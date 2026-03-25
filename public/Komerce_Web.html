@@ -6,19 +6,16 @@
   <title>Komerce — Tout ce que vous voulez, livré aux Comores</title>
   <style>
     :root {
-      --primary: #1C1611;
-      --accent:  #F5A623;
-      --accent2: #E8941A;
-      --light:   #f5f5f5;
-      --border:  #e8e8e8;
-      --green:   #1DAD6F;
-      --red:     #E8552A;
-      
-      --dark:    #1C1611;
-      --text:    #1C1611;
-      --muted:   #888888;
+      --primary: #1a3a5c;
+      --accent:  #e8a020;
+      --green:   #2ecc71;
+      --red:     #e74c3c;
+      --light:   #f4f7fb;
+      --dark:    #0f1f33;
+      --text:    #2c3e50;
+      --muted:   #7f8c9b;
       --white:   #ffffff;
-      --shadow:  0 4px 24px rgba(28,22,17,0.10);
+      --shadow:  0 4px 24px rgba(26,58,92,0.10);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Segoe UI',system-ui,sans-serif; color:var(--text); background:var(--white); }
@@ -31,19 +28,19 @@
       box-shadow:0 2px 12px rgba(0,0,0,0.2);
     }
     .logo { color:var(--white); font-size:1.5rem; font-weight:800; letter-spacing:-0.5px; }
-    .logo span { color:#1C1611; }
+    .logo span { color:var(--accent); }
     .nav-links { display:flex; gap:2rem; }
-    .nav-links a { color:#888888; text-decoration:none; font-size:.9rem; font-weight:500; transition:color .2s; }
-    .nav-links a:hover { color:var(--accent2); }
+    .nav-links a { color:rgba(255,255,255,0.85); text-decoration:none; font-size:.9rem; font-weight:500; transition:color .2s; }
+    .nav-links a:hover { color:var(--accent); }
     .nav-cta {
-      background:var(--accent); color:var(--primary)!important; font-weight:700;
+      background:var(--accent); color:var(--white)!important;
       padding:.45rem 1.1rem; border-radius:6px; font-weight:700!important;
     }
 
     /* ── HERO ── */
     .hero {
-      background: #FFFBF2; border-bottom:1px solid #F5E4C0;
-      color:var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, #0d2640 60%, #162d48 100%);
+      color:var(--white);
       padding: 80px 5% 60px;
       text-align:center;
       position:relative;
@@ -108,25 +105,23 @@
       background:var(--accent); color:var(--white);
       padding:.85rem 2rem; border-radius:8px; font-size:1rem; font-weight:700;
       text-decoration:none; border:none; cursor:pointer;
-      box-shadow:0 2px 8px rgba(245,166,35,0.25);
+      box-shadow:0 4px 16px rgba(232,160,32,0.4);
       transition:transform .2s, box-shadow .2s;
       display:inline-flex; align-items:center; gap:.5rem;
     }
-    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(245,166,35,0.35); }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(232,160,32,0.5); }
     .btn-secondary {
-      background:#ffffff; color:#1C1611;
+      background:rgba(255,255,255,0.1); color:var(--white);
       padding:.85rem 2rem; border-radius:8px; font-size:1rem; font-weight:600;
-      text-decoration:none; border:1px solid #e8e8e8;
+      text-decoration:none; border:1px solid rgba(255,255,255,0.25);
       transition:background .2s;
       display:inline-flex; align-items:center; gap:.5rem;
     }
-    .btn-secondary:hover { background:#f5f5f5; }
+    .btn-secondary:hover { background:rgba(255,255,255,0.18); }
 
     /* ── ADVANTAGE STRIP ── */
     .advantage-strip {
-      background:#FFFBF2;
-      border-top:1px solid #FADADD;
-      border-bottom:1px solid #F5E4C0;
+      background:var(--accent);
       display:grid; grid-template-columns:repeat(3,1fr);
     }
     .adv-item {
@@ -151,7 +146,7 @@
       color:var(--accent); margin-bottom:.5rem;
     }
     .section-title { font-size:2rem; font-weight:800; color:var(--primary); margin-bottom:.5rem; }
-    .section-sub { color:#888888; font-size:1rem; margin-bottom:2.5rem; max-width:580px; }
+    .section-sub { color:var(--muted); font-size:1rem; margin-bottom:2.5rem; max-width:580px; }
 
     .promo-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:2rem; }
 
@@ -162,7 +157,7 @@
       overflow:hidden; transition:transform .2s, box-shadow .2s;
       border:1px solid rgba(232,160,32,0.2);
     }
-    .promo-card:hover { transform:translateY(-4px); box-shadow:0 8px 32px rgba(28,22,17,0.15); }
+    .promo-card:hover { transform:translateY(-4px); box-shadow:0 8px 32px rgba(26,58,92,0.15); }
     .promo-card-img {
       background: linear-gradient(135deg, #f0f4f8, #e8edf2);
       height:160px; display:flex; align-items:center; justify-content:center;
@@ -180,12 +175,12 @@
     }
     .promo-card-body { padding:1rem; }
     .promo-card-name { font-weight:700; color:var(--primary); font-size:.95rem; margin-bottom:.4rem; }
-    .promo-card-cat { font-size:.75rem; color:#888888; margin-bottom:.8rem; }
+    .promo-card-cat { font-size:.75rem; color:var(--muted); margin-bottom:.8rem; }
     .promo-prices { display:flex; align-items:baseline; gap:.6rem; margin-bottom:.5rem; }
-    .promo-price-original { font-size:.85rem; color:#888888; text-decoration:line-through; }
+    .promo-price-original { font-size:.85rem; color:var(--muted); text-decoration:line-through; }
     .promo-price-now { font-size:1.25rem; font-weight:800; color:var(--red); }
-    .promo-price-aed { font-size:.75rem; color:#888888; }
-    .promo-price-kmf { font-size:.8rem; color:#C47A00; font-weight:700; margin-bottom:.8rem; }
+    .promo-price-aed { font-size:.75rem; color:var(--muted); }
+    .promo-price-kmf { font-size:.8rem; color:var(--primary); font-weight:600; margin-bottom:.8rem; }
     .promo-savings {
       background:#fef3f2; border:1px solid #fecaca;
       color:var(--red); font-size:.78rem; font-weight:600;
@@ -197,7 +192,7 @@
       border:none; padding:.55rem; border-radius:6px;
       font-size:.82rem; font-weight:700; cursor:pointer; transition:background .2s;
     }
-    .btn-order:hover { background:var(--accent2); }
+    .btn-order:hover { background:#0d2640; }
     .btn-fav {
       background:var(--light); border:none;
       padding:.55rem .7rem; border-radius:6px; cursor:pointer; font-size:1rem;
@@ -205,7 +200,7 @@
 
     .promo-countdown {
       display:flex; align-items:center; gap:.5rem;
-      font-size:.8rem; color:#888888; margin-top:.5rem;
+      font-size:.8rem; color:var(--muted); margin-top:.5rem;
     }
 
     .promo-mvp-note {
@@ -220,17 +215,17 @@
     .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:2rem; margin-top:2.5rem; }
     .step-card {
       background:var(--light); border-radius:12px; padding:1.8rem 1.5rem;
-      position:relative; border:1px solid rgba(28,22,17,0.08);
+      position:relative; border:1px solid rgba(26,58,92,0.08);
     }
     .step-num {
-      width:40px; height:40px; background:var(--accent); color:var(--primary);
+      width:40px; height:40px; background:var(--primary); color:var(--white);
       border-radius:50%; font-weight:800; font-size:1rem;
       display:flex; align-items:center; justify-content:center;
       margin-bottom:1rem;
     }
     .step-icon { font-size:1.8rem; margin-bottom:.8rem; }
     .step-title { font-weight:700; color:var(--primary); margin-bottom:.4rem; }
-    .step-desc { font-size:.88rem; color:#888888; line-height:1.55; }
+    .step-desc { font-size:.88rem; color:var(--muted); line-height:1.55; }
     .step-detail { font-size:.78rem; color:var(--accent); font-weight:600; margin-top:.5rem; }
 
     /* ── TRACKING ── */
@@ -239,7 +234,7 @@
     .track-step { flex:1; min-width:140px; text-align:center; position:relative; }
     .track-step::after {
       content:''; position:absolute; top:18px; left:50%; width:100%; height:3px;
-      background: linear-gradient(90deg, var(--accent), rgba(232,85,42,0.08));
+      background: linear-gradient(90deg, var(--accent), rgba(232,160,32,0.2));
     }
     .track-step:last-child::after { display:none; }
     .track-dot {
@@ -248,13 +243,13 @@
       display:flex; align-items:center; justify-content:center;
       font-size:1rem; margin:0 auto 0.8rem;
       position:relative; z-index:1;
-      box-shadow:0 2px 8px rgba(28,22,17,0.25);
+      box-shadow:0 2px 8px rgba(26,58,92,0.25);
     }
     .track-dot.done { background:var(--green); }
     .track-dot.active { background:var(--accent); animation:pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(232,160,32,0.4)} 50%{box-shadow:0 0 0 8px rgba(232,160,32,0)} }
     .track-label { font-size:.78rem; font-weight:600; color:var(--primary); }
-    .track-sublabel { font-size:.7rem; color:#888888; margin-top:.2rem; }
+    .track-sublabel { font-size:.7rem; color:var(--muted); margin-top:.2rem; }
 
     /* ── TRUST ── */
     /* VALISE SECTION */
@@ -282,22 +277,22 @@
     .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-top:2.5rem; }
     .pricing-card {
       border-radius:12px; padding:2rem;
-      border:2px solid rgba(28,22,17,0.1);
+      border:2px solid rgba(26,58,92,0.1);
     }
     .pricing-card.featured { border-color:var(--accent); background:linear-gradient(135deg,#fff8ee,#fffdf5); }
     .cat-icon { font-size:2.5rem; margin-bottom:1rem; }
     .cat-name { font-weight:800; font-size:1.1rem; color:var(--primary); margin-bottom:.3rem; }
-    .cat-desc { font-size:.85rem; color:#888888; margin-bottom:1rem; }
+    .cat-desc { font-size:.85rem; color:var(--muted); margin-bottom:1rem; }
     .price-example { background:var(--light); border-radius:8px; padding:.8rem 1rem; }
-    .price-label { font-size:.75rem; color:#888888; }
+    .price-label { font-size:.75rem; color:var(--muted); }
     .price-value { font-size:1.4rem; font-weight:800; color:var(--primary); }
-    .price-sub { font-size:.75rem; color:#888888; }
+    .price-sub { font-size:.75rem; color:var(--muted); }
     .deliv-tag { display:inline-block; background:rgba(46,204,113,0.1); color:var(--green); font-size:.75rem; font-weight:600; padding:.2rem .6rem; border-radius:4px; margin-top:.8rem; }
 
     /* ── DESTINATAIRE ── */
     .destinataire-section { padding:70px 5%; background:var(--white); }
     .dest-container { max-width:780px; margin:0 auto; }
-    .dest-card { background:var(--light); border-radius:16px; padding:2.5rem; border:1px solid rgba(28,22,17,0.1); box-shadow:0 4px 24px rgba(28,22,17,0.07); }
+    .dest-card { background:var(--light); border-radius:16px; padding:2.5rem; border:1px solid rgba(26,58,92,0.1); box-shadow:0 4px 24px rgba(26,58,92,0.07); }
     .dest-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin-bottom:1.5rem; }
     @media(max-width:600px){ .dest-form-grid { grid-template-columns:1fr; } }
     .dest-field { display:flex; flex-direction:column; gap:.4rem; }
@@ -312,13 +307,13 @@
     .relais-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.8rem; margin-bottom:1.5rem; }
     .relais-card { border:2px solid #e2e8f0; border-radius:10px; padding:1rem; cursor:pointer; transition:border-color .2s, background .2s; background:var(--white); }
     .relais-card:hover { border-color:var(--accent); }
-    .relais-card.selected { border-color:var(--primary); background:rgba(28,22,17,0.04); }
+    .relais-card.selected { border-color:var(--primary); background:rgba(26,58,92,0.04); }
     .relais-card.selected .relais-check { opacity:1; }
     .relais-name { font-weight:700; font-size:.9rem; color:var(--primary); margin-bottom:.2rem; }
-    .relais-zone { font-size:.78rem; color:#888888; }
+    .relais-zone { font-size:.78rem; color:var(--muted); }
     .relais-check { float:right; color:var(--green); font-size:1rem; opacity:0; transition:opacity .2s; margin-top:-.1rem; }
 
-    .dest-note { background:#FFFBF2; border-left:3px solid var(--accent); border-radius:6px; padding:.75rem 1rem; font-size:.82rem; color:#888888; margin-bottom:1.5rem; line-height:1.5; }
+    .dest-note { background:rgba(232,160,32,0.1); border-left:3px solid var(--accent); border-radius:6px; padding:.75rem 1rem; font-size:.82rem; color:#78350f; margin-bottom:1.5rem; line-height:1.5; }
     .dest-submit { width:100%; padding:1rem; background:var(--primary); color:var(--white); border:none; border-radius:10px; font-size:1rem; font-weight:700; cursor:pointer; transition:background .2s; letter-spacing:.02em; }
     .dest-submit:hover { background:#0d2640; }
     .dest-steps { display:flex; gap:0; margin-bottom:2rem; }
@@ -337,8 +332,8 @@
     .shared-banner-title { font-weight:800; font-size:1rem; margin-bottom:.2rem; }
     .shared-banner-sub { font-size:.82rem; opacity:.85; }
     .shared-banner-badge { background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); border-radius:20px; padding:.3rem .9rem; font-size:.78rem; font-weight:700; letter-spacing:.04em; white-space:nowrap; }
-    .owner-tag { display:inline-flex; align-items:center; gap:.5rem; background:rgba(28,22,17,0.07); border:1px solid rgba(28,22,17,0.15); border-radius:8px; padding:.5rem 1rem; font-size:.82rem; color:var(--primary); margin-bottom:1.2rem; font-weight:600; }
-    .owner-tag span { color:#888888; font-weight:400; }
+    .owner-tag { display:inline-flex; align-items:center; gap:.5rem; background:rgba(26,58,92,0.07); border:1px solid rgba(26,58,92,0.15); border-radius:8px; padding:.5rem 1rem; font-size:.82rem; color:var(--primary); margin-bottom:1.2rem; font-weight:600; }
+    .owner-tag span { color:var(--muted); font-weight:400; }
     .share-cart-wrap { text-align:center; padding:1.5rem 0 .5rem; }
     .share-cart-btn { display:inline-flex; align-items:center; gap:.6rem; background:var(--white); border:2px solid var(--primary); color:var(--primary); padding:.75rem 1.8rem; border-radius:10px; font-size:.9rem; font-weight:700; cursor:pointer; transition:all .2s; letter-spacing:.02em; }
     .share-cart-btn:hover { background:var(--primary); color:#fff; }
@@ -346,23 +341,23 @@
     .share-code-modal.open { display:flex; }
     .share-modal-box { background:#fff; border-radius:20px; padding:2.5rem; max-width:400px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3); }
     .share-modal-code { font-size:2.5rem; font-weight:900; color:var(--primary); letter-spacing:.15em; background:var(--light); border-radius:12px; padding:.8rem 1.5rem; margin:1rem 0; display:inline-block; }
-    .share-modal-sub { font-size:.82rem; color:#888888; margin-bottom:1.5rem; }
+    .share-modal-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.5rem; }
     .share-wa-btn { display:flex; align-items:center; justify-content:center; gap:.6rem; background:#25D366; color:#fff; border:none; border-radius:10px; padding:.85rem 1.5rem; font-size:.95rem; font-weight:700; cursor:pointer; width:100%; margin-bottom:.8rem; }
-    .share-close-btn { background:none; border:none; color:#888888; font-size:.85rem; cursor:pointer; }
+    .share-close-btn { background:none; border:none; color:var(--muted); font-size:.85rem; cursor:pointer; }
     .gift-btn { display:inline-flex; align-items:center; gap:.6rem; background:var(--white); border:2px solid var(--green); color:var(--green); padding:.75rem 1.8rem; border-radius:10px; font-size:.9rem; font-weight:700; cursor:pointer; transition:all .2s; letter-spacing:.02em; margin-left:.8rem; }
     .gift-btn:hover { background:var(--green); color:#fff; }
     .gift-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center; }
     .gift-modal.open { display:flex; }
     .gift-modal-box { background:#fff; border-radius:20px; padding:2.5rem; max-width:420px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.3); }
     .gift-modal-title { font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:.3rem; }
-    .gift-modal-sub { font-size:.82rem; color:#888888; margin-bottom:1.5rem; line-height:1.5; }
+    .gift-modal-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.5; }
     .gift-field { margin-bottom:1rem; }
     .gift-label { display:block; font-size:.78rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.4rem; }
     .gift-input { width:100%; padding:.75rem 1rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; box-sizing:border-box; outline:none; }
     .gift-input:focus { border-color:#16a34a; }
     .gift-confirm-btn { width:100%; background:#16a34a; color:#fff; border:none; border-radius:10px; padding:.9rem; font-size:.95rem; font-weight:700; cursor:pointer; margin-top:.5rem; }
-    .gift-note { font-size:.75rem; color:#888888; text-align:center; margin-top:.8rem; line-height:1.5; }
-    .gift-close-btn { background:none; border:none; color:#888888; font-size:.82rem; cursor:pointer; display:block; margin:.5rem auto 0; }
+    .gift-note { font-size:.75rem; color:var(--muted); text-align:center; margin-top:.8rem; line-height:1.5; }
+    .gift-close-btn { background:none; border:none; color:var(--muted); font-size:.82rem; cursor:pointer; display:block; margin:.5rem auto 0; }
 
     /* ── FIDÉLISATION ── */
     .fidelite-section { padding:60px 5%; background:var(--primary); }
@@ -437,7 +432,7 @@
   </p>
   <div class="hero-value">
     <span class="vp-icon">✨</span>
-    Tout ce que vous voulez, livré aux Comores sans bouger de chez vous · 4 semaines environ · Prix tout inclus
+    Tout ce que vous voulez, livré aux Comores sans bouger de chez vous · 3 à 5 semaines · Prix tout inclus
   </div>
   <div class="hero-actions">
     <a href="#promos" class="btn-primary">🔥 Voir les promos en cours</a>
@@ -474,7 +469,7 @@
     <div class="adv-icon">⏱️</div>
     <div>
       <div class="adv-label">Livraison</div>
-      <div class="adv-value">4 semaines environ</div>
+      <div class="adv-value">3–5 semaines</div>
     </div>
   </div>
 </div>
@@ -491,9 +486,9 @@
       </p>
     </div>
     <div style="text-align:right;flex-shrink:0;">
-      <div style="font-size:.8rem;color:#888888;margin-bottom:.3rem;">Dernière mise à jour</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem;">Dernière mise à jour</div>
       <div style="font-weight:700;color:var(--primary);">Lundi 23 mars 2026</div>
-      <div style="font-size:.75rem;color:#888888;">Produits sélectionnés et vérifiés</div>
+      <div style="font-size:.75rem;color:var(--muted);">Produits sélectionnés et vérifiés</div>
     </div>
   </div>
 
@@ -507,7 +502,7 @@
       </div>
       <div class="promo-card-body">
         <div class="promo-card-name">Samsung Galaxy A15 128Go</div>
-        <div class="promo-card-cat">📱 Électronique</div>
+        <div class="promo-card-cat">📱 Téléphones &amp; Accessoires</div>
         <div class="promo-price-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 28 mars</div>
         <div class="promo-card-footer" style="margin-top:.8rem;">
@@ -525,7 +520,7 @@
       </div>
       <div class="promo-card-body">
         <div class="promo-card-name">Lot 3 abayas brodées — sélection exclus.</div>
-        <div class="promo-card-cat">👗 Mode &amp; Beauté</div>
+        <div class="promo-card-cat">👗 Vêtements &amp; Tissu</div>
         <div class="promo-price-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 31 mars</div>
         <div class="promo-card-footer" style="margin-top:.8rem;">
@@ -543,7 +538,7 @@
       </div>
       <div class="promo-card-body">
         <div class="promo-card-name">Écouteurs Bluetooth Sony WH-CH520</div>
-        <div class="promo-card-cat">📱 Électronique</div>
+        <div class="promo-card-cat">🎧 Électronique léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Stock limité — 12 unités restantes</div>
         <div class="promo-card-footer" style="margin-top:.8rem;">
@@ -561,7 +556,7 @@
       </div>
       <div class="promo-card-body">
         <div class="promo-card-name">Set cuisine Tefal — 5 pièces inox</div>
-        <div class="promo-card-cat">🏠 Maison</div>
+        <div class="promo-card-cat">🏠 Électroménager léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 30 mars</div>
         <div class="promo-card-footer" style="margin-top:.8rem;">
@@ -610,7 +605,7 @@
       <div class="step-icon">🚢</div>
       <div class="step-title">On expédie</div>
       <div class="step-desc">Votre colis part par fret maritime groupé. Vous suivez chaque étape en temps réel : Commandé → Expédié → Disponible.</div>
-      <div class="step-detail">Fret maritime · 4 semaines environ · Douane incluse</div>
+      <div class="step-detail">Fret maritime · 3 à 5 semaines · Douane incluse</div>
     </div>
     <div class="step-card">
       <div class="step-num">4</div>
@@ -705,7 +700,7 @@
   <button class="gift-btn" onclick="openGiftModal()">
     🎁 Offrir ce panier
   </button>
-  <p style="font-size:.78rem;color:#888888;margin-top:.6rem;">
+  <p style="font-size:.78rem;color:var(--muted);margin-top:.6rem;">
     <strong>Partager</strong> : votre proche modifie et paie ·
     <strong>Offrir</strong> : vous payez, votre proche récupère au relais
   </p>
@@ -741,7 +736,7 @@
   <div class="share-modal-box">
     <div style="font-size:2rem;margin-bottom:.5rem;">🔗</div>
     <div style="font-weight:800;font-size:1.1rem;color:var(--primary);margin-bottom:.3rem;">Votre panier est prêt à partager</div>
-    <div style="font-size:.85rem;color:#888888;margin-bottom:.5rem;">Envoyez ce code ou ce lien à la personne qui va payer</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem;">Envoyez ce code ou ce lien à la personne qui va payer</div>
     <div class="share-modal-code" id="modal-code">K-7X4M</div>
     <div class="share-modal-sub">⏱️ Valide 7 jours · Le payeur peut ajouter ou retirer des articles</div>
     <button class="share-wa-btn" onclick="shareWhatsApp()">
@@ -944,30 +939,69 @@ function confirmGift() {
   <div class="pricing-grid">
     <div class="pricing-card">
       <div class="cat-icon">📱</div>
-      <div class="cat-name">Électronique</div>
+      <div class="cat-name">Téléphones &amp; Accessoires</div>
+      <div class="cat-desc">Samsung, Itel, Realme milieu de gamme</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Samsung A15 128Go</div>
+        <div class="price-value">57 600 <small>KMF</small></div>
+        <div class="price-sub">Promo −35% · Produit sélectionné et vérifié</div>
       </div>
-      <div class="cat-card" onclick="">
-        <div class="cat-icon">🏠</div>
-        <div class="cat-name">Maison</div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card featured">
+      <div class="cat-icon">👗</div>
+      <div class="cat-name">Vêtements, Wax &amp; Dentelles</div>
+      <div class="cat-desc">Tissus Wax, dentelles, abayas africanisées, tenues cérémonie</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Lot 3 abayas brodées</div>
+        <div class="price-value kmf-price" data-kmf="31648">31 648 <small>KMF</small></div>
+        <div class="price-sub">Promo −40% · Produit sélectionné et vérifié</div>
       </div>
-      <div class="cat-card" onclick="">
-        <div class="cat-icon">💍</div>
-        <div class="cat-name">Mariage</div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">🏠</div>
+      <div class="cat-name">Électroménager Compact</div>
+      <div class="cat-desc">Fer, mixeur, mini-frigo, plaque, sèche-cheveux</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Set Tefal 5 pièces</div>
+        <div class="price-value kmf-price" data-kmf="64471">64 471 <small>KMF</small></div>
+        <div class="price-sub">Promo −22% · Produit sélectionné et vérifié</div>
       </div>
-      <div class="cat-card" onclick="">
-        <div class="cat-icon">👗</div>
-        <div class="cat-name">Mode &amp; Beauté</div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">💄</div>
+      <div class="cat-name">Cosmétiques &amp; Parfums</div>
+      <div class="cat-desc">Soins peau, parfums importés UAE, produits re-marqués</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Coffret parfum 100ml</div>
+        <div class="price-value kmf-price" data-kmf="22193">22 193 <small>KMF</small></div>
+        <div class="price-sub">Prix livré tout inclus · fret + douane + relais</div>
       </div>
-      <div class="cat-card" onclick="">
-        <div class="cat-icon">🧸</div>
-        <div class="cat-name">Enfants</div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">💍</div>
+      <div class="cat-name">Mariage &amp; Cadeaux de Fête</div>
+      <div class="cat-desc">Vaisselle, décor, bijoux fantaisie, cadeaux de cérémonie</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Service vaisselle 12 pièces</div>
+        <div class="price-value kmf-price" data-kmf="52186">52 186 <small>KMF</small></div>
+        <div class="price-sub">Prix livré tout inclus · fret + douane + relais</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">🧸</div>
+      <div class="cat-name">Enfants</div>
       <div class="cat-desc">Jouets, vêtements enfants, accessoires scolaires</div>
       <div class="price-example">
         <div class="price-label">Exemple — Lot jouets éducatifs</div>
         <div class="price-value kmf-price" data-kmf="25648">25 648 <small>KMF</small></div>
         <div class="price-sub">Prix livré tout inclus · fret + douane + relais</div>
       </div>
-      <div class="deliv-tag">✅ Livré en 4 semaines environ</div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
     </div>
   </div>
 </section>
@@ -1044,11 +1078,6 @@ function confirmGift() {
   // Taux MVP : 1 AED = 138 KMF · 1 EUR = 492 KMF · Fret 180 EUR/m3
   // Hub Dubai 7000 AED/mois absorbé dans marge 12% (Option B)
   const RATES = { EUR: 492, AED: 138, KMF: 1 };
-  window.KomerceAPI.getRates().then(r => {
-    RATES.EUR = r.eur_kmf || 492;
-    RATES.AED = r.aed_kmf || 138;
-    applyCurrency(document.getElementById('curr-select')?.value || 'EUR');
-  }).catch(() => {});
   const SYMBOLS = { EUR: '€', AED: 'AED', KMF: 'KMF' };
   const FLAGS = { EUR: '🇪🇺', AED: '🇦🇪', KMF: '🇰🇲' };
 
@@ -1102,92 +1131,6 @@ function confirmGift() {
 })();
 </script>
 
-<!-- ═══ KOMERCE API LAYER v1.0 ═══ -->
-<script>
-(function(){
-'use strict';
-const API_BASE=(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')
-  ?'http://localhost:3000/api':'/api';
-const Auth={
-  getToken(){try{return localStorage.getItem('kmrc_token');}catch(e){return null;}},
-  setToken(t){try{localStorage.setItem('kmrc_token',t);}catch(e){}},
-  getUser(){try{return JSON.parse(localStorage.getItem('kmrc_user')||'null');}catch(e){return null;}},
-  setUser(u){try{localStorage.setItem('kmrc_user',JSON.stringify(u));}catch(e){}},
-};
-async function http(method,path,body,auth){
-  const headers={'Content-Type':'application/json'};
-  if(auth!==false){const t=Auth.getToken();if(t)headers['Authorization']='Bearer '+t;}
-  try{
-    const res=await fetch(API_BASE+path,{method,headers,body:body?JSON.stringify(body):undefined});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok)throw new Error(data.error||'Erreur '+res.status);
-    return data;
-  }catch(err){console.error('[Komerce API]',method,path,err.message);throw err;}
-}
-window.KomerceAPI={
-  async requestOTP(phone){return http('POST','/auth/otp/request',{phone},false);},
-  async verifyOTP(phone,code,fn){const d=await http('POST','/auth/otp/verify',{phone,code,first_name:fn},false);if(d.token){Auth.setToken(d.token);Auth.setUser(d.user);}return d;},
-  logout(){try{localStorage.removeItem('kmrc_token');}catch(e){}},
-  getUser(){return Auth.getUser();},
-  isLoggedIn(){return!!Auth.getToken();},
-  async getRates(){
-    const c=sessionStorage.getItem('kmrc_rates'),ts=sessionStorage.getItem('kmrc_rates_ts');
-    if(c&&ts&&Date.now()-parseInt(ts)<3600000)return JSON.parse(c);
-    try{const d=await http('GET','/payments/rates',null,false);sessionStorage.setItem('kmrc_rates',JSON.stringify(d));sessionStorage.setItem('kmrc_rates_ts',Date.now());return d;}
-    catch(e){return{eur_kmf:492,aed_kmf:138};}
-  },
-  async getProducts(p){const qs=p?'?'+new URLSearchParams(p).toString():'';return http('GET','/products'+qs,null,false);},
-  async calcPrice(pid,qty,diaspora){return http('POST','/pricing/calculate',{product_id:pid,qty:qty||1,is_diaspora:!!diaspora},false);},
-  async getRelais(){return http('GET','/relay-points',null,false);},
-  async createOrder(payload){return http('POST','/orders',payload);},
-  async getOrderTracking(ref){return http('GET','/orders/'+ref+'/tracking',null,false);},
-  async getMyOrders(){return http('GET','/orders');},
-  async cancelOrder(ref){return http('PUT','/orders/'+ref+'/cancel',{});},
-  async createStripeIntent(ref){return http('POST','/payments/stripe/intent',{order_reference:ref});},
-  async shareBasket(items,name){return http('POST','/baskets/share',{items,creator_name:name},false);},
-  async getBasket(code){return http('GET','/baskets/'+code,null,false);},
-  async payBasket(code){return http('POST','/baskets/'+code+'/pay',{});},
-  async giftBasket(items,phone,name){return http('POST','/baskets/gift',{items,recipient_phone:phone,recipient_name:name});},
-  async getFabrics(){return http('GET','/ceremony/fabrics',null,false);},
-  async getGarmentModels(){return http('GET','/ceremony/models',null,false);},
-  async calcCeremonyPrice(fid,mid,qty,d){return http('POST','/ceremony/price',{fabric_id:fid,model_id:mid,qty:qty||1,is_diaspora:!!d},false);},
-};
-window.KomerceAPI.getRates().then(r=>{
-  window._KMRC_RATES=r;
-  // Mettre à jour les taux affichés
-  document.querySelectorAll('[data-kmrc-rate="eur_kmf"]').forEach(el=>el.textContent=r.eur_kmf);
-  document.querySelectorAll('[data-kmrc-rate="aed_kmf"]').forEach(el=>el.textContent=r.aed_kmf);
-}).catch(()=>{window._KMRC_RATES={eur_kmf:492,aed_kmf:138};});
-console.log('[Komerce] API Layer v1.0 —',API_BASE);
-})();
-</script>
-<!-- ═══ FIN API LAYER ═══ -->
-<script>
-// Charger les relais depuis le back-end
-document.addEventListener('DOMContentLoaded', () => {
-  window._webCartItems = [];
-  if (!window.KomerceAPI) return;
-  window.KomerceAPI.getRelais().then(data => {
-    if (!data?.relay_points?.length) return;
-    document.querySelectorAll('[data-relais-select]').forEach(sel => {
-      sel.innerHTML = data.relay_points.map(r =>
-        `<option value="${r.id}">${r.name} — ${r.district||r.zone||''}</option>`
-      ).join('');
-    });
-  }).catch(() => {});
-  // Détecter panier partagé dans l'URL
-  const params = new URLSearchParams(window.location.search);
-  const basketCode = params.get('panier') || params.get('basket');
-  if (basketCode && window.KomerceAPI) {
-    window.KomerceAPI.getBasket(basketCode).then(data => {
-      if (data?.basket && data?.items?.length) {
-        window._sharedBasket = data;
-        window._webCartItems = data.items.map(i => ({ product_id: i.product_id, quantity: i.quantity }));
-        console.log('[Komerce] Panier partagé chargé :', basketCode, data.items.length, 'articles');
-      }
-    }).catch(() => {});
-  }
-});
-</script>
+<script src="/komerce-api.js"></script>
 </body>
 </html>

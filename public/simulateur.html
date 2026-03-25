@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Komerce — Simulateur de Prix</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+
+    /* ─── Header ─── */
+    header {
+      background: linear-gradient(135deg, #1a3a5c 0%, #2563eb 100%);
+      color: white; padding: 20px 32px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    header .brand { display: flex; align-items: center; gap: 10px; }
+    header .brand h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; }
+    header .brand span { font-size: 0.78rem; opacity: 0.7; }
+    header nav a {
+      color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem;
+      font-weight: 600; padding: 6px 14px; border-radius: 20px; transition: all 0.2s;
+    }
+    header nav a:hover { background: rgba(255,255,255,0.15); color: white; }
+    header nav a.active { background: rgba(255,255,255,0.2); color: white; }
+
+    /* ─── Taux bar ─── */
+    .taux-bar {
+      background: #fffbeb; border-bottom: 1.5px solid #fde68a;
+      padding: 8px 32px; font-size: 0.78rem; color: #92400e;
+      display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+    }
+    .taux-bar strong { color: #78350f; }
+    .taux-item { display: flex; gap: 5px; align-items: center; }
+
+    /* ─── Layout ─── */
+    .container {
+      max-width: 1100px; margin: 0 auto; padding: 24px 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 700px) { .container { grid-template-columns: 1fr; } }
+
+    /* ─── Card ─── */
+    .card {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .card h2 {
+      font-size: 0.88rem; font-weight: 700; color: #1a3a5c;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .badge {
+      background: #e0eaff; color: #2563eb; font-size: 0.65rem;
+      padding: 2px 8px; border-radius: 20px; font-weight: 600;
+    }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .badge-ok   { background: #d1fae5; color: #065f46; }
+
+    /* ─── Form ─── */
+    label {
+      display: block; font-size: 0.72rem; font-weight: 600; color: #4a5568;
+      margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    input[type="number"], select {
+      width: 100%; padding: 9px 11px; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; font-size: 0.9rem; color: #1a202c;
+      background: #f8fafc; transition: border-color 0.2s; margin-bottom: 14px;
+    }
+    input:focus, select:focus { outline: none; border-color: #2563eb; background: white; }
+    .hint { font-size: 0.7rem; color: #a0aec0; margin-top: -10px; margin-bottom: 14px; }
+    .hint.warn { color: #d97706; }
+
+    /* ─── Toggle marché ─── */
+    .toggle-row { display: flex; border-radius: 8px; overflow: hidden; border: 1.5px solid #e2e8f0; margin-bottom: 14px; }
+    .toggle-row button {
+      flex: 1; padding: 9px; border: none; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; background: #f8fafc;
+      color: #718096; transition: all 0.2s;
+    }
+    .toggle-row button.active { background: #1a3a5c; color: white; }
+    .toggle-row button.active-diaspora { background: #2563eb; color: white; }
+
+    /* ─── Dimensions ─── */
+    .dim-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .dim-row .dim-field { flex: 1; }
+    .dim-row .dim-field label { font-size: 0.65rem; }
+    .dim-row .dim-field input { margin-bottom: 0; }
+
+    /* ─── Fret computed ─── */
+    .fret-box {
+      background: #f0f9ff; border: 1.5px solid #7dd3fc;
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+    }
+    .fret-box .fret-val { font-size: 1.05rem; font-weight: 800; color: #0369a1; }
+    .fret-box .fret-sub { font-size: 0.7rem; color: #0284c7; margin-top: 3px; }
+
+    /* ─── Conformité note ─── */
+    .note-conf {
+      font-size: 0.74rem; border-left: 3px solid #f59e0b;
+      background: #fffbeb; color: #78350f; padding: 8px 12px;
+      border-radius: 0 6px 6px 0; margin-bottom: 14px; display: none;
+    }
+
+    /* ─── Breakdown table ─── */
+    .breakdown { margin-top: 4px; }
+    .bk-section {
+      font-size: 0.65rem; font-weight: 700; color: #718096;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      padding: 8px 0 4px; border-top: 1px solid #f0f4f8;
+      margin-top: 4px;
+    }
+    .bk-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0; font-size: 0.82rem; border-bottom: 1px solid #f8fafc;
+    }
+    .bk-row .lbl { color: #4a5568; }
+    .bk-row .val { font-weight: 700; font-variant-numeric: tabular-nums; color: #1a3a5c; }
+    .bk-row.total { background: #f0f4f8; border-radius: 6px; padding: 6px 8px; border: none; margin-top: 4px; }
+    .bk-row.total .lbl { font-weight: 700; color: #1a3a5c; }
+    .bk-row.total .val { color: #2563eb; font-size: 0.95rem; }
+
+    /* ─── Result card ─── */
+    .result-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #1a3a5c 0%, #2563eb 100%);
+      border-radius: 14px; padding: 28px 32px; color: white;
+      box-shadow: 0 6px 24px rgba(37,99,235,0.3);
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: center;
+    }
+    @media (max-width: 700px) { .result-card { grid-template-columns: 1fr; } }
+
+    .result-block { text-align: center; }
+    .result-block .lbl { font-size: 0.72rem; font-weight: 600; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .result-block .price { font-size: 2rem; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+    .result-block .price-sub { font-size: 0.8rem; opacity: 0.65; margin-top: 4px; }
+
+    .result-divider { width: 1px; background: rgba(255,255,255,0.2); height: 60px; margin: 0 auto; }
+    @media (max-width: 700px) { .result-divider { display: none; } }
+
+    .margin-block {
+      background: rgba(255,255,255,0.12); border-radius: 10px;
+      padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .margin-row { display: flex; justify-content: space-between; font-size: 0.82rem; }
+    .margin-row .mk { opacity: 0.7; }
+    .margin-row .mv { font-weight: 700; }
+    .margin-row.highlight .mv { color: #86efac; font-size: 0.95rem; }
+
+    /* ─── Recommandation ─── */
+    .reco {
+      grid-column: 1 / -1; background: white; border-radius: 12px;
+      padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .reco h3 { font-size: 0.88rem; font-weight: 700; color: #1a3a5c; margin-bottom: 14px; }
+    .reco-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 700px) { .reco-grid { grid-template-columns: 1fr; } }
+    .reco-item {
+      border-radius: 10px; padding: 14px; border: 1.5px solid #e2e8f0; text-align: center;
+    }
+    .reco-item.selected { border-color: #2563eb; background: #eff6ff; }
+    .reco-item .ri-lbl { font-size: 0.7rem; color: #718096; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .reco-item .ri-price { font-size: 1.3rem; font-weight: 800; color: #1a3a5c; }
+    .reco-item .ri-sub { font-size: 0.72rem; color: #718096; margin-top: 2px; }
+    .reco-item .ri-marge { font-size: 0.78rem; color: #059669; font-weight: 700; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span style="font-size:1.5rem">🛒</span>
+    <div>
+      <h1>Komerce</h1>
+      <span>Simulateur de Tarification</span>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Boutique</a>
+    <a href="/admin.html">Admin</a>
+    <a href="/simulateur.html" class="active">Simulateur</a>
+  </nav>
+</header>
+
+<div class="taux-bar">
+  <div class="taux-item">💱 Taux indicatifs :</div>
+  <div class="taux-item"><strong>1 AED</strong> = <span id="taux-aed">138</span> KMF</div>
+  <div class="taux-item"><strong>1 EUR</strong> = <span id="taux-eur">492</span> KMF</div>
+  <div class="taux-item"><strong>Fret</strong> = 180 EUR/m³ = <span id="taux-fret">88 560</span> KMF/m³</div>
+  <div class="taux-item" style="margin-left:auto; font-size:0.7rem; opacity:0.6;">⚠️ Estimations — à confirmer avec transitaire</div>
+</div>
+
+<div class="container">
+
+  <!-- ══ PANNEAU GAUCHE : Produit ══ -->
+  <div class="card">
+    <h2>📦 Produit <span class="badge">Dubaï → Anjouan</span></h2>
+
+    <label>Catégorie</label>
+    <select id="categorie" onchange="onCatChange()">
+      <option value="">-- Choisir une catégorie --</option>
+    </select>
+    <p class="hint" id="hint-cat-sub">Sélectionner une catégorie pour les taux de douane automatiques</p>
+
+    <div id="note-conf" class="note-conf"></div>
+
+    <label>Prix achat Dubaï (AED)</label>
+    <input type="number" id="prix-achat-aed" value="100" min="0" step="1" oninput="calculer()" />
+    <p class="hint">Prix unitaire payé au fournisseur à Dubaï</p>
+
+    <label>Quantité</label>
+    <input type="number" id="qte" value="1" min="1" step="1" oninput="calculer()" />
+
+    <label>Marché cible</label>
+    <div class="toggle-row">
+      <button id="btn-local" class="active" onclick="setMarche('local')">🏝️ Local (KMF)</button>
+      <button id="btn-diaspora" onclick="setMarche('diaspora')">✈️ Diaspora (EUR/AED)</button>
+    </div>
+
+    <hr style="border:none;border-top:1.5px dashed #e2e8f0; margin-bottom:14px;" />
+    <p style="font-size:0.72rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">📐 Dimensions (cm) pour calcul fret</p>
+
+    <div class="dim-row">
+      <div class="dim-field"><label>Longueur</label><input type="number" id="dim-l" value="20" min="1" step="1" oninput="onDimChange()" /></div>
+      <div class="dim-field"><label>Largeur</label><input type="number" id="dim-w" value="15" min="1" step="1" oninput="onDimChange()" /></div>
+      <div class="dim-field"><label>Hauteur</label><input type="number" id="dim-h" value="10" min="1" step="1" oninput="onDimChange()" /></div>
+    </div>
+
+    <div class="fret-box">
+      <div class="fret-val" id="fret-display">—</div>
+      <div class="fret-sub" id="fret-sub">Entrer les dimensions pour calculer le fret</div>
+    </div>
+    <input type="hidden" id="fret-kmf" value="0" />
+  </div>
+
+  <!-- ══ PANNEAU DROIT : Coûts Comores ══ -->
+  <div class="card">
+    <h2>🏛️ Coûts Dédouanement <span class="badge">Anjouan</span></h2>
+
+    <label>Droits de douane (%)</label>
+    <input type="number" id="douane-pct" value="10" min="0" max="100" step="1" oninput="calculer()" />
+    <p class="hint" id="hint-douane">Appliqués sur valeur CIF (achat + fret)</p>
+
+    <label>TVA import (%)</label>
+    <input type="number" id="tva-pct" value="10" min="0" max="100" step="1" oninput="calculer()" />
+
+    <label>Taxe additionnelle (%)</label>
+    <input type="number" id="taxe-add-pct" value="0" min="0" max="20" step="0.5" oninput="calculer()" />
+    <p class="hint" id="hint-taxe-add">Parafiscale textile 2,5% · Hygiène cosmétiques 1% · 0% autres</p>
+
+    <label>Frais transitaire (%)</label>
+    <input type="number" id="trans-pct" value="2" min="0" step="0.5" oninput="calculer()" />
+    <p class="hint">Sur valeur CIF + forfait 450 KMF/colis</p>
+
+    <hr style="border:none;border-top:1.5px dashed #e2e8f0; margin-bottom:14px;" />
+    <p style="font-size:0.72rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">🏪 Distribution</p>
+
+    <label>Frais portuaires Mutsamudu (KMF)</label>
+    <input type="number" id="frais-port" value="1200" min="0" step="100" oninput="calculer()" />
+
+    <label>Transport → points relais (KMF)</label>
+    <input type="number" id="transport-relais" value="840" min="0" step="50" oninput="calculer()" />
+
+    <label>Commission point relais (KMF)</label>
+    <input type="number" id="commission-relais" value="500" min="0" step="50" oninput="calculer()" />
+
+    <hr style="border:none;border-top:1.5px dashed #e2e8f0; margin-bottom:14px;" />
+    <p style="font-size:0.72rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">📊 Komerce</p>
+
+    <label>Marge Komerce (%)</label>
+    <input type="number" id="marge-pct" value="12" min="5" max="40" step="0.5" oninput="calculer()" />
+    <p class="hint">Inclut coussin de change ~3%</p>
+
+    <div id="bloc-stripe" style="display:none">
+      <label>Frais paiement diaspora (%)</label>
+      <input type="number" id="stripe-pct" value="2.5" min="0" max="10" step="0.1" oninput="calculer()" />
+      <p class="hint">Stripe/PayPal — diaspora France/UAE uniquement</p>
+    </div>
+  </div>
+
+  <!-- ══ DÉTAIL COÛTS ══ -->
+  <div class="card">
+    <h2>📊 Décomposition des coûts</h2>
+    <div class="breakdown" id="breakdown">
+      <div style="color:#a0aec0; font-size:0.85rem; padding:20px 0; text-align:center;">
+        Renseigner les paramètres pour voir le détail
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RECOMMANDATION PRIX ══ -->
+  <div class="card">
+    <h2>💡 Scénarios de prix de vente <span class="badge">3 options</span></h2>
+    <div class="reco-grid" id="reco-grid">
+      <div style="grid-column:1/-1; color:#a0aec0; font-size:0.85rem; padding:20px 0; text-align:center;">
+        Calcul en attente...
+      </div>
+    </div>
+    <div id="reco-note" style="margin-top:12px; font-size:0.73rem; color:#718096; line-height:1.5;"></div>
+  </div>
+
+  <!-- ══ RÉSULTAT PRINCIPAL ══ -->
+  <div class="result-card">
+    <div class="result-block">
+      <div class="lbl">Prix de vente recommandé</div>
+      <div class="price" id="price-kmf">—</div>
+      <div class="price-sub" id="price-kmf-sub">KMF · livré Anjouan</div>
+    </div>
+    <div class="result-divider"></div>
+    <div class="result-block">
+      <div class="lbl">Équivalent</div>
+      <div class="price" id="price-eur" style="font-size:1.4rem;">—</div>
+      <div class="price-sub" id="price-aed">—</div>
+    </div>
+    <div class="result-divider"></div>
+    <div class="margin-block">
+      <div class="lbl" style="opacity:0.65; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Bilan marge</div>
+      <div class="margin-row"><span class="mk">Coût total</span><span class="mv" id="cout-total-r">—</span></div>
+      <div class="margin-row"><span class="mk">Marge Komerce</span><span class="mv" id="marge-kmf-r">—</span></div>
+      <div class="margin-row highlight"><span class="mk">Marge %</span><span class="mv" id="marge-pct-r">—</span></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  KOMERCE — Simulateur de Tarification
+// ═══════════════════════════════════════════════════════
+
+const TAUX_AED = 138;   // 1 AED = 138 KMF
+const TAUX_EUR = 492;   // 1 EUR = 492 KMF
+const TAUX_FRET_M3 = 180 * TAUX_EUR; // 180 EUR/m³ → 88 560 KMF/m³
+
+// Catégories produits avec taux de douane Comores
+const CATS = {
+  phones:      { label: '📱 Téléphones & accessoires', sub: 'Samsung, Itel, Realme', dims: [17,12,11], douane: 10, taxeAdd: 0,   hint: 'SH 8517.12 — taux 10%' },
+  vetements:   { label: '👗 Vêtements & Tissus Wax',    sub: 'Wax, dentelles, abayas',  dims: [25,22,10], douane: 20, taxeAdd: 2.5, hint: 'SH 61xx/62xx — taux 20% + parafiscale 2,5%' },
+  ceremonie:   { label: '💃 Tenues cérémonie',           sub: 'Abayas, robes',           dims: [30,25,11], douane: 20, taxeAdd: 2.5, hint: 'SH 61xx — taux 20% + parafiscale 2,5%' },
+  electro:     { label: '🏠 Électroménager compact',     sub: 'Fer, mixeur, mini-frigo',  dims: [35,30,16], douane: 15, taxeAdd: 0,   hint: 'SH 84xx/85xx — taux 15%' },
+  cosmetiques: { label: '💄 Cosmétiques & Parfums',      sub: 'Soins peau, parfums UAE',  dims: [20,15,11], douane: 20, taxeAdd: 1,   hint: 'SH 33xx — taux 20% + taxe hygiène 1%', warn: '⚠️ Certificat d\'origine requis — étiquetage FR/EN obligatoire' },
+  mariage:     { label: '💍 Mariage & Cadeaux',          sub: 'Vaisselle, décor, bijoux', dims: [30,25,12], douane: 15, taxeAdd: 0,   hint: 'SH 63xx/71xx — taux 15%' },
+  enfants:     { label: '🧸 Jouets & Enfants',           sub: 'Jouets, accessoires',      dims: [25,20, 9], douane: 10, taxeAdd: 0,   hint: 'SH 9503 — taux 10%' },
+  materiels:   { label: '🔧 Petits Matériels',           sub: 'Outillage, quincaillerie', dims: [30,20,15], douane: 15, taxeAdd: 0,   hint: 'SH 82xx/73xx — taux 15%' },
+  alimentaire: { label: '🍽️ Alimentation & Épices',      sub: 'Produits secs, épices',    dims: [20,15, 8], douane:  5, taxeAdd: 0,   hint: 'SH 04xx/09xx — taux 5%' },
+};
+
+let marche = 'local';
+
+// Init catégorie select
+const sel = document.getElementById('categorie');
+Object.entries(CATS).forEach(([k, v]) => {
+  const o = document.createElement('option');
+  o.value = k; o.textContent = v.label;
+  sel.appendChild(o);
+});
+
+function fmt(kmf) {
+  return new Intl.NumberFormat('fr-FR').format(Math.round(kmf)) + ' KMF';
+}
+function fmtAED(kmf) {
+  return (kmf / TAUX_AED).toFixed(0) + ' AED';
+}
+function fmtEUR(kmf) {
+  return (kmf / TAUX_EUR).toFixed(0) + ' €';
+}
+
+function g(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function setMarche(m) {
+  marche = m;
+  document.getElementById('btn-local').className     = m === 'local'     ? 'active' : '';
+  document.getElementById('btn-diaspora').className  = m === 'diaspora'  ? 'active-diaspora' : '';
+  document.getElementById('bloc-stripe').style.display = m === 'diaspora' ? 'block' : 'none';
+  calculer();
+}
+
+function onCatChange() {
+  const cat = document.getElementById('categorie').value;
+  if (!cat) return;
+  const d = CATS[cat];
+  document.getElementById('dim-l').value        = d.dims[0];
+  document.getElementById('dim-w').value        = d.dims[1];
+  document.getElementById('dim-h').value        = d.dims[2];
+  document.getElementById('douane-pct').value   = d.douane;
+  document.getElementById('taxe-add-pct').value = d.taxeAdd;
+  document.getElementById('hint-douane').textContent   = d.hint;
+  document.getElementById('hint-cat-sub').textContent  = d.sub;
+
+  const noteEl = document.getElementById('note-conf');
+  if (d.warn) {
+    noteEl.textContent = d.warn;
+    noteEl.style.display = 'block';
+    noteEl.style.borderLeftColor = '#dc2626';
+    noteEl.style.background = '#fef2f2';
+    noteEl.style.color = '#7f1d1d';
+  } else {
+    noteEl.style.display = 'none';
+  }
+  onDimChange();
+}
+
+function onDimChange() {
+  const l = g('dim-l'), w = g('dim-w'), h = g('dim-h');
+  const volCm3 = l * w * h;
+  const volM3  = volCm3 / 1e6;
+  const fretKmf = volM3 * TAUX_FRET_M3;
+
+  document.getElementById('fret-kmf').value       = fretKmf.toFixed(0);
+  document.getElementById('fret-display').textContent =
+    new Intl.NumberFormat('fr-FR').format(Math.round(fretKmf)) + ' KMF / article';
+  document.getElementById('fret-sub').textContent =
+    `${new Intl.NumberFormat('fr-FR').format(Math.round(volCm3))} cm³ = ${volM3.toFixed(5)} m³ × 180 EUR/m³ × ${TAUX_EUR} KMF/EUR`;
+  calculer();
+}
+
+function calculer() {
+  const prixAedUnit = g('prix-achat-aed');
+  const qte         = Math.max(1, g('qte'));
+  const fretUnit    = g('fret-kmf');
+
+  const douanePct   = g('douane-pct')        / 100;
+  const tvaPct      = g('tva-pct')           / 100;
+  const taxeAddPct  = g('taxe-add-pct')      / 100;
+  const transPct    = g('trans-pct')         / 100;
+  const margePct    = g('marge-pct')         / 100;
+  const stripePct   = marche === 'diaspora' ? g('stripe-pct') / 100 : 0;
+
+  const fPort       = g('frais-port');
+  const tRelais     = g('transport-relais');
+  const cRelais     = g('commission-relais');
+
+  if (!prixAedUnit || !fretUnit) {
+    document.getElementById('price-kmf').textContent = '—';
+    return;
+  }
+
+  // Conversions unitaires
+  const achatKmfUnit  = prixAedUnit * TAUX_AED;
+  const agentKmfUnit  = achatKmfUnit * 0.05;       // agent 5%
+  const embKmfUnit    = 3 * TAUX_AED;              // emballage 3 AED
+
+  // Fret total
+  const fretTotKmf = fretUnit * qte;
+
+  // CIF = (achat + agent + emb) × qte + fret_total
+  const achatTotKmf = (achatKmfUnit + agentKmfUnit + embKmfUnit) * qte;
+  const valCIF      = achatTotKmf + fretTotKmf;
+
+  // Douane & taxes (sur CIF)
+  const douaneKmf   = valCIF * douanePct;
+  const tvaKmf      = valCIF * tvaPct;
+  const taxeAddKmf  = valCIF * taxeAddPct;
+  const transKmf    = valCIF * transPct + 450;   // transitaire % + forfait 450 KMF
+
+  // Distribution (forfaits)
+  const distKmf = fPort + tRelais + cRelais;
+
+  // Coût total avant marge
+  const coutTotal = achatTotKmf + fretTotKmf + douaneKmf + tvaKmf + taxeAddKmf + transKmf + distKmf;
+
+  // Prix final avec marge et Stripe
+  // coutTotal / (1 - margePct - stripePct)
+  const diviseur   = 1 - margePct - stripePct;
+  const prixFinal  = diviseur > 0 ? coutTotal / diviseur : coutTotal * (1 + margePct + stripePct);
+  const margeKmf   = prixFinal - coutTotal;
+  const margeRPct  = prixFinal > 0 ? (margeKmf / prixFinal * 100) : 0;
+
+  // ── Affichage résultat principal ──
+  document.getElementById('price-kmf').textContent     = new Intl.NumberFormat('fr-FR').format(Math.round(prixFinal)) + ' KMF';
+  document.getElementById('price-kmf-sub').textContent = marche === 'diaspora' ? 'KMF · diaspora' : 'KMF · livré Anjouan';
+  document.getElementById('price-eur').textContent     = fmtEUR(prixFinal);
+  document.getElementById('price-aed').textContent     = '≈ ' + fmtAED(prixFinal);
+  document.getElementById('cout-total-r').textContent  = fmt(coutTotal);
+  document.getElementById('marge-kmf-r').textContent   = fmt(margeKmf);
+  document.getElementById('marge-pct-r').textContent   = margeRPct.toFixed(1) + '%';
+
+  // ── Décomposition ──
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML = `
+    <div class="bk-section">📦 Achat Dubaï</div>
+    <div class="bk-row"><span class="lbl">Prix achat (${qte} × ${prixAedUnit} AED)</span><span class="val">${fmt(achatKmfUnit * qte)}</span></div>
+    <div class="bk-row"><span class="lbl">Agent sourcing (5%)</span><span class="val">${fmt(agentKmfUnit * qte)}</span></div>
+    <div class="bk-row"><span class="lbl">Emballage (3 AED/u)</span><span class="val">${fmt(embKmfUnit * qte)}</span></div>
+
+    <div class="bk-section">🚢 Fret maritime</div>
+    <div class="bk-row"><span class="lbl">Fret total (${qte} article${qte>1?'s':''})</span><span class="val">${fmt(fretTotKmf)}</span></div>
+    <div class="bk-row"><span class="lbl">Valeur CIF (base douane)</span><span class="val" style="color:#2563eb;">${fmt(valCIF)}</span></div>
+
+    <div class="bk-section">🏛️ Dédouanement Anjouan</div>
+    <div class="bk-row"><span class="lbl">Douane (${(douanePct*100).toFixed(0)}% × CIF)</span><span class="val">${fmt(douaneKmf)}</span></div>
+    <div class="bk-row"><span class="lbl">TVA import (${(tvaPct*100).toFixed(0)}% × CIF)</span><span class="val">${fmt(tvaKmf)}</span></div>
+    ${taxeAddKmf > 0 ? `<div class="bk-row"><span class="lbl">Taxe additionnelle (${(taxeAddPct*100).toFixed(1)}%)</span><span class="val">${fmt(taxeAddKmf)}</span></div>` : ''}
+    <div class="bk-row"><span class="lbl">Transitaire (${(transPct*100).toFixed(0)}% + 450 KMF)</span><span class="val">${fmt(transKmf)}</span></div>
+
+    <div class="bk-section">🏪 Distribution</div>
+    <div class="bk-row"><span class="lbl">Frais portuaires Mutsamudu</span><span class="val">${fmt(fPort)}</span></div>
+    <div class="bk-row"><span class="lbl">Transport → points relais</span><span class="val">${fmt(tRelais)}</span></div>
+    <div class="bk-row"><span class="lbl">Commission relais</span><span class="val">${fmt(cRelais)}</span></div>
+
+    ${stripePct > 0 ? `<div class="bk-section">💳 Paiement diaspora</div><div class="bk-row"><span class="lbl">Frais Stripe/PayPal (${(stripePct*100).toFixed(1)}%)</span><span class="val">${fmt(prixFinal * stripePct)}</span></div>` : ''}
+
+    <div class="bk-section">📊 Synthèse</div>
+    <div class="bk-row total"><span class="lbl">COÛT TOTAL</span><span class="val">${fmt(coutTotal)}</span></div>
+    <div class="bk-row total"><span class="lbl">MARGE KOMERCE (${(margePct*100).toFixed(0)}%)</span><span class="val">${fmt(margeKmf)}</span></div>
+  `;
+
+  // ── Scénarios prix de vente ──
+  const scen = [
+    { label: 'Prix compétitif',  icon: '⬇️',  coeff: 0.95, desc: '5% sous recommandé · attire plus de clients' },
+    { label: 'Prix recommandé',  icon: '✅',  coeff: 1.00, desc: `Marge ${(margePct*100).toFixed(0)}% · équilibre optimal` },
+    { label: 'Prix premium',     icon: '⬆️',  coeff: 1.10, desc: '10% au-dessus · marque montée en gamme' },
+  ];
+
+  const recoGrid = document.getElementById('reco-grid');
+  recoGrid.innerHTML = scen.map((s, i) => {
+    const p    = prixFinal * s.coeff;
+    const mg   = p - coutTotal;
+    const mgP  = p > 0 ? (mg / p * 100).toFixed(1) : 0;
+    return `
+      <div class="reco-item ${i === 1 ? 'selected' : ''}">
+        <div class="ri-lbl">${s.icon} ${s.label}</div>
+        <div class="ri-price">${new Intl.NumberFormat('fr-FR').format(Math.round(p))} KMF</div>
+        <div class="ri-sub">${fmtEUR(p)} · ${fmtAED(p)}</div>
+        <div class="ri-marge">Marge ${mgP}% = ${fmt(mg)}</div>
+        <div style="font-size:0.68rem;color:#a0aec0;margin-top:4px;">${s.desc}</div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('reco-note').innerHTML =
+    `<strong>Base calcul :</strong> Prix achat Dubaï + fret maritime + dédouanement Anjouan + distribution. ` +
+    `Marge Komerce <strong>${(margePct*100).toFixed(0)}%</strong> couvre les frais fixes du hub et le coussin de change. ` +
+    (marche === 'diaspora' ? `Frais paiement <strong>${(stripePct*100).toFixed(1)}%</strong> inclus pour la diaspora.` : '');
+}
+
+// ── Init ──
+onDimChange();
+</script>
+
+</body>
+</html>
