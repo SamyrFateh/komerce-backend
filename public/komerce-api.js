@@ -86,7 +86,7 @@ async function loadProducts() {
             </div>
             <div style="display:flex;gap:.6rem;margin-top:.8rem">
               <button class="btn-order" onclick="openOrderModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-                🛒 Commander pour ma famille
+                🛒 Commander
               </button>
             </div>
           </div>
@@ -239,10 +239,6 @@ function openOrderModal(product) {
   const existing = document.getElementById('komerce-order-modal');
   if (existing) existing.remove();
 
-  const relaisOptions = _relaisList.length
-    ? _relaisList.map(r => `<option value="${r.id}">${r.name} · ${r.zone || r.island || ''}</option>`).join('')
-    : '<option value="">Chargement…</option>';
-
   const modal = document.createElement('div');
   modal.id = 'komerce-order-modal';
   modal.style.cssText = `
@@ -250,6 +246,7 @@ function openOrderModal(product) {
     display:flex;align-items:center;justify-content:center;padding:1rem;
   `;
 
+  // ── Étape 1 : choix du profil ──
   modal.innerHTML = `
     <div style="background:#fff;border-radius:18px;padding:2rem;max-width:480px;width:100%;
                 max-height:90vh;overflow-y:auto;position:relative;">
@@ -258,16 +255,87 @@ function openOrderModal(product) {
         style="position:absolute;top:1rem;right:1rem;background:none;border:none;
                font-size:1.4rem;cursor:pointer;color:#64748b;">✕</button>
 
-      <div style="margin-bottom:1.4rem;">
+      <div style="margin-bottom:1.6rem;">
         <div style="font-size:1.8rem;margin-bottom:.3rem;">${product.emoji || '📦'}</div>
         <h3 style="font-size:1.1rem;font-weight:700;color:#1a3a5c;margin:0 0 .3rem;">${product.name}</h3>
         <div style="font-size:1.2rem;font-weight:800;color:#e8a020;">${kmf(product.price_kmf)}</div>
       </div>
 
+      <p style="font-size:.9rem;color:#64748b;margin-bottom:1.2rem;text-align:center;">
+        Vous commandez pour…
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:.5rem;">
+        <button onclick="openOrderForm('diaspora')"
+          style="padding:1.4rem 1rem;border:2px solid #e2e8f0;border-radius:14px;
+                 background:#f8fafc;cursor:pointer;text-align:center;transition:all .2s;
+                 font-size:.9rem;font-weight:700;color:#1a3a5c;"
+          onmouseover="this.style.borderColor='#2563eb';this.style.background='#eff6ff';"
+          onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#f8fafc';">
+          <div style="font-size:2rem;margin-bottom:.5rem;">✈️</div>
+          <div>Ma famille</div>
+          <div style="font-size:.75rem;color:#64748b;font-weight:400;margin-top:.3rem;">
+            Je suis à l'étranger, je commande pour la famille aux Comores
+          </div>
+        </button>
+        <button onclick="openOrderForm('local')"
+          style="padding:1.4rem 1rem;border:2px solid #e2e8f0;border-radius:14px;
+                 background:#f8fafc;cursor:pointer;text-align:center;transition:all .2s;
+                 font-size:.9rem;font-weight:700;color:#1a3a5c;"
+          onmouseover="this.style.borderColor='#16a34a';this.style.background='#f0fdf4';"
+          onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#f8fafc';">
+          <div style="font-size:2rem;margin-bottom:.5rem;">🏝️</div>
+          <div>Pour moi</div>
+          <div style="font-size:.75rem;color:#64748b;font-weight:400;margin-top:.3rem;">
+            Je vis aux Comores, je commande pour moi-même
+          </div>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeOrderModal(); });
+}
+
+function openOrderForm(profil) {
+  const modal = document.getElementById('komerce-order-modal');
+  if (!modal) return;
+  const product = _selectedProduct;
+
+  const relaisOptions = _relaisList.length
+    ? _relaisList.map(r => `<option value="${r.id}">${r.name} · ${r.zone || r.island || ''}</option>`).join('')
+    : '<option value="">Chargement…</option>';
+
+  const isDiaspora = profil === 'diaspora';
+
+  modal.querySelector('div').innerHTML = `
+      <button onclick="closeOrderModal()"
+        style="position:absolute;top:1rem;right:1rem;background:none;border:none;
+               font-size:1.4rem;cursor:pointer;color:#64748b;">✕</button>
+
+      <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1.4rem;">
+        <button onclick="openOrderModal(_selectedProduct)"
+          style="background:none;border:none;color:#64748b;cursor:pointer;font-size:.85rem;padding:0;">
+          ← Retour
+        </button>
+        <span style="color:#e2e8f0;">|</span>
+        <span style="font-size:.85rem;color:#1a3a5c;font-weight:700;">
+          ${isDiaspora ? '✈️ Commander pour ma famille' : '🏝️ Commander pour moi'}
+        </span>
+      </div>
+
+      <div style="margin-bottom:1.2rem;">
+        <div style="font-size:1.5rem;margin-bottom:.2rem;">${product.emoji || '📦'}</div>
+        <h3 style="font-size:1rem;font-weight:700;color:#1a3a5c;margin:0 0 .2rem;">${product.name}</h3>
+        <div style="font-size:1.1rem;font-weight:800;color:#e8a020;">${kmf(product.price_kmf)}</div>
+      </div>
+
       <form id="order-form" onsubmit="submitOrder(event)" style="display:flex;flex-direction:column;gap:1rem;">
+        <input type="hidden" name="profil" value="${profil}" />
 
         <div style="background:#f0f9ff;border-radius:10px;padding:1rem;font-size:.85rem;color:#1a3a5c;">
-          <strong>Vous commandez depuis</strong> — Entrez vos coordonnées pour créer votre compte ou suivre votre commande.
+          <strong>${isDiaspora ? 'Vos coordonnées (depuis l\'étranger)' : 'Vos coordonnées'}</strong> — pour créer votre compte ou retrouver votre commande.
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
@@ -280,11 +348,14 @@ function openOrderModal(product) {
             <label style="font-size:.78rem;font-weight:700;color:#1a3a5c;display:block;margin-bottom:.3rem;">Pays *</label>
             <select name="country"
               style="width:100%;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.9rem;box-sizing:border-box;">
-              <option value="FR">🇫🇷 France</option>
-              <option value="AE">🇦🇪 Émirats</option>
-              <option value="BE">🇧🇪 Belgique</option>
-              <option value="KM">🇰🇲 Comores</option>
-              <option value="OTHER">Autre</option>
+              ${isDiaspora ? `
+                <option value="FR">🇫🇷 France</option>
+                <option value="AE">🇦🇪 Émirats</option>
+                <option value="BE">🇧🇪 Belgique</option>
+                <option value="OTHER">Autre</option>
+              ` : `
+                <option value="KM" selected>🇰🇲 Comores</option>
+              `}
             </select>
           </div>
         </div>
@@ -296,26 +367,31 @@ function openOrderModal(product) {
         </div>
 
         <div>
-          <label style="font-size:.78rem;font-weight:700;color:#1a3a5c;display:block;margin-bottom:.3rem;">Téléphone (optionnel)</label>
-          <input name="phone" type="tel" placeholder="+33 6 xx xx xx xx"
+          <label style="font-size:.78rem;font-weight:700;color:#1a3a5c;display:block;margin-bottom:.3rem;">
+            Téléphone ${isDiaspora ? '(optionnel)' : '*'}
+          </label>
+          <input name="phone" type="tel" ${isDiaspora ? '' : 'required'}
+            placeholder="${isDiaspora ? '+33 6 xx xx xx xx' : '+269 321 xx xx'}"
             style="width:100%;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.9rem;box-sizing:border-box;" />
         </div>
 
-        <hr style="border:none;border-top:1px solid #e2e8f0;margin:.2rem 0;" />
-        <div style="font-size:.85rem;font-weight:700;color:#1a3a5c;">📍 Destinataire aux Comores</div>
+        ${isDiaspora ? `
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:.2rem 0;" />
+          <div style="font-size:.85rem;font-weight:700;color:#1a3a5c;">📍 Destinataire aux Comores</div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
-          <div>
-            <label style="font-size:.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:.3rem;">Nom destinataire *</label>
-            <input name="recipient_name" required placeholder="Nom de famille"
-              style="width:100%;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.9rem;box-sizing:border-box;" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+            <div>
+              <label style="font-size:.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:.3rem;">Nom destinataire *</label>
+              <input name="recipient_name" required placeholder="Nom de famille"
+                style="width:100%;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.9rem;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="font-size:.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:.3rem;">Tél. destinataire *</label>
+              <input name="recipient_phone" required type="tel" placeholder="+269 321 xx xx"
+                style="width:100%;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.9rem;box-sizing:border-box;" />
+            </div>
           </div>
-          <div>
-            <label style="font-size:.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:.3rem;">Tél. destinataire *</label>
-            <input name="recipient_phone" required type="tel" placeholder="+269 321 xx xx"
-              style="width:100%;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.9rem;box-sizing:border-box;" />
-          </div>
-        </div>
+        ` : ''}
 
         <div>
           <label style="font-size:.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:.3rem;">Point relais *</label>
@@ -329,12 +405,14 @@ function openOrderModal(product) {
         <div>
           <label style="font-size:.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:.5rem;">Mode de paiement *</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;">
+            ${isDiaspora ? `
+              <label style="display:flex;align-items:center;gap:.6rem;padding:.8rem;border:2px solid #e2e8f0;border-radius:8px;cursor:pointer;">
+                <input type="radio" name="payment_mode" value="stripe_eur" required />
+                <span style="font-size:.85rem;font-weight:600;">💳 Carte bancaire (EUR)</span>
+              </label>
+            ` : ''}
             <label style="display:flex;align-items:center;gap:.6rem;padding:.8rem;border:2px solid #e2e8f0;border-radius:8px;cursor:pointer;">
-              <input type="radio" name="payment_mode" value="stripe_eur" required />
-              <span style="font-size:.85rem;font-weight:600;">💳 Carte bancaire (EUR)</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:.6rem;padding:.8rem;border:2px solid #e2e8f0;border-radius:8px;cursor:pointer;">
-              <input type="radio" name="payment_mode" value="cash_relais" />
+              <input type="radio" name="payment_mode" value="cash_relais" ${isDiaspora ? '' : 'required'} />
               <span style="font-size:.85rem;font-weight:600;">💵 Cash au relais (KMF)</span>
             </label>
           </div>
@@ -398,12 +476,16 @@ async function submitOrder(e) {
     }
 
     // Étape 2 : créer la commande
+    // Pour le profil local, le destinataire = l'acheteur lui-même
+    const recipientName  = data.recipient_name  || data.full_name;
+    const recipientPhone = data.recipient_phone || data.phone;
+
     const orderRes = await apiPost('/api/orders', {
       product_id:      _selectedProduct.id,
       quantity:        1,
       relais_id:       data.relais_id,
-      recipient_name:  data.recipient_name,
-      recipient_phone: data.recipient_phone,
+      recipient_name:  recipientName,
+      recipient_phone: recipientPhone,
       payment_mode:    data.payment_mode,
     });
 
