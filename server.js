@@ -59,20 +59,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── Interfaces HTML statiques ─────────────────────────────────────────────────
-const frontDir = path.join(__dirname, '..');
-
-// / → interface web (diaspora + universel)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(frontDir, 'Komerce_Web.html'));
-});
-
-// /pwa → interface mobile (Anjouan)
-app.get('/pwa', (req, res) => {
-  res.sendFile(path.join(frontDir, 'Komerce_PWA_Mobile.html'));
-});
-
-// Assets statiques du dossier parent (images, etc.)
-app.use(express.static(frontDir));
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
+app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'Komerce_Web.html')));
+app.get('/pwa', (req, res) => res.sendFile(path.join(publicDir, 'Komerce_PWA_Mobile.html')));
 
 // ── Routes API ────────────────────────────────────────────────────────────────
 app.use('/api/auth',       require('./routes/auth'));
@@ -80,6 +70,8 @@ app.use('/api/products',   require('./routes/products'));
 app.use('/api/orders',     require('./routes/orders'));
 app.use('/api/scans',      require('./routes/scans'));
 app.use('/api/payments',   require('./routes/payments'));
+app.use('/api/relais', require('./routes/relais'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/dashboard',  require('./routes/dashboard'));
 // ── Routes v6.4 ────────────────────────────────────────────────────────────
 app.use('/api/baskets',    require('./routes/baskets'));    // M10 Panier partagé + cadeaux
