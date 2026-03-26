@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Komerce — Administration</title>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --accent:  #e8a020;
+    --green:   #16a34a;
+    --red:     #dc2626;
+    --bg:      #f1f5f9;
+    --card:    #ffffff;
+    --border:  #e2e8f0;
+    --muted:   #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #1e293b; }
+
+  /* ── Login ── */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a3a5c 0%, #0d2640 100%);
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .login-logo { text-align: center; margin-bottom: 1.8rem; }
+  .login-logo span { font-size: 2rem; font-weight: 900; color: var(--primary); }
+  .login-logo sup { font-size: .8rem; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: .78rem; font-weight: 700; color: var(--primary); margin-bottom: .4rem; text-transform: uppercase; letter-spacing: .04em; }
+  .form-group input { width: 100%; padding: .85rem 1rem; border: 2px solid var(--border); border-radius: 10px; font-size: .95rem; outline: none; transition: border .2s; }
+  .form-group input:focus { border-color: var(--primary); }
+  .btn-login { width: 100%; background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 1rem; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: .5rem; }
+  .btn-login:hover { background: #0d2640; }
+  #login-error { color: var(--red); font-size: .85rem; text-align: center; margin-top: .6rem; display: none; }
+
+  /* ── App shell ── */
+  #app { display: none; }
+  .topbar {
+    background: var(--primary); color: #fff; padding: .8rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { font-weight: 800; font-size: 1.1rem; }
+  .topbar-brand span { color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 1rem; font-size: .85rem; }
+  .btn-logout { background: rgba(255,255,255,.15); border: none; color: #fff; padding: .4rem .9rem; border-radius: 6px; cursor: pointer; font-size: .82rem; }
+  .btn-refresh { background: var(--accent); border: none; color: #fff; padding: .4rem .9rem; border-radius: 6px; cursor: pointer; font-size: .82rem; font-weight: 700; }
+
+  .tabs { background: var(--card); border-bottom: 2px solid var(--border); display: flex; padding: 0 1.5rem; overflow-x: auto; }
+  .tab { padding: 1rem 1.4rem; font-weight: 600; font-size: .9rem; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all .2s; }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .content { padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .kpi-card {
+    background: var(--card); border-radius: 14px; padding: 1.2rem 1.4rem;
+    border: 1px solid var(--border); position: relative; overflow: hidden;
+  }
+  .kpi-label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+  .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1; }
+  .kpi-sub { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+  .kpi-icon { position: absolute; right: 1rem; top: 1rem; font-size: 1.8rem; opacity: .15; }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.orange .kpi-value { color: var(--accent); }
+
+  /* ── Tables ── */
+  .card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 1.2rem; }
+  .card-header { padding: 1rem 1.4rem; border-bottom: 1px solid var(--border); font-weight: 700; font-size: .9rem; color: var(--primary); display: flex; align-items: center; gap: .5rem; }
+  .card-body { padding: 1.2rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { text-align: left; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: .5rem .8rem; border-bottom: 2px solid var(--border); }
+  td { padding: .7rem .8rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+  .badge-green  { background: #dcfce7; color: #16a34a; }
+  .badge-orange { background: #fef3c7; color: #d97706; }
+  .badge-red    { background: #fef2f2; color: #dc2626; }
+  .badge-blue   { background: #eff6ff; color: #1a3a5c; }
+  .badge-gray   { background: #f1f5f9; color: #64748b; }
+
+  /* ── SLA bars ── */
+  .sla-bar { display: flex; gap: .4rem; margin-bottom: 1.2rem; }
+  .sla-seg { flex: 1; height: 10px; border-radius: 5px; }
+
+  /* ── Prévisions ── */
+  .forecast-form { display: flex; gap: .8rem; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .forecast-form label { font-size: .78rem; font-weight: 700; color: var(--primary); display: block; margin-bottom: .3rem; text-transform: uppercase; }
+  .forecast-form input, .forecast-form select {
+    padding: .7rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: .9rem; outline: none;
+  }
+  .forecast-form input:focus, .forecast-form select:focus { border-color: var(--primary); }
+  .btn-forecast { background: var(--primary); color: #fff; border: none; border-radius: 8px; padding: .75rem 1.4rem; font-weight: 700; cursor: pointer; }
+
+  .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.2rem; }
+  .scenario-card { background: var(--card); border-radius: 12px; border: 2px solid var(--border); padding: 1.2rem; text-align: center; }
+  .scenario-card.attendu { border-color: var(--primary); }
+  .scenario-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .5rem; }
+  .scenario-value { font-size: 1.6rem; font-weight: 800; }
+  .scenario-card.pessimiste .scenario-value { color: var(--red); }
+  .scenario-card.attendu    .scenario-value { color: var(--primary); }
+  .scenario-card.optimiste  .scenario-value { color: var(--green); }
+
+  /* ── Loading ── */
+  .loading { text-align: center; padding: 3rem; color: var(--muted); }
+  .spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn .3s ease; }
+
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .scenario-grid { grid-template-columns: 1fr; }
+    .content { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ ÉCRAN DE CONNEXION ═══════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span>Komerce<sup>ADMIN</sup></span>
+      <div style="font-size:.8rem;color:#94a3b8;margin-top:.3rem;">Tableau de bord opérationnel</div>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" value="admin@komerce.km" />
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Connexion →</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ══ APPLICATION ══════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <div class="topbar">
+    <div class="topbar-brand">Komerce <span>Admin</span></div>
+    <div class="topbar-right">
+      <span id="topbar-time" style="opacity:.7;font-size:.78rem;"></span>
+      <button class="btn-refresh" onclick="refreshCurrent()">↻ Actualiser</button>
+      <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('ops')">📊 Pilotage</div>
+    <div class="tab" onclick="switchTab('sales')">💰 Ventes</div>
+    <div class="tab" onclick="switchTab('retards')">⚠️ Retards</div>
+    <div class="tab" onclick="switchTab('forecast')">📈 Prévisions</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── PILOTAGE ────────────────────────────────────────────────────── -->
+    <div id="panel-ops" class="panel active">
+      <div id="ops-content"><div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Chargement du pilotage…</p></div></div>
+    </div>
+
+    <!-- ── VENTES ──────────────────────────────────────────────────────── -->
+    <div id="panel-sales" class="panel">
+      <div style="display:flex;gap:.6rem;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
+        <span style="font-size:.82rem;font-weight:700;color:var(--muted);">Période :</span>
+        <button class="period-btn" onclick="loadSales(7)"  style="padding:.4rem .9rem;border:2px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;">7j</button>
+        <button class="period-btn active-period" onclick="loadSales(30)" style="padding:.4rem .9rem;border:2px solid var(--primary);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;background:var(--primary);color:#fff;">30j</button>
+        <button class="period-btn" onclick="loadSales(90)" style="padding:.4rem .9rem;border:2px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;">90j</button>
+      </div>
+      <div id="sales-content"><div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Chargement des ventes…</p></div></div>
+    </div>
+
+    <!-- ── RETARDS ─────────────────────────────────────────────────────── -->
+    <div id="panel-retards" class="panel">
+      <div style="display:flex;gap:.6rem;margin-bottom:1.2rem;flex-wrap:wrap;">
+        <button onclick="loadRetards(null)" style="padding:.4rem .9rem;border:2px solid var(--primary);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;background:var(--primary);color:#fff;">Tous</button>
+        <button onclick="loadRetards('remboursement_possible')" style="padding:.4rem .9rem;border:2px solid var(--red);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:var(--red);">🚨 Remboursement</button>
+        <button onclick="loadRetards('remise_10pct_prochaine_cmd')" style="padding:.4rem .9rem;border:2px solid var(--accent);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;color:var(--accent);">−10%</button>
+        <button onclick="loadRetards('avoir_5pct')" style="padding:.4rem .9rem;border:2px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;">Avoir 5%</button>
+        <button onclick="loadRetards('contact_préventif')" style="padding:.4rem .9rem;border:2px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;font-size:.82rem;">Préventif</button>
+      </div>
+      <div id="retards-content"><div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Chargement…</p></div></div>
+    </div>
+
+    <!-- ── PRÉVISIONS ──────────────────────────────────────────────────── -->
+    <div id="panel-forecast" class="panel">
+      <div class="forecast-form">
+        <div>
+          <label>Date cible</label>
+          <input type="date" id="fc-target" />
+        </div>
+        <div>
+          <label>Historique de référence</label>
+          <select id="fc-period">
+            <option value="7">7 jours</option>
+            <option value="30" selected>30 jours</option>
+            <option value="90">90 jours</option>
+          </select>
+        </div>
+        <div>
+          <label>Depuis le</label>
+          <input type="date" id="fc-from" />
+        </div>
+        <button class="btn-forecast" onclick="loadForecast()">Calculer →</button>
+      </div>
+      <div id="forecast-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = 'https://komerce-backend-production.up.railway.app';
+let _token = null;
+let _currentTab = 'ops';
+let _salesPeriod = 30;
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login: email, password }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.style.display = 'block';
+      return;
+    }
+    if (data.user.role !== 'admin') {
+      errEl.textContent = 'Accès réservé aux administrateurs.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    _token = data.token;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    startClock();
+    loadOps();
+
+  } catch (e) {
+    errEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  _token = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-password').value = '';
+}
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  _currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+
+  if (tab === 'ops')      loadOps();
+  if (tab === 'sales')    loadSales(_salesPeriod);
+  if (tab === 'retards')  loadRetards(null);
+  if (tab === 'forecast') initForecastForm();
+}
+
+function refreshCurrent() {
+  if (_currentTab === 'ops')     loadOps();
+  if (_currentTab === 'sales')   loadSales(_salesPeriod);
+  if (_currentTab === 'retards') loadRetards(null);
+  if (_currentTab === 'forecast') loadForecast();
+}
+
+// ── API CALLS ─────────────────────────────────────────────────────────────────
+
+async function apiFetch(path) {
+  const res = await fetch(API + path, {
+    headers: { Authorization: 'Bearer ' + _token }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+
+function kmf(n) { return Number(n || 0).toLocaleString('fr-FR') + ' KMF'; }
+function pct(n) { return (Number(n || 0)).toFixed(1) + '%'; }
+
+function badge(text, type) {
+  const cls = { green:'badge-green', orange:'badge-orange', red:'badge-red', blue:'badge-blue', gray:'badge-gray' };
+  return `<span class="badge ${cls[type] || 'badge-gray'}">${text}</span>`;
+}
+
+function slaColor(status) {
+  if (status === 'collected') return 'green';
+  if (status === 'shipped')   return 'blue';
+  if (status === 'available') return 'orange';
+  if (status === 'paid' || status === 'preparation') return 'gray';
+  return 'gray';
+}
+
+function startClock() {
+  const el = document.getElementById('topbar-time');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }, 1000);
+}
+
+// ── PILOTAGE ──────────────────────────────────────────────────────────────────
+
+async function loadOps() {
+  const el = document.getElementById('ops-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const d = await apiFetch('/api/dashboard/ops');
+    const a = d.activite;
+    const l = d.logistique;
+    const s = d.sla;
+    const total_sla = s.on_time + s.warning + s.late + s.blocked || 1;
+
+    el.innerHTML = `
+      <div class="fade-in">
+
+        <!-- KPIs activité -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">📦</div>
+            <div class="kpi-label">Aujourd'hui</div>
+            <div class="kpi-value">${a.commandes_aujourd_hui}</div>
+            <div class="kpi-sub">nouvelles commandes</div>
+          </div>
+          <div class="kpi-card orange">
+            <div class="kpi-icon">⏳</div>
+            <div class="kpi-label">En cours</div>
+            <div class="kpi-value">${a.commandes_en_cours}</div>
+            <div class="kpi-sub">actives</div>
+          </div>
+          <div class="kpi-card ${a.commandes_bloquees > 0 ? 'red' : 'green'}">
+            <div class="kpi-icon">🚨</div>
+            <div class="kpi-label">Bloquées</div>
+            <div class="kpi-value">${a.commandes_bloquees}</div>
+            <div class="kpi-sub">sans activité 7j+</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-label">Livrées</div>
+            <div class="kpi-value">${a.livrees_aujourd_hui}</div>
+            <div class="kpi-sub">aujourd'hui · ${a.livrees_30j} sur 30j</div>
+          </div>
+        </div>
+
+        <!-- SLA -->
+        <div class="card">
+          <div class="card-header">🎯 SLA — Respect des délais (3–5 semaines)</div>
+          <div class="card-body">
+            <div class="sla-bar">
+              <div class="sla-seg" style="flex:${s.on_time};background:#16a34a;" title="Dans les délais : ${s.on_time}"></div>
+              <div class="sla-seg" style="flex:${s.warning};background:#f59e0b;" title="Attention : ${s.warning}"></div>
+              <div class="sla-seg" style="flex:${s.late};background:#ef4444;" title="En retard : ${s.late}"></div>
+              <div class="sla-seg" style="flex:${s.blocked};background:#7c3aed;" title="Bloqué : ${s.blocked}"></div>
+            </div>
+            <div style="display:flex;gap:1.2rem;font-size:.82rem;flex-wrap:wrap;">
+              <span>🟢 Dans les délais : <strong>${s.on_time}</strong></span>
+              <span>🟡 Attention : <strong>${s.warning}</strong></span>
+              <span>🔴 En retard : <strong>${s.late}</strong></span>
+              <span>🟣 Bloqué : <strong>${s.blocked}</strong></span>
+            </div>
+            ${s.details.late.length ? `
+              <div style="margin-top:1rem;">
+                <div style="font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.5rem;">Commandes en retard</div>
+                ${s.details.late.map(c => `
+                  <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.83rem;">
+                    <span>${c.reference}</span>
+                    <span>${badge(c.status, 'orange')}</span>
+                    <span style="color:var(--red);">${c.jours}j</span>
+                  </div>`).join('')}
+              </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Logistique par zone -->
+        <div class="kpi-grid">
+          <div class="kpi-card blue" style="cursor:pointer;" onclick="toggleDetail('detail-dubai')">
+            <div class="kpi-icon">✈️</div>
+            <div class="kpi-label">Dubai – À préparer</div>
+            <div class="kpi-value" style="color:var(--primary);">${l.dubai.count}</div>
+            <div class="kpi-sub">colis en attente d'expédition</div>
+          </div>
+          <div class="kpi-card" style="cursor:pointer;" onclick="toggleDetail('detail-bateau')">
+            <div class="kpi-icon">🚢</div>
+            <div class="kpi-label">Bateau – En transit</div>
+            <div class="kpi-value">${l.bateau.count}</div>
+            <div class="kpi-sub">en mer</div>
+          </div>
+          <div class="kpi-card orange" style="cursor:pointer;" onclick="toggleDetail('detail-anjouan')">
+            <div class="kpi-icon">🏝️</div>
+            <div class="kpi-label">Anjouan – À récupérer</div>
+            <div class="kpi-value">${l.anjouan.count}</div>
+            <div class="kpi-sub">au relais</div>
+          </div>
+        </div>
+
+        <!-- Détails logistiques -->
+        <div id="detail-dubai" style="display:none;margin-bottom:1rem;">
+          ${tableCommandes(l.dubai.items, ['reference','status','jours_dans_etape'], ['Référence','Statut','Jours étape'])}
+        </div>
+        <div id="detail-bateau" style="display:none;margin-bottom:1rem;">
+          ${tableCommandes(l.bateau.items, ['reference','shipment_ref','jours_en_mer','eta_arrivee'], ['Référence','Expédition','Jours en mer','ETA'])}
+        </div>
+        <div id="detail-anjouan" style="display:none;margin-bottom:1rem;">
+          ${tableCommandes(l.anjouan.items, ['reference','destinataire','relais_nom','heures_en_attente'], ['Référence','Destinataire','Relais','Heures attente'])}
+        </div>
+
+        <!-- Délais moyens -->
+        <div class="card">
+          <div class="card-header">⏱️ Délais moyens</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;">
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:2rem;font-weight:800;color:var(--primary);">${d.delais.avg_preparation_jours || '—'}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">jours préparation</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:2rem;font-weight:800;color:var(--primary);">${d.delais.avg_livraison_totale_jours || '—'}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">jours livraison totale</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:2rem;font-weight:800;color:${parseFloat(d.delais.pct_en_retard) > 10 ? 'var(--red)' : 'var(--green)'};">${d.delais.pct_en_retard}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">% en retard</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertes -->
+        ${alertesBlock(d.alertes)}
+
+        <!-- Clients à contacter -->
+        ${d.clients_retards && d.clients_retards.count > 0 ? `
+        <div class="card">
+          <div class="card-header" style="color:var(--red);">⚠️ Clients à contacter (${d.clients_retards.count})</div>
+          <div class="card-body">
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+              ${Object.entries(d.clients_retards.par_niveau || {}).map(([k,v]) =>
+                `<span class="badge ${k.includes('remboursement') ? 'badge-red' : k.includes('10pct') ? 'badge-orange' : 'badge-blue'}">${k} : ${v}</span>`
+              ).join('')}
+            </div>
+            ${d.clients_retards.urgents?.length ? `
+              <table>
+                <tr><th>Référence</th><th>Client</th><th>Retard</th><th>Action</th></tr>
+                ${d.clients_retards.urgents.map(c => `
+                  <tr>
+                    <td><strong>${c.reference}</strong></td>
+                    <td>${c.client || '—'}<br><span style="font-size:.75rem;color:var(--muted);">${c.email || ''}</span></td>
+                    <td style="color:var(--red);">${c.jours_retard}j</td>
+                    <td>${badge(c.compensation, c.compensation.includes('remb') ? 'red' : 'orange')}</td>
+                  </tr>`).join('')}
+              </table>
+              <div style="margin-top:.8rem;font-size:.82rem;color:var(--muted);">→ Voir tous les détails dans l'onglet <strong>Retards</strong></div>
+            ` : ''}
+          </div>
+        </div>` : ''}
+
+      </div>
+    `;
+
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+function tableCommandes(items, fields, headers) {
+  if (!items || !items.length) return '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;">Aucune commande dans cette étape.</div>';
+  return `
+    <div class="card">
+      <div class="card-body" style="overflow-x:auto;">
+        <table>
+          <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          ${items.map(item => `
+            <tr>${fields.map(f => {
+              const v = item[f];
+              if (f === 'status') return `<td>${badge(v, slaColor(v))}</td>`;
+              if (f === 'eta_arrivee' && v) return `<td>${new Date(v).toLocaleDateString('fr-FR')}</td>`;
+              if (f === 'heures_en_attente') return `<td style="color:${Number(v)>48?'var(--red)':'inherit'}">${Math.round(v)}h</td>`;
+              if (f === 'jours_en_mer') return `<td style="color:${Number(v)>30?'var(--red)':Number(v)>25?'var(--accent)':'inherit'}">${v}j</td>`;
+              return `<td>${v || '—'}</td>`;
+            }).join('')}</tr>
+          `).join('')}
+        </table>
+      </div>
+    </div>`;
+}
+
+function alertesBlock(a) {
+  const items = [
+    { key: 'cash_pending', icon: '💵', label: 'Cash relais en attente +12h', color: 'orange' },
+    { key: 'anomalies',    icon: '🔍', label: 'Anomalies scan non traitées', color: 'red' },
+    { key: 'low_stock',    icon: '📦', label: 'Stock faible (<3 unités)',    color: 'orange' },
+    { key: 'sms_failed',   icon: '📵', label: 'SMS échoués (24h)',           color: 'red' },
+  ].filter(i => a[i.key]?.count > 0);
+
+  if (!items.length) return `<div style="background:#f0fdf4;border-radius:12px;padding:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:1rem;">✅ Aucune alerte active</div>`;
+
+  return `
+    <div class="kpi-grid">
+      ${items.map(i => `
+        <div class="kpi-card ${i.color === 'red' ? 'red' : 'orange'}">
+          <div class="kpi-icon">${i.icon}</div>
+          <div class="kpi-label">${i.label}</div>
+          <div class="kpi-value">${a[i.key].count}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── VENTES ────────────────────────────────────────────────────────────────────
+
+async function loadSales(period) {
+  _salesPeriod = period;
+  const el = document.getElementById('sales-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const d = await apiFetch(`/api/dashboard/sales?period=${period}`);
+    const r = d.kpi_l1;
+    const m = r.marge;
+
+    el.innerHTML = `
+      <div class="fade-in">
+
+        <!-- KPI L1 -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">💶</div>
+            <div class="kpi-label">Chiffre d'affaires</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(r.ca_kmf)}</div>
+            <div class="kpi-sub">${r.ca_eur} EUR · évol. ${r.evolution.ca_pct}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🛒</div>
+            <div class="kpi-label">Commandes</div>
+            <div class="kpi-value">${r.nb_commandes}</div>
+            <div class="kpi-sub">évol. ${r.evolution.commandes_pct}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🧺</div>
+            <div class="kpi-label">Panier moyen</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(r.panier_moyen_kmf)}</div>
+            <div class="kpi-sub">conversion ${r.taux_conversion}</div>
+          </div>
+          <div class="kpi-card ${parseInt(m.marge_reelle_kmf) < 0 ? 'red' : 'green'}">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-label">Marge réelle</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(m.marge_reelle_kmf)}</div>
+            <div class="kpi-sub">${m.taux_marge_moy} · taux moyen</div>
+          </div>
+        </div>
+
+        <!-- Alerte marge -->
+        ${m.alerte_vente_a_perte ? `
+          <div style="background:#fef2f2;border:2px solid var(--red);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+            <strong style="color:var(--red);">🚨 Attention — ${m.alerte_vente_a_perte.count} commande(s) potentiellement à perte</strong>
+            <div style="font-size:.82rem;color:var(--muted);margin-top:.3rem;">${m.alerte_vente_a_perte.commandes.map(c => c.reference).join(', ')}</div>
+          </div>` : ''}
+        ${m.nb_sans_cost_renseigne > 0 ? `
+          <div style="background:#fef3c7;border:2px solid var(--accent);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+            <strong style="color:#d97706;">⚠️ ${m.nb_sans_cost_renseigne} commande(s) sans coût renseigné</strong> — marge inconnue pour ces articles
+          </div>` : ''}
+
+        <!-- Décomposition marge -->
+        <div class="card">
+          <div class="card-header">💸 Décomposition de la marge</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;">
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">MARGE PRODUIT</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--primary);">${kmf(m.marge_produit_kmf)}</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#fff7ed;border-radius:10px;">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">− TRANSPORT</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--accent);">${kmf(m.cout_transport_kmf)}</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#fff7ed;border-radius:10px;">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">− DOUANE</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--accent);">${kmf(m.cout_douane_kmf)}</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:${parseInt(m.marge_reelle_kmf)>=0?'#f0fdf4':'#fef2f2'};border-radius:10px;border:2px solid ${parseInt(m.marge_reelle_kmf)>=0?'#16a34a':'var(--red)'};">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">= MARGE RÉELLE</div>
+                <div style="font-size:1.3rem;font-weight:800;color:${parseInt(m.marge_reelle_kmf)>=0?'var(--green)':'var(--red)'};">${kmf(m.marge_reelle_kmf)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diaspora vs local -->
+        <div class="card">
+          <div class="card-header">🌍 Diaspora vs Local</div>
+          <div class="card-body">
+            <table>
+              <tr><th>Origine</th><th>Commandes</th><th>CA</th><th>Panier moyen</th></tr>
+              ${(d.kpi_l2.diaspora_vs_local || []).map(r => `
+                <tr>
+                  <td>${r.origine === 'local' ? '🇰🇲 Local' : '✈️ Diaspora'}</td>
+                  <td>${r.nb_commandes}</td>
+                  <td>${kmf(r.ca_kmf)}</td>
+                  <td>${kmf(r.panier_moyen_kmf)}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <!-- Marge par catégorie -->
+        <div class="card">
+          <div class="card-header">📦 Marge par catégorie</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table>
+              <tr><th>Catégorie</th><th>Commandes</th><th>CA</th><th>Marge produit</th><th>Taux</th></tr>
+              ${(d.kpi_l2.marge_par_categorie || []).map(c => `
+                <tr>
+                  <td><strong>${c.category || 'Non catégorisé'}</strong></td>
+                  <td>${c.nb_commandes}</td>
+                  <td>${kmf(c.ca_kmf)}</td>
+                  <td>${kmf(c.marge_produit_kmf)}</td>
+                  <td>${badge(c.taux_marge_pct + '%', Number(c.taux_marge_pct) > 20 ? 'green' : Number(c.taux_marge_pct) > 10 ? 'orange' : 'red')}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <!-- Top 10 produits -->
+        <div class="card">
+          <div class="card-header">🏆 Top 10 produits</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table>
+              <tr><th>#</th><th>Produit</th><th>Qté</th><th>CA</th><th>Marge</th><th>Taux</th></tr>
+              ${(d.produits.top_10 || []).map((p, i) => `
+                <tr>
+                  <td style="color:var(--muted);font-weight:700;">${i + 1}</td>
+                  <td>${p.emoji || ''} <strong>${p.name}</strong><br><span style="font-size:.75rem;color:var(--muted);">${p.category || ''}</span></td>
+                  <td>${p.qty_vendue}</td>
+                  <td>${kmf(p.revenue_kmf)}</td>
+                  <td>${p.marge_kmf ? kmf(p.marge_kmf) : '—'}</td>
+                  <td>${p.taux_marge_pct ? badge(p.taux_marge_pct + '%', Number(p.taux_marge_pct) > 20 ? 'green' : 'orange') : '—'}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <!-- Produits jamais vendus -->
+        ${d.produits.jamais_vendus?.count > 0 ? `
+          <div class="card">
+            <div class="card-header" style="color:var(--muted);">💤 Produits jamais vendus (${d.produits.jamais_vendus.count})</div>
+            <div class="card-body">
+              <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+                ${d.produits.jamais_vendus.items.map(p => `
+                  <span class="badge badge-gray">${p.emoji || ''} ${p.name}</span>`).join('')}
+              </div>
+            </div>
+          </div>` : ''}
+
+        <!-- Clients -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">👤</div>
+            <div class="kpi-label">Nouveaux clients</div>
+            <div class="kpi-value">${d.clients.nouveaux_cette_periode}</div>
+            <div class="kpi-sub">sur la période</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">🔄</div>
+            <div class="kpi-label">Taux réachat</div>
+            <div class="kpi-value">${d.kpi_l3.taux_reachat_pct}</div>
+            <div class="kpi-sub">${d.clients.clients_recurrents} clients récurrents</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">💎</div>
+            <div class="kpi-label">LTV moyen</div>
+            <div class="kpi-value" style="font-size:1.3rem;">${kmf(d.kpi_l3.ltv_moyen_kmf)}</div>
+            <div class="kpi-sub">valeur vie client</div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ── RETARDS ───────────────────────────────────────────────────────────────────
+
+async function loadRetards(niveau) {
+  const el = document.getElementById('retards-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const url = '/api/dashboard/retards' + (niveau ? `?niveau=${encodeURIComponent(niveau)}` : '');
+    const d = await apiFetch(url);
+
+    if (!d.clients?.length) {
+      el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--green);font-size:1.1rem;font-weight:600;">✅ Aucun retard — toutes les commandes sont dans les délais</div>';
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="fade-in">
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+          ${Object.entries(d.par_niveau || {}).map(([k, v]) => `
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1.2rem;text-align:center;">
+              <div style="font-size:1.3rem;font-weight:800;color:${k.includes('remb')?'var(--red)':k.includes('10')?'var(--accent)':'var(--primary)'};">${v.count}</div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;max-width:120px;">${v.label}</div>
+            </div>`).join('')}
+        </div>
+
+        <div class="card">
+          <div class="card-header">📋 Liste des clients à contacter (${d.total})</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table>
+              <tr><th>Référence</th><th>Client</th><th>Statut</th><th>Retard</th><th>Action</th><th>Message suggéré</th></tr>
+              ${d.clients.map(c => `
+                <tr>
+                  <td><strong>${c.reference}</strong></td>
+                  <td>
+                    <strong>${c.client_nom || '—'}</strong><br>
+                    <span style="font-size:.75rem;color:var(--muted);">${c.client_email || ''}</span><br>
+                    <span style="font-size:.75rem;color:var(--muted);">${c.client_phone || ''}</span>
+                  </td>
+                  <td>${badge(c.status, slaColor(c.status))}</td>
+                  <td style="color:${Number(c.jours_de_retard) > 14 ? 'var(--red)' : 'var(--accent)'}; font-weight:700;">
+                    ${c.jours_de_retard > 0 ? c.jours_de_retard + 'j' : c.type_retard || '—'}
+                  </td>
+                  <td>${badge(c.compensation_recommandee || '—', c.compensation_recommandee?.includes('remb') ? 'red' : c.compensation_recommandee?.includes('10') ? 'orange' : 'blue')}</td>
+                  <td style="font-size:.75rem;color:var(--muted);max-width:260px;">${c.sms_suggere || '—'}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+      </div>`;
+
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ── PRÉVISIONS ────────────────────────────────────────────────────────────────
+
+function initForecastForm() {
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  document.getElementById('fc-target').value = lastDay.toISOString().split('T')[0];
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('fc-from').value = firstDay.toISOString().split('T')[0];
+}
+
+async function loadForecast() {
+  const el = document.getElementById('forecast-content');
+  const target = document.getElementById('fc-target').value;
+  const period = document.getElementById('fc-period').value;
+  const from   = document.getElementById('fc-from').value;
+
+  if (!target) { alert('Choisissez une date cible'); return; }
+
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Calcul des projections…</p></div>';
+
+  try {
+    const url = `/api/dashboard/forecast?target_date=${target}&ref_period=${period}${from ? '&from_date=' + from : ''}`;
+    const d = await apiFetch(url);
+
+    const tauxMargeReel = d.realise.ca_kmf > 0
+      ? ((d.realise.marge_reelle_kmf / d.realise.ca_kmf) * 100).toFixed(1) + '%'
+      : '—';
+
+    el.innerHTML = `
+      <div class="fade-in">
+
+        <!-- Réalisé -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-label">CA réalisé</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(d.realise.ca_kmf)}</div>
+            <div class="kpi-sub">depuis le ${new Date(d.from_date).toLocaleDateString('fr-FR')}</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-label">Marge réalisée</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(d.realise.marge_reelle_kmf)}</div>
+            <div class="kpi-sub">${tauxMargeReel}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">📅</div>
+            <div class="kpi-label">Jours restants</div>
+            <div class="kpi-value">${d.days_remaining}</div>
+            <div class="kpi-sub">jusqu'au ${new Date(d.target_date).toLocaleDateString('fr-FR')}</div>
+          </div>
+        </div>
+
+        <!-- Note modèle -->
+        <div style="background:#f0f9ff;border-radius:10px;padding:1rem;margin-bottom:1.2rem;font-size:.85rem;color:#1a3a5c;">
+          ${d.modele.note} · Basé sur ${d.modele.ref_period_jours}j d'historique ·
+          Moyenne ${kmf(d.modele.avg_ca_par_jour)}/jour · ±${kmf(d.modele.stddev_ca)}
+        </div>
+
+        <!-- Scénarios CA -->
+        <div class="card">
+          <div class="card-header">📈 Projection CA au ${new Date(d.target_date).toLocaleDateString('fr-FR')}</div>
+          <div class="card-body">
+            <div class="scenario-grid">
+              <div class="scenario-card pessimiste">
+                <div class="scenario-label">Pessimiste</div>
+                <div class="scenario-value">${kmf(d.projection_ca.pessimiste)}</div>
+              </div>
+              <div class="scenario-card attendu">
+                <div class="scenario-label">⭐ Attendu</div>
+                <div class="scenario-value">${kmf(d.projection_ca.attendu)}</div>
+              </div>
+              <div class="scenario-card optimiste">
+                <div class="scenario-label">Optimiste</div>
+                <div class="scenario-value">${kmf(d.projection_ca.optimiste)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scénarios marge -->
+        <div class="card">
+          <div class="card-header">💸 Projection marge réelle au ${new Date(d.target_date).toLocaleDateString('fr-FR')}</div>
+          <div class="card-body">
+            ${d.projection_marge.alerte_perte ? `<div style="background:#fef2f2;border:2px solid var(--red);border-radius:8px;padding:.8rem;margin-bottom:1rem;color:var(--red);font-weight:700;">${d.projection_marge.alerte_perte}</div>` : ''}
+            <div class="scenario-grid">
+              <div class="scenario-card pessimiste">
+                <div class="scenario-label">Pessimiste</div>
+                <div class="scenario-value">${kmf(d.projection_marge.pessimiste)}</div>
+              </div>
+              <div class="scenario-card attendu">
+                <div class="scenario-label">⭐ Attendu</div>
+                <div class="scenario-value">${kmf(d.projection_marge.attendu)}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.3rem;">taux ${d.projection_marge.taux_marge_proj}</div>
+              </div>
+              <div class="scenario-card optimiste">
+                <div class="scenario-label">Optimiste</div>
+                <div class="scenario-value">${kmf(d.projection_marge.optimiste)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>`;
+
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+initForecastForm();
+</script>
+</body>
+</html>
