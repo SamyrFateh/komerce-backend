@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Komerce — Tout ce que vous voulez, livré aux Comores</title>
+  <style>
+    :root {
+      --primary: #1a3a5c;
+      --accent:  #e8a020;
+      --green:   #2ecc71;
+      --red:     #e74c3c;
+      --light:   #f4f7fb;
+      --dark:    #0f1f33;
+      --text:    #2c3e50;
+      --muted:   #7f8c9b;
+      --white:   #ffffff;
+      --shadow:  0 4px 24px rgba(26,58,92,0.10);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; color:var(--text); background:var(--white); }
+
+    /* ── NAV ── */
+    nav {
+      background:var(--primary);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 5%; height:64px; position:sticky; top:0; z-index:100;
+      box-shadow:0 2px 12px rgba(0,0,0,0.2);
+    }
+    .logo { color:var(--white); font-size:1.5rem; font-weight:800; letter-spacing:-0.5px; }
+    .logo span { color:var(--accent); }
+    .nav-links { display:flex; gap:2rem; }
+    .nav-links a { color:rgba(255,255,255,0.85); text-decoration:none; font-size:.9rem; font-weight:500; transition:color .2s; }
+    .nav-links a:hover { color:var(--accent); }
+    .nav-cta {
+      background:var(--accent); color:var(--white)!important;
+      padding:.45rem 1.1rem; border-radius:6px; font-weight:700!important;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #0d2640 60%, #162d48 100%);
+      color:var(--white);
+      padding: 80px 5% 60px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before {
+      content:''; position:absolute; inset:0;
+      background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge {
+      display:inline-block;
+      background:rgba(232,160,32,0.2); border:1px solid rgba(232,160,32,0.5);
+      color:var(--accent); font-size:.8rem; font-weight:700; letter-spacing:1px;
+      text-transform:uppercase; padding:.3rem .9rem; border-radius:20px;
+      margin-bottom:1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight:900; line-height:1.15;
+      margin-bottom:1rem;
+      text-shadow:0 2px 8px rgba(0,0,0,0.3);
+    }
+    .hero h1 em { color:var(--accent); font-style:normal; }
+    .hero-subtitle {
+      font-size:1.15rem; color:rgba(255,255,255,0.75);
+      max-width:560px; margin:0 auto 2rem;
+      line-height:1.6;
+    }
+
+    /* ── HERO VALUE BANDEAU ── */
+    .hero-value {
+      display:inline-flex; align-items:center; gap:.6rem;
+      background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+      backdrop-filter:blur(8px);
+      color:var(--white); font-size:.95rem; font-weight:600;
+      padding:.7rem 1.5rem; border-radius:40px;
+      margin-bottom:2.5rem;
+    }
+    .hero-value .vp-icon { font-size:1.2rem; }
+
+    .hero-actions { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+    .hero-testimonial {
+      display:flex; align-items:center; gap:.75rem;
+      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2);
+      backdrop-filter:blur(8px);
+      border-radius:12px; padding:.75rem 1.2rem;
+      max-width:560px; margin:.4rem auto 0;
+    }
+    .hero-testimonial-avatar {
+      font-size:1.6rem; flex-shrink:0; line-height:1;
+    }
+    .hero-testimonial-text {
+      font-size:.82rem; color:rgba(255,255,255,0.9); line-height:1.4;
+    }
+    .hero-testimonial-text em {
+      font-style:normal; color:var(--white); font-weight:600;
+    }
+    .hero-testimonial-author {
+      font-size:.72rem; color:rgba(255,255,255,0.6); margin-top:.2rem;
+    }
+    .btn-primary {
+      background:var(--accent); color:var(--white);
+      padding:.85rem 2rem; border-radius:8px; font-size:1rem; font-weight:700;
+      text-decoration:none; border:none; cursor:pointer;
+      box-shadow:0 4px 16px rgba(232,160,32,0.4);
+      transition:transform .2s, box-shadow .2s;
+      display:inline-flex; align-items:center; gap:.5rem;
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(232,160,32,0.5); }
+    .btn-secondary {
+      background:rgba(255,255,255,0.1); color:var(--white);
+      padding:.85rem 2rem; border-radius:8px; font-size:1rem; font-weight:600;
+      text-decoration:none; border:1px solid rgba(255,255,255,0.25);
+      transition:background .2s;
+      display:inline-flex; align-items:center; gap:.5rem;
+    }
+    .btn-secondary:hover { background:rgba(255,255,255,0.18); }
+
+    /* ── ADVANTAGE STRIP ── */
+    .advantage-strip {
+      background:var(--accent);
+      display:grid; grid-template-columns:repeat(3,1fr);
+    }
+    .adv-item {
+      display:flex; align-items:center; gap:1rem;
+      padding:1.4rem 2rem;
+      border-right:1px solid rgba(255,255,255,0.25);
+      color:var(--white);
+    }
+    .adv-item:last-child { border-right:none; }
+    .adv-icon { font-size:2rem; flex-shrink:0; }
+    .adv-label { font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; opacity:.85; }
+    .adv-value { font-size:1rem; font-weight:800; margin-top:.1rem; }
+
+    /* ── PROMO SECTION ── */
+    .promo-section {
+      background: linear-gradient(135deg, #fff8ee 0%, #fff3e0 100%);
+      padding:60px 5%;
+      border-top: 3px solid var(--accent);
+    }
+    .section-eyebrow {
+      font-size:.75rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      color:var(--accent); margin-bottom:.5rem;
+    }
+    .section-title { font-size:2rem; font-weight:800; color:var(--primary); margin-bottom:.5rem; }
+    .section-sub { color:var(--muted); font-size:1rem; margin-bottom:2.5rem; max-width:580px; }
+
+    .promo-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:2rem; }
+
+    .promo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1.2rem; }
+    .promo-card {
+      background:var(--white); border-radius:12px;
+      box-shadow: var(--shadow);
+      overflow:hidden; transition:transform .2s, box-shadow .2s;
+      border:1px solid rgba(232,160,32,0.2);
+    }
+    .promo-card:hover { transform:translateY(-4px); box-shadow:0 8px 32px rgba(26,58,92,0.15); }
+    .promo-card-img {
+      background: linear-gradient(135deg, #f0f4f8, #e8edf2);
+      height:160px; display:flex; align-items:center; justify-content:center;
+      font-size:3.5rem; position:relative;
+    }
+    .promo-badge-tag {
+      position:absolute; top:10px; left:10px;
+      background:var(--red); color:var(--white);
+      font-size:.72rem; font-weight:700; padding:.25rem .6rem; border-radius:4px;
+    }
+    .promo-source-tag {
+      position:absolute; top:10px; right:10px;
+      background:var(--primary); color:var(--white);
+      font-size:.65rem; font-weight:600; padding:.2rem .5rem; border-radius:4px;
+    }
+    .promo-card-body { padding:1rem; }
+    .promo-card-name { font-weight:700; color:var(--primary); font-size:.95rem; margin-bottom:.4rem; }
+    .promo-card-cat { font-size:.75rem; color:var(--muted); margin-bottom:.8rem; }
+    .promo-prices { display:flex; align-items:baseline; gap:.6rem; margin-bottom:.5rem; }
+    .promo-price-original { font-size:.85rem; color:var(--muted); text-decoration:line-through; }
+    .promo-price-now { font-size:1.25rem; font-weight:800; color:var(--red); }
+    .promo-price-aed { font-size:.75rem; color:var(--muted); }
+    .promo-price-kmf { font-size:.8rem; color:var(--primary); font-weight:600; margin-bottom:.8rem; }
+    .promo-savings {
+      background:#fef3f2; border:1px solid #fecaca;
+      color:var(--red); font-size:.78rem; font-weight:600;
+      padding:.25rem .6rem; border-radius:4px; display:inline-block; margin-bottom:.8rem;
+    }
+    .promo-card-footer { display:flex; gap:.5rem; }
+    .btn-order {
+      flex:1; background:var(--primary); color:var(--white);
+      border:none; padding:.55rem; border-radius:6px;
+      font-size:.82rem; font-weight:700; cursor:pointer; transition:background .2s;
+    }
+    .btn-order:hover { background:#0d2640; }
+    .btn-fav {
+      background:var(--light); border:none;
+      padding:.55rem .7rem; border-radius:6px; cursor:pointer; font-size:1rem;
+    }
+
+    .promo-countdown {
+      display:flex; align-items:center; gap:.5rem;
+      font-size:.8rem; color:var(--muted); margin-top:.5rem;
+    }
+
+    .promo-mvp-note {
+      background:rgba(232,160,32,0.1); border:1px solid rgba(232,160,32,0.3);
+      border-radius:8px; padding:1rem 1.5rem;
+      display:flex; align-items:center; gap:.8rem;
+      margin-top:1.5rem; font-size:.85rem; color:var(--text);
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-section { padding:70px 5%; background:var(--white); }
+    .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:2rem; margin-top:2.5rem; }
+    .step-card {
+      background:var(--light); border-radius:12px; padding:1.8rem 1.5rem;
+      position:relative; border:1px solid rgba(26,58,92,0.08);
+    }
+    .step-num {
+      width:40px; height:40px; background:var(--primary); color:var(--white);
+      border-radius:50%; font-weight:800; font-size:1rem;
+      display:flex; align-items:center; justify-content:center;
+      margin-bottom:1rem;
+    }
+    .step-icon { font-size:1.8rem; margin-bottom:.8rem; }
+    .step-title { font-weight:700; color:var(--primary); margin-bottom:.4rem; }
+    .step-desc { font-size:.88rem; color:var(--muted); line-height:1.55; }
+    .step-detail { font-size:.78rem; color:var(--accent); font-weight:600; margin-top:.5rem; }
+
+    /* ── TRACKING ── */
+    .tracking-section { background:var(--light); padding:60px 5%; }
+    .tracking-timeline { display:flex; align-items:flex-start; gap:0; margin-top:2rem; overflow-x:auto; padding-bottom:1rem; }
+    .track-step { flex:1; min-width:140px; text-align:center; position:relative; }
+    .track-step::after {
+      content:''; position:absolute; top:18px; left:50%; width:100%; height:3px;
+      background: linear-gradient(90deg, var(--accent), rgba(232,160,32,0.2));
+    }
+    .track-step:last-child::after { display:none; }
+    .track-dot {
+      width:38px; height:38px; border-radius:50%;
+      background:var(--primary); color:var(--white);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1rem; margin:0 auto 0.8rem;
+      position:relative; z-index:1;
+      box-shadow:0 2px 8px rgba(26,58,92,0.25);
+    }
+    .track-dot.done { background:var(--green); }
+    .track-dot.active { background:var(--accent); animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(232,160,32,0.4)} 50%{box-shadow:0 0 0 8px rgba(232,160,32,0)} }
+    .track-label { font-size:.78rem; font-weight:600; color:var(--primary); }
+    .track-sublabel { font-size:.7rem; color:var(--muted); margin-top:.2rem; }
+
+    /* ── TRUST ── */
+    /* VALISE SECTION */
+    .valise-section { padding:70px 5%; background:var(--light); }
+    .valise-grid { display:flex; align-items:center; justify-content:center; gap:1.5rem; margin:3rem auto; max-width:900px; flex-wrap:wrap; }
+    .valise-card { flex:1; min-width:260px; max-width:380px; background:var(--white); border-radius:16px; padding:2rem; box-shadow:0 4px 20px rgba(0,0,0,.07); }
+    .valise-before { border:2px solid #e5e7eb; }
+    .valise-after { border:2px solid var(--accent); }
+    .valise-badge { display:inline-block; padding:.3rem .9rem; border-radius:20px; background:#f1f5f9; color:#64748b; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:1.2rem; }
+    .valise-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.75rem; }
+    .valise-list li { font-size:.9rem; color:var(--text); line-height:1.4; }
+    .valise-arrow { font-size:2.5rem; color:var(--accent); flex-shrink:0; font-weight:700; }
+    .valise-cta { background:var(--white); border-left:4px solid var(--accent); border-radius:12px; padding:1.6rem 2rem; max-width:620px; margin:0 auto; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .valise-cta-text { font-size:.95rem; color:var(--text); line-height:1.7; margin:0; }
+    @media(max-width:640px){ .valise-arrow { transform:rotate(90deg); } }
+    .trust-section { padding:60px 5%; background:var(--primary); color:var(--white); }
+    .trust-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:2rem; margin-top:2.5rem; }
+    .trust-item { text-align:center; }
+    .trust-icon { font-size:2.5rem; margin-bottom:.8rem; }
+    .trust-title { font-weight:700; font-size:1rem; margin-bottom:.3rem; }
+    .trust-desc { font-size:.83rem; color:rgba(255,255,255,0.65); line-height:1.5; }
+
+    /* ── PRICING PREVIEW ── */
+    .pricing-section { padding:70px 5%; background:var(--white); }
+    .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-top:2.5rem; }
+    .pricing-card {
+      border-radius:12px; padding:2rem;
+      border:2px solid rgba(26,58,92,0.1);
+    }
+    .pricing-card.featured { border-color:var(--accent); background:linear-gradient(135deg,#fff8ee,#fffdf5); }
+    .cat-icon { font-size:2.5rem; margin-bottom:1rem; }
+    .cat-name { font-weight:800; font-size:1.1rem; color:var(--primary); margin-bottom:.3rem; }
+    .cat-desc { font-size:.85rem; color:var(--muted); margin-bottom:1rem; }
+    .price-example { background:var(--light); border-radius:8px; padding:.8rem 1rem; }
+    .price-label { font-size:.75rem; color:var(--muted); }
+    .price-value { font-size:1.4rem; font-weight:800; color:var(--primary); }
+    .price-sub { font-size:.75rem; color:var(--muted); }
+    .deliv-tag { display:inline-block; background:rgba(46,204,113,0.1); color:var(--green); font-size:.75rem; font-weight:600; padding:.2rem .6rem; border-radius:4px; margin-top:.8rem; }
+
+    /* ── DESTINATAIRE ── */
+    .destinataire-section { padding:70px 5%; background:var(--white); }
+    .dest-container { max-width:780px; margin:0 auto; }
+    .dest-card { background:var(--light); border-radius:16px; padding:2.5rem; border:1px solid rgba(26,58,92,0.1); box-shadow:0 4px 24px rgba(26,58,92,0.07); }
+    .dest-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin-bottom:1.5rem; }
+    @media(max-width:600px){ .dest-form-grid { grid-template-columns:1fr; } }
+    .dest-field { display:flex; flex-direction:column; gap:.4rem; }
+    .dest-field.full { grid-column:1/-1; }
+    .dest-label { font-size:.8rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.04em; }
+    .dest-input { padding:.75rem 1rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; color:var(--text); background:var(--white); transition:border-color .2s; outline:none; }
+    .dest-input:focus { border-color:var(--primary); }
+    .dest-input::placeholder { color:#adb5bd; }
+
+    /* Point relais selector */
+    .relais-label { font-size:.8rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.8rem; display:block; }
+    .relais-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.8rem; margin-bottom:1.5rem; }
+    .relais-card { border:2px solid #e2e8f0; border-radius:10px; padding:1rem; cursor:pointer; transition:border-color .2s, background .2s; background:var(--white); }
+    .relais-card:hover { border-color:var(--accent); }
+    .relais-card.selected { border-color:var(--primary); background:rgba(26,58,92,0.04); }
+    .relais-card.selected .relais-check { opacity:1; }
+    .relais-name { font-weight:700; font-size:.9rem; color:var(--primary); margin-bottom:.2rem; }
+    .relais-zone { font-size:.78rem; color:var(--muted); }
+    .relais-check { float:right; color:var(--green); font-size:1rem; opacity:0; transition:opacity .2s; margin-top:-.1rem; }
+
+    .dest-note { background:rgba(232,160,32,0.1); border-left:3px solid var(--accent); border-radius:6px; padding:.75rem 1rem; font-size:.82rem; color:#78350f; margin-bottom:1.5rem; line-height:1.5; }
+    .dest-submit { width:100%; padding:1rem; background:var(--primary); color:var(--white); border:none; border-radius:10px; font-size:1rem; font-weight:700; cursor:pointer; transition:background .2s; letter-spacing:.02em; }
+    .dest-submit:hover { background:#0d2640; }
+    .dest-steps { display:flex; gap:0; margin-bottom:2rem; }
+    .dest-step { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
+    .dest-step::after { content:''; position:absolute; top:14px; left:50%; width:100%; height:2px; background:#e2e8f0; z-index:0; }
+    .dest-step:last-child::after { display:none; }
+    .dest-step-dot { width:28px; height:28px; border-radius:50%; background:var(--primary); color:var(--white); font-size:.75rem; font-weight:700; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; }
+    .dest-step-dot.inactive { background:#e2e8f0; color:#94a3b8; }
+    .dest-step-lbl { font-size:.72rem; font-weight:600; color:var(--primary); margin-top:.4rem; text-align:center; }
+    .dest-step-lbl.inactive { color:#94a3b8; }
+
+    /* ── PANIER PARTAGÉ ── */
+    .shared-banner { background:linear-gradient(135deg,#1a3a5c,#2d6a4f); color:#fff; padding:1.2rem 5%; display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; }
+    .shared-banner-icon { font-size:2rem; flex-shrink:0; }
+    .shared-banner-text { flex:1; min-width:200px; }
+    .shared-banner-title { font-weight:800; font-size:1rem; margin-bottom:.2rem; }
+    .shared-banner-sub { font-size:.82rem; opacity:.85; }
+    .shared-banner-badge { background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); border-radius:20px; padding:.3rem .9rem; font-size:.78rem; font-weight:700; letter-spacing:.04em; white-space:nowrap; }
+    .owner-tag { display:inline-flex; align-items:center; gap:.5rem; background:rgba(26,58,92,0.07); border:1px solid rgba(26,58,92,0.15); border-radius:8px; padding:.5rem 1rem; font-size:.82rem; color:var(--primary); margin-bottom:1.2rem; font-weight:600; }
+    .owner-tag span { color:var(--muted); font-weight:400; }
+    .share-cart-wrap { text-align:center; padding:1.5rem 0 .5rem; }
+    .share-cart-btn { display:inline-flex; align-items:center; gap:.6rem; background:var(--white); border:2px solid var(--primary); color:var(--primary); padding:.75rem 1.8rem; border-radius:10px; font-size:.9rem; font-weight:700; cursor:pointer; transition:all .2s; letter-spacing:.02em; }
+    .share-cart-btn:hover { background:var(--primary); color:#fff; }
+    .share-code-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center; }
+    .share-code-modal.open { display:flex; }
+    .share-modal-box { background:#fff; border-radius:20px; padding:2.5rem; max-width:400px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .share-modal-code { font-size:2.5rem; font-weight:900; color:var(--primary); letter-spacing:.15em; background:var(--light); border-radius:12px; padding:.8rem 1.5rem; margin:1rem 0; display:inline-block; }
+    .share-modal-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.5rem; }
+    .share-wa-btn { display:flex; align-items:center; justify-content:center; gap:.6rem; background:#25D366; color:#fff; border:none; border-radius:10px; padding:.85rem 1.5rem; font-size:.95rem; font-weight:700; cursor:pointer; width:100%; margin-bottom:.8rem; }
+    .share-close-btn { background:none; border:none; color:var(--muted); font-size:.85rem; cursor:pointer; }
+    .gift-btn { display:inline-flex; align-items:center; gap:.6rem; background:var(--white); border:2px solid var(--green); color:var(--green); padding:.75rem 1.8rem; border-radius:10px; font-size:.9rem; font-weight:700; cursor:pointer; transition:all .2s; letter-spacing:.02em; margin-left:.8rem; }
+    .gift-btn:hover { background:var(--green); color:#fff; }
+    .gift-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center; }
+    .gift-modal.open { display:flex; }
+    .gift-modal-box { background:#fff; border-radius:20px; padding:2.5rem; max-width:420px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .gift-modal-title { font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:.3rem; }
+    .gift-modal-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.5; }
+    .gift-field { margin-bottom:1rem; }
+    .gift-label { display:block; font-size:.78rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.4rem; }
+    .gift-input { width:100%; padding:.75rem 1rem; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.95rem; box-sizing:border-box; outline:none; }
+    .gift-input:focus { border-color:#16a34a; }
+    .gift-confirm-btn { width:100%; background:#16a34a; color:#fff; border:none; border-radius:10px; padding:.9rem; font-size:.95rem; font-weight:700; cursor:pointer; margin-top:.5rem; }
+    .gift-note { font-size:.75rem; color:var(--muted); text-align:center; margin-top:.8rem; line-height:1.5; }
+    .gift-close-btn { background:none; border:none; color:var(--muted); font-size:.82rem; cursor:pointer; display:block; margin:.5rem auto 0; }
+
+    /* ── FIDÉLISATION ── */
+    .fidelite-section { padding:60px 5%; background:var(--primary); }
+    .fidelite-inner { max-width:860px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; align-items:center; }
+    @media(max-width:640px){ .fidelite-inner { grid-template-columns:1fr; } }
+    .fidelite-text h2 { font-size:1.7rem; font-weight:800; color:var(--white); margin-bottom:.6rem; line-height:1.2; }
+    .fidelite-text p { font-size:.92rem; color:rgba(255,255,255,0.65); line-height:1.6; }
+    .fidelite-widget {
+      background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15);
+      border-radius:16px; padding:1.8rem;
+    }
+    .fw-label { font-size:.72rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin-bottom:1rem; }
+    .fw-steps { display:flex; gap:.5rem; margin-bottom:1.2rem; }
+    .fw-step {
+      flex:1; height:8px; border-radius:20px; background:rgba(255,255,255,0.15);
+      position:relative; overflow:hidden;
+    }
+    .fw-step.done { background:var(--accent); }
+    .fw-step.active { background:linear-gradient(90deg, var(--accent) 50%, rgba(255,255,255,0.15) 50%); }
+    .fw-count { font-size:.85rem; color:rgba(255,255,255,0.7); margin-bottom:.5rem; }
+    .fw-count strong { color:var(--white); font-size:1.1rem; }
+    .fw-reward { display:flex; align-items:center; gap:.6rem; background:rgba(232,160,32,0.15); border-radius:8px; padding:.7rem 1rem; }
+    .fw-reward-icon { font-size:1.4rem; }
+    .fw-reward-text { font-size:.82rem; color:rgba(255,255,255,0.8); line-height:1.4; }
+    .fw-reward-text strong { color:var(--accent); }
+    .fw-coming { margin-top:.8rem; font-size:.72rem; color:rgba(255,255,255,0.4); text-align:center; font-style:italic; }
+
+    /* ── FOOTER ── */
+    footer {
+      background:var(--dark); color:rgba(255,255,255,0.6);
+      padding:3rem 5% 2rem;
+    }
+    .footer-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:2rem; margin-bottom:2rem; }
+    .footer-brand .logo { font-size:1.3rem; }
+    .footer-tagline { font-size:.85rem; color:rgba(255,255,255,0.5); margin-top:.5rem; font-style:italic; }
+    .footer-links { display:flex; flex-direction:column; gap:.4rem; }
+    .footer-links a { color:rgba(255,255,255,0.55); text-decoration:none; font-size:.85rem; }
+    .footer-links a:hover { color:var(--accent); }
+    .footer-links strong { color:rgba(255,255,255,0.8); font-size:.9rem; margin-bottom:.3rem; display:block; }
+    .footer-bottom { border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem; font-size:.8rem; }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px) {
+      nav { padding:0 4%; }
+      .nav-links { display:none; }
+      .advantage-strip { grid-template-columns:1fr; }
+      .adv-item { border-right:none; border-bottom:1px solid rgba(255,255,255,0.2); }
+      .adv-item:last-child { border-bottom:none; }
+      .tracking-timeline { justify-content:flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Ko<span>merce</span></div>
+  <div class="nav-links">
+    <a href="#promos">🔥 Promos</a>
+    <a href="#comment">Comment ça marche</a>
+    <a href="#suivi">Suivi commande</a>
+    <a href="#commander" class="nav-cta">Commander →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🏝️ La plateforme pensée pour les Comores</div>
+  <h1>Vos envies traversent la mer.<br><em>Vous, voyagez libre.</em></h1>
+  <p class="hero-subtitle">
+    Cadeaux, mariage, soutien familial ou achat personnel — commandez depuis chez vous, vos proches récupèrent à Anjouan. On s'occupe de l'achat, du transport et de la livraison.
+  </p>
+  <div class="hero-value">
+    <span class="vp-icon">✨</span>
+    Tout ce que vous voulez, livré aux Comores sans bouger de chez vous · 3 à 5 semaines · Prix tout inclus
+  </div>
+  <div class="hero-actions">
+    <a href="#promos" class="btn-primary">🔥 Voir les promos en cours</a>
+    <a href="#commander" class="btn-secondary">📦 Passer une commande</a>
+  </div>
+  <div class="hero-testimonial">
+    <div class="hero-testimonial-avatar">🗣️</div>
+    <div>
+      <div class="hero-testimonial-text">
+        <em>« Sans Komerce, il était difficile de trouver ce que l'on voulait quand on le voulait ! »</em>
+      </div>
+      <div class="hero-testimonial-author">— Client diaspora · France</div>
+    </div>
+  </div>
+</section>
+
+<!-- ADVANTAGE STRIP -->
+<div class="advantage-strip">
+  <div class="adv-item">
+    <div class="adv-icon">🛒</div>
+    <div>
+      <div class="adv-label">Sourcing</div>
+      <div class="adv-value">Sélectionné & vérifié</div>
+    </div>
+  </div>
+  <div class="adv-item">
+    <div class="adv-icon">💰</div>
+    <div>
+      <div class="adv-label">Engagement</div>
+      <div class="adv-value">Prix le plus juste</div>
+    </div>
+  </div>
+  <div class="adv-item">
+    <div class="adv-icon">⏱️</div>
+    <div>
+      <div class="adv-label">Livraison</div>
+      <div class="adv-value">3–5 semaines</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMO SECTION -->
+<section class="promo-section" id="promos">
+  <div class="promo-header">
+    <div>
+      <div class="section-eyebrow">🔥 Offres en cours</div>
+      <h2 class="section-title">Sélection du moment — Édition limitée</h2>
+      <p class="section-sub">
+        Nos acheteurs sélectionnent chaque semaine les meilleures promotions disponibles.
+        Ces prix sont rares — ils ne durent pas.
+      </p>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem;">Dernière mise à jour</div>
+      <div style="font-weight:700;color:var(--primary);">Lundi 23 mars 2026</div>
+      <div style="font-size:.75rem;color:var(--muted);">Produits sélectionnés et vérifiés</div>
+    </div>
+  </div>
+
+  <div class="promo-grid">
+
+    <!-- Promo Card 1 -->
+    <div class="promo-card" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
+      <div class="promo-card-img">
+        📱
+        <span class="promo-badge-tag">−35%</span>
+      </div>
+      <div class="promo-card-body">
+        <div class="promo-card-name">Samsung Galaxy A15 128Go</div>
+        <div class="promo-card-cat">📱 Téléphones &amp; Accessoires</div>
+        <div class="promo-price-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré à Anjouan</div>
+        <div class="promo-countdown">⏳ Offre valable jusqu'au 28 mars</div>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Promo Card 2 -->
+    <div class="promo-card" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
+      <div class="promo-card-img">
+        👗
+        <span class="promo-badge-tag">−40%</span>
+        <div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
+          color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
+          ✂️ Tailles dispo
+        </div>
+      </div>
+      <div class="promo-card-body">
+        <div class="promo-card-name">Lot 3 abayas brodées — sélection exclus.</div>
+        <div class="promo-card-cat">👗 Vêtements &amp; Tissu</div>
+        <div class="promo-price-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré à Anjouan</div>
+        <div class="promo-countdown">⏳ Offre valable jusqu'au 31 mars</div>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Promo Card 3 -->
+    <div class="promo-card" data-product='{"id":"static-3","name":"Écouteurs Sony WH-CH520","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
+      <div class="promo-card-img">
+        🎧
+        <span class="promo-badge-tag">−28%</span>
+      </div>
+      <div class="promo-card-body">
+        <div class="promo-card-name">Écouteurs Bluetooth Sony WH-CH520</div>
+        <div class="promo-card-cat">🎧 Électronique léger</div>
+        <div class="promo-price-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré à Anjouan</div>
+        <div class="promo-countdown">⏳ Stock limité — 12 unités restantes</div>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Promo Card 4 -->
+    <div class="promo-card" data-product='{"id":"static-4","name":"Set cuisine Tefal 5 pièces","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
+      <div class="promo-card-img">
+        🍳
+        <span class="promo-badge-tag">−22%</span>
+      </div>
+      <div class="promo-card-body">
+        <div class="promo-card-name">Set cuisine Tefal — 5 pièces inox</div>
+        <div class="promo-card-cat">🏠 Électroménager léger</div>
+        <div class="promo-price-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré à Anjouan</div>
+        <div class="promo-countdown">⏳ Offre valable jusqu'au 30 mars</div>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="promo-mvp-note">
+    <span style="font-size:1.4rem;">ℹ️</span>
+    <div>
+      <strong>Comment fonctionne la sélection promo ?</strong>
+      Chaque semaine, nos produits sélectionnés et vérifiés vous permettent de bénéficier des meilleures offres du moment.
+      Quand un produit est en promo, l'économie est entièrement répercutée sur votre commande.
+      Les prix affichés incluent le fret maritime, la douane et la livraison au point relais à Anjouan.
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="comment">
+  <div class="section-eyebrow">✅ Simple &amp; transparent</div>
+  <h2 class="section-title">Comment ça marche ?</h2>
+  <p class="section-sub">4 étapes pour envoyer ce dont votre famille aux Comores a besoin ou envie.</p>
+
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-icon">📲</div>
+      <div class="step-title">Vous commandez</div>
+      <div class="step-desc">Parcourez le catalogue, choisissez vos produits et passez commande en quelques minutes depuis n'importe où.</div>
+      <div class="step-detail">💳 Carte EUR (Stripe) · 🏪 Cash au point relais 🔒</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-icon">📦</div>
+      <div class="step-title">On s'occupe de tout</div>
+      <div class="step-desc">Achat, vérification, emballage soigné, dédouanement — tout est pris en charge. Prix affiché : tout inclus, aucun frais caché.</div>
+      <div class="step-detail">Sourcing international · Fret maritime · Douane incluse</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-icon">🚢</div>
+      <div class="step-title">On expédie</div>
+      <div class="step-desc">Votre colis part par fret maritime groupé. Vous suivez chaque étape en temps réel : Commandé → Expédié → Disponible.</div>
+      <div class="step-detail">Fret maritime · 3 à 5 semaines · Douane incluse</div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-icon">🏪</div>
+      <div class="step-title">Vous venez chercher</div>
+      <div class="step-desc">Dès que c'est disponible, un SMS vous prévient avec le code de retrait. Vous récupérez votre colis au point relais de votre choix.</div>
+      <div class="step-detail">📍 Point relais Anjouan · Code SMS + QR code</div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACKING TIMELINE -->
+<section class="tracking-section" id="suivi">
+  <div class="section-eyebrow">📍 Suivi en direct</div>
+  <h2 class="section-title">Votre commande, étape par étape</h2>
+  <p class="section-sub">Chaque commande est traçable, étape par étape, jusqu'à votre point relais.</p>
+
+  <div class="tracking-timeline" style="margin-top:2.5rem;">
+    <div class="track-step">
+      <div class="track-dot done">✓</div>
+      <div class="track-label">Commandé</div>
+      <div class="track-sublabel">Paiement confirmé</div>
+    </div>
+    <div class="track-step">
+      <div class="track-dot active">🚢</div>
+      <div class="track-label">Expédié</div>
+      <div class="track-sublabel">En transit</div>
+    </div>
+    <div class="track-step">
+      <div class="track-dot">🏪</div>
+      <div class="track-label">Disponible</div>
+      <div class="track-sublabel">Point relais Anjouan</div>
+    </div>
+  </div>
+</section>
+
+<!-- VOYAGEZ LÉGER -->
+<section class="valise-section" id="voyagez-leger">
+  <div style="text-align:center;">
+    <div class="section-eyebrow">🛒 Commandez depuis chez vous</div>
+    <h2 class="section-title">Tout ce que vous voulez,<br>livré aux Comores</h2>
+    <p class="section-sub" style="font-style:italic;font-size:1rem;color:var(--primary);font-weight:600;">
+      « Sans Komerce, il était difficile de trouver ce que l'on voulait quand on le voulait ! »
+    </p>
+    <p class="section-sub" style="margin-top:.4rem;font-size:.9rem;">Komerce s'occupe de l'achat, du fret et de la livraison — sans que vous ayez à bouger de chez vous.</p>
+  </div>
+  <div class="valise-grid">
+    <div class="valise-card valise-before">
+      <div class="valise-badge">Sans Komerce</div>
+      <ul class="valise-list">
+        <li>🧳 Valise de 23 kg à moitié remplie</li>
+        <li>💸 Surpoids aérien à 10–15 €/kg</li>
+        <li>😟 Choix limité, achats en catastrophe</li>
+        <li>📦 Électroménager, gros volumes — impossible</li>
+        <li>🕐 Envoyer de l'argent, pas les objets voulus</li>
+      </ul>
+    </div>
+    <div class="valise-arrow">→</div>
+    <div class="valise-card valise-after">
+      <div class="valise-badge" style="background:var(--accent);color:#fff;">Avec Komerce</div>
+      <ul class="valise-list">
+        <li>🎁 Cadeaux — choisissez précisément ce qu'ils veulent</li>
+        <li>💍 Mariage — robes, wax, cérémonie : tout livré à temps</li>
+        <li>🤝 Soutien familial — envoyez ce dont ils ont besoin</li>
+        <li>🛒 Achat personnel — commandez pour vous-même, livré chez eux</li>
+        <li>📦 Gros volumes, électroménager — tout passe par le fret</li>
+      </ul>
+    </div>
+  </div>
+  <div class="valise-cta">
+    <p class="valise-cta-text">Un surpoids de 10 kg sur Air France coûte <strong>~120 €</strong>.<br>
+    Avec Komerce, ces 10 kg arrivent directement chez votre famille — <strong>pour moins cher, avec plus de choix.</strong></p>
+    <a href="#promos" class="btn-primary" style="display:inline-block;margin-top:1.2rem;">Commander maintenant</a>
+  </div>
+</section>
+
+<!-- BANDEAU PANIER PARTAGÉ (visible si URL contient ?panier=K-XXXX) -->
+<div class="shared-banner" id="shared-banner" style="display:none;">
+  <div class="shared-banner-icon">🛒</div>
+  <div class="shared-banner-text">
+    <div class="shared-banner-title">Panier partagé par <span id="shared-by-name">Ali</span></div>
+    <div class="shared-banner-sub">Ce panier a été préparé pour vous. Ajoutez, retirez des articles librement — c'est vous qui payez.</div>
+  </div>
+  <div class="shared-banner-badge" id="shared-code-badge">K-XXXX</div>
+</div>
+
+<!-- BOUTON PARTAGER CE PANIER -->
+<div class="share-cart-wrap">
+  <button class="share-cart-btn" onclick="openShareModal()">
+    🔗 Partager ce panier à un proche
+  </button>
+  <button class="gift-btn" onclick="openGiftModal()">
+    🎁 Offrir ce panier
+  </button>
+  <p style="font-size:.78rem;color:var(--muted);margin-top:.6rem;">
+    <strong>Partager</strong> : votre proche modifie et paie ·
+    <strong>Offrir</strong> : vous payez, votre proche récupère au relais
+  </p>
+</div>
+
+<!-- MODAL OFFRIR UN PANIER -->
+<div class="gift-modal" id="gift-modal">
+  <div class="gift-modal-box">
+    <div style="font-size:1.8rem;text-align:center;margin-bottom:.5rem;">🎁</div>
+    <div class="gift-modal-title" style="text-align:center;">Offrir ce panier</div>
+    <div class="gift-modal-sub" style="text-align:center;">
+      Vous payez l'intégralité du panier. Votre proche reçoit un SMS et récupère au relais sans rien débourser.
+    </div>
+    <div class="gift-field">
+      <label class="gift-label">Prénom du destinataire</label>
+      <input class="gift-input" type="text" id="gift-prenom" placeholder="ex : Fatima" />
+    </div>
+    <div class="gift-field">
+      <label class="gift-label">Numéro de téléphone (Comores)</label>
+      <input class="gift-input" type="tel" id="gift-tel" placeholder="ex : +269 321 xx xx" />
+    </div>
+    <button class="gift-confirm-btn" onclick="confirmGift()">Continuer vers le paiement →</button>
+    <div class="gift-note">
+      📱 Le destinataire recevra un SMS avec un code de retrait.<br>
+      Il n'a besoin ni de carte ni de mobile money.
+    </div>
+    <button class="gift-close-btn" onclick="closeGiftModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- MODAL CODE PANIER -->
+<div class="share-code-modal" id="share-modal">
+  <div class="share-modal-box">
+    <div style="font-size:2rem;margin-bottom:.5rem;">🔗</div>
+    <div style="font-weight:800;font-size:1.1rem;color:var(--primary);margin-bottom:.3rem;">Votre panier est prêt à partager</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem;">Envoyez ce code ou ce lien à la personne qui va payer</div>
+    <div class="share-modal-code" id="modal-code">K-7X4M</div>
+    <div class="share-modal-sub">⏱️ Valide 7 jours · Le payeur peut ajouter ou retirer des articles</div>
+    <button class="share-wa-btn" onclick="shareWhatsApp()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Envoyer via WhatsApp
+    </button>
+    <button class="share-close-btn" onclick="closeShareModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- DESTINATAIRE & POINT RELAIS -->
+<section class="destinataire-section" id="destinataire">
+  <div class="dest-container">
+    <div style="text-align:center; margin-bottom:2.5rem;">
+      <div class="section-eyebrow">🎁 Votre commande</div>
+      <h2 class="section-title">À qui souhaitez-vous envoyer ?</h2>
+      <p class="section-sub">Indiquez les coordonnées du destinataire à Anjouan. La commande sera disponible au point relais de son choix.</p>
+    </div>
+
+    <!-- Steps indicator -->
+    <div class="dest-steps" style="max-width:400px; margin:0 auto 2.5rem;">
+      <div class="dest-step">
+        <div class="dest-step-dot">✓</div>
+        <div class="dest-step-lbl">Produits</div>
+      </div>
+      <div class="dest-step">
+        <div class="dest-step-dot" style="background:var(--accent);">2</div>
+        <div class="dest-step-lbl">Destinataire</div>
+      </div>
+      <div class="dest-step">
+        <div class="dest-step-dot inactive">3</div>
+        <div class="dest-step-lbl inactive">Paiement</div>
+      </div>
+    </div>
+
+    <div class="dest-card">
+      <!-- Formulaire destinataire -->
+      <div class="dest-form-grid">
+        <div class="dest-field">
+          <label class="dest-label">Prénom du destinataire</label>
+          <input class="dest-input" type="text" placeholder="ex : Fatima" />
+        </div>
+        <div class="dest-field">
+          <label class="dest-label">Numéro de téléphone</label>
+          <input class="dest-input" type="tel" placeholder="ex : +269 321 xx xx" />
+        </div>
+        <div class="dest-field full">
+          <label class="dest-label">Quartier / Village (optionnel)</label>
+          <input class="dest-input" type="text" placeholder="ex : Mutsamudu, Domoni, Bambao..." />
+        </div>
+      </div>
+
+      <!-- Point relais -->
+      <span class="relais-label">📍 Choisir un point relais</span>
+      <div class="relais-grid">
+        <div class="relais-card selected" onclick="selectRelais(this)">
+          <span class="relais-check">✔</span>
+          <div class="relais-name">Relais Mutsamudu Centre</div>
+          <div class="relais-zone">Zone nord · Ouvert 8h–19h</div>
+        </div>
+        <div class="relais-card" onclick="selectRelais(this)">
+          <span class="relais-check">✔</span>
+          <div class="relais-name">Relais Domoni</div>
+          <div class="relais-zone">Zone sud · Ouvert 8h–18h</div>
+        </div>
+        <div class="relais-card" onclick="selectRelais(this)">
+          <span class="relais-check">✔</span>
+          <div class="relais-name">Relais Bambao</div>
+          <div class="relais-zone">Zone centre · Ouvert 8h–18h</div>
+        </div>
+        <div class="relais-card" onclick="selectRelais(this)">
+          <span class="relais-check">✔</span>
+          <div class="relais-name">Relais Sima</div>
+          <div class="relais-zone">Zone ouest · Ouvert 9h–18h</div>
+        </div>
+      </div>
+
+      <div class="dest-note">
+        ℹ️ Le destinataire reçoit un <strong>SMS avec son code de retrait</strong> dès que la commande est disponible au relais. Un SMS (WhatsApp en complément si disponible) peut être envoyé en complément si disponible. Il lui suffit de se présenter avec son code.
+      </div>
+
+      <button class="dest-submit">Continuer vers le paiement →</button>
+    </div>
+  </div>
+</section>
+
+<script>
+function selectRelais(el) {
+  document.querySelectorAll('.relais-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── PANIER PARTAGÉ ──────────────────────────────────────────────────────
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'K-';
+  for(let i=0;i<4;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+function openShareModal() {
+  const code = genCode();
+  document.getElementById('modal-code').textContent = code;
+  document.getElementById('share-modal').classList.add('open');
+}
+function closeShareModal() {
+  document.getElementById('share-modal').classList.remove('open');
+}
+function shareWhatsApp() {
+  const code = document.getElementById('modal-code').textContent;
+  const url = `https://komerce.km/panier/${code}`;
+  const msg = encodeURIComponent(`🛒 J'ai préparé un panier Komerce pour toi — tu peux voir les articles, en ajouter ou retirer, et choisir comment payer :\n${url}\n⏱️ Valide 7 jours`);
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+// ── OFFRIR UN PANIER ────────────────────────────────────────────────────
+function openGiftModal() { document.getElementById('gift-modal').classList.add('open'); }
+function closeGiftModal() { document.getElementById('gift-modal').classList.remove('open'); }
+function confirmGift() {
+  const prenom = document.getElementById('gift-prenom').value.trim();
+  const tel = document.getElementById('gift-tel').value.trim();
+  if(!prenom || !tel) { alert('Merci de renseigner le prénom et le numéro du destinataire.'); return; }
+  closeGiftModal();
+  alert(`✅ Panier offert à ${prenom} !\nIl recevra un SMS sur ${tel} avec son code de retrait une fois votre paiement confirmé.`);
+}
+
+// Détection panier partagé via URL ?panier=K-XXXX
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('panier');
+  if(code) {
+    document.getElementById('shared-banner').style.display = 'flex';
+    document.getElementById('shared-code-badge').textContent = code;
+    // Simuler un nom créateur (en production : API GET /cart/{code})
+    document.getElementById('shared-by-name').textContent = params.get('de') || 'votre proche';
+  }
+})();
+</script>
+
+<!-- FIDÉLISATION -->
+<section class="fidelite-section">
+  <div class="fidelite-inner">
+    <div class="fidelite-text">
+      <div class="section-eyebrow" style="color:var(--accent); margin-bottom:.8rem;">⭐ Programme fidélité</div>
+      <h2>Chaque envoi<br>vous rapproche d'une récompense</h2>
+      <p style="margin-top:1rem;">Plus vous commandez pour votre famille, plus Komerce vous récompense. Les détails du programme seront annoncés prochainement.</p>
+    </div>
+    <div class="fidelite-widget">
+      <div class="fw-label">Votre progression</div>
+      <div class="fw-steps">
+        <div class="fw-step done"></div>
+        <div class="fw-step done"></div>
+        <div class="fw-step active"></div>
+        <div class="fw-step"></div>
+        <div class="fw-step"></div>
+      </div>
+      <div class="fw-count"><strong>2</strong> commandes sur 5</div>
+      <div class="fw-reward">
+        <div class="fw-reward-icon">🎁</div>
+        <div class="fw-reward-text">Encore <strong>3 commandes</strong> pour débloquer votre première récompense</div>
+      </div>
+      <div class="fw-coming">Détail des récompenses annoncé prochainement</div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section class="trust-section">
+  <div style="text-align:center;">
+    <div class="section-eyebrow" style="color:var(--accent);">🤝 Nos engagements</div>
+    <h2 class="section-title" style="color:var(--white);">Pourquoi choisir Komerce ?</h2>
+  </div>
+  <div class="trust-grid">
+    <div class="trust-item">
+      <div class="trust-icon">🔒</div>
+      <div class="trust-title">Paiement 100% sécurisé</div>
+      <div class="trust-desc">2 modes : carte EUR via Stripe (PCI-DSS), ou cash au point relais sur code de référence (valide 24h).</div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon">📋</div>
+      <div class="trust-title">Prix tout inclus</div>
+      <div class="trust-desc">Fret, douane, livraison — aucune surprise. Le prix affiché est le prix final à Anjouan.</div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon">🔥</div>
+      <div class="trust-title">Sélection & promos exclusives</div>
+      <div class="trust-desc">Accès aux meilleures offres du moment — produits sélectionnés et vérifiés pour vous.</div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon">📍</div>
+      <div class="trust-title">Suivi en temps réel</div>
+      <div class="trust-desc">Chaque commande est tracée, étape par étape, jusqu'à votre point relais à Anjouan.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING PREVIEW -->
+<section class="pricing-section">
+  <div class="section-eyebrow">💰 Exemples de prix</div>
+  <h2 class="section-title">Prix livrés à Anjouan — tout inclus</h2>
+  <p class="section-sub">Fret, douane, transport relais compris. Aucun frais cachés.</p>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="cat-icon">📱</div>
+      <div class="cat-name">Téléphones &amp; Accessoires</div>
+      <div class="cat-desc">Samsung, Itel, Realme milieu de gamme</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Samsung A15 128Go</div>
+        <div class="price-value">57 600 <small>KMF</small></div>
+        <div class="price-sub">Promo −35% · Produit sélectionné et vérifié</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card featured">
+      <div class="cat-icon">👗</div>
+      <div class="cat-name">Vêtements, Wax &amp; Dentelles</div>
+      <div class="cat-desc">Tissus Wax, dentelles, abayas africanisées, tenues cérémonie</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Lot 3 abayas brodées</div>
+        <div class="price-value kmf-price" data-kmf="31648">31 648 <small>KMF</small></div>
+        <div class="price-sub">Promo −40% · Produit sélectionné et vérifié</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">🏠</div>
+      <div class="cat-name">Électroménager Compact</div>
+      <div class="cat-desc">Fer, mixeur, mini-frigo, plaque, sèche-cheveux</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Set Tefal 5 pièces</div>
+        <div class="price-value kmf-price" data-kmf="64471">64 471 <small>KMF</small></div>
+        <div class="price-sub">Promo −22% · Produit sélectionné et vérifié</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">💄</div>
+      <div class="cat-name">Cosmétiques &amp; Parfums</div>
+      <div class="cat-desc">Soins peau, parfums importés UAE, produits re-marqués</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Coffret parfum 100ml</div>
+        <div class="price-value kmf-price" data-kmf="22193">22 193 <small>KMF</small></div>
+        <div class="price-sub">Prix livré tout inclus · fret + douane + relais</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">💍</div>
+      <div class="cat-name">Mariage &amp; Cadeaux de Fête</div>
+      <div class="cat-desc">Vaisselle, décor, bijoux fantaisie, cadeaux de cérémonie</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Service vaisselle 12 pièces</div>
+        <div class="price-value kmf-price" data-kmf="52186">52 186 <small>KMF</small></div>
+        <div class="price-sub">Prix livré tout inclus · fret + douane + relais</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+    <div class="pricing-card">
+      <div class="cat-icon">🧸</div>
+      <div class="cat-name">Enfants</div>
+      <div class="cat-desc">Jouets, vêtements enfants, accessoires scolaires</div>
+      <div class="price-example">
+        <div class="price-label">Exemple — Lot jouets éducatifs</div>
+        <div class="price-value kmf-price" data-kmf="25648">25 648 <small>KMF</small></div>
+        <div class="price-sub">Prix livré tout inclus · fret + douane + relais</div>
+      </div>
+      <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="logo">Ko<span>merce</span></div>
+      <div class="footer-tagline">Tout ce que vous voulez, livré aux Comores sans bouger de chez vous.</div>
+    </div>
+    <div class="footer-links">
+      <strong>Acheter</strong>
+      <a href="#promos">Promos en cours</a>
+      <a href="#catalogue">Catalogue complet</a>
+      <a href="#commander">Passer une commande</a>
+    </div>
+    <div class="footer-links">
+      <strong>Aide</strong>
+      <a href="#comment">Comment ça marche</a>
+      <a href="#suivi">Suivre ma commande</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="footer-links">
+      <strong>Komerce</strong>
+      <a href="#about">À propos</a>
+      <a href="#contact">Nous contacter</a>
+      <a href="#app">Application mobile</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Komerce — Premier Marketplace des Comores</span>
+    <span>🏝️ Komerce · Livraison aux Comores</span>
+    <a href="/admin.html" style="color:rgba(255,255,255,0.2); text-decoration:none; font-size:.72rem; letter-spacing:.3px;" title="Espace administration">⚙️</a>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     DÉTECTION DEVISE AUTOMATIQUE PAR TIMEZONE
+     Taux MVP (révision mensuelle) : 1 EUR = 492 KMF · 1 AED = 138 KMF
+     ═══════════════════════════════════════════════════ -->
+<style>
+  #currency-badge {
+    position: fixed; bottom: 1.2rem; left: 1.2rem; z-index: 999;
+    background: #1a3a5c; color: #fff; border-radius: 2rem;
+    padding: .45rem 1rem; font-size: .78rem; font-family: Arial, sans-serif;
+    display: flex; align-items: center; gap: .5rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2); cursor: default;
+    animation: slideUp .4s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  #currency-badge select {
+    background: transparent; border: 1px solid rgba(255,255,255,.4);
+    color: #fff; border-radius: 1rem; padding: .15rem .5rem;
+    font-size: .78rem; cursor: pointer; outline: none;
+  }
+  #currency-badge select option { background: #1a3a5c; }
+  .kmf-price .price-secondary { font-size: .72em; color: #64748b; margin-top: .1rem; display: block; }
+</style>
+
+<div id="currency-badge">
+  <span id="curr-flag">🌍</span>
+  <span>Prix en</span>
+  <select id="curr-select" onchange="applyCurrency(this.value)">
+    <option value="EUR">EUR €</option>
+    <option value="KMF">KMF</option>
+    <option value="AED">AED د.إ</option>
+  </select>
+</div>
+
+<script>
+(function() {
+  // ── Taux MVP (révision mensuelle) ──────────────────────
+  // Pricing v6.4 — Formule complète 16 étapes
+  // Taux MVP : 1 AED = 138 KMF · 1 EUR = 492 KMF · Fret 180 EUR/m3
+  // Hub Dubai 7000 AED/mois absorbé dans marge 12% (Option B)
+  const RATES = { EUR: 492, AED: 138, KMF: 1 };
+  const SYMBOLS = { EUR: '€', AED: 'AED', KMF: 'KMF' };
+  const FLAGS = { EUR: '🇪🇺', AED: '🇦🇪', KMF: '🇰🇲' };
+
+  // ── Détection devise par timezone ──────────────────────
+  function detectCurrency() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (/Comoro|Mayotte/i.test(tz))    return 'KMF';
+    if (/Dubai|Abu_Dhabi|Muscat/i.test(tz)) return 'AED';
+    // Europe, Amérique, Asie hors Golfe → EUR par défaut
+    return 'EUR';
+  }
+
+  // ── Formatage ──────────────────────────────────────────
+  function fmt(kmf, currency) {
+    const rate = RATES[currency];
+    const val  = Math.round(kmf / rate);
+    if (currency === 'KMF') return val.toLocaleString('fr-FR') + ' KMF';
+    if (currency === 'EUR') return val.toLocaleString('fr-FR') + ' €';
+    if (currency === 'AED') return val.toLocaleString('fr-FR') + ' AED';
+  }
+
+  // ── Application aux éléments prix ─────────────────────
+  window.applyCurrency = function(currency) {
+    document.querySelectorAll('.kmf-price').forEach(el => {
+      const kmf = parseInt(el.dataset.kmf, 10);
+      if (!kmf) return;
+      const main = fmt(kmf, currency);
+      const secondary = currency !== 'KMF'
+        ? `<span class="price-secondary">≈ ${kmf.toLocaleString('fr-FR')} KMF</span>` : '';
+      // Préserver le libellé "livré à Anjouan" pour les promo cards
+      if (el.classList.contains('promo-price-kmf')) {
+        el.innerHTML = `${main} livré${secondary}`;
+      } else {
+        // price-value dans la section pricing
+        const [intPart, ...rest] = main.split(' ');
+        el.innerHTML = `${main}${secondary}`;
+      }
+    });
+    // Badge
+    document.getElementById('curr-flag').textContent = FLAGS[currency] || '🌍';
+    document.getElementById('curr-select').value = currency;
+    // Mémoriser le choix
+    try { localStorage.setItem('kmrc_currency', currency); } catch(e) {}
+  };
+
+  // ── Initialisation ─────────────────────────────────────
+  const saved = (function() { try { return localStorage.getItem('kmrc_currency'); } catch(e) { return null; } })();
+  const detected = detectCurrency();
+  const initial = saved || detected;
+  applyCurrency(initial);
+})();
+</script>
+
+<script src="/komerce-api.js"></script>
+</body>
+</html>
