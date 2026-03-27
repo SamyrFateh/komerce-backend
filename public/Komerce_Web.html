@@ -495,7 +495,7 @@
   <div class="promo-grid">
 
     <!-- Promo Card 1 -->
-    <div class="promo-card">
+    <div class="promo-card" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
       <div class="promo-card-img">
         📱
         <span class="promo-badge-tag">−35%</span>
@@ -505,33 +505,51 @@
         <div class="promo-card-cat">📱 Téléphones &amp; Accessoires</div>
         <div class="promo-price-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 28 mars</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;">
-          <button class="btn-order">🛒 Commander</button>
-          <button class="btn-fav">🤍</button>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Promo Card 2 -->
-    <div class="promo-card">
+    <div class="promo-card" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
       <div class="promo-card-img">
         👗
         <span class="promo-badge-tag">−40%</span>
+        <div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
+          color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
+          ✂️ Tailles dispo
+        </div>
       </div>
       <div class="promo-card-body">
         <div class="promo-card-name">Lot 3 abayas brodées — sélection exclus.</div>
         <div class="promo-card-cat">👗 Vêtements &amp; Tissu</div>
         <div class="promo-price-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 31 mars</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;">
-          <button class="btn-order">🛒 Commander</button>
-          <button class="btn-fav">🤍</button>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Promo Card 3 -->
-    <div class="promo-card">
+    <div class="promo-card" data-product='{"id":"static-3","name":"Écouteurs Sony WH-CH520","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
       <div class="promo-card-img">
         🎧
         <span class="promo-badge-tag">−28%</span>
@@ -541,15 +559,22 @@
         <div class="promo-card-cat">🎧 Électronique léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Stock limité — 12 unités restantes</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;">
-          <button class="btn-order">🛒 Commander</button>
-          <button class="btn-fav">🤍</button>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Promo Card 4 -->
-    <div class="promo-card">
+    <div class="promo-card" data-product='{"id":"static-4","name":"Set cuisine Tefal 5 pièces","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
       <div class="promo-card-img">
         🍳
         <span class="promo-badge-tag">−22%</span>
@@ -559,9 +584,16 @@
         <div class="promo-card-cat">🏠 Électroménager léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 30 mars</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;">
-          <button class="btn-order">🛒 Commander</button>
-          <button class="btn-fav">🤍</button>
+        <div class="promo-card-footer" style="margin-top:.8rem;display:flex;gap:.5rem;">
+          <button class="btn-order" style="flex:1;"
+            onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+            🛒 Ajouter
+          </button>
+          <button title="Commander maintenant"
+            onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+            style="padding:.5rem .7rem;background:none;border:2px solid #1a3a5c;border-radius:8px;cursor:pointer;">
+            ⚡
+          </button>
         </div>
       </div>
     </div>

@@ -1,347 +1,635 @@
 /**
- * KOMERCE — Routes commandes
+ * KOMERCE — Commandes v7.1
  *
- * POST /api/orders                    → créer une commande
- * GET  /api/orders/:reference         → détail commande (client)
- * GET  /api/orders/:reference/tracking → suivi logistique public
- * GET  /api/orders                    → liste toutes les commandes (admin)
- * PUT  /api/orders/:reference/cancel  → annuler une commande
+ * POST /api/orders               → créer une commande (client authentifié)
+ * GET  /api/orders               → liste des commandes du client connecté
+ * GET  /api/orders/:ref          → détail + suivi public par référence
+ * PATCH /api/orders/:id/status   → changer statut (admin/agent_hub/agent_relais)
+ * PATCH /api/orders/:id/cost     → saisir le coût réel (admin) — déclenche marge réelle
+ * POST  /api/scans               → scanner un colis (agent_hub ou relais)
+ * GET  /api/orders/:id/history   → historique statuts de la commande
  */
 
 const express = require('express');
 const router  = express.Router();
+const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { generateOrderRef, generateCashCode, generatePickupCode } = require('../utils/reference');
 const { sendSMS } = require('../utils/sms');
-const QRCode = require('qrcode');
 
-// ── POST /api/orders ──────────────────────────────────────────────────────────
-// Crée une commande à partir d'un panier ou d'une liste d'articles.
-// Body : { items, recipient_id, relais_id, payment_mode, currency }
+// ─── Constantes v7.1 ─────────────────────────────────────────────────────────
+
+const ORDER_STATUSES = [
+  'ordered',
+  'purchasing',
+  'preparation',
+  'shipped',
+  'transit_comores',
+  'available',
+  'collected',
+  'cancelled',
+];
+
+// Pré-confection tailles standards + retouches locales uniquement
+// (pas de sur-mesure ni broderie — ajustements locaux seulement)
+const CONFECTION_TYPES = [
+  'aucun',
+  'retouche_locale',  // taille standard commandée, ajustée par artisan local
+];
+
+const STATUS_SMS = {
+  ordered:          (ref) => `Komerce : Commande ${ref} confirmée ! Nous achetons votre article dans les 48h.`,
+  purchasing:       (ref) => `Komerce : Commande ${ref} — nous achetons votre article actuellement.`,
+  preparation:      (ref) => `Komerce : Commande ${ref} — colis en cours de préparation au hub.`,
+  shipped:          (ref) => `Komerce : Commande ${ref} — votre colis a pris la mer ! Arrivée estimée 3–5 semaines.`,
+  transit_comores:  (ref) => `Komerce : Commande ${ref} — colis arrivé aux Comores, en cours de dédouanement.`,
+  available:        (ref, relais) => `Komerce : Commande ${ref} disponible au relais ${relais || ''}. Venez le récupérer !`,
+  collected:        (ref) => `Komerce : Commande ${ref} remise. Merci de votre confiance ! 🎉`,
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function generateRef() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return 'K' + Array.from({ length: 6 }, () =>
+    chars[Math.floor(Math.random() * chars.length)]
+  ).join('');
+}
+
+async function getUniqueRef() {
+  let ref, exists;
+  do {
+    ref = generateRef();
+    const { rows } = await db.query('SELECT id FROM orders WHERE reference = $1', [ref]);
+    exists = rows.length > 0;
+  } while (exists);
+  return ref;
+}
+
+// ─── POST /api/orders ────────────────────────────────────────────────────────
+
 router.post('/', authenticate, async (req, res) => {
-  const client = await db.pool.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
-    const { items, recipient_id, relais_id, payment_mode, currency } = req.body;
+    const {
+      product_id,
+      quantity              = 1,
+      relais_id,
+      payment_mode,           // 'stripe' | 'cash_relais'
+      stripe_payment_intent,
+      recipient_name,
+      recipient_phone,
+      is_gift               = false,
+      gift_message,
+      // Couture v7.1
+      confection_type       = 'aucun',
+      confection_instructions,
+      confection_delay_days,
+      // Diaspora info
+      sender_name,
+      sender_phone,
+    } = req.body;
 
     // Validation
-    if (!items?.length || !recipient_id || !relais_id || !payment_mode) {
-      return res.status(400).json({ error: 'items, recipient_id, relais_id et payment_mode sont requis' });
+    if (!product_id) {
+      return res.status(400).json({ error: 'product_id obligatoire' });
     }
-    if (!['stripe_eur', 'cash_relais'].includes(payment_mode)) {
-      return res.status(400).json({ error: 'payment_mode invalide' });
+    if (!['stripe', 'cash_relais'].includes(payment_mode)) {
+      return res.status(400).json({ error: 'payment_mode invalide (stripe | cash_relais)' });
+    }
+    if (!CONFECTION_TYPES.includes(confection_type)) {
+      return res.status(400).json({ error: `confection_type invalide. Valeurs : ${CONFECTION_TYPES.join(', ')}` });
     }
 
-    // Récupérer les produits et calculer le total
-    const productIds = items.map(i => i.product_id);
-    const { rows: products } = await client.query(
-      'SELECT id, name, price_kmf, stock FROM products WHERE id = ANY($1) AND is_active = TRUE',
-      [productIds]
+    // Récupérer le produit
+    const { rows: [product] } = await client.query(
+      'SELECT * FROM products WHERE id = $1 AND is_active = TRUE',
+      [product_id]
     );
-
-    const productMap = {};
-    for (const p of products) productMap[p.id] = p;
-
-    let total_kmf = 0;
-    for (const item of items) {
-      const product = productMap[item.product_id];
-      if (!product) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ error: `Produit ${item.product_id} introuvable` });
-      }
-      if (product.stock < item.quantity) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ error: `Stock insuffisant pour ${product.name}` });
-      }
-      total_kmf += product.price_kmf * item.quantity;
+    if (!product) {
+      return res.status(404).json({ error: 'Produit introuvable ou inactif' });
     }
 
-    // Récupérer le taux de change actuel
-    const { rows: rates } = await client.query(
-      'SELECT * FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
-    );
-    const rate = rates[0] || { eur_kmf: 492, aed_kmf: 138 };
-    const total_eur = (total_kmf / rate.eur_kmf).toFixed(2);
-    const total_aed = (total_kmf / rate.aed_kmf).toFixed(2);
+    // Vérifier stock
+    if (product.stock !== null && product.stock < quantity) {
+      return res.status(409).json({
+        error: `Stock insuffisant — disponible : ${product.stock}`,
+        available_stock: product.stock,
+      });
+    }
 
-    // Générer les codes
-    const reference    = generateOrderRef();
-    const cash_ref     = payment_mode === 'cash_relais' ? generateCashCode()  : null;
-    const pickup_code  = generatePickupCode();
-
-    // Générer le QR code cash relais (contient la référence + code cash)
-    let cash_qr_data = null;
-    if (payment_mode === 'cash_relais') {
-      cash_qr_data = await QRCode.toDataURL(
-        JSON.stringify({ ref: reference, code: cash_ref })
+    // Récupérer relais
+    let relais = null;
+    if (relais_id) {
+      const { rows: [r] } = await client.query(
+        'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE',
+        [relais_id]
       );
+      if (!r) return res.status(404).json({ error: 'Relais introuvable' });
+      relais = r;
+    } else {
+      // Assigner le premier relais disponible si aucun fourni
+      const { rows: [r] } = await client.query(
+        `SELECT * FROM relais WHERE is_active = TRUE ORDER BY id LIMIT 1`
+      );
+      relais = r;
     }
 
-    // ── Statut initial selon mode de paiement ────────────────────────────────
-    // Cash relais : en attente de paiement — le stock n'est PAS encore réservé
-    // Stripe/PayPal : confirmée immédiatement après paiement front
-    const initialStatus        = payment_mode === 'cash_relais' ? 'confirmed' : 'confirmed';
-    const initialPaymentStatus = payment_mode === 'cash_relais' ? 'pending'   : 'pending';
-    // Note spec v6.4 : le flux cash relais est :
-    //   created (confirmed + payment pending) → client paie au relais
-    //   → POST /api/payments/cash/confirm → payment_status = paid → status = paid
-    //   → agent Dubai reçoit le bon → purchasing → packing → shipped...
-    // Le STOCK est décrémenté uniquement à la confirmation du paiement cash.
-    // Pour Stripe, le stock est décrémenté ici car le paiement est immédiat.
+    // Calculer montants
+    const unit_price_kmf = product.price_kmf;
+    const total_kmf      = unit_price_kmf * quantity;
+
+    // Estimer coût (sourcing + fret + douane estimée)
+    const customs_rate   = product.customs_risk_coeff || 1.0;
+    const fret_per_kg    = 65; // KMF/kg estimé
+    const fret_kmf       = (product.weight_kg || 0.5) * quantity * fret_per_kg;
+    const customs_base   = (product.price_aed || 0) * 138 * quantity; // en KMF
+    const customs_est    = customs_base * 0.20 * customs_rate;        // taux moyen 20%
+    const cost_estimated = (product.price_aed || 0) * 138 * quantity + fret_kmf + customs_est;
+    const margin_est     = total_kmf > 0
+      ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
+      : 0;
+
+    // Générer référence unique
+    const reference = await getUniqueRef();
+
+    // Code cash si paiement relais
+    const cash_ref_code = payment_mode === 'cash_relais'
+      ? Math.floor(100000 + Math.random() * 900000).toString()
+      : null;
 
     // Créer la commande
     const { rows: [order] } = await client.query(
-      `INSERT INTO orders
-        (reference, user_id, recipient_id, relais_id,
-         total_kmf, total_eur, total_aed,
-         payment_mode, payment_status,
-         cash_ref_code, cash_qr_data, pickup_code, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-       RETURNING *`,
-      [reference, req.user.id, recipient_id, relais_id,
-       total_kmf, total_eur, total_aed,
-       payment_mode, initialPaymentStatus,
-       cash_ref, cash_qr_data, pickup_code, initialStatus]
+      `INSERT INTO orders (
+         id, reference, user_id, product_id, quantity,
+         unit_price_kmf, total_kmf,
+         relais_id,
+         payment_mode, payment_status, stripe_payment_intent,
+         cash_ref_code,
+         recipient_name, recipient_phone,
+         sender_name, sender_phone,
+         is_gift, gift_message,
+         confection_type, confection_instructions, confection_delay_days,
+         cost_estimated_kmf, margin_estimated_pct,
+         status, ordered_at
+       ) VALUES (
+         $1,$2,$3,$4,$5,
+         $6,$7,
+         $8,
+         $9,$10,$11,
+         $12,
+         $13,$14,
+         $15,$16,
+         $17,$18,
+         $19,$20,$21,
+         $22,$23,
+         'ordered', NOW()
+       ) RETURNING *`,
+      [
+        uuidv4(), reference, req.user.id, product_id, quantity,
+        unit_price_kmf, total_kmf,
+        relais ? relais.id : null,
+        payment_mode,
+        payment_mode === 'stripe' ? 'paid' : 'pending',
+        stripe_payment_intent || null,
+        cash_ref_code,
+        recipient_name || req.user.full_name,
+        recipient_phone || req.user.phone,
+        sender_name || null,
+        sender_phone || null,
+        is_gift,
+        gift_message || null,
+        confection_type,
+        confection_instructions || null,
+        confection_delay_days || null,
+        Math.round(cost_estimated),
+        Number(margin_est),
+      ]
     );
 
-    // Créer les lignes de commande
-    for (const item of items) {
-      const product = productMap[item.product_id];
-      const scan_code = `KOM-ITEM-${order.id.slice(0,4).toUpperCase()}${item.product_id.slice(0,4).toUpperCase()}`;
-
-      await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf, scan_code)
-         VALUES ($1,$2,$3,$4,$5)`,
-        [order.id, item.product_id, item.quantity, product.price_kmf, scan_code]
-      );
-
-      // Décrémenter le stock uniquement pour Stripe (paiement immédiat)
-      // Pour cash relais : décrémenté dans POST /payments/cash/confirm
-      if (payment_mode !== 'cash_relais') {
-        await client.query(
-          'UPDATE products SET stock = stock - $1 WHERE id = $2',
-          [item.quantity, item.product_id]
-        );
-      }
-    }
-
-    // Historique statut initial
-    const histNote = payment_mode === 'cash_relais'
-      ? 'Commande créée — en attente paiement espèces au relais'
-      : 'Commande créée — paiement en ligne en cours';
+    // Historiser le statut initial
     await client.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by, note)
-       VALUES ($1,$2,$3,$4)`,
-      [order.id, initialStatus, req.user.id, histNote]
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, 'ordered', 'Commande créée', $2)`,
+      [order.id, req.user.id]
     );
+
+    // Décrémenter stock
+    if (product.stock !== null) {
+      await client.query(
+        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+        [quantity, product_id]
+      );
+    }
 
     await client.query('COMMIT');
 
-    // SMS selon mode paiement
-    if (req.user.phone) {
-      const msg = payment_mode === 'cash_relais'
-        ? `Komerce · Commande ${reference} créée. Rendez-vous au relais avec le code : ${cash_ref}. Total à payer : ${total_kmf.toLocaleString('fr-FR')} KMF. Délai : 24h.`
-        : `Komerce · Commande ${reference} en cours. Total : ${total_eur} EUR. Suivi sur komerce.km`;
-      await sendSMS(req.user.phone, msg, 'confirmation', order.id);
+    // SMS de confirmation (async — ne bloque pas la réponse)
+    const smsPhone = sender_phone || req.user.phone;
+    if (smsPhone) {
+      sendSMS(
+        smsPhone,
+        STATUS_SMS.ordered(reference),
+        'confirmation',
+        order.id
+      ).catch(console.error);
     }
 
     res.status(201).json({
-      reference,
-      order_id:      order.id,
-      total_kmf,
-      total_eur,
-      payment_mode,
-      cash_ref_code: cash_ref,
-      cash_qr_data,
-      status:        initialStatus,
-      payment_status: initialPaymentStatus,
-      message: payment_mode === 'cash_relais'
-        ? `Présentez-vous au relais avec le code ${cash_ref} pour valider et payer votre commande.`
-        : 'Finalisez le paiement en ligne pour confirmer votre commande.',
+      order: {
+        id:             order.id,
+        reference:      order.reference,
+        status:         order.status,
+        total_kmf:      order.total_kmf,
+        payment_mode:   order.payment_mode,
+        payment_status: order.payment_status,
+        cash_ref_code:  order.cash_ref_code,
+        confection_type: order.confection_type,
+        relais:         relais ? { id: relais.id, name: relais.name, address: relais.address } : null,
+        created_at:     order.created_at,
+      },
     });
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err);
-    res.status(500).json({ error: 'Erreur lors de la création de la commande' });
+    console.error('Create order error:', err.message);
+    res.status(500).json({ error: 'Erreur création commande' });
   } finally {
     client.release();
   }
 });
 
-// ── GET /api/orders/:reference ────────────────────────────────────────────────
-// Détail complet d'une commande (client authentifié ou admin)
-router.get('/:reference', authenticate, async (req, res) => {
+// ─── GET /api/orders — liste client ──────────────────────────────────────────
+
+router.get('/', authenticate, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT o.*,
-              r.name  AS relais_name,
-              r.phone AS relais_phone,
-              r.address AS relais_address,
-              rc.full_name AS recipient_name,
-              rc.phone     AS recipient_phone
-       FROM orders o
-       LEFT JOIN relais    r  ON r.id  = o.relais_id
-       LEFT JOIN recipients rc ON rc.id = o.recipient_id
-       WHERE o.reference = $1`,
-      [req.params.reference]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
+    const { status, limit = 20, offset = 0 } = req.query;
 
-    const order = rows[0];
+    const conditions = ['o.user_id = $1'];
+    const params     = [req.user.id];
+    let   pi         = 2;
 
-    // Sécurité : un client ne peut voir que ses propres commandes
-    if (req.user.role === 'client' && order.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Accès refusé' });
+    if (status) {
+      conditions.push(`o.status = $${pi++}`);
+      params.push(status);
     }
 
-    // Récupérer les articles
-    const { rows: items } = await db.query(
-      `SELECT oi.*, p.name, p.emoji, p.category
-       FROM order_items oi
-       JOIN products p ON p.id = oi.product_id
-       WHERE oi.order_id = $1`,
-      [order.id]
-    );
+    const where = conditions.join(' AND ');
 
-    res.json({ ...order, items });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// ── GET /api/orders/:reference/tracking ──────────────────────────────────────
-// Suivi logistique public (pas besoin d'être connecté — on vérifie juste la ref)
-// Utilisé par l'interface client pour afficher la timeline
-router.get('/:reference/tracking', async (req, res) => {
-  try {
-    const { rows: orders } = await db.query(
-      `SELECT o.id, o.reference, o.status, o.relais_id,
-              o.shipped_at, o.available_at, o.collected_at,
-              r.name AS relais_name, r.address AS relais_address
+    const { rows } = await db.query(
+      `SELECT
+         o.id, o.reference, o.status, o.total_kmf,
+         o.payment_mode, o.payment_status,
+         o.confection_type,
+         o.created_at,
+         p.name AS product_name, p.image_url,
+         r.name AS relais_name
        FROM orders o
-       LEFT JOIN relais r ON r.id = o.relais_id
-       WHERE o.reference = $1`,
-      [req.params.reference]
-    );
-    if (!orders.length) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const order = orders[0];
-
-    // Récupérer l'historique des scans
-    const { rows: history } = await db.query(
-      `SELECT s.step, s.location, s.created_at, s.is_anomaly
-       FROM scans s
-       WHERE s.order_id = $1
-       ORDER BY s.created_at ASC`,
-      [order.id]
+       LEFT JOIN products p ON p.id = o.product_id
+       LEFT JOIN relais   r ON r.id = o.relais_id
+       WHERE ${where}
+       ORDER BY o.created_at DESC
+       LIMIT $${pi} OFFSET $${pi + 1}`,
+      [...params, Number(limit), Number(offset)]
     );
 
-    // Labels lisibles par étape
-    const stepLabels = {
-      preparation:     'Préparé',
-      shipped:         'Expédié',
-      relais_received: 'Disponible au relais',
-      collected:       'Récupéré',
-    };
-
-    // Prochaine étape attendue
-    const chain  = ['preparation', 'shipped', 'relais_received', 'collected'];
-    const done   = history.map(h => h.step);
-    const lastDone = done[done.length - 1];
-    const nextIdx  = chain.indexOf(lastDone) + 1;
-    const nextStep = nextIdx < chain.length ? chain[nextIdx] : null;
-
-    res.json({
-      reference:  order.reference,
-      status:     order.status,
-      relais:     order.relais_name,
-      address:    order.relais_address,
-      timeline:   history.map(h => ({
-        step:     h.step,
-        label:    stepLabels[h.step] || h.step,
-        at:       h.created_at,
-        location: h.location,
-        anomaly:  h.is_anomaly,
-      })),
-      next: nextStep ? { step: nextStep, label: stepLabels[nextStep] } : null,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// ── GET /api/orders ───────────────────────────────────────────────────────────
-// Liste toutes les commandes — admin uniquement
-// Query params : ?status=shipped | ?payment_mode=cash_relais
-router.get('/', authenticate, requireRole(['admin']), async (req, res) => {
-  try {
-    const { status, payment_mode } = req.query;
-    let sql    = `SELECT o.*, r.name AS relais_name, rc.full_name AS recipient_name
-                  FROM orders o
-                  LEFT JOIN relais     r  ON r.id  = o.relais_id
-                  LEFT JOIN recipients rc ON rc.id = o.recipient_id
-                  WHERE 1=1`;
-    const params = [];
-    let idx = 1;
-
-    if (status)       { sql += ` AND o.status = $${idx++}`;       params.push(status); }
-    if (payment_mode) { sql += ` AND o.payment_mode = $${idx++}`; params.push(payment_mode); }
-
-    sql += ' ORDER BY o.created_at DESC LIMIT 100';
-
-    const { rows } = await db.query(sql, params);
     res.json(rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('List orders error:', err.message);
+    res.status(500).json({ error: 'Erreur liste commandes' });
   }
 });
 
-// ── PUT /api/orders/:reference/cancel ────────────────────────────────────────
-// Annuler une commande (client ou admin, avant expédition seulement)
-router.put('/:reference/cancel', authenticate, async (req, res) => {
+// ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
+
+router.get('/:ref', async (req, res) => {
+  try {
+    const isUuid = /^[0-9a-f-]{36}$/.test(req.params.ref);
+    const field  = isUuid ? 'o.id' : 'o.reference';
+
+    const { rows: [order] } = await db.query(
+      `SELECT
+         o.*,
+         p.name      AS product_name,
+         p.image_url AS product_image,
+         p.category  AS product_category,
+         p.has_couture,
+         r.name      AS relais_name,
+         r.address   AS relais_address,
+         r.phone     AS relais_phone,
+         r.hours     AS relais_hours,
+         r.zone      AS relais_zone
+       FROM orders  o
+       LEFT JOIN products p ON p.id = o.product_id
+       LEFT JOIN relais   r ON r.id = o.relais_id
+       WHERE ${field} = $1`,
+      [req.params.ref]
+    );
+
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    // Historique des statuts
+    const { rows: history } = await db.query(
+      `SELECT status, note, created_at
+       FROM order_status_history
+       WHERE order_id = $1
+       ORDER BY created_at ASC`,
+      [order.id]
+    );
+
+    // Masquer les champs sensibles si accès public (pas de token)
+    const safeOrder = {
+      id:               order.id,
+      reference:        order.reference,
+      status:           order.status,
+      total_kmf:        order.total_kmf,
+      payment_mode:     order.payment_mode,
+      payment_status:   order.payment_status,
+      cash_ref_code:    order.cash_ref_code,
+      confection_type:  order.confection_type,
+      ordered_at:       order.ordered_at,
+      purchasing_at:    order.purchasing_at,
+      shipped_at:       order.shipped_at,
+      transit_comores_at: order.transit_comores_at,
+      available_at:     order.available_at,
+      collected_at:     order.collected_at,
+      product: {
+        name:     order.product_name,
+        image:    order.product_image,
+        category: order.product_category,
+      },
+      relais: order.relais_name ? {
+        name:    order.relais_name,
+        address: order.relais_address,
+        phone:   order.relais_phone,
+        hours:   order.relais_hours,
+        zone:    order.relais_zone,
+      } : null,
+      history,
+    };
+
+    res.json(safeOrder);
+
+  } catch (err) {
+    console.error('Get order error:', err.message);
+    res.status(500).json({ error: 'Erreur récupération commande' });
+  }
+});
+
+// ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
+
+router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { status, note } = req.body;
+
+    if (!ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({
+        error: `Statut invalide. Valeurs : ${ORDER_STATUSES.join(', ')}`,
+      });
+    }
+
+    // Récupérer commande actuelle
+    const { rows: [order] } = await client.query(
+      `SELECT o.*, r.name AS relais_name, u.phone AS user_phone
+       FROM orders  o
+       LEFT JOIN relais r ON r.id = o.relais_id
+       LEFT JOIN users  u ON u.id = o.user_id
+       WHERE o.id = $1`,
+      [req.params.id]
+    );
+
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    // Construire la mise à jour du timestamp correspondant
+    const tsField = {
+      ordered:          'ordered_at',
+      purchasing:       'purchasing_at',
+      preparation:      null,
+      shipped:          'shipped_at',
+      transit_comores:  'transit_comores_at',
+      available:        'available_at',
+      collected:        'collected_at',
+      cancelled:        'cancelled_at',
+    }[status];
+
+    const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
+
+    await client.query(
+      `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW()
+       WHERE id = $2`,
+      [status, order.id]
+    );
+
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [order.id, status, note || null, req.user.id]
+    );
+
+    await client.query('COMMIT');
+
+    // SMS notification
+    const smsPhone = order.sender_phone || order.user_phone;
+    if (smsPhone && STATUS_SMS[status]) {
+      sendSMS(
+        smsPhone,
+        STATUS_SMS[status](order.reference, order.relais_name),
+        status,
+        order.id
+      ).catch(console.error);
+    }
+
+    res.json({ success: true, status });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Update status error:', err.message);
+    res.status(500).json({ error: 'Erreur mise à jour statut' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── PATCH /api/orders/:id/cost — saisie coût réel (admin) ───────────────────
+
+router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res) => {
+  try {
+    const {
+      cost_real_kmf,
+      customs_real_kmf,
+      customs_agent_id,
+      customs_notes,
+    } = req.body;
+
+    if (!cost_real_kmf) {
+      return res.status(400).json({ error: 'cost_real_kmf obligatoire' });
+    }
+
+    const { rows: [order] } = await db.query(
+      'SELECT * FROM orders WHERE id = $1', [req.params.id]
+    );
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    // Calculer delta douane
+    const est = order.customs_estimated_kmf || 0;
+    const delta = est > 0
+      ? ((customs_real_kmf - est) / est * 100).toFixed(2)
+      : null;
+
+    await db.query(
+      `UPDATE orders SET
+         cost_real_kmf       = $1,
+         cost_delta_pct      = $2,
+         cost_closed_at      = NOW(),
+         updated_at          = NOW()
+       WHERE id = $3`,
+      [cost_real_kmf, delta, order.id]
+    );
+
+    // Créer entrée customs_history
+    if (customs_real_kmf) {
+      await db.query(
+        `INSERT INTO customs_history
+           (order_id, customs_estimated_kmf, customs_real_kmf,
+            customs_delta_pct, customs_agent_id, notes)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [
+          order.id,
+          order.customs_estimated_kmf || null,
+          customs_real_kmf,
+          delta,
+          customs_agent_id || null,
+          customs_notes || null,
+        ]
+      );
+    }
+
+    // Le trigger PostgreSQL trg_compute_real_margin recalcule margin_real_pct automatiquement
+    // Récupérer la commande mise à jour
+    const { rows: [updated] } = await db.query(
+      'SELECT id, reference, cost_real_kmf, margin_real_pct, margin_alert, sourcing_blocked FROM orders WHERE id = $1',
+      [req.params.id]
+    );
+
+    res.json({ success: true, order: updated });
+
+  } catch (err) {
+    console.error('Update cost error:', err.message);
+    res.status(500).json({ error: 'Erreur saisie coût réel' });
+  }
+});
+
+// ─── POST /api/scans — scan physique colis ────────────────────────────────────
+
+router.post('/scans', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { reference, scan_step, location, notes } = req.body;
+
+    // Étapes de scan v7.1
+    const SCAN_STEPS = {
+      hub_preparation:   { status: 'preparation', label: 'Hub — colis prêt' },       // étape 3
+      relais_reception:  { status: 'available',   label: 'Relais — réception'  },    // étape 6
+      client_collection: { status: 'collected',   label: 'Remise client QR'    },    // étape 7
+    };
+
+    if (!SCAN_STEPS[scan_step]) {
+      return res.status(400).json({
+        error: `scan_step invalide. Valeurs : ${Object.keys(SCAN_STEPS).join(', ')}`,
+      });
+    }
+
+    const { rows: [order] } = await client.query(
+      `SELECT o.*, r.name AS relais_name, u.phone AS user_phone, u.phone AS sender_phone_fallback
+       FROM orders o
+       LEFT JOIN relais r ON r.id = o.relais_id
+       LEFT JOIN users  u ON u.id = o.user_id
+       WHERE o.reference = $1`,
+      [reference]
+    );
+
+    if (!order) return res.status(404).json({ error: `Commande ${reference} introuvable` });
+
+    const step = SCAN_STEPS[scan_step];
+
+    // Enregistrer le scan
+    await client.query(
+      `INSERT INTO scans (order_id, scan_step, scanned_by, location, notes)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [order.id, scan_step, req.user.id, location || null, notes || null]
+    );
+
+    // Mettre à jour le statut commande
+    const tsField = {
+      preparation: null,
+      available:   'available_at',
+      collected:   'collected_at',
+    }[step.status];
+
+    const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
+
+    await client.query(
+      `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW() WHERE id = $2`,
+      [step.status, order.id]
+    );
+
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [order.id, step.status, `Scan ${scan_step} — ${step.label}`, req.user.id]
+    );
+
+    await client.query('COMMIT');
+
+    // SMS
+    const smsPhone = order.sender_phone || order.user_phone;
+    if (smsPhone && STATUS_SMS[step.status]) {
+      sendSMS(
+        smsPhone,
+        STATUS_SMS[step.status](reference, order.relais_name),
+        step.status,
+        order.id
+      ).catch(console.error);
+    }
+
+    res.json({
+      success: true,
+      reference,
+      scan_step,
+      new_status: step.status,
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Scan error:', err.message);
+    res.status(500).json({ error: 'Erreur scan' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── GET /api/orders/:id/history ──────────────────────────────────────────────
+
+router.get('/:id/history', authenticate, async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT * FROM orders WHERE reference = $1',
-      [req.params.reference]
+      `SELECT h.status, h.note, h.created_at, u.full_name AS changed_by_name
+       FROM order_status_history h
+       LEFT JOIN users u ON u.id = h.changed_by
+       WHERE h.order_id = $1
+       ORDER BY h.created_at ASC`,
+      [req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const order = rows[0];
-
-    // Seul le propriétaire ou un admin peut annuler
-    if (req.user.role === 'client' && order.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Accès refusé' });
-    }
-
-    // On ne peut pas annuler une commande déjà expédiée
-    if (['shipped', 'available', 'collected'].includes(order.status)) {
-      return res.status(400).json({ error: 'Impossible d\'annuler une commande déjà expédiée' });
-    }
-
-    const { reason } = req.body;
-
-    await db.query(
-      `UPDATE orders SET status = 'cancelled', cancelled_at = NOW(), cancel_reason = $1
-       WHERE id = $2`,
-      [reason || null, order.id]
-    );
-
-    await db.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by, note)
-       VALUES ($1,'cancelled',$2,$3)`,
-      [order.id, req.user.id, reason || 'Annulé par le client']
-    );
-
-    res.json({ message: 'Commande annulée', reference: order.reference });
+    res.json(rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Erreur historique' });
   }
 });
 

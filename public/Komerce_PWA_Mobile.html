@@ -501,9 +501,10 @@
       <a class="sect-link" href="#">Toutes →</a>
     </div>
     <div class="promo-scroll">
+      <!-- promo-row = container des cartes PWA ; aussi ciblé par loadProducts() -->
       <div class="promo-row">
 
-        <div class="promo-card-m">
+        <div class="promo-card-m" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
           <div class="promo-card-m-img">
             📱
             <span class="pct-badge">−35%</span>
@@ -511,23 +512,43 @@
           <div class="promo-card-m-body">
             <div class="pm-name">Samsung Galaxy A15 128Go</div>
             <div class="pm-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
-        <div class="promo-card-m">
-          <div class="promo-card-m-img">
+        <div class="promo-card-m" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
+          <div class="promo-card-m-img" style="position:relative;">
             👗
             <span class="pct-badge">−40%</span>
+            <span style="position:absolute;bottom:.3rem;left:.3rem;background:#1a3a5c;
+              color:#fff;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:10px;">
+              ✂️ Tailles
+            </span>
           </div>
           <div class="promo-card-m-body">
             <div class="pm-name">Lot 3 abayas brodées</div>
             <div class="pm-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
-        <div class="promo-card-m">
+        <div class="promo-card-m" data-product='{"id":"static-3","name":"Sony WH-CH520 Bluetooth","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
           <div class="promo-card-m-img">
             🎧
             <span class="pct-badge">−28%</span>
@@ -535,11 +556,19 @@
           <div class="promo-card-m-body">
             <div class="pm-name">Sony WH-CH520 Bluetooth</div>
             <div class="pm-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
-        <div class="promo-card-m">
+        <div class="promo-card-m" data-product='{"id":"static-4","name":"Set Tefal 5 pièces inox","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
           <div class="promo-card-m-img">
             🍳
             <span class="pct-badge">−22%</span>
@@ -547,7 +576,15 @@
           <div class="promo-card-m-body">
             <div class="pm-name">Set Tefal 5 pièces inox</div>
             <div class="pm-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
