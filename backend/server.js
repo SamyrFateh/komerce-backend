@@ -1,139 +1,133 @@
 /**
- * KOMERCE — Serveur API v7.1
+ * KOMERCE — Serveur principal
+ * Node.js + Express + PostgreSQL
+ * Version 1.0 · Mars 2026
  *
- * Point d'entrée Node.js + Express
- * Déployé sur Railway — PORT fourni par la variable d'environnement
+ * Routes disponibles :
+ *   /api/products   → catalogue produits
+ *   /api/orders     → commandes (création, suivi, tracking)
+ *   /api/scans      → scan logistique (4 étapes)
+ *   /api/payments   → Stripe EUR + Cash relais
+ *   /api/baskets    → panier partagé + cadeaux M10
+ *   /api/ceremony   → tissus + tenues cérémonie M11
+ *   /api/logistics  → colisage + PDF étiquettes + manifeste M12
+ *   /api/pricing    → simulation prix + taux de change
+ *   /api/health     → vérification état du serveur
+ *
+ * Interfaces front servies en statique :
+ *   /               → Komerce_Web.html   (diaspora/web universel)
+ *   /pwa            → Komerce_PWA_Mobile.html (mobile Anjouan)
  */
 
 require('dotenv').config();
 
 const express    = require('express');
 const cors       = require('cors');
-const path       = require('path');
+const helmet     = require('helmet');
 const rateLimit  = require('express-rate-limit');
+const path       = require('path');
+const { processChashRelaisReminders } = require('./utils/sms');
 
 const app = express();
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
+// ── Sécurité ──────────────────────────────────────────────────────────────────
+app.use(helmet({
+  // Nécessaire pour servir les HTML avec scripts inline
+  contentSecurityPolicy: false,
+}));
 
-const allowedOrigins = [
-  'https://komerce-backend-production.up.railway.app',
-  'http://localhost:3000',
-  'http://localhost:5000',
-];
-
+// CORS : en dev tout est autorisé, en prod restreindre au domaine
+// MVP : CORS ouvert — restreindre au domaine définitif en production
 app.use(cors({
-  origin: (origin, callback) => {
-    // Autoriser les requêtes sans origin (curl, Postman) et les origines listées
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  origin: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true,
 }));
 
-// ─── Body parser ──────────────────────────────────────────────────────────────
+// Rate limiting : 100 requêtes par 15 minutes par IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Trop de requêtes — réessayez dans 15 minutes' },
+});
+app.use('/api/', limiter);
 
-app.use(express.json({ limit: '1mb' }));
+// ── Parsers ───────────────────────────────────────────────────────────────────
+// Le webhook Stripe nécessite le body brut (raw) — doit être avant express.json()
+app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Rate limiting ────────────────────────────────────────────────────────────
+// ── Interfaces HTML statiques ─────────────────────────────────────────────────
+const frontDir = path.join(__dirname, '..');
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes
-  max:      100,
-  standardHeaders: true,
-  legacyHeaders:   false,
-  message: { error: 'Trop de requêtes, réessayez dans 15 minutes.' },
+// / → interface web (diaspora + universel)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontDir, 'Komerce_Web.html'));
 });
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max:      20,
-  standardHeaders: true,
-  legacyHeaders:   false,
-  message: { error: 'Trop de tentatives de connexion.' },
+// /pwa → interface mobile (Anjouan)
+app.get('/pwa', (req, res) => {
+  res.sendFile(path.join(frontDir, 'Komerce_PWA_Mobile.html'));
 });
 
-app.use('/api/', apiLimiter);
-app.use('/api/auth/', authLimiter);
+// Assets statiques du dossier parent (images, etc.)
+app.use(express.static(frontDir));
 
-// ─── Fichiers statiques (frontend) ───────────────────────────────────────────
+// ── Routes API ────────────────────────────────────────────────────────────────
+app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/products',   require('./routes/products'));
+app.use('/api/orders',     require('./routes/orders'));
+app.use('/api/scans',      require('./routes/scans'));
+app.use('/api/payments',   require('./routes/payments'));
+app.use('/api/dashboard',  require('./routes/dashboard'));
+// ── Routes v6.4 ────────────────────────────────────────────────────────────
+app.use('/api/baskets',    require('./routes/baskets'));    // M10 Panier partagé + cadeaux
+app.use('/api/ceremony',   require('./routes/ceremony'));   // M11 Tissus & tenues cérémonie
+app.use('/api/logistics',  require('./routes/logistics'));  // M12 Colisage + PDF étiquettes/manifeste
+app.use('/api/pricing',    require('./routes/pricing'));    // Moteur pricing v6.4 + taux admin
 
-app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── Routes API ───────────────────────────────────────────────────────────────
-
-const authRouter      = require('./routes/auth');
-const productsRouter  = require('./routes/products');
-const ordersRouter    = require('./routes/orders');
-const relaisRouter    = require('./routes/relais');
-const adminRouter     = require('./routes/admin');
-const dashboardRouter = require('./routes/dashboard');
-
-app.use('/api/auth',      authRouter);
-app.use('/api/products',  productsRouter);
-app.use('/api/orders',    ordersRouter);
-app.use('/api/relais',    relaisRouter);
-app.use('/api/admin',     adminRouter);
-app.use('/api/dashboard', dashboardRouter);
-
-// Note : les scans sont accessibles via POST /api/orders/scans
-
-// ─── Healthcheck ─────────────────────────────────────────────────────────────
-
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
-    status:    'ok',
-    version:   '7.1',
-    timestamp: new Date().toISOString(),
+    status:  'ok',
+    version: '1.0',
+    env:     process.env.NODE_ENV || 'development',
+    time:    new Date().toISOString(),
   });
 });
 
-// ─── SPA fallback ─────────────────────────────────────────────────────────────
-// Sert index.html pour toutes les routes non-API (navigation côté client)
-
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'Endpoint introuvable' });
-  }
-  res.sendFile(path.join(__dirname, 'public', 'Komerce_Web.html'));
+// ── 404 ───────────────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: `Route introuvable : ${req.method} ${req.path}` });
 });
 
-// ─── Gestion erreurs globale ──────────────────────────────────────────────────
-
+// ── Gestion des erreurs globales ──────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message);
-  res.status(500).json({ error: 'Erreur serveur interne' });
+  console.error('❌ Erreur non gérée :', err);
+  res.status(500).json({ error: 'Erreur interne du serveur' });
 });
 
-// ─── Cron interne — rappels cash relais ──────────────────────────────────────
-
-const { processChashRelaisReminders } = require('./utils/sms');
-
-setInterval(() => {
-  processChashRelaisReminders().catch(err =>
-    console.error('Cash reminder cron error:', err.message)
-  );
-}, 60 * 60 * 1000); // toutes les heures
-
-// ─── Démarrage ────────────────────────────────────────────────────────────────
-
+// ── Démarrage ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════════════════╗
-║   🌊 KOMERCE API v7.1 — en ligne sur :${PORT.toString().padEnd(9)}║
-╠══════════════════════════════════════════════════╣
-║   Env   : ${(process.env.NODE_ENV || 'development').padEnd(39)}║
-║   DB    : ${process.env.DATABASE_URL ? 'Railway PostgreSQL ✓' : 'DATABASE_URL manquante ⚠️ '}║
-║   JWT   : ${process.env.JWT_SECRET  ? 'Configuré ✓          ' : 'JWT_SECRET manquante ⚠️  '}║
-╚══════════════════════════════════════════════════╝
-  `);
+  console.log(`\n🚀 Komerce API démarrée sur http://localhost:${PORT}`);
+  console.log(`   → Web :  http://localhost:${PORT}/`);
+  console.log(`   → PWA :  http://localhost:${PORT}/pwa`);
+  console.log(`   → API :  http://localhost:${PORT}/api/health\n`);
 });
+
+// ── Cron : rappels Cash relais (toutes les heures) ────────────────────────────
+// Vérifie les commandes cash non payées et envoie les rappels H+12 / annule H+36
+setInterval(async () => {
+  try {
+    await processChashRelaisReminders();
+  } catch (err) {
+    console.error('❌ Erreur cron cash relais :', err.message);
+  }
+}, 60 * 60 * 1000); // toutes les heures
 
 module.exports = app;
