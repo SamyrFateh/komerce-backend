@@ -388,8 +388,8 @@ function addToCart(product, initialQty) {
     setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1200);
   }
   toast(`${product.emoji || '📦'} ${product.name} ajouté`, 'success');
-  // Ouvrir le panier si déjà des articles
-  if (_cart.length >= 2) openCart();
+  // Afficher le mini-preview après ajout (pas le tiroir complet)
+  setTimeout(() => _showCartPreview(), 300);
 }
 
 function removeFromCart(productId) {
@@ -445,33 +445,145 @@ function initCartButton() {
     display:flex;align-items:center;justify-content:center;
     transition:transform .2s,box-shadow .2s;overflow:visible;
   `;
-  btn.onmouseenter = () => btn.style.transform = 'scale(1.1)';
-  btn.onmouseleave = () => btn.style.transform = 'scale(1)';
+  btn.onmouseenter = () => {
+    btn.style.transform = 'scale(1.1)';
+    _showCartPreview();
+  };
+  btn.onmouseleave = () => {
+    btn.style.transform = 'scale(1)';
+    setTimeout(() => {
+      const p = $('kmrc-cart-preview');
+      if (p && !p.matches(':hover')) p.remove();
+    }, 250);
+  };
   document.body.appendChild(btn);
+}
+
+function _showCartPreview() {
+  if ($('kmrc-cart-drawer')) return; // tiroir déjà ouvert
+  $('kmrc-cart-preview')?.remove();
+  if (_cart.length === 0) return;
+
+  const preview = document.createElement('div');
+  preview.id = 'kmrc-cart-preview';
+  preview.onmouseleave = () => preview.remove();
+
+  const lastItems = _cart.slice(-3).reverse(); // 3 derniers articles
+  const total     = cartTotal();
+  const n         = cartQty();
+
+  preview.style.cssText = `
+    position:fixed;bottom:5.5rem;right:1.5rem;z-index:9989;
+    background:#fff;border-radius:16px;padding:1rem;width:260px;
+    box-shadow:0 8px 32px rgba(26,58,92,.22);border:1px solid #f0f4f8;
+    animation:kmrcPreviewIn .18s ease;
+  `;
+  preview.innerHTML = `
+    <style>
+      @keyframes kmrcPreviewIn {
+        from { opacity:0; transform:translateY(8px) scale(.97); }
+        to   { opacity:1; transform:translateY(0)   scale(1);   }
+      }
+    </style>
+    <div style="font-size:.72rem;font-weight:800;color:#64748b;text-transform:uppercase;
+                letter-spacing:.06em;margin-bottom:.7rem;">
+      🛒 ${n} article${n > 1 ? 's' : ''} dans le panier
+    </div>
+    ${lastItems.map(({ product: p, qty }) => `
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;
+                  border-bottom:1px solid #f8fafc;">
+        <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;
+                    background:#f8fafc;display:flex;align-items:center;
+                    justify-content:center;font-size:1.2rem;flex-shrink:0;">
+          ${p.image_url
+            ? `<img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='${p.emoji||'📦'}';">`
+            : (p.emoji || '📦')}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.78rem;font-weight:700;color:#1a3a5c;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${p.name}
+          </div>
+          <div style="font-size:.72rem;color:#e8a020;font-weight:600;">
+            ×${qty} · ${(p.price_kmf * qty / 492).toFixed(0)} €
+          </div>
+        </div>
+      </div>
+    `).join('')}
+    ${_cart.length > 3 ? `<div style="font-size:.72rem;color:#94a3b8;text-align:center;padding:.4rem 0;">
+      + ${_cart.length - 3} autre${_cart.length - 3 > 1 ? 's' : ''} article${_cart.length - 3 > 1 ? 's' : ''}
+    </div>` : ''}
+    <div style="margin-top:.8rem;padding-top:.7rem;border-top:2px solid #f0f4f8;
+                display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:.7rem;color:#64748b;">Total</div>
+        <div style="font-size:1rem;font-weight:900;color:#1a3a5c;">
+          ${(total / 492).toFixed(0)} € <span style="font-size:.7rem;color:#94a3b8;font-weight:400;">≈ ${total.toLocaleString('fr-FR')} KMF</span>
+        </div>
+      </div>
+      <button onclick="$('kmrc-cart-preview')?.remove();openCart();"
+        style="background:#1a3a5c;color:#fff;border:none;border-radius:10px;
+               padding:.55rem 1rem;font-size:.82rem;font-weight:700;cursor:pointer;">
+        Voir →
+      </button>
+    </div>
+  `;
+  document.body.appendChild(preview);
 }
 
 function refreshCartBadge() {
   const badge = $('kmrc-cart-badge');
-  const n = cartQty();
+  const n     = cartQty();
+  const total = cartTotal();
 
-  // Badge sur le bouton flottant
+  // Badge flottant
   if (badge) {
     badge.textContent = n;
     badge.style.display = n > 0 ? 'flex' : 'none';
   }
 
-  // Compteur nav (#cart-count dans Komerce_Web.html)
+  // Nav : badge count + total KMF sous l'icône
   const navCount = document.getElementById('cart-count');
   if (navCount) {
     navCount.textContent = n;
     navCount.style.display = n > 0 ? 'flex' : 'none';
   }
+  // Afficher le total dans la nav si l'élément existe
+  let navTotal = document.getElementById('cart-total-nav');
+  if (!navTotal && n > 0) {
+    // Créer l'élément total sous l'icône panier nav
+    const cartIcon = document.querySelector('.cart-icon');
+    if (cartIcon) {
+      navTotal = document.createElement('div');
+      navTotal.id = 'cart-total-nav';
+      navTotal.style.cssText = `
+        position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+        background:#e8a020;color:#fff;font-size:.62rem;font-weight:800;
+        padding:2px 6px;border-radius:10px;white-space:nowrap;pointer-events:none;
+        box-shadow:0 2px 6px rgba(0,0,0,.2);
+      `;
+      cartIcon.style.position = 'relative';
+      cartIcon.appendChild(navTotal);
+    }
+  }
+  if (navTotal) {
+    if (n > 0) {
+      navTotal.textContent = (total / 492).toFixed(0) + ' €';
+      navTotal.style.display = 'block';
+    } else {
+      navTotal.style.display = 'none';
+    }
+  }
 
-  // Pulse animation bouton flottant
+  // Bounce animation sur bouton flottant + nav badge
   const btn = $('kmrc-cart-btn');
   if (btn && n > 0) {
     btn.style.transform = 'scale(1.18)';
-    setTimeout(() => btn.style.transform = 'scale(1)', 200);
+    setTimeout(() => btn.style.transform = 'scale(1)', 220);
+  }
+  if (navCount && n > 0) {
+    navCount.style.transform = 'scale(1.4)';
+    setTimeout(() => navCount.style.transform = 'scale(1)', 220);
   }
 }
 
