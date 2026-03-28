@@ -55,6 +55,7 @@ let _token      = null;
 let _relaisList = [];
 let _cart       = [];          // [{ product, qty, couture }]
 let _profil     = 'local';     // 'local' | 'diaspora'
+let _savedUser  = null;        // { name, phone, token, savedAt } depuis localStorage
 
 // ═══════════════════════════════════════════════════════════════════════
 //  UTILITAIRES
@@ -1455,6 +1456,15 @@ async function submitOrder(e, items) {
     document.getElementById('kmrc-form-modal')?.remove();
     _cart = [];
     refreshCartBadge();
+    // Mémoriser le client pour les visites suivantes
+    try {
+      localStorage.setItem('kmrc_user', JSON.stringify({
+        name:  data.full_name,
+        phone: data.phone || '',
+        token: _token,
+        savedAt: Date.now()
+      }));
+    } catch(e) { /* ignore */ }
     showOrderSuccess(refs, data);
 
   } catch (err) {
@@ -1945,10 +1955,169 @@ async function loadRelais() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+//  7. CLIENT FIDÈLE — RETOUR + MES COMMANDES
+// ═══════════════════════════════════════════════════════════════════════
+
+function _initReturningUser() {
+  if (!_savedUser) return;
+  const firstName = (_savedUser.name || '').split(' ')[0];
+
+  // Bannière discrète en haut de page
+  const banner = document.createElement('div');
+  banner.id = 'kmrc-returning-banner';
+  banner.style.cssText = `
+    position:fixed;top:0;left:0;right:0;z-index:9980;
+    background:linear-gradient(90deg,#1a3a5c,#2563eb);
+    color:#fff;font-size:.82rem;font-weight:600;
+    padding:.5rem 1.2rem;display:flex;align-items:center;
+    justify-content:space-between;gap:.8rem;
+    animation:kmrcFadeIn .4s ease;
+  `;
+  banner.innerHTML = `
+    <span>👋 Bon retour <strong>${firstName}</strong> !</span>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <button onclick="openMyOrders()"
+        style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);
+               color:#fff;border-radius:20px;padding:.3rem .9rem;cursor:pointer;
+               font-size:.78rem;font-weight:700;">
+        📋 Mes commandes
+      </button>
+      <button onclick="document.getElementById('kmrc-returning-banner').remove()"
+        style="background:none;border:none;color:rgba(255,255,255,.6);
+               cursor:pointer;font-size:1rem;padding:.2rem;">✕</button>
+    </div>
+  `;
+  document.body.prepend(banner);
+}
+
+async function openMyOrders() {
+  document.getElementById('kmrc-myorders-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'kmrc-myorders-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);
+    z-index:10300;display:flex;align-items:center;justify-content:center;
+    padding:1rem;animation:kmrcFadeIn .2s ease;
+  `;
+
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;
+                max-height:88vh;overflow-y:auto;animation:kmrcSlideUp .25s ease;">
+      <div style="padding:1.2rem 1.4rem .9rem;border-bottom:1px solid #f0f4f8;
+                  position:sticky;top:0;background:#fff;border-radius:20px 20px 0 0;z-index:1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:1rem;font-weight:800;color:#1a3a5c;">📋 Mes commandes</span>
+          <button onclick="document.getElementById('kmrc-myorders-modal').remove()"
+            style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#94a3b8;">✕</button>
+        </div>
+        ${_savedUser ? `<div style="font-size:.78rem;color:#64748b;margin-top:.3rem;">
+          ${_savedUser.name} · ${_savedUser.phone}
+        </div>` : ''}
+      </div>
+      <div id="kmrc-myorders-body" style="padding:1rem 1.4rem 1.6rem;">
+        <div style="text-align:center;color:#94a3b8;padding:2rem;font-size:.85rem;">Chargement…</div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  // Charger les commandes
+  const data = await apiGet('/api/orders');
+  const body = document.getElementById('kmrc-myorders-body');
+  if (!body) return;
+
+  const orders = Array.isArray(data) ? data : (data?.orders || []);
+
+  if (!orders.length) {
+    body.innerHTML = `
+      <div style="text-align:center;padding:2.5rem 1rem;color:#94a3b8;">
+        <div style="font-size:3rem;margin-bottom:.8rem;opacity:.4;">📦</div>
+        <div style="font-weight:700;margin-bottom:.3rem;">Aucune commande trouvée</div>
+        <div style="font-size:.8rem;">Vos futures commandes apparaîtront ici</div>
+      </div>`;
+    return;
+  }
+
+  const STATUS_LABEL = {
+    draft:'Brouillon', confirmed:'Confirmée', paid:'Payée',
+    purchasing:'En achat', preparation:'Préparation', shipped:'Expédiée',
+    transit_comores:'Arrivée Comores', available:'Disponible',
+    collected:'Remise', cancelled:'Annulée', refunded:'Remboursée',
+  };
+  const STATUS_COLOR = {
+    confirmed:'#2563eb', paid:'#0891b2', purchasing:'#7c3aed',
+    preparation:'#d97706', shipped:'#0369a1', transit_comores:'#0891b2',
+    available:'#16a34a', collected:'#16a34a', cancelled:'#dc2626', refunded:'#dc2626',
+  };
+
+  body.innerHTML = orders.map(o => {
+    const color = STATUS_COLOR[o.status] || '#64748b';
+    const label = STATUS_LABEL[o.status] || o.status;
+    const date  = o.created_at ? new Date(o.created_at).toLocaleDateString('fr-FR') : '';
+    return `
+      <div style="border:1.5px solid #e2e8f0;border-radius:12px;padding:1rem;
+                  margin-bottom:.8rem;transition:box-shadow .15s;"
+           onmouseenter="this.style.boxShadow='0 2px 12px rgba(26,58,92,.1)'"
+           onmouseleave="this.style.boxShadow='none'">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;">
+          <div>
+            <div style="font-weight:800;color:#1a3a5c;font-size:.92rem;">
+              ${o.reference || o.id}
+            </div>
+            <div style="font-size:.75rem;color:#94a3b8;margin-top:.15rem;">${date}</div>
+          </div>
+          <span style="background:${color}15;color:${color};border:1px solid ${color}30;
+                       font-size:.72rem;font-weight:700;padding:.25rem .7rem;
+                       border-radius:20px;white-space:nowrap;">${label}</span>
+        </div>
+        ${o.items?.length ? `
+          <div style="margin-top:.6rem;font-size:.8rem;color:#4a5568;">
+            ${o.items.map(i => `${i.emoji || '📦'} ${i.product_name || i.name} ×${i.quantity || 1}`).join(' · ')}
+          </div>` : ''}
+        <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:.85rem;font-weight:800;color:#e8a020;">
+            ${o.total_kmf ? Number(o.total_kmf).toLocaleString('fr-FR') + ' KMF' : ''}
+          </span>
+          <button onclick="
+            document.getElementById('kmrc-myorders-modal').remove();
+            document.getElementById('tracking-ref-input') && (document.getElementById('tracking-ref-input').value='${o.reference || ''}');
+            searchTracking();"
+            style="font-size:.75rem;color:#2563eb;background:none;border:none;
+                   cursor:pointer;font-weight:700;text-decoration:underline;">
+            Suivre →
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Déconnexion (effacer le localStorage)
+function logoutUser() {
+  localStorage.removeItem('kmrc_user');
+  _token = null;
+  _savedUser = null;
+  document.getElementById('kmrc-returning-banner')?.remove();
+  toast('Profil effacé', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Restaurer le token + profil depuis localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('kmrc_user') || 'null');
+    // Token valide 30 jours
+    if (saved && saved.token && (Date.now() - saved.savedAt) < 30 * 86400000) {
+      _token = saved.token;
+      _savedUser = saved;
+    }
+  } catch(e) { /* ignore */ }
+
   // Câbler immédiatement les boutons statiques (avant que l'API réponde)
   wireStaticButtons();
 
@@ -1960,6 +2129,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Bouton flottant panier
   initCartButton();
+
+  // Bannière retour client + bouton "Mes commandes"
+  _initReturningUser();
 
   // Restaurer un panier partagé depuis l'URL
   const params = new URLSearchParams(window.location.search);
