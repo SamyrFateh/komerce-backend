@@ -25,6 +25,28 @@ const TAUX = { AED: 138, EUR: 492 };
 // Catégories avec service couture disponible
 const COUTURE_CATS = ['vetements', 'ceremonie', 'vêtements', 'tenues', 'wax'];
 
+// Images de fallback par catégorie (utilisées quand image_url est null en DB)
+const CATEGORY_IMAGES = {
+  electronique:  'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75',
+  telephones:    'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75',
+  mariage:       'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=75',
+  ceremonie:     'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=75',
+  vetements:     'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=75',
+  maison:        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75',
+  cuisine:       'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75',
+  wax:           'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=75',
+  default:       'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=75',
+};
+
+function getProductImage(p) {
+  if (p.image_url) return p.image_url;
+  const cat = (p.category || '').toLowerCase();
+  for (const key of Object.keys(CATEGORY_IMAGES)) {
+    if (key !== 'default' && cat.includes(key)) return CATEGORY_IMAGES[key];
+  }
+  return CATEGORY_IMAGES.default;
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 //  ÉTAT GLOBAL
 // ═══════════════════════════════════════════════════════════════════════
@@ -129,14 +151,9 @@ async function loadProducts() {
       return `
         <div class="promo-card-m" data-product-id="${p.id}">
           <div class="promo-card-m-img">
-            ${p.image_url
-              ? `<img src="${p.image_url}" alt="${p.name}"
-                   style="width:100%;height:100%;object-fit:cover;display:block;"
-                   onerror="this.style.display='none';this.nextSibling.style.display='flex'">
-                 <span style="display:none;align-items:center;justify-content:center;
-                   width:100%;height:100%;font-size:2.8rem;">${p.emoji || '📦'}</span>`
-              : `<span style="font-size:2.8rem;">${p.emoji || '📦'}</span>`
-            }
+            <img src="${getProductImage(p)}" alt="${p.name}"
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+              onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.8rem;\\'>${p.emoji || '📦'}</span>')">`
             ${promo ? `<span class="pct-badge">−${promo}%</span>` : ''}
             ${needSize ? `<span style="position:absolute;bottom:.3rem;left:.3rem;
               background:#1a3a5c;color:#fff;font-size:.6rem;font-weight:700;
@@ -172,14 +189,11 @@ async function loadProducts() {
       return `
         <div class="promo-card" data-product-id="${p.id}">
           <div class="promo-card-img">
-            ${p.image_url
-              ? `<img src="${p.image_url}" alt="${p.name}"
-                   style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
-                   onerror="this.style.display='none';this.nextSibling.style.display='flex'">
-                 <span style="display:none;align-items:center;justify-content:center;
-                   width:100%;height:100%;font-size:3rem;">${p.emoji || '📦'}</span>`
-              : `<span style="font-size:3rem;">${p.emoji || '📦'}</span>`
-            }
+            <img src="${getProductImage(p)}" alt="${p.name}"
+              style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+              onerror="this.style.display='none'">
+            <span style="display:none;align-items:center;justify-content:center;
+                   width:100%;height:100%;font-size:3rem;">${p.emoji || '📦'}</span>
             ${promo ? `<div class="promo-badge">−${promo}%</div>` : ''}
             ${needSize ? `<div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
               color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
@@ -411,22 +425,25 @@ function initCartButton() {
   btn.onclick = openCart;
   btn.setAttribute('aria-label', 'Ouvrir le panier');
   btn.innerHTML = `
-    <span style="font-size:1.4rem;">🛒</span>
+    <img src="images/avatar_panier.png" alt="Panier"
+      style="width:42px;height:42px;border-radius:50%;object-fit:cover;
+             border:2px solid rgba(255,255,255,0.3);display:block;"
+      onerror="this.outerHTML='<span style=\\'font-size:1.4rem;\\'>🛒</span>'" />
     <span id="kmrc-cart-badge" style="
       display:none;position:absolute;top:-5px;right:-5px;
-      background:#e8a020;color:#fff;border-radius:50%;
+      background:#e74c3c;color:#fff;border-radius:50%;
       width:22px;height:22px;font-size:.7rem;font-weight:800;
-      align-items:center;justify-content:center;border:2px solid #fff;">
+      align-items:center;justify-content:center;border:2px solid #1a3a5c;">
       0
     </span>
   `;
   btn.style.cssText = `
     position:fixed;bottom:1.5rem;right:1.5rem;z-index:9990;
     width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;
-    background:linear-gradient(135deg,#1a3a5c,#2563eb);
-    box-shadow:0 4px 20px rgba(37,99,235,.4);
+    background:#1a3a5c;
+    box-shadow:0 4px 20px rgba(26,58,92,.45);
     display:flex;align-items:center;justify-content:center;
-    transition:transform .2s,box-shadow .2s;
+    transition:transform .2s,box-shadow .2s;overflow:visible;
   `;
   btn.onmouseenter = () => btn.style.transform = 'scale(1.1)';
   btn.onmouseleave = () => btn.style.transform = 'scale(1)';
@@ -435,11 +452,22 @@ function initCartButton() {
 
 function refreshCartBadge() {
   const badge = $('kmrc-cart-badge');
-  if (!badge) return;
   const n = cartQty();
-  badge.textContent = n;
-  badge.style.display = n > 0 ? 'flex' : 'none';
-  // Pulse animation
+
+  // Badge sur le bouton flottant
+  if (badge) {
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'flex' : 'none';
+  }
+
+  // Compteur nav (#cart-count dans Komerce_Web.html)
+  const navCount = document.getElementById('cart-count');
+  if (navCount) {
+    navCount.textContent = n;
+    navCount.style.display = n > 0 ? 'flex' : 'none';
+  }
+
+  // Pulse animation bouton flottant
   const btn = $('kmrc-cart-btn');
   if (btn && n > 0) {
     btn.style.transform = 'scale(1.18)';
@@ -597,7 +625,7 @@ function renderCartBody() {
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:.3rem;">
             ${SIZES.map(s => `
-              <button onclick="setSize(${p.id}, '${s}')"
+              <button onclick="setSize('${p.id}', '${s}')"
                 style="padding:.25rem .55rem;border-radius:6px;cursor:pointer;
                        font-size:.75rem;font-weight:700;transition:all .15s;
                        border:1.5px solid ${size===s ? '#1a3a5c' : '#e2e8f0'};

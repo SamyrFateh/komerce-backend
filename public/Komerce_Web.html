@@ -682,6 +682,33 @@
       color:#fff;
       font-weight:800;
       cursor:pointer;
+      font-size:.88rem;
+      transition: opacity .15s;
+    }
+    .ceremony-card button:hover { opacity:.88; }
+    .ceremony-card-price {
+      font-size:.9rem;
+      font-weight:800;
+      color:#92400e;
+      margin-bottom:.4rem;
+    }
+    .ceremony-card-tag {
+      display:inline-block;
+      font-size:.68rem;
+      font-weight:700;
+      padding:.18rem .55rem;
+      border-radius:20px;
+      margin-bottom:.7rem;
+      letter-spacing:.03em;
+    }
+    .ceremony-card-tag.tissu      { background:#fef3c7; color:#92400e; }
+    .ceremony-card-tag.confection { background:#ede9fe; color:#5b21b6; }
+    .ceremony-card-tag.pret       { background:#dcfce7; color:#166534; }
+    @media(max-width:700px){
+      .ceremony-showcase { grid-template-columns: 1fr 1fr !important; }
+    }
+    @media(max-width:440px){
+      .ceremony-showcase { grid-template-columns: 1fr !important; }
     }
 
     /* ── SIMPLE TRACKING ── */
@@ -1255,9 +1282,9 @@
     <a href="#univers">✨ Univers</a>
     <a href="#ceremony-section">🎉 Cérémonies</a>
     <a href="#daily-section">🏠 Quotidien</a>
-    <a href="#commander" class="nav-cta">Commander →</a>
+    <a href="#" class="nav-cta" onclick="event.preventDefault();openCheckout()">Commander →</a>
   </div>
-    <div class="cart-icon" title="Voir le panier">
+    <div class="cart-icon" title="Voir le panier" onclick="if(typeof openCart==='function')openCart()" style="cursor:pointer;">
       <img src="images/avatar_panier.png" alt="Avatar panier Komerce" class="cart-avatar" />
       <span id="cart-count">0</span>
     </div>
@@ -1278,7 +1305,7 @@
   </div>
   <div class="hero-actions">
     <a href="#univers" class="btn-primary">✨ Choisir mon univers</a>
-    <a href="#commander" class="btn-secondary">📦 Passer une commande</a>
+    <a href="#" class="btn-secondary" onclick="event.preventDefault();openCheckout()">📦 Passer une commande</a>
   </div>
   <div class="hero-testimonial">
     <div class="hero-testimonial-avatar">🗣️</div>
@@ -1333,7 +1360,7 @@
       </div>
       <div class="univers-actions">
         <a href="#ceremony-section" class="univers-btn primary" onclick="showUniverse('ceremony')">Explorer cet univers</a>
-        <a href="#commander" class="univers-btn secondary">Commander un besoin précis</a>
+        <a href="#" class="univers-btn secondary" onclick="event.preventDefault();showUniverse('ceremony');openCheckout()">Commander un besoin précis</a>
       </div>
     </article>
 
@@ -1371,30 +1398,80 @@
       </div>
     </div>
 
-    <div class="ceremony-showcase">
+    <div class="ceremony-showcase" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+
+      <!-- 1. Wax Ankara Premium — tissu -->
       <div class="ceremony-card">
-        <div class="ceremony-card-emoji">🧵</div>
-        <h4>Tissus cérémonie</h4>
-        <p>Dentelle, tissus habillés et matières adaptées aux grands moments et aux commandes de fête.</p>
-        <div class="ceremony-meta">Catégorie à valoriser visuellement</div>
-        <button onclick="location.href='#commander'">Choisir un tissu →</button>
+        <div class="ceremony-card-emoji">🧡</div>
+        <h4>Wax Ankara Premium</h4>
+        <p>Tissu wax aux motifs africains vifs. Idéal pour robes, ensembles et tenues de fête.</p>
+        <div class="ceremony-card-price">4 800 KMF / m</div>
+        <span class="ceremony-card-tag tissu">🧵 Tissu au mètre</span>
+        <button onclick="openCeremony({id:'tissu-wax-ankara',name:'Wax Ankara Premium',emoji:'🧡',price_kmf:4800,category:'ceremonie'})">
+          Choisir &amp; commander →
+        </button>
       </div>
 
+      <!-- 2. Dentelle brodée — tissu mariage -->
       <div class="ceremony-card">
-        <div class="ceremony-card-emoji">👗</div>
-        <h4>Tenues & modèles</h4>
-        <p>Tenues prêtes, inspirations et articles habillés pour mariage, fête et événements familiaux.</p>
-        <div class="ceremony-meta">Met en avant le côté émotionnel</div>
-        <button onclick="location.href='#commander'">Choisir une tenue →</button>
+        <div class="ceremony-card-emoji">🤍</div>
+        <h4>Dentelle brodée mariage</h4>
+        <p>Dentelle fine importée, broderies florales. Parfaite pour robes de mariée et tenues habillées.</p>
+        <div class="ceremony-card-price">7 200 KMF / m</div>
+        <span class="ceremony-card-tag tissu">🧵 Tissu au mètre</span>
+        <button onclick="openCeremony({id:'tissu-dentelle-mariage',name:'Dentelle brodée mariage',emoji:'🤍',price_kmf:7200,category:'ceremonie'})">
+          Choisir &amp; commander →
+        </button>
       </div>
 
+      <!-- 3. Mousseline dorée — tissu -->
       <div class="ceremony-card">
         <div class="ceremony-card-emoji">✨</div>
-        <h4>Commande guidée</h4>
-        <p>Une façon simple de préparer une commande liée à un événement, sans compliquer l’expérience.</p>
-        <div class="ceremony-meta">À connecter plus tard si besoin</div>
-        <button onclick="location.href='#commander'">Commander →</button>
+        <h4>Mousseline dorée cérémonie</h4>
+        <p>Tissu léger avec reflets dorés, idéal pour les grandes occasions et fêtes familiales.</p>
+        <div class="ceremony-card-price">5 500 KMF / m</div>
+        <span class="ceremony-card-tag tissu">🧵 Tissu au mètre</span>
+        <button onclick="openCeremony({id:'tissu-mousseline-doree',name:'Mousseline dorée cérémonie',emoji:'✨',price_kmf:5500,category:'ceremonie'})">
+          Choisir &amp; commander →
+        </button>
       </div>
+
+      <!-- 4. Boubou cérémonie homme — prêt à porter -->
+      <div class="ceremony-card">
+        <div class="ceremony-card-emoji">👘</div>
+        <h4>Boubou cérémonie homme</h4>
+        <p>Boubou brodé confectionné à Dubaï. Tailles standard disponibles, retouche possible à livraison.</p>
+        <div class="ceremony-card-price">18 500 KMF</div>
+        <span class="ceremony-card-tag pret">👗 Prêt à porter</span>
+        <button onclick="openCeremony({id:'boubou-homme-ceremonie',name:'Boubou cérémonie homme',emoji:'👘',price_kmf:18500,category:'ceremonie'})">
+          Choisir ma taille →
+        </button>
+      </div>
+
+      <!-- 5. Abaya dorée Dubaï — prêt à porter -->
+      <div class="ceremony-card">
+        <div class="ceremony-card-emoji">🌙</div>
+        <h4>Abaya brodée Dubaï</h4>
+        <p>Abaya longue avec broderies dorées sur les manches. Tissu fluide, coupe élégante, style Golfe.</p>
+        <div class="ceremony-card-price">22 000 KMF</div>
+        <span class="ceremony-card-tag pret">👗 Prêt à porter</span>
+        <button onclick="openCeremony({id:'abaya-doree-dubai',name:'Abaya brodée Dubaï',emoji:'🌙',price_kmf:22000,category:'ceremonie'})">
+          Choisir ma taille →
+        </button>
+      </div>
+
+      <!-- 6. Kaftan confection sur tissu -->
+      <div class="ceremony-card">
+        <div class="ceremony-card-emoji">✂️</div>
+        <h4>Kaftan sur mesure</h4>
+        <p>Confection d'un kaftan cérémonie sur votre choix de tissu. Taille standard + retouche à la livraison.</p>
+        <div class="ceremony-card-price">À partir de 28 000 KMF</div>
+        <span class="ceremony-card-tag confection">✂️ Confection</span>
+        <button onclick="openCeremony({id:'kaftan-confection',name:'Kaftan cérémonie confection',emoji:'✂️',price_kmf:28000,category:'ceremonie'})">
+          Choisir tissu &amp; taille →
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -1448,7 +1525,9 @@
     <!-- Promo Card 1 -->
     <div class="promo-card" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
       <div class="promo-card-img">
-        📱
+        <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75"
+          alt="Samsung Galaxy A15" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          onerror="this.style.display='none'">
         <span class="promo-badge-tag">−35%</span>
       </div>
       <div class="promo-card-body">
@@ -1473,7 +1552,9 @@
     <!-- Promo Card 2 -->
     <div class="promo-card" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
       <div class="promo-card-img">
-        👗
+        <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=75"
+          alt="Abayas brodées" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          onerror="this.style.display='none'">
         <span class="promo-badge-tag">−40%</span>
         <div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
           color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
@@ -1502,7 +1583,9 @@
     <!-- Promo Card 3 -->
     <div class="promo-card" data-product='{"id":"static-3","name":"Écouteurs Sony WH-CH520","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
       <div class="promo-card-img">
-        🎧
+        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=75"
+          alt="Écouteurs Sony" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          onerror="this.style.display='none'">
         <span class="promo-badge-tag">−28%</span>
       </div>
       <div class="promo-card-body">
@@ -1527,7 +1610,9 @@
     <!-- Promo Card 4 -->
     <div class="promo-card" data-product='{"id":"static-4","name":"Set cuisine Tefal 5 pièces","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
       <div class="promo-card-img">
-        🍳
+        <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75"
+          alt="Set cuisine Tefal" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          onerror="this.style.display='none'">
         <span class="promo-badge-tag">−22%</span>
       </div>
       <div class="promo-card-body">
@@ -1661,8 +1746,8 @@
         </div>
 
         <div class="simple-tracking-actions">
-          <a href="#commander" class="btn-primary">📦 Voir le suivi</a>
-          <a href="#commander" class="btn-secondary" style="color:var(--primary); border-color:rgba(26,58,92,0.12); background:#f8fafc;">Commander maintenant</a>
+          <a href="#suivi" class="btn-primary">📦 Voir le suivi</a>
+          <a href="#" class="btn-secondary" style="color:var(--primary); border-color:rgba(26,58,92,0.12); background:#f8fafc;" onclick="event.preventDefault();openCheckout()">Commander maintenant</a>
         </div>
       </div>
     </div>
@@ -1965,21 +2050,20 @@
     </div>
     <div class="footer-links">
       <strong>Acheter</strong>
-      <a href="#promos">Promos en cours</a>
-      <a href="#catalogue">Catalogue complet</a>
-      <a href="#commander">Passer une commande</a>
+      <a href="#promos" onclick="showUniverse('daily')">Promos en cours</a>
+      <a href="#ceremony-section">Catalogue cérémonie</a>
+      <a href="#" onclick="event.preventDefault();openCheckout()">Passer une commande</a>
     </div>
     <div class="footer-links">
       <strong>Aide</strong>
       <a href="#comment">Comment ça marche</a>
       <a href="#suivi">Suivre ma commande</a>
-      <a href="#faq">FAQ</a>
+      <a href="#comment">FAQ & aide</a>
     </div>
     <div class="footer-links">
       <strong>Komerce</strong>
-      <a href="#about">À propos</a>
-      <a href="#contact">Nous contacter</a>
-      <a href="#app">Application mobile</a>
+      <a href="#comment">À propos</a>
+      <a href="mailto:contact@komerce.km">Nous contacter</a>
     </div>
   </div>
   <div class="footer-bottom">
