@@ -1993,9 +1993,6 @@ function _initReturningUser() {
     </div>
   `;
   document.body.prepend(banner);
-
-  // Injecter onglet "Mes commandes" dans la nav
-  _injectNavOrdersLink();
 }
 
 function _injectNavOrdersLink() {
@@ -2057,20 +2054,39 @@ async function openMyOrders() {
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 
-  // Charger les commandes
-  const data = await apiGet('/api/orders');
+  // Si pas de token : afficher formulaire recherche par téléphone
   const body = document.getElementById('kmrc-myorders-body');
   if (!body) return;
 
-  const orders = Array.isArray(data) ? data : (data?.orders || []);
+  if (!_token) {
+    body.innerHTML =
+      '<div style="padding:1rem 0;">'+
+      '<p style="font-size:.83rem;color:#64748b;margin-bottom:.9rem;">'+
+      'Entrez votre numéro de téléphone utilisé lors de la commande.</p>'+
+      '<div style="display:flex;gap:.5rem;">'+
+      '<input id="kmrc-orders-phone" type="tel" placeholder="+269 321 xx xx"'+
+      ' style="flex:1;padding:.7rem 1rem;border:2px solid #e2e8f0;border-radius:8px;font-size:.88rem;"/>'+
+      '<button onclick="_lookupOrdersByPhone()"'+
+      ' style="background:#1a3a5c;color:#fff;border:none;border-radius:8px;'+
+      'padding:.7rem 1.1rem;font-weight:700;cursor:pointer;white-space:nowrap;">'+
+      'Rechercher →</button></div>'+
+      '<div id="kmrc-orders-lookup-result" style="margin-top:.8rem;"></div>'+
+      '</div>';
+    return;
+  }
+
+  // Charger les commandes avec token
+  const data = await apiGet('/api/orders');
+
+  const orders = Array.isArray(data) ? data : (data && data.orders ? data.orders : []);
 
   if (!orders.length) {
-    body.innerHTML = `
-      <div style="text-align:center;padding:2.5rem 1rem;color:#94a3b8;">
-        <div style="font-size:3rem;margin-bottom:.8rem;opacity:.4;">📦</div>
-        <div style="font-weight:700;margin-bottom:.3rem;">Aucune commande trouvée</div>
-        <div style="font-size:.8rem;">Vos futures commandes apparaîtront ici</div>
-      </div>`;
+    body.innerHTML =
+      '<div style="text-align:center;padding:2.5rem 1rem;color:#94a3b8;">'+
+      '<div style="font-size:3rem;margin-bottom:.8rem;opacity:.4;">📦</div>'+
+      '<div style="font-weight:700;margin-bottom:.3rem;">Aucune commande trouvée</div>'+
+      '<div style="font-size:.8rem;">Vos futures commandes apparaîtront ici</div>'+
+      '</div>';
     return;
   }
 
@@ -2125,6 +2141,43 @@ async function openMyOrders() {
         </div>
       </div>`;
   }).join('');
+}
+
+async function _lookupOrdersByPhone() {
+  var input  = document.getElementById('kmrc-orders-phone');
+  var result = document.getElementById('kmrc-orders-lookup-result');
+  if (!input || !result) return;
+
+  var phone = input.value.trim();
+  if (!phone) { result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>'; return; }
+
+  result.innerHTML = '<p style="color:#94a3b8;font-size:.82rem;">Recherche…</p>';
+
+  // Auto-register silencieux pour obtenir un token lié au numéro
+  var reg = await apiPost('/api/auth/auto-register', { phone: phone, full_name: 'Client', country: 'KM' });
+  if (!reg || reg.error || !reg.token) {
+    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Numéro introuvable ou aucune commande associée.</p>';
+    return;
+  }
+  _token = reg.token;
+
+  var data   = await apiGet('/api/orders');
+  var orders = Array.isArray(data) ? data : (data && data.orders ? data.orders : []);
+
+  if (!orders.length) {
+    result.innerHTML = '<p style="color:#94a3b8;font-size:.82rem;">Aucune commande trouvée pour ce numéro.</p>';
+    return;
+  }
+
+  // Sauvegarder pour les prochaines visites
+  try {
+    localStorage.setItem('kmrc_user', JSON.stringify({ name: reg.user && reg.user.full_name || 'Client', phone: phone, token: _token, savedAt: Date.now() }));
+    _savedUser = JSON.parse(localStorage.getItem('kmrc_user'));
+  } catch(e) {}
+
+  // Re-ouvrir le panel avec les commandes
+  document.getElementById('kmrc-myorders-modal')?.remove();
+  openMyOrders();
 }
 
 // Déconnexion (effacer le localStorage)
@@ -2454,6 +2507,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Bannière retour client + bouton "Mes commandes"
   _initReturningUser();
+
+  // Onglet Mes commandes toujours visible dans la nav
+  _injectNavOrdersLink();
 
   // Bouton WhatsApp flottant
   initWhatsAppButton();
