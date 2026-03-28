@@ -153,7 +153,7 @@ async function loadProducts() {
           <div class="promo-card-m-img">
             <img src="${getProductImage(p)}" alt="${p.name}"
               style="width:100%;height:100%;object-fit:cover;display:block;"
-              onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.8rem;\\'>${p.emoji || '📦'}</span>')">`
+              onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.8rem;\\'>${p.emoji || '📦'}</span>')"
             ${promo ? `<span class="pct-badge">−${promo}%</span>` : ''}
             ${needSize ? `<span style="position:absolute;bottom:.3rem;left:.3rem;
               background:#1a3a5c;color:#fff;font-size:.6rem;font-weight:700;
