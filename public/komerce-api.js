@@ -149,7 +149,9 @@ async function loadProducts() {
     if (isPWA) {
       // ── Carte PWA (.promo-card-m) ──
       return `
-        <div class="promo-card-m" data-product-id="${p.id}">
+        <div class="promo-card-m" data-product-id="${p.id}"
+          onclick="event.stopPropagation();openProduct(JSON.parse(this.dataset.pp))" data-pp="${pData}"
+          style="cursor:pointer;">
           <div class="promo-card-m-img">
             <img src="${getProductImage(p)}" alt="${p.name}"
               style="width:100%;height:100%;object-fit:cover;display:block;"
@@ -168,13 +170,13 @@ async function loadProducts() {
               ⚠️ Plus que ${stock}</div>` : ''}
             <div style="display:flex;gap:.4rem;margin-top:.4rem;">
               <button class="pm-btn"
-                onclick="addToCart(JSON.parse(this.dataset.p))"
+                onclick="event.stopPropagation();addToCart(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 style="flex:1;">
                 🛒 Ajouter
               </button>
               <button
-                onclick="quickOrder(JSON.parse(this.dataset.p))"
+                onclick="event.stopPropagation();quickOrder(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 title="Commander maintenant"
                 style="padding:.45rem .6rem;background:none;border:1.5px solid #1a3a5c;
@@ -187,7 +189,9 @@ async function loadProducts() {
     } else {
       // ── Carte Web (.promo-card) ──
       return `
-        <div class="promo-card" data-product-id="${p.id}">
+        <div class="promo-card" data-product-id="${p.id}"
+          onclick="event.stopPropagation();openProduct(JSON.parse(this.dataset.pp))" data-pp="${pData}"
+          style="cursor:pointer;">
           <div class="promo-card-img">
             <img src="${getProductImage(p)}" alt="${p.name}"
               style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
@@ -210,14 +214,14 @@ async function loadProducts() {
               margin-bottom:.4rem;">⚠️ Plus que ${stock} en stock</div>` : ''}
             <div style="display:flex;gap:.5rem;margin-top:.6rem;">
               <button
-                onclick="addToCart(JSON.parse(this.dataset.p))"
+                onclick="event.stopPropagation();addToCart(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 class="btn-order"
                 style="flex:1;display:flex;align-items:center;justify-content:center;gap:.4rem;">
                 🛒 Ajouter
               </button>
               <button
-                onclick="quickOrder(JSON.parse(this.dataset.p))"
+                onclick="event.stopPropagation();quickOrder(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 title="Commander maintenant"
                 style="padding:.55rem .75rem;background:none;border:2px solid #1a3a5c;
@@ -235,14 +239,244 @@ async function loadProducts() {
 // Lit le data-product du parent .promo-card ou .promo-card-m.
 function wireStaticButtons() {
   document.querySelectorAll('.btn-order, .pm-btn').forEach(btn => {
-    if (btn.onclick) return; // déjà câblé
+    if (btn.onclick) return;
     const card = btn.closest('[data-product]');
     if (!card) return;
     try {
       const p = JSON.parse(card.dataset.product);
-      btn.onclick = () => addToCart(p);
+      btn.onclick = (e) => { e.stopPropagation(); addToCart(p); };
     } catch (e) { /* ignorer */ }
   });
+
+  // Wirer clic carte -> openProduct (cartes statiques HTML)
+  document.querySelectorAll('[data-product]').forEach(card => {
+    if (card.dataset.productWired) return;
+    card.dataset.productWired = '1';
+    try {
+      const p = JSON.parse(card.dataset.product);
+      card.style.cursor = 'pointer';
+      card.onclick = () => openProduct(p);
+    } catch (e) { /* ignorer */ }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  1b. FICHE PRODUIT — MODALE
+// ═══════════════════════════════════════════════════════════════════════
+
+function openProduct(product) {
+  const p = product;
+  document.getElementById('kmrc-product-modal')?.remove();
+
+  const needSize  = COUTURE_CATS.some(c => (p.category || '').toLowerCase().includes(c));
+  const promo     = p.promo_pct ? Math.round(p.promo_pct) : null;
+  const stock     = p.stock ?? 99;
+  const img       = getProductImage(p);
+  const catColors = { vetements:'#7c3aed', ceremonie:'#be185d', maison:'#0891b2',
+                      electronique:'#0369a1', beaute:'#db2777', parfum:'#7c3aed',
+                      cuisine:'#d97706', wax:'#b45309' };
+  const cat       = (p.category || '').toLowerCase();
+  const pillKey   = Object.keys(catColors).find(k => cat.includes(k));
+  const pillColor = pillKey ? catColors[pillKey] : '#4a5568';
+  const pillBg    = pillKey ? pillColor + '15' : '#f0f4f8';
+  const pData     = JSON.stringify(p).replace(/"/g, '&quot;');
+
+  const PSIZES = ['XS','S','M','L','XL','XXL','XXXL'];
+
+  const modal = document.createElement('div');
+  modal.id = 'kmrc-product-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);
+    z-index:10200;display:flex;align-items:center;justify-content:center;
+    padding:1rem;animation:kmrcFadeIn .2s ease;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background:#fff;border-radius:20px;width:100%;max-width:680px;
+      max-height:90vh;overflow-y:auto;
+      animation:kmrcSlideUp .25s ease;
+    ">
+      <button onclick="document.getElementById('kmrc-product-modal').remove()"
+        style="float:right;margin:.8rem .8rem 0 0;
+               background:rgba(0,0,0,.07);border:none;border-radius:50%;
+               width:34px;height:34px;cursor:pointer;font-size:1rem;
+               display:flex;align-items:center;justify-content:center;
+               color:#4a5568;">✕</button>
+
+      <div style="display:flex;flex-wrap:wrap;gap:1.4rem;padding:1.4rem 1.6rem 1.2rem;clear:both;">
+
+        <div style="flex:0 0 auto;width:min(220px,100%);position:relative;">
+          <div style="border-radius:14px;overflow:hidden;background:#f0f4f8;
+                      aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;">
+            <img src="${img}" alt="${p.name}"
+              style="width:100%;height:100%;object-fit:cover;display:block;"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <span style="display:none;align-items:center;justify-content:center;
+                         width:100%;height:100%;font-size:4rem;">${p.emoji || '📦'}</span>
+          </div>
+          ${promo ? `<div style="position:absolute;top:.7rem;left:.7rem;
+            background:#dc2626;color:#fff;font-size:.75rem;font-weight:800;
+            padding:.25rem .7rem;border-radius:20px;">−${promo}%</div>` : ''}
+          ${stock < 5 ? `<div style="position:absolute;bottom:.7rem;left:.7rem;
+            background:#dc2626;color:#fff;font-size:.7rem;font-weight:700;
+            padding:.2rem .6rem;border-radius:12px;">⚠️ ${stock} restants</div>` : ''}
+        </div>
+
+        <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:.75rem;">
+          <div>
+            <span style="font-size:.72rem;font-weight:700;padding:.25rem .75rem;border-radius:20px;
+              background:${pillBg};color:${pillColor};border:1px solid ${pillColor}30;">
+              ${p.category || 'Produit'}
+            </span>
+          </div>
+          <h2 style="font-size:1.15rem;font-weight:800;color:#1a3a5c;margin:0;line-height:1.3;">
+            ${p.name}
+          </h2>
+          <div style="display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;">
+            <span style="font-size:1.3rem;font-weight:900;color:#e8a020;">${kmf(p.price_kmf)}</span>
+            <span style="font-size:.88rem;color:#94a3b8;">≈ ${eur(p.price_kmf)}</span>
+          </div>
+          <p style="font-size:.87rem;color:#4a5568;line-height:1.65;margin:0;">
+            ${p.description || ((p.emoji || '📦') + ' ' + (p.category ? 'Catégorie : ' + p.category : 'Produit Komerce'))}
+          </p>
+
+          ${needSize ? `
+          <div id="kmrc-prod-size-wrap">
+            <div style="font-size:.72rem;font-weight:700;color:#64748b;
+                        text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">
+              Taille <span id="kmrc-prod-size-warn" style="color:#dc2626;">*</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:.35rem;">
+              ${PSIZES.map(s => `
+                <button onclick="event.stopPropagation();_selectProductSize('${s}')"
+                  id="kmrc-psize-${s}"
+                  style="padding:.3rem .65rem;border-radius:7px;cursor:pointer;
+                         font-size:.8rem;font-weight:700;border:1.5px solid #e2e8f0;
+                         background:#fff;color:#64748b;transition:all .12s;">${s}</button>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <div style="display:flex;gap:.7rem;margin-top:.25rem;flex-wrap:wrap;">
+            <button onclick="event.stopPropagation();_addFromProductModal(${pData})"
+              style="flex:1;min-width:130px;padding:.75rem 1rem;
+                     background:linear-gradient(135deg,#14532d,#16a34a);
+                     color:#fff;border:none;border-radius:12px;
+                     font-size:.88rem;font-weight:800;cursor:pointer;">
+              🛒 Ajouter au panier
+            </button>
+            <button onclick="event.stopPropagation();_quickFromProductModal(${pData})"
+              style="padding:.75rem 1.1rem;background:linear-gradient(135deg,#1a3a5c,#2563eb);
+                     color:#fff;border:none;border-radius:12px;
+                     font-size:.88rem;font-weight:800;cursor:pointer;">
+              ⚡ Commander
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid #f0f4f8;padding:1.2rem 1.6rem 1.6rem;">
+        <div style="font-size:.78rem;font-weight:800;color:#1a3a5c;
+                    text-transform:uppercase;letter-spacing:.06em;margin-bottom:.9rem;">
+          Produits similaires
+        </div>
+        <div id="kmrc-similar">
+          <span style="color:#94a3b8;font-size:.82rem;">Chargement…</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  window._kmrcProductSize = null;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  _loadSimilar(p, 'kmrc-similar');
+}
+
+function _selectProductSize(size) {
+  window._kmrcProductSize = window._kmrcProductSize === size ? null : size;
+  ['XS','S','M','L','XL','XXL','XXXL'].forEach(s => {
+    const btn = document.getElementById('kmrc-psize-' + s);
+    if (!btn) return;
+    const active = s === window._kmrcProductSize;
+    btn.style.borderColor = active ? '#1a3a5c' : '#e2e8f0';
+    btn.style.background  = active ? '#1a3a5c' : '#fff';
+    btn.style.color       = active ? '#fff'    : '#64748b';
+  });
+  const warn = document.getElementById('kmrc-prod-size-warn');
+  if (warn) warn.style.display = window._kmrcProductSize ? 'none' : 'inline';
+}
+
+function _addFromProductModal(product) {
+  const needSize = COUTURE_CATS.some(c => (product.category || '').toLowerCase().includes(c));
+  if (needSize && !window._kmrcProductSize) {
+    toast('⚠️ Choisissez une taille', 'error');
+    const warn = document.getElementById('kmrc-prod-size-warn');
+    if (warn) { warn.style.display = 'inline'; warn.style.color = '#dc2626'; }
+    return;
+  }
+  const enriched = Object.assign({}, product);
+  if (window._kmrcProductSize) enriched._selected_size = window._kmrcProductSize;
+  addToCart(enriched);
+}
+
+function _quickFromProductModal(product) {
+  const needSize = COUTURE_CATS.some(c => (product.category || '').toLowerCase().includes(c));
+  if (needSize && !window._kmrcProductSize) {
+    toast('⚠️ Choisissez une taille', 'error');
+    return;
+  }
+  const enriched = Object.assign({}, product);
+  if (window._kmrcProductSize) enriched._selected_size = window._kmrcProductSize;
+  quickOrder(enriched);
+  document.getElementById('kmrc-product-modal')?.remove();
+}
+
+async function _loadSimilar(product, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const data    = await apiGet('/api/products?category=' + encodeURIComponent(product.category || '') + '&limit=6');
+  const all     = (data && data.products) ? data.products : [];
+  // eslint-disable-next-line eqeqeq
+  const similar = all.filter(p => p.id != product.id).slice(0, 4);
+
+  if (similar.length === 0) {
+    container.innerHTML = '<span style="color:#94a3b8;font-size:.82rem;">Aucun produit similaire trouvé.</span>';
+    return;
+  }
+
+  container.innerHTML =
+    '<div style="display:flex;gap:.8rem;overflow-x:auto;padding-bottom:.4rem;">' +
+    similar.map(p => {
+      const pd = JSON.stringify(p).replace(/"/g, '&quot;');
+      return `<div onclick="openProduct(JSON.parse(this.dataset.pp))" data-pp="${pd}"
+        style="flex:0 0 140px;border:1.5px solid #e2e8f0;border-radius:12px;
+               overflow:hidden;cursor:pointer;background:#fff;
+               transition:box-shadow .15s,transform .15s;"
+        onmouseenter="this.style.boxShadow='0 4px 16px rgba(26,58,92,.12)';this.style.transform='translateY(-2px)'"
+        onmouseleave="this.style.boxShadow='none';this.style.transform='translateY(0)'">
+        <div style="height:90px;overflow:hidden;background:#f0f4f8;
+                    display:flex;align-items:center;justify-content:center;">
+          <img src="${getProductImage(p)}" alt="${p.name}"
+            style="width:100%;height:100%;object-fit:cover;display:block;"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <span style="display:none;align-items:center;justify-content:center;
+                       width:100%;height:100%;font-size:2.5rem;">${p.emoji || '📦'}</span>
+        </div>
+        <div style="padding:.55rem .65rem;">
+          <div style="font-size:.76rem;font-weight:700;color:#1a3a5c;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+          <div style="font-size:.72rem;color:#e8a020;font-weight:700;margin:.2rem 0;">${kmf(p.price_kmf)}</div>
+          <button onclick="event.stopPropagation();addToCart(JSON.parse(this.dataset.pp))" data-pp="${pd}"
+            style="width:100%;padding:.3rem;background:#1a3a5c;color:#fff;
+                   border:none;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;">
+            🛒 Ajouter
+          </button>
+        </div>
+      </div>`;
+    }).join('') +
+    '</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════════════
