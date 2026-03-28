@@ -129,7 +129,14 @@ async function loadProducts() {
       return `
         <div class="promo-card-m" data-product-id="${p.id}">
           <div class="promo-card-m-img">
-            ${p.emoji || '📦'}
+            ${p.image_url
+              ? `<img src="${p.image_url}" alt="${p.name}"
+                   style="width:100%;height:100%;object-fit:cover;display:block;"
+                   onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+                 <span style="display:none;align-items:center;justify-content:center;
+                   width:100%;height:100%;font-size:2.8rem;">${p.emoji || '📦'}</span>`
+              : `<span style="font-size:2.8rem;">${p.emoji || '📦'}</span>`
+            }
             ${promo ? `<span class="pct-badge">−${promo}%</span>` : ''}
             ${needSize ? `<span style="position:absolute;bottom:.3rem;left:.3rem;
               background:#1a3a5c;color:#fff;font-size:.6rem;font-weight:700;
@@ -165,7 +172,14 @@ async function loadProducts() {
       return `
         <div class="promo-card" data-product-id="${p.id}">
           <div class="promo-card-img">
-            ${p.emoji ? `<span style="font-size:3rem">${p.emoji}</span>` : ''}
+            ${p.image_url
+              ? `<img src="${p.image_url}" alt="${p.name}"
+                   style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+                   onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+                 <span style="display:none;align-items:center;justify-content:center;
+                   width:100%;height:100%;font-size:3rem;">${p.emoji || '📦'}</span>`
+              : `<span style="font-size:3rem;">${p.emoji || '📦'}</span>`
+            }
             ${promo ? `<div class="promo-badge">−${promo}%</div>` : ''}
             ${needSize ? `<div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
               color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
@@ -342,12 +356,13 @@ function hasCoutureProduct(p) {
   return COUTURE_CATS.some(c => (p.category || '').toLowerCase().includes(c));
 }
 
-function addToCart(product) {
-  const existing = _cart.find(i => i.product.id === product.id);
+function addToCart(product, initialQty) {
+  // eslint-disable-next-line eqeqeq
+  const existing = _cart.find(i => i.product.id == product.id);
   if (existing) {
-    existing.qty += 1;
+    existing.qty += (initialQty || 1);
   } else {
-    _cart.push({ product, qty: 1, size: null }); // size: null = pas de taille choisie
+    _cart.push({ product, qty: initialQty || 1, size: null }); // size: null = pas de taille choisie
   }
   refreshCartBadge();
   // Feedback visuel — icône panier
@@ -364,13 +379,15 @@ function addToCart(product) {
 }
 
 function removeFromCart(productId) {
-  _cart = _cart.filter(i => i.product.id !== productId);
+  // eslint-disable-next-line eqeqeq
+  _cart = _cart.filter(i => i.product.id != productId);
   refreshCartBadge();
   renderCartBody();
 }
 
 function setQty(productId, qty) {
-  const item = _cart.find(i => i.product.id === productId);
+  // eslint-disable-next-line eqeqeq
+  const item = _cart.find(i => i.product.id == productId);
   if (!item) return;
   if (qty < 1) { removeFromCart(productId); return; }
   item.qty = qty;
@@ -548,11 +565,17 @@ function renderCartBody() {
     <div style="display:flex;gap:.8rem;padding:.9rem 0;
                 border-bottom:1px solid #f8fafc;align-items:flex-start;">
 
-      <!-- Emoji produit -->
+      <!-- Image produit -->
       <div style="width:48px;height:48px;background:#f8fafc;border-radius:10px;
                   display:flex;align-items:center;justify-content:center;
-                  font-size:1.6rem;flex-shrink:0;">
-        ${p.emoji || '📦'}
+                  font-size:1.6rem;flex-shrink:0;overflow:hidden;">
+        ${p.image_url
+          ? `<img src="${p.image_url}" alt="${p.name}"
+               style="width:100%;height:100%;object-fit:cover;border-radius:10px;"
+               onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+             <span style="display:none;align-items:center;justify-content:center;width:100%;height:100%;">${p.emoji || '📦'}</span>`
+          : (p.emoji || '📦')
+        }
       </div>
 
       <!-- Infos + contrôles -->
@@ -596,16 +619,16 @@ function renderCartBody() {
         <div style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem;">
           <div style="display:flex;align-items:center;border:1.5px solid #e2e8f0;
                       border-radius:8px;overflow:hidden;">
-            <button onclick="setQty(${p.id}, ${qty - 1})"
+            <button onclick="setQty('${p.id}', ${qty - 1})"
               style="width:30px;height:30px;border:none;background:#f8fafc;
                      cursor:pointer;font-size:1rem;font-weight:700;color:#4a5568;">−</button>
             <span style="width:28px;text-align:center;font-size:.9rem;
                           font-weight:700;color:#1a3a5c;">${qty}</span>
-            <button onclick="setQty(${p.id}, ${qty + 1})"
+            <button onclick="setQty('${p.id}', ${qty + 1})"
               style="width:30px;height:30px;border:none;background:#f8fafc;
                      cursor:pointer;font-size:1rem;font-weight:700;color:#4a5568;">+</button>
           </div>
-          <button onclick="removeFromCart(${p.id})"
+          <button onclick="removeFromCart('${p.id}')"
             style="background:#fef2f2;border:none;border-radius:8px;
                    width:30px;height:30px;cursor:pointer;color:#dc2626;font-size:.8rem;">
             🗑️
@@ -693,7 +716,8 @@ function renderCartBody() {
 }
 
 function setSize(productId, size) {
-  const item = _cart.find(i => i.product.id === productId);
+  // eslint-disable-next-line eqeqeq
+  const item = _cart.find(i => i.product.id == productId);
   if (!item) return;
   item.size = item.size === size ? null : size; // deselect si re-clic
   renderCartBody();
@@ -1107,8 +1131,427 @@ function showOrderSuccess(refs, data) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  7. RELAIS
+//  6b. CÉRÉMONIE — 3 types de commande
+//      ready_made       : article prêt (Dubai) · taille + option retouche
+//      fabric_only      : tissu au mètre/yard  · quantité (+ accessoires)
+//      custom_from_fabric : confection sur tissu · taille + option retouche
 // ═══════════════════════════════════════════════════════════════════════
+
+const CEREMONY_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+// État local du module cérémonie
+let _ceremonyState = {
+  type: null,        // 'ready_made' | 'fabric_only' | 'custom_from_fabric'
+  product: null,
+  size: null,
+  retouche: false,
+  qty: 1,
+  accessoires: [],
+};
+
+function openCeremony(product) {
+  // Réinitialiser l'état
+  _ceremonyState = { type: null, product, size: null, retouche: false, qty: 1, accessoires: [] };
+
+  const modal = document.createElement('div');
+  modal.id = 'kmrc-ceremony-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);
+    z-index:10100;display:flex;align-items:flex-end;justify-content:center;
+    padding:0;animation:fadeIn .2s ease;
+  `;
+
+  modal.innerHTML = `
+    <div id="kmrc-ceremony-sheet" style="
+      background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;
+      max-height:92vh;overflow-y:auto;padding:1.5rem 1.5rem 2rem;
+      animation:slideUp .25s ease;
+    ">
+      <!-- Poignée -->
+      <div style="width:40px;height:4px;background:#e2e8f0;border-radius:2px;
+                  margin:0 auto 1.2rem;"></div>
+
+      <!-- En-tête produit -->
+      <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:1.4rem;">
+        <div style="width:52px;height:52px;background:#f0f4f8;border-radius:12px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:1.8rem;flex-shrink:0;overflow:hidden;">
+          ${product?.image_url
+            ? `<img src="${product.image_url}" style="width:100%;height:100%;object-fit:cover;"
+                 onerror="this.style.display='none'">`
+            : (product?.emoji || '🪡')}
+        </div>
+        <div>
+          <div style="font-weight:800;color:#1a3a5c;font-size:.95rem;">
+            ${product?.name || 'Commande cérémonie'}
+          </div>
+          ${product?.price_kmf ? `
+          <div style="font-size:.82rem;color:#e8a020;font-weight:700;">
+            ${kmf(product.price_kmf)}
+            <span style="color:#94a3b8;font-weight:400;font-size:.75rem;"> ≈ ${eur(product.price_kmf)}</span>
+          </div>` : ''}
+        </div>
+        <button onclick="document.getElementById('kmrc-ceremony-modal').remove()"
+          style="margin-left:auto;background:none;border:none;font-size:1.3rem;
+                 cursor:pointer;color:#94a3b8;padding:.2rem;">✕</button>
+      </div>
+
+      <!-- Titre section -->
+      <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.08em;
+                  text-transform:uppercase;margin-bottom:.8rem;">
+        Type de commande
+      </div>
+
+      <!-- 3 types -->
+      <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.5rem;">
+
+        <!-- 1. ready_made -->
+        <button onclick="_selectCeremonyType('ready_made')" id="ctype-ready_made"
+          style="text-align:left;padding:.85rem 1rem;border-radius:12px;cursor:pointer;
+                 border:2px solid #e2e8f0;background:#fff;transition:all .15s;width:100%;">
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <span style="font-size:1.3rem;">👗</span>
+            <div>
+              <div style="font-weight:700;color:#1a3a5c;font-size:.9rem;">Article prêt à porter</div>
+              <div style="font-size:.75rem;color:#64748b;margin-top:.15rem;">
+                Fabriqué à Dubaï · tailles standard · retouche possible aux Comores
+              </div>
+            </div>
+          </div>
+        </button>
+
+        <!-- 2. fabric_only -->
+        <button onclick="_selectCeremonyType('fabric_only')" id="ctype-fabric_only"
+          style="text-align:left;padding:.85rem 1rem;border-radius:12px;cursor:pointer;
+                 border:2px solid #e2e8f0;background:#fff;transition:all .15s;width:100%;">
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <span style="font-size:1.3rem;">🧵</span>
+            <div>
+              <div style="font-weight:700;color:#1a3a5c;font-size:.9rem;">Achat tissu</div>
+              <div style="font-size:.75rem;color:#64748b;margin-top:.15rem;">
+                Au mètre / yard · accessoires disponibles
+              </div>
+            </div>
+          </div>
+        </button>
+
+        <!-- 3. custom_from_fabric -->
+        <button onclick="_selectCeremonyType('custom_from_fabric')" id="ctype-custom_from_fabric"
+          style="text-align:left;padding:.85rem 1rem;border-radius:12px;cursor:pointer;
+                 border:2px solid #e2e8f0;background:#fff;transition:all .15s;width:100%;">
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <span style="font-size:1.3rem;">✂️</span>
+            <div>
+              <div style="font-weight:700;color:#1a3a5c;font-size:.9rem;">Confection sur tissu</div>
+              <div style="font-size:.75rem;color:#64748b;margin-top:.15rem;">
+                Choix tissu · taille standard · retouche possible
+              </div>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Zone formulaire dynamique -->
+      <div id="kmrc-ceremony-form"></div>
+
+      <!-- CTA -->
+      <div id="kmrc-ceremony-cta" style="display:none;margin-top:1rem;">
+        <button id="kmrc-ceremony-add-btn"
+          onclick="_confirmCeremonyOrder()"
+          style="width:100%;padding:.9rem;background:linear-gradient(135deg,#1a3a5c,#2563eb);
+                 color:#fff;border:none;border-radius:12px;font-weight:800;
+                 font-size:.95rem;cursor:pointer;">
+          🛒 Ajouter au panier
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Styles animation (idempotent)
+  if (!document.getElementById('kmrc-ceremony-styles')) {
+    const s = document.createElement('style');
+    s.id = 'kmrc-ceremony-styles';
+    s.textContent = `
+      @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+      @keyframes slideUp { from { transform:translateY(40px);opacity:0 } to { transform:translateY(0);opacity:1 } }
+    `;
+    document.head.appendChild(s);
+  }
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function _selectCeremonyType(type) {
+  _ceremonyState.type = type;
+  _ceremonyState.size = null;
+  _ceremonyState.retouche = false;
+  _ceremonyState.qty = 1;
+  _ceremonyState.accessoires = [];
+
+  // Highlight sélection
+  ['ready_made', 'fabric_only', 'custom_from_fabric'].forEach(t => {
+    const btn = document.getElementById('ctype-' + t);
+    if (!btn) return;
+    btn.style.borderColor   = t === type ? '#1a3a5c' : '#e2e8f0';
+    btn.style.background    = t === type ? '#f0f4f8' : '#fff';
+  });
+
+  _renderCeremonyForm(type);
+}
+
+function _renderCeremonyForm(type) {
+  const form = document.getElementById('kmrc-ceremony-form');
+  const cta  = document.getElementById('kmrc-ceremony-cta');
+  if (!form) return;
+
+  // ── 1. ready_made ────────────────────────────────────────────────────
+  if (type === 'ready_made') {
+    form.innerHTML = `
+      <!-- Taille -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Taille <span id="csize-warn" style="color:#dc2626;">*</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+          ${CEREMONY_SIZES.map(s => `
+            <button onclick="_setCeremonySize('${s}')" id="csize-${s}"
+              style="padding:.35rem .7rem;border-radius:8px;cursor:pointer;font-size:.8rem;
+                     font-weight:700;border:1.5px solid #e2e8f0;background:#fff;
+                     color:#64748b;transition:all .12s;">
+              ${s}
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- Retouche -->
+      <div style="background:#f0f9ff;border-radius:10px;padding:.8rem 1rem;
+                  display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
+           onclick="_toggleCeremonyRetouche()">
+        <div>
+          <div style="font-weight:700;color:#0369a1;font-size:.88rem;">✂️ Retouche aux Comores</div>
+          <div style="font-size:.72rem;color:#0284c7;margin-top:.1rem;">Incluse · ajustement local à la livraison</div>
+        </div>
+        <div id="retouche-toggle" style="
+          width:38px;height:22px;border-radius:11px;background:#e2e8f0;
+          position:relative;transition:background .2s;flex-shrink:0;">
+          <div id="retouche-thumb" style="
+            position:absolute;top:3px;left:3px;width:16px;height:16px;
+            border-radius:50%;background:#fff;transition:left .2s;
+            box-shadow:0 1px 4px rgba(0,0,0,.2);"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── 2. fabric_only ───────────────────────────────────────────────────
+  else if (type === 'fabric_only') {
+    form.innerHTML = `
+      <!-- Quantité -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Quantité (mètres / yards)
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <div style="display:flex;align-items:center;border:1.5px solid #e2e8f0;
+                      border-radius:10px;overflow:hidden;">
+            <button onclick="_setCeremonyQty(_ceremonyState.qty - 1)"
+              style="width:38px;height:38px;border:none;background:#f8fafc;
+                     cursor:pointer;font-size:1.1rem;font-weight:700;color:#4a5568;">−</button>
+            <span id="cqty-display"
+              style="width:44px;text-align:center;font-size:1rem;font-weight:800;color:#1a3a5c;">
+              1
+            </span>
+            <button onclick="_setCeremonyQty(_ceremonyState.qty + 1)"
+              style="width:38px;height:38px;border:none;background:#f8fafc;
+                     cursor:pointer;font-size:1.1rem;font-weight:700;color:#4a5568;">+</button>
+          </div>
+          <span style="font-size:.8rem;color:#94a3b8;">m / yd</span>
+        </div>
+      </div>
+
+      <!-- Accessoires -->
+      <div style="margin-bottom:.5rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Accessoires (optionnel)
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+          ${['Fil assorti', 'Doublure', 'Boutons', 'Fermeture éclair', 'Dentelle', 'Broderie'].map(a => `
+            <button onclick="_toggleAccessoire('${a}')" id="acc-${a.replace(/ /g,'-')}"
+              style="padding:.35rem .7rem;border-radius:8px;cursor:pointer;font-size:.78rem;
+                     font-weight:600;border:1.5px solid #e2e8f0;background:#fff;
+                     color:#64748b;transition:all .12s;">
+              ${a}
+            </button>`).join('')}
+        </div>
+      </div>
+    `;
+    cta.style.display = 'block';
+  }
+
+  // ── 3. custom_from_fabric ─────────────────────────────────────────────
+  else if (type === 'custom_from_fabric') {
+    form.innerHTML = `
+      <!-- Tissu -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Type de tissu
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+          ${['Wax', 'Dentelle', 'Mousseline', 'Soie', 'Coton', 'Bogolan'].map(t => `
+            <button onclick="_selectTissu('${t}')" id="tissu-${t}"
+              style="padding:.35rem .7rem;border-radius:8px;cursor:pointer;font-size:.8rem;
+                     font-weight:700;border:1.5px solid #e2e8f0;background:#fff;
+                     color:#64748b;transition:all .12s;">
+              ${t}
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- Taille -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Taille <span id="csize-warn" style="color:#dc2626;">*</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+          ${CEREMONY_SIZES.map(s => `
+            <button onclick="_setCeremonySize('${s}')" id="csize-${s}"
+              style="padding:.35rem .7rem;border-radius:8px;cursor:pointer;font-size:.8rem;
+                     font-weight:700;border:1.5px solid #e2e8f0;background:#fff;
+                     color:#64748b;transition:all .12s;">
+              ${s}
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- Retouche -->
+      <div style="background:#f0f9ff;border-radius:10px;padding:.8rem 1rem;
+                  display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
+           onclick="_toggleCeremonyRetouche()">
+        <div>
+          <div style="font-weight:700;color:#0369a1;font-size:.88rem;">✂️ Retouche aux Comores</div>
+          <div style="font-size:.72rem;color:#0284c7;margin-top:.1rem;">Incluse · ajustement local à la livraison</div>
+        </div>
+        <div id="retouche-toggle" style="
+          width:38px;height:22px;border-radius:11px;background:#e2e8f0;
+          position:relative;transition:background .2s;flex-shrink:0;">
+          <div id="retouche-thumb" style="
+            position:absolute;top:3px;left:3px;width:16px;height:16px;
+            border-radius:50%;background:#fff;transition:left .2s;
+            box-shadow:0 1px 4px rgba(0,0,0,.2);"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Afficher CTA pour les types avec taille obligatoire (masqué jusqu'à sélection)
+  if (type === 'ready_made' || type === 'custom_from_fabric') {
+    cta.style.display = 'none'; // affiché quand taille sélectionnée
+  }
+}
+
+function _setCeremonySize(size) {
+  _ceremonyState.size = size;
+  CEREMONY_SIZES.forEach(s => {
+    const btn = document.getElementById('csize-' + s);
+    if (!btn) return;
+    btn.style.borderColor = s === size ? '#1a3a5c' : '#e2e8f0';
+    btn.style.background  = s === size ? '#1a3a5c' : '#fff';
+    btn.style.color       = s === size ? '#fff'    : '#64748b';
+  });
+  const warn = document.getElementById('csize-warn');
+  if (warn) warn.style.display = 'none';
+  const cta = document.getElementById('kmrc-ceremony-cta');
+  if (cta) cta.style.display = 'block';
+}
+
+function _setCeremonyQty(qty) {
+  if (qty < 1) qty = 1;
+  _ceremonyState.qty = qty;
+  const el = document.getElementById('cqty-display');
+  if (el) el.textContent = qty;
+}
+
+function _toggleCeremonyRetouche() {
+  _ceremonyState.retouche = !_ceremonyState.retouche;
+  const toggle = document.getElementById('retouche-toggle');
+  const thumb  = document.getElementById('retouche-thumb');
+  if (toggle) toggle.style.background = _ceremonyState.retouche ? '#0369a1' : '#e2e8f0';
+  if (thumb)  thumb.style.left        = _ceremonyState.retouche ? '19px'   : '3px';
+}
+
+function _selectTissu(tissu) {
+  _ceremonyState.tissu = tissu;
+  ['Wax','Dentelle','Mousseline','Soie','Coton','Bogolan'].forEach(t => {
+    const btn = document.getElementById('tissu-' + t);
+    if (!btn) return;
+    btn.style.borderColor = t === tissu ? '#e8a020' : '#e2e8f0';
+    btn.style.background  = t === tissu ? '#fffbeb' : '#fff';
+    btn.style.color       = t === tissu ? '#92400e' : '#64748b';
+  });
+}
+
+function _toggleAccessoire(nom) {
+  const idx = _ceremonyState.accessoires.indexOf(nom);
+  if (idx === -1) _ceremonyState.accessoires.push(nom);
+  else _ceremonyState.accessoires.splice(idx, 1);
+  const btn = document.getElementById('acc-' + nom.replace(/ /g, '-'));
+  const selected = _ceremonyState.accessoires.includes(nom);
+  if (btn) {
+    btn.style.borderColor = selected ? '#1a3a5c' : '#e2e8f0';
+    btn.style.background  = selected ? '#f0f4f8' : '#fff';
+    btn.style.color       = selected ? '#1a3a5c' : '#64748b';
+  }
+}
+
+function _confirmCeremonyOrder() {
+  const { type, product, size, retouche, qty, accessoires, tissu } = _ceremonyState;
+
+  if ((type === 'ready_made' || type === 'custom_from_fabric') && !size) {
+    toast('⚠️ Choisissez une taille', 'error');
+    const warn = document.getElementById('csize-warn');
+    if (warn) warn.style.display = 'inline';
+    return;
+  }
+
+  // Construire l'objet produit enrichi avec les options cérémonie
+  const enriched = {
+    ...product,
+    _ceremony_type:   type,
+    _ceremony_size:   size    || null,
+    _ceremony_retouche: retouche,
+    _ceremony_qty:    qty,
+    _ceremony_acc:    accessoires,
+    _ceremony_tissu:  tissu   || null,
+    // Nom enrichi pour l'affichage panier
+    name: [
+      product?.name || 'Tenue cérémonie',
+      size          ? `· T.${size}`                   : '',
+      tissu         ? `· ${tissu}`                    : '',
+      retouche      ? '· Retouche ✂️'                : '',
+      accessoires?.length ? `· +${accessoires.length} acc.` : '',
+    ].filter(Boolean).join(' '),
+  };
+
+  addToCart(enriched, qty);
+  document.getElementById('kmrc-ceremony-modal')?.remove();
+
+  // Labels lisibles
+  const typeLabel = {
+    ready_made: 'Prêt à porter',
+    fabric_only: 'Tissu',
+    custom_from_fabric: 'Confection',
+  }[type] || type;
+
+  toast(`🪡 ${typeLabel} ajouté au panier`, 'success');
+}
+
+
 
 async function loadRelais() {
   const data = await apiGet('/api/relais');
