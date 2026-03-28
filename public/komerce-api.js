@@ -1197,13 +1197,13 @@ function openCeremony(product) {
   modal.id = 'kmrc-ceremony-modal';
   modal.style.cssText = `
     position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);
-    z-index:10100;display:flex;align-items:flex-end;justify-content:center;
-    padding:0;animation:fadeIn .2s ease;
+    z-index:10100;display:flex;align-items:center;justify-content:center;
+    padding:1rem;animation:fadeIn .2s ease;
   `;
 
   modal.innerHTML = `
     <div id="kmrc-ceremony-sheet" style="
-      background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;
+      background:#fff;border-radius:20px;width:100%;max-width:520px;
       max-height:92vh;overflow-y:auto;padding:1.5rem 1.5rem 2rem;
       animation:slideUp .25s ease;
     ">
