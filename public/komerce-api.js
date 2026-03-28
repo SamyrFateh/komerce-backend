@@ -785,11 +785,23 @@ function showShareModal(url, code) {
 function checkoutCart() {
   if (_cart.length === 0) return;
   closeCart();
-  openOrderForm(_profil, _cart);
+  // Utiliser le checkout diaspora-aware si disponible (Komerce_Web_refait)
+  if (typeof window.openCheckout === 'function') {
+    window.openCheckout();
+  } else {
+    openOrderForm(_profil, _cart);
+  }
 }
 
 function quickOrder(product) {
-  openOrderForm(_profil, [{ product, qty: 1, size: null }]);
+  // Pré-remplir le panier avec cet article unique puis ouvrir le checkout
+  _cart = [{ product, qty: 1, size: null }];
+  refreshCartBadge();
+  if (typeof window.openCheckout === 'function') {
+    window.openCheckout();
+  } else {
+    openOrderForm(_profil, _cart);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════

@@ -252,19 +252,6 @@
     .track-sublabel { font-size:.7rem; color:var(--muted); margin-top:.2rem; }
 
     /* ── TRUST ── */
-    /* VALISE SECTION */
-    .valise-section { padding:70px 5%; background:var(--light); }
-    .valise-grid { display:flex; align-items:center; justify-content:center; gap:1.5rem; margin:3rem auto; max-width:900px; flex-wrap:wrap; }
-    .valise-card { flex:1; min-width:260px; max-width:380px; background:var(--white); border-radius:16px; padding:2rem; box-shadow:0 4px 20px rgba(0,0,0,.07); }
-    .valise-before { border:2px solid #e5e7eb; }
-    .valise-after { border:2px solid var(--accent); }
-    .valise-badge { display:inline-block; padding:.3rem .9rem; border-radius:20px; background:#f1f5f9; color:#64748b; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:1.2rem; }
-    .valise-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.75rem; }
-    .valise-list li { font-size:.9rem; color:var(--text); line-height:1.4; }
-    .valise-arrow { font-size:2.5rem; color:var(--accent); flex-shrink:0; font-weight:700; }
-    .valise-cta { background:var(--white); border-left:4px solid var(--accent); border-radius:12px; padding:1.6rem 2rem; max-width:620px; margin:0 auto; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,.06); }
-    .valise-cta-text { font-size:.95rem; color:var(--text); line-height:1.7; margin:0; }
-    @media(max-width:640px){ .valise-arrow { transform:rotate(90deg); } }
     .trust-section { padding:60px 5%; background:var(--primary); color:var(--white); }
     .trust-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:2rem; margin-top:2.5rem; }
     .trust-item { text-align:center; }
@@ -399,7 +386,842 @@
     .footer-links strong { color:rgba(255,255,255,0.8); font-size:.9rem; margin-bottom:.3rem; display:block; }
     .footer-bottom { border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem; font-size:.8rem; }
 
+
+    /* ── HERO TITLE ANIMATION ── */
+    .hero-line {
+      display:block;
+      opacity:0;
+      transform:translateY(18px);
+      animation:heroReveal .9s ease forwards;
+    }
+    .hero-line.line-1 { animation-delay:.15s; }
+    .hero-line.line-2 { animation-delay:.45s; }
+    .hero-subtitle {
+      opacity:0;
+      transform:translateY(12px);
+      animation:heroReveal .9s ease forwards;
+      animation-delay:.8s;
+    }
+    @keyframes heroReveal {
+      from { opacity:0; transform:translateY(18px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── UNIVERS EXPERIENCE ── */
+    .universe-switch-wrap {
+      padding: 26px 5% 10px;
+      background: var(--white);
+    }
+    .universe-switch {
+      max-width: 760px;
+      margin: 0 auto;
+      background: var(--light);
+      border: 1px solid rgba(26,58,92,0.08);
+      border-radius: 999px;
+      padding: .4rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+      box-shadow: 0 6px 20px rgba(26,58,92,0.08);
+    }
+    .universe-switch button {
+      border: none;
+      border-radius: 999px;
+      padding: .95rem 1.2rem;
+      background: transparent;
+      color: var(--primary);
+      font-size: .95rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .universe-switch button.active {
+      background: var(--primary);
+      color: var(--white);
+      box-shadow: 0 6px 18px rgba(26,58,92,0.18);
+    }
+
+    .univers-section {
+      padding: 70px 5% 30px;
+      background: var(--white);
+    }
+    .univers-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 1.4rem;
+      margin-top: 2rem;
+    }
+    .univers-card {
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .univers-card::before {
+      content:'';
+      position:absolute;
+      inset:0;
+      background: radial-gradient(circle at top right, rgba(255,255,255,0.35), transparent 35%);
+      pointer-events:none;
+    }
+    .univers-card h3 {
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin-bottom: .5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .univers-card p {
+      color: rgba(15,31,51,0.78);
+      font-size: .96rem;
+      line-height: 1.65;
+      margin-bottom: 1.1rem;
+      max-width: 500px;
+      position: relative;
+      z-index: 1;
+    }
+    .univers-list {
+      display:flex;
+      flex-wrap:wrap;
+      gap:.55rem;
+      margin-bottom:1.4rem;
+      position: relative;
+      z-index: 1;
+    }
+    .univers-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      padding:.45rem .8rem;
+      border-radius:999px;
+      font-size:.78rem;
+      font-weight:700;
+      background: rgba(255,255,255,0.65);
+      border: 1px solid rgba(15,31,51,0.08);
+      color: var(--primary);
+    }
+    .univers-actions {
+      display:flex;
+      gap:.8rem;
+      flex-wrap:wrap;
+      position: relative;
+      z-index: 1;
+    }
+    .univers-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      text-decoration:none;
+      padding:.8rem 1.15rem;
+      border-radius:10px;
+      font-size:.88rem;
+      font-weight:800;
+      transition:transform .2s, box-shadow .2s, background .2s;
+    }
+    .univers-btn:hover { transform: translateY(-2px); }
+    .univers-btn.primary {
+      color: var(--white);
+      box-shadow: 0 8px 22px rgba(26,58,92,0.15);
+    }
+    .univers-btn.secondary {
+      background: rgba(255,255,255,0.72);
+      color: var(--primary);
+      border: 1px solid rgba(26,58,92,0.12);
+    }
+    .univers-card.ceremony {
+      background: linear-gradient(135deg, #fff7ec 0%, #fde7c9 100%);
+      border: 1px solid rgba(232,160,32,0.35);
+    }
+    .univers-card.ceremony h3 { color: #92400e; }
+    .univers-card.ceremony .univers-btn.primary {
+      background: linear-gradient(135deg, #92400e, #e8a020);
+    }
+    .univers-card.daily {
+      background: linear-gradient(135deg, #f5f8fc 0%, #e9f0f8 100%);
+      border: 1px solid rgba(26,58,92,0.12);
+    }
+    .univers-card.daily h3 { color: var(--primary); }
+    .univers-card.daily .univers-btn.primary {
+      background: linear-gradient(135deg, #1a3a5c, #2b5d8a);
+    }
+
+    .catalog-section {
+      padding: 20px 5% 60px;
+      background: var(--white);
+    }
+    .catalog-panel {
+      display: none;
+      animation: fadeIn .25s ease;
+    }
+    .catalog-panel.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(8px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    .catalog-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:1rem;
+      flex-wrap:wrap;
+      margin-bottom: 1.4rem;
+    }
+    .catalog-badge {
+      display:inline-block;
+      padding:.35rem .75rem;
+      border-radius:999px;
+      font-size:.76rem;
+      font-weight:800;
+      letter-spacing:.04em;
+      margin-bottom:.7rem;
+    }
+    .catalog-panel.ceremony-panel .catalog-badge {
+      background: rgba(232,160,32,0.16);
+      color: #9a5a00;
+    }
+    .catalog-panel.daily-panel .catalog-badge {
+      background: rgba(26,58,92,0.10);
+      color: var(--primary);
+    }
+
+    .ceremony-showcase {
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:1.2rem;
+      margin-top:1rem;
+    }
+    .ceremony-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 1.2rem;
+      box-shadow: var(--shadow);
+      border:1px solid rgba(232,160,32,0.22);
+    }
+    .ceremony-card-emoji {
+      width:56px;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:14px;
+      background: linear-gradient(135deg, #fff1da, #fde8bd);
+      font-size:1.8rem;
+      margin-bottom:.9rem;
+    }
+    .ceremony-card h4 {
+      color:#7c3f00;
+      font-size:1rem;
+      font-weight:800;
+      margin-bottom:.35rem;
+    }
+    .ceremony-card p {
+      font-size:.85rem;
+      color:var(--muted);
+      line-height:1.55;
+      margin-bottom:.8rem;
+    }
+    .ceremony-meta {
+      font-size:.78rem;
+      font-weight:700;
+      color:#b45309;
+      margin-bottom:.9rem;
+    }
+    .ceremony-card button {
+      width:100%;
+      border:none;
+      border-radius:8px;
+      padding:.7rem .9rem;
+      background: linear-gradient(135deg, #92400e, #e8a020);
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    /* ── SIMPLE TRACKING ── */
+    .simple-tracking-section {
+      padding: 70px 5%;
+      background: linear-gradient(135deg, #f8fafc 0%, #eef4f9 100%);
+    }
+    .simple-tracking-wrap {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .simple-tracking-card {
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: 0 12px 32px rgba(26,58,92,0.10);
+      border: 1px solid rgba(26,58,92,0.08);
+      padding: 2rem;
+      overflow: hidden;
+    }
+    .simple-tracking-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      margin-bottom: 1.4rem;
+    }
+    .simple-tracking-kicker {
+      display: inline-block;
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(232,160,32,0.12);
+      border: 1px solid rgba(232,160,32,0.28);
+      border-radius: 999px;
+      padding: .35rem .8rem;
+      margin-bottom: .7rem;
+    }
+    .simple-tracking-title {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: .35rem;
+      letter-spacing: -.02em;
+    }
+    .simple-tracking-sub {
+      color: var(--muted);
+      font-size: .95rem;
+      line-height: 1.65;
+      max-width: 620px;
+    }
+    .simple-tracking-ref {
+      background: #f8fbff;
+      border: 1px solid rgba(26,58,92,0.10);
+      border-radius: 12px;
+      padding: .9rem 1rem;
+      min-width: 230px;
+    }
+    .simple-tracking-ref-label {
+      font-size: .74rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-weight: 700;
+      margin-bottom: .25rem;
+    }
+    .simple-tracking-ref-value {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: .04em;
+    }
+    .simple-tracking-steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 1rem;
+      margin: 1.6rem 0 1.2rem;
+    }
+    .simple-step {
+      position: relative;
+      background: #f8fafc;
+      border: 1px solid rgba(26,58,92,0.08);
+      border-radius: 16px;
+      padding: 1.1rem .95rem 1rem;
+      min-height: 145px;
+    }
+    .simple-step.active {
+      background: linear-gradient(135deg, #fff8ee 0%, #fff4e1 100%);
+      border-color: rgba(232,160,32,0.35);
+      box-shadow: 0 10px 26px rgba(232,160,32,0.10);
+    }
+    .simple-step.done {
+      background: linear-gradient(135deg, #eefaf3 0%, #f7fdf9 100%);
+      border-color: rgba(46,204,113,0.28);
+    }
+    .simple-step-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      background: rgba(26,58,92,0.08);
+      margin-bottom: .9rem;
+    }
+    .simple-step.done .simple-step-icon {
+      background: rgba(46,204,113,0.12);
+    }
+    .simple-step.active .simple-step-icon {
+      background: rgba(232,160,32,0.14);
+    }
+    .simple-step-title {
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: .25rem;
+    }
+    .simple-step-desc {
+      font-size: .82rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .simple-step-status {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: .72rem;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: .28rem .55rem;
+      background: rgba(26,58,92,0.08);
+      color: var(--primary);
+    }
+    .simple-step.done .simple-step-status {
+      background: rgba(46,204,113,0.14);
+      color: #1f8b4c;
+    }
+    .simple-step.active .simple-step-status {
+      background: rgba(232,160,32,0.18);
+      color: #9a5a00;
+    }
+    .simple-tracking-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 1.4rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(26,58,92,0.08);
+    }
+    .simple-tracking-message {
+      font-size: .95rem;
+      color: var(--text);
+      line-height: 1.6;
+      max-width: 620px;
+    }
+    .simple-tracking-message strong {
+      color: var(--primary);
+    }
+    .simple-tracking-actions {
+      display: flex;
+      gap: .7rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── SUIVI COMMANDES EN COURS (style Amazon) ── */
+    #kmrc-live-orders {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 10100;
+      transform: translateY(100%);
+      transition: transform .45s cubic-bezier(.34,1.2,.64,1);
+      pointer-events: none;
+    }
+    #kmrc-live-orders.visible {
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .live-orders-bar {
+      background: linear-gradient(135deg, #0f2238 0%, #1a3a5c 100%);
+      border-top: 2px solid rgba(232,160,32,.5);
+      box-shadow: 0 -8px 40px rgba(0,0,0,.35);
+      padding: .6rem 1.4rem .6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      cursor: pointer;
+      transition: background .2s;
+      min-height: 58px;
+    }
+    .live-orders-bar:hover { background: linear-gradient(135deg,#122843,#1f4a6e); }
+    .live-orders-pulse {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+      animation: livePulse 2s ease infinite;
+    }
+    @keyframes livePulse {
+      0%   { box-shadow: 0 0 0 0   rgba(34,197,94,.6); }
+      60%  { box-shadow: 0 0 0 9px rgba(34,197,94,0);  }
+      100% { box-shadow: 0 0 0 0   rgba(34,197,94,0);  }
+    }
+    .live-orders-label {
+      font-size: .78rem; font-weight: 800; color: #22c55e;
+      text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0;
+    }
+    .live-orders-summary {
+      flex: 1; min-width: 0; font-size: .88rem;
+      color: rgba(255,255,255,.9); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+    }
+    .live-orders-chevron { color: var(--accent); font-size: 1.1rem; transition: transform .3s; flex-shrink: 0; }
+    #kmrc-live-orders.panel-open .live-orders-chevron { transform: rotate(180deg); }
+    .live-orders-close {
+      background: rgba(255,255,255,.1); border: none; border-radius: 50%;
+      width: 26px; height: 26px; color: rgba(255,255,255,.6);
+      font-size: .8rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .live-orders-close:hover { background: rgba(255,255,255,.2); }
+    .live-orders-panel {
+      background: #fff; border-top: 1px solid rgba(232,160,32,.25);
+      max-height: 0; overflow: hidden;
+      transition: max-height .4s cubic-bezier(.4,0,.2,1);
+    }
+    #kmrc-live-orders.panel-open .live-orders-panel { max-height: 70vh; overflow-y: auto; }
+    .live-orders-panel-inner { padding: 1.2rem 1.4rem 1.4rem; }
+    .lo-panel-title { font-size: .7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 1rem; }
+    .lo-order-card { border: 1px solid rgba(26,58,92,.1); border-radius: 14px; overflow: hidden; margin-bottom: .9rem; }
+    .lo-order-card:last-child { margin-bottom: 0; }
+    .lo-order-card:hover { box-shadow: 0 4px 20px rgba(26,58,92,.12); }
+    .lo-order-head { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem .7rem; background: #f8fafc; border-bottom: 1px solid rgba(26,58,92,.07); gap: .7rem; flex-wrap: wrap; }
+    .lo-order-ref { font-weight: 800; font-size: .88rem; color: var(--primary); letter-spacing: .03em; }
+    .lo-order-date { font-size: .72rem; color: var(--muted); margin-top: .1rem; }
+    .lo-status-pill { font-size: .72rem; font-weight: 800; padding: .28rem .75rem; border-radius: 999px; white-space: nowrap; }
+    .lo-status-pill.confirmed   { background:#eff6ff; color:#1d4ed8; }
+    .lo-status-pill.purchasing  { background:#fff7ed; color:#c2410c; }
+    .lo-status-pill.preparation { background:#fef9c3; color:#854d0e; }
+    .lo-status-pill.shipped     { background:#e0f2fe; color:#0369a1; }
+    .lo-status-pill.transit     { background:#f0fdf4; color:#166534; }
+    .lo-status-pill.available   { background:#dcfce7; color:#15803d; animation: availablePop .4s ease; }
+    @keyframes availablePop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    .lo-timeline { display: flex; align-items: center; padding: .9rem 1rem .75rem; gap: 0; overflow-x: auto; }
+    .lo-tl-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 54px; }
+    .lo-tl-connector { flex: 1; height: 2px; margin-top: -15px; min-width: 8px; }
+    .lo-tl-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; position: relative; z-index: 1; }
+    .lo-tl-dot.done   { background: #16a34a; color: #fff; }
+    .lo-tl-dot.active { background: var(--primary); color: #fff; box-shadow: 0 0 0 5px rgba(26,58,92,.14); animation: loActivePulse 2s ease infinite; }
+    .lo-tl-dot.future { background: #e2e8f0; color: #94a3b8; }
+    @keyframes loActivePulse { 0%,100%{box-shadow:0 0 0 4px rgba(26,58,92,.12)} 50%{box-shadow:0 0 0 8px rgba(26,58,92,.06)} }
+    .lo-tl-label { font-size: .6rem; font-weight: 700; color: #94a3b8; text-align: center; margin-top: .35rem; line-height: 1.2; max-width: 52px; }
+    .lo-tl-label.done   { color: #16a34a; }
+    .lo-tl-label.active { color: var(--primary); font-weight: 800; }
+    .lo-order-footer { padding: .6rem 1rem .85rem; display: flex; align-items: center; justify-content: space-between; gap: .7rem; flex-wrap: wrap; }
+    .lo-eta { font-size: .78rem; color: var(--text); line-height: 1.4; }
+    .lo-eta strong { color: var(--primary); }
+    .lo-eta-tag { display: inline-block; background: rgba(232,160,32,.12); color: #9a5a00; font-size: .7rem; font-weight: 700; padding: .18rem .55rem; border-radius: 6px; margin-top: .25rem; }
+    .lo-refresh-btn { background: none; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .38rem .75rem; font-size: .75rem; font-weight: 700; color: var(--primary); cursor: pointer; transition: all .18s; white-space: nowrap; }
+    .lo-refresh-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .lo-add-ref-wrap { padding: 1rem 1.4rem 1.4rem; border-top: 1px solid rgba(26,58,92,.07); }
+    .lo-add-ref-label { font-size: .72rem; color: var(--muted); margin-bottom: .5rem; }
+    .lo-add-ref-row { display: flex; gap: .5rem; }
+    .lo-add-ref-input { flex: 1; padding: .6rem .85rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: .85rem; outline: none; transition: border-color .2s; text-transform: uppercase; }
+    .lo-add-ref-input:focus { border-color: var(--primary); }
+    .lo-add-ref-btn { background: var(--primary); color: #fff; border: none; border-radius: 8px; padding: .6rem 1rem; font-size: .82rem; font-weight: 700; cursor: pointer; }
+
+    /* ── PROVERBES AFRICAINS ── */
+    .proverb-band {
+      background: linear-gradient(135deg, #0f1f33 0%, #1a3a5c 100%);
+      overflow: hidden;
+      padding: .75rem 0;
+      border-top: 2px solid rgba(232,160,32,0.35);
+      border-bottom: 2px solid rgba(232,160,32,0.35);
+      position: relative;
+    }
+    .proverb-band::before,
+    .proverb-band::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 80px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .proverb-band::before {
+      left: 0;
+      background: linear-gradient(90deg, #0f1f33, transparent);
+    }
+    .proverb-band::after {
+      right: 0;
+      background: linear-gradient(-90deg, #0f1f33, transparent);
+    }
+    .proverb-track {
+      display: flex;
+      gap: 4rem;
+      width: max-content;
+      animation: scrollProverbs 48s linear infinite;
+    }
+    .proverb-track:hover { animation-play-state: paused; }
+    @keyframes scrollProverbs {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .proverb-item {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .proverb-ornament { color: var(--accent); font-size: 1rem; opacity: .7; }
+    .proverb-text {
+      font-size: .82rem;
+      color: rgba(255,255,255,0.88);
+      font-style: italic;
+      letter-spacing: .01em;
+    }
+    .proverb-origin {
+      font-size: .7rem;
+      color: var(--accent);
+      font-weight: 700;
+      font-style: normal;
+      opacity: .85;
+    }
+
+    /* ── CHECKOUT DIASPORA-AWARE ── */
+    .checkout-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,20,40,.72);
+      backdrop-filter: blur(6px);
+      z-index: 10200;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      animation: coFadeIn .2s ease;
+    }
+    .checkout-overlay.open { display: flex; }
+    @keyframes coFadeIn { from { opacity:0; } to { opacity:1; } }
+
+    .checkout-sheet {
+      background: #fff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 94vh;
+      overflow-y: auto;
+      box-shadow: 0 32px 80px rgba(0,0,0,.35);
+      animation: coSlideUp .28s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes coSlideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .checkout-header {
+      padding: 1.4rem 1.5rem 1rem;
+      border-bottom: 1px solid #f0f4f8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .checkout-header h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .checkout-close {
+      background: none; border: none;
+      font-size: 1.2rem; cursor: pointer; color: #94a3b8;
+      padding: .2rem; line-height: 1;
+    }
+    .checkout-body { padding: 1.4rem 1.5rem; }
+    .checkout-steps {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1.6rem;
+    }
+    .co-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .co-step::after {
+      content: '';
+      position: absolute;
+      top: 13px; left: 50%;
+      width: 100%; height: 2px;
+      background: #e2e8f0;
+      z-index: 0;
+    }
+    .co-step:last-child::after { display: none; }
+    .co-step-dot {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #94a3b8;
+      font-size: .72rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; z-index: 1;
+      transition: background .2s, color .2s;
+    }
+    .co-step-dot.active { background: var(--primary); color: #fff; }
+    .co-step-dot.done   { background: #16a34a;       color: #fff; }
+    .co-step-lbl {
+      font-size: .64rem; font-weight: 600;
+      color: #94a3b8; margin-top: .35rem;
+      text-align: center;
+      transition: color .2s;
+    }
+    .co-step-lbl.active { color: var(--primary); }
+    .co-step-lbl.done   { color: #16a34a; }
+
+    /* Location toggle */
+    .co-location-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+      margin-bottom: 1.4rem;
+    }
+    .co-loc-btn {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: .9rem .8rem;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all .18s;
+      text-align: left;
+    }
+    .co-loc-btn:hover { border-color: #b8cfe8; }
+    .co-loc-btn.selected {
+      border-color: var(--primary);
+      background: rgba(26,58,92,.05);
+    }
+    .co-loc-icon { font-size: 1.4rem; display: block; margin-bottom: .3rem; }
+    .co-loc-title { font-size: .88rem; font-weight: 800; color: var(--primary); }
+    .co-loc-sub   { font-size: .73rem; color: var(--muted); margin-top: .1rem; }
+
+    /* Form fields */
+    .co-field { margin-bottom: 1rem; }
+    .co-label {
+      display: block;
+      font-size: .75rem; font-weight: 700;
+      color: var(--primary); text-transform: uppercase;
+      letter-spacing: .05em; margin-bottom: .4rem;
+    }
+    .co-label .co-required { color: #e74c3c; }
+    .co-input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 9px;
+      font-size: .95rem; color: var(--text);
+      background: #fff; outline: none;
+      transition: border-color .2s;
+      box-sizing: border-box;
+    }
+    .co-input:focus { border-color: var(--primary); }
+    .co-input::placeholder { color: #adb5bd; }
+    .co-input-flag {
+      position: relative;
+    }
+    .co-input-flag .co-flag {
+      position: absolute; left: .9rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem; pointer-events: none;
+    }
+    .co-input-flag .co-input { padding-left: 2.5rem; }
+
+    .co-diaspora-block {
+      background: linear-gradient(135deg, #f0f6ff, #e8f0fb);
+      border: 1.5px solid rgba(26,58,92,.15);
+      border-radius: 12px;
+      padding: 1.1rem;
+      margin-bottom: 1.2rem;
+      display: none;
+    }
+    .co-diaspora-block.visible { display: block; }
+    .co-diaspora-title {
+      font-size: .8rem; font-weight: 800;
+      color: var(--primary); margin-bottom: .25rem;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .co-diaspora-sub {
+      font-size: .74rem; color: var(--muted);
+      margin-bottom: .9rem; line-height: 1.5;
+    }
+
+    /* Payment methods */
+    .co-payment-methods { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.2rem; }
+    .co-pay-opt {
+      border: 2px solid #e2e8f0;
+      border-radius: 11px;
+      padding: .9rem 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      transition: all .18s;
+      background: #fff;
+    }
+    .co-pay-opt:hover { border-color: #b8cfe8; }
+    .co-pay-opt.selected { border-color: var(--primary); background: rgba(26,58,92,.04); }
+    .co-pay-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .co-pay-title { font-weight: 700; font-size: .9rem; color: var(--primary); }
+    .co-pay-sub   { font-size: .75rem; color: var(--muted); margin-top: .1rem; }
+    .co-pay-badge {
+      margin-left: auto;
+      font-size: .68rem; font-weight: 800;
+      padding: .2rem .5rem; border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .co-pay-badge.recommended {
+      background: rgba(46,204,113,.12);
+      color: #16a34a;
+    }
+    .co-pay-badge.local {
+      background: rgba(232,160,32,.15);
+      color: #9a5a00;
+    }
+
+    .co-summary-box {
+      background: var(--light);
+      border-radius: 10px;
+      padding: .9rem 1rem;
+      margin-bottom: 1.2rem;
+    }
+    .co-summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: .83rem;
+      color: var(--muted);
+      margin-bottom: .35rem;
+    }
+    .co-summary-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary);
+      border-top: 1px solid #e2e8f0;
+      padding-top: .55rem;
+      margin-top: .35rem;
+    }
+
+    .co-cta {
+      width: 100%;
+      padding: 1rem;
+      border: none; border-radius: 11px;
+      font-size: .97rem; font-weight: 800;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(26,58,92,.22);
+      transition: transform .18s, box-shadow .18s;
+      letter-spacing: .01em;
+    }
+    .co-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(26,58,92,.3); }
+    .co-note {
+      text-align: center;
+      font-size: .73rem;
+      color: var(--muted);
+      margin-top: .75rem;
+      line-height: 1.5;
+    }
+
+    .co-panel { display: none; }
+    .co-panel.active { display: block; }
+
     /* ── RESPONSIVE ── */
+    @media(max-width:900px) {
+      .univers-grid,
+      .ceremony-showcase { grid-template-columns: 1fr; }
+      .simple-tracking-steps { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media(max-width:640px) {
+      .simple-tracking-steps { grid-template-columns: 1fr; }
+      .simple-tracking-card { padding: 1.3rem; }
+    }
+
     @media(max-width:768px) {
       nav { padding:0 4%; }
       .nav-links { display:none; }
@@ -416,9 +1238,9 @@
 <nav>
   <div class="logo">Ko<span>merce</span></div>
   <div class="nav-links">
-    <a href="#promos">🔥 Promos</a>
-    <a href="#comment">Comment ça marche</a>
-    <a href="#suivi">Suivi commande</a>
+    <a href="#univers">✨ Univers</a>
+    <a href="#ceremony-section">🎉 Cérémonies</a>
+    <a href="#daily-section">🏠 Quotidien</a>
     <a href="#commander" class="nav-cta">Commander →</a>
   </div>
 </nav>
@@ -426,16 +1248,17 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">🏝️ La plateforme pensée pour les Comores</div>
-  <h1>Vos envies traversent la mer.<br><em>Vous, voyagez libre.</em></h1>
-  <p class="hero-subtitle">
-    Cadeaux, mariage, soutien familial ou achat personnel — commandez depuis chez vous, vos proches récupèrent à Anjouan. On s'occupe de l'achat, du transport et de la livraison.
-  </p>
+  <h1>
+      <span class="hero-line line-1">Vos envies traversent la mer.</span>
+      <span class="hero-line line-2" style="color:#e8a020;">Profitez de la vie.</span>
+    </h1>
+  <p class="hero-subtitle">Commandez facilement pour votre famille aux Comores : maison, quotidien, cérémonies et événements, depuis là où vous êtes.</p>
   <div class="hero-value">
     <span class="vp-icon">✨</span>
     Tout ce que vous voulez, livré aux Comores sans bouger de chez vous · 3 à 5 semaines · Prix tout inclus
   </div>
   <div class="hero-actions">
-    <a href="#promos" class="btn-primary">🔥 Voir les promos en cours</a>
+    <a href="#univers" class="btn-primary">✨ Choisir mon univers</a>
     <a href="#commander" class="btn-secondary">📦 Passer une commande</a>
   </div>
   <div class="hero-testimonial">
@@ -448,6 +1271,114 @@
     </div>
   </div>
 </section>
+
+
+<!-- PROVERBES AFRICAINS -->
+<div class="proverb-band" title="Passer la souris pour faire une pause">
+  <div class="proverb-track" id="proverb-track">
+    <!-- Les proverbes sont dupliqués pour le scroll infini -->
+  </div>
+</div>
+
+<!-- UNIVERSE SWITCH -->
+<section class="universe-switch-wrap">
+  <div class="universe-switch">
+    <button id="switch-ceremony" class="active" onclick="showUniverse('ceremony')">🎉 Cérémonies & événements</button>
+    <button id="switch-daily" onclick="showUniverse('daily')">🏠 Maison & quotidien</button>
+  </div>
+</section>
+
+<!-- UNIVERS -->
+<section class="univers-section" id="univers">
+  <div class="section-eyebrow">✨ Deux univers, un même service</div>
+  <h2 class="section-title">Choisissez l’univers qui correspond à votre besoin</h2>
+  <p class="section-sub">
+    Komerce répond à deux grands usages réels : les achats pour le quotidien et les achats pour les moments importants.
+    Vous pouvez commander aussi bien un produit utile pour la maison qu’un article lié à une cérémonie ou à un événement.
+  </p>
+
+  <div class="univers-grid">
+    <article class="univers-card ceremony">
+      <h3>🎉 Cérémonies & événements</h3>
+      <p>
+        Pour les mariages, fêtes, cadeaux marquants et commandes liées aux grands moments.
+        Cet univers met en avant les tissus cérémonie, la dentelle, les tenues habillées et les besoins de fête.
+      </p>
+      <div class="univers-list">
+        <span class="univers-pill">💍 Mariage</span>
+        <span class="univers-pill">🧵 Tissus cérémonie</span>
+        <span class="univers-pill">🪡 Dentelle</span>
+        <span class="univers-pill">👗 Tenues habillées</span>
+        <span class="univers-pill">🎁 Événements familiaux</span>
+      </div>
+      <div class="univers-actions">
+        <a href="#ceremony-section" class="univers-btn primary" onclick="showUniverse('ceremony')">Explorer cet univers</a>
+        <a href="#commander" class="univers-btn secondary">Commander un besoin précis</a>
+      </div>
+    </article>
+
+    <article class="univers-card daily">
+      <h3>🏠 Maison & quotidien</h3>
+      <p>
+        Pour les besoins utiles et récurrents de la famille : téléphones, électroménager, cuisine, accessoires maison
+        et produits demandés tous les jours. Un univers plus direct, plus pratique, plus rapide à commander.
+      </p>
+      <div class="univers-list">
+        <span class="univers-pill">📱 Téléphones</span>
+        <span class="univers-pill">🍳 Cuisine</span>
+        <span class="univers-pill">🏡 Maison</span>
+        <span class="univers-pill">🧺 Quotidien</span>
+        <span class="univers-pill">🎁 Cadeaux utiles</span>
+      </div>
+      <div class="univers-actions">
+        <a href="#daily-section" class="univers-btn primary" onclick="showUniverse('daily')">Voir les produits du quotidien</a>
+        <a href="#promos" class="univers-btn secondary" onclick="showUniverse('daily')">Voir les promos</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- CATALOG PANELS -->
+<section class="catalog-section">
+  <div id="ceremony-section" class="catalog-panel ceremony-panel active">
+    <div class="catalog-header">
+      <div>
+        <div class="catalog-badge">🎉 Univers 1</div>
+        <h2 class="section-title">Cérémonies & événements</h2>
+        <p class="section-sub">
+          Une sélection pensée pour les mariages, les fêtes, les cadeaux marquants et les tenues qui comptent.
+        </p>
+      </div>
+    </div>
+
+    <div class="ceremony-showcase">
+      <div class="ceremony-card">
+        <div class="ceremony-card-emoji">🧵</div>
+        <h4>Tissus cérémonie</h4>
+        <p>Dentelle, tissus habillés et matières adaptées aux grands moments et aux commandes de fête.</p>
+        <div class="ceremony-meta">Catégorie à valoriser visuellement</div>
+        <button onclick="location.href='#commander'">Choisir un tissu →</button>
+      </div>
+
+      <div class="ceremony-card">
+        <div class="ceremony-card-emoji">👗</div>
+        <h4>Tenues & modèles</h4>
+        <p>Tenues prêtes, inspirations et articles habillés pour mariage, fête et événements familiaux.</p>
+        <div class="ceremony-meta">Met en avant le côté émotionnel</div>
+        <button onclick="location.href='#commander'">Choisir une tenue →</button>
+      </div>
+
+      <div class="ceremony-card">
+        <div class="ceremony-card-emoji">✨</div>
+        <h4>Commande guidée</h4>
+        <p>Une façon simple de préparer une commande liée à un événement, sans compliquer l’expérience.</p>
+        <div class="ceremony-meta">À connecter plus tard si besoin</div>
+        <button onclick="location.href='#commander'">Commander →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="daily-section" class="catalog-panel daily-panel">
 
 <!-- ADVANTAGE STRIP -->
 <div class="advantage-strip">
@@ -609,6 +1540,9 @@
       Les prix affichés incluent le fret maritime, la douane et la livraison au point relais à Anjouan.
     </div>
   </div>
+</div>
+</section>
+
 </section>
 
 <!-- HOW IT WORKS -->
@@ -649,289 +1583,72 @@
   </div>
 </section>
 
-<!-- TRACKING TIMELINE -->
-<section class="tracking-section" id="suivi">
-  <div class="section-eyebrow">📍 Suivi en direct</div>
-  <h2 class="section-title">Votre commande, étape par étape</h2>
-  <p class="section-sub">Chaque commande est traçable, étape par étape, jusqu'à votre point relais.</p>
 
-  <div class="tracking-timeline" style="margin-top:2.5rem;">
-    <div class="track-step">
-      <div class="track-dot done">✓</div>
-      <div class="track-label">Commandé</div>
-      <div class="track-sublabel">Paiement confirmé</div>
-    </div>
-    <div class="track-step">
-      <div class="track-dot active">🚢</div>
-      <div class="track-label">Expédié</div>
-      <div class="track-sublabel">En transit</div>
-    </div>
-    <div class="track-step">
-      <div class="track-dot">🏪</div>
-      <div class="track-label">Disponible</div>
-      <div class="track-sublabel">Point relais Anjouan</div>
+<!-- SIMPLE TRACKING SECTION -->
+<section class="simple-tracking-section" id="suivi">
+  <div class="simple-tracking-wrap">
+    <div class="simple-tracking-card">
+      <div class="simple-tracking-top">
+        <div>
+          <div class="simple-tracking-kicker">Suivi simple</div>
+          <div class="simple-tracking-title">Suivez votre commande sans vous perdre dans trop de statuts</div>
+          <div class="simple-tracking-sub">
+            Pour vos clients, Komerce peut afficher seulement l’essentiel : commande reçue, préparation, en transit,
+            puis disponible. Clair, rassurant, facile à comprendre.
+          </div>
+        </div>
+
+        <div class="simple-tracking-ref">
+          <div class="simple-tracking-ref-label">Exemple de commande</div>
+          <div class="simple-tracking-ref-value">KMC-2601-0005</div>
+        </div>
+      </div>
+
+      <div class="simple-tracking-steps">
+        <div class="simple-step done">
+          <div class="simple-step-status">Terminé</div>
+          <div class="simple-step-icon">✅</div>
+          <div class="simple-step-title">Commande reçue</div>
+          <div class="simple-step-desc">La commande a bien été enregistrée et prise en charge.</div>
+        </div>
+
+        <div class="simple-step done">
+          <div class="simple-step-status">Terminé</div>
+          <div class="simple-step-icon">📦</div>
+          <div class="simple-step-title">Préparation</div>
+          <div class="simple-step-desc">Le colis a été préparé et validé avant expédition.</div>
+        </div>
+
+        <div class="simple-step active">
+          <div class="simple-step-status">En cours</div>
+          <div class="simple-step-icon">🚢</div>
+          <div class="simple-step-title">En transit</div>
+          <div class="simple-step-desc">Votre commande est en route vers les Comores.</div>
+        </div>
+
+        <div class="simple-step">
+          <div class="simple-step-status">À venir</div>
+          <div class="simple-step-icon">📍</div>
+          <div class="simple-step-title">Disponible</div>
+          <div class="simple-step-desc">Le client pourra bientôt retirer sa commande au relais.</div>
+        </div>
+      </div>
+
+      <div class="simple-tracking-bottom">
+        <div class="simple-tracking-message">
+          <strong>Statut affiché au client :</strong> votre commande est actuellement
+          <strong>en transit</strong>. Vous évitez les détails techniques tout en gardant un suivi utile.
+        </div>
+
+        <div class="simple-tracking-actions">
+          <a href="#commander" class="btn-primary">📦 Voir le suivi</a>
+          <a href="#commander" class="btn-secondary" style="color:var(--primary); border-color:rgba(26,58,92,0.12); background:#f8fafc;">Commander maintenant</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- VOYAGEZ LÉGER -->
-<section class="valise-section" id="voyagez-leger">
-  <div style="text-align:center;">
-    <div class="section-eyebrow">🛒 Commandez depuis chez vous</div>
-    <h2 class="section-title">Tout ce que vous voulez,<br>livré aux Comores</h2>
-    <p class="section-sub" style="font-style:italic;font-size:1rem;color:var(--primary);font-weight:600;">
-      « Sans Komerce, il était difficile de trouver ce que l'on voulait quand on le voulait ! »
-    </p>
-    <p class="section-sub" style="margin-top:.4rem;font-size:.9rem;">Komerce s'occupe de l'achat, du fret et de la livraison — sans que vous ayez à bouger de chez vous.</p>
-  </div>
-  <div class="valise-grid">
-    <div class="valise-card valise-before">
-      <div class="valise-badge">Sans Komerce</div>
-      <ul class="valise-list">
-        <li>🧳 Valise de 23 kg à moitié remplie</li>
-        <li>💸 Surpoids aérien à 10–15 €/kg</li>
-        <li>😟 Choix limité, achats en catastrophe</li>
-        <li>📦 Électroménager, gros volumes — impossible</li>
-        <li>🕐 Envoyer de l'argent, pas les objets voulus</li>
-      </ul>
-    </div>
-    <div class="valise-arrow">→</div>
-    <div class="valise-card valise-after">
-      <div class="valise-badge" style="background:var(--accent);color:#fff;">Avec Komerce</div>
-      <ul class="valise-list">
-        <li>🎁 Cadeaux — choisissez précisément ce qu'ils veulent</li>
-        <li>💍 Mariage — robes, wax, cérémonie : tout livré à temps</li>
-        <li>🤝 Soutien familial — envoyez ce dont ils ont besoin</li>
-        <li>🛒 Achat personnel — commandez pour vous-même, livré chez eux</li>
-        <li>📦 Gros volumes, électroménager — tout passe par le fret</li>
-      </ul>
-    </div>
-  </div>
-  <div class="valise-cta">
-    <p class="valise-cta-text">Un surpoids de 10 kg sur Air France coûte <strong>~120 €</strong>.<br>
-    Avec Komerce, ces 10 kg arrivent directement chez votre famille — <strong>pour moins cher, avec plus de choix.</strong></p>
-    <a href="#promos" class="btn-primary" style="display:inline-block;margin-top:1.2rem;">Commander maintenant</a>
-  </div>
-</section>
-
-<!-- BANDEAU PANIER PARTAGÉ (visible si URL contient ?panier=K-XXXX) -->
-<div class="shared-banner" id="shared-banner" style="display:none;">
-  <div class="shared-banner-icon">🛒</div>
-  <div class="shared-banner-text">
-    <div class="shared-banner-title">Panier partagé par <span id="shared-by-name">Ali</span></div>
-    <div class="shared-banner-sub">Ce panier a été préparé pour vous. Ajoutez, retirez des articles librement — c'est vous qui payez.</div>
-  </div>
-  <div class="shared-banner-badge" id="shared-code-badge">K-XXXX</div>
-</div>
-
-<!-- BOUTON PARTAGER CE PANIER -->
-<div class="share-cart-wrap">
-  <button class="share-cart-btn" onclick="openShareModal()">
-    🔗 Partager ce panier à un proche
-  </button>
-  <button class="gift-btn" onclick="openGiftModal()">
-    🎁 Offrir ce panier
-  </button>
-  <p style="font-size:.78rem;color:var(--muted);margin-top:.6rem;">
-    <strong>Partager</strong> : votre proche modifie et paie ·
-    <strong>Offrir</strong> : vous payez, votre proche récupère au relais
-  </p>
-</div>
-
-<!-- MODAL OFFRIR UN PANIER -->
-<div class="gift-modal" id="gift-modal">
-  <div class="gift-modal-box">
-    <div style="font-size:1.8rem;text-align:center;margin-bottom:.5rem;">🎁</div>
-    <div class="gift-modal-title" style="text-align:center;">Offrir ce panier</div>
-    <div class="gift-modal-sub" style="text-align:center;">
-      Vous payez l'intégralité du panier. Votre proche reçoit un SMS et récupère au relais sans rien débourser.
-    </div>
-    <div class="gift-field">
-      <label class="gift-label">Prénom du destinataire</label>
-      <input class="gift-input" type="text" id="gift-prenom" placeholder="ex : Fatima" />
-    </div>
-    <div class="gift-field">
-      <label class="gift-label">Numéro de téléphone (Comores)</label>
-      <input class="gift-input" type="tel" id="gift-tel" placeholder="ex : +269 321 xx xx" />
-    </div>
-    <button class="gift-confirm-btn" onclick="confirmGift()">Continuer vers le paiement →</button>
-    <div class="gift-note">
-      📱 Le destinataire recevra un SMS avec un code de retrait.<br>
-      Il n'a besoin ni de carte ni de mobile money.
-    </div>
-    <button class="gift-close-btn" onclick="closeGiftModal()">Annuler</button>
-  </div>
-</div>
-
-<!-- MODAL CODE PANIER -->
-<div class="share-code-modal" id="share-modal">
-  <div class="share-modal-box">
-    <div style="font-size:2rem;margin-bottom:.5rem;">🔗</div>
-    <div style="font-weight:800;font-size:1.1rem;color:var(--primary);margin-bottom:.3rem;">Votre panier est prêt à partager</div>
-    <div style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem;">Envoyez ce code ou ce lien à la personne qui va payer</div>
-    <div class="share-modal-code" id="modal-code">K-7X4M</div>
-    <div class="share-modal-sub">⏱️ Valide 7 jours · Le payeur peut ajouter ou retirer des articles</div>
-    <button class="share-wa-btn" onclick="shareWhatsApp()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Envoyer via WhatsApp
-    </button>
-    <button class="share-close-btn" onclick="closeShareModal()">Fermer</button>
-  </div>
-</div>
-
-<!-- DESTINATAIRE & POINT RELAIS -->
-<section class="destinataire-section" id="destinataire">
-  <div class="dest-container">
-    <div style="text-align:center; margin-bottom:2.5rem;">
-      <div class="section-eyebrow">🎁 Votre commande</div>
-      <h2 class="section-title">À qui souhaitez-vous envoyer ?</h2>
-      <p class="section-sub">Indiquez les coordonnées du destinataire à Anjouan. La commande sera disponible au point relais de son choix.</p>
-    </div>
-
-    <!-- Steps indicator -->
-    <div class="dest-steps" style="max-width:400px; margin:0 auto 2.5rem;">
-      <div class="dest-step">
-        <div class="dest-step-dot">✓</div>
-        <div class="dest-step-lbl">Produits</div>
-      </div>
-      <div class="dest-step">
-        <div class="dest-step-dot" style="background:var(--accent);">2</div>
-        <div class="dest-step-lbl">Destinataire</div>
-      </div>
-      <div class="dest-step">
-        <div class="dest-step-dot inactive">3</div>
-        <div class="dest-step-lbl inactive">Paiement</div>
-      </div>
-    </div>
-
-    <div class="dest-card">
-      <!-- Formulaire destinataire -->
-      <div class="dest-form-grid">
-        <div class="dest-field">
-          <label class="dest-label">Prénom du destinataire</label>
-          <input class="dest-input" type="text" placeholder="ex : Fatima" />
-        </div>
-        <div class="dest-field">
-          <label class="dest-label">Numéro de téléphone</label>
-          <input class="dest-input" type="tel" placeholder="ex : +269 321 xx xx" />
-        </div>
-        <div class="dest-field full">
-          <label class="dest-label">Quartier / Village (optionnel)</label>
-          <input class="dest-input" type="text" placeholder="ex : Mutsamudu, Domoni, Bambao..." />
-        </div>
-      </div>
-
-      <!-- Point relais -->
-      <span class="relais-label">📍 Choisir un point relais</span>
-      <div class="relais-grid">
-        <div class="relais-card selected" onclick="selectRelais(this)">
-          <span class="relais-check">✔</span>
-          <div class="relais-name">Relais Mutsamudu Centre</div>
-          <div class="relais-zone">Zone nord · Ouvert 8h–19h</div>
-        </div>
-        <div class="relais-card" onclick="selectRelais(this)">
-          <span class="relais-check">✔</span>
-          <div class="relais-name">Relais Domoni</div>
-          <div class="relais-zone">Zone sud · Ouvert 8h–18h</div>
-        </div>
-        <div class="relais-card" onclick="selectRelais(this)">
-          <span class="relais-check">✔</span>
-          <div class="relais-name">Relais Bambao</div>
-          <div class="relais-zone">Zone centre · Ouvert 8h–18h</div>
-        </div>
-        <div class="relais-card" onclick="selectRelais(this)">
-          <span class="relais-check">✔</span>
-          <div class="relais-name">Relais Sima</div>
-          <div class="relais-zone">Zone ouest · Ouvert 9h–18h</div>
-        </div>
-      </div>
-
-      <div class="dest-note">
-        ℹ️ Le destinataire reçoit un <strong>SMS avec son code de retrait</strong> dès que la commande est disponible au relais. Un SMS (WhatsApp en complément si disponible) peut être envoyé en complément si disponible. Il lui suffit de se présenter avec son code.
-      </div>
-
-      <button class="dest-submit">Continuer vers le paiement →</button>
-    </div>
-  </div>
-</section>
-
-<script>
-function selectRelais(el) {
-  document.querySelectorAll('.relais-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-// ── PANIER PARTAGÉ ──────────────────────────────────────────────────────
-function genCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'K-';
-  for(let i=0;i<4;i++) code += chars[Math.floor(Math.random()*chars.length)];
-  return code;
-}
-function openShareModal() {
-  const code = genCode();
-  document.getElementById('modal-code').textContent = code;
-  document.getElementById('share-modal').classList.add('open');
-}
-function closeShareModal() {
-  document.getElementById('share-modal').classList.remove('open');
-}
-function shareWhatsApp() {
-  const code = document.getElementById('modal-code').textContent;
-  const url = `https://komerce.km/panier/${code}`;
-  const msg = encodeURIComponent(`🛒 J'ai préparé un panier Komerce pour toi — tu peux voir les articles, en ajouter ou retirer, et choisir comment payer :\n${url}\n⏱️ Valide 7 jours`);
-  window.open(`https://wa.me/?text=${msg}`, '_blank');
-}
-// ── OFFRIR UN PANIER ────────────────────────────────────────────────────
-function openGiftModal() { document.getElementById('gift-modal').classList.add('open'); }
-function closeGiftModal() { document.getElementById('gift-modal').classList.remove('open'); }
-function confirmGift() {
-  const prenom = document.getElementById('gift-prenom').value.trim();
-  const tel = document.getElementById('gift-tel').value.trim();
-  if(!prenom || !tel) { alert('Merci de renseigner le prénom et le numéro du destinataire.'); return; }
-  closeGiftModal();
-  alert(`✅ Panier offert à ${prenom} !\nIl recevra un SMS sur ${tel} avec son code de retrait une fois votre paiement confirmé.`);
-}
-
-// Détection panier partagé via URL ?panier=K-XXXX
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('panier');
-  if(code) {
-    document.getElementById('shared-banner').style.display = 'flex';
-    document.getElementById('shared-code-badge').textContent = code;
-    // Simuler un nom créateur (en production : API GET /cart/{code})
-    document.getElementById('shared-by-name').textContent = params.get('de') || 'votre proche';
-  }
-})();
-</script>
-
-<!-- FIDÉLISATION -->
-<section class="fidelite-section">
-  <div class="fidelite-inner">
-    <div class="fidelite-text">
-      <div class="section-eyebrow" style="color:var(--accent); margin-bottom:.8rem;">⭐ Programme fidélité</div>
-      <h2>Chaque envoi<br>vous rapproche d'une récompense</h2>
-      <p style="margin-top:1rem;">Plus vous commandez pour votre famille, plus Komerce vous récompense. Les détails du programme seront annoncés prochainement.</p>
-    </div>
-    <div class="fidelite-widget">
-      <div class="fw-label">Votre progression</div>
-      <div class="fw-steps">
-        <div class="fw-step done"></div>
-        <div class="fw-step done"></div>
-        <div class="fw-step active"></div>
-        <div class="fw-step"></div>
-        <div class="fw-step"></div>
-      </div>
-      <div class="fw-count"><strong>2</strong> commandes sur 5</div>
-      <div class="fw-reward">
-        <div class="fw-reward-icon">🎁</div>
-        <div class="fw-reward-text">Encore <strong>3 commandes</strong> pour débloquer votre première récompense</div>
-      </div>
-      <div class="fw-coming">Détail des récompenses annoncé prochainement</div>
-    </div>
-  </div>
-</section>
 
 <!-- TRUST -->
 <section class="trust-section">
@@ -1051,6 +1768,163 @@ function confirmGift() {
     </div>
   </div>
 </section>
+
+<!-- SUIVI COMMANDES EN COURS — style Amazon -->
+<div id="kmrc-live-orders">
+  <div class="live-orders-bar" onclick="toggleLiveOrders()">
+    <div class="live-orders-pulse"></div>
+    <div class="live-orders-label">En cours</div>
+    <div class="live-orders-summary" id="lo-bar-summary">Vérification de vos commandes…</div>
+    <div class="live-orders-chevron">▲</div>
+    <button class="live-orders-close" onclick="event.stopPropagation();dismissLiveOrders()" title="Fermer">✕</button>
+  </div>
+  <div class="live-orders-panel">
+    <div class="live-orders-panel-inner">
+      <div class="lo-panel-title">🚢 Vos commandes en cours</div>
+      <div id="lo-orders-list"></div>
+    </div>
+    <div class="lo-add-ref-wrap">
+      <div class="lo-add-ref-label">Suivre une autre commande par référence</div>
+      <div class="lo-add-ref-row">
+        <input class="lo-add-ref-input" id="lo-add-ref-input" type="text" placeholder="KMC-2601-XXXX" maxlength="16" />
+        <button class="lo-add-ref-btn" onclick="loAddRef()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT DIASPORA-AWARE -->
+<div class="checkout-overlay" id="kmrc-checkout-overlay">
+  <div class="checkout-sheet" id="kmrc-checkout-sheet">
+    <div class="checkout-header">
+      <h3 id="co-header-title">🛒 Finaliser la commande</h3>
+      <button class="checkout-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div class="checkout-body">
+
+      <!-- Étapes -->
+      <div class="checkout-steps">
+        <div class="co-step">
+          <div class="co-step-dot active" id="co-dot-1">1</div>
+          <div class="co-step-lbl active" id="co-lbl-1">Où êtes-vous ?</div>
+        </div>
+        <div class="co-step">
+          <div class="co-step-dot" id="co-dot-2">2</div>
+          <div class="co-step-lbl" id="co-lbl-2">Destinataire</div>
+        </div>
+        <div class="co-step">
+          <div class="co-step-dot" id="co-dot-3">3</div>
+          <div class="co-step-lbl" id="co-lbl-3">Paiement</div>
+        </div>
+      </div>
+
+      <!-- Panneau 1 : Localisation du commanditaire -->
+      <div class="co-panel active" id="co-panel-1">
+        <div style="font-size:.8rem;font-weight:700;color:var(--primary);margin-bottom:.8rem;text-transform:uppercase;letter-spacing:.05em;">
+          Depuis où passez-vous cette commande ?
+        </div>
+        <div class="co-location-toggle">
+          <button class="co-loc-btn selected" id="co-local-btn" onclick="selectLocation('local')">
+            <span class="co-loc-icon">🏝️</span>
+            <div class="co-loc-title">Aux Comores</div>
+            <div class="co-loc-sub">Je commande pour moi ou ma famille, je suis sur place</div>
+          </button>
+          <button class="co-loc-btn" id="co-diaspora-btn" onclick="selectLocation('diaspora')">
+            <span class="co-loc-icon">✈️</span>
+            <div class="co-loc-title">Depuis l'étranger</div>
+            <div class="co-loc-sub">Je commande pour ma famille aux Comores, je suis en dehors</div>
+          </button>
+        </div>
+        <button class="co-cta" onclick="coGoStep(2)">Continuer →</button>
+      </div>
+
+      <!-- Panneau 2 : Destinataire + expéditeur si diaspora -->
+      <div class="co-panel" id="co-panel-2">
+
+        <!-- Bloc destinataire (toujours visible) -->
+        <div style="font-size:.8rem;font-weight:700;color:var(--primary);margin-bottom:.7rem;text-transform:uppercase;letter-spacing:.05em;">
+          📍 Destinataire aux Comores
+        </div>
+
+        <div class="co-field">
+          <label class="co-label">Nom complet <span class="co-required">*</span></label>
+          <input class="co-input" id="co-recipient-name" type="text" placeholder="Nom de la personne qui récupère le colis" autocomplete="name" />
+        </div>
+
+        <div class="co-field">
+          <div class="co-label">Téléphone local <span class="co-required">*</span></div>
+          <div class="co-input-flag">
+            <span class="co-flag">🇰🇲</span>
+            <input class="co-input" id="co-recipient-phone" type="tel" placeholder="+269 77 00 000" autocomplete="tel" />
+          </div>
+          <div style="font-size:.71rem;color:var(--muted);margin-top:.3rem;">Pour recevoir le SMS de disponibilité au relais</div>
+        </div>
+
+        <!-- Sélecteur relais -->
+        <div class="co-field">
+          <label class="co-label">Point relais <span class="co-required">*</span></label>
+          <select class="co-input" id="co-relais-select">
+            <option value="">— Choisir un relais —</option>
+          </select>
+        </div>
+
+        <!-- Bloc expéditeur diaspora (conditionnel) -->
+        <div class="co-diaspora-block" id="co-diaspora-block">
+          <div class="co-diaspora-title">✈️ Vos coordonnées (expéditeur)</div>
+          <div class="co-diaspora-sub">
+            Comme vous commandez depuis l'étranger, nous avons besoin de votre numéro pour le suivi de paiement et les confirmations.
+          </div>
+          <div class="co-field">
+            <label class="co-label">Votre numéro (étranger) <span class="co-required">*</span></label>
+            <div class="co-input-flag">
+              <span class="co-flag" id="co-sender-flag">🌍</span>
+              <input class="co-input" id="co-sender-phone" type="tel" placeholder="+33 6 12 34 56 78" autocomplete="tel" />
+            </div>
+            <div style="font-size:.71rem;color:var(--muted);margin-top:.3rem;">Pour les confirmations de commande et de paiement</div>
+          </div>
+          <div class="co-field" style="margin-bottom:0;">
+            <label class="co-label">Email <span style="font-weight:400;color:#94a3b8;">(optionnel)</span></label>
+            <input class="co-input" id="co-sender-email" type="email" placeholder="votre@email.com" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.7rem;margin-top:.3rem;">
+          <button onclick="coGoStep(1)" style="flex:0 0 auto;padding:.85rem 1.1rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:var(--primary);font-weight:700;cursor:pointer;font-size:.88rem;">← Retour</button>
+          <button class="co-cta" style="flex:1;" onclick="coGoStep(3)">Continuer →</button>
+        </div>
+      </div>
+
+      <!-- Panneau 3 : Paiement -->
+      <div class="co-panel" id="co-panel-3">
+
+        <!-- Récapitulatif panier -->
+        <div class="co-summary-box" id="co-summary-box">
+          <div style="font-size:.75rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.6rem;">Récapitulatif</div>
+          <div id="co-summary-items"></div>
+          <div class="co-summary-total">
+            <span>Total</span>
+            <span id="co-summary-total-val">—</span>
+          </div>
+        </div>
+
+        <!-- Méthodes de paiement -->
+        <div style="font-size:.8rem;font-weight:700;color:var(--primary);margin-bottom:.7rem;text-transform:uppercase;letter-spacing:.05em;">
+          Mode de paiement
+        </div>
+        <div class="co-payment-methods" id="co-payment-methods">
+          <!-- Injecté dynamiquement selon localisation -->
+        </div>
+
+        <div style="display:flex;gap:.7rem;margin-top:.3rem;">
+          <button onclick="coGoStep(2)" style="flex:0 0 auto;padding:.85rem 1.1rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:var(--primary);font-weight:700;cursor:pointer;font-size:.88rem;">← Retour</button>
+          <button class="co-cta" style="flex:1;" id="co-confirm-btn" onclick="coConfirm()">✅ Confirmer la commande</button>
+        </div>
+        <div class="co-note">🔒 Paiement sécurisé · Prix tout inclus · Aucun frais caché</div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <footer>
@@ -1179,5 +2053,651 @@ function confirmGift() {
 </script>
 
 <script src="/komerce-api.js"></script>
+
+<script>
+function showUniverse(type) {
+  var ceremonyBtn = document.getElementById('switch-ceremony');
+  var dailyBtn = document.getElementById('switch-daily');
+  var ceremonySection = document.getElementById('ceremony-section');
+  var dailySection = document.getElementById('daily-section');
+
+  if (!ceremonyBtn || !dailyBtn || !ceremonySection || !dailySection) return;
+
+  if (type === 'daily') {
+    ceremonyBtn.classList.remove('active');
+    dailyBtn.classList.add('active');
+    ceremonySection.classList.remove('active');
+    dailySection.classList.add('active');
+  } else {
+    dailyBtn.classList.remove('active');
+    ceremonyBtn.classList.add('active');
+    dailySection.classList.remove('active');
+    ceremonySection.classList.add('active');
+  }
+}
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  PROVERBES & CITATIONS AFRICAINS
+// ═══════════════════════════════════════════════════════
+
+const PROVERBS = [
+  { text: "La mer ne se traverse pas avec des regrets.", origin: "🇰🇲 Comores" },
+  { text: "On ne nourrit pas la mer avec ses larmes, mais avec ses bras.", origin: "🌍 Swahili" },
+  { text: "Un seul bracelet ne fait pas de bruit.", origin: "🌍 Afrique de l'Est" },
+  { text: "La patience est la clé du bonheur.", origin: "🇸🇳 Sénégal" },
+  { text: "Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble.", origin: "🌍 Afrique" },
+  { text: "La rivière ne dit pas à la montagne qu'elle est loin.", origin: "🇲🇬 Madagascar" },
+  { text: "On ne récolte que ce que l'on a semé.", origin: "🌍 Swahili" },
+  { text: "Celui qui n'a jamais voyagé croit que sa mère est la meilleure cuisinière.", origin: "🌍 Yoruba" },
+  { text: "Un seul arbre ne fait pas une forêt.", origin: "🌍 Afrique centrale" },
+  { text: "La main droite lave la main gauche.", origin: "🇲🇷 Mauritanie" },
+  { text: "Ce n'est pas la mer qui décide où ira le bateau.", origin: "🇰🇲 Comores" },
+  { text: "L'enfant qui n'est pas choyé par son village lui brûlera pour ressentir sa chaleur.", origin: "🌍 Afrique" },
+  { text: "Quand la musique change, la danse change.", origin: "🌍 Haoussa" },
+  { text: "Un ventre plein ne comprend pas un ventre vide.", origin: "🌍 Wolof" },
+];
+
+(function initProverbs() {
+  const track = document.getElementById('proverb-track');
+  if (!track) return;
+
+  function makeItem(p) {
+    const div = document.createElement('div');
+    div.className = 'proverb-item';
+    div.innerHTML = `
+      <span class="proverb-ornament">✦</span>
+      <span class="proverb-text">"${p.text}"</span>
+      <span class="proverb-origin">${p.origin}</span>
+    `;
+    return div;
+  }
+
+  // Double pour scroll infini fluide
+  [...PROVERBS, ...PROVERBS].forEach(p => track.appendChild(makeItem(p)));
+})();
+
+// ═══════════════════════════════════════════════════════
+//  CHECKOUT DIASPORA-AWARE
+// ═══════════════════════════════════════════════════════
+
+let _coLocation  = 'local';   // 'local' | 'diaspora'
+let _coPayMode   = null;       // 'stripe_eur' | 'cash_relais'
+let _coStep      = 1;
+
+// Ouvrir le checkout (appelé depuis komerce-api.js au moment du checkout)
+// Patch de openCheckoutModal pour intercepter l'ouverture
+window.openCheckout = function() {
+  _coStep     = 1;
+  _coLocation = detectLocationHint();
+  _coPayMode  = null;
+
+  updateCoSteps(1);
+  document.querySelectorAll('.co-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('co-panel-1').classList.add('active');
+  selectLocation(_coLocation, false);
+  populateRelaisList();
+
+  document.getElementById('kmrc-checkout-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeCheckout = function() {
+  document.getElementById('kmrc-checkout-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+// Détecter indice de localisation depuis la devise auto-détectée
+function detectLocationHint() {
+  try {
+    const saved = localStorage.getItem('kmrc_currency');
+    if (saved === 'KMF') return 'local';
+    if (saved === 'EUR' || saved === 'AED') return 'diaspora';
+  } catch(e) {}
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  if (/Comoro|Mayotte/i.test(tz)) return 'local';
+  return 'diaspora';
+}
+
+window.selectLocation = function(loc, animate = true) {
+  _coLocation = loc;
+  document.getElementById('co-local-btn')?.classList.toggle('selected', loc === 'local');
+  document.getElementById('co-diaspora-btn')?.classList.toggle('selected', loc === 'diaspora');
+
+  const diasporaBlock = document.getElementById('co-diaspora-block');
+  if (diasporaBlock) {
+    diasporaBlock.classList.toggle('visible', loc === 'diaspora');
+  }
+
+  // Mettre à jour le flag expéditeur selon timezone
+  const senderFlag = document.getElementById('co-sender-flag');
+  if (senderFlag) {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    senderFlag.textContent = /Dubai|Abu_Dhabi|Muscat/i.test(tz) ? '🇦🇪'
+      : /Paris|Lyon|Brussels|Geneva/i.test(tz) ? '🇫🇷'
+      : '🌍';
+  }
+};
+
+window.coGoStep = function(step) {
+  // Validation
+  if (step === 3) {
+    const name  = document.getElementById('co-recipient-name')?.value?.trim();
+    const phone = document.getElementById('co-recipient-phone')?.value?.trim();
+    const relais = document.getElementById('co-relais-select')?.value;
+    if (!name)   { alert('Veuillez saisir le nom du destinataire.'); return; }
+    if (!phone)  { alert('Veuillez saisir le numéro local du destinataire.'); return; }
+    if (!relais) { alert('Veuillez choisir un point relais.'); return; }
+    if (_coLocation === 'diaspora') {
+      const sPhone = document.getElementById('co-sender-phone')?.value?.trim();
+      if (!sPhone) { alert('Veuillez saisir votre numéro depuis l\'étranger.'); return; }
+    }
+    renderPaymentMethods();
+    renderSummary();
+  }
+
+  _coStep = step;
+  updateCoSteps(step);
+  document.querySelectorAll('.co-panel').forEach((p, i) => {
+    p.classList.toggle('active', i + 1 === step);
+  });
+};
+
+function updateCoSteps(active) {
+  [1,2,3].forEach(n => {
+    const dot = document.getElementById(`co-dot-${n}`);
+    const lbl = document.getElementById(`co-lbl-${n}`);
+    if (!dot || !lbl) return;
+    dot.className = 'co-step-dot' + (n < active ? ' done' : n === active ? ' active' : '');
+    lbl.className = 'co-step-lbl' + (n < active ? ' done' : n === active ? ' active' : '');
+    if (n < active)  dot.textContent = '✓';
+    else             dot.textContent = String(n);
+  });
+}
+
+function populateRelaisList() {
+  const sel = document.getElementById('co-relais-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Choisir un relais —</option>';
+  // Tenter de récupérer depuis l'API komerce-api.js si _relaisList est dispo
+  const list = (typeof _relaisList !== 'undefined' && _relaisList.length)
+    ? _relaisList
+    : [
+        { id: 'c0a124e2-330b-4464-9846-17c0294acf49', name: 'Relais Mutsamudu Centre', zone: 'Zone centre · Anjouan' },
+        { id: 'a1000000-0000-0000-0000-000000000002', name: 'Relais Domoni Médina',    zone: 'Zone sud · Anjouan'    },
+        { id: 'a1000000-0000-0000-0000-000000000003', name: 'Relais Bandamaji Nord',   zone: 'Zone nord · Anjouan'   },
+      ];
+  list.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.name + (r.zone ? ` — ${r.zone}` : '');
+    sel.appendChild(opt);
+  });
+}
+
+function renderPaymentMethods() {
+  const container = document.getElementById('co-payment-methods');
+  if (!container) return;
+
+  // Méthodes selon localisation
+  const methods = _coLocation === 'diaspora'
+    ? [
+        {
+          id: 'stripe_eur',
+          icon: '💳',
+          title: 'Carte bancaire (EUR)',
+          sub: 'Visa, Mastercard — paiement sécurisé Stripe',
+          badge: 'Recommandé',
+          badgeClass: 'recommended',
+        },
+        {
+          id: 'cash_relais',
+          icon: '🏪',
+          title: 'Cash au relais (destinataire)',
+          sub: 'La personne aux Comores paie en cash au point relais',
+          badge: 'Local',
+          badgeClass: 'local',
+        },
+      ]
+    : [
+        {
+          id: 'cash_relais',
+          icon: '🏪',
+          title: 'Cash au relais',
+          sub: 'Vous payez en espèces au point relais sur présentation du code',
+          badge: 'Recommandé',
+          badgeClass: 'recommended',
+        },
+        {
+          id: 'stripe_eur',
+          icon: '💳',
+          title: 'Carte bancaire (EUR)',
+          sub: 'Paiement en ligne sécurisé via Stripe',
+          badge: null,
+        },
+      ];
+
+  container.innerHTML = '';
+  methods.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'co-pay-opt' + (m.id === _coPayMode ? ' selected' : '');
+    div.onclick = () => {
+      _coPayMode = m.id;
+      container.querySelectorAll('.co-pay-opt').forEach(el => el.classList.remove('selected'));
+      div.classList.add('selected');
+    };
+    div.innerHTML = `
+      <span class="co-pay-icon">${m.icon}</span>
+      <div>
+        <div class="co-pay-title">${m.title}</div>
+        <div class="co-pay-sub">${m.sub}</div>
+      </div>
+      ${m.badge ? `<span class="co-pay-badge ${m.badgeClass}">${m.badge}</span>` : ''}
+    `;
+    container.appendChild(div);
+    // Sélectionner le premier par défaut
+    if (!_coPayMode) {
+      _coPayMode = m.id;
+      div.classList.add('selected');
+    }
+  });
+}
+
+function renderSummary() {
+  const itemsEl = document.getElementById('co-summary-items');
+  const totalEl = document.getElementById('co-summary-total-val');
+  if (!itemsEl || !totalEl) return;
+
+  // Lire _cart depuis komerce-api.js si disponible
+  const cart = (typeof _cart !== 'undefined') ? _cart : [];
+  if (cart.length === 0) {
+    itemsEl.innerHTML = '<div style="font-size:.82rem;color:var(--muted);">Panier vide</div>';
+    totalEl.textContent = '—';
+    return;
+  }
+
+  let total = 0;
+  itemsEl.innerHTML = cart.map(({ product: p, qty }) => {
+    const line = p.price_kmf * qty;
+    total += line;
+    return `<div class="co-summary-row">
+      <span>${p.emoji || '📦'} ${p.name}${qty > 1 ? ` ×${qty}` : ''}</span>
+      <span>${line.toLocaleString('fr-FR')} KMF</span>
+    </div>`;
+  }).join('');
+  totalEl.textContent = total.toLocaleString('fr-FR') + ' KMF';
+}
+
+window.coConfirm = async function() {
+  if (!_coPayMode) { alert('Veuillez choisir un mode de paiement.'); return; }
+
+  const btn = document.getElementById('co-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Envoi en cours…';
+
+  const body = {
+    items:              (typeof _cart !== 'undefined') ? _cart.map(i => ({
+      product_id:  i.product.id,
+      quantity:    i.qty,
+      ceremony_order_type:  i.product._ceremony_type  || null,
+      ceremony_size:        i.product._ceremony_size   || null,
+      ceremony_retouche:    i.product._ceremony_retouche || false,
+      ceremony_fabric_type: i.product._ceremony_tissu  || null,
+      ceremony_accessories: i.product._ceremony_acc    || null,
+    })) : [],
+    relais_id:          document.getElementById('co-relais-select')?.value || null,
+    payment_mode:       _coPayMode,
+    recipient_name:     document.getElementById('co-recipient-name')?.value?.trim(),
+    recipient_phone:    document.getElementById('co-recipient-phone')?.value?.trim(),
+    sender_phone:       _coLocation === 'diaspora'
+                          ? (document.getElementById('co-sender-phone')?.value?.trim() || null)
+                          : null,
+    sender_email:       _coLocation === 'diaspora'
+                          ? (document.getElementById('co-sender-email')?.value?.trim() || null)
+                          : null,
+  };
+
+  try {
+    const res = await fetch('https://komerce-backend-production.up.railway.app/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Erreur');
+
+    closeCheckout();
+    if (typeof clearCart === 'function') clearCart();
+
+    // Confirmation visuelle
+    const ref = data.order?.reference || '—';
+    const msg = _coPayMode === 'cash_relais'
+      ? `🎉 Commande ${ref} confirmée !\nCode cash relais : ${data.order?.cash_ref_code || '—'}\n\nApportez ce code au point relais pour payer en espèces.`
+      : `🎉 Commande ${ref} confirmée !\nVous recevrez un SMS de confirmation.`;
+    alert(msg);
+
+  } catch(err) {
+    alert('Erreur lors de la commande : ' + err.message);
+    btn.disabled = false;
+    btn.textContent = '✅ Confirmer la commande';
+  }
+};
+
+// Fermer sur clic overlay
+document.getElementById('kmrc-checkout-overlay')?.addEventListener('click', function(e) {
+  if (e.target === this) closeCheckout();
+});
+</script>
 </body>
-</html>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  SUIVI COMMANDES EN COURS — style Amazon
+//  Stockage : localStorage['kmrc_tracked_refs'] = JSON array of refs
+//  Polling  : toutes les 3 min + à chaque ouverture du panel
+// ═══════════════════════════════════════════════════════════════════════
+
+const LO_STORAGE_KEY  = 'kmrc_tracked_refs';
+const LO_DISMISS_KEY  = 'kmrc_lo_dismissed';
+const LO_POLL_MS      = 3 * 60 * 1000;  // 3 minutes
+const LO_API          = 'https://komerce-backend-production.up.railway.app';
+
+// Statuts "actifs" (à afficher) — collected et cancelled sont terminés
+const LO_ACTIVE_STATUSES = ['confirmed','paid','purchasing','preparation','shipped','transit_comores','available'];
+
+const LO_STEP_CONFIG = [
+  { code: 'confirmed',        icon: '✅', label: 'Confirmé',       shortEta: null },
+  { code: 'purchasing',       icon: '🛒', label: 'En achat',       shortEta: '48h' },
+  { code: 'preparation',      icon: '📦', label: 'Préparation',    shortEta: '48h' },
+  { code: 'shipped',          icon: '🚢', label: 'En mer',         shortEta: '3–5 sem.' },
+  { code: 'transit_comores',  icon: '🏝️', label: 'Comores',        shortEta: '3–5 j' },
+  { code: 'available',        icon: '🏪', label: 'Disponible',     shortEta: null },
+];
+
+// ── Persistance refs ──────────────────────────────────────────────────
+
+function loGetRefs() {
+  try { return JSON.parse(localStorage.getItem(LO_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function loSaveRefs(refs) {
+  try { localStorage.setItem(LO_STORAGE_KEY, JSON.stringify([...new Set(refs)])); } catch {}
+}
+function loAddRefToStorage(ref) {
+  const refs = loGetRefs();
+  if (!refs.includes(ref)) refs.push(ref);
+  loSaveRefs(refs);
+}
+function loRemoveRef(ref) {
+  loSaveRefs(loGetRefs().filter(r => r !== ref));
+  loRefresh();
+}
+
+// ── Fetch une commande ────────────────────────────────────────────────
+
+async function loFetchOrder(ref) {
+  try {
+    const res = await fetch(`${LO_API}/api/orders/${encodeURIComponent(ref)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// ── Cache en mémoire ──────────────────────────────────────────────────
+
+let _loOrders = [];   // [{ ref, data, lastFetch }]
+let _loTimer  = null;
+
+async function loRefresh(showSpinner = false) {
+  const refs = loGetRefs();
+  if (!refs.length) { loHide(); return; }
+
+  if (showSpinner) {
+    document.querySelectorAll('.lo-refresh-btn').forEach(b => b.classList.add('spinning'));
+  }
+
+  const results = await Promise.all(refs.map(async ref => {
+    const data = await loFetchOrder(ref);
+    return { ref, data };
+  }));
+
+  // Ne garder que les commandes actives trouvées
+  _loOrders = results.filter(r =>
+    r.data && LO_ACTIVE_STATUSES.includes(r.data.status)
+  );
+
+  // Supprimer de localStorage les refs introuvables ou terminées
+  const activeRefs = _loOrders.map(o => o.ref);
+  const deadRefs   = refs.filter(r => {
+    const found = results.find(res => res.ref === r);
+    // Garder si null (API down) mais retirer si terminé
+    if (!found || !found.data) return false; // API down — garder
+    return !LO_ACTIVE_STATUSES.includes(found.data.status);
+  });
+  if (deadRefs.length) loSaveRefs(refs.filter(r => !deadRefs.includes(r)));
+
+  document.querySelectorAll('.lo-refresh-btn').forEach(b => b.classList.remove('spinning'));
+
+  if (!_loOrders.length) { loHide(); return; }
+  loRender();
+  loShow();
+}
+
+// ── Render ────────────────────────────────────────────────────────────
+
+function loRender() {
+  const list       = document.getElementById('lo-orders-list');
+  const barSummary = document.getElementById('lo-bar-summary');
+  if (!list || !barSummary) return;
+
+  // Barre synthèse
+  const n = _loOrders.length;
+  const activeOne = _loOrders.find(o => o.data.status === 'available');
+  if (activeOne) {
+    barSummary.textContent = `🏪 Commande ${activeOne.data.reference} disponible au relais — venez la récupérer !`;
+  } else if (n === 1) {
+    const o = _loOrders[0];
+    const step = LO_STEP_CONFIG.find(s => s.code === o.data.status);
+    barSummary.textContent = `${step?.icon || '📦'} ${o.data.reference} — ${step?.label || o.data.status}`;
+  } else {
+    barSummary.textContent = `${n} commande${n > 1 ? 's' : ''} en cours de livraison`;
+  }
+
+  // Cards
+  list.innerHTML = _loOrders.map(({ ref, data }) => loRenderCard(ref, data)).join('');
+}
+
+function loRenderCard(ref, data) {
+  const curIdx   = LO_STEP_CONFIG.findIndex(s => s.code === data.status);
+  const curStep  = LO_STEP_CONFIG[curIdx];
+
+  // Timeline — 4 étapes simplifiées (comme Amazon)
+  const displaySteps = [
+    LO_STEP_CONFIG[0],  // Confirmé
+    LO_STEP_CONFIG[2],  // Préparation
+    LO_STEP_CONFIG[3],  // En mer
+    LO_STEP_CONFIG[5],  // Disponible
+  ];
+  const displayIdx = (() => {
+    if (curIdx <= 0) return 0;
+    if (curIdx <= 2) return 1;
+    if (curIdx <= 4) return 2;
+    return 3;
+  })();
+
+  const timelineHtml = displaySteps.map((s, i) => {
+    const state = i < displayIdx ? 'done' : i === displayIdx ? 'active' : 'future';
+    const dot   = state === 'done' ? '✓' : s.icon;
+    const connColor = i < displayIdx ? '#16a34a' : '#e2e8f0';
+    return `
+      ${i > 0 ? `<div class="lo-tl-connector" style="background:${connColor};"></div>` : ''}
+      <div class="lo-tl-step">
+        <div class="lo-tl-dot ${state}">${dot}</div>
+        <div class="lo-tl-label ${state}">${s.label}</div>
+      </div>`;
+  }).join('');
+
+  // Statut pill CSS class
+  const pillClass = {
+    confirmed: 'confirmed', paid: 'confirmed',
+    purchasing: 'purchasing', preparation: 'preparation',
+    shipped: 'shipped', transit_comores: 'transit',
+    available: 'available',
+  }[data.status] || 'confirmed';
+
+  // Message contextuel + ETA
+  const etaMessages = {
+    confirmed:       { msg: 'Votre commande est confirmée.', eta: 'Achat en cours sous 48h' },
+    paid:            { msg: 'Paiement reçu — achat en cours.', eta: 'Achat sous 48h' },
+    purchasing:      { msg: 'Nos agents achètent votre article à Dubaï.', eta: 'Expédition sous 48–72h' },
+    preparation:     { msg: 'Colis emballé et prêt au Hub Dubaï.', eta: 'Expédition maritime imminente' },
+    shipped:         { msg: 'Votre colis est en route par fret maritime.', eta: 'Arrivée estimée : 3–5 semaines' },
+    transit_comores: { msg: 'Arrivé aux Comores — dédouanement en cours.', eta: 'Disponible au relais sous 3–5 jours' },
+    available:       { msg: '🎉 Votre colis est prêt !', eta: 'Venez le récupérer au relais' },
+  };
+  const eta = etaMessages[data.status] || { msg: '', eta: '' };
+
+  // Date commande formatée
+  const orderDate = data.created_at
+    ? new Date(data.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    : '';
+
+  // Relais info
+  const relaisHtml = data.status === 'available' && data.relais
+    ? `<div style="margin:.4rem 0 0;font-size:.75rem;color:#15803d;font-weight:700;">
+         📍 ${data.relais.name}${data.relais.hours ? ` · ${data.relais.hours}` : ''}
+       </div>`
+    : '';
+
+  // Premier article
+  const firstItem = data.items?.[0];
+  const itemName  = firstItem?.product_name || '';
+  const itemCount = data.items?.length || 1;
+
+  return `
+    <div class="lo-order-card">
+      <div class="lo-order-head">
+        <div>
+          <div class="lo-order-ref">${ref}</div>
+          <div class="lo-order-date">
+            ${itemName ? `${itemName}${itemCount > 1 ? ` +${itemCount - 1}` : ''}` : ''}
+            ${orderDate ? ` · ${orderDate}` : ''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <span class="lo-status-pill ${pillClass}">${curStep?.icon || ''} ${curStep?.label || data.status}</span>
+          <button onclick="loRemoveRef('${ref}')"
+            style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.8rem;padding:.2rem;" title="Retirer du suivi">✕</button>
+        </div>
+      </div>
+      <div class="lo-timeline">${timelineHtml}</div>
+      <div class="lo-order-footer">
+        <div class="lo-eta">
+          <div>${eta.msg}${relaisHtml}</div>
+          ${eta.eta ? `<div class="lo-eta-tag">⏱ ${eta.eta}</div>` : ''}
+        </div>
+        <button class="lo-refresh-btn" onclick="loRefresh(true)">↻ Actualiser</button>
+      </div>
+    </div>`;
+}
+
+// ── Affichage / masquage ──────────────────────────────────────────────
+
+function loShow() {
+  const el = document.getElementById('kmrc-live-orders');
+  if (!el) return;
+  // Ne pas rouvrir si l'utilisateur a fermé manuellement dans cette session
+  const dismissed = sessionStorage.getItem(LO_DISMISS_KEY);
+  if (dismissed) return;
+  el.classList.add('visible');
+}
+function loHide() {
+  document.getElementById('kmrc-live-orders')?.classList.remove('visible');
+}
+function dismissLiveOrders() {
+  sessionStorage.setItem(LO_DISMISS_KEY, '1');
+  loHide();
+}
+function toggleLiveOrders() {
+  const el = document.getElementById('kmrc-live-orders');
+  if (!el) return;
+  el.classList.toggle('panel-open');
+  // Refresh au premier clic pour avoir les données fraîches
+  if (el.classList.contains('panel-open') && !_loOrders.length) {
+    loRefresh();
+  }
+}
+
+// ── Ajouter ref manuellement depuis le panel ──────────────────────────
+
+window.loAddRef = async function() {
+  const input = document.getElementById('lo-add-ref-input');
+  if (!input) return;
+  const ref = input.value.trim().toUpperCase();
+  if (!ref) return;
+  input.value = '';
+  input.placeholder = 'Vérification…';
+
+  const data = await loFetchOrder(ref);
+  if (!data) {
+    input.placeholder = 'Référence introuvable';
+    setTimeout(() => { input.placeholder = 'KMC-2601-XXXX'; }, 2500);
+    return;
+  }
+  loAddRefToStorage(ref);
+  // Ouvrir le panel si pas déjà ouvert
+  sessionStorage.removeItem(LO_DISMISS_KEY);
+  document.getElementById('kmrc-live-orders')?.classList.add('panel-open');
+  input.placeholder = 'KMC-2601-XXXX';
+  await loRefresh();
+};
+
+// ── Sauvegarder la ref après une commande réussie ─────────────────────
+// Patch de coConfirm pour auto-ajouter la ref
+
+(function patchCoConfirmForTracking() {
+  const origConfirm = window.coConfirm;
+  if (!origConfirm) return;
+  window.coConfirm = async function() {
+    // On intercepte la réponse — on monkey-patch fetch temporairement
+    const origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const res = await origFetch(...args);
+      if (typeof args[0] === 'string' && args[0].includes('/api/orders') && args[1]?.method === 'POST') {
+        const clone = res.clone();
+        clone.json().then(data => {
+          if (data?.order?.reference) {
+            loAddRefToStorage(data.order.reference);
+            sessionStorage.removeItem(LO_DISMISS_KEY);
+            setTimeout(() => loRefresh(), 1500);
+          }
+        }).catch(() => {});
+      }
+      window.fetch = origFetch; // restaurer
+      return res;
+    };
+    return origConfirm.apply(this, arguments);
+  };
+})();
+
+// ── Entrée clavier dans le champ ref ─────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement?.id === 'lo-add-ref-input') {
+    window.loAddRef();
+  }
+});
+
+// ── Init + polling ────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Lancer le suivi dès que la page est chargée
+  setTimeout(() => loRefresh(), 800);   // petit délai pour ne pas bloquer le LCP
+  _loTimer = setInterval(() => loRefresh(), LO_POLL_MS);
+
+  // Refresh quand l'utilisateur revient sur l'onglet
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) loRefresh();
+  });
+});
+</script>
