@@ -216,14 +216,21 @@ async function loadProducts() {
             </div>
             ${stock < 5 ? `<div style="color:#dc2626;font-size:.75rem;font-weight:700;
               margin-bottom:.4rem;">⚠️ Plus que ${stock} en stock</div>` : ''}
-            <div style="margin-top:.6rem;">
+            <div style="margin-top:.6rem;display:flex;gap:.4rem;">
+              <button
+                onclick="event.stopPropagation();toggleFavorite(JSON.parse(this.dataset.pp))"
+                data-pp="${pData}" data-fav-id="${p.id}"
+                style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;
+                       border-radius:8px;cursor:pointer;font-size:1rem;
+                       display:flex;align-items:center;justify-content:center;"
+                title="Favoris">${isFavorite(p.id)?'❤️':'🤍'}</button>
               <button
                 onclick="event.stopPropagation();addToCart(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 class="btn-order"
-                style="display:flex;align-items:center;justify-content:center;gap:.3rem;
-                       font-size:.82rem;padding:.6rem .4rem;width:100%;">
-                🛒 Ajouter au panier
+                style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;
+                       font-size:.82rem;padding:.6rem .4rem;">
+                🛒 Ajouter
               </button>
             </div>
           </div>
@@ -362,12 +369,7 @@ function openProduct(product) {
                      font-size:.88rem;font-weight:800;cursor:pointer;">
               🛒 Ajouter au panier
             </button>
-            <button onclick="event.stopPropagation();_quickFromProductModal(${pData})"
-              style="padding:.75rem 1.1rem;background:linear-gradient(135deg,#1a3a5c,#2563eb);
-                     color:#fff;border:none;border-radius:12px;
-                     font-size:.88rem;font-weight:800;cursor:pointer;">
-              ⚡ Commander
-            </button>
+
           </div>
         </div>
       </div>

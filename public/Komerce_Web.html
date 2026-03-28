@@ -1349,34 +1349,28 @@
 </nav>
 
 <!-- HERO -->
-<section class="hero" style="text-align:left;padding:0;overflow:hidden;min-height:0;">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:stretch;flex-wrap:wrap;">
-
-    <!-- Colonne texte -->
-    <div style="flex:1;min-width:280px;padding:48px 5% 40px;display:flex;flex-direction:column;justify-content:center;">
-      <div class="hero-badge" style="margin-bottom:1rem;">
-        🏝️ La plateforme pensée pour les Comores
-      </div>
-      <h1 style="font-size:clamp(1.6rem,4vw,2.8rem);margin-bottom:.8rem;text-align:left;">
-        <span>Vos envies traversent la mer.</span><br>
-        <span style="color:#e8a020;">Profitez de la vie.</span>
-      </h1>
-      <p style="font-size:.95rem;color:rgba(255,255,255,.8);margin:0 0 1.4rem;line-height:1.55;max-width:400px;">
-        Commandez pour votre famille aux Comores — maison, cérémonies, quotidien — depuis là où vous êtes.
-      </p>
-      <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
-        <a href="#univers" class="btn-primary" style="font-size:.92rem;padding:.7rem 1.5rem;">✨ Choisir mon univers</a>
-        <a href="#" onclick="event.preventDefault();openCheckout()" class="btn-secondary" style="font-size:.92rem;padding:.7rem 1.5rem;">📦 Commander</a>
-      </div>
+<section class="hero" style="padding:0;overflow:hidden;min-height:0;position:relative;">
+  <!-- Image pleine largeur -->
+  <img src="/images/hero_banner.jpg" alt="Komerce"
+    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;z-index:0;"
+    onerror="this.remove()">
+  <!-- Overlay dégradé pour lisibilité du texte -->
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,30,55,.82) 0%,rgba(15,30,55,.5) 55%,rgba(15,30,55,.1) 100%);z-index:1;"></div>
+  <!-- Contenu texte -->
+  <div style="position:relative;z-index:2;max-width:600px;padding:52px 6% 44px;">
+    <div class="hero-badge" style="margin-bottom:1rem;">
+      🏝️ La plateforme pensée pour les Comores
     </div>
-
-    <!-- Colonne image -->
-    <div style="flex:0 0 min(500px,50%);max-width:500px;min-width:280px;position:relative;overflow:hidden;">
-      <img src="/images/hero_banner.jpg" alt="Komerce — shopping e-commerce Comores"
-        style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;min-height:260px;max-height:400px;"
-        onerror="this.parentElement.style.display='none'">
+    <h1 style="font-size:clamp(1.6rem,4vw,2.6rem);margin-bottom:.8rem;text-align:left;">
+      <span>Vos envies traversent la mer.</span><br>
+      <span style="color:#e8a020;">Profitez de la vie.</span>
+    </h1>
+    <p style="font-size:.9rem;color:rgba(255,255,255,.85);margin:0 0 1.4rem;line-height:1.55;max-width:420px;">
+      Commandez pour votre famille aux Comores — maison, cérémonies, quotidien — depuis là où vous êtes.
+    </p>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+      <a href="#univers" class="btn-primary" style="font-size:.9rem;padding:.7rem 1.5rem;">✨ Choisir mon univers</a>
     </div>
-
   </div>
 </section>
 
@@ -1611,7 +1605,8 @@
         <div class="promo-card-cat">📱 Téléphones &amp; Accessoires</div>
         <div class="promo-price-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 28 mars</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;"><button class="btn-order" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
+        <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
+          <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
             🛒 Ajouter
           </button></div>
@@ -1635,7 +1630,8 @@
         <div class="promo-card-cat">👗 Vêtements &amp; Tissu</div>
         <div class="promo-price-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 31 mars</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;"><button class="btn-order" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
+        <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
+          <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
             🛒 Ajouter
           </button></div>
@@ -1655,7 +1651,8 @@
         <div class="promo-card-cat">🎧 Électronique léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Stock limité — 12 unités restantes</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;"><button class="btn-order" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
+        <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
+          <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
             🛒 Ajouter
           </button></div>
@@ -1675,7 +1672,8 @@
         <div class="promo-card-cat">🏠 Électroménager léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré à Anjouan</div>
         <div class="promo-countdown">⏳ Offre valable jusqu'au 30 mars</div>
-        <div class="promo-card-footer" style="margin-top:.8rem;"><button class="btn-order" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
+        <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
+          <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
             🛒 Ajouter
           </button></div>
