@@ -286,7 +286,7 @@
       color:var(--red); font-size:.78rem; font-weight:600;
       padding:.25rem .6rem; border-radius:4px; display:inline-block; margin-bottom:.8rem;
     }
-    .promo-card-footer { display:flex; gap:.5rem; }
+    .promo-card-footer { display:flex !important; gap:.5rem; align-items:center; }
     .btn-order {
       flex:1; background:var(--primary); color:var(--white);
       border:none; padding:.55rem; border-radius:6px;
@@ -1339,7 +1339,7 @@
     <a href="#univers">✨ Univers</a>
     <a href="#ceremony-section">🎉 Cérémonies</a>
     <a href="#daily-section">🏠 Quotidien</a>
-    <a href="#" class="nav-cta" onclick="event.preventDefault();openCheckout()">Commander →</a>
+
   </div>
     <div class="cart-icon" title="Voir le panier" onclick="if(typeof openCart==='function')openCart()" style="cursor:pointer;">
       <img src="images/avatar_panier.png" alt="Avatar panier Komerce" class="cart-avatar" />
@@ -1349,28 +1349,26 @@
 </nav>
 
 <!-- HERO -->
-<section class="hero" style="padding:0;overflow:hidden;min-height:0;position:relative;">
-  <!-- Image pleine largeur -->
-  <img src="/images/hero_banner.jpg" alt="Komerce"
-    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;z-index:0;"
-    onerror="this.remove()">
-  <!-- Overlay dégradé pour lisibilité du texte -->
-  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,30,55,.82) 0%,rgba(15,30,55,.5) 55%,rgba(15,30,55,.1) 100%);z-index:1;"></div>
-  <!-- Contenu texte -->
-  <div style="position:relative;z-index:2;max-width:600px;padding:52px 6% 44px;">
-    <div class="hero-badge" style="margin-bottom:1rem;">
-      🏝️ La plateforme pensée pour les Comores
-    </div>
-    <h1 style="font-size:clamp(1.6rem,4vw,2.6rem);margin-bottom:.8rem;text-align:left;">
+<section class="hero" style="padding:0;overflow:hidden;min-height:0;position:relative;display:flex;align-items:stretch;min-height:300px;">
+  <!-- Côté gauche : texte sur fond dégradé -->
+  <div style="flex:0 0 45%;min-width:260px;padding:48px 5% 40px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:1;background:linear-gradient(135deg,#0f1e37 0%,#1a3a5c 100%);">
+    <div class="hero-badge" style="margin-bottom:1rem;">🏝️ La plateforme pensée pour les Comores</div>
+    <h1 style="font-size:clamp(1.5rem,3.5vw,2.4rem);margin-bottom:.8rem;text-align:left;">
       <span>Vos envies traversent la mer.</span><br>
       <span style="color:#e8a020;">Profitez de la vie.</span>
     </h1>
-    <p style="font-size:.9rem;color:rgba(255,255,255,.85);margin:0 0 1.4rem;line-height:1.55;max-width:420px;">
+    <p style="font-size:.88rem;color:rgba(255,255,255,.82);margin:0 0 1.4rem;line-height:1.55;max-width:380px;">
       Commandez pour votre famille aux Comores — maison, cérémonies, quotidien — depuis là où vous êtes.
     </p>
     <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
-      <a href="#univers" class="btn-primary" style="font-size:.9rem;padding:.7rem 1.5rem;">✨ Choisir mon univers</a>
+      <a href="#univers" class="btn-primary" style="font-size:.88rem;padding:.65rem 1.3rem;">✨ Choisir mon univers</a>
     </div>
+  </div>
+  <!-- Côté droit : image étendue -->
+  <div style="flex:1;min-width:0;position:relative;overflow:hidden;">
+    <img src="/images/hero_banner.jpg" alt="Komerce e-commerce Comores"
+      style="width:100%;height:100%;object-fit:cover;object-position:center center;display:block;min-height:280px;"
+      onerror="this.closest('div').style.background='#f0f4f8'">
   </div>
 </section>
 
