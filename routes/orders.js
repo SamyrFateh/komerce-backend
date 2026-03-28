@@ -1,14 +1,25 @@
 /**
- * KOMERCE — Commandes v7.1
+ * KOMERCE — Commandes v7.2
  *
- * POST /api/orders               → créer une commande (client authentifié)
- * GET  /api/orders               → liste des commandes du client connecté
- * GET  /api/orders/:ref          → détail + suivi public par référence
- * PATCH /api/orders/:id/status   → changer statut (admin/agent_hub/agent_relais)
- * PATCH /api/orders/:id/cost     → saisir le coût réel (admin) — déclenche marge réelle
- * POST  /api/scans               → scanner un colis (agent_hub ou relais)
- * GET  /api/orders/:id/history   → historique statuts de la commande
+ * POST  /api/orders               → créer une commande (client authentifié)
+ * GET   /api/orders               → liste des commandes du client connecté
+ * GET   /api/orders/:ref          → détail + suivi public par référence
+ * PATCH /api/orders/:id/status    → changer statut (admin/agent_hub/agent_relais)
+ * PATCH /api/orders/:id/cost      → saisir le coût réel (admin)
+ * GET   /api/orders/:id/history   → historique statuts
+ *
+ * Corrections v7.2 vs v7.1 :
+ *   · Architecture orders + order_items (product_id/quantity/price sur order_items)
+ *   · payment_mode enum : 'stripe_eur' | 'cash_relais' (pas 'stripe')
+ *   · status initial : 'confirmed' (pas 'ordered' — absent de l'enum réel)
+ *   · ORDER_STATUSES aligné sur l'enum PostgreSQL réel
+ *   · scans : colonne 'step' (pas 'scan_step') + scan_code NOT NULL
+ *   · customs_history : sans customs_delta_pct (colonne GENERATED)
+ *   · ceremony_* : lus depuis req.body et persistés dans order_items
+ *   · recipients : créé ou réutilisé depuis recipient_name/phone
  */
+
+'use strict';
 
 const express = require('express');
 const router  = express.Router();
@@ -17,10 +28,12 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS } = require('../utils/sms');
 
-// ─── Constantes v7.1 ─────────────────────────────────────────────────────────
+// ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
 
 const ORDER_STATUSES = [
-  'ordered',
+  'draft',
+  'confirmed',
+  'paid',
   'purchasing',
   'preparation',
   'shipped',
@@ -28,17 +41,14 @@ const ORDER_STATUSES = [
   'available',
   'collected',
   'cancelled',
+  'refunded',
 ];
 
-// Pré-confection tailles standards + retouches locales uniquement
-// (pas de sur-mesure ni broderie — ajustements locaux seulement)
-const CONFECTION_TYPES = [
-  'aucun',
-  'retouche_locale',  // taille standard commandée, ajustée par artisan local
-];
+// ceremony_order_type enum v7.2
+const CEREMONY_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 
 const STATUS_SMS = {
-  ordered:          (ref) => `Komerce : Commande ${ref} confirmée ! Nous achetons votre article dans les 48h.`,
+  confirmed:        (ref) => `Komerce : Commande ${ref} confirmée ! Nous achetons votre article dans les 48h.`,
   purchasing:       (ref) => `Komerce : Commande ${ref} — nous achetons votre article actuellement.`,
   preparation:      (ref) => `Komerce : Commande ${ref} — colis en cours de préparation au hub.`,
   shipped:          (ref) => `Komerce : Commande ${ref} — votre colis a pris la mer ! Arrivée estimée 3–5 semaines.`,
@@ -47,7 +57,7 @@ const STATUS_SMS = {
   collected:        (ref) => `Komerce : Commande ${ref} remise. Merci de votre confiance ! 🎉`,
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function generateRef() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -66,7 +76,20 @@ async function getUniqueRef() {
   return ref;
 }
 
-// ─── POST /api/orders ────────────────────────────────────────────────────────
+// ─── POST /api/orders ─────────────────────────────────────────────────────────
+// Corps attendu :
+//   items[]              → [{ product_id, quantity, ceremony_order_type?,
+//                             ceremony_fabric_id?, ceremony_fabric_type?,
+//                             ceremony_size?, ceremony_retouche?,
+//                             ceremony_qty_meters?, ceremony_accessories? }]
+//   relais_id            → UUID relais de livraison
+//   payment_mode         → 'stripe_eur' | 'cash_relais'
+//   recipient_name       → nom du destinataire
+//   recipient_phone      → téléphone du destinataire
+//   confection_type      → 'aucun' | 'retouche_locale' | 'sur_mesure' | 'broderie'
+//   confection_instructions, confection_delay_days, confection_artisan_id
+//   ceremony_order_type  → si commande cérémonie globale
+//   ceremony_*           → autres champs cérémonie au niveau commande
 
 router.post('/', authenticate, async (req, res) => {
   const client = await db.getClient();
@@ -74,181 +97,230 @@ router.post('/', authenticate, async (req, res) => {
     await client.query('BEGIN');
 
     const {
-      product_id,
-      quantity              = 1,
+      items                 = [],
       relais_id,
-      payment_mode,           // 'stripe' | 'cash_relais'
+      payment_mode,
       stripe_payment_intent,
       recipient_name,
       recipient_phone,
-      is_gift               = false,
-      gift_message,
-      // Couture v7.1
-      confection_type       = 'aucun',
+      // Couture / cérémonie niveau commande
+      confection_type           = 'aucun',
       confection_instructions,
-      confection_delay_days,
-      // Diaspora info
-      sender_name,
-      sender_phone,
+      confection_delay_days     = 0,
+      confection_artisan_id,
+      // Cérémonie v7.2 niveau commande (optionnel — sinon porté par items)
+      ceremony_order_type,
+      ceremony_fabric_id,
+      ceremony_fabric_type,
+      ceremony_size,
+      ceremony_retouche         = false,
+      ceremony_qty_meters,
+      ceremony_accessories,
     } = req.body;
 
-    // Validation
-    if (!product_id) {
-      return res.status(400).json({ error: 'product_id obligatoire' });
+    // ── Validation ──────────────────────────────────────────────────────────
+    if (!items.length) {
+      return res.status(400).json({ error: 'items[] obligatoire (min 1 article)' });
     }
-    if (!['stripe', 'cash_relais'].includes(payment_mode)) {
-      return res.status(400).json({ error: 'payment_mode invalide (stripe | cash_relais)' });
+    if (!['stripe_eur', 'cash_relais'].includes(payment_mode)) {
+      return res.status(400).json({ error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais' });
     }
-    if (!CONFECTION_TYPES.includes(confection_type)) {
-      return res.status(400).json({ error: `confection_type invalide. Valeurs : ${CONFECTION_TYPES.join(', ')}` });
-    }
-
-    // Récupérer le produit
-    const { rows: [product] } = await client.query(
-      'SELECT * FROM products WHERE id = $1 AND is_active = TRUE',
-      [product_id]
-    );
-    if (!product) {
-      return res.status(404).json({ error: 'Produit introuvable ou inactif' });
+    if (ceremony_order_type && !CEREMONY_TYPES.includes(ceremony_order_type)) {
+      return res.status(400).json({ error: `ceremony_order_type invalide. Valeurs : ${CEREMONY_TYPES.join(', ')}` });
     }
 
-    // Vérifier stock
-    if (product.stock !== null && product.stock < quantity) {
-      return res.status(409).json({
-        error: `Stock insuffisant — disponible : ${product.stock}`,
-        available_stock: product.stock,
-      });
-    }
-
-    // Récupérer relais
+    // ── Résoudre relais ─────────────────────────────────────────────────────
     let relais = null;
     if (relais_id) {
       const { rows: [r] } = await client.query(
-        'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE',
-        [relais_id]
+        'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE', [relais_id]
       );
       if (!r) return res.status(404).json({ error: 'Relais introuvable' });
       relais = r;
     } else {
-      // Assigner le premier relais disponible si aucun fourni
       const { rows: [r] } = await client.query(
-        `SELECT * FROM relais WHERE is_active = TRUE ORDER BY id LIMIT 1`
+        'SELECT * FROM relais WHERE is_active = TRUE ORDER BY id LIMIT 1'
       );
       relais = r;
     }
 
-    // Calculer montants
-    const unit_price_kmf = product.price_kmf;
-    const total_kmf      = unit_price_kmf * quantity;
+    // ── Créer ou réutiliser le recipient ────────────────────────────────────
+    let recipient_id = null;
+    const rName  = recipient_name  || req.user.full_name;
+    const rPhone = recipient_phone || req.user.phone;
+    if (rName && rPhone) {
+      // Chercher un recipient existant pour cet utilisateur + relais
+      const { rows: [existingRc] } = await client.query(
+        'SELECT id FROM recipients WHERE user_id = $1 AND phone = $2 AND relais_id = $3 LIMIT 1',
+        [req.user.id, rPhone, relais?.id || null]
+      );
+      if (existingRc) {
+        recipient_id = existingRc.id;
+      } else {
+        const { rows: [newRc] } = await client.query(
+          'INSERT INTO recipients (user_id, full_name, phone, relais_id, is_default) VALUES ($1,$2,$3,$4,FALSE) RETURNING id',
+          [req.user.id, rName, rPhone, relais?.id || null]
+        );
+        recipient_id = newRc.id;
+      }
+    }
 
-    // Estimer coût (sourcing + fret + douane estimée)
-    const customs_rate   = product.customs_risk_coeff || 1.0;
-    const fret_per_kg    = 65; // KMF/kg estimé
-    const fret_kmf       = (product.weight_kg || 0.5) * quantity * fret_per_kg;
-    const customs_base   = (product.price_aed || 0) * 138 * quantity; // en KMF
-    const customs_est    = customs_base * 0.20 * customs_rate;        // taux moyen 20%
-    const cost_estimated = (product.price_aed || 0) * 138 * quantity + fret_kmf + customs_est;
-    const margin_est     = total_kmf > 0
+    // ── Charger les produits en une seule requête ───────────────────────────
+    const productIds = items.map(i => i.product_id);
+    const { rows: products } = await client.query(
+      'SELECT * FROM products WHERE id = ANY($1) AND is_active = TRUE',
+      [productIds]
+    );
+    const productMap = Object.fromEntries(products.map(p => [p.id, p]));
+
+    // ── Vérifier stock + calculer totaux ────────────────────────────────────
+    let total_kmf        = 0;
+    let cost_estimated   = 0;
+
+    for (const item of items) {
+      const product = productMap[item.product_id];
+      if (!product) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: `Produit introuvable : ${item.product_id}` });
+      }
+      const qty = item.quantity || 1;
+      if (product.stock !== null && product.stock < qty) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `Stock insuffisant pour ${product.name} — disponible : ${product.stock}`,
+          available_stock: product.stock,
+        });
+      }
+      total_kmf += product.price_kmf * qty;
+
+      // Estimation coût : sourcing + fret + douane estimée
+      const fret_kmf     = (product.weight_kg || 0.5) * qty * 65;
+      const base_aed_kmf = (product.price_aed || 0) * 138 * qty;
+      const customs_est  = base_aed_kmf * 0.20 * (product.customs_risk_coeff || 1.0);
+      cost_estimated    += base_aed_kmf + fret_kmf + customs_est;
+    }
+
+    const margin_est = total_kmf > 0
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
       : 0;
 
-    // Générer référence unique
-    const reference = await getUniqueRef();
-
-    // Code cash si paiement relais
+    // ── Code cash si paiement relais ────────────────────────────────────────
     const cash_ref_code = payment_mode === 'cash_relais'
       ? Math.floor(100000 + Math.random() * 900000).toString()
       : null;
 
-    // Créer la commande
+    // ── Créer la commande ───────────────────────────────────────────────────
+    const reference = await getUniqueRef();
+
     const { rows: [order] } = await client.query(
       `INSERT INTO orders (
-         id, reference, user_id, product_id, quantity,
-         unit_price_kmf, total_kmf,
-         relais_id,
-         payment_mode, payment_status, stripe_payment_intent,
+         id, reference, user_id, recipient_id, relais_id,
+         total_kmf, total_eur,
+         payment_mode, payment_status, stripe_payment_id,
          cash_ref_code,
-         recipient_name, recipient_phone,
-         sender_name, sender_phone,
-         is_gift, gift_message,
-         confection_type, confection_instructions, confection_delay_days,
-         cost_estimated_kmf, margin_estimated_pct,
-         status, ordered_at
+         status,
+         confection_type, confection_instructions,
+         confection_delay_days, confection_artisan_id,
+         ceremony_order_type, ceremony_fabric_id, ceremony_fabric_type,
+         ceremony_size, ceremony_retouche, ceremony_qty_meters, ceremony_accessories,
+         cost_estimated_kmf, margin_estimated_pct
        ) VALUES (
          $1,$2,$3,$4,$5,
          $6,$7,
-         $8,
-         $9,$10,$11,
-         $12,
-         $13,$14,
-         $15,$16,
-         $17,$18,
-         $19,$20,$21,
-         $22,$23,
-         'ordered', NOW()
+         $8,$9,$10,
+         $11,
+         'confirmed',
+         $12,$13,
+         $14,$15,
+         $16,$17,$18,
+         $19,$20,$21,$22,
+         $23,$24
        ) RETURNING *`,
       [
-        uuidv4(), reference, req.user.id, product_id, quantity,
-        unit_price_kmf, total_kmf,
-        relais ? relais.id : null,
+        uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
+        total_kmf, parseFloat((total_kmf / 492).toFixed(2)),
         payment_mode,
-        payment_mode === 'stripe' ? 'paid' : 'pending',
+        payment_mode === 'stripe_eur' ? 'paid' : 'pending',
         stripe_payment_intent || null,
         cash_ref_code,
-        recipient_name || req.user.full_name,
-        recipient_phone || req.user.phone,
-        sender_name || null,
-        sender_phone || null,
-        is_gift,
-        gift_message || null,
         confection_type,
         confection_instructions || null,
-        confection_delay_days || null,
+        confection_delay_days,
+        confection_artisan_id || null,
+        ceremony_order_type || null,
+        ceremony_fabric_id  || null,
+        ceremony_fabric_type || null,
+        ceremony_size        || null,
+        ceremony_retouche,
+        ceremony_qty_meters  || null,
+        ceremony_accessories ? JSON.stringify(ceremony_accessories) : null,
         Math.round(cost_estimated),
         Number(margin_est),
       ]
     );
 
-    // Historiser le statut initial
+    // ── Historiser statut initial ───────────────────────────────────────────
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'ordered', 'Commande créée', $2)`,
+       VALUES ($1, 'confirmed', 'Commande créée', $2)`,
       [order.id, req.user.id]
     );
 
-    // Décrémenter stock
-    if (product.stock !== null) {
+    // ── Créer les order_items ───────────────────────────────────────────────
+    for (const item of items) {
+      const product = productMap[item.product_id];
+      const qty     = item.quantity || 1;
+
       await client.query(
-        'UPDATE products SET stock = stock - $1 WHERE id = $2',
-        [quantity, product_id]
+        `INSERT INTO order_items (
+           order_id, product_id, quantity, price_kmf,
+           ceremony_order_type, ceremony_fabric_id, ceremony_fabric_type,
+           ceremony_size, ceremony_retouche, ceremony_qty_meters, ceremony_accessories
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          order.id, item.product_id, qty, product.price_kmf,
+          item.ceremony_order_type || null,
+          item.ceremony_fabric_id  || null,
+          item.ceremony_fabric_type || null,
+          item.ceremony_size        || null,
+          item.ceremony_retouche    || false,
+          item.ceremony_qty_meters  || null,
+          item.ceremony_accessories ? JSON.stringify(item.ceremony_accessories) : null,
+        ]
       );
+
+      // Décrémenter stock
+      if (product.stock !== null) {
+        await client.query(
+          'UPDATE products SET stock = stock - $1 WHERE id = $2',
+          [qty, item.product_id]
+        );
+      }
     }
 
     await client.query('COMMIT');
 
-    // SMS de confirmation (async — ne bloque pas la réponse)
-    const smsPhone = sender_phone || req.user.phone;
+    // ── SMS confirmation ────────────────────────────────────────────────────
+    const smsPhone = req.user.phone;
     if (smsPhone) {
-      sendSMS(
-        smsPhone,
-        STATUS_SMS.ordered(reference),
-        'confirmation',
-        order.id
-      ).catch(console.error);
+      sendSMS(smsPhone, STATUS_SMS.confirmed(reference), 'confirmation', order.id)
+        .catch(console.error);
     }
 
     res.status(201).json({
       order: {
-        id:             order.id,
-        reference:      order.reference,
-        status:         order.status,
-        total_kmf:      order.total_kmf,
-        payment_mode:   order.payment_mode,
-        payment_status: order.payment_status,
-        cash_ref_code:  order.cash_ref_code,
-        confection_type: order.confection_type,
-        relais:         relais ? { id: relais.id, name: relais.name, address: relais.address } : null,
-        created_at:     order.created_at,
+        id:               order.id,
+        reference:        order.reference,
+        status:           order.status,
+        total_kmf:        order.total_kmf,
+        total_eur:        order.total_eur,
+        payment_mode:     order.payment_mode,
+        payment_status:   order.payment_status,
+        cash_ref_code:    order.cash_ref_code,
+        confection_type:  order.confection_type,
+        ceremony_order_type: order.ceremony_order_type,
+        relais:           relais ? { id: relais.id, name: relais.name, address: relais.address } : null,
+        created_at:       order.created_at,
       },
     });
 
@@ -278,17 +350,30 @@ router.get('/', authenticate, async (req, res) => {
 
     const where = conditions.join(' AND ');
 
+    // Jointure via order_items pour récupérer le premier article
     const { rows } = await db.query(
       `SELECT
          o.id, o.reference, o.status, o.total_kmf,
          o.payment_mode, o.payment_status,
-         o.confection_type,
+         o.confection_type, o.ceremony_order_type,
          o.created_at,
-         p.name AS product_name, p.image_url,
-         r.name AS relais_name
+         r.name AS relais_name,
+         -- Premier article de la commande (pour affichage)
+         (
+           SELECT p.name FROM order_items oi
+           JOIN products p ON p.id = oi.product_id
+           WHERE oi.order_id = o.id
+           ORDER BY oi.created_at ASC LIMIT 1
+         ) AS product_name,
+         (
+           SELECT p.image_url FROM order_items oi
+           JOIN products p ON p.id = oi.product_id
+           WHERE oi.order_id = o.id
+           ORDER BY oi.created_at ASC LIMIT 1
+         ) AS product_image_url,
+         (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS items_count
        FROM orders o
-       LEFT JOIN products p ON p.id = o.product_id
-       LEFT JOIN relais   r ON r.id = o.relais_id
+       LEFT JOIN relais r ON r.id = o.relais_id
        WHERE ${where}
        ORDER BY o.created_at DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
@@ -312,23 +397,33 @@ router.get('/:ref', async (req, res) => {
     const { rows: [order] } = await db.query(
       `SELECT
          o.*,
-         p.name      AS product_name,
-         p.image_url AS product_image,
-         p.category  AS product_category,
-         p.has_couture,
-         r.name      AS relais_name,
-         r.address   AS relais_address,
-         r.phone     AS relais_phone,
-         r.hours     AS relais_hours,
-         r.zone      AS relais_zone
-       FROM orders  o
-       LEFT JOIN products p ON p.id = o.product_id
-       LEFT JOIN relais   r ON r.id = o.relais_id
+         r.name    AS relais_name,
+         r.address AS relais_address,
+         r.phone   AS relais_phone,
+         r.hours   AS relais_hours,
+         r.zone    AS relais_zone
+       FROM orders o
+       LEFT JOIN relais r ON r.id = o.relais_id
        WHERE ${field} = $1`,
       [req.params.ref]
     );
 
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    // Articles de la commande
+    const { rows: items } = await db.query(
+      `SELECT
+         oi.id, oi.quantity, oi.price_kmf,
+         oi.ceremony_order_type, oi.ceremony_fabric_type,
+         oi.ceremony_size, oi.ceremony_retouche,
+         oi.ceremony_qty_meters, oi.ceremony_accessories,
+         p.name AS product_name, p.image_url, p.category, p.has_couture, p.emoji
+       FROM order_items oi
+       JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id = $1
+       ORDER BY oi.created_at ASC`,
+      [order.id]
+    );
 
     // Historique des statuts
     const { rows: history } = await db.query(
@@ -339,27 +434,26 @@ router.get('/:ref', async (req, res) => {
       [order.id]
     );
 
-    // Masquer les champs sensibles si accès public (pas de token)
-    const safeOrder = {
-      id:               order.id,
-      reference:        order.reference,
-      status:           order.status,
-      total_kmf:        order.total_kmf,
-      payment_mode:     order.payment_mode,
-      payment_status:   order.payment_status,
-      cash_ref_code:    order.cash_ref_code,
-      confection_type:  order.confection_type,
-      ordered_at:       order.ordered_at,
-      purchasing_at:    order.purchasing_at,
-      shipped_at:       order.shipped_at,
-      transit_comores_at: order.transit_comores_at,
-      available_at:     order.available_at,
-      collected_at:     order.collected_at,
-      product: {
-        name:     order.product_name,
-        image:    order.product_image,
-        category: order.product_category,
-      },
+    res.json({
+      id:                  order.id,
+      reference:           order.reference,
+      status:              order.status,
+      total_kmf:           order.total_kmf,
+      total_eur:           order.total_eur,
+      payment_mode:        order.payment_mode,
+      payment_status:      order.payment_status,
+      cash_ref_code:       order.cash_ref_code,
+      confection_type:     order.confection_type,
+      ceremony_order_type: order.ceremony_order_type,
+      ceremony_size:       order.ceremony_size,
+      ceremony_retouche:   order.ceremony_retouche,
+      purchasing_at:       order.purchasing_at,
+      shipped_at:          order.shipped_at,
+      transit_comores_at:  order.transit_comores_at,
+      available_at:        order.available_at,
+      collected_at:        order.collected_at,
+      created_at:          order.created_at,
+      items,
       relais: order.relais_name ? {
         name:    order.relais_name,
         address: order.relais_address,
@@ -368,9 +462,7 @@ router.get('/:ref', async (req, res) => {
         zone:    order.relais_zone,
       } : null,
       history,
-    };
-
-    res.json(safeOrder);
+    });
 
   } catch (err) {
     console.error('Get order error:', err.message);
@@ -393,35 +485,30 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       });
     }
 
-    // Récupérer commande actuelle
     const { rows: [order] } = await client.query(
       `SELECT o.*, r.name AS relais_name, u.phone AS user_phone
-       FROM orders  o
+       FROM orders o
        LEFT JOIN relais r ON r.id = o.relais_id
        LEFT JOIN users  u ON u.id = o.user_id
        WHERE o.id = $1`,
       [req.params.id]
     );
-
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Construire la mise à jour du timestamp correspondant
+    // Timestamp correspondant au statut
     const tsField = {
-      ordered:          'ordered_at',
-      purchasing:       'purchasing_at',
-      preparation:      null,
-      shipped:          'shipped_at',
-      transit_comores:  'transit_comores_at',
-      available:        'available_at',
-      collected:        'collected_at',
-      cancelled:        'cancelled_at',
+      purchasing:      'purchasing_at',
+      shipped:         'shipped_at',
+      transit_comores: 'transit_comores_at',
+      available:       'available_at',
+      collected:       'collected_at',
+      cancelled:       'cancelled_at',
     }[status];
 
     const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
 
     await client.query(
-      `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW()
-       WHERE id = $2`,
+      `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW() WHERE id = $2`,
       [status, order.id]
     );
 
@@ -433,15 +520,10 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
     await client.query('COMMIT');
 
-    // SMS notification
-    const smsPhone = order.sender_phone || order.user_phone;
+    const smsPhone = order.user_phone;
     if (smsPhone && STATUS_SMS[status]) {
-      sendSMS(
-        smsPhone,
-        STATUS_SMS[status](order.reference, order.relais_name),
-        status,
-        order.id
-      ).catch(console.error);
+      sendSMS(smsPhone, STATUS_SMS[status](order.reference, order.relais_name), status, order.id)
+        .catch(console.error);
     }
 
     res.json({ success: true, status });
@@ -455,64 +537,47 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
   }
 });
 
-// ─── PATCH /api/orders/:id/cost — saisie coût réel (admin) ───────────────────
+// ─── PATCH /api/orders/:id/cost ──────────────────────────────────────────────
 
 router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res) => {
   try {
-    const {
-      cost_real_kmf,
-      customs_real_kmf,
-      customs_agent_id,
-      customs_notes,
-    } = req.body;
+    const { cost_real_kmf, customs_real_kmf, customs_agent_id, customs_notes, sh_category } = req.body;
 
-    if (!cost_real_kmf) {
-      return res.status(400).json({ error: 'cost_real_kmf obligatoire' });
-    }
+    if (!cost_real_kmf) return res.status(400).json({ error: 'cost_real_kmf obligatoire' });
 
     const { rows: [order] } = await db.query(
       'SELECT * FROM orders WHERE id = $1', [req.params.id]
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Calculer delta douane
-    const est = order.customs_estimated_kmf || 0;
-    const delta = est > 0
-      ? ((customs_real_kmf - est) / est * 100).toFixed(2)
-      : null;
-
+    // Mise à jour coût réel (le trigger compute_real_margin recalcule margin_real_pct)
     await db.query(
-      `UPDATE orders SET
-         cost_real_kmf       = $1,
-         cost_delta_pct      = $2,
-         cost_closed_at      = NOW(),
-         updated_at          = NOW()
-       WHERE id = $3`,
-      [cost_real_kmf, delta, order.id]
+      `UPDATE orders SET cost_real_kmf = $1, updated_at = NOW() WHERE id = $2`,
+      [cost_real_kmf, order.id]
     );
 
-    // Créer entrée customs_history
-    if (customs_real_kmf) {
+    // Customs history — sans customs_delta_pct ni customs_delta_kmf (GENERATED)
+    if (customs_real_kmf && sh_category) {
       await db.query(
         `INSERT INTO customs_history
-           (order_id, customs_estimated_kmf, customs_real_kmf,
-            customs_delta_pct, customs_agent_id, notes)
+           (order_id, sh_category, customs_estimated_kmf, customs_real_kmf,
+            customs_agent_id, customs_notes)
          VALUES ($1,$2,$3,$4,$5,$6)`,
         [
           order.id,
-          order.customs_estimated_kmf || null,
+          sh_category,
+          order.cost_estimated_kmf || null,
           customs_real_kmf,
-          delta,
           customs_agent_id || null,
-          customs_notes || null,
+          customs_notes    || null,
         ]
       );
     }
 
-    // Le trigger PostgreSQL trg_compute_real_margin recalcule margin_real_pct automatiquement
-    // Récupérer la commande mise à jour
     const { rows: [updated] } = await db.query(
-      'SELECT id, reference, cost_real_kmf, margin_real_pct, margin_alert, sourcing_blocked FROM orders WHERE id = $1',
+      `SELECT id, reference, cost_real_kmf, margin_real_pct,
+              margin_alert, sourcing_blocked, cost_delta_pct
+       FROM orders WHERE id = $1`,
       [req.params.id]
     );
 
@@ -524,98 +589,7 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res)
   }
 });
 
-// ─── POST /api/scans — scan physique colis ────────────────────────────────────
-
-router.post('/scans', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), async (req, res) => {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const { reference, scan_step, location, notes } = req.body;
-
-    // Étapes de scan v7.1
-    const SCAN_STEPS = {
-      hub_preparation:   { status: 'preparation', label: 'Hub — colis prêt' },       // étape 3
-      relais_reception:  { status: 'available',   label: 'Relais — réception'  },    // étape 6
-      client_collection: { status: 'collected',   label: 'Remise client QR'    },    // étape 7
-    };
-
-    if (!SCAN_STEPS[scan_step]) {
-      return res.status(400).json({
-        error: `scan_step invalide. Valeurs : ${Object.keys(SCAN_STEPS).join(', ')}`,
-      });
-    }
-
-    const { rows: [order] } = await client.query(
-      `SELECT o.*, r.name AS relais_name, u.phone AS user_phone, u.phone AS sender_phone_fallback
-       FROM orders o
-       LEFT JOIN relais r ON r.id = o.relais_id
-       LEFT JOIN users  u ON u.id = o.user_id
-       WHERE o.reference = $1`,
-      [reference]
-    );
-
-    if (!order) return res.status(404).json({ error: `Commande ${reference} introuvable` });
-
-    const step = SCAN_STEPS[scan_step];
-
-    // Enregistrer le scan
-    await client.query(
-      `INSERT INTO scans (order_id, scan_step, scanned_by, location, notes)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [order.id, scan_step, req.user.id, location || null, notes || null]
-    );
-
-    // Mettre à jour le statut commande
-    const tsField = {
-      preparation: null,
-      available:   'available_at',
-      collected:   'collected_at',
-    }[step.status];
-
-    const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
-
-    await client.query(
-      `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW() WHERE id = $2`,
-      [step.status, order.id]
-    );
-
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, $2, $3, $4)`,
-      [order.id, step.status, `Scan ${scan_step} — ${step.label}`, req.user.id]
-    );
-
-    await client.query('COMMIT');
-
-    // SMS
-    const smsPhone = order.sender_phone || order.user_phone;
-    if (smsPhone && STATUS_SMS[step.status]) {
-      sendSMS(
-        smsPhone,
-        STATUS_SMS[step.status](reference, order.relais_name),
-        step.status,
-        order.id
-      ).catch(console.error);
-    }
-
-    res.json({
-      success: true,
-      reference,
-      scan_step,
-      new_status: step.status,
-    });
-
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Scan error:', err.message);
-    res.status(500).json({ error: 'Erreur scan' });
-  } finally {
-    client.release();
-  }
-});
-
-// ─── GET /api/orders/:id/history ──────────────────────────────────────────────
+// ─── GET /api/orders/:id/history ─────────────────────────────────────────────
 
 router.get('/:id/history', authenticate, async (req, res) => {
   try {
