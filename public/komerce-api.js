@@ -216,23 +216,14 @@ async function loadProducts() {
             </div>
             ${stock < 5 ? `<div style="color:#dc2626;font-size:.75rem;font-weight:700;
               margin-bottom:.4rem;">⚠️ Plus que ${stock} en stock</div>` : ''}
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;">
+            <div style="margin-top:.6rem;">
               <button
                 onclick="event.stopPropagation();addToCart(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 class="btn-order"
                 style="display:flex;align-items:center;justify-content:center;gap:.3rem;
-                       font-size:.82rem;padding:.5rem .4rem;">
-                🛒 Ajouter
-              </button>
-              <button
-                onclick="event.stopPropagation();quickOrder(JSON.parse(this.dataset.p))"
-                data-p="${pData}"
-                style="display:flex;align-items:center;justify-content:center;gap:.3rem;
-                       font-size:.82rem;padding:.5rem .4rem;
-                       background:linear-gradient(135deg,#1a3a5c,#2563eb);color:#fff;
-                       border:none;border-radius:8px;cursor:pointer;font-weight:700;">
-                ⚡ Commander
+                       font-size:.82rem;padding:.6rem .4rem;width:100%;">
+                🛒 Ajouter au panier
               </button>
             </div>
           </div>
