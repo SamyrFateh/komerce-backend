@@ -11,8 +11,10 @@ const express    = require('express');
 const cors       = require('cors');
 const path       = require('path');
 const rateLimit  = require('express-rate-limit');
-
 const app = express();
+
+// FIX PROXY (Railway, Render, etc.)
+app.set('trust proxy', 1);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 
