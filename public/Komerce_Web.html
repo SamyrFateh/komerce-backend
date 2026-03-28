@@ -203,6 +203,51 @@
     .promo-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:2rem; }
 
     .promo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1.2rem; align-items:stretch; }
+
+    /* ── CARROUSEL HORIZONTAL (style Noon/Amazon) ── */
+    .promo-carousel-wrap {
+      position:relative;
+      padding:0 24px;
+    }
+    .promo-carousel {
+      display:flex;
+      gap:1rem;
+      overflow-x:auto;
+      scroll-snap-type:x mandatory;
+      scroll-behavior:smooth;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      padding:.5rem .2rem 1.2rem;
+    }
+    .promo-carousel::-webkit-scrollbar { display:none; }
+    .promo-carousel .promo-card {
+      flex:0 0 220px;
+      scroll-snap-align:start;
+    }
+    .carousel-btn {
+      position:absolute;top:50%;transform:translateY(-60%);
+      background:#fff;border:1.5px solid #e2e8f0;border-radius:50%;
+      width:40px;height:40px;cursor:pointer;z-index:10;
+      box-shadow:0 2px 12px rgba(0,0,0,.12);font-size:1.3rem;font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      transition:box-shadow .15s,transform .15s;color:#1a3a5c;
+    }
+    .carousel-btn:hover { box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(-60%) scale(1.1); }
+    .carousel-btn-prev { left:-4px; }
+    .carousel-btn-next { right:-4px; }
+    .carousel-dots {
+      display:flex;justify-content:center;gap:.4rem;margin-top:.4rem;
+    }
+    .carousel-dot {
+      width:7px;height:7px;border-radius:50%;background:#e2e8f0;
+      transition:background .2s,transform .2s;cursor:pointer;
+    }
+    .carousel-dot.active { background:#1a3a5c;transform:scale(1.3); }
+    @media(max-width:640px) {
+      .carousel-btn { display:none; }
+      .promo-carousel .promo-card { flex:0 0 165px; }
+      .promo-carousel-wrap { padding:0 4px; }
+    }
     .promo-card {
       background:var(--white); border-radius:12px;
       box-shadow: var(--shadow);
@@ -1660,7 +1705,9 @@
     </div>
   </div>
 
-  <div class="promo-grid">
+  <div class="promo-carousel-wrap">
+    <button class="carousel-btn carousel-btn-prev" onclick="_scrollCarousel(this,-1)" aria-label="Précédent">&#8249;</button>
+    <div class="promo-carousel" id="promo-carousel-main">
 
     <!-- Promo Card 1 -->
     <div class="promo-card" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
@@ -1786,7 +1833,10 @@
       </div>
     </div>
 
-  </div>
+  </div><!-- /promo-carousel -->
+    <button class="carousel-btn carousel-btn-next" onclick="_scrollCarousel(this,1)" aria-label="Suivant">&#8250;</button>
+  </div><!-- /promo-carousel-wrap -->
+  <div class="carousel-dots" id="promo-carousel-dots"></div>
 
   <div class="promo-mvp-note">
     <span style="font-size:1.4rem;">ℹ️</span>

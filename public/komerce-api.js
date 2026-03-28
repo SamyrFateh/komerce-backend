@@ -119,7 +119,7 @@ function toast(msg, type = 'info') {
 
 async function loadProducts() {
   // Web → .promo-grid  |  PWA → .promo-row
-  const grid  = document.querySelector('.promo-grid');
+  const grid  = document.querySelector('.promo-carousel') || document.querySelector('.promo-grid');
   const row   = document.querySelector('.promo-row');
   const container = grid || row;
   if (!container) return;
@@ -2471,6 +2471,55 @@ function _renderFavBody() {
 
 
 // ═══════════════════════════════════════════════════════════════════════
+//  9. CARROUSEL HORIZONTAL
+// ═══════════════════════════════════════════════════════════════════════
+
+function _scrollCarousel(btn, dir) {
+  var wrap  = btn.parentElement;
+  var track = wrap.querySelector('.promo-carousel');
+  if (!track) return;
+  var cardW = (track.querySelector('.promo-card') || {}).offsetWidth || 240;
+  track.scrollBy({ left: dir * (cardW + 16) * 2, behavior: 'smooth' });
+  setTimeout(function(){ _updateCarouselDots(track); }, 350);
+}
+
+function _initCarouselDots() {
+  var track = document.getElementById('promo-carousel-main');
+  var dots  = document.getElementById('promo-carousel-dots');
+  if (!track || !dots) return;
+
+  var cards = track.querySelectorAll('.promo-card');
+  if (cards.length === 0) return;
+
+  // Créer un dot par carte visible (~3 à la fois desktop)
+  var total = Math.ceil(cards.length / 2);
+  dots.innerHTML = '';
+  for (var i = 0; i < total; i++) {
+    var d = document.createElement('span');
+    d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+    (function(idx){ d.onclick = function(){
+      var cardW = (cards[0] || {}).offsetWidth || 240;
+      track.scrollTo({ left: idx * (cardW + 16) * 2, behavior: 'smooth' });
+      setTimeout(function(){ _updateCarouselDots(track); }, 350);
+    }; })(i);
+    dots.appendChild(d);
+  }
+
+  // Mettre à jour au scroll
+  track.addEventListener('scroll', function(){
+    _updateCarouselDots(track);
+  }, { passive: true });
+}
+
+function _updateCarouselDots(track) {
+  var dots  = document.querySelectorAll('#promo-carousel-dots .carousel-dot');
+  if (!dots.length) return;
+  var cardW = (track.querySelector('.promo-card') || {}).offsetWidth || 240;
+  var idx   = Math.round(track.scrollLeft / ((cardW + 16) * 2));
+  dots.forEach(function(d, i){ d.classList.toggle('active', i === idx); });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -2498,6 +2547,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Charger en parallèle relais + produits API (remplace les cartes statiques)
   await Promise.all([loadRelais(), loadProducts()]);
+
+  // Dots carousel
+  _initCarouselDots();
 
   // Tracking
   initTracking();
