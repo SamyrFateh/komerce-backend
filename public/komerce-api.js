@@ -216,21 +216,23 @@ async function loadProducts() {
             </div>
             ${stock < 5 ? `<div style="color:#dc2626;font-size:.75rem;font-weight:700;
               margin-bottom:.4rem;">⚠️ Plus que ${stock} en stock</div>` : ''}
-            <div style="display:flex;gap:.5rem;margin-top:.6rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;">
               <button
                 onclick="event.stopPropagation();addToCart(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
                 class="btn-order"
-                style="flex:1;display:flex;align-items:center;justify-content:center;gap:.4rem;">
+                style="display:flex;align-items:center;justify-content:center;gap:.3rem;
+                       font-size:.82rem;padding:.5rem .4rem;">
                 🛒 Ajouter
               </button>
               <button
                 onclick="event.stopPropagation();quickOrder(JSON.parse(this.dataset.p))"
                 data-p="${pData}"
-                title="Commander maintenant"
-                style="padding:.55rem .75rem;background:none;border:2px solid #1a3a5c;
-                       border-radius:8px;cursor:pointer;font-size:.9rem;">
-                ⚡
+                style="display:flex;align-items:center;justify-content:center;gap:.3rem;
+                       font-size:.82rem;padding:.5rem .4rem;
+                       background:linear-gradient(135deg,#1a3a5c,#2563eb);color:#fff;
+                       border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+                ⚡ Commander
               </button>
             </div>
           </div>
