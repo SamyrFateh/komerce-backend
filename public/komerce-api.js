@@ -56,6 +56,8 @@ let _relaisList = [];
 let _cart       = [];          // [{ product, qty, couture }]
 let _profil     = 'local';     // 'local' | 'diaspora'
 let _savedUser  = null;        // { name, phone, token, savedAt } depuis localStorage
+let _favorites  = [];          // [{ id, name, priceAtSave, priceDropped, currentPrice, ... }]
+const LS_FAV_KEY = 'kmrc_favorites';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  UTILITAIRES
@@ -203,6 +205,7 @@ async function loadProducts() {
             ${needSize ? `<div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
               color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
               ✂️ Tailles dispo</div>` : ''}
+            <button onclick="event.stopPropagation();toggleFavorite(JSON.parse(this.dataset.pp))" data-pp="${pData}" data-fav-id="${p.id}" title="Favoris" style="position:absolute;top:.5rem;right:.5rem;background:rgba(255,255,255,.9);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.15);">${isFavorite(p.id)?'❤️':'🤍'}</button>
           </div>
           <div class="promo-card-body">
             <div class="promo-card-name">${p.name}</div>
@@ -2198,6 +2201,221 @@ function initWhatsAppButton() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+//  8. FAVORIS — TRACKING PRIX
+// ═══════════════════════════════════════════════════════════════════════
+
+function _saveFavorites() {
+  try { localStorage.setItem(LS_FAV_KEY, JSON.stringify(_favorites)); } catch(e) {}
+}
+
+function isFavorite(productId) {
+  return _favorites.some(function(f){ return String(f.id) === String(productId); });
+}
+
+function addToFavorites(product) {
+  if (isFavorite(product.id)) return;
+  _favorites.push({
+    id:           product.id,
+    name:         product.name,
+    category:     product.category || '',
+    price_kmf:    product.price_kmf,
+    priceAtSave:  product.price_kmf,
+    image_url:    product.image_url || null,
+    emoji:        product.emoji || '📦',
+    promo_pct:    product.promo_pct || 0,
+    savedAt:      Date.now(),
+    priceDropped: false,
+    currentPrice: product.price_kmf,
+  });
+  _saveFavorites();
+  _refreshFavBadge();
+  toast('❤️ ' + product.name + ' ajouté aux favoris', 'success');
+}
+
+function removeFromFavorites(productId) {
+  _favorites = _favorites.filter(function(f){ return String(f.id) !== String(productId); });
+  _saveFavorites();
+  _refreshFavBadge();
+  var body = document.getElementById('kmrc-fav-body');
+  if (body) _renderFavBody();
+}
+
+function toggleFavorite(product) {
+  if (isFavorite(product.id)) {
+    removeFromFavorites(product.id);
+    toast('🤍 Retiré des favoris', 'info');
+  } else {
+    addToFavorites(product);
+  }
+  document.querySelectorAll('[data-fav-id="' + product.id + '"]').forEach(function(btn){
+    btn.textContent = isFavorite(product.id) ? '❤️' : '🤍';
+  });
+}
+
+function _refreshProductFavBtn(productId) {
+  var btn = document.getElementById('kmrc-prod-fav-btn');
+  if (btn) btn.textContent = isFavorite(productId) ? '❤️' : '🤍';
+}
+
+function _refreshFavBadge() {
+  var badge   = document.getElementById('kmrc-fav-badge');
+  var dropped = _favorites.filter(function(f){ return f.priceDropped; }).length;
+  var total   = _favorites.length;
+  if (!badge) return;
+  if (dropped > 0) {
+    badge.textContent  = dropped;
+    badge.style.display    = 'flex';
+    badge.style.background = '#dc2626';
+  } else if (total > 0) {
+    badge.textContent  = total;
+    badge.style.display    = 'flex';
+    badge.style.background = '#e8a020';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function _checkFavoritePrices() {
+  if (_favorites.length === 0) return;
+  var droppedCount = 0;
+
+  await Promise.all(_favorites.map(async function(fav) {
+    try {
+      var data = await apiGet('/api/products/' + fav.id);
+      if (!data || data.error) return;
+      var current   = data.price_kmf || fav.priceAtSave;
+      fav.currentPrice = current;
+      fav.promo_pct    = data.promo_pct || fav.promo_pct;
+      if (current < fav.priceAtSave) { fav.priceDropped = true; droppedCount++; }
+      else                           { fav.priceDropped = false; }
+    } catch(e) {}
+  }));
+
+  _saveFavorites();
+  _refreshFavBadge();
+
+  if (droppedCount > 0) {
+    setTimeout(function(){
+      toast('📉 ' + droppedCount + ' favori' + (droppedCount > 1 ? 's ont' : ' a') + ' baissé de prix !', 'success');
+    }, 1500);
+  }
+}
+
+function initFavoritesNavButton() {
+  var navLinks = document.querySelector('.nav-links')
+    || document.querySelector('nav ul')
+    || document.querySelector('.nav-menu');
+  if (!navLinks || document.getElementById('kmrc-nav-favs')) return;
+
+  var li = document.createElement('li');
+  li.id = 'kmrc-nav-favs';
+  li.style.cssText = 'list-style:none;cursor:pointer;position:relative;';
+  li.innerHTML = '<a onclick="openFavorites();return false;" href="#"' +
+    ' style="display:flex;align-items:center;gap:.35rem;font-weight:700;font-size:.88rem;color:#1a3a5c;' +
+    'text-decoration:none;padding:.3rem .5rem;border-radius:8px;transition:background .15s;position:relative;"' +
+    ' onmouseenter="this.style.background=\'#f0f4f8\'" onmouseleave="this.style.background=\'none\'">' +
+    '❤️ Favoris' +
+    '<span id="kmrc-fav-badge" style="display:none;position:absolute;top:-6px;right:-6px;' +
+    'background:#e8a020;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:800;' +
+    'align-items:center;justify-content:center;border:2px solid #fff;">0</span>' +
+    '</a>';
+  navLinks.appendChild(li);
+  _refreshFavBadge();
+}
+
+function openFavorites() {
+  document.getElementById('kmrc-fav-modal')?.remove();
+
+  var droppedAny = _favorites.some(function(f){ return f.priceDropped; });
+  var modal = document.createElement('div');
+  modal.id = 'kmrc-fav-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);' +
+    'z-index:10300;display:flex;align-items:center;justify-content:center;padding:1rem;animation:kmrcFadeIn .2s ease;';
+
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:20px;width:100%;max-width:500px;' +
+    'max-height:88vh;overflow-y:auto;animation:kmrcSlideUp .25s ease;">' +
+
+    '<div style="padding:1.2rem 1.4rem .9rem;border-bottom:1px solid #f0f4f8;' +
+    'position:sticky;top:0;background:#fff;border-radius:20px 20px 0 0;z-index:1;">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+    '<div><span style="font-size:1rem;font-weight:800;color:#1a3a5c;">❤️ Mes favoris</span>' +
+    '<span style="margin-left:.5rem;background:#f0f4f8;color:#64748b;font-size:.75rem;font-weight:700;' +
+    'padding:2px 10px;border-radius:20px;">' + _favorites.length + ' produit' + (_favorites.length > 1 ? 's' : '') + '</span></div>' +
+    '<button onclick="document.getElementById(\'kmrc-fav-modal\').remove()" ' +
+    'style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#94a3b8;">✕</button></div>' +
+    (droppedAny ? '<div style="margin-top:.6rem;background:#f0fdf4;border:1px solid #bbf7d0;' +
+    'border-radius:8px;padding:.5rem .9rem;font-size:.78rem;color:#16a34a;font-weight:700;">' +
+    '📉 Des prix ont baissé depuis votre dernier ajout !</div>' : '') +
+    '</div>' +
+
+    '<div id="kmrc-fav-body" style="padding:.8rem 1.4rem 1.6rem;"></div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+  _renderFavBody();
+}
+
+function _renderFavBody() {
+  var body = document.getElementById('kmrc-fav-body');
+  if (!body) return;
+
+  if (_favorites.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:#94a3b8;">' +
+      '<div style="font-size:3.5rem;margin-bottom:.8rem;opacity:.35;">❤️</div>' +
+      '<div style="font-weight:700;margin-bottom:.3rem;">Aucun favori pour l\'instant</div>' +
+      '<div style="font-size:.82rem;">Cliquez sur 🤍 sur un produit pour le sauvegarder</div></div>';
+    return;
+  }
+
+  body.innerHTML = _favorites.map(function(fav) {
+    var dropped  = fav.priceDropped && fav.currentPrice < fav.priceAtSave;
+    var dropPct  = dropped ? Math.round((1 - fav.currentPrice / fav.priceAtSave) * 100) : 0;
+    var pd       = JSON.stringify(fav).replace(/"/g, '&quot;');
+    var imgSrc   = fav.image_url || '';
+    var savedDate = new Date(fav.savedAt).toLocaleDateString('fr-FR');
+
+    var priceHtml = dropped
+      ? '<span style="font-size:.78rem;color:#94a3b8;text-decoration:line-through;">' +
+        fav.priceAtSave.toLocaleString('fr-FR') + ' KMF</span> ' +
+        '<span style="font-size:.9rem;font-weight:800;color:#16a34a;">' +
+        fav.currentPrice.toLocaleString('fr-FR') + ' KMF</span> ' +
+        '<span style="background:#dcfce7;color:#16a34a;font-size:.7rem;font-weight:800;' +
+        'padding:.15rem .5rem;border-radius:20px;">📉 −' + dropPct + '%</span>'
+      : '<span style="font-size:.88rem;font-weight:700;color:#e8a020;">' +
+        (fav.currentPrice || fav.priceAtSave).toLocaleString('fr-FR') + ' KMF</span>';
+
+    var promoHtml = fav.promo_pct > 0
+      ? ' <span style="background:#fef3c7;color:#d97706;font-size:.7rem;font-weight:800;' +
+        'padding:.15rem .5rem;border-radius:20px;">🔥 Promo</span>'
+      : '';
+
+    var imgHtml = imgSrc
+      ? '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" ' +
+        'onerror="this.style.display=\'none\'"> '
+      : fav.emoji;
+
+    return '<div style="display:flex;gap:.9rem;padding:.9rem 0;border-bottom:1px solid #f8fafc;align-items:center;">' +
+      '<div onclick="openProduct(' + pd + ')" style="cursor:pointer;width:64px;height:64px;' +
+      'border-radius:12px;overflow:hidden;background:#f0f4f8;display:flex;align-items:center;' +
+      'justify-content:center;font-size:1.8rem;flex-shrink:0;">' + imgHtml + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+      '<div style="font-size:.88rem;font-weight:700;color:#1a3a5c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + fav.name + '</div>' +
+      '<div style="margin:.3rem 0;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">' + priceHtml + promoHtml + '</div>' +
+      '<div style="font-size:.7rem;color:#94a3b8;">Ajouté le ' + savedDate + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0;">' +
+      '<button onclick="addToCart(' + pd + ')" style="padding:.4rem .7rem;background:#1a3a5c;color:#fff;' +
+      'border:none;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;">🛒 Ajouter</button>' +
+      '<button onclick="removeFromFavorites(\'' + fav.id + '\')" style="padding:.4rem .7rem;background:#fef2f2;' +
+      'color:#dc2626;border:none;border-radius:8px;font-size:.75rem;cursor:pointer;">🗑️</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -2211,6 +2429,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       _savedUser = saved;
     }
   } catch(e) { /* ignore */ }
+
+  // Charger les favoris depuis localStorage
+  try {
+    const rawFav = JSON.parse(localStorage.getItem(LS_FAV_KEY) || '[]');
+    const limitFav = Date.now() - 90 * 86400000;
+    _favorites = rawFav.filter(function(f){ return f.savedAt > limitFav; });
+    _saveFavorites();
+  } catch(e) { _favorites = []; }
 
   // Câbler immédiatement les boutons statiques (avant que l'API réponde)
   wireStaticButtons();
@@ -2229,6 +2455,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Bouton WhatsApp flottant
   initWhatsAppButton();
+
+  // Vérifier les prix des favoris
+  _checkFavoritePrices();
+
+  // Bouton favoris dans la nav
+  initFavoritesNavButton();
 
   // Restaurer un panier partagé depuis l'URL
   const params = new URLSearchParams(window.location.search);
