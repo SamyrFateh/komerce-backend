@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — API Client JS v2.0
  * Spec v7.1 · Mars 2026
  *
@@ -2004,11 +2004,11 @@ function _injectNavOrdersLink() {
   li.innerHTML = `
     <a onclick="openMyOrders();return false;" href="#"
       style="display:flex;align-items:center;gap:.35rem;
-             font-weight:700;font-size:.88rem;color:#1a3a5c;
-             text-decoration:none;padding:.3rem .5rem;border-radius:8px;
+             font-weight:600;font-size:.88rem;color:rgba(255,255,255,.88);
+             text-decoration:none;padding:.3rem .6rem;border-radius:8px;
              transition:background .15s;"
-      onmouseenter="this.style.background='#f0f4f8'"
-      onmouseleave="this.style.background='none'">
+      onmouseenter="this.style.background='rgba(255,255,255,.1)'"
+      onmouseleave="this.style.background='transparent'">
       📋 Mes commandes
     </a>
   `;
@@ -2361,7 +2361,7 @@ function initFavoritesNavButton() {
   li.id = 'kmrc-nav-favs';
   li.style.cssText = 'list-style:none;cursor:pointer;position:relative;';
   li.innerHTML = '<a onclick="openFavorites();return false;" href="#"' +
-    ' style="display:flex;align-items:center;gap:.35rem;font-weight:700;font-size:.88rem;color:#1a3a5c;' +
+    ' style="display:flex;align-items:center;gap:.35rem;font-weight:700;font-size:.88rem;color:rgba(255,255,255,.88);' +
     'text-decoration:none;padding:.3rem .5rem;border-radius:8px;transition:background .15s;position:relative;"' +
     ' onmouseenter="this.style.background=\'#f0f4f8\'" onmouseleave="this.style.background=\'none\'">' +
     '❤️ Favoris' +
