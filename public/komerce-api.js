@@ -2186,7 +2186,7 @@ function logoutUser() {
 
 function initWhatsAppButton() {
   // ⚠️ Remplacer par le vrai numéro WhatsApp Komerce (sans + ni espaces)
-  const WA_NUMBER  = '269321000000'; // TODO: à remplacer
+  const WA_NUMBER  = '33699272526'; // TODO: à remplacer
   const WA_MESSAGE = encodeURIComponent('Bonjour Komerce ! J\'ai une question sur ma commande.');
   const WA_URL     = 'https://wa.me/' + WA_NUMBER + '?text=' + WA_MESSAGE;
 

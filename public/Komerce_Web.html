@@ -296,7 +296,7 @@
     .promo-prices { display:flex; align-items:baseline; gap:.6rem; margin-bottom:.5rem; }
     .promo-price-original { font-size:.85rem; color:var(--muted); text-decoration:line-through; }
     .promo-price-now { font-size:1.25rem; font-weight:800; color:var(--red); }
-    .promo-price-aed { font-size:.75rem; color:var(--muted); }
+    /* .promo-price-aed masqué — devise AED non affichée */
     .promo-price-kmf { font-size:.8rem; color:var(--primary); font-weight:600; margin-bottom:.8rem; }
     .promo-savings {
       background:#fef3f2; border:1px solid #fecaca;
@@ -1344,7 +1344,8 @@
       .adv-item:last-child { border-bottom:none; }
       .tracking-timeline { justify-content:flex-start; }
     }
-  </style>
+      .promo-price-aed { display:none !important; }
+</style>
 </head>
 <body>
 
@@ -2186,33 +2187,9 @@
      Taux MVP (révision mensuelle) : 1 EUR = 492 KMF · 1 AED = 138 KMF
      ═══════════════════════════════════════════════════ -->
 <style>
-  #currency-badge {
-    position: fixed; bottom: 1.2rem; left: 1.2rem; z-index: 999;
-    background: #1a3a5c; color: #fff; border-radius: 2rem;
-    padding: .45rem 1rem; font-size: .78rem; font-family: Arial, sans-serif;
-    display: flex; align-items: center; gap: .5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,.2); cursor: default;
-    animation: slideUp .4s ease;
-  }
-  @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  #currency-badge select {
-    background: transparent; border: 1px solid rgba(255,255,255,.4);
-    color: #fff; border-radius: 1rem; padding: .15rem .5rem;
-    font-size: .78rem; cursor: pointer; outline: none;
-  }
-  #currency-badge select option { background: #1a3a5c; }
   .kmf-price .price-secondary { font-size: .72em; color: #64748b; margin-top: .1rem; display: block; }
 </style>
-
-<div id="currency-badge">
-  <span id="curr-flag">🌍</span>
-  <span>Prix en</span>
-  <select id="curr-select" onchange="applyCurrency(this.value)">
-    <option value="EUR">EUR €</option>
-    <option value="KMF">KMF</option>
-    <option value="AED">AED د.إ</option>
-  </select>
-</div>
+<!-- currency-badge supprimé — devise détectée automatiquement (KMF/EUR) -->
 
 <script>
 (function() {
@@ -2227,10 +2204,8 @@
   // ── Détection devise par timezone ──────────────────────
   function detectCurrency() {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    if (/Comoro|Mayotte/i.test(tz))    return 'KMF';
-    if (/Dubai|Abu_Dhabi|Muscat/i.test(tz)) return 'AED';
-    // Europe, Amérique, Asie hors Golfe → EUR par défaut
-    return 'EUR';
+    if (/Comoro|Mayotte/i.test(tz)) return 'KMF';
+    return 'EUR'; // Diaspora / reste du monde
   }
 
   // ── Formatage ──────────────────────────────────────────
@@ -2259,9 +2234,9 @@
         el.innerHTML = `${main}${secondary}`;
       }
     });
-    // Badge
-    document.getElementById('curr-flag').textContent = FLAGS[currency] || '🌍';
-    document.getElementById('curr-select').value = currency;
+    // Badge (optionnel — widget peut être masqué)
+    const fl = document.getElementById('curr-flag'); if (fl) fl.textContent = FLAGS[currency] || '🌍';
+    const cs = document.getElementById('curr-select'); if (cs) cs.value = currency;
     // Mémoriser le choix
     try { localStorage.setItem('kmrc_currency', currency); } catch(e) {}
   };
