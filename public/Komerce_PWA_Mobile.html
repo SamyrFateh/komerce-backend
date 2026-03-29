@@ -932,42 +932,142 @@
 
 <script>
 // ── PANIER PARTAGÉ PWA ──────────────────────────────────────────────────
-function pwaGenCode() {
-  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code='K-';
-  for(let i=0;i<4;i++) code+=c[Math.floor(Math.random()*c.length)];
-  return code;
-}
-function pwaOpenShare() {
-  const code = pwaGenCode();
-  document.getElementById('pwa-modal-code').textContent = code;
-  document.getElementById('share-overlay-pwa').classList.add('open');
-}
-function pwaShareWA() {
-  const code = document.getElementById('pwa-modal-code').textContent;
-  const url = `https://komerce.km/panier/${code}`;
-  const msg = encodeURIComponent(`🛒 J'ai préparé un panier Komerce — tu peux modifier les articles et payer :\n${url}\n⏱️ Valide 7 jours`);
-  window.open(`https://wa.me/?text=${msg}`,'_blank');
-}
-// ── OFFRIR UN PANIER ────────────────────────────────────────────────────
-function pwaOpenGift() { document.getElementById('gift-overlay-pwa').classList.add('open'); }
-function pwaConfirmGift() {
-  const prenom = document.getElementById('pwa-gift-prenom').value.trim();
-  const tel = document.getElementById('pwa-gift-tel').value.trim();
-  if(!prenom || !tel) { alert('Merci de renseigner le prénom et le numéro du destinataire.'); return; }
-  document.getElementById('gift-overlay-pwa').classList.remove('open');
-  alert(`✅ Panier offert à ${prenom} !\nIl recevra un SMS sur ${tel} avec son code de retrait.`);
+const KOMERCE_API_BASE = 'https://komerce-backend-production.up.railway.app';
+
+// Code WA à réutiliser dans pwaShareWA (rempli par pwaOpenShare)
+let _pwaShareWaUrl = null;
+
+async function pwaOpenShare() {
+  // Construire la liste des articles depuis le panier en mémoire (_cart vient de komerce-api.js)
+  const cartItems = (typeof _cart !== 'undefined' ? _cart : []);
+  if (!cartItems.length) {
+    alert('Votre panier est vide. Ajoutez des articles avant de partager.');
+    return;
+  }
+
+  // Récupérer le nom de l'utilisateur connecté si disponible
+  const creatorName = (typeof _currentUser !== 'undefined' && _currentUser?.full_name)
+    ? _currentUser.full_name
+    : 'Votre proche';
+
+  const items = cartItems.map(i => ({ product_id: i.product.id, quantity: i.qty }));
+
+  // Spinner pendant l'appel API
+  const btn = document.querySelector('.share-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Création du lien…'; }
+
+  try {
+    const res = await fetch(KOMERCE_API_BASE + '/api/baskets/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, creator_name: creatorName }),
+    });
+    if (!res.ok) throw new Error('Erreur serveur ' + res.status);
+    const data = await res.json();
+
+    // Stocker l'URL WhatsApp renvoyée par l'API
+    _pwaShareWaUrl = data.whatsapp_url;
+
+    document.getElementById('pwa-modal-code').textContent = data.code;
+    document.getElementById('share-overlay-pwa').classList.add('open');
+  } catch(err) {
+    console.error('pwaOpenShare:', err);
+    alert('Impossible de créer le lien de partage. Vérifiez votre connexion et réessayez.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔗 Partager ce panier à un proche'; }
+  }
 }
 
-// Détection panier partagé
-(function(){
-  const p = new URLSearchParams(window.location.search);
+function pwaShareWA() {
+  if (_pwaShareWaUrl) {
+    window.open(_pwaShareWaUrl, '_blank');
+  } else {
+    // Fallback : construire le lien manuellement si l'URL API n'est pas disponible
+    const code = document.getElementById('pwa-modal-code').textContent;
+    const url = `https://komerce.km/panier/${code}`;
+    const msg = encodeURIComponent(`🛒 J'ai préparé un panier Komerce — tu peux modifier les articles et payer :\n${url}\n⏱️ Valide 7 jours`);
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  }
+}
+
+// ── OFFRIR UN PANIER ────────────────────────────────────────────────────
+function pwaOpenGift() { document.getElementById('gift-overlay-pwa').classList.add('open'); }
+async function pwaConfirmGift() {
+  const prenom = document.getElementById('pwa-gift-prenom').value.trim();
+  const tel    = document.getElementById('pwa-gift-tel').value.trim();
+  if (!prenom || !tel) { alert('Merci de renseigner le prénom et le numéro du destinataire.'); return; }
+
+  const cartItems = (typeof _cart !== 'undefined' ? _cart : []);
+  if (!cartItems.length) { alert('Votre panier est vide.'); return; }
+
+  const items = cartItems.map(i => ({ product_id: i.product.id, quantity: i.qty }));
+  const token = localStorage.getItem('kmrc_token') || '';
+
+  const confirmBtn = document.getElementById('pwa-gift-confirm-btn');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ Envoi…'; }
+
+  try {
+    const res = await fetch(KOMERCE_API_BASE + '/api/baskets/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ items, recipient_name: prenom, recipient_phone: tel }),
+    });
+    if (!res.ok) throw new Error('Erreur serveur ' + res.status);
+    document.getElementById('gift-overlay-pwa').classList.remove('open');
+    alert(`✅ Panier offert à ${prenom} !\nIl recevra un SMS sur ${tel} avec son code de retrait dès la confirmation du paiement.`);
+  } catch(err) {
+    console.error('pwaConfirmGift:', err);
+    alert('Impossible d\'envoyer le cadeau. Vérifiez votre connexion et réessayez.');
+  } finally {
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Envoyer le cadeau'; }
+  }
+}
+
+// ── DÉTECTION PANIER PARTAGÉ (chargement depuis l'API) ──────────────────
+(async function(){
+  const p    = new URLSearchParams(window.location.search);
   const code = p.get('panier');
-  if(code){
-    const bar = document.getElementById('pwa-shared-bar');
-    bar.classList.add('active');
-    document.getElementById('pwa-shared-code').textContent = code;
-    document.getElementById('pwa-shared-from').textContent = p.get('de') || 'votre proche';
+  if (!code) return;
+
+  // Afficher le bandeau immédiatement
+  const bar = document.getElementById('pwa-shared-bar');
+  bar.classList.add('active');
+  document.getElementById('pwa-shared-code').textContent = code;
+  document.getElementById('pwa-shared-from').textContent = p.get('de') || 'votre proche';
+
+  // Charger le contenu réel du panier depuis l'API
+  try {
+    const res = await fetch(KOMERCE_API_BASE + '/api/baskets/' + encodeURIComponent(code));
+    if (!res.ok) {
+      console.warn('Panier partagé introuvable ou expiré :', code);
+      document.querySelector('#pwa-shared-bar .shared-bar-sub').textContent =
+        '⚠️ Panier introuvable ou expiré.';
+      return;
+    }
+    const data = await res.json();
+
+    // Injecter chaque article dans le panier local via addToCart (défini dans komerce-api.js)
+    if (typeof addToCart === 'function' && data.items?.length) {
+      data.items.forEach(item => {
+        // Construire un objet produit compatible avec addToCart
+        const product = {
+          id:        item.product_id,
+          name:      item.name,
+          emoji:     item.emoji     || '📦',
+          category:  item.category  || '',
+          price_kmf: item.price_kmf,
+        };
+        addToCart(product, item.quantity);
+      });
+    }
+
+    // Mettre à jour le sous-titre du bandeau avec le total
+    if (data.total_eur) {
+      document.querySelector('#pwa-shared-bar .shared-bar-sub').textContent =
+        `${data.items?.length || 0} article(s) · ${data.total_eur} € · C'est vous qui payez`;
+    }
+  } catch(err) {
+    console.error('Chargement panier partagé:', err);
   }
 })();
 

@@ -14,7 +14,12 @@ const db       = require('../db');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
-const JWT_SECRET  = process.env.JWT_SECRET || 'komerce_secret_dev';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET manquant — démarrage impossible en production');
+  if (process.env.NODE_ENV === 'production') process.exit(1);
+}
+const _JWT_SECRET = JWT_SECRET || 'komerce_secret_dev_UNSAFE';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -22,7 +27,7 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 function generateToken(user) {
   return jwt.sign(
     { id: user.id, role: user.role },
-    JWT_SECRET,
+    _JWT_SECRET,
     { expiresIn: JWT_EXPIRES }
   );
 }
@@ -78,7 +83,7 @@ router.post('/register', async (req, res) => {
     const { rows: [user] } = await db.query(
       `INSERT INTO users
          (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'customer', $5, $6)
+       VALUES ($1, $2, $3, $4, 'client', $5, $6)
        RETURNING *`,
       [
         full_name || null,
@@ -222,7 +227,7 @@ router.post('/auto-register', async (req, res) => {
     const { rows: [user] } = await db.query(
       `INSERT INTO users
          (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'customer', $5, 'KMF')
+       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF')
        RETURNING *`,
       [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
     );

@@ -210,6 +210,9 @@ router.post('/', authenticate, async (req, res) => {
       : null;
 
     // ── Créer la commande ───────────────────────────────────────────────────
+    // Générer un code de retrait unique à 6 caractères alphanumériques
+    const pickup_code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
     const reference = await getUniqueRef();
 
     const { rows: [order] } = await client.query(
@@ -217,7 +220,7 @@ router.post('/', authenticate, async (req, res) => {
          id, reference, user_id, recipient_id, relais_id,
          total_kmf, total_eur,
          payment_mode, payment_status, stripe_payment_id,
-         cash_ref_code,
+         cash_ref_code, pickup_code,
          status,
          confection_type, confection_instructions,
          confection_delay_days, confection_artisan_id,
@@ -228,21 +231,22 @@ router.post('/', authenticate, async (req, res) => {
          $1,$2,$3,$4,$5,
          $6,$7,
          $8,$9,$10,
-         $11,
+         $11,$12,
          'confirmed',
-         $12,$13,
-         $14,$15,
-         $16,$17,$18,
-         $19,$20,$21,$22,
-         $23,$24
+         $13,$14,
+         $15,$16,
+         $17,$18,$19,
+         $20,$21,$22,$23,
+         $24,$25
        ) RETURNING *`,
       [
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
         total_kmf, parseFloat((total_kmf / 492).toFixed(2)),
         payment_mode,
-        payment_mode === 'stripe_eur' ? 'paid' : 'pending',
+        'pending',
         stripe_payment_intent || null,
         cash_ref_code,
+        pickup_code,
         confection_type,
         confection_instructions || null,
         confection_delay_days,
@@ -289,8 +293,9 @@ router.post('/', authenticate, async (req, res) => {
         ]
       );
 
-      // Décrémenter stock
-      if (product.stock !== null) {
+      // Décrémenter stock uniquement pour cash_relais
+      // (pour stripe_eur, le webhook payments.js gère la décrémentation après confirmation)
+      if (product.stock !== null && payment_mode === 'cash_relais') {
         await client.query(
           'UPDATE products SET stock = stock - $1 WHERE id = $2',
           [qty, item.product_id]

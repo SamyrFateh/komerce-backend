@@ -69,6 +69,8 @@ router.get('/', async (req, res) => {
          p.image_url,
          p.images,
          p.badge,
+         p.emoji,
+         p.promo_pct,
          p.is_available,
          p.customs_risk_coeff,
          p.has_couture,

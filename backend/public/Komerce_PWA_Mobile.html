@@ -10,50 +10,42 @@
   <title>Komerce — App Anjouan</title>
   <style>
     :root {
-      --primary:  #111111;       /* texte principal — noir pur */
-      --accent:   #E8552A;       /* corail — CTA, bordure header, badges */
-      --accent2:  #C8431A;       /* corail foncé — hover */
-      --accent-bg:#FEF5F2;       /* fond banner saumon très clair */
-      --accent-lbl:#993C1D;      /* texte cat active */
-      --green:    #1DAD6F;
-      --red:      #E8552A;
-      --light:    #f5f5f5;       /* search bar, fond cat inactive */
-      --dark:     #111111;
-      --text:     #111111;
-      --muted:    #888888;
-      --price:    #111111;       /* prix — noir */
-      --orig:     #bbbbbb;       /* prix barré */
-      --white:    #ffffff;
-      --card-bg:  #ffffff;
-      --border:   #eeeeee;       /* bordure produits */
-      --shadow:   0 1px 4px rgba(0,0,0,0.06);
-      --radius:   8px;
+      --primary: #1a3a5c;
+      --accent:  #e8a020;
+      --green:   #2ecc71;
+      --red:     #e74c3c;
+      --light:   #f4f7fb;
+      --dark:    #0f1f33;
+      --text:    #2c3e50;
+      --muted:   #7f8c9b;
+      --white:   #ffffff;
+      --card-bg: #ffffff;
+      --shadow:  0 2px 16px rgba(26,58,92,0.09);
+      --radius:  16px;
       --bottom-nav-h: 72px;
     }
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     html,body { height:100%; overflow-x:hidden; }
     body {
       font-family:-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif;
-      color:var(--text); background:#ffffff;
+      color:var(--text); background:#f0f3f7;
       padding-bottom:var(--bottom-nav-h);
     }
 
     /* ── TOP BAR ── */
     .top-bar {
-      background:#ffffff;
-      border-bottom: 1px solid #e8e8e8;
+      background:var(--primary);
       padding:env(safe-area-inset-top,12px) 1rem 12px;
       display:flex; align-items:center; justify-content:space-between;
       position:sticky; top:0; z-index:100;
-      box-shadow: 0 1px 4px rgba(28,22,17,0.06);
     }
-    .logo { color:var(--primary); font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; }
-    .logo span { color:#1C1611; }
+    .logo { color:var(--white); font-size:1.4rem; font-weight:900; letter-spacing:-0.5px; }
+    .logo span { color:var(--accent); }
     .top-bar-actions { display:flex; gap:.5rem; }
     .icon-btn {
       width:38px; height:38px;
-      background:var(--light); border:0.5px solid #e8e8e8; border-radius:10px;
-      color:var(--primary); font-size:1.1rem;
+      background:rgba(255,255,255,0.12); border:none; border-radius:10px;
+      color:var(--white); font-size:1.1rem;
       display:flex; align-items:center; justify-content:center;
       cursor:pointer;
     }
@@ -70,10 +62,9 @@
 
     /* ── HERO STRIP ── */
     .hero-strip {
-      background: #FFFBF2;
-      border-bottom: 1px solid #F5E4C0;
+      background: linear-gradient(135deg, var(--primary) 0%, #0d2640 100%);
       padding:1.2rem 1rem 1.5rem;
-      color:var(--primary);
+      color:var(--white);
     }
     .hero-strip h1 {
       font-size:1.25rem; font-weight:800; line-height:1.25;
@@ -82,20 +73,20 @@
     .hero-strip h1 em { color:var(--accent); font-style:normal; }
     .hero-strip .vp-pill {
       display:inline-flex; align-items:center; gap:.4rem;
-      background:var(--light); border:1px solid #e8e8e8;
-      color:#888888; font-size:.75rem; font-weight:600;
+      background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+      color:rgba(255,255,255,0.9); font-size:.75rem; font-weight:600;
       padding:.35rem .8rem; border-radius:20px; margin-top:.6rem;
     }
     .hero-quote-chip {
       display:flex; align-items:flex-start; gap:.5rem;
-      background:var(--light); border:1px solid #e8e8e8;
+      background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18);
       border-radius:10px; padding:.6rem .8rem; margin:.5rem 1rem 0;
       text-align:left;
     }
     .hero-quote-chip .hq-icon { font-size:1rem; flex-shrink:0; margin-top:.05rem; }
-    .hero-quote-chip .hq-text { font-size:.72rem; color:var(--text); line-height:1.35; }
-    .hero-quote-chip .hq-text strong { color:var(--primary); }
-    .hero-quote-chip .hq-author { font-size:.62rem; color:#888888; margin-top:.15rem; }
+    .hero-quote-chip .hq-text { font-size:.72rem; color:rgba(255,255,255,0.92); line-height:1.35; }
+    .hero-quote-chip .hq-text strong { color:var(--white); }
+    .hero-quote-chip .hq-author { font-size:.62rem; color:rgba(255,255,255,0.55); margin-top:.15rem; }
 
     /* ── QUICK STATS ── */
     .stats-row {
@@ -108,38 +99,40 @@
       padding:.75rem .6rem; text-align:center;
       box-shadow:var(--shadow);
     }
-    .stat-val { font-size:1.15rem; font-weight:800; color:#111; }
-    .stat-lbl { font-size:.65rem; color:#888888; margin-top:.15rem; font-weight:500; }
+    .stat-val { font-size:1.15rem; font-weight:800; color:var(--primary); }
+    .stat-lbl { font-size:.65rem; color:var(--muted); margin-top:.15rem; font-weight:500; }
 
     /* ── SCROLL CONTENT ── */
     .scroll-content { padding:.8rem 1rem; display:flex; flex-direction:column; gap:1rem; }
 
     /* ── SECTION HEADER ── */
     .sect-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.6rem; }
-    .sect-title { font-size:1rem; font-weight:700; color:#111; }
+    .sect-title { font-size:1rem; font-weight:800; color:var(--primary); }
     .sect-link { font-size:.78rem; color:var(--accent); font-weight:600; text-decoration:none; }
 
     /* ── PROMO BANNER ── */
     .promo-banner {
-      background: #ffffff;
-      border:1px solid #e8e8e8;
+      background: linear-gradient(135deg, #e8a020, #f5c04a);
       border-radius:var(--radius); padding:1rem 1.2rem;
       display:flex; align-items:center; justify-content:space-between;
       overflow:hidden; position:relative;
     }
-    .promo-banner::before { content:''; }
+    .promo-banner::before {
+      content:'🔥'; position:absolute; right:-8px; bottom:-10px;
+      font-size:5rem; opacity:.15;
+    }
     .promo-banner-left { flex:1; }
     .promo-banner-tag {
-      background:#FFFBF2; color:var(--accent);
+      background:rgba(255,255,255,0.3); color:var(--white);
       font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1px;
       padding:.2rem .5rem; border-radius:4px; display:inline-block; margin-bottom:.4rem;
     }
-    .promo-banner h2 { font-size:1.1rem; font-weight:800; color:#1C1611; line-height:1.2; }
-    .promo-banner p { font-size:.78rem; color:#888888; margin-top:.3rem; }
+    .promo-banner h2 { font-size:1.1rem; font-weight:800; color:var(--white); line-height:1.2; }
+    .promo-banner p { font-size:.78rem; color:rgba(255,255,255,0.85); margin-top:.3rem; }
     .promo-banner-btn {
-      background:var(--accent); color:#1C1611;
-      border:none; border-radius:8px;
-      padding:.55rem .9rem; font-size:.8rem; font-weight:700;
+      background:var(--white); color:var(--accent);
+      border:none; border-radius:10px;
+      padding:.55rem .9rem; font-size:.8rem; font-weight:800;
       cursor:pointer; flex-shrink:0; margin-left:.8rem;
     }
 
@@ -171,9 +164,9 @@
     .promo-card-m-body { padding:.7rem .65rem; }
     .pm-name { font-size:.82rem; font-weight:700; color:var(--primary); margin-bottom:.3rem; line-height:1.25; }
     .pm-prices { display:flex; align-items:baseline; gap:.4rem; }
-    .pm-orig { font-size:.7rem; color:#888888; text-decoration:line-through; }
+    .pm-orig { font-size:.7rem; color:var(--muted); text-decoration:line-through; }
     .pm-now { font-size:1rem; font-weight:800; color:var(--red); }
-    .pm-kmf { font-size:.7rem; color:#888888; margin:.2rem 0 .6rem; }
+    .pm-kmf { font-size:.7rem; color:var(--muted); margin:.2rem 0 .6rem; }
     .pm-btn {
       width:100%; background:var(--primary); color:var(--white);
       border:none; border-radius:8px; padding:.45rem;
@@ -190,15 +183,15 @@
     }
     .cat-item:active { transform:scale(0.94); }
     .cat-item-icon { font-size:1.6rem; }
-    .cat-item-label { font-size:.62rem; font-weight:600; color:#333; margin-top:.3rem; }
-    .cat-item-trad { font-size:.55rem; color:#888888; font-style:italic; margin-top:.1rem; }
+    .cat-item-label { font-size:.62rem; font-weight:600; color:var(--primary); margin-top:.3rem; }
+    .cat-item-trad { font-size:.55rem; color:var(--muted); font-style:italic; margin-top:.1rem; }
 
     /* ── TRACKING CARD ── */
     .tracking-card {
       background:var(--card-bg); border-radius:var(--radius);
       box-shadow:var(--shadow); padding:1rem 1.1rem;
     }
-    .track-order-id { font-size:.72rem; color:#888888; margin-bottom:.6rem; }
+    .track-order-id { font-size:.72rem; color:var(--muted); margin-bottom:.6rem; }
     .track-order-id strong { color:var(--primary); }
     .track-progress { display:flex; align-items:center; gap:0; margin:.6rem 0; overflow-x:auto; }
     .track-step-m { flex:1; min-width:50px; text-align:center; position:relative; }
@@ -214,10 +207,10 @@
     }
     .ts-dot.done { background:var(--green); color:var(--white); }
     .ts-dot.active { background:var(--accent); color:var(--white); }
-    .ts-dot.pending { background:#e0e6ed; color:#888888; font-size:.7rem; }
-    .ts-label { font-size:.58rem; color:#888888; font-weight:500; }
+    .ts-dot.pending { background:#e0e6ed; color:var(--muted); font-size:.7rem; }
+    .ts-label { font-size:.58rem; color:var(--muted); font-weight:500; }
     .track-eta { margin-top:.7rem; background:var(--light); border-radius:8px; padding:.5rem .8rem; display:flex; justify-content:space-between; align-items:center; }
-    .eta-label { font-size:.72rem; color:#888888; }
+    .eta-label { font-size:.72rem; color:var(--muted); }
     .eta-val { font-size:.82rem; font-weight:700; color:var(--primary); }
 
     /* ── MY ORDERS ── */
@@ -229,7 +222,7 @@
     .order-icon { font-size:2rem; flex-shrink:0; }
     .order-info { flex:1; }
     .order-name { font-size:.88rem; font-weight:700; color:var(--primary); }
-    .order-status { font-size:.73rem; color:#888888; margin-top:.15rem; }
+    .order-status { font-size:.73rem; color:var(--muted); margin-top:.15rem; }
     .order-price { font-size:.9rem; font-weight:700; color:var(--accent); }
     .order-status-pill {
       font-size:.65rem; font-weight:700; padding:.2rem .55rem; border-radius:20px;
@@ -248,7 +241,7 @@
     .how-num { font-size:.65rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.3rem; }
     .how-icon-m { font-size:1.5rem; margin-bottom:.4rem; }
     .how-title-m { font-size:.78rem; font-weight:700; color:var(--primary); margin-bottom:.25rem; }
-    .how-desc-m { font-size:.68rem; color:#888888; line-height:1.45; }
+    .how-desc-m { font-size:.68rem; color:var(--muted); line-height:1.45; }
 
     /* ── FIDÉLISATION ── */
     .fidelite-card {
@@ -285,7 +278,7 @@
     .fidelite-coming {
       margin-top:.75rem; padding:.5rem .7rem;
       background:rgba(255,255,255,0.07); border-radius:6px;
-      font-size:.7rem; color:#888888; text-align:center; font-style:italic;
+      font-size:.7rem; color:rgba(255,255,255,0.5); text-align:center; font-style:italic;
     }
 
     /* ── VALUE PROPOSITION CARD ── */
@@ -386,7 +379,7 @@
     .relais-item.selected .relais-radio::after { content:''; width:7px; height:7px; border-radius:50%; background:white; display:block; }
     .relais-info { flex:1; }
     .relais-nom { font-size:.84rem; font-weight:700; color:var(--primary); }
-    .relais-zone-m { font-size:.7rem; color:#888888; margin-top:.1rem; }
+    .relais-zone-m { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
     .ri-check { opacity:0; font-size:.85rem; transition:opacity .15s; }
 
     .co-note {
@@ -427,7 +420,7 @@
     .nav-item {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap:.2rem; cursor:pointer; padding:.5rem 0;
-      color:#888888; border:none; background:none;
+      color:var(--muted); border:none; background:none;
     }
     .nav-item.active { color:var(--primary); }
     .nav-item-icon { font-size:1.3rem; position:relative; }
@@ -461,7 +454,7 @@
 <div class="hero-strip">
   <h1>Vos envies traversent la mer.<br><em>Vous, voyagez libre.</em></h1>
   <div class="vp-pill">
-    ✨ Tout ce que vous voulez · 4 semaines environ · Prix tout inclus
+    ✨ Tout ce que vous voulez · 3 à 5 semaines · Prix tout inclus
   </div>
   <div class="hero-quote-chip">
     <div class="hq-icon">🗣️</div>
@@ -508,9 +501,10 @@
       <a class="sect-link" href="#">Toutes →</a>
     </div>
     <div class="promo-scroll">
+      <!-- promo-row = container des cartes PWA ; aussi ciblé par loadProducts() -->
       <div class="promo-row">
 
-        <div class="promo-card-m">
+        <div class="promo-card-m" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
           <div class="promo-card-m-img">
             📱
             <span class="pct-badge">−35%</span>
@@ -518,23 +512,43 @@
           <div class="promo-card-m-body">
             <div class="pm-name">Samsung Galaxy A15 128Go</div>
             <div class="pm-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
-        <div class="promo-card-m">
-          <div class="promo-card-m-img">
+        <div class="promo-card-m" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
+          <div class="promo-card-m-img" style="position:relative;">
             👗
             <span class="pct-badge">−40%</span>
+            <span style="position:absolute;bottom:.3rem;left:.3rem;background:#1a3a5c;
+              color:#fff;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:10px;">
+              ✂️ Tailles
+            </span>
           </div>
           <div class="promo-card-m-body">
             <div class="pm-name">Lot 3 abayas brodées</div>
             <div class="pm-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
-        <div class="promo-card-m">
+        <div class="promo-card-m" data-product='{"id":"static-3","name":"Sony WH-CH520 Bluetooth","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
           <div class="promo-card-m-img">
             🎧
             <span class="pct-badge">−28%</span>
@@ -542,11 +556,19 @@
           <div class="promo-card-m-body">
             <div class="pm-name">Sony WH-CH520 Bluetooth</div>
             <div class="pm-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
-        <div class="promo-card-m">
+        <div class="promo-card-m" data-product='{"id":"static-4","name":"Set Tefal 5 pièces inox","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
           <div class="promo-card-m-img">
             🍳
             <span class="pct-badge">−22%</span>
@@ -554,7 +576,15 @@
           <div class="promo-card-m-body">
             <div class="pm-name">Set Tefal 5 pièces inox</div>
             <div class="pm-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré</div>
-            <button class="pm-btn">🛒 Commander</button>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;">
+              <button class="pm-btn" style="flex:1;"
+                onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
+                🛒 Ajouter
+              </button>
+              <button onclick="quickOrder(JSON.parse(this.closest('[data-product]').dataset.product))"
+                style="padding:.4rem .55rem;background:none;border:1.5px solid #1a3a5c;
+                       border-radius:8px;cursor:pointer;font-size:.85rem;">⚡</button>
+            </div>
           </div>
         </div>
 
@@ -569,35 +599,50 @@
       <a class="sect-link" href="#">Tout voir →</a>
     </div>
     <div class="cat-grid">
-      <div class="cat-item" onclick="">
+      <div class="cat-item">
         <div class="cat-item-icon">📱</div>
-        <div class="cat-item-label">Électronique</div>
+        <div class="cat-item-label">Téléphones</div>
         <div class="cat-item-trad">"Simu"</div>
       </div>
-      <div class="cat-item" onclick="">
-        <div class="cat-item-icon">🏠</div>
-        <div class="cat-item-label">Maison</div>
-        <div class="cat-item-trad">"Nyumba"</div>
-      </div>
-      <div class="cat-item" onclick="">
-        <div class="cat-item-icon">💍</div>
-        <div class="cat-item-label">Mariage</div>
-        <div class="cat-item-trad">"Harusi"</div>
-      </div>
-      <div class="cat-item" onclick="">
+      <div class="cat-item" onclick="openCeremony({id:'cat-wax',name:'Wax &amp; Dentelles',emoji:'👗',price_kmf:0,category:'ceremonie'})" style="cursor:pointer;">
         <div class="cat-item-icon">👗</div>
-        <div class="cat-item-label">Mode &amp; Beauté</div>
+        <div class="cat-item-label">Wax &amp; Dentelles</div>
         <div class="cat-item-trad">"Nguo"</div>
       </div>
-      <div class="cat-item" onclick="">
+      <div class="cat-item" onclick="openCeremony({id:'cat-harusi',name:'Tenue Cérémonie',emoji:'💃',price_kmf:0,category:'ceremonie'})" style="cursor:pointer;">
+        <div class="cat-item-icon">💃</div>
+        <div class="cat-item-label">Cérémonie</div>
+        <div class="cat-item-trad">"Harusi"</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-item-icon">🏠</div>
+        <div class="cat-item-label">Électroménager</div>
+        <div class="cat-item-trad">"Vyombo"</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-item-icon">💄</div>
+        <div class="cat-item-label">Cosmétiques</div>
+        <div class="cat-item-trad">"Manukato"</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-item-icon">💍</div>
+        <div class="cat-item-label">Mariage &amp; Fêtes</div>
+        <div class="cat-item-trad">"Harusi wa sherehe"</div>
+      </div>
+      <div class="cat-item">
         <div class="cat-item-icon">🧸</div>
         <div class="cat-item-label">Enfants</div>
         <div class="cat-item-trad">"Watoto"</div>
       </div>
-      <div class="cat-item" onclick="">
+      <div class="cat-item">
+        <div class="cat-item-icon">🔧</div>
+        <div class="cat-item-label">Matériels</div>
+        <div class="cat-item-trad">"Zana"</div>
+      </div>
+      <div class="cat-item">
         <div class="cat-item-icon">🔥</div>
         <div class="cat-item-label">Promos</div>
-        <div class="cat-item-trad">"Nafuu"</div>
+        <div class="cat-item-trad">"Bei nzuri"</div>
       </div>
     </div>
   </div>
@@ -818,7 +863,7 @@
         <div class="how-num">Étape 3</div>
         <div class="how-icon-m">🚢</div>
         <div class="how-title-m">On expédie</div>
-        <div class="how-desc-m">Fret maritime groupé. 4 semaines environ.</div>
+        <div class="how-desc-m">Fret maritime groupé. 3 à 5 semaines.</div>
       </div>
       <div class="how-card-m">
         <div class="how-num">Étape 4</div>
@@ -849,12 +894,12 @@
     <div class="vp-card-tag">🇦🇪 Notre promesse</div>
     <h3>Tout ce que vous voulez, livré aux Comores sans bouger de chez vous.</h3>
     <p>
-      Cadeaux, mariage, soutien familial ou achat personnel — vous commandez, on s'occupe de l'achat, du fret et de la livraison. En 4 semaines environ, prix tout compris, sans frais cachés.
+      Cadeaux, mariage, soutien familial ou achat personnel — vous commandez, on s'occupe de l'achat, du fret et de la livraison. En 3 à 5 semaines, prix tout compris, sans frais cachés.
     </p>
     <div class="vp-pillars">
       <div class="vp-pillar">✅ Produits sélectionnés et vérifiés</div>
       <div class="vp-pillar">🔥 Promos du moment</div>
-      <div class="vp-pillar">⏱️ 4 semaines environ</div>
+      <div class="vp-pillar">⏱️ 3–5 semaines</div>
       <div class="vp-pillar">💰 Prix tout inclus</div>
     </div>
   </div>
@@ -893,22 +938,7 @@ function pwaGenCode() {
   for(let i=0;i<4;i++) code+=c[Math.floor(Math.random()*c.length)];
   return code;
 }
-async function pwaOpenShare() {
-  // Utilise le vrai back-end si disponible
-  const items = window._pwaCartItems || [];
-  if (items.length && window.KomerceAPI) {
-    try {
-      const user = window.KomerceAPI.getUser();
-      const data = await window.KomerceAPI.shareBasket(items, user?.first_name || 'votre proche');
-      document.getElementById('pwa-modal-code').textContent = data.code;
-      document.getElementById('share-overlay-pwa').classList.add('open');
-      // Stocker l'URL du panier pour le partage WhatsApp
-      window._pwaShareUrl = data.url;
-      window._pwaShareMsg = data.whatsapp_message;
-      return;
-    } catch(e) { console.warn('Fallback partage local', e.message); }
-  }
-  // Fallback : code local
+function pwaOpenShare() {
   const code = pwaGenCode();
   document.getElementById('pwa-modal-code').textContent = code;
   document.getElementById('share-overlay-pwa').classList.add('open');
@@ -921,19 +951,11 @@ function pwaShareWA() {
 }
 // ── OFFRIR UN PANIER ────────────────────────────────────────────────────
 function pwaOpenGift() { document.getElementById('gift-overlay-pwa').classList.add('open'); }
-async function pwaConfirmGift() {
+function pwaConfirmGift() {
   const prenom = document.getElementById('pwa-gift-prenom').value.trim();
   const tel = document.getElementById('pwa-gift-tel').value.trim();
-  if(!prenom || !tel) { alert('Merci de renseigner le prénom et le numéro.'); return; }
+  if(!prenom || !tel) { alert('Merci de renseigner le prénom et le numéro du destinataire.'); return; }
   document.getElementById('gift-overlay-pwa').classList.remove('open');
-  const items = window._pwaCartItems || [];
-  if (items.length && window.KomerceAPI) {
-    try {
-      const data = await window.KomerceAPI.giftBasket(items, tel, prenom);
-      alert(`✅ Panier cadeau créé pour ${prenom} !\nIl recevra un SMS sur ${tel} avec son code de retrait dès le paiement confirmé.`);
-      return;
-    } catch(e) { console.warn('Gift API error:', e.message); }
-  }
   alert(`✅ Panier offert à ${prenom} !\nIl recevra un SMS sur ${tel} avec son code de retrait.`);
 }
 
@@ -953,32 +975,6 @@ function selRelais(el) {
   document.querySelectorAll('.relais-item').forEach(r => r.classList.remove('selected'));
   el.classList.add('selected');
 }
-
-// Charger les relais depuis le back-end
-async function loadRelaisFromAPI() {
-  try {
-    const data = await window.KomerceAPI.getRelais();
-    if (!data?.relay_points?.length) return;
-    const container = document.querySelector('.relais-list');
-    if (!container) return;
-    container.innerHTML = data.relay_points.map((r, i) => `
-      <div class="relais-item ${i===0?'selected':''}" onclick="selRelais(this)" data-relais-id="${r.id}">
-        <div class="relais-radio"></div>
-        <div class="relais-info">
-          <div class="relais-nom">${r.name}</div>
-          <div class="relais-zone-m">${r.district||r.zone||''} · ${r.hours||'Horaires à confirmer'}</div>
-        </div>
-        <span class="ri-check">✓</span>
-      </div>`).join('');
-  } catch(e) { console.warn('Relais fallback statique', e.message); }
-}
-
-// Exécuter au chargement
-document.addEventListener('DOMContentLoaded', () => {
-  loadRelaisFromAPI();
-  // Stocker items panier pour les fonctions partagé/cadeau
-  window._pwaCartItems = [];
-});
 </script>
 
 <!-- ═══ DÉTECTION DEVISE AUTOMATIQUE ═══ -->
@@ -1021,12 +1017,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Taux MVP : 1 AED = 138 KMF · 1 EUR = 492 KMF · Fret 180 EUR/m3
   // ────────────────────────────────────────────────────────────────
   const RATES  = { EUR: 492, AED: 138, KMF: 1 };
-  // Taux live depuis le back-end (mis à jour toutes les heures)
-  window.KomerceAPI.getRates().then(r => {
-    RATES.EUR = r.eur_kmf || 492;
-    RATES.AED = r.aed_kmf || 138;
-    applyCurrencyM(document.getElementById('curr-select-m')?.value || 'KMF');
-  }).catch(() => {});
   const FLAGS  = { EUR: '🇪🇺', AED: '🇦🇪', KMF: '🇰🇲' };
 
   function detectCurrency() {
@@ -1062,71 +1052,6 @@ document.addEventListener('DOMContentLoaded', () => {
   applyCurrencyM(saved || detected);
 })();
 </script>
-<!-- ═══ KOMERCE API LAYER v1.0 ═══ -->
-<script>
-(function(){
-'use strict';
-const API_BASE=(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')
-  ?'http://localhost:3000/api':'https://komerce-backend-production.up.railway.app/api';
-const Auth={
-  getToken(){try{return localStorage.getItem('kmrc_token');}catch(e){return null;}},
-  setToken(t){try{localStorage.setItem('kmrc_token',t);}catch(e){}},
-  getUser(){try{return JSON.parse(localStorage.getItem('kmrc_user')||'null');}catch(e){return null;}},
-  setUser(u){try{localStorage.setItem('kmrc_user',JSON.stringify(u));}catch(e){}},
-};
-async function http(method,path,body,auth){
-  const headers={'Content-Type':'application/json'};
-  if(auth!==false){const t=Auth.getToken();if(t)headers['Authorization']='Bearer '+t;}
-  try{
-    const res=await fetch(API_BASE+path,{method,headers,body:body?JSON.stringify(body):undefined});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok)throw new Error(data.error||'Erreur '+res.status);
-    return data;
-  }catch(err){console.error('[Komerce API]',method,path,err.message);throw err;}
-}
-window.KomerceAPI={
-  async requestOTP(phone){return http('POST','/auth/otp/request',{phone},false);},
-  async verifyOTP(phone,code,fn){const d=await http('POST','/auth/otp/verify',{phone,code,first_name:fn},false);if(d.token){Auth.setToken(d.token);Auth.setUser(d.user);}return d;},
-  logout(){try{localStorage.removeItem('kmrc_token');}catch(e){}},
-  getUser(){return Auth.getUser();},
-  isLoggedIn(){return!!Auth.getToken();},
-  async getRates(){
-    const c=sessionStorage.getItem('kmrc_rates'),ts=sessionStorage.getItem('kmrc_rates_ts');
-    if(c&&ts&&Date.now()-parseInt(ts)<3600000)return JSON.parse(c);
-    try{const d=await http('GET','/payments/rates',null,false);sessionStorage.setItem('kmrc_rates',JSON.stringify(d));sessionStorage.setItem('kmrc_rates_ts',Date.now());return d;}
-    catch(e){return{eur_kmf:492,aed_kmf:138};}
-  },
-  async getProducts(p){const qs=p?'?'+new URLSearchParams(p).toString():'';return http('GET','/products'+qs,null,false);},
-  async getProduct(id){return http('GET','/products/'+id,null,false);},
-  async calcPrice(pid,qty,diaspora){return http('POST','/pricing/calculate',{product_id:pid,qty:qty||1,is_diaspora:!!diaspora},false);},
-  async getRelais(){return http('GET','/relay-points',null,false);},
-  async createOrder(payload){return http('POST','/orders',payload);},
-  async getOrderTracking(ref){return http('GET','/orders/'+ref+'/tracking',null,false);},
-  async getMyOrders(){return http('GET','/orders');},
-  async cancelOrder(ref){return http('PUT','/orders/'+ref+'/cancel',{});},
-  async confirmCashPayment(code){return http('POST','/payments/cash/confirm',{cash_ref_code:code});},
-  async createStripeIntent(ref){return http('POST','/payments/stripe/intent',{order_reference:ref});},
-  async shareBasket(items,name){return http('POST','/baskets/share',{items,creator_name:name},false);},
-  async getBasket(code){return http('GET','/baskets/'+code,null,false);},
-  async payBasket(code){return http('POST','/baskets/'+code+'/pay',{});},
-  async giftBasket(items,phone,name){return http('POST','/baskets/gift',{items,recipient_phone:phone,recipient_name:name});},
-  async getFabrics(){return http('GET','/ceremony/fabrics',null,false);},
-  async getGarmentModels(){return http('GET','/ceremony/models',null,false);},
-  async calcCeremonyPrice(fid,mid,qty,d){return http('POST','/ceremony/price',{fabric_id:fid,model_id:mid,qty:qty||1,is_diaspora:!!d},false);},
-  async getDashboardOps(){return http('GET','/dashboard/ops');},
-  async getDashboardSales(p){return http('GET','/dashboard/sales?period='+(p||30));},
-  async getDashboardForecast(d){return http('GET','/dashboard/forecast?target_date='+d);},
-  async getRetards(){return http('GET','/dashboard/retards');},
-  async getShipments(){return http('GET','/logistics/shipments');},
-  async updateShipment(id,data){return http('PATCH','/logistics/shipments/'+id,data);},
-  labelsUrl(id){return API_BASE+'/logistics/labels/'+id;},
-  manifestUrl(id){return API_BASE+'/logistics/manifest/'+id;},
-  async updateRates(e,a){return http('PUT','/pricing/rates',{eur_kmf:e,aed_kmf:a});},
-};
-window.KomerceAPI.getRates().then(r=>{window._KMRC_RATES=r;}).catch(()=>{window._KMRC_RATES={eur_kmf:492,aed_kmf:138};});
-console.log('[Komerce] API Layer v1.0 —',API_BASE);
-})();
-</script>
-<!-- ═══ FIN API LAYER ═══ -->
+<script src="/komerce-api.js"></script>
 </body>
 </html>

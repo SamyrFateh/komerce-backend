@@ -18,6 +18,7 @@ const { sendSMS } = require('../utils/sms');
 // Droits d'accès par étape de scan
 const STEP_ROLES = {
   preparation:     ['admin', 'agent_hub'],
+  hub_preparation: ['admin', 'agent_hub'],
   shipped:         ['admin', 'agent_hub'],
   relais_received: ['admin', 'agent_relais'],
   collected:       ['admin', 'agent_relais'],
@@ -47,7 +48,7 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'scan_code et step sont requis' });
     }
 
-    const validSteps = ['preparation', 'shipped', 'relais_received', 'collected'];
+    const validSteps = ['preparation', 'hub_preparation', 'shipped', 'relais_received', 'collected'];
     if (!validSteps.includes(step)) {
       return res.status(400).json({ error: `step invalide. Valeurs acceptées : ${validSteps.join(', ')}` });
     }
@@ -198,8 +199,8 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), as
     await db.query(
       `INSERT INTO scans
          (order_id, step, scanned_by, location, scan_code, notes)
-       VALUES ($1,'collected',$2,$3,$4,'Retrait destinataire — code valide')`,
-      [order.id, req.user.id, order.relais_name, order.pickup_code]
+       VALUES ($1,'collected',$2,$3,$4,$5)`,
+      [order.id, req.user.id, order.relais_name || '', order.pickup_code || ('COLLECT-' + order.reference), 'Retrait destinataire — code valide']
     );
 
     // SMS confirmation au commanditaire

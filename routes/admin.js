@@ -61,7 +61,8 @@ router.get('/dashboard', ...guard, async (req, res) => {
           COUNT(o.id) AS order_count,
           SUM(o.total_kmf) AS revenue_kmf
         FROM orders o
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE o.created_at >= NOW() - ($1 || ' days')::INTERVAL
         GROUP BY p.id, p.name, p.category
         ORDER BY order_count DESC
@@ -89,7 +90,8 @@ router.get('/dashboard', ...guard, async (req, res) => {
           p.name AS product_name,
           u.full_name AS customer_name
         FROM orders o
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         LEFT JOIN users    u ON u.id = o.user_id
         ORDER BY o.created_at DESC
         LIMIT 10
@@ -169,16 +171,18 @@ router.get('/orders', ...guard, async (req, res) => {
          o.margin_estimated_pct, o.margin_real_pct, o.margin_alert, o.sourcing_blocked,
          o.payment_mode, o.payment_status,
          o.confection_type, o.confection_instructions, o.confection_delay_days,
-         o.recipient_name, o.recipient_phone,
-         o.sender_name, o.sender_phone,
-         o.created_at, o.ordered_at, o.shipped_at, o.available_at, o.collected_at,
+         rc.full_name AS recipient_name,
+         rc.phone     AS recipient_phone,
+         o.created_at, o.shipped_at, o.available_at, o.collected_at,
          p.name   AS product_name, p.category,
          u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
          r.name   AS relais_name, r.zone AS relais_zone
        FROM orders o
-       LEFT JOIN products p ON p.id = o.product_id
+       LEFT JOIN order_items oi ON oi.order_id = o.id
+       LEFT JOIN products p ON p.id = oi.product_id
        LEFT JOIN users    u ON u.id = o.user_id
        LEFT JOIN relais   r ON r.id = o.relais_id
+       LEFT JOIN recipients rc ON rc.id = o.recipient_id
        WHERE ${where}
        ORDER BY o.created_at DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
@@ -220,7 +224,8 @@ router.get('/margins', ...guard, async (req, res) => {
           COUNT(*) FILTER (WHERE o.margin_real_pct < 0)          AS negative_count,
           COUNT(*) FILTER (WHERE o.margin_real_pct >= 10)        AS healthy_count
         FROM orders o
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE o.created_at >= NOW() - ($1 || ' days')::INTERVAL
         GROUP BY p.category
         ORDER BY avg_margin_real ASC NULLS LAST
@@ -235,7 +240,8 @@ router.get('/margins', ...guard, async (req, res) => {
           o.sourcing_blocked,
           p.name AS product_name, p.category
         FROM orders o
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE o.margin_alert = TRUE
           AND o.created_at >= NOW() - ($1 || ' days')::INTERVAL
         ORDER BY o.margin_real_pct ASC NULLS LAST
@@ -310,7 +316,8 @@ router.get('/customs', ...guard, async (req, res) => {
           u.full_name AS agent_name
         FROM customs_history ch
         LEFT JOIN orders   o ON o.id = ch.order_id
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         LEFT JOIN users    u ON u.id = ch.customs_agent_id
         WHERE ${where}
         ORDER BY ch.created_at DESC
@@ -328,7 +335,8 @@ router.get('/customs', ...guard, async (req, res) => {
           COUNT(*) FILTER (WHERE ch.is_anomaly = TRUE)    AS anomalies
         FROM customs_history ch
         LEFT JOIN orders   o ON o.id = ch.order_id
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE ch.created_at >= NOW() - ($1 || ' days')::INTERVAL
         GROUP BY p.category
         ORDER BY avg_delta_pct DESC NULLS LAST
@@ -342,7 +350,8 @@ router.get('/customs', ...guard, async (req, res) => {
           ch.notes
         FROM customs_history ch
         LEFT JOIN orders   o ON o.id = ch.order_id
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE ch.is_anomaly = TRUE
           AND ch.created_at >= NOW() - ($1 || ' days')::INTERVAL
         ORDER BY ch.customs_delta_pct DESC
@@ -376,7 +385,8 @@ router.get('/alerts', ...guard, async (req, res) => {
         SELECT o.reference, o.status, o.total_kmf, o.margin_real_pct,
                p.name AS product_name
         FROM orders o
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE o.margin_alert = TRUE AND o.status NOT IN ('cancelled','collected')
         ORDER BY o.margin_real_pct ASC NULLS LAST
         LIMIT 20
@@ -386,7 +396,8 @@ router.get('/alerts', ...guard, async (req, res) => {
                ch.customs_real_kmf, ch.customs_delta_pct
         FROM customs_history ch
         LEFT JOIN orders   o ON o.id = ch.order_id
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE ch.is_anomaly = TRUE
           AND ch.created_at >= NOW() - INTERVAL '30 days'
         ORDER BY ch.created_at DESC
@@ -396,7 +407,8 @@ router.get('/alerts', ...guard, async (req, res) => {
         SELECT o.reference, o.status, o.total_kmf, o.margin_real_pct,
                p.name AS product_name
         FROM orders o
-        LEFT JOIN products p ON p.id = o.product_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN products p ON p.id = oi.product_id
         WHERE o.sourcing_blocked = TRUE
           AND o.status NOT IN ('cancelled','collected')
         ORDER BY o.created_at DESC
