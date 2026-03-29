@@ -118,6 +118,8 @@ function toast(msg, type = 'info') {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function loadProducts() {
+  // Stocker pour la recherche hero
+  const _storeCache = (arr) => { if (arr && arr.length) _allProductsCache = arr; };
   // Web → .promo-grid  |  PWA → .promo-row
   const grid  = document.querySelector('.promo-carousel') || document.querySelector('.promo-grid');
   const row   = document.querySelector('.promo-row');
@@ -2515,6 +2517,90 @@ function _updateCarouselDots(track) {
 // ═══════════════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════════════
+
+
+// ── RECHERCHE HERO ─────────────────────────────────────────────────────────
+let _allProductsCache = [];
+
+function _heroSearch(query) {
+  if (!query || query.trim().length < 2) return;
+  const q = query.trim().toLowerCase();
+  document.getElementById('hero-search-suggestions') && (document.getElementById('hero-search-suggestions').style.display = 'none');
+  // Faire défiler vers le carrousel et filtrer
+  const carousel = document.querySelector('.promo-carousel') || document.querySelector('.promo-grid');
+  if (carousel) {
+    carousel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  // Filtrer les cartes visibles
+  const cards = document.querySelectorAll('.promo-card, .promo-card-m');
+  let found = 0;
+  cards.forEach(card => {
+    const text = (card.dataset.product || card.dataset.pp || card.textContent || '').toLowerCase();
+    const match = text.includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) found++;
+  });
+  // Si aucun résultat visible, ouvrir la recherche via API
+  if (found === 0 && _allProductsCache.length > 0) {
+    const results = _allProductsCache.filter(p =>
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q)
+    );
+    if (results.length > 0) openProduct(results[0]);
+  }
+  // Bouton reset
+  _showSearchReset(query);
+}
+
+function _showSearchReset(query) {
+  const input = document.getElementById('hero-search-input');
+  if (!input) return;
+  const existing = document.getElementById('hero-search-reset');
+  if (existing) existing.remove();
+  const btn = document.createElement('button');
+  btn.id = 'hero-search-reset';
+  btn.innerHTML = '&times;';
+  btn.title = 'Effacer la recherche';
+  btn.style.cssText = 'position:absolute;right:56px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.1rem;color:#94a3b8;cursor:pointer;z-index:10;';
+  btn.onclick = () => {
+    input.value = '';
+    btn.remove();
+    document.querySelectorAll('.promo-card, .promo-card-m').forEach(c => c.style.display = '');
+    document.getElementById('hero-search-suggestions') && (document.getElementById('hero-search-suggestions').style.display = 'none');
+  };
+  if (input.parentElement) { input.parentElement.style.position = 'relative'; input.parentElement.appendChild(btn); }
+}
+
+function _heroSearchSuggest(query) {
+  var box = document.getElementById('hero-search-suggestions');
+  if (!box) return;
+  if (!query || query.trim().length < 2) { box.style.display = 'none'; return; }
+  var q = query.trim().toLowerCase();
+  var pool = _allProductsCache.length > 0 ? _allProductsCache : [];
+  var suggestions = pool
+    .filter(function(p) { return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.category||'').toLowerCase().indexOf(q)>=0; })
+    .slice(0, 6);
+  if (suggestions.length === 0) { box.style.display = 'none'; return; }
+  var rows = suggestions.map(function(p) {
+    var safeName = (p.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    var kmfTxt = p.price_kmf ? Math.round(p.price_kmf).toLocaleString('fr') + ' KMF' : '';
+    var row = document.createElement('div');
+    row.style.cssText = 'padding:.55rem 1rem;cursor:pointer;border-bottom:1px solid #f0f4f8;display:flex;gap:.6rem;align-items:center;';
+    row.onmouseover = function(){ this.style.background='#f8fafc'; };
+    row.onmouseout  = function(){ this.style.background=''; };
+    row.onclick = function(){ _heroSearch(p.name || ''); };
+    row.innerHTML = '<span>' + (p.emoji || '\uD83D\uDCE6') + '</span>' +
+      '<span style="font-weight:600;color:#1a3a5c;">' + safeName + '</span>' +
+      '<span style="margin-left:auto;font-size:.78rem;color:#64748b;">' + kmfTxt + '</span>';
+    return row.outerHTML;
+  });
+  box.innerHTML = rows.join('');
+  box.style.display = 'block';
+  document.addEventListener('click', function handler(e) {
+    if (!box.contains(e.target) && e.target.id !== 'hero-search-input') { box.style.display = 'none'; document.removeEventListener('click', handler); }
+  });
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Restaurer le token + profil depuis localStorage
