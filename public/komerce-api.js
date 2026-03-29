@@ -2562,14 +2562,18 @@ function _showSearchReset(query) {
   btn.id = 'hero-search-reset';
   btn.innerHTML = '&times;';
   btn.title = 'Effacer la recherche';
-  btn.style.cssText = 'position:absolute;right:56px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.1rem;color:#94a3b8;cursor:pointer;z-index:10;';
-  btn.onclick = () => {
+  btn.style.cssText = 'position:absolute;right:110px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.1rem;color:#64748b;cursor:pointer;z-index:10;line-height:1;';
+  btn.onclick = (e) => {
+    e.preventDefault();
     input.value = '';
     btn.remove();
     document.querySelectorAll('.promo-card, .promo-card-m').forEach(c => c.style.display = '');
-    document.getElementById('hero-search-suggestions') && (document.getElementById('hero-search-suggestions').style.display = 'none');
+    const box = document.getElementById('hero-search-suggestions');
+    if (box) box.style.display = 'none';
   };
-  if (input.parentElement) { input.parentElement.style.position = 'relative'; input.parentElement.appendChild(btn); }
+  // Insérer dans le wrapper position:relative (parent du form)
+  const wrapper = input.closest('div[style*="position:relative"]') || input.form?.parentElement;
+  if (wrapper) wrapper.appendChild(btn);
 }
 
 function _heroSearchSuggest(query) {

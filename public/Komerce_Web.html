@@ -1357,37 +1357,71 @@
 </nav>
 
 <!-- HERO -->
-<section class="hero" style="padding:0;overflow:hidden;position:relative;display:flex;align-items:stretch;max-height:220px;">
-  <!-- Côté gauche : texte compact + recherche -->
-  <div style="flex:0 0 50%;min-width:240px;padding:22px 4% 18px;display:flex;flex-direction:column;justify-content:center;gap:.6rem;background:linear-gradient(135deg,#0f1e37 0%,#1a3a5c 100%);">
-    <!-- Titre court -->
+<section class="hero" style="padding:0;overflow:visible;position:relative;display:flex;align-items:stretch;min-height:240px;max-height:280px;">
+
+  <!-- Côté gauche : texte + barre de recherche -->
+  <div style="flex:0 0 48%;min-width:260px;max-width:560px;
+              padding:28px 5% 24px;
+              display:flex;flex-direction:column;justify-content:center;gap:1rem;
+              background:linear-gradient(135deg,#0f1e37 0%,#1a3a5c 100%);">
+
+    <!-- Badge + titre -->
     <div>
-      <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#e8a020;margin-bottom:.3rem;">🏝️ Komerce · Comores</div>
-      <h1 style="font-size:clamp(1.1rem,2.5vw,1.6rem);margin:0;text-align:left;line-height:1.2;font-weight:900;">
-        Vos envies traversent la mer.
-        <span style="color:#e8a020;display:block;font-size:.9em;">Profitez de la vie.</span>
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;
+                  text-transform:uppercase;color:#e8a020;margin-bottom:.5rem;">
+        🏝️ Komerce &mdash; La boutique des Comores
+      </div>
+      <h1 style="font-size:clamp(1.15rem,2.8vw,1.75rem);margin:0;
+                 text-align:left;line-height:1.25;font-weight:900;color:#fff;">
+        Vos envies traversent la mer.<br>
+        <span style="color:#e8a020;">Profitez de la vie.</span>
       </h1>
     </div>
-    <!-- Barre de recherche -->
-    <form onsubmit="event.preventDefault();_heroSearch(this.querySelector('input').value)"
-      style="display:flex;gap:0;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.25);max-width:400px;">
-      <input id="hero-search-input" type="text" placeholder="🔍 Rechercher un produit..."
-        style="flex:1;padding:.55rem .9rem;border:none;outline:none;font-size:.85rem;min-width:0;background:#fff;color:#1a3a5c;"
-        oninput="_heroSearchSuggest(this.value)">
-      <button type="submit"
-        style="padding:.55rem 1rem;background:#e8a020;border:none;cursor:pointer;font-size:.85rem;font-weight:800;color:#fff;white-space:nowrap;">
-        OK
-      </button>
-    </form>
-    <!-- Suggestions de recherche -->
-    <div id="hero-search-suggestions" style="display:none;position:absolute;top:calc(100% - 6px);left:0;right:0;background:#fff;border-radius:0 0 10px 10px;box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:100;max-height:200px;overflow-y:auto;font-size:.83rem;"></div>
+
+    <!-- Barre de recherche avec suggestions -->
+    <div style="position:relative;width:100%;max-width:420px;">
+      <form onsubmit="event.preventDefault();_heroSearch(document.getElementById('hero-search-input').value)"
+        style="display:flex;border-radius:12px;overflow:hidden;
+               box-shadow:0 4px 20px rgba(0,0,0,.35);height:46px;">
+        <span style="display:flex;align-items:center;padding:0 .75rem;
+                     background:#fff;color:#94a3b8;font-size:1.05rem;flex-shrink:0;">
+          &#128269;
+        </span>
+        <input id="hero-search-input" type="text"
+          placeholder="Rechercher un produit, une catégorie..."
+          autocomplete="off"
+          style="flex:1;padding:.6rem .5rem;border:none;outline:none;
+                 font-size:.88rem;min-width:0;background:#fff;color:#1a3a5c;"
+          oninput="_heroSearchSuggest(this.value)"
+          onkeydown="if(event.key==='Escape'){this.value='';document.getElementById('hero-search-suggestions').style.display='none';}">
+        <button type="submit"
+          style="padding:0 1.2rem;background:#e8a020;border:none;cursor:pointer;
+                 font-size:.85rem;font-weight:800;color:#fff;white-space:nowrap;
+                 letter-spacing:.03em;transition:background .15s;"
+          onmouseover="this.style.background='#cf8e10'"
+          onmouseout="this.style.background='#e8a020'">
+          Rechercher
+        </button>
+      </form>
+      <!-- Suggestions dropdown -->
+      <div id="hero-search-suggestions"
+        style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
+               background:#fff;border-radius:12px;
+               box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;
+               max-height:220px;overflow-y:auto;font-size:.84rem;">
+      </div>
+    </div>
+
   </div>
-  <!-- Côté droit : image -->
-  <div style="flex:1;min-width:0;position:relative;overflow:hidden;">
-    <img src="/images/hero_banner.jpg" alt="Komerce"
-      style="width:100%;height:100%;object-fit:cover;object-position:center 15%;display:block;"
+
+  <!-- Côté droit : illustration -->
+  <div style="flex:1;min-width:0;background:#f8f3eb;
+              display:flex;align-items:center;justify-content:center;overflow:hidden;">
+    <img src="/images/hero_banner.jpg" alt="Komerce e-commerce Comores"
+      style="width:100%;height:100%;object-fit:contain;object-position:center center;display:block;"
       onerror="this.closest('div').style.background='linear-gradient(135deg,#e8f4f8,#dbeafe)'">
   </div>
+
 </section>
 
 
