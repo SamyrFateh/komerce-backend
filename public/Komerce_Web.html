@@ -1389,24 +1389,24 @@
     </div>
 
     <!-- Barre de recherche avec suggestions -->
-    <div style="position:relative;width:100%;max-width:420px;">
+    <div style="position:relative;width:100%;max-width:580px;">
       <form onsubmit="event.preventDefault();_heroSearch(document.getElementById('hero-search-input').value)"
-        style="display:flex;border-radius:12px;overflow:hidden;
-               box-shadow:0 4px 20px rgba(0,0,0,.35);height:46px;">
+        style="display:flex;border-radius:14px;overflow:hidden;
+               box-shadow:0 4px 24px rgba(0,0,0,.38);height:54px;">
         <span style="display:flex;align-items:center;padding:0 .75rem;
-                     background:#fff;color:#94a3b8;font-size:1.05rem;flex-shrink:0;">
+                     background:#fff;color:#94a3b8;font-size:1.15rem;flex-shrink:0;">
           &#128269;
         </span>
         <input id="hero-search-input" type="text"
           placeholder="Rechercher un produit, une catégorie..."
           autocomplete="off"
           style="flex:1;padding:.6rem .5rem;border:none;outline:none;
-                 font-size:.88rem;min-width:0;background:#fff;color:#1a3a5c;"
+                 font-size:.97rem;min-width:0;background:#fff;color:#1a3a5c;"
           oninput="_heroSearchSuggest(this.value)"
           onkeydown="if(event.key==='Escape'){this.value='';document.getElementById('hero-search-suggestions').style.display='none';}">
         <button type="submit"
-          style="padding:0 1.2rem;background:#e8a020;border:none;cursor:pointer;
-                 font-size:.85rem;font-weight:800;color:#fff;white-space:nowrap;
+          style="padding:0 1.5rem;background:#e8a020;border:none;cursor:pointer;
+                 font-size:.92rem;font-weight:800;color:#fff;white-space:nowrap;
                  letter-spacing:.03em;transition:background .15s;"
           onmouseover="this.style.background='#cf8e10'"
           onmouseout="this.style.background='#e8a020'">
@@ -1656,7 +1656,7 @@
     <div class="promo-card" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75"
-          alt="Samsung Galaxy A15" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          alt="Samsung Galaxy A15" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−35%</span>
       </div>
@@ -1677,7 +1677,7 @@
     <div class="promo-card" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=75"
-          alt="Abayas brodées" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          alt="Abayas brodées" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−40%</span>
         <div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
@@ -1702,7 +1702,7 @@
     <div class="promo-card" data-product='{"id":"static-3","name":"Écouteurs Sony WH-CH520","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=75"
-          alt="Écouteurs Sony" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          alt="Écouteurs Sony" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−28%</span>
       </div>
@@ -1723,7 +1723,7 @@
     <div class="promo-card" data-product='{"id":"static-4","name":"Set cuisine Tefal 5 pièces","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75"
-          alt="Set cuisine Tefal" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
+          alt="Set cuisine Tefal" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−22%</span>
       </div>
@@ -2194,7 +2194,7 @@
 <script>
 (function() {
   // ── Taux MVP (révision mensuelle) ──────────────────────
-  // Pricing v6.4 — Formule complète 16 étapes
+  // Pricing v7.2 — Formule complète 16 étapes
   // Taux MVP : 1 AED = 138 KMF · 1 EUR = 492 KMF · Fret 180 EUR/m3
   // Hub Dubai 7000 AED/mois absorbé dans marge 12% (Option B)
   const RATES = { EUR: 492, AED: 138, KMF: 1 };
@@ -2348,9 +2348,84 @@ function detectLocationFallback() {
 }
 
 // Ouvrir le checkout
+
+// ── Favoris (localStorage) ─────────────────────────────────────────────
+window.toggleFavorite = function(product) {
+  if (!product || !product.id) return;
+  var stored = JSON.parse(localStorage.getItem('kmrc_favs') || '[]');
+  var idx = stored.findIndex(function(p) { return p.id === product.id; });
+  // Trouver le bouton favoris de la carte
+  var targetCard = null;
+  document.querySelectorAll('[data-product]').forEach(function(c) {
+    try { var d = JSON.parse(c.dataset.product); if (d.id === product.id) targetCard = c; } catch(e) {}
+  });
+  var favBtn = targetCard ? targetCard.querySelector('button[title="Favoris"]') : null;
+  if (idx === -1) {
+    stored.push(product);
+    if (favBtn) { favBtn.textContent = '\u2764\ufe0f'; favBtn.style.background = '#fff0f0'; favBtn.style.borderColor = '#f87171'; }
+    window._showToast('\u2764\ufe0f ' + product.name + ' ajout\u00e9 aux favoris', 'success');
+  } else {
+    stored.splice(idx, 1);
+    if (favBtn) { favBtn.textContent = '\U0001f90d'; favBtn.style.background = '#f1f5f9'; favBtn.style.borderColor = '#e2e8f0'; }
+    window._showToast('Retir\u00e9 des favoris', 'info');
+  }
+  localStorage.setItem('kmrc_favs', JSON.stringify(stored));
+};
+
+// Restaurer icones favoris au chargement
+document.addEventListener('DOMContentLoaded', function() {
+  var stored = JSON.parse(localStorage.getItem('kmrc_favs') || '[]');
+  stored.forEach(function(product) {
+    document.querySelectorAll('[data-product]').forEach(function(c) {
+      try {
+        var d = JSON.parse(c.dataset.product);
+        if (d.id === product.id) {
+          var btn = c.querySelector('button[title="Favoris"]');
+          if (btn) { btn.textContent = '\u2764\ufe0f'; btn.style.background = '#fff0f0'; btn.style.borderColor = '#f87171'; }
+        }
+      } catch(e) {}
+    });
+  });
+});
+
+// Toast utilitaire
+window._showToast = function(msg, type) {
+  var colors = { error: '#e05c2e', success: '#2e7d52', info: '#1a3a5c' };
+  var bg = colors[type] || colors.info;
+  var t = document.createElement('div');
+  t.setAttribute('role', 'alert');
+  t.style.cssText = [
+    'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%)',
+    'background:' + bg,
+    'color:#fff;padding:.8rem 1.4rem;border-radius:12px',
+    'font-size:.92rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.22)',
+    'z-index:99999;max-width:90vw;text-align:center',
+    'animation:_toastIn .2s ease'
+  ].join(';');
+  t.textContent = msg;
+  if (!document.getElementById('_toast-style')) {
+    var s = document.createElement('style');
+    s.id = '_toast-style';
+    s.textContent = '@keyframes _toastIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(t);
+  setTimeout(function() { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(function() { t.remove(); }, 300); }, 3200);
+};
+
 window.openCheckout = async function() {
+  // Guard panier vide
+  var _cartCheck = (typeof _cart !== 'undefined') ? _cart : [];
+  if (_cartCheck.length === 0) {
+    window._showToast('⚠️ Votre panier est vide — ajoutez des produits avant de commander', 'error');
+    var catalog = document.getElementById('catalog') || document.getElementById('products') || document.querySelector('.products-section, [data-section="catalog"]');
+    if (catalog) { setTimeout(function() { catalog.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); }
+    return;
+  }
+
   _coStep    = 1;
   _coPayMode = null;
+
 
   const fallback = detectLocationFallback();
   _coLocation = fallback;
@@ -2966,4 +3041,107 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!document.hidden) loRefresh();
   });
 });
+
+
+// ── RECHERCHE HERO ────────────────────────────────────────────────────
+
+/** Construit l'index de recherche depuis les cartes du DOM */
+function _buildSearchIndex() {
+  const index = [];
+  document.querySelectorAll('.ceremony-card').forEach(card => {
+    const name = card.querySelector('h4')?.textContent?.trim() || '';
+    const desc = card.querySelector('p')?.textContent?.trim() || '';
+    index.push({ name, desc, type: 'ceremony', el: card });
+  });
+  document.querySelectorAll('[data-product]').forEach(card => {
+    try {
+      const data = JSON.parse(card.dataset.product);
+      index.push({ name: data.name, desc: data.category || '', type: 'promo', el: card });
+    } catch(e) {}
+  });
+  return index;
+}
+
+let _searchIndex = null;
+
+/** Vide le champ et ferme le dropdown */
+function _clearHeroSearch() {
+  const input = document.getElementById('hero-search-input');
+  const sugg  = document.getElementById('hero-search-suggestions');
+  if (input) input.value = '';
+  if (sugg)  { sugg.innerHTML = ''; sugg.style.display = 'none'; sugg._results = []; }
+}
+
+/** Suggestions temps réel (oninput) */
+function _heroSearchSuggest(query) {
+  const sugg = document.getElementById('hero-search-suggestions');
+  if (!sugg) return;
+  const q = (query || '').trim().toLowerCase();
+  if (q.length < 2) { sugg.innerHTML = ''; sugg.style.display = 'none'; return; }
+  if (!_searchIndex) _searchIndex = _buildSearchIndex();
+  const results = _searchIndex.filter(item =>
+    item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
+  ).slice(0, 6);
+  if (!results.length) { sugg.innerHTML = ''; sugg.style.display = 'none'; return; }
+  sugg._results = results;
+  sugg.innerHTML = results.map((r, i) =>
+    `<div style="padding:.65rem 1rem;cursor:pointer;border-bottom:1px solid #f1f5f9;
+                 display:flex;align-items:center;gap:.6rem;transition:background .1s;"
+          onmousedown="event.preventDefault();_heroSelectResult(${i})"
+          onmouseover="this.style.background='#f8fafc'"
+          onmouseout="this.style.background='#fff'">
+       <span style="font-size:.75rem;color:#64748b;min-width:65px;">
+         ${r.type === 'ceremony' ? '\ud83c\udf89 C�r�monie' : '\ud83d\uded2 Produit'}
+       </span>
+       <span style="color:#1a3a5c;font-weight:600;">${r.name}</span>
+     </div>`
+  ).join('');
+  sugg.style.display = 'block';
+}
+
+/** Sélectionne un résultat : scroll + vidé */
+function _heroSelectResult(idx) {
+  const sugg = document.getElementById('hero-search-suggestions');
+  const results = sugg?._results || [];
+  const item = results[idx];
+  if (!item) return;
+  _clearHeroSearch();
+  if (item.type === 'ceremony') showUniverse('ceremony');
+  else showUniverse('daily');
+  setTimeout(() => {
+    item.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    item.el.style.transition = 'box-shadow .3s';
+    item.el.style.boxShadow  = '0 0 0 3px #e8a020';
+    setTimeout(() => { item.el.style.boxShadow = ''; }, 1400);
+  }, 80);
+}
+
+/** Recherche sur soumission du formulaire */
+function _heroSearch(query) {
+  const q = (query || '').trim().toLowerCase();
+  if (!q) return;
+  if (!_searchIndex) _searchIndex = _buildSearchIndex();
+  const best = _searchIndex.find(item =>
+    item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
+  );
+  if (best) {
+    _heroSelectResult(_searchIndex.indexOf(best));
+  } else {
+    _clearHeroSearch();
+    const input = document.getElementById('hero-search-input');
+    if (input) {
+      input.placeholder = `Aucun r�sultat pour "${query}"`;
+      setTimeout(() => { input.placeholder = 'Rechercher un produit, une cat�gorie…'; }, 2500);
+    }
+  }
+}
+
+/** Fermer le dropdown au clic extérieur */
+document.addEventListener('click', e => {
+  if (!e.target.closest('#hero-search-input') && !e.target.closest('#hero-search-suggestions')) {
+    const sugg = document.getElementById('hero-search-suggestions');
+    if (sugg) { sugg.innerHTML = ''; sugg.style.display = 'none'; }
+  }
+});
+
 </script>

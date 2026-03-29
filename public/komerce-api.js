@@ -1721,6 +1721,31 @@ function _renderCeremonyForm(type) {
         </div>
       </div>
 
+
+      <!-- Quantité -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Quantité
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <div style="display:flex;align-items:center;border:1.5px solid #e2e8f0;
+                      border-radius:10px;overflow:hidden;">
+            <button onclick="_setCeremonyQty(_ceremonyState.qty - 1)"
+              style="width:38px;height:38px;border:none;background:#f8fafc;
+                     cursor:pointer;font-size:1.1rem;font-weight:700;color:#4a5568;">−</button>
+            <span id="cqty-display"
+              style="width:44px;text-align:center;font-size:1rem;font-weight:800;color:#1a3a5c;">
+              1
+            </span>
+            <button onclick="_setCeremonyQty(_ceremonyState.qty + 1)"
+              style="width:38px;height:38px;border:none;background:#f8fafc;
+                     cursor:pointer;font-size:1.1rem;font-weight:700;color:#4a5568;">+</button>
+          </div>
+          <span style="font-size:.8rem;color:#94a3b8;">article(s)</span>
+        </div>
+      </div>
+
       <!-- Retouche -->
       <div style="background:#f0f9ff;border-radius:10px;padding:.8rem 1rem;
                   display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
@@ -1822,6 +1847,30 @@ function _renderCeremonyForm(type) {
                      color:#64748b;transition:all .12s;">
               ${s}
             </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- Quantité -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:#64748b;letter-spacing:.07em;
+                    text-transform:uppercase;margin-bottom:.55rem;">
+          Quantité
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <div style="display:flex;align-items:center;border:1.5px solid #e2e8f0;
+                      border-radius:10px;overflow:hidden;">
+            <button onclick="_setCeremonyQty(_ceremonyState.qty - 1)"
+              style="width:38px;height:38px;border:none;background:#f8fafc;
+                     cursor:pointer;font-size:1.1rem;font-weight:700;color:#4a5568;">−</button>
+            <span id="cqty-display"
+              style="width:44px;text-align:center;font-size:1rem;font-weight:800;color:#1a3a5c;">
+              1
+            </span>
+            <button onclick="_setCeremonyQty(_ceremonyState.qty + 1)"
+              style="width:38px;height:38px;border:none;background:#f8fafc;
+                     cursor:pointer;font-size:1.1rem;font-weight:700;color:#4a5568;">+</button>
+          </div>
+          <span style="font-size:.8rem;color:#94a3b8;">article(s)</span>
         </div>
       </div>
 
