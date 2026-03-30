@@ -1670,6 +1670,25 @@ footer h4, footer .footer-title { color:#fff !important; }
   .hero > div:last-child { min-height:200px !important; width:100% !important; }
 }
 /* ═══ END REDESIGN v4 ═══ */
+
+/* ── Merged patch block ── */
+.kmf-price .price-secondary { font-size: .72em; color: #64748b; margin-top: .1rem; display: block; }
+
+/* ── Merged patch block ── */
+@keyframes kmrcPreviewIn {
+        from { opacity:0; transform:translateY(8px) scale(.97); }
+        to   { opacity:1; transform:translateY(0)   scale(1);   }
+      }
+
+/* ── Merged patch block ── */
+@keyframes kmrcFadeIn  { from{opacity:0}     to{opacity:1} }
+      @keyframes kmrcSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+/* ── Merged patch block ── */
+@keyframes slideUpModal {
+  from { transform:translateY(32px); opacity:0; }
+  to   { transform:translateY(0);    opacity:1; }
+}
 </style>
 </head>
 <body>
@@ -2538,9 +2557,7 @@ footer h4, footer .footer-title { color:#fff !important; }
      DÉTECTION DEVISE AUTOMATIQUE PAR TIMEZONE
      Taux mars 2026 : 1 EUR = 495 KMF · 1 AED = 139 KMF
      ═══════════════════════════════════════════════════ -->
-<style>
-  .kmf-price .price-secondary { font-size: .72em; color: #64748b; margin-top: .1rem; display: block; }
-</style>
+
 <!-- currency-badge supprimé — devise détectée automatiquement (KMF/EUR) -->
 
 <script>
@@ -3327,12 +3344,7 @@ function _showCartPreview() {
     animation:kmrcPreviewIn .18s ease;
   `;
   preview.innerHTML = `
-    <style>
-      @keyframes kmrcPreviewIn {
-        from { opacity:0; transform:translateY(8px) scale(.97); }
-        to   { opacity:1; transform:translateY(0)   scale(1);   }
-      }
-    </style>
+    
     <div style="font-size:.72rem;font-weight:800;color:#64748b;text-transform:uppercase;
                 letter-spacing:.06em;margin-bottom:.7rem;">
       🛒 ${n} article${n > 1 ? 's' : ''} dans le panier
@@ -3465,10 +3477,7 @@ function openCart() {
   `;
 
   drawer.innerHTML = `
-    <style>
-      @keyframes kmrcFadeIn  { from{opacity:0}     to{opacity:1} }
-      @keyframes kmrcSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-    </style>
+    
 
     <!-- Poignée + En-tête -->
     <div style="padding:1rem 1.4rem .8rem;border-bottom:1px solid #f0f4f8;flex-shrink:0;">
@@ -4839,7 +4848,7 @@ async function _lookupOrdersByPhone() {
 
 // Déconnexion (effacer le localStorage)
 function logoutUser() {
-  localStorage.removeItem('kmrc_user');
+  try { localStorage.removeItem('kmrc_user'); } catch(e) {}
   _token = null;
   _savedUser = null;
   document.getElementById('kmrc-returning-banner')?.remove();
@@ -4848,7 +4857,9 @@ function logoutUser() {
 
 function initWhatsAppButton() {
   // ⚠️ Remplacer par le vrai numéro WhatsApp Komerce (sans + ni espaces)
-  const WA_NUMBER  = '33699272526'; // TODO: à remplacer
+  // ⚠️ CONFIG REQUISE : remplacez ce numéro par le numéro WhatsApp officiel de Komerce
+  // Ce numéro est visible dans le code source public !
+  const WA_NUMBER  = '33699272526'; // TODO: numéro WhatsApp Komerce (ex: 2697XXXXXXX)
   const WA_MESSAGE = encodeURIComponent('Bonjour Komerce ! J\'ai une question sur ma commande.');
   const WA_URL     = 'https://wa.me/' + WA_NUMBER + '?text=' + WA_MESSAGE;
 
@@ -5731,20 +5742,18 @@ window.coConfirm = async function() {
   };
 
   try {
-    const res = await fetch('https://komerce-backend-production.up.railway.app/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-
-    if (!res.ok) throw new Error(data.error || 'Erreur');
+    // ✅ Utilise apiPost (centralisé, gère les erreurs réseau)
+    const data = await apiPost('/api/orders', body);
+    if (!data || data.error) throw new Error(data?.error || 'Erreur réseau');
 
     closeCheckout();
     if (typeof clearCart === 'function') clearCart();
 
-    // Confirmation visuelle
+    // Notifier le module de suivi via CustomEvent (évite le monkey-patch de window.fetch)
     const ref = data.order?.reference || '—';
+    document.dispatchEvent(new CustomEvent('kmrc:order-created', { detail: { ref: data.order?.reference } }));
+
+    // Confirmation visuelle
     const msg = _coPayMode === 'cash_relais'
       ? `🎉 Commande ${ref} confirmée !\nCode cash relais : ${data.order?.cash_ref_code || '—'}\n\nApportez ce code au point relais pour payer en espèces.`
       : `🎉 Commande ${ref} confirmée !\nVous recevrez un SMS de confirmation.`;
@@ -5943,12 +5952,7 @@ document.getElementById('kmrc-checkout-overlay')?.addEventListener('click', func
   </div>
 </div>
 
-<style>
-@keyframes slideUpModal {
-  from { transform:translateY(32px); opacity:0; }
-  to   { transform:translateY(0);    opacity:1; }
-}
-</style>
+
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -6219,7 +6223,7 @@ function _ceremonyFormHTML(type, p) {
   }
 
   if (type === 'clothing') {
-    var sizes = ['XS','S','M','L','XL','XXL','3XL'];
+    var sizes = ['XS','S','M','L','XL','XXL','XXXL']; // ← unifié avec PSIZES/SIZES/CEREMONY_SIZES
     var sizeRows = sizes.map(function(sz) {
       return '<div style="display:flex;align-items:center;justify-content:space-between;'+
         'padding:.55rem .7rem;border-radius:8px;border:1.5px solid #e2e8f0;'+
@@ -6687,32 +6691,14 @@ window.loAddRef = async function() {
 };
 
 // ── Sauvegarder la ref après une commande réussie ─────────────────────
-// Patch de coConfirm pour auto-ajouter la ref
-
-(function patchCoConfirmForTracking() {
-  const origConfirm = window.coConfirm;
-  if (!origConfirm) return;
-  window.coConfirm = async function() {
-    // On intercepte la réponse — on monkey-patch fetch temporairement
-    const origFetch = window.fetch;
-    window.fetch = async function(...args) {
-      const res = await origFetch(...args);
-      if (typeof args[0] === 'string' && args[0].includes('/api/orders') && args[1]?.method === 'POST') {
-        const clone = res.clone();
-        clone.json().then(data => {
-          if (data?.order?.reference) {
-            loAddRefToStorage(data.order.reference);
-            sessionStorage.removeItem(LO_DISMISS_KEY);
-            setTimeout(() => loRefresh(), 1500);
-          }
-        }).catch(() => {});
-      }
-      window.fetch = origFetch; // restaurer
-      return res;
-    };
-    return origConfirm.apply(this, arguments);
-  };
-})();
+// ✅ Suivi auto des commandes via CustomEvent (plus de monkey-patch sur window.fetch)
+document.addEventListener('kmrc:order-created', function(e) {
+  const ref = e.detail?.ref;
+  if (!ref) return;
+  loAddRefToStorage(ref);
+  sessionStorage.removeItem(LO_DISMISS_KEY);
+  setTimeout(() => loRefresh(), 1500);
+});
 
 // ── Entrée clavier dans le champ ref ─────────────────────────────────
 document.addEventListener('keydown', e => {
