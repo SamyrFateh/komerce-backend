@@ -50,6 +50,59 @@
     }
 
     .nav-right { display:flex; align-items:center; gap:1rem; }
+    .nav-icon-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text); font-size: .88rem; font-weight: 500;
+      display: flex; align-items: center; gap: .3rem;
+      padding: .3rem .6rem; border-radius: 6px;
+      transition: color .2s, background .2s; white-space: nowrap;
+      position: relative;
+    }
+    .nav-icon-btn:hover { color: var(--accent); background: var(--primary-light); }
+    .nav-icon-btn .nav-badge {
+      position: absolute; top: -4px; right: -4px;
+      min-width: 16px; height: 16px; background: var(--red); color: #fff;
+      font-size: 10px; font-weight: 800; border-radius: 999px;
+      padding: 0 4px; display: none; align-items: center; justify-content: center;
+    }
+    .nav-icon-btn .nav-badge.visible { display: flex; }
+    /* Panel favoris */
+    #fav-drawer {
+      position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+      background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,.15);
+      z-index: 1100; transition: right .3s ease;
+      display: flex; flex-direction: column;
+    }
+    #fav-drawer.open { right: 0; }
+    .fav-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 1.4rem; border-bottom: 2px solid var(--primary-light);
+      background: linear-gradient(135deg, #0369a1, #0891b2); color: #fff;
+    }
+    .fav-header h3 { margin: 0; font-size: 1rem; font-weight: 800; }
+    .fav-close { background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; }
+    .fav-body { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; }
+    .fav-item {
+      display: flex; align-items: center; gap: .8rem;
+      padding: .7rem 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .fav-item-emoji { font-size: 1.5rem; flex-shrink: 0; }
+    .fav-item-info { flex: 1; }
+    .fav-item-name { font-weight: 600; font-size: .9rem; color: var(--text); }
+    .fav-item-price { font-size: .82rem; color: var(--accent); font-weight: 700; }
+    .fav-item-remove { background: none; border: none; cursor: pointer; font-size: 1rem; color: #94a3b8; }
+    .fav-item-remove:hover { color: var(--red); }
+    .fav-add-btn {
+      background: var(--accent); color: #fff; border: none; cursor: pointer;
+      border-radius: 6px; padding: .35rem .7rem; font-size: .78rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .fav-empty { text-align: center; padding: 3rem 1rem; color: #94a3b8; font-size: .95rem; }
+    #fav-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.35); z-index: 1099;
+    }
+    #fav-overlay.open { display: block; }
     .cart-icon {
       position: relative;
       width: 42px;
@@ -1489,10 +1542,16 @@
   <div class="nav-right">
     <div class="nav-links">
     <a href="#situations">🌟 Situations</a>
-    <a href="#ceremony-section">🎉 Cérémonies</a>
     <a href="#catalog">📦 Catalogue</a>
-
   </div>
+    <button class="nav-icon-btn" onclick="toggleLiveOrders()" title="Mes commandes en cours">
+      📋 <span>Mes commandes</span>
+      <span class="nav-badge" id="nav-orders-badge"></span>
+    </button>
+    <button class="nav-icon-btn" onclick="openFavDrawer()" title="Mes favoris">
+      ❤️ <span>Favoris</span>
+      <span class="nav-badge" id="nav-fav-badge"></span>
+    </button>
     <div class="cart-icon" title="Voir le panier" onclick="if(typeof openCart==='function')openCart()" style="cursor:pointer;">
       <svg class="cart-avatar" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#0369a1,#0891b2);padding:6px;border:2px solid #7dd3fc;box-shadow:0 4px 12px rgba(0,0,0,0.18);">
         <path d="M8 10h2l3.5 14h13l3-10H13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -3393,6 +3452,68 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+
+<!-- PANEL FAVORIS -->
+<div id="fav-overlay" onclick="closeFavDrawer()"></div>
+<aside id="fav-drawer">
+  <div class="fav-header">
+    <h3>❤️ Mes favoris</h3>
+    <button class="fav-close" onclick="closeFavDrawer()">✕</button>
+  </div>
+  <div class="fav-body" id="fav-body-content">
+    <div class="fav-empty">Aucun favori pour l'instant.<br>Cliquez sur 🤍 sur un produit pour le sauvegarder.</div>
+  </div>
+</aside>
+
+
+// ── PANEL FAVORIS ────────────────────────────────────────────────────────────
+function openFavDrawer() {
+  _renderFavDrawer();
+  document.getElementById('fav-drawer').classList.add('open');
+  document.getElementById('fav-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeFavDrawer() {
+  document.getElementById('fav-drawer').classList.remove('open');
+  document.getElementById('fav-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function _renderFavDrawer() {
+  var favs = _loadFavs ? _loadFavs() : [];
+  var body = document.getElementById('fav-body-content');
+  if (!body) return;
+  if (!favs || favs.length === 0) {
+    body.innerHTML = '<div class="fav-empty">Aucun favori pour l\'instant.<br>Cliquez sur 🤍 sur un produit pour le sauvegarder.</div>';
+    return;
+  }
+  body.innerHTML = favs.map(function(p) {
+    var price = p.price_kmf ? p.price_kmf.toLocaleString('fr-FR') + ' KMF' : '';
+    return '<div class="fav-item">' +
+      '<div class="fav-item-emoji">' + (p.emoji || '📦') + '</div>' +
+      '<div class="fav-item-info">' +
+        '<div class="fav-item-name">' + (p.name || p.id) + '</div>' +
+        '<div class="fav-item-price">' + price + '</div>' +
+      '</div>' +
+      '<button class="fav-add-btn" onclick="addToCart(' + JSON.stringify(p).replace(/"/g,'&quot;') + ')">+ Panier</button>' +
+      '<button class="fav-item-remove" onclick="toggleFavorite(' + JSON.stringify(p).replace(/"/g,'&quot;') + ');_renderFavDrawer();_updateNavFavBadge()">✕</button>' +
+    '</div>';
+  }).join('');
+}
+function _updateNavFavBadge() {
+  var favs = _loadFavs ? _loadFavs() : [];
+  var badge = document.getElementById('nav-fav-badge');
+  if (!badge) return;
+  if (favs && favs.length > 0) {
+    badge.textContent = favs.length;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+// Init badge au chargement
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(_updateNavFavBadge, 500);
+});
 </body>
 
 <script>
