@@ -1480,7 +1480,197 @@
   }
   .tiers-footer a:hover { text-decoration: underline; }
 
-  </style>
+  
+/* ═══ REDESIGN OVERRIDE v4 — LIGHT ISLAND PALETTE ═══ */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --primary:   #0891b2;   /* turquoise ciel */
+  --primary-d: #0e7490;
+  --primary-l: #e0f7fa;
+  --accent:    #f59e0b;   /* or chaud */
+  --accent-d:  #d97706;
+  --bg:        #ffffff;
+  --bg-soft:   #f8fafc;
+  --bg-warm:   #fffbf5;
+  --text:      #1e293b;
+  --text-muted:#64748b;
+  --border:    #e2e8f0;
+  --radius:    14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family:'Poppins',sans-serif !important; background:var(--bg) !important; color:var(--text) !important; }
+
+/* ── NAVBAR ── */
+nav, .navbar, header nav, .site-header {
+  background:#fff !important;
+  border-bottom:1px solid var(--border) !important;
+  box-shadow:0 2px 12px rgba(8,145,178,.08) !important;
+}
+.logo, .nav-logo, .site-logo { color:var(--primary) !important; font-weight:900 !important; }
+.nav-link, .navbar a:not(.btn) {
+  color:var(--text) !important;
+  font-weight:500 !important;
+}
+.nav-link:hover, .navbar a:hover { color:var(--primary) !important; }
+.btn-primary, .btn-cart, .nav-cart-btn {
+  background:var(--primary) !important;
+  color:#fff !important;
+  border-radius:10px !important;
+  border:none !important;
+  font-weight:700 !important;
+}
+.btn-primary:hover { background:var(--primary-d) !important; }
+
+/* ── HERO : panneau gauche clair ── */
+.hero { min-height:320px !important; max-height:400px !important; }
+
+/* Left text panel */
+.hero > div:first-child {
+  background: linear-gradient(145deg, #e0f7fa 0%, #b2ebf2 100%) !important;
+  color: var(--text) !important;
+}
+.hero h1, .hero-title-anim {
+  color: var(--primary-d) !important;
+  font-family:'Poppins',sans-serif !important;
+  font-weight:900 !important;
+}
+.hero h1 span, .hero-title-anim span { color: var(--accent) !important; }
+.hero-badge-anim { color: var(--primary-d) !important; }
+
+/* Hero search bar */
+.hero input, #hero-search-input {
+  color: var(--text) !important;
+  background:#fff !important;
+}
+.hero button[type=submit] {
+  background:var(--accent) !important;
+  color:#fff !important;
+}
+.hero button[type=submit]:hover { background:var(--accent-d) !important; }
+
+/* Right image panel: cover */
+.hero > div:last-child {
+  background: #e0f7fa !important;
+}
+.hero > div:last-child img {
+  object-fit: cover !important;
+  object-position: center center !important;
+  width:100% !important;
+  height:100% !important;
+}
+
+/* ── SECTION TITLES ── */
+h2, h3, .section-title {
+  color: var(--text) !important;
+  font-family:'Poppins',sans-serif !important;
+  font-weight:800 !important;
+}
+.section-subtitle { color:var(--text-muted) !important; }
+
+/* ── CARDS ── */
+.product-card, .promo-card, .card {
+  background:#fff !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--radius) !important;
+  box-shadow:0 2px 12px rgba(8,145,178,.07) !important;
+  transition:transform .2s, box-shadow .2s !important;
+}
+.product-card:hover, .promo-card:hover, .card:hover {
+  transform:translateY(-4px) !important;
+  box-shadow:0 8px 28px rgba(8,145,178,.14) !important;
+}
+.product-card-title, .product-name, .card-title { color:var(--text) !important; font-weight:700 !important; }
+.product-price, .price { color:var(--primary) !important; font-weight:800 !important; }
+.price-old, .product-price-old { color:var(--text-muted) !important; }
+.product-badge, .badge {
+  background:var(--accent) !important;
+  color:#fff !important;
+  border-radius:6px !important;
+  font-weight:700 !important;
+}
+
+/* ── BTN PANIER ── */
+.btn-add-cart, .btn-cart-add, button[onclick*="addToCart"] {
+  background:var(--primary) !important;
+  color:#fff !important;
+  border:none !important;
+  border-radius:10px !important;
+  font-weight:700 !important;
+  transition:background .15s !important;
+}
+.btn-add-cart:hover, button[onclick*="addToCart"]:hover {
+  background:var(--primary-d) !important;
+}
+
+/* ── SECTIONS / BANDS ── */
+.proverb-band {
+  background: linear-gradient(135deg,var(--primary),var(--primary-d)) !important;
+  color:#fff !important;
+  border-radius:0 !important;
+}
+.proverb-ornament, .proverb-text, .proverb-origin { color:#fff !important; }
+
+.shared-banner {
+  background:linear-gradient(135deg,var(--primary),var(--primary-d)) !important;
+  border-radius:16px !important;
+}
+
+.catalog-section, .products-section, section {
+  background: var(--bg-soft) !important;
+}
+.catalog-section:nth-child(even), section:nth-child(even) {
+  background: var(--bg-warm) !important;
+}
+
+/* ── CATEGORY PILLS ── */
+.cat-pill, .category-pill, .filter-btn {
+  background:#fff !important;
+  border:2px solid var(--border) !important;
+  color:var(--text) !important;
+  border-radius:30px !important;
+  font-weight:600 !important;
+  transition:all .15s !important;
+}
+.cat-pill:hover, .cat-pill.active, .filter-btn.active {
+  background:var(--primary) !important;
+  border-color:var(--primary) !important;
+  color:#fff !important;
+}
+
+/* ── FOOTER ── */
+footer {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
+}
+footer a { color:#94a3b8 !important; }
+footer a:hover { color:#fff !important; }
+footer h4, footer .footer-title { color:#fff !important; }
+
+/* ── MODALS & DRAWERS ── */
+.modal-content, .drawer-content, .cart-drawer, .side-panel {
+  background:#fff !important;
+  border-radius:var(--radius) !important;
+}
+.modal-header, .drawer-header {
+  background:var(--bg-soft) !important;
+  border-bottom:1px solid var(--border) !important;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:var(--primary-l); border-radius:99px; }
+::-webkit-scrollbar-thumb:hover { background:var(--primary); }
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px) {
+  .hero { flex-direction:column !important; max-height:none !important; }
+  .hero > div:first-child { flex:none !important; width:100% !important; }
+  .hero > div:last-child { min-height:200px !important; width:100% !important; }
+}
+/* ═══ END REDESIGN v4 ═══ */
+</style>
 </head>
 <body>
 
