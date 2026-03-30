@@ -1,10 +1,10 @@
 /**
- * KOMERCE — Serveur API v7.2
+ * KOMERCE — Serveur API v7.5
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
- * CORRECTION v7.2 : CORS étendu à tous les domaines Railway + domaine custom
+ * Changelog v7.5 : /api/ceremony → /api/modules · /api/pilotage ajouté
  */
 
 require('dotenv').config();
@@ -91,11 +91,11 @@ const relaisRouter    = require('./routes/relais');
 const adminRouter     = require('./routes/admin');
 const dashboardRouter = require('./routes/dashboard');
 const pricingRouter   = require('./routes/pricing');
-const ceremonyRouter  = require('./routes/ceremony');
+const modulesRouter   = require('./routes/modules');
+const pilotageRouter  = require('./routes/pilotage');
 const basketsRouter   = require('./routes/baskets');
 const logisticsRouter = require('./routes/logistics');
 const paymentsRouter  = require('./routes/payments');
-const pilotageRouter  = require('./routes/pilotage');
 
 app.use('/api/auth',      authRouter);
 app.use('/api/products',  productsRouter);
@@ -104,11 +104,11 @@ app.use('/api/relais',    relaisRouter);
 app.use('/api/admin',     adminRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/pricing',   pricingRouter);
-app.use('/api/ceremony',  ceremonyRouter);
+app.use('/api/modules',   modulesRouter);
+app.use('/api/pilotage',  pilotageRouter);
 app.use('/api/baskets',   basketsRouter);
 app.use('/api/logistics', logisticsRouter);
 app.use('/api/payments',  paymentsRouter);
-app.use('/api/pilotage',  pilotageRouter);
 
 // Note : les scans sont accessibles via POST /api/orders/scans
 
@@ -117,7 +117,7 @@ app.use('/api/pilotage',  pilotageRouter);
 app.get('/api/health', (req, res) => {
   res.json({
     status:    'ok',
-    version:   '7.3',
+    version:   '7.5',
     timestamp: new Date().toISOString(),
     env:       process.env.NODE_ENV || 'development',
   });
@@ -161,12 +161,13 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════╗
-║   🌊 KOMERCE API v7.3 — en ligne sur :${PORT.toString().padEnd(9)}║
+║   🌊 KOMERCE API v7.5 — en ligne sur :${PORT.toString().padEnd(9)}║
 ╠══════════════════════════════════════════════════╣
 ║   Env      : ${(process.env.NODE_ENV || 'development').padEnd(37)}║
 ║   DB       : ${process.env.DATABASE_URL ? 'Railway PostgreSQL ✓' : 'DATABASE_URL manquante ⚠️ '}║
 ║   JWT      : ${process.env.JWT_SECRET  ? 'Configuré ✓          ' : 'JWT_SECRET manquante ⚠️  '}║
 ║   Frontend : ${(FRONTEND_URL || 'auto (*.railway.app)').padEnd(37)}║
+║   Modules  : /api/modules ✓ (couture·lunettes·…) ║
 ║   Pilotage : /api/pilotage ✓                     ║
 ╚══════════════════════════════════════════════════╝
   `);

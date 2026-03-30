@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Commandes v7.2
+ * KOMERCE — Commandes v7.5
  *
  * POST  /api/orders               → créer une commande (client authentifié)
  * GET   /api/orders               → liste des commandes du client connecté
@@ -8,15 +8,11 @@
  * PATCH /api/orders/:id/cost      → saisir le coût réel (admin)
  * GET   /api/orders/:id/history   → historique statuts
  *
- * Corrections v7.2 vs v7.1 :
- *   · Architecture orders + order_items (product_id/quantity/price sur order_items)
- *   · payment_mode enum : 'stripe_eur' | 'cash_relais' (pas 'stripe')
- *   · status initial : 'confirmed' (pas 'ordered' — absent de l'enum réel)
- *   · ORDER_STATUSES aligné sur l'enum PostgreSQL réel
- *   · scans : colonne 'step' (pas 'scan_step') + scan_code NOT NULL
- *   · customs_history : sans customs_delta_pct (colonne GENERATED)
- *   · ceremony_* : lus depuis req.body et persistés dans order_items
- *   · recipients : créé ou réutilisé depuis recipient_name/phone
+ * Changelog v7.5 vs v7.2 :
+ *   · ceremony_* renommé module_* — champs génériques pour tous les modules spécialisés
+ *   · CEREMONY_TYPES remplacé par MODULE_TYPES — extensible sans migration DB
+ *   · confection_type étendu : 'couture_standard' | 'sur_mesure' | 'lunettes_vue' | ...
+ *   · Commentaires alignés sur Brand Truth v7 (local d'abord, modules spécialisés)
  */
 
 'use strict';
@@ -45,11 +41,16 @@ const ORDER_STATUSES = [
   'refunded',
 ];
 
-// confection_type enum — valeurs valides
-const CONFECTION_TYPES = ['aucun', 'couture_standard', 'sur_mesure', 'retouche_locale', 'broderie', 'lunettes_vue', 'lunettes_solaires'];
+// confection_type — extensible sans migration DB (champ TEXT en base)
+const CONFECTION_TYPES = [
+  'aucun', 'couture_standard', 'sur_mesure', 'retouche_locale', 'broderie',
+  'lunettes_vue', 'lunettes_solaires',
+  'construction_devis', 'cosmetiques_devis', // Phase 2-3
+];
 
-// ceremony_order_type enum v7.2
-const CEREMONY_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
+// MODULE_TYPES — sous-types pour le module couture uniquement
+// Les autres modules (lunettes, construction, cosmetiques) n'ont pas de sous-type
+const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 
 const STATUS_SMS = {
   confirmed:        (ref) => `Komerce : Commande ${ref} confirmée ! Nous achetons votre article dans les 48h.`,
@@ -82,18 +83,18 @@ async function getUniqueRef() {
 
 // ─── POST /api/orders ─────────────────────────────────────────────────────────
 // Corps attendu :
-//   items[]              → [{ product_id, quantity, ceremony_order_type?,
-//                             ceremony_fabric_id?, ceremony_fabric_type?,
-//                             ceremony_size?, ceremony_retouche?,
-//                             ceremony_qty_meters?, ceremony_accessories? }]
+//   items[]              → [{ product_id, quantity, module_type?,
+//                             module_fabric_id?, module_fabric_type?,
+//                             module_size?, module_retouche?,
+//                             module_qty_meters?, module_accessories? }]
 //   relais_id            → UUID relais de livraison
 //   payment_mode         → 'stripe_eur' | 'cash_relais'
 //   recipient_name       → nom du destinataire
 //   recipient_phone      → téléphone du destinataire
 //   confection_type      → 'aucun' | 'couture_standard' | 'sur_mesure' | 'retouche_locale' | 'broderie' | 'lunettes_vue' | 'lunettes_solaires'
 //   confection_instructions, confection_delay_days, confection_artisan_id
-//   ceremony_order_type  → si commande cérémonie globale
-//   ceremony_*           → autres champs cérémonie au niveau commande
+//   module_type  → si commande cérémonie globale
+//   module_*          → autres champs module au niveau commande
 
 router.post('/', authenticate, async (req, res) => {
   const client = await db.getClient();
@@ -107,19 +108,19 @@ router.post('/', authenticate, async (req, res) => {
       stripe_payment_intent,
       recipient_name,
       recipient_phone,
-      // Couture / cérémonie niveau commande
+      // Module spécialisé niveau commande
       confection_type           = 'aucun',
       confection_instructions,
       confection_delay_days     = 0,
       confection_artisan_id,
-      // Cérémonie v7.2 niveau commande (optionnel — sinon porté par items)
-      ceremony_order_type,
-      ceremony_fabric_id,
-      ceremony_fabric_type,
-      ceremony_size,
-      ceremony_retouche         = false,
-      ceremony_qty_meters,
-      ceremony_accessories,
+      // Module spécialisé niveau commande (optionnel — sinon porté par items)
+      module_type,
+      module_fabric_id,
+      module_fabric_type,
+      module_size,
+      module_retouche         = false,
+      module_qty_meters,
+      module_accessories,
     } = req.body;
 
     // ── Validation ──────────────────────────────────────────────────────────
@@ -129,8 +130,8 @@ router.post('/', authenticate, async (req, res) => {
     if (!['stripe_eur', 'cash_relais'].includes(payment_mode)) {
       return res.status(400).json({ error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais' });
     }
-    if (ceremony_order_type && !CEREMONY_TYPES.includes(ceremony_order_type)) {
-      return res.status(400).json({ error: `ceremony_order_type invalide. Valeurs : ${CEREMONY_TYPES.join(', ')}` });
+    if (module_type && !MODULE_TYPES.includes(module_type)) {
+      return res.status(400).json({ error: `module_type invalide. Valeurs : ${MODULE_TYPES.join(', ')}` });
     }
 
     // ── Résoudre relais ─────────────────────────────────────────────────────
@@ -228,8 +229,8 @@ router.post('/', authenticate, async (req, res) => {
          status,
          confection_type, confection_instructions,
          confection_delay_days, confection_artisan_id,
-         ceremony_order_type, ceremony_fabric_id, ceremony_fabric_type,
-         ceremony_size, ceremony_retouche, ceremony_qty_meters, ceremony_accessories,
+         module_type, module_fabric_id, module_fabric_type,
+         module_size, module_retouche, module_qty_meters, module_accessories,
          cost_estimated_kmf, margin_estimated_pct
        ) VALUES (
          $1,$2,$3,$4,$5,
@@ -255,13 +256,13 @@ router.post('/', authenticate, async (req, res) => {
         confection_instructions || null,
         confection_delay_days,
         confection_artisan_id || null,
-        ceremony_order_type || null,
-        ceremony_fabric_id  || null,
-        ceremony_fabric_type || null,
-        ceremony_size        || null,
-        ceremony_retouche,
-        ceremony_qty_meters  || null,
-        ceremony_accessories ? JSON.stringify(ceremony_accessories) : null,
+        module_type || null,
+        module_fabric_id  || null,
+        module_fabric_type || null,
+        module_size        || null,
+        module_retouche,
+        module_qty_meters  || null,
+        module_accessories ? JSON.stringify(module_accessories) : null,
         Math.round(cost_estimated),
         Number(margin_est),
       ]
@@ -282,18 +283,18 @@ router.post('/', authenticate, async (req, res) => {
       await client.query(
         `INSERT INTO order_items (
            order_id, product_id, quantity, price_kmf,
-           ceremony_order_type, ceremony_fabric_id, ceremony_fabric_type,
-           ceremony_size, ceremony_retouche, ceremony_qty_meters, ceremony_accessories
+           module_type, module_fabric_id, module_fabric_type,
+           module_size, module_retouche, module_qty_meters, module_accessories
          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [
           order.id, item.product_id, qty, product.price_kmf,
-          item.ceremony_order_type || null,
-          item.ceremony_fabric_id  || null,
-          item.ceremony_fabric_type || null,
-          item.ceremony_size        || null,
-          item.ceremony_retouche    || false,
-          item.ceremony_qty_meters  || null,
-          item.ceremony_accessories ? JSON.stringify(item.ceremony_accessories) : null,
+          item.module_type || null,
+          item.module_fabric_id  || null,
+          item.module_fabric_type || null,
+          item.module_size        || null,
+          item.module_retouche    || false,
+          item.module_qty_meters  || null,
+          item.module_accessories ? JSON.stringify(item.module_accessories) : null,
         ]
       );
 
@@ -327,7 +328,7 @@ router.post('/', authenticate, async (req, res) => {
         payment_status:   order.payment_status,
         cash_ref_code:    order.cash_ref_code,
         confection_type:  order.confection_type,
-        ceremony_order_type: order.ceremony_order_type,
+        module_type: order.module_type,
         relais:           relais ? { id: relais.id, name: relais.name, address: relais.address } : null,
         created_at:       order.created_at,
       },
@@ -364,7 +365,7 @@ router.get('/', authenticate, async (req, res) => {
       `SELECT
          o.id, o.reference, o.status, o.total_kmf,
          o.payment_mode, o.payment_status,
-         o.confection_type, o.ceremony_order_type,
+         o.confection_type, o.module_type,
          o.created_at,
          r.name AS relais_name,
          -- Premier article de la commande (pour affichage)
@@ -423,9 +424,9 @@ router.get('/:ref', async (req, res) => {
     const { rows: items } = await db.query(
       `SELECT
          oi.id, oi.quantity, oi.price_kmf,
-         oi.ceremony_order_type, oi.ceremony_fabric_type,
-         oi.ceremony_size, oi.ceremony_retouche,
-         oi.ceremony_qty_meters, oi.ceremony_accessories,
+         oi.module_type, oi.module_fabric_type,
+         oi.module_size, oi.module_retouche,
+         oi.module_qty_meters, oi.module_accessories,
          p.name AS product_name, p.image_url, p.category, p.has_couture, p.emoji
        FROM order_items oi
        JOIN products p ON p.id = oi.product_id
@@ -453,9 +454,9 @@ router.get('/:ref', async (req, res) => {
       payment_status:      order.payment_status,
       cash_ref_code:       order.cash_ref_code,
       confection_type:     order.confection_type,
-      ceremony_order_type: order.ceremony_order_type,
-      ceremony_size:       order.ceremony_size,
-      ceremony_retouche:   order.ceremony_retouche,
+      module_type: order.module_type,
+      module_size:       order.module_size,
+      module_retouche:   order.module_retouche,
       purchasing_at:       order.purchasing_at,
       shipped_at:          order.shipped_at,
       transit_comores_at:  order.transit_comores_at,
