@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Pilotage Coûts & Marges</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
+
+:root {
+  --bg:       #0a0e17;
+  --bg2:      #111827;
+  --bg3:      #1a2235;
+  --border:   #1e2d47;
+  --border2:  #2a3f5f;
+  --text:     #e2e8f0;
+  --text2:    #94a3b8;
+  --text3:    #4a6080;
+  --amber:    #f59e0b;
+  --amber2:   #fbbf24;
+  --teal:     #0d9488;
+  --teal2:    #14b8a6;
+  --green:    #10b981;
+  --red:      #ef4444;
+  --blue:     #3b82f6;
+  --purple:   #8b5cf6;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.app-logo {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--amber);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.app-logo span { color: var(--text2); }
+.app-meta {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+
+/* ── TABS ── */
+.tabs-wrap {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  gap: 0;
+}
+.tab {
+  padding: 14px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* ── LAYOUT ── */
+.screen { display: none; padding: 24px 28px 60px; }
+.screen.active { display: block; }
+
+/* ── SECTION TITLES ── */
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.mt { margin-top: 24px; }
+.mt-sm { margin-top: 12px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+.card-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+
+/* ── FORM FIELDS ── */
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.lbl {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 5px;
+}
+input[type="number"], select.inp {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="number"]:focus, select.inp:focus { border-color: var(--amber); }
+.hint { font-size: 0.65rem; color: var(--text3); margin-top: 3px; }
+.hint.warn { color: #d97706; }
+
+/* ── KPI BOXES ── */
+.kpi-box {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.kpi-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.kpi-val { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.kpi-sub { font-size: 0.65rem; color: var(--text3); margin-top: 4px; }
+.kpi-val.amber { color: var(--amber); }
+.kpi-val.green { color: var(--green); }
+.kpi-val.red   { color: var(--red); }
+.kpi-val.teal  { color: var(--teal2); }
+.kpi-val.blue  { color: var(--blue); }
+
+/* ── RESULT PANEL ── */
+.result-panel {
+  background: linear-gradient(135deg, #0f172a 0%, #1a2235 100%);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--amber);
+  border-radius: 10px;
+  padding: 20px;
+}
+.result-price {
+  font-family: var(--mono);
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--amber2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+}
+.result-sub { font-size: 0.8rem; color: var(--text2); margin-top: 4px; }
+
+.option-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 10px;
+  margin-right: 8px;
+}
+.option-badge.a { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+.option-badge.b { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: var(--amber); }
+.option-badge.neg { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+
+/* ── TOPBAR CONFIG ── */
+.config-bar {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.config-group { display: flex; align-items: center; gap: 8px; }
+.config-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text3); white-space: nowrap; }
+.btn-group { display: flex; gap: 3px; }
+.btn-tog {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-tog.active { background: var(--amber); color: #1a0f00; border-color: var(--amber); }
+.btn-tog:not(.active):hover { color: var(--text); border-color: var(--border2); }
+.sep-v { width: 1px; height: 24px; background: var(--border); }
+
+/* ── DETAIL TABLE ── */
+.detail-wrap { margin-top: 16px; }
+.detail-toggle-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.detail-toggle-btn:hover { border-color: var(--amber); color: var(--amber); }
+.detail-table { display: none; margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.detail-table.open { display: block; }
+.d-section { padding: 5px 12px; font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); background: var(--bg3); border-bottom: 1px solid var(--border); }
+.d-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
+.d-row:last-child { border-bottom: none; }
+.d-row .dl { color: var(--text2); }
+.d-row .dv { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.d-row.warn .dl { color: #d97706; }
+.d-row.total { background: rgba(245,158,11,0.07); }
+.d-row.total .dl, .d-row.total .dv { color: var(--amber2); font-weight: 700; }
+.d-row.opt-a .dv { color: #34d399; }
+.d-row.opt-b .dv { color: var(--amber); }
+
+/* ══ TAB 2 — PILOTAGE TEMPOREL ══ */
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.tl-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tl-btn:hover { border-color: var(--teal); color: var(--teal2); }
+.tl-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+.timeline-table-wrap { overflow-x: auto; }
+.timeline-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  min-width: 900px;
+}
+.timeline-table th {
+  background: var(--bg3);
+  color: var(--text3);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 10px 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+}
+.timeline-table th.col-month { text-align: left; color: var(--amber); }
+.timeline-table td {
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  vertical-align: middle;
+}
+.timeline-table td.computed {
+  text-align: center;
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+.timeline-table td.computed.pos { color: var(--green); }
+.timeline-table td.computed.neg { color: var(--red); }
+.timeline-table td.computed.warn { color: #d97706; }
+.timeline-table td.computed.highlight { color: var(--amber2); font-weight: 700; }
+.timeline-table tr:hover td { background: #141e2e; }
+.tl-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  padding: 9px 8px;
+  text-align: center;
+  outline: none;
+}
+.tl-input:focus { background: rgba(245,158,11,0.08); color: var(--amber); }
+td.month-cell {
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--bg3);
+  white-space: nowrap;
+}
+td.phase-cell {
+  padding: 8px;
+  text-align: center;
+}
+.phase-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+.phase-badge.p1 { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.phase-badge.p2 { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+.phase-badge.p3 { background: rgba(139,92,246,0.15); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3); }
+
+/* ══ TAB 3 — DASHBOARD ══ */
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.chart-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--amber);
+  border-radius: 2px;
+}
+.chart-wrap { position: relative; height: 220px; }
+
+/* ── ALERT STRIP ── */
+.alert-strip {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-left: 3px solid var(--red);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: #fca5a5;
+  display: none;
+}
+.alert-strip.warn {
+  background: rgba(245,158,11,0.08);
+  border-color: rgba(245,158,11,0.25);
+  border-left-color: var(--amber);
+  color: #fde68a;
+}
+.alert-strip.visible { display: block; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-logo">Ko<span>merce</span> // <span style="color:var(--teal2)">Pilotage</span></div>
+  <div class="app-meta">COÛTS & MARGES · v1.0 · MARS 2026</div>
+</header>
+
+<div class="tabs-wrap">
+  <div class="tab active" onclick="showTab('sim')">⚙️ Simulateur Produit</div>
+  <div class="tab" onclick="showTab('tl')">📅 Pilotage Temporel</div>
+  <div class="tab" onclick="showTab('mix')">🗂️ Mix Catégories</div>
+  <div class="tab" onclick="showTab('dash')">📊 Dashboard</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 1 — SIMULATEUR
+══════════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-sim">
+
+  <!-- Config bar -->
+  <div class="config-bar">
+    <div class="config-group">
+      <span class="config-label">Catégorie</span>
+      <select class="inp" id="cat" style="min-width:200px;" onchange="onCatChange()"></select>
+    </div>
+    <div class="sep-v"></div>
+    <div class="config-group">
+      <span class="config-label">Source</span>
+      <div class="btn-group">
+        <button class="btn-tog active" id="btn-s1" onclick="setSource('s1')">S1 Agent</button>
+        <button class="btn-tog" id="btn-s2" onclick="setSource('s2')">S2 Grossiste</button>
+        <button class="btn-tog" id="btn-s4" onclick="setSource('s4')">S4 CN −30%</button>
+      </div>
+    </div>
+    <div class="sep-v"></div>
+    <div class="config-group">
+      <span class="config-label">Marché</span>
+      <div class="btn-group">
+        <button class="btn-tog active" id="btn-local" onclick="setMarche('local')">🏝️ Local KMF</button>
+        <button class="btn-tog" id="btn-diaspora" onclick="setMarche('diaspora')">✈️ Diaspora EUR</button>
+      </div>
+    </div>
+    <div class="sep-v"></div>
+    <div class="config-group">
+      <span class="config-label">Taux AED</span>
+      <input type="number" id="taux-aed" value="139" min="100" max="200" step="1" oninput="calculer()" style="width:70px;">
+    </div>
+    <div class="config-group">
+      <span class="config-label">Taux EUR</span>
+      <input type="number" id="taux-eur" value="495" min="400" max="600" step="1" oninput="calculer()" style="width:70px;">
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px; align-items:start;">
+
+    <!-- LEFT — inputs -->
+    <div>
+
+      <!-- Étape 1 — Achat -->
+      <div class="section-label">01 — Achat Dubai</div>
+      <div class="card">
+        <div class="grid-2">
+          <div class="field">
+            <label class="lbl">Prix achat (AED)</label>
+            <input type="number" id="prix-aed" value="50" min="0" step="1" oninput="calculer()">
+          </div>
+          <div class="field">
+            <label class="lbl">Quantité</label>
+            <input type="number" id="quantite" value="1" min="1" step="1" oninput="calculer()">
+          </div>
+        </div>
+        <div id="bloc-agent">
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl">Commission agent (%)</label>
+              <input type="number" id="frais-agent" value="5" min="0" max="30" step="0.5" oninput="calculer()">
+              <div class="hint warn">S1 uniquement</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Transport Deira→cargo (KMF)</label>
+              <input type="number" id="transport-dubai" value="500" min="0" step="50" oninput="calculer()">
+            </div>
+          </div>
+        </div>
+        <div id="bloc-tenues" style="display:none">
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl">Tissu (AED/m)</label>
+              <input type="number" id="tissu-aed" value="15" min="0" step="0.5" oninput="calculer()">
+            </div>
+            <div class="field">
+              <label class="lbl">Métrage (m)</label>
+              <input type="number" id="metrage" value="4" min="1" step="0.5" oninput="calculer()">
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl">Confection (AED/tenue)</label>
+            <input type="number" id="confection-aed" value="30" min="0" step="1" oninput="calculer()">
+          </div>
+          <div class="grid-3" style="gap:8px">
+            <div class="field"><label class="lbl">S</label><input type="number" id="q-s" value="0" min="0" oninput="calculer()"></div>
+            <div class="field"><label class="lbl">M</label><input type="number" id="q-m" value="2" min="0" oninput="calculer()"></div>
+            <div class="field"><label class="lbl">L</label><input type="number" id="q-l" value="3" min="0" oninput="calculer()"></div>
+            <div class="field"><label class="lbl">XL</label><input type="number" id="q-xl" value="1" min="0" oninput="calculer()"></div>
+            <div class="field"><label class="lbl">XXL</label><input type="number" id="q-xxl" value="0" min="0" oninput="calculer()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 1b — Hub -->
+      <div class="section-label mt">01b — Hub Réception & Contrôle</div>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field">
+            <label class="lbl">Contrôle qualité (KMF)</label>
+            <input type="number" id="hub-controle" value="1000" min="0" step="50" oninput="calculer()">
+          </div>
+          <div class="field">
+            <label class="lbl">Étiquette QR (KMF)</label>
+            <input type="number" id="hub-etiquette" value="150" min="0" step="10" oninput="calculer()">
+          </div>
+          <div class="field">
+            <label class="lbl">SMS logistiques (KMF)</label>
+            <input type="number" id="hub-sms" value="100" min="0" step="10" oninput="calculer()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 2 — Fret -->
+      <div class="section-label mt">02 — Fret Maritime LCL</div>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field">
+            <label class="lbl">Longueur (cm)</label>
+            <input type="number" id="dim-l" value="17" min="1" step="1" oninput="onDimChange()">
+          </div>
+          <div class="field">
+            <label class="lbl">Largeur (cm)</label>
+            <input type="number" id="dim-w" value="12" min="1" step="1" oninput="onDimChange()">
+          </div>
+          <div class="field">
+            <label class="lbl">Hauteur (cm)</label>
+            <input type="number" id="dim-h" value="11" min="1" step="1" oninput="onDimChange()">
+          </div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:10px 12px;margin-top:10px;">
+          <div style="font-family:var(--mono);font-size:0.9rem;font-weight:700;color:var(--teal2);" id="fret-display">—</div>
+          <div style="font-size:0.65rem;color:var(--text3);margin-top:2px;" id="fret-sub">—</div>
+        </div>
+        <input type="hidden" id="fret-kmf" value="0">
+        <div class="field" style="margin-top:10px;">
+          <label class="lbl">Couverture maritime (%)</label>
+          <input type="number" id="couverture-pct" value="0.4" min="0" max="5" step="0.1" oninput="calculer()">
+          <div class="hint">0,3–0,5% valeur marchandise · 0 = non activée</div>
+        </div>
+      </div>
+
+      <!-- Étape 3 — Douane -->
+      <div class="section-label mt">03 — Dédouanement Comores</div>
+      <div class="card">
+
+        <!-- Sélecteur de mode douanier -->
+        <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Mode de calcul douanier</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);transition:all 0.15s;" id="lbl-mode-cat">
+              <input type="radio" name="douane-mode" id="mode-cat" value="cat" checked onchange="setDouaneMode('cat')"
+                style="accent-color:var(--amber);width:14px;height:14px;">
+              <span>
+                <span style="font-size:0.78rem;font-weight:700;color:var(--text);">Par catégorie SH</span>
+                <span style="display:block;font-size:0.65rem;color:var(--text3);">Taux théorique selon le produit</span>
+              </span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);transition:all 0.15s;" id="lbl-mode-eff">
+              <input type="radio" name="douane-mode" id="mode-eff" value="eff" onchange="setDouaneMode('eff')"
+                style="accent-color:var(--amber);width:14px;height:14px;">
+              <span>
+                <span style="font-size:0.78rem;font-weight:700;color:var(--text);">Taux effectif constaté</span>
+                <span style="display:block;font-size:0.65rem;color:var(--text3);">Issu d'un vrai dédouanement terrain</span>
+              </span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);transition:all 0.15s;" id="lbl-mode-lot">
+              <input type="radio" name="douane-mode" id="mode-lot" value="lot" onchange="setDouaneMode('lot')"
+                style="accent-color:var(--amber);width:14px;height:14px;">
+              <span>
+                <span style="font-size:0.78rem;font-weight:700;color:var(--text);">Carton mixte (taux déclaré)</span>
+                <span style="display:block;font-size:0.65rem;color:var(--text3);">Un taux unique pour tout le lot</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Bloc mode par catégorie (défaut) -->
+        <div id="bloc-mode-cat">
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl">Transitaire (%)</label>
+              <input type="number" id="trans-pct" value="2" min="0" step="0.5" oninput="calculer()">
+              <div class="hint">+ forfait 450 KMF</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Droits douane (%)</label>
+              <input type="number" id="douane-pct" value="10" min="0" max="100" step="1" oninput="calculer()">
+              <div class="hint" id="hint-douane">Selon catégorie SH</div>
+            </div>
+            <div class="field">
+              <label class="lbl">TVA import (%)</label>
+              <input type="number" id="tva-pct" value="10" min="0" max="100" step="1" oninput="calculer()">
+            </div>
+            <div class="field">
+              <label class="lbl">Taxe additionnelle (%)</label>
+              <input type="number" id="taxe-add-pct" value="0" min="0" max="20" step="0.5" oninput="calculer()">
+              <div class="hint" id="hint-taxe">0% téléphones/électro</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloc taux effectif constaté -->
+        <div id="bloc-mode-eff" style="display:none;">
+          <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+            <div style="font-size:0.7rem;color:#34d399;font-weight:600;margin-bottom:4px;">✅ Mode terrain — basé sur un vrai dédouanement</div>
+            <div style="font-size:0.65rem;color:var(--text3);">Saisissez le taux effectif constaté = droits réels payés ÷ valeur CIF du lot. Ce taux remplace tous les taux théoriques.</div>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl">Taux effectif global (%) ✅</label>
+              <input type="number" id="douane-eff-pct" value="18" min="0" max="60" step="0.5" oninput="calculer()">
+              <div class="hint warn">Droits + TVA + taxes — tout compris sur CIF</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Transitaire (%)</label>
+              <input type="number" id="trans-eff-pct" value="2" min="0" step="0.5" oninput="calculer()">
+              <div class="hint">+ forfait 450 KMF</div>
+            </div>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">
+            Exemple : lot CIF 500 000 KMF · droits payés 90 000 KMF → taux effectif = 18%
+          </div>
+        </div>
+
+        <!-- Bloc carton mixte -->
+        <div id="bloc-mode-lot" style="display:none;">
+          <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+            <div style="font-size:0.7rem;color:var(--amber);font-weight:600;margin-bottom:4px;">📦 Mode carton mixte — taux déclaré unique</div>
+            <div style="font-size:0.65rem;color:var(--text3);">Dédouanement global sur le lot sans distinction par article. Saisissez le taux que vous déclarez.</div>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl">Taux douane déclaré (%)</label>
+              <input type="number" id="douane-lot-pct" value="15" min="0" max="40" step="0.5" oninput="calculer()">
+              <div class="hint warn">Taux de la catégorie dominante du lot</div>
+            </div>
+            <div class="field">
+              <label class="lbl">TVA import (%)</label>
+              <input type="number" id="tva-lot-pct" value="10" min="0" max="20" step="1" oninput="calculer()">
+            </div>
+            <div class="field">
+              <label class="lbl">Transitaire (%)</label>
+              <input type="number" id="trans-lot-pct" value="2" min="0" step="0.5" oninput="calculer()">
+              <div class="hint">+ forfait 450 KMF</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Taxe add. lot (%)</label>
+              <input type="number" id="taxeadd-lot-pct" value="0" min="0" max="10" step="0.5" oninput="calculer()">
+              <div class="hint">Si applicable sur catégorie déclarée</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label class="lbl">Frais portuaires Mutsamudu (KMF) ⚠️</label>
+          <input type="number" id="frais-port" value="1200" min="0" step="100" oninput="calculer()">
+          <div class="hint warn">À confirmer terrain — estimation basse</div>
+        </div>
+      </div>
+
+      <!-- Étape 4 — Distribution -->
+      <div class="section-label mt">04 — Distribution Anjouan</div>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field">
+            <label class="lbl">Transport → relais (KMF)</label>
+            <input type="number" id="transport-relais" value="840" min="0" step="50" oninput="calculer()">
+          </div>
+          <div class="field">
+            <label class="lbl">Commission relais (KMF)</label>
+            <input type="number" id="commission-relais" value="500" min="0" step="50" oninput="calculer()">
+          </div>
+          <div id="bloc-stripe" style="display:none">
+            <div class="field">
+              <label class="lbl">Frais Stripe (%)</label>
+              <input type="number" id="stripe-pct" value="2.5" min="0" max="10" step="0.1" oninput="calculer()">
+              <div class="hint">Diaspora uniquement</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 5 — Marge -->
+      <div class="section-label mt">05 — Marge Komerce</div>
+      <div class="card">
+        <div class="field">
+          <label class="lbl">Marge (%)</label>
+          <input type="number" id="marge-pct" value="12" min="0" max="100" step="0.5" oninput="calculer()">
+          <div class="hint">Plancher 10% — inclut coussin change ~3%</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT — résultats -->
+    <div>
+
+      <!-- Prix final -->
+      <div class="section-label">Résultat</div>
+      <div class="result-panel">
+        <div style="font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">PRIX FINAL CLIENT</div>
+        <div class="result-price" id="price-main">—</div>
+        <div class="result-sub" id="price-secondary"></div>
+        <div style="margin-top:12px;" id="qty-label-wrap"></div>
+        <div style="margin-top:14px;">
+          <div id="badge-a" class="option-badge a">A ⬤ —</div>
+          <div id="badge-b" class="option-badge b">B ⬤ —</div>
+        </div>
+        <div id="alert-marge" class="alert-strip mt-sm">⚠️ Marge nette négative en Option B — volume insuffisant pour couvrir le Hub fixe</div>
+      </div>
+
+      <!-- KPIs décomposition -->
+      <div class="section-label mt">Décomposition coûts</div>
+      <div class="grid-2">
+        <div class="kpi-box">
+          <div class="kpi-label">Achat + Hub/cmd</div>
+          <div class="kpi-val amber" id="kpi-achat">—</div>
+          <div class="kpi-sub" id="kpi-achat-pct">—% du prix</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">Fret + Couverture</div>
+          <div class="kpi-val teal" id="kpi-fret">—</div>
+          <div class="kpi-sub" id="kpi-fret-pct">—% du prix</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">Dédouanement</div>
+          <div class="kpi-val blue" id="kpi-douane">—</div>
+          <div class="kpi-sub" id="kpi-douane-pct">—% du prix</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">Distribution</div>
+          <div class="kpi-val" style="color:var(--purple);" id="kpi-distrib">—</div>
+          <div class="kpi-sub" id="kpi-distrib-pct">—% du prix</div>
+        </div>
+      </div>
+
+      <!-- Hub P&L -->
+      <div class="section-label mt">Hub P&L Mensuel</div>
+      <div class="card">
+
+        <!-- Sélecteur mode Hub -->
+        <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Mode de répercussion Hub</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);flex:1;min-width:180px;" id="lbl-hub-b">
+              <input type="radio" name="hub-mode" id="hub-mode-b" value="b" checked onchange="setHubMode('b')"
+                style="accent-color:var(--amber);width:14px;height:14px;flex-shrink:0;">
+              <span>
+                <span style="font-size:0.78rem;font-weight:700;color:var(--text);">Option B — Absorbé</span>
+                <span style="display:block;font-size:0.65rem;color:var(--text3);">Hub dans la marge · prix compétitif · marge nette réduite</span>
+              </span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);flex:1;min-width:180px;" id="lbl-hub-a">
+              <input type="radio" name="hub-mode" id="hub-mode-a" value="a" onchange="setHubMode('a')"
+                style="accent-color:var(--amber);width:14px;height:14px;flex-shrink:0;">
+              <span>
+                <span style="font-size:0.78rem;font-weight:700;color:var(--text);">Option A — Répercuté</span>
+                <span style="display:block;font-size:0.65rem;color:var(--text3);">Hub ajouté au prix · marge nette = marge brute · prix plus élevé</span>
+              </span>
+            </label>
+          </div>
+          <!-- Indicateur mode actif -->
+          <div id="hub-mode-indicator" style="margin-top:10px;font-size:0.72rem;padding:7px 12px;border-radius:6px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--amber);font-weight:600;">
+            Mode actif : Option B — Hub absorbé dans la marge 12%
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="field">
+            <label class="lbl">Loyer Hub (AED/mois)</label>
+            <input type="number" id="hub-loyer" value="3000" min="0" step="100" oninput="updateHub()">
+            <div class="hint warn">Phase 2 : 3 000 AED</div>
+          </div>
+          <div class="field">
+            <label class="lbl">Salaire employé (AED/mois)</label>
+            <input type="number" id="hub-salaire" value="4000" min="0" step="100" oninput="updateHub()">
+            <div class="hint warn">Phase 2 : 4 000 AED</div>
+          </div>
+          <div class="field">
+            <label class="lbl">Volume cmd/mois</label>
+            <input type="number" id="hub-volume" value="200" min="1" step="10" oninput="updateHub()">
+          </div>
+        </div>
+        <div class="grid-3 mt-sm">
+          <div class="kpi-box">
+            <div class="kpi-label">Coût Hub/mois</div>
+            <div class="kpi-val amber" id="hub-total-kmf" style="font-size:1rem;">—</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">Coût Hub/cmd</div>
+            <div class="kpi-val" style="color:var(--text2);font-size:1rem;" id="hub-par-cmd">—</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">Solde marge−Hub</div>
+            <div class="kpi-val" id="hub-solde" style="font-size:1rem;">—</div>
+          </div>
+        </div>
+        <div id="hub-verdict" style="margin-top:10px;padding:8px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;"></div>
+      </div>
+
+      <!-- Détail ligne -->
+      <div class="detail-wrap mt">
+        <button class="detail-toggle-btn" onclick="toggleDetail()">▼ Détail ligne par ligne</button>
+        <div class="detail-table" id="detail-table">
+          <div class="d-section">🛒 Achat Dubai</div>
+          <div class="d-row"><span class="dl">Prix achat</span><span class="dv" id="d-achat">—</span></div>
+          <div class="d-row warn" id="row-agent"><span class="dl">Commission agent</span><span class="dv" id="d-agent">—</span></div>
+          <div class="d-row"><span class="dl">Emballage (3 AED)</span><span class="dv" id="d-emb">—</span></div>
+          <div class="d-row warn" id="row-tdubai"><span class="dl">Transport Dubai→cargo</span><span class="dv" id="d-tdubai">—</span></div>
+          <div class="d-section">🏢 Hub / commande</div>
+          <div class="d-row"><span class="dl">Contrôle qualité</span><span class="dv" id="d-ctrl">—</span></div>
+          <div class="d-row"><span class="dl">Étiquette QR</span><span class="dv" id="d-etiq">—</span></div>
+          <div class="d-row"><span class="dl">SMS logistiques</span><span class="dv" id="d-sms">—</span></div>
+          <div class="d-section">🚢 Fret maritime</div>
+          <div class="d-row"><span class="dl">Fret LCL</span><span class="dv" id="d-fret">—</span></div>
+          <div class="d-row"><span class="dl">Couverture maritime</span><span class="dv" id="d-couv">—</span></div>
+          <div class="d-section">🏛️ Dédouanement</div>
+          <div class="d-row warn"><span class="dl">Frais portuaires</span><span class="dv" id="d-port">—</span></div>
+          <div class="d-row"><span class="dl">Transitaire</span><span class="dv" id="d-trans">—</span></div>
+          <div class="d-row"><span class="dl">Droits douane</span><span class="dv" id="d-douane">—</span></div>
+          <div class="d-row"><span class="dl">TVA import 10%</span><span class="dv" id="d-tva">—</span></div>
+          <div class="d-row" id="row-taxeadd" style="display:none"><span class="dl" id="lbl-taxeadd">Taxe add.</span><span class="dv" id="d-taxeadd">—</span></div>
+          <div class="d-section">🏪 Distribution</div>
+          <div class="d-row warn"><span class="dl">Transport → relais</span><span class="dv" id="d-trelais">—</span></div>
+          <div class="d-row warn"><span class="dl">Commission relais</span><span class="dv" id="d-relais">—</span></div>
+          <div class="d-row" id="row-stripe" style="display:none"><span class="dl">Frais Stripe</span><span class="dv" id="d-stripe">—</span></div>
+          <div class="d-section">📊 Résultat</div>
+          <div class="d-row"><span class="dl">Sous-total avant marge</span><span class="dv" id="d-subtotal">—</span></div>
+          <div class="d-row"><span class="dl">Marge Komerce (affichée)</span><span class="dv" id="d-marge">—</span></div>
+          <div class="d-row total"><span class="dl">✅ PRIX FINAL</span><span class="dv" id="d-total">—</span></div>
+          <div class="d-section">📐 Hub fixe — analyse mode actif</div>
+          <div class="d-row" id="d-row-hub-mode"><span class="dl" id="d-hub-mode-label">Mode actif</span><span class="dv" id="d-hub-mode-val">—</span></div>
+          <div class="d-row" id="d-row-hub-fixe"><span class="dl">Hub fixe répercuté/cmd</span><span class="dv" id="d-hub-fixe">—</span></div>
+          <div class="d-row opt-a" id="d-row-prix-a"><span class="dl">Option A — prix (Hub répercuté)</span><span class="dv" id="d-prix-a">—</span></div>
+          <div class="d-row opt-a" id="d-row-marge-a"><span class="dl">Marge nette Option A</span><span class="dv" id="d-marge-a">—</span></div>
+          <div class="d-row opt-b" id="d-row-prix-b"><span class="dl">Option B — prix (Hub absorbé)</span><span class="dv" id="d-prix-b">—</span></div>
+          <div class="d-row opt-b" id="d-row-marge-b"><span class="dl">Marge nette Option B</span><span class="dv" id="d-marge-b">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 2 — PILOTAGE TEMPOREL
+══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-tl">
+
+  <div class="section-label">Paramètres du scénario</div>
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+      <div class="field">
+        <label class="lbl">Mois de départ</label>
+        <input type="month" id="tl-start" value="2026-04" oninput="buildTimeline()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.8rem;padding:7px 10px;outline:none;width:100%;">
+      </div>
+      <div class="field">
+        <label class="lbl">Horizont (mois)</label>
+        <input type="number" id="tl-months" value="12" min="3" max="24" step="1" oninput="buildTimeline()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.8rem;padding:7px 10px;outline:none;width:100%;">
+      </div>
+      <div class="field">
+        <label class="lbl">Produit référence (AED)</label>
+        <input type="number" id="tl-prix-ref" value="359" min="0" step="1" oninput="recomputeTimeline()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.8rem;padding:7px 10px;outline:none;width:100%;">
+        <div class="hint">Samsung A15 = 359 AED</div>
+      </div>
+      <div class="field">
+        <label class="lbl">Catégorie référence</label>
+        <select id="tl-cat" class="inp" onchange="recomputeTimeline()">
+          <option value="phones">📱 Téléphones (10%)</option>
+          <option value="vetements">👗 Vêtements (20%)</option>
+          <option value="electro">🏠 Électroménager (15%)</option>
+          <option value="cosmetiques">💄 Cosmétiques (20%+1%)</option>
+          <option value="mariage">💍 Mariage (15%)</option>
+          <option value="enfants">🧸 Enfants (10%)</option>
+          <option value="materiels">🔧 Matériels (15%)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="lbl">Croissance volume/mois (%)</label>
+        <input type="number" id="tl-growth" value="15" min="0" max="100" step="1" oninput="recomputeTimeline()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.8rem;padding:7px 10px;outline:none;width:100%;">
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline-controls">
+    <span class="section-label" style="margin:0;border:none;padding:0;">Tableau de pilotage</span>
+    <button class="tl-btn" onclick="recomputeTimeline()">🔄 Recalculer</button>
+    <button class="tl-btn" onclick="exportCSV()">⬇️ Export CSV</button>
+  </div>
+
+  <div class="timeline-table-wrap">
+    <table class="timeline-table" id="tl-table">
+      <thead>
+        <tr>
+          <th class="col-month">Mois</th>
+          <th>Phase</th>
+          <th>Vol. cmd</th>
+          <th>Taux AED</th>
+          <th>Taux EUR</th>
+          <th>Prix fourn. (AED)</th>
+          <th>Douane (%)</th>
+          <th>Loyer Hub (AED)</th>
+          <th>Salaire (AED)</th>
+          <th>Coût de revient</th>
+          <th>Prix client (KMF)</th>
+          <th>Marge brute</th>
+          <th>Hub/cmd fixe</th>
+          <th>Marge nette B</th>
+          <th>Point équilibre</th>
+        </tr>
+      </thead>
+      <tbody id="tl-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section-label mt">Alertes & Observations</div>
+  <div id="tl-alerts" style="display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 3 — DASHBOARD
+══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-dash">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <div>
+      <div class="section-label" style="margin:0;border:none;padding:0;">Dashboard — Données réelles</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <!-- Sélecteur mois -->
+      <input type="month" id="dash-mois" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.75rem;padding:6px 10px;outline:none;">
+      <!-- Token JWT -->
+      <input type="password" id="dash-token" placeholder="Bearer token JWT admin" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.75rem;padding:6px 10px;outline:none;width:220px;">
+      <button onclick="loadLiveData()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 Charger données réelles</button>
+      <button onclick="refreshDashboard()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:7px 14px;font-size:0.75rem;font-weight:600;cursor:pointer;">📊 Mode simulé</button>
+    </div>
+  </div>
+
+  <!-- Bandeau statut connexion -->
+  <div id="dash-status" style="display:none;padding:9px 14px;border-radius:8px;font-size:0.78rem;font-weight:600;margin-bottom:16px;"></div>
+
+  <!-- Taux douane effectif variabilisable -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;align-items:center;">
+      <div>
+        <div class="section-label" style="margin:0;border:none;padding:0;font-size:0.6rem;">Taux douane effectif terrain</div>
+        <div style="font-size:0.7rem;color:var(--text3);margin-top:4px;">Selon votre agent aux Comores · 42% estimé · variabilisez selon les envois réels</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="range" id="dash-douane-range" min="20" max="65" step="1" value="42"
+            oninput="updateDouaneRange(this.value)"
+            style="flex:1;accent-color:var(--amber);">
+          <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--amber);min-width:52px;" id="dash-douane-display">42%</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text3);">
+          <span>20% optimiste</span>
+          <span style="color:var(--green);">▲ 30% théorique min</span>
+          <span style="color:var(--amber);">⚡ 42% agent</span>
+          <span style="color:var(--red);">55%+ risque élevé</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <button onclick="updateDouaneRange(30)" class="btn-tog" style="font-size:0.7rem;padding:5px 10px;">30%</button>
+        <button onclick="updateDouaneRange(42)" class="btn-tog active" id="btn-douane-42" style="font-size:0.7rem;padding:5px 10px;">42%</button>
+        <button onclick="updateDouaneRange(55)" class="btn-tog" style="font-size:0.7rem;padding:5px 10px;">55%</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid-4" style="margin-bottom:20px;">
+    <div class="kpi-box">
+      <div class="kpi-label">Commandes ce mois</div>
+      <div class="kpi-val amber" id="dash-vol-cmd">—</div>
+      <div class="kpi-sub" id="dash-vol-sub">simulé</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">CA estimé</div>
+      <div class="kpi-val teal" id="dash-ca">—</div>
+      <div class="kpi-sub" id="dash-ca-sub">—</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Marge brute</div>
+      <div class="kpi-val" id="dash-marge-brute">12%</div>
+      <div class="kpi-sub" id="dash-marge-brute-sub">sur produit référence</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Marge nette (Hub)</div>
+      <div class="kpi-val green" id="dash-marge-nette">—</div>
+      <div class="kpi-sub" id="dash-marge-nette-sub">après Hub fixe</div>
+    </div>
+  </div>
+
+  <!-- Impact taux 42% vs théorique -->
+  <div id="dash-impact-douane" class="alert-strip warn visible" style="margin-bottom:16px;">
+    ⚡ Avec 42% effectif vs 20% théorique téléphones : +22% sur le coût de revient · Impact sur marge : calcul en cours…
+  </div>
+
+  <div class="grid-2" style="gap:20px;">
+    <div class="chart-card">
+      <div class="chart-title">Évolution marge nette sur 12 mois</div>
+      <div class="chart-wrap"><canvas id="chart-marge"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Volume commandes & point d'équilibre</div>
+      <div class="chart-wrap"><canvas id="chart-volume"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Décomposition coût de revient (%)</div>
+      <div class="chart-wrap"><canvas id="chart-decompo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Impact taux douane sur marge nette</div>
+      <div class="chart-wrap"><canvas id="chart-taux"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Données réelles : top produits & pipeline -->
+  <div id="dash-live-section" style="display:none;">
+    <div class="section-label mt">Top produits commandés ce mois</div>
+    <div id="dash-top-produits" class="card" style="overflow-x:auto;"></div>
+    <div class="section-label mt">Pipeline commandes (tous statuts)</div>
+    <div id="dash-pipeline" class="card" style="display:flex;gap:10px;flex-wrap:wrap;padding:14px;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 4 — MIX CATÉGORIES
+══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-mix">
+
+  <!-- En-tête + KPIs globaux mix -->
+  <div class="section-label">Paramètres globaux du mix</div>
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:end;">
+      <div class="field">
+        <label class="lbl">Volume total cmd/mois</label>
+        <input type="number" id="mix-volume-total" value="100" min="1" step="5" oninput="computeMix()">
+        <div class="hint warn">Réparti selon % par catégorie</div>
+      </div>
+      <div class="field">
+        <label class="lbl">Taux AED (KMF)</label>
+        <input type="number" id="mix-taux-aed" value="139" min="100" max="200" step="1" oninput="computeMix()">
+      </div>
+      <div class="field">
+        <label class="lbl">Taux EUR (KMF)</label>
+        <input type="number" id="mix-taux-eur" value="495" min="400" max="600" step="1" oninput="computeMix()">
+      </div>
+      <div class="field">
+        <label class="lbl">Marge cible (%)</label>
+        <input type="number" id="mix-marge-pct" value="12" min="0" max="50" step="0.5" oninput="computeMix()">
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs résultat mix -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;" id="mix-kpis">
+    <div class="kpi-box">
+      <div class="kpi-label">Volume total actif</div>
+      <div class="kpi-val amber" id="mix-kpi-volume">—</div>
+      <div class="kpi-sub" id="mix-kpi-vol-sub">sur 100 cmd</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">% total alloué</div>
+      <div class="kpi-val" id="mix-kpi-pct-total">0%</div>
+      <div class="kpi-sub" id="mix-kpi-pct-sub">doit = 100%</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Marge brute moy. pondérée</div>
+      <div class="kpi-val green" id="mix-kpi-marge-brute">—</div>
+      <div class="kpi-sub">sur prix client moyen</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Marge nette moy. Option B</div>
+      <div class="kpi-val" id="mix-kpi-marge-nette">—</div>
+      <div class="kpi-sub">après Hub fixe</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">CA mensuel estimé</div>
+      <div class="kpi-val teal" id="mix-kpi-ca">—</div>
+      <div class="kpi-sub">prix client × volume</div>
+    </div>
+  </div>
+
+  <div id="mix-alert-pct" class="alert-strip warn" style="margin-bottom:16px;">⚡ Le total des % doit être égal à 100% pour un calcul cohérent</div>
+
+  <!-- Tableau catégories -->
+  <div class="section-label">Catégories actives — configurez votre mix</div>
+  <div style="overflow-x:auto;">
+    <table class="timeline-table" id="mix-table" style="min-width:820px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;width:32px;"></th>
+          <th style="text-align:left;">Catégorie</th>
+          <th>Prix moy. AED</th>
+          <th>% du volume</th>
+          <th>Cmd/mois</th>
+          <th>Coût de revient</th>
+          <th>Prix client</th>
+          <th>Marge brute</th>
+          <th>Marge nette B</th>
+          <th>Contribution CA</th>
+        </tr>
+      </thead>
+      <tbody id="mix-body"></tbody>
+      <tfoot id="mix-foot"></tfoot>
+    </table>
+  </div>
+
+  <!-- Graphiques mix -->
+  <div class="grid-2 mt" style="gap:20px;">
+    <div class="chart-card">
+      <div class="chart-title">Contribution CA par catégorie</div>
+      <div class="chart-wrap"><canvas id="chart-mix-ca"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Marge nette B par catégorie (%)</div>
+      <div class="chart-wrap"><canvas id="chart-mix-marge"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+//  CONSTANTES & ÉTAT
+// ══════════════════════════════════════════════════════════════════════
+const EMBARK_AED = 3;
+
+const CATS = {
+  phones:      { label:'📱 Téléphones & accessoires', dims:[17,12,11], douane:10, taxeAdd:0, hint:'SH 8517.12 — 10%' },
+  vetements:   { label:'👗 Vêtements, Wax & Dentelles', dims:[25,22,10], douane:20, taxeAdd:2.5, hint:'SH 61xx/62xx — 20% + 2,5%' },
+  ceremonie:   { label:'💃 Tenues cérémonie', dims:[30,25,11], douane:20, taxeAdd:2.5, hint:'SH 61xx — 20% + 2,5%' },
+  electro:     { label:'🏠 Électroménager compact', dims:[35,30,16], douane:15, taxeAdd:0, hint:'SH 84xx/85xx — 15%' },
+  cosmetiques: { label:'💄 Cosmétiques & Parfums', dims:[20,15,11], douane:20, taxeAdd:1, hint:'SH 33xx — 20% + taxe hygiène 1%' },
+  mariage:     { label:'💍 Mariage & Cadeaux', dims:[30,25,12], douane:15, taxeAdd:0, hint:'SH 63xx/71xx — 15%' },
+  enfants:     { label:'🧸 Enfants', dims:[25,20,9], douane:10, taxeAdd:0, hint:'SH 9503 — 10%' },
+  materiels:   { label:'🔧 Petits Matériels', dims:[30,20,15], douane:15, taxeAdd:0, hint:'SH 82xx/73xx — 15%' },
+};
+
+let marche = 'local', source = 's1';
+let _lastResult = {};
+let _tlData = [];
+let _charts = {};
+
+// État mode douanier : 'cat' | 'eff' | 'lot'
+let _douaneMode = 'cat';
+
+// État mode Hub : 'a' (répercuté) | 'b' (absorbé)
+let _hubMode = 'b';
+
+function setHubMode(mode) {
+  _hubMode = mode;
+  ['a','b'].forEach(m => {
+    const lbl = document.getElementById('lbl-hub-' + m);
+    if (lbl) lbl.style.borderColor = m === mode ? 'var(--amber)' : 'var(--border2)';
+  });
+  const ind = document.getElementById('hub-mode-indicator');
+  if (ind) {
+    if (mode === 'a') {
+      ind.textContent = 'Mode actif : Option A — Hub répercuté dans le prix client';
+      ind.style.background = 'rgba(16,185,129,0.08)';
+      ind.style.borderColor = 'rgba(16,185,129,0.3)';
+      ind.style.color = '#34d399';
+    } else {
+      ind.textContent = 'Mode actif : Option B — Hub absorbé dans la marge 12%';
+      ind.style.background = 'rgba(245,158,11,0.08)';
+      ind.style.borderColor = 'rgba(245,158,11,0.2)';
+      ind.style.color = 'var(--amber)';
+    }
+  }
+  calculer();
+}
+
+function setDouaneMode(mode) {
+  _douaneMode = mode;
+  // Afficher/masquer les blocs
+  document.getElementById('bloc-mode-cat').style.display = mode === 'cat' ? 'block' : 'none';
+  document.getElementById('bloc-mode-eff').style.display = mode === 'eff' ? 'block' : 'none';
+  document.getElementById('bloc-mode-lot').style.display = mode === 'lot' ? 'block' : 'none';
+  // Highlight label actif
+  ['cat','eff','lot'].forEach(m => {
+    const lbl = document.getElementById('lbl-mode-' + m);
+    if (lbl) lbl.style.borderColor = m === mode ? 'var(--amber)' : 'var(--border2)';
+  });
+  calculer();
+}
+let _mixCats = {
+  phones:      { active: true,  prixAed: 350, pct: 35 },
+  vetements:   { active: true,  prixAed: 120, pct: 20 },
+  ceremonie:   { active: true,  prixAed: 180, pct: 15 },
+  electro:     { active: true,  prixAed: 280, pct: 15 },
+  cosmetiques: { active: false, prixAed: 80,  pct: 0  },
+  mariage:     { active: true,  prixAed: 150, pct: 10 },
+  enfants:     { active: false, prixAed: 90,  pct: 0  },
+  materiels:   { active: false, prixAed: 200, pct: 5  },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════
+(function init() {
+  const sel = document.getElementById('cat');
+  Object.entries(CATS).forEach(([k,v]) => {
+    const o = document.createElement('option');
+    o.value = k; o.textContent = v.label;
+    sel.appendChild(o);
+  });
+  onCatChange();
+  buildTimeline();
+  buildMixTable();
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════════════════
+const g  = id => parseFloat(document.getElementById(id)?.value) || 0;
+const gi = id => parseInt(document.getElementById(id)?.value)   || 0;
+const $  = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+function getTaux() {
+  return { AED: g('taux-aed') || 139, EUR: g('taux-eur') || 495 };
+}
+
+function fmt(kmf, t) {
+  if (!t) t = getTaux();
+  return new Intl.NumberFormat('fr-FR').format(Math.round(kmf)) + ' KMF';
+}
+function fmtE(kmf, t) {
+  if (!t) t = getTaux();
+  return new Intl.NumberFormat('fr-FR', { style:'currency', currency:'EUR' }).format(kmf / t.EUR);
+}
+function fmtN(n) {
+  return (n >= 0 ? '+' : '') + new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF';
+}
+function pctStr(v, total) {
+  return total > 0 ? (v / total * 100).toFixed(1) + '%' : '—';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'dash') refreshDashboard();
+  if (id === 'mix')  computeMix();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  SIMULATEUR — INTERACTIONS
+// ══════════════════════════════════════════════════════════════════════
+function setMarche(m) {
+  marche = m;
+  document.getElementById('btn-local').className    = 'btn-tog' + (m==='local'    ? ' active' : '');
+  document.getElementById('btn-diaspora').className = 'btn-tog' + (m==='diaspora' ? ' active' : '');
+  document.getElementById('bloc-stripe').style.display    = m === 'diaspora' ? 'block' : 'none';
+  document.getElementById('row-stripe').style.display     = m === 'diaspora' ? 'flex'  : 'none';
+  calculer();
+}
+
+function setSource(s) {
+  source = s;
+  ['s1','s2','s4'].forEach(x => {
+    document.getElementById('btn-'+x).className = 'btn-tog' + (s===x ? ' active' : '');
+  });
+  document.getElementById('bloc-agent').style.display    = s === 's1' ? 'block' : 'none';
+  document.getElementById('row-tdubai').style.display    = s === 's1' ? 'flex'  : 'none';
+  document.getElementById('row-agent').style.display     = s === 's1' ? 'flex'  : 'none';
+  calculer();
+}
+
+function onCatChange() {
+  const cat = document.getElementById('cat').value;
+  const d = CATS[cat];
+  if (!d) return;
+  document.getElementById('dim-l').value       = d.dims[0];
+  document.getElementById('dim-w').value       = d.dims[1];
+  document.getElementById('dim-h').value       = d.dims[2];
+  document.getElementById('douane-pct').value  = d.douane;
+  document.getElementById('taxe-add-pct').value = d.taxeAdd;
+  document.getElementById('hint-douane').textContent = d.hint;
+  document.getElementById('hint-taxe').textContent   = d.taxeAdd > 0
+    ? `Taxe ${cat==='cosmetiques'?'hygiène':'parafiscale'} : ${d.taxeAdd}%`
+    : '0% pour cette catégorie';
+  const isTenue = cat === 'ceremonie';
+  document.getElementById('bloc-tenues').style.display  = isTenue ? 'block' : 'none';
+  document.getElementById('bloc-produit') && (document.getElementById('bloc-produit').style.display = isTenue ? 'none' : 'block');
+  onDimChange();
+}
+
+function onDimChange() {
+  const t = getTaux();
+  const l = g('dim-l'), w = g('dim-w'), h = g('dim-h');
+  const volCm3 = l * w * h;
+  const volM3  = volCm3 / 1e6;
+  const tauxFretM3 = 180 * t.EUR;
+  const fret = volM3 * tauxFretM3;
+  document.getElementById('fret-kmf').value = fret.toFixed(0);
+  document.getElementById('fret-display').textContent =
+    new Intl.NumberFormat('fr-FR').format(Math.round(fret)) + ' KMF / article';
+  document.getElementById('fret-sub').textContent =
+    `${new Intl.NumberFormat('fr-FR').format(Math.round(volCm3))} cm³ = ${volM3.toFixed(5)} m³ × 180 EUR/m³ × ${t.EUR} KMF/EUR`;
+  calculer();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  SIMULATEUR — CALCUL PRINCIPAL
+// ══════════════════════════════════════════════════════════════════════
+function computeAll(params) {
+  const {
+    prixAed, qte, agentPct, tDubai, embAed,
+    fretKmf, couverturePct, transPct, douanePct, tvaPct, taxeAddPct,
+    fPort, tRelais, cRelais, stripePct, margePct,
+    hubCtrl, hubEtiq, hubSms,
+    hubLoyer, hubSalaire, hubVolume,
+    tAED, tEUR, s4, isTenue, tissuAed, metrage, confAed, qteTenues
+  } = params;
+
+  const TAUX_FRET_M3 = 180 * tEUR;
+  const embKmf = embAed * tAED;
+  const s4Discount = s4 ? 0.70 : 1.0;
+
+  let prixAchatKmf = 0, qteCalc = qte;
+  if (isTenue) {
+    qteCalc = qteTenues;
+    prixAchatKmf = (tissuAed * metrage + confAed) * qteCalc * tAED * s4Discount;
+  } else {
+    prixAchatKmf = prixAed * tAED * qteCalc * s4Discount;
+  }
+
+  const agentKmf    = prixAchatKmf * agentPct;
+  const tDubaiKmf   = tDubai;
+  const hubCmdKmf   = hubCtrl + hubEtiq + hubSms;
+  const fretTotKmf  = fretKmf * qteCalc;
+  const couvertKmf  = prixAchatKmf * couverturePct;
+  const valCIF      = prixAchatKmf + fretTotKmf;
+
+  // ─── Calcul douane selon mode ──────────────────────────────────────
+  let transKmf, douaneKmf, tvaKmf, taxeAddKmf;
+  if (_douaneMode === 'eff') {
+    transKmf   = valCIF * params.transEffPct + 450;
+    douaneKmf  = valCIF * params.douaneEffPct; // taux effectif global = droits+TVA+taxes
+    tvaKmf     = 0;
+    taxeAddKmf = 0;
+  } else if (_douaneMode === 'lot') {
+    transKmf   = valCIF * params.transLotPct + 450;
+    douaneKmf  = valCIF * params.douaneLotPct;
+    tvaKmf     = valCIF * params.tvaLotPct;
+    taxeAddKmf = valCIF * params.taxeAddLotPct;
+  } else {
+    transKmf   = valCIF * transPct + 450;
+    douaneKmf  = valCIF * douanePct;
+    tvaKmf     = valCIF * tvaPct;
+    taxeAddKmf = valCIF * taxeAddPct;
+  }
+  const fPortKmf    = fPort;
+  const tRelaisKmf  = tRelais;
+  const cRelaisKmf  = cRelais;
+
+  const hubFixeParCmd = (hubLoyer + hubSalaire) * tAED / Math.max(hubVolume, 1);
+
+  // Option B — Hub fixe absorbé dans marge
+  const subtotalB = prixAchatKmf + agentKmf + embKmf + tDubaiKmf
+    + hubCmdKmf + fretTotKmf + couvertKmf
+    + transKmf + fPortKmf + douaneKmf + tvaKmf + taxeAddKmf
+    + tRelaisKmf + cRelaisKmf;
+  const stripeB   = marche === 'diaspora' ? subtotalB * stripePct : 0;
+  const subtBStr  = subtotalB + stripeB;
+  const margeB    = subtBStr * margePct;
+  const totalB    = subtBStr + margeB;
+  const margeNetteB = margeB - hubFixeParCmd;
+  const margePctNetteB = totalB > 0 ? margeNetteB / totalB * 100 : 0;
+
+  // Option A — Hub répercuté dans le prix
+  const subtotalA = subtotalB + hubFixeParCmd;
+  const stripeA   = marche === 'diaspora' ? subtotalA * stripePct : 0;
+  const subtAStr  = subtotalA + stripeA;
+  const margeA    = subtAStr * margePct;
+  const totalA    = subtAStr + margeA;
+  const margePctNetteA = totalA > 0 ? margeA / totalA * 100 : 0;
+
+  const blocAchat  = prixAchatKmf + agentKmf + embKmf + tDubaiKmf + hubCmdKmf;
+  const blocFret   = fretTotKmf + couvertKmf;
+  const blocDouane = transKmf + fPortKmf + douaneKmf + tvaKmf + taxeAddKmf;
+  const blocDistrib = tRelaisKmf + cRelaisKmf;
+
+  const hubMensuel = (hubLoyer + hubSalaire) * tAED;
+  const margeMensuelle = margeB * hubVolume;
+  const solde = margeMensuelle - hubMensuel;
+  const equilibre = Math.ceil(hubMensuel / margeB);
+
+  return {
+    prixAchatKmf, agentKmf, embKmf, tDubaiKmf, hubCmdKmf,
+    fretTotKmf, couvertKmf, valCIF,
+    transKmf, douaneKmf, tvaKmf, taxeAddKmf, fPortKmf,
+    tRelaisKmf, cRelaisKmf, stripeB,
+    subtotalA: subtAStr, subtotalB: subtBStr,
+    margeB, totalB, margeNetteB, margePctNetteB,
+    totalA, margeA, margePctNetteA,
+    hubFixeParCmd, hubMensuel, margeMensuelle, solde, equilibre,
+    blocAchat, blocFret, blocDouane, blocDistrib,
+    qteCalc
+  };
+}
+
+function calculer() {
+  const t = getTaux();
+  const cat = document.getElementById('cat').value;
+  const isTenue = cat === 'ceremonie';
+  const qteTenues = gi('q-s')+gi('q-m')+gi('q-l')+gi('q-xl')+gi('q-xxl');
+
+  const params = {
+    prixAed: g('prix-aed'), qte: gi('quantite') || 1,
+    agentPct: source === 's1' ? g('frais-agent')/100 : 0,
+    tDubai: source === 's1' ? g('transport-dubai') : 0,
+    embAed: EMBARK_AED,
+    fretKmf: g('fret-kmf'),
+    couverturePct: g('couverture-pct')/100,
+    transPct: g('trans-pct')/100,
+    douanePct: g('douane-pct')/100,
+    tvaPct: g('tva-pct')/100,
+    taxeAddPct: g('taxe-add-pct')/100,
+    // Mode taux effectif
+    douaneEffPct: g('douane-eff-pct')/100,
+    transEffPct:  g('trans-eff-pct')/100,
+    // Mode carton mixte
+    douaneLotPct:  g('douane-lot-pct')/100,
+    tvaLotPct:     g('tva-lot-pct')/100,
+    transLotPct:   g('trans-lot-pct')/100,
+    taxeAddLotPct: g('taxeadd-lot-pct')/100,
+    fPort: g('frais-port'),
+    tRelais: g('transport-relais'),
+    cRelais: g('commission-relais'),
+    stripePct: g('stripe-pct')/100,
+    margePct: g('marge-pct')/100,
+    hubCtrl: g('hub-controle'),
+    hubEtiq: g('hub-etiquette'),
+    hubSms: g('hub-sms'),
+    hubLoyer: g('hub-loyer'),
+    hubSalaire: g('hub-salaire'),
+    hubVolume: gi('hub-volume') || 1,
+    tAED: t.AED, tEUR: t.EUR,
+    s4: source === 's4',
+    isTenue, tissuAed: g('tissu-aed'), metrage: g('metrage'),
+    confAed: g('confection-aed'), qteTenues
+  };
+
+  if (isTenue && qteTenues === 0) {
+    $('price-main', '—'); return;
+  }
+
+  const r = computeAll(params);
+  _lastResult = r;
+
+  // Prix affiché = selon mode Hub actif
+  const totalActif = _hubMode === 'a' ? r.totalA : r.totalB;
+  const margeNetteActif = _hubMode === 'a' ? r.margeA : r.margeNetteB;
+  const margePctActif   = _hubMode === 'a' ? r.margePctNetteA : r.margePctNetteB;
+
+  if (marche === 'diaspora') {
+    $('price-main', fmtE(totalActif, t));
+    $('price-secondary', '≈ ' + fmt(totalActif, t));
+  } else {
+    $('price-main', fmt(totalActif, t));
+    $('price-secondary', '');
+  }
+
+  const label = `${r.qteCalc} ${isTenue ? 'tenue' + (r.qteCalc>1?'s':'') : 'article' + (r.qteCalc>1?'s':'')}`;
+  $('qty-label-wrap', label);
+
+  // Option badges — toujours les deux affichés pour comparaison
+  const fmtBadge = (v, pct) => `${new Intl.NumberFormat('fr-FR').format(Math.round(v))} KMF (${pct.toFixed(1)}%)`;
+  const badgeA = document.getElementById('badge-a');
+  const badgeB = document.getElementById('badge-b');
+  const activeStyle = 'border:2px solid var(--amber);';
+  badgeA.textContent = `A ⬤  ${marche==='diaspora'?fmtE(r.totalA,t)+' · ':'' }marge nette ${fmtBadge(r.margeA, r.margePctNetteA)}`;
+  badgeB.textContent = `B ⬤  ${marche==='diaspora'?fmtE(r.totalB,t)+' · ':'' }marge nette ${fmtBadge(r.margeNetteB, r.margePctNetteB)}`;
+  badgeA.className = 'option-badge ' + (_hubMode==='a' ? 'a' : 'a') + (_hubMode==='a' ? '' : '');
+  badgeB.className = 'option-badge ' + (r.margeNetteB >= 0 ? 'b' : 'neg');
+  // Surbrillance badge actif
+  badgeA.style.opacity = _hubMode === 'a' ? '1' : '0.5';
+  badgeB.style.opacity = _hubMode === 'b' ? '1' : '0.5';
+
+  const alert = document.getElementById('alert-marge');
+  alert.className = 'alert-strip mt-sm' + (margePctActif < 0 ? ' visible' : '');
+
+  // KPIs décomposition sur prix actif
+  $('kpi-achat', fmt(r.blocAchat, t)); $('kpi-achat-pct', pctStr(r.blocAchat, totalActif) + ' du prix');
+  $('kpi-fret',  fmt(r.blocFret, t));  $('kpi-fret-pct',  pctStr(r.blocFret,  totalActif) + ' du prix');
+  $('kpi-douane',fmt(r.blocDouane,t)); $('kpi-douane-pct',pctStr(r.blocDouane,totalActif) + ' du prix');
+  $('kpi-distrib',fmt(r.blocDistrib,t));$('kpi-distrib-pct',pctStr(r.blocDistrib,totalActif)+' du prix');
+
+  // Hub P&L
+  updateHub(r);
+
+  // Detail table
+  $('d-achat',  fmt(r.prixAchatKmf,t) + (source==='s4'?' · S4 −30%':''));
+  $('d-agent',  source==='s1' ? fmt(r.agentKmf,t)+` (${(params.agentPct*100).toFixed(0)}%)` : '0 KMF');
+  $('d-emb',    fmt(r.embKmf,t)+' (3 AED)');
+  $('d-tdubai', source==='s1' ? fmt(r.tDubaiKmf,t) : '0 KMF');
+  $('d-ctrl',   fmt(params.hubCtrl,t));
+  $('d-etiq',   fmt(params.hubEtiq,t));
+  $('d-sms',    fmt(params.hubSms,t));
+  const lv=g('dim-l'),wv=g('dim-w'),hv=g('dim-h');
+  $('d-fret',   fmt(r.fretTotKmf,t)+` (${new Intl.NumberFormat('fr-FR').format(Math.round(lv*wv*hv))} cm³)`);
+  $('d-couv',   params.couverturePct>0 ? fmt(r.couvertKmf,t)+` (${(params.couverturePct*100).toFixed(1)}%)` : '0 KMF — non activée');
+  $('d-port',   fmt(r.fPortKmf,t));
+  $('d-trans',  fmt(r.transKmf,t));
+  const douaneLabel = _douaneMode === 'eff'
+    ? `Taux effectif global (${(params.douaneEffPct*100).toFixed(1)}% CIF) — droits+TVA+taxes`
+    : _douaneMode === 'lot'
+    ? `Douane lot déclaré (${(params.douaneLotPct*100).toFixed(1)}% CIF)`
+    : `Droits douane (${(params.douanePct*100).toFixed(0)}% CIF)`;
+  $('d-douane', fmt(r.douaneKmf,t) + ' · ' + douaneLabel);
+  $('d-tva',    _douaneMode === 'eff' ? '0 KMF — inclus dans taux effectif' : fmt(r.tvaKmf,t)+' (10% CIF)');
+  const rta = document.getElementById('row-taxeadd');
+  if (r.taxeAddKmf > 0 && _douaneMode === 'cat') {
+    document.getElementById('lbl-taxeadd').textContent = cat==='cosmetiques' ? "Taxe d'hygiène" : 'Taxe parafiscale';
+    $('d-taxeadd', fmt(r.taxeAddKmf,t)); rta.style.display='flex';
+  } else { rta.style.display='none'; }
+  $('d-trelais', fmt(r.tRelaisKmf,t));
+  $('d-relais',  fmt(r.cRelaisKmf,t));
+  $('d-stripe',  fmt(r.stripeB,t));
+  document.getElementById('row-stripe').style.display = marche==='diaspora' ? 'flex' : 'none';
+  $('d-subtotal', fmt(_hubMode==='a' ? r.subtotalA : r.subtotalB, t));
+  $('d-marge',    fmt(_hubMode==='a' ? r.margeA : r.margeB, t)+` (${(params.margePct*100).toFixed(0)}%)`);
+  $('d-total',    marche==='diaspora' ? `${fmtE(totalActif,t)} · ${fmt(totalActif,t)}` : fmt(totalActif,t));
+
+  // Section Hub mode actif dans le détail
+  const hubModeLabels = { a: '✅ Option A — Hub répercuté dans le prix', b: '🟡 Option B — Hub absorbé dans la marge' };
+  $('d-hub-mode-label', 'Mode Hub actif');
+  $('d-hub-mode-val',   hubModeLabels[_hubMode]);
+  $('d-hub-fixe',       fmt(r.hubFixeParCmd,t) + '/cmd · ' + new Intl.NumberFormat('fr-FR').format(Math.round(r.hubMensuel)) + ' KMF/mois');
+  $('d-prix-a',         fmt(r.totalA,t) + (marche==='diaspora' ? ' · '+fmtE(r.totalA,t) : ''));
+  $('d-marge-a',        `${fmtN(r.margeA)} — ${r.margePctNetteA.toFixed(1)}% net`);
+  $('d-prix-b',         fmt(r.totalB,t) + (marche==='diaspora' ? ' · '+fmtE(r.totalB,t) : ''));
+  $('d-marge-b',        `${fmtN(r.margeNetteB)} — ${r.margePctNetteB.toFixed(1)}% net`);
+  // Highlight ligne active
+  ['a','b'].forEach(m => {
+    const rowPrix  = document.getElementById('d-row-prix-' + m);
+    const rowMarge = document.getElementById('d-row-marge-' + m);
+    const isActive = m === _hubMode;
+    if (rowPrix)  rowPrix.style.background  = isActive ? 'rgba(245,158,11,0.08)' : '';
+    if (rowMarge) rowMarge.style.background = isActive ? 'rgba(245,158,11,0.08)' : '';
+  });
+}
+
+function updateHub(r) {
+  if (!r) r = _lastResult;
+  if (!r || !r.hubMensuel) return;
+  const t = getTaux();
+  $('hub-total-kmf', new Intl.NumberFormat('fr-FR').format(Math.round(r.hubMensuel)) + ' KMF');
+  $('hub-par-cmd', new Intl.NumberFormat('fr-FR').format(Math.round(r.hubFixeParCmd)) + ' KMF/cmd');
+  const soldeEl = document.getElementById('hub-solde');
+  soldeEl.textContent = fmtN(r.solde);
+  soldeEl.className = 'kpi-val ' + (r.solde >= 0 ? 'green' : 'red');
+  const v = document.getElementById('hub-verdict');
+  if (r.solde >= 0) {
+    v.style.cssText = 'margin-top:10px;padding:8px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.25);';
+    v.textContent = `✅ Hub couvert · solde ${fmtN(r.solde)} · marge nette B : ${r.margePctNetteB.toFixed(1)}%`;
+  } else {
+    v.style.cssText = 'margin-top:10px;padding:8px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);';
+    v.textContent = `⚠️ Hub non couvert · manque ${new Intl.NumberFormat('fr-FR').format(Math.round(-r.solde))} KMF · équilibre à ${r.equilibre} cmd/mois`;
+  }
+}
+
+function toggleDetail() {
+  const t = document.getElementById('detail-table');
+  const b = document.querySelector('.detail-toggle-btn');
+  t.classList.toggle('open');
+  b.textContent = t.classList.contains('open') ? '▲ Masquer le détail' : '▼ Détail ligne par ligne';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  PILOTAGE TEMPOREL
+// ══════════════════════════════════════════════════════════════════════
+function buildTimeline() {
+  const startStr = document.getElementById('tl-start').value || '2026-04';
+  const n = gi('tl-months') || 12;
+  const [y0, m0] = startStr.split('-').map(Number);
+
+  const phaseVol = { p1: 30, p2: 150, p3: 400 };
+  const phaseHub = {
+    p1: { loyer: 2000, salaire: 1500 },
+    p2: { loyer: 3000, salaire: 4000 },
+    p3: { loyer: 5000, salaire: 7000 }
+  };
+
+  _tlData = [];
+  let vol = 20;
+  const growth = g('tl-growth') / 100 || 0.15;
+
+  for (let i = 0; i < n; i++) {
+    const m = ((m0 - 1 + i) % 12) + 1;
+    const y = y0 + Math.floor((m0 - 1 + i) / 12);
+    const label = `${y}-${String(m).padStart(2,'0')}`;
+    vol = i === 0 ? 20 : Math.round(vol * (1 + growth));
+
+    const phase = vol < 50 ? 'p1' : vol < 200 ? 'p2' : 'p3';
+    const hub = phaseHub[phase];
+
+    _tlData.push({
+      label, vol, phase,
+      tAED: 139, tEUR: 495,
+      prixFourn: g('tl-prix-ref') || 359,
+      douanePct: CATS[document.getElementById('tl-cat').value]?.douane || 10,
+      loyer: hub.loyer, salaire: hub.salaire
+    });
+  }
+
+  renderTimeline();
+}
+
+function renderTimeline() {
+  const tbody = document.getElementById('tl-body');
+  tbody.innerHTML = '';
+
+  _tlData.forEach((row, i) => {
+    const tr = document.createElement('tr');
+
+    // Calcul
+    const res = computeRowResult(row);
+
+    const phaseLabel = { p1:'Phase 1', p2:'Phase 2', p3:'Phase 3' };
+    const phaseClass = row.phase;
+
+    tr.innerHTML = `
+      <td class="month-cell">${row.label}</td>
+      <td class="phase-cell"><span class="phase-badge ${phaseClass}">${phaseLabel[row.phase]}</span></td>
+      <td><input class="tl-input" type="number" value="${row.vol}" min="1" step="5" oninput="tlEdit(${i},'vol',this.value)"></td>
+      <td><input class="tl-input" type="number" value="${row.tAED}" min="100" max="200" step="1" oninput="tlEdit(${i},'tAED',this.value)"></td>
+      <td><input class="tl-input" type="number" value="${row.tEUR}" min="400" max="600" step="1" oninput="tlEdit(${i},'tEUR',this.value)"></td>
+      <td><input class="tl-input" type="number" value="${row.prixFourn}" min="0" step="1" oninput="tlEdit(${i},'prixFourn',this.value)"></td>
+      <td><input class="tl-input" type="number" value="${row.douanePct}" min="0" max="40" step="0.5" oninput="tlEdit(${i},'douanePct',this.value)"></td>
+      <td><input class="tl-input" type="number" value="${row.loyer}" min="0" step="100" oninput="tlEdit(${i},'loyer',this.value)"></td>
+      <td><input class="tl-input" type="number" value="${row.salaire}" min="0" step="100" oninput="tlEdit(${i},'salaire',this.value)"></td>
+      <td class="computed ${res.cdr > 0 ? '' : 'warn'}">${new Intl.NumberFormat('fr-FR').format(Math.round(res.cdr))} KMF</td>
+      <td class="computed highlight">${new Intl.NumberFormat('fr-FR').format(Math.round(res.prix))} KMF</td>
+      <td class="computed pos">${res.margeBrutePct.toFixed(1)}%</td>
+      <td class="computed warn">${new Intl.NumberFormat('fr-FR').format(Math.round(res.hubParCmd))} KMF</td>
+      <td class="computed ${res.margeNettePct >= 0 ? 'pos' : 'neg'}">${res.margeNettePct.toFixed(1)}%</td>
+      <td class="computed ${res.equilibre <= row.vol ? 'pos' : 'neg'}">${res.equilibre} cmd</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  buildAlerts();
+}
+
+function computeRowResult(row) {
+  // Dimensions par défaut téléphone
+  const volM3 = 17*12*11/1e6;
+  const fretKmf = volM3 * 180 * row.tEUR;
+  const prixAchat = row.prixFourn * row.tAED;
+  const emb = EMBARK_AED * row.tAED;
+  const hubCmd = 1000 + 150 + 100; // contrôle + étiq + sms
+  const fret = fretKmf;
+  const couv = prixAchat * 0.004;
+  const valCIF = prixAchat + fret;
+  const trans = valCIF * 0.02 + 450;
+  const douane = valCIF * row.douanePct / 100;
+  const tva = valCIF * 0.10;
+  const port = 1200;
+  const tRelais = 840, cRelais = 500;
+
+  const cdr = prixAchat + emb + hubCmd + fret + couv + trans + douane + tva + port + tRelais + cRelais;
+  const marge = cdr * 0.12;
+  const prix = cdr + marge;
+  const hubMensuel = (row.loyer + row.salaire) * row.tAED;
+  const hubParCmd = hubMensuel / Math.max(row.vol, 1);
+  const margeNette = marge - hubParCmd;
+  const margeBrutePct = prix > 0 ? marge/prix*100 : 0;
+  const margeNettePct = prix > 0 ? margeNette/prix*100 : 0;
+  const equilibre = Math.ceil(hubMensuel / Math.max(marge, 1));
+
+  return { cdr, prix, marge, hubParCmd, margeNette, margeBrutePct, margeNettePct, equilibre };
+}
+
+function tlEdit(i, key, val) {
+  _tlData[i][key] = parseFloat(val) || 0;
+  // Auto-phase
+  const v = _tlData[i].vol;
+  _tlData[i].phase = v < 50 ? 'p1' : v < 200 ? 'p2' : 'p3';
+  recomputeTimeline(false);
+}
+
+function recomputeTimeline(rebuild) {
+  if (rebuild !== false) buildTimeline();
+  else renderTimeline();
+  if (document.getElementById('screen-dash').classList.contains('active')) refreshDashboard();
+}
+
+function buildAlerts() {
+  const container = document.getElementById('tl-alerts');
+  container.innerHTML = '';
+  let alerts = [];
+
+  _tlData.forEach(row => {
+    const r = computeRowResult(row);
+    if (r.margeNettePct < 0) {
+      alerts.push({ type:'error', msg: `⚠️ ${row.label} — Marge nette négative (${r.margeNettePct.toFixed(1)}%) · Volume ${row.vol} cmd insuffisant pour couvrir le Hub (équilibre à ${r.equilibre} cmd)` });
+    } else if (r.margeNettePct < 3) {
+      alerts.push({ type:'warn', msg: `⚡ ${row.label} — Marge nette faible : ${r.margeNettePct.toFixed(1)}% · Point d'équilibre à ${r.equilibre} cmd/mois` });
+    }
+    if (row.tAED > 150) {
+      alerts.push({ type:'warn', msg: `💱 ${row.label} — Taux AED élevé (${row.tAED}) · Impact coût de revient +${((row.tAED-139)/139*100).toFixed(0)}% vs référence` });
+    }
+  });
+
+  if (alerts.length === 0) {
+    container.innerHTML = '<div style="color:var(--green);font-size:0.8rem;font-weight:600;">✅ Aucune alerte sur la période simulée</div>';
+    return;
+  }
+
+  alerts.slice(0, 8).forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'alert-strip visible' + (a.type==='warn' ? ' warn' : '');
+    d.textContent = a.msg;
+    container.appendChild(d);
+  });
+}
+
+function exportCSV() {
+  const headers = ['Mois','Phase','Volume','TauxAED','TauxEUR','PrixFourn','Douane%','Loyer','Salaire','CoutRevient','PrixClient','MargeBrute%','HubParCmd','MargeNette%','Equilibre'];
+  const rows = _tlData.map(row => {
+    const r = computeRowResult(row);
+    return [row.label, row.phase, row.vol, row.tAED, row.tEUR, row.prixFourn, row.douanePct,
+            row.loyer, row.salaire,
+            Math.round(r.cdr), Math.round(r.prix),
+            r.margeBrutePct.toFixed(1), Math.round(r.hubParCmd),
+            r.margeNettePct.toFixed(1), r.equilibre].join(';');
+  });
+  const csv = [headers.join(';'), ...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `komerce_pilotage_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  DASHBOARD — Connexion API + mode simulé
+// ══════════════════════════════════════════════════════════════════════
+
+const KOMERCE_API_URL = 'https://komerce-backend-production.up.railway.app';
+let _liveData = null;          // données réelles si connecté
+let _douaneEffPct = 0.42;      // taux terrain par défaut : 42%
+
+// Init mois courant dans le sélecteur
+(function initDashMois() {
+  const el = document.getElementById('dash-mois');
+  if (el) el.value = new Date().toISOString().slice(0, 7);
+})();
+
+function updateDouaneRange(val) {
+  const v = parseFloat(val);
+  _douaneEffPct = v / 100;
+  const el = document.getElementById('dash-douane-range');
+  const disp = document.getElementById('dash-douane-display');
+  if (el) el.value = v;
+  if (disp) disp.textContent = v + '%';
+  // Reset boutons preset
+  [30, 42, 55].forEach(p => {
+    const btn = document.getElementById('btn-douane-' + p);
+    if (btn) btn.className = 'btn-tog' + (p === v ? ' active' : '');
+  });
+  // Recalcul impact
+  updateImpactDouane(v);
+  refreshDashboard();
+}
+
+function updateImpactDouane(pct) {
+  const el = document.getElementById('dash-impact-douane');
+  if (!el) return;
+  const t = getTaux();
+  // Calcul sur un téléphone 359 AED (exemple référence)
+  const prixAchat = 359 * t.AED;
+  const fret = 17*12*11/1e6 * 180 * t.EUR;
+  const valCIF = prixAchat + fret;
+  const douaneTheo = valCIF * 0.20; // théorique téléphone 10%+10%TVA
+  const douaneReel = valCIF * (pct / 100);
+  const delta = douaneReel - douaneTheo;
+  const impactMarge = prixAchat > 0 ? (delta / (prixAchat * 1.12) * 100) : 0;
+
+  if (pct > 30) {
+    el.style.display = 'block';
+    el.className = 'alert-strip visible ' + (pct >= 45 ? '' : 'warn');
+    el.textContent = `⚡ Taux effectif ${pct}% vs 20% théorique téléphones : `
+      + `+${new Intl.NumberFormat('fr-FR').format(Math.round(delta))} KMF/cmd `
+      + `· Impact marge estimé −${Math.abs(impactMarge).toFixed(1)}% `
+      + `· Ajustez votre prix de vente en conséquence`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ── Chargement données réelles depuis /api/pilotage ──────────────────────────
+async function loadLiveData() {
+  const token = document.getElementById('dash-token')?.value?.trim();
+  const mois  = document.getElementById('dash-mois')?.value || new Date().toISOString().slice(0, 7);
+  const statusEl = document.getElementById('dash-status');
+
+  if (!token) {
+    showDashStatus('⚠️ Saisissez votre Bearer token JWT admin pour charger les données réelles', 'warn');
+    return;
+  }
+
+  showDashStatus('⏳ Connexion à Railway en cours…', 'info');
+
+  try {
+    const [snapRes, histRes] = await Promise.all([
+      fetch(`${KOMERCE_API_URL}/api/pilotage?mois=${mois}`, {
+        headers: { Authorization: 'Bearer ' + token }
+      }),
+      fetch(`${KOMERCE_API_URL}/api/pilotage/history?mois=12`, {
+        headers: { Authorization: 'Bearer ' + token }
+      }),
+    ]);
+
+    if (snapRes.status === 401 || snapRes.status === 403) {
+      showDashStatus('❌ Token invalide ou non admin — vérifiez vos droits', 'error');
+      return;
+    }
+    if (!snapRes.ok) {
+      showDashStatus(`❌ Erreur API : ${snapRes.status} — vérifiez que Railway est en ligne`, 'error');
+      return;
+    }
+
+    const snap = await snapRes.json();
+    const hist = histRes.ok ? await histRes.json() : null;
+
+    _liveData = { snap, hist };
+
+    // Synchroniser taux depuis Railway dans le simulateur
+    if (snap.taux) {
+      const aedEl = document.getElementById('taux-aed');
+      const eurEl = document.getElementById('taux-eur');
+      if (aedEl && snap.taux.aed_kmf) aedEl.value = snap.taux.aed_kmf;
+      if (eurEl && snap.taux.eur_kmf) eurEl.value = snap.taux.eur_kmf;
+    }
+
+    // Afficher taux douane réel si disponible
+    if (snap.couts?.douane_effectif_pct !== null && snap.couts?.douane_effectif_pct !== undefined) {
+      updateDouaneRange(snap.couts.douane_effectif_pct);
+    }
+
+    showDashStatus(
+      `✅ Données réelles chargées — ${mois} · ${snap.volume?.total_commandes} commandes · `
+      + `CA ${new Intl.NumberFormat('fr-FR').format(snap.ca?.total_kmf)} KMF · `
+      + `Mode douane : ${snap.couts?.mode_douane === 'terrain' ? '🟢 taux terrain' : '🟡 théorique'}`,
+      'success'
+    );
+
+    renderDashLive(snap, hist);
+
+  } catch (err) {
+    showDashStatus('❌ Connexion impossible — ' + err.message, 'error');
+  }
+}
+
+function showDashStatus(msg, type) {
+  const el = document.getElementById('dash-status');
+  if (!el) return;
+  el.style.display = 'block';
+  const styles = {
+    success: 'background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;',
+    error:   'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;',
+    warn:    'background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--amber);',
+    info:    'background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;',
+  };
+  el.style.cssText = `display:block;padding:9px 14px;border-radius:8px;font-size:0.78rem;font-weight:600;margin-bottom:16px;${styles[type]||styles.info}`;
+  el.textContent = msg;
+}
+
+// ── Rendu dashboard avec données réelles ────────────────────────────────────
+function renderDashLive(snap, hist) {
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+
+  // KPIs
+  $('dash-vol-cmd',   snap.volume?.total_commandes + ' cmd');
+  $('dash-vol-sub',   `${snap.volume?.livrees} livrées · ${snap.volume?.en_cours} en cours`);
+  $('dash-ca',        N(snap.ca?.total_kmf) + ' KMF');
+  $('dash-ca-sub',    `≈ ${N(snap.ca?.total_eur)} EUR`);
+  $('dash-marge-brute', snap.marges?.brute_pct?.toFixed(1) + '%');
+  $('dash-marge-brute-sub', `${N(snap.marges?.brute_kmf)} KMF`);
+
+  const mnEl = document.getElementById('dash-marge-nette');
+  const mnPct = snap.marges?.nette_pct;
+  if (mnEl) {
+    mnEl.textContent = (mnPct !== undefined ? mnPct.toFixed(1) : '—') + '%';
+    mnEl.className = 'kpi-val ' + (mnPct >= 0 ? 'green' : 'red');
+  }
+  $('dash-marge-nette-sub', snap.marges?.alerte || `${N(snap.marges?.nette_kmf)} KMF`);
+
+  // Graphique marge temporelle (historique réel)
+  if (hist?.history?.length) {
+    const labels  = hist.history.map(h => h.mois);
+    const marges  = hist.history.map(h => h.marge_nette_pct);
+    const volumes = hist.history.map(h => h.total_commandes);
+    const equil   = hist.history.map(h => {
+      const hubKmf = 7000 * (snap.taux?.aed_kmf || 139);
+      const margeCmd = h.ca_kmf * 0.12 / Math.max(h.total_commandes, 1);
+      return Math.ceil(hubKmf / Math.max(margeCmd, 1));
+    });
+    renderLiveCharts(labels, marges, volumes, equil, snap);
+  } else {
+    refreshDashboard(); // fallback simulé si pas d'historique
+  }
+
+  // Top produits
+  renderTopProduits(snap.top_produits || []);
+
+  // Pipeline
+  renderPipeline(snap.pipeline || []);
+
+  document.getElementById('dash-live-section').style.display = 'block';
+}
+
+function renderTopProduits(produits) {
+  const el = document.getElementById('dash-top-produits');
+  if (!el || !produits.length) return;
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:8px;color:var(--text3);font-size:0.65rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Produit</th>
+          <th style="text-align:center;padding:8px;color:var(--text3);font-size:0.65rem;font-weight:700;text-transform:uppercase;">Catégorie</th>
+          <th style="text-align:center;padding:8px;color:var(--text3);font-size:0.65rem;font-weight:700;text-transform:uppercase;">Qté</th>
+          <th style="text-align:right;padding:8px;color:var(--text3);font-size:0.65rem;font-weight:700;text-transform:uppercase;">CDR estimé</th>
+          <th style="text-align:right;padding:8px;color:var(--text3);font-size:0.65rem;font-weight:700;text-transform:uppercase;">Prix vente</th>
+          <th style="text-align:right;padding:8px;color:var(--text3);font-size:0.65rem;font-weight:700;text-transform:uppercase;">Marge brute</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${produits.map(p => {
+          const marge = p.prix_vente_kmf - p.cdr_kmf;
+          const margePct = p.prix_vente_kmf > 0 ? (marge / p.prix_vente_kmf * 100) : 0;
+          const color = margePct >= 10 ? 'var(--green)' : margePct >= 0 ? '#d97706' : 'var(--red)';
+          return `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px;color:var(--text);">${p.produit}</td>
+            <td style="padding:8px;text-align:center;color:var(--text2);">${p.categorie}</td>
+            <td style="padding:8px;text-align:center;font-family:var(--mono);color:var(--amber);">${p.qte}</td>
+            <td style="padding:8px;text-align:right;font-family:var(--mono);color:var(--text2);">${N(p.cdr_kmf)}</td>
+            <td style="padding:8px;text-align:right;font-family:var(--mono);color:var(--text);">${N(p.prix_vente_kmf)}</td>
+            <td style="padding:8px;text-align:right;font-family:var(--mono);font-weight:700;color:${color};">${margePct.toFixed(1)}%</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderPipeline(pipeline) {
+  const el = document.getElementById('dash-pipeline');
+  if (!el) return;
+  const labels = {
+    confirmed: '✅ Confirmé', purchasing: '🛒 Achat', preparation: '📦 Préparation',
+    shipped: '🚢 Expédié', transit_comores: '⚓ Transit', available: '🏪 Disponible', collected: '🎉 Livré'
+  };
+  el.innerHTML = pipeline.map(p => `
+    <div class="kpi-box" style="flex:1;min-width:100px;">
+      <div class="kpi-label">${labels[p.statut] || p.statut}</div>
+      <div class="kpi-val amber" style="font-size:1.6rem;">${p.nb}</div>
+    </div>`).join('');
+}
+
+function renderLiveCharts(labels, marges, volumes, equil, snap) {
+  const margeColors = marges.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)');
+
+  renderChart('chart-marge', 'bar', labels, [
+    { label: 'Marge nette (%)', data: marges, backgroundColor: margeColors, borderWidth: 1 },
+    { label: 'Seuil 0%', data: labels.map(() => 0), type: 'line', borderColor: 'rgba(239,68,68,0.5)', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, fill: false }
+  ], { yAxisLabel: '%', yBeginAtZero: false });
+
+  renderChart('chart-volume', 'line', labels, [
+    { label: 'Volume réel', data: volumes, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, pointRadius: 3 },
+    { label: 'Équilibre Hub', data: equil, borderColor: 'rgba(245,158,11,0.8)', borderDash: [5,3], borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }
+  ], { yAxisLabel: 'cmd/mois' });
+
+  // Donut catégories réelles
+  if (snap.categories?.length) {
+    const catLabels = snap.categories.map(c => c.categorie);
+    const catCA     = snap.categories.map(c => c.ca_kmf);
+    const colors    = ['#f59e0b','#0d9488','#3b82f6','#8b5cf6','#10b981','#ec4899','#f97316','#6366f1'];
+    renderChart('chart-decompo', 'doughnut', catLabels, [{
+      data: catCA, backgroundColor: colors.slice(0, catLabels.length),
+      borderColor: '#111827', borderWidth: 2
+    }], { isDoughnut: true });
+  }
+
+  // Sensibilité taux douane sur marge nette
+  renderDouaneSensChart(snap);
+}
+
+function renderDouaneSensChart(snap) {
+  const t = getTaux();
+  const prixRef = 359;
+  const tauxRange = Array.from({length: 10}, (_, i) => 20 + i*5);
+
+  const margePcts = tauxRange.map(tDouane => {
+    const achat  = prixRef * t.AED;
+    const fret   = 17*12*11/1e6 * 180 * t.EUR;
+    const valCIF = achat + fret;
+    const douane = valCIF * (tDouane / 100);
+    const cdr    = achat + 3*t.AED + 1250 + fret + valCIF*0.02+450 + douane + 1200 + 1340;
+    const prix   = cdr * 1.12;
+    const hubKmf = 7000 * t.AED;
+    const volRef = snap?.volume?.total_commandes || 100;
+    const margeCmd = prix * 0.12;
+    const margeNette = margeCmd - hubKmf / Math.max(volRef, 1);
+    return prix > 0 ? parseFloat((margeNette / prix * 100).toFixed(1)) : 0;
+  });
+
+  const dotColors = tauxRange.map(v => v === Math.round(_douaneEffPct*100) ? '#f59e0b' : 'rgba(59,130,246,0.6)');
+
+  renderChart('chart-taux', 'line', tauxRange.map(t => t + '%'), [{
+    label: 'Marge nette (%)',
+    data: margePcts,
+    borderColor: '#3b82f6',
+    backgroundColor: 'rgba(59,130,246,0.08)',
+    fill: true, tension: 0.4,
+    pointRadius: 5,
+    pointBackgroundColor: dotColors,
+    pointBorderColor: dotColors,
+  }, {
+    label: 'Seuil 0%',
+    data: tauxRange.map(() => 0),
+    borderColor: 'rgba(239,68,68,0.4)', borderDash: [4,4], borderWidth: 1.5,
+    pointRadius: 0, fill: false
+  }], { yAxisLabel: 'Marge nette %', yBeginAtZero: false });
+}
+
+// ── Mode simulé (fallback sans connexion) ───────────────────────────────────
+function refreshDashboard() {
+  if (_liveData) {
+    renderDashLive(_liveData.snap, _liveData.hist);
+    return;
+  }
+
+  if (!_tlData.length) buildTimeline();
+
+  const t   = getTaux();
+  const r   = _lastResult;
+  const vol = gi('hub-volume') || 200;
+
+  if (r && r.margePctNetteB !== undefined) {
+    $('dash-vol-cmd',   vol + ' cmd (simulé)');
+    $('dash-vol-sub',   'mode simulé — connectez-vous');
+    const caEst = (r._hubMode === 'a' ? r.totalA : r.totalB) * vol;
+    $('dash-ca',        new Intl.NumberFormat('fr-FR').format(Math.round(caEst)) + ' KMF');
+    $('dash-ca-sub',    'estimé × volume simulé');
+    $('dash-marge-brute', (g('marge-pct') || 12).toFixed(1) + '%');
+    $('dash-marge-brute-sub', 'taux affiché');
+    const mn = document.getElementById('dash-marge-nette');
+    if (mn) {
+      mn.textContent = r.margePctNetteB.toFixed(1) + '%';
+      mn.className = 'kpi-val ' + (r.margePctNetteB >= 0 ? 'green' : 'red');
+    }
+    $('dash-marge-nette-sub', 'après Hub fixe (simulé)');
+  }
+
+  updateImpactDouane(Math.round(_douaneEffPct * 100));
+
+  const labels = _tlData.map(d => d.label);
+  const margesNettes  = _tlData.map(d => {
+    const row = {...d, douanePct: _douaneEffPct * 100};
+    return computeRowResult(row).margeNettePct;
+  });
+  const volumes    = _tlData.map(d => d.vol);
+  const equilibres = _tlData.map(d => computeRowResult(d).equilibre);
+  const prix       = _tlData.map(d => Math.round(computeRowResult(d).prix));
+
+  const margeColors = margesNettes.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)');
+
+  renderChart('chart-marge', 'bar', labels, [
+    { label: 'Marge nette (%)', data: margesNettes, backgroundColor: margeColors, borderWidth: 1 },
+    { label: 'Seuil 0%', data: labels.map(() => 0), type:'line', borderColor:'rgba(239,68,68,0.5)', borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false }
+  ], { yAxisLabel: '%', yBeginAtZero: false });
+
+  renderChart('chart-volume', 'line', labels, [
+    { label: 'Volume cmd/mois', data: volumes, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.1)', fill:true, tension:0.4, pointRadius:3 },
+    { label: 'Point équilibre', data: equilibres, borderColor:'rgba(245,158,11,0.8)', borderDash:[5,3], borderWidth:2, pointRadius:0, fill:false, tension:0.4 }
+  ], { yAxisLabel: 'cmd/mois' });
+
+  if (r && r.blocAchat) {
+    renderChart('chart-decompo', 'doughnut', ['Achat+Hub','Fret','Douane','Distribution','Marge'], [{
+      data: [Math.round(r.blocAchat), Math.round(r.blocFret), Math.round(r.blocDouane), Math.round(r.blocDistrib), Math.round(r.margeB)],
+      backgroundColor: ['#f59e0b','#0d9488','#3b82f6','#8b5cf6','#10b981'],
+      borderColor: '#111827', borderWidth: 2
+    }], { isDoughnut: true });
+  }
+
+  renderDouaneSensChart(null);
+}
+
+function renderChart(id, type, labels, datasets, opts={}) {
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+  const ctx = document.getElementById(id)?.getContext('2d');
+  if (!ctx) return;
+
+  const isDoughnut = opts.isDoughnut || false;
+
+  _charts[id] = new Chart(ctx, {
+    type: isDoughnut ? 'doughnut' : type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: isDoughnut || datasets.length > 1,
+          labels: { color: '#94a3b8', font: { size: 10, family: "'IBM Plex Sans'" }, boxWidth: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#1a2235',
+          titleColor: '#f59e0b',
+          bodyColor: '#e2e8f0',
+          borderColor: '#2a3f5f',
+          borderWidth: 1
+        }
+      },
+      ...(isDoughnut ? {} : {
+        scales: {
+          x: {
+            ticks: { color: '#4a6080', font: { size: 9 }, maxRotation: 45 },
+            grid: { color: 'rgba(30,45,71,0.8)' }
+          },
+          y: {
+            ticks: { color: '#4a6080', font: { size: 9 } },
+            grid: { color: 'rgba(30,45,71,0.8)' },
+            beginAtZero: opts.yBeginAtZero !== false,
+            title: opts.yAxisLabel ? { display: true, text: opts.yAxisLabel, color: '#4a6080', font: { size: 9 } } : undefined
+          }
+        }
+      })
+    }
+  });
+}
+// ══════════════════════════════════════════════════════════════════════
+//  MIX CATÉGORIES
+// ══════════════════════════════════════════════════════════════════════
+
+function buildMixTable() {
+  const tbody = document.getElementById('mix-body');
+  tbody.innerHTML = '';
+
+  Object.entries(CATS).forEach(([key, cat]) => {
+    const m = _mixCats[key];
+    const tr = document.createElement('tr');
+    tr.id = 'mix-row-' + key;
+    tr.style.opacity = m.active ? '1' : '0.4';
+
+    tr.innerHTML = `
+      <td style="text-align:center;padding:8px;">
+        <input type="checkbox" id="mix-chk-${key}" ${m.active ? 'checked' : ''}
+          onchange="mixToggle('${key}',this.checked)"
+          style="accent-color:var(--amber);width:15px;height:15px;cursor:pointer;">
+      </td>
+      <td style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:var(--text);white-space:nowrap;">${cat.label}</td>
+      <td>
+        <input class="tl-input" type="number" id="mix-prix-${key}"
+          value="${m.prixAed}" min="0" step="5"
+          oninput="mixEdit('${key}','prixAed',this.value)"
+          ${!m.active ? 'disabled' : ''}>
+      </td>
+      <td>
+        <input class="tl-input" type="number" id="mix-pct-${key}"
+          value="${m.pct}" min="0" max="100" step="1"
+          oninput="mixEdit('${key}','pct',this.value)"
+          ${!m.active ? 'disabled' : ''}>
+      </td>
+      <td class="computed" id="mix-cmd-${key}">—</td>
+      <td class="computed" id="mix-cdr-${key}">—</td>
+      <td class="computed highlight" id="mix-prix-client-${key}">—</td>
+      <td class="computed pos" id="mix-mb-${key}">—</td>
+      <td class="computed" id="mix-mn-${key}">—</td>
+      <td class="computed teal" id="mix-ca-${key}">—</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  computeMix();
+}
+
+function mixToggle(key, active) {
+  _mixCats[key].active = active;
+  const row = document.getElementById('mix-row-' + key);
+  if (row) row.style.opacity = active ? '1' : '0.4';
+  // Disable/enable inputs
+  ['prix','pct'].forEach(f => {
+    const el = document.getElementById(`mix-${f}-${key}`);
+    if (el) el.disabled = !active;
+  });
+  if (!active) _mixCats[key].pct = 0;
+  computeMix();
+}
+
+function mixEdit(key, field, val) {
+  _mixCats[key][field] = parseFloat(val) || 0;
+  computeMix();
+}
+
+function computeMixRowResult(key, prixAed, tAED, tEUR, margePct) {
+  const cat = CATS[key];
+  if (!cat) return null;
+
+  const d = cat.dims;
+  const volM3 = d[0] * d[1] * d[2] / 1e6;
+  const fretKmf = volM3 * 180 * tEUR;
+  const prixAchat = prixAed * tAED;
+  const emb = EMBARK_AED * tAED;
+  const hubCmd = 1000 + 150 + 100;
+  const couv = prixAchat * 0.004;
+  const valCIF = prixAchat + fretKmf;
+  const trans = valCIF * 0.02 + 450;
+  const douane = valCIF * cat.douane / 100;
+  const tva = valCIF * 0.10;
+  const taxeAdd = valCIF * cat.taxeAdd / 100;
+  const port = 1200;
+  const tRelais = 840, cRelais = 500;
+
+  const cdr = prixAchat + emb + hubCmd + fretKmf + couv + trans + douane + tva + taxeAdd + port + tRelais + cRelais;
+  const marge = cdr * margePct;
+  const prix = cdr + marge;
+
+  return { cdr, marge, prix };
+}
+
+function computeMix() {
+  const tAED    = parseFloat(document.getElementById('mix-taux-aed')?.value)   || 139;
+  const tEUR    = parseFloat(document.getElementById('mix-taux-eur')?.value)   || 495;
+  const margePct = (parseFloat(document.getElementById('mix-marge-pct')?.value) || 12) / 100;
+  const volTotal = parseFloat(document.getElementById('mix-volume-total')?.value) || 100;
+
+  // Hub Phase 2 par défaut (synchro avec simulateur si possible)
+  const hubLoyer   = parseFloat(document.getElementById('hub-loyer')?.value)   || 3000;
+  const hubSalaire = parseFloat(document.getElementById('hub-salaire')?.value) || 4000;
+  const hubMensuel = (hubLoyer + hubSalaire) * tAED;
+
+  let totalPct = 0, totalCA = 0, totalCmdActifs = 0;
+  let sommeMargeBrutePonderee = 0, sommeMargeNettePonderee = 0;
+  const caParCat = [], margesParCat = [], labelsActifs = [];
+
+  Object.entries(_mixCats).forEach(([key, m]) => {
+    const rowR = computeMixRowResult(key, m.prixAed, tAED, tEUR, margePct);
+    if (!rowR) return;
+
+    const cmd = m.active ? Math.round(volTotal * m.pct / 100) : 0;
+    const ca  = rowR.prix * cmd;
+    const hubParCmd = cmd > 0 ? hubMensuel / volTotal : 0; // part du Hub proportionnelle
+    const margeNette = rowR.marge - hubParCmd;
+    const margeBrutePct  = rowR.prix > 0 ? rowR.marge / rowR.prix * 100 : 0;
+    const margeNettePct  = rowR.prix > 0 ? margeNette  / rowR.prix * 100 : 0;
+
+    if (m.active) {
+      totalPct   += m.pct;
+      totalCA    += ca;
+      totalCmdActifs += cmd;
+      sommeMargeBrutePonderee += margeBrutePct * m.pct;
+      sommeMargeNettePonderee += margeNettePct  * m.pct;
+      caParCat.push(Math.round(ca));
+      margesParCat.push(parseFloat(margeNettePct.toFixed(1)));
+      labelsActifs.push(CATS[key].label.split(' ').slice(0,2).join(' '));
+    }
+
+    // Mise à jour cellules
+    const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+    const setC = (id, val, cls) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val;
+      if (cls) el.className = 'computed ' + cls;
+    };
+
+    setC(`mix-cmd-${key}`,        m.active ? cmd + ' cmd' : '—');
+    setC(`mix-cdr-${key}`,        m.active ? N(rowR.cdr) + ' KMF' : '—');
+    setC(`mix-prix-client-${key}`,m.active ? N(rowR.prix) + ' KMF' : '—', 'highlight');
+    setC(`mix-mb-${key}`,         m.active ? margeBrutePct.toFixed(1) + '%' : '—', 'pos');
+    setC(`mix-mn-${key}`,         m.active ? margeNettePct.toFixed(1) + '%' : '—',
+         m.active ? (margeNettePct >= 0 ? 'pos' : 'neg') : '');
+    setC(`mix-ca-${key}`,         m.active ? N(ca) + ' KMF' : '—');
+  });
+
+  // KPIs globaux
+  const margeBruteMoy  = totalPct > 0 ? sommeMargeBrutePonderee / totalPct : 0;
+  const margeNetteMoy  = totalPct > 0 ? sommeMargeNettePonderee / totalPct : 0;
+
+  $('mix-kpi-volume',      totalCmdActifs + ' cmd');
+  $('mix-kpi-vol-sub',     `sur ${volTotal} cmd totales`);
+  const pctEl = document.getElementById('mix-kpi-pct-total');
+  if (pctEl) {
+    pctEl.textContent = totalPct.toFixed(0) + '%';
+    pctEl.className   = 'kpi-val ' + (Math.abs(totalPct - 100) < 1 ? 'green' : 'red');
+  }
+  $('mix-kpi-pct-sub',    Math.abs(totalPct - 100) < 1 ? '✅ Équilibré' : `⚠️ Écart : ${(totalPct-100).toFixed(0)}%`);
+  const mnEl = document.getElementById('mix-kpi-marge-nette');
+  if (mnEl) {
+    mnEl.textContent = margeNetteMoy.toFixed(1) + '%';
+    mnEl.className   = 'kpi-val ' + (margeNetteMoy >= 0 ? 'green' : 'red');
+  }
+  $('mix-kpi-marge-brute', margeBruteMoy.toFixed(1) + '%');
+  $('mix-kpi-ca',          new Intl.NumberFormat('fr-FR').format(Math.round(totalCA)) + ' KMF');
+
+  // Alerte % total
+  const alertEl = document.getElementById('mix-alert-pct');
+  if (alertEl) alertEl.style.display = Math.abs(totalPct - 100) < 1 ? 'none' : 'block';
+
+  // Graphiques mix
+  renderMixCharts(labelsActifs, caParCat, margesParCat);
+}
+
+function renderMixCharts(labels, caData, margeData) {
+  // Donut CA
+  if (_charts['chart-mix-ca']) { _charts['chart-mix-ca'].destroy(); delete _charts['chart-mix-ca']; }
+  const ctx1 = document.getElementById('chart-mix-ca')?.getContext('2d');
+  if (ctx1 && labels.length > 0) {
+    const colors = ['#f59e0b','#0d9488','#3b82f6','#8b5cf6','#10b981','#ec4899','#f97316','#6366f1'];
+    _charts['chart-mix-ca'] = new Chart(ctx1, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: caData, backgroundColor: colors.slice(0, labels.length), borderColor: '#111827', borderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } },
+          tooltip: { backgroundColor: '#1a2235', titleColor: '#f59e0b', bodyColor: '#e2e8f0', borderColor: '#2a3f5f', borderWidth: 1 }
+        }
+      }
+    });
+  }
+
+  // Barres marge nette par catégorie
+  if (_charts['chart-mix-marge']) { _charts['chart-mix-marge'].destroy(); delete _charts['chart-mix-marge']; }
+  const ctx2 = document.getElementById('chart-mix-marge')?.getContext('2d');
+  if (ctx2 && labels.length > 0) {
+    const bgColors = margeData.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)');
+    _charts['chart-mix-marge'] = new Chart(ctx2, {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Marge nette B (%)', data: margeData, backgroundColor: bgColors, borderWidth: 0 },
+        { label: 'Seuil 0%', data: labels.map(()=>0), type:'line', borderColor:'rgba(239,68,68,0.5)', borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false }
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color:'#94a3b8', font:{size:10}, boxWidth:10 } },
+          tooltip: { backgroundColor:'#1a2235', titleColor:'#f59e0b', bodyColor:'#e2e8f0', borderColor:'#2a3f5f', borderWidth:1 }
+        },
+        scales: {
+          x: { ticks: { color:'#4a6080', font:{size:9}, maxRotation:30 }, grid: { color:'rgba(30,45,71,0.8)' } },
+          y: { ticks: { color:'#4a6080', font:{size:9} }, grid: { color:'rgba(30,45,71,0.8)' },
+               title: { display:true, text:'%', color:'#4a6080', font:{size:9} } }
+        }
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>
