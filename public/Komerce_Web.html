@@ -1508,11 +1508,11 @@
   </nav>
 </div>
 <nav>
-  <div class="logo">Ko<span>merce</span></div>
+  <a class="logo" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" style="text-decoration:none;cursor:pointer;">Ko<span>merce</span></a>
   <div class="nav-right">
     <div class="nav-links">
     <a href="#situations">🌟 Situations</a>
-    <a href="#catalog">📦 Catalogue</a>
+    <a href="#promos">📦 Catalogue</a>
   </div>
 
 
@@ -2334,7 +2334,7 @@
     <div class="footer-links">
       <strong>Komerce</strong>
       <a href="#comment">À propos</a>
-      <a href="/cdn-cgi/l/email-protection#5e3d31302a3f3d2a1e3531333b2c3d3b703533">Nous contacter</a>
+      <a href="mailto:contact@komerce.km">Nous contacter</a>
     </div>
   </div>
   <div class="footer-bottom">
@@ -5157,8 +5157,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Bannière retour client + bouton "Mes commandes"
   _initReturningUser();
 
-  // Onglet Mes commandes toujours visible dans la nav
-  _injectNavOrdersLink();
+  // Onglet Mes commandes désactivé de la nav (supprimé UI)
+  // _injectNavOrdersLink();
 
   // Bouton WhatsApp flottant
   initWhatsAppButton();
@@ -5166,8 +5166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Vérifier les prix des favoris
   _checkFavoritePrices();
 
-  // Bouton favoris dans la nav
-  initFavoritesNavButton();
+  // Bouton favoris dans la nav (supprimé UI)
+  // initFavoritesNavButton();
 
   // Restaurer un panier partagé depuis l'URL
   const params = new URLSearchParams(window.location.search);
