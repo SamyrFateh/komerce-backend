@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -6,35 +6,38 @@
   <title>Komerce — Tout ce que vous voulez, livré aux Comores</title>
   <style>
     :root {
-      --primary: #1a3a5c;
-      --accent:  #e8a020;
-      --green:   #2ecc71;
-      --red:     #e74c3c;
-      --light:   #f4f7fb;
-      --dark:    #0f1f33;
-      --text:    #2c3e50;
-      --muted:   #7f8c9b;
-      --white:   #ffffff;
-      --shadow:  0 4px 24px rgba(26,58,92,0.10);
+      --primary:       #0891b2;
+      --primary-dark:  #0369a1;
+      --primary-light: #e0f2fe;
+      --accent:        #f59e0b;
+      --green:         #10b981;
+      --red:           #ef4444;
+      --light:         #f0f9ff;
+      --dark:          #0f172a;
+      --text:          #1e293b;
+      --muted:         #64748b;
+      --white:         #ffffff;
+      --shadow:        0 4px 24px rgba(8,145,178,0.13);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Segoe UI',system-ui,sans-serif; color:var(--text); background:var(--white); }
 
     /* ── NAV ── */
     nav {
-      background:var(--primary);
+      background:#ffffff;
+      border-bottom:2px solid var(--primary-light);
       display:flex; align-items:center; justify-content:space-between;
       padding:0 5%; height:64px; position:sticky; top:0; z-index:100;
-      box-shadow:0 2px 12px rgba(0,0,0,0.2);
+      box-shadow:0 2px 12px rgba(8,145,178,0.10);
     }
-    .logo { color:var(--white); font-size:1.5rem; font-weight:800; letter-spacing:-0.5px; }
+    .logo { color:var(--primary); font-size:1.5rem; font-weight:800; letter-spacing:-0.5px; }
     .logo span { color:var(--accent); }
     .nav-links {
       display:flex; gap:1.4rem; align-items:center; list-style:none; margin:0; padding:0;
     }
     .nav-links a,
     .nav-links li a {
-      color:rgba(255,255,255,0.85); text-decoration:none;
+      color:var(--text); text-decoration:none;
       font-size:.88rem; font-weight:500; transition:color .2s;
       display:flex; align-items:center; gap:.3rem; white-space:nowrap;
     }
@@ -63,10 +66,10 @@
       height: 42px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid rgba(255,255,255,0.25);
+      border: 2px solid var(--primary-light);
       box-shadow: 0 4px 12px rgba(0,0,0,0.18);
       transition: transform .2s ease, box-shadow .2s ease;
-      background: rgba(255,255,255,0.08);
+      background: var(--primary-light);
     }
     .cart-icon:hover .cart-avatar {
       transform: translateY(-1px) scale(1.04);
@@ -94,7 +97,7 @@
 
     /* ── HERO ── */
     .hero {
-      background: linear-gradient(135deg, var(--primary) 0%, #0d2640 60%, #162d48 100%);
+      background: linear-gradient(135deg, #38bdf8 0%, #0891b2 50%, #0369a1 100%);
       color:var(--white);
       padding: 80px 5% 60px;
       text-align:center;
@@ -242,7 +245,7 @@
       width:40px;height:40px;cursor:pointer;z-index:10;
       box-shadow:0 2px 12px rgba(0,0,0,.12);font-size:1.3rem;font-weight:700;
       display:flex;align-items:center;justify-content:center;
-      transition:box-shadow .15s,transform .15s;color:#1a3a5c;
+      transition:box-shadow .15s,transform .15s;color:#0891b2;
     }
     .carousel-btn:hover { box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(-60%) scale(1.1); }
     .carousel-btn-prev { left:-4px; }
@@ -254,7 +257,7 @@
       width:7px;height:7px;border-radius:50%;background:#e2e8f0;
       transition:background .2s,transform .2s;cursor:pointer;
     }
-    .carousel-dot.active { background:#1a3a5c;transform:scale(1.3); }
+    .carousel-dot.active { background:#0891b2;transform:scale(1.3); }
     @media(max-width:640px) {
       .carousel-btn { display:none; }
       .promo-carousel .promo-card { flex:0 0 165px; }
@@ -311,7 +314,7 @@
     }
     .btn-order:hover { background:#0d2640; }
     .btn-fav {
-      background:var(--light); border:none;
+      background:var(--primary-light); border:none;
       padding:.55rem .7rem; border-radius:6px; cursor:pointer; font-size:1rem;
     }
 
@@ -331,7 +334,7 @@
     .how-section { padding:70px 5%; background:var(--white); }
     .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:2rem; margin-top:2.5rem; }
     .step-card {
-      background:var(--light); border-radius:12px; padding:1.8rem 1.5rem;
+      background:var(--primary-light); border-radius:12px; padding:1.8rem 1.5rem;
       position:relative; border:1px solid rgba(26,58,92,0.08);
     }
     .step-num {
@@ -346,7 +349,7 @@
     .step-detail { font-size:.78rem; color:var(--accent); font-weight:600; margin-top:.5rem; }
 
     /* ── TRACKING ── */
-    .tracking-section { background:var(--light); padding:60px 5%; }
+    .tracking-section { background:var(--primary-light); padding:60px 5%; }
     .tracking-timeline { display:flex; align-items:flex-start; gap:0; margin-top:2rem; overflow-x:auto; padding-bottom:1rem; }
     .track-step { flex:1; min-width:140px; text-align:center; position:relative; }
     .track-step::after {
@@ -387,7 +390,7 @@
     .cat-icon { font-size:2.5rem; margin-bottom:1rem; }
     .cat-name { font-weight:800; font-size:1.1rem; color:var(--primary); margin-bottom:.3rem; }
     .cat-desc { font-size:.85rem; color:var(--muted); margin-bottom:1rem; }
-    .price-example { background:var(--light); border-radius:8px; padding:.8rem 1rem; }
+    .price-example { background:var(--primary-light); border-radius:8px; padding:.8rem 1rem; }
     .price-label { font-size:.75rem; color:var(--muted); }
     .price-value { font-size:1.4rem; font-weight:800; color:var(--primary); }
     .price-sub { font-size:.75rem; color:var(--muted); }
@@ -396,7 +399,7 @@
     /* ── DESTINATAIRE ── */
     .destinataire-section { padding:70px 5%; background:var(--white); }
     .dest-container { max-width:780px; margin:0 auto; }
-    .dest-card { background:var(--light); border-radius:16px; padding:2.5rem; border:1px solid rgba(26,58,92,0.1); box-shadow:0 4px 24px rgba(26,58,92,0.07); }
+    .dest-card { background:var(--primary-light); border-radius:16px; padding:2.5rem; border:1px solid rgba(26,58,92,0.1); box-shadow:0 4px 24px rgba(26,58,92,0.07); }
     .dest-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin-bottom:1.5rem; }
     @media(max-width:600px){ .dest-form-grid { grid-template-columns:1fr; } }
     .dest-field { display:flex; flex-direction:column; gap:.4rem; }
@@ -430,7 +433,7 @@
     .dest-step-lbl.inactive { color:#94a3b8; }
 
     /* ── PANIER PARTAGÉ ── */
-    .shared-banner { background:linear-gradient(135deg,#1a3a5c,#2d6a4f); color:#fff; padding:1.2rem 5%; display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; }
+    .shared-banner { background:linear-gradient(135deg,#0891b2,#2d6a4f); color:#fff; padding:1.2rem 5%; display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; }
     .shared-banner-icon { font-size:2rem; flex-shrink:0; }
     .shared-banner-text { flex:1; min-width:200px; }
     .shared-banner-title { font-weight:800; font-size:1rem; margin-bottom:.2rem; }
@@ -444,7 +447,7 @@
     .share-code-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center; }
     .share-code-modal.open { display:flex; }
     .share-modal-box { background:#fff; border-radius:20px; padding:2.5rem; max-width:400px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3); }
-    .share-modal-code { font-size:2.5rem; font-weight:900; color:var(--primary); letter-spacing:.15em; background:var(--light); border-radius:12px; padding:.8rem 1.5rem; margin:1rem 0; display:inline-block; }
+    .share-modal-code { font-size:2.5rem; font-weight:900; color:var(--primary); letter-spacing:.15em; background:var(--primary-light); border-radius:12px; padding:.8rem 1.5rem; margin:1rem 0; display:inline-block; }
     .share-modal-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.5rem; }
     .share-wa-btn { display:flex; align-items:center; justify-content:center; gap:.6rem; background:#25D366; color:#fff; border:none; border-radius:10px; padding:.85rem 1.5rem; font-size:.95rem; font-weight:700; cursor:pointer; width:100%; margin-bottom:.8rem; }
     .share-close-btn { background:none; border:none; color:var(--muted); font-size:.85rem; cursor:pointer; }
@@ -660,7 +663,7 @@
     }
     .univers-card.daily h3 { color: var(--primary); }
     .univers-card.daily .univers-btn.primary {
-      background: linear-gradient(135deg, #1a3a5c, #2b5d8a);
+      background: linear-gradient(135deg, #0891b2, #2b5d8a);
     }
 
     .catalog-section {
@@ -966,7 +969,7 @@
       pointer-events: all;
     }
     .live-orders-bar {
-      background: linear-gradient(135deg, #0f2238 0%, #1a3a5c 100%);
+      background: linear-gradient(135deg, #0f2238 0%, #0891b2 100%);
       border-top: 2px solid rgba(232,160,32,.5);
       box-shadow: 0 -8px 40px rgba(0,0,0,.35);
       padding: .6rem 1.4rem .6rem 1rem;
@@ -1055,7 +1058,7 @@
 
     /* ── PROVERBE DU JOUR ── */
     .proverb-band {
-      background: linear-gradient(135deg, #0f1f33 0%, #1a3a5c 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #0891b2 100%);
       padding: 1.1rem 5%;
       border-top: 2px solid rgba(232,160,32,0.35);
       border-bottom: 2px solid rgba(232,160,32,0.35);
@@ -1345,11 +1348,283 @@
       .tracking-timeline { justify-content:flex-start; }
     }
       .promo-price-aed { display:none !important; }
-</style>
+
+    /* ── PROMO TOP-BAR (style ASOS / Shein) ────────── */
+    .promo-topbar {
+      background: var(--primary-dark);
+      color: #fff;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 200;
+      overflow: hidden;
+    }
+    .promo-topbar-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: .82rem;
+      letter-spacing: .02em;
+    }
+    .promo-messages {
+      position: relative;
+      height: 22px;
+      min-width: 340px;
+      overflow: hidden;
+    }
+    .promo-msg {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .5s ease, transform .5s ease;
+      white-space: nowrap;
+    }
+    .promo-msg.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .promo-topbar-badge {
+      background: #e63946;
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: 2px 8px;
+      border-radius: 30px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .promo-topbar-nav {
+      position: absolute;
+      right: 1rem;
+      display: flex;
+      gap: .35rem;
+      align-items: center;
+    }
+    .promo-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.3);
+      cursor: pointer;
+      transition: background .3s;
+    }
+    .promo-dot.on { background: #ffd700; }
+    /* ── PRODUCT IMAGES non-cliquables ──────────── */
+    .product-card img,
+    .promo-card-img img,
+    .ceremony-card img { pointer-events:none; }
+
+    
+  /* ═══════════════════════════════════════════════
+     SECTION SITUATIONS — navigation par besoin
+  ═══════════════════════════════════════════════ */
+  .situations-section {
+    padding: 48px 5% 20px;
+    background: #fff;
+  }
+  .situations-title {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .situations-title h2 {
+    font-size: 1.55rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0 0 .4rem;
+  }
+  .situations-title p {
+    font-size: .92rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .situations-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  @media (max-width: 680px) {
+    .situations-grid { grid-template-columns: repeat(2, 1fr); }
+    .situations-title h2 { font-size: 1.2rem; }
+  }
+
+  .sit-card {
+    border-radius: 16px;
+    padding: 1.3rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .18s, box-shadow .18s;
+    border: 2.5px solid transparent;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .sit-card:hover  { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+  .sit-card.active { border-color: var(--sit-color); box-shadow: 0 0 0 4px color-mix(in srgb,var(--sit-color) 15%,transparent); }
+  .sit-card .sit-icon { font-size: 2.4rem; line-height: 1; margin-bottom: .5rem; }
+  .sit-card .sit-label { font-size: .88rem; font-weight: 800; color: #0f172a; }
+  .sit-card .sit-desc  { font-size: .73rem; color: #64748b; margin-top: .2rem; line-height: 1.35; }
+
+  /* ── Panneau 3 niveaux ── */
+  .tiers-panel {
+    display: none;
+    max-width: 860px;
+    margin: 1.4rem auto 0;
+    animation: fadeIn .25s ease;
+  }
+  .tiers-panel.visible { display: block; }
+  .tiers-header {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: 1rem;
+  }
+  .tiers-header h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+  .tiers-header .back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: .83rem;
+    color: #64748b;
+    padding: .25rem .5rem;
+    border-radius: 6px;
+    transition: background .15s;
+    margin-left: auto;
+  }
+  .tiers-header .back-btn:hover { background: #f1f5f9; }
+
+  .tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 600px) {
+    .tiers-grid { grid-template-columns: 1fr; }
+    .situations-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .tier-card {
+    border-radius: 14px;
+    padding: 1.2rem;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    transition: box-shadow .18s;
+    position: relative;
+  }
+  .tier-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .22rem .65rem;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    width: fit-content;
+  }
+  .tier-badge.essentiel { background: #dcfce7; color: #166534; }
+  .tier-badge.confort   { background: #dbeafe; color: #1e40af; }
+  .tier-badge.premium   { background: #fef9c3; color: #854d0e; }
+
+  .tier-tagline {
+    font-size: .72rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: -.2rem;
+  }
+
+  .tier-emoji { font-size: 2.2rem; line-height: 1; text-align: center; }
+
+  .tier-name {
+    font-size: .88rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+  }
+
+  .tier-price {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0891b2;
+  }
+  .tier-price-sub {
+    font-size: .72rem;
+    color: #94a3b8;
+    margin-top: -.2rem;
+  }
+
+  .tier-add-btn {
+    margin-top: auto;
+    padding: .6rem;
+    border-radius: 10px;
+    border: none;
+    font-size: .82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    width: 100%;
+  }
+  .tier-add-btn:hover { opacity: .88; transform: scale(1.02); }
+  .tier-add-btn.essentiel { background: #16a34a; color: #fff; }
+  .tier-add-btn.confort   { background: #1d4ed8; color: #fff; }
+  .tier-add-btn.premium   { background: linear-gradient(135deg,#d97706,#f59e0b); color: #fff; }
+
+  .tiers-footer {
+    text-align: center;
+    margin-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  .tiers-footer a {
+    font-size: .82rem;
+    color: #0891b2;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .tiers-footer a:hover { text-decoration: underline; }
+
+  </style>
 </head>
 <body>
 
 <!-- NAV -->
+<!-- PROMO TOP-BAR -->
+<div class="promo-topbar" id="promoTopbar">
+  <div class="promo-topbar-inner">
+    <span class="promo-topbar-badge">Promo</span>
+    <div class="promo-messages" id="promoMessages">
+      <div class="promo-msg active">🎁 Livraison offerte dès 5 000 KMF d’achats</div>
+      <div class="promo-msg">✨ Première commande : code <strong>BIENVENUE</strong> pour −10 %</div>
+      <div class="promo-msg">🌍 Envoyez un cadeau aux Comores depuis la France</div>
+      <div class="promo-msg">⚡ Jusqu’à −40 % sur une sélection de produits</div>
+      <div class="promo-msg">📦 Retrait dans tous nos relais à Moroni &amp; Anjouan</div>
+      <div class="promo-msg">💳 PayPal, carte bancaire ou paiement à la livraison</div>
+    </div>
+  </div>
+  <nav class="promo-topbar-nav" aria-label="Messages promotionnels">
+    <span class="promo-dot on" data-idx="0"></span>
+    <span class="promo-dot" data-idx="1"></span>
+    <span class="promo-dot" data-idx="2"></span>
+    <span class="promo-dot" data-idx="3"></span>
+    <span class="promo-dot" data-idx="4"></span>
+    <span class="promo-dot" data-idx="5"></span>
+  </nav>
+</div>
 <nav>
   <div class="logo">Ko<span>merce</span></div>
   <div class="nav-right">
@@ -1373,15 +1648,15 @@
   <div style="flex:0 0 48%;min-width:260px;max-width:560px;
               padding:28px 5% 24px;
               display:flex;flex-direction:column;justify-content:center;gap:1rem;
-              background:linear-gradient(135deg,#0f1e37 0%,#1a3a5c 100%);">
+              background:linear-gradient(135deg,#0369a1 0%,#0891b2 100%);">
 
     <!-- Badge + titre -->
     <div>
       <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;
                   text-transform:uppercase;color:#e8a020;margin-bottom:.5rem;">
-        🏝️ Komerce &mdash; La boutique des Comores
+        <span class="hero-badge-anim">🏝️ Komerce &mdash; La boutique des Comores</span>
       </div>
-      <h1 style="font-size:clamp(1.15rem,2.8vw,1.75rem);margin:0;
+      <h1 class="hero-title-anim" style="font-size:clamp(1.15rem,2.8vw,1.75rem);margin:0;
                  text-align:left;line-height:1.25;font-weight:900;color:#fff;">
         Vos envies traversent la mer.<br>
         <span style="color:#e8a020;">Profitez de la vie.</span>
@@ -1391,22 +1666,22 @@
     <!-- Barre de recherche avec suggestions -->
     <div style="position:relative;width:100%;max-width:580px;">
       <form onsubmit="event.preventDefault();_heroSearch(document.getElementById('hero-search-input').value)"
-        style="display:flex;border-radius:14px;overflow:hidden;
+        style="display:flex;border-radius:12px;overflow:hidden;
                box-shadow:0 4px 24px rgba(0,0,0,.38);height:54px;">
         <span style="display:flex;align-items:center;padding:0 .75rem;
-                     background:#fff;color:#94a3b8;font-size:1.15rem;flex-shrink:0;">
+                     background:#fff;color:#94a3b8;font-size:1.05rem;flex-shrink:0;">
           &#128269;
         </span>
         <input id="hero-search-input" type="text"
           placeholder="Rechercher un produit, une catégorie..."
           autocomplete="off"
           style="flex:1;padding:.6rem .5rem;border:none;outline:none;
-                 font-size:.97rem;min-width:0;background:#fff;color:#1a3a5c;"
+                 font-size:.88rem;min-width:0;background:#fff;color:#0891b2;"
           oninput="_heroSearchSuggest(this.value)"
           onkeydown="if(event.key==='Escape'){this.value='';document.getElementById('hero-search-suggestions').style.display='none';}">
         <button type="submit"
-          style="padding:0 1.5rem;background:#e8a020;border:none;cursor:pointer;
-                 font-size:.92rem;font-weight:800;color:#fff;white-space:nowrap;
+          style="padding:0 1.2rem;background:#e8a020;border:none;cursor:pointer;
+                 font-size:.85rem;font-weight:800;color:#fff;white-space:nowrap;
                  letter-spacing:.03em;transition:background .15s;"
           onmouseover="this.style.background='#cf8e10'"
           onmouseout="this.style.background='#e8a020'">
@@ -1427,7 +1702,7 @@
   <!-- Côté droit : illustration -->
   <div style="flex:1;min-width:0;background:#f8f3eb;
               display:flex;align-items:center;justify-content:center;overflow:hidden;">
-    <img src="/images/hero_banner.jpg" alt="Komerce e-commerce Comores"
+    <img src="/images/hero_banner.jpg" class="hero-img-anim" alt="Komerce e-commerce Comores"
       style="width:100%;height:100%;object-fit:contain;object-position:center center;display:block;"
       onerror="this.closest('div').style.background='linear-gradient(135deg,#e8f4f8,#dbeafe)'">
   </div>
@@ -1452,7 +1727,72 @@
 </section>
 
 <!-- UNIVERS -->
-<section class="univers-section" id="univers">
+
+  <!-- ══════════════════════════════════════════
+       SECTION SITUATIONS DE VIE
+  ══════════════════════════════════════════ -->
+  <section class="situations-section" id="situations">
+    <div class="situations-title">
+      <h2>Qu'est-ce que vous souhaitez faire ?</h2>
+      <p>Choisissez une situation — nous vous proposons ce qu'il vous faut, en 3 niveaux de prix.</p>
+    </div>
+
+    <div class="situations-grid" id="situations-grid">
+      <div class="sit-card" style="background:#e0f7ff;--sit-color:#0891b2" data-sit="maison"
+           onclick="openSituation('maison')">
+        <div class="sit-icon">🏠</div>
+        <div class="sit-label">Équiper la maison</div>
+        <div class="sit-desc">Électroménager, cuisine, linge</div>
+      </div>
+      <div class="sit-card" style="background:#fef3c7;--sit-color:#d97706" data-sit="ceremonie"
+           onclick="openSituation('ceremonie')">
+        <div class="sit-icon">💒</div>
+        <div class="sit-label">Préparer une cérémonie</div>
+        <div class="sit-desc">Mariage, baptême, fiançailles</div>
+      </div>
+      <div class="sit-card" style="background:#f3f0ff;--sit-color:#7c3aed" data-sit="tech"
+           onclick="openSituation('tech')">
+        <div class="sit-icon">📱</div>
+        <div class="sit-label">Rester connecté</div>
+        <div class="sit-desc">Téléphones, électronique</div>
+      </div>
+      <div class="sit-card" style="background:#fdf2f8;--sit-color:#ec4899" data-sit="shabiller"
+           onclick="openSituation('shabiller')">
+        <div class="sit-icon">👗</div>
+        <div class="sit-label">S'habiller</div>
+        <div class="sit-desc">Tenues quotidiennes, enfants</div>
+      </div>
+      <div class="sit-card" style="background:#ecfdf5;--sit-color:#10b981" data-sit="fete"
+           onclick="openSituation('fete')">
+        <div class="sit-icon">🎉</div>
+        <div class="sit-label">Organiser une fête</div>
+        <div class="sit-desc">Décoration, vaisselle, cadeaux</div>
+      </div>
+      <div class="sit-card" style="background:#fffbeb;--sit-color:#f59e0b" data-sit="bebe"
+           onclick="openSituation('bebe')">
+        <div class="sit-icon">🤱</div>
+        <div class="sit-label">Accueillir un bébé</div>
+        <div class="sit-desc">Layette, jouets, soins</div>
+      </div>
+    </div>
+
+    <!-- Panneau 3 niveaux (apparaît sous la grille) -->
+    <div class="tiers-panel" id="tiers-panel">
+      <div class="tiers-header">
+        <span id="tiers-icon" style="font-size:1.5rem;"></span>
+        <h3 id="tiers-title"></h3>
+        <button class="back-btn" onclick="closeSituation()">← Retour</button>
+      </div>
+      <div class="tiers-grid" id="tiers-grid">
+        <!-- généré par JS -->
+      </div>
+      <div class="tiers-footer">
+        <a href="#catalog" onclick="showCatalog()">Voir tout le catalogue →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="univers-section" id="univers">
   <div class="section-eyebrow">✨ Deux univers, un même service</div>
   <h2 class="section-title">Choisissez l’univers qui correspond à votre besoin</h2>
   <p class="section-sub">
@@ -1656,7 +1996,7 @@
     <div class="promo-card" data-product='{"id":"static-1","name":"Samsung Galaxy A15 128Go","emoji":"📱","price_kmf":52186,"category":"telephones","promo_pct":35}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75"
-          alt="Samsung Galaxy A15" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
+          alt="Samsung Galaxy A15" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−35%</span>
       </div>
@@ -1664,7 +2004,7 @@
         <div class="promo-card-name">Samsung Galaxy A15 128Go</div>
         <div class="promo-card-cat">📱 Téléphones &amp; Accessoires</div>
         <div class="promo-price-kmf kmf-price" data-kmf="52186">≈ 52 186 KMF livré à Anjouan</div>
-        <div class="promo-countdown">⏳ Offre valable jusqu'au 28 mars</div>
+        <div class="promo-countdown">⏳ Se termine dans <span class="countdown-live" data-countdown="2026-04-30T23:59:59">--:--:--</span></div>
         <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
           <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
@@ -1677,10 +2017,10 @@
     <div class="promo-card" data-product='{"id":"static-2","name":"Lot 3 abayas brodées","emoji":"👗","price_kmf":31648,"category":"vetements","promo_pct":40}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=75"
-          alt="Abayas brodées" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
+          alt="Abayas brodées" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−40%</span>
-        <div style="position:absolute;top:.5rem;left:.5rem;background:#1a3a5c;
+        <div style="position:absolute;top:.5rem;left:.5rem;background:#0891b2;
           color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;">
           ✂️ Tailles dispo
         </div>
@@ -1689,7 +2029,7 @@
         <div class="promo-card-name">Lot 3 abayas brodées — sélection exclus.</div>
         <div class="promo-card-cat">👗 Vêtements &amp; Tissu</div>
         <div class="promo-price-kmf kmf-price" data-kmf="31648">≈ 31 648 KMF livré à Anjouan</div>
-        <div class="promo-countdown">⏳ Offre valable jusqu'au 31 mars</div>
+        <div class="promo-countdown">⏳ Se termine dans <span class="countdown-live" data-countdown="2026-04-15T23:59:59">--:--:--</span></div>
         <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
           <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
@@ -1702,7 +2042,7 @@
     <div class="promo-card" data-product='{"id":"static-3","name":"Écouteurs Sony WH-CH520","emoji":"🎧","price_kmf":42285,"category":"electronique","promo_pct":28}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=75"
-          alt="Écouteurs Sony" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
+          alt="Écouteurs Sony" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−28%</span>
       </div>
@@ -1710,7 +2050,7 @@
         <div class="promo-card-name">Écouteurs Bluetooth Sony WH-CH520</div>
         <div class="promo-card-cat">🎧 Électronique léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="42285">≈ 42 285 KMF livré à Anjouan</div>
-        <div class="promo-countdown">⏳ Stock limité — 12 unités restantes</div>
+        <div class="promo-countdown">🔥 Stock limité — <strong>12 unités restantes</strong></div>
         <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
           <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
@@ -1723,7 +2063,7 @@
     <div class="promo-card" data-product='{"id":"static-4","name":"Set cuisine Tefal 5 pièces","emoji":"🍳","price_kmf":64471,"category":"electromenager","promo_pct":22}'>
       <div class="promo-card-img">
         <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75"
-          alt="Set cuisine Tefal" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;pointer-events:none;"
+          alt="Set cuisine Tefal" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;"
           onerror="this.style.display='none'">
         <span class="promo-badge-tag">−22%</span>
       </div>
@@ -1731,7 +2071,7 @@
         <div class="promo-card-name">Set cuisine Tefal — 5 pièces inox</div>
         <div class="promo-card-cat">🏠 Électroménager léger</div>
         <div class="promo-price-kmf kmf-price" data-kmf="64471">≈ 64 471 KMF livré à Anjouan</div>
-        <div class="promo-countdown">⏳ Offre valable jusqu'au 30 mars</div>
+        <div class="promo-countdown">⏳ Se termine dans <span class="countdown-live" data-countdown="2026-04-25T23:59:59">--:--:--</span></div>
         <div class="promo-card-footer" style="margin-top:.8rem;"><button onclick="toggleFavorite(JSON.parse(this.closest('[data-product]').dataset.product))" style="flex:0 0 38px;height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;" title="Favoris">🤍</button>
           <button class="btn-order" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.82rem;padding:.6rem .4rem;"
             onclick="addToCart(JSON.parse(this.closest('[data-product]').dataset.product))">
@@ -1923,7 +2263,7 @@
       <div class="deliv-tag">✅ Livré en 3 à 5 semaines</div>
       <button onclick="openCeremony({id:'cat-wax',name:'Wax &amp; Dentelles',emoji:'👗',price_kmf:0,category:'ceremonie'})"
         style="margin-top:.9rem;width:100%;padding:.6rem 1rem;
-               background:linear-gradient(135deg,#1a3a5c,#2563eb);
+               background:linear-gradient(135deg,#0891b2,#2563eb);
                color:#fff;border:none;border-radius:8px;font-weight:700;
                font-size:.82rem;cursor:pointer;letter-spacing:.01em;">
         🪡 Commander tissu / tenue →
@@ -2194,7 +2534,7 @@
 <script>
 (function() {
   // ── Taux MVP (révision mensuelle) ──────────────────────
-  // Pricing v7.2 — Formule complète 16 étapes
+  // Pricing v6.4 — Formule complète 16 étapes
   // Taux MVP : 1 AED = 138 KMF · 1 EUR = 492 KMF · Fret 180 EUR/m3
   // Hub Dubai 7000 AED/mois absorbé dans marge 12% (Option B)
   const RATES = { EUR: 492, AED: 138, KMF: 1 };
@@ -2348,84 +2688,9 @@ function detectLocationFallback() {
 }
 
 // Ouvrir le checkout
-
-// ── Favoris (localStorage) ─────────────────────────────────────────────
-window.toggleFavorite = function(product) {
-  if (!product || !product.id) return;
-  var stored = JSON.parse(localStorage.getItem('kmrc_favs') || '[]');
-  var idx = stored.findIndex(function(p) { return p.id === product.id; });
-  // Trouver le bouton favoris de la carte
-  var targetCard = null;
-  document.querySelectorAll('[data-product]').forEach(function(c) {
-    try { var d = JSON.parse(c.dataset.product); if (d.id === product.id) targetCard = c; } catch(e) {}
-  });
-  var favBtn = targetCard ? targetCard.querySelector('button[title="Favoris"]') : null;
-  if (idx === -1) {
-    stored.push(product);
-    if (favBtn) { favBtn.textContent = '\u2764\ufe0f'; favBtn.style.background = '#fff0f0'; favBtn.style.borderColor = '#f87171'; }
-    window._showToast('\u2764\ufe0f ' + product.name + ' ajout\u00e9 aux favoris', 'success');
-  } else {
-    stored.splice(idx, 1);
-    if (favBtn) { favBtn.textContent = '\U0001f90d'; favBtn.style.background = '#f1f5f9'; favBtn.style.borderColor = '#e2e8f0'; }
-    window._showToast('Retir\u00e9 des favoris', 'info');
-  }
-  localStorage.setItem('kmrc_favs', JSON.stringify(stored));
-};
-
-// Restaurer icones favoris au chargement
-document.addEventListener('DOMContentLoaded', function() {
-  var stored = JSON.parse(localStorage.getItem('kmrc_favs') || '[]');
-  stored.forEach(function(product) {
-    document.querySelectorAll('[data-product]').forEach(function(c) {
-      try {
-        var d = JSON.parse(c.dataset.product);
-        if (d.id === product.id) {
-          var btn = c.querySelector('button[title="Favoris"]');
-          if (btn) { btn.textContent = '\u2764\ufe0f'; btn.style.background = '#fff0f0'; btn.style.borderColor = '#f87171'; }
-        }
-      } catch(e) {}
-    });
-  });
-});
-
-// Toast utilitaire
-window._showToast = function(msg, type) {
-  var colors = { error: '#e05c2e', success: '#2e7d52', info: '#1a3a5c' };
-  var bg = colors[type] || colors.info;
-  var t = document.createElement('div');
-  t.setAttribute('role', 'alert');
-  t.style.cssText = [
-    'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%)',
-    'background:' + bg,
-    'color:#fff;padding:.8rem 1.4rem;border-radius:12px',
-    'font-size:.92rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.22)',
-    'z-index:99999;max-width:90vw;text-align:center',
-    'animation:_toastIn .2s ease'
-  ].join(';');
-  t.textContent = msg;
-  if (!document.getElementById('_toast-style')) {
-    var s = document.createElement('style');
-    s.id = '_toast-style';
-    s.textContent = '@keyframes _toastIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
-    document.head.appendChild(s);
-  }
-  document.body.appendChild(t);
-  setTimeout(function() { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(function() { t.remove(); }, 300); }, 3200);
-};
-
 window.openCheckout = async function() {
-  // Guard panier vide
-  var _cartCheck = (typeof _cart !== 'undefined') ? _cart : [];
-  if (_cartCheck.length === 0) {
-    window._showToast('⚠️ Votre panier est vide — ajoutez des produits avant de commander', 'error');
-    var catalog = document.getElementById('catalog') || document.getElementById('products') || document.querySelector('.products-section, [data-section="catalog"]');
-    if (catalog) { setTimeout(function() { catalog.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); }
-    return;
-  }
-
   _coStep    = 1;
   _coPayMode = null;
-
 
   const fallback = detectLocationFallback();
   _coLocation = fallback;
@@ -2731,6 +2996,604 @@ document.getElementById('kmrc-checkout-overlay')?.addEventListener('click', func
   if (e.target === this) closeCheckout();
 });
 </script>
+
+<script>
+// ── Validation panier vide ────────────────────────────────────────────────
+(function _patchCheckout() {
+  // On surcharge openCheckout au moment où komerce-api.js est chargé
+  function _showCartEmptyToast() {
+    var existing = document.getElementById('_empty-cart-toast');
+    if (existing) existing.remove();
+    var t = document.createElement('div');
+    t.id = '_empty-cart-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
+      + 'background:#0891b2;color:#fff;padding:.9rem 1.6rem;border-radius:14px;'
+      + 'box-shadow:0 8px 32px rgba(0,0,0,.3);z-index:99999;font-size:.9rem;font-weight:600;'
+      + 'display:flex;align-items:center;gap:.6rem;max-width:340px;text-align:center;'
+      + 'animation:fadeSlideUp .3s ease;';
+    t.innerHTML = '<span style="font-size:1.3rem;">🛒</span>'
+      + '<span>Votre panier est vide.<br><a href="#catalogue" '
+      + 'style="color:#e8a020;text-decoration:underline;" '
+      + 'onclick="document.getElementById('_empty-cart-toast').remove()">'
+      + 'Découvrir le catalogue →</a></span>';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity .4s';
+      setTimeout(function(){ t.remove(); }, 400); }, 4000);
+    var cat = document.getElementById('catalogue');
+    if (cat) cat.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function _cartIsEmpty() {
+    // Tente de lire le panier depuis komerce-api.js (exposed as window._cart or window.cart)
+    var c = window._cart || window.cart || [];
+    return !c.length;
+  }
+
+  // Remplace openCheckout globalement une fois le DOM prêt
+  window.addEventListener('load', function() {
+    var _orig = window.openCheckout;
+    window.openCheckout = function() {
+      if (_cartIsEmpty()) { _showCartEmptyToast(); return; }
+      if (typeof _orig === 'function') _orig.apply(this, arguments);
+    };
+  }, {once: true});
+})();
+</script>
+
+
+<script>
+// ── Compte-à-rebours live ────────────────────────────────────────────────
+(function _countdown() {
+  function pad(n) { return String(n).padStart(2,'0'); }
+  function fmt(ms) {
+    if (ms <= 0) return 'Expiré';
+    var d = Math.floor(ms/86400000),
+        h = Math.floor(ms%86400000/3600000),
+        m = Math.floor(ms%3600000/60000),
+        s = Math.floor(ms%60000/1000);
+    return d>0 ? d+'j '+pad(h)+'h '+pad(m)+'min'
+               : pad(h)+':'+pad(m)+':'+pad(s);
+  }
+  function tick() {
+    document.querySelectorAll('[data-countdown]').forEach(function(el){
+      var rem = new Date(el.dataset.countdown).getTime()-Date.now();
+      el.textContent = fmt(rem);
+      if (rem<=0) el.style.background='#fee2e2';
+    });
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PANIER DRAWER (slide from right)
+════════════════════════════════════════════════════════ -->
+<div id="cart-overlay" onclick="closeCart()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;transition:opacity .25s;"></div>
+
+<aside id="cart-drawer"
+  style="position:fixed;top:0;right:-440px;width:min(440px,100vw);height:100dvh;
+         background:#fff;z-index:9001;box-shadow:-4px 0 32px rgba(0,0,0,.18);
+         display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);
+         font-family:inherit;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;
+               padding:1.2rem 1.4rem;border-bottom:2px solid #e0f2fe;background:#f0f9ff;">
+    <div style="display:flex;align-items:center;gap:.6rem;">
+      <span style="font-size:1.4rem;">🛒</span>
+      <h2 style="margin:0;font-size:1.05rem;font-weight:800;color:#0369a1;">Mon Panier</h2>
+      <span id="cart-drawer-count"
+        style="background:#0891b2;color:#fff;border-radius:999px;
+               padding:.15rem .55rem;font-size:.75rem;font-weight:700;"></span>
+    </div>
+    <button onclick="closeCart()"
+      style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#64748b;
+             line-height:1;padding:.3rem;">&times;</button>
+  </div>
+
+  <!-- Items list -->
+  <div id="cart-items-list"
+    style="flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.85rem;">
+  </div>
+
+  <!-- Empty state -->
+  <div id="cart-empty-state"
+    style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;
+           gap:1rem;padding:2rem;text-align:center;color:#94a3b8;">
+    <div style="font-size:3.5rem;">🛒</div>
+    <p style="font-size:.95rem;font-weight:600;color:#64748b;margin:0;">Votre panier est vide</p>
+    <p style="font-size:.82rem;margin:0;">Ajoutez des produits depuis le catalogue</p>
+    <button onclick="closeCart();document.getElementById('daily-section')?.scrollIntoView({behavior:'smooth'})"
+      style="background:#0891b2;color:#fff;border:none;border-radius:10px;
+             padding:.65rem 1.4rem;font-size:.85rem;font-weight:700;cursor:pointer;">
+      Voir le catalogue →
+    </button>
+  </div>
+
+  <!-- Footer total + checkout -->
+  <div id="cart-footer"
+    style="border-top:2px solid #e0f2fe;padding:1.1rem 1.4rem;background:#f0f9ff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem;">
+      <span style="font-size:.9rem;color:#64748b;font-weight:600;">Total estimé</span>
+      <span id="cart-total" style="font-size:1.15rem;font-weight:900;color:#0369a1;"></span>
+    </div>
+    <button onclick="closeCart();typeof openCheckout==='function'&&openCheckout()"
+      style="width:100%;background:linear-gradient(135deg,#0891b2,#0369a1);color:#fff;
+             border:none;border-radius:12px;padding:.85rem;font-size:.92rem;
+             font-weight:800;cursor:pointer;letter-spacing:.02em;
+             box-shadow:0 4px 16px rgba(8,145,178,.35);transition:opacity .15s;"
+      onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+      ✅ Passer la commande
+    </button>
+    <p style="font-size:.72rem;color:#94a3b8;text-align:center;margin:.6rem 0 0;">
+      Livraison calculée à la commande · Paiement sécurisé
+    </p>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL CÉRÉMONIE — Panier personnalisé
+════════════════════════════════════════════════════════ -->
+<div id="ceremony-modal-overlay" onclick="closeCeremonyModal()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+         z-index:9100;align-items:center;justify-content:center;padding:1rem;">
+
+  <div id="ceremony-modal-box" onclick="event.stopPropagation()"
+    style="background:#fff;border-radius:20px;width:min(520px,100%);max-height:90dvh;
+           overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.25);
+           animation:slideUpModal .3s cubic-bezier(.4,0,.2,1);">
+
+    <!-- Modal header -->
+    <div id="ceremony-modal-header"
+      style="padding:1.4rem 1.5rem 1rem;border-bottom:1px solid #e0f2fe;
+             display:flex;align-items:flex-start;justify-content:space-between;
+             background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border-radius:20px 20px 0 0;">
+      <div>
+        <div id="ceremony-modal-emoji" style="font-size:2rem;line-height:1;margin-bottom:.3rem;"></div>
+        <h3 id="ceremony-modal-name" style="margin:0;font-size:1.05rem;font-weight:800;color:#0369a1;"></h3>
+        <div id="ceremony-modal-price" style="font-size:.82rem;color:#64748b;margin-top:.25rem;"></div>
+      </div>
+      <button onclick="closeCeremonyModal()"
+        style="background:none;border:none;font-size:1.4rem;cursor:pointer;
+               color:#64748b;line-height:1;padding:.2rem;flex-shrink:0;">&times;</button>
+    </div>
+
+    <!-- Modal body (dynamic) -->
+    <div id="ceremony-modal-body" style="padding:1.4rem 1.5rem;"></div>
+
+    <!-- Modal footer -->
+    <div style="padding:1rem 1.5rem 1.5rem;border-top:1px solid #f1f5f9;">
+      <button id="ceremony-modal-add-btn" onclick="ceremonyAddToCart()"
+        style="width:100%;background:linear-gradient(135deg,#0891b2,#0369a1);color:#fff;
+               border:none;border-radius:12px;padding:.9rem;font-size:.95rem;
+               font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(8,145,178,.3);
+               transition:opacity .15s;"
+        onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+        🛒 Ajouter au panier personnalisé
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUpModal {
+  from { transform:translateY(32px); opacity:0; }
+  to   { transform:translateY(0);    opacity:1; }
+}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  KOMERCE — Système Panier + Cérémonie + Favoris
+//  v3.0 — Panier persistant localStorage · Modal cérémonie · Favoris
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Stockage ─────────────────────────────────────────────────────
+var CART_KEY = 'kmrc_cart_v2';
+var FAVS_KEY = 'kmrc_favs_v2';
+
+function _loadCart()  { try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch(e){ return []; } }
+function _saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); window._cart = c; }
+function _loadFavs()  { try { return JSON.parse(localStorage.getItem(FAVS_KEY) || '[]'); } catch(e){ return []; } }
+function _saveFavs(f) { localStorage.setItem(FAVS_KEY, JSON.stringify(f)); }
+
+// Init global
+window._cart = _loadCart();
+
+// ── Utilitaires ──────────────────────────────────────────────────
+function _fmtKmf(kmf) {
+  if (!kmf) return '—';
+  var tz = (Intl&&Intl.DateTimeFormat)?Intl.DateTimeFormat().resolvedOptions().timeZone:'';
+  if (/Comoro|Mayotte/i.test(tz)) return Math.round(kmf).toLocaleString('fr-FR')+' KMF';
+  return Math.round(kmf/492).toLocaleString('fr-FR')+' €';
+}
+
+function _updateCartBadge() {
+  var c = _loadCart();
+  var total = c.reduce(function(s,i){ return s+(i.qty||1); }, 0);
+  ['cart-count','cart-drawer-count'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.textContent = total || ''; el.style.display = total ? '' : 'none'; }
+  });
+  window._cart = c;
+}
+
+function _showToast(msg, icon) {
+  var old = document.getElementById('_kmrc_toast');
+  if (old) old.remove();
+  var t = document.createElement('div');
+  t.id = '_kmrc_toast';
+  t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);'+
+    'background:#0369a1;color:#fff;padding:.85rem 1.5rem;border-radius:14px;'+
+    'box-shadow:0 8px 32px rgba(0,0,0,.25);z-index:99999;font-size:.88rem;font-weight:600;'+
+    'display:flex;align-items:center;gap:.55rem;max-width:360px;text-align:left;'+
+    'animation:fadeSlideUp .3s ease;white-space:nowrap;';
+  t.innerHTML = '<span style="font-size:1.25rem">'+(icon||'✅')+'</span><span>'+msg+'</span>';
+  document.body.appendChild(t);
+  setTimeout(function(){
+    t.style.opacity='0'; t.style.transition='opacity .35s';
+    setTimeout(function(){ t.remove(); }, 400);
+  }, 2800);
+}
+
+// ── PANIER — addToCart ────────────────────────────────────────────
+function addToCart(p) {
+  if (!p || !p.id) return;
+  var cart = _loadCart();
+  var existing = cart.find(function(i){ return i.id === p.id; });
+  if (existing) {
+    existing.qty = (existing.qty||1) + 1;
+    _showToast(p.name+' · quantité mise à jour', '🛒');
+  } else {
+    cart.push(Object.assign({}, p, { qty: 1, addedAt: Date.now() }));
+    _showToast(p.name+' ajouté au panier !', '✅');
+  }
+  _saveCart(cart);
+  _updateCartBadge();
+}
+
+// ── PANIER — removeFromCart ───────────────────────────────────────
+function removeFromCart(id) {
+  var cart = _loadCart().filter(function(i){ return i.id !== id; });
+  _saveCart(cart);
+  _updateCartBadge();
+  renderCart();
+}
+
+// ── PANIER — openCart / closeCart / renderCart ───────────────────
+function openCart() {
+  renderCart();
+  var drawer  = document.getElementById('cart-drawer');
+  var overlay = document.getElementById('cart-overlay');
+  if (drawer)  { drawer.style.right  = '0'; }
+  if (overlay) { overlay.style.display = 'block'; }
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  var drawer  = document.getElementById('cart-drawer');
+  var overlay = document.getElementById('cart-overlay');
+  if (drawer)  { drawer.style.right  = '-440px'; }
+  if (overlay) { overlay.style.display = 'none'; }
+  document.body.style.overflow = '';
+}
+
+function renderCart() {
+  var cart   = _loadCart();
+  var list   = document.getElementById('cart-items-list');
+  var empty  = document.getElementById('cart-empty-state');
+  var footer = document.getElementById('cart-footer');
+  var total  = document.getElementById('cart-total');
+  if (!list) return;
+
+  if (!cart.length) {
+    list.style.display   = 'none';
+    if (empty)  { empty.style.display  = 'flex'; }
+    if (footer) { footer.style.display = 'none'; }
+    return;
+  }
+  list.style.display   = 'flex';
+  if (empty)  { empty.style.display  = 'none'; }
+  if (footer) { footer.style.display = 'block'; }
+
+  list.innerHTML = cart.map(function(item) {
+    var isCeremony = !!(item.sizes || item.metres);
+    var totalQty   = item.sizes
+      ? Object.values(item.sizes).reduce(function(s,v){return s+parseInt(v||0);},0)
+      : (item.qty || 1);
+    var lineKmf = (item.price_kmf || 0) * totalQty;
+
+    // ── Sous-titre selon type ──
+    var subHtml = '';
+    if (item.sizes) {
+      var badges = Object.entries(item.sizes)
+        .filter(function(e){ return parseInt(e[1])>0; })
+        .map(function(e){
+          return '<span style="display:inline-flex;align-items:center;gap:.25rem;'+
+            'background:#e0f2fe;color:#0369a1;border-radius:20px;'+
+            'padding:.15rem .55rem;font-size:.72rem;font-weight:700;">'+
+            e[0]+' <span style="background:#0369a1;color:#fff;border-radius:50%;'+
+            'width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;">'+
+            e[1]+'</span></span>';
+        }).join(' ');
+      subHtml = '<div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem;">'+badges+'</div>';
+    } else if (item.metres) {
+      subHtml = '<div style="margin-top:.3rem;"><span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:.15rem .55rem;font-size:.72rem;font-weight:700;">'+item.metres+' m de tissu</span></div>';
+    }
+    if (item.details) {
+      subHtml += '<div style="font-size:.72rem;color:#64748b;margin-top:.3rem;font-style:italic;">'+item.details.substring(0,40)+'…</div>';
+    }
+
+    // ── Contrôles quantité (standard) ou icône verrou (cérémonie) ──
+    var qtyCtrl = isCeremony
+      ? '<div style="font-size:.7rem;color:#94a3b8;margin-top:.35rem;display:flex;align-items:center;gap:.3rem;">'+
+          '<span>🔒</span><span>Commande sur mesure</span></div>'
+      : '<div style="display:flex;align-items:center;gap:.55rem;margin-top:.45rem;">'+
+          '<button onclick="decrementCart(\''+item.id+'\')" style="width:26px;height:26px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-size:.9rem;">−</button>'+
+          '<span style="font-size:.85rem;font-weight:700;color:#0369a1;min-width:1.2rem;text-align:center;">'+(item.qty||1)+'</span>'+
+          '<button onclick="incrementCart(\''+item.id+'\')" style="width:26px;height:26px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-size:.9rem;">+</button>'+
+        '</div>';
+
+    return '<div style="display:flex;align-items:flex-start;gap:.85rem;padding:.85rem;'+
+      'background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">'+
+      '<div style="font-size:1.7rem;flex-shrink:0;line-height:1.1;">'+(item.emoji||'📦')+'</div>'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-size:.85rem;font-weight:700;color:#0f172a;overflow:hidden;text-overflow:ellipsis;">'+item.name+'</div>'+
+        subHtml+
+        qtyCtrl+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0;">'+
+        '<div style="font-size:.88rem;font-weight:800;color:#0891b2;">'+_fmtKmf(lineKmf)+'</div>'+
+        '<button onclick="removeFromCart(\''+item.id+'\')" title="Supprimer" '+
+        'style="background:none;border:none;color:#e11d48;cursor:pointer;font-size:.85rem;padding:.1rem;">🗑</button>'+
+      '</div></div>';
+  }).join('');
+
+  var totalKmf = cart.reduce(function(s,i){ return s+(i.price_kmf||0)*(i.qty||1); }, 0);
+  if (total) total.textContent = _fmtKmf(totalKmf);
+  _updateCartBadge();
+}
+
+function incrementCart(id) {
+  var cart = _loadCart();
+  var item = cart.find(function(i){ return i.id === id; });
+  if (item) { item.qty = (item.qty||1)+1; _saveCart(cart); renderCart(); }
+}
+function decrementCart(id) {
+  var cart = _loadCart();
+  var item = cart.find(function(i){ return i.id === id; });
+  if (item) {
+    item.qty = (item.qty||1) - 1;
+    if (item.qty <= 0) { cart = cart.filter(function(i){ return i.id !== id; }); }
+    _saveCart(cart); renderCart();
+  }
+}
+
+// ── CÉRÉMONIE — openCeremony ─────────────────────────────────────
+var _ceremonyProduct = null;
+
+function openCeremony(p) {
+  _ceremonyProduct = p;
+  var overlay = document.getElementById('ceremony-modal-overlay');
+  var box     = document.getElementById('ceremony-modal-box');
+  if (!overlay) return;
+
+  // Header
+  document.getElementById('ceremony-modal-emoji').textContent = p.emoji || '🎁';
+  document.getElementById('ceremony-modal-name').textContent  = p.name  || '';
+  var priceEl = document.getElementById('ceremony-modal-price');
+  if (p.price_kmf && p.price_kmf > 0) {
+    priceEl.textContent = _fmtKmf(p.price_kmf) + (p.id.startsWith('tissu-') ? ' / mètre' : '');
+  } else {
+    priceEl.textContent = 'Prix selon options choisies';
+  }
+
+  // Body — dynamic fields
+  var body = document.getElementById('ceremony-modal-body');
+  var type = _getCeremonyType(p.id);
+  body.innerHTML = _ceremonyFormHTML(type, p);
+
+  // Show
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  // Animate box
+  if (box) { box.style.animation = 'none'; box.offsetHeight; box.style.animation = ''; }
+}
+
+function closeCeremonyModal() {
+  var overlay = document.getElementById('ceremony-modal-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  _ceremonyProduct = null;
+}
+
+function _getCeremonyType(id) {
+  if (!id) return 'generic';
+  if (id.startsWith('tissu-')) return 'fabric';
+  if (id.startsWith('boubou-') || id.startsWith('abaya-') || id.startsWith('kaftan-')) return 'clothing';
+  return 'generic';
+}
+
+function _ceremonyFormHTML(type, p) {
+  var phoneField = '<div style="margin-top:1.2rem;">'+
+    '<label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:.4rem;">'+
+    '📞 Votre numéro WhatsApp (pour confirmation)</label>'+
+    '<input id="cer-phone" type="tel" placeholder="+269 3XX XXXX" '+
+    'style="width:100%;padding:.65rem .85rem;border:1.5px solid #cbd5e1;border-radius:10px;'+
+    'font-size:.88rem;box-sizing:border-box;outline:none;" '+
+    'onfocus="this.style.borderColor='#0891b2'" onblur="this.style.borderColor='#cbd5e1'">'+
+    '</div>';
+
+  var notesField = '<div style="margin-top:1rem;">'+
+    '<label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:.4rem;">'+
+    '✏️ Instructions spéciales (optionnel)</label>'+
+    '<textarea id="cer-notes" rows="2" placeholder="Couleur préférée, occasion, précisions..." '+
+    'style="width:100%;padding:.65rem .85rem;border:1.5px solid #cbd5e1;border-radius:10px;'+
+    'font-size:.82rem;resize:vertical;box-sizing:border-box;outline:none;" '+
+    'onfocus="this.style.borderColor='#0891b2'" onblur="this.style.borderColor='#cbd5e1'"></textarea>'+
+    '</div>';
+
+  if (type === 'fabric') {
+    return '<p style="font-size:.85rem;color:#64748b;margin:0 0 1.2rem;">'+
+      'Indiquez la quantité de tissu souhaitée en mètres.</p>'+
+      '<label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:.4rem;">'+
+      '📏 Quantité (mètres)</label>'+
+      '<div style="display:flex;align-items:center;gap:.7rem;">'+
+      '<button onclick="var i=document.getElementById('cer-metres');i.value=Math.max(0.5,(parseFloat(i.value)||1)-0.5)" '+
+      'style="width:38px;height:38px;border-radius:8px;border:1.5px solid #cbd5e1;background:#f8fafc;cursor:pointer;font-size:1.1rem;">−</button>'+
+      '<input id="cer-metres" type="number" value="2" min="0.5" max="50" step="0.5" '+
+      'style="flex:1;padding:.65rem;border:1.5px solid #0891b2;border-radius:10px;'+
+      'font-size:1rem;font-weight:700;text-align:center;outline:none;color:#0369a1;">'+
+      '<button onclick="var i=document.getElementById('cer-metres');i.value=(parseFloat(i.value)||1)+0.5" '+
+      'style="width:38px;height:38px;border-radius:8px;border:1.5px solid #cbd5e1;background:#f8fafc;cursor:pointer;font-size:1.1rem;">+</button>'+
+      '</div>'+
+      phoneField + notesField;
+  }
+
+  if (type === 'clothing') {
+    var sizes = ['XS','S','M','L','XL','XXL','3XL'];
+    var sizeRows = sizes.map(function(sz) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;'+
+        'padding:.55rem .7rem;border-radius:8px;border:1.5px solid #e2e8f0;'+
+        'background:#f8fafc;transition:border-color .15s;" '+
+        'onmouseover="this.style.borderColor='#0891b2'" onmouseout="this.style.borderColor='#e2e8f0'">'+
+        '<span style="font-size:.85rem;font-weight:700;color:#374151;min-width:2.5rem;">'+sz+'</span>'+
+        '<div style="display:flex;align-items:center;gap:.5rem;">'+
+        '<button onclick="var i=this.nextElementSibling;i.value=Math.max(0,parseInt(i.value||0)-1);_updateSizeVisual(this.parentElement.parentElement)" '+
+        'style="width:28px;height:28px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-size:.9rem;">−</button>'+
+        '<input type="number" data-size="'+sz+'" value="0" min="0" max="20" '+
+        'style="width:48px;height:28px;border:1px solid #cbd5e1;border-radius:6px;'+
+        'text-align:center;font-size:.85rem;font-weight:700;color:#0369a1;outline:none;" '+
+        'onchange="_updateSizeVisual(this.closest('div'))" '+
+        'onfocus="this.style.borderColor='#0891b2'" onblur="this.style.borderColor='#cbd5e1'">'+
+        '<button onclick="var i=this.previousElementSibling;i.value=Math.min(20,parseInt(i.value||0)+1);_updateSizeVisual(this.parentElement.parentElement)" '+
+        'style="width:28px;height:28px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-size:.9rem;">+</button>'+
+        '</div></div>';
+    }).join('');
+    return '<p style="font-size:.85rem;color:#64748b;margin:0 0 1rem;">'+
+      'Sélectionnez les tailles et quantités souhaitées.</p>'+
+      '<div style="display:flex;flex-direction:column;gap:.45rem;">'+sizeRows+'</div>'+
+      phoneField + notesField;
+  }
+
+  // generic
+  return '<p style="font-size:.85rem;color:#64748b;margin:0 0 1.2rem;">'+
+    'Décrivez votre besoin et nous vous contacterons pour confirmer.</p>'+
+    '<label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:.4rem;">'+
+    '📝 Décrivez votre demande</label>'+
+    '<textarea id="cer-generic-details" rows="3" placeholder="Exemple : robe de mariage bleue, taille 42, pour juillet 2026..." '+
+    'style="width:100%;padding:.7rem .85rem;border:1.5px solid #cbd5e1;border-radius:10px;'+
+    'font-size:.85rem;resize:vertical;box-sizing:border-box;outline:none;" '+
+    'onfocus="this.style.borderColor='#0891b2'" onblur="this.style.borderColor='#cbd5e1'"></textarea>'+
+    phoneField + notesField;
+}
+
+function _updateSizeVisual(row) {
+  // Highlight row if qty > 0
+  var inp = row && row.querySelector ? row.querySelector('input[type=number]') : null;
+  if (inp) row.style.borderColor = parseInt(inp.value||0) > 0 ? '#0891b2' : '#e2e8f0';
+}
+
+// ── CÉRÉMONIE — Ajouter au panier ────────────────────────────────
+function ceremonyAddToCart() {
+  if (!_ceremonyProduct) return;
+  var p    = _ceremonyProduct;
+  var type = _getCeremonyType(p.id);
+  var item = Object.assign({}, p, { addedAt: Date.now() });
+  var uniqueId = p.id + '_' + Date.now(); // Each ceremony item is unique
+
+  if (type === 'fabric') {
+    var mEl = document.getElementById('cer-metres');
+    var m   = parseFloat(mEl && mEl.value || '1');
+    if (!m || m <= 0) { _showToast('Veuillez indiquer une quantité', '⚠️'); return; }
+    item.id      = uniqueId;
+    item.metres  = m;
+    item.qty     = 1;
+    item.price_kmf = (p.price_kmf || 0) * m;
+    item.name    = p.name + ' × ' + m + 'm';
+  } else if (type === 'clothing') {
+    var sizeInputs = document.querySelectorAll('#ceremony-modal-body input[data-size]');
+    var sizes = {};
+    var totalQty = 0;
+    sizeInputs.forEach(function(inp) {
+      var qty = parseInt(inp.value || '0');
+      if (qty > 0) { sizes[inp.dataset.size] = qty; totalQty += qty; }
+    });
+    if (!totalQty) { _showToast('Sélectionnez au moins une taille', '⚠️'); return; }
+    item.id    = uniqueId;
+    item.sizes = sizes;
+    item.qty   = totalQty;
+  } else {
+    var detEl = document.getElementById('cer-generic-details');
+    var det   = detEl && detEl.value.trim();
+    if (!det) { _showToast('Veuillez décrire votre demande', '⚠️'); return; }
+    item.id      = uniqueId;
+    item.details = det;
+    item.qty     = 1;
+  }
+
+  // Phone / notes
+  var phoneEl = document.getElementById('cer-phone');
+  var notesEl = document.getElementById('cer-notes');
+  if (phoneEl && phoneEl.value.trim()) item.phone = phoneEl.value.trim();
+  if (notesEl && notesEl.value.trim()) item.notes = notesEl.value.trim();
+
+  var cart = _loadCart();
+  cart.push(item);
+  _saveCart(cart);
+  _updateCartBadge();
+  closeCeremonyModal();
+  _showToast(p.name + ' ajouté au panier !', '✅');
+
+  // Open cart after short delay
+  setTimeout(openCart, 600);
+}
+
+// ── FAVORIS ───────────────────────────────────────────────────────
+function toggleFavorite(p) {
+  if (!p || !p.id) return;
+  var favs = _loadFavs();
+  var idx  = favs.findIndex(function(f){ return f.id === p.id; });
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    _showToast(p.name + ' retiré des favoris', '🤍');
+  } else {
+    favs.push(Object.assign({}, p, { savedAt: Date.now() }));
+    _showToast(p.name + ' ajouté aux favoris !', '❤️');
+  }
+  _saveFavs(favs);
+  _updateFavIcons();
+}
+
+function _updateFavIcons() {
+  var favs = _loadFavs();
+  var ids  = favs.map(function(f){ return f.id; });
+  document.querySelectorAll('[data-product]').forEach(function(card) {
+    try {
+      var p = JSON.parse(card.dataset.product);
+      var btn = card.querySelector('button[title="Favoris"]');
+      if (btn) btn.textContent = ids.indexOf(p.id) >= 0 ? '❤️' : '🤍';
+    } catch(e) {}
+  });
+}
+
+// ── Init au chargement ────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  _updateCartBadge();
+  _updateFavIcons();
+
+  // Keyboard: Escape ferme les modals
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeCart();
+      closeCeremonyModal();
+    }
+  });
+});
+</script>
+
 </body>
 
 <script>
@@ -3042,106 +3905,181 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+  /* ── PROMO TOP-BAR rotation ── */
+  (function(){
+    const msgs = document.querySelectorAll('#promoMessages .promo-msg');
+    const dots = document.querySelectorAll('.promo-topbar-nav .promo-dot');
+    let cur = 0;
+    function show(n){
+      msgs[cur].classList.remove('active');
+      dots[cur].classList.remove('on');
+      cur = (n + msgs.length) % msgs.length;
+      msgs[cur].classList.add('active');
+      dots[cur].classList.add('on');
+    }
+    dots.forEach(d => d.addEventListener('click', () => { show(+d.dataset.idx); clearInterval(timer); timer = setInterval(() => show(cur+1), 4000); }));
+    let timer = setInterval(() => show(cur+1), 4000);
+  })();
 
-// ── RECHERCHE HERO ────────────────────────────────────────────────────
 
-/** Construit l'index de recherche depuis les cartes du DOM */
-function _buildSearchIndex() {
-  const index = [];
-  document.querySelectorAll('.ceremony-card').forEach(card => {
-    const name = card.querySelector('h4')?.textContent?.trim() || '';
-    const desc = card.querySelector('p')?.textContent?.trim() || '';
-    index.push({ name, desc, type: 'ceremony', el: card });
-  });
-  document.querySelectorAll('[data-product]').forEach(card => {
-    try {
-      const data = JSON.parse(card.dataset.product);
-      index.push({ name: data.name, desc: data.category || '', type: 'promo', el: card });
-    } catch(e) {}
-  });
-  return index;
-}
+  // ═══════════════════════════════════════════
+  //  SYSTÈME SITUATIONS DE VIE
+  // ═══════════════════════════════════════════
+  var _situations = {
+    maison: {
+      icon: '🏠', label: 'Équiper la maison',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Casseroles inox (lot 3)', emoji:'🍳',
+          price_kmf:18500, price_eur:40,
+          id:'sit-maison-1', category:'electromenager' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Set cuisine Tefal 5 pièces', emoji:'🥘',
+          price_kmf:64471, price_eur:139,
+          id:'sit-maison-2', category:'electromenager' },
+        { level:'premium', tagline:'Pour bien équiper',
+          name:'Réfrigérateur Samsung 300L', emoji:'❄️',
+          price_kmf:185000, price_eur:399,
+          id:'sit-maison-3', category:'electromenager' }
+      ]
+    },
+    ceremonie: {
+      icon: '💒', label: 'Préparer une cérémonie',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Tissu bazin 6 mètres', emoji:'🧵',
+          price_kmf:24000, price_eur:52,
+          id:'sit-cer-1', category:'tissus' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Lot 3 abayas brodées', emoji:'👘',
+          price_kmf:31648, price_eur:68,
+          id:'sit-cer-2', category:'vetements' },
+        { level:'premium', tagline:'Pour se faire plaisir',
+          name:'Grand boubou brodé sur mesure', emoji:'🥻',
+          price_kmf:95000, price_eur:205,
+          id:'sit-cer-3', category:'vetements' }
+      ]
+    },
+    tech: {
+      icon: '📱', label: 'Rester connecté',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Écouteurs Sony WH-CH520', emoji:'🎧',
+          price_kmf:42285, price_eur:91,
+          id:'sit-tech-1', category:'electronique' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Samsung Galaxy A15 128Go', emoji:'📱',
+          price_kmf:52186, price_eur:112,
+          id:'sit-tech-2', category:'telephones' },
+        { level:'premium', tagline:'Pour se faire plaisir',
+          name:'Samsung Galaxy A55 256Go', emoji:'📱',
+          price_kmf:138000, price_eur:298,
+          id:'sit-tech-3', category:'telephones' }
+      ]
+    },
+    shabiller: {
+      icon: '👗', label: "S'habiller",
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Lot 3 t-shirts coton', emoji:'👕',
+          price_kmf:9200, price_eur:20,
+          id:'sit-vt-1', category:'vetements' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Abaya brodée premium', emoji:'👘',
+          price_kmf:24500, price_eur:53,
+          id:'sit-vt-2', category:'vetements' },
+        { level:'premium', tagline:'Pour se faire plaisir',
+          name:'Ensemble tailleur coton', emoji:'🥻',
+          price_kmf:72000, price_eur:155,
+          id:'sit-vt-3', category:'vetements' }
+      ]
+    },
+    fete: {
+      icon: '🎉', label: 'Organiser une fête',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Kit décoration anniversaire', emoji:'🎈',
+          price_kmf:8500, price_eur:18,
+          id:'sit-ft-1', category:'decoration' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Service vaisselle 12 pièces', emoji:'🍽️',
+          price_kmf:38000, price_eur:82,
+          id:'sit-ft-2', category:'electromenager' },
+        { level:'premium', tagline:'Colis fête complet',
+          name:'Pack déco + vaisselle + bougies', emoji:'🎁',
+          price_kmf:95000, price_eur:205,
+          id:'sit-ft-3', category:'decoration' }
+      ]
+    },
+    bebe: {
+      icon: '🤱', label: 'Accueillir un bébé',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Lot layette nouveau-né (7 pièces)', emoji:'🧸',
+          price_kmf:16500, price_eur:36,
+          id:'sit-bb-1', category:'bebe' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Pack bébé (layette + jouets)', emoji:'🍼',
+          price_kmf:45000, price_eur:97,
+          id:'sit-bb-2', category:'bebe' },
+        { level:'premium', tagline:'Pour bien accueillir',
+          name:'Hamac + mobile musical + linge', emoji:'🛏️',
+          price_kmf:118000, price_eur:255,
+          id:'sit-bb-3', category:'bebe' }
+      ]
+    }
+  };
 
-let _searchIndex = null;
+  function openSituation(key) {
+    var sit = _situations[key];
+    if (!sit) return;
 
-/** Vide le champ et ferme le dropdown */
-function _clearHeroSearch() {
-  const input = document.getElementById('hero-search-input');
-  const sugg  = document.getElementById('hero-search-suggestions');
-  if (input) input.value = '';
-  if (sugg)  { sugg.innerHTML = ''; sugg.style.display = 'none'; sugg._results = []; }
-}
+    // Marquer carte active
+    document.querySelectorAll('.sit-card').forEach(function(c){
+      c.classList.toggle('active', c.dataset.sit === key);
+    });
 
-/** Suggestions temps réel (oninput) */
-function _heroSearchSuggest(query) {
-  const sugg = document.getElementById('hero-search-suggestions');
-  if (!sugg) return;
-  const q = (query || '').trim().toLowerCase();
-  if (q.length < 2) { sugg.innerHTML = ''; sugg.style.display = 'none'; return; }
-  if (!_searchIndex) _searchIndex = _buildSearchIndex();
-  const results = _searchIndex.filter(item =>
-    item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
-  ).slice(0, 6);
-  if (!results.length) { sugg.innerHTML = ''; sugg.style.display = 'none'; return; }
-  sugg._results = results;
-  sugg.innerHTML = results.map((r, i) =>
-    `<div style="padding:.65rem 1rem;cursor:pointer;border-bottom:1px solid #f1f5f9;
-                 display:flex;align-items:center;gap:.6rem;transition:background .1s;"
-          onmousedown="event.preventDefault();_heroSelectResult(${i})"
-          onmouseover="this.style.background='#f8fafc'"
-          onmouseout="this.style.background='#fff'">
-       <span style="font-size:.75rem;color:#64748b;min-width:65px;">
-         ${r.type === 'ceremony' ? '\ud83c\udf89 C�r�monie' : '\ud83d\uded2 Produit'}
-       </span>
-       <span style="color:#1a3a5c;font-weight:600;">${r.name}</span>
-     </div>`
-  ).join('');
-  sugg.style.display = 'block';
-}
+    document.getElementById('tiers-icon').textContent  = sit.icon;
+    document.getElementById('tiers-title').textContent = sit.label;
 
-/** Sélectionne un résultat : scroll + vidé */
-function _heroSelectResult(idx) {
-  const sugg = document.getElementById('hero-search-suggestions');
-  const results = sugg?._results || [];
-  const item = results[idx];
-  if (!item) return;
-  _clearHeroSearch();
-  if (item.type === 'ceremony') showUniverse('ceremony');
-  else showUniverse('daily');
-  setTimeout(() => {
-    item.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    item.el.style.transition = 'box-shadow .3s';
-    item.el.style.boxShadow  = '0 0 0 3px #e8a020';
-    setTimeout(() => { item.el.style.boxShadow = ''; }, 1400);
-  }, 80);
-}
+    var tiersLabels = { essentiel:'💚 Essentiel', confort:'💙 Confort', premium:'💛 Premium' };
 
-/** Recherche sur soumission du formulaire */
-function _heroSearch(query) {
-  const q = (query || '').trim().toLowerCase();
-  if (!q) return;
-  if (!_searchIndex) _searchIndex = _buildSearchIndex();
-  const best = _searchIndex.find(item =>
-    item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
-  );
-  if (best) {
-    _heroSelectResult(_searchIndex.indexOf(best));
-  } else {
-    _clearHeroSearch();
-    const input = document.getElementById('hero-search-input');
-    if (input) {
-      input.placeholder = `Aucun r�sultat pour "${query}"`;
-      setTimeout(() => { input.placeholder = 'Rechercher un produit, une cat�gorie…'; }, 2500);
+    document.getElementById('tiers-grid').innerHTML = sit.tiers.map(function(t) {
+      var kmf = t.price_kmf.toLocaleString('fr-FR') + ' KMF';
+      var eur = t.price_eur + ' €';
+      return '<div class="tier-card">'+
+        '<span class="tier-badge '+t.level+'">'+tiersLabels[t.level]+'</span>'+
+        '<div class="tier-tagline">'+t.tagline+'</div>'+
+        '<div class="tier-emoji">'+t.emoji+'</div>'+
+        '<div class="tier-name">'+t.name+'</div>'+
+        '<div class="tier-price">'+kmf+'</div>'+
+        '<div class="tier-price-sub">~ '+eur+' depuis la France</div>'+
+        '<button class="tier-add-btn '+t.level+'" onclick="addToCart({'+
+          'id:\''+t.id+'\',name:\''+t.name.replace(/'/g,"\'")+'\','+
+          'emoji:\''+t.emoji+'\',price_kmf:'+t.price_kmf+',price_eur:'+t.price_eur+','+
+          'category:\''+t.category+'\',qty:1'+
+        '})">Ajouter au panier</button>'+
+      '</div>';
+    }).join('');
+
+    var panel = document.getElementById('tiers-panel');
+    panel.classList.add('visible');
+    setTimeout(function(){
+      panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }, 50);
+  }
+
+  function closeSituation() {
+    document.getElementById('tiers-panel').classList.remove('visible');
+    document.querySelectorAll('.sit-card').forEach(function(c){ c.classList.remove('active'); });
+  }
+
+  function showCatalog() {
+    closeSituation();
+    var catalogEl = document.querySelector('.catalog-section') || document.querySelector('#catalog');
+    if (catalogEl) {
+      catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
-}
-
-/** Fermer le dropdown au clic extérieur */
-document.addEventListener('click', e => {
-  if (!e.target.closest('#hero-search-input') && !e.target.closest('#hero-search-suggestions')) {
-    const sugg = document.getElementById('hero-search-suggestions');
-    if (sugg) { sugg.innerHTML = ''; sugg.style.display = 'none'; }
-  }
-});
 
 </script>
