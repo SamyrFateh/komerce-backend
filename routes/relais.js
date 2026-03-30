@@ -16,7 +16,6 @@ router.get('/', async (req, res) => {
       SELECT id, name, agent_name, phone, address, zone, hours, island
       FROM relais
       WHERE is_active = TRUE
-        AND (name ILIKE '%Mutsamudu%' OR zone ILIKE '%Mutsamudu%' OR island ILIKE '%Anjouan%')
       ORDER BY island, name
     `);
     res.json(rows);

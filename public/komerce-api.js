@@ -20,10 +20,10 @@
 const KOMERCE_API = 'https://komerce-backend-production.up.railway.app';
 
 // Taux de change MVP (révision mensuelle)
-const TAUX = { AED: 138, EUR: 492 };
+const TAUX = { AED: 139, EUR: 495 }; // taux mars 2026
 
 // Catégories avec service couture disponible
-const COUTURE_CATS = ['vetements', 'ceremonie', 'vêtements', 'tenues', 'wax'];
+const COUTURE_CATS = ['vetements', 'ceremonie', 'tenues', 'wax'];
 
 // Images de fallback par catégorie (utilisées quand image_url est null en DB)
 const CATEGORY_IMAGES = {
@@ -34,6 +34,11 @@ const CATEGORY_IMAGES = {
   vetements:     'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=75',
   maison:        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75',
   cuisine:       'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75',
+  electromenager:'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=75',
+  bebe:          'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&q=75',
+  construction:  'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=75',
+  bricolage:     'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=400&q=75',
+  rentree:       'https://images.unsplash.com/photo-1588072432836-e10032774350?w=400&q=75',
   wax:           'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=75',
   default:       'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&q=75',
 };
@@ -503,7 +508,7 @@ function initTracking() {
   wrap.innerHTML = `
     <div style="display:flex;gap:.6rem;">
       <input id="tracking-ref-input" type="text"
-        placeholder="Votre référence KOM-2026-XXXX"
+        placeholder="Votre référence (ex: KABC123)"
         style="flex:1;padding:.85rem 1.2rem;border:2px solid #e2e8f0;border-radius:10px;
                font-size:.95rem;outline:none;transition:border .2s;"
         onfocus="this.style.borderColor='#1a3a5c'"
@@ -531,7 +536,7 @@ async function searchTracking() {
 
   result.innerHTML = '<p style="text-align:center;color:#64748b;padding:1rem;">Recherche…</p>';
 
-  const data = await apiGet(`/api/orders/${ref}/tracking`);
+  const data = await apiGet(`/api/orders/${ref}`);
 
   if (!data || data.error) {
     result.innerHTML = `
@@ -740,7 +745,7 @@ function _showCartPreview() {
             ${p.name}
           </div>
           <div style="font-size:.72rem;color:#e8a020;font-weight:600;">
-            ×${qty} · ${(p.price_kmf * qty / 492).toFixed(0)} €
+            ×${qty} · ${(p.price_kmf * qty / TAUX.EUR).toFixed(0)} €
           </div>
         </div>
       </div>
@@ -753,7 +758,7 @@ function _showCartPreview() {
       <div>
         <div style="font-size:.7rem;color:#64748b;">Total</div>
         <div style="font-size:1rem;font-weight:900;color:#1a3a5c;">
-          ${(total / 492).toFixed(0)} € <span style="font-size:.7rem;color:#94a3b8;font-weight:400;">≈ ${total.toLocaleString('fr-FR')} KMF</span>
+          ${(total / TAUX.EUR).toFixed(0)} € <span style="font-size:.7rem;color:#94a3b8;font-weight:400;">≈ ${total.toLocaleString('fr-FR')} KMF</span>
         </div>
       </div>
       <button onclick="$('kmrc-cart-preview')?.remove();openCart();"
@@ -803,7 +808,7 @@ function refreshCartBadge() {
   }
   if (navTotal) {
     if (n > 0) {
-      navTotal.textContent = (total / 492).toFixed(0) + ' €';
+      navTotal.textContent = (total / TAUX.EUR).toFixed(0) + ' €';
       navTotal.style.display = 'block';
     } else {
       navTotal.style.display = 'none';
@@ -1243,7 +1248,7 @@ function openOrderForm(profil, items) {
 
         <input type="hidden" name="profil"        value="${profil}" />
         <input type="hidden" name="country"       value="${isDiaspora ? 'FR' : 'KM'}" />
-        <input type="hidden" name="payment_mode"  value="${isDiaspora ? 'stripe' : 'cash_relais'}" />
+        <input type="hidden" name="payment_mode"  value="${isDiaspora ? 'stripe_eur' : 'cash_relais'}" />
 
         ${isDiaspora ? `
           <!-- Diaspora : vos coordonnées -->
@@ -1434,23 +1439,23 @@ async function submitOrder(e, items) {
       else { throw new Error(reg?.error || 'Erreur d\'authentification'); }
     }
 
-    // ── Étape 2 : créer une commande par article ──
+    // ── Étape 2 : créer la commande (tous les articles en une seule requête) ──
     const refs = [];
-    for (const item of items) {
-      const res = await apiPost('/api/orders', {
-        product_id:               item.product.id,
-        quantity:                 item.qty,
-        relais_id:                data.relais_id || undefined,
-        recipient_name:           data.recipient_name  || data.full_name,
-        recipient_phone:          data.recipient_phone || data.phone,
-        payment_mode:             data.payment_mode,
-        confection_type:          item.size ? 'retouche_locale' : 'aucun',
-        confection_instructions:  item.size ? `Taille ${item.size}` : undefined,
-      });
-      if (res?.error) throw new Error(res.error);
-      const ref = res?.order?.reference || res?.reference;
-      if (ref) refs.push(ref);
-    }
+    const res = await apiPost('/api/orders', {
+      items: items.map(item => ({
+        product_id:              item.product.id,
+        quantity:                item.qty,
+        confection_type:         item.size ? 'retouche_locale' : 'aucun',
+        confection_instructions: item.size ? `Taille ${item.size}` : undefined,
+      })),
+      relais_id:        data.relais_id || undefined,
+      recipient_name:   data.recipient_name  || data.full_name,
+      recipient_phone:  data.recipient_phone || data.phone,
+      payment_mode:     data.payment_mode,
+    });
+    if (res?.error) throw new Error(res.error);
+    const orderRef = res?.order?.reference || res?.reference;
+    if (orderRef) refs.push(orderRef);
 
     // ── Succès ──
     document.getElementById('kmrc-form-modal')?.remove();

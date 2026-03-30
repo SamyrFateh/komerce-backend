@@ -30,6 +30,7 @@ const { sendSMS } = require('../utils/sms');
 
 // ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
 
+// Statuts 'purchasing' et 'transit_comores' : mise à jour admin manuelle uniquement (non gérés par scans.js)
 const ORDER_STATUSES = [
   'draft',
   'confirmed',
@@ -43,6 +44,9 @@ const ORDER_STATUSES = [
   'cancelled',
   'refunded',
 ];
+
+// confection_type enum — valeurs valides
+const CONFECTION_TYPES = ['aucun', 'couture_standard', 'sur_mesure', 'retouche_locale', 'broderie', 'lunettes_vue', 'lunettes_solaires'];
 
 // ceremony_order_type enum v7.2
 const CEREMONY_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
@@ -86,7 +90,7 @@ async function getUniqueRef() {
 //   payment_mode         → 'stripe_eur' | 'cash_relais'
 //   recipient_name       → nom du destinataire
 //   recipient_phone      → téléphone du destinataire
-//   confection_type      → 'aucun' | 'retouche_locale' | 'sur_mesure' | 'broderie'
+//   confection_type      → 'aucun' | 'couture_standard' | 'sur_mesure' | 'retouche_locale' | 'broderie' | 'lunettes_vue' | 'lunettes_solaires'
 //   confection_instructions, confection_delay_days, confection_artisan_id
 //   ceremony_order_type  → si commande cérémonie globale
 //   ceremony_*           → autres champs cérémonie au niveau commande

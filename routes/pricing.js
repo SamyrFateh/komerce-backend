@@ -16,7 +16,7 @@ const adminOnly = [authenticate, requireRole(['admin'])];
 
 async function getRates() {
   const { rows } = await db.query('SELECT eur_kmf, aed_kmf FROM exchange_rates ORDER BY valid_from DESC LIMIT 1');
-  return rows[0] || { eur_kmf: 492, aed_kmf: 138 };
+  return rows[0] || { eur_kmf: 495, aed_kmf: 139 };
 }
 
 // POST /api/pricing/calculate
@@ -75,7 +75,7 @@ router.post('/ceremony', async (req, res) => {
 router.get('/rates', async (req, res) => {
   try {
     const { rows } = await db.query('SELECT * FROM exchange_rates ORDER BY valid_from DESC LIMIT 5');
-    res.json({ current: rows[0] || { eur_kmf:492, aed_kmf:138 }, history: rows });
+    res.json({ current: rows[0] || { eur_kmf:495, aed_kmf:139 }, history: rows });
   } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 

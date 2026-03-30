@@ -526,146 +526,6 @@
       from { opacity:0; transform:translateY(18px); }
       to { opacity:1; transform:translateY(0); }
     }
-
-    /* ── UNIVERS EXPERIENCE ── */
-    .universe-switch-wrap {
-      padding: 26px 5% 10px;
-      background: var(--white);
-    }
-    .universe-switch {
-      max-width: 760px;
-      margin: 0 auto;
-      background: var(--light);
-      border: 1px solid rgba(26,58,92,0.08);
-      border-radius: 999px;
-      padding: .4rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: .5rem;
-      box-shadow: 0 6px 20px rgba(26,58,92,0.08);
-    }
-    .universe-switch button {
-      border: none;
-      border-radius: 999px;
-      padding: .95rem 1.2rem;
-      background: transparent;
-      color: var(--primary);
-      font-size: .95rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all .2s ease;
-    }
-    .universe-switch button.active {
-      background: var(--primary);
-      color: var(--white);
-      box-shadow: 0 6px 18px rgba(26,58,92,0.18);
-    }
-
-    .univers-section {
-      padding: 70px 5% 30px;
-      background: var(--white);
-    }
-    .univers-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 1.4rem;
-      margin-top: 2rem;
-    }
-    .univers-card {
-      border-radius: 18px;
-      padding: 2rem;
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-    }
-    .univers-card::before {
-      content:'';
-      position:absolute;
-      inset:0;
-      background: radial-gradient(circle at top right, rgba(255,255,255,0.35), transparent 35%);
-      pointer-events:none;
-    }
-    .univers-card h3 {
-      font-size: 1.35rem;
-      font-weight: 900;
-      margin-bottom: .5rem;
-      position: relative;
-      z-index: 1;
-    }
-    .univers-card p {
-      color: rgba(15,31,51,0.78);
-      font-size: .96rem;
-      line-height: 1.65;
-      margin-bottom: 1.1rem;
-      max-width: 500px;
-      position: relative;
-      z-index: 1;
-    }
-    .univers-list {
-      display:flex;
-      flex-wrap:wrap;
-      gap:.55rem;
-      margin-bottom:1.4rem;
-      position: relative;
-      z-index: 1;
-    }
-    .univers-pill {
-      display:inline-flex;
-      align-items:center;
-      gap:.35rem;
-      padding:.45rem .8rem;
-      border-radius:999px;
-      font-size:.78rem;
-      font-weight:700;
-      background: rgba(255,255,255,0.65);
-      border: 1px solid rgba(15,31,51,0.08);
-      color: var(--primary);
-    }
-    .univers-actions {
-      display:flex;
-      gap:.8rem;
-      flex-wrap:wrap;
-      position: relative;
-      z-index: 1;
-    }
-    .univers-btn {
-      display:inline-flex;
-      align-items:center;
-      gap:.5rem;
-      text-decoration:none;
-      padding:.8rem 1.15rem;
-      border-radius:10px;
-      font-size:.88rem;
-      font-weight:800;
-      transition:transform .2s, box-shadow .2s, background .2s;
-    }
-    .univers-btn:hover { transform: translateY(-2px); }
-    .univers-btn.primary {
-      color: var(--white);
-      box-shadow: 0 8px 22px rgba(26,58,92,0.15);
-    }
-    .univers-btn.secondary {
-      background: rgba(255,255,255,0.72);
-      color: var(--primary);
-      border: 1px solid rgba(26,58,92,0.12);
-    }
-    .univers-card.ceremony {
-      background: linear-gradient(135deg, #fff7ec 0%, #fde7c9 100%);
-      border: 1px solid rgba(232,160,32,0.35);
-    }
-    .univers-card.ceremony h3 { color: #92400e; }
-    .univers-card.ceremony .univers-btn.primary {
-      background: linear-gradient(135deg, #92400e, #e8a020);
-    }
-    .univers-card.daily {
-      background: linear-gradient(135deg, #f5f8fc 0%, #e9f0f8 100%);
-      border: 1px solid rgba(26,58,92,0.12);
-    }
-    .univers-card.daily h3 { color: var(--primary); }
-    .univers-card.daily .univers-btn.primary {
-      background: linear-gradient(135deg, #0891b2, #2b5d8a);
-    }
-
     .catalog-section {
       padding: 20px 5% 60px;
       background: var(--white);
@@ -696,11 +556,11 @@
       letter-spacing:.04em;
       margin-bottom:.7rem;
     }
-    .catalog-panel.ceremony-panel .catalog-badge {
+    .catalog-panel.ceremony-panel .catalog-badge { /* cérémonie */
       background: rgba(232,160,32,0.16);
       color: #9a5a00;
     }
-    .catalog-panel.daily-panel .catalog-badge {
+    .catalog-panel.daily-panel .catalog-badge { /* quotidien */
       background: rgba(26,58,92,0.10);
       color: var(--primary);
     }
@@ -1327,7 +1187,6 @@
 
     /* ── RESPONSIVE ── */
     @media(max-width:900px) {
-      .univers-grid,
       .ceremony-showcase { grid-template-columns: 1fr; }
       .simple-tracking-steps { grid-template-columns: 1fr 1fr; }
     }
@@ -1629,13 +1488,17 @@
   <div class="logo">Ko<span>merce</span></div>
   <div class="nav-right">
     <div class="nav-links">
-    <a href="#univers">✨ Univers</a>
+    <a href="#situations">🌟 Situations</a>
     <a href="#ceremony-section">🎉 Cérémonies</a>
-    <a href="#daily-section">🏠 Quotidien</a>
+    <a href="#catalog">📦 Catalogue</a>
 
   </div>
     <div class="cart-icon" title="Voir le panier" onclick="if(typeof openCart==='function')openCart()" style="cursor:pointer;">
-      <img src="images/avatar_panier.png" alt="Avatar panier Komerce" class="cart-avatar" />
+      <svg class="cart-avatar" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#0369a1,#0891b2);padding:6px;border:2px solid #7dd3fc;box-shadow:0 4px 12px rgba(0,0,0,0.18);">
+        <path d="M8 10h2l3.5 14h13l3-10H13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="16" cy="28" r="2" fill="white"/>
+        <circle cx="26" cy="28" r="2" fill="white"/>
+      </svg>
       <span id="cart-count">0</span>
     </div>
   </div>
@@ -1718,15 +1581,7 @@
   <span class="proverb-ornament">✦</span>
 </div>
 
-<!-- UNIVERSE SWITCH -->
-<section class="universe-switch-wrap">
-  <div class="universe-switch">
-    <button id="switch-ceremony" class="active" onclick="showUniverse('ceremony')">🎉 Cérémonies & événements</button>
-    <button id="switch-daily" onclick="showUniverse('daily')">🏠 Maison & quotidien</button>
-  </div>
-</section>
-
-<!-- UNIVERS -->
+<!-- CATALOGUE -->
 
   <!-- ══════════════════════════════════════════
        SECTION SITUATIONS DE VIE
@@ -1762,11 +1617,23 @@
         <div class="sit-label">S'habiller</div>
         <div class="sit-desc">Tenues quotidiennes, enfants</div>
       </div>
-      <div class="sit-card" style="background:#ecfdf5;--sit-color:#10b981" data-sit="fete"
-           onclick="openSituation('fete')">
-        <div class="sit-icon">🎉</div>
-        <div class="sit-label">Organiser une fête</div>
-        <div class="sit-desc">Décoration, vaisselle, cadeaux</div>
+      <div class="sit-card" style="background:#fff7ed;--sit-color:#ea580c" data-sit="construire"
+           onclick="openSituation('construire')">
+        <div class="sit-icon">🏗️</div>
+        <div class="sit-label">Construire sa maison</div>
+        <div class="sit-desc">Matériaux, ciment, ferraillage</div>
+      </div>
+      <div class="sit-card" style="background:#f0fdf4;--sit-color:#16a34a" data-sit="bricoler"
+           onclick="openSituation('bricoler')">
+        <div class="sit-icon">🔧</div>
+        <div class="sit-label">Bricoler</div>
+        <div class="sit-desc">Outillage, fixations, réparations</div>
+      </div>
+      <div class="sit-card" style="background:#eff6ff;--sit-color:#2563eb" data-sit="rentree"
+           onclick="openSituation('rentree')">
+        <div class="sit-icon">📚</div>
+        <div class="sit-label">Préparer la rentrée</div>
+        <div class="sit-desc">Fournitures, cartables, uniforme</div>
       </div>
       <div class="sit-card" style="background:#fffbeb;--sit-color:#f59e0b" data-sit="bebe"
            onclick="openSituation('bebe')">
@@ -1792,61 +1659,12 @@
     </div>
   </section>
 
-  <section class="univers-section" id="univers">
-  <div class="section-eyebrow">✨ Deux univers, un même service</div>
-  <h2 class="section-title">Choisissez l’univers qui correspond à votre besoin</h2>
-  <p class="section-sub">
-    Komerce répond à deux grands usages réels : les achats pour le quotidien et les achats pour les moments importants.
-    Vous pouvez commander aussi bien un produit utile pour la maison qu’un article lié à une cérémonie ou à un événement.
-  </p>
-
-  <div class="univers-grid">
-    <article class="univers-card ceremony">
-      <h3>🎉 Cérémonies & événements</h3>
-      <p>
-        Pour les mariages, fêtes, cadeaux marquants et commandes liées aux grands moments.
-        Cet univers met en avant les tissus cérémonie, la dentelle, les tenues habillées et les besoins de fête.
-      </p>
-      <div class="univers-list">
-        <span class="univers-pill">💍 Mariage</span>
-        <span class="univers-pill">🧵 Tissus cérémonie</span>
-        <span class="univers-pill">🪡 Dentelle</span>
-        <span class="univers-pill">👗 Tenues habillées</span>
-        <span class="univers-pill">🎁 Événements familiaux</span>
-      </div>
-      <div class="univers-actions">
-        <a href="#ceremony-section" class="univers-btn primary" onclick="showUniverse('ceremony')">Explorer cet univers</a>
-        <a href="#" class="univers-btn secondary" onclick="event.preventDefault();showUniverse('ceremony');openCheckout()">Commander un besoin précis</a>
-      </div>
-    </article>
-
-    <article class="univers-card daily">
-      <h3>🏠 Maison & quotidien</h3>
-      <p>
-        Pour les besoins utiles et récurrents de la famille : téléphones, électroménager, cuisine, accessoires maison
-        et produits demandés tous les jours. Un univers plus direct, plus pratique, plus rapide à commander.
-      </p>
-      <div class="univers-list">
-        <span class="univers-pill">📱 Téléphones</span>
-        <span class="univers-pill">🍳 Cuisine</span>
-        <span class="univers-pill">🏡 Maison</span>
-        <span class="univers-pill">🧺 Quotidien</span>
-        <span class="univers-pill">🎁 Cadeaux utiles</span>
-      </div>
-      <div class="univers-actions">
-        <a href="#daily-section" class="univers-btn primary" onclick="showUniverse('daily')">Voir les produits du quotidien</a>
-        <a href="#promos" class="univers-btn secondary" onclick="showUniverse('daily')">Voir les promos</a>
-      </div>
-    </article>
-  </div>
-</section>
-
 <!-- CATALOG PANELS -->
 <section class="catalog-section">
   <div id="ceremony-section" class="catalog-panel ceremony-panel active">
     <div class="catalog-header">
       <div>
-        <div class="catalog-badge">🎉 Univers 1</div>
+        <div class="catalog-badge">🎉 Cérémonies</div>
         <h2 class="section-title">Cérémonies & événements</h2>
         <p class="section-sub">
           Une sélection pensée pour les mariages, les fêtes, les cadeaux marquants et les tenues qui comptent.
@@ -2340,7 +2158,7 @@
     <div class="lo-add-ref-wrap">
       <div class="lo-add-ref-label">Suivre une autre commande par référence</div>
       <div class="lo-add-ref-row">
-        <input class="lo-add-ref-input" id="lo-add-ref-input" type="text" placeholder="KMC-2601-XXXX" maxlength="16" />
+        <input class="lo-add-ref-input" id="lo-add-ref-input" type="text" placeholder="ex: KABC123" maxlength="16" />
         <button class="lo-add-ref-btn" onclick="loAddRef()">Ajouter</button>
       </div>
     </div>
@@ -2499,7 +2317,7 @@
     </div>
     <div class="footer-links">
       <strong>Acheter</strong>
-      <a href="#promos" onclick="showUniverse('daily')">Promos en cours</a>
+      <a href="#promos">Promos en cours</a>
       <a href="#ceremony-section">Catalogue cérémonie</a>
       <a href="#" onclick="event.preventDefault();openCheckout()">Passer une commande</a>
     </div>
@@ -2524,7 +2342,7 @@
 
 <!-- ═══════════════════════════════════════════════════
      DÉTECTION DEVISE AUTOMATIQUE PAR TIMEZONE
-     Taux MVP (révision mensuelle) : 1 EUR = 492 KMF · 1 AED = 138 KMF
+     Taux mars 2026 : 1 EUR = 495 KMF · 1 AED = 139 KMF
      ═══════════════════════════════════════════════════ -->
 <style>
   .kmf-price .price-secondary { font-size: .72em; color: #64748b; margin-top: .1rem; display: block; }
@@ -2535,9 +2353,9 @@
 (function() {
   // ── Taux MVP (révision mensuelle) ──────────────────────
   // Pricing v6.4 — Formule complète 16 étapes
-  // Taux MVP : 1 AED = 138 KMF · 1 EUR = 492 KMF · Fret 180 EUR/m3
+  // Taux mars 2026 : 1 AED = 139 KMF · 1 EUR = 495 KMF · Fret 180 EUR/m3
   // Hub Dubai 7000 AED/mois absorbé dans marge 12% (Option B)
-  const RATES = { EUR: 492, AED: 138, KMF: 1 };
+  const RATES = { EUR: 495, AED: 139, KMF: 1 }; // taux mars 2026 — sync avec exchange_rates DB
   const SYMBOLS = { EUR: '€', AED: 'AED', KMF: 'KMF' };
   const FLAGS = { EUR: '🇪🇺', AED: '🇦🇪', KMF: '🇰🇲' };
 
@@ -2592,26 +2410,7 @@
 <script src="komerce-api.js"></script>
 
 <script>
-function showUniverse(type) {
-  var ceremonyBtn = document.getElementById('switch-ceremony');
-  var dailyBtn = document.getElementById('switch-daily');
-  var ceremonySection = document.getElementById('ceremony-section');
-  var dailySection = document.getElementById('daily-section');
-
-  if (!ceremonyBtn || !dailyBtn || !ceremonySection || !dailySection) return;
-
-  if (type === 'daily') {
-    ceremonyBtn.classList.remove('active');
-    dailyBtn.classList.add('active');
-    ceremonySection.classList.remove('active');
-    dailySection.classList.add('active');
-  } else {
-    dailyBtn.classList.remove('active');
-    ceremonyBtn.classList.add('active');
-    dailySection.classList.remove('active');
-    ceremonySection.classList.add('active');
-  }
-}
+/* showUniverse() supprimé — navigation par situations */
 </script>
 
 <script>
@@ -3207,7 +3006,7 @@ function _fmtKmf(kmf) {
   if (!kmf) return '—';
   var tz = (Intl&&Intl.DateTimeFormat)?Intl.DateTimeFormat().resolvedOptions().timeZone:'';
   if (/Comoro|Mayotte/i.test(tz)) return Math.round(kmf).toLocaleString('fr-FR')+' KMF';
-  return Math.round(kmf/492).toLocaleString('fr-FR')+' €';
+  return Math.round(kmf/RATES.EUR).toLocaleString('fr-FR')+' €';
 }
 
 function _updateCartBadge() {
@@ -3846,14 +3645,14 @@ window.loAddRef = async function() {
   const data = await loFetchOrder(ref);
   if (!data) {
     input.placeholder = 'Référence introuvable';
-    setTimeout(() => { input.placeholder = 'KMC-2601-XXXX'; }, 2500);
+    setTimeout(() => { input.placeholder = 'ex: KABC123'; }, 2500);
     return;
   }
   loAddRefToStorage(ref);
   // Ouvrir le panel si pas déjà ouvert
   sessionStorage.removeItem(LO_DISMISS_KEY);
   document.getElementById('kmrc-live-orders')?.classList.add('panel-open');
-  input.placeholder = 'KMC-2601-XXXX';
+  input.placeholder = 'ex: KABC123';
   await loRefresh();
 };
 
@@ -3994,21 +3793,55 @@ document.addEventListener('DOMContentLoaded', () => {
           id:'sit-vt-3', category:'vetements' }
       ]
     },
-    fete: {
-      icon: '🎉', label: 'Organiser une fête',
+    construire: {
+      icon: '🏗️', label: 'Construire sa maison',
       tiers: [
         { level:'essentiel', tagline:"L'indispensable",
-          name:'Kit décoration anniversaire', emoji:'🎈',
-          price_kmf:8500, price_eur:18,
-          id:'sit-ft-1', category:'decoration' },
+          name:'Ciment Portland (10 sacs)', emoji:'🧱',
+          price_kmf:22000, price_eur:47,
+          id:'sit-const-1', category:'construction' },
         { level:'confort', tagline:'Meilleur rapport qualité/prix',
-          name:'Service vaisselle 12 pièces', emoji:'🍽️',
-          price_kmf:38000, price_eur:82,
-          id:'sit-ft-2', category:'electromenager' },
-        { level:'premium', tagline:'Colis fête complet',
-          name:'Pack déco + vaisselle + bougies', emoji:'🎁',
-          price_kmf:95000, price_eur:205,
-          id:'sit-ft-3', category:'decoration' }
+          name:'Pack ferraillage + ciment (palier)', emoji:'⚙️',
+          price_kmf:85000, price_eur:183,
+          id:'sit-const-2', category:'construction' },
+        { level:'premium', tagline:'Chantier bien équipé',
+          name:'Kit complet gros œuvre (1 pièce)', emoji:'🏠',
+          price_kmf:210000, price_eur:453,
+          id:'sit-const-3', category:'construction' }
+      ]
+    },
+    bricoler: {
+      icon: '🔧', label: 'Bricoler',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Kit outils main (10 pièces)', emoji:'🔨',
+          price_kmf:12500, price_eur:27,
+          id:'sit-bri-1', category:'bricolage' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Perceuse sans fil + accessoires', emoji:'🔩',
+          price_kmf:48000, price_eur:103,
+          id:'sit-bri-2', category:'bricolage' },
+        { level:'premium', tagline:'Atelier complet',
+          name:'Malette professionnelle 40 outils', emoji:'🧰',
+          price_kmf:125000, price_eur:270,
+          id:'sit-bri-3', category:'bricolage' }
+      ]
+    },
+    rentree: {
+      icon: '📚', label: 'Préparer la rentrée',
+      tiers: [
+        { level:'essentiel', tagline:"L'indispensable",
+          name:'Kit fournitures scolaires (1 élève)', emoji:'✏️',
+          price_kmf:7500, price_eur:16,
+          id:'sit-ren-1', category:'scolaire' },
+        { level:'confort', tagline:'Meilleur rapport qualité/prix',
+          name:'Cartable + fournitures complètes', emoji:'🎒',
+          price_kmf:28000, price_eur:60,
+          id:'sit-ren-2', category:'scolaire' },
+        { level:'premium', tagline:'Rentrée sans stress',
+          name:'Pack complet 3 enfants', emoji:'📐',
+          price_kmf:72000, price_eur:155,
+          id:'sit-ren-3', category:'scolaire' }
       ]
     },
     bebe: {
