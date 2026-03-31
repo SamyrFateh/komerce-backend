@@ -291,10 +291,12 @@ router.get('/', async (req, res) => {
         cdr_moyen_kmf:         cdrMoyenKmf,
         cdr_total_estime_kmf:  Math.round(cdrTotalEstimeKmf),
         hub_fixe_mensuel_kmf:  Math.round(hubMensuelKmf),
-        // taux_terrain_utilise = taux réel customs_history si disponible,
-        // sinon 42% CIF décision v7.5 §7.2 (jamais les taux SH théoriques)
+        // Champs v7.5 — noms canoniques
         taux_terrain_utilise_pct: douaneEffectif ?? (TAUX_TERRAIN_DEFAULT * 100),
         source_taux:           douaneEffectif ? 'customs_history' : 'decision_v75_42pct',
+        // Aliases de compatibilité — consommés par Komerce_Pilotage_v2.html
+        douane_effectif_pct:   douaneEffectif,   // null si pas encore historisé
+        mode_douane:           douaneEffectif ? 'terrain' : 'decision_v75',
       },
 
       marges: {

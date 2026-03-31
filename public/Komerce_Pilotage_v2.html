@@ -1872,14 +1872,16 @@ async function loadLiveData() {
     }
 
     // Afficher taux douane réel si disponible
-    if (snap.couts?.douane_effectif_pct !== null && snap.couts?.douane_effectif_pct !== undefined) {
-      updateDouaneRange(snap.couts.douane_effectif_pct);
+    // Supporte les deux noms : douane_effectif_pct (alias compat) et taux_terrain_utilise_pct (v7.5)
+    const taux_sync = snap.couts?.douane_effectif_pct ?? snap.couts?.taux_terrain_utilise_pct;
+    if (taux_sync !== null && taux_sync !== undefined) {
+      updateDouaneRange(taux_sync);
     }
 
     showDashStatus(
       `✅ Données réelles chargées — ${mois} · ${snap.volume?.total_commandes} commandes · `
       + `CA ${new Intl.NumberFormat('fr-FR').format(snap.ca?.total_kmf)} KMF · `
-      + `Mode douane : ${snap.couts?.mode_douane === 'terrain' ? '🟢 taux terrain' : '🟡 théorique'}`,
+      + `Mode douane : ${(snap.couts?.mode_douane === 'terrain' || snap.couts?.source_taux === 'customs_history') ? '🟢 taux terrain' : '🟡 décision v7.5 42%'}`,
       'success'
     );
 

@@ -1,7 +1,7 @@
 /**
  * KOMERCE — Routes pricing admin
  * POST /api/pricing/calculate  → calcul prix temps réel
- * POST /api/pricing/ceremony   → calcul prix tenue cérémonie
+ * POST /api/pricing/couture    → calcul prix tenue couture (tissu + confection)
  * GET  /api/pricing/rates      → taux actuels
  * PUT  /api/pricing/rates      → mettre à jour les taux (admin)
  */
@@ -42,8 +42,8 @@ router.post('/calculate', async (req, res) => {
   } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur calcul prix' }); }
 });
 
-// POST /api/pricing/ceremony
-router.post('/ceremony', async (req, res) => {
+// POST /api/pricing/couture
+router.post('/couture', async (req, res) => {
   try {
     const { fabric_id, model_id, qty=1, is_diaspora=false } = req.body;
     if (!fabric_id || !model_id) return res.status(400).json({ error: 'fabric_id et model_id requis' });
@@ -65,7 +65,7 @@ router.post('/ceremony', async (req, res) => {
     });
 
     res.json({ ...result, fabric: f.rows[0].name, model: m.rows[0].name });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur calcul prix tenue' }); }
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur calcul prix couture' }); }
 });
 
 // GET /api/pricing/rates

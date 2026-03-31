@@ -175,7 +175,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <div class="ni" onclick="go('litiges',this)"><span class="ni-ic">&#9676;</span>Litiges<span class="ni-bdg red">2</span></div>
       <div class="sb-sec">Catalogue</div>
       <div class="ni" onclick="go('catalogue',this)"><span class="ni-ic">&#9635;</span>Produits</div>
-      <div class="ni" onclick="go('ceremony',this)"><span class="ni-ic">&#9638;</span>Tenues ceremonie</div>
+      <div class="ni" onclick="go('ceremony',this)"><span class="ni-ic">&#9638;</span>Modules spécialisés</div>
       <div class="sb-sec">Finance</div>
       <div class="ni" onclick="go('finance',this)"><span class="ni-ic">&#9670;</span>Comptabilite</div>
       <div class="ni" onclick="go('pricing',this)"><span class="ni-ic">&#9671;</span>Moteur pricing</div>
@@ -323,7 +323,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
               <tbody>
                 <tr><td class="mono">KOM-354</td><td>Mariama C.</td><td>Parfum Oud</td><td class="mono">0.003</td><td class="mono">300</td></tr>
                 <tr><td class="mono">KOM-353</td><td>Ibrahim Y.</td><td>Djellaba + abaya</td><td class="mono">0.013</td><td class="mono">1 000</td></tr>
-                <tr><td class="mono">KOM-351</td><td>Rahma S.</td><td>6 tenues M11</td><td class="mono">0.048</td><td class="mono">4 200</td></tr>
+                <tr><td class="mono">KOM-351</td><td>Rahma S.</td><td>Couture sur mesure</td><td class="mono">0.048</td><td class="mono">4 200</td></tr>
                 <tr><td class="mono">KOM-350</td><td>Omar B.</td><td>Samsung A55</td><td class="mono">0.002</td><td class="mono">200</td></tr>
                 <tr style="background:var(--bg3)"><td colspan="3" class="bold">Total</td><td class="mono" style="color:var(--amb)">0.066 m3</td><td class="mono" style="color:var(--amb)">5 700</td></tr>
               </tbody>
@@ -506,15 +506,15 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
         </div>
       </div>
 
-      <!-- CEREMONY -->
+      <!-- MODULES SPÉCIALISÉS (couture phase 1, lunettes/construction/cosmetiques phase 2+) -->
       <div class="scr" id="scr-ceremony">
-        <div style="font-size:18px;font-weight:600;margin-bottom:4px">Tenues ceremonie — M11</div>
-        <div style="font-size:12px;color:var(--ink4);margin-bottom:16px">Commandes groupe · Tissus Deira · Tailles S &#8594; XXL</div>
+        <div style="font-size:18px;font-weight:600;margin-bottom:4px">Modules spécialisés ✂️</div>
+        <div style="font-size:12px;color:var(--ink4);margin-bottom:16px">Couture sur mesure · Tissus Deira · Atelier confection · Lunettes vue (Phase 2)</div>
         <div class="g2">
           <div class="card">
-            <div class="ch"><span class="ch-t">Commandes tenues en cours</span></div>
+            <div class="ch"><span class="ch-t">Commandes modules spécialisés</span></div>
             <table class="tbl">
-              <thead><tr><th>Commande</th><th>Tissu</th><th>Modele</th><th>Tenues</th><th>Total KMF</th><th>Statut</th></tr></thead>
+              <thead><tr><th>Commande</th><th>Module</th><th>Détail</th><th>Qté</th><th>Total KMF</th><th>Statut</th></tr></thead>
               <tbody>
                 <tr><td class="mono">KOM-356</td><td>Bazin blanc</td><td>Robe longue</td><td>12</td><td class="mono">203 400</td><td><span class="b br">&#9888; Litige</span></td></tr>
                 <tr><td class="mono">KOM-351</td><td>Soie imprimee</td><td>Ensemble</td><td>6</td><td class="mono">101 574</td><td><span class="b ba">&#9881; Confection</span></td></tr>
@@ -609,7 +609,7 @@ async function api(method, path, body) {
 var TITLES = {
   dash:"Tableau de bord",orders:"Commandes",logistic:"Logistique",
   litiges:"Litiges et Remboursements",catalogue:"Catalogue produits",
-  ceremony:"Tenues ceremonie M11",finance:"Comptabilite multi-devises",
+  ceremony:"Modules spécialisés",finance:"Comptabilite multi-devises",
   pricing:"Moteur de pricing",relais:"Point relais",settings:"Parametres systeme"
 };
 function go(id, el) {
@@ -861,10 +861,10 @@ async function loadFinance() {
     document.querySelectorAll('#scr-finance button').forEach(btn => {
       if (btn.textContent.includes('CSV')) {
         const now = new Date();
-        btn.onclick = () => window.open(API + `/finance/export?month=${now.getMonth()+1}&year=${now.getFullYear()}`, '_blank');
+        btn.onclick = () => showT('Export CSV — disponible Phase 2');
       }
       if (btn.textContent.includes('preuves Stripe')) {
-        btn.onclick = () => window.open(API + '/finance/stripe-proofs', '_blank');
+        btn.onclick = () => showT('Preuves Stripe — disponible Phase 2');
       }
     });
   } catch(e) { console.error('Finance error:', e.message); showT('Erreur chargement finance'); }
@@ -928,8 +928,8 @@ async function loadCatalogue() {
 // ── RELAIS ────────────────────────────────────────────────────────────────────
 async function loadRelais() {
   try {
-    const data = await api('GET', '/relay-points');
-    const relais = data.relay_points || [];
+    const data = await api('GET', '/relais');
+    const relais = Array.isArray(data) ? data : (data.relay_points || []);
     if (!relais.length) return;
     const r = relais[0];
     document.querySelectorAll('#scr-relais input').forEach(inp => {
