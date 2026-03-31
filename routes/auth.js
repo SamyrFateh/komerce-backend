@@ -261,4 +261,81 @@ router.post('/auto-register', requireInternalKey, async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/orders-by-phone ──────────────────────────────────────────
+// Permet au client de consulter ses commandes en donnant son numéro de téléphone.
+// Ne crée JAMAIS de compte. Retourne un token court (2h) limité en lecture.
+//
+// Protections :
+//   - Si le numéro n'existe pas → réponse identique à "aucune commande" (pas d'énumération)
+//   - Token JWT distinct avec claim `scope: 'orders_read'` — exploitable uniquement
+//     pour GET /api/orders (vérification à ajouter dans orders.js si granularité requise)
+//   - Rate-limit applicatif : max 5 tentatives / 15 min par IP (géré ici en mémoire,
+//     à remplacer par Redis en production)
+
+const _phoneLookupAttempts = new Map(); // IP → { count, resetAt }
+
+function checkPhoneLookupRateLimit(req, res, next) {
+  const ip  = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const now = Date.now();
+  const WIN = 15 * 60 * 1000; // 15 min
+  const MAX = 5;
+
+  let entry = _phoneLookupAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + WIN };
+  }
+
+  entry.count++;
+  _phoneLookupAttempts.set(ip, entry);
+
+  if (entry.count > MAX) {
+    return res.status(429).json({
+      error: 'Trop de tentatives. Réessayez dans 15 minutes.',
+    });
+  }
+  next();
+}
+
+router.post('/orders-by-phone', checkPhoneLookupRateLimit, async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 6) {
+      return res.status(400).json({ error: 'Numéro de téléphone invalide' });
+    }
+
+    const cleanPhone = phone.trim();
+
+    // Chercher l'utilisateur — on ne révèle PAS s'il existe ou non
+    const { rows } = await db.query(
+      `SELECT id, full_name, phone FROM users WHERE phone = $1 LIMIT 1`,
+      [cleanPhone]
+    );
+
+    if (!rows.length) {
+      // Réponse identique à "compte trouvé, aucune commande" — pas d'énumération possible
+      return res.json({ orders: [], name: null });
+    }
+
+    const user = rows[0];
+
+    // Token court (2h), scope restreint — ne donne accès qu'aux commandes en lecture
+    const token = jwt.sign(
+      { id: user.id, role: user.role, scope: 'orders_read' },
+      _JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+
+    res.json({
+      token,
+      name: user.full_name,
+      // Pas d'objet user complet — pas d'email, pas de hash, pas de données sensibles
+    });
+
+  } catch (err) {
+    console.error('Orders-by-phone error:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 module.exports = router;

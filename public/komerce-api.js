@@ -1461,12 +1461,13 @@ async function submitOrder(e, items) {
     document.getElementById('kmrc-form-modal')?.remove();
     _cart = [];
     refreshCartBadge();
-    // Mémoriser le client pour les visites suivantes
+    // Mémoriser nom + téléphone (sans le token) pour la bannière retour client
+    // Le token n'est PAS persisté — il restera actif seulement pour cette session
     try {
       localStorage.setItem('kmrc_user', JSON.stringify({
-        name:  data.full_name,
-        phone: data.phone || '',
-        token: _token,
+        name:    data.full_name,
+        phone:   data.phone || '',
+        // token intentionnellement absent — ne pas stocker de JWT en localStorage
         savedAt: Date.now()
       }));
     } catch(e) { /* ignore */ }
@@ -2198,16 +2199,30 @@ async function _lookupOrdersByPhone() {
   if (!input || !result) return;
 
   var phone = input.value.trim();
-  if (!phone) { result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>'; return; }
+  if (!phone) {
+    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>';
+    return;
+  }
 
   result.innerHTML = '<p style="color:#94a3b8;font-size:.82rem;">Recherche…</p>';
 
-  // Auto-register silencieux pour obtenir un token lié au numéro
-  var reg = await apiPost('/api/auth/auto-register', { phone: phone, full_name: 'Client', country: 'KM' });
-  if (!reg || reg.error || !reg.token) {
-    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Numéro introuvable ou aucune commande associée.</p>';
+  // Endpoint dédié — ne crée jamais de compte, token court (2h) scope restreint
+  var reg = await apiPost('/api/auth/orders-by-phone', { phone });
+  if (!reg || reg.error) {
+    var msg = reg && reg.error === 'Trop de tentatives. Réessayez dans 15 minutes.'
+      ? reg.error
+      : 'Erreur lors de la recherche. Réessayez.';
+    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">' + msg + '</p>';
     return;
   }
+
+  if (!reg.token) {
+    // Numéro inconnu — même message que "aucune commande" (pas d'énumération)
+    result.innerHTML = '<p style="color:#94a3b8;font-size:.82rem;">Aucune commande trouvée pour ce numéro.</p>';
+    return;
+  }
+
+  // Token court (2h) scope orders_read — ne PAS persister en localStorage
   _token = reg.token;
 
   var data   = await apiGet('/api/orders');
@@ -2215,19 +2230,21 @@ async function _lookupOrdersByPhone() {
 
   if (!orders.length) {
     result.innerHTML = '<p style="color:#94a3b8;font-size:.82rem;">Aucune commande trouvée pour ce numéro.</p>';
+    _token = null;
     return;
   }
 
-  // Sauvegarder pour les prochaines visites
+  // Stocker nom + téléphone en sessionStorage (expire à la fermeture) — PAS le token
   try {
-    localStorage.setItem('kmrc_user', JSON.stringify({ name: reg.user && reg.user.full_name || 'Client', phone: phone, token: _token, savedAt: Date.now() }));
-    _savedUser = JSON.parse(localStorage.getItem('kmrc_user'));
+    const sessionData = { name: reg.name || 'Client', phone, savedAt: Date.now() };
+    sessionStorage.setItem('kmrc_session', JSON.stringify(sessionData));
+    _savedUser = sessionData;
   } catch(e) {}
 
-  // Re-ouvrir le panel avec les commandes
   document.getElementById('kmrc-myorders-modal')?.remove();
   openMyOrders();
 }
+
 
 // Déconnexion (effacer le localStorage)
 function logoutUser() {
@@ -2239,8 +2256,14 @@ function logoutUser() {
 }
 
 function initWhatsAppButton() {
-  // ⚠️ Remplacer par le vrai numéro WhatsApp Komerce (sans + ni espaces)
-  const WA_NUMBER  = '33699272526'; // TODO: à remplacer
+  // Le numéro WhatsApp est injecté par le serveur via window.KOMERCE_CONFIG
+  // pour ne jamais apparaître en clair dans le code source public.
+  // Si la config est absente (dev local), le bouton est désactivé.
+  const WA_NUMBER = (window.KOMERCE_CONFIG && window.KOMERCE_CONFIG.wa_number) || null;
+  if (!WA_NUMBER) {
+    console.warn('KOMERCE_CONFIG.wa_number non défini — bouton WhatsApp désactivé');
+    return;
+  }
   const WA_MESSAGE = encodeURIComponent('Bonjour Komerce ! J\'ai une question sur ma commande.');
   const WA_URL     = 'https://wa.me/' + WA_NUMBER + '?text=' + WA_MESSAGE;
 
@@ -2703,13 +2726,15 @@ function _heroSearchSuggest(query) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Restaurer le token + profil depuis localStorage
+  // Restaurer le profil depuis localStorage (nom + téléphone uniquement, pas de token)
+  // Le token JWT n'est plus stocké en localStorage — il vit seulement en mémoire (_token)
+  // pour la durée de la session courante.
   try {
     const saved = JSON.parse(localStorage.getItem('kmrc_user') || 'null');
-    // Token valide 30 jours
-    if (saved && saved.token && (Date.now() - saved.savedAt) < 30 * 86400000) {
-      _token = saved.token;
-      _savedUser = saved;
+    if (saved && saved.name && (Date.now() - saved.savedAt) < 30 * 86400000) {
+      // Restaurer uniquement les données d'affichage (bannière retour client)
+      _savedUser = { name: saved.name, phone: saved.phone, savedAt: saved.savedAt };
+      // _token reste null — le client devra se réidentifier pour accéder à ses commandes
     }
   } catch(e) { /* ignore */ }
 

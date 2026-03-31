@@ -2803,7 +2803,7 @@ footer h4, footer .footer-title { color:#fff !important; }
     <div class="footer-links">
       <strong>Komerce</strong>
       <a href="#comment">À propos</a>
-      <a href="mailto:contact@komerce.km">Nous contacter</a>
+      <a href="/cdn-cgi/l/email-protection#395a56574d585a4d795256545c4b5a5c175254">Nous contacter</a>
     </div>
   </div>
   <div class="footer-bottom">
@@ -2931,7 +2931,7 @@ footer h4, footer .footer-title { color:#fff !important; }
 
 
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ═══ Script block 1 ═══
 (function() {
   // ── Taux MVP (révision mensuelle) ──────────────────────
@@ -3012,8 +3012,20 @@ footer h4, footer .footer-title { color:#fff !important; }
 
 const KOMERCE_API = 'https://komerce-backend-production.up.railway.app';
 
-// Taux de change MVP (révision mensuelle)
-const TAUX = { AED: 139, EUR: 495 }; // taux mars 2026
+// Taux de change — chargés depuis l'API au démarrage (fallback si indisponible)
+const TAUX = { AED: 139, EUR: 495 }; // valeurs de secours, écrasées par loadRates()
+
+async function loadRates() {
+  try {
+    const data = await apiGet('/api/payments/rates');
+    if (data && data.eur_kmf && data.aed_kmf) {
+      TAUX.EUR = parseFloat(data.eur_kmf);
+      TAUX.AED = parseFloat(data.aed_kmf);
+    }
+  } catch(e) {
+    console.warn('Rates API indisponible — taux de fallback utilisés');
+  }
+}
 
 // Catégories avec service couture disponible
   // Alignées sur la taxonomie Mode & accessoires → Tissus/Vêtements
@@ -3023,7 +3035,6 @@ const COUTURE_CATS = ['vetements', 'ceremonie', 'tenues', 'wax'];
 const CATEGORY_IMAGES = {
   telephones:    'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75',
   electronique:  'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75',
-  telephones:    'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75',
   mariage:       'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=75',
   ceremonie:     'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=75',
   vetements:     'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=75',
@@ -4103,21 +4114,32 @@ function setProfil(p) {
 //  4. PANIER PARTAGÉ (K-XXXX · 7 jours)
 // ═══════════════════════════════════════════════════════════════════════
 
-function shareCart() {
+async function shareCart() {
   if (_cart.length === 0) { toast('Le panier est vide', 'error'); return; }
 
-  // Encoder le panier dans un paramètre URL (MVP sans API persistance)
-  const data = _cart.map(i => `${i.product.id}:${i.qty}`).join(',');
-  const code = 'K-' + Math.random().toString(36).slice(2, 6).toUpperCase();
-  const url  = `${window.location.origin}${window.location.pathname}?panier=${btoa(data)}&ref=${code}`;
+  toast('Création du lien…', 'info');
 
-  // Copier dans le presse-papier
-  navigator.clipboard.writeText(url).then(() => {
-    toast('🔗 Lien copié ! Valable 7 jours', 'success');
-  }).catch(() => {
-    // Fallback — afficher le lien
-    showShareModal(url, code);
-  });
+  try {
+    const res = await apiPost('/api/baskets/share', {
+      creator_name: _savedUser?.name || undefined,
+      items: _cart.map(i => ({ product_id: i.product.id, quantity: i.qty })),
+    });
+    if (!res || res.error) throw new Error(res?.error || 'Erreur création panier');
+
+    const url = res.url || `${window.location.origin}${window.location.pathname}?panier=${res.code}`;
+    navigator.clipboard.writeText(url)
+      .then(() => toast('🔗 Lien copié ! Valable 7 jours', 'success'))
+      .catch(() => showShareModal(url, res.code));
+
+  } catch(e) {
+    // Fallback local si l'API est indisponible
+    const data = _cart.map(i => `${i.product.id}:${i.qty}`).join(',');
+    const code = 'K-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const url  = `${window.location.origin}${window.location.pathname}?panier=${btoa(data)}&ref=${code}`;
+    navigator.clipboard.writeText(url)
+      .then(() => toast('🔗 Lien copié (mode hors-ligne)', 'success'))
+      .catch(() => showShareModal(url, code));
+  }
 }
 
 function showShareModal(url, code) {
@@ -4453,9 +4475,9 @@ async function submitOrder(e, items) {
     // Mémoriser le client pour les visites suivantes
     try {
       localStorage.setItem('kmrc_user', JSON.stringify({
-        name:  data.full_name,
-        phone: data.phone || '',
-        token: _token,
+        name:    data.full_name,
+        phone:   data.phone || '',
+        // token intentionnellement absent — ne pas stocker de JWT en localStorage
         savedAt: Date.now()
       }));
     } catch(e) { /* ignore */ }
@@ -4539,7 +4561,9 @@ let _ceremonyState = {
   accessoires: [],
 };
 
-function openCeremony(product) {
+// LEGACY: renommée pour éviter le conflit avec openCeremony() (script 3)
+// Cette implémentation crée une modale dynamique — voir ceremony-modal-overlay
+function _openCeremonyLegacy(product) {
   // Réinitialiser l'état
   _ceremonyState = { type: null, product, size: null, retouche: false, qty: 1, accessoires: [] };
 
@@ -5074,16 +5098,29 @@ async function _lookupOrdersByPhone() {
   if (!input || !result) return;
 
   var phone = input.value.trim();
-  if (!phone) { result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>'; return; }
+  if (!phone) {
+    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>';
+    return;
+  }
 
   result.innerHTML = '<p class="u-txt-muted2">Recherche…</p>';
 
-  // Auto-register silencieux pour obtenir un token lié au numéro
-  var reg = await apiPost('/api/auth/auto-register', { phone: phone, full_name: 'Client', country: 'KM' });
-  if (!reg || reg.error || !reg.token) {
-    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Numéro introuvable ou aucune commande associée.</p>';
+  // Endpoint dédié — ne crée jamais de compte, token court (2h) scope restreint
+  var reg = await apiPost('/api/auth/orders-by-phone', { phone });
+  if (!reg || reg.error) {
+    var msg = reg && reg.error === 'Trop de tentatives. Réessayez dans 15 minutes.'
+      ? reg.error
+      : 'Erreur lors de la recherche. Réessayez.';
+    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">' + msg + '</p>';
     return;
   }
+
+  if (!reg.token) {
+    result.innerHTML = '<p class="u-txt-muted2">Aucune commande trouvée pour ce numéro.</p>';
+    return;
+  }
+
+  // Token court (2h), scope orders_read — ne PAS persister en localStorage
   _token = reg.token;
 
   var data   = await apiGet('/api/orders');
@@ -5091,16 +5128,17 @@ async function _lookupOrdersByPhone() {
 
   if (!orders.length) {
     result.innerHTML = '<p class="u-txt-muted2">Aucune commande trouvée pour ce numéro.</p>';
+    _token = null;
     return;
   }
 
-  // Sauvegarder pour les prochaines visites
+  // Stocker nom + téléphone en sessionStorage — PAS le token JWT
   try {
-    localStorage.setItem('kmrc_user', JSON.stringify({ name: reg.user && reg.user.full_name || 'Client', phone: phone, token: _token, savedAt: Date.now() }));
-    _savedUser = JSON.parse(localStorage.getItem('kmrc_user'));
+    const sessionData = { name: reg.name || 'Client', phone, savedAt: Date.now() };
+    sessionStorage.setItem('kmrc_session', JSON.stringify(sessionData));
+    _savedUser = sessionData;
   } catch(e) {}
 
-  // Re-ouvrir le panel avec les commandes
   document.getElementById('kmrc-myorders-modal')?.remove();
   openMyOrders();
 }
@@ -5115,10 +5153,13 @@ function logoutUser() {
 }
 
 function initWhatsAppButton() {
-  // ⚠️ Remplacer par le vrai numéro WhatsApp Komerce (sans + ni espaces)
-  // ⚠️ CONFIG REQUISE : remplacez ce numéro par le numéro WhatsApp officiel de Komerce
-  // Ce numéro est visible dans le code source public !
-  const WA_NUMBER  = '33699272526'; // TODO: numéro WhatsApp Komerce (ex: 2697XXXXXXX)
+  // Le numéro WhatsApp est injecté via window.KOMERCE_CONFIG (côté serveur)
+  // pour ne jamais apparaître en clair dans le code source public.
+  const WA_NUMBER = (window.KOMERCE_CONFIG && window.KOMERCE_CONFIG.wa_number) || null;
+  if (!WA_NUMBER) {
+    console.warn('KOMERCE_CONFIG.wa_number non défini — bouton WhatsApp désactivé');
+    return;
+  }
   const WA_MESSAGE = encodeURIComponent('Bonjour Komerce ! J\'ai une question sur ma commande.');
   const WA_URL     = 'https://wa.me/' + WA_NUMBER + '?text=' + WA_MESSAGE;
 
@@ -5584,10 +5625,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Restaurer le token + profil depuis localStorage
   try {
     const saved = JSON.parse(localStorage.getItem('kmrc_user') || 'null');
-    // Token valide 30 jours
-    if (saved && saved.token && (Date.now() - saved.savedAt) < 30 * 86400000) {
-      _token = saved.token;
-      _savedUser = saved;
+    if (saved && saved.name && (Date.now() - saved.savedAt) < 30 * 86400000) {
+      // Restaurer uniquement les données d'affichage — pas de token JWT en localStorage
+      _savedUser = { name: saved.name, phone: saved.phone, savedAt: saved.savedAt };
     }
   } catch(e) { /* ignore */ }
 
@@ -5603,7 +5643,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireStaticButtons();
 
   // Charger en parallèle relais + produits API (remplace les cartes statiques)
-  await Promise.all([loadRelais(), loadProducts()]);
+  await Promise.all([loadRates(), loadRelais(), loadProducts()]);
 
   // Dots carousel
   _initCarouselDots();
@@ -5630,15 +5670,64 @@ document.addEventListener('DOMContentLoaded', async () => {
   // initFavoritesNavButton();
 
   // Restaurer un panier partagé depuis l'URL
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('panier')) {
+  (async () => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('panier')) return;
+
+    const param = params.get('panier');
+
+    // Nouveau format : code API (ex: K-AB12)
+    if (/^K-[A-Z0-9]{4}$/i.test(param)) {
+      try {
+        const basket = await apiGet('/api/baskets/' + param);
+        if (!basket || basket.error || !basket.items?.length) {
+          toast('Ce lien de panier est expiré ou introuvable.', 'error');
+          return;
+        }
+        _cart = basket.items.map(item => ({
+          product: {
+            id:        item.product_id,
+            name:      item.name      || item.product_name || 'Produit',
+            emoji:     item.emoji     || '📦',
+            category:  item.category  || '',
+            price_kmf: item.price_kmf,
+          },
+          qty:  item.quantity || 1,
+          size: null,
+        }));
+        refreshCartBadge();
+        toast(`🛒 Panier partagé chargé — ${_cart.length} article${_cart.length > 1 ? 's' : ''}`, 'success');
+        setTimeout(() => openCart(), 800);
+      } catch(e) {
+        toast('Impossible de charger le panier partagé.', 'error');
+      }
+      return;
+    }
+
+    // Ancien format local (base64) — fallback dégradé
     try {
-      const decoded = atob(params.get('panier'));
-      // decoded = "id:qty,id:qty,..." — nécessite un fetch produits déjà chargé
-      // Simplifié MVP : juste un toast d'info
-      toast('🔗 Panier partagé détecté — consultez les produits', 'info');
-    } catch { /* ignore */ }
-  }
+      const decoded = atob(param);
+      const pairs   = decoded.split(',').map(s => s.split(':'));
+      if (!pairs.length) return;
+
+      const fetched = await Promise.all(
+        pairs.map(([id]) => apiGet('/api/products/' + id).catch(() => null))
+      );
+      _cart = pairs
+        .map(([id, qty], i) => {
+          const p = fetched[i];
+          if (!p || p.error) return null;
+          return { product: p, qty: Math.max(1, parseInt(qty) || 1), size: null };
+        })
+        .filter(Boolean);
+
+      if (_cart.length) {
+        refreshCartBadge();
+        toast(`🛒 ${_cart.length} article${_cart.length > 1 ? 's' : ''} chargé${_cart.length > 1 ? 's' : ''} depuis le lien partagé`, 'success');
+        setTimeout(() => openCart(), 800);
+      }
+    } catch { /* lien corrompu — ignorer silencieusement */ }
+  })();
 
   // Entrée tracking au clavier
   document.addEventListener('keydown', e => {
@@ -7014,9 +7103,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showCatalog() {
     closeSituation();
-    var catalogEl = document.querySelector('.catalog-section');
-    if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-</script>
-</body>
-</html>
+    var catalogEl = document.
