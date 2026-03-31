@@ -503,6 +503,9 @@
 
     /* ── TRUST ── */
     .trust-section { padding:60px 5%; background:var(--primary); color:var(--white); }
+    .trust-section .section-eyebrow { color:var(--accent); }
+    .trust-section .section-title { color:var(--white); }
+    .trust-section .section-sub { color:rgba(255,255,255,0.8); }
     .trust-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:2rem; margin-top:2.5rem; }
     .trust-item { text-align:center; }
     .trust-icon { font-size:2.5rem; margin-bottom:.8rem; }
@@ -2803,7 +2806,7 @@ footer h4, footer .footer-title { color:#fff !important; }
     <div class="footer-links">
       <strong>Komerce</strong>
       <a href="#comment">À propos</a>
-      <a href="/cdn-cgi/l/email-protection#395a56574d585a4d795256545c4b5a5c175254">Nous contacter</a>
+      <a href="/cdn-cgi/l/email-protection#82e1edecf6e3e1f6c2e9edefe7f0e1e7ace9ef">Nous contacter</a>
     </div>
   </div>
   <div class="footer-bottom">
@@ -4132,7 +4135,7 @@ async function shareCart() {
       .catch(() => showShareModal(url, res.code));
 
   } catch(e) {
-    // Fallback local si l'API est indisponible
+    // Fallback local si API indisponible
     const data = _cart.map(i => `${i.product.id}:${i.qty}`).join(',');
     const code = 'K-' + Math.random().toString(36).slice(2, 6).toUpperCase();
     const url  = `${window.location.origin}${window.location.pathname}?panier=${btoa(data)}&ref=${code}`;
@@ -4561,8 +4564,7 @@ let _ceremonyState = {
   accessoires: [],
 };
 
-// LEGACY: renommée pour éviter le conflit avec openCeremony() (script 3)
-// Cette implémentation crée une modale dynamique — voir ceremony-modal-overlay
+// LEGACY: renommée pour éviter le conflit avec openCeremony() (script 3 — ceremony-modal-overlay)
 function _openCeremonyLegacy(product) {
   // Réinitialiser l'état
   _ceremonyState = { type: null, product, size: null, retouche: false, qty: 1, accessoires: [] };
@@ -5098,23 +5100,19 @@ async function _lookupOrdersByPhone() {
   if (!input || !result) return;
 
   var phone = input.value.trim();
-  if (!phone) {
-    result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>';
-    return;
-  }
+  if (!phone) { result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">Entrez un numéro de téléphone</p>'; return; }
 
   result.innerHTML = '<p class="u-txt-muted2">Recherche…</p>';
 
+  // Auto-register silencieux pour obtenir un token lié au numéro
   // Endpoint dédié — ne crée jamais de compte, token court (2h) scope restreint
   var reg = await apiPost('/api/auth/orders-by-phone', { phone });
   if (!reg || reg.error) {
     var msg = reg && reg.error === 'Trop de tentatives. Réessayez dans 15 minutes.'
-      ? reg.error
-      : 'Erreur lors de la recherche. Réessayez.';
+      ? reg.error : 'Erreur lors de la recherche. Réessayez.';
     result.innerHTML = '<p style="color:#dc2626;font-size:.82rem;">' + msg + '</p>';
     return;
   }
-
   if (!reg.token) {
     result.innerHTML = '<p class="u-txt-muted2">Aucune commande trouvée pour ce numéro.</p>';
     return;
@@ -5153,8 +5151,7 @@ function logoutUser() {
 }
 
 function initWhatsAppButton() {
-  // Le numéro WhatsApp est injecté via window.KOMERCE_CONFIG (côté serveur)
-  // pour ne jamais apparaître en clair dans le code source public.
+  // Numéro injecté côté serveur via window.KOMERCE_CONFIG — jamais en clair dans le source
   const WA_NUMBER = (window.KOMERCE_CONFIG && window.KOMERCE_CONFIG.wa_number) || null;
   if (!WA_NUMBER) {
     console.warn('KOMERCE_CONFIG.wa_number non défini — bouton WhatsApp désactivé');
@@ -5626,7 +5623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const saved = JSON.parse(localStorage.getItem('kmrc_user') || 'null');
     if (saved && saved.name && (Date.now() - saved.savedAt) < 30 * 86400000) {
-      // Restaurer uniquement les données d'affichage — pas de token JWT en localStorage
+      // Restaurer nom + téléphone pour la bannière — pas de token JWT en localStorage
       _savedUser = { name: saved.name, phone: saved.phone, savedAt: saved.savedAt };
     }
   } catch(e) { /* ignore */ }
@@ -5673,7 +5670,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   (async () => {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('panier')) return;
-
     const param = params.get('panier');
 
     // Nouveau format : code API (ex: K-AB12)
@@ -5681,52 +5677,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const basket = await apiGet('/api/baskets/' + param);
         if (!basket || basket.error || !basket.items?.length) {
-          toast('Ce lien de panier est expiré ou introuvable.', 'error');
-          return;
+          toast('Ce lien de panier est expiré ou introuvable.', 'error'); return;
         }
         _cart = basket.items.map(item => ({
           product: {
-            id:        item.product_id,
-            name:      item.name      || item.product_name || 'Produit',
-            emoji:     item.emoji     || '📦',
-            category:  item.category  || '',
-            price_kmf: item.price_kmf,
+            id: item.product_id, name: item.name || item.product_name || 'Produit',
+            emoji: item.emoji || '📦', category: item.category || '', price_kmf: item.price_kmf,
           },
-          qty:  item.quantity || 1,
-          size: null,
+          qty: item.quantity || 1, size: null,
         }));
         refreshCartBadge();
         toast(`🛒 Panier partagé chargé — ${_cart.length} article${_cart.length > 1 ? 's' : ''}`, 'success');
         setTimeout(() => openCart(), 800);
-      } catch(e) {
-        toast('Impossible de charger le panier partagé.', 'error');
-      }
+      } catch(e) { toast('Impossible de charger le panier partagé.', 'error'); }
       return;
     }
 
-    // Ancien format local (base64) — fallback dégradé
+    // Ancien format base64 — fallback dégradé
     try {
       const decoded = atob(param);
       const pairs   = decoded.split(',').map(s => s.split(':'));
       if (!pairs.length) return;
-
-      const fetched = await Promise.all(
-        pairs.map(([id]) => apiGet('/api/products/' + id).catch(() => null))
-      );
-      _cart = pairs
-        .map(([id, qty], i) => {
-          const p = fetched[i];
-          if (!p || p.error) return null;
-          return { product: p, qty: Math.max(1, parseInt(qty) || 1), size: null };
-        })
-        .filter(Boolean);
-
+      const fetched = await Promise.all(pairs.map(([id]) => apiGet('/api/products/' + id).catch(() => null)));
+      _cart = pairs.map(([id, qty], i) => {
+        const p = fetched[i];
+        if (!p || p.error) return null;
+        return { product: p, qty: Math.max(1, parseInt(qty) || 1), size: null };
+      }).filter(Boolean);
       if (_cart.length) {
         refreshCartBadge();
-        toast(`🛒 ${_cart.length} article${_cart.length > 1 ? 's' : ''} chargé${_cart.length > 1 ? 's' : ''} depuis le lien partagé`, 'success');
+        toast(`🛒 ${_cart.length} article${_cart.length > 1 ? 's' : ''} chargé${_cart.length > 1 ? 's' : ''} depuis le lien`, 'success');
         setTimeout(() => openCart(), 800);
       }
-    } catch { /* lien corrompu — ignorer silencieusement */ }
+    } catch { /* lien corrompu */ }
   })();
 
   // Entrée tracking au clavier
@@ -7103,4 +7086,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showCatalog() {
     closeSituation();
-    var catalogEl = document.
+    var catalogEl = document.querySelector('.catalog-section')
+      || document.querySelector('#catalog')
+      || document.querySelector('.products-section')
+      || document.querySelector('.promo-section');
+    if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+</script>
+</body>
+</html>
