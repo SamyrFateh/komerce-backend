@@ -97,6 +97,7 @@ const basketsRouter   = require('./routes/baskets');
 const logisticsRouter = require('./routes/logistics');
 const paymentsRouter  = require('./routes/payments');
 const scansRouter     = require('./routes/scans');
+const financeRouter   = require('./routes/finance');
 
 app.use('/api/auth',      authRouter);
 app.use('/api/products',  productsRouter);
@@ -111,6 +112,7 @@ app.use('/api/baskets',   basketsRouter);
 app.use('/api/logistics', logisticsRouter);
 app.use('/api/payments',  paymentsRouter);
 app.use('/api/scans',    scansRouter);    // SCAN 3+4 Hub · SCAN 6+7 relais
+app.use('/api/finance',  financeRouter);  // Export CSV · Preuves Stripe · Rapport PDF
 
 // ─── Healthcheck ─────────────────────────────────────────────────────────────
 
@@ -169,6 +171,7 @@ app.listen(PORT, () => {
 ║   Frontend : ${(FRONTEND_URL || 'auto (*.railway.app)').padEnd(37)}║
 ║   Modules  : /api/modules ✓ (couture·lunettes·…) ║
 ║   Pilotage : /api/pilotage ✓                     ║
+║   Finance  : /api/finance ✓ (CSV·Stripe·PDF)     ║
 ╚══════════════════════════════════════════════════╝
   `);
 });

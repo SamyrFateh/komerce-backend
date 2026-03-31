@@ -857,14 +857,44 @@ async function loadFinance() {
       if (n.includes('EUR')) dv.querySelector('.dv-val').textContent = rates?.eur_kmf||495;
       if (n.includes('transactions')) dv.querySelector('.dv-val').textContent = k.nb_commandes||0;
     });
-    // Connecter export CSV
+    // Connecter les boutons export finance
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year  = now.getFullYear();
+
     document.querySelectorAll('#scr-finance button').forEach(btn => {
-      if (btn.textContent.includes('CSV')) {
-        const now = new Date();
-        btn.onclick = () => showT('Export CSV — disponible Phase 2');
+      const txt = btn.textContent.trim();
+
+      if (txt.includes('CSV')) {
+        btn.onclick = () => {
+          window.open(API + `/api/finance/export?month=${month}&year=${year}`, '_blank');
+        };
       }
-      if (btn.textContent.includes('preuves Stripe')) {
-        btn.onclick = () => showT('Preuves Stripe — disponible Phase 2');
+      if (txt.includes('PDF') || txt.includes('Rapport')) {
+        btn.onclick = () => {
+          window.open(API + `/api/finance/report?month=${month}&year=${year}`, '_blank');
+        };
+      }
+      if (txt.includes('Stripe')) {
+        btn.onclick = async () => {
+          try {
+            btn.disabled = true;
+            btn.textContent = '⏳ Chargement…';
+            const data = await api('GET', `/finance/stripe-proofs?month=${month}&year=${year}`);
+            btn.disabled = false;
+            btn.textContent = '🔒 Export preuves Stripe';
+            if (!data.count) {
+              showT('Aucune transaction Stripe ce mois');
+              return;
+            }
+            // Afficher un résumé dans un toast
+            showT(`${data.count} transactions Stripe · ${data.total_eur} EUR confirmés`);
+          } catch(e) {
+            btn.disabled = false;
+            btn.textContent = '🔒 Export preuves Stripe';
+            showT('Erreur: ' + e.message);
+          }
+        };
       }
     });
   } catch(e) { console.error('Finance error:', e.message); showT('Erreur chargement finance'); }
