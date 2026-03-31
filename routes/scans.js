@@ -105,24 +105,24 @@ router.post('/', authenticate, async (req, res) => {
 
     if (!is_anomaly) {
       if (step === 'shipped') {
-        // SMS au commanditaire : commande en route
+        // SMS au commanditaire — non bloquant
         const { rows: [fullOrder] } = await db.query(
           `SELECT o.*, u.phone AS user_phone
            FROM orders o LEFT JOIN users u ON u.id = o.user_id
            WHERE o.id = $1`, [order_id]
         );
         if (fullOrder?.user_phone) {
-          await sendSMS(
+          sendSMS(
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est en route ! Délai estimé : 3 à 5 semaines.`,
             'shipped', order_id
-          );
+          ).catch(err => console.error('SMS shipped error:', err.message));
           sms_triggered = true;
         }
       }
 
       if (step === 'relais_received') {
-        // SMS au destinataire : disponible au relais
+        // SMS au destinataire — non bloquant
         const { rows: [fullOrder] } = await db.query(
           `SELECT o.pickup_code, rc.phone AS recipient_phone, rc.full_name,
                   r.name AS relais_name, r.address AS relais_address
@@ -132,26 +132,26 @@ router.post('/', authenticate, async (req, res) => {
            WHERE o.id = $1`, [order_id]
         );
         if (fullOrder?.recipient_phone) {
-          await sendSMS(
+          sendSMS(
             fullOrder.recipient_phone,
             `Komerce · Bonjour ${fullOrder.full_name}, votre colis est disponible au ${fullOrder.relais_name} (${fullOrder.relais_address}). Code de retrait : ${fullOrder.pickup_code}`,
             'available', order_id
-          );
+          ).catch(err => console.error('SMS relais error:', err.message));
           sms_triggered = true;
         }
       }
     } else {
-      // Anomalie → alerte admin par SMS
+      // Anomalie → alerte admin par SMS — non bloquant
       const { rows: adminUsers } = await db.query(
         `SELECT phone FROM users WHERE role = 'admin' AND phone IS NOT NULL`
       );
-      for (const admin of adminUsers) {
-        await sendSMS(
-          admin.phone,
-          `⚠️ Komerce · Anomalie scan sur ${order.reference} à l'étape "${step}". Notes : ${notes || 'aucune'}`,
+      Promise.all(
+        adminUsers.map(a => sendSMS(
+          a.phone,
+          `Komerce · Anomalie scan sur ${order.reference} à l'étape "${step}". Notes : ${notes || 'aucune'}`,
           'anomaly_alert', order_id
-        );
-      }
+        ))
+      ).catch(err => console.error('SMS anomaly error:', err.message));
     }
 
     res.status(201).json({
@@ -200,7 +200,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), as
       `INSERT INTO scans
          (order_id, step, scanned_by, location, scan_code, notes)
        VALUES ($1,'collected',$2,$3,$4,$5)`,
-      [order.id, req.user.id, order.relais_name || '', order.pickup_code || ('COLLECT-' + order.reference), 'Retrait destinataire — code valide']
+      [order.id, req.user.id, order.relais_name || '', pickup_code, 'Retrait destinataire — code valide']
     );
 
     // SMS confirmation au commanditaire
@@ -210,11 +210,11 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), as
       [order.id]
     );
     if (fullOrder?.user_phone) {
-      await sendSMS(
+      sendSMS(
         fullOrder.user_phone,
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name}. Merci pour votre confiance !`,
         'collected', order.id
-      );
+      ).catch(err => console.error('SMS collect error:', err.message));
     }
 
     res.json({

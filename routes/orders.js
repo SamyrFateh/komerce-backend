@@ -22,7 +22,8 @@ const router  = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendSMS } = require('../utils/sms');
+const { sendSMS }  = require('../utils/sms');
+const { getRates } = require('../utils/rates');
 
 // ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
 //
@@ -160,6 +161,9 @@ router.post('/', authenticate, async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
+
+    // Taux de change actuels — utilisés pour total_eur et cost_estimated
+    const rates = await getRates();
 
     const {
       items                 = [],
@@ -316,7 +320,7 @@ router.post('/', authenticate, async (req, res) => {
        ) RETURNING *`,
       [
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
-        total_kmf, parseFloat((total_kmf / 492).toFixed(2)),
+        total_kmf, parseFloat((total_kmf / rates.eur_kmf).toFixed(2)),
         payment_mode,
         'pending',
         stripe_payment_intent || null,

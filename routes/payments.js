@@ -12,7 +12,8 @@ const router  = express.Router();
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendSMS } = require('../utils/sms');
+const { sendSMS }  = require('../utils/sms');
+const { getRates } = require('../utils/rates');
 
 // ── POST /api/payments/stripe/intent ─────────────────────────────────────────
 // Crée un Stripe PaymentIntent pour une commande.
@@ -97,21 +98,25 @@ router.post('/stripe/webhook',
       const intent = event.data.object;
       const { order_id, order_reference } = intent.metadata;
 
+      // Paiement confirmé → statut 'ordered' (spec §9.1 statut #1)
+      // 'paid' est un statut interne de validation paiement,
+      // 'ordered' est le statut opérationnel visible client.
       await db.query(
         `UPDATE orders SET
            payment_status = 'paid',
-           status = 'paid'
+           status         = 'ordered',
+           ordered_at     = NOW()
          WHERE id = $1`,
         [order_id]
       );
 
       await db.query(
         `INSERT INTO order_status_history (order_id, status, note)
-         VALUES ($1,'paid','Paiement Stripe confirmé')`,
+         VALUES ($1,'ordered','Paiement Stripe confirmé — commande lancée')`,
         [order_id]
       );
 
-      // SMS confirmation au commanditaire
+      // SMS confirmation — non bloquant
       const { rows: [order] } = await db.query(
         `SELECT o.*, u.phone AS user_phone
          FROM orders o LEFT JOIN users u ON u.id = o.user_id
@@ -119,11 +124,11 @@ router.post('/stripe/webhook',
         [order_id]
       );
       if (order?.user_phone) {
-        await sendSMS(
+        sendSMS(
           order.user_phone,
-          `Komerce · Paiement reçu pour la commande ${order_reference}. Votre commande est maintenant en cours de préparation.`,
-          'confirmation', order_id
-        );
+          `Komerce · Paiement reçu pour la commande ${order_reference}. Votre commande est lancée — achat en cours à Dubai.`,
+          'ordered', order_id
+        ).catch(err => console.error('SMS webhook error:', err.message));
       }
 
       console.log(`✅ Paiement Stripe confirmé : ${order_reference}`);
@@ -172,11 +177,12 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     const order = rows[0];
 
-    // Passer la commande en payée + confirmée
+    // Paiement espèces confirmé → statut 'ordered' (spec §9.1 statut #1)
     await client.query(
       `UPDATE orders SET
          payment_status = 'paid',
-         status         = 'paid',
+         status         = 'ordered',
+         ordered_at     = NOW(),
          cash_paid_at   = NOW()
        WHERE id = $1`,
       [order.id]
@@ -208,7 +214,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     await client.query(
       `INSERT INTO order_status_history (order_id, status, changed_by, note)
-       VALUES ($1,'paid',$2,'Paiement espèces confirmé par agent relais — stock décrémenté')`,
+       VALUES ($1,'ordered',$2,'Paiement espèces confirmé par agent relais — commande lancée')`,
       [order.id, req.user.id]
     );
 
@@ -249,10 +255,11 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 // Retourne les taux de change actuels (utilisés par le front pour la conversion)
 router.get('/rates', async (req, res) => {
   try {
+    const rates = await getRates();
     const { rows } = await db.query(
       'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
     );
-    res.json(rows[0] || { eur_kmf: 492, aed_kmf: 138 });
+    res.json(rows[0] || rates);
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });
   }

@@ -53,19 +53,22 @@ router.get('/dashboard', ...guard, async (req, res) => {
         ORDER BY count DESC
       `),
 
-      // Top produits
+      // Top produits — pivoté depuis order_items pour éviter de compter
+      // les commandes sans articles (LEFT JOIN → résultats faussés)
       db.query(`
         SELECT
           p.name,
           p.category,
-          COUNT(o.id) AS order_count,
-          SUM(o.total_kmf) AS revenue_kmf
-        FROM orders o
-        LEFT JOIN order_items oi ON oi.order_id = o.id
-        LEFT JOIN products p ON p.id = oi.product_id
+          COUNT(DISTINCT oi.order_id)      AS order_count,
+          SUM(oi.quantity)                 AS units_sold,
+          SUM(oi.price_kmf * oi.quantity)  AS revenue_kmf
+        FROM order_items oi
+        JOIN products p ON p.id = oi.product_id
+        JOIN orders o   ON o.id = oi.order_id
         WHERE o.created_at >= NOW() - ($1 || ' days')::INTERVAL
+          AND o.status != 'cancelled'
         GROUP BY p.id, p.name, p.category
-        ORDER BY order_count DESC
+        ORDER BY units_sold DESC
         LIMIT 10
       `, [days]),
 
