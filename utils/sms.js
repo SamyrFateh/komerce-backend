@@ -100,7 +100,7 @@ async function sendSMS(to, message, type, order_id = null) {
  * H+12 : rappel paiement
  * H+36 : annulation automatique + restauration stock
  */
-async function processChashRelaisReminders() {
+async function processCashRelaisReminders() {
   // H+12 : commandes cash non payées créées il y a 12h, rappel pas encore envoyé
   const { rows: h12 } = await db.query(
     `SELECT o.*, u.phone AS user_phone
@@ -184,4 +184,4 @@ async function processChashRelaisReminders() {
   console.log(`Rappels cash relais : ${h12.length} H+12, ${h36.length} H+36 annulations`);
 }
 
-module.exports = { sendSMS, processChashRelaisReminders };
+module.exports = { sendSMS, processCashRelaisReminders };
