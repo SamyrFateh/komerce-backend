@@ -23,13 +23,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { calcPrixTenue } = require('../utils/pricing');
 
-// Taux de change courant
-async function getRates() {
-  const { rows } = await db.query(
-    'SELECT eur_kmf, aed_kmf FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
-  );
-  return rows[0] || { eur_kmf: 492, aed_kmf: 138 };
-}
+const { getRates } = require('../utils/rates');
 
 // ─── GET /api/ceremony/fabrics ───────────────────────────────────────────────
 // Filtres optionnels : ?fabric_type=Wax&available=true

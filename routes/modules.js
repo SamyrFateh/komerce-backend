@@ -86,12 +86,7 @@ const MODULES_REGISTRY = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function getRates() {
-  const { rows } = await db.query(
-    'SELECT eur_kmf, aed_kmf FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
-  );
-  return rows[0] || { eur_kmf: 495, aed_kmf: 139 };
-}
+const { getRates } = require('../utils/rates');
 
 // ─── GET /api/modules ─────────────────────────────────────────────────────────
 // Liste tous les modules avec leur statut de disponibilité

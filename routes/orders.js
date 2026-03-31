@@ -25,21 +25,69 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS } = require('../utils/sms');
 
 // ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
+//
+// Mapping spec v7.5 §9.1 :
+//   ordered         → #1 — paiement confirmé (système)
+//   purchasing      → #2 — achat en cours (admin manuel)
+//   preparation     → #3 — SCAN 3 Hub réception (agent_hub)
+//   hub_preparation → #4 — SCAN 4 Hub groupage prêt groupeur (agent_hub)
+//   shipped         → #5 — expédié (admin / groupeur)
+//   transit_comores → #6 — arrivé Comores, dédouanement (admin manuel)
+//   available       → #7 — SCAN 6 arrivé au relais (agent_relais)
+//   collected       → #8 — SCAN QR 7 remis au client (agent_relais)
+//
+// draft / confirmed / paid : étapes de création/validation commande (avant ordered)
+// 'purchasing' et 'transit_comores' : mise à jour admin manuelle uniquement
 
-// Statuts 'purchasing' et 'transit_comores' : mise à jour admin manuelle uniquement (non gérés par scans.js)
 const ORDER_STATUSES = [
   'draft',
   'confirmed',
   'paid',
-  'purchasing',
-  'preparation',
-  'shipped',
-  'transit_comores',
-  'available',
-  'collected',
+  'ordered',           // #1 spec — paiement validé, commande lancée
+  'purchasing',        // #2 spec — achat en cours Dubai
+  'preparation',       // #3 spec — SCAN 3 Hub réception
+  'hub_preparation',   // #4 spec — SCAN 4 Hub groupage / prêt groupeur
+  'shipped',           // #5 spec — expédié groupeur
+  'transit_comores',   // #6 spec — arrivé Comores, dédouanement
+  'available',         // #7 spec — SCAN 6 arrivé au relais
+  'collected',         // #8 spec — SCAN QR 7 remis au client
   'cancelled',
   'refunded',
 ];
+
+// Matrice de transitions valides — alignée spec v7.5 §9.1 (8 statuts opérationnels)
+// Les admins peuvent toujours basculer vers cancelled/refunded depuis n'importe quel statut.
+const VALID_TRANSITIONS = {
+  draft:           ['confirmed', 'cancelled'],
+  confirmed:       ['paid', 'cancelled'],
+  paid:            ['ordered', 'cancelled'],
+  ordered:         ['purchasing', 'cancelled'],
+  purchasing:      ['preparation', 'cancelled'],
+  preparation:     ['hub_preparation', 'cancelled'],    // SCAN 3 → SCAN 4
+  hub_preparation: ['shipped', 'cancelled'],            // SCAN 4 → expédié
+  shipped:         ['transit_comores', 'available', 'cancelled'],
+  transit_comores: ['available', 'cancelled'],
+  available:       ['collected', 'cancelled'],
+  collected:       [],
+  cancelled:       ['refunded'],
+  refunded:        [],
+};
+
+// Rôles autorisés par transition — alignés spec v7.5 §9.1
+const TRANSITION_ROLES = {
+  confirmed:       ['admin', 'agent_hub'],
+  paid:            ['admin'],
+  ordered:         ['admin'],                           // déclenché par webhook paiement
+  purchasing:      ['admin'],
+  preparation:     ['admin', 'agent_hub'],              // SCAN 3
+  hub_preparation: ['admin', 'agent_hub'],              // SCAN 4
+  shipped:         ['admin', 'agent_hub'],
+  transit_comores: ['admin'],
+  available:       ['admin', 'agent_relais'],           // SCAN 6
+  collected:       ['admin', 'agent_relais'],           // SCAN QR 7
+  cancelled:       ['admin'],
+  refunded:        ['admin'],
+};
 
 // confection_type — extensible sans migration DB (champ TEXT en base)
 const CONFECTION_TYPES = [
@@ -52,10 +100,13 @@ const CONFECTION_TYPES = [
 // Les autres modules (lunettes, construction, cosmetiques) n'ont pas de sous-type
 const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 
+// SMS déclenchés par changement de statut — alignés spec v7.5 §9.1
+// Seuls les statuts visibles client reçoivent un SMS (pas les statuts internes Hub)
 const STATUS_SMS = {
-  confirmed:        (ref) => `Komerce : Commande ${ref} confirmée ! Nous achetons votre article dans les 48h.`,
-  purchasing:       (ref) => `Komerce : Commande ${ref} — nous achetons votre article actuellement.`,
-  preparation:      (ref) => `Komerce : Commande ${ref} — colis en cours de préparation au hub.`,
+  ordered:          (ref) => `Komerce : Commande ${ref} confirmée et lancée ! Votre article est en cours d'achat à Dubai.`,
+  purchasing:       (ref) => `Komerce : Commande ${ref} — votre article est en cours d'achat à Dubai.`,
+  preparation:      (ref) => `Komerce : Commande ${ref} — colis reçu au Hub Dubai, contrôle qualité en cours.`,
+  hub_preparation:  (ref) => `Komerce : Commande ${ref} — colis emballé et prêt pour expédition. Départ imminent !`,
   shipped:          (ref) => `Komerce : Commande ${ref} — votre colis a pris la mer ! Arrivée estimée 3–5 semaines.`,
   transit_comores:  (ref) => `Komerce : Commande ${ref} — colis arrivé aux Comores, en cours de dédouanement.`,
   available:        (ref, relais) => `Komerce : Commande ${ref} disponible au relais ${relais || ''}. Venez le récupérer !`,
@@ -64,21 +115,30 @@ const STATUS_SMS = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const { randomBytes } = require('crypto');
+
 function generateRef() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  return 'K' + Array.from({ length: 6 }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
-  ).join('');
+  // randomBytes génère des octets non biaisés — rejet des valeurs hors plage
+  // pour éviter un biais de modulo (36 ne divise pas 256 uniformément)
+  const result = [];
+  while (result.length < 6) {
+    const byte = randomBytes(1)[0];
+    // Rejeter les valeurs > 251 pour éviter le biais de modulo (252 = 7 × 36)
+    if (byte < 252) result.push(chars[byte % 36]);
+  }
+  return 'K' + result.join('');
 }
 
 async function getUniqueRef() {
-  let ref, exists;
-  do {
-    ref = generateRef();
+  // La colonne `reference` a une contrainte UNIQUE en DB.
+  // En cas de collision (extrêmement rare), on retente jusqu'à 5 fois.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const ref = generateRef();
     const { rows } = await db.query('SELECT id FROM orders WHERE reference = $1', [ref]);
-    exists = rows.length > 0;
-  } while (exists);
-  return ref;
+    if (!rows.length) return ref;
+  }
+  throw new Error('Impossible de générer une référence unique après 5 tentatives');
 }
 
 // ─── POST /api/orders ─────────────────────────────────────────────────────────
@@ -121,6 +181,9 @@ router.post('/', authenticate, async (req, res) => {
       module_retouche         = false,
       module_qty_meters,
       module_accessories,
+      // Spec §11 : capturer dès MVP pour fidélisation Phase 2
+      // Valeurs : mariage · cadeau · personnel · construction · rentree · ramadan · aid · autre
+      order_occasion        = null,
     } = req.body;
 
     // ── Validation ──────────────────────────────────────────────────────────
@@ -210,13 +273,18 @@ router.post('/', authenticate, async (req, res) => {
       : 0;
 
     // ── Code cash si paiement relais ────────────────────────────────────────
+    // Codes générés avec crypto — pas Math.random()
     const cash_ref_code = payment_mode === 'cash_relais'
-      ? Math.floor(100000 + Math.random() * 900000).toString()
+      ? (100000 + (randomBytes(3).readUIntBE(0, 3) % 900000)).toString()
       : null;
 
-    // ── Créer la commande ───────────────────────────────────────────────────
-    // Générer un code de retrait unique à 6 caractères alphanumériques
-    const pickup_code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Code de retrait 6 caractères alphanumériques (crypto)
+    const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const pickup_code = Array.from({ length: 6 }, () => {
+      let b;
+      do { b = randomBytes(1)[0]; } while (b >= 216); // 216 = 6 × 36
+      return PICKUP_CHARS[b % 36];
+    }).join('');
 
     const reference = await getUniqueRef();
 
@@ -231,6 +299,7 @@ router.post('/', authenticate, async (req, res) => {
          confection_delay_days, confection_artisan_id,
          module_type, module_fabric_id, module_fabric_type,
          module_size, module_retouche, module_qty_meters, module_accessories,
+         order_occasion,
          cost_estimated_kmf, margin_estimated_pct
        ) VALUES (
          $1,$2,$3,$4,$5,
@@ -242,7 +311,8 @@ router.post('/', authenticate, async (req, res) => {
          $15,$16,
          $17,$18,$19,
          $20,$21,$22,$23,
-         $24,$25
+         $24,
+         $25,$26
        ) RETURNING *`,
       [
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -263,6 +333,7 @@ router.post('/', authenticate, async (req, res) => {
         module_retouche,
         module_qty_meters  || null,
         module_accessories ? JSON.stringify(module_accessories) : null,
+        order_occasion || null,
         Math.round(cost_estimated),
         Number(margin_est),
       ]
@@ -313,7 +384,7 @@ router.post('/', authenticate, async (req, res) => {
     // ── SMS confirmation ────────────────────────────────────────────────────
     const smsPhone = req.user.phone;
     if (smsPhone) {
-      sendSMS(smsPhone, STATUS_SMS.confirmed(reference), 'confirmation', order.id)
+      sendSMS(smsPhone, STATUS_SMS.ordered(reference), 'confirmation', order.id)
         .catch(console.error);
     }
 
@@ -402,21 +473,21 @@ router.get('/', authenticate, async (req, res) => {
 router.get('/:ref', async (req, res) => {
   try {
     const isUuid = /^[0-9a-f-]{36}$/.test(req.params.ref);
-    const field  = isUuid ? 'o.id' : 'o.reference';
 
-    const { rows: [order] } = await db.query(
-      `SELECT
-         o.*,
-         r.name    AS relais_name,
-         r.address AS relais_address,
-         r.phone   AS relais_phone,
-         r.hours   AS relais_hours,
-         r.zone    AS relais_zone
-       FROM orders o
-       LEFT JOIN relais r ON r.id = o.relais_id
-       WHERE ${field} = $1`,
-      [req.params.ref]
-    );
+    // Deux requêtes explicites pour éviter l'interpolation de nom de colonne
+    const { rows: [order] } = isUuid
+      ? await db.query(
+          `SELECT o.*, r.name AS relais_name, r.address AS relais_address,
+                  r.phone AS relais_phone, r.hours AS relais_hours, r.zone AS relais_zone
+           FROM orders o LEFT JOIN relais r ON r.id = o.relais_id WHERE o.id = $1`,
+          [req.params.ref]
+        )
+      : await db.query(
+          `SELECT o.*, r.name AS relais_name, r.address AS relais_address,
+                  r.phone AS relais_phone, r.hours AS relais_hours, r.zone AS relais_zone
+           FROM orders o LEFT JOIN relais r ON r.id = o.relais_id WHERE o.reference = $1`,
+          [req.params.ref]
+        );
 
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
@@ -444,6 +515,11 @@ router.get('/:ref', async (req, res) => {
       [order.id]
     );
 
+    // Route publique — req.user est undefined sauf si le middleware authenticate est présent.
+    // cash_ref_code est masqué pour tous les accès publics (toujours false ici).
+    // Les agents accèdent aux détails complets via GET /api/admin/orders.
+    const isAdmin = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
+
     res.json({
       id:                  order.id,
       reference:           order.reference,
@@ -452,11 +528,12 @@ router.get('/:ref', async (req, res) => {
       total_eur:           order.total_eur,
       payment_mode:        order.payment_mode,
       payment_status:      order.payment_status,
-      cash_ref_code:       order.cash_ref_code,
+      // cash_ref_code exposé uniquement aux agents et admins
+      ...(isAdmin ? { cash_ref_code: order.cash_ref_code } : {}),
       confection_type:     order.confection_type,
-      module_type: order.module_type,
-      module_size:       order.module_size,
-      module_retouche:   order.module_retouche,
+      module_type:         order.module_type,
+      module_size:         order.module_size,
+      module_retouche:     order.module_retouche,
       purchasing_at:       order.purchasing_at,
       shipped_at:          order.shipped_at,
       transit_comores_at:  order.transit_comores_at,
@@ -505,9 +582,31 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Timestamp correspondant au statut
+    // ── Valider la transition d'état ─────────────────────────────────────────
+    const allowedNext = VALID_TRANSITIONS[order.status] || [];
+    if (!allowedNext.includes(status)) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Transition invalide : ${order.status} → ${status}. Transitions autorisées depuis "${order.status}" : ${allowedNext.join(', ') || 'aucune (état terminal)'}`,
+        current_status: order.status,
+      });
+    }
+
+    // Vérifier que le rôle de l'agent est autorisé pour cette transition
+    const allowedRoles = TRANSITION_ROLES[status] || ['admin'];
+    if (!allowedRoles.includes(req.user.role)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({
+        error: `Rôle "${req.user.role}" non autorisé pour la transition → ${status}`,
+      });
+    }
+
+    // Timestamp correspondant au statut — aligné spec v7.5 §9.1
     const tsField = {
+      ordered:         'ordered_at',
       purchasing:      'purchasing_at',
+      preparation:     'preparation_at',
+      hub_preparation: 'hub_preparation_at',
       shipped:         'shipped_at',
       transit_comores: 'transit_comores_at',
       available:       'available_at',
@@ -603,6 +702,17 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res)
 
 router.get('/:id/history', authenticate, async (req, res) => {
   try {
+    // Vérifier que la commande appartient à l'utilisateur (sauf admin/agents)
+    const isPrivileged = ['admin', 'agent_hub', 'agent_relais'].includes(req.user.role);
+
+    if (!isPrivileged) {
+      const { rows: [order] } = await db.query(
+        'SELECT id FROM orders WHERE id = $1 AND user_id = $2',
+        [req.params.id, req.user.id]
+      );
+      if (!order) return res.status(403).json({ error: 'Accès refusé' });
+    }
+
     const { rows } = await db.query(
       `SELECT h.status, h.note, h.created_at, u.full_name AS changed_by_name
        FROM order_status_history h

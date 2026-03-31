@@ -14,10 +14,7 @@ const { calcPrix, calcPrixTenue } = require('../utils/pricing');
 
 const adminOnly = [authenticate, requireRole(['admin'])];
 
-async function getRates() {
-  const { rows } = await db.query('SELECT eur_kmf, aed_kmf FROM exchange_rates ORDER BY valid_from DESC LIMIT 1');
-  return rows[0] || { eur_kmf: 495, aed_kmf: 139 };
-}
+const { getRates } = require('../utils/rates');
 
 // POST /api/pricing/calculate
 router.post('/calculate', async (req, res) => {

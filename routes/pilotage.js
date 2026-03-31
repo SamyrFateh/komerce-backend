@@ -23,15 +23,7 @@ router.use(authenticate, requireRole(['admin']));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/**
- * Taux de change actifs — lus depuis exchange_rates
- */
-async function getRates() {
-  const { rows } = await db.query(
-    'SELECT eur_kmf, aed_kmf FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
-  );
-  return rows[0] || { eur_kmf: 495, aed_kmf: 139 };
-}
+const { getRates } = require('../utils/rates');
 
 /**
  * Moteur de pricing simplifié — reproduit la logique du simulateur v7
@@ -41,7 +33,11 @@ async function getRates() {
  * @param {object} rates   - { eur_kmf, aed_kmf }
  * @param {number} douanePctOverride - taux effectif terrain si connu (ex: 0.42)
  */
-function calcCoutRevient(p, rates, douanePctOverride = null) {
+// Taux terrain par défaut : 42% CIF global — décision v7.5 §7.2
+// Passer douanePctOverride explicitement pour simuler un autre taux
+const TAUX_TERRAIN_DEFAULT = 0.42;
+
+function calcCoutRevient(p, rates, douanePctOverride = TAUX_TERRAIN_DEFAULT) {
   const TAUX_AED     = rates.aed_kmf;
   const TAUX_EUR     = rates.eur_kmf;
   const EMBARK_KMF   = 3 * TAUX_AED;         // 3 AED emballage
@@ -96,18 +92,12 @@ function calcCoutRevient(p, rates, douanePctOverride = null) {
   // Valeur CIF
   const valCIF = prixAchatKmf + fretKmf;
 
-  // Dédouanement
+  // Dédouanement — taux effectif terrain 42% CIF (décision v7.5 §7.2)
+  // DOUANE_CAT conservé pour référence théorique SH uniquement (non utilisé dans les calculs MVP)
   let douaneKmf, tvaKmf, taxeAddKmf;
-  if (douanePctOverride !== null) {
-    // Mode taux effectif terrain (ex: 42%)
-    douaneKmf  = valCIF * douanePctOverride;
-    tvaKmf     = 0; // inclus dans le taux effectif
-    taxeAddKmf = 0;
-  } else {
-    douaneKmf  = valCIF * douane.droits;
-    tvaKmf     = valCIF * douane.tva;
-    taxeAddKmf = valCIF * douane.taxeAdd;
-  }
+  douaneKmf  = valCIF * douanePctOverride; // 42% par défaut — inclut droits + TVA + frais divers
+  tvaKmf     = 0;
+  taxeAddKmf = 0;
 
   const transKmf = valCIF * 0.02 + 450; // transitaire 2% + forfait
 
@@ -175,24 +165,22 @@ router.get('/', async (req, res) => {
       ORDER BY nb_commandes DESC
     `, [debutMois, finMois]);
 
-    // ── 3. Taux douane effectif réel (si la table customs_history existe) ────
-    // Sinon, on retourne null → le dashboard utilise le taux simulateur
+    // ── 3. Taux douane effectif réel — vue customs_taux_mensuel (spec §12 + §7.3)
+    // La vue agrège customs_history par mois et calcule taux_effectif_pct
+    // Fallback : 42% CIF décision v7.5 §7.2 si aucune donnée terrain ce mois
     let douaneEffectif = null;
     try {
-      const { rows: customsRows } = await db.query(`
-        SELECT
-          ROUND(
-            COALESCE(SUM(droits_payes_kmf), 0) /
-            NULLIF(COALESCE(SUM(valeur_cif_kmf), 0), 0) * 100
-          , 1) AS taux_effectif_pct
-        FROM customs_history
-        WHERE date_dedouanement >= $1 AND date_dedouanement < $2
-      `, [debutMois, finMois]);
-      if (customsRows[0]?.taux_effectif_pct !== null) {
+      const { rows: customsRows } = await db.query(
+        `SELECT taux_effectif_pct
+         FROM customs_taux_mensuel
+         WHERE mois = $1`,
+        [mois]   // mois au format YYYY-MM
+      );
+      if (customsRows[0]?.taux_effectif_pct != null) {
         douaneEffectif = parseFloat(customsRows[0].taux_effectif_pct);
       }
     } catch {
-      // Table customs_history pas encore créée — normal en Phase 1
+      // Vue customs_taux_mensuel pas encore disponible — fallback 42%
     }
 
     // ── 4. Coût de revient estimé par commande ────────────────────────────────
@@ -212,7 +200,8 @@ router.get('/', async (req, res) => {
     `, [debutMois, finMois]);
 
     // CDR moyen pondéré (en utilisant taux effectif si disponible)
-    const douaneTaux = douaneEffectif ? douaneEffectif / 100 : null;
+    // Taux terrain : customs_history si disponible, sinon 42% CIF (décision v7.5 §7.2)
+    const douaneTaux = douaneEffectif ? douaneEffectif / 100 : TAUX_TERRAIN_DEFAULT;
     let totalCdrKmf = 0, totalQte = 0;
     const cdrParProduit = [];
 
@@ -302,8 +291,10 @@ router.get('/', async (req, res) => {
         cdr_moyen_kmf:         cdrMoyenKmf,
         cdr_total_estime_kmf:  Math.round(cdrTotalEstimeKmf),
         hub_fixe_mensuel_kmf:  Math.round(hubMensuelKmf),
-        douane_effectif_pct:   douaneEffectif,   // null si pas encore historisé
-        mode_douane:           douaneEffectif ? 'terrain' : 'theorique',
+        // taux_terrain_utilise = taux réel customs_history si disponible,
+        // sinon 42% CIF décision v7.5 §7.2 (jamais les taux SH théoriques)
+        taux_terrain_utilise_pct: douaneEffectif ?? (TAUX_TERRAIN_DEFAULT * 100),
+        source_taux:           douaneEffectif ? 'customs_history' : 'decision_v75_42pct',
       },
 
       marges: {
@@ -344,10 +335,10 @@ router.get('/history', async (req, res) => {
         COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS ca_kmf,
         COALESCE(SUM(total_eur) FILTER (WHERE status != 'cancelled'), 0) AS ca_eur
       FROM orders
-      WHERE created_at >= NOW() - INTERVAL '${nbMois} months'
+      WHERE created_at >= NOW() - ($1 || ' months')::INTERVAL
       GROUP BY 1
       ORDER BY 1 ASC
-    `);
+    `, [nbMois]);
 
     // Enrichir avec marge estimée (12% de marge brute par défaut)
     const history = rows.map(r => {

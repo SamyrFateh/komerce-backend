@@ -7,7 +7,8 @@
  * PUT  /api/auth/me         → mise à jour profil
  */
 
-const express  = require('express');
+const express      = require('express');
+const { randomBytes } = require('crypto');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const db       = require('../db');
@@ -117,14 +118,19 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email ou téléphone obligatoire' });
     }
 
-    // Chercher par email ou téléphone
-    const field = email ? 'email' : 'phone';
-    const value = email ? email.toLowerCase() : phone;
-
-    const { rows } = await db.query(
-      `SELECT * FROM users WHERE ${field} = $1`,
-      [value]
-    );
+    // Chercher par email ou téléphone — deux requêtes explicites, pas d'interpolation de colonne
+    let rows;
+    if (email) {
+      ({ rows } = await db.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email.toLowerCase()]
+      ));
+    } else {
+      ({ rows } = await db.query(
+        'SELECT * FROM users WHERE phone = $1',
+        [phone]
+      ));
+    }
 
     if (!rows.length) {
       return res.status(401).json({ error: 'Identifiants incorrects' });
@@ -184,11 +190,26 @@ router.put('/me', authenticate, async (req, res) => {
   }
 });
 
-// ─── POST /api/auth/auto-register (usage interne komerce-api.js) ──────────────
+// ─── POST /api/auth/auto-register (usage interne uniquement) ─────────────────
 // Crée silencieusement un compte avec email généré depuis le téléphone
 // si l'utilisateur n'a pas encore de compte.
+// Protégé par clé API interne (header X-Internal-Key) — ne jamais exposer au frontend.
 
-router.post('/auto-register', async (req, res) => {
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+
+function requireInternalKey(req, res, next) {
+  if (!INTERNAL_API_KEY) {
+    console.error('FATAL: INTERNAL_API_KEY non définie — auto-register désactivé');
+    return res.status(503).json({ error: 'Endpoint désactivé (configuration manquante)' });
+  }
+  const provided = req.headers['x-internal-key'];
+  if (!provided || provided !== INTERNAL_API_KEY) {
+    return res.status(401).json({ error: 'Clé interne invalide ou absente' });
+  }
+  next();
+}
+
+router.post('/auto-register', requireInternalKey, async (req, res) => {
   try {
     const {
       full_name,
@@ -219,10 +240,9 @@ router.post('/auto-register', async (req, res) => {
       return res.json({ token, user: userResponse(user), created: false });
     }
 
-    // Créer le compte
-    const password_hash = await bcrypt.hash(
-      phone.replace(/\D/g, '') + '_komerce', 10
-    );
+    // Créer le compte — mot de passe aléatoire, inutilisable directement
+    // (le compte auto-créé n'est accessible que via token JWT)
+    const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
 
     const { rows: [user] } = await db.query(
       `INSERT INTO users

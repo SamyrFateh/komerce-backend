@@ -24,7 +24,7 @@ const guard = [authenticate, requireRole(['admin'])];
 
 router.get('/dashboard', ...guard, async (req, res) => {
   try {
-    const { days = 30 } = req.query;
+    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
 
     const [
       { rows: [kpi] },
@@ -206,7 +206,7 @@ router.get('/orders', ...guard, async (req, res) => {
 
 router.get('/margins', ...guard, async (req, res) => {
   try {
-    const { days = 30 } = req.query;
+    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
 
     const [
       { rows: byCategory },

@@ -15,10 +15,7 @@ const { authenticate } = require('../middleware/auth');
 const { generateBasketCode } = require('../utils/reference');
 const { sendSMS } = require('../utils/sms');
 
-async function getRates() {
-  const { rows } = await db.query('SELECT eur_kmf, aed_kmf FROM exchange_rates ORDER BY valid_from DESC LIMIT 1');
-  return rows[0] || { eur_kmf: 492, aed_kmf: 138 };
-}
+const { getRates } = require('../utils/rates');
 
 // POST /api/baskets/share
 router.post('/share', async (req, res) => {
@@ -35,12 +32,26 @@ router.post('/share', async (req, res) => {
       [code, owner_id, expires_at]
     );
 
-    for (const item of items) {
-      const p = await db.query('SELECT price_kmf FROM products WHERE id=$1 AND is_active=TRUE', [item.product_id]);
-      if (!p.rows.length) continue;
+    // Charger tous les produits en une seule requête (batch)
+    const productIds = items.map(i => i.product_id);
+    const { rows: products } = await db.query(
+      'SELECT id, price_kmf FROM products WHERE id = ANY($1) AND is_active = TRUE',
+      [productIds]
+    );
+    const priceMap = Object.fromEntries(products.map(p => [p.id, p.price_kmf]));
+
+    // Insérer tous les articles valides en un seul INSERT multi-valeurs
+    const validItems = items.filter(i => priceMap[i.product_id] != null);
+    if (validItems.length) {
+      const vals = validItems.flatMap((item, idx) => [
+        basket.id, item.product_id, owner_id, item.quantity || 1, priceMap[item.product_id],
+      ]);
+      const ph = validItems.map((_, idx) =>
+        `($${idx * 5 + 1},$${idx * 5 + 2},$${idx * 5 + 3},$${idx * 5 + 4},$${idx * 5 + 5})`
+      ).join(',');
       await db.query(
-        'INSERT INTO basket_items (basket_id, product_id, added_by, quantity, price_kmf) VALUES ($1,$2,$3,$4,$5)',
-        [basket.id, item.product_id, owner_id, item.quantity||1, p.rows[0].price_kmf]
+        `INSERT INTO basket_items (basket_id, product_id, added_by, quantity, price_kmf) VALUES ${ph}`,
+        vals
       );
     }
 
@@ -156,16 +167,32 @@ router.post('/gift', authenticate, async (req, res) => {
       [code, req.user.id, expires_at]
     );
 
+    // Charger tous les produits en une seule requête (batch)
+    const giftProductIds = items.map(i => i.product_id);
+    const { rows: giftProducts } = await db.query(
+      'SELECT id, price_kmf, name FROM products WHERE id = ANY($1)',
+      [giftProductIds]
+    );
+    const giftPriceMap = Object.fromEntries(giftProducts.map(p => [p.id, p.price_kmf]));
+
+    const validGiftItems = items.filter(i => giftPriceMap[i.product_id] != null);
     let total_kmf = 0;
-    for (const item of items) {
-      const p = await db.query('SELECT price_kmf, name FROM products WHERE id=$1', [item.product_id]);
-      if (!p.rows.length) continue;
-      const price = p.rows[0].price_kmf;
+
+    if (validGiftItems.length) {
+      const vals = validGiftItems.flatMap((item, idx) => [
+        basket.id, item.product_id, req.user.id, item.quantity || 1,
+        giftPriceMap[item.product_id], item.note || null,
+      ]);
+      const ph = validGiftItems.map((_, idx) =>
+        `($${idx * 6 + 1},$${idx * 6 + 2},$${idx * 6 + 3},$${idx * 6 + 4},$${idx * 6 + 5},$${idx * 6 + 6})`
+      ).join(',');
       await db.query(
-        'INSERT INTO basket_items (basket_id,product_id,added_by,quantity,price_kmf,note) VALUES ($1,$2,$3,$4,$5,$6)',
-        [basket.id, item.product_id, req.user.id, item.quantity||1, price, item.note||null]
+        `INSERT INTO basket_items (basket_id, product_id, added_by, quantity, price_kmf, note) VALUES ${ph}`,
+        vals
       );
-      total_kmf += price * (item.quantity||1);
+      total_kmf = validGiftItems.reduce((s, item) =>
+        s + giftPriceMap[item.product_id] * (item.quantity || 1), 0
+      );
     }
 
     res.status(201).json({ basket_id: basket.id, code, expires_at, total_kmf, recipient_phone, recipient_name,

@@ -96,6 +96,7 @@ const pilotageRouter  = require('./routes/pilotage');
 const basketsRouter   = require('./routes/baskets');
 const logisticsRouter = require('./routes/logistics');
 const paymentsRouter  = require('./routes/payments');
+const scansRouter     = require('./routes/scans');
 
 app.use('/api/auth',      authRouter);
 app.use('/api/products',  productsRouter);
@@ -109,8 +110,7 @@ app.use('/api/pilotage',  pilotageRouter);
 app.use('/api/baskets',   basketsRouter);
 app.use('/api/logistics', logisticsRouter);
 app.use('/api/payments',  paymentsRouter);
-
-// Note : les scans sont accessibles via POST /api/orders/scans
+app.use('/api/scans',    scansRouter);    // SCAN 3+4 Hub · SCAN 6+7 relais
 
 // ─── Healthcheck ─────────────────────────────────────────────────────────────
 
@@ -146,10 +146,10 @@ app.use((err, req, res, next) => {
 
 // ─── Cron interne — rappels cash relais ──────────────────────────────────────
 
-const { processChashRelaisReminders } = require('./utils/sms');
+const { processCashRelaisReminders } = require('./utils/sms');
 
 setInterval(() => {
-  processChashRelaisReminders().catch(err =>
+  processCashRelaisReminders().catch(err =>
     console.error('Cash reminder cron error:', err.message)
   );
 }, 60 * 60 * 1000); // toutes les heures

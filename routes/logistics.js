@@ -15,6 +15,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { generateShipmentRef } = require('../utils/reference');
 const PDFDocument = require('pdfkit');
+const { sendSMS }   = require('../utils/sms');
 const QRCode = require('qrcode');
 
 const adminOnly = [authenticate, requireRole(['admin'])];
@@ -75,15 +76,16 @@ router.patch('/shipments/:id', ...adminOnly, async (req, res) => {
         WHERE o.shipment_id=$1 AND o.status='available'
       `, [req.params.id]);
 
-      const { sendSMS } = require('../utils/sms');
-      for (const c of clients.rows) {
-        if (c.phone) {
-          await sendSMS(c.phone,
+      // Envoi en parallèle — ne bloque pas la réponse HTTP
+      Promise.all(
+        clients.rows
+          .filter(c => c.phone)
+          .map(c => sendSMS(
+            c.phone,
             `Komerce · Votre commande ${c.reference} est disponible au ${c.relais_name} (${c.relais_addr}). Code de retrait : ${c.pickup_code}`,
             'available', null
-          );
-        }
-      }
+          ))
+      ).catch(err => console.error('SMS batch logistics error:', err.message));
     }
 
     res.json(rows[0]);
