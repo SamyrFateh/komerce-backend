@@ -571,12 +571,13 @@ body {
 .modal-sheet {
   background: var(--white);
   border-radius: 20px 20px 0 0;
-  max-height: 85vh;
+  max-height: min(85svh, 85vh);
   width: 100%;
   max-width: 480px;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .modal-sheet-scroll {
   overflow-y: auto;
@@ -584,9 +585,10 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 .modal-sheet-footer {
-  padding: 12px 20px calc(16px + var(--safe-bottom));
+  padding: 12px 20px 16px;
   background: var(--white);
   border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
 }
 @keyframes slideUp {
   from { transform: translateY(100%); }
@@ -1900,6 +1902,7 @@ function addToCartFromModal() {
   addToCart(currentProduct, qty);
   closeProductModal({ target: document.getElementById('productModal'), currentTarget: document.getElementById('productModal') });
   showToast(`${currentProduct.emoji || '📦'} ${currentProduct.name} ajouté !`);
+  setTimeout(() => openCart(), 350);
 }
 
 function quickAdd(id, btn) {
@@ -2003,11 +2006,12 @@ function renderCart() {
         <div class="cart-item-info">
           <div class="cart-item-name">${esc(item.name)}</div>
           <div class="cart-item-price">${fmtKmf(item.price_kmf * item.qty)}</div>
+          <div style="font-size:11px;color:#94a3b8">${fmtKmf(item.price_kmf)} × ${item.qty}</div>
         </div>
         <div class="cart-item-qty">
-          <button onclick="updateCartItemQty('${item.id}', -1)">−</button>
+          <button onclick="updateCartItemQty('${item.id}', -1)" style="color:#ef4444">−</button>
           <span>${item.qty}</span>
-          <button onclick="updateCartItemQty('${item.id}', 1)">+</button>
+          <button onclick="updateCartItemQty('${item.id}', 1)" style="color:#16a34a">+</button>
         </div>
         <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">✕</button>
       </div>
@@ -2358,6 +2362,14 @@ function submitCheckout() {
   let ref = 'K';
   for (let i = 0; i < 6; i++) ref += chars[Math.floor(Math.random() * chars.length)];
   
+  // Disable submit button to prevent double-click
+  const submitBtn = document.getElementById('checkoutSubmitBtn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.7';
+    submitBtn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Envoi en cours...';
+  }
+
   const totalKmf = cart.reduce((s, i) => s + i.price_kmf * i.qty, 0);
   const totalEur = Math.round(totalKmf / EUR_KMF);
   
@@ -2439,9 +2451,14 @@ function submitCheckout() {
           <div style="font-size:11px;color:var(--text-light);">${esc(commanditaire.phone)}</div>
         </div>` : ''}
         
-        <button onclick="document.getElementById('confirmModal').remove()" style="width:100%;padding:13px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;">
-          👍 Compris !
-        </button>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <button onclick="document.getElementById('confirmModal').remove();setTimeout(()=>{document.getElementById('trackRef').value='${ref}';openTracking();searchOrder();},100);" style="width:100%;padding:13px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;">
+            🔍 Suivre ma commande
+          </button>
+          <button onclick="document.getElementById('confirmModal').remove()" style="width:100%;padding:11px;background:transparent;color:var(--text-light);border:1px solid #e5e7eb;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;">
+            👍 Compris, je ferme
+          </button>
+        </div>
       </div>
     `;
     
@@ -2450,14 +2467,18 @@ function submitCheckout() {
   
   // Clear cart
   cart = [];
-  } catch(err) {
-    console.error('submitCheckout error:', err);
-    showToast('Erreur : ' + err.message, 'error');
-  }
   saveCart();
   updateCartBadges();
   commanditaireVisible = false;
-  showToast('Commande confirmée ! 🎉');
+  showToast('Commande confirmée ! 🎉', 'success');
+  } catch(err) {
+    console.error('submitCheckout error:', err);
+    showToast('Erreur : ' + err.message, 'error');
+    // Re-enable submit button
+    const btn = document.getElementById('checkoutSubmitBtn');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = '✅ Confirmer'; }
+    return;
+  }
 }
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -2649,11 +2670,13 @@ async function searchOrder() {
       renderTrackingResult([data]);
       return;
     }
-    // Demo fallback
-    if (DEMO_ORDERS[ref]) {
-      renderTrackingResult([DEMO_ORDERS[ref]]);
+    // Vérifier dans les commandes locales
+    const localOrders = JSON.parse(localStorage.getItem('komerce_orders') || '[]');
+    const localMatch = localOrders.find(o => o.ref === ref || o.reference === ref);
+    if (localMatch) {
+      renderTrackingResult([{ reference: localMatch.ref, status: localMatch.status || 'pending_payment', total_kmf: localMatch.total_kmf, items: localMatch.items, relais: { name: localMatch.recipient?.relais_label || localMatch.recipient?.relais }, history: localMatch.history || [] }]);
     } else {
-      resultEl.innerHTML = `<div class="search-empty"><div class="emoji">📭</div><div>Commande introuvable</div><div style="margin-top:4px;font-size:12px;color:var(--text-light)">Vérifiez la référence (ex: K4F8A2Z ou K9B3C7X)</div></div>`;
+      resultEl.innerHTML = `<div class="search-empty"><div class="emoji">📭</div><div style="font-weight:700;margin-bottom:4px;">Commande introuvable</div><div style="font-size:12px;color:var(--text-light)">Vérifiez la référence reçue par SMS<br>Ex : <strong>K4F8A2Z</strong></div></div>`;
     }
   } else if (phone) {
     // Try API
@@ -2669,8 +2692,8 @@ async function searchOrder() {
         return;
       }
     }
-    // Demo fallback — show demo orders for any phone
-    renderTrackingResult(Object.values(DEMO_ORDERS));
+    // Aucune commande trouvée pour ce numéro
+    resultEl.innerHTML = `<div class="search-empty"><div class="emoji">📭</div><div style="font-weight:700;margin-bottom:4px;">Aucune commande trouvée</div><div style="font-size:12px;color:var(--text-light)">Aucune commande liée à ce numéro.<br>Utilisez votre référence (ex: K4F8A2Z) pour chercher.</div></div>`;
   }
 }
 
@@ -2931,11 +2954,13 @@ function esc(s) {
   return el.innerHTML;
 }
 
-function showToast(msg) {
+function showToast(msg, type) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
+  toast.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '';
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2200);
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.classList.remove('show'); toast.style.background = ''; }, 3200);
 }
 </script>
 
