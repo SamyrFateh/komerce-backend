@@ -592,22 +592,27 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
     }
 
     // Bloquer si des PO confirmed existent — traçabilité comptable
+    // Exception : fournisseurs [TEST] supprimables de force via header X-Force-Delete
+    const isTestSupplier = sup.name.includes('[TEST]');
+    const forceDelete    = req.headers['x-force-delete'] === 'true';
+
     const { rows: confirmedPOs } = await client.query(
       `SELECT id FROM purchase_orders WHERE supplier_id = $1 AND status = 'confirmed' LIMIT 1`,
       [id]
     );
-    if (confirmedPOs.length) {
+    if (confirmedPOs.length && !(isTestSupplier && forceDelete)) {
       await client.query('ROLLBACK');
       return res.status(409).json({
         error: 'Impossible de supprimer ce fournisseur : des commandes confirmées existent. Annulez-les d\'abord.',
       });
     }
 
-    // Supprimer les purchase_orders liées (seulement celles [TEST] — statut notified/pending)
+    // Supprimer les purchase_orders liées
+    // Pour les fournisseurs [TEST] avec force, on supprime aussi les confirmed
     const { rowCount: posDeleted } = await client.query(`
       DELETE FROM purchase_orders
       WHERE supplier_id = $1
-        AND status IN ('pending', 'notified')
+        AND status IN ('pending', 'notified'${isTestSupplier && forceDelete ? ", 'confirmed'" : ''})
     `, [id]);
 
     // Supprimer les mappings produit→fournisseur liés
