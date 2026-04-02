@@ -589,6 +589,13 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
       return res.status(404).json({ error: 'Fournisseur non trouvé' });
     }
 
+    // Supprimer les purchase_orders liées (seulement celles [TEST] — statut notified/pending)
+    const { rowCount: posDeleted } = await client.query(`
+      DELETE FROM purchase_orders
+      WHERE supplier_id = $1
+        AND status IN ('pending', 'notified', 'confirmed')
+    `, [id]);
+
     // Supprimer les mappings produit→fournisseur liés
     const { rowCount: mappingsDeleted } = await client.query(
       'DELETE FROM product_suppliers WHERE supplier_id = $1', [id]
@@ -599,8 +606,8 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
 
     await client.query('COMMIT');
 
-    console.log(`[PURCHASING] Fournisseur supprimé : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s) supprimé(s)`);
-    res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted });
+    console.log(`[PURCHASING] Fournisseur supprimé : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posDeleted} PO(s) supprimé(s)`);
+    res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_deleted: posDeleted });
 
   } catch (err) {
     await client.query('ROLLBACK');
