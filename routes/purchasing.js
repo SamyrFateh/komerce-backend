@@ -571,6 +571,46 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
 //   GESTION FOURNISSEURS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ─── DELETE /api/purchasing/suppliers/:id — supprimer un fournisseur ──────────
+
+router.delete('/suppliers/:id', ...guard, async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+
+    // Vérifier que le fournisseur existe
+    const { rows: [sup] } = await client.query(
+      'SELECT id, name FROM suppliers WHERE id = $1', [id]
+    );
+    if (!sup) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Fournisseur non trouvé' });
+    }
+
+    // Supprimer les mappings produit→fournisseur liés
+    const { rowCount: mappingsDeleted } = await client.query(
+      'DELETE FROM product_suppliers WHERE supplier_id = $1', [id]
+    );
+
+    // Supprimer le fournisseur
+    await client.query('DELETE FROM suppliers WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+
+    console.log(`[PURCHASING] Fournisseur supprimé : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s) supprimé(s)`);
+    res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Delete supplier error:', err.message);
+    res.status(500).json({ error: 'Erreur suppression fournisseur' });
+  } finally {
+    client.release();
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //   EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════════
