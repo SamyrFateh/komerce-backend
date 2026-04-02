@@ -571,18 +571,19 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
 
 // ─── DELETE /api/purchasing/po/:po_id — annuler une purchase order ────────────
 // Permet d'annuler une PO individuelle (utile pour cleanup [TEST] et corrections).
-// Bloque si la PO est déjà hub_received (marchandise physiquement reçue).
+// Bloque si la PO est déjà hub_received, sauf avec header X-Force-Delete: true.
 
 router.delete('/po/:po_id', ...guard, async (req, res) => {
   try {
     const { po_id } = req.params;
+    const forceDelete = req.headers['x-force-delete'] === 'true';
 
     const { rows: [po] } = await db.query(
       'SELECT * FROM purchase_orders WHERE id = $1', [po_id]
     );
     if (!po) return res.status(404).json({ error: 'Purchase order introuvable' });
 
-    if (po.status === 'hub_received') {
+    if (po.status === 'hub_received' && !forceDelete) {
       return res.status(409).json({
         error: 'Impossible d\'annuler une PO déjà reçue au Hub.',
       });
