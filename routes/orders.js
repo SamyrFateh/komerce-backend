@@ -8,6 +8,10 @@
  * PATCH /api/orders/:id/cost      → saisir le coût réel (admin)
  * GET   /api/orders/:id/history   → historique statuts
  *
+ * Changelog v7.6 vs v7.5 :
+ *   · PATCH /api/orders/:id/cost : ajout supplier_name + supplier_invoice_url
+ *   · Traçabilité achat fournisseur — champs optionnels, mise à jour dynamique
+ *
  * Changelog v7.5 vs v7.2 :
  *   · ceremony_* renommé module_* — champs génériques pour tous les modules spécialisés
  *   · CEREMONY_TYPES remplacé par MODULE_TYPES — extensible sans migration DB
@@ -654,7 +658,18 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
 router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res) => {
   try {
-    const { cost_real_kmf, customs_real_kmf, customs_agent_id, customs_notes, sh_category } = req.body;
+    const {
+      cost_real_kmf,
+      customs_real_kmf,
+      customs_agent_id,
+      customs_notes,
+      sh_category,
+      // ── Traçabilité fournisseur (v7.6) ────────────────────────────────────
+      // supplier_name        : enseigne / fournisseur (ex: "Noon Dubai", "Carrefour MoE")
+      // supplier_invoice_url : lien facture (Google Drive, S3, URL directe)
+      supplier_name,
+      supplier_invoice_url,
+    } = req.body;
 
     if (!cost_real_kmf) return res.status(400).json({ error: 'cost_real_kmf obligatoire' });
 
@@ -663,10 +678,25 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res)
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
+    // Construire la mise à jour dynamiquement selon les champs fournis
+    const updates = ['cost_real_kmf = $1', 'updated_at = NOW()'];
+    const values  = [cost_real_kmf];
+    let   pi      = 2;
+
+    if (supplier_name !== undefined) {
+      updates.push(`supplier_name = $${pi++}`);
+      values.push(supplier_name);
+    }
+    if (supplier_invoice_url !== undefined) {
+      updates.push(`supplier_invoice_url = $${pi++}`);
+      values.push(supplier_invoice_url);
+    }
+    values.push(order.id);
+
     // Mise à jour coût réel (le trigger compute_real_margin recalcule margin_real_pct)
     await db.query(
-      `UPDATE orders SET cost_real_kmf = $1, updated_at = NOW() WHERE id = $2`,
-      [cost_real_kmf, order.id]
+      `UPDATE orders SET ${updates.join(', ')} WHERE id = $${pi}`,
+      values
     );
 
     // Customs history — sans customs_delta_pct ni customs_delta_kmf (GENERATED)
@@ -689,7 +719,8 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res)
 
     const { rows: [updated] } = await db.query(
       `SELECT id, reference, cost_real_kmf, margin_real_pct,
-              margin_alert, sourcing_blocked, cost_delta_pct
+              margin_alert, sourcing_blocked, cost_delta_pct,
+              supplier_name, supplier_invoice_url
        FROM orders WHERE id = $1`,
       [req.params.id]
     );
