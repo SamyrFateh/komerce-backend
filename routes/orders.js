@@ -162,6 +162,10 @@ async function getUniqueRef() {
 //   module_*          → autres champs module au niveau commande
 
 router.post('/', authenticate, async (req, res) => {
+  // Les tokens à scope restreint (orders-by-phone) ne peuvent pas créer de commandes
+  if (req.user.scope) {
+    return res.status(403).json({ error: 'Token lecture seule — connexion complète requise pour créer une commande' });
+  }
   const client = await db.getClient();
   try {
     await client.query('BEGIN');

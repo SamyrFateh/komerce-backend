@@ -520,6 +520,7 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
     }
 
     // Si qualité OK → passer la commande client à 'preparation' (SCAN 3)
+    let scan3_triggered = false;
     if (quality_ok) {
       // Vérifier que toutes les purchase_orders de cette commande sont hub_received
       const { rows: pending } = await client.query(`
@@ -528,6 +529,7 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
       `, [req.params.order_id]);
 
       if (pending.length === 0) {
+        scan3_triggered = true;
         // Tous les articles sont arrivés → SCAN 3
         await client.query(`
           UPDATE orders
@@ -556,7 +558,7 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ success: true, purchase_order: po, scan3_triggered: quality_ok && true });
+    res.json({ success: true, purchase_order: po, scan3_triggered });
 
   } catch (err) {
     await client.query('ROLLBACK');
@@ -589,11 +591,23 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
       return res.status(404).json({ error: 'Fournisseur non trouvé' });
     }
 
+    // Bloquer si des PO confirmed existent — traçabilité comptable
+    const { rows: confirmedPOs } = await client.query(
+      `SELECT id FROM purchase_orders WHERE supplier_id = $1 AND status = 'confirmed' LIMIT 1`,
+      [id]
+    );
+    if (confirmedPOs.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Impossible de supprimer ce fournisseur : des commandes confirmées existent. Annulez-les d\'abord.',
+      });
+    }
+
     // Supprimer les purchase_orders liées (seulement celles [TEST] — statut notified/pending)
     const { rowCount: posDeleted } = await client.query(`
       DELETE FROM purchase_orders
       WHERE supplier_id = $1
-        AND status IN ('pending', 'notified', 'confirmed')
+        AND status IN ('pending', 'notified')
     `, [id]);
 
     // Supprimer les mappings produit→fournisseur liés

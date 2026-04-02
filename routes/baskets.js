@@ -88,7 +88,7 @@ router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res) => {
 });
 
 // PATCH /api/baskets/:code
-router.patch('/:code', async (req, res) => {
+router.patch('/:code', authenticate, async (req, res) => {
   try {
     const { rows: [basket] } = await db.query(
       'SELECT * FROM baskets WHERE code=$1 AND expires_at>NOW() AND is_locked=FALSE', [req.params.code]
