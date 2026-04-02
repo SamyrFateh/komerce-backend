@@ -642,12 +642,11 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
     }
 
     // Supprimer les purchase_orders liées
-    // Pour les fournisseurs [TEST] avec force, on supprime aussi les confirmed
-    const { rowCount: posDeleted } = await client.query(`
-      DELETE FROM purchase_orders
-      WHERE supplier_id = $1
-        AND status IN ('pending', 'notified'${isTestSupplier && forceDelete ? ", 'confirmed'" : ''})
-    `, [id]);
+    // Pour les fournisseurs [TEST] avec force : toutes les PO sans exception
+    const posQuery = (isTestSupplier && forceDelete)
+      ? `DELETE FROM purchase_orders WHERE supplier_id = $1`
+      : `DELETE FROM purchase_orders WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
+    const { rowCount: posDeleted } = await client.query(posQuery, [id]);
 
     // Supprimer les mappings produit→fournisseur liés
     const { rowCount: mappingsDeleted } = await client.query(
