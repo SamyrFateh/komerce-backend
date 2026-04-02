@@ -475,14 +475,13 @@ router.post('/:order_id/confirm', ...guard, async (req, res) => {
     if (!po) return res.status(404).json({ error: 'Purchase order introuvable' });
 
     // Mettre à jour supplier_name sur la commande parent pour traçabilité
-    if (po.unit_price_aed) {
-      const { rows: [sup] } = await db.query('SELECT name FROM suppliers WHERE id = $1', [po.supplier_id]);
-      if (sup) {
-        await db.query(
-          'UPDATE orders SET supplier_name = $1, updated_at = NOW() WHERE id = $2',
-          [sup.name, req.params.order_id]
-        );
-      }
+    // (toujours — pas de condition sur unit_price_aed)
+    const { rows: [sup] } = await db.query('SELECT name FROM suppliers WHERE id = $1', [po.supplier_id]);
+    if (sup) {
+      await db.query(
+        'UPDATE orders SET supplier_name = $1, supplier_invoice_url = COALESCE($2, supplier_invoice_url), updated_at = NOW() WHERE id = $3',
+        [sup.name, tracking_url || null, req.params.order_id]
+      );
     }
 
     res.json({ success: true, purchase_order: po });
@@ -533,7 +532,7 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
         await client.query(`
           UPDATE orders
           SET status = 'preparation', preparation_at = NOW(), updated_at = NOW()
-          WHERE id = $1 AND status = 'purchasing'
+          WHERE id = $1 AND status IN ('ordered', 'purchasing')
         `, [req.params.order_id]);
 
         await client.query(`
