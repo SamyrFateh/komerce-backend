@@ -4,6 +4,7 @@
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v7.6 : /api/purchasing ajouté · triggerPurchasing dans payments.js (cash + Stripe)
  * Changelog v7.5 : /api/ceremony → /api/modules · /api/pilotage ajouté
  */
 
@@ -97,7 +98,8 @@ const basketsRouter   = require('./routes/baskets');
 const logisticsRouter = require('./routes/logistics');
 const paymentsRouter  = require('./routes/payments');
 const scansRouter     = require('./routes/scans');
-const financeRouter   = require('./routes/finance');
+const financeRouter    = require('./routes/finance');
+const purchasingRouter = require('./routes/purchasing'); // Sourcing semi-automatisé v7.6
 
 app.use('/api/auth',      authRouter);
 app.use('/api/products',  productsRouter);
@@ -112,14 +114,15 @@ app.use('/api/baskets',   basketsRouter);
 app.use('/api/logistics', logisticsRouter);
 app.use('/api/payments',  paymentsRouter);
 app.use('/api/scans',    scansRouter);    // SCAN 3+4 Hub · SCAN 6+7 relais
-app.use('/api/finance',  financeRouter);  // Export CSV · Preuves Stripe · Rapport PDF
+app.use('/api/finance',    financeRouter);   // Export CSV · Preuves Stripe · Rapport PDF
+app.use('/api/purchasing', purchasingRouter); // Sourcing fournisseurs semi-automatisé v7.6
 
 // ─── Healthcheck ─────────────────────────────────────────────────────────────
 
 app.get('/api/health', (req, res) => {
   res.json({
     status:    'ok',
-    version:   '7.5',
+    version:   '7.6',
     timestamp: new Date().toISOString(),
     env:       process.env.NODE_ENV || 'development',
   });
@@ -163,7 +166,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════╗
-║   🌊 KOMERCE API v7.5 — en ligne sur :${PORT.toString().padEnd(9)}║
+║   🌊 KOMERCE API v7.6 — en ligne sur :${PORT.toString().padEnd(9)}║
 ╠══════════════════════════════════════════════════╣
 ║   Env      : ${(process.env.NODE_ENV || 'development').padEnd(37)}║
 ║   DB       : ${process.env.DATABASE_URL ? 'Railway PostgreSQL ✓' : 'DATABASE_URL manquante ⚠️ '}║
@@ -172,6 +175,7 @@ app.listen(PORT, () => {
 ║   Modules  : /api/modules ✓ (couture·lunettes·…) ║
 ║   Pilotage : /api/pilotage ✓                     ║
 ║   Finance  : /api/finance ✓ (CSV·Stripe·PDF)     ║
+║   Sourcing : /api/purchasing ✓ (semi-auto v7.6)  ║
 ╚══════════════════════════════════════════════════╝
   `);
 });

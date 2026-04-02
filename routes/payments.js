@@ -1,10 +1,14 @@
 /**
- * KOMERCE — Routes paiement
+ * KOMERCE — Routes paiement v7.6
  *
  * POST /api/payments/stripe/intent    → créer un PaymentIntent Stripe (EUR)
  * POST /api/payments/stripe/webhook   → webhook Stripe (confirmation paiement)
  * POST /api/payments/cash/confirm     → agent relais confirme réception espèces
  * GET  /api/payments/rates            → taux de change actuels
+ *
+ * Changelog v7.6 :
+ *   · triggerPurchasing() déclenché après paiement Stripe ET cash confirmé
+ *   · Point d'entrée unique pour le sourcing — plus de déclenchement dans orders.js
  */
 
 const express = require('express');
@@ -14,6 +18,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
+const { triggerPurchasing } = require('./purchasing'); // Sourcing semi-automatisé v7.6
 
 // ── POST /api/payments/stripe/intent ─────────────────────────────────────────
 // Crée un Stripe PaymentIntent pour une commande.
@@ -132,6 +137,11 @@ router.post('/stripe/webhook',
       }
 
       console.log(`✅ Paiement Stripe confirmé : ${order_reference}`);
+
+      // ── Sourcing semi-automatisé — déclenché après paiement Stripe ──────────
+      triggerPurchasing(order_id)
+        .then(r => console.log('[PURCHASING] Stripe trigger OK:', order_reference, r))
+        .catch(e => console.error('[PURCHASING] Stripe trigger error:', order_reference, e.message));
     }
 
     // Paiement échoué
@@ -235,11 +245,17 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
       );
     }
 
+
+    // ── Sourcing semi-automatisé — déclenché après paiement cash ──────────────
+    triggerPurchasing(order.id)
+      .then(r => console.log('[PURCHASING] Cash trigger OK:', order.reference, r))
+      .catch(e => console.error('[PURCHASING] Cash trigger error:', order.reference, e.message));
+
     res.json({
       message:   'Paiement espèces confirmé — commande validée',
       reference: order.reference,
       paid_at:   new Date().toISOString(),
-      next_step: 'Bon de commande transmis à l\'agent Dubai',
+      next_step: 'Sourcing déclenché automatiquement — bon de commande à l\'agent Dubai',
     });
 
   } catch (err) {
