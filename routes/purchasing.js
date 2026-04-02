@@ -301,6 +301,125 @@ router.get('/', ...guard, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//   GESTION FOURNISSEURS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── GET /api/purchasing/suppliers ───────────────────────────────────────────
+
+router.get('/suppliers', ...guard, async (req, res) => {
+  try {
+    const { platform, active } = req.query;
+    const conditions = ['1=1'];
+    const params     = [];
+
+    if (platform) { conditions.push(`platform = $${params.length + 1}`); params.push(platform); }
+    if (active !== undefined) { conditions.push(`is_active = $${params.length + 1}`); params.push(active === 'true'); }
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    // Masquer les clés API en réponse
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur liste fournisseurs' });
+  }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+router.post('/suppliers', ...guard, async (req, res) => {
+  try {
+    const {
+      name, platform, contact_name, contact_phone, contact_email,
+      api_key_enc, api_secret_enc, account_id,
+      auto_order = false, lead_time_days = 2, notes,
+    } = req.body;
+
+    if (!name || !platform) {
+      return res.status(400).json({ error: 'name et platform obligatoires' });
+    }
+
+    const { rows: [supplier] } = await db.query(`
+      INSERT INTO suppliers
+        (name, platform, contact_name, contact_phone, contact_email,
+         api_key_enc, api_secret_enc, account_id,
+         auto_order, lead_time_days, notes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      RETURNING id, name, platform, auto_order, lead_time_days, is_active, created_at
+    `, [name, platform, contact_name, contact_phone, contact_email,
+        api_key_enc, api_secret_enc, account_id,
+        auto_order, lead_time_days, notes]);
+
+    res.status(201).json(supplier);
+  } catch (err) {
+    console.error('Create supplier error:', err.message);
+    res.status(500).json({ error: 'Erreur création fournisseur' });
+  }
+});
+
+// ─── POST /api/purchasing/suppliers/:id/map — mapper produit → fournisseur ───
+
+router.post('/suppliers/:id/map', ...guard, async (req, res) => {
+  try {
+    const {
+      product_id,
+      supplier_sku,
+      supplier_url,
+      supplier_price_aed,
+      min_order_qty = 1,
+      priority = 1,
+      notes,
+    } = req.body;
+
+    if (!product_id || !supplier_sku || !supplier_price_aed) {
+      return res.status(400).json({ error: 'product_id, supplier_sku et supplier_price_aed obligatoires' });
+    }
+
+    const { rows: [mapping] } = await db.query(`
+      INSERT INTO product_suppliers
+        (product_id, supplier_id, supplier_sku, supplier_url,
+         supplier_price_aed, min_order_qty, priority, notes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      ON CONFLICT (product_id, supplier_id) DO UPDATE SET
+        supplier_sku       = EXCLUDED.supplier_sku,
+        supplier_url       = EXCLUDED.supplier_url,
+        supplier_price_aed = EXCLUDED.supplier_price_aed,
+        min_order_qty      = EXCLUDED.min_order_qty,
+        priority           = EXCLUDED.priority,
+        notes              = EXCLUDED.notes,
+        is_active          = TRUE,
+        updated_at         = NOW()
+      RETURNING *
+    `, [product_id, req.params.id, supplier_sku, supplier_url,
+        supplier_price_aed, min_order_qty, priority, notes]);
+
+    res.status(201).json(mapping);
+  } catch (err) {
+    console.error('Map supplier error:', err.message);
+    res.status(500).json({ error: 'Erreur mapping fournisseur' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   COMMANDES PAR ORDER_ID — déclaré après /suppliers pour éviter conflit Express
+// ═══════════════════════════════════════════════════════════════════════════════
+
 // ─── GET /api/purchasing/:order_id — achats d'une commande ───────────────────
 
 router.get('/:order_id', ...guard, async (req, res) => {
@@ -452,117 +571,6 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 //   GESTION FOURNISSEURS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// ─── GET /api/purchasing/suppliers ───────────────────────────────────────────
-
-router.get('/suppliers', ...guard, async (req, res) => {
-  try {
-    const { platform, active } = req.query;
-    const conditions = ['1=1'];
-    const params     = [];
-
-    if (platform) { conditions.push(`platform = $${params.length + 1}`); params.push(platform); }
-    if (active !== undefined) { conditions.push(`is_active = $${params.length + 1}`); params.push(active === 'true'); }
-
-    const { rows } = await db.query(`
-      SELECT
-        s.*,
-        COUNT(DISTINCT ps.product_id) AS products_mapped,
-        COUNT(DISTINCT po.id)         AS purchase_orders_total
-      FROM suppliers s
-      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE
-      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
-      WHERE ${conditions.join(' AND ')}
-      GROUP BY s.id
-      ORDER BY s.name
-    `, params);
-
-    // Masquer les clés API en réponse
-    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
-      ...s,
-      has_api_key: !!api_key_enc,
-    }));
-
-    res.json(safe);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur liste fournisseurs' });
-  }
-});
-
-// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
-
-router.post('/suppliers', ...guard, async (req, res) => {
-  try {
-    const {
-      name, platform, contact_name, contact_phone, contact_email,
-      api_key_enc, api_secret_enc, account_id,
-      auto_order = false, lead_time_days = 2, notes,
-    } = req.body;
-
-    if (!name || !platform) {
-      return res.status(400).json({ error: 'name et platform obligatoires' });
-    }
-
-    const { rows: [supplier] } = await db.query(`
-      INSERT INTO suppliers
-        (name, platform, contact_name, contact_phone, contact_email,
-         api_key_enc, api_secret_enc, account_id,
-         auto_order, lead_time_days, notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      RETURNING id, name, platform, auto_order, lead_time_days, is_active, created_at
-    `, [name, platform, contact_name, contact_phone, contact_email,
-        api_key_enc, api_secret_enc, account_id,
-        auto_order, lead_time_days, notes]);
-
-    res.status(201).json(supplier);
-  } catch (err) {
-    console.error('Create supplier error:', err.message);
-    res.status(500).json({ error: 'Erreur création fournisseur' });
-  }
-});
-
-// ─── POST /api/purchasing/suppliers/:id/map — mapper produit → fournisseur ───
-
-router.post('/suppliers/:id/map', ...guard, async (req, res) => {
-  try {
-    const {
-      product_id,
-      supplier_sku,
-      supplier_url,
-      supplier_price_aed,
-      min_order_qty = 1,
-      priority = 1,
-      notes,
-    } = req.body;
-
-    if (!product_id || !supplier_sku || !supplier_price_aed) {
-      return res.status(400).json({ error: 'product_id, supplier_sku et supplier_price_aed obligatoires' });
-    }
-
-    const { rows: [mapping] } = await db.query(`
-      INSERT INTO product_suppliers
-        (product_id, supplier_id, supplier_sku, supplier_url,
-         supplier_price_aed, min_order_qty, priority, notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      ON CONFLICT (product_id, supplier_id) DO UPDATE SET
-        supplier_sku       = EXCLUDED.supplier_sku,
-        supplier_url       = EXCLUDED.supplier_url,
-        supplier_price_aed = EXCLUDED.supplier_price_aed,
-        min_order_qty      = EXCLUDED.min_order_qty,
-        priority           = EXCLUDED.priority,
-        notes              = EXCLUDED.notes,
-        is_active          = TRUE,
-        updated_at         = NOW()
-      RETURNING *
-    `, [product_id, req.params.id, supplier_sku, supplier_url,
-        supplier_price_aed, min_order_qty, priority, notes]);
-
-    res.status(201).json(mapping);
-  } catch (err) {
-    console.error('Map supplier error:', err.message);
-    res.status(500).json({ error: 'Erreur mapping fournisseur' });
-  }
-});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //   EXPORTS
