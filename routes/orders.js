@@ -162,10 +162,6 @@ async function getUniqueRef() {
 //   module_*          → autres champs module au niveau commande
 
 router.post('/', authenticate, async (req, res) => {
-  // Les tokens à scope restreint (orders-by-phone) ne peuvent pas créer de commandes
-  if (req.user.scope) {
-    return res.status(403).json({ error: 'Token lecture seule — connexion complète requise pour créer une commande' });
-  }
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -634,8 +630,22 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
     const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
 
+    // Si passage à available et pickup_code manquant → en générer un
+    let pickupCodePatch = '';
+    if (status === 'available' && !order.pickup_code) {
+      const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const { randomBytes } = require('crypto');
+      const newCode = Array.from({ length: 6 }, () => {
+        let b;
+        do { b = randomBytes(1)[0]; } while (b >= 216);
+        return PICKUP_CHARS[b % 36];
+      }).join('');
+      pickupCodePatch = `, pickup_code = '${newCode}'`;
+      console.log(`[ORDERS] pickup_code auto-généré pour ${order.reference}: ${newCode}`);
+    }
+
     await client.query(
-      `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW() WHERE id = $2`,
+      `UPDATE orders SET status = $1${tsUpdate}${pickupCodePatch}, updated_at = NOW() WHERE id = $2`,
       [status, order.id]
     );
 
