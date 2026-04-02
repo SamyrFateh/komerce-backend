@@ -2292,6 +2292,7 @@ function validatePhone(phone) {
 }
 
 function submitCheckout() {
+  try {
   const name = document.getElementById('checkName').value.trim();
   const checkPhoneRaw = document.getElementById('checkPhone').value.trim();
   const phone = checkPhoneRaw.startsWith('+') ? checkPhoneRaw : '+269' + checkPhoneRaw;
@@ -2388,7 +2389,7 @@ function submitCheckout() {
   localStorage.setItem('komerce_orders', JSON.stringify(orders));
   
   // Tenter d'envoyer au backend
-  fetch(API + '/orders', {
+  fetch(API_BASE + '/orders', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderData)
@@ -2458,6 +2459,10 @@ function submitCheckout() {
   
   // Clear cart
   cart = [];
+  } catch(err) {
+    console.error('submitCheckout error:', err);
+    showToast('Erreur : ' + err.message, 'error');
+  }
   saveCart();
   updateCartBadges();
   commanditaireVisible = false;
