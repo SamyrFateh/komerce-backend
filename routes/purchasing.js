@@ -569,6 +569,39 @@ router.post('/:order_id/receive', ...guard, async (req, res) => {
   }
 });
 
+// ─── DELETE /api/purchasing/po/:po_id — annuler une purchase order ────────────
+// Permet d'annuler une PO individuelle (utile pour cleanup [TEST] et corrections).
+// Bloque si la PO est déjà hub_received (marchandise physiquement reçue).
+
+router.delete('/po/:po_id', ...guard, async (req, res) => {
+  try {
+    const { po_id } = req.params;
+
+    const { rows: [po] } = await db.query(
+      'SELECT * FROM purchase_orders WHERE id = $1', [po_id]
+    );
+    if (!po) return res.status(404).json({ error: 'Purchase order introuvable' });
+
+    if (po.status === 'hub_received') {
+      return res.status(409).json({
+        error: 'Impossible d\'annuler une PO déjà reçue au Hub.',
+      });
+    }
+
+    await db.query(
+      `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+      [po_id]
+    );
+
+    console.log(`[PURCHASING] PO annulée : ${po_id} (était: ${po.status})`);
+    res.json({ cancelled: true, po_id, previous_status: po.status });
+
+  } catch (err) {
+    console.error('Cancel PO error:', err.message);
+    res.status(500).json({ error: 'Erreur annulation purchase order' });
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //   GESTION FOURNISSEURS
 // ═══════════════════════════════════════════════════════════════════════════════
