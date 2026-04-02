@@ -526,7 +526,8 @@ router.get('/:ref', async (req, res) => {
     // Route publique — req.user est undefined sauf si le middleware authenticate est présent.
     // cash_ref_code est masqué pour tous les accès publics (toujours false ici).
     // Les agents accèdent aux détails complets via GET /api/admin/orders.
-    const isAdmin = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
+    const isAdmin       = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
+    const isRelaisAdmin = req.user && ['admin', 'agent_relais'].includes(req.user.role);
 
     res.json({
       id:                  order.id,
@@ -537,7 +538,9 @@ router.get('/:ref', async (req, res) => {
       payment_mode:        order.payment_mode,
       payment_status:      order.payment_status,
       // cash_ref_code exposé uniquement aux agents et admins
-      ...(isAdmin ? { cash_ref_code: order.cash_ref_code } : {}),
+      ...(isAdmin       ? { cash_ref_code: order.cash_ref_code } : {}),
+      // pickup_code exposé uniquement à l'admin et l'agent relais (pas au public, pas à l'agent hub)
+      ...(isRelaisAdmin ? { pickup_code:   order.pickup_code   } : {}),
       confection_type:       order.confection_type,
       module_type:           order.module_type,
       module_size:           order.module_size,
