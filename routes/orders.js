@@ -26,6 +26,7 @@ const router  = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 
@@ -282,6 +283,18 @@ router.post('/', authenticate, async (req, res) => {
 
     // ── Code cash si paiement relais ────────────────────────────────────────
     // Codes générés avec crypto — pas Math.random()
+    // ── Loyalty : récupérer le rabais du client connecté ──────────────────
+    let discountPct   = 0;
+    let discountKmf   = 0;
+    let loyaltyLabel  = null;
+    if (req.user?.id) {
+      const ld = await getLoyaltyDiscount(db, req.user.id);
+      discountPct  = ld.discountPct  || 0;
+      loyaltyLabel = ld.discountLabel || null;
+      discountKmf  = Math.round(total_kmf * discountPct / 100);
+      total_kmf    = total_kmf - discountKmf;
+    }
+
     const cash_ref_code = payment_mode === 'cash_relais'
       ? (100000 + (randomBytes(3).readUIntBE(0, 3) % 900000)).toString()
       : null;
@@ -308,7 +321,8 @@ router.post('/', authenticate, async (req, res) => {
          module_type, module_fabric_id, module_fabric_type,
          module_size, module_retouche, module_qty_meters, module_accessories,
          order_occasion,
-         cost_estimated_kmf, margin_estimated_pct
+         cost_estimated_kmf, margin_estimated_pct,
+         discount_pct, discount_kmf, loyalty_label
        ) VALUES (
          $1,$2,$3,$4,$5,
          $6,$7,
@@ -320,7 +334,8 @@ router.post('/', authenticate, async (req, res) => {
          $17,$18,$19,
          $20,$21,$22,$23,
          $24,
-         $25,$26
+         $25,$26,
+         $27,$28,$29
        ) RETURNING *`,
       [
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -344,6 +359,9 @@ router.post('/', authenticate, async (req, res) => {
         order_occasion || null,
         Math.round(cost_estimated),
         Number(margin_est),
+        discountPct,
+        discountKmf,
+        loyaltyLabel,
       ]
     );
 
@@ -397,6 +415,9 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     res.status(201).json({
+        discount_pct:     order.discount_pct || 0,
+        discount_kmf:     order.discount_kmf || 0,
+        loyalty_label:    order.loyalty_label || null,
       order: {
         id:               order.id,
         reference:        order.reference,
@@ -656,6 +677,12 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     );
 
     await client.query('COMMIT');
+
+    // ── Recalculer le palier fidélité après collecte ──────────────────────
+    if (status === 'collected' && order.user_id) {
+      recalculateLoyalty(db, order.user_id)
+        .catch(e => console.error('[LOYALTY] recalculate error:', e.message));
+    }
 
     const smsPhone = order.user_phone;
     if (smsPhone && STATUS_SMS[status]) {

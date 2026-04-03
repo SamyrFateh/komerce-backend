@@ -156,8 +156,18 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticate, async (req, res) => {
   try {
     const { rows: [user] } = await db.query(
-      `SELECT id, full_name, email, phone, role, country, currency_pref, created_at
-       FROM users WHERE id = $1`,
+      `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.country,
+              u.currency_pref, u.created_at, u.orders_count,
+              lt.label AS loyalty_label, lt.badge AS loyalty_badge,
+              lt.discount_pct AS loyalty_discount_pct,
+              (SELECT lt2.min_orders
+               FROM loyalty_tiers lt2
+               WHERE lt2.min_orders > COALESCE(lt.min_orders, 0)
+               ORDER BY lt2.min_orders ASC LIMIT 1
+              ) - u.orders_count AS orders_until_next_tier
+       FROM users u
+       LEFT JOIN loyalty_tiers lt ON lt.id = u.loyalty_tier_id
+       WHERE u.id = $1`,
       [req.user.id]
     );
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });

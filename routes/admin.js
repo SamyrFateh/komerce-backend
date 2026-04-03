@@ -176,7 +176,8 @@ router.get('/orders', ...guard, async (req, res) => {
          o.confection_type, o.confection_instructions, o.confection_delay_days,
          rc.full_name AS recipient_name,
          rc.phone     AS recipient_phone,
-         o.created_at, o.shipped_at, o.available_at, o.collected_at,
+         o.created_at, o.ordered_at, o.purchasing_at, o.preparation_at,
+         o.shipped_at, o.available_at, o.collected_at, o.cash_paid_at,
          p.name   AS product_name, p.category,
          u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
          r.name   AS relais_name, r.zone AS relais_zone

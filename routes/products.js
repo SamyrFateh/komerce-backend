@@ -75,6 +75,9 @@ router.get('/', async (req, res) => {
          p.customs_risk_coeff,
          p.has_couture,
          p.sourcing_source,
+         p.requires_secure_transport,
+         p.unsold_price_kmf,
+         p.unsold_channel,
          p.created_at
        FROM products p
        WHERE ${where}
@@ -150,10 +153,13 @@ router.post('/', authenticate, requireRole(['admin']), async (req, res) => {
       image_url,
       images,
       badge,
-      has_couture       = false,
-      customs_risk_coeff = 1.0,
+      has_couture                = false,
+      customs_risk_coeff          = 1.0,
       sourcing_source,
-      sort_order        = 0,
+      sort_order                  = 0,
+      requires_secure_transport   = false,
+      unsold_price_kmf,
+      unsold_channel              = 'both',
     } = req.body;
 
     if (!name || !category || !price_kmf) {
@@ -164,12 +170,14 @@ router.post('/', authenticate, requireRole(['admin']), async (req, res) => {
       `INSERT INTO products
          (name, description, category, price_aed, price_kmf, price_eur,
           weight_kg, dimensions_cm, stock, image_url, images, badge,
-          has_couture, customs_risk_coeff, sourcing_source, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          has_couture, customs_risk_coeff, sourcing_source, sort_order,
+          requires_secure_transport, unsold_price_kmf, unsold_channel)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING *`,
       [name, description, category, price_aed, price_kmf, price_eur,
        weight_kg, dimensions_cm, stock, image_url, images ? JSON.stringify(images) : null,
-       badge, has_couture, customs_risk_coeff, sourcing_source, sort_order]
+       badge, has_couture, customs_risk_coeff, sourcing_source, sort_order,
+       requires_secure_transport, unsold_price_kmf || null, unsold_channel]
     );
 
     res.status(201).json(product);
@@ -188,6 +196,7 @@ router.put('/:id', authenticate, requireRole(['admin']), async (req, res) => {
       'weight_kg', 'dimensions_cm', 'stock', 'image_url', 'images', 'badge',
       'has_couture', 'customs_risk_coeff', 'sourcing_source', 'sort_order',
       'is_active', 'is_available',
+      'requires_secure_transport', 'unsold_price_kmf', 'unsold_channel',
     ];
 
     const updates = [];

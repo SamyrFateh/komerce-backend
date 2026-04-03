@@ -4,6 +4,7 @@
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v8.0 : /api/loyalty ajouté · /api/unsold ajouté · migration session 6
  * Changelog v7.6 : /api/purchasing ajouté · triggerPurchasing dans payments.js (cash + Stripe)
  * Changelog v7.5 : /api/ceremony → /api/modules · /api/pilotage ajouté
  */
@@ -16,25 +17,16 @@ const path       = require('path');
 const rateLimit  = require('express-rate-limit');
 const app = express();
 
-// FIX PROXY (Railway, Render, etc.)
 app.set('trust proxy', 1);
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-//
-// Stratégie :
-//   1. Toujours autoriser les requêtes sans origin (curl, Postman, mobile natif)
-//   2. Autoriser tous les sous-domaines *.up.railway.app (frontend + backend même plateforme)
-//   3. Autoriser le domaine custom si défini dans FRONTEND_URL
-//   4. Autoriser localhost pour le développement
-//
-const FRONTEND_URL = process.env.FRONTEND_URL || ''; // ex: https://komerce.km
+const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
 function isAllowedOrigin(origin) {
-  if (!origin) return true;                                      // curl / Postman / mobile
-  if (origin === 'null') return true;                           // fichier local (file://)
-  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;// localhost dev
-  if (/^https:\/\/[a-z0-9-]+\.up\.railway\.app$/.test(origin)) return true; // tout Railway
-  if (FRONTEND_URL && origin === FRONTEND_URL) return true;     // domaine custom
+  if (!origin) return true;
+  if (origin === 'null') return true;
+  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
+  if (/^https:\/\/[a-z0-9-]+\.up\.railway\.app$/.test(origin)) return true;
+  if (FRONTEND_URL && origin === FRONTEND_URL) return true;
   return false;
 }
 
@@ -50,22 +42,17 @@ app.use(cors({
   credentials: true,
 }));
 
-// Pré-flight explicite (certains clients l'exigent)
 app.options('*', cors());
-
-// ─── Body parser ──────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Rate limiting ────────────────────────────────────────────────────────────
-
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max:      100,
   standardHeaders: true,
   legacyHeaders:   false,
-  message: { error: 'Trop de requêtes, réessayez dans 15 minutes.' },
+  message: { error: 'Trop de requetes, reessayez dans 15 minutes.' },
 });
 
 const authLimiter = rateLimit({
@@ -79,11 +66,9 @@ const authLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
-// ─── Fichiers statiques (frontend) ───────────────────────────────────────────
-
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── Routes API ───────────────────────────────────────────────────────────────
+// ── Routes API ────────────────────────────────────────────────────────────────
 
 const authRouter      = require('./routes/auth');
 const productsRouter  = require('./routes/products');
@@ -98,8 +83,10 @@ const basketsRouter   = require('./routes/baskets');
 const logisticsRouter = require('./routes/logistics');
 const paymentsRouter  = require('./routes/payments');
 const scansRouter     = require('./routes/scans');
-const financeRouter    = require('./routes/finance');
-const purchasingRouter = require('./routes/purchasing'); // Sourcing semi-automatisé v7.6
+const financeRouter   = require('./routes/finance');
+const purchasingRouter = require('./routes/purchasing');
+const loyaltyRouter   = require('./routes/loyalty');    // v8.0
+const unsoldRouter    = require('./routes/unsold');     // v8.0
 
 app.use('/api/auth',      authRouter);
 app.use('/api/products',  productsRouter);
@@ -113,23 +100,24 @@ app.use('/api/pilotage',  pilotageRouter);
 app.use('/api/baskets',   basketsRouter);
 app.use('/api/logistics', logisticsRouter);
 app.use('/api/payments',  paymentsRouter);
-app.use('/api/scans',    scansRouter);    // SCAN 3+4 Hub · SCAN 6+7 relais
-app.use('/api/finance',    financeRouter);   // Export CSV · Preuves Stripe · Rapport PDF
-app.use('/api/purchasing', purchasingRouter); // Sourcing fournisseurs semi-automatisé v7.6
+app.use('/api/scans',     scansRouter);
+app.use('/api/finance',   financeRouter);
+app.use('/api/purchasing', purchasingRouter);
+app.use('/api/loyalty',   loyaltyRouter);   // v8.0
+app.use('/api/unsold',    unsoldRouter);    // v8.0
 
-// ─── Healthcheck ─────────────────────────────────────────────────────────────
+// ── Healthcheck ───────────────────────────────────────────────────────────────
 
 app.get('/api/health', (req, res) => {
   res.json({
     status:    'ok',
-    version:   '7.6',
+    version:   '8.0',
     timestamp: new Date().toISOString(),
     env:       process.env.NODE_ENV || 'development',
   });
 });
 
-// ─── SPA fallback ─────────────────────────────────────────────────────────────
-// Sert Komerce_Web.html pour toutes les routes non-API
+// ── SPA fallback ──────────────────────────────────────────────────────────────
 
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
@@ -138,18 +126,18 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Komerce_Web.html'));
 });
 
-// ─── Gestion erreurs globale ──────────────────────────────────────────────────
+// ── Erreurs globales ──────────────────────────────────────────────────────────
 
 app.use((err, req, res, next) => {
   if (err.message && err.message.startsWith('Not allowed by CORS')) {
     console.warn('CORS blocked:', err.message);
-    return res.status(403).json({ error: 'Origine non autorisée' });
+    return res.status(403).json({ error: 'Origine non autorisee' });
   }
   console.error('Unhandled error:', err.message);
   res.status(500).json({ error: 'Erreur serveur interne' });
 });
 
-// ─── Cron interne — rappels cash relais ──────────────────────────────────────
+// ── Cron cash relais ──────────────────────────────────────────────────────────
 
 const { processCashRelaisReminders } = require('./utils/sms');
 
@@ -157,27 +145,14 @@ setInterval(() => {
   processCashRelaisReminders().catch(err =>
     console.error('Cash reminder cron error:', err.message)
   );
-}, 60 * 60 * 1000); // toutes les heures
+}, 60 * 60 * 1000);
 
-// ─── Démarrage ────────────────────────────────────────────────────────────────
+// ── Demarrage ─────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════════════════╗
-║   🌊 KOMERCE API v7.6 — en ligne sur :${PORT.toString().padEnd(9)}║
-╠══════════════════════════════════════════════════╣
-║   Env      : ${(process.env.NODE_ENV || 'development').padEnd(37)}║
-║   DB       : ${process.env.DATABASE_URL ? 'Railway PostgreSQL ✓' : 'DATABASE_URL manquante ⚠️ '}║
-║   JWT      : ${process.env.JWT_SECRET  ? 'Configuré ✓          ' : 'JWT_SECRET manquante ⚠️  '}║
-║   Frontend : ${(FRONTEND_URL || 'auto (*.railway.app)').padEnd(37)}║
-║   Modules  : /api/modules ✓ (couture·lunettes·…) ║
-║   Pilotage : /api/pilotage ✓                     ║
-║   Finance  : /api/finance ✓ (CSV·Stripe·PDF)     ║
-║   Sourcing : /api/purchasing ✓ (semi-auto v7.6)  ║
-╚══════════════════════════════════════════════════╝
-  `);
+  console.log(`KOMERCE API v8.0 — port ${PORT} — loyalty OK — unsold OK`);
 });
 
 module.exports = app;
