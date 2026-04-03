@@ -376,4 +376,207 @@ router.get('/history', async (req, res) => {
   }
 });
 
+// ─── GET /api/pilotage/clients ────────────────────────────────────────────────
+// Analyse comportement client : top acheteurs, top produits, ventes par relais,
+// nouveaux vs récurrents, panier moyen.
+// Query params :
+//   ?debut=YYYY-MM-DD  (défaut : tout l'historique)
+//   ?fin=YYYY-MM-DD    (défaut : aujourd'hui)
+//   ?top=20            (défaut : 20)
+
+router.get('/clients', async (req, res) => {
+  try {
+    const top    = Math.min(50, Math.max(1, parseInt(req.query.top) || 20));
+    const debut  = req.query.debut || '2024-01-01';
+    const fin    = req.query.fin   || new Date().toISOString().split('T')[0];
+    const finExcl = new Date(new Date(fin).getTime() + 86400000).toISOString().split('T')[0];
+
+    // ── 1. KPIs globaux clients ───────────────────────────────────────────────
+    const { rows: [kpi] } = await db.query(`
+      SELECT
+        COUNT(DISTINCT o.user_id)                                        AS nb_clients_actifs,
+        COUNT(DISTINCT o.id)                                             AS nb_commandes,
+        COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS ca_total_kmf,
+        COALESCE(AVG(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS panier_moyen_kmf,
+        COUNT(DISTINCT o.id) FILTER (WHERE o.status != 'cancelled')      AS commandes_valides,
+        -- Nouveaux clients (1ère commande dans la période)
+        COUNT(DISTINCT o.user_id) FILTER (WHERE o.user_id IN (
+          SELECT user_id FROM orders
+          GROUP BY user_id
+          HAVING MIN(created_at) >= $1 AND MIN(created_at) < $3
+        ))                                                               AS nouveaux_clients,
+        -- Clients récurrents (2+ commandes toutes périodes confondues)
+        COUNT(DISTINCT o.user_id) FILTER (WHERE o.user_id IN (
+          SELECT user_id FROM orders
+          GROUP BY user_id HAVING COUNT(*) >= 2
+        ))                                                               AS clients_recurrents
+      FROM orders o
+      WHERE o.created_at >= $1 AND o.created_at < $3
+    `, [debut, fin, finExcl]);
+
+    // ── 2. Top clients (volume CA + fréquence) ────────────────────────────────
+    const { rows: topClients } = await db.query(`
+      SELECT
+        u.id,
+        u.full_name                                                       AS name,
+        u.phone,
+        COUNT(o.id)                                                       AS nb_commandes,
+        COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS ca_total_kmf,
+        COALESCE(AVG(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS panier_moyen_kmf,
+        MAX(o.created_at)                                                 AS derniere_commande,
+        MIN(o.created_at)                                                 AS premiere_commande,
+        lt.label                                                          AS palier,
+        lt.badge                                                          AS badge,
+        lt.discount_pct                                                   AS remise_pct
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      LEFT JOIN loyalty_tiers lt ON lt.id = u.loyalty_tier_id
+      WHERE o.created_at >= $1 AND o.created_at < $2
+      GROUP BY u.id, u.full_name, u.phone, lt.label, lt.badge, lt.discount_pct
+      ORDER BY ca_total_kmf DESC
+      LIMIT $3
+    `, [debut, finExcl, top]);
+
+    // ── 3. Top produits vendus ────────────────────────────────────────────────
+    const { rows: topProduits } = await db.query(`
+      SELECT
+        p.id,
+        p.name,
+        p.category,
+        p.price_kmf,
+        SUM(oi.quantity)                                                  AS qte_vendue,
+        COUNT(DISTINCT oi.order_id)                                       AS nb_commandes,
+        COALESCE(SUM(oi.price_kmf * oi.quantity), 0)                      AS ca_kmf,
+        COUNT(DISTINCT o.user_id)                                         AS nb_clients_uniques
+      FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      JOIN orders o   ON o.id = oi.order_id
+      WHERE o.created_at >= $1 AND o.created_at < $2
+        AND o.status != 'cancelled'
+      GROUP BY p.id, p.name, p.category, p.price_kmf
+      ORDER BY qte_vendue DESC
+      LIMIT $3
+    `, [debut, finExcl, top]);
+
+    // ── 4. Ventes par relais ──────────────────────────────────────────────────
+    const { rows: parRelais } = await db.query(`
+      SELECT
+        r.name                                                            AS relais,
+        r.island                                                          AS ile,
+        COUNT(DISTINCT o.id)                                              AS nb_commandes,
+        COUNT(DISTINCT o.user_id)                                         AS nb_clients,
+        COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS ca_kmf,
+        COALESCE(AVG(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS panier_moyen_kmf,
+        COUNT(*) FILTER (WHERE o.status = 'collected')                    AS livrees,
+        COUNT(*) FILTER (WHERE o.status = 'cancelled')                    AS annulees
+      FROM orders o
+      JOIN relais r ON r.id = o.relais_id
+      WHERE o.created_at >= $1 AND o.created_at < $2
+      GROUP BY r.id, r.name, r.island
+      ORDER BY ca_kmf DESC
+    `, [debut, finExcl]);
+
+    // ── 5. Évolution mensuelle commandes + CA ─────────────────────────────────
+    const { rows: evolution } = await db.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM')              AS mois,
+        COUNT(DISTINCT id)                                                AS nb_commandes,
+        COUNT(DISTINCT user_id)                                           AS nb_clients,
+        COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0)  AS ca_kmf,
+        COALESCE(AVG(total_kmf) FILTER (WHERE status != 'cancelled'), 0)  AS panier_moyen_kmf
+      FROM orders
+      WHERE created_at >= $1 AND created_at < $2
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `, [debut, finExcl]);
+
+    // ── 6. Répartition nouveaux vs récurrents par mois ────────────────────────
+    const { rows: retention } = await db.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', o.created_at), 'YYYY-MM')            AS mois,
+        COUNT(DISTINCT o.user_id) FILTER (WHERE first_order.created_at >= DATE_TRUNC('month', o.created_at)
+          AND first_order.created_at < DATE_TRUNC('month', o.created_at) + INTERVAL '1 month') AS nouveaux,
+        COUNT(DISTINCT o.user_id) FILTER (WHERE first_order.created_at < DATE_TRUNC('month', o.created_at)) AS recurrents
+      FROM orders o
+      JOIN (
+        SELECT user_id, MIN(created_at) AS created_at FROM orders GROUP BY user_id
+      ) first_order ON first_order.user_id = o.user_id
+      WHERE o.created_at >= $1 AND o.created_at < $2
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `, [debut, finExcl]);
+
+    // ── 7. Top catégories ─────────────────────────────────────────────────────
+    const { rows: topCategories } = await db.query(`
+      SELECT
+        p.category,
+        SUM(oi.quantity)                                                  AS qte_vendue,
+        COUNT(DISTINCT oi.order_id)                                       AS nb_commandes,
+        COUNT(DISTINCT o.user_id)                                         AS nb_clients,
+        COALESCE(SUM(oi.price_kmf * oi.quantity), 0)                      AS ca_kmf
+      FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      JOIN orders o   ON o.id = oi.order_id
+      WHERE o.created_at >= $1 AND o.created_at < $2
+        AND o.status != 'cancelled'
+      GROUP BY p.category
+      ORDER BY ca_kmf DESC
+    `, [debut, finExcl]);
+
+    res.json({
+      periode:        { debut, fin },
+      kpi: {
+        nb_clients_actifs:   parseInt(kpi.nb_clients_actifs),
+        nb_commandes:        parseInt(kpi.nb_commandes),
+        commandes_valides:   parseInt(kpi.commandes_valides),
+        ca_total_kmf:        Math.round(parseFloat(kpi.ca_total_kmf)),
+        panier_moyen_kmf:    Math.round(parseFloat(kpi.panier_moyen_kmf)),
+        nouveaux_clients:    parseInt(kpi.nouveaux_clients),
+        clients_recurrents:  parseInt(kpi.clients_recurrents),
+        taux_recurrence_pct: parseInt(kpi.nb_clients_actifs) > 0
+          ? parseFloat((parseInt(kpi.clients_recurrents) / parseInt(kpi.nb_clients_actifs) * 100).toFixed(1))
+          : 0,
+      },
+      top_clients:    topClients.map(c => ({
+        ...c,
+        nb_commandes:      parseInt(c.nb_commandes),
+        ca_total_kmf:      Math.round(parseFloat(c.ca_total_kmf)),
+        panier_moyen_kmf:  Math.round(parseFloat(c.panier_moyen_kmf)),
+      })),
+      top_produits:   topProduits.map(p => ({
+        ...p,
+        qte_vendue:        parseInt(p.qte_vendue),
+        nb_commandes:      parseInt(p.nb_commandes),
+        ca_kmf:            Math.round(parseFloat(p.ca_kmf)),
+        nb_clients_uniques: parseInt(p.nb_clients_uniques),
+      })),
+      par_relais:     parRelais.map(r => ({
+        ...r,
+        nb_commandes:      parseInt(r.nb_commandes),
+        nb_clients:        parseInt(r.nb_clients),
+        ca_kmf:            Math.round(parseFloat(r.ca_kmf)),
+        panier_moyen_kmf:  Math.round(parseFloat(r.panier_moyen_kmf)),
+        livrees:           parseInt(r.livrees),
+        annulees:          parseInt(r.annulees),
+        taux_collecte_pct: parseInt(r.nb_commandes) > 0
+          ? parseFloat((parseInt(r.livrees) / parseInt(r.nb_commandes) * 100).toFixed(1))
+          : 0,
+      })),
+      evolution,
+      retention,
+      top_categories: topCategories.map(c => ({
+        ...c,
+        qte_vendue:   parseInt(c.qte_vendue),
+        nb_commandes: parseInt(c.nb_commandes),
+        nb_clients:   parseInt(c.nb_clients),
+        ca_kmf:       Math.round(parseFloat(c.ca_kmf)),
+      })),
+    });
+
+  } catch (err) {
+    console.error('Pilotage clients error:', err.message);
+    res.status(500).json({ error: 'Erreur analyse clients' });
+  }
+});
+
 module.exports = router;
