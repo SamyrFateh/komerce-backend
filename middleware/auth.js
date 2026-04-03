@@ -3,9 +3,10 @@
  *
  * authenticate       : vérifie le token Bearer, injecte req.user
  * requireRole(roles) : vérifie que l'utilisateur a le bon rôle
+ * requireAdmin       : raccourci pour requireRole(['admin'])
  *
  * Utilisation :
- *   router.get('/admin', authenticate, requireRole(['admin']), handler)
+ *   router.get('/admin', authenticate, requireAdmin, handler)
  *   router.get('/hub',   authenticate, requireRole(['admin','agent_hub']), handler)
  */
 
@@ -68,4 +69,7 @@ function requireRole(roles) {
   };
 }
 
-module.exports = { authenticate, requireRole };
+// Raccourci : vérifie que l'utilisateur est admin
+const requireAdmin = requireRole(['admin']);
+
+module.exports = { authenticate, requireRole, requireAdmin };
