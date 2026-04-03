@@ -82,8 +82,10 @@ async function triggerPurchasing(orderId) {
       FROM product_suppliers ps
       JOIN suppliers s ON s.id = ps.supplier_id
       WHERE ps.product_id = $1
-        AND ps.is_active = TRUE
-        AND s.is_active  = TRUE
+        AND ps.is_active   = TRUE
+        AND s.is_active    = TRUE
+        AND ps.deleted_at  IS NULL
+        AND s.deleted_at   IS NULL
       ORDER BY ps.priority ASC
       LIMIT 1
     `, [item.product_id]);
@@ -315,6 +317,7 @@ router.get('/suppliers', ...guard, async (req, res) => {
 
     if (platform) { conditions.push(`platform = $${params.length + 1}`); params.push(platform); }
     if (active !== undefined) { conditions.push(`is_active = $${params.length + 1}`); params.push(active === 'true'); }
+    conditions.push('s.deleted_at IS NULL');
 
     const { rows } = await db.query(`
       SELECT
@@ -322,7 +325,7 @@ router.get('/suppliers', ...guard, async (req, res) => {
         COUNT(DISTINCT ps.product_id) AS products_mapped,
         COUNT(DISTINCT po.id)         AS purchase_orders_total
       FROM suppliers s
-      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
       LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
       WHERE ${conditions.join(' AND ')}
       GROUP BY s.id
@@ -616,9 +619,9 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
 
     const { id } = req.params;
 
-    // Vérifier que le fournisseur existe
+    // Vérifier que le fournisseur existe et n'est pas déjà soft-deleted
     const { rows: [sup] } = await client.query(
-      'SELECT id, name FROM suppliers WHERE id = $1', [id]
+      'SELECT id, name FROM suppliers WHERE id = $1 AND deleted_at IS NULL', [id]
     );
     if (!sup) {
       await client.query('ROLLBACK');
@@ -641,25 +644,25 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
       });
     }
 
-    // Supprimer les purchase_orders liées
+    // Annuler les PO pending/notified (on les passe à cancelled — on garde la traçabilité)
     // Pour les fournisseurs [TEST] avec force : toutes les PO sans exception
     const posQuery = (isTestSupplier && forceDelete)
-      ? `DELETE FROM purchase_orders WHERE supplier_id = $1`
-      : `DELETE FROM purchase_orders WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
-    const { rowCount: posDeleted } = await client.query(posQuery, [id]);
+      ? `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status != 'cancelled'`
+      : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
+    const { rowCount: posCancelled } = await client.query(posQuery, [id]);
 
-    // Supprimer les mappings produit→fournisseur liés
+    // Soft-delete les mappings produit→fournisseur
     const { rowCount: mappingsDeleted } = await client.query(
-      'DELETE FROM product_suppliers WHERE supplier_id = $1', [id]
+      'UPDATE product_suppliers SET deleted_at = NOW() WHERE supplier_id = $1 AND deleted_at IS NULL', [id]
     );
 
-    // Supprimer le fournisseur
-    await client.query('DELETE FROM suppliers WHERE id = $1', [id]);
+    // Soft-delete le fournisseur
+    await client.query('UPDATE suppliers SET deleted_at = NOW() WHERE id = $1', [id]);
 
     await client.query('COMMIT');
 
-    console.log(`[PURCHASING] Fournisseur supprimé : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posDeleted} PO(s) supprimé(s)`);
-    res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_deleted: posDeleted });
+    console.log(`[PURCHASING] Fournisseur désactivé (soft-delete) : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posCancelled} PO(s) annulée(s)`);
+    res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_cancelled: posCancelled });
 
   } catch (err) {
     await client.query('ROLLBACK');
