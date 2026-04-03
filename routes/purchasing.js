@@ -1,56 +1,36 @@
 // ============================================================
-// KOMERCE — purchasing.js — diff v8.1 → v8.2
-// Session 8 — Hub Stock — Logique de complétude
+// KOMERCE — purchasing.js — diff v8.1 → v8.2  [BUGFIXED]
+// Session 11 — Corrections colonnes réelles DB
 // ============================================================
 //
-// CE FICHIER EST UN DIFF — il montre uniquement les changements à apporter.
-// La base est purchasing.js v8.1 (soft-delete fournisseurs — session 7).
+// BUGS CORRIGÉS vs purchasing_v82_diff.js :
+//   [B1] quantity → qty          (vraie colonne purchase_orders)
+//   [B2] received_at → hub_received_at  (vraie colonne purchase_orders)
+//   [B3] parseInt(order_id) → supprimé  (order_id est UUID, pas integer)
+//   [B4] JOIN products via product_id → via product_supplier_id → product_suppliers → products
 //
-// CHANGEMENTS :
-//   - Route POST /:id/receive : logique complétude (received_qty)
-//   - Nouveau statut 'partially_received' sur orders et purchase_orders
-//   - Plus de SCAN 3 automatique depuis purchasing.js (délégué à scans.js)
+// INTÉGRATION :
+//   1. Remplacer la route POST /:id/receive existante par le bloc ci-dessous
+//   2. Ajouter la route GET /order/:order_id/completeness si elle n'existe pas
+//   3. S'assurer que triggerScan3 est importé depuis scans.js ou défini avant
 //
 // ============================================================
 
 // ──────────────────────────────────────────────────────────────
-// AVANT (v8.1) — à remplacer dans purchasing.js
-// ──────────────────────────────────────────────────────────────
-//
-// router.post('/:id/receive', requireAuth, async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const po = await db.query(
-//       `UPDATE purchase_orders SET status='received', received_at=NOW()
-//        WHERE id=$1 RETURNING *`,
-//       [id]
-//     );
-//     if (!po.rows.length) return res.status(404).json({ error: 'PO not found' });
-//
-//     // Déclenche SCAN 3 automatiquement → preparation → SMS client
-//     await triggerScan3(po.rows[0].order_id);
-//
-//     res.json({ success: true, po: po.rows[0] });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// ──────────────────────────────────────────────────────────────
-// APRÈS (v8.2) — remplace la route ci-dessus
+// ROUTE MODIFIÉE : POST /api/purchasing/:id/receive
+// Remplace l'ancienne route receive (v8.1)
 // ──────────────────────────────────────────────────────────────
 
 router.post('/:id/receive', requireAuth, async (req, res) => {
   const { id } = req.params;
-  // qty_recue : quantité reçue maintenant. Défaut = totalité commandée (comportement habituel).
-  // Permet les réceptions partielles si un jour on le souhaite.
+  // qty_recue : quantité reçue maintenant. Défaut = totalité commandée.
   const qty_recue = parseInt(req.body.qty_recue) || null;
 
   try {
     // 1. Récupérer le PO actuel
+    // [B1] qty (pas quantity) | [B2] hub_received_at (pas received_at)
     const poRes = await db.query(
-      `SELECT id, order_id, quantity, received_qty, status
+      `SELECT id, order_id, qty, received_qty, status, hub_received_at
        FROM purchase_orders
        WHERE id = $1`,
       [id]
@@ -61,40 +41,45 @@ router.post('/:id/receive', requireAuth, async (req, res) => {
     const po = poRes.rows[0];
 
     // Quantité à incrémenter : celle fournie, sinon le reste non reçu
+    // [B1] po.qty (pas po.quantity)
     const delta = qty_recue !== null
-      ? Math.min(qty_recue, po.quantity - po.received_qty)
-      : po.quantity - po.received_qty;
+      ? Math.min(qty_recue, po.qty - po.received_qty)
+      : po.qty - po.received_qty;
 
     if (delta <= 0) {
       return res.status(400).json({ error: 'Quantité déjà reçue en totalité' });
     }
 
     const new_received = po.received_qty + delta;
-    const po_complete  = new_received >= po.quantity;
+    // [B1] po.qty (pas po.quantity)
+    const po_complete  = new_received >= po.qty;
 
     // 2. Mettre à jour ce PO
+    // [B2] hub_received_at (pas received_at)
     const updatedPo = await db.query(
       `UPDATE purchase_orders
-       SET received_qty = $1,
-           status       = $2,
-           received_at  = CASE WHEN $3 THEN NOW() ELSE received_at END
+       SET received_qty     = $1,
+           status           = $2,
+           hub_received_at  = CASE WHEN $3 THEN NOW() ELSE hub_received_at END,
+           updated_at       = NOW()
        WHERE id = $4
        RETURNING *`,
       [
         new_received,
         po_complete ? 'received' : 'partially_received',
-        po_complete,   // received_at seulement quand complet
+        po_complete,   // hub_received_at seulement quand complet
         id
       ]
     );
 
     // 3. Vérifier si TOUS les POs de la commande sont reçus
+    // [B1] qty (pas quantity) dans SUM et dans CASE
     const completenessRes = await db.query(
       `SELECT
-         COUNT(*) FILTER (WHERE status != 'cancelled')                          AS total,
-         COUNT(*) FILTER (WHERE received_qty >= quantity AND status != 'cancelled') AS recus,
-         SUM(quantity)      FILTER (WHERE status != 'cancelled')                AS qty_totale,
-         SUM(received_qty)  FILTER (WHERE status != 'cancelled')                AS qty_recue
+         COUNT(*) FILTER (WHERE status != 'cancelled')                             AS total,
+         COUNT(*) FILTER (WHERE received_qty >= qty AND status != 'cancelled')     AS recus,
+         SUM(qty)          FILTER (WHERE status != 'cancelled')                    AS qty_totale,
+         SUM(received_qty) FILTER (WHERE status != 'cancelled')                    AS qty_recue
        FROM purchase_orders
        WHERE order_id = $1`,
       [po.order_id]
@@ -113,9 +98,8 @@ router.post('/:id/receive', requireAuth, async (req, res) => {
       );
 
       // Déclencher SCAN 3 (notification SMS hub + client)
-      // triggerScan3 est défini dans scans.js / importé
       try {
-        await triggerScan3(po.order_id);
+        await triggerScan3(po.order_id, req.user?.id || null);
       } catch (smsErr) {
         // Ne pas bloquer la réception si le SMS échoue — logguer seulement
         console.error('[purchasing/receive] Erreur SMS SCAN3:', smsErr.message);
@@ -130,7 +114,7 @@ router.post('/:id/receive', requireAuth, async (req, res) => {
       );
     }
 
-    // 5. Construire la réponse opérateur (ce que voit l'écran de scan)
+    // 5. Construire la réponse opérateur
     const items_missing = parseInt(total) - parseInt(recus);
 
     res.json({
@@ -144,7 +128,6 @@ router.post('/:id/receive', requireAuth, async (req, res) => {
       items_missing,
       qty_totale:       parseInt(qty_totale),
       qty_recue:        parseInt(qty_recue_total),
-      // Message court pour l'interface opérateur
       message: order_complete
         ? `✅ Commande complète — ${total}/${total} articles — Prête à préparer`
         : `📦 Réception partielle — ${recus}/${total} articles — ${items_missing} manquant(s)`
@@ -158,27 +141,29 @@ router.post('/:id/receive', requireAuth, async (req, res) => {
 
 // ──────────────────────────────────────────────────────────────
 // NOUVELLE ROUTE : GET /api/purchasing/order/:order_id/completeness
-// Permet de vérifier l'état de réception d'une commande
-// Utilisée par le dashboard Pilotage + interface scan mobile (Phase 2)
 // ──────────────────────────────────────────────────────────────
 
 router.get('/order/:order_id/completeness', requireAuth, async (req, res) => {
   const { order_id } = req.params;
   try {
+    // [B1] po.qty (pas po.quantity)
+    // [B2] po.hub_received_at (pas po.received_at)
+    // [B3] order_id est UUID → pas de parseInt
+    // [B4] JOIN via product_suppliers (purchase_orders n'a pas product_id)
     const result = await db.query(
       `SELECT
          po.id,
-         p.name                                     AS product_name,
-         po.quantity,
+         p.name                                        AS product_name,
+         po.qty,
          po.received_qty,
          po.status,
-         (po.received_qty >= po.quantity)           AS is_complete,
-         (po.quantity - po.received_qty)            AS qty_missing,
-         s.name                                     AS supplier_name,
-         po.received_at
+         (po.received_qty >= po.qty)                   AS is_complete,
+         (po.qty - po.received_qty)                    AS qty_missing,
+         s.name                                        AS supplier_name,
+         po.hub_received_at
        FROM purchase_orders po
-       JOIN products p ON p.id = po.product_id
-       LEFT JOIN product_suppliers ps ON ps.id = po.product_supplier_id
+       JOIN product_suppliers ps ON ps.id = po.product_supplier_id
+       JOIN products p ON p.id = ps.product_id
        LEFT JOIN suppliers s ON s.id = ps.supplier_id
        WHERE po.order_id = $1
          AND po.status != 'cancelled'
@@ -192,7 +177,7 @@ router.get('/order/:order_id/completeness', requireAuth, async (req, res) => {
     const is_complete = recus === total && total > 0;
 
     res.json({
-      order_id:         parseInt(order_id),
+      order_id,            // [B3] UUID — pas de parseInt
       is_complete,
       items_received:   recus,
       items_total:      total,
@@ -209,5 +194,4 @@ router.get('/order/:order_id/completeness', requireAuth, async (req, res) => {
 
 // ──────────────────────────────────────────────────────────────
 // AUCUNE AUTRE MODIFICATION dans purchasing.js v8.2
-// Les autres routes (confirm, suppliers CRUD, soft-delete) restent identiques à v8.1
 // ──────────────────────────────────────────────────────────────
