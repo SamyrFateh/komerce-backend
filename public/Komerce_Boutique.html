@@ -736,6 +736,154 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ────────────────────────────────────────
    RESPONSIVE
    ──────────────────────────────────────── */
+
+/* ────────────────────────────────────────
+   CATEGORY NAVIGATION (image-first)
+   ──────────────────────────────────────── */
+#cat-nav {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  position: sticky;
+  top: 63px;
+  z-index: 899;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.cat-scroll {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.cat-scroll::-webkit-scrollbar { display: none; }
+
+.cat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 76px;
+  padding: 6px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+.cat-pill:hover { background: rgba(22,163,74,0.04); }
+.cat-pill.active { border-color: var(--primary); background: var(--primary-light); }
+
+.cat-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+}
+.cat-pill:hover .cat-icon,
+.cat-pill.active .cat-icon {
+  transform: scale(1.12);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.16);
+}
+/* Unique gradient per category */
+.cat-icon.cg-all         { background: linear-gradient(135deg, #16a34a, #4ade80); }
+.cat-icon.cg-electronics { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.cat-icon.cg-home        { background: linear-gradient(135deg, #d97706, #fbbf24); }
+.cat-icon.cg-wedding     { background: linear-gradient(135deg, #db2777, #f9a8d4); }
+.cat-icon.cg-fashion     { background: linear-gradient(135deg, #7c3aed, #c4b5fd); }
+.cat-icon.cg-services    { background: linear-gradient(135deg, #e11d48, #fda4af); }
+
+.cat-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.cat-pill.active .cat-label { color: var(--primary-dark); }
+
+/* ────────────────────────────────────────
+   HAMBURGER MENU (mobile)
+   ──────────────────────────────────────── */
+.hamburger {
+  display: none;
+  background: none;
+  padding: 6px;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  order: 1;
+}
+.hamburger span {
+  display: block;
+  width: 24px;
+  height: 2.5px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+.hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+#mobile-menu {
+  display: none;
+  position: fixed;
+  top: 63px;
+  left: 0; right: 0;
+  background: var(--white);
+  border-bottom: 3px solid var(--primary);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  z-index: 897;
+  padding: 8px 24px;
+  animation: fadeIn 0.25s ease;
+}
+#mobile-menu.show { display: block; }
+#mobile-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  transition: color 0.2s;
+}
+#mobile-menu a:last-child { border-bottom: none; }
+#mobile-menu a:hover { color: var(--primary); }
+
+
+/* ── Category Nav + Hamburger responsive ── */
+@media (max-width: 768px) {
+  .nav-links > a { display: none; }
+  .hamburger { display: flex; }
+  .cat-icon { width: 50px; height: 50px; font-size: 1.4rem; }
+  .cat-pill { min-width: 64px; gap: 4px; padding: 4px; }
+  .cat-scroll { justify-content: flex-start; gap: 10px; padding: 0 14px; }
+  #cat-nav { padding: 10px 0; top: 60px; }
+}
+@media (max-width: 480px) {
+  .cat-icon { width: 46px; height: 46px; font-size: 1.25rem; }
+  .cat-pill { min-width: 58px; }
+  .cat-label { font-size: 0.62rem; }
+  #cat-nav { top: 60px; }
+}
+
 @media (max-width: 900px) {
   .hero-left { padding: 10px 14px 10px 14px; }
 }
@@ -1267,6 +1415,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <div class="nav-links">
       <a href="#how-it-works">🌟 Situations</a>
       <a href="#catalogue">📦 Catalogue</a>
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
       <button class="cart-btn" id="nav-cart-btn" aria-label="Ouvrir le panier">
         <img src="/images/avatar_panier.png" class="cart-avatar" width="42" height="42" alt="Panier">
         <span id="cart-count" class="hidden">0</span>
@@ -1274,6 +1423,44 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     </div>
   </div>
 </nav>
+
+<!-- Mobile dropdown menu -->
+<div id="mobile-menu">
+  <a href="#catalogue">📦 Catalogue</a>
+  <a href="#how-it-works">🌟 Situations</a>
+</div>
+
+<!-- ========================================
+     CATEGORY NAVIGATION (image-first)
+     ======================================== -->
+<div id="cat-nav">
+  <div class="cat-scroll">
+    <button class="cat-pill active" data-cat="all">
+      <span class="cat-icon cg-all">🛍️</span>
+      <span class="cat-label">Tout</span>
+    </button>
+    <button class="cat-pill" data-cat="electronics">
+      <span class="cat-icon cg-electronics">📱</span>
+      <span class="cat-label">Électronique</span>
+    </button>
+    <button class="cat-pill" data-cat="home">
+      <span class="cat-icon cg-home">🏡</span>
+      <span class="cat-label">Maison</span>
+    </button>
+    <button class="cat-pill" data-cat="wedding">
+      <span class="cat-icon cg-wedding">💍</span>
+      <span class="cat-label">Mariage</span>
+    </button>
+    <button class="cat-pill" data-cat="fashion">
+      <span class="cat-icon cg-fashion">👗</span>
+      <span class="cat-label">Mode</span>
+    </button>
+    <button class="cat-pill" data-cat="services">
+      <span class="cat-icon cg-services">✨</span>
+      <span class="cat-label">Beauté</span>
+    </button>
+  </div>
+</div>
 
 <!-- ========================================
      3. HERO SPLIT
@@ -1515,6 +1702,7 @@ try {
   localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
 }
 let _products = [];
+let _currentCat = 'all';
 let _relais = [];
 let _rates = { EUR: 495, KMF: 1 };
 let _currency = detectCurrency();
@@ -1836,7 +2024,7 @@ function renderProducts(list) {
 
     var cat = document.createElement('div');
     cat.className = 'card-category';
-    cat.textContent = p.category || '';
+    cat.textContent = catLabelFR(p.category);
     body.appendChild(cat);
 
     var name = document.createElement('div');
@@ -1927,7 +2115,7 @@ function liveSearch(q) {
       return '<div class="search-item" data-idx="' + i + '" data-pid="' + p.id + '">'
         + imgHtml
         + '<div class="search-item-info"><div class="search-item-name">' + sanitize(p.name) + '</div>'
-        + '<div class="search-item-cat">' + sanitize(p.category || '') + '</div></div>'
+        + '<div class="search-item-cat">' + sanitize(catLabelFR(p.category)) + '</div></div>'
         + '<div class="search-item-price">' + fmt(p.price_kmf || 0, 'KMF') + '</div>'
         + '</div>';
     }).join('') + '<div class="search-count">' + results.length + ' résultat' + (results.length > 1 ? 's' : '') + '</div>';
@@ -2064,7 +2252,7 @@ function openProductModal(p) {
 
   var catEl = document.createElement('div');
   catEl.className = 'pd-cat';
-  catEl.textContent = p.category || '';
+  catEl.textContent = catLabelFR(p.category);
   info.appendChild(catEl);
 
   var nameEl = document.createElement('div');
@@ -2782,7 +2970,7 @@ function renderCheckout() {
   var mvolaInfo = document.createElement('div');
   var mvolaL = document.createElement('div');
   mvolaL.style.cssText = 'font-weight:700;font-size:0.88rem;display:flex;align-items:center;gap:6px;';
-  mvolaL.innerHTML = '<img src="https://www.mvola.km/wp-content/uploads/2024/10/mvola-log.png" alt="MVola" style="height:20px;border-radius:4px;"> MVola <span style="font-size:0.65rem;background:#00a651;color:white;padding:1px 6px;border-radius:8px;font-weight:700;">Bient\u00f4t</span>';
+  mvolaL.innerHTML = '<img src="https://www.mvola.km/wp-content/uploads/2023/12/logo.svg" alt="MVola Comores" style="height:22px;"> MVola <span style="font-size:0.65rem;background:#00a651;color:white;padding:1px 6px;border-radius:8px;font-weight:700;">Bient\u00f4t</span>';
   mvolaInfo.appendChild(mvolaL);
   var mvolaSub = document.createElement('div');
   mvolaSub.style.cssText = 'font-size:0.75rem;color:var(--text-light);margin-top:1px;';
@@ -3131,6 +3319,73 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Enter') searchTracking();
   });
 });
+
+
+/* ── Category labels (EN → FR) ── */
+var catLabels = {
+  'electronics': 'Électronique',
+  'home': 'Maison',
+  'wedding': 'Mariage',
+  'fashion': 'Mode',
+  'services': 'Beauté & Soins'
+};
+function catLabelFR(cat) {
+  return catLabels[(cat || '').toLowerCase()] || cat || '';
+}
+
+/* ── Category filtering (CSP-safe) ── */
+function filterCategory(cat) {
+  _currentCat = cat;
+  /* Update active pill */
+  document.querySelectorAll('.cat-pill').forEach(function(p) {
+    p.classList.toggle('active', p.getAttribute('data-cat') === cat);
+  });
+  /* Filter & render */
+  if (cat === 'all') {
+    renderProducts(_products);
+  } else {
+    var filtered = _products.filter(function(p) {
+      return (p.category || '').toLowerCase() === cat.toLowerCase();
+    });
+    renderProducts(filtered);
+  }
+  /* Smooth scroll to catalogue */
+  var s = document.getElementById('catalogue');
+  if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Category pill click listeners (CSP-safe, no inline onclick) ── */
+document.querySelectorAll('.cat-pill[data-cat]').forEach(function(pill) {
+  pill.addEventListener('click', function() {
+    filterCategory(this.getAttribute('data-cat'));
+  });
+});
+
+/* ── Hamburger menu toggle ── */
+(function() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('mobile-menu');
+  if (!btn || !menu) return;
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    btn.classList.toggle('open');
+    menu.classList.toggle('show');
+  });
+  menu.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      btn.classList.remove('open');
+      menu.classList.remove('show');
+    });
+  });
+  document.addEventListener('click', function(e) {
+    if (!btn.contains(e.target) && !menu.contains(e.target)) {
+      btn.classList.remove('open');
+      menu.classList.remove('show');
+    }
+  });
+})();
+
+
 </script>
 
 </body>
