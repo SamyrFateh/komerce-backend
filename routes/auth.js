@@ -2,7 +2,8 @@
  * KOMERCE — Authentification
  *
  * POST /api/auth/register   → création de compte
- * POST /api/auth/login      → connexion, retourne JWT
+ * POST /api/auth/login      → connexion, retourne JWT + cookie httpOnly
+ * POST /api/auth/logout     → déconnexion, supprime le cookie
  * GET  /api/auth/me         → profil de l'utilisateur connecté
  * PUT  /api/auth/me         → mise à jour profil
  */
@@ -22,6 +23,43 @@ if (!JWT_SECRET) {
 }
 const _JWT_SECRET = JWT_SECRET || 'komerce_secret_dev_UNSAFE';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
+
+// ─── Cookie settings (BUG-014 fix) ─────────────────────────────────────────
+// httpOnly=true empêche JavaScript d'accéder au JWT (protection XSS)
+// sameSite='Strict' bloque les requêtes cross-site (protection CSRF)
+// secure=true en production force HTTPS uniquement
+
+const COOKIE_NAME = 'kmrc_jwt';
+
+function cookieOptions() {
+  const isProd = process.env.NODE_ENV === 'production';
+  // Parse JWT_EXPIRES to get maxAge in ms (default 30d)
+  const expiresStr = process.env.JWT_EXPIRES || '30d';
+  const match = expiresStr.match(/(\d+)(d|h|m)/);
+  let maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days default
+  if (match) {
+    const val = parseInt(match[1]);
+    if (match[2] === 'd') maxAge = val * 24 * 60 * 60 * 1000;
+    if (match[2] === 'h') maxAge = val * 60 * 60 * 1000;
+    if (match[2] === 'm') maxAge = val * 60 * 1000;
+  }
+  return {
+    httpOnly: true,
+    secure:   isProd,
+    sameSite: 'Strict',
+    maxAge,
+    path:     '/',
+  };
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(COOKIE_NAME, token, cookieOptions());
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie(COOKIE_NAME, { httpOnly: true, path: '/' });
+}
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -97,6 +135,7 @@ router.post('/register', async (req, res) => {
     );
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
     res.status(201).json({ token, user: userResponse(user) });
 
   } catch (err) {
@@ -143,6 +182,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
     res.json({ token, user: userResponse(user) });
 
   } catch (err) {
@@ -247,6 +287,7 @@ router.post('/auto-register', requireInternalKey, async (req, res) => {
         `SELECT * FROM users WHERE id = $1`, [existing[0].id]
       );
       const token = generateToken(user);
+      setAuthCookie(res, token);
       return res.json({ token, user: userResponse(user), created: false });
     }
 
@@ -263,6 +304,7 @@ router.post('/auto-register', requireInternalKey, async (req, res) => {
     );
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
     res.status(201).json({ token, user: userResponse(user), created: true });
 
   } catch (err) {
@@ -346,6 +388,15 @@ router.post('/orders-by-phone', checkPhoneLookupRateLimit, async (req, res) => {
     console.error('Orders-by-phone error:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
+});
+
+
+// ─── POST /api/auth/logout (BUG-014) ────────────────────────────────────────
+// Supprime le cookie httpOnly JWT côté serveur.
+
+router.post('/logout', (req, res) => {
+  clearAuthCookie(res);
+  res.json({ message: 'Déconnexion réussie' });
 });
 
 module.exports = router;

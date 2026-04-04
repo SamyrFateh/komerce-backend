@@ -475,7 +475,7 @@ td.phase-cell {
 <script>
 // ── Komerce Auth Guard ──
 (function(){
-  if(!localStorage.getItem('komerce_token')){
+  if(!localStorage.getItem('kmrc_logged_in')){ // BUG-014
     window.location.replace('/portal.html');
   }
 })();
@@ -2521,8 +2521,8 @@ async function doPilLogin() {
     if (!res.ok) { alert('Connexion échouée : ' + (data.error || res.status)); return; }
 
     const token = data.token;
-    document.getElementById('pil-token').value = token;
-    localStorage.setItem('kmrc_token', token);
+    document.getElementById('pil-token').value = '1'; // BUG-014: flag only, JWT in httpOnly cookie
+    localStorage.setItem('kmrc_logged_in', '1'); // BUG-014: JWT in httpOnly cookie
 
     document.getElementById('pil-login-block').style.display  = 'none';
     document.getElementById('pil-status-block').style.display = 'flex';
@@ -2536,8 +2536,9 @@ async function doPilLogin() {
 }
 
 function doPilLogout() {
-  document.getElementById('pil-token').value = '';
-  localStorage.removeItem('kmrc_token');
+  document.getElementById('pil-token').value = ''; // BUG-014: cleared
+  localStorage.removeItem('kmrc_logged_in'); // BUG-014
+  fetch(KOMERCE_API_URL + '/api/auth/logout', { credentials: 'include', method: 'POST', credentials: 'include' }).catch(() => {});
   document.getElementById('pil-login-block').style.display  = 'flex';
   document.getElementById('pil-status-block').style.display = 'none';
   document.getElementById('pil-auth-password').value = '';
@@ -2557,9 +2558,9 @@ function setPilAuthButtons(loggedIn) {
 
 // Auto-restaurer le token depuis localStorage (partagé avec le Simulateur)
 (function restorePilToken() {
-  const saved = localStorage.getItem('kmrc_token');
+  const saved = localStorage.getItem('kmrc_logged_in'); // BUG-014: flag only
   if (!saved) return;
-  document.getElementById('pil-token').value = saved;
+  document.getElementById('pil-token').value = saved; // BUG-014: flag ('1')
   document.getElementById('pil-login-block').style.display  = 'none';
   document.getElementById('pil-status-block').style.display = 'flex';
   document.getElementById('pil-status-label').textContent   = '✅ Connecté (session)';
@@ -2634,10 +2635,10 @@ async function loadLiveData() {
   try {
     const [snapRes, histRes] = await Promise.all([
       fetch(`${KOMERCE_API_URL}/api/pilotage?mois=${mois}`, {
-        headers: { Authorization: 'Bearer ' + token }
+        headers: {}, credentials: 'include' // BUG-014
       }),
       fetch(`${KOMERCE_API_URL}/api/pilotage/history?mois=12`, {
-        headers: { Authorization: 'Bearer ' + token }
+        headers: {}, credentials: 'include' // BUG-014
       }),
     ]);
 
@@ -3253,9 +3254,9 @@ async function loadOps() {
   statusEl.style.color = 'var(--text3)';
   try {
     const [adminRes, purchRes, ordersRes] = await Promise.all([
-      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { headers:{ Authorization:'Bearer '+token } }),
-      fetch(`${KOMERCE_API_URL}/api/purchasing`, { headers:{ Authorization:'Bearer '+token } }),
-      fetch(`${KOMERCE_API_URL}/api/pilotage`, { headers:{ Authorization:'Bearer '+token } }),
+      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { credentials: 'include', headers: {}, credentials: 'include' // BUG-014 }),
+      fetch(`${KOMERCE_API_URL}/api/purchasing`, { credentials: 'include', headers: {}, credentials: 'include' // BUG-014 }),
+      fetch(`${KOMERCE_API_URL}/api/pilotage`, { credentials: 'include', headers: {}, credentials: 'include' // BUG-014 }),
     ]);
     if (!adminRes.ok) { statusEl.textContent = '❌ Token invalide ou non admin'; statusEl.style.color='var(--red)'; return; }
     const adminData = await adminRes.json();
@@ -3460,7 +3461,7 @@ function renderOps() {
 // ══════════════════════════════════════════════════════════════════════
 
 async function loadFidData() {
-  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_token');
+  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_logged_in'); // BUG-014
   const statusEl = document.getElementById('fid-status');
   if (!token) {
     if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(220,38,38,0.08)'; statusEl.style.color='var(--red)'; statusEl.textContent='Connectez-vous pour accéder aux données fidélité.'; }
@@ -3468,14 +3469,14 @@ async function loadFidData() {
   }
   if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(217,119,6,0.08)'; statusEl.style.color='var(--amber)'; statusEl.textContent='Chargement...'; }
 
-  const h = { 'Authorization': 'Bearer ' + token };
+  const h = { /* BUG-014: auth via httpOnly cookie */ }, credentials: 'include';
   const base = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
 
   try {
     const [loyRes, tiersRes, unsRes] = await Promise.all([
-      fetch(base + '/api/loyalty/users',       { headers: h }),
-      fetch(base + '/api/loyalty/tiers',       { headers: h }),
-      fetch(base + '/api/unsold/stats/summary',{ headers: h }),
+      fetch(base + '/api/loyalty/users',       { credentials: 'include', headers: h }),
+      fetch(base + '/api/loyalty/tiers',       { credentials: 'include', headers: h }),
+      fetch(base + '/api/unsold/stats/summary',{ credentials: 'include', headers: h }),
     ]);
 
     if (!loyRes.ok || !tiersRes.ok || !unsRes.ok) throw new Error('Erreur API');
@@ -3580,13 +3581,13 @@ function renderInvendus(d) {
   document.getElementById('uns-canal-both').textContent = d.canal_both || 0;
 
   // Pipeline — on recharge la liste complète si possible
-  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_token');
+  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_logged_in'); // BUG-014
   const base  = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
   const pEl   = document.getElementById('uns-pipeline');
 
   if (!token) { pEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Non connecté</div>'; return; }
 
-  fetch(base + '/api/unsold', { headers: { 'Authorization': 'Bearer ' + token } })
+  fetch(base + '/api/unsold', { credentials: 'include', headers: { /* BUG-014: auth via httpOnly cookie */ }, credentials: 'include' })
     .then(r => r.json())
     .then(items => {
       if (!items.length) { pEl.innerHTML = '<div style="color:var(--green);font-size:0.8rem;padding:12px;">Aucun invendu actif — bonne santé du stock.</div>'; return; }
