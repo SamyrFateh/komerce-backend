@@ -137,7 +137,7 @@ router.get('/ops', async (req, res) => {
     // ── Délais moyens ─────────────────────────────────────────────────────────
     const { rows: [delais] } = await db.query(`
       SELECT
-        ROUND(AVG(EXTRACT(EPOCH FROM (COALESCE(dispatched_at, NOW()) - created_at)) / 86400)
+        ROUND(AVG(EXTRACT(EPOCH FROM (COALESCE(shipped_at, NOW()) - created_at)) / 86400)
           FILTER (WHERE status NOT IN ('cancelled')))::int AS avg_preparation_jours,
         ROUND(AVG(EXTRACT(EPOCH FROM (collected_at - created_at)) / 86400)
           FILTER (WHERE status = 'collected' AND collected_at IS NOT NULL))::int AS avg_livraison_totale_jours,
@@ -390,14 +390,14 @@ router.get('/sales', async (req, res) => {
     const { rows: topProds } = await db.query(`
       SELECT
         p.id, p.name, p.category,
-        SUM(o.quantity) AS qty_vendue,
-        SUM(o.total_kmf) AS revenue_kmf,
+        SUM(oi.quantity) AS qty_vendue,
+        SUM(oi.price_kmf * oi.quantity) AS revenue_kmf,
         CASE WHEN SUM(CASE WHEN o.cost_real_kmf IS NOT NULL THEN 1 ELSE 0 END) > 0
-          THEN ROUND(SUM(o.total_kmf - COALESCE(o.cost_real_kmf, 0)))
+          THEN ROUND(SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, 0)))
           ELSE NULL
         END AS marge_kmf,
-        CASE WHEN SUM(o.total_kmf) > 0
-          THEN ROUND(100.0 * SUM(o.total_kmf - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)) / SUM(o.total_kmf), 1)
+        CASE WHEN SUM(oi.price_kmf * oi.quantity) > 0
+          THEN ROUND(100.0 * SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)) / SUM(oi.price_kmf * oi.quantity), 1)
           ELSE NULL
         END AS taux_marge_pct
       FROM orders o
