@@ -48,13 +48,46 @@ VALUES (
   'Anjouan'
 );
 
--- ── PRODUITS DE DÉMONSTRATION ─────────────────────────────────
-INSERT INTO products (sku, name, category, emoji, price_kmf, cost_kmf, promo_pct, is_promo, stock, weight_kg)
+-- ── PRODUITS — Catalogue avec images réelles ─────────────────
+INSERT INTO products (sku, name, category, emoji, price_kmf, cost_kmf, promo_pct, is_promo, stock, weight_kg, image_url)
 VALUES
-  ('SKU-001', 'Samsung Galaxy A15 128Go', 'Téléphones',     '📱', 57600, 40000, 35, TRUE,  10, 0.2),
-  ('SKU-002', 'Lot 3 abayas brodées',     'Vêtements',      '👗', 38200, 25000, 40, TRUE,   8, 1.5),
-  ('SKU-003', 'Sony WH-CH520 Bluetooth',  'Électronique',   '🎧', 38800, 27000, 28, TRUE,  15, 0.3),
-  ('SKU-004', 'Set Tefal 5 pièces inox',  'Électroménager', '🍳', 64400, 46000, 22, TRUE,   5, 3.2);
+  -- ── Existants (mis à jour avec images) ──
+  ('SKU-001', 'Samsung Galaxy A15 128Go',      'Téléphones',     '📱', 57600, 40000, 35, TRUE,  10, 0.2,
+   'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-002', 'Lot 3 abayas brodées',          'Vêtements',      '👗', 38200, 25000, 40, TRUE,   8, 1.5,
+   'https://images.unsplash.com/photo-1590156546946-ce55a12a6a3a?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-003', 'Sony WH-CH520 Bluetooth',       'Électronique',   '🎧', 38800, 27000, 28, TRUE,  15, 0.3,
+   'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-004', 'Set Tefal 5 pièces inox',       'Électroménager', '🍳', 64400, 46000, 22, TRUE,   5, 3.2,
+   'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  -- ── Nouveaux produits ──
+  ('SKU-005', 'Enceinte JBL Flip 6',           'Électronique',   '🔊', 44200, 30000, 25, TRUE,  12, 0.5,
+   'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-006', 'Parfum Oud Al Sultan 100ml',    'Beauté',         '✨', 28800, 18000, 30, TRUE,  20, 0.3,
+   'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-007', 'Montre connectée Xiaomi Band 8','Électronique',   '⌚', 24600, 16000, 20, TRUE,  18, 0.1,
+   'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-008', 'Lampe solaire LED extérieur',   'Maison',         '☀️', 14800, 8000,  35, TRUE,  25, 0.8,
+   'https://images.unsplash.com/photo-1558449028-b53a39d100fc?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-009', 'Valise cabine 55cm rigide',     'Bagagerie',      '🧳', 34600, 22000, 28, TRUE,   7, 2.5,
+   'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-010', 'Nike Air Max 90',               'Chaussures',     '👟', 52400, 36000, 30, TRUE,   6, 0.9,
+   'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-011', 'Robot mixeur multifonction',     'Électroménager', '🥤', 42000, 28000, 25, TRUE,   8, 2.8,
+   'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&h=400&fit=crop&auto=format&q=80'),
+
+  ('SKU-012', 'Kofia brodé traditionnel',       'Vêtements',      '🧢', 9800,  5500,  15, FALSE, 30, 0.1,
+   'https://images.unsplash.com/photo-1588850561407-ed78c334e67a?w=400&h=400&fit=crop&auto=format&q=80');
 
 -- ── TISSUS FICTIFS (M11) ──────────────────────────────────────────────────────
 INSERT INTO fabrics (name, material, price_per_meter_aed, colors, occasions) VALUES
