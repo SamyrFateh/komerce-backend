@@ -1187,6 +1187,7 @@ body {
 <header class="header">
   <div class="header-logo">K<span>.</span>omerce</div>
   <div class="header-actions">
+    <button class="header-btn" id="headerUserBtn" onclick="toggleUserMenu()" aria-label="Mon compte">👤</button>
     <button class="header-btn" onclick="openTracking()" aria-label="Suivi commande">📦</button>
     <button class="header-btn" onclick="openCart()" aria-label="Panier">
       🛒
@@ -1407,7 +1408,7 @@ const API_BASE   = 'https://komerce-backend-production.up.railway.app/api';
 let EUR_KMF      = 495;
 const WA_NUMBER  = '33699272526';
 const WA_MSG     = 'Bonjour Komerce ! Je souhaite passer commande.';
-const USE_DEMO   = true; // Force demo mode tant que le backend n'a pas de produits
+const USE_DEMO   = false; // Produits et relais chargés depuis l'API
 
 // UTM Tracking
 const UTM_PARAMS = {};
@@ -1480,6 +1481,8 @@ let cart = JSON.parse(localStorage.getItem('komerce_cart') || '[]');
 let currentProduct = null;
 let productsCache = {};
 let searchTimeout = null;
+let relaisCache = [];
+let authCallback = null;
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1501,6 +1504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderCategories();
   loadFeatured();
+  loadRelais();
   updateCartBadges();
 
   // Deep link: ?product=p1 → ouvre la modal produit après chargement
@@ -1560,8 +1564,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ─── API Helpers ──────────────────────────────────────────────────────────────
 async function apiFetch(url, opts = {}) {
-  // En mode demo ou si l'API est indisponible, on utilise les données locales
-  if (USE_DEMO && url.startsWith('/products')) return null;
   try {
     const token = localStorage.getItem('komerce_token');
     const headers = { 'Content-Type': 'application/json', ...opts.headers };
@@ -1589,6 +1591,244 @@ async function apiFetch(url, opts = {}) {
     }
     return null;
   }
+}
+
+
+// ─── Load Relais from API ─────────────────────────────────────────────────────
+async function loadRelais() {
+  try {
+    const data = await apiFetch('/relais', { silent: true });
+    if (data && Array.isArray(data)) {
+      relaisCache = data;
+    } else if (data?.relais && Array.isArray(data.relais)) {
+      relaisCache = data.relais;
+    }
+    console.log('Relais chargés:', relaisCache.length);
+  } catch(e) {
+    console.warn('Erreur chargement relais:', e);
+  }
+  // Fallback if API fails
+  if (!relaisCache.length) {
+    relaisCache = [
+      { id: 1, name: 'Relais Moroni', address: 'Moroni centre', island: 'Grande Comore' },
+      { id: 2, name: 'Relais Mutsamudu', address: 'Mutsamudu', island: 'Anjouan' },
+      { id: 3, name: 'Relais Fomboni', address: 'Fomboni', island: 'Mohéli' },
+      { id: 4, name: 'Relais Domoni', address: 'Domoni', island: 'Anjouan' },
+      { id: 5, name: 'Relais Sima', address: 'Sima', island: 'Anjouan' },
+    ];
+  }
+}
+
+// ─── Auth Modal (Login / Register) ─────────────────────────────────────────────
+function showAuthModal(callback) {
+  authCallback = callback;
+  document.getElementById('authModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:700;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px;padding:24px;max-width:400px;width:100%;animation:slideUp 0.3s ease;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-size:18px;font-weight:800;color:var(--navy);">👤 Mon compte</h3>
+        <button onclick="document.getElementById('authModal').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light);">✕</button>
+      </div>
+
+      <div style="font-size:13px;color:var(--text-light);margin-bottom:16px;text-align:center;">
+        Connectez-vous pour passer commande et suivre vos achats
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;border-bottom:2px solid var(--bg);margin-bottom:20px;">
+        <button id="tabLogin" onclick="switchAuthTab('login')" style="flex:1;padding:10px;border:none;background:none;font-size:14px;font-weight:700;cursor:pointer;color:var(--navy);border-bottom:2px solid var(--navy);margin-bottom:-2px;">Connexion</button>
+        <button id="tabRegister" onclick="switchAuthTab('register')" style="flex:1;padding:10px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-2px;">Inscription</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="authLoginForm">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input id="authEmail" type="email" placeholder="Email" style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          <input id="authPassword" type="password" placeholder="Mot de passe" style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'" onkeydown="if(event.key==='Enter')doLogin()">
+          <div id="authLoginError" style="display:none;font-size:12px;color:var(--coral);text-align:center;"></div>
+          <button onclick="doLogin()" id="loginBtn" style="width:100%;padding:13px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            Se connecter
+          </button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="authRegisterForm" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input id="regName" type="text" placeholder="Prénom et nom" style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          <input id="regEmail" type="email" placeholder="Email" style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          <input id="regPassword" type="password" placeholder="Mot de passe (min 6 car.)" style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          <div style="display:flex;align-items:center;border:2px solid #e5e7eb;border-radius:var(--radius-sm);overflow:hidden;" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='#e5e7eb'">
+            <span style="padding:12px 10px 12px 14px;font-size:14px;font-weight:700;color:var(--navy);background:#f1f5f9;border-right:2px solid #e5e7eb;white-space:nowrap;">+269</span>
+            <input id="regPhone" type="tel" placeholder="321 12 34" maxlength="7" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="flex:1;padding:12px 14px;border:none;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;">
+          </div>
+          <input id="regAddress" type="text" placeholder="Adresse (optionnel)" style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          <div id="authRegError" style="display:none;font-size:12px;color:var(--coral);text-align:center;"></div>
+          <button onclick="doRegister()" id="registerBtn" style="width:100%;padding:13px;background:var(--gold);color:var(--white);border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            Créer mon compte
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  setTimeout(() => document.getElementById('authEmail')?.focus(), 200);
+}
+
+function switchAuthTab(tab) {
+  const loginForm = document.getElementById('authLoginForm');
+  const regForm = document.getElementById('authRegisterForm');
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+
+  if (tab === 'login') {
+    loginForm.style.display = '';
+    regForm.style.display = 'none';
+    tabLogin.style.color = 'var(--navy)';
+    tabLogin.style.borderBottom = '2px solid var(--navy)';
+    tabLogin.style.fontWeight = '700';
+    tabRegister.style.color = 'var(--text-light)';
+    tabRegister.style.borderBottom = '2px solid transparent';
+    tabRegister.style.fontWeight = '600';
+  } else {
+    loginForm.style.display = 'none';
+    regForm.style.display = '';
+    tabRegister.style.color = 'var(--navy)';
+    tabRegister.style.borderBottom = '2px solid var(--navy)';
+    tabRegister.style.fontWeight = '700';
+    tabLogin.style.color = 'var(--text-light)';
+    tabLogin.style.borderBottom = '2px solid transparent';
+    tabLogin.style.fontWeight = '600';
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authLoginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!email || !password) {
+    errEl.textContent = 'Veuillez remplir tous les champs';
+    errEl.style.display = '';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;"></span> Connexion...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(API_BASE + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      localStorage.setItem('komerce_token', data.token);
+      if (data.user) localStorage.setItem('komerce_user', JSON.stringify(data.user));
+      showToast('Connecté ! ✅');
+      document.getElementById('authModal')?.remove();
+      if (authCallback) { authCallback(); authCallback = null; }
+    } else {
+      errEl.textContent = data.error || data.message || 'Email ou mot de passe incorrect';
+      errEl.style.display = '';
+    }
+  } catch(e) {
+    errEl.textContent = 'Erreur réseau, réessayez';
+    errEl.style.display = '';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Se connecter';
+}
+
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const phoneRaw = document.getElementById('regPhone').value.trim();
+  const address = document.getElementById('regAddress').value.trim();
+  const phone = phoneRaw.startsWith('+') ? phoneRaw : '+269' + phoneRaw;
+  const errEl = document.getElementById('authRegError');
+  const btn = document.getElementById('registerBtn');
+
+  if (!name || !email || !password) {
+    errEl.textContent = 'Nom, email et mot de passe sont obligatoires';
+    errEl.style.display = '';
+    return;
+  }
+  if (password.length < 6) {
+    errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères';
+    errEl.style.display = '';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;"></span> Création...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(API_BASE + '/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, phone, address: address || undefined })
+    });
+    const data = await res.json();
+    if (res.ok && (data.token || data.user)) {
+      // Si le register retourne un token, on l'utilise directement
+      if (data.token) {
+        localStorage.setItem('komerce_token', data.token);
+        if (data.user) localStorage.setItem('komerce_user', JSON.stringify(data.user));
+      } else {
+        // Sinon, auto-login
+        const loginRes = await fetch(API_BASE + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const loginData = await loginRes.json();
+        if (loginRes.ok && loginData.token) {
+          localStorage.setItem('komerce_token', loginData.token);
+          if (loginData.user) localStorage.setItem('komerce_user', JSON.stringify(loginData.user));
+        }
+      }
+      showToast('Compte créé ! Bienvenue 🎉');
+      document.getElementById('authModal')?.remove();
+      if (authCallback) { authCallback(); authCallback = null; }
+    } else {
+      errEl.textContent = data.error || data.message || 'Erreur lors de l\'inscription';
+      errEl.style.display = '';
+    }
+  } catch(e) {
+    errEl.textContent = 'Erreur réseau, réessayez';
+    errEl.style.display = '';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Créer mon compte';
+}
+
+function isLoggedIn() {
+  return !!localStorage.getItem('komerce_token');
+}
+
+function getCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('komerce_user')); } catch(e) { return null; }
+}
+
+function logout() {
+  localStorage.removeItem('komerce_token');
+  localStorage.removeItem('komerce_user');
+  showToast('Déconnecté');
 }
 
 // ─── Demo data — Plan Lancement v3 (20 produits, 4 par catégorie) ─────────────
@@ -1923,6 +2163,33 @@ function quickAdd(id, btn) {
   }
 }
 
+
+// ─── User Menu (Header) ──────────────────────────────────────────────────────
+function toggleUserMenu() {
+  if (isLoggedIn()) {
+    const user = getCurrentUser();
+    const name = user?.name || user?.email || 'Mon compte';
+    document.getElementById('userMenuPopup')?.remove();
+    const popup = document.createElement('div');
+    popup.id = 'userMenuPopup';
+    popup.style.cssText = 'position:fixed;top:56px;right:12px;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-lg);z-index:150;padding:8px 0;min-width:200px;animation:slideUp 0.15s ease;';
+    popup.innerHTML = `
+      <div style="padding:12px 16px;border-bottom:1px solid var(--bg);">
+        <div style="font-size:14px;font-weight:700;color:var(--navy);">${esc(name)}</div>
+        <div style="font-size:11px;color:var(--text-light);">${esc(user?.email || '')}</div>
+      </div>
+      <button onclick="openTracking();document.getElementById('userMenuPopup')?.remove();" style="display:block;width:100%;padding:10px 16px;text-align:left;background:none;border:none;font-size:13px;cursor:pointer;font-family:inherit;">📦 Mes commandes</button>
+      <button onclick="logout();document.getElementById('userMenuPopup')?.remove();" style="display:block;width:100%;padding:10px 16px;text-align:left;background:none;border:none;font-size:13px;cursor:pointer;font-family:inherit;color:var(--coral);">🚪 Déconnexion</button>
+    `;
+    document.body.appendChild(popup);
+    setTimeout(() => document.addEventListener('click', function closeMenu(e) {
+      if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', closeMenu); }
+    }), 10);
+  } else {
+    showAuthModal(null);
+  }
+}
+
 // ─── Cart Logic ──────────────────────────────────────────────────────────────
 function addToCart(product, qty = 1) {
   // M2: Vérification stock
@@ -2111,6 +2378,12 @@ function copyShareLink(url) {
 function startCheckout() {
   if (!cart.length) return;
   closeCart();
+
+  // Auth check: si pas connecté, montrer la modal login/register
+  if (!isLoggedIn()) {
+    showAuthModal(() => startCheckout());
+    return;
+  }
   
   // Remove existing checkout modal
   document.getElementById('checkoutModal')?.remove();
@@ -2157,8 +2430,7 @@ function startCheckout() {
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Point relais de retrait *</label>
           <select id="checkRelais" style="width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;background:var(--white);box-sizing:border-box;">
             <option value="">Choisir un relais…</option>
-            <option value="mutsamudu" selected>📍 Relais Mutsamudu Centre — Anjouan</option>
-
+            ${relaisCache.map(r => `<option value="${r.id}" ${r.name && r.name.includes('Mutsamudu') ? 'selected' : ''}>📍 ${r.name}${r.island ? ' — ' + r.island : ''}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -2289,7 +2561,7 @@ function validatePhone(phone) {
   return patterns.some(p => p.test(clean));
 }
 
-function submitCheckout() {
+async function submitCheckout() {
   try {
   const name = document.getElementById('checkName').value.trim();
   const checkPhoneRaw = document.getElementById('checkPhone').value.trim();
@@ -2357,7 +2629,7 @@ function submitCheckout() {
     return;
   }
   
-  // Generate a demo reference
+  // Generate a local reference (may be replaced by API response)
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let ref = 'K';
   for (let i = 0; i < 6; i++) ref += chars[Math.floor(Math.random() * chars.length)];
@@ -2391,16 +2663,45 @@ function submitCheckout() {
   orders.push(orderData);
   localStorage.setItem('komerce_orders', JSON.stringify(orders));
   
-  // Tenter d'envoyer au backend
-  fetch(API_BASE + '/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(orderData)
-  }).then(res => {
-    if (!res.ok) console.warn('Commande non envoyée au serveur (code ' + res.status + ')');
-  }).catch(() => {
-    showToast('⚠️ Commande sauvée localement — elle sera synchronisée quand la connexion reviendra');
-  });
+  // Envoyer la commande au backend avec le bon format API
+  const token = localStorage.getItem('komerce_token');
+  const apiPayload = {
+    items: cart.map(i => ({
+      product_id: typeof i.id === 'string' && i.id.startsWith('p') ? parseInt(i.id.slice(1)) : parseInt(i.id),
+      quantity: i.qty,
+      unit_price: i.price_kmf
+    })),
+    relais_id: parseInt(relais),
+    payment_mode: payMethod === 'cash' ? 'cash_relais' : 'stripe_eur',
+    recipient_name: name,
+    recipient_phone: phone,
+    delivery_address: relaisLabel
+  };
+
+  try {
+    const apiRes = await fetch(API_BASE + '/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? 'Bearer ' + token : ''
+      },
+      body: JSON.stringify(apiPayload)
+    });
+    if (apiRes.ok) {
+      const apiData = await apiRes.json();
+      if (apiData.reference) orderData.ref = apiData.reference;
+      if (apiData.id) orderData.api_id = apiData.id;
+      ref = orderData.ref;
+      console.log('✅ Commande créée en DB:', apiData);
+    } else {
+      const errBody = await apiRes.json().catch(() => ({}));
+      console.warn('Commande non envoyée au serveur:', apiRes.status, errBody);
+      showToast('⚠️ Commande sauvée localement');
+    }
+  } catch(e) {
+    console.warn('Erreur envoi commande:', e);
+    showToast('⚠️ Commande sauvée localement — synchronisation ultérieure');
+  }
   
   document.getElementById('checkoutModal').remove();
   
