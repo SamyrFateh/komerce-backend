@@ -2515,7 +2515,8 @@ async function submitOrder(btn) {
     recipPhone = (document.getElementById('of-my-phone').value || '').trim();
     clientName = recipName;
     clientPhone = '+269' + recipPhone.replace(/\s/g, '');
-    clientEmail = (document.getElementById('of-my-email').value || '').trim();
+    var emailEl = document.getElementById('of-my-email');
+    clientEmail = emailEl ? emailEl.value.trim() : '';
   } else {
     recipName = (document.getElementById('of-pickup-name').value || '').trim();
     recipPhone = (document.getElementById('of-pickup-phone').value || '').trim();
@@ -2524,8 +2525,8 @@ async function submitOrder(btn) {
     clientEmail = (document.getElementById('of-client-email').value || '').trim();
   }
 
-  if (!recipName) { toast('Veuillez indiquer le nom de la personne qui r\u00e9cup\u00e8re.', 'error'); return; }
-  if (!recipPhone) { toast('Veuillez indiquer le t\u00e9l\u00e9phone de la personne au relais.', 'error'); return; }
+  if (!recipName) { toast('Indiquez le nom de la personne qui r\u00e9cup\u00e8re.', 'error'); return; }
+  if (!recipPhone) { toast('Indiquez le t\u00e9l\u00e9phone du r\u00e9cup\u00e9rateur.', 'error'); return; }
 
   var fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
 
@@ -2534,19 +2535,21 @@ async function submitOrder(btn) {
   btn.style.opacity = '0.7';
 
   try {
+    /* Step 1 : guest-checkout — cr\u00e9e ou retrouve le client par t\u00e9l\u00e9phone */
     await apiPost('/api/auth/guest-checkout', {
       full_name: clientName,
       phone: clientPhone,
       email: clientEmail || undefined
     });
 
+    /* Step 2 : cr\u00e9er la commande */
     var items = _cart.map(function(i) {
       return { product_id: String(i.product.id), quantity: i.qty, confection_type: 'aucun' };
     });
 
     var relaisId = _relais.length > 0 ? _relais[0].id : '';
 
-    var result = await apiPost('/api/orders', {
+    var apiResult = await apiPost('/api/orders', {
       items: items,
       relais_id: relaisId,
       recipient_name: recipName,
@@ -2554,11 +2557,18 @@ async function submitOrder(btn) {
       payment_mode: _orderData.payment_mode
     });
 
+    /* API retourne { order: {...}, discount_pct, discount_kmf, loyalty_label } */
+    var orderData = apiResult.order || apiResult;
+
+    /* Step 3 : vider le panier */
     _cart = [];
     saveCart();
     renderCartBody();
-    renderOrderSuccess(result, recipName, clientEmail);
+
+    /* Step 4 : \u00e9cran de succ\u00e8s */
+    renderOrderSuccess(orderData, recipName, clientEmail, apiResult);
     toast('Commande confirm\u00e9e !', 'success');
+
   } catch (e) {
     console.error('submitOrder:', e);
     toast(e.message || 'Erreur lors de la commande.', 'error');
@@ -2569,86 +2579,109 @@ async function submitOrder(btn) {
 }
 
 
-function renderOrderSuccess(result, recipientName, clientEmail) {
+function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
   var body = $('order-modal-body');
   body.innerHTML = '';
   $('order-modal-title').textContent = '\u2705 Commande confirm\u00e9e';
 
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'text-align:center;padding:20px 0;';
+  wrap.style.cssText = 'text-align:center;padding:14px 0;';
 
+  /* Icon */
   var icon = document.createElement('div');
-  icon.style.cssText = 'font-size:4rem;margin-bottom:14px;';
+  icon.style.cssText = 'font-size:3.2rem;margin-bottom:8px;';
   icon.textContent = '\u{1F389}';
   wrap.appendChild(icon);
 
+  /* Title */
   var h3 = document.createElement('h3');
-  h3.style.cssText = 'font-family:Poppins,sans-serif;color:var(--primary);margin-bottom:8px;font-size:1.25rem;';
+  h3.style.cssText = 'font-family:Poppins,sans-serif;color:var(--primary);margin-bottom:6px;font-size:1.1rem;';
   h3.textContent = 'Commande enregistr\u00e9e !';
   wrap.appendChild(h3);
 
-  var p1 = document.createElement('p');
-  p1.style.color = 'var(--muted)';
-  p1.textContent = 'Votre r\u00e9f\u00e9rence :';
-  wrap.appendChild(p1);
+  /* Reference */
+  var refLabel = document.createElement('p');
+  refLabel.style.cssText = 'color:var(--muted);font-size:0.85rem;margin-bottom:2px;';
+  refLabel.textContent = 'Votre r\u00e9f\u00e9rence :';
+  wrap.appendChild(refLabel);
 
-  var ref = document.createElement('div');
-  ref.style.cssText = 'display:inline-block;background:var(--primary-light);color:var(--primary-dark);font-weight:800;font-size:1.2rem;padding:10px 24px;border-radius:10px;margin:14px 0;letter-spacing:2px;font-family:monospace;';
-  ref.textContent = result.reference || result.order_reference || result.id || '\u2014';
-  wrap.appendChild(ref);
+  var refBox = document.createElement('div');
+  refBox.style.cssText = 'display:inline-block;background:var(--primary-light);color:var(--primary-dark);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;';
+  refBox.textContent = order.reference || '\u2014';
+  wrap.appendChild(refBox);
 
-  if (result.pickup_code || result.order_pickup_code) {
-    var pickupLabel = document.createElement('p');
-    pickupLabel.style.cssText = 'margin-top:16px;font-weight:700;color:var(--text);';
-    pickupLabel.textContent = '\u{1F3EA} Code de retrait :';
-    wrap.appendChild(pickupLabel);
+  /* Cash ref code — affich\u00e9 uniquement pour paiement cash */
+  if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
+    var cashLabel = document.createElement('p');
+    cashLabel.style.cssText = 'margin-top:10px;font-weight:700;color:var(--text);font-size:0.88rem;';
+    cashLabel.textContent = '\u{1F3EA} Code de paiement au relais :';
+    wrap.appendChild(cashLabel);
 
-    var pickupCode = document.createElement('div');
-    pickupCode.style.cssText = 'display:inline-block;background:#fffbeb;color:#92400e;font-weight:800;font-size:1.4rem;padding:12px 28px;border-radius:10px;margin:10px 0;letter-spacing:3px;border:2px solid #fde68a;font-family:monospace;';
-    pickupCode.textContent = result.pickup_code || result.order_pickup_code || '';
-    wrap.appendChild(pickupCode);
+    var cashCode = document.createElement('div');
+    cashCode.style.cssText = 'display:inline-block;background:#fffbeb;color:#92400e;font-weight:800;font-size:1.15rem;padding:8px 22px;border-radius:10px;margin:6px 0;letter-spacing:2px;border:2px solid #fde68a;font-family:monospace;';
+    cashCode.textContent = order.cash_ref_code;
+    wrap.appendChild(cashCode);
   }
 
+  /* Discount fid\u00e9lit\u00e9 */
+  if (fullResult && fullResult.discount_pct > 0) {
+    var discDiv = document.createElement('div');
+    discDiv.style.cssText = 'margin-top:10px;padding:8px 12px;background:#ecfdf5;border-radius:8px;border:1px solid #a7f3d0;font-size:0.82rem;color:#065f46;font-weight:600;';
+    discDiv.textContent = '\u{1F381} Fid\u00e9lit\u00e9 ' + (fullResult.loyalty_label || '') + ' : -' + fullResult.discount_pct + '% (-' + fmt(fullResult.discount_kmf, 'KMF') + ')';
+    wrap.appendChild(discDiv);
+  }
+
+  /* Info block */
   var info = document.createElement('div');
-  info.style.cssText = 'margin-top:14px;padding:14px;background:var(--bg);border-radius:10px;font-size:0.88rem;color:var(--muted);line-height:1.6;text-align:left;';
+  info.style.cssText = 'margin-top:12px;padding:10px 12px;background:var(--bg);border-radius:10px;font-size:0.82rem;color:var(--muted);line-height:1.6;text-align:left;';
 
-  var line1 = document.createElement('div');
-  line1.textContent = '\u{1F3EA} Paiement en cash (KMF) au point relais lors du retrait.';
-  info.appendChild(line1);
-  var line2 = document.createElement('div');
-  line2.style.marginTop = '6px';
-  line2.textContent = '\u{1F4F1} ' + sanitize(recipientName || '') + ' recevra un SMS avec le code de retrait.';
-  info.appendChild(line2);
+  var l1 = document.createElement('div');
+  l1.textContent = '\u{1F3EA} Paiement en cash (KMF) au point relais lors du retrait.';
+  info.appendChild(l1);
+
+  var l2 = document.createElement('div');
+  l2.style.marginTop = '4px';
+  l2.textContent = '\u{1F4F1} ' + sanitize(recipientName || '') + ' recevra un SMS de confirmation.';
+  info.appendChild(l2);
+
   if (clientEmail) {
-    var line2b = document.createElement('div');
-    line2b.style.marginTop = '6px';
-    line2b.textContent = '\u{1F4E7} Suivi envoy\u00e9 \u00e0 ' + sanitize(clientEmail);
-    info.appendChild(line2b);
+    var l3 = document.createElement('div');
+    l3.style.marginTop = '4px';
+    l3.textContent = '\u{1F4E7} Suivi envoy\u00e9 \u00e0 ' + sanitize(clientEmail);
+    info.appendChild(l3);
   }
-  var line3 = document.createElement('div');
-  line3.style.marginTop = '6px';
-  line3.textContent = '\u{1F4CD} Pr\u00e9sentez la r\u00e9f\u00e9rence ou le code de retrait au point relais.';
-  info.appendChild(line3);
+
+  var l4 = document.createElement('div');
+  l4.style.marginTop = '4px';
+  l4.textContent = '\u{1F4CD} Pr\u00e9sentez la r\u00e9f\u00e9rence ou le code au point relais.';
+  info.appendChild(l4);
+
   wrap.appendChild(info);
 
+  /* Bouton Suivre */
   var trackBtn = document.createElement('button');
-  trackBtn.style.cssText = 'margin-top:18px;width:100%;padding:13px;border-radius:var(--radius);font-weight:700;font-size:0.95rem;background:var(--primary);color:white;border:none;cursor:pointer;transition:background 0.2s;';
+  trackBtn.style.cssText = 'margin-top:12px;width:100%;padding:11px;border-radius:var(--radius);font-weight:700;font-size:0.9rem;background:var(--primary);color:white;border:none;cursor:pointer;transition:background 0.2s;';
   trackBtn.textContent = '\u{1F4CD} Suivre ma commande';
   trackBtn.addEventListener('mouseenter', function() { this.style.background = 'var(--primary-dark)'; });
   trackBtn.addEventListener('mouseleave', function() { this.style.background = 'var(--primary)'; });
   trackBtn.addEventListener('click', function() {
     closeOrderModal();
-    var refVal = result.reference || result.order_reference || '';
+    var refVal = order.reference || '';
     if (refVal) {
-      document.getElementById('tracking-input').value = refVal;
-      document.getElementById('tracking').scrollIntoView({ behavior: 'smooth' });
-      setTimeout(function() { searchTracking(); }, 500);
+      var trackInput = document.getElementById('tracking-input');
+      if (trackInput) {
+        trackInput.value = refVal;
+        var trackSection = document.getElementById('tracking');
+        if (trackSection) trackSection.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(function() { if (typeof searchTracking === 'function') searchTracking(); }, 500);
+      }
     }
   });
   wrap.appendChild(trackBtn);
 
+  /* Bouton Fermer */
   var closeBtn = document.createElement('button');
-  closeBtn.style.cssText = 'margin-top:8px;width:100%;padding:11px;border-radius:var(--radius);font-weight:600;font-size:0.9rem;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;transition:background 0.2s;';
+  closeBtn.style.cssText = 'margin-top:6px;width:100%;padding:10px;border-radius:var(--radius);font-weight:600;font-size:0.85rem;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;transition:background 0.2s;';
   closeBtn.textContent = 'Fermer';
   closeBtn.addEventListener('mouseenter', function() { this.style.background = 'var(--border)'; });
   closeBtn.addEventListener('mouseleave', function() { this.style.background = 'var(--bg)'; });
