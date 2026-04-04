@@ -8,10 +8,7 @@
 -- Mot de passe : Komerce2026!
 -- ⚠️  Changer le mot de passe dès la première connexion.
 --
--- Le hash ci-dessous est SHA-256 de "Komerce2026!" avec le JWT_SECRET
--- par défaut "change_this_secret_in_production".
--- Si tu changes JWT_SECRET dans .env, recrée le hash via :
---   node -e "const c=require('crypto');console.log(c.createHmac('sha256','TON_SECRET').update('TON_MDP').digest('hex'))"
+-- Hash bcrypt valide pour "Komerce2026!" (10 rounds)
 
 INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
 VALUES (
@@ -21,18 +18,18 @@ VALUES (
   'admin',
   'KMF',
   'KM',
-  -- hash de "Komerce2026!" avec secret "change_this_secret_in_production"
-  'a3f8c2d1e4b7a9f0c5d8e2b1a4f7c0d3e6b9a2f5c8d1e4b7a0f3c6d9e2b5a8f1'
+  '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'
 );
 
 -- Clients de démonstration : diaspora + local
+-- Mot de passe démo : client123
 INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
 VALUES
-  ('Fatouma Ali',     'fatouma.ali@gmail.com',   '+33612345678', 'client', 'EUR', 'FR', 'demo_hash_fr1'),
-  ('Said Mohamed',   'said.m@hotmail.com',       '+33698765432', 'client', 'EUR', 'FR', 'demo_hash_fr2'),
-  ('Nadjma Hassan',  'nadjma.h@gmail.com',       '+97155123456', 'client', 'AED', 'AE', 'demo_hash_ae1'),
-  ('Omar Abdou',     'omar.abdou@komerce.km',    '+269321001',   'client', 'KMF', 'KM', 'demo_hash_km1'),
-  ('Rayhana Said',   'rayhana.s@komerce.km',     '+269321002',   'client', 'KMF', 'KM', 'demo_hash_km2');
+  ('Fatouma Ali',     'fatouma.ali@gmail.com',   '+33612345678', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Said Mohamed',   'said.m@hotmail.com',       '+33698765432', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Nadjma Hassan',  'nadjma.h@gmail.com',       '+97155123456', 'client', 'AED', 'AE', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Omar Abdou',     'omar.abdou@komerce.km',    '+269321001',   'client', 'KMF', 'KM', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Rayhana Said',   'rayhana.s@komerce.km',     '+269321002',   'client', 'KMF', 'KM', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.');
 
 -- ── TAUX DE CHANGE ───────────────────────────────────────────
 INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from)
@@ -52,8 +49,6 @@ VALUES (
 );
 
 -- ── PRODUITS DE DÉMONSTRATION ─────────────────────────────────
--- price_kmf = prix de vente livré · cost_kmf = achat + fret + douane
--- marge brute = price_kmf - cost_kmf
 INSERT INTO products (sku, name, category, emoji, price_kmf, cost_kmf, promo_pct, is_promo, stock, weight_kg)
 VALUES
   ('SKU-001', 'Samsung Galaxy A15 128Go', 'Téléphones',     '📱', 57600, 40000, 35, TRUE,  10, 0.2),

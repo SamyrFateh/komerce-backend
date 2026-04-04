@@ -177,19 +177,56 @@ setInterval(async () => {
 
 // ── Démarrage + Graceful Shutdown ────────────────────────────────────────────
 
+// ── Auto-migration : fix admin bcrypt hash (one-time) ──────────────────────
+// Le seed original stockait un hash SHA-256 incompatible avec bcrypt.compare().
+// Cette migration corrige automatiquement au premier démarrage.
+
+const bcryptMigrate = require('bcryptjs');
+
+async function fixAdminHash() {
+  try {
+    const { rows } = await db.query(
+      "SELECT id, password_hash FROM users WHERE email = 'admin@komerce.km' AND role = 'admin' LIMIT 1"
+    );
+    if (!rows.length) return;
+    const admin = rows[0];
+    // Si le hash ne commence pas par $2 (bcrypt prefix), il faut le corriger
+    if (admin.password_hash && !admin.password_hash.startsWith('$2')) {
+      const newHash = await bcryptMigrate.hash('Komerce2026!', 10);
+      await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, admin.id]);
+      console.log('✅ Migration: admin password_hash corrigé (SHA-256 → bcrypt)');
+    }
+    // Also fix demo client hashes that are not valid bcrypt
+    const { rows: demoUsers } = await db.query(
+      "SELECT id, password_hash FROM users WHERE role = 'client' AND password_hash NOT LIKE '$2%'"
+    );
+    for (const u of demoUsers) {
+      const newHash = await bcryptMigrate.hash('client123', 10);
+      await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, u.id]);
+    }
+    if (demoUsers.length > 0) {
+      console.log(`✅ Migration: ${demoUsers.length} demo client hashes corrigés`);
+    }
+  } catch (err) {
+    console.error('Migration admin hash error (non-fatal):', err.message);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 
-const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v8.5 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened`);
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM reçu — fermeture gracieuse...');
-  server.close(() => {
-    console.log('Serveur fermé proprement.');
-    process.exit(0);
+fixAdminHash().then(() => {
+  const server = app.listen(PORT, () => {
+    console.log(`KOMERCE API v8.5 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened`);
   });
-  setTimeout(() => process.exit(1), 10_000);
+
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM reçu — fermeture gracieuse...');
+    server.close(() => {
+      console.log('Serveur fermé proprement.');
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10_000);
+  });
 });
 
 module.exports = app;
