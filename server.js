@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v9.1 (sécurisé)
+ * KOMERCE — Serveur API v9.2 (sécurisé)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v9.2 : Helmet CSP corrigé — inline scripts + Google Fonts + images HTTPS autorisés
  * Changelog v9.1 : BUG-014 cookie-parser ajouté — JWT migré vers httpOnly cookie
  * Changelog v8.8 : migration robuste (try/catch individuel) + CREATE TABLE partners + gen_random_uuid
  * Changelog v8.7 : auto-migration customs_history colonnes + loyalty_tiers table + users.loyalty_tier_id
@@ -63,8 +64,29 @@ const corsOptions = {
 };
 
 // ── Security headers ─────────────────────────────────────────────────────────
+// CSP configuré pour autoriser :
+//   - scripts inline (tous les HTML utilisent <script> inline)
+//   - Google Fonts (CSS + polices)
+//   - images HTTPS (produits, avatars, banners)
+//   - connect-src self (fetch API)
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'self'"],
+      scriptSrc:   ["'self'", "'unsafe-inline'"],
+      styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc:     ["'self'", "https://fonts.gstatic.com", "data:"],
+      imgSrc:      ["'self'", "data:", "https:", "http:"],
+      connectSrc:  ["'self'"],
+      mediaSrc:    ["'self'"],
+      objectSrc:   ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri:     ["'self'"],
+      formAction:  ["'self'"],
+    },
+  },
+}));
 
 app.use(cors(corsOptions));
 
@@ -137,7 +159,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '8.8',
+      version:       '9.2',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -393,7 +415,7 @@ async function seedRelais() {
 
 fixAdminHash().then(() => fixMissingSchema()).then(() => seedProducts()).then(() => seedRelais()).then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`KOMERCE API v9.0 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — migrations OK`);
+    console.log(`KOMERCE API v9.2 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — CSP fixed — migrations OK`);
   });
 
   process.on('SIGTERM', () => {
