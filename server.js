@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v9.0 (sécurisé)
+ * KOMERCE — Serveur API v9.1 (sécurisé)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v9.1 : BUG-014 cookie-parser ajouté — JWT migré vers httpOnly cookie
  * Changelog v8.8 : migration robuste (try/catch individuel) + CREATE TABLE partners + gen_random_uuid
  * Changelog v8.7 : auto-migration customs_history colonnes + loyalty_tiers table + users.loyalty_tier_id
  * Changelog v8.6 : auto-migration bcrypt admin hash · fix P0 dashboard + scans · fix 404 routes
@@ -19,6 +20,7 @@ require('dotenv').config();
 const express    = require('express');
 const cors       = require('cors');
 const helmet     = require('helmet');
+const cookieParser = require('cookie-parser');
 const path       = require('path');
 const db         = require('./db');
 
@@ -70,6 +72,10 @@ app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ── Cookie parser (BUG-014 : JWT httpOnly cookie) ────────────────────────────
+
+app.use(cookieParser());
 
 // ── Rate limiting (middleware/rate-limit.js) ─────────────────────────────────
 

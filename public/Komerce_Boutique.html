@@ -1565,15 +1565,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─── API Helpers ──────────────────────────────────────────────────────────────
 async function apiFetch(url, opts = {}) {
   try {
-    const token = localStorage.getItem('komerce_token');
+    const token = localStorage.getItem('komerce_logged_in'); // BUG-014: flag only
     const headers = { 'Content-Type': 'application/json', ...opts.headers };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    // BUG-014: Authorization via httpOnly cookie (automatic)
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(API_BASE + url, { ...opts, headers, signal: controller.signal });
+    const res = await fetch(API_BASE + url, { ...opts, credentials: 'include', headers, signal: controller.signal }); // BUG-014
     clearTimeout(timeout);
     if (res.status === 401) {
-      localStorage.removeItem('komerce_token');
+      localStorage.removeItem('komerce_logged_in'); // BUG-014
       showToast('Session expirée, veuillez réessayer');
       return null;
     }
@@ -1726,14 +1726,14 @@ async function doLogin() {
   errEl.style.display = 'none';
 
   try {
-    const res = await fetch(API_BASE + '/auth/login', {
+    const res = await fetch(API_BASE + '/auth/login', { credentials: 'include',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
     if (res.ok && data.token) {
-      localStorage.setItem('komerce_token', data.token);
+      localStorage.setItem('komerce_logged_in', '1'); // BUG-014: JWT in httpOnly cookie
       if (data.user) localStorage.setItem('komerce_user', JSON.stringify(data.user));
       showToast('Connecté ! ✅');
       document.getElementById('authModal')?.remove();
@@ -1777,7 +1777,7 @@ async function doRegister() {
   errEl.style.display = 'none';
 
   try {
-    const res = await fetch(API_BASE + '/auth/register', {
+    const res = await fetch(API_BASE + '/auth/register', { credentials: 'include',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, phone, address: address || undefined })
@@ -1786,18 +1786,18 @@ async function doRegister() {
     if (res.ok && (data.token || data.user)) {
       // Si le register retourne un token, on l'utilise directement
       if (data.token) {
-        localStorage.setItem('komerce_token', data.token);
+        localStorage.setItem('komerce_logged_in', '1'); // BUG-014: JWT in httpOnly cookie
         if (data.user) localStorage.setItem('komerce_user', JSON.stringify(data.user));
       } else {
         // Sinon, auto-login
-        const loginRes = await fetch(API_BASE + '/auth/login', {
+        const loginRes = await fetch(API_BASE + '/auth/login', { credentials: 'include',
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
         const loginData = await loginRes.json();
         if (loginRes.ok && loginData.token) {
-          localStorage.setItem('komerce_token', loginData.token);
+          localStorage.setItem('komerce_logged_in', '1'); // BUG-014
           if (loginData.user) localStorage.setItem('komerce_user', JSON.stringify(loginData.user));
         }
       }
@@ -1818,7 +1818,7 @@ async function doRegister() {
 }
 
 function isLoggedIn() {
-  return !!localStorage.getItem('komerce_token');
+  return !!localStorage.getItem('komerce_logged_in') // BUG-014;
 }
 
 function getCurrentUser() {
@@ -1826,8 +1826,9 @@ function getCurrentUser() {
 }
 
 function logout() {
-  localStorage.removeItem('komerce_token');
+  localStorage.removeItem('komerce_logged_in'); // BUG-014
   localStorage.removeItem('komerce_user');
+  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {}); // BUG-014
   showToast('Déconnecté');
 }
 
@@ -2073,7 +2074,7 @@ function openProductModal(id) {
 
   const imgEl = document.getElementById('modalImg');
   if (p.image_url) {
-    imgEl.innerHTML = `<img src="${p.image_url}" alt="${esc(p.name)}">`;
+    imgEl.innerHTML = `<img src="${esc(p.image_url)}" alt="${esc(p.name)}">`;
   } else {
     imgEl.innerHTML = p.emoji || '📦';
   }
@@ -2090,7 +2091,7 @@ function openProductModal(id) {
     const productUrl = location.origin + location.pathname + '?product=' + p.id;
     shareBtn.onclick = () => {
       if (navigator.share) {
-        navigator.share({ title: p.name, text: `${p.name} sur Komerce — ${fmtKmf(p.price_kmf)}`, url: productUrl });
+        navigator.share({ title: p.name, text: `${esc(p.name)} sur Komerce — ${fmtKmf(p.price_kmf)}`, url: productUrl });
       } else {
         navigator.clipboard.writeText(productUrl).then(() => showToast('Lien copié ! 📋')).catch(() => showToast('Lien : ' + productUrl));
       }
@@ -2149,7 +2150,7 @@ function quickAdd(id, btn) {
   const p = productsCache[id];
   if (!p) return;
   addToCart(p, 1);
-  showToast(`${p.emoji || '📦'} ${p.name} ajouté !`);
+  showToast(`${p.emoji || '📦'} ${esc(p.name)} ajouté !`);
   // Animation ✓ sur le bouton
   if (btn) {
     btn.innerHTML = '✓ Ajouté !';
@@ -2664,7 +2665,7 @@ async function submitCheckout() {
   localStorage.setItem('komerce_orders', JSON.stringify(orders));
   
   // Envoyer la commande au backend avec le bon format API
-  const token = localStorage.getItem('komerce_token');
+  const token = localStorage.getItem('komerce_logged_in'); // BUG-014: flag only
   const apiPayload = {
     items: cart.map(i => ({
       product_id: typeof i.id === 'string' && i.id.startsWith('p') ? parseInt(i.id.slice(1)) : parseInt(i.id),
@@ -2679,11 +2680,11 @@ async function submitCheckout() {
   };
 
   try {
-    const apiRes = await fetch(API_BASE + '/orders', {
+    const apiRes = await fetch(API_BASE + '/orders', { credentials: 'include',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? 'Bearer ' + token : ''
+        // Authorization handled by httpOnly cookie
       },
       body: JSON.stringify(apiPayload)
     });
@@ -2986,7 +2987,7 @@ async function searchOrder() {
       body: JSON.stringify({ phone }),
     });
     if (data?.token) {
-      localStorage.setItem('komerce_token', data.token);
+      localStorage.setItem('komerce_logged_in', '1'); // BUG-014: JWT in httpOnly cookie
       const orders = await apiFetch('/orders');
       if (orders?.length) {
         renderTrackingResult(orders);
@@ -3142,7 +3143,7 @@ function openLegalPage(page) {
   const legal = LEGAL_PAGES[page];
   if (!legal) return;
   document.getElementById('legal-title').textContent = legal.title;
-  document.getElementById('legal-content').innerHTML = legal.content;
+  document.getElementById('legal-content').textContent = legal.content;  // BUG-011 fix: textContent prevents XSS
   // Hide all sections, show legal
   document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
   document.getElementById('legal-page').style.display = 'block';

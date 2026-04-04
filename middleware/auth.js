@@ -1,7 +1,7 @@
 /**
  * KOMERCE — Middleware d'authentification JWT (sécurisé)
  *
- * authenticate       : vérifie le token Bearer, injecte req.user
+ * authenticate       : vérifie le token (httpOnly cookie OU Bearer), injecte req.user
  * requireRole(roles) : vérifie que l'utilisateur a le bon rôle
  * requireAdmin       : raccourci pour requireRole(['admin'])
  *
@@ -9,7 +9,9 @@
  *   router.get('/admin', authenticate, requireAdmin, handler)
  *   router.get('/hub',   authenticate, requireRole(['admin','agent_hub']), handler)
  *
- * Corrections v8.1 :
+ * Corrections v9.1 :
+ *   - BUG-014 : JWT lu depuis cookie httpOnly en priorité (plus sûr que localStorage)
+ *   - Fallback Bearer header conservé pour compatibilité API externe / mobile
  *   - JWT algorithm verrouillé à HS256 (empêche alg:none / RS256 confusion)
  *   - maxAge 24h en double protection
  *   - Cache mémoire user (TTL 5min) pour réduire les requêtes DB
@@ -45,17 +47,38 @@ function setCachedUser(userId, user) {
 }
 
 /**
- * Vérifie le token JWT dans le header Authorization: Bearer <token>
+ * Extrait le token JWT depuis :
+ *   1. Cookie httpOnly `kmrc_jwt` (prioritaire — BUG-014 fix)
+ *   2. Header Authorization: Bearer <token> (fallback API / mobile)
+ *
+ * @returns {string|null} Le token JWT ou null
+ */
+function extractToken(req) {
+  // 1. Cookie httpOnly (prioritaire)
+  if (req.cookies && req.cookies.kmrc_jwt) {
+    return req.cookies.kmrc_jwt;
+  }
+
+  // 2. Fallback : header Authorization: Bearer <token>
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    return header.split(' ')[1];
+  }
+
+  return null;
+}
+
+/**
+ * Vérifie le token JWT (cookie ou Bearer header).
  * Injecte req.user si valide.
  */
 async function authenticate(req, res, next) {
   try {
-    const header = req.headers.authorization;
-    if (!header || !header.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token manquant — Authorization: Bearer <token>' });
-    }
+    const token = extractToken(req);
 
-    const token   = header.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token manquant — connectez-vous' });
+    }
 
     // ← P0 FIX : verrouiller l'algorithme + maxAge
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
