@@ -236,7 +236,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ────────────────────────────────────────
    5. PRODUCT CATALOGUE
    ──────────────────────────────────────── */
-#catalogue { padding: 60px 0; }
+#catalogue { padding: 60px 0;   scroll-margin-top: 140px;
+}
 .carousel-wrapper { position: relative; }
 .carousel-track {
   display: flex; gap: 20px; overflow-x: auto; scroll-behavior: smooth;
@@ -748,6 +749,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   top: 63px;
   z-index: 899;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-bottom: 0;
 }
 .cat-scroll {
   max-width: 1200px;
@@ -1431,38 +1433,6 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 </div>
 
 <!-- ========================================
-     CATEGORY NAVIGATION (image-first)
-     ======================================== -->
-<div id="cat-nav">
-  <div class="cat-scroll">
-    <button class="cat-pill active" data-cat="all">
-      <span class="cat-icon cg-all">🛍️</span>
-      <span class="cat-label">Tout</span>
-    </button>
-    <button class="cat-pill" data-cat="electronics">
-      <span class="cat-icon cg-electronics">📱</span>
-      <span class="cat-label">Électronique</span>
-    </button>
-    <button class="cat-pill" data-cat="home">
-      <span class="cat-icon cg-home">🏡</span>
-      <span class="cat-label">Maison</span>
-    </button>
-    <button class="cat-pill" data-cat="wedding">
-      <span class="cat-icon cg-wedding">💍</span>
-      <span class="cat-label">Mariage</span>
-    </button>
-    <button class="cat-pill" data-cat="fashion">
-      <span class="cat-icon cg-fashion">👗</span>
-      <span class="cat-label">Mode</span>
-    </button>
-    <button class="cat-pill" data-cat="services">
-      <span class="cat-icon cg-services">✨</span>
-      <span class="cat-label">Beauté</span>
-    </button>
-  </div>
-</div>
-
-<!-- ========================================
      3. HERO SPLIT
      ======================================== -->
 <!-- PROMO TOP-BAR -->
@@ -1525,6 +1495,41 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <!-- ========================================
      5. PRODUCT CATALOGUE
      ======================================== -->
+<!-- ========================================
+     CATEGORY NAVIGATION (image-first)
+     ======================================== -->
+<!-- ========================================
+     CATEGORY NAVIGATION (image-first)
+     ======================================== -->
+<div id="cat-nav">
+  <div class="cat-scroll">
+    <button class="cat-pill active" data-cat="all">
+      <span class="cat-icon cg-all">🛍️</span>
+      <span class="cat-label">Tout</span>
+    </button>
+    <button class="cat-pill" data-cat="electronics">
+      <span class="cat-icon cg-electronics">📱</span>
+      <span class="cat-label">Électronique</span>
+    </button>
+    <button class="cat-pill" data-cat="home">
+      <span class="cat-icon cg-home">🏡</span>
+      <span class="cat-label">Maison</span>
+    </button>
+    <button class="cat-pill" data-cat="wedding">
+      <span class="cat-icon cg-wedding">💍</span>
+      <span class="cat-label">Mariage</span>
+    </button>
+    <button class="cat-pill" data-cat="fashion">
+      <span class="cat-icon cg-fashion">👗</span>
+      <span class="cat-label">Mode</span>
+    </button>
+    <button class="cat-pill" data-cat="services">
+      <span class="cat-icon cg-services">✨</span>
+      <span class="cat-label">Beauté</span>
+    </button>
+  </div>
+</div>
+
 <section id="catalogue">
   <div class="container">
     <h2 class="section-title">📦 Notre Catalogue</h2>
