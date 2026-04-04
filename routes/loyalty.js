@@ -41,6 +41,25 @@ router.get('/users', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// ── GET /api/loyalty/stats — admin : KPIs fidélité (attendu par le frontend) ──
+router.get('/stats', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { rows: tiers } = await db.query(
+      'SELECT id, label, badge, min_orders, discount_pct FROM loyalty_tiers ORDER BY min_orders ASC'
+    );
+    const { rows: users } = await db.query('SELECT * FROM v_loyalty_summary');
+    const total_clients = users.length;
+    const tier_distribution = {};
+    for (const u of users) {
+      const t = u.tier_label || 'Aucun';
+      tier_distribution[t] = (tier_distribution[t] || 0) + 1;
+    }
+    res.json({ tiers, total_clients, tier_distribution, users });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── PUT /api/loyalty/tiers/:id — admin : modifier un palier ────────────────────
 router.put('/tiers/:id', authenticate, requireAdmin, async (req, res) => {
   const { label, badge, min_orders, discount_pct } = req.body;

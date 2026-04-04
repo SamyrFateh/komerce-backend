@@ -17,6 +17,32 @@ const { sendSMS } = require('../utils/sms');
 
 const { getRates } = require('../utils/rates');
 
+// GET /api/baskets — lister les paniers (admin: tous, client: les siens)
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const isAdmin = req.user.role === 'admin';
+    const baseQuery = `
+      SELECT b.*,
+             u.full_name AS owner_name,
+             COUNT(bi.id) AS item_count,
+             COALESCE(SUM(bi.price_kmf * bi.quantity), 0) AS total_kmf
+      FROM baskets b
+      LEFT JOIN users u ON u.id = b.owner_id
+      LEFT JOIN basket_items bi ON bi.basket_id = b.id
+      ${isAdmin ? '' : 'WHERE b.owner_id = $1'}
+      GROUP BY b.id, u.full_name
+      ORDER BY b.created_at DESC
+    `;
+    const { rows } = isAdmin
+      ? await db.query(baseQuery)
+      : await db.query(baseQuery, [req.user.id]);
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erreur liste paniers' });
+  }
+});
+
 // POST /api/baskets/share
 router.post('/share', async (req, res) => {
   try {
