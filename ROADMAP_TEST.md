@@ -173,7 +173,7 @@
 
 ## Phase 7 — 🐛 Correction des 14 bugs identifiés (Audit du 4 avril 2026)
 
-> **Mise à jour 4 avril 2026** : Phase 7A et 7B appliquées. Voir commits pour détails.
+> **Mise à jour 4 avril 2026** : Phase 7A, 7B et 7C entièrement appliquées. 14/14 bugs résolus ✅
 
 > Voir rapport complet: `AUDIT_BUGS.md`
 
@@ -201,10 +201,10 @@
 | BUG-001 | Localhost hardcodé | `Komerce_Admin.html:715` | URL relative `/api` | 1 min | ✅ |
 | BUG-005 | DIV/0 évolution cmd | `routes/dashboard.js:329` | Guard `nbCmdPrev > 0` | 2 min | ✅ |
 | BUG-006 | DIV/0 forecast | `routes/dashboard.js:647` | Guard `nbDays > 0` | 2 min | ✅ |
-| BUG-014 | JWT dans localStorage | Tous les HTML | Migration httpOnly cookies | 30 min | ⬜ |
+| BUG-014 | JWT dans localStorage | Tous les HTML + komerce-api.js | Migration httpOnly cookies + credentials: include | 30 min | ✅ |
 
 **Temps total estimé : ~1h05**  
-**Priorité : 7A avant tout test, 7B avant prod, 7C quand on a le temps**
+**✅ Toutes les phases 7A, 7B, 7C sont complètes — 14/14 bugs résolus**
 
 ---
 
