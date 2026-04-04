@@ -1466,65 +1466,6 @@ function removeFromCart(productId) {
   renderCartBody();
 }
 
-/* ── Amazon-Komores: ouvre le drawer et highlight le produit ajouté ── */
-function openCartWithHighlight(productId) {
-  renderCartBody();
-  $('cart-overlay').classList.add('open');
-  $('cart-drawer').classList.add('open');
-  document.body.style.overflow = 'hidden';
-
-  /* Flash header gold */
-  var header = document.querySelector('.cart-header');
-  header.classList.add('success-flash');
-  setTimeout(function() { header.classList.remove('success-flash'); }, 1600);
-
-  /* Highlight l'article ajouté */
-  setTimeout(function() {
-    var items = document.querySelectorAll('#cart-body .cart-item');
-    items.forEach(function(el) {
-      if (el.dataset.pid === String(productId)) {
-        el.classList.add('just-added');
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        setTimeout(function() { el.classList.remove('just-added'); }, 2800);
-      }
-    });
-  }, 60);
-}
-
-function setQty(productId, qty) {
-  if (qty < 1) { removeFromCart(productId); return; }
-  var item = _cart.find(function(i) { return i.product.id === productId; });
-  if (item) item.qty = qty;
-  saveCart();
-  renderCartBody();
-}
-
-function saveCart() {
-  localStorage.setItem('kmrc_cart', JSON.stringify(_cart));
-  refreshCartBadge();
-}
-
-function refreshCartBadge() {
-  var badge = $('cart-count');
-  var q = cartQty();
-  if (q > 0) {
-    badge.textContent = q;
-    badge.classList.remove('hidden');
-    badge.classList.remove('bump');
-    void badge.offsetWidth;
-    badge.classList.add('bump');
-  } else {
-    badge.classList.add('hidden');
-  }
-  $('cart-header-title').textContent = 'Mon Panier (' + q + ')';
-}
-
-function openCart() {
-  renderCartBody();
-  $('cart-overlay').classList.add('open');
-  $('cart-drawer').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
 
 function openCartWithHighlight(productId) {
   renderCartBody(productId);
