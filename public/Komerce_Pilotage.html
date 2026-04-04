@@ -471,6 +471,15 @@ td.phase-cell {
 </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <header class="app-header">
   <div class="app-logo">Ko<span>merce</span> // <span style="color:var(--teal2)">Pilotage</span></div>
@@ -483,7 +492,7 @@ td.phase-cell {
 
   <!-- Bloc login -->
   <div id="pil-login-block" style="display:flex;align-items:center;gap:6px;">
-    <input type="email" id="pil-auth-email" placeholder="Email admin" value="ilham@komerce.km"
+    <input type="email" id="pil-auth-email" placeholder="Email admin" value="admin@komerce.km"
       style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);
              font-size:0.78rem;padding:6px 10px;outline:none;width:170px;">
     <input type="password" id="pil-auth-password" placeholder="Mot de passe"

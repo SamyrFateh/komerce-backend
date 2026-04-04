@@ -611,6 +611,15 @@
   </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
 <header class="site-header">
@@ -627,7 +636,7 @@
 
   <!-- Login admin -->
   <div id="auth-login-block" style="display:flex;align-items:center;gap:6px;">
-    <input type="email" id="auth-email" placeholder="Email admin" value="ilham@komerce.km"
+    <input type="email" id="auth-email" placeholder="Email admin" value="admin@komerce.km"
       style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);
              font-size:0.78rem;padding:6px 10px;outline:none;width:160px;">
     <input type="password" id="auth-password" placeholder="Mot de passe"

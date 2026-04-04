@@ -235,9 +235,18 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <!-- ══ ÉCRAN DE CONNEXION ═══════════════════════════════════════════════════ -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <div class="login-card">
     <div class="login-logo">
       <span>Komerce<sup>ADMIN</sup></span>
@@ -245,7 +254,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
     </div>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="login-email" value="ilham@komerce.km" />
+      <input type="email" id="login-email" value="admin@komerce.km" />
     </div>
     <div class="form-group">
       <label>Mot de passe</label>
@@ -1116,7 +1125,7 @@ let _token = localStorage.getItem('kmrc_token') || null;
 let _salesPeriod = 30;
 
 // Adapter apiFetch pour utiliser la même base API que le Backoffice
-function doLogin() {
+async function doLogin() {
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const errEl    = document.getElementById('login-error');
@@ -1192,7 +1201,7 @@ function refreshCurrent() {
 
 // ── API CALLS ─────────────────────────────────────────────────────────────────
 
-function apiFetch(path) {
+async function apiFetch(path) {
   const res = await fetch(API + path, {
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || _token) }
   });
@@ -1228,7 +1237,7 @@ function startClock() {
 
 // ── PILOTAGE ──────────────────────────────────────────────────────────────────
 
-function loadOps() {
+async function loadOps() {
   const el = document.getElementById('ops-content');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
@@ -1440,7 +1449,7 @@ function toggleDetail(id) {
 
 // ── VENTES ────────────────────────────────────────────────────────────────────
 
-function loadSales(period) {
+async function loadSales(period) {
   _salesPeriod = period;
   const el = document.getElementById('sales-content');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -1614,7 +1623,7 @@ function loadSales(period) {
 
 // ── RETARDS ───────────────────────────────────────────────────────────────────
 
-function loadRetards(niveau) {
+async function loadRetards(niveau) {
   const el = document.getElementById('retards-content');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
@@ -1677,7 +1686,7 @@ function initForecastForm() {
   document.getElementById('fc-from').value = firstDay.toISOString().split('T')[0];
 }
 
-function loadForecast() {
+async function loadForecast() {
   const el = document.getElementById('forecast-content');
   const target = document.getElementById('fc-target').value;
   const period = document.getElementById('fc-period').value;

@@ -440,6 +440,15 @@
   </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <!-- TOP BAR -->
 <div class="top-bar">

@@ -1481,6 +1481,15 @@ td.phase-cell {
 </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <!-- ===== UNIFIED LOGIN ===== -->
 <div id="uni-login">
@@ -3472,7 +3481,7 @@ initForecastForm();
 <!-- Login admin -->
 <div id="auth-login-block" style="display:flex;align-items:center;gap:6px;">
 <input id="auth-email" placeholder="Email admin" style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);
-             font-size:0.78rem;padding:6px 10px;outline:none;width:160px;" type="email" value="ilham@komerce.km"/>
+             font-size:0.78rem;padding:6px 10px;outline:none;width:160px;" type="email" value="admin@komerce.km"/>
 <input id="auth-password" onkeydown="if(event.key==='Enter') doSimLogin()" placeholder="Mot de passe" style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);
              font-size:0.78rem;padding:6px 10px;outline:none;width:130px;" type="password"/>
 <button onclick="doSimLogin()" style="background:#0d9488;color:#fff;border:none;border-radius:7px;

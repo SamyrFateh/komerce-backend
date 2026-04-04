@@ -813,6 +813,15 @@ tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
 <div id="toast-container"></div>

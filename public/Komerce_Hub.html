@@ -312,9 +312,18 @@ tr:hover { background: var(--bg3); }
 </style>
 </head>
 <body>
+<script>
+// ── Komerce Auth Guard ──
+(function(){
+  if(!localStorage.getItem('komerce_token')){
+    window.location.replace('/portal.html');
+  }
+})();
+</script>
+
 
 <!-- ── Login Overlay ── -->
-<div class="login-overlay" id="loginOverlay">
+<div class="login-overlay" style="display:none" id="loginOverlay">
   <div class="login-card">
     <div class="login-logo">
       <h1>🏭 Komerce Hub</h1>
