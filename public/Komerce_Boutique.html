@@ -78,10 +78,6 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-@keyframes cartToastProgress {
-  from { width: 100%; }
-  to { width: 0%; }
-}
 @keyframes cartBounce {
   0%,100% { transform: scale(1); }
   30% { transform: scale(1.35) rotate(-8deg); }
@@ -466,7 +462,40 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   display: flex; gap: 12px; padding: 14px 0;
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.3s;
+  transition: background 0.3s, border 0.3s;
+  position: relative;
 }
+/* ── Amazon-Komores drawer highlight ── */
+.cart-item.just-added {
+  background: #fffbeb;
+  border-radius: 10px;
+  border: none;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  padding-left: 12px; padding-right: 12px;
+}
+.cart-item.just-added::before {
+  content: '✨ Ajouté';
+  position: absolute; top: -11px; right: 12px;
+  background: var(--accent); color: var(--dark);
+  font-size: 0.68rem; font-weight: 700;
+  padding: 2px 9px; border-radius: 10px;
+  letter-spacing: 0.3px;
+}
+.cart-header {
+  transition: background 0.5s;
+}
+.cart-header.success-flash {
+  background: linear-gradient(135deg, #92400e, #d97706, var(--accent)) !important;
+}
+.cart-continue-shop {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 9px 16px; margin-bottom: 14px;
+  background: var(--bg); border: 2px solid var(--border);
+  border-radius: var(--radius); font-weight: 600; font-size: 0.85rem;
+  color: var(--text); cursor: pointer; transition: background 0.2s, border-color 0.2s;
+}
+.cart-continue-shop:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
 .cart-item-emoji {
   width: 52px; height: 52px; background: var(--primary-light);
   border-radius: 8px; display: flex; align-items: center; justify-content: center;
@@ -527,16 +556,13 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .modal-box {
   background: var(--white); border-radius: 14px;
   max-width: 560px; width: 100%; max-height: 90vh;
-  overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+  overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
   animation: fadeInUp 0.35s;
   display: flex; flex-direction: column;
 }
-/* ✅ FIX: header sticky dans le modal */
 .modal-header {
-  position: sticky; top: 0; z-index: 10;
-  background: var(--white);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 24px;
+  padding: 18px 24px; flex-shrink: 0;
   border-bottom: 1px solid var(--border);
   font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.1rem;
   border-radius: 14px 14px 0 0;
@@ -549,7 +575,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 .modal-close:hover { background: var(--border); transform: scale(1.1); }
-.modal-body { padding: 24px; }
+.modal-body { padding: 24px; flex: 1; overflow-y: auto; }
 
 /* ────────────────────────────────────────
    PRODUCT DETAIL MODAL
@@ -654,43 +680,39 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .toast.success { border-left: 4px solid var(--green); }
 .toast.error { border-left: 4px solid var(--red); }
 .toast.info { border-left: 4px solid var(--accent); }
+
+/* ── Panier : version Africaine 🌍 ── */
+@keyframes newItemSlide {
+  from { transform: translateX(-16px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.cart-item.new-item {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(90deg, #fffbeb 0%, var(--white) 55%);
+  border-radius: 0 8px 8px 0;
+  animation: newItemSlide 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.new-item-badge {
+  background: var(--accent); color: var(--dark);
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.3px;
+  padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+  vertical-align: middle; display: inline-block;
+}
+.cart-header.celebrating {
+  background: linear-gradient(135deg, #15803d, #d97706) !important;
+}
+.cart-ctas { display: flex; flex-direction: column; gap: 10px; }
+.btn-continue {
+  width: 100%; padding: 11px; border-radius: var(--radius);
+  background: transparent; color: var(--primary);
+  font-weight: 700; font-size: 0.92rem;
+  border: 2px solid var(--primary-light);
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-continue:hover { background: var(--primary-light); border-color: var(--primary); }
+
 .toast-icon { font-size: 1.2rem; }
 
-/* ── Cart-specific toast ── */
-.cart-toast {
-  padding: 0; overflow: hidden; min-width: 300px;
-  flex-direction: column; align-items: stretch; gap: 0;
-  border-left: none; border-top: 4px solid var(--green);
-  cursor: pointer;
-}
-.cart-toast-inner {
-  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-}
-.cart-toast-thumb {
-  width: 48px; height: 48px; border-radius: 8px;
-  background: var(--primary-light);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.6rem; flex-shrink: 0; overflow: hidden;
-}
-.cart-toast-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-.cart-toast-text { flex: 1; min-width: 0; }
-.cart-toast-name {
-  font-weight: 700; font-size: 0.9rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.cart-toast-sub { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
-.cart-toast-cta {
-  background: var(--primary); color: var(--white);
-  padding: 7px 14px; border-radius: 8px;
-  font-size: 0.82rem; font-weight: 700;
-  white-space: nowrap; flex-shrink: 0;
-  transition: background 0.2s;
-}
-.cart-toast-cta:hover { background: var(--primary-dark); }
-.cart-toast-bar {
-  height: 3px; background: var(--green);
-  animation: cartToastProgress 3.2s linear forwards;
-}
 
 /* ────────────────────────────────────────
    RESPONSIVE
@@ -904,7 +926,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="cart-footer" id="cart-footer" style="display:none;">
     <div class="cart-total"><span>Total</span><span id="cart-total-val">0 KMF</span></div>
     <div class="cart-total-conv" id="cart-total-conv"></div>
-    <button class="btn-checkout" onclick="checkoutCart()">Commander →</button>
+    <div class="cart-ctas">
+      <button class="btn-continue" onclick="closeCart()">← Continuer mes achats</button>
+      <button class="btn-checkout" onclick="checkoutCart()">Commander →</button>
+    </div>
   </div>
 </aside>
 
@@ -1024,79 +1049,7 @@ function toast(msg, type) {
   }, 3000);
 }
 
-/* ── Toast panier enrichi ── */
-function cartToast(product, qty) {
-  var c = $('toast-container');
-  var t = document.createElement('div');
-  t.className = 'toast cart-toast';
-  t.title = 'Voir le panier';
 
-  /* Inner */
-  var inner = document.createElement('div');
-  inner.className = 'cart-toast-inner';
-
-  /* Thumb */
-  var thumb = document.createElement('div');
-  thumb.className = 'cart-toast-thumb';
-  if (product.image_url) {
-    var img = document.createElement('img');
-    img.src = product.image_url;
-    img.alt = '';
-    thumb.appendChild(img);
-  } else {
-    thumb.textContent = productEmoji(product);
-  }
-  inner.appendChild(thumb);
-
-  /* Text */
-  var textWrap = document.createElement('div');
-  textWrap.className = 'cart-toast-text';
-  var nameEl = document.createElement('div');
-  nameEl.className = 'cart-toast-name';
-  nameEl.textContent = product.name || 'Produit';
-  var subEl = document.createElement('div');
-  subEl.className = 'cart-toast-sub';
-  subEl.textContent = fmt(product.price_kmf || 0, 'KMF') + (qty > 1 ? ' × ' + qty : '') + ' · Ajouté ✓';
-  textWrap.appendChild(nameEl);
-  textWrap.appendChild(subEl);
-  inner.appendChild(textWrap);
-
-  /* CTA */
-  var cta = document.createElement('button');
-  cta.className = 'cart-toast-cta';
-  cta.textContent = 'Panier 🛒';
-  cta.addEventListener('click', function(e) {
-    e.stopPropagation();
-    openCart();
-    dismissToast(t);
-  });
-  inner.appendChild(cta);
-  t.appendChild(inner);
-
-  /* Progress bar */
-  var bar = document.createElement('div');
-  bar.className = 'cart-toast-bar';
-  t.appendChild(bar);
-
-  /* Click whole toast → open cart */
-  t.addEventListener('click', function() {
-    openCart();
-    dismissToast(t);
-  });
-
-  c.appendChild(t);
-
-  var timer = setTimeout(function() { dismissToast(t); }, 3200);
-  t._timer = timer;
-}
-
-function dismissToast(t) {
-  if (t._timer) clearTimeout(t._timer);
-  t.style.opacity = '0';
-  t.style.transform = 'translateX(48px)';
-  t.style.transition = 'opacity 0.3s, transform 0.3s';
-  setTimeout(function() { if (t.parentNode) t.remove(); }, 350);
-}
 
 /* ── Fly-to-cart animation ── */
 function flyToCart(sourceEl, product) {
@@ -1497,21 +1450,45 @@ function addToCart(product, qty, btn) {
   }
   saveCart();
 
-  /* Fly + feedback bouton */
+  /* Feedback bouton */
   if (btn) {
-    flyToCart(btn, product);
     var orig = btn.textContent;
     btnAddedFeedback(btn, orig);
   }
 
-  /* Toast enrichi */
-  cartToast(product, qty);
+  /* Drawer Amazon-Komores */
+  openCartWithHighlight(product.id);
 }
 
 function removeFromCart(productId) {
   _cart = _cart.filter(function(i) { return i.product.id !== productId; });
   saveCart();
   renderCartBody();
+}
+
+/* ── Amazon-Komores: ouvre le drawer et highlight le produit ajouté ── */
+function openCartWithHighlight(productId) {
+  renderCartBody();
+  $('cart-overlay').classList.add('open');
+  $('cart-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  /* Flash header gold */
+  var header = document.querySelector('.cart-header');
+  header.classList.add('success-flash');
+  setTimeout(function() { header.classList.remove('success-flash'); }, 1600);
+
+  /* Highlight l'article ajouté */
+  setTimeout(function() {
+    var items = document.querySelectorAll('#cart-body .cart-item');
+    items.forEach(function(el) {
+      if (el.dataset.pid === String(productId)) {
+        el.classList.add('just-added');
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(function() { el.classList.remove('just-added'); }, 2800);
+      }
+    });
+  }, 60);
 }
 
 function setQty(productId, qty) {
@@ -1549,13 +1526,34 @@ function openCart() {
   document.body.style.overflow = 'hidden';
 }
 
+function openCartWithHighlight(productId) {
+  renderCartBody(productId);
+  var header = document.querySelector('.cart-header');
+  var titleEl = $('cart-header-title');
+  if (header && titleEl) {
+    header.classList.add('celebrating');
+    titleEl.textContent = '🎊 C\'est dans le panier !';
+    setTimeout(function() {
+      header.classList.remove('celebrating');
+      titleEl.textContent = 'Mon Panier (' + cartQty() + ')';
+    }, 2400);
+  }
+  $('cart-overlay').classList.add('open');
+  $('cart-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(function() {
+    var newItem = document.querySelector('.cart-item.new-item');
+    if (newItem) newItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 120);
+}
+
 function closeCart() {
   $('cart-overlay').classList.remove('open');
   $('cart-drawer').classList.remove('open');
   document.body.style.overflow = '';
 }
 
-function renderCartBody() {
+function renderCartBody(highlightId) {
   var body = $('cart-body');
   var footer = $('cart-footer');
   body.innerHTML = '';
@@ -1575,9 +1573,18 @@ function renderCartBody() {
     return;
   }
 
+  /* Bouton "Continuer mes achats" façon Amazon */
+  var continueBtn = document.createElement('button');
+  continueBtn.className = 'cart-continue-shop';
+  continueBtn.innerHTML = '← Continuer mes achats';
+  continueBtn.addEventListener('click', closeCart);
+  body.appendChild(continueBtn);
+
   _cart.forEach(function(item) {
     var row = document.createElement('div');
     row.className = 'cart-item';
+    row.dataset.pid = String(item.product.id);
+    if (highlightId && item.product.id === highlightId) row.classList.add('new-item');
 
     var emojiBox = document.createElement('div');
     emojiBox.className = 'cart-item-emoji';
@@ -1598,6 +1605,12 @@ function renderCartBody() {
     var name = document.createElement('div');
     name.className = 'cart-item-name';
     name.textContent = item.product.name || 'Produit';
+    if (highlightId && item.product.id === highlightId) {
+      var badge = document.createElement('span');
+      badge.className = 'new-item-badge';
+      badge.textContent = '✨ Ajouté';
+      name.appendChild(badge);
+    }
     info.appendChild(name);
 
     var price = document.createElement('div');
