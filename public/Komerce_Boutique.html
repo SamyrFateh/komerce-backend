@@ -963,7 +963,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
      ======================================== -->
 <script>
 /* ── State ── */
-let _cart = JSON.parse(localStorage.getItem('kmrc_cart') || '[]');
+let _cart;
+try { _cart = JSON.parse(localStorage.getItem('kmrc_cart') || '[]'); }
+catch(e) { console.warn('Cart data corrupted, resetting:', e); _cart = []; localStorage.removeItem('kmrc_cart'); }
 let _products = [];
 let _relais = [];
 let _rates = { EUR: 495, KMF: 1 };
@@ -1215,6 +1217,7 @@ function renderProducts(list) {
 
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
+    addBtn.setAttribute('data-product-id', p.id);
     addBtn.textContent = '🛒 Ajouter';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
