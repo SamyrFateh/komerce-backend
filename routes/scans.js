@@ -115,7 +115,7 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'scan_code et step sont requis' });
     }
 
-    const validSteps = ['preparation', 'hub_preparation', 'shipped', 'relais_received', 'collected'];
+    const validSteps = ['preparation', 'shipped', 'relais_received', 'collected'];
     if (!validSteps.includes(step)) {
       return res.status(400).json({ error: `step invalide. Valeurs acceptées : ${validSteps.join(', ')}` });
     }
@@ -516,6 +516,13 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
 router.get('/:order_id', authenticate, requireRole(['admin']), async (req, res) => {
   try {
+    // Valider le format UUID pour éviter un crash PostgreSQL
+    // si le paramètre est un mot (ex: "prepare", "collect")
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(req.params.order_id)) {
+      return res.status(400).json({ error: 'order_id invalide — UUID attendu' });
+    }
+
     const { rows } = await db.query(
       `SELECT s.*, u.full_name AS scanned_by_name
        FROM scans s
