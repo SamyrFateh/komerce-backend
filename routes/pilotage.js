@@ -238,7 +238,8 @@ router.get('/', async (req, res) => {
         fret_kmf,
         douane_kmf,
         distrib_kmf,
-        prix_vente_kmf: Math.round(parseFloat(p.ca_produit_kmf) / qte),
+        // BUG-003 fix: fallback (qte || 1) pour éviter division par zéro
+        prix_vente_kmf: Math.round(parseFloat(p.ca_produit_kmf) / (qte || 1)),
       });
     }
 

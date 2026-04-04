@@ -393,11 +393,11 @@ router.get('/sales', async (req, res) => {
         SUM(oi.quantity) AS qty_vendue,
         SUM(oi.price_kmf * oi.quantity) AS revenue_kmf,
         CASE WHEN SUM(CASE WHEN o.cost_real_kmf IS NOT NULL THEN 1 ELSE 0 END) > 0
-          THEN ROUND(SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, 0)))
+          THEN ROUND(SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)))
           ELSE NULL
         END AS marge_kmf,
         CASE WHEN SUM(oi.price_kmf * oi.quantity) > 0
-          THEN ROUND(100.0 * SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)) / SUM(oi.price_kmf * oi.quantity), 1)
+          THEN ROUND(100.0 * SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)) / NULLIF(SUM(oi.price_kmf * oi.quantity), 0), 1)
           ELSE NULL
         END AS taux_marge_pct
       FROM orders o
@@ -441,9 +441,12 @@ router.get('/sales', async (req, res) => {
       FROM orders
     `, [period]);
 
-    const nbClients   = Number(clients.total_clients) || 1;
+    // BUG-004 fix: guard explicite pour nbClients=0 (base vide ou après reset)
+    const nbClients   = Number(clients.total_clients);
     const nbRecurrents = Number(clients.clients_recurrents);
-    const tauxReachat = (nbRecurrents / nbClients * 100).toFixed(1) + '%';
+    const tauxReachat = nbClients > 0
+      ? (nbRecurrents / nbClients * 100).toFixed(1) + '%'
+      : '0%';
 
     // LTV moyen : CA total / nb clients uniques
     const { rows: [ltv] } = await db.query(`
