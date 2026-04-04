@@ -542,6 +542,14 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 .btn-checkout:hover { background: var(--primary-dark); }
 .btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-clear {
+  width: 100%; padding: 11px; border-radius: var(--radius);
+  background: transparent; color: var(--red);
+  font-weight: 700; font-size: 0.88rem;
+  border: 2px solid #fecaca;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-clear:hover { background: #fef2f2; border-color: var(--red); }
 
 /* ────────────────────────────────────────
    MODAL BASE
@@ -801,7 +809,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <div class="nav-links">
       <a href="#how-it-works">🌟 Situations</a>
       <a href="#catalogue">📦 Catalogue</a>
-      <button class="cart-btn" onclick="openCart()" aria-label="Ouvrir le panier">
+      <button class="cart-btn" id="nav-cart-btn" aria-label="Ouvrir le panier">
         <img src="/images/avatar_panier.png" class="cart-avatar" width="42" height="42" alt="Panier">
         <span id="cart-count" class="hidden">0</span>
       </button>
@@ -818,7 +826,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <h1 class="hero-title">Tout ce que vous voulez,<br><span class="hero-accent">livré aux Comores</span></h1>
     <div class="hero-search">
       <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit">
-      <button type="button" onclick="heroSearch()">Rechercher</button>
+      <button type="button" id="hero-search-btn">Rechercher</button>
     </div>
   </div>
   <div class="hero-right">
@@ -844,14 +852,14 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="container">
     <h2 class="section-title">📦 Notre Catalogue</h2>
     <div class="carousel-wrapper">
-      <button class="carousel-btn prev" onclick="scrollCarousel(-1)" aria-label="Précédent">‹</button>
+      <button class="carousel-btn prev" id="carousel-prev-btn" aria-label="Précédent">‹</button>
       <div class="carousel-track" id="product-track">
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
       </div>
-      <button class="carousel-btn next" onclick="scrollCarousel(1)" aria-label="Suivant">›</button>
+      <button class="carousel-btn next" id="carousel-next-btn" aria-label="Suivant">›</button>
     </div>
   </div>
 </section>
@@ -896,7 +904,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <div class="tracking-box">
       <div class="tracking-form">
         <input type="text" id="tracking-input" placeholder="Référence de commande (ex: KMR-XXXXXX)" aria-label="Référence de commande">
-        <button type="button" onclick="searchTracking()">Suivre</button>
+        <button type="button" id="tracking-search-btn">Suivre</button>
       </div>
       <div id="tracking-result"></div>
     </div>
@@ -944,11 +952,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 </footer>
 
 <!-- CART OVERLAY & DRAWER -->
-<div id="cart-overlay" onclick="closeCart()"></div>
+<div id="cart-overlay"></div>
 <aside id="cart-drawer" aria-label="Panier">
   <div class="cart-header">
     <span id="cart-header-title">Mon Panier (0)</span>
-    <button class="cart-close" onclick="closeCart()" aria-label="Fermer le panier">✕</button>
+    <button class="cart-close" id="cart-close-btn" aria-label="Fermer le panier">✕</button>
   </div>
   <div class="cart-body" id="cart-body">
     <div class="cart-empty">
@@ -960,8 +968,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <div class="cart-total"><span>Total</span><span id="cart-total-val">0 KMF</span></div>
     <div class="cart-total-conv" id="cart-total-conv"></div>
     <div class="cart-ctas">
-      <button class="btn-continue" onclick="closeCart()">← Continuer mes achats</button>
-      <button class="btn-checkout" onclick="checkoutCart()">Commander →</button>
+      <button class="btn-continue" id="footer-continue-btn">← Continuer mes achats</button>
+      <button class="btn-clear" id="footer-clear-btn">🗑️ Vider le panier</button>
+      <button class="btn-checkout" id="footer-checkout-btn">Commander →</button>
     </div>
   </div>
 </aside>
@@ -971,7 +980,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="modal-box">
     <div class="modal-header">
       <span>Détail du produit</span>
-      <button class="modal-close" onclick="closeProductModal()" aria-label="Fermer">✕</button>
+      <button class="modal-close" id="product-modal-close" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body" id="product-modal-body"></div>
   </div>
@@ -982,7 +991,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="modal-box">
     <div class="modal-header">
       <span id="order-modal-title">Commander</span>
-      <button class="modal-close" onclick="closeOrderModal()" aria-label="Fermer">✕</button>
+      <button class="modal-close" id="order-modal-close" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body" id="order-modal-body"></div>
   </div>
@@ -997,8 +1006,23 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <script>
 /* ── State ── */
 let _cart;
-try { _cart = JSON.parse(localStorage.getItem('kmrc_cart') || '[]'); }
-catch(e) { console.warn('Cart data corrupted, resetting:', e); _cart = []; localStorage.removeItem('kmrc_cart'); }
+var CART_VERSION = 2;
+try {
+  var savedVersion = parseInt(localStorage.getItem('kmrc_cart_v') || '0', 10);
+  if (savedVersion < CART_VERSION) {
+    console.info('Cart version upgrade ' + savedVersion + ' → ' + CART_VERSION + ', clearing old data');
+    _cart = [];
+    localStorage.removeItem('kmrc_cart');
+    localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
+  } else {
+    _cart = JSON.parse(localStorage.getItem('kmrc_cart') || '[]');
+  }
+} catch(e) {
+  console.warn('Cart data corrupted, resetting:', e);
+  _cart = [];
+  localStorage.removeItem('kmrc_cart');
+  localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
+}
 let _products = [];
 let _relais = [];
 let _rates = { EUR: 495, KMF: 1 };
@@ -1535,6 +1559,7 @@ function updateCartBadges() {
 function saveCart() {
   try {
     localStorage.setItem('kmrc_cart', JSON.stringify(_cart));
+    localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
   } catch (e) {
     console.warn('saveCart: localStorage indisponible', e);
   }
@@ -1544,7 +1569,7 @@ function saveCart() {
 
 function addToCart(product, qty, btn) {
   qty = qty || 1;
-  var existing = _cart.find(function(i) { return i.product.id === product.id; });
+  var existing = _cart.find(function(i) { return String(i.product.id) === String(product.id); });
   if (existing) {
     existing.qty += qty;
   } else {
@@ -1570,21 +1595,25 @@ function addToCart(product, qty, btn) {
 }
 
 function removeFromCart(productId) {
-  _cart = _cart.filter(function(i) { return i.product.id !== productId; });
+  var pid = String(productId);
+  _cart = _cart.filter(function(i) { return String(i.product.id) !== pid; });
   saveCart();
   renderCartBody();
 }
 
 function setQty(productId, newQty) {
+  var pid = String(productId);
   if (newQty < 1) {
-    removeFromCart(productId);
+    removeFromCart(pid);
     return;
   }
-  var item = _cart.find(function(i) { return i.product.id === productId; });
+  var item = _cart.find(function(i) { return String(i.product.id) === pid; });
   if (item) {
     item.qty = newQty;
     saveCart();
     renderCartBody();
+  } else {
+    console.warn('setQty: product not found, id=', pid);
   }
 }
 
@@ -2141,12 +2170,47 @@ async function searchTracking() {
 /* ──────────────────────────────────────
    INIT
    ────────────────────────────────────── */
+/* ── Clear entire cart ── */
+function clearCart() {
+  if (!confirm('Vider tout le panier ?')) return;
+  _cart = [];
+  saveCart();
+  renderCartBody();
+  toast('Panier vidé', 'info');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadProducts();
   loadRelais();
   refreshCartBadge();
   initPromoBar();
   initHeroSearch();
+
+  /* Wire footer buttons via addEventListener (CSP-safe, no inline onclick) */
+  var omClose = document.getElementById('order-modal-close');
+  if (omClose) omClose.addEventListener('click', function() { closeOrderModal(); });
+  var pmClose = document.getElementById('product-modal-close');
+  if (pmClose) pmClose.addEventListener('click', function() { closeProductModal(); });
+  var cartCloseBtn = document.getElementById('cart-close-btn');
+  if (cartCloseBtn) cartCloseBtn.addEventListener('click', function() { closeCart(); });
+  var cartOverlay = document.getElementById('cart-overlay');
+  if (cartOverlay) cartOverlay.addEventListener('click', function() { closeCart(); });
+  var trackBtn = document.getElementById('tracking-search-btn');
+  if (trackBtn) trackBtn.addEventListener('click', function() { searchTracking(); });
+  var heroBtn = document.getElementById('hero-search-btn');
+  if (heroBtn) heroBtn.addEventListener('click', function() { heroSearch(); });
+  var prevBtn = document.getElementById('carousel-prev-btn');
+  if (prevBtn) prevBtn.addEventListener('click', function() { scrollCarousel(-1); });
+  var nextBtn = document.getElementById('carousel-next-btn');
+  if (nextBtn) nextBtn.addEventListener('click', function() { scrollCarousel(1); });
+  var navCartBtn = document.getElementById('nav-cart-btn');
+  if (navCartBtn) navCartBtn.addEventListener('click', function() { openCart(); });
+  var fcBtn = document.getElementById('footer-continue-btn');
+  if (fcBtn) fcBtn.addEventListener('click', function() { closeCart(); });
+  var fclBtn = document.getElementById('footer-clear-btn');
+  if (fclBtn) fclBtn.addEventListener('click', function() { clearCart(); });
+  var fcoBtn = document.getElementById('footer-checkout-btn');
+  if (fcoBtn) fcoBtn.addEventListener('click', function() { checkoutCart(); });
 
   $('product-modal').addEventListener('click', function(e) {
     if (e.target === $('product-modal')) closeProductModal();
