@@ -19,6 +19,7 @@ Câbler la Boutique pour que les commandes arrivent en DB → les dashboards se 
 - Les seeds s'exécutent au démarrage (INSERT IF NOT EXISTS)
 - **Routes concernées** : GET /api/products, GET /api/relais
 - **Commit** : `7894ad2`
+- **Fix colonnes** : `4482bd2` (price_kmf, price_eur, emoji, badge, is_active corrigés)
 - **Status** : ✅ Fait
 
 ### 🔲 Étape 2 — Boutique : charger vrais produits depuis l'API
