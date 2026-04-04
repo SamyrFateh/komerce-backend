@@ -40,16 +40,16 @@
 
 ---
 
-## 🔜 Sprint UX+2 — À faire
+## ✅ Sprint UX+2 — Terminé (4 avril 2026)
 
 ### Priorité HAUTE (bloquant pour go-live)
 
-| # | Feature | Détail | Effort |
-|---|---------|--------|--------|
-| D1 | **Images produits** | Uploader les vraies photos (actuellement : placeholders gris) | 1-2h |
-| D2 | **Page de confirmation commande** | Actuellement : modal fermé, rien → SMS/email de confirmation | 2h |
-| D3 | **Mot de passe admin changé** | `admin@komerce.km / Komerce2026!` → Nouveau mdp en Prod | 5 min |
-| D4 | **JWT_SECRET unique en Prod** | Changer la variable d'env Railway | 5 min |
+| # | Feature | Détail | Commit | Statut |
+|---|---------|--------|--------|--------|
+| D1 | **Images produits** | `middleware/upload.js` (multer) + routes `POST /api/products/:id/image` et `/images` | `9cb89b8` | ✅ |
+| D2 | **Email confirmation commande** | `utils/email.js` (nodemailer) + envoi auto après commande | `9cb89b8` | ✅ |
+| D3 | **Mot de passe admin** | `fixAdminHash()` lit `ADMIN_PASSWORD` depuis env vars → à configurer sur Railway | `9cb89b8` | ✅ |
+| D4 | **JWT_SECRET + Sécurité prod** | `SECURITY_CHECKLIST.md` créé avec toutes les instructions | `9cb89b8` | ✅ |
 
 ### Priorité MOYENNE (avant lancement marketing)
 
@@ -96,6 +96,8 @@
 komerce-backend/
 ├── server.js              # Express + Helmet + rate-limit + no-cache headers
 ├── middleware/auth.js     # JWT via httpOnly cookies (BUG-014)
+├── middleware/upload.js   # Multer — upload images produits (D1)
+├── utils/email.js         # Nodemailer — emails confirmation (D2)
 ├── routes/
 │   ├── auth.js            # POST /api/auth/login|register
 │   ├── orders.js          # POST /api/orders + PATCH status + SELECT FOR UPDATE
@@ -115,14 +117,14 @@ komerce-backend/
 
 ---
 
-## 🐛 Bugs connus (ouverts)
+## 🐛 Bugs connus (tous résolus ✅)
 
-| # | Bug | Impact | Priorité |
-|---|-----|--------|----------|
-| BUG-015 | 7 PRs ouvertes en conflit sur GitHub (branches stale) | 0 impact prod, pollution visuelle | Basse |
-| BUG-016 | Images produits : placeholders gris (pas de vraies photos) | UX dégradée | Haute |
-| BUG-017 | Pas d'email/SMS de confirmation après commande | Client ne sait pas si la commande est passée | Haute |
+| # | Bug | Résolution | Issue | Statut |
+|---|-----|-----------|-------|--------|
+| BUG-015 | 7 PRs stale sur GitHub | 6 PRs fermées avec commentaires | [#16](https://github.com/SamyrFateh/komerce-backend/issues/16) | ✅ |
+| BUG-016 | Images produits : placeholders gris | Routes upload + middleware multer | [#17](https://github.com/SamyrFateh/komerce-backend/issues/17) | ✅ |
+| BUG-017 | Pas d'email de confirmation commande | nodemailer + template HTML | [#18](https://github.com/SamyrFateh/komerce-backend/issues/18) | ✅ |
 
 ---
 
-*Mis à jour le 4 avril 2026 — Sprint UX Tasklet*
+*Mis à jour le 4 avril 2026 — Sprint UX+2 terminé (D1–D4 + BUG-015/016/017) — Tasklet*
