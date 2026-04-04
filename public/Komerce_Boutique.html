@@ -542,6 +542,16 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 .btn-checkout:hover { background: var(--primary-dark); }
 .btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-whatsapp {
+  width: 100%; padding: 14px; border-radius: var(--radius);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: var(--white); font-weight: 700; font-size: 1.05rem;
+  transition: filter 0.2s, transform 0.15s; display: flex;
+  align-items: center; justify-content: center; gap: 8px;
+  margin-top: 8px; box-shadow: 0 4px 14px rgba(245,158,11,0.25);
+}
+.btn-whatsapp:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-whatsapp:active { transform: translateY(0); }
 .btn-clear {
   width: 100%; padding: 11px; border-radius: var(--radius);
   background: transparent; color: var(--red);
@@ -1279,6 +1289,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       <button class="btn-continue" id="footer-continue-btn">← Continuer mes achats</button>
       <button class="btn-clear" id="footer-clear-btn">🗑️ Vider le panier</button>
       <button class="btn-checkout" id="footer-checkout-btn">Commander →</button>
+      <button class="btn-whatsapp" id="footer-whatsapp-btn">📲 Partager via WhatsApp</button>
     </div>
   </div>
 </aside>
@@ -2171,6 +2182,38 @@ async function loadRelais() {
 }
 
 /* ──────────────────────────────────────
+   SHARE CART VIA WHATSAPP
+   ────────────────────────────────────── */
+function shareCartWhatsApp() {
+  if (_cart.length === 0) { toast('Votre panier est vide.', 'error'); return; }
+
+  var lines = [];
+  lines.push('🛒 *Mon panier Komerce*');
+  lines.push('━━━━━━━━━━━━━━━━');
+  lines.push('');
+
+  _cart.forEach(function(item, idx) {
+    var name = item.product.name || 'Produit';
+    var priceKMF = (item.product.price_kmf || 0) * item.qty;
+    var line = (idx + 1) + '. ' + name;
+    if (item.qty > 1) line += ' x' + item.qty;
+    line += ' — ' + fmt(priceKMF, 'KMF');
+    lines.push(line);
+  });
+
+  lines.push('');
+  lines.push('━━━━━━━━━━━━━━━━');
+  lines.push('💰 *Total : ' + fmt(cartTotal(), 'KMF') + '* (≈ ' + fmt(cartTotal(), 'EUR') + ')');
+  lines.push('📦 Livraison incluse · 3-5 semaines');
+  lines.push('');
+  lines.push('👉 Commande sur : ' + window.location.origin + window.location.pathname);
+
+  var msg = lines.join('\n');
+  var url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+
+/* ──────────────────────────────────────
    ORDER FORM — SINGLE PAGE CHECKOUT
    ────────────────────────────────────── */
 var _orderData = {};
@@ -2695,6 +2738,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (fclBtn) fclBtn.addEventListener('click', function() { clearCart(); });
   var fcoBtn = document.getElementById('footer-checkout-btn');
   if (fcoBtn) fcoBtn.addEventListener('click', function() { checkoutCart(); });
+  var fwaBtn = document.getElementById('footer-whatsapp-btn');
+  if (fwaBtn) fwaBtn.addEventListener('click', function() { shareCartWhatsApp(); });
 
   $('product-modal').addEventListener('click', function(e) {
     if (e.target === $('product-modal')) closeProductModal();
