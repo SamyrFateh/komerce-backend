@@ -1127,7 +1127,7 @@ let selectedRelaisId = localStorage.getItem('komerce_relais_id') || '';
 let selectedRelaisName = localStorage.getItem('komerce_relais_name') || '';
 let relaisList = [];
 let refreshTimer = null;
-let countdown = 30;
+let countdown = 15;
 let receptionScanner = null;
 let collectScanner = null;
 let currentQrUrl = '';
@@ -1495,13 +1495,13 @@ function populateTopbarRelaisSelect() {
 // ── Auto-refresh with countdown ──
 function startAutoRefresh() {
   stopTimers();
-  countdown = 30;
+  countdown = 15;
   updateCountdown();
   refreshTimer = setInterval(() => {
     countdown--;
     updateCountdown();
     if (countdown <= 0) {
-      countdown = 30;
+      countdown = 15;
       refreshAll();
     }
   }, 1000);

@@ -505,7 +505,7 @@ let token = localStorage.getItem('komerce_token') || '';
 let currentUser = null;
 let refreshInterval = null;
 let countdownInterval = null;
-let countdown = 30;
+let countdown = 15;
 let scannerInstance = null;
 let scannerRunning = false;
 let allOrders = [];
@@ -630,13 +630,13 @@ function renderUserInfo() {
 
 /* ─── Auto-refresh ─── */
 function startAutoRefresh() {
-  countdown = 30;
+  countdown = 15;
   updateCountdown();
   countdownInterval = setInterval(() => {
     countdown--;
     updateCountdown();
     if (countdown <= 0) {
-      countdown = 30;
+      countdown = 15;
       loadAllData();
     }
   }, 1000);

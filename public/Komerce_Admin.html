@@ -45,6 +45,10 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 .tb-right{display:flex;align-items:center;gap:10px}
 .tb-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);background:var(--bg3);padding:5px 12px;border-radius:100px;border:1px solid var(--ln)}
 .tb-pill.live{color:var(--grn)}
+
+@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+#live-indicator { animation: livePulse 2s ease-in-out infinite; }
+
 .content{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent}
 
 /* SCREENS */
@@ -306,7 +310,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <div class="tb-title" id="tb-title">Tableau de bord</div>
       <div class="tb-right">
         <span id="topbar-time" style="font-size:.72rem;color:var(--ink3);opacity:.8;margin-right:.5rem;font-family:monospace;"></span>
-        <div class="tb-pill live">&#9679; Live
+        <div class="tb-pill live" id="live-indicator">🔴 LIVE <span id="live-countdown" style="font-size:10px;opacity:.7;margin-left:4px;"></span>
       <button class="btn-logout" onclick="doLogout()" style="margin-left:.5rem;">Déconnexion</button>
     </div>
         <div class="tb-pill">&#127462;&#127466; 1 AED = 139 KMF</div>
@@ -1787,6 +1791,25 @@ async function loadForecast() {
 }
 
 initForecastForm();
+
+
+
+// ── AUTO-REFRESH 15s ──────────────────────────────────────────────────────────
+(function() {
+  let _refreshCountdown = 15;
+  const countdownEl = document.getElementById('live-countdown');
+  
+  setInterval(() => {
+    _refreshCountdown--;
+    if (countdownEl) countdownEl.textContent = '(' + _refreshCountdown + 's)';
+    if (_refreshCountdown <= 0) {
+      _refreshCountdown = 15;
+      try { refreshCurrent(); } catch(e) { console.warn('Auto-refresh error:', e); }
+    }
+  }, 1000);
+  
+  console.log('[Komerce Admin] Auto-refresh activé (15s)');
+})();
 
 </script>
 

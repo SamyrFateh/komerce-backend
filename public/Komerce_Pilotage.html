@@ -468,6 +468,7 @@ td.phase-cell {
 .perf-badge.ok  { background:rgba(5,150,105,0.1);color:var(--green); }
 .perf-badge.warn{ background:rgba(217,119,6,0.1); color:var(--amber); }
 .perf-badge.red { background:rgba(220,38,38,0.1); color:var(--red);   }
+@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 </style>
 </head>
 <body>
@@ -481,9 +482,10 @@ td.phase-cell {
 </script>
 
 
-<header class="app-header">
+<header class="app-header" style="position:relative;">
   <div class="app-logo">Ko<span>merce</span> // <span style="color:var(--teal2)">Pilotage</span></div>
   <div class="app-meta">COÛTS & MARGES · v5 · MARS 2026</div>
+  <div id="live-indicator" style="position:absolute;top:12px;right:20px;display:flex;align-items:center;gap:6px;background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;color:#ef4444;animation:livePulse 2s ease-in-out infinite;">🔴 LIVE <span id="live-countdown" style="font-size:10px;opacity:.7;"></span></div>
 </header>
 
 <!-- ── BARRE CONNEXION JWT ──────────────────────────────────────────────────── -->
@@ -3622,6 +3624,32 @@ function renderInvendus(d) {
     })
     .catch(() => { pEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Erreur chargement pipeline</div>'; });
 }
+
+
+
+// ── AUTO-REFRESH 15s ──────────────────────────────────────────────────────────
+(function() {
+  let _refreshCountdown = 15;
+  const countdownEl = document.getElementById('live-countdown');
+  
+  setInterval(() => {
+    _refreshCountdown--;
+    if (countdownEl) countdownEl.textContent = '(' + _refreshCountdown + 's)';
+    if (_refreshCountdown <= 0) {
+      _refreshCountdown = 15;
+      try {
+        // Refresh live data if we have a token (connected to API)
+        if (typeof _pilToken !== 'undefined' && _pilToken) {
+          loadLiveData();
+        } else if (typeof refreshDashboard === 'function') {
+          refreshDashboard();
+        }
+      } catch(e) { console.warn('Auto-refresh error:', e); }
+    }
+  }, 1000);
+  
+  console.log('[Komerce Pilotage] Auto-refresh activé (15s)');
+})();
 
 </script>
 </body>
