@@ -1239,8 +1239,13 @@ function flyToCart(sourceEl, product) {
       }, 200);
 
       var badge = document.getElementById('cart-count');
-    if (badge) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
-  }, 1100);
+      if (badge) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+    }
+  }
+
+  setTimeout(function() {
+    requestAnimationFrame(animateArc);
+  }, 350);
 }
 
 /* ── Feedback bouton ── */
