@@ -240,6 +240,83 @@ router.put('/me', authenticate, async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/guest-checkout (public — frontend checkout) ──────────────
+// Crée ou retrouve un utilisateur par téléphone pour le checkout invité.
+// Pas de clé interne requise, mais rate-limité par IP (5 req / 15 min).
+
+const _guestCheckoutAttempts = new Map(); // IP → { count, resetAt }
+
+function guestCheckoutRateLimit(req, res, next) {
+  const ip  = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const now = Date.now();
+  const WIN = 15 * 60 * 1000; // 15 min
+  const MAX = 5;
+
+  let entry = _guestCheckoutAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + WIN };
+  }
+
+  entry.count++;
+  _guestCheckoutAttempts.set(ip, entry);
+
+  if (entry.count > MAX) {
+    return res.status(429).json({
+      error: 'Trop de tentatives. Réessayez dans 15 minutes.',
+    });
+  }
+  next();
+}
+
+router.post('/guest-checkout', guestCheckoutRateLimit, async (req, res) => {
+  try {
+    const {
+      full_name,
+      phone,
+      email,
+      country = 'KM',
+    } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ error: 'Téléphone obligatoire' });
+    }
+
+    // Chercher un utilisateur existant par téléphone
+    const { rows: existing } = await db.query(
+      'SELECT * FROM users WHERE phone = $1 LIMIT 1',
+      [phone]
+    );
+
+    if (existing.length) {
+      // Utilisateur existant : générer JWT + cookie
+      const user = existing[0];
+      const token = generateToken(user);
+      setAuthCookie(res, token);
+      return res.json({ token, user: userResponse(user), created: false });
+    }
+
+    // Créer un nouveau compte client — mot de passe aléatoire (inutilisable directement)
+    const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
+    const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
+
+    const { rows: [user] } = await db.query(
+      `INSERT INTO users
+         (full_name, email, phone, password_hash, role, country, currency_pref)
+       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF')
+       RETURNING *`,
+      [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
+    );
+
+    const token = generateToken(user);
+    setAuthCookie(res, token);
+    res.status(201).json({ token, user: userResponse(user), created: true });
+
+  } catch (err) {
+    console.error('Guest-checkout error:', err.message);
+    res.status(500).json({ error: 'Erreur création automatique de compte' });
+  }
+});
+
 // ─── POST /api/auth/auto-register (usage interne uniquement) ─────────────────
 // Crée silencieusement un compte avec email généré depuis le téléphone
 // si l'utilisateur n'a pas encore de compte.

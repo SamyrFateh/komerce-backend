@@ -1440,6 +1440,27 @@ function closeProductModal() {
 function cartQty() { return _cart.reduce(function(s, i) { return s + i.qty; }, 0); }
 function cartTotal() { return _cart.reduce(function(s, i) { return s + (i.product.price_kmf || 0) * i.qty; }, 0); }
 
+function refreshCartBadge() {
+  var badge = $('cart-count');
+  if (!badge) return;
+  var count = cartQty();
+  badge.textContent = count;
+  if (count > 0) {
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function saveCart() {
+  try {
+    localStorage.setItem('kmrc_cart', JSON.stringify(_cart));
+  } catch (e) {
+    console.warn('saveCart: localStorage indisponible', e);
+  }
+  refreshCartBadge();
+}
+
 function addToCart(product, qty, btn) {
   qty = qty || 1;
   var existing = _cart.find(function(i) { return i.product.id === product.id; });
@@ -1448,6 +1469,13 @@ function addToCart(product, qty, btn) {
   } else {
     _cart.push({ product: product, qty: qty });
   }
+
+  /* Animation fly-to-cart */
+  if (typeof flyToCart === 'function') {
+    var addBtns = document.querySelectorAll('[data-product-id="' + product.id + '"]');
+    if (addBtns.length) flyToCart(addBtns[0], product);
+  }
+
   saveCart();
 
   /* Feedback bouton */
@@ -1466,6 +1494,18 @@ function removeFromCart(productId) {
   renderCartBody();
 }
 
+function setQty(productId, newQty) {
+  if (newQty < 1) {
+    removeFromCart(productId);
+    return;
+  }
+  var item = _cart.find(function(i) { return i.product.id === productId; });
+  if (item) {
+    item.qty = newQty;
+    saveCart();
+    renderCartBody();
+  }
+}
 
 function openCartWithHighlight(productId) {
   renderCartBody(productId);
@@ -1492,6 +1532,14 @@ function closeCart() {
   $('cart-overlay').classList.remove('open');
   $('cart-drawer').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function openCart() {
+  renderCartBody();
+  $('cart-header-title').textContent = 'Mon Panier (' + cartQty() + ')';
+  $('cart-overlay').classList.add('open');
+  $('cart-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function renderCartBody(highlightId) {
@@ -1614,7 +1662,7 @@ function renderCartBody(highlightId) {
    ────────────────────────────────────── */
 async function loadRelais() {
   try {
-    var data = await apiGet('/api/relais');
+    var data = await apiGet('/api/relais/public');
     _relais = data.relais || data || [];
   } catch (e) {
     console.error('loadRelais:', e);
@@ -1848,7 +1896,7 @@ function renderOrderStep3(body) {
   radioGroup.className = 'of-radio-group';
   var modes = [
     { v: 'cash_relais', t: '🏪 Paiement au relais' },
-    { v: 'card', t: '💳 Carte bancaire' }
+    { v: 'stripe_eur', t: '💳 Carte bancaire (€)' }
   ];
   modes.forEach(function(m) {
     var opt = document.createElement('div');
@@ -1884,14 +1932,14 @@ async function submitOrder(btn) {
   btn.disabled = true;
   btn.textContent = 'Envoi en cours…';
   try {
-    await apiPost('/api/auth/auto-register', {
+    await apiPost('/api/auth/guest-checkout', {
       full_name: _orderData.full_name,
       phone: _orderData.phone,
       email: _orderData.email || undefined,
       country: _orderData.country
     });
     var items = _cart.map(function(i) {
-      return { product_id: i.product.id, quantity: i.qty, confection_type: 'aucun' };
+      return { product_id: String(i.product.id), quantity: i.qty, confection_type: 'aucun' };
     });
     var orderPayload = {
       items: items,
@@ -1950,13 +1998,14 @@ function renderOrderSuccess(result) {
    TRACKING
    ────────────────────────────────────── */
 var TRACKING_STEPS = [
-  { key: 'ordered', label: 'Commande reçue', icon: '📋' },
+  { key: 'confirmed', label: 'Commande confirmée', icon: '📋' },
+  { key: 'paid', label: 'Paiement reçu', icon: '💳' },
   { key: 'purchasing', label: 'Achat en cours', icon: '🛒' },
   { key: 'preparation', label: 'Préparation', icon: '📦' },
   { key: 'shipped', label: 'Expédié', icon: '✈️' },
-  { key: 'transit', label: 'En transit', icon: '🚚' },
+  { key: 'transit_comores', label: 'Arrivé aux Comores', icon: '🚚' },
   { key: 'available', label: 'Disponible au relais', icon: '🏪' },
-  { key: 'delivered', label: 'Livré', icon: '✅' }
+  { key: 'collected', label: 'Remis au client', icon: '✅' }
 ];
 
 async function searchTracking() {

@@ -24,6 +24,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Route publique — liste des relais actifs (pas d'auth requise)
+router.get('/public', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, name, zone, island, address, phone FROM relais WHERE is_active = TRUE ORDER BY island, zone, name'
+    );
+    res.json({ relais: rows });
+  } catch (err) {
+    console.error('GET /api/relais/public error:', err.message);
+    res.status(500).json({ error: 'Erreur chargement relais' });
+  }
+});
+
 // GET /api/relais/:id — détail d'un relais
 router.get('/:id', async (req, res) => {
   try {
