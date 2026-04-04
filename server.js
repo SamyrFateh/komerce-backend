@@ -4,6 +4,7 @@
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v8.9 : fix customs_history CREATE TABLE + ALTER colonnes manquantes → admin/customs 200
  * Changelog v8.8 : migration robuste (try/catch individuel) + CREATE TABLE partners + gen_random_uuid
  * Changelog v8.7 : auto-migration customs_history colonnes + loyalty_tiers table + users.loyalty_tier_id
  * Changelog v8.6 : auto-migration bcrypt admin hash · fix P0 dashboard + scans · fix 404 routes
@@ -131,7 +132,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '8.8',
+      version:       '8.9',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -235,9 +236,32 @@ async function fixMissingSchema() {
 
   console.log('🔧 Running schema migrations...');
 
-  // 1. customs_history — colonnes manquantes pour admin/customs
+  // 1. customs_history — table absente de schema.sql, requise par admin/customs + admin/alerts
+  //    CREATE TABLE d'abord (si table n'existe pas du tout),
+  //    puis ALTER TABLE pour chaque colonne (si table existait avec schéma partiel)
+  await run('customs_history table', `
+    CREATE TABLE IF NOT EXISTS customs_history (
+      id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      order_id              UUID,
+      customs_estimated_kmf INTEGER     DEFAULT 0,
+      customs_real_kmf      INTEGER     DEFAULT 0,
+      customs_delta_pct     NUMERIC(6,2) DEFAULT 0,
+      is_anomaly            BOOLEAN     NOT NULL DEFAULT FALSE,
+      notes                 TEXT,
+      customs_agent_id      UUID,
+      created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await run('customs_history.order_id',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS order_id UUID`);
   await run('customs_history.customs_estimated_kmf',
     `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_estimated_kmf INTEGER DEFAULT 0`);
+  await run('customs_history.customs_real_kmf',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_real_kmf INTEGER DEFAULT 0`);
+  await run('customs_history.customs_delta_pct',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_delta_pct NUMERIC(6,2) DEFAULT 0`);
+  await run('customs_history.is_anomaly',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS is_anomaly BOOLEAN DEFAULT FALSE`);
   await run('customs_history.notes',
     `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS notes TEXT`);
   await run('customs_history.customs_agent_id',
@@ -314,7 +338,7 @@ const PORT = process.env.PORT || 3000;
 
 fixAdminHash().then(() => fixMissingSchema()).then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`KOMERCE API v8.8 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — migrations OK`);
+    console.log(`KOMERCE API v8.9 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — migrations OK`);
   });
 
   process.on('SIGTERM', () => {
