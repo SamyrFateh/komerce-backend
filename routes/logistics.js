@@ -24,7 +24,7 @@ const adminOnly = [authenticate, requireRole(['admin'])];
 router.post('/shipments', ...adminOnly, async (req, res) => {
   try {
     const { carrier, container_ref, departed_at, eta, notes } = req.body;
-    const reference = generateShipmentRef();
+    const reference = await generateShipmentRef(db);
     const { rows } = await db.query(
       `INSERT INTO shipments (reference, carrier, container_ref, departed_at, eta, notes)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,

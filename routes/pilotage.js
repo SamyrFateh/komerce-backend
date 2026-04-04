@@ -21,6 +21,17 @@ const { authenticate, requireRole } = require('../middleware/auth');
 // Toutes les routes pilotage nécessitent authentification admin
 router.use(authenticate, requireRole(['admin']));
 
+// --- In-memory cache (TTL 30s) ---
+const _cache = new Map();
+function cached(key, ttlMs = 30000) {
+  const entry = _cache.get(key);
+  if (entry && Date.now() - entry.ts < ttlMs) return entry.data;
+  return null;
+}
+function setCache(key, data) {
+  _cache.set(key, { data, ts: Date.now() });
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const { getRates } = require('../utils/rates');
@@ -127,6 +138,14 @@ function calcCoutRevient(p, rates, douanePctOverride = TAUX_TERRAIN_DEFAULT) {
 router.get('/', async (req, res) => {
   try {
     const mois = req.query.mois || new Date().toISOString().slice(0, 7); // YYYY-MM
+    if (!/^\d{4}-\d{2}$/.test(mois)) {
+      return res.status(400).json({ error: 'Format mois invalide (YYYY-MM attendu)' });
+    }
+
+    const cacheKey = 'pilotage_snapshot_' + mois;
+    const hit = cached(cacheKey);
+    if (hit) return res.json(hit);
+
     const [annee, moisNum] = mois.split('-').map(Number);
 
     const debutMois = `${mois}-01`;
@@ -256,7 +275,7 @@ router.get('/', async (req, res) => {
     `);
 
     // ── Réponse finale ────────────────────────────────────────────────────────
-    res.json({
+    const result = {
       periode:      mois,
       genere_le:    new Date().toISOString(),
 
@@ -312,7 +331,9 @@ router.get('/', async (req, res) => {
 
       top_produits: topProduits,
       pipeline:     pipelineRows.map(r => ({ statut: r.status, nb: parseInt(r.nb) })),
-    });
+    };
+    setCache(cacheKey, result);
+    res.json(result);
 
   } catch (err) {
     console.error('Pilotage error:', err.message);
@@ -386,6 +407,10 @@ router.get('/history', async (req, res) => {
 
 router.get('/clients', async (req, res) => {
   try {
+    const cacheKey = `pilotage_clients_${req.query.debut || 'default'}_${req.query.fin || 'default'}_${req.query.top || '20'}`;
+    const hit = cached(cacheKey);
+    if (hit) return res.json(hit);
+
     const top    = Math.min(50, Math.max(1, parseInt(req.query.top) || 20));
     const debut  = req.query.debut || '2024-01-01';
     const fin    = req.query.fin   || new Date().toISOString().split('T')[0];
@@ -523,7 +548,7 @@ router.get('/clients', async (req, res) => {
       ORDER BY ca_kmf DESC
     `, [debut, finExcl]);
 
-    res.json({
+    const result = {
       periode:        { debut, fin },
       kpi: {
         nb_clients_actifs:   parseInt(kpi.nb_clients_actifs),
@@ -571,7 +596,9 @@ router.get('/clients', async (req, res) => {
         nb_clients:   parseInt(c.nb_clients),
         ca_kmf:       Math.round(parseFloat(c.ca_kmf)),
       })),
-    });
+    };
+    setCache(cacheKey, result);
+    res.json(result);
 
   } catch (err) {
     console.error('Pilotage clients error:', err.message);

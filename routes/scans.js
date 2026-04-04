@@ -301,7 +301,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), as
 // Réception hub via QR — délègue à POST /api/purchasing/:id/receive
 // Body : { qr_code?, po_id? }
 // [B7] receiveItem() n'existe pas → 501 explicite avec po_id résolu
-router.post('/hub/receive', requireAuth, async (req, res) => {
+router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res) => {
   const { qr_code, po_id } = req.body;
 
   try {
@@ -330,8 +330,8 @@ router.post('/hub/receive', requireAuth, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[scans/hub/receive] Erreur:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Scan error:', err.message);
+    res.status(500).json({ error: 'Erreur interne' });
   }
 });
 
@@ -339,7 +339,7 @@ router.post('/hub/receive', requireAuth, async (req, res) => {
 // Commandes en attente de réception hub
 // [B1] po.qty (pas po.quantity) | [B4] JOIN via product_suppliers
 // IMPORTANT : doit être AVANT /:order_id pour ne pas être capturé
-router.get('/hub/pending', requireAuth, async (req, res) => {
+router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res) => {
   try {
     const result = await db.query(
       `SELECT
@@ -373,8 +373,8 @@ router.get('/hub/pending', requireAuth, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[scans/hub/pending] Erreur:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Scan error:', err.message);
+    res.status(500).json({ error: 'Erreur interne' });
   }
 });
 

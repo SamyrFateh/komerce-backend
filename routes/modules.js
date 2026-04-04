@@ -430,8 +430,13 @@ router.post('/fabrics', authenticate, requireRole(['admin']), async (req, res) =
     if (!name)                return res.status(400).json({ error: 'name requis' });
     if (!price_per_meter_aed) return res.status(400).json({ error: 'price_per_meter_aed requis' });
 
+    const parsedPrice = parseFloat(price_per_meter_aed);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ error: 'price_per_meter_aed doit être un nombre positif' });
+    }
+
     const rates = await getRates();
-    const price_per_meter_kmf  = Math.round(parseFloat(price_per_meter_aed) * rates.aed_kmf);
+    const price_per_meter_kmf  = Math.round(parsedPrice * rates.aed_kmf);
     const price_per_yard_kmf   = Math.round(price_per_meter_kmf * 0.9144);
 
     const { rows: [fabric] } = await db.query(
@@ -444,7 +449,7 @@ router.post('/fabrics', authenticate, requireRole(['admin']), async (req, res) =
        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,TRUE,$12,TRUE)
        RETURNING *`,
       [
-        name, material || null, parseFloat(price_per_meter_aed),
+        name, material || null, parsedPrice,
         fabric_type || null, price_per_meter_kmf, price_per_yard_kmf,
         min_order_meters, stock_meters || null,
         colors, occasions, image_url || null,

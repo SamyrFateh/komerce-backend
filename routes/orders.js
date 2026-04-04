@@ -256,12 +256,20 @@ router.post('/', authenticate, async (req, res) => {
     let cost_estimated   = 0;
 
     for (const item of items) {
+      if (!item.product_id || typeof item.product_id !== 'string') {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'product_id invalide' });
+      }
       const product = productMap[item.product_id];
       if (!product) {
         await client.query('ROLLBACK');
         return res.status(404).json({ error: `Produit introuvable : ${item.product_id}` });
       }
-      const qty = item.quantity || 1;
+      const qty = parseInt(item.quantity) || 1;
+      if (qty < 1 || qty > 100) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: `Quantité invalide pour ${item.product_id}: min 1, max 100` });
+      }
       if (product.stock !== null && product.stock < qty) {
         await client.query('ROLLBACK');
         return res.status(409).json({
@@ -297,7 +305,7 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     const cash_ref_code = payment_mode === 'cash_relais'
-      ? (100000 + (randomBytes(3).readUIntBE(0, 3) % 900000)).toString()
+      ? randomBytes(8).toString('hex')  // 16 chars hex = 64 bits of entropy
       : null;
 
     // Code de retrait 6 caractères alphanumériques (crypto)
@@ -376,7 +384,7 @@ router.post('/', authenticate, async (req, res) => {
     // ── Créer les order_items ───────────────────────────────────────────────
     for (const item of items) {
       const product = productMap[item.product_id];
-      const qty     = item.quantity || 1;
+      const qty     = parseInt(item.quantity) || 1;
 
       await client.query(
         `INSERT INTO order_items (
@@ -595,9 +603,13 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
   try {
     const relais_id = req.user.relais_id;
 
-    const relaisFilter = (relais_id && req.user.role !== 'admin')
-      ? `AND o.relais_id = '${relais_id}'`  // sécurisé : UUID, pas d'injection possible
-      : '';
+    // Build relais filter safely — parameterized to prevent SQL injection
+    const params = [];
+    let relaisFilter = '';
+    if (relais_id && req.user.role !== 'admin') {
+      params.push(relais_id);
+      relaisFilter = `AND o.relais_id = $${params.length}`;
+    }
 
     // 10 règles de détection — chaque règle retourne des commandes avec problem_type
     const { rows } = await db.query(
@@ -690,7 +702,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
            OR (o.relais_id IS NULL AND o.status NOT IN ('draft', 'confirmed', 'cancelled', 'refunded'))
          )
        ORDER BY o.id, hours_since_last_event DESC`,
-      []
+      params
     );
 
     // Score santé global (0-100)
@@ -973,10 +985,21 @@ router.get('/:ref', async (req, res) => {
     );
 
     // Route publique — req.user est undefined sauf si le middleware authenticate est présent.
+    // TODO: Ajouter un middleware « soft-auth » (optionalAuthenticate) pour peupler req.user
+    //       sans bloquer la requête quand le token est absent/invalide.
     // cash_ref_code est masqué pour tous les accès publics (toujours false ici).
     // Les agents accèdent aux détails complets via GET /api/admin/orders.
     const isAdmin       = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
     const isRelaisAdmin = req.user && ['admin', 'agent_relais'].includes(req.user.role);
+
+    // If not authenticated, return minimal public data only
+    if (!req.user) {
+      return res.json({
+        reference: order.reference,
+        status: order.status,
+        created_at: order.created_at,
+      });
+    }
 
     res.json({
       id:                  order.id,
@@ -1000,9 +1023,11 @@ router.get('/:ref', async (req, res) => {
       available_at:          order.available_at,
       collected_at:          order.collected_at,
       created_at:            order.created_at,
-      // Traçabilité fournisseur (v7.6)
-      supplier_name:         order.supplier_name         || null,
-      supplier_invoice_url:  order.supplier_invoice_url  || null,
+      // Traçabilité fournisseur (v7.6) — admin seulement
+      ...(req.user?.role === 'admin' ? {
+        supplier_name:         order.supplier_name         || null,
+        supplier_invoice_url:  order.supplier_invoice_url  || null,
+      } : {}),
       items,
       relais: order.relais_name ? {
         name:    order.relais_name,

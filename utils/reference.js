@@ -1,51 +1,75 @@
 /**
- * KOMERCE — Générateurs de références uniques
+ * KOMERCE — Générateurs de références uniques (sécurisé)
+ *
+ * Corrections v8.1 :
+ *   - generateOrderRef()    → séquence DB (plus de collision)
+ *   - generateShipmentRef() → séquence DB (plus de collision)
+ *   - generateCashCode()    → crypto.randomInt (non prévisible)
+ *   - generatePickupCode()  → crypto.randomInt (non prévisible)
+ *   - generateBasketCode()  → crypto.randomBytes (non prévisible)
+ *
+ * PRÉREQUIS :
+ *   Exécuter migration-round2.sql pour créer les séquences :
+ *   CREATE SEQUENCE order_ref_seq START WITH 1 INCREMENT BY 1;
+ *   CREATE SEQUENCE shipment_ref_seq START WITH 1 INCREMENT BY 1;
  */
 
+const crypto = require('crypto');
+
 /**
- * Génère une référence commande : KOM-2026-XXXX
- * Le suffixe est un nombre aléatoire à 4 chiffres zero-padded.
- * En production, remplacer par un séquenceur DB pour garantir l'unicité.
+ * Génère une référence commande unique : KOM-2026-000001
+ * Utilise une séquence PostgreSQL pour garantir l'unicité.
+ *
+ * @param {object} db - Instance pg pool/client
+ * @returns {Promise<string>} Référence unique
  */
-function generateOrderRef() {
-  const year  = new Date().getFullYear();
-  const seq   = String(Math.floor(1000 + Math.random() * 9000));
-  return `KOM-${year}-${seq}`;
+async function generateOrderRef(db) {
+  const { rows } = await db.query(`SELECT nextval('order_ref_seq') AS seq`);
+  const year = new Date().getFullYear();
+  return `KOM-${year}-${String(rows[0].seq).padStart(6, '0')}`;
 }
 
 /**
- * Génère un code cash relais à 6 chiffres (affiché au client + encodé QR)
+ * Génère un code cash relais à 6 chiffres (crypto-secure).
+ * @returns {string} Code 6 chiffres
  */
 function generateCashCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(crypto.randomInt(100000, 999999));
 }
 
 /**
- * Génère un code retrait destinataire à 6 chiffres
+ * Génère un code retrait destinataire à 6 chiffres (crypto-secure).
+ * @returns {string} Code 6 chiffres
  */
 function generatePickupCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(crypto.randomInt(100000, 999999));
 }
 
 /**
- * Génère un code panier partagé : K-XXXX
+ * Génère un code panier partagé : K-XXXX (crypto-secure)
+ * @returns {string} Code panier
  */
 function generateBasketCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(4);
   let code = 'K-';
   for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[bytes[i] % chars.length];
   }
   return code;
 }
 
 /**
- * Génère une référence expédition : EXP-2026-XX
+ * Génère une référence expédition unique : EXP-2026-0001
+ * Utilise une séquence PostgreSQL pour garantir l'unicité.
+ *
+ * @param {object} db - Instance pg pool/client
+ * @returns {Promise<string>} Référence unique
  */
-function generateShipmentRef() {
+async function generateShipmentRef(db) {
+  const { rows } = await db.query(`SELECT nextval('shipment_ref_seq') AS seq`);
   const year = new Date().getFullYear();
-  const seq  = String(Math.floor(10 + Math.random() * 90));
-  return `EXP-${year}-${seq}`;
+  return `EXP-${year}-${String(rows[0].seq).padStart(4, '0')}`;
 }
 
 module.exports = {
