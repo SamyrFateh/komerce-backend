@@ -358,33 +358,67 @@ const PORT = process.env.PORT || 3000;
 
 
 // ââ SEED : Produits (20 articles â match DEMO_PRODUCTS Boutique) âââââââââââââ
+// —— Fix encoding: correct broken UTF-8 product data in DB ——————————————
+async function fixProductEncoding() {
+  console.log('🔤 Fixing product encoding...');
+  const fixes = [
+    { price_kmf: 99000, category: 'electronics', name: 'Samsung Galaxy A35 (128Go)', description: 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.', emoji: '📱' },
+    { price_kmf: 39600, category: 'electronics', name: 'Écouteurs Samsung Galaxy Buds2', description: 'Réduction de bruit active, 5h autonomie + 15h boîtier. Compatible Android & iOS.', emoji: '🎧' },
+    { price_kmf: 14850, category: 'electronics', name: 'Pack coques + accessoires (5 pièces)', description: 'Coque renforcée + verre trempé + chargeur rapide 25W + câble USB-C + support voiture.', emoji: '📱' },
+    { price_kmf: 19800, category: 'electronics', name: 'Chargeur rapide 65W GaN (multi-ports)', description: '3 ports (2 USB-C + 1 USB-A), compact. Charge téléphone + tablette + PC simultanément.', emoji: '🔌' },
+    { price_kmf: 24750, category: 'home', name: 'Ventilateur sur pied 16"', description: 'Oscillant 3 vitesses, silencieux, télécommande. Indispensable aux Comores toute année.', emoji: '🌀' },
+    { price_kmf: 17325, category: 'home', name: 'Fer à repasser vapeur 2400W', description: 'Semelle céramique anti-adhésive, réservoir 300ml, départ rapide 30s.', emoji: '🔥' },
+    { price_kmf: 9900, category: 'home', name: 'Multiprise 6 prises + 2 USB', description: 'Câble 2m, disjoncteur sécurité, 2 ports USB-A. Indispensable pour les foyers connectés.', emoji: '🔌' },
+    { price_kmf: 12375, category: 'home', name: 'Bouilloire électrique 1.7L inox', description: 'Arrêt automatique, protection anti-surchauffe, ébullition en 3 min.', emoji: '☕' },
+    { price_kmf: 99000, category: 'wedding', name: 'Montre homme acier brossé', description: 'Boîtier 42mm, bracelet acier, étanchéité 50m, verre saphir.', emoji: '⌚' },
+    { price_kmf: 277200, category: 'wedding', name: 'Collier or 18K (8g)', description: 'Or 18 carats certifié Dubai, chaîne maille forçat 45cm. Certificat authenticité inclus.', emoji: '💎' },
+    { price_kmf: 59400, category: 'wedding', name: 'Parfum Oud Al Shuyukh 100ml', description: 'Parfum de luxe Dubai, notes de oud, ambre et rose. Longue tenue 12h+.', emoji: '🌹' },
+    { price_kmf: 49500, category: 'wedding', name: 'Coffret cadeau mariage (4 pièces)', description: 'Parfum + crème corps + savon artisanal + bracelet fantaisie.', emoji: '🎁' },
+    { price_kmf: 34650, category: 'fashion', name: 'Djellaba homme brodée (L/XL/XXL)', description: 'Tissu Bazin premium, broderie traditionnelle dorée.', emoji: '🧥' },
+    { price_kmf: 39600, category: 'fashion', name: 'Abaya femme dentelle Dubai (M/L/XL)', description: 'Tissu crêpe fluide, broderie dentelle sur les manches.', emoji: '👗' },
+    { price_kmf: 19800, category: 'fashion', name: 'Boubou enfant 3-12 ans', description: 'Tissu wax africain, coupe ample confortable.', emoji: '👕' },
+    { price_kmf: 54450, category: 'fashion', name: 'Caftan femme soirée (S/M/L/XL)', description: 'Tissu satiné Dubai, encolure brodée de perles.', emoji: '🥻' },
+    { price_kmf: 24750, category: 'services', name: 'Crème visage éclat au safran', description: 'Soin hydratant au safran de Perse + vitamine C. 50ml.', emoji: '✨' },
+    { price_kmf: 34650, category: 'services', name: 'Parfum Oud Rose (50ml)', description: 'Eau de parfum Dubai, concentrée 20%, notes de rose et oud boisé.', emoji: '🌸' },
+    { price_kmf: 17325, category: 'services', name: 'Huile argan pure Maroc (100ml)', description: 'Argan bio certifié, pressée à froid. Soin cheveux + peau + ongles.', emoji: '🧴' },
+    { price_kmf: 44550, category: 'services', name: 'Coffret soins corps luxe (5 pièces)', description: 'Gommage + lait corps + huile + beurre de karité + savon noir.', emoji: '🧴' },
+  ];
+
+  for (const fix of fixes) {
+    try {
+      await db.query(
+        `UPDATE products SET name = $1, description = $2, emoji = $3
+         WHERE price_kmf = $4 AND category = $5`,
+        [fix.name, fix.description, fix.emoji, fix.price_kmf, fix.category]
+      );
+    } catch(e) { console.warn('Fix encoding skip:', fix.name, e.message); }
+  }
+  console.log('🔤 Product encoding fixed.');
+}
+
+
 async function seedProducts() {
   const products = [
-    // TÃ©lÃ©phones & accessoires
-    { name: 'Samsung Galaxy A35 (128Go)', price_kmf: 99000, price_eur: 200, category: 'electronics', stock: 15, emoji: 'ð±', badge: 'Populaire', description: 'Ãcran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh. RÃ©seau 4G stable aux Comores.' },
-    { name: 'Ãcouteurs Samsung Galaxy Buds2', price_kmf: 39600, price_eur: 80, category: 'electronics', stock: 20, emoji: 'ð§', badge: null, description: 'RÃ©duction de bruit active, 5h autonomie + 15h boÃ®tier. Compatible Android & iOS.' },
-    { name: 'Pack coques + accessoires (5 piÃ¨ces)', price_kmf: 14850, price_eur: 30, category: 'electronics', stock: 30, emoji: 'ð±', badge: 'Nouveau', description: 'Coque renforcÃ©e + verre trempÃ© + chargeur rapide 25W + cÃ¢ble USB-C + support voiture.' },
-    { name: 'Chargeur rapide 65W GaN (multi-ports)', price_kmf: 19800, price_eur: 40, category: 'electronics', stock: 25, emoji: 'ð', badge: null, description: '3 ports (2 USB-C + 1 USB-A), compact. Charge tÃ©lÃ©phone + tablette + PC simultanÃ©ment.' },
-    // ÃlectromÃ©nager
-    { name: 'Ventilateur sur pied 16\"', price_kmf: 24750, price_eur: 50, category: 'home', stock: 25, emoji: 'ð', badge: 'Best-seller', description: 'Oscillant 3 vitesses, silencieux, tÃ©lÃ©commande. Indispensable aux Comores toute annÃ©e.' },
-    { name: 'Fer Ã  repasser vapeur 2400W', price_kmf: 17325, price_eur: 35, category: 'home', stock: 18, emoji: 'ð', badge: null, description: 'Semelle cÃ©ramique anti-adhÃ©sive, rÃ©servoir 300ml, dÃ©part rapide 30s.' },
-    { name: 'Multiprise 6 prises + 2 USB', price_kmf: 9900, price_eur: 20, category: 'home', stock: 35, emoji: 'ð', badge: null, description: 'CÃ¢ble 2m, disjoncteur sÃ©curitÃ©, 2 ports USB-A. Indispensable pour les foyers connectÃ©s.' },
-    { name: 'Bouilloire Ã©lectrique 1.7L inox', price_kmf: 12375, price_eur: 25, category: 'home', stock: 22, emoji: 'â', badge: null, description: 'ArrÃªt automatique, protection anti-surchauffe, Ã©bullition en 3 min.' },
-    // Mariage & Bijoux
-    { name: 'Montre homme acier brossÃ©', price_kmf: 99000, price_eur: 200, category: 'wedding', stock: 8, emoji: 'â', badge: 'Exclusif', description: 'BoÃ®tier 42mm, bracelet acier, Ã©tanchÃ©itÃ© 50m, verre saphir.' },
-    { name: 'Collier or 18K (8g)', price_kmf: 277200, price_eur: 560, category: 'wedding', stock: 5, emoji: 'ð¿', badge: 'Premium', description: 'Or 18 carats certifiÃ© Dubai, chaÃ®ne maille forÃ§at 45cm. Certificat authenticitÃ© inclus.' },
-    { name: 'Parfum Oud Al Shuyukh 100ml', price_kmf: 59400, price_eur: 120, category: 'wedding', stock: 12, emoji: 'ð¹', badge: null, description: 'Parfum de luxe Dubai, notes de oud, ambre et rose. Longue tenue 12h+.' },
-    { name: 'Coffret cadeau mariage (4 piÃ¨ces)', price_kmf: 49500, price_eur: 100, category: 'wedding', stock: 15, emoji: 'ð', badge: 'Populaire', description: 'Parfum + crÃ¨me corps + savon artisanal + bracelet fantaisie.' },
-    // VÃªtements
-    { name: 'Djellaba homme brodÃ©e (L/XL/XXL)', price_kmf: 34650, price_eur: 70, category: 'fashion', stock: 20, emoji: 'ð§¥', badge: 'Best-seller', description: 'Tissu Bazin premium, broderie traditionnelle dorÃ©e.' },
-    { name: 'Abaya femme dentelle Dubai (M/L/XL)', price_kmf: 39600, price_eur: 80, category: 'fashion', stock: 15, emoji: 'ð', badge: 'Populaire', description: 'Tissu crÃªpe fluide, broderie dentelle sur les manches.' },
-    { name: 'Boubou enfant 3-12 ans', price_kmf: 19800, price_eur: 40, category: 'fashion', stock: 18, emoji: 'ð', badge: null, description: 'Tissu wax africain, coupe ample confortable.' },
-    { name: 'Caftan femme soiree (S/M/L/XL)', price_kmf: 54450, price_eur: 110, category: 'fashion', stock: 10, emoji: 'ð¥»', badge: 'Nouveau', description: 'Tissu satinÃ© Dubai, encolure brodÃ©e de perles.' },
-    // CosmÃ©tiques
-    { name: 'CrÃ¨me visage Ã©clat au safran', price_kmf: 24750, price_eur: 50, category: 'services', stock: 20, emoji: 'â¨', badge: null, description: 'Soin hydratant au safran de Perse + vitamine C. 50ml.' },
-    { name: 'Parfum Oud Rose (50ml)', price_kmf: 34650, price_eur: 70, category: 'services', stock: 18, emoji: 'ð¸', badge: 'Best-seller', description: 'Eau de parfum Dubai, concentrÃ©e 20%, notes de rose et oud boisÃ©.' },
-    { name: 'Huile argan pure Maroc (100ml)', price_kmf: 17325, price_eur: 35, category: 'services', stock: 25, emoji: 'ð§', badge: null, description: 'Argan bio certifiÃ©, pressÃ©e Ã  froid. Soin cheveux + peau + ongles.' },
-    { name: 'Coffret soins corps luxe (5 piÃ¨ces)', price_kmf: 44550, price_eur: 90, category: 'services', stock: 12, emoji: 'ð§´', badge: 'Nouveau', description: 'Gommage + lait corps + huile + beurre de karitÃ© + savon noir.' },
+    { name: 'Samsung Galaxy A35 (128Go)', price_kmf: 99000, price_eur: 200, category: 'electronics', stock: 15, emoji: '📱', badge: 'Populaire', description: 'Écran AMOLED 6.6\", 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.' },
+    { name: 'Écouteurs Samsung Galaxy Buds2', price_kmf: 39600, price_eur: 80, category: 'electronics', stock: 20, emoji: '🎧', badge: null, description: 'Réduction de bruit active, 5h autonomie + 15h boîtier. Compatible Android & iOS.' },
+    { name: 'Pack coques + accessoires (5 pièces)', price_kmf: 14850, price_eur: 30, category: 'electronics', stock: 30, emoji: '📱', badge: 'Nouveau', description: 'Coque renforcée + verre trempé + chargeur rapide 25W + câble USB-C + support voiture.' },
+    { name: 'Chargeur rapide 65W GaN (multi-ports)', price_kmf: 19800, price_eur: 40, category: 'electronics', stock: 25, emoji: '🔌', badge: null, description: '3 ports (2 USB-C + 1 USB-A), compact. Charge téléphone + tablette + PC simultanément.' },
+    { name: 'Ventilateur sur pied 16\"', price_kmf: 24750, price_eur: 50, category: 'home', stock: 25, emoji: '🌀', badge: 'Best-seller', description: 'Oscillant 3 vitesses, silencieux, télécommande. Indispensable aux Comores toute année.' },
+    { name: 'Fer à repasser vapeur 2400W', price_kmf: 17325, price_eur: 35, category: 'home', stock: 18, emoji: '🔥', badge: null, description: 'Semelle céramique anti-adhésive, réservoir 300ml, départ rapide 30s.' },
+    { name: 'Multiprise 6 prises + 2 USB', price_kmf: 9900, price_eur: 20, category: 'home', stock: 35, emoji: '🔌', badge: null, description: 'Câble 2m, disjoncteur sécurité, 2 ports USB-A. Indispensable pour les foyers connectés.' },
+    { name: 'Bouilloire électrique 1.7L inox', price_kmf: 12375, price_eur: 25, category: 'home', stock: 22, emoji: '☕', badge: null, description: 'Arrêt automatique, protection anti-surchauffe, ébullition en 3 min.' },
+    { name: 'Montre homme acier brossé', price_kmf: 99000, price_eur: 200, category: 'wedding', stock: 8, emoji: '⌚', badge: 'Exclusif', description: 'Boîtier 42mm, bracelet acier, étanchéité 50m, verre saphir.' },
+    { name: 'Collier or 18K (8g)', price_kmf: 277200, price_eur: 560, category: 'wedding', stock: 5, emoji: '💎', badge: 'Premium', description: 'Or 18 carats certifié Dubai, chaîne maille forçat 45cm. Certificat authenticité inclus.' },
+    { name: 'Parfum Oud Al Shuyukh 100ml', price_kmf: 59400, price_eur: 120, category: 'wedding', stock: 12, emoji: '🌹', badge: null, description: 'Parfum de luxe Dubai, notes de oud, ambre et rose. Longue tenue 12h+.' },
+    { name: 'Coffret cadeau mariage (4 pièces)', price_kmf: 49500, price_eur: 100, category: 'wedding', stock: 15, emoji: '🎁', badge: 'Populaire', description: 'Parfum + crème corps + savon artisanal + bracelet fantaisie.' },
+    { name: 'Djellaba homme brodée (L/XL/XXL)', price_kmf: 34650, price_eur: 70, category: 'fashion', stock: 20, emoji: '🧥', badge: 'Best-seller', description: 'Tissu Bazin premium, broderie traditionnelle dorée.' },
+    { name: 'Abaya femme dentelle Dubai (M/L/XL)', price_kmf: 39600, price_eur: 80, category: 'fashion', stock: 15, emoji: '👗', badge: 'Populaire', description: 'Tissu crêpe fluide, broderie dentelle sur les manches.' },
+    { name: 'Boubou enfant 3-12 ans', price_kmf: 19800, price_eur: 40, category: 'fashion', stock: 18, emoji: '👕', badge: null, description: 'Tissu wax africain, coupe ample confortable.' },
+    { name: 'Caftan femme soirée (S/M/L/XL)', price_kmf: 54450, price_eur: 110, category: 'fashion', stock: 10, emoji: '🥻', badge: 'Nouveau', description: 'Tissu satiné Dubai, encolure brodée de perles.' },
+    { name: 'Crème visage éclat au safran', price_kmf: 24750, price_eur: 50, category: 'services', stock: 20, emoji: '✨', badge: null, description: 'Soin hydratant au safran de Perse + vitamine C. 50ml.' },
+    { name: 'Parfum Oud Rose (50ml)', price_kmf: 34650, price_eur: 70, category: 'services', stock: 18, emoji: '🌸', badge: 'Best-seller', description: 'Eau de parfum Dubai, concentrée 20%, notes de rose et oud boisé.' },
+    { name: 'Huile argan pure Maroc (100ml)', price_kmf: 17325, price_eur: 35, category: 'services', stock: 25, emoji: '🧴', badge: null, description: 'Argan bio certifié, pressée à froid. Soin cheveux + peau + ongles.' },
+    { name: 'Coffret soins corps luxe (5 pièces)', price_kmf: 44550, price_eur: 90, category: 'services', stock: 12, emoji: '🧴', badge: 'Nouveau', description: 'Gommage + lait corps + huile + beurre de karité + savon noir.' },
   ];
 
   for (const p of products) {
@@ -399,7 +433,7 @@ async function seedProducts() {
       }
     } catch(e) { console.warn('Seed product skip:', p.name, e.message); }
   }
-  console.log('ð± Seed produits OK');
+  console.log('🌱 Seed produits OK');
 }
 
 
@@ -429,7 +463,7 @@ async function seedRelais() {
 }
 
 
-fixAdminHash().then(() => fixMissingSchema()).then(() => seedProducts()).then(() => seedRelais()).then(() => {
+fixAdminHash().then(() => fixMissingSchema()).then(() => fixProductEncoding()).then(() => seedProducts()).then(() => seedRelais()).then(() => {
   const server = app.listen(PORT, () => {
     console.log(`KOMERCE API v9.3 â port ${PORT} â helmet OK â rate-limit OK â CORS hardened â CSP fixed â migrations OK`);
   });
