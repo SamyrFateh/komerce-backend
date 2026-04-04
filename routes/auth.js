@@ -476,4 +476,49 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Déconnexion réussie' });
 });
 
+
+// ─── POST /api/auth/admin-reset ─────────────────────────────────────────────
+// Reset admin password securely. Requires ADMIN_RESET_KEY env var.
+// Usage: POST /api/auth/admin-reset { "key": "<ADMIN_RESET_KEY>", "new_password": "..." }
+// After use, remove ADMIN_RESET_KEY from Railway env vars for security.
+
+router.post('/admin-reset', async (req, res) => {
+  try {
+    const resetKey = process.env.ADMIN_RESET_KEY;
+    if (!resetKey) {
+      return res.status(404).json({ error: 'Reset non disponible — définir ADMIN_RESET_KEY dans les variables Railway' });
+    }
+
+    const { key, new_password } = req.body;
+    if (!key || key !== resetKey) {
+      return res.status(403).json({ error: 'Clé de reset invalide' });
+    }
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
+    }
+
+    const hash = await bcrypt.hash(new_password, 10);
+    const { rowCount } = await db.query(
+      "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
+      [hash]
+    );
+
+    if (rowCount === 0) {
+      // Create admin if doesn't exist
+      await db.query(
+        `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
+         VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
+         ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
+        [hash]
+      );
+    }
+
+    console.log('🔑 Admin password reset via /admin-reset endpoint');
+    res.json({ success: true, message: 'Mot de passe admin réinitialisé avec succès' });
+  } catch (err) {
+    console.error('Admin reset error:', err.message);
+    res.status(500).json({ error: 'Erreur lors de la réinitialisation' });
+  }
+});
+
 module.exports = router;
