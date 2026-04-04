@@ -1,8 +1,9 @@
 /**
- * KOMERCE — Utilitaire SMS via Africa's Talking
+ * KOMERCE — Utilitaire SMS via Africa's Talking (sécurisé)
  *
- * Tous les SMS passent par cette fonction centralisée.
- * Chaque envoi est loggé en base dans la table sms_log.
+ * Corrections v8.1 :
+ *   - Validation numéro de téléphone (format E.164)
+ *   - Transaction DB pour annulation H+36 (pas de stock perdu si crash)
  *
  * Types de SMS :
  *   confirmation    -> commande créée (commanditaire)
@@ -19,8 +20,6 @@ const AfricasTalking = require('africastalking');
 const db = require('../db');
 
 // Initialisation conditionnelle — Africa's Talking uniquement si les clés sont renseignées.
-// En mode dev (clés vides ou placeholder), les SMS sont simulés dans la console
-// et loggés en base avec le statut 'dev_skipped'.
 let smsClient = null;
 
 const atKey  = process.env.AT_API_KEY;
@@ -38,6 +37,17 @@ if (atKey && atUser && atKey !== '...' && atUser !== 'komerce') {
   console.warn('⚠️  SMS désactivés — clés Africa\'s Talking non configurées (mode dev)');
 }
 
+// ── Validation numéro de téléphone ───────────────────────────────────────────
+
+/**
+ * Vérifie qu'un numéro est au format E.164 international (+XXXXXXXXXXX)
+ * @param {string} phone
+ * @returns {boolean}
+ */
+function isValidPhone(phone) {
+  return typeof phone === 'string' && /^\+[1-9]\d{6,14}$/.test(phone);
+}
+
 /**
  * Envoie un SMS et le logue en base.
  *
@@ -47,6 +57,12 @@ if (atKey && atUser && atKey !== '...' && atUser !== 'komerce') {
  * @param {string} order_id  - UUID commande associée (peut être null)
  */
 async function sendSMS(to, message, type, order_id = null) {
+  // ← P1 FIX : valider le numéro avant tout
+  if (!isValidPhone(to)) {
+    console.warn(`SMS ignoré — numéro invalide : ${to}`);
+    return { success: false, error: 'invalid_phone' };
+  }
+
   // Insérer en base avec statut pending
   const { rows: [log] } = await db.query(
     `INSERT INTO sms_log (order_id, recipient, type, message, status)
@@ -98,7 +114,7 @@ async function sendSMS(to, message, type, order_id = null) {
  * Appelés par un cron job toutes les heures (setInterval dans server.js)
  *
  * H+12 : rappel paiement
- * H+36 : annulation automatique + restauration stock
+ * H+36 : annulation automatique + restauration stock (TRANSACTIONNEL)
  */
 async function processCashRelaisReminders() {
   // H+12 : commandes cash non payées créées il y a 12h, rappel pas encore envoyé
@@ -127,7 +143,8 @@ async function processCashRelaisReminders() {
     );
   }
 
-  // H+36 : annulation automatique
+  // ── H+36 : annulation automatique (TRANSACTIONNEL) ──────────────────────
+
   const { rows: h36 } = await db.query(
     `SELECT o.*, u.phone AS user_phone
      FROM orders o
@@ -140,33 +157,51 @@ async function processCashRelaisReminders() {
   );
 
   for (const order of h36) {
-    // Annuler la commande
-    await db.query(
-      `UPDATE orders SET
-         status       = 'cancelled',
-         cancelled_at = NOW(),
-         cancel_reason = 'Non-paiement cash relais apres 36h'
-       WHERE id = $1`,
-      [order.id]
-    );
-    await db.query(
-      `INSERT INTO order_status_history (order_id, status, note)
-       VALUES ($1,'cancelled','Annulation automatique H+36 - non paiement')`,
-      [order.id]
-    );
+    // ← P1 FIX : Transaction pour atomicité annulation + restauration stock
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    // Restaurer le stock
-    const { rows: items } = await db.query(
-      'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
-      [order.id]
-    );
-    for (const item of items) {
-      await db.query(
-        'UPDATE products SET stock = stock + $1 WHERE id = $2',
-        [item.quantity, item.product_id]
+      // Annuler la commande
+      await client.query(
+        `UPDATE orders SET
+           status        = 'cancelled',
+           cancelled_at  = NOW(),
+           cancel_reason = 'Non-paiement cash relais apres 36h',
+           reminder_h36_sent = TRUE
+         WHERE id = $1`,
+        [order.id]
       );
+
+      // Historique
+      await client.query(
+        `INSERT INTO order_status_history (order_id, status, note)
+         VALUES ($1,'cancelled','Annulation automatique H+36 - non paiement')`,
+        [order.id]
+      );
+
+      // Restaurer le stock
+      const { rows: items } = await client.query(
+        'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
+        [order.id]
+      );
+      for (const item of items) {
+        await client.query(
+          'UPDATE products SET stock = stock + $1 WHERE id = $2',
+          [item.quantity, item.product_id]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      console.error(`H+36 annulation échouée pour order ${order.id}:`, txErr.message);
+      continue; // Passer à la commande suivante, ne pas crasher le cron
+    } finally {
+      client.release();
     }
 
+    // SMS hors transaction (non critique — on ne rollback pas pour un SMS raté)
     if (order.user_phone) {
       await sendSMS(
         order.user_phone,
@@ -174,11 +209,6 @@ async function processCashRelaisReminders() {
         'reminder_h36', order.id
       );
     }
-
-    await db.query(
-      `UPDATE orders SET reminder_h36_sent = TRUE WHERE id = $1`,
-      [order.id]
-    );
   }
 
   console.log(`Rappels cash relais : ${h12.length} H+12, ${h36.length} H+36 annulations`);

@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v7.5
+ * KOMERCE — Serveur API v8.1 (sécurisé)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v8.1 : Helmet · CORS fix · graceful shutdown · health check DB · cron lock
  * Changelog v8.0 : /api/loyalty ajouté · /api/unsold ajouté · migration session 6
  * Changelog v7.6 : /api/purchasing ajouté · triggerPurchasing dans payments.js (cash + Stripe)
  * Changelog v7.5 : /api/ceremony → /api/modules · /api/pilotage ajouté
@@ -13,24 +14,30 @@ require('dotenv').config();
 
 const express    = require('express');
 const cors       = require('cors');
+const helmet     = require('helmet');           // ← P0 ajouté
 const path       = require('path');
 const rateLimit  = require('express-rate-limit');
+const db         = require('./db');              // ← P1 pour health check
 const app = express();
 
 app.set('trust proxy', 1);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
+// ── CORS — politique corrigée ────────────────────────────────────────────────
+
 function isAllowedOrigin(origin) {
+  // Pas d'origin = requête same-origin ou mobile app → OK
   if (!origin) return true;
-  if (origin === 'null') return true;
+  // ❌ SUPPRIMÉ: if (origin === 'null') return true;
+  //    → Un attaquant peut forger Origin: null via iframe sandbox
   if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
   if (/^https:\/\/[a-z0-9-]+\.up\.railway\.app$/.test(origin)) return true;
   if (FRONTEND_URL && origin === FRONTEND_URL) return true;
   return false;
 }
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
     if (isAllowedOrigin(origin)) {
       callback(null, true);
@@ -40,12 +47,22 @@ app.use(cors({
   },
   methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
-}));
+};
 
-app.options('*', cors());
+// ── Security headers ─────────────────────────────────────────────────────────
+
+app.use(helmet());                              // ← P0 X-Content-Type, HSTS, CSP, etc.
+
+app.use(cors(corsOptions));
+// ❌ SUPPRIMÉ: app.options('*', cors());
+//    → Ce second appel utilisait la config par défaut (origin: *) et bypassait la politique CORS
+
+// ── Body parsing ─────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));  // ← P1 ajout limite
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -106,15 +123,22 @@ app.use('/api/purchasing', purchasingRouter);
 app.use('/api/loyalty',   loyaltyRouter);   // v8.0
 app.use('/api/unsold',    unsoldRouter);    // v8.0
 
-// ── Healthcheck ───────────────────────────────────────────────────────────────
+// ── Healthcheck (avec test DB) ───────────────────────────────────────────────
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    status:    'ok',
-    version:   '8.0',
-    timestamp: new Date().toISOString(),
-    env:       process.env.NODE_ENV || 'development',
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const start = Date.now();
+    await db.query('SELECT 1');
+    res.json({
+      status:        'ok',
+      version:       '8.1',
+      db_latency_ms: Date.now() - start,
+      timestamp:     new Date().toISOString(),
+      env:           process.env.NODE_ENV || 'development',
+    });
+  } catch {
+    res.status(503).json({ status: 'degraded', db: 'unreachable' });
+  }
 });
 
 // ── SPA fallback ──────────────────────────────────────────────────────────────
@@ -137,22 +161,40 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erreur serveur interne' });
 });
 
-// ── Cron cash relais ──────────────────────────────────────────────────────────
+// ── Cron cash relais (avec verrou anti-concurrence) ──────────────────────────
 
 const { processCashRelaisReminders } = require('./utils/sms');
 
-setInterval(() => {
-  processCashRelaisReminders().catch(err =>
-    console.error('Cash reminder cron error:', err.message)
-  );
+let cronRunning = false;                        // ← P2 verrou
+setInterval(async () => {
+  if (cronRunning) return;                      // Skip si encore en cours
+  cronRunning = true;
+  try {
+    await processCashRelaisReminders();
+  } catch (err) {
+    console.error('Cash reminder cron error:', err.message);
+  } finally {
+    cronRunning = false;
+  }
 }, 60 * 60 * 1000);
 
-// ── Demarrage ─────────────────────────────────────────────────────────────────
+// ── Démarrage + Graceful Shutdown ────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`KOMERCE API v8.0 — port ${PORT} — loyalty OK — unsold OK`);
+const server = app.listen(PORT, () => {
+  console.log(`KOMERCE API v8.1 — port ${PORT} — helmet OK — CORS hardened`);
+});
+
+// Graceful shutdown : ferme proprement les connexions en cours
+process.on('SIGTERM', () => {
+  console.log('SIGTERM reçu — fermeture gracieuse...');
+  server.close(() => {
+    console.log('Serveur fermé proprement.');
+    process.exit(0);
+  });
+  // Force exit après 10s si des connexions traînent
+  setTimeout(() => process.exit(1), 10_000);
 });
 
 module.exports = app;
