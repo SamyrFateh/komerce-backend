@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Komerce — 📦 Relais Anjouan</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════
+   Komerce Relais Dashboard — Design Tokens & Base
+   ══════════════════════════════════════════════════════════ */
+:root {
+  --bg: #f5f6f8; --bg2: #ffffff; --bg3: #f0f2f5; --bg4: #e9ecef;
+  --ln: #e5e7eb; --border: #e2e6ec; --border2: #d0d7e2;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+  --ink: #1a202c; --ink2: #4a5568; --ink3: #8a9ab5; --ink4: #9ca3af;
+  --text: #1a202c; --text2: #4a5568; --text3: #8a9ab5;
+  --gold: #d97706; --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fcd34d;
+  --green: #16a34a; --green-bg: #f0fdf4; --green-border: #86efac;
+  --blue: #2563eb; --blue-bg: #eff6ff; --blue-border: #93c5fd;
+  --red: #E8552A; --red-bg: #fff5f3;
+  --teal: #0d9488; --teal-bg: #f0fdfa; --teal-border: #5eead4;
+  --purple: #7c3aed; --purple-bg: #faf5ff; --purple-border: #c4b5fd;
+  --sans: "DM Sans", system-ui, sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --transition: all 0.2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink3); }
+
+/* Selection color */
+::selection { background: var(--blue-bg); color: var(--blue); }
+
+/* ══════════════════════════════════════════════════════════
+   Login Screen
+   ══════════════════════════════════════════════════════════ */
+#login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--blue-bg) 0%, var(--bg) 50%, var(--purple-bg) 100%);
+  padding: 20px;
+}
+.login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+}
+.login-logo { text-align: center; font-size: 56px; margin-bottom: 8px; line-height: 1; }
+.login-title { text-align: center; font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.login-subtitle { text-align: center; font-size: 14px; color: var(--text3); margin-bottom: 32px; }
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.01em; }
+.form-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg2);
+  transition: var(--transition);
+}
+.form-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.form-input::placeholder { color: var(--ink4); }
+.login-error {
+  color: var(--red);
+  font-size: 13px;
+  margin-bottom: 12px;
+  display: none;
+  padding: 8px 12px;
+  background: var(--red-bg);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+.login-hint {
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Relais Selector Screen
+   ══════════════════════════════════════════════════════════ */
+#relais-selector-screen {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--green-bg) 0%, var(--bg) 50%, var(--teal-bg) 100%);
+  padding: 20px;
+}
+.relais-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow-lg);
+}
+.relais-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+.relais-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--bg2);
+  font-family: var(--sans);
+}
+.relais-option:hover { border-color: var(--blue-border); background: var(--blue-bg); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.relais-option.selected { border-color: var(--blue); background: var(--blue-bg); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.relais-option-icon { font-size: 32px; line-height: 1; }
+.relais-option-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+.relais-option-location { font-size: 12px; color: var(--text3); }
+
+/* ══════════════════════════════════════════════════════════
+   App Shell
+   ══════════════════════════════════════════════════════════ */
+#app { display: none; }
+
+/* Top Bar */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.topbar-title { font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.topbar-user { font-size: 13px; color: var(--text3); font-weight: 500; }
+.topbar-relais-select {
+  padding: 5px 12px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--bg3);
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 34px;
+}
+.topbar-relais-select:focus { outline: none; border-color: var(--blue); }
+.topbar-center { display: flex; align-items: center; gap: 8px; }
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--green-bg);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--green-border);
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.countdown {
+  font-size: 12px;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  background: var(--bg3);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+.role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--purple-bg);
+  color: var(--purple);
+  text-transform: capitalize;
+}
+
+/* Offline Banner */
+.offline-banner {
+  display: none;
+  background: var(--red);
+  color: white;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Main Layout
+   ══════════════════════════════════════════════════════════ */
+.main-content { padding: 24px; max-width: 1440px; margin: 0 auto; }
+
+/* ══════════════════════════════════════════════════════════
+   Stats Row
+   ══════════════════════════════════════════════════════════ */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.stat-info { min-width: 0; flex: 1; }
+.stat-value { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 12px; color: var(--text3); font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-trend { font-size: 11px; font-weight: 600; margin-top: 2px; }
+.stat-trend-up { color: var(--green); }
+.stat-trend-down { color: var(--red); }
+
+/* ══════════════════════════════════════════════════════════
+   Cards
+   ══════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+.card-description {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: -12px;
+  margin-bottom: 16px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Twin Grid (side by side cards)
+   ══════════════════════════════════════════════════════════ */
+.twin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Tables
+   ══════════════════════════════════════════════════════════ */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius-sm); }
+table { width: 100%; border-collapse: collapse; min-width: 600px; }
+th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  background: var(--bg3);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ln);
+  font-size: 14px;
+  color: var(--text);
+  vertical-align: middle;
+}
+tr:hover { background: var(--bg3); }
+tr:last-child td { border-bottom: none; }
+.table-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text3);
+  font-size: 14px;
+  font-weight: 500;
+}
+.table-empty-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+.td-ref { font-weight: 600; white-space: nowrap; font-size: 13px; font-family: monospace, var(--sans); }
+.td-nowrap { white-space: nowrap; }
+.td-phone { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td-actions { white-space: nowrap; display: flex; gap: 6px; }
+
+/* ══════════════════════════════════════════════════════════
+   Badges
+   ══════════════════════════════════════════════════════════ */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-teal { background: var(--teal-bg); color: var(--teal); }
+.badge-gray { background: var(--bg3); color: var(--ink3); }
+
+/* ══════════════════════════════════════════════════════════
+   Buttons
+   ══════════════════════════════════════════════════════════ */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--sans);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  justify-content: center;
+  text-decoration: none;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover:not(:disabled) { background: #1d4ed8; box-shadow: 0 2px 4px rgba(37,99,235,0.3); }
+.btn-success { background: var(--green); color: white; }
+.btn-success:hover:not(:disabled) { background: #15803d; box-shadow: 0 2px 4px rgba(22,163,74,0.3); }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover:not(:disabled) { background: #c9441f; box-shadow: 0 2px 4px rgba(232,85,42,0.3); }
+.btn-outline { background: transparent; border: 1.5px solid var(--border2); color: var(--text2); }
+.btn-outline:hover:not(:disabled) { background: var(--bg3); border-color: var(--ink3); }
+.btn-amber { background: var(--amber); color: white; }
+.btn-amber:hover:not(:disabled) { background: #b45309; }
+.btn-purple { background: var(--purple); color: white; }
+.btn-purple:hover:not(:disabled) { background: #6d28d9; }
+.btn-teal { background: var(--teal); color: white; }
+.btn-teal:hover:not(:disabled) { background: #0f766e; }
+.btn-sm { padding: 5px 10px; font-size: 12px; min-height: 34px; border-radius: 6px; }
+.btn-lg { padding: 12px 24px; font-size: 16px; min-height: 48px; }
+.btn-block { width: 100%; }
+
+/* ══════════════════════════════════════════════════════════
+   Scanner Area
+   ══════════════════════════════════════════════════════════ */
+.scanner-area {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg3);
+  min-height: 260px;
+  position: relative;
+}
+.scanner-area video { width: 100% !important; border-radius: 10px; }
+.scanner-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text3);
+  min-height: 260px;
+}
+.scanner-placeholder-icon { font-size: 52px; margin-bottom: 12px; line-height: 1; }
+.scanner-placeholder p { font-size: 14px; font-weight: 500; max-width: 240px; }
+.manual-input-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  width: 100%;
+}
+.manual-input-group .form-input { flex: 1; }
+
+/* ══════════════════════════════════════════════════════════
+   Scan Result Feedback
+   ══════════════════════════════════════════════════════════ */
+.scan-result {
+  display: none;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--green-border);
+  background: var(--green-bg);
+  animation: fadeInUp 0.3s ease;
+}
+.scan-result-error {
+  border-color: #fca5a5;
+  background: var(--red-bg);
+}
+.scan-result h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+.scan-result p { font-size: 13px; color: var(--text2); margin-bottom: 4px; line-height: 1.5; }
+.scan-result-error h4 { color: var(--red); }
+
+@keyframes fadeInUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   QR Modal
+   ══════════════════════════════════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+  from { transform: scale(0.95) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--bg3);
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text3);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.modal-close:hover { background: var(--bg4); color: var(--ink); }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--ink); }
+.qr-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.qr-display canvas { border-radius: 8px; border: 4px solid white; box-shadow: var(--shadow); }
+.qr-info { text-align: center; }
+.qr-info p { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.qr-info strong { color: var(--ink); }
+.qr-expiry { font-size: 12px; color: var(--amber); font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px; justify-content: center; }
+.qr-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Collect Code Input
+   ══════════════════════════════════════════════════════════ */
+.collect-section-label {
+  font-size: 13px;
+  color: var(--text3);
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.collect-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.code-input {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-align: center;
+  border: 2px solid var(--border2);
+  border-radius: 10px;
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--bg2);
+  transition: var(--transition);
+}
+.code-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+.code-input::placeholder { letter-spacing: 4px; font-size: 14px; font-weight: 400; color: var(--ink4); }
+.collect-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--text3);
+  font-size: 13px;
+  font-weight: 500;
+}
+.collect-or::before, .collect-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ln);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Caisse Summary Cards
+   ══════════════════════════════════════════════════════════ */
+.caisse-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.caisse-card {
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  transition: var(--transition);
+}
+.caisse-card:hover { box-shadow: var(--shadow); }
+.caisse-card-icon { font-size: 20px; margin-bottom: 6px; }
+.caisse-card-value { font-size: 22px; font-weight: 700; margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+.caisse-card-label { font-size: 12px; color: var(--text3); font-weight: 500; }
+
+/* ══════════════════════════════════════════════════════════
+   Contact Rows
+   ══════════════════════════════════════════════════════════ */
+.contact-row {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  background: var(--bg2);
+  transition: var(--transition);
+}
+.contact-row:hover { box-shadow: var(--shadow); }
+.contact-row:last-child { margin-bottom: 0; }
+.contact-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.contact-row-info { flex: 1; min-width: 0; }
+.contact-row-name { font-weight: 600; font-size: 15px; color: var(--ink); }
+.contact-row-phone { font-size: 13px; color: var(--text3); margin-top: 2px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.contact-row-reason { margin-top: 4px; }
+.contact-msg {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.contact-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ══════════════════════════════════════════════════════════
+   Row urgency highlighting
+   ══════════════════════════════════════════════════════════ */
+.row-amber td { background: var(--amber-bg); }
+.row-red td { background: var(--red-bg); }
+
+/* ══════════════════════════════════════════════════════════
+   Toast System
+   ══════════════════════════════════════════════════════════ */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  animation: slideIn 0.3s ease;
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast-success { background: var(--green); }
+.toast-error { background: var(--red); }
+.toast-info { background: var(--blue); }
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ══════════════════════════════════════════════════════════
+   Spinner
+   ══════════════════════════════════════════════════════════ */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+.spinner-dark {
+  border-color: rgba(0,0,0,0.1);
+  border-top-color: var(--blue);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Loading overlay for sections */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  z-index: 10;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Section dividers
+   ══════════════════════════════════════════════════════════ */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 32px 0 20px;
+  color: var(--text3);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ln);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Responsive Design
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  .twin-grid { grid-template-columns: 1fr; }
+  .caisse-cards { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .topbar { padding: 10px 16px; }
+  .topbar-center { order: 3; width: 100%; justify-content: center; }
+  .main-content { padding: 16px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .stats-row .stat-card:last-child { grid-column: span 2; }
+  .qr-actions { grid-template-columns: 1fr; }
+  .modal { padding: 20px; margin: 10px; max-height: 95vh; border-radius: var(--radius); }
+  .modal-overlay { padding: 8px; }
+  table { min-width: 500px; }
+  .card { padding: 16px; }
+}
+@media (max-width: 480px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .relais-grid { grid-template-columns: 1fr; }
+  .stat-value { font-size: 18px; }
+  .stat-icon { width: 40px; height: 40px; font-size: 18px; }
+  .stat-card { padding: 14px; gap: 10px; }
+  .topbar-title { font-size: 16px; }
+  .code-input { font-size: 20px; letter-spacing: 6px; padding: 12px; }
+  .login-card { padding: 28px 24px; }
+}
+
+/* Print styles */
+@media print {
+  .topbar, .btn, .scanner-area, #toast-container { display: none !important; }
+  .card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════ OFFLINE BANNER ═══════════════════ -->
+<div id="offline-banner" class="offline-banner">⚠️ Connexion perdue — les données affichées peuvent être obsolètes</div>
+
+<!-- ═══════════════════ LOGIN SCREEN ═══════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">📦</div>
+    <div class="login-title">Komerce Relais</div>
+    <div class="login-subtitle">Connectez-vous pour accéder au tableau de bord</div>
+    <form id="login-form" autocomplete="on">
+      <div class="form-group">
+        <label class="form-label" for="login-email">Adresse email</label>
+        <input class="form-input" id="login-email" type="email" placeholder="email@komerce.km" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-password">Mot de passe</label>
+        <input class="form-input" id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">Se connecter</button>
+    </form>
+    <div class="login-hint">
+      🔐 Connexion sécurisée — Accès réservé aux agents relais<br>
+      Contactez l'administrateur si vous n'avez pas vos identifiants
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RELAIS SELECTOR SCREEN ═══════════════════ -->
+<div id="relais-selector-screen">
+  <div class="relais-card">
+    <div class="login-logo">📍</div>
+    <div class="login-title">Choisir votre relais</div>
+    <div class="login-subtitle">Sélectionnez le point relais depuis lequel vous travaillez aujourd'hui</div>
+    <div class="relais-grid" id="relais-grid">
+      <!-- populated dynamically -->
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" id="relais-confirm-btn" disabled style="margin-top: 24px;">
+      Confirmer et commencer
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APPLICATION ═══════════════════ -->
+<div id="app">
+  <!-- ── TOP BAR ── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">📦 Relais Anjouan</span>
+      <span class="topbar-user" id="topbar-user"></span>
+      <select class="topbar-relais-select" id="topbar-relais-select" title="Changer de relais"></select>
+      <span class="role-badge" id="topbar-role"></span>
+    </div>
+    <div class="topbar-center">
+      <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+    </div>
+    <div class="topbar-right">
+      <span class="countdown" id="countdown">⏱ 30s</span>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- ═══ STATS ROW ═══ -->
+    <section class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--blue-bg); color: var(--blue);">📦</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-waiting">—</div>
+          <div class="stat-label">En attente</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--green-bg); color: var(--green);">✅</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-collected">—</div>
+          <div class="stat-label">Retirés ce mois</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--red-bg); color: var(--red);">🚨</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-alerts">—</div>
+          <div class="stat-label">Alertes &gt;48h</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--amber-bg); color: var(--amber);">💰</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-cash">—</div>
+          <div class="stat-label">Cash attendu</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: var(--purple-bg); color: var(--purple);">📞</div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-contact">—</div>
+          <div class="stat-label">À contacter</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SCAN RECEPTION + RETRAIT CLIENT (Twin Grid) ═══ -->
+    <div class="section-divider">Opérations de scan</div>
+    <section class="twin-grid">
+
+      <!-- ── Scan Réception (SCAN 5) ── -->
+      <div class="card" id="card-scan-reception">
+        <div class="card-header">
+          <h2 class="card-title">📥 Scan Réception Colis</h2>
+          <span class="badge badge-blue">SCAN 5</span>
+        </div>
+        <p class="card-description">Scannez les colis arrivant du hub pour les enregistrer au relais</p>
+        <div class="scanner-area" id="scanner-reception-area">
+          <div class="scanner-placeholder" id="scanner-reception-placeholder">
+            <div class="scanner-placeholder-icon">📷</div>
+            <p>Scannez le QR code du colis ou saisissez la référence</p>
+            <button class="btn btn-primary" style="margin-top: 14px;" onclick="startReceptionScanner()">📷 Activer la caméra</button>
+          </div>
+          <div id="scanner-reception-reader" style="display:none;"></div>
+        </div>
+        <div class="manual-input-group" style="margin-top: 14px;">
+          <input class="form-input" id="reception-manual-ref" placeholder="Référence (ex: KOM-240001)" maxlength="30" autocomplete="off">
+          <button class="btn btn-primary" onclick="handleManualReception()">✅ Valider</button>
+        </div>
+        <div class="scan-result" id="reception-result"></div>
+      </div>
+
+      <!-- ── Retrait Client (SCAN 6) ── -->
+      <div class="card" id="card-retrait">
+        <div class="card-header">
+          <h2 class="card-title">🤝 Retrait Client</h2>
+          <span class="badge badge-green">SCAN 6</span>
+        </div>
+        <p class="card-description">Validez la remise du colis au client avec son code ou QR</p>
+
+        <!-- Code 6 chiffres -->
+        <div class="collect-section-label">🔢 Code à 6 chiffres</div>
+        <div class="collect-input-group" style="margin-bottom: 4px;">
+          <input class="code-input" id="collect-code-input" type="text" maxlength="6" placeholder="• • • • • •" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <button class="btn btn-success btn-lg" onclick="handleCodeCollect()" id="collect-code-btn">✅ Valider</button>
+        </div>
+
+        <div class="collect-or">ou</div>
+
+        <!-- Scanner QR -->
+        <div class="collect-section-label">📱 Scanner QR client</div>
+        <div class="scanner-area" id="scanner-collect-area" style="min-height: 200px;">
+          <div class="scanner-placeholder" id="scanner-collect-placeholder" style="min-height: 200px;">
+            <div class="scanner-placeholder-icon">📱</div>
+            <p>Scanner le QR du client pour valider le retrait</p>
+            <button class="btn btn-success" style="margin-top: 10px;" onclick="startCollectScanner()">📷 Activer la caméra</button>
+          </div>
+          <div id="scanner-collect-reader" style="display:none;"></div>
+        </div>
+        <div class="scan-result" id="collect-result"></div>
+      </div>
+    </section>
+
+    <!-- ═══ COLIS EN ATTENTE ═══ -->
+    <div class="section-divider">Gestion des colis</div>
+    <section class="card" id="card-waiting">
+      <div class="card-header">
+        <h2 class="card-title">📦 Colis en attente <span class="card-count" id="waiting-count">0</span></h2>
+        <button class="btn btn-outline btn-sm" onclick="loadWaitingOrders()">🔄 Rafraîchir</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Client</th>
+              <th>Téléphone</th>
+              <th>Total KMF</th>
+              <th>Paiement</th>
+              <th>Depuis</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="waiting-tbody">
+            <tr><td colspan="7" class="table-empty"><span class="table-empty-icon">📦</span>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ CAISSE DU JOUR ═══ -->
+    <div class="section-divider">Finances</div>
+    <section class="card" id="card-caisse">
+      <div class="card-header">
+        <h2 class="card-title">💰 Caisse du jour</h2>
+        <span class="badge badge-gray" id="caisse-date"></span>
+      </div>
+      <div class="caisse-cards">
+        <div class="caisse-card" style="border-left: 4px solid var(--green);">
+          <div class="caisse-card-icon">💵</div>
+          <div class="caisse-card-value" style="color: var(--green);" id="caisse-cash-in">0 KMF</div>
+          <div class="caisse-card-label">Encaissé cash aujourd'hui</div>
+        </div>
+        <div class="caisse-card" style="border-left: 4px solid var(--amber);">
+          <div class="caisse-card-icon">⏳</div>
+          <div class="caisse-card-value" style="color: var(--amber);" id="caisse-cash-pending">0 KMF</div>
+          <div class="caisse-card-label">En attente (cash relais)</div>
+        </div>
+        <div class="caisse-card" style="border-left: 4px solid var(--blue);">
+          <div class="caisse-card-icon">💳</div>
+          <div class="caisse-card-value" style="color: var(--blue);" id="caisse-stripe">0 KMF</div>
+          <div class="caisse-card-label">Stripe (déjà payé)</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Heure</th><th>Référence</th><th>Client</th><th>Montant KMF</th><th>Mode</th></tr>
+          </thead>
+          <tbody id="caisse-tbody">
+            <tr><td colspan="5" class="table-empty"><span class="table-empty-icon">💰</span>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ CLIENTS À CONTACTER ═══ -->
+    <div class="section-divider">Communication</div>
+    <section class="card" id="card-contacts">
+      <div class="card-header">
+        <h2 class="card-title">📞 Clients à contacter <span class="card-count" id="contact-count">0</span></h2>
+      </div>
+      <p class="card-description">Clients nécessitant un suivi — cliquez WhatsApp pour envoyer le message pré-rédigé</p>
+      <div id="contact-list">
+        <div class="table-empty"><span class="table-empty-icon">📞</span>Chargement...</div>
+      </div>
+    </section>
+
+    <!-- ═══ EN APPROCHE ═══ -->
+    <div class="section-divider">Transit</div>
+    <section class="card" id="card-incoming">
+      <div class="card-header">
+        <h2 class="card-title">🚚 En approche du Hub <span class="card-count" id="incoming-count">0</span></h2>
+      </div>
+      <p class="card-description">Colis expédiés depuis le hub vers ce relais — préparez-vous à les réceptionner</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Référence</th><th>Client</th><th>Expédié le</th><th>ETA estimé</th><th>Statut</th></tr>
+          </thead>
+          <tbody id="incoming-tbody">
+            <tr><td colspan="5" class="table-empty"><span class="table-empty-icon">🚚</span>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════════ QR CODE MODAL ═══════════════════ -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeQrModal()" title="Fermer">&times;</button>
+    <h3 class="modal-title">🔲 QR Code de retrait</h3>
+    <div class="qr-display" id="qr-display">
+      <canvas id="qr-canvas"></canvas>
+      <div class="qr-info" id="qr-info">
+        <p>Génération en cours...</p>
+      </div>
+    </div>
+    <div class="qr-actions">
+      <a class="btn btn-success" id="qr-whatsapp-btn" target="_blank" rel="noopener">📲 WhatsApp</a>
+      <button class="btn btn-outline" id="qr-copy-btn" onclick="copyQrLink()">📋 Copier lien</button>
+      <button class="btn btn-primary" id="qr-download-btn" onclick="downloadQr()">⬇️ Télécharger</button>
+      <button class="btn btn-outline" id="qr-print-btn" onclick="printQr()">🖨️ Imprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ COLLECT SUCCESS MODAL ═══════════════════ -->
+<div class="modal-overlay" id="collect-success-modal">
+  <div class="modal" style="text-align: center;">
+    <button class="modal-close" onclick="closeCollectModal()">&times;</button>
+    <div style="font-size: 64px; line-height: 1; margin-bottom: 16px;">✅</div>
+    <h3 class="modal-title" style="text-align: center;">Colis remis avec succès !</h3>
+    <div id="collect-success-details" style="text-align: left;"></div>
+    <button class="btn btn-primary btn-block btn-lg" style="margin-top: 20px;" onclick="closeCollectModal()">Fermer</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   Komerce Relais Dashboard — Application Logic
+   ══════════════════════════════════════════════════════════════ */
+
+// ── Configuration ──
+const API_URL = 'https://komerce-backend-production.up.railway.app';
+let token = localStorage.getItem('komerce_token') || '';
+let currentUser = null;
+let selectedRelaisId = localStorage.getItem('komerce_relais_id') || '';
+let selectedRelaisName = localStorage.getItem('komerce_relais_name') || '';
+let relaisList = [];
+let refreshTimer = null;
+let countdown = 30;
+let receptionScanner = null;
+let collectScanner = null;
+let currentQrUrl = '';
+let currentQrRef = '';
+let allRelaisOrders = [];
+let isRefreshing = false;
+
+// ── BroadcastChannel for real-time sync ──
+let liveChannel;
+try {
+  liveChannel = new BroadcastChannel('komerce-live');
+  liveChannel.onmessage = (e) => {
+    const types = ['HUB_SCAN', 'RELAIS_COLLECT', 'ORDER_UPDATE', 'SCAN_EVENT'];
+    if (types.includes(e.data?.type)) {
+      refreshAll();
+    }
+  };
+} catch (err) {
+  console.warn('BroadcastChannel not supported:', err);
+}
+
+// ══════════════════════════════════════
+// API Client
+// ══════════════════════════════════════
+async function apiCall(method, path, body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+
+  let res;
+  try {
+    res = await fetch(API_URL + path, opts);
+  } catch (networkErr) {
+    document.getElementById('offline-banner').style.display = 'block';
+    throw { status: 0, error: 'Connexion perdue', message: 'Impossible de contacter le serveur' };
+  }
+
+  document.getElementById('offline-banner').style.display = 'none';
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    if (res.status === 401) {
+      logout();
+      throw { status: 401, ...err };
+    }
+    throw { status: res.status, ...err };
+  }
+  return res.json();
+}
+
+// ══════════════════════════════════════
+// Toast Notification System
+// ══════════════════════════════════════
+function toast(msg, type = 'info') {
+  const icon = { success: '✅', error: '❌', info: 'ℹ️' };
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = (icon[type] || '') + ' ' + msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(100px)';
+    t.style.transition = 'all 0.3s ease';
+    setTimeout(() => t.remove(), 300);
+  }, 3700);
+}
+
+// ══════════════════════════════════════
+// Utility Functions
+// ══════════════════════════════════════
+function formatKMF(val) {
+  const n = Number(val) || 0;
+  return n.toLocaleString('fr-FR') + ' KMF';
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatTime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateTime(d) {
+  if (!d) return '—';
+  return formatDate(d) + ' à ' + formatTime(d);
+}
+
+function daysSince(d) {
+  if (!d) return 0;
+  return Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+}
+
+function hoursSince(d) {
+  if (!d) return 0;
+  return Math.floor((Date.now() - new Date(d).getTime()) / 3600000);
+}
+
+function timeSinceLabel(d) {
+  const h = hoursSince(d);
+  if (h < 1) return '<1h';
+  if (h < 24) return h + 'h';
+  const days = Math.floor(h / 24);
+  return days + 'j';
+}
+
+function statusBadge(status) {
+  const map = {
+    draft: ['Brouillon', 'badge-gray'],
+    confirmed: ['Confirmé', 'badge-blue'],
+    paid: ['Payé', 'badge-teal'],
+    preparation: ['Préparation', 'badge-amber'],
+    shipped: ['Expédié', 'badge-purple'],
+    relais_received: ['Réceptionné', 'badge-blue'],
+    available: ['Disponible', 'badge-green'],
+    collected: ['Retiré', 'badge-green'],
+    cancelled: ['Annulé', 'badge-red']
+  };
+  const [label, cls] = map[status] || [status || '—', 'badge-gray'];
+  return '<span class="badge ' + cls + '">' + label + '</span>';
+}
+
+function paymentBadge(mode, paymentStatus) {
+  if (mode === 'cash_relais') {
+    return paymentStatus === 'paid'
+      ? '<span class="badge badge-green">💵 Cash ✓</span>'
+      : '<span class="badge badge-amber">💵 Cash à payer</span>';
+  }
+  if (mode === 'stripe_eur') {
+    return paymentStatus === 'paid'
+      ? '<span class="badge badge-teal">💳 Stripe ✓</span>'
+      : '<span class="badge badge-blue">💳 Stripe</span>';
+  }
+  return '<span class="badge badge-gray">' + escHtml(mode || '—') + '</span>';
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+function getOrderId(order) {
+  return order.id || order._id || '';
+}
+
+function getOrderRef(order) {
+  return order.reference || order.ref || getOrderId(order);
+}
+
+function getClientName(order) {
+  return order.client_name || order.customer_name || order.clientName || '—';
+}
+
+function getClientPhone(order) {
+  return order.client_phone || order.customer_phone || order.clientPhone || '';
+}
+
+function getCleanPhone(order) {
+  return getClientPhone(order).replace(/[^0-9+]/g, '');
+}
+
+function getWaPhone(order) {
+  const p = getCleanPhone(order);
+  return p.startsWith('+') ? p.slice(1) : p;
+}
+
+function getOrderTotal(order) {
+  return Number(order.total_kmf) || Number(order.total) || 0;
+}
+
+// ── Network status ──
+window.addEventListener('online', () => {
+  document.getElementById('offline-banner').style.display = 'none';
+  toast('Connexion rétablie', 'success');
+  refreshAll();
+});
+window.addEventListener('offline', () => {
+  document.getElementById('offline-banner').style.display = 'block';
+});
+
+// ══════════════════════════════════════
+// AUTHENTICATION
+// ══════════════════════════════════════
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Connexion en cours...';
+
+  try {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const data = await apiCall('POST', '/api/auth/login', { email, password });
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('komerce_token', token);
+    localStorage.setItem('komerce_user', JSON.stringify(currentUser));
+    toast('Bienvenue, ' + (currentUser.name || currentUser.email) + ' !', 'success');
+    afterLogin();
+  } catch (err) {
+    errEl.textContent = err.error || err.message || 'Identifiants incorrects';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Se connecter';
+  }
+});
+
+async function tryAutoLogin() {
+  if (!token) return;
+  try {
+    const data = await apiCall('GET', '/api/auth/me');
+    currentUser = data.user || data;
+    localStorage.setItem('komerce_user', JSON.stringify(currentUser));
+    afterLogin();
+  } catch {
+    token = '';
+    localStorage.removeItem('komerce_token');
+    localStorage.removeItem('komerce_user');
+  }
+}
+
+function afterLogin() {
+  document.getElementById('login-screen').style.display = 'none';
+  // If we already have a relais selected, go straight to app
+  if (selectedRelaisId) {
+    showApp();
+  } else {
+    showRelaisSelector();
+  }
+}
+
+function logout() {
+  token = '';
+  currentUser = null;
+  localStorage.removeItem('komerce_token');
+  localStorage.removeItem('komerce_user');
+  stopTimers();
+  stopScanners();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('relais-selector-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+// ══════════════════════════════════════
+// RELAIS SELECTOR
+// ══════════════════════════════════════
+const DEFAULT_RELAIS = [
+  { id: 'mutsamudu', name: 'Mutsamudu', island: 'Anjouan' },
+  { id: 'domoni', name: 'Domoni', island: 'Anjouan' },
+  { id: 'moroni', name: 'Moroni', island: 'Grande Comore' },
+  { id: 'fomboni', name: 'Fomboni', island: 'Mohéli' }
+];
+
+const RELAIS_ICONS = {
+  mutsamudu: '🏪', domoni: '🏬', moroni: '🏢', fomboni: '🏠'
+};
+
+async function showRelaisSelector() {
+  document.getElementById('relais-selector-screen').style.display = 'flex';
+  const grid = document.getElementById('relais-grid');
+  grid.innerHTML = '<p style="text-align:center;color:var(--text3);grid-column:1/-1;">Chargement des relais...</p>';
+
+  try {
+    const data = await apiCall('GET', '/api/relais');
+    relaisList = Array.isArray(data) ? data : (data.relais || data.data || []);
+    if (!relaisList.length) relaisList = DEFAULT_RELAIS;
+  } catch {
+    relaisList = DEFAULT_RELAIS;
+  }
+  renderRelaisOptions();
+}
+
+function renderRelaisOptions() {
+  const grid = document.getElementById('relais-grid');
+  grid.innerHTML = relaisList.map(r => {
+    const rid = (r.id || r._id || '').toString().toLowerCase();
+    const icon = RELAIS_ICONS[rid] || RELAIS_ICONS[r.name?.toLowerCase()] || '📍';
+    const island = r.island || r.location || '';
+    return '<button class="relais-option" data-id="' + escHtml(r.id || r._id) + '" data-name="' + escHtml(r.name) + '">' +
+      '<span class="relais-option-icon">' + icon + '</span>' +
+      '<span class="relais-option-name">' + escHtml(r.name) + '</span>' +
+      (island ? '<span class="relais-option-location">' + escHtml(island) + '</span>' : '') +
+    '</button>';
+  }).join('');
+
+  grid.querySelectorAll('.relais-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      grid.querySelectorAll('.relais-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('relais-confirm-btn').disabled = false;
+    });
+  });
+}
+
+document.getElementById('relais-confirm-btn').addEventListener('click', () => {
+  const sel = document.querySelector('.relais-option.selected');
+  if (!sel) return;
+  selectedRelaisId = sel.dataset.id;
+  selectedRelaisName = sel.dataset.name;
+  localStorage.setItem('komerce_relais_id', selectedRelaisId);
+  localStorage.setItem('komerce_relais_name', selectedRelaisName);
+  document.getElementById('relais-selector-screen').style.display = 'none';
+  toast('Relais sélectionné : ' + selectedRelaisName, 'success');
+  showApp();
+});
+
+// ══════════════════════════════════════
+// MAIN APP INITIALIZATION
+// ══════════════════════════════════════
+function showApp() {
+  document.getElementById('app').style.display = 'block';
+
+  // Topbar info
+  const userName = currentUser?.name || currentUser?.email || 'Agent';
+  document.getElementById('topbar-user').textContent = userName;
+  document.getElementById('topbar-role').textContent = currentUser?.role || 'agent';
+
+  // Caisse date
+  document.getElementById('caisse-date').textContent = new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+
+  // Relais selector in topbar
+  populateTopbarRelaisSelect();
+
+  // Load data
+  refreshAll();
+  startAutoRefresh();
+}
+
+function populateTopbarRelaisSelect() {
+  const sel = document.getElementById('topbar-relais-select');
+  sel.innerHTML = '';
+  const sources = relaisList.length ? relaisList : [{ id: selectedRelaisId, name: selectedRelaisName }];
+  sources.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id || r._id;
+    opt.textContent = '📍 ' + r.name;
+    if ((r.id || r._id) === selectedRelaisId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.onchange = () => {
+    selectedRelaisId = sel.value;
+    selectedRelaisName = sel.options[sel.selectedIndex].textContent.replace('📍 ', '');
+    localStorage.setItem('komerce_relais_id', selectedRelaisId);
+    localStorage.setItem('komerce_relais_name', selectedRelaisName);
+    refreshAll();
+    toast('Relais changé : ' + selectedRelaisName, 'info');
+  };
+}
+
+// ── Auto-refresh with countdown ──
+function startAutoRefresh() {
+  stopTimers();
+  countdown = 30;
+  updateCountdown();
+  refreshTimer = setInterval(() => {
+    countdown--;
+    updateCountdown();
+    if (countdown <= 0) {
+      countdown = 30;
+      refreshAll();
+    }
+  }, 1000);
+}
+
+function stopTimers() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+function updateCountdown() {
+  const el = document.getElementById('countdown');
+  if (el) el.textContent = '⏱ ' + countdown + 's';
+}
+
+// ══════════════════════════════════════
+// DATA LOADING & REFRESH
+// ══════════════════════════════════════
+async function refreshAll() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  try {
+    await Promise.allSettled([
+      loadRelaisOrders(),
+      loadCaisse(),
+      loadIncoming()
+    ]);
+  } catch (err) {
+    console.error('Refresh error:', err);
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+async function loadRelaisOrders() {
+  try {
+    const data = await apiCall('GET', '/api/orders/relais?relais_id=' + encodeURIComponent(selectedRelaisId));
+    allRelaisOrders = Array.isArray(data) ? data : (data.orders || data.data || []);
+  } catch (err) {
+    if (err.status !== 401) {
+      console.warn('Failed to load relais orders:', err);
+    }
+    // Keep existing data on error
+    if (!allRelaisOrders.length) allRelaisOrders = [];
+  }
+  computeStats();
+  renderWaitingTable();
+  renderContacts();
+}
+
+function computeStats() {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const available = allRelaisOrders.filter(o => o.status === 'available');
+  const collectedMonth = allRelaisOrders.filter(o =>
+    o.status === 'collected' && new Date(o.collected_at || o.updated_at) >= monthStart
+  );
+  const alerts48 = available.filter(o => hoursSince(o.available_at || o.updated_at) > 48);
+  const cashPending = allRelaisOrders.filter(o =>
+    o.payment_mode === 'cash_relais' &&
+    o.payment_status !== 'paid' &&
+    ['available', 'relais_received'].includes(o.status)
+  );
+  const cashSum = cashPending.reduce((s, o) => s + getOrderTotal(o), 0);
+  const contacts = buildContactList();
+
+  document.getElementById('stat-waiting').textContent = available.length;
+  document.getElementById('stat-collected').textContent = collectedMonth.length;
+  document.getElementById('stat-alerts').textContent = alerts48.length;
+  document.getElementById('stat-cash').textContent = formatKMF(cashSum);
+  document.getElementById('stat-contact').textContent = contacts.length;
+}
+
+// ══════════════════════════════════════
+// WAITING ORDERS TABLE
+// ══════════════════════════════════════
+function renderWaitingTable() {
+  const tbody = document.getElementById('waiting-tbody');
+  const available = allRelaisOrders.filter(o => o.status === 'available');
+  document.getElementById('waiting-count').textContent = available.length;
+
+  if (!available.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty"><span class="table-empty-icon">🎉</span>Aucun colis en attente de retrait</td></tr>';
+    return;
+  }
+
+  // Sort: oldest first (most urgent)
+  available.sort((a, b) => new Date(a.available_at || a.updated_at) - new Date(b.available_at || b.updated_at));
+
+  tbody.innerHTML = available.map(o => {
+    const h = hoursSince(o.available_at || o.updated_at);
+    const rowClass = h > 48 ? 'row-red' : (h > 24 ? 'row-amber' : '');
+    const ref = escHtml(getOrderRef(o));
+    const client = escHtml(getClientName(o));
+    const phone = escHtml(getClientPhone(o) || '—');
+    const total = formatKMF(getOrderTotal(o));
+    const payment = paymentBadge(o.payment_mode, o.payment_status);
+    const since = timeSinceLabel(o.available_at || o.updated_at);
+    const sinceBadge = h > 48 ? 'badge-red' : (h > 24 ? 'badge-amber' : 'badge-blue');
+    const oid = getOrderId(o);
+
+    return '<tr class="' + rowClass + '">' +
+      '<td class="td-ref">' + ref + '</td>' +
+      '<td>' + client + '</td>' +
+      '<td class="td-phone">' + phone + '</td>' +
+      '<td class="td-nowrap">' + total + '</td>' +
+      '<td>' + payment + '</td>' +
+      '<td><span class="badge ' + sinceBadge + '">' + since + '</span></td>' +
+      '<td><div class="td-actions">' +
+        '<button class="btn btn-outline btn-sm" onclick="openQrModal(\'' + oid + '\')" title="Générer QR">🔲 QR</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="scrollToRetrait()" title="Scanner pour retrait">📷</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function loadWaitingOrders() {
+  await loadRelaisOrders();
+  toast('Liste actualisée', 'success');
+}
+
+function scrollToRetrait() {
+  document.getElementById('card-retrait').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Focus the code input
+  setTimeout(() => document.getElementById('collect-code-input').focus(), 500);
+}
+
+// ══════════════════════════════════════
+// SCAN RECEPTION (SCAN 5)
+// ══════════════════════════════════════
+function startReceptionScanner() {
+  const placeholder = document.getElementById('scanner-reception-placeholder');
+  const reader = document.getElementById('scanner-reception-reader');
+  placeholder.style.display = 'none';
+  reader.style.display = 'block';
+
+  stopReceptionScanner();
+  receptionScanner = new Html5Qrcode('scanner-reception-reader');
+  receptionScanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    (decoded) => {
+      receptionScanner.stop().catch(() => {});
+      receptionScanner = null;
+      handleReceptionScan(decoded);
+      placeholder.style.display = 'flex';
+      reader.style.display = 'none';
+    }
+  ).catch((err) => {
+    console.error('Scanner error:', err);
+    placeholder.style.display = 'flex';
+    reader.style.display = 'none';
+    toast('Impossible d\'accéder à la caméra. Utilisez la saisie manuelle.', 'error');
+  });
+}
+
+function stopReceptionScanner() {
+  if (receptionScanner) {
+    try { receptionScanner.stop(); } catch {}
+    receptionScanner = null;
+  }
+}
+
+async function handleReceptionScan(decoded) {
+  const ref = decoded.trim();
+  await processReception(ref);
+}
+
+function handleManualReception() {
+  const input = document.getElementById('reception-manual-ref');
+  const ref = input.value.trim();
+  if (!ref) { toast('Veuillez saisir une référence', 'error'); return; }
+  processReception(ref);
+}
+
+async function processReception(ref) {
+  const resultEl = document.getElementById('reception-result');
+  resultEl.style.display = 'none';
+  resultEl.classList.remove('scan-result-error');
+
+  try {
+    // Try to find order by reference in our local cache
+    let orderId = ref;
+    const matchingOrder = allRelaisOrders.find(o =>
+      getOrderRef(o) === ref || getOrderId(o) === ref
+    );
+    if (matchingOrder) orderId = getOrderId(matchingOrder);
+
+    const data = await apiCall('POST', '/api/scans', {
+      order_id: orderId,
+      scan_type: 'relais_received',
+      relais_id: selectedRelaisId
+    });
+
+    const order = data.order || {};
+    resultEl.innerHTML =
+      '<h4>✅ Colis réceptionné avec succès !</h4>' +
+      '<p><strong>Référence :</strong> ' + escHtml(getOrderRef(order) || ref) + '</p>' +
+      '<p><strong>Client :</strong> ' + escHtml(getClientName(order)) + '</p>' +
+      '<p><strong>Téléphone :</strong> ' + escHtml(getClientPhone(order) || '—') + '</p>' +
+      '<p><strong>Statut :</strong> ' + statusBadge(order.status || 'relais_received') + '</p>' +
+      '<p style="margin-top:10px;font-size:12px;color:var(--text3);">📱 Le QR code client sera généré lors du passage en "disponible".</p>';
+    resultEl.classList.remove('scan-result-error');
+    resultEl.style.display = 'block';
+    toast('Colis ' + (getOrderRef(order) || ref) + ' réceptionné', 'success');
+
+    // Broadcast event
+    if (liveChannel) {
+      liveChannel.postMessage({ type: 'HUB_SCAN', orderId: getOrderId(order) || orderId, status: 'relais_received' });
+    }
+
+    document.getElementById('reception-manual-ref').value = '';
+    await refreshAll();
+  } catch (err) {
+    resultEl.innerHTML = '<h4>❌ Erreur de scan</h4>' +
+      '<p>' + escHtml(err.error || err.message || 'Colis introuvable ou déjà scanné') + '</p>' +
+      '<p style="font-size:12px;color:var(--text3);margin-top:6px;">Référence : ' + escHtml(ref) + '</p>';
+    resultEl.classList.add('scan-result-error');
+    resultEl.style.display = 'block';
+    toast('Erreur : ' + (err.error || err.message || 'Scan échoué'), 'error');
+  }
+}
+
+// ══════════════════════════════════════
+// QR CODE MODAL
+// ══════════════════════════════════════
+async function openQrModal(orderId) {
+  const modal = document.getElementById('qr-modal');
+  const infoEl = document.getElementById('qr-info');
+  const canvas = document.getElementById('qr-canvas');
+
+  infoEl.innerHTML = '<p style="color:var(--text3);">⏳ Génération du QR code en cours...</p>';
+  modal.classList.add('active');
+  currentQrUrl = '';
+  currentQrRef = '';
+
+  try {
+    const data = await apiCall('POST', '/api/orders/' + encodeURIComponent(orderId) + '/qr-token');
+    const tokenVal = data.token;
+    const expiresAt = data.expiresAt;
+    const url = API_URL + '/api/orders/retrait/' + tokenVal;
+    currentQrUrl = url;
+
+    // Find order details in local cache
+    const order = allRelaisOrders.find(o => getOrderId(o) === orderId) || {};
+    const clientName = getClientName(order);
+    const clientPhone = getClientPhone(order);
+    const ref = getOrderRef(order);
+    currentQrRef = ref;
+
+    // Generate QR code on canvas
+    await QRCode.toCanvas(canvas, url, {
+      width: 280,
+      margin: 2,
+      color: { dark: '#1a202c', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    });
+
+    infoEl.innerHTML =
+      '<p><strong style="font-size:16px;">' + escHtml(clientName) + '</strong></p>' +
+      '<p>📞 ' + escHtml(clientPhone || '—') + '</p>' +
+      '<p>📦 ' + escHtml(ref) + ' — 📍 ' + escHtml(selectedRelaisName) + '</p>' +
+      '<p>💰 ' + formatKMF(getOrderTotal(order)) + ' — ' + paymentBadge(order.payment_mode, order.payment_status) + '</p>' +
+      '<div class="qr-expiry">⏰ Expire le ' + formatDateTime(expiresAt) + '</div>';
+
+    // WhatsApp button
+    const waBtn = document.getElementById('qr-whatsapp-btn');
+    const waPhone = getWaPhone(order);
+    const waText = encodeURIComponent(
+      'Bonjour ' + clientName + ',\n\n' +
+      'Votre colis ' + ref + ' est disponible au relais ' + selectedRelaisName + '.\n\n' +
+      'Présentez ce QR code pour le retirer :\n' + url + '\n\n' +
+      'Komerce 📦'
+    );
+    waBtn.href = 'https://wa.me/' + waPhone + '?text=' + waText;
+    canvas.dataset.ref = ref;
+
+  } catch (err) {
+    infoEl.innerHTML = '<p style="color:var(--red);font-weight:600;">❌ ' +
+      escHtml(err.error || err.message || 'Erreur lors de la génération du QR code') + '</p>' +
+      '<p style="font-size:12px;color:var(--text3);margin-top:8px;">Réessayez ou contactez l\'administrateur.</p>';
+    toast('Erreur QR : ' + (err.error || 'Échec'), 'error');
+  }
+}
+
+function closeQrModal() {
+  document.getElementById('qr-modal').classList.remove('active');
+  currentQrUrl = '';
+  currentQrRef = '';
+}
+
+function copyQrLink() {
+  if (!currentQrUrl) { toast('Aucun lien à copier', 'error'); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentQrUrl).then(() => {
+      toast('Lien copié dans le presse-papier', 'success');
+    }).catch(() => fallbackCopy(currentQrUrl));
+  } else {
+    fallbackCopy(currentQrUrl);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); toast('Lien copié !', 'success'); }
+  catch { toast('Impossible de copier', 'error'); }
+  document.body.removeChild(ta);
+}
+
+function downloadQr() {
+  const canvas = document.getElementById('qr-canvas');
+  const ref = currentQrRef || 'qr-code';
+  const link = document.createElement('a');
+  link.download = 'QR-Retrait-' + ref + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  toast('QR téléchargé : QR-Retrait-' + ref + '.png', 'success');
+}
+
+function printQr() {
+  const canvas = document.getElementById('qr-canvas');
+  const ref = currentQrRef || '';
+  const info = document.getElementById('qr-info').innerHTML;
+  const w = window.open('', '_blank', 'width=420,height=550');
+  if (!w) { toast('Popup bloquée — autorisez les popups', 'error'); return; }
+  w.document.write(
+    '<!DOCTYPE html><html><head><title>QR Retrait ' + escHtml(ref) + '</title>' +
+    '<style>body{font-family:"DM Sans",system-ui,sans-serif;text-align:center;padding:40px 20px;color:#1a202c;}' +
+    'img{max-width:280px;margin:20px auto;display:block;border:2px solid #e5e7eb;border-radius:8px;}' +
+    'h2{font-size:20px;margin-bottom:4px;}.subtitle{color:#8a9ab5;font-size:13px;margin-bottom:20px;}' +
+    '.info{font-size:14px;line-height:1.8;}</style></head>' +
+    '<body><h2>📦 Komerce — QR de Retrait</h2>' +
+    '<p class="subtitle">Relais ' + escHtml(selectedRelaisName) + '</p>' +
+    '<img src="' + canvas.toDataURL('image/png') + '">' +
+    '<div class="info">' + info + '</div>' +
+    '<script>setTimeout(function(){window.print();},500);<\/script></body></html>'
+  );
+  w.document.close();
+}
+
+// Close modal on backdrop click
+document.getElementById('qr-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeQrModal();
+});
+
+// ══════════════════════════════════════
+// RETRAIT CLIENT (SCAN 6)
+// ══════════════════════════════════════
+async function handleCodeCollect() {
+  const input = document.getElementById('collect-code-input');
+  const code = input.value.trim();
+  if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+    toast('Veuillez saisir un code valide à 6 chiffres', 'error');
+    input.focus();
+    return;
+  }
+
+  const btn = document.getElementById('collect-code-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  const resultEl = document.getElementById('collect-result');
+  resultEl.style.display = 'none';
+  resultEl.classList.remove('scan-result-error');
+
+  try {
+    const data = await apiCall('POST', '/api/scans/collect', { code });
+    showCollectSuccess(data);
+    input.value = '';
+    if (liveChannel) {
+      liveChannel.postMessage({ type: 'RELAIS_COLLECT', orderId: getOrderId(data.order || {}) });
+    }
+    await refreshAll();
+  } catch (err) {
+    resultEl.innerHTML = '<h4>❌ Code invalide</h4>' +
+      '<p>' + escHtml(err.error || err.message || 'Ce code ne correspond à aucun colis en attente de retrait.') + '</p>' +
+      '<p style="font-size:12px;color:var(--text3);margin-top:6px;">Code saisi : ' + escHtml(code) + '</p>';
+    resultEl.classList.add('scan-result-error');
+    resultEl.style.display = 'block';
+    toast('Code invalide', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Valider';
+  }
+}
+
+function startCollectScanner() {
+  const placeholder = document.getElementById('scanner-collect-placeholder');
+  const reader = document.getElementById('scanner-collect-reader');
+  placeholder.style.display = 'none';
+  reader.style.display = 'block';
+
+  stopCollectScanner();
+  collectScanner = new Html5Qrcode('scanner-collect-reader');
+  collectScanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    (decoded) => {
+      collectScanner.stop().catch(() => {});
+      collectScanner = null;
+      handleCollectQrScan(decoded);
+      placeholder.style.display = 'flex';
+      reader.style.display = 'none';
+    }
+  ).catch(() => {
+    placeholder.style.display = 'flex';
+    reader.style.display = 'none';
+    toast('Impossible d\'accéder à la caméra. Utilisez le code 6 chiffres.', 'error');
+  });
+}
+
+function stopCollectScanner() {
+  if (collectScanner) {
+    try { collectScanner.stop(); } catch {}
+    collectScanner = null;
+  }
+}
+
+function stopScanners() {
+  stopReceptionScanner();
+  stopCollectScanner();
+}
+
+async function handleCollectQrScan(decoded) {
+  const resultEl = document.getElementById('collect-result');
+  resultEl.style.display = 'none';
+  resultEl.classList.remove('scan-result-error');
+
+  // Extract token from URL if needed
+  let qrToken = decoded.trim();
+  const match = decoded.match(/\/retrait\/([a-zA-Z0-9_-]+)/);
+  if (match) qrToken = match[1];
+
+  try {
+    const data = await apiCall('POST', '/api/scans/verify-qr', {
+      token: qrToken,
+      relaisId: selectedRelaisId,
+      agentId: currentUser?.id || currentUser?._id
+    });
+    showCollectSuccess(data);
+    if (liveChannel) {
+      liveChannel.postMessage({ type: 'RELAIS_COLLECT', orderId: getOrderId(data.order || {}) });
+    }
+    await refreshAll();
+  } catch (err) {
+    resultEl.innerHTML = '<h4>❌ QR code invalide</h4>' +
+      '<p>' + escHtml(err.error || err.message || 'QR code expiré ou invalide. Demandez un nouveau code au client.') + '</p>';
+    resultEl.classList.add('scan-result-error');
+    resultEl.style.display = 'block';
+    toast('QR invalide ou expiré', 'error');
+  }
+}
+
+function showCollectSuccess(data) {
+  const order = data.order || {};
+  const modal = document.getElementById('collect-success-modal');
+  const details = document.getElementById('collect-success-details');
+
+  details.innerHTML =
+    '<div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:16px;margin-top:8px;">' +
+    '<p style="margin-bottom:6px;"><strong>Client :</strong> ' + escHtml(getClientName(order)) + '</p>' +
+    '<p style="margin-bottom:6px;"><strong>Référence :</strong> ' + escHtml(getOrderRef(order)) + '</p>' +
+    '<p style="margin-bottom:6px;"><strong>Montant :</strong> ' + formatKMF(getOrderTotal(order)) + '</p>' +
+    '<p><strong>Paiement :</strong> ' + paymentBadge(order.payment_mode, order.payment_status) + '</p>' +
+    '</div>';
+
+  modal.classList.add('active');
+
+  // Also show inline result
+  const resultEl = document.getElementById('collect-result');
+  resultEl.innerHTML = '<h4>✅ Colis remis avec succès !</h4>' +
+    '<p><strong>' + escHtml(getClientName(order)) + '</strong> — ' + escHtml(getOrderRef(order)) + '</p>';
+  resultEl.classList.remove('scan-result-error');
+  resultEl.style.display = 'block';
+  toast('Colis ' + escHtml(getOrderRef(order)) + ' remis au client !', 'success');
+}
+
+function closeCollectModal() {
+  document.getElementById('collect-success-modal').classList.remove('active');
+}
+
+document.getElementById('collect-success-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeCollectModal();
+});
+
+// ══════════════════════════════════════
+// CAISSE DU JOUR
+// ══════════════════════════════════════
+async function loadCaisse() {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  try {
+    const data = await apiCall('GET', '/api/dashboard/ops?relais_id=' + encodeURIComponent(selectedRelaisId));
+    const ops = data.transactions || data.orders || data.data || [];
+    const opsArr = Array.isArray(ops) ? ops : [];
+
+    // Filter to today's collected transactions
+    const todayCollected = opsArr.filter(o =>
+      o.status === 'collected' &&
+      new Date(o.collected_at || o.updated_at) >= todayStart
+    );
+
+    // Cash collected today
+    const cashIn = todayCollected
+      .filter(o => o.payment_mode === 'cash_relais')
+      .reduce((s, o) => s + getOrderTotal(o), 0);
+
+    // Cash pending (from relais orders)
+    const cashPending = allRelaisOrders
+      .filter(o => o.payment_mode === 'cash_relais' && o.payment_status !== 'paid' && o.status === 'available')
+      .reduce((s, o) => s + getOrderTotal(o), 0);
+
+    // Stripe collected today
+    const stripeIn = todayCollected
+      .filter(o => o.payment_mode === 'stripe_eur')
+      .reduce((s, o) => s + getOrderTotal(o), 0);
+
+    document.getElementById('caisse-cash-in').textContent = formatKMF(cashIn);
+    document.getElementById('caisse-cash-pending').textContent = formatKMF(cashPending);
+    document.getElementById('caisse-stripe').textContent = formatKMF(stripeIn);
+
+    // Render transactions table
+    const tbody = document.getElementById('caisse-tbody');
+    if (!todayCollected.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="table-empty"><span class="table-empty-icon">💰</span>Aucune transaction aujourd\'hui</td></tr>';
+    } else {
+      // Sort by time descending (most recent first)
+      todayCollected.sort((a, b) => new Date(b.collected_at || b.updated_at) - new Date(a.collected_at || a.updated_at));
+      tbody.innerHTML = todayCollected.map(o =>
+        '<tr>' +
+        '<td class="td-nowrap">' + formatTime(o.collected_at || o.updated_at) + '</td>' +
+        '<td class="td-ref">' + escHtml(getOrderRef(o)) + '</td>' +
+        '<td>' + escHtml(getClientName(o)) + '</td>' +
+        '<td class="td-nowrap">' + formatKMF(getOrderTotal(o)) + '</td>' +
+        '<td>' + paymentBadge(o.payment_mode, o.payment_status) + '</td>' +
+        '</tr>'
+      ).join('');
+    }
+  } catch (err) {
+    if (err.status !== 401) {
+      console.warn('Failed to load caisse:', err);
+      // Use local data as fallback for pending
+      const cashPending = allRelaisOrders
+        .filter(o => o.payment_mode === 'cash_relais' && o.payment_status !== 'paid' && o.status === 'available')
+        .reduce((s, o) => s + getOrderTotal(o), 0);
+      document.getElementById('caisse-cash-in').textContent = '— KMF';
+      document.getElementById('caisse-cash-pending').textContent = formatKMF(cashPending);
+      document.getElementById('caisse-stripe').textContent = '— KMF';
+      document.getElementById('caisse-tbody').innerHTML =
+        '<tr><td colspan="5" class="table-empty"><span class="table-empty-icon">⚠️</span>Données de la caisse indisponibles</td></tr>';
+    }
+  }
+}
+
+// ══════════════════════════════════════
+// CLIENTS À CONTACTER
+// ══════════════════════════════════════
+const CONTACT_REASONS = {
+  waiting_too_long: { label: 'Attente >48h', badge: 'badge-red', icon: '🕐', priority: 1 },
+  lost_parcel:      { label: 'Colis perdu', badge: 'badge-red', icon: '❓', priority: 2 },
+  hub_wrong:        { label: 'Erreur hub', badge: 'badge-red', icon: '⚠️', priority: 3 },
+  double_payment:   { label: 'Double paiement', badge: 'badge-amber', icon: '💳', priority: 4 },
+  incomplete_hub:   { label: 'Incomplet au hub', badge: 'badge-amber', icon: '📋', priority: 5 },
+  transit_long:     { label: 'Transit >10j', badge: 'badge-purple', icon: '🚢', priority: 6 },
+  no_sms:           { label: 'SMS non envoyé', badge: 'badge-blue', icon: '📩', priority: 7 }
+};
+
+function buildContactMessage(reason, order) {
+  const name = getClientName(order);
+  const ref = getOrderRef(order);
+  const relais = selectedRelaisName;
+  const days = daysSince(order.available_at || order.updated_at);
+
+  const templates = {
+    waiting_too_long:
+      'Bonjour ' + name + ',\n\n' +
+      'Votre colis ' + ref + ' est disponible au relais ' + relais + ' depuis ' + days + ' jours.\n' +
+      'Merci de venir le récupérer dès que possible.\n\n' +
+      'Pour toute question, répondez à ce message.\n\nKomerce 📦',
+    incomplete_hub:
+      'Bonjour ' + name + ',\n\n' +
+      'Votre commande ' + ref + ' est en cours de traitement au hub.\n' +
+      'Nous vous tiendrons informé(e) dès qu\'elle sera complète et prête à l\'envoi.\n\nKomerce 📦',
+    no_sms:
+      'Bonjour ' + name + ',\n\n' +
+      'Votre colis ' + ref + ' est arrivé au relais ' + relais + ' !\n' +
+      'Vous pouvez venir le retirer avec votre QR code ou code à 6 chiffres.\n\n' +
+      'Horaires d\'ouverture : Lun-Sam 8h-18h\n\nKomerce 📦',
+    transit_long:
+      'Bonjour ' + name + ',\n\n' +
+      'Votre commande ' + ref + ' est en route depuis plus de 10 jours.\n' +
+      'Nous suivons activement son acheminement et vous tiendrons informé(e) de son arrivée.\n\nKomerce 📦',
+    lost_parcel:
+      'Bonjour ' + name + ',\n\n' +
+      'Nous rencontrons un problème avec la localisation de votre colis ' + ref + '.\n' +
+      'Notre équipe fait le nécessaire pour le retrouver. Nous revenons vers vous très rapidement.\n\n' +
+      'Nous nous excusons pour ce désagrément.\n\nKomerce 📦',
+    double_payment:
+      'Bonjour ' + name + ',\n\n' +
+      'Un trop-perçu a été détecté sur votre commande ' + ref + '.\n' +
+      'Merci de nous contacter au relais ' + relais + ' pour organiser le remboursement.\n\nKomerce 📦',
+    hub_wrong:
+      'Bonjour ' + name + ',\n\n' +
+      'Votre commande ' + ref + ' nécessite une vérification supplémentaire au hub.\n' +
+      'Nous vous tenons informé(e) de l\'avancement.\n\nKomerce 📦'
+  };
+  return templates[reason] || ('Bonjour ' + name + ', concernant votre colis ' + ref + '...');
+}
+
+function buildContactList() {
+  const contacts = [];
+  const seen = new Set(); // Avoid duplicates
+
+  function addContact(order, reason) {
+    const key = getOrderId(order) + '-' + reason;
+    if (seen.has(key)) return;
+    seen.add(key);
+    contacts.push({ ...order, reason });
+  }
+
+  // 1. waiting_too_long: available > 48h
+  allRelaisOrders
+    .filter(o => o.status === 'available' && hoursSince(o.available_at || o.updated_at) > 48)
+    .forEach(o => addContact(o, 'waiting_too_long'));
+
+  // 2. incomplete_hub
+  allRelaisOrders
+    .filter(o => o.status === 'preparation' && o.incomplete)
+    .forEach(o => addContact(o, 'incomplete_hub'));
+
+  // 3. no_sms: available but no notification sent, within 48h
+  allRelaisOrders
+    .filter(o => o.status === 'available' && !o.sms_sent && !o.notified && hoursSince(o.available_at || o.updated_at) <= 48)
+    .forEach(o => addContact(o, 'no_sms'));
+
+  // 4. transit_long: shipped > 10 days
+  allRelaisOrders
+    .filter(o => o.status === 'shipped' && daysSince(o.shipped_at || o.updated_at) > 10)
+    .forEach(o => addContact(o, 'transit_long'));
+
+  // 5. lost_parcel
+  allRelaisOrders
+    .filter(o => o.lost === true)
+    .forEach(o => addContact(o, 'lost_parcel'));
+
+  // 6. double_payment
+  allRelaisOrders
+    .filter(o => o.double_payment === true)
+    .forEach(o => addContact(o, 'double_payment'));
+
+  // 7. hub_wrong
+  allRelaisOrders
+    .filter(o => o.hub_error === true)
+    .forEach(o => addContact(o, 'hub_wrong'));
+
+  // Sort by priority (most urgent first)
+  contacts.sort((a, b) => {
+    const pa = (CONTACT_REASONS[a.reason] || {}).priority || 99;
+    const pb = (CONTACT_REASONS[b.reason] || {}).priority || 99;
+    return pa - pb;
+  });
+
+  return contacts;
+}
+
+function renderContacts() {
+  const contacts = buildContactList();
+  const container = document.getElementById('contact-list');
+  document.getElementById('contact-count').textContent = contacts.length;
+
+  if (!contacts.length) {
+    container.innerHTML = '<div class="table-empty"><span class="table-empty-icon">🎉</span>Aucun client à contacter — tout est en ordre !</div>';
+    return;
+  }
+
+  container.innerHTML = contacts.map((o, idx) => {
+    const r = CONTACT_REASONS[o.reason] || {};
+    const name = escHtml(getClientName(o));
+    const phone = escHtml(getClientPhone(o) || '—');
+    const waPhone = getWaPhone(o);
+    const ref = escHtml(getOrderRef(o));
+    const msg = buildContactMessage(o.reason, o);
+    const waUrl = 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(msg);
+    const oid = getOrderId(o);
+
+    return '<div class="contact-row" id="contact-' + oid + '-' + o.reason + '">' +
+      '<div class="contact-row-header">' +
+        '<div class="contact-row-info">' +
+          '<div class="contact-row-name">' + name + '</div>' +
+          '<div class="contact-row-phone">📞 ' + phone + ' &nbsp;·&nbsp; 📦 ' + ref + '</div>' +
+          '<div class="contact-row-reason" style="margin-top:4px;">' +
+            '<span class="badge ' + (r.badge || 'badge-gray') + '">' + (r.icon || '') + ' ' + (r.label || o.reason) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="contact-msg">' + escHtml(msg) + '</div>' +
+      '<div class="contact-actions">' +
+        '<a class="btn btn-success btn-sm" href="' + waUrl + '" target="_blank" rel="noopener">📲 WhatsApp</a>' +
+        '<button class="btn btn-outline btn-sm" onclick="copyContactMsg(this)" data-msg="' + escHtml(msg).replace(/"/g, '&quot;') + '">📋 Copier</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="markContacted(\'' + oid + '\', \'' + o.reason + '\')">✅ Contacté</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function copyContactMsg(btn) {
+  const msg = btn.dataset.msg;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).then(() => toast('Message copié', 'success'));
+  } else {
+    fallbackCopy(msg);
+  }
+}
+
+async function markContacted(orderId, reason) {
+  try {
+    await apiCall('POST', '/api/orders/' + encodeURIComponent(orderId) + '/contacted', {
+      relais_id: selectedRelaisId,
+      reason: reason
+    });
+    toast('Client marqué comme contacté', 'success');
+    await refreshAll();
+  } catch {
+    // Optimistic: hide the row
+    toast('Marqué comme contacté', 'info');
+    const el = document.getElementById('contact-' + orderId + '-' + reason);
+    if (el) {
+      el.style.opacity = '0.3';
+      el.style.pointerEvents = 'none';
+      setTimeout(() => el.remove(), 1000);
+    }
+    // Update contact count
+    const count = document.querySelectorAll('.contact-row:not([style*="pointer-events: none"])').length;
+    document.getElementById('contact-count').textContent = Math.max(0, count - 1);
+  }
+}
+
+// ══════════════════════════════════════
+// EN APPROCHE (from Hub)
+// ══════════════════════════════════════
+async function loadIncoming() {
+  try {
+    const data = await apiCall('GET', '/api/admin/orders?status=shipped&destination_relais=' + encodeURIComponent(selectedRelaisId));
+    const orders = Array.isArray(data) ? data : (data.orders || data.data || []);
+    document.getElementById('incoming-count').textContent = orders.length;
+    const tbody = document.getElementById('incoming-tbody');
+
+    if (!orders.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="table-empty"><span class="table-empty-icon">📭</span>Aucun colis en transit vers ce relais</td></tr>';
+      return;
+    }
+
+    // Sort by shipped date (most recent first)
+    orders.sort((a, b) => new Date(b.shipped_at || b.updated_at) - new Date(a.shipped_at || a.updated_at));
+
+    tbody.innerHTML = orders.map(o => {
+      const shipped = o.shipped_at || o.updated_at;
+      const dit = daysSince(shipped);
+      let eta, etaBadge;
+      if (dit >= 10) { eta = 'Retard possible'; etaBadge = 'badge-red'; }
+      else if (dit >= 7) { eta = 'Imminent'; etaBadge = 'badge-green'; }
+      else if (dit >= 5) { eta = '~' + (7 - dit) + ' jours'; etaBadge = 'badge-amber'; }
+      else { eta = '~' + (7 - dit) + ' jours'; etaBadge = 'badge-purple'; }
+
+      return '<tr>' +
+        '<td class="td-ref">' + escHtml(getOrderRef(o)) + '</td>' +
+        '<td>' + escHtml(getClientName(o)) + '</td>' +
+        '<td class="td-nowrap">' + formatDate(shipped) + '</td>' +
+        '<td><span class="badge ' + etaBadge + '">' + eta + '</span></td>' +
+        '<td>' + statusBadge(o.status) + '</td>' +
+        '</tr>';
+    }).join('');
+  } catch (err) {
+    if (err.status !== 401) {
+      document.getElementById('incoming-count').textContent = '0';
+      document.getElementById('incoming-tbody').innerHTML =
+        '<tr><td colspan="5" class="table-empty"><span class="table-empty-icon">⚠️</span>Données indisponibles</td></tr>';
+    }
+  }
+}
+
+// ══════════════════════════════════════
+// KEYBOARD & UX HANDLERS
+// ══════════════════════════════════════
+
+// Enter to submit code
+document.getElementById('collect-code-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); handleCodeCollect(); }
+});
+
+// Enter to submit reference
+document.getElementById('reception-manual-ref').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); handleManualReception(); }
+});
+
+// Only digits in code input
+document.getElementById('collect-code-input').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+  // Auto-submit when 6 digits entered
+  if (e.target.value.length === 6) {
+    // Small delay so user sees the full code
+    setTimeout(() => {
+      if (e.target.value.length === 6) handleCodeCollect();
+    }, 300);
+  }
+});
+
+// ESC to close modals
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeQrModal();
+    closeCollectModal();
+  }
+});
+
+// Prevent zoom on double-tap for buttons (mobile)
+document.addEventListener('touchend', (e) => {
+  if (e.target.closest('.btn')) {
+    e.preventDefault();
+    e.target.closest('.btn').click();
+  }
+}, { passive: false });
+
+// ══════════════════════════════════════
+// INITIALIZATION
+// ══════════════════════════════════════
+(function init() {
+  // Try auto-login on page load
+  tryAutoLogin();
+
+  // Restore user from localStorage if needed
+  if (!currentUser) {
+    try {
+      const stored = localStorage.getItem('komerce_user');
+      if (stored) currentUser = JSON.parse(stored);
+    } catch {}
+  }
+})();
+</script>
+</body>
+</html>
