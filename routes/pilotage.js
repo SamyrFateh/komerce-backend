@@ -428,7 +428,7 @@ router.get('/clients', async (req, res) => {
         COUNT(DISTINCT o.user_id) FILTER (WHERE o.user_id IN (
           SELECT user_id FROM orders
           GROUP BY user_id
-          HAVING MIN(created_at) >= $1 AND MIN(created_at) < $3
+          HAVING MIN(created_at) >= $1 AND MIN(created_at) < $2
         ))                                                               AS nouveaux_clients,
         -- Clients récurrents (2+ commandes toutes périodes confondues)
         COUNT(DISTINCT o.user_id) FILTER (WHERE o.user_id IN (
@@ -436,8 +436,8 @@ router.get('/clients', async (req, res) => {
           GROUP BY user_id HAVING COUNT(*) >= 2
         ))                                                               AS clients_recurrents
       FROM orders o
-      WHERE o.created_at >= $1 AND o.created_at < $3
-    `, [debut, fin, finExcl]);
+      WHERE o.created_at >= $1 AND o.created_at < $2
+    `, [debut, finExcl]);
 
     // ── 2. Top clients (volume CA + fréquence) ────────────────────────────────
     const { rows: topClients } = await db.query(`

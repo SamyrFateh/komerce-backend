@@ -320,7 +320,7 @@ router.get('/customs', ...guard, async (req, res) => {
           ch.notes,
           u.full_name AS agent_name
         FROM customs_history ch
-        LEFT JOIN orders   o ON o.id = ch.order_id
+        LEFT JOIN orders   o ON o.id = ch.order_id::uuid
         LEFT JOIN order_items oi ON oi.order_id = o.id
         LEFT JOIN products p ON p.id = oi.product_id
         LEFT JOIN users    u ON u.id = ch.customs_agent_id
@@ -339,7 +339,7 @@ router.get('/customs', ...guard, async (req, res) => {
           ROUND(AVG(ch.customs_delta_pct), 2)             AS avg_delta_pct,
           COUNT(*) FILTER (WHERE ch.is_anomaly = TRUE)    AS anomalies
         FROM customs_history ch
-        LEFT JOIN orders   o ON o.id = ch.order_id
+        LEFT JOIN orders   o ON o.id = ch.order_id::uuid
         LEFT JOIN order_items oi ON oi.order_id = o.id
         LEFT JOIN products p ON p.id = oi.product_id
         WHERE ch.created_at >= NOW() - ($1 || ' days')::INTERVAL
@@ -354,7 +354,7 @@ router.get('/customs', ...guard, async (req, res) => {
           ch.customs_estimated_kmf, ch.customs_real_kmf, ch.customs_delta_pct,
           ch.notes
         FROM customs_history ch
-        LEFT JOIN orders   o ON o.id = ch.order_id
+        LEFT JOIN orders   o ON o.id = ch.order_id::uuid
         LEFT JOIN order_items oi ON oi.order_id = o.id
         LEFT JOIN products p ON p.id = oi.product_id
         WHERE ch.is_anomaly = TRUE
@@ -400,7 +400,7 @@ router.get('/alerts', ...guard, async (req, res) => {
         SELECT ch.created_at, o.reference, p.category,
                ch.customs_real_kmf, ch.customs_delta_pct
         FROM customs_history ch
-        LEFT JOIN orders   o ON o.id = ch.order_id
+        LEFT JOIN orders   o ON o.id = ch.order_id::uuid
         LEFT JOIN order_items oi ON oi.order_id = o.id
         LEFT JOIN products p ON p.id = oi.product_id
         WHERE ch.is_anomaly = TRUE
