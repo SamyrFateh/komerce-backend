@@ -4,6 +4,7 @@
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v8.8 : migration robuste (try/catch individuel) + CREATE TABLE partners + gen_random_uuid
  * Changelog v8.7 : auto-migration customs_history colonnes + loyalty_tiers table + users.loyalty_tier_id
  * Changelog v8.6 : auto-migration bcrypt admin hash · fix P0 dashboard + scans · fix 404 routes
  * Changelog v8.5 : rate-limit middleware branché · health route montée · .env retiré du repo
@@ -130,7 +131,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '8.7',
+      version:       '8.8',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -220,57 +221,80 @@ async function fixAdminHash() {
   }
 }
 
-// ── Auto-migration : tables/colonnes manquantes (customs_history, loyalty) ───
+// ── Auto-migration : tables/colonnes manquantes ─────────────────────────────
 
 async function fixMissingSchema() {
+  const run = async (label, sql) => {
+    try {
+      await db.query(sql);
+      console.log(`  ✅ ${label}`);
+    } catch (err) {
+      console.error(`  ⚠️ ${label}: ${err.message}`);
+    }
+  };
+
+  console.log('🔧 Running schema migrations...');
+
+  // 1. customs_history — colonnes manquantes pour admin/customs
+  await run('customs_history.customs_estimated_kmf',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_estimated_kmf INTEGER DEFAULT 0`);
+  await run('customs_history.notes',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS notes TEXT`);
+  await run('customs_history.customs_agent_id',
+    `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_agent_id UUID`);
+
+  // 2. partners — table manquante pour admin/partners
+  await run('partners table', `
+    CREATE TABLE IF NOT EXISTS partners (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name TEXT NOT NULL,
+      partner_type TEXT NOT NULL DEFAULT 'relais',
+      contact_name TEXT,
+      contact_phone TEXT,
+      contact_email TEXT,
+      address TEXT,
+      island TEXT,
+      zone TEXT,
+      commission_kmf INTEGER DEFAULT 0,
+      notes TEXT,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  // 3. loyalty_tiers — table nécessaire pour pilotage/clients
+  await run('loyalty_tiers table', `
+    CREATE TABLE IF NOT EXISTS loyalty_tiers (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      label TEXT NOT NULL UNIQUE,
+      min_orders INT NOT NULL DEFAULT 0,
+      discount_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
+      badge TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  // 4. users.loyalty_tier_id — colonne FK pour pilotage/clients
+  await run('users.loyalty_tier_id',
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS loyalty_tier_id UUID`);
+
+  // 5. customs_taux_mensuel — vue pour pilotage.js
+  await run('customs_taux_mensuel view', `
+    CREATE OR REPLACE VIEW customs_taux_mensuel AS
+    SELECT
+      TO_CHAR(created_at, 'YYYY-MM') AS mois,
+      ROUND(AVG(customs_delta_pct)::numeric, 2) AS taux_effectif_pct
+    FROM customs_history
+    WHERE customs_real_kmf > 0
+    GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+  `);
+
+  // 6. Seed default loyalty tiers si vide
   try {
-    // 1. customs_history — ajouter colonnes manquantes référencées par admin.js
-    await db.query(`
-      ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_estimated_kmf INTEGER DEFAULT 0
-    `);
-    await db.query(`
-      ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS notes TEXT
-    `);
-    await db.query(`
-      ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_agent_id UUID
-    `);
-    console.log('✅ Migration: customs_history colonnes ajoutées');
-
-    // 2. loyalty_tiers — table nécessaire pour pilotage/clients
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS loyalty_tiers (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        label TEXT NOT NULL UNIQUE,
-        min_orders INT NOT NULL DEFAULT 0,
-        discount_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
-        badge TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-    console.log('✅ Migration: loyalty_tiers table créée');
-
-    // 3. users.loyalty_tier_id — colonne FK nécessaire pour pilotage/clients
-    await db.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS loyalty_tier_id UUID
-    `);
-    console.log('✅ Migration: users.loyalty_tier_id ajouté');
-
-    // 4. customs_taux_mensuel — vue utilisée par pilotage.js
-    await db.query(`
-      CREATE OR REPLACE VIEW customs_taux_mensuel AS
-      SELECT
-        TO_CHAR(created_at, 'YYYY-MM') AS mois,
-        ROUND(AVG(customs_delta_pct)::numeric, 2) AS taux_effectif_pct
-      FROM customs_history
-      WHERE customs_real_kmf > 0
-      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
-    `);
-    console.log('✅ Migration: customs_taux_mensuel vue créée');
-
-    // 5. Seed default loyalty tiers si vide
     const { rows } = await db.query('SELECT COUNT(*)::int AS c FROM loyalty_tiers');
     if (rows[0].c === 0) {
-      await db.query(`
+      await run('loyalty tiers seed', `
         INSERT INTO loyalty_tiers (label, min_orders, discount_pct, badge) VALUES
           ('Bronze',   0,  0, '🥉'),
           ('Silver',   3,  2, '🥈'),
@@ -278,18 +302,19 @@ async function fixMissingSchema() {
           ('Platinum', 25, 8, '💎')
         ON CONFLICT DO NOTHING
       `);
-      console.log('✅ Migration: loyalty tiers seed inséré');
     }
   } catch (err) {
-    console.error('Migration fixMissingSchema error (non-fatal):', err.message);
+    console.error(`  ⚠️ loyalty seed: ${err.message}`);
   }
+
+  console.log('🔧 Schema migrations complete.');
 }
 
 const PORT = process.env.PORT || 3000;
 
 fixAdminHash().then(() => fixMissingSchema()).then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`KOMERCE API v8.7 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — migrations OK`);
+    console.log(`KOMERCE API v8.8 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — migrations OK`);
   });
 
   process.on('SIGTERM', () => {
