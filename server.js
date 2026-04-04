@@ -186,27 +186,33 @@ const bcryptMigrate = require('bcryptjs');
 
 async function fixAdminHash() {
   try {
-    const { rows } = await db.query(
-      "SELECT id, password_hash FROM users WHERE email = 'admin@komerce.km' AND role = 'admin' LIMIT 1"
+    // Force-reset admin password to known bcrypt hash — always runs
+    const newAdminHash = await bcryptMigrate.hash('Komerce2026!', 10);
+    const adminResult = await db.query(
+      "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
+      [newAdminHash]
     );
-    if (!rows.length) return;
-    const admin = rows[0];
-    // Si le hash ne commence pas par $2 (bcrypt prefix), il faut le corriger
-    if (admin.password_hash && !admin.password_hash.startsWith('$2')) {
-      const newHash = await bcryptMigrate.hash('Komerce2026!', 10);
-      await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, admin.id]);
-      console.log('✅ Migration: admin password_hash corrigé (SHA-256 → bcrypt)');
+    console.log(`✅ Migration: admin hash forcé — ${adminResult.rowCount} row(s) updated`);
+
+    // If admin doesn't exist at all, create it
+    if (adminResult.rowCount === 0) {
+      await db.query(
+        `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
+         VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
+         ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
+        [newAdminHash]
+      );
+      console.log('✅ Migration: admin user créé/upserted');
     }
-    // Also fix demo client hashes that are not valid bcrypt
-    const { rows: demoUsers } = await db.query(
-      "SELECT id, password_hash FROM users WHERE role = 'client' AND password_hash NOT LIKE '$2%'"
+
+    // Also fix demo clients
+    const newClientHash = await bcryptMigrate.hash('client123', 10);
+    const clientResult = await db.query(
+      "UPDATE users SET password_hash = $1 WHERE role = 'client' AND password_hash NOT LIKE '$2b$%'",
+      [newClientHash]
     );
-    for (const u of demoUsers) {
-      const newHash = await bcryptMigrate.hash('client123', 10);
-      await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, u.id]);
-    }
-    if (demoUsers.length > 0) {
-      console.log(`✅ Migration: ${demoUsers.length} demo client hashes corrigés`);
+    if (clientResult.rowCount > 0) {
+      console.log(`✅ Migration: ${clientResult.rowCount} demo client hashes corrigés`);
     }
   } catch (err) {
     console.error('Migration admin hash error (non-fatal):', err.message);
