@@ -4,6 +4,7 @@
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v8.6 : auto-migration bcrypt admin hash · fix P0 dashboard + scans · fix 404 routes
  * Changelog v8.5 : rate-limit middleware branché · health route montée · .env retiré du repo
  * Changelog v8.1 : Helmet · CORS fix · graceful shutdown · health check DB · cron lock
  * Changelog v8.0 : /api/loyalty ajouté · /api/unsold ajouté · migration session 6
@@ -128,7 +129,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '8.5',
+      version:       '8.6',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -216,7 +217,7 @@ const PORT = process.env.PORT || 3000;
 
 fixAdminHash().then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`KOMERCE API v8.5 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened`);
+    console.log(`KOMERCE API v8.6 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — bcrypt migration OK`);
   });
 
   process.on('SIGTERM', () => {
