@@ -153,11 +153,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    3. HERO SPLIT
    ──────────────────────────────────────── */
 #hero {
-  display: flex; min-height: 480px;
+  display: flex; min-height: 280px; max-height: 320px;
 }
 .hero-left {
   flex: 0 0 55%; display: flex; flex-direction: column; justify-content: center;
-  padding: 60px 48px;
+  padding: 32px 40px;
   background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%);
 }
 .hero-badge {
@@ -167,8 +167,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   width: fit-content;
 }
 .hero-title {
-  font-size: 2.6rem; font-weight: 800; color: var(--dark);
-  margin-bottom: 22px; animation: fadeInUp 0.8s ease-out;
+  font-size: 2rem; font-weight: 800; color: var(--dark);
+  margin-bottom: 16px; animation: fadeInUp 0.8s ease-out;
 }
 .hero-accent { color: var(--primary); }
 .hero-search {
@@ -241,10 +241,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 .product-card:hover { transform: translateY(-6px); box-shadow: 0 8px 32px rgba(22,163,74,0.18); }
 .product-card .card-img {
-  height: 170px; display: flex; align-items: center; justify-content: center;
-  background: var(--primary-light); font-size: 3.5rem;
-  overflow: hidden;
+  height: 160px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 50%, #86efac 100%);
+  font-size: 4rem; overflow: hidden; position: relative;
 }
+.product-card .card-img.cat-fashion { background: linear-gradient(135deg, #fce7f3, #fbcfe8, #f9a8d4); }
+.product-card .card-img.cat-electronics { background: linear-gradient(135deg, #dbeafe, #bfdbfe, #93c5fd); }
+.product-card .card-img.cat-services { background: linear-gradient(135deg, #dcfce7, #bbf7d0, #86efac); }
+.product-card .card-img.cat-food { background: linear-gradient(135deg, #fef3c7, #fde68a, #fcd34d); }
+.product-card .card-img.cat-home { background: linear-gradient(135deg, #ede9fe, #ddd6fe, #c4b5fd); }
 .product-card .card-img img { width: 100%; height: 100%; object-fit: cover; }
 .card-body { padding: 14px 16px; }
 .card-category {
@@ -619,10 +624,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    RESPONSIVE
    ──────────────────────────────────────── */
 @media (max-width: 768px) {
-  #hero { flex-direction: column; }
-  .hero-left { flex: none; padding: 40px 24px; }
-  .hero-title { font-size: 1.8rem; }
-  .hero-right { height: 240px; }
+  #hero { flex-direction: column; max-height: none; }
+  .hero-left { flex: none; padding: 28px 20px; }
+  .hero-title { font-size: 1.6rem; }
+  .hero-right { height: 180px; }
   .adv-grid { grid-template-columns: 1fr; gap: 10px; }
   .steps-grid { grid-template-columns: repeat(2, 1fr); }
   .trust-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
@@ -1024,6 +1029,8 @@ function renderProducts(list) {
     /* Image area */
     var imgDiv = document.createElement('div');
     imgDiv.className = 'card-img';
+    var catKey = (p.category || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (catKey) imgDiv.classList.add('cat-' + catKey);
     if (p.image_url) {
       var img = document.createElement('img');
       img.src = p.image_url;
@@ -1031,7 +1038,10 @@ function renderProducts(list) {
       img.loading = 'lazy';
       imgDiv.appendChild(img);
     } else {
-      imgDiv.textContent = productEmoji(p);
+      var emojiSpan = document.createElement('span');
+      emojiSpan.style.cssText = 'font-size:4rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.1));';
+      emojiSpan.textContent = productEmoji(p);
+      imgDiv.appendChild(emojiSpan);
     }
     card.appendChild(imgDiv);
 
