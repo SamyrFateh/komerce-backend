@@ -147,7 +147,7 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Endpoint introuvable' });
   }
-  res.sendFile(path.join(__dirname, 'public', 'Komerce_Web.html'));
+  res.sendFile(path.join(__dirname, 'public', 'Komerce_Boutique.html'));
 });
 
 // ── Erreurs globales ──────────────────────────────────────────────────────────
