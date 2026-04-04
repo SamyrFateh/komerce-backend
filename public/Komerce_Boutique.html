@@ -1552,6 +1552,19 @@ function fmtBoth(kmf) {
 
 function productEmoji(p) { return p.emoji || '📦'; }
 
+function categoryLabel(cat) {
+  var labels = {
+    'electronics': 'Électronique',
+    'home': 'Maison & Cuisine',
+    'wedding': 'Mariage & Cadeaux',
+    'fashion': 'Mode & Vêtements',
+    'services': 'Beauté & Soins',
+    'beauty': 'Beauté & Soins'
+  };
+  return labels[cat] || cat || '';
+}
+
+
 /* ── API ── */
 async function apiGet(path) {
   var res = await fetch(path, { credentials: 'include' });
@@ -1835,7 +1848,7 @@ function renderProducts(list) {
 
     var cat = document.createElement('div');
     cat.className = 'card-category';
-    cat.textContent = p.category || '';
+    cat.textContent = categoryLabel(p.category);
     body.appendChild(cat);
 
     var name = document.createElement('div');
@@ -1926,7 +1939,7 @@ function liveSearch(q) {
       return '<div class="search-item" data-idx="' + i + '" data-pid="' + p.id + '">'
         + imgHtml
         + '<div class="search-item-info"><div class="search-item-name">' + sanitize(p.name) + '</div>'
-        + '<div class="search-item-cat">' + sanitize(p.category || '') + '</div></div>'
+        + '<div class="search-item-cat">' + sanitize(categoryLabel(p.category)) + '</div></div>'
         + '<div class="search-item-price">' + fmt(p.price_kmf || 0, 'KMF') + '</div>'
         + '</div>';
     }).join('') + '<div class="search-count">' + results.length + ' résultat' + (results.length > 1 ? 's' : '') + '</div>';
@@ -2063,7 +2076,7 @@ function openProductModal(p) {
 
   var catEl = document.createElement('div');
   catEl.className = 'pd-cat';
-  catEl.textContent = p.category || '';
+  catEl.textContent = categoryLabel(p.category);
   info.appendChild(catEl);
 
   var nameEl = document.createElement('div');
