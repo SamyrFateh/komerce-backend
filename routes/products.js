@@ -12,6 +12,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // ─── GET /api/products ───────────────────────────────────────────────────────
 
@@ -263,6 +264,81 @@ router.delete('/:id', authenticate, requireRole(['admin']), async (req, res) => 
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Erreur suppression produit' });
+  }
+});
+
+// ─── POST /api/products/:id/image (admin) — D1/BUG-016 ──────────────────────
+// Upload une image produit (multipart/form-data, champ "image")
+// Stocke dans public/uploads/products/ et met à jour image_url en DB
+
+router.post('/:id/image', authenticate, requireRole(['admin']), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "image" (multipart/form-data)' });
+    }
+
+    const imageUrl = `/uploads/products/${req.file.filename}`;
+
+    const { rows: [product] } = await db.query(
+      `UPDATE products SET image_url = $1, updated_at = NOW()
+       WHERE id = $2 AND is_active = TRUE RETURNING id, name, image_url`,
+      [imageUrl, req.params.id]
+    );
+
+    if (!product) {
+      // Nettoyer le fichier uploadé si produit introuvable
+      const fs = require('fs');
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+      return res.status(404).json({ error: 'Produit introuvable' });
+    }
+
+    console.log(`📷 Image uploadée pour "${product.name}" → ${imageUrl}`);
+    res.json({ success: true, image_url: imageUrl, product });
+  } catch (err) {
+    console.error('Upload image error:', err.message);
+    res.status(500).json({ error: 'Erreur upload image' });
+  }
+});
+
+// ─── POST /api/products/:id/images (admin) — Upload multiple ─────────────────
+// Upload jusqu'à 5 images supplémentaires pour un produit
+
+router.post('/:id/images', authenticate, requireRole(['admin']), upload.array('images', 5), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "images" (max 5)' });
+    }
+
+    const imageUrls = req.files.map(f => `/uploads/products/${f.filename}`);
+
+    // Récupérer les images existantes
+    const { rows: [product] } = await db.query(
+      'SELECT id, name, images FROM products WHERE id = $1 AND is_active = TRUE',
+      [req.params.id]
+    );
+
+    if (!product) {
+      const fs = require('fs');
+      req.files.forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
+      return res.status(404).json({ error: 'Produit introuvable' });
+    }
+
+    const existing = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
+    const merged = [...existing, ...imageUrls];
+
+    // Si pas d'image principale, utiliser la première uploadée
+    const setMain = existing.length === 0 ? `, image_url = '${imageUrls[0]}'` : '';
+
+    await db.query(
+      `UPDATE products SET images = $1${setMain}, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(merged), req.params.id]
+    );
+
+    console.log(`📷 ${imageUrls.length} images uploadées pour "${product.name}"`);
+    res.json({ success: true, images: merged, new_images: imageUrls });
+  } catch (err) {
+    console.error('Upload images error:', err.message);
+    res.status(500).json({ error: 'Erreur upload images' });
   }
 });
 

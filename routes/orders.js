@@ -29,6 +29,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
+const { sendOrderConfirmation } = require('../utils/email');
 
 // ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
 //
@@ -425,6 +426,21 @@ router.post('/', authenticate, async (req, res) => {
     if (smsPhone) {
       sendSMS(smsPhone, STATUS_SMS.ordered(reference), 'confirmation', order.id)
         .catch(console.error);
+    }
+
+    // ── Email confirmation (D2/BUG-017) ─────────────────────────────────────
+    const userEmail = req.user.email || req.body.email;
+    if (userEmail) {
+      const emailItems = items.map(i => ({
+        name: productMap[i.product_id]?.name || 'Produit',
+        qty: parseInt(i.quantity) || 1,
+        price_kmf: productMap[i.product_id]?.price_kmf || 0,
+      }));
+      sendOrderConfirmation(
+        { reference, total_kmf, relais_name: relais?.name },
+        userEmail,
+        emailItems
+      ).catch(err => console.error('[EMAIL] Order confirmation error:', err.message));
     }
 
     res.status(201).json({

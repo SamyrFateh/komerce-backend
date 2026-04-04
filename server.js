@@ -224,8 +224,14 @@ const bcryptMigrate = require('bcryptjs');
 
 async function fixAdminHash() {
   try {
-    // Force-reset admin password to known bcrypt hash â always runs
-    const newAdminHash = await bcryptMigrate.hash('Komerce2026!', 10);
+    // D3 : Si ADMIN_PASSWORD est défini dans l'env, utiliser ce mot de passe au lieu du défaut
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Komerce2026!';
+    if (process.env.ADMIN_PASSWORD) {
+      console.log('🔒 ADMIN_PASSWORD défini — utilisation du mot de passe personnalisé');
+    } else {
+      console.warn('⚠️  ADMIN_PASSWORD non défini — utilisation du mot de passe par défaut (changer en prod !)');
+    }
+    const newAdminHash = await bcryptMigrate.hash(adminPassword, 10);
     const adminResult = await db.query(
       "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
       [newAdminHash]
