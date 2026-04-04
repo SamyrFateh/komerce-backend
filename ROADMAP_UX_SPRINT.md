@@ -51,6 +51,26 @@
 | D3 | **Mot de passe admin** | `fixAdminHash()` lit `ADMIN_PASSWORD` depuis env vars → à configurer sur Railway | `9cb89b8` | ✅ |
 | D4 | **JWT_SECRET + Sécurité prod** | `SECURITY_CHECKLIST.md` créé avec toutes les instructions | `9cb89b8` | ✅ |
 
+### ✅ Hotfix Frontend — BUG-018 (4 avril 2026)
+
+> **12 bugs corrigés** — la boutique était entièrement non-fonctionnelle.  
+> **Commit :** `0246887` · **Issue :** [#19](https://github.com/SamyrFateh/komerce-backend/issues/19)
+
+| # | Bug | Fichier | Fix |
+|---|-----|---------|-----|
+| C1 | `openCart()` non définie | Boutique.html | Fonction ajoutée |
+| C2 | `saveCart()` non définie | Boutique.html | Fonction ajoutée (localStorage) |
+| C3 | `refreshCartBadge()` non définie | Boutique.html | Fonction ajoutée |
+| C4 | `setQty()` non définie | Boutique.html | Fonction ajoutée |
+| C5 | `/api/auth/auto-register` protégé | auth.js | Route `/guest-checkout` publique |
+| C6 | `payment_mode: 'card'` rejeté | Boutique.html | → `'stripe_eur'` |
+| C7 | Route `/api/relais` inexistante | relais.js | Route `GET /public` ajoutée |
+| I1 | Statuts tracking mal mappés | Boutique.html | 8 statuts backend alignés |
+| I3 | `product_id` type mismatch | Boutique.html | Forcé en `String()` |
+| IMP | `flyToCart()` jamais appelé | Boutique.html | Appel conditionnel ajouté |
+
+---
+
 ### Priorité MOYENNE (avant lancement marketing)
 
 | # | Feature | Détail | Effort |
@@ -99,11 +119,12 @@ komerce-backend/
 ├── middleware/upload.js   # Multer — upload images produits (D1)
 ├── utils/email.js         # Nodemailer — emails confirmation (D2)
 ├── routes/
-│   ├── auth.js            # POST /api/auth/login|register
+│   ├── auth.js            # POST /api/auth/login|register|guest-checkout
 │   ├── orders.js          # POST /api/orders + PATCH status + SELECT FOR UPDATE
 │   ├── admin.js           # Seed, reset, counts
 │   ├── dashboard.js       # Stats sales, ops (guards DIV/0)
 │   ├── pilotage.js        # CDR, marges, top clients
+│   ├── relais.js          # GET /api/relais/public + CRUD admin
 │   └── finance.js         # Summary, export CSV/PDF
 ├── db/schema.sql          # 5 index ajoutés (BUG-010)
 └── public/
@@ -124,7 +145,8 @@ komerce-backend/
 | BUG-015 | 7 PRs stale sur GitHub | 6 PRs fermées avec commentaires | [#16](https://github.com/SamyrFateh/komerce-backend/issues/16) | ✅ |
 | BUG-016 | Images produits : placeholders gris | Routes upload + middleware multer | [#17](https://github.com/SamyrFateh/komerce-backend/issues/17) | ✅ |
 | BUG-017 | Pas d'email de confirmation commande | nodemailer + template HTML | [#18](https://github.com/SamyrFateh/komerce-backend/issues/18) | ✅ |
+| BUG-018 | Frontend boutique non-fonctionnel (12 bugs) | 4 fonctions JS manquantes + 3 routes backend + 3 fixes data | [#19](https://github.com/SamyrFateh/komerce-backend/issues/19) | ✅ |
 
 ---
 
-*Mis à jour le 4 avril 2026 — Sprint UX+2 terminé (D1–D4 + BUG-015/016/017) — Tasklet*
+*Mis à jour le 4 avril 2026 — Sprint UX+2 + Hotfix BUG-018 (12 bugs frontend) — Tasklet*
