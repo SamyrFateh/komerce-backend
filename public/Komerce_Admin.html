@@ -713,8 +713,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 // ── Config API ────────────────────────────────────────────────────────────────
 const API = '/api';  // BUG-001 fix: relative URL only (no localhost)
 
-const token = localStorage.getItem('kmrc_logged_in') || ''; // BUG-014: flag only
-_token = token || null;
+let token = localStorage.getItem('kmrc_logged_in') || ''; // BUG-014: flag only
 // Afficher login si pas de token
 if (!token) {
   document.getElementById('login-screen').style.display = 'flex';
@@ -767,7 +766,7 @@ function showT(msg) {
   setTimeout(() => t.classList.remove("on"), 2400);
 }
 
-function fmt(n) { return n ? parseInt(n).toLocaleString('fr-FR') : '0'; }
+function fmt(n) { const v = parseInt(n); return isFinite(v) ? v.toLocaleString('fr-FR') : '0'; }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('fr-FR') : '—'; }
 
 // ── STATUS BADGES ─────────────────────────────────────────────────────────────
@@ -782,8 +781,15 @@ const STATUS_LABEL = {
   cancelled:'Annule', disputed:'⚠ Litige', refunded:'Rembourse',
   pending_payment:'Att. paiement',
 };
-function badge(status) {
+function statusBadge(status) {
   return `<span class="b ${STATUS_CLASS[status]||'ba'}">${STATUS_LABEL[status]||status}</span>`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -829,9 +835,9 @@ async function loadDashboard() {
       ].slice(0,5);
       tbody.innerHTML = orders.length ? orders.map(o => `
         <tr>
-          <td class="mono">${o.reference}</td>
-          <td class="bold">${o.destinataire||o.first_name||'—'}</td>
-          <td>${badge(o.status)}</td>
+          <td class="mono">${escapeHtml(o.reference)}</td>
+          <td class="bold">${escapeHtml(o.destinataire||o.first_name||'—')}</td>
+          <td>${statusBadge(o.status)}</td>
           <td class="mono">${fmt(o.total_kmf)}</td>
           <td><span class="b bk">${o.payment_mode==='stripe_eur'?'Stripe':o.payment_mode==='cash_relais'?'Especes':'—'}</span></td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--ink4);padding:20px">Aucune commande active</td></tr>';
@@ -877,16 +883,16 @@ async function loadOrders(status, paymentMode) {
     if (!tbody) return;
     tbody.innerHTML = orders.length ? orders.map(o => `
       <tr>
-        <td class="mono">${o.reference}</td>
-        <td class="bold">${o.full_name||o.first_name||'—'}</td>
-        <td class="mono">${o.phone||'—'}</td>
+        <td class="mono">${escapeHtml(o.reference)}</td>
+        <td class="bold">${escapeHtml(o.full_name||o.first_name||'—')}</td>
+        <td class="mono">${escapeHtml(o.phone||'—')}</td>
         <td>—</td>
         <td class="mono">${fmt(o.total_kmf)}</td>
-        <td class="mono">${o.total_eur ? o.total_eur+'€' : '—'}</td>
+        <td class="mono">${o.total_eur ? escapeHtml(String(o.total_eur))+'€' : '—'}</td>
         <td><span class="b ${o.payment_mode==='stripe_eur'?'bp':'bk'}">${o.payment_mode==='stripe_eur'?'Stripe':'Especes'}</span></td>
-        <td>${badge(o.status)}</td>
+        <td>${statusBadge(o.status)}</td>
         <td class="mono">${fmtDate(o.created_at)}</td>
-        <td><button class="btn2" onclick="showT('${o.reference}')">Voir</button></td>
+        <td><button class="btn2" onclick="showT('${escapeHtml(o.reference)}')">Voir</button></td>
       </tr>`).join('') :
       '<tr><td colspan="10" style="text-align:center;color:var(--ink4);padding:20px">Aucune commande</td></tr>';
     document.querySelector('#scr-orders div div:last-child')?.querySelector('div')?.setAttribute('data-count', orders.length);
@@ -949,9 +955,9 @@ async function loadLitiges() {
         const el = document.createElement('div');
         el.className = 'lit urgent';
         el.innerHTML = `
-          <div class="lit-head"><span class="lit-id">${r.reference} · ${r.jours_de_retard}j retard</span><span class="b br">Urgent</span></div>
-          <div class="lit-desc">${r.type_retard} — ${r.compensation_recommandee.replace(/_/g,' ')}</div>
-          <div class="lit-meta">${r.client_nom||'—'} · ${r.client_phone||'—'}</div>
+          <div class="lit-head"><span class="lit-id">${escapeHtml(r.reference)} · ${r.jours_de_retard}j retard</span><span class="b br">Urgent</span></div>
+          <div class="lit-desc">${escapeHtml(r.type_retard)} — ${escapeHtml((r.compensation_recommandee||'').replace(/_/g,' '))}</div>
+          <div class="lit-meta">${escapeHtml(r.client_nom||'—')} · ${escapeHtml(r.client_phone||'—')}</div>
           <div class="lit-acts">
             <button class="btn2" style="font-size:11px" onclick="showT('SMS suggere copie')">SMS suggere</button>
           </div>`;
@@ -999,12 +1005,12 @@ async function loadFinance() {
 
       if (txt.includes('CSV')) {
         btn.onclick = () => {
-          window.open(API + `/api/finance/export?month=${month}&year=${year}`, '_blank');
+          window.open(API + `/finance/export?month=${month}&year=${year}`, '_blank');
         };
       }
       if (txt.includes('PDF') || txt.includes('Rapport')) {
         btn.onclick = () => {
-          window.open(API + `/api/finance/report?month=${month}&year=${year}`, '_blank');
+          window.open(API + `/finance/report?month=${month}&year=${year}`, '_blank');
         };
       }
       if (txt.includes('Stripe')) {
@@ -1073,8 +1079,8 @@ async function loadCatalogue() {
     if (!tbody || !products.length) return;
     tbody.innerHTML = products.map(p => `
       <tr>
-        <td class="bold">${p.emoji||''} ${p.name}</td>
-        <td><span class="b bb">${p.category}</span></td>
+        <td class="bold">${escapeHtml(p.emoji||'')} ${escapeHtml(p.name)}</td>
+        <td><span class="b bb">${escapeHtml(p.category)}</span></td>
         <td class="mono">${p.price_aed||'—'}</td>
         <td class="mono">—</td>
         <td class="mono">—%</td>
@@ -1114,7 +1120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pill = document.querySelector('.tb-pill.live');
     if (dot && h.status === 'ok') {
       dot.style.background = 'var(--grn)';
-      if (pill) pill.innerHTML = '<span class="dot-live"></span> API connectée · ' + h.env;
+      if (pill) pill.innerHTML = '<span class="dot-live"></span> API connectée · ' + escapeHtml(h.env);
     }
   }).catch(() => {
     const dot = document.querySelector('.dot-live');
@@ -1127,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ══ FONCTIONS FUSIONNÉES (admin_v2) ══
 
 // ══ FUSION admin_v2 — Auth & Dashboard ══════════════════════════════════════
-let _token = localStorage.getItem('kmrc_logged_in') || null; // BUG-014: flag only
+var _token = localStorage.getItem('kmrc_logged_in') || null; // BUG-014: flag only
 let _salesPeriod = 30;
 
 // Adapter apiFetch pour utiliser la même base API que le Backoffice
@@ -1138,7 +1144,7 @@ async function doLogin() {
   errEl.style.display = 'none';
 
   try {
-    const res = await fetch(API + '/api/auth/login', {
+    const res = await fetch(API + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -1186,11 +1192,12 @@ document.getElementById('login-password').addEventListener('keydown', e => {
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 
-function switchTab(tab) {
+let _currentTab = 'ops';
+function switchTab(tab, e) {
   _currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  event.target.classList.add('active');
+  if (e && e.target) e.target.classList.add('active');
   document.getElementById('panel-' + tab).classList.add('active');
 
   if (tab === 'ops')      loadOps();
@@ -1210,7 +1217,7 @@ function refreshCurrent() {
 
 async function apiFetch(path) {
   const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json', // Authorization handled by httpOnly cookie }
+    headers: { 'Content-Type': 'application/json' } // Authorization handled by httpOnly cookie
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -1249,11 +1256,11 @@ async function loadOps() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
-    const d = await apiFetch('/api/dashboard/ops');
+    const d = await apiFetch('/dashboard/ops');
     const a = d.activite;
     const l = d.logistique;
     const s = d.sla;
-    const total_sla = s.on_time + s.warning + s.late + s.blocked || 1;
+    const total_sla = (s.on_time + s.warning + s.late + s.blocked) || 1;
 
     el.innerHTML = `
       <div class="fade-in">
@@ -1307,8 +1314,8 @@ async function loadOps() {
                 <div style="font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.5rem;">Commandes en retard</div>
                 ${s.details.late.map(c => `
                   <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.83rem;">
-                    <span>${c.reference}</span>
-                    <span>${badge(c.status, 'orange')}</span>
+                    <span>${escapeHtml(c.reference)}</span>
+                    <span>${badge(escapeHtml(c.status), 'orange')}</span>
                     <span style="color:var(--red);">${c.jours}j</span>
                   </div>`).join('')}
               </div>` : ''}
@@ -1387,10 +1394,10 @@ async function loadOps() {
                 <tr><th>Référence</th><th>Client</th><th>Retard</th><th>Action</th></tr>
                 ${d.clients_retards.urgents.map(c => `
                   <tr>
-                    <td><strong>${c.reference}</strong></td>
-                    <td>${c.client || '—'}<br><span style="font-size:.75rem;color:var(--muted);">${c.email || ''}</span></td>
+                    <td><strong>${escapeHtml(c.reference)}</strong></td>
+                    <td>${escapeHtml(c.client || '—')}<br><span style="font-size:.75rem;color:var(--muted);">${escapeHtml(c.email || '')}</span></td>
                     <td style="color:var(--red);">${c.jours_retard}j</td>
-                    <td>${badge(c.compensation, c.compensation.includes('remb') ? 'red' : 'orange')}</td>
+                    <td>${badge(escapeHtml(c.compensation), (c.compensation||'').includes('remb') ? 'red' : 'orange')}</td>
                   </tr>`).join('')}
               </table>
               <div style="margin-top:.8rem;font-size:.82rem;color:var(--muted);">→ Voir tous les détails dans l'onglet <strong>Retards</strong></div>
@@ -1402,7 +1409,7 @@ async function loadOps() {
     `;
 
   } catch (e) {
-    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -1416,11 +1423,11 @@ function tableCommandes(items, fields, headers) {
           ${items.map(item => `
             <tr>${fields.map(f => {
               const v = item[f];
-              if (f === 'status') return `<td>${badge(v, slaColor(v))}</td>`;
+              if (f === 'status') return `<td>${badge(escapeHtml(v), slaColor(v))}</td>`;
               if (f === 'eta_arrivee' && v) return `<td>${new Date(v).toLocaleDateString('fr-FR')}</td>`;
               if (f === 'heures_en_attente') return `<td style="color:${Number(v)>48?'var(--red)':'inherit'}">${Math.round(v)}h</td>`;
               if (f === 'jours_en_mer') return `<td style="color:${Number(v)>30?'var(--red)':Number(v)>25?'var(--accent)':'inherit'}">${v}j</td>`;
-              return `<td>${v || '—'}</td>`;
+              return `<td>${escapeHtml(String(v || '—'))}</td>`;
             }).join('')}</tr>
           `).join('')}
         </table>
@@ -1462,7 +1469,7 @@ async function loadSales(period) {
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
-    const d = await apiFetch(`/api/dashboard/sales?period=${period}`);
+    const d = await apiFetch(`/dashboard/sales?period=${period}`);
     const r = d.kpi_l1;
     const m = r.marge;
 
@@ -1558,7 +1565,7 @@ async function loadSales(period) {
               <tr><th>Catégorie</th><th>Commandes</th><th>CA</th><th>Marge produit</th><th>Taux</th></tr>
               ${(d.kpi_l2.marge_par_categorie || []).map(c => `
                 <tr>
-                  <td><strong>${c.category || 'Non catégorisé'}</strong></td>
+                  <td><strong>${escapeHtml(c.category || 'Non catégorisé')}</strong></td>
                   <td>${c.nb_commandes}</td>
                   <td>${kmf(c.ca_kmf)}</td>
                   <td>${kmf(c.marge_produit_kmf)}</td>
@@ -1577,7 +1584,7 @@ async function loadSales(period) {
               ${(d.produits.top_10 || []).map((p, i) => `
                 <tr>
                   <td style="color:var(--muted);font-weight:700;">${i + 1}</td>
-                  <td>${p.emoji || ''} <strong>${p.name}</strong><br><span style="font-size:.75rem;color:var(--muted);">${p.category || ''}</span></td>
+                  <td>${escapeHtml(p.emoji || '')} <strong>${escapeHtml(p.name)}</strong><br><span style="font-size:.75rem;color:var(--muted);">${escapeHtml(p.category || '')}</span></td>
                   <td>${p.qty_vendue}</td>
                   <td>${kmf(p.revenue_kmf)}</td>
                   <td>${p.marge_kmf ? kmf(p.marge_kmf) : '—'}</td>
@@ -1594,7 +1601,7 @@ async function loadSales(period) {
             <div class="card-body">
               <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
                 ${d.produits.jamais_vendus.items.map(p => `
-                  <span class="badge badge-gray">${p.emoji || ''} ${p.name}</span>`).join('')}
+                  <span class="badge badge-gray">${escapeHtml(p.emoji || '')} ${escapeHtml(p.name)}</span>`).join('')}
               </div>
             </div>
           </div>` : ''}
@@ -1624,7 +1631,7 @@ async function loadSales(period) {
       </div>
     `;
   } catch (e) {
-    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -1635,7 +1642,7 @@ async function loadRetards(niveau) {
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
-    const url = '/api/dashboard/retards' + (niveau ? `?niveau=${encodeURIComponent(niveau)}` : '');
+    const url = '/dashboard/retards' + (niveau ? `?niveau=${encodeURIComponent(niveau)}` : '');
     const d = await apiFetch(url);
 
     if (!d.clients?.length) {
@@ -1660,18 +1667,18 @@ async function loadRetards(niveau) {
               <tr><th>Référence</th><th>Client</th><th>Statut</th><th>Retard</th><th>Action</th><th>Message suggéré</th></tr>
               ${d.clients.map(c => `
                 <tr>
-                  <td><strong>${c.reference}</strong></td>
+                  <td><strong>${escapeHtml(c.reference)}</strong></td>
                   <td>
-                    <strong>${c.client_nom || '—'}</strong><br>
-                    <span style="font-size:.75rem;color:var(--muted);">${c.client_email || ''}</span><br>
-                    <span style="font-size:.75rem;color:var(--muted);">${c.client_phone || ''}</span>
+                    <strong>${escapeHtml(c.client_nom || '—')}</strong><br>
+                    <span style="font-size:.75rem;color:var(--muted);">${escapeHtml(c.client_email || '')}</span><br>
+                    <span style="font-size:.75rem;color:var(--muted);">${escapeHtml(c.client_phone || '')}</span>
                   </td>
-                  <td>${badge(c.status, slaColor(c.status))}</td>
+                  <td>${badge(escapeHtml(c.status), slaColor(c.status))}</td>
                   <td style="color:${Number(c.jours_de_retard) > 14 ? 'var(--red)' : 'var(--accent)'}; font-weight:700;">
-                    ${c.jours_de_retard > 0 ? c.jours_de_retard + 'j' : c.type_retard || '—'}
+                    ${c.jours_de_retard > 0 ? c.jours_de_retard + 'j' : escapeHtml(c.type_retard || '—')}
                   </td>
-                  <td>${badge(c.compensation_recommandee || '—', c.compensation_recommandee?.includes('remb') ? 'red' : c.compensation_recommandee?.includes('10') ? 'orange' : 'blue')}</td>
-                  <td style="font-size:.75rem;color:var(--muted);max-width:260px;">${c.sms_suggere || '—'}</td>
+                  <td>${badge(escapeHtml(c.compensation_recommandee || '—'), c.compensation_recommandee?.includes('remb') ? 'red' : c.compensation_recommandee?.includes('10') ? 'orange' : 'blue')}</td>
+                  <td style="font-size:.75rem;color:var(--muted);max-width:260px;">${escapeHtml(c.sms_suggere || '—')}</td>
                 </tr>`).join('')}
             </table>
           </div>
@@ -1679,7 +1686,7 @@ async function loadRetards(niveau) {
       </div>`;
 
   } catch (e) {
-    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -1704,7 +1711,7 @@ async function loadForecast() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Calcul des projections…</p></div>';
 
   try {
-    const url = `/api/dashboard/forecast?target_date=${target}&ref_period=${period}${from ? '&from_date=' + from : ''}`;
+    const url = `/dashboard/forecast?target_date=${target}&ref_period=${period}${from ? '&from_date=' + from : ''}`;
     const d = await apiFetch(url);
 
     const tauxMargeReel = d.realise.ca_kmf > 0
@@ -1789,7 +1796,7 @@ async function loadForecast() {
       </div>`;
 
   } catch (e) {
-    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${escapeHtml(e.message)}</div>`;
   }
 }
 

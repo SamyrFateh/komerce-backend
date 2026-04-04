@@ -906,8 +906,10 @@ function detectCurrency() {
 
 function fmt(kmf, currency) {
   if (!currency) currency = _currency;
+  kmf = Number(kmf) || 0;
   var rate = _rates[currency] || 1;
   var val = Math.round(kmf / rate);
+  if (!isFinite(val)) val = 0;
   return val.toLocaleString('fr-FR') + (currency === 'EUR' ? ' €' : ' KMF');
 }
 
@@ -921,6 +923,30 @@ function fmtBoth(kmf) {
 
 function productEmoji(p) {
   return p.emoji || '📦';
+}
+
+/* Category-based fallback images for broken image_url */
+var FALLBACK_IMAGES = {
+  'Alimentation': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=300&fit=crop',
+  'Électronique': 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=300&fit=crop',
+  'Mode': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=300&fit=crop',
+  'Cosmétiques': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop',
+  'Maison': 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=400&h=300&fit=crop',
+  'default': 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop'
+};
+
+function getProductFallbackSrc(product) {
+  return FALLBACK_IMAGES[product.category] || FALLBACK_IMAGES['default'];
+}
+
+function handleImgError(img, product, fallbackEl) {
+  var fallbackSrc = getProductFallbackSrc(product);
+  if (img.src !== fallbackSrc) {
+    img.src = fallbackSrc;
+  } else {
+    img.style.display = 'none';
+    if (fallbackEl) fallbackEl.textContent = productEmoji(product);
+  }
 }
 
 /* ── API ── */
@@ -972,11 +998,12 @@ function toast(msg, type) {
 /* ──────────────────────────────────────
    PROMO BAR
    ────────────────────────────────────── */
+var _promoInterval = null;
 function initPromoBar() {
   var msgs = document.querySelectorAll('#promo-bar .promo-msg');
   if (msgs.length < 2) return;
   var idx = 0;
-  setInterval(function() {
+  _promoInterval = setInterval(function() {
     msgs[idx].classList.remove('active');
     idx = (idx + 1) % msgs.length;
     msgs[idx].classList.add('active');
@@ -1027,8 +1054,11 @@ function renderProducts(list) {
     if (p.image_url) {
       var img = document.createElement('img');
       img.src = p.image_url;
-      img.alt = sanitize(p.name);
+      img.alt = p.name || '';
       img.loading = 'lazy';
+      (function(imgEl, prod, container) {
+        imgEl.onerror = function() { handleImgError(imgEl, prod, container); };
+      })(img, p, imgDiv);
       imgDiv.appendChild(img);
     } else {
       imgDiv.textContent = productEmoji(p);
@@ -1136,7 +1166,10 @@ function openProductModal(p) {
   if (p.image_url) {
     var img = document.createElement('img');
     img.src = p.image_url;
-    img.alt = sanitize(p.name);
+    img.alt = p.name || '';
+    (function(imgEl, prod, container) {
+      imgEl.onerror = function() { handleImgError(imgEl, prod, container); };
+    })(img, p, emojiBox);
     emojiBox.appendChild(img);
   } else {
     emojiBox.textContent = productEmoji(p);
@@ -1261,8 +1294,11 @@ function openProductModal(p) {
       if (sp.image_url) {
         var mImg = document.createElement('img');
         mImg.src = sp.image_url;
-        mImg.alt = sanitize(sp.name);
+        mImg.alt = sp.name || '';
         mImg.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:6px;margin:0 auto;';
+        (function(imgEl, prod, container) {
+          imgEl.onerror = function() { handleImgError(imgEl, prod, container); };
+        })(mImg, sp, mEmoji);
         mEmoji.innerHTML = '';
         mEmoji.appendChild(mImg);
       } else {
@@ -1307,7 +1343,7 @@ function addToCart(product, qty) {
     _cart.push({ product: product, qty: qty });
   }
   saveCart();
-  toast(sanitize(product.name) + ' ajouté au panier !', 'success');
+  toast((product.name || 'Produit') + ' ajouté au panier !', 'success');
 }
 
 function removeFromCart(productId) {
@@ -1386,8 +1422,11 @@ function renderCartBody() {
     if (item.product.image_url) {
       var img = document.createElement('img');
       img.src = item.product.image_url;
-      img.alt = '';
+      img.alt = item.product.name || '';
       img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:8px;';
+      (function(imgEl, prod, container) {
+        imgEl.onerror = function() { handleImgError(imgEl, prod, container); };
+      })(img, item.product, emojiBox);
       emojiBox.innerHTML = '';
       emojiBox.appendChild(img);
     } else {
@@ -1613,7 +1652,7 @@ function renderOrderStep2(body) {
   _relais.forEach(function(r) {
     var opt = document.createElement('option');
     opt.value = r.id;
-    opt.textContent = sanitize(r.name + (r.city ? ' — ' + r.city : ''));
+    opt.textContent = (r.name || '') + (r.city ? ' — ' + r.city : '');
     if (_orderData.relais_id === r.id) opt.selected = true;
     rSelect.appendChild(opt);
   });
@@ -1654,9 +1693,13 @@ function renderOrderStep2(body) {
   nextBtn.className = 'of-next';
   nextBtn.textContent = 'Suivant →';
   nextBtn.addEventListener('click', function() {
-    _orderData.relais_id = document.getElementById('of-relais').value || null;
-    _orderData.recipient_name = document.getElementById('of-recip-name').value.trim();
-    _orderData.recipient_phone = document.getElementById('of-recip-phone').value.trim();
+    var relaisVal = document.getElementById('of-relais').value;
+    var recipName = document.getElementById('of-recip-name').value.trim();
+    var recipPhone = document.getElementById('of-recip-phone').value.trim();
+    if (!relaisVal) { toast('Veuillez choisir un point relais.', 'error'); return; }
+    _orderData.relais_id = relaisVal;
+    _orderData.recipient_name = recipName;
+    _orderData.recipient_phone = recipPhone;
     _orderStep = 3;
     renderOrderStep();
   });
@@ -1872,7 +1915,7 @@ async function searchTracking() {
     /* Reference display */
     var refDiv = document.createElement('div');
     refDiv.style.cssText = 'font-weight:700;margin-bottom:16px;font-size:1rem;';
-    refDiv.textContent = 'Commande : ' + sanitize(order.reference || ref);
+    refDiv.textContent = 'Commande : ' + (order.reference || ref);
     result.appendChild(refDiv);
 
     /* Timeline */
@@ -1948,6 +1991,11 @@ document.addEventListener('DOMContentLoaded', function() {
   $('tracking-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') searchTracking();
   });
+});
+
+/* Cleanup intervals on page unload */
+window.addEventListener('beforeunload', function() {
+  if (_promoInterval) clearInterval(_promoInterval);
 });
 </script>
 
