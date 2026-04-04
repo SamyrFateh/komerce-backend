@@ -711,8 +711,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 'use strict';
 
 // ── Config API ────────────────────────────────────────────────────────────────
-const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
-  ? 'http://localhost:3000/api' : '/api';
+const API = '/api';  // BUG-001 fix: relative URL only (no localhost)
 
 const token = localStorage.getItem('kmrc_token') || '';
 _token = token || null;

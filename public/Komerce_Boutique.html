@@ -2073,7 +2073,7 @@ function openProductModal(id) {
 
   const imgEl = document.getElementById('modalImg');
   if (p.image_url) {
-    imgEl.innerHTML = `<img src="${p.image_url}" alt="${esc(p.name)}">`;
+    imgEl.innerHTML = `<img src="${esc(p.image_url)}" alt="${esc(p.name)}">`;
   } else {
     imgEl.innerHTML = p.emoji || '📦';
   }
@@ -2090,7 +2090,7 @@ function openProductModal(id) {
     const productUrl = location.origin + location.pathname + '?product=' + p.id;
     shareBtn.onclick = () => {
       if (navigator.share) {
-        navigator.share({ title: p.name, text: `${p.name} sur Komerce — ${fmtKmf(p.price_kmf)}`, url: productUrl });
+        navigator.share({ title: p.name, text: `${esc(p.name)} sur Komerce — ${fmtKmf(p.price_kmf)}`, url: productUrl });
       } else {
         navigator.clipboard.writeText(productUrl).then(() => showToast('Lien copié ! 📋')).catch(() => showToast('Lien : ' + productUrl));
       }
@@ -2149,7 +2149,7 @@ function quickAdd(id, btn) {
   const p = productsCache[id];
   if (!p) return;
   addToCart(p, 1);
-  showToast(`${p.emoji || '📦'} ${p.name} ajouté !`);
+  showToast(`${p.emoji || '📦'} ${esc(p.name)} ajouté !`);
   // Animation ✓ sur le bouton
   if (btn) {
     btn.innerHTML = '✓ Ajouté !';
@@ -3142,7 +3142,7 @@ function openLegalPage(page) {
   const legal = LEGAL_PAGES[page];
   if (!legal) return;
   document.getElementById('legal-title').textContent = legal.title;
-  document.getElementById('legal-content').innerHTML = legal.content;
+  document.getElementById('legal-content').textContent = legal.content;  // BUG-011 fix: textContent prevents XSS
   // Hide all sections, show legal
   document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
   document.getElementById('legal-page').style.display = 'block';
