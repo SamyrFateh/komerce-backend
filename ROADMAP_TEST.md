@@ -168,6 +168,42 @@
 - **Reset test** : Mode `orders` nettoie les commandes test sans toucher aux comptes
 - **Idempotent** : Le seed peut être relancé plusieurs fois (ON CONFLICT sur les users)
 
+
+---
+
+## Phase 7 — 🐛 Correction des 14 bugs identifiés (Audit du 4 avril 2026)
+
+> Voir rapport complet: `AUDIT_BUGS.md`
+
+### 7A — Phase 1 : Avant test (BLOQUANT)
+| # | Bug | Fichier | Fix | Effort | Statut |
+|---|---|---|---|---|---|
+| BUG-002 | DIV/0 `rates.eur_kmf` | `routes/orders.js:351` | Fallback `rates?.eur_kmf \|\| 492` | 2 min | ⬜ |
+| BUG-003 | DIV/0 `qte=0` pilotage | `routes/pilotage.js:241` | `(qte \|\| 1)` | 1 min | ⬜ |
+| BUG-004 | DIV/0 `nbClients=0` | `routes/dashboard.js:446` | Guard `nbClients > 0` | 1 min | ⬜ |
+| BUG-007 | NULL `cost_real_kmf` x4 fichiers | `orders/dashboard/finance/admin` | COALESCE partout | 15 min | ⬜ |
+| BUG-009 | Pas de `Array.isArray(items)` | `routes/orders.js` | Validation input | 2 min | ⬜ |
+
+### 7B — Phase 2 : Avant prod (IMPORTANT)
+| # | Bug | Fichier | Fix | Effort | Statut |
+|---|---|---|---|---|---|
+| BUG-010 | 5 index DB manquants | `db/schema.sql` | CREATE INDEX x5 | 5 min | ⬜ |
+| BUG-013 | Pas de helmet / rate-limit | `server.js` | npm install + config | 10 min | ⬜ |
+| BUG-008 | Race condition stock | `routes/orders.js` | SELECT FOR UPDATE | 10 min | ⬜ |
+| BUG-011 | XSS innerHTML boutique | `Komerce_Boutique.html` | textContent / DOMPurify | 15 min | ⬜ |
+| BUG-012 | 4 fetch sans catch | `Komerce_Pilotage.html` | try/catch partout | 10 min | ⬜ |
+
+### 7C — Phase 3 : Nice to have
+| # | Bug | Fichier | Fix | Effort | Statut |
+|---|---|---|---|---|---|
+| BUG-001 | Localhost hardcodé | `Komerce_Admin.html:715` | URL relative `/api` | 1 min | ⬜ |
+| BUG-005 | DIV/0 évolution cmd | `routes/dashboard.js:329` | Guard `nbCmdPrev > 0` | 2 min | ⬜ |
+| BUG-006 | DIV/0 forecast | `routes/dashboard.js:647` | Guard `nbDays > 0` | 2 min | ⬜ |
+| BUG-014 | JWT dans localStorage | Tous les HTML | Migration httpOnly cookies | 30 min | ⬜ |
+
+**Temps total estimé : ~1h05**  
+**Priorité : 7A avant tout test, 7B avant prod, 7C quand on a le temps**
+
 ---
 
 ## ✍️ Sign-off
