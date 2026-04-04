@@ -1,17 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//   KOMERCE — Service Worker v1.0
+//   KOMERCE — Service Worker v2.0
 //   Stratégie : Cache-First pour assets statiques, Network-First pour l'API
 //   Optimisé pour réseau instable (Comores)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'komerce-v1';
-const CACHE_STATIC = 'komerce-static-v1';
-const CACHE_API    = 'komerce-api-v1';
+const CACHE_NAME = 'komerce-v2';
+const CACHE_STATIC = 'komerce-static-v2';
+const CACHE_API    = 'komerce-api-v2';
 
 // Assets à mettre en cache immédiatement à l'installation
 const STATIC_ASSETS = [
   '/',
-  '/Komerce_Web.html',
+  '/Komerce_Boutique.html',
   '/manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
   'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js',
