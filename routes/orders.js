@@ -794,6 +794,137 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
   }
 });
 
+// ─── GET /api/orders/retrait/:token — Page HTML retrait client (publique) ──────
+// Affiche le QR code dans une page web que le client peut ouvrir, screenshot ou télécharger.
+// Lien envoyé via WhatsApp / email / n'importe quel canal.
+// Token validé (non expiré) mais PAS invalidé — l'invalidation se fait au scan (verify-qr).
+
+router.get('/retrait/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { rows: [order] } = await db.query(
+      `SELECT o.reference, o.qr_expires_at,
+              rc.full_name AS client_name, rc.phone AS client_phone,
+              r.name AS relais_name, r.address AS relais_address
+       FROM orders o
+       LEFT JOIN recipients rc ON rc.id = o.recipient_id
+       LEFT JOIN relais r ON r.id = o.relais_id
+       WHERE o.qr_token = $1`,
+      [token]
+    );
+
+    if (!order) {
+      return res.status(404).send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Komerce — Lien invalide</title>
+        <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0f172a;color:#e2e8f0;text-align:center;padding:20px}</style>
+        </head><body><div>
+          <div style="font-size:48px;margin-bottom:16px">❌</div>
+          <h2>Lien invalide ou expiré</h2>
+          <p style="color:#94a3b8">Ce lien de retrait n'est plus valide.<br>Contactez votre point relais pour en obtenir un nouveau.</p>
+        </div></body></html>`);
+    }
+
+    const expires = new Date(order.qr_expires_at);
+    const expired = expires < new Date();
+    const expiresStr = expires.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    // Payload QR = le token lui-même (sera vérifié via verify-qr)
+    const qrData = JSON.stringify({ token, reference: order.reference });
+    const qrDataB64 = Buffer.from(qrData).toString('base64');
+
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Komerce — Retrait colis</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: #1e293b; border-radius: 16px; padding: 28px 24px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    .logo { font-size: 1.4rem; font-weight: 700; color: #6366f1; letter-spacing: 1px; margin-bottom: 4px; }
+    .logo-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+    .title { font-size: 1.15rem; font-weight: 600; margin-bottom: 4px; }
+    .ref { font-family: monospace; font-size: 1rem; color: #6366f1; background: #0f172a; padding: 4px 12px; border-radius: 6px; display: inline-block; margin-bottom: 16px; }
+    .qr-wrap { background: white; border-radius: 12px; padding: 16px; display: inline-block; margin: 12px 0 8px; }
+    .expired-banner { background: #7f1d1d; color: #fca5a5; border-radius: 8px; padding: 10px 16px; margin: 8px 0 12px; font-size: 0.85rem; font-weight: 600; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.875rem; }
+    .info-row:last-child { border-bottom: none; }
+    .info-lbl { color: #94a3b8; }
+    .info-val { font-weight: 600; text-align: right; max-width: 55%; }
+    .info-block { background: #0f172a; border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+    .btn-dl { display: block; width: 100%; padding: 12px; background: #6366f1; color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 14px; text-decoration: none; }
+    .btn-dl:hover { background: #4f46e5; }
+    .tip { font-size: 0.78rem; color: #475569; margin-top: 14px; line-height: 1.5; }
+    .expire-ok { font-size: 0.8rem; color: #34d399; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">KOMERCE</div>
+    <div class="logo-sub">Votre colis vous attend</div>
+
+    <div class="title">📦 Code de retrait</div>
+    <div class="ref">${order.reference}</div>
+
+    ${expired ? '<div class="expired-banner">⏰ Ce QR code a expiré — demandez-en un nouveau à votre relais</div>' : ''}
+
+    <div class="qr-wrap" id="qr-container"></div>
+
+    ${!expired ? `<div class="expire-ok">✅ Valable jusqu'au ${expiresStr}</div>` : ''}
+
+    <div class="info-block">
+      <div class="info-row"><span class="info-lbl">Client</span><span class="info-val">${order.client_name || '—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Point relais</span><span class="info-val">${order.relais_name || '—'}</span></div>
+      ${order.relais_address ? `<div class="info-row"><span class="info-lbl">Adresse</span><span class="info-val">${order.relais_address}</span></div>` : ''}
+    </div>
+
+    <button class="btn-dl" id="btn-dl" ${expired ? 'disabled style="opacity:0.4"' : ''}>⬇️ Télécharger le QR Code</button>
+
+    <p class="tip">Présentez ce QR code à l'agent relais lors du retrait.<br>Usage unique · ${expired ? 'Expiré' : 'Expire le ' + expiresStr}</p>
+  </div>
+
+  <script>
+    const qrData = atob('${qrDataB64}');
+    const container = document.getElementById('qr-container');
+
+    try {
+      new QRCode(container, {
+        text: qrData,
+        width: 200, height: 200,
+        colorDark: '#1e293b', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } catch(e) {
+      container.innerHTML = '<p style="color:#ef4444;font-size:0.8rem">Erreur QR</p>';
+    }
+
+    // Téléchargement via canvas
+    document.getElementById('btn-dl').addEventListener('click', () => {
+      setTimeout(() => {
+        const canvas = container.querySelector('canvas');
+        if (!canvas) { alert('QR non disponible'); return; }
+        const link = document.createElement('a');
+        link.download = 'komerce-qr-${order.reference}.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }, 200);
+    });
+  </script>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+
+  } catch (err) {
+    console.error('[orders/retrait] Erreur:', err.message);
+    res.status(500).send('<h1>Erreur serveur</h1>');
+  }
+});
+
 // ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
 
 router.get('/:ref', async (req, res) => {
