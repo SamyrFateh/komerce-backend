@@ -310,6 +310,13 @@ CREATE INDEX idx_scans_anomaly         ON scans(is_anomaly) WHERE is_anomaly = T
 CREATE INDEX idx_shipments_reference   ON shipments(reference);
 CREATE INDEX idx_sms_log_order         ON sms_log(order_id);
 
+-- BUG-010 fix: 4 index manquants sur colonnes fréquemment requêtées
+CREATE INDEX IF NOT EXISTS idx_orders_relais         ON orders(relais_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_product   ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_recipients_user       ON recipients(user_id);
+CREATE INDEX IF NOT EXISTS idx_osh_order             ON order_status_history(order_id);
+
+
 -- ============================================================
 -- TRIGGERS updated_at
 -- ============================================================

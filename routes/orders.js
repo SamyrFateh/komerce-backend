@@ -170,6 +170,8 @@ router.post('/', authenticate, async (req, res) => {
 
     // Taux de change actuels — utilisés pour total_eur et cost_estimated
     const rates = await getRates();
+    // BUG-002 fix: fallback si getRates() échoue ou retourne 0/null
+    const eurKmf = rates?.eur_kmf || 492;
 
     const {
       items                 = [],
@@ -197,8 +199,9 @@ router.post('/', authenticate, async (req, res) => {
     } = req.body;
 
     // ── Validation ──────────────────────────────────────────────────────────
-    if (!items.length) {
-      return res.status(400).json({ error: 'items[] obligatoire (min 1 article)' });
+    // BUG-009 fix: validation Array.isArray pour éviter crash sur input malformé
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items[] obligatoire (tableau, min 1 article)' });
     }
     if (!['stripe_eur', 'cash_relais'].includes(payment_mode)) {
       return res.status(400).json({ error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais' });
@@ -245,8 +248,9 @@ router.post('/', authenticate, async (req, res) => {
 
     // ── Charger les produits en une seule requête ───────────────────────────
     const productIds = items.map(i => i.product_id);
+    // BUG-008 fix: FOR UPDATE pour verrouiller les lignes et empêcher la survente
     const { rows: products } = await client.query(
-      'SELECT * FROM products WHERE id = ANY($1) AND is_active = TRUE',
+      'SELECT * FROM products WHERE id = ANY($1) AND is_active = TRUE FOR UPDATE',
       [productIds]
     );
     const productMap = Object.fromEntries(products.map(p => [p.id, p]));
@@ -348,7 +352,7 @@ router.post('/', authenticate, async (req, res) => {
        ) RETURNING *`,
       [
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
-        total_kmf, parseFloat((total_kmf / rates.eur_kmf).toFixed(2)),
+        total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
         payment_mode,
         'pending',
         stripe_payment_intent || null,
