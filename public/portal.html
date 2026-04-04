@@ -302,7 +302,7 @@ const API_BASE = window.location.origin;
 // ── Check existing session ──
 function checkSession() {
   const user = JSON.parse(localStorage.getItem('komerce_user') || 'null');
-  if (token && user) {
+  if (user && user.role) {
     showPortal(user);
   }
 }
@@ -328,6 +328,7 @@ async function doLogin() {
     const res = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, password: pass })
     });
     const data = await res.json();
@@ -359,7 +360,8 @@ function showPortal(user) {
 }
 
 // ── Logout ──
-function doLogout() {
+async function doLogout() {
+  try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch(e) {}
   localStorage.removeItem('komerce_user');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('portal').classList.remove('visible');
