@@ -360,7 +360,8 @@ router.get('/hub/pending', requireAuth, async (req, res) => {
        JOIN purchase_orders po ON po.order_id = o.id
        JOIN product_suppliers ps ON ps.id = po.product_supplier_id
        JOIN products p ON p.id = ps.product_id
-       WHERE o.status IN ('paid', 'confirmed', 'purchasing', 'partially_received')
+       -- [FIX v8.4.1] Ajout 'ordered' : après cash/confirm le statut est 'ordered', pas 'purchasing'
+      WHERE o.status IN ('ordered', 'paid', 'confirmed', 'purchasing', 'partially_received')
          AND po.status != 'cancelled'
        GROUP BY o.id, o.reference, o.status, o.created_at
        ORDER BY o.created_at ASC`

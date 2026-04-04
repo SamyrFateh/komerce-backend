@@ -173,6 +173,17 @@ async function triggerPurchasing(orderId) {
     }
   }
 
+  // [FIX v8.4.1] Avancer le statut de la commande vers 'purchasing'
+  // Après création des POs, la commande passe de 'ordered' → 'purchasing'
+  const createdPOs = results.filter(r => r.purchase_order_id != null);
+  if (createdPOs.length > 0) {
+    await db.query(
+      `UPDATE orders SET status = 'purchasing', updated_at = NOW() WHERE id = $1 AND status = 'ordered'`,
+      [orderId]
+    );
+    console.log(`[PURCHASING] Commande ${orderId} → status 'purchasing' (${createdPOs.length} POs créés)`);
+  }
+
   return { purchase_orders: results };
 }
 
