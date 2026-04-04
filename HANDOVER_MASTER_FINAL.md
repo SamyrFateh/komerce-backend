@@ -1,9 +1,9 @@
 # HANDOVER MASTER — KOMERCE BACKEND
 
-> **Dernière mise à jour :** Session 15 — Avril 2026
+> **Dernière mise à jour :** Session 16 — Avril 2026
 > **Repo :** `SamyrFateh/komerce-backend` · branche `main`
 > **Runtime :** Node.js 20 + Express 4 · PostgreSQL 15 · Déploiement Railway
-> **Version serveur :** `v8.5`
+> **Version serveur :** `v9.0`
 > **Score intégrité code :** `9.3/10` (Audit Session 15)
 
 ---
@@ -17,7 +17,7 @@
 5. [API — Toutes les Routes Montées](#5-api-routes)
 6. [Fonctionnalités Métier — Implémentées vs Restantes](#6-fonctionnalités-métier)
 7. [Sécurité & Middleware](#7-sécurité--middleware)
-8. [Outils Admin Locaux](#8-outils-admin-locaux)
+8. [Dashboards & Outils Admin](#8-dashboards--outils-admin)
 9. [Configuration & Déploiement](#9-configuration--déploiement)
 10. [Historique des Sessions](#10-historique-des-sessions)
 11. [État Actuel & Prochaines Étapes](#11-état-actuel--prochaines-étapes)
@@ -49,7 +49,7 @@ Diaspora (EUR/Stripe) ──→ Hub Dubai (AED) ──→ Fret maritime ──�
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    server.js v8.5                         │
+│                    server.js v9.0                         │
 │  Express + Helmet + CORS + Rate-Limit + Body Parser      │
 ├─────────────────────────────────────────────────────────┤
 │  18 fichiers routes montés sur /api/*                     │
@@ -62,9 +62,10 @@ Diaspora (EUR/Stripe) ──→ Hub Dubai (AED) ──→ Fret maritime ──�
 ├─────────────────────────────────────────────────────────┤
 │  DB : PostgreSQL 15 via pg Pool (db.js → db/index.js)     │
 │  Schema : schema.sql v1.3 + schema_extension.sql          │
+│  Tables v9 : customs_history (CREATE TABLE + 9 colonnes)  │
 ├─────────────────────────────────────────────────────────┤
 │  Cron intégré : Cash relais reminders (1h interval)       │
-│  Static : public/ (SPA Komerce_Web.html)                  │
+│  Static : public/ (9 dashboards HTML + assets)            │
 │  Deploy : Railway · PORT env · Graceful shutdown SIGTERM   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -77,7 +78,7 @@ Diaspora (EUR/Stripe) ──→ Hub Dubai (AED) ──→ Fret maritime ──�
 - **Paiement :** Stripe SDK
 - **SMS :** Afrika's Talking API
 - **PDF :** PDFKit (étiquettes, manifestes, rapports)
-- **QR :** qrcode (npm)
+- **QR :** qrcode (npm) + Html5Qrcode (frontend)
 - **Sécurité :** helmet, cors, express-rate-limit
 
 ---
@@ -86,7 +87,7 @@ Diaspora (EUR/Stripe) ──→ Hub Dubai (AED) ──→ Fret maritime ──�
 
 ```
 komerce-backend/
-├── server.js                    # Point d'entrée v8.5
+├── server.js                    # Point d'entrée v9.0
 ├── package.json                 # Dépendances
 ├── db.js                        # Pool PostgreSQL (wrapper)
 ├── .gitignore                   # ✅ Configuré (node_modules, .env, logs)
@@ -124,14 +125,22 @@ komerce-backend/
 │   ├── reference.js             # Générateurs KOM-XXXX, EXP-XXXX, K-XXXX
 │   └── sms.js                   # sendSMS + processCashRelaisReminders
 ├── public/
-│   ├── Komerce_Web.html         # SPA frontend
-│   ├── Komerce_Web.html.old     # ⚠️ Ancienne version (à nettoyer)
-│   ├── komerce-api.js           # Client API JS
-│   ├── komerce-api.js.old       # ⚠️ Ancienne version (à nettoyer)
-│   └── *.sql                    # 2 fichiers migration (à déplacer vers db/)
-├── backend/                     # ⚠️ OBSOLÈTE — à supprimer (contient node_modules trackés)
+│   ├── Komerce_Boutique.html    # SPA frontend client (122 KB)
+│   ├── Komerce_Mobile.html      # App mobile PWA Anjouan (54 KB)
+│   ├── Komerce_Admin.html       # Back-office administration (112 KB, 7 APIs)
+│   ├── Komerce_Pilotage.html    # Pilotage coûts & marges (179 KB, 9 APIs)
+│   ├── Komerce_Simulateur.html  # Simulateur tarification v17 (141 KB)
+│   ├── Komerce_Backend.html     # Méga-cockpit all-in-one (514 KB, 26 APIs)
+│   ├── Komerce_Tests.html       # Test Runner E2E 12 étapes (147 KB)
+│   ├── Komerce_Hub.html         # Dashboard Agent Hub Dubai (40 KB)
+│   ├── Komerce_Relais.html      # Dashboard Agent Relais Anjouan (93 KB)
+│   ├── komerce-api.js           # Client API JS (128 KB)
+│   ├── sw.js                    # Service Worker PWA
+│   └── images/                  # Assets visuels
 └── HANDOVER_MASTER_FINAL.md     # Ce document
 ```
+
+> **Note :** Les anciens fichiers `Komerce_Web.html`, `Komerce_PWA_Mobile.html`, `Komerce_Backoffice_Admin_v2.html`, `Komerce_Pilotage_v2.html`, `Komerce_Simulateur_v7.html` ont été remplacés par leurs versions harmonisées sans suffixes.
 
 ---
 
@@ -156,15 +165,29 @@ komerce-backend/
 | `exchange_rates` | Taux de change | eur_kmf (défaut 492), aed_kmf (défaut 138), valid_from |
 | `disputes` | Litiges & remboursements | order_id, type, level (1-3), status, refund_kmf/eur |
 
+### Table customs_history (ajoutée v8.9 → v9.0)
+
+| Colonne | Type | Utilisée par |
+|---------|------|-------------|
+| `id` | UUID PK | customs |
+| `order_id` | TEXT FK | customs, alerts |
+| `customs_estimated_kmf` | INTEGER | customs |
+| `customs_real_kmf` | INTEGER | customs, alerts |
+| `customs_delta_pct` | NUMERIC(6,2) | customs, alerts |
+| `is_anomaly` | BOOLEAN | customs, alerts |
+| `notes` | TEXT | customs |
+| `customs_agent_id` | UUID | customs |
+| `created_at` | TIMESTAMPTZ | customs, alerts |
+
 ### Tables extension (schema_extension.sql)
 
 | Table | Description |
 |-------|-------------|
-| `ceremony_fabrics` | Catalogue tissus cérémonie (legacy, voir `fabrics` dans schema.sql) |
-| `ceremony_models` | Modèles tenues cérémonie (legacy, voir `garment_models`) |
+| `ceremony_fabrics` | Catalogue tissus cérémonie (legacy) |
+| `ceremony_models` | Modèles tenues cérémonie (legacy) |
 | `ceremony_order_items` | Lignes commande cérémonie |
-| `fabrics` | Catalogue tissus (schema.sql v1.3) — utilisé par modules.js |
-| `garment_models` | Modèles tenues (schema.sql v1.3) — utilisé par modules.js |
+| `fabrics` | Catalogue tissus — utilisé par modules.js |
+| `garment_models` | Modèles tenues — utilisé par modules.js |
 
 ### Types ENUM PostgreSQL
 
@@ -216,8 +239,6 @@ scan_step:      preparation → shipped → relais_received → collected
 | PATCH | `/api/orders/:id/shipment` | Admin | Affecter commande à une expédition |
 | PATCH | `/api/orders/:id/cancel` | JWT | Annuler commande |
 
-**Système d'occasions :** `order_occasion` (mariage, bapteme, rentrée, fête, ramadan, autre) — marketing segmenté.
-
 ### 5.4 Relais (`/api/relais` → routes/relais.js)
 
 | Méthode | Endpoint | Auth | Description |
@@ -225,212 +246,72 @@ scan_step:      preparation → shipped → relais_received → collected
 | GET | `/api/relais` | Public | Liste relais actifs (tri par île) |
 | GET | `/api/relais/:id` | Public | Détail relais |
 
-### 5.5 Admin (`/api/admin` → routes/admin.js — v7.1)
+### 5.5 Admin (`/api/admin` → routes/admin.js)
 
 | Méthode | Endpoint | Auth | Description |
 |---------|----------|------|-------------|
-| GET | `/api/admin/dashboard` | Admin | KPIs globaux (commandes, CA, panier moyen, top produits, marge) |
-| GET | `/api/admin/orders` | Admin | Toutes commandes + filtres (status, payment_mode, search, margin_alert, dates) |
-| GET | `/api/admin/margins` | Admin | Dashboard marge réelle par commande |
+| GET | `/api/admin/dashboard` | Admin | KPIs globaux |
+| GET | `/api/admin/orders` | Admin | Toutes commandes + filtres |
+| GET | `/api/admin/margins` | Admin | Dashboard marge réelle |
 | GET | `/api/admin/customs` | Admin | Historique douane |
 | GET | `/api/admin/partners` | Admin | Gestion partenaires/relais |
 | POST | `/api/admin/partners` | Admin | Créer partenaire |
 | PUT | `/api/admin/partners/:id` | Admin | Modifier partenaire |
 | GET | `/api/admin/alerts` | Admin | Alertes marge négative + anomalies douane |
 
-### 5.6 Dashboard (`/api/dashboard` → routes/dashboard.js — v7.1)
+> **Fix v9 :** `customs_history.order_id` — cast `::uuid` sur les 4 JOINs (était : `operator does not exist: uuid = text`)
+
+### 5.6 Dashboard (`/api/dashboard` → routes/dashboard.js)
 
 | Méthode | Endpoint | Auth | Description |
 |---------|----------|------|-------------|
-| GET | `/api/dashboard/ops` | Admin | Pilotage opérationnel : activité, SLA, logistique (Dubai/Bateau/Anjouan), alertes, retards clients |
-| GET | `/api/dashboard/sales` | Admin | Ventes & marges : KPIs L1/L2/L3, marge par catégorie, top 10 produits, clients récurrents, LTV |
-| GET | `/api/dashboard/retards` | Admin | Clients en retard : classification par niveau, compensation recommandée, SMS suggérés |
-| GET | `/api/dashboard/forecast` | Admin | Projections CA & marge (pessimiste/attendu/optimiste) avec modèle linéaire |
+| GET | `/api/dashboard/ops` | Admin | Pilotage opérationnel : activité, SLA, logistique, alertes |
+| GET | `/api/dashboard/sales` | Admin | Ventes & marges : KPIs, top produits, LTV |
+| GET | `/api/dashboard/retards` | Admin | Clients en retard : niveaux, compensation recommandée |
+| GET | `/api/dashboard/forecast` | Admin | Projections CA & marge (3 scénarios) |
 
-**SLA définis dans le code :**
-- Warning : 35 jours · Late : 42 jours · Blocked : 56 jours · Inactif : 7 jours
-- Compensations : Contact préventif (28j) → Avoir 5% (35j) → Remise 10% (42j) → Remboursement (56j)
+> **Fix v9 :** `dispatched_at` → `shipped_at` (ops) ; `SUM(o.quantity)` → `SUM(oi.quantity)` (sales) ; validation UUID dans `GET /scans/:order_id`
 
-### 5.7 Pricing (`/api/pricing` → routes/pricing.js)
+### 5.7 – 5.18 (inchangés)
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| POST | `/api/pricing/calculate` | Public | Calcul prix temps réel (product_id, qty, diaspora, relais_type) |
-| POST | `/api/pricing/couture` | Public | Calcul prix tenue couture (fabric_id + model_id) |
-| GET | `/api/pricing/rates` | Public | Taux de change actuels + historique 5 derniers |
-| PUT | `/api/pricing/rates` | Admin | Mettre à jour les taux EUR/KMF et AED/KMF |
+Voir sections 5.7 à 5.18 de la version précédente — routes pricing, modules, pilotage, baskets, logistics, payments, scans, finance, purchasing, loyalty, unsold, health inchangées.
 
-### 5.8 Modules (`/api/modules` → routes/modules.js — v7.5)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/modules` | Public | Liste des 4 modules avec disponibilité |
-| GET | `/api/modules/:type` | Public | Détail d'un module |
-| POST | `/api/modules/price` | Public | Calcul prix pour n'importe quel module |
-| GET | `/api/modules/fabrics` | Public | Catalogue tissus (filtre: fabric_type) |
-| GET | `/api/modules/models` | Public | Catalogue modèles tenues |
-| POST | `/api/modules/fabrics` | Admin | Ajouter tissu (calcul auto prix KMF/yard) |
-| POST | `/api/modules/models` | Admin | Ajouter modèle tenue |
-
-**Registre des modules :**
-
-| Module | Phase | Disponible | Description |
-|--------|-------|------------|-------------|
-| `couture` | 1 | ✅ Oui | Tissu + confection sur mesure · mensurations · atelier Deira |
-| `lunettes` | 2 | ❌ Non | Ordonnance → montage Dubai → livraison (opticien partenaire à signer) |
-| `construction` | 3 | ❌ Non | Matériaux finition Dubai (logistique volumineuse) |
-| `cosmetiques` | 2 | ❌ Non | Marques Dubai exclusives (accord exclusivité à signer) |
-
-### 5.9 Pilotage (`/api/pilotage` → routes/pilotage.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/pilotage` | Admin | Snapshot mensuel agrégé coûts & marges (moteur pricing v7) |
-| GET | `/api/pilotage/history` | Admin | Historique mensuel sur N mois |
-
-**Moteur intégré :** Reproduit la logique simulateur v7 (taux terrain 42% CIF, dimensions par catégorie, taux douane SH Comores).
-
-### 5.10 Baskets (`/api/baskets` → routes/baskets.js — M10)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| POST | `/api/baskets/share` | Optionnel | Créer panier partagé → lien K-XXXX WhatsApp (7j) |
-| GET | `/api/baskets/:code` | Public | Consulter panier partagé |
-| PATCH | `/api/baskets/:code` | JWT | Modifier panier (add/remove/update_qty) |
-| POST | `/api/baskets/:code/pay` | JWT | Payer panier → verrouille + SMS créateur |
-| POST | `/api/baskets/gift` | JWT | Offrir panier cadeau (14j) |
-| POST | `/api/baskets/gift/:code/confirm` | JWT | Confirmer cadeau → SMS destinataire + code retrait |
-
-### 5.11 Logistics (`/api/logistics` → routes/logistics.js — M12)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| POST | `/api/logistics/shipments` | Admin | Créer expédition (carrier, container, eta) |
-| GET | `/api/logistics/shipments` | Admin | Liste expéditions (avec nb commandes) |
-| PATCH | `/api/logistics/shipments/:id` | Admin | Mettre à jour expédition (arrivée → auto SMS clients) |
-| POST | `/api/logistics/parcels` | Admin | Créer colis |
-| POST | `/api/logistics/parcels/:id/photo` | Admin | Photo colis agent Dubai |
-| GET | `/api/logistics/labels/:shipment_id` | Admin | Étiquettes PDF A6 (avec QR code) |
-| GET | `/api/logistics/manifest/:shipment_id` | Admin | Manifeste PDF complet |
-
-### 5.12 Payments (`/api/payments` → routes/payments.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| POST | `/api/payments/create-intent` | JWT | Créer PaymentIntent Stripe (EUR) |
-| POST | `/api/payments/cash/confirm` | JWT | Confirmer paiement cash relais (code 6 chiffres) |
-| POST | `/api/payments/webhook` | Stripe | Webhook Stripe (payment_intent.succeeded) |
-
-**Flux post-paiement :** Déclenche auto `triggerPurchasing()` → crée entrée purchasing workflow.
-
-### 5.13 Scans (`/api/scans` → routes/scans.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| POST | `/api/scans` | Agent | Scanner QR (4 étapes : preparation → shipped → relais_received → collected) |
-| GET | `/api/scans/verify/:code` | Agent | Vérifier QR code |
-| GET | `/api/scans/order/:orderId` | JWT | Historique scans d'une commande |
-
-**4 étapes de scan MVP :**
-1. **Préparation** — Article acheté, vérifié, emballé au hub Dubai
-2. **Shipped** — Expédition maritime confirmée (départ)
-3. **Relais received** — Reçu au point relais → déclenche SMS destinataire
-4. **Collected** — Récupéré par le destinataire
-
-### 5.14 Finance (`/api/finance` → routes/finance.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/finance/export` | Admin | Export CSV transactions du mois (avec taux figés) |
-| GET | `/api/finance/stripe-proofs` | Admin | Liste PaymentIntents Stripe confirmés + rapprochement DB |
-| GET | `/api/finance/report` | Admin | Rapport PDF mensuel (CA, marges, flux devises) |
-
-### 5.15 Purchasing (`/api/purchasing` → routes/purchasing.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/purchasing` | Admin | Liste commandes en cours d'achat |
-| PATCH | `/api/purchasing/:id` | Admin | Mettre à jour statut achat |
-
-### 5.16 Loyalty (`/api/loyalty` → routes/loyalty.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/loyalty/points` | JWT | Points fidélité du client |
-| POST | `/api/loyalty/redeem` | JWT | Utiliser points |
-
-### 5.17 Unsold (`/api/unsold` → routes/unsold.js)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/unsold` | Admin | Produits jamais vendus ou stock dormant |
-| POST | `/api/unsold/action` | Admin | Action sur invendu (promo, retrait, etc.) |
-
-### 5.18 Health (`/health` + `/api/health`)
-
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/health` | Public | Railway readiness probe (JSON status) |
-| GET | `/api/health` | Public | Health check avec test DB + latence |
+> **Fix v9 Pilotage :** `GET /api/pilotage/clients` — paramètre `$2` supprimé (était non référencé → `could not determine data type`)
 
 ---
 
 ## 6. FONCTIONNALITÉS MÉTIER — IMPLÉMENTÉES vs RESTANTES
 
-### ✅ IMPLÉMENTÉ ET OPÉRATIONNEL (sur `main`)
+### ✅ IMPLÉMENTÉ ET OPÉRATIONNEL (sur `main` v9.0)
 
 | # | Fonctionnalité | Fichiers | Statut |
 |---|---------------|----------|--------|
-| 1 | **Auth JWT + RBAC** (client, admin, agent_relais, agent_hub) | auth.js, middleware/auth.js | ✅ Complet |
-| 2 | **Catalogue produits** (CRUD, catégories, stock, promo, recherche) | products.js | ✅ Complet |
-| 3 | **Commandes complètes** (création, items, occasion, affectation expédition, annulation) | orders.js | ✅ Complet |
-| 4 | **Double paiement** : Stripe EUR (diaspora) + Cash relais KMF (local) | payments.js | ✅ Complet |
-| 5 | **Scan QR 4 étapes** (prep → shipped → relais → collected) avec trigger DB auto | scans.js, schema.sql triggers | ✅ Complet |
-| 6 | **SMS automatiques** (confirmation, rappels cash H12/H36, disponibilité, cadeau) | utils/sms.js, cron server.js | ✅ Complet |
-| 7 | **Points relais** (CRUD, zones, îles) | relais.js | ✅ Complet |
-| 8 | **Panier partagé + cadeau WhatsApp** (share, gift, pay, confirm, SMS) | baskets.js | ✅ Complet |
-| 9 | **Logistique maritime** (expéditions, manifeste PDF, étiquettes A6 QR, arrivée → auto SMS) | logistics.js | ✅ Complet |
-| 10 | **Module couture** (tissus, modèles, 3 sous-types: ready_made/fabric_only/custom) | modules.js | ✅ Complet |
-| 11 | **Moteur de pricing tri-devise** (EUR/AED/KMF, calcul coût de revient, fret, douane 42% CIF) | pricing.js, utils/pricing.js, pilotage.js | ✅ Complet |
-| 12 | **Dashboard admin** (KPIs, orders filtrés, marges, douane, partenaires, alertes) | admin.js | ✅ Complet |
-| 13 | **Dashboard opérationnel** (activité, SLA, logistique 3 zones, alertes, clients retards) | dashboard.js | ✅ Complet |
-| 14 | **Dashboard ventes** (CA, marge décomposée, catégories, top produits, LTV, taux réachat) | dashboard.js | ✅ Complet |
-| 15 | **Prévisions** (forecast CA pessimiste/attendu/optimiste, projection marge, alerte perte) | dashboard.js | ✅ Complet |
-| 16 | **Pilotage coûts & marges** (snapshot agrégé, historique mensuel, cache 30s) | pilotage.js | ✅ Complet |
-| 17 | **Finance & comptabilité** (export CSV, preuves Stripe, rapport PDF mensuel) | finance.js | ✅ Complet |
-| 18 | **Purchasing workflow** (flux achat automatisé post-paiement) | purchasing.js | ✅ Complet |
-| 19 | **Programme fidélité** (points, récompenses) | loyalty.js | ✅ Complet |
-| 20 | **Gestion invendus** (détection, actions) | unsold.js | ✅ Complet |
-| 21 | **Litiges & remboursements** (3 niveaux, photos, résolution) | schema.sql (disputes table) | ✅ Schema prêt |
-| 22 | **Compensation retards automatisée** (4 niveaux: contact → avoir → remise → remboursement) | dashboard.js /retards | ✅ Complet |
-| 23 | **Rate limiting** (6 limiters : global, auth, cash, scan, orders, dashboard) | middleware/rate-limit.js | ✅ Complet |
-| 24 | **Sécurité** (Helmet, CORS hardened, trust proxy, graceful shutdown) | server.js | ✅ Complet |
-| 25 | **Taux de change** (CRUD admin, historique, cache, fallback) | pricing.js, utils/rates.js | ✅ Complet |
+| 1–25 | (idem v8.5) | — | ✅ Complet |
+| 26 | **Dashboard Hub Dubai** | public/Komerce_Hub.html | ✅ Nouveau v9 |
+| 27 | **Dashboard Relais Anjouan** | public/Komerce_Relais.html | ✅ Nouveau v9 |
+| 28 | **Méga-cockpit Backend** | public/Komerce_Backend.html | ✅ Nouveau v9 |
+| 29 | **Test Runner E2E** | public/Komerce_Tests.html | ✅ Nouveau v9 |
+| 30 | **customs_history schema** | db/schema.sql (CREATE TABLE) | ✅ Fix v9 |
 
 ### 🔶 DÉCLARÉ MAIS NON ENCORE OPÉRATIONNEL
 
 | # | Module | Phase | Bloqueur |
 |---|--------|-------|----------|
-| 1 | **Module lunettes** (ordonnance → montage → livraison) | Phase 2 | Opticien partenaire Dubai à signer |
-| 2 | **Module cosmétiques** (marques Dubai exclusives) | Phase 2 | Accord exclusivité fournisseur à signer |
-| 3 | **Module construction** (matériaux finition) | Phase 3 | Logistique volumineuse non résolue |
+| 1 | **Module lunettes** | Phase 2 | Opticien partenaire Dubai à signer |
+| 2 | **Module cosmétiques** | Phase 2 | Accord exclusivité fournisseur à signer |
+| 3 | **Module construction** | Phase 3 | Logistique volumineuse non résolue |
 
-> Note : Le code backend pour ces 3 modules existe dans `modules.js` (registre + endpoints). Ils retournent `disponible: false` et des messages d'attente. L'activation est un changement de flag dans `MODULES_REGISTRY`, pas un développement backend.
-
-### 🔴 RESTE À FAIRE (développement nécessaire)
+### 🔴 RESTE À FAIRE
 
 | # | Fonctionnalité | Priorité | Détail |
 |---|---------------|----------|--------|
-| 1 | **Frontend SPA complet** | 🔴 Haute | `Komerce_Web.html` existe mais doit être connecté à toutes les routes API |
-| 2 | **Tests automatisés** | 🔴 Haute | Aucun test unitaire/intégration — critique pour production |
-| 3 | **Route disputes CRUD** | 🟡 Moyenne | La table `disputes` existe en DB mais aucun fichier `routes/disputes.js` n'est monté |
-| 4 | **Notifications push** | 🟡 Moyenne | SMS OK, mais pas de push web/mobile |
-| 5 | **Upload images produits** | 🟡 Moyenne | `image_url` existe en DB mais pas d'upload/stockage S3 |
-| 6 | **Tableau de bord relais** | 🟡 Moyenne | Les agents relais ont un rôle mais pas de vue dédiée |
-| 7 | **Multi-île** | 🟢 Basse | Schema prêt (`island` sur relais) mais logique = Anjouan uniquement |
-| 8 | **i18n** | 🟢 Basse | Tout en français — pas de support multilingue |
-| 9 | **Rate limiter Redis** | 🟢 Basse | Memory store OK pour MVP, Redis nécessaire en production scale |
-| 10 | **Logging structuré** | 🟢 Basse | console.log/error partout — passer à Winston/Pino |
+| 1 | **Tests automatisés** | 🔴 P0 | Jest/Supertest — auth, orders, payments, scans |
+| 2 | **Route disputes CRUD** | 🟡 P1 | Table `disputes` prête, `routes/disputes.js` manquant |
+| 3 | **Upload images produits** | 🟡 P1 | `image_url` en DB, pas d'upload S3/Cloudinary |
+| 4 | **Activer modules Phase 2** | 🟡 P1 | Signer contrats opticien + cosmétiques |
+| 5 | **Logging structuré** | 🟢 P2 | Passer à Winston/Pino |
+| 6 | **Redis rate-limit** | 🟢 P2 | Remplacer memory store pour scale |
+| 7 | **Multi-île** | 🟢 P2 | Schema prêt, logique = Anjouan uniquement |
 
 ---
 
@@ -445,19 +326,17 @@ JWT Bearer Token
 ```
 
 **Rôles :** `client` · `admin` · `agent_relais` · `agent_hub`
-**Secret :** `JWT_SECRET` en .env
-**Token :** Expire selon configuration (refresh disponible)
 
 ### 7.2 Rate Limiting (middleware/rate-limit.js)
 
 | Limiter | Cible | Limite |
 |---------|-------|--------|
 | `globalLimiter` | `/api/*` | 100 req / 15 min |
-| `authLimiter` | `/api/auth/login`, `/api/auth/register` | 5 req / 15 min |
-| `cashConfirmLimiter` | `/api/payments/cash/confirm` | 3 req / 1 min |
-| `scanCollectLimiter` | `/api/scans/collect` | 5 req / 1 min |
-| `orderCreateLimiter` | `/api/orders` | 10 req / 1 min |
-| `dashboardLimiter` | `/api/dashboard/*` | 30 req / 1 min |
+| `authLimiter` | login, register | 5 req / 15 min |
+| `cashConfirmLimiter` | cash/confirm | 3 req / 1 min |
+| `scanCollectLimiter` | scans/collect | 5 req / 1 min |
+| `orderCreateLimiter` | orders POST | 10 req / 1 min |
+| `dashboardLimiter` | dashboard/* | 30 req / 1 min |
 
 ### 7.3 Autres mesures
 
@@ -469,16 +348,52 @@ JWT Bearer Token
 
 ---
 
-## 8. OUTILS ADMIN LOCAUX
+## 8. DASHBOARDS & OUTILS ADMIN
 
-Versions **réelles** dans `public/` :
+Suite complète de 9 dashboards HTML standalone dans `public/`, tous en thème clair, DM Sans, JWT Railway.
 
-| Outil | Version repo | Fichier |
-|-------|-------------|---------|
-| **SPA Komerce** | Komerce_Web.html | Front public |
-| **Client API** | komerce-api.js | Wrapper fetch pour toutes les routes |
+| Fichier | Rôle | Taille | APIs |
+|---------|------|--------|------|
+| `Komerce_Boutique.html` | SPA frontend client | 122 KB | — |
+| `Komerce_Mobile.html` | App PWA mobile Anjouan | 54 KB | — |
+| `Komerce_Admin.html` | Back-office administration | 112 KB | 7 |
+| `Komerce_Pilotage.html` | Pilotage coûts & marges | 179 KB | 9 |
+| `Komerce_Simulateur.html` | Simulateur tarification v17 | 141 KB | — |
+| `Komerce_Backend.html` | Méga-cockpit all-in-one | 514 KB | 26 |
+| `Komerce_Tests.html` | Test Runner E2E (12 étapes) | 147 KB | — |
+| `Komerce_Hub.html` | Agent Hub Dubai | 40 KB | — |
+| `Komerce_Relais.html` | Agent Relais Anjouan | 93 KB | — |
 
-> Note : Les outils Backoffice, Simulateur et Pilotage décrits dans les sessions précédentes sont des **pages HTML standalone** servies par `public/`. Leurs versions dans le repo sont les versions commitées sur `main`.
+### Komerce_Hub.html — Agent Hub Dubai
+- 4 stats temps réel (reçus, en préparation, prêts, alertes >7j)
+- Scanner QR réception colis (Html5Qrcode + fallback manuel)
+- File d'attente avec actions (Réceptionner / Expédier)
+- Expéditions récentes + Répartition par relais destination
+- Auto-refresh 30s + BroadcastChannel sync · Responsive mobile
+
+### Komerce_Relais.html — Agent Relais Anjouan
+- Sélecteur de relais (Mutsamudu, Domoni, Moroni, Fomboni)
+- 5 stats (en attente, retirés, alertes >48h, cash attendu, à contacter)
+- Scanner réception colis (SCAN 5)
+- Retrait client double méthode (code 6 chiffres + QR scan)
+- Colis en attente avec QR Code modal (WhatsApp, Copier, Télécharger, Imprimer)
+- Caisse du jour (cash + stripe + en attente)
+- 7 scripts pré-rédigés clients à contacter
+- Auto-refresh 30s + BroadcastChannel sync · Mobile-first
+
+### URLs Railway
+
+| Dashboard | URL |
+|-----------|-----|
+| 🛒 Boutique | `/Komerce_Boutique.html` |
+| 📱 Mobile | `/Komerce_Mobile.html` |
+| ⚙️ Admin | `/Komerce_Admin.html` |
+| 📈 Pilotage | `/Komerce_Pilotage.html` |
+| 🧮 Simulateur | `/Komerce_Simulateur.html` |
+| 🏭 Backend | `/Komerce_Backend.html` |
+| 🧪 Tests | `/Komerce_Tests.html` |
+| 🏗️ Hub | `/Komerce_Hub.html` |
+| 📦 Relais | `/Komerce_Relais.html` |
 
 ---
 
@@ -542,35 +457,28 @@ psql $DATABASE_URL < db/seed.sql
 | 12 | Modules v2 | Registre générique, lunettes/construction/cosmétiques déclarés |
 | 13 | Litiges | Schema disputes, purchasing workflow |
 | 14 | Fidélité + Invendus | loyalty.js, unsold.js, dashboard forecast |
-| 15 | Audit intégrité + Alignement | Audit code 9.3/10, .gitignore/.env.example/rate-limit/health corrigés, HANDOVER aligné avec code réel |
+| 15 | Audit intégrité + Alignement | Audit code 9.3/10, .gitignore/.env.example/rate-limit/health corrigés |
+| 16 | **Dashboards v9.0** | **Fixes P0 dashboard + customs_history · Hub Dubai · Relais Anjouan · Méga-cockpit Backend · Test Runner E2E · Harmonisation noms (9 dashboards)** |
 
 ---
 
 ## 11. ÉTAT ACTUEL & PROCHAINES ÉTAPES
 
-### État au 4 avril 2026
+### État au 4 avril 2026 — v9.0
 
-- ✅ **25 fonctionnalités backend** implémentées et poussées sur `main`
-- ✅ **18 fichiers routes** montés dans server.js v8.5
-- ✅ **14+ tables** PostgreSQL avec triggers automatiques
-- ✅ **Score intégrité : 9.3/10** — tous les faux positifs de l'audit résolus
-- ⚠️ **1 point opérationnel restant** : supprimer `backend/` du tracking git
-
-### Nettoyage restant (non bloquant)
-
-| # | Action | Impact |
-|---|--------|--------|
-| 1 | `git rm -r backend/` | Supprimer le dossier obsolète (node_modules trackés) |
-| 2 | Supprimer `public/Komerce_Web.html.old` | Nettoyage fichier obsolète |
-| 3 | Supprimer `public/komerce-api.js.old` | Nettoyage fichier obsolète |
-| 4 | Déplacer `public/*.sql` vers `db/` | Organisation migrations |
+- ✅ **30 fonctionnalités** implémentées sur `main`
+- ✅ **9 dashboards** HTML opérationnels dans `public/`
+- ✅ **18 fichiers routes** montés dans server.js v9.0
+- ✅ **15+ tables** PostgreSQL avec triggers automatiques (dont `customs_history`)
+- ✅ **Score intégrité : 9.3/10** — audit Session 15
+- ✅ **Fixes P0 intégrés :** dashboard 500s · scans UUID validation · SQL customs/pilotage · customs_history schema
+- ✅ **Suite de dashboards complète :** Hub Dubai · Relais Anjouan · Backend cockpit · Test Runner
 
 ### Prochaines étapes recommandées
 
 | Priorité | Action | Détail |
 |----------|--------|--------|
 | 🔴 P0 | Tests automatisés | Jest/Supertest — couvrir auth, orders, payments, scans |
-| 🔴 P0 | Frontend connecté | Relier Komerce_Web.html à toutes les routes API |
 | 🟡 P1 | Route disputes | Créer routes/disputes.js (table DB prête) |
 | 🟡 P1 | Upload images | S3/Cloudinary pour products.image_url |
 | 🟡 P1 | Activer modules Phase 2 | Signer contrats opticien + cosmétiques |
@@ -581,4 +489,4 @@ psql $DATABASE_URL < db/seed.sql
 ---
 
 > **Ce document est la source de vérité pour tout nouveau développeur ou IA reprenant le projet.**
-> Il reflète exactement l'état du code sur `main` au 4 avril 2026.
+> Il reflète exactement l'état du code sur `main` au 4 avril 2026 — version v9.0.

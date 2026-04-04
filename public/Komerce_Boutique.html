@@ -1,0 +1,2968 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Open Graph / WhatsApp / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Komerce — Vos envies traversent la mer">
+<meta property="og:description" content="Shopping Dubai → Comores. Électronique, mode, maison livrés à Mutsamudu. Paiement cash au relais.">
+<meta property="og:image" content="https://komerce.km/og-image.jpg">
+<meta property="og:url" content="https://komerce.km">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Shopping Dubai → Comores. Électronique, mode, maison livrés à Mutsamudu. Paiement cash au relais.">
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%231a3a5c'/><text x='50' y='68' text-anchor='middle' font-size='50' fill='%23e8a020'>K</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%231a3a5c'/><text x='50' y='68' text-anchor='middle' font-size='50' fill='%23e8a020'>K</text></svg>">
+<title>Komerce — 🛒 Boutique</title>
+<link rel="manifest" href="manifest.json">
+<!-- Google Analytics — remplacer G-XXXXXXXX par votre ID de mesure -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXX');
+  // Helper pour tracker les événements e-commerce
+  function trackEvent(action, params) {
+    if (typeof gtag !== 'undefined') gtag('event', action, params || {});
+  }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   KOMERCE — Mobile-First Sales Page
+   Brand: Navy #1a3a5c · Gold #e8a020 · Coral #e85d40
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --navy: #1a3a5c;
+  --navy-light: #2a5580;
+  --gold: #e8a020;
+  --gold-light: #f5c563;
+  --coral: #e85d40;
+  --green: #27ae60;
+  --bg: #f5f5f0;
+  --white: #ffffff;
+  --text: #1a1a1a;
+  --text-light: #6b7280;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(72px + var(--safe-bottom));
+  overflow-x: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.header-logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.header-logo span { color: var(--gold); }
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.header-btn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: var(--white);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition);
+}
+.header-btn:active { transform: scale(0.92); }
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+.cart-badge:empty, .cart-badge[data-count="0"] { display: none; }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: var(--white);
+  padding: 24px 16px 28px;
+  text-align: center;
+}
+.hero h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+.hero p {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(232,160,32,0.18);
+  border: 1px solid rgba(232,160,32,0.35);
+  color: var(--gold-light);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.search-box {
+  position: relative;
+  max-width: 400px;
+  margin: 0 auto;
+}
+.search-box input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.15);
+  color: var(--white);
+  outline: none;
+  transition: var(--transition);
+}
+.search-box input::placeholder { color: rgba(255,255,255,0.5); }
+.search-box input:focus { background: rgba(255,255,255,0.22); }
+.search-box .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+/* ── Search Results Overlay ─────────────────────────────────────────────── */
+.search-results {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 200;
+  overflow-y: auto;
+}
+.search-results.active { display: block; }
+.search-results-header {
+  background: var(--navy);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.search-results-header input {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.15);
+  color: var(--white);
+  outline: none;
+}
+.search-results-header input::placeholder { color: rgba(255,255,255,0.5); }
+.search-back {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+}
+.search-results-body {
+  padding: 16px;
+}
+.search-results-body .product-card { margin-bottom: 12px; }
+.search-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-light);
+}
+.search-empty .emoji { font-size: 40px; margin-bottom: 12px; }
+
+/* ── Featured Carousel ──────────────────────────────────────────────────── */
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 20px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.featured-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 0 16px 16px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.featured-scroll::-webkit-scrollbar { display: none; }
+.featured-card {
+  min-width: 160px;
+  max-width: 160px;
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  scroll-snap-align: start;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.featured-card:active { transform: scale(0.97); }
+.featured-img {
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(135deg, #e8e8e0 0%, #d5d5cc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  position: relative;
+}
+.featured-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.featured-info {
+  padding: 10px 12px;
+}
+.featured-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.featured-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.featured-price-eur {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+/* ── Category Accordions ────────────────────────────────────────────────── */
+.categories-section {
+  padding: 0 16px 16px;
+}
+.category-accordion {
+  background: var(--white);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.category-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 12px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.category-header:active { background: rgba(0,0,0,0.03); }
+.category-emoji {
+  font-size: 26px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.category-info { flex: 1; min-width: 0; }
+.category-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 1px;
+}
+.category-count {
+  font-size: 12px;
+  color: var(--text-light);
+}
+.category-chevron {
+  font-size: 18px;
+  color: var(--text-light);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+.category-accordion.open .category-chevron {
+  transform: rotate(180deg);
+}
+.category-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+.category-accordion.open .category-body {
+  max-height: 3000px;
+}
+.category-products {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.category-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-light);
+  font-size: 13px;
+}
+.category-loading .spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-bottom: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Product Card ───────────────────────────────────────────────────────── */
+.product-card {
+  display: flex;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  align-items: center;
+  cursor: pointer;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.product-card:active { transform: scale(0.98); background: #ebe9e3; }
+.product-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+.product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-promo-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.product-details { flex: 1; min-width: 0; }
+.product-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.product-desc {
+  font-size: 11px;
+  color: var(--text-light);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.product-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.product-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.product-price-eur {
+  font-size: 11px;
+  color: var(--text-light);
+}
+.product-price-old {
+  font-size: 11px;
+  color: var(--text-light);
+  text-decoration: line-through;
+}
+.product-add-btn {
+  background: var(--gold);
+  border: none;
+  color: var(--white);
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: var(--transition);
+  line-height: 1;
+}
+.product-add-btn:active { transform: scale(0.95); background: #d4900b; }
+
+/* ── Services Personnalisés (catégorie 6) ───────────────────────────────── */
+.service-card {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  border-left: 3px solid var(--gold);
+}
+.service-card:active { transform: scale(0.98); }
+.service-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.service-emoji { font-size: 24px; }
+.service-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.service-phase {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+.service-phase.available {
+  background: rgba(39,174,96,0.12);
+  color: var(--green);
+}
+.service-phase.coming {
+  background: rgba(107,114,128,0.12);
+  color: var(--text-light);
+}
+.service-desc {
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.4;
+}
+.service-need {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--navy);
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* ── Product Detail Modal ───────────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 300;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.active {
+  display: flex;
+}
+.modal-sheet {
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  max-height: min(85svh, 85vh);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.modal-sheet-scroll {
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.modal-sheet-footer {
+  padding: 12px 20px 16px;
+  background: var(--white);
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 2px;
+  margin: 12px auto;
+}
+.modal-product-img {
+  width: 100%;
+  height: 220px;
+  background: linear-gradient(135deg, #e8e8e0, #d5d5cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+}
+.modal-product-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.modal-content { padding: 16px 20px; }
+.modal-product-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.modal-product-category {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 12px;
+}
+.modal-product-desc {
+  font-size: 13px;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.modal-price-block {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.modal-price-kmf {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.modal-price-eur {
+  font-size: 14px;
+  color: var(--text-light);
+}
+.modal-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.modal-qty-row label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.qty-btn {
+  background: var(--bg);
+  border: none;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qty-btn:active { background: #ddd; }
+.qty-value {
+  width: 40px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--white);
+  border: none;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  height: 36px;
+}
+.modal-add-cart {
+  width: 100%;
+  width: 100%;
+  padding: 14px;
+  background: var(--gold);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+.modal-add-cart:active { background: #d4900b; transform: scale(0.98); }
+.modal-stock-info {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--green);
+}
+.modal-stock-info.low { color: var(--coral); }
+
+/* ── Cart Panel (slide from right) ──────────────────────────────────────── */
+.cart-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 400;
+}
+.cart-overlay.active { display: block; }
+.cart-panel {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  background: var(--white);
+  z-index: 401;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.cart-panel.open { right: 0; }
+.cart-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cart-header h3 { font-size: 16px; font-weight: 700; }
+.cart-close {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+}
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+.cart-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-light);
+}
+.cart-empty .emoji { font-size: 48px; margin-bottom: 12px; }
+.cart-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+}
+.cart-item-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.cart-item-info { flex: 1; min-width: 0; }
+.cart-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cart-item-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.cart-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.cart-item-qty button {
+  background: var(--bg);
+  border: none;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cart-item-qty span {
+  width: 28px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: var(--coral);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+}
+.cart-footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + var(--safe-bottom));
+}
+.cart-totals {
+  margin-bottom: 12px;
+}
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.cart-total-row.total {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--navy);
+  padding-top: 6px;
+  border-top: 1px solid #e5e7eb;
+}
+.cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: var(--gold);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-primary:active { background: #d4900b; }
+.btn-secondary {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  color: var(--navy);
+  border: 2px solid var(--navy);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-secondary:active { background: rgba(26,58,92,0.06); }
+.btn-whatsapp {
+  background: #25d366;
+  color: var(--white);
+  border-color: #25d366;
+}
+.btn-whatsapp:active { background: #1da855; }
+
+/* ── Order Tracking Panel ───────────────────────────────────────────────── */
+.tracking-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 500;
+  overflow-y: auto;
+}
+.tracking-overlay.active { display: block; }
+.tracking-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.tracking-header h3 { font-size: 16px; font-weight: 700; flex: 1; }
+.tracking-back {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 22px;
+  cursor: pointer;
+}
+.tracking-body { padding: 20px 16px; }
+.tracking-input-group {
+  margin-bottom: 16px;
+}
+.tracking-input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.tracking-input-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transition);
+}
+.tracking-input-group input:focus { border-color: var(--navy); }
+.tracking-search-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.tracking-search-btn:active { background: var(--navy-light); }
+.tracking-result { margin-top: 24px; }
+.tracking-order-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+.tracking-order-ref {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.tracking-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.tracking-status.draft { background: #f3f4f6; color: #6b7280; }
+.tracking-status.confirmed { background: #dbeafe; color: #1e40af; }
+.tracking-status.paid { background: #d1fae5; color: #065f46; }
+.tracking-status.ordered { background: #dbeafe; color: #1e40af; }
+.tracking-status.purchasing { background: #fef3c7; color: #92400e; }
+.tracking-status.preparation { background: #fce7f3; color: #9d174d; }
+.tracking-status.hub_preparation { background: #ede9fe; color: #5b21b6; }
+.tracking-status.shipped { background: #e0e7ff; color: #3730a3; }
+.tracking-status.transit_comores { background: #ccfbf1; color: #065f46; }
+.tracking-status.relais_received { background: #d1fae5; color: #065f46; }
+.tracking-status.available { background: #d1fae5; color: #065f46; }
+.tracking-status.collected { background: #d1fae5; color: #065f46; }
+.tracking-status.cancelled { background: #fee2e2; color: #dc2626; }
+.tracking-status.refunded { background: #fef3c7; color: #92400e; }
+.tracking-timeline {
+  border-left: 2px solid #e5e7eb;
+  padding-left: 16px;
+  margin-top: 12px;
+}
+.tracking-step {
+  position: relative;
+  padding-bottom: 16px;
+  font-size: 12px;
+}
+.tracking-step:last-child { padding-bottom: 0; }
+.tracking-step::before {
+  content: '';
+  position: absolute;
+  left: -21px;
+  top: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+}
+.tracking-step.done::before { background: var(--green); }
+.tracking-step.current::before { background: var(--gold); box-shadow: 0 0 0 3px rgba(232,160,32,0.3); }
+.tracking-step-status { font-weight: 600; color: var(--text); }
+.tracking-step-date { color: var(--text-light); font-size: 11px; }
+
+/* ── Bottom Nav ─────────────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-around;
+  padding: 6px 0;
+  padding-bottom: calc(6px + var(--safe-bottom));
+  z-index: 90;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.nav-item.active { color: var(--navy); }
+.nav-item .nav-icon { font-size: 22px; }
+.nav-item .nav-badge {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+.nav-item .nav-badge:empty { display: none; }
+
+/* ── WhatsApp FAB ───────────────────────────────────────────────────────── */
+.fab-whatsapp {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #25d366;
+  color: var(--white);
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(37,211,102,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 89;
+  transition: var(--transition);
+}
+.fab-whatsapp:active { transform: scale(0.9); }
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: calc(90px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--navy);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 600;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Utilities ──────────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.hidden { display: none !important; }
+
+/* ── Responsive tweaks ──────────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .hero h1 { font-size: 26px; }
+  .featured-card { min-width: 180px; max-width: 180px; }
+  .category-products {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .category-products .product-card {
+    width: calc(50% - 5px);
+    flex-direction: column;
+    text-align: center;
+  }
+  .category-products .product-card .product-thumb {
+    width: 100%;
+    height: 100px;
+  }
+}
+
+/* ── Loading States (additional) ─────────────────────────────────────────── */
+.skeleton-card {
+  height: 200px;
+  margin-bottom: 12px;
+}
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+  width: 80%;
+}
+.skeleton-text.short { width: 40%; }
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gold-light, #e5e7eb);
+  border-top-color: var(--gold, var(--navy));
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+</style>
+<!-- Google Analytics (replace GA_MEASUREMENT_ID with real ID before launch) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'GA_MEASUREMENT_ID');
+</script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-logo">K<span>.</span>omerce</div>
+  <div class="header-actions">
+    <button class="header-btn" onclick="openTracking()" aria-label="Suivi commande">📦</button>
+    <button class="header-btn" onclick="openCart()" aria-label="Panier">
+      🛒
+      <span class="cart-badge" id="headerCartBadge"></span>
+    </button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="hero" id="heroSection">
+  <div class="hero-badge">🇦🇪 Dubai → 🇰🇲 Comores · 3-5 semaines</div>
+  <h1>Vos envies traversent la mer.<br>Profitez de la vie.</h1>
+  <p>Tout ce que vous voulez, livré aux Comores sans bouger de chez vous.<br><strong>Prix tout compris · 3 à 5 semaines · Zéro frais cachés</strong></p>
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="search" id="heroSearch" placeholder="Que cherchez-vous ?" onfocus="openSearchPanel()">
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FEATURED PRODUCTS
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title">🔥 En vedette</div>
+<div class="featured-scroll" id="featuredScroll">
+  <!-- Filled by JS -->
+  <div class="featured-card skeleton" style="min-width:160px;height:200px"></div>
+  <div class="featured-card skeleton" style="min-width:160px;height:200px"></div>
+  <div class="featured-card skeleton" style="min-width:160px;height:200px"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     CATEGORIES (5 + 1 personnalisée)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section-title">📂 Catégories</div>
+<div class="categories-section" id="categoriesSection">
+  <!-- Filled by JS -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SEARCH RESULTS OVERLAY
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="search-results" id="searchPanel">
+  <div class="search-results-header">
+    <button class="search-back" onclick="closeSearchPanel()">←</button>
+    <input type="search" id="searchInput" placeholder="Rechercher un produit...">
+  </div>
+  <div class="search-results-body" id="searchResultsBody">
+    <div class="search-empty">
+      <div class="emoji">🔍</div>
+      <div>Tapez pour rechercher parmi tous nos produits</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PRODUCT DETAIL MODAL
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="productModal" onclick="closeProductModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-sheet-scroll">
+      <div class="modal-product-img" id="modalImg"></div>
+      <div class="modal-content">
+        <div class="modal-product-name" id="modalName"></div>
+        <div class="modal-product-category" id="modalCategory"></div>
+        <div class="modal-product-desc" id="modalDesc"></div>
+        <div class="modal-price-block">
+          <span class="modal-price-kmf" id="modalPriceKmf"></span>
+          <span class="modal-price-eur" id="modalPriceEur"></span>
+        </div>
+        <div class="modal-qty-row">
+          <label>Quantité</label>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="changeModalQty(-1)">−</button>
+            <input type="number" class="qty-value" id="modalQty" value="1" min="1" readonly>
+            <button class="qty-btn" onclick="changeModalQty(1)">+</button>
+          </div>
+        </div>
+        <div class="modal-stock-info" id="modalStock"></div>
+      </div>
+    </div>
+    <div class="modal-sheet-footer">
+      <button class="modal-add-cart" onclick="addToCartFromModal()">
+        🛒 Ajouter au panier
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     CART PANEL
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-header">
+    <h3>🛒 Mon panier</h3>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div class="cart-empty">
+      <div class="emoji">🛒</div>
+      <div>Votre panier est vide</div>
+    </div>
+  </div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-totals" id="cartTotals"></div>
+    <div class="cart-actions">
+      <button class="btn-primary" onclick="startCheckout()">
+        💳 Commander
+      </button>
+      <button class="btn-secondary btn-whatsapp" onclick="shareCartWhatsApp()">
+        📲 Partager via WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TRACKING PANEL
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="tracking-overlay" id="trackingPanel">
+  <div class="tracking-header">
+    <button class="tracking-back" onclick="closeTracking()">←</button>
+    <h3>📦 Suivi de commande</h3>
+  </div>
+  <div class="tracking-body">
+    
+    <!-- Mes Commandes (localStorage) -->
+    <div id="myOrdersSection" style="margin-bottom:20px;"></div>
+    
+    <div style="padding:12px 0;border-top:1px solid var(--bg);margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);">🔍 Rechercher une commande</div>
+    </div>
+    
+    <div class="tracking-input-group">
+      <label>Référence commande</label>
+      <input type="text" id="trackRef" placeholder="ex: K4F8A2Z">
+    </div>
+    <div class="tracking-input-group">
+      <label>ou votre numéro de téléphone</label>
+      <input type="tel" id="trackPhone" placeholder="ex: +269 321 12 34">
+    </div>
+    <button class="tracking-search-btn" onclick="searchOrder()">🔍 Rechercher</button>
+    <div class="tracking-result" id="trackingResult"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     LEGAL PAGES
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="legal-page" class="section" style="display:none;">
+  <div style="padding:16px 16px 32px;max-width:600px;margin:auto;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <button onclick="closeLegalPage()" style="background:var(--navy);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">←</button>
+      <h2 id="legal-title" style="font-size:1.3rem;color:var(--navy);"></h2>
+    </div>
+    <div id="legal-content" style="font-size:0.9rem;line-height:1.7;color:var(--text);"></div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer style="background:var(--navy);color:#fff;padding:32px 16px 24px;text-align:center;font-size:0.8rem;line-height:1.8;">
+  <div style="max-width:500px;margin:auto;">
+    <div style="font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:8px;">Komerce</div>
+    <p style="color:rgba(255,255,255,0.7);margin-bottom:12px;">Vos envies traversent la mer. 🌊</p>
+    <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+      <a href="#" onclick="openLegalPage('cgv');return false;" style="color:var(--gold-light);text-decoration:none;">CGV</a>
+      <span style="color:rgba(255,255,255,0.3);">|</span>
+      <a href="#" onclick="openLegalPage('privacy');return false;" style="color:var(--gold-light);text-decoration:none;">Confidentialité</a>
+      <span style="color:rgba(255,255,255,0.3);">|</span>
+      <a href="#" onclick="openLegalPage('mentions');return false;" style="color:var(--gold-light);text-decoration:none;">Mentions légales</a>
+    </div>
+    <p style="color:rgba(255,255,255,0.5);">© 2025 LYLIA GROUP LIMITED — Dubai, UAE</p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     BOTTOM NAVIGATION
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="navigateTo('home', this)">
+    <span class="nav-icon">🏠</span>
+    Accueil
+  </button>
+  <button class="nav-item" onclick="navigateTo('categories', this)">
+    <span class="nav-icon">📂</span>
+    Catégories
+  </button>
+  <button class="nav-item" onclick="navigateTo('cart', this)">
+    <span class="nav-icon">🛒</span>
+    Panier
+    <span class="nav-badge" id="navCartBadge"></span>
+  </button>
+  <button class="nav-item" onclick="navigateTo('tracking', this)">
+    <span class="nav-icon">📦</span>
+    Suivi
+  </button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     WHATSAPP FAB
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<button class="fab-whatsapp" onclick="openWhatsApp()" aria-label="Contacter sur WhatsApp">💬</button>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TOAST
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ─── Configuration ───────────────────────────────────────────────────────────
+const API_BASE   = 'https://komerce-backend-production.up.railway.app/api';
+let EUR_KMF      = 495;
+const WA_NUMBER  = '33699272526';
+const WA_MSG     = 'Bonjour Komerce ! Je souhaite passer commande.';
+const USE_DEMO   = true; // Force demo mode tant que le backend n'a pas de produits
+
+// UTM Tracking
+const UTM_PARAMS = {};
+(function parseUTM() {
+  const params = new URLSearchParams(window.location.search);
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(k => {
+    if (params.get(k)) UTM_PARAMS[k] = params.get(k);
+  });
+  if (Object.keys(UTM_PARAMS).length > 0) {
+    localStorage.setItem('komerce_utm', JSON.stringify(UTM_PARAMS));
+    console.log('UTM tracked:', UTM_PARAMS);
+  }
+})();
+
+// ─── Categories definition ────────────────────────────────────────────────────
+const CATEGORIES = [
+  { key: 'electronics', name: 'Téléphones & accessoires', emoji: '📱', desc: 'Smartphones, écouteurs, chargeurs, coques' },
+  { key: 'home', name: 'Électroménager', emoji: '🏠', desc: 'Ventilateurs, fer à repasser, bouilloire, multiprise' },
+  { key: 'wedding', name: 'Mariage & Bijoux', emoji: '💍', desc: 'Or, montres, parfums, coffrets cadeaux' },
+  { key: 'fashion', name: 'Vêtements', emoji: '👗', desc: 'Djellabas, abayas, boubous, caftans' },
+  { key: 'services', name: 'Cosmétiques', emoji: '💄', desc: 'Crèmes, parfums oud, huile d\'argan, coffrets soins' },
+];
+
+// Services personnalisés (catégorie 6)
+const SERVICES = [
+  {
+    type: 'couture',
+    emoji: '✂️',
+    label: 'Couture & Tenues sur mesure',
+    desc: 'Tissu au choix (Wax, Bazin, Dentelle…) + confection sur mesure à Dubai selon vos mensurations.',
+    need: 'Couture professionnelle sur mesure — tissus haut de gamme indisponibles localement',
+    phase: 1,
+    available: true,
+    delay: '+5 jours',
+  },
+  {
+    type: 'lunettes',
+    emoji: '👓',
+    label: 'Lunettes de vue & Solaires',
+    desc: 'Envoyez votre ordonnance, choisissez une monture — montage verres par opticien Dubai.',
+    need: 'Aucun opticien qualifié à Anjouan — verres correcteurs absents du marché local',
+    phase: 2,
+    available: false,
+    delay: '+5 jours',
+  },
+  {
+    type: 'construction',
+    emoji: '🏗️',
+    label: 'Matériaux & Finitions',
+    desc: 'Carrelage, robinetterie, enduits professionnels — commande sur devis avec dimensions.',
+    need: 'Matériaux de finition qualité absents — la diaspora investit dans l\'immobilier',
+    phase: 3,
+    available: false,
+    delay: '+14 jours',
+  },
+  {
+    type: 'cosmetiques',
+    emoji: '💄',
+    label: 'Cosmétiques & Parfums Dubai',
+    desc: 'Marques de soins, parfums oud, cosmétiques professionnels fabriqués à Dubai.',
+    need: 'Marques professionnelles Dubai absentes du marché local',
+    phase: 2,
+    available: false,
+    delay: '',
+  },
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let cart = JSON.parse(localStorage.getItem('komerce_cart') || '[]');
+let currentProduct = null;
+let productsCache = {};
+let searchTimeout = null;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  // Géolocalisation auto (ipapi.co)
+  try {
+    const geoRes = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) });
+    if (geoRes.ok) {
+      const geo = await geoRes.json();
+      window.KOMERCE_GEO = { country: geo.country_code, city: geo.city, region: geo.region };
+      console.log('Géoloc:', geo.country_code, geo.city);
+      // Auto-set currency context
+      if (['KM', 'MG', 'TZ', 'MZ'].includes(geo.country_code)) {
+        document.documentElement.setAttribute('data-region', 'indian-ocean');
+      } else {
+        document.documentElement.setAttribute('data-region', 'diaspora');
+      }
+    }
+  } catch(e) { console.log('Géoloc indisponible'); }
+
+  renderCategories();
+  loadFeatured();
+  updateCartBadges();
+
+  // Deep link: ?product=p1 → ouvre la modal produit après chargement
+  const urlParams = new URLSearchParams(window.location.search);
+  const deepProduct = urlParams.get('product');
+  if (deepProduct) {
+    // Attendre que les produits démo soient accessibles
+    setTimeout(() => {
+      // Peupler le cache avec tous les produits démo
+      Object.values(DEMO_PRODUCTS).flat().forEach(p => { productsCache[p.id] = p; });
+      if (productsCache[deepProduct]) openProductModal(deepProduct);
+    }, 300);
+  }
+
+  // Restaurer panier partagé: ?cart=base64
+  const sharedCart = urlParams.get('cart');
+  if (sharedCart && !cart.length) {
+    try {
+      const items = JSON.parse(decodeURIComponent(escape(atob(sharedCart))));
+      Object.values(DEMO_PRODUCTS).flat().forEach(p => { productsCache[p.id] = p; });
+      items.forEach(({ id, q }) => {
+        const p = productsCache[id];
+        if (p) addToCart(p, q);
+      });
+      if (cart.length) {
+        showToast(`🛒 Panier restauré — ${cart.length} article${cart.length > 1 ? 's' : ''}`);
+        setTimeout(() => openCart(), 800);
+      }
+    } catch(e) { console.log('Panier partagé invalide'); }
+  }
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => searchProducts(e.target.value), 350);
+  });
+
+  // M4: Charger taux EUR/KMF depuis l'API
+  try {
+    const rates = await apiFetch('/rates', { silent: true });
+    if (rates?.EUR_KMF) {
+      EUR_KMF = rates.EUR_KMF;
+      console.log('Taux API mis à jour:', EUR_KMF);
+    }
+  } catch(e) { /* taux fallback 495 utilisé */ }
+
+  // Offline / Online notifications
+  window.addEventListener('offline', () => showToast('📴 Connexion perdue — mode hors ligne'));
+  window.addEventListener('online', () => showToast('📶 Connexion rétablie !'));
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      console.log('SW registered:', reg.scope);
+    }).catch(err => console.log('SW registration failed:', err));
+  }
+});
+
+// ─── API Helpers ──────────────────────────────────────────────────────────────
+async function apiFetch(url, opts = {}) {
+  // En mode demo ou si l'API est indisponible, on utilise les données locales
+  if (USE_DEMO && url.startsWith('/products')) return null;
+  try {
+    const token = localStorage.getItem('komerce_token');
+    const headers = { 'Content-Type': 'application/json', ...opts.headers };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(API_BASE + url, { ...opts, headers, signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.status === 401) {
+      localStorage.removeItem('komerce_token');
+      showToast('Session expirée, veuillez réessayer');
+      return null;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('API error:', err.message);
+    // Show user-friendly error for non-silent requests
+    if (!opts.silent) {
+      if (err.name === 'AbortError') {
+        showToast('Connexion lente — données locales utilisées');
+      } else if (!navigator.onLine) {
+        showToast('Pas de connexion internet');
+      }
+    }
+    return null;
+  }
+}
+
+// ─── Demo data — Plan Lancement v3 (20 produits, 4 par catégorie) ─────────────
+const DEMO_PRODUCTS = {
+  // Téléphones & accessoires
+  electronics: [
+    { id: 'p1', name: 'Samsung Galaxy A35 (128Go)', description: 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.', category: 'electronics', price_kmf: 99000, price_eur: 200, emoji: '📱', badge: 'Populaire', stock: 15, image_url: null },
+    { id: 'p2', name: 'Écouteurs Samsung Galaxy Buds2', description: 'Réduction de bruit active, 5h d\'autonomie + 15h boîtier. Compatible Android & iOS.', category: 'electronics', price_kmf: 39600, price_eur: 80, emoji: '🎧', stock: 20, image_url: null },
+    { id: 'p3', name: 'Pack coques + accessoires (5 pièces)', description: 'Coque renforcée + verre trempé + chargeur rapide 25W + câble USB-C + support voiture.', category: 'electronics', price_kmf: 14850, price_eur: 30, emoji: '📱', badge: 'Nouveau', stock: 30, image_url: null },
+    { id: 'p4', name: 'Chargeur rapide 65W GaN (multi-ports)', description: '3 ports (2 USB-C + 1 USB-A), compact. Charge téléphone + tablette + PC simultanément.', category: 'electronics', price_kmf: 19800, price_eur: 40, emoji: '🔌', stock: 25, image_url: null },
+  ],
+  // Électroménager
+  home: [
+    { id: 'p5', name: 'Ventilateur sur pied 16"', description: 'Oscillant 3 vitesses, silencieux, télécommande. Indispensable aux Comores toute l\'année.', category: 'home', price_kmf: 24750, price_eur: 50, emoji: '🌀', badge: 'Best-seller', stock: 25, image_url: null },
+    { id: 'p6', name: 'Fer à repasser vapeur 2400W', description: 'Semelle céramique anti-adhésive, réservoir 300ml, départ rapide 30s. Parfait pour les tenues de cérémonie.', category: 'home', price_kmf: 17325, price_eur: 35, emoji: '👕', stock: 18, image_url: null },
+    { id: 'p7', name: 'Multiprise 6 prises + 2 USB', description: 'Câble 2m, disjoncteur sécurité, 2 ports USB-A. Indispensable pour les foyers connectés.', category: 'home', price_kmf: 9900, price_eur: 20, emoji: '🔌', stock: 35, image_url: null },
+    { id: 'p8', name: 'Bouilloire électrique 1.7L inox', description: 'Arrêt automatique, protection anti-surchauffe, ébullition en 3 min. Pour le thé et le café.', category: 'home', price_kmf: 12375, price_eur: 25, emoji: '☕', stock: 22, image_url: null },
+  ],
+  // Mariage & Bijoux
+  wedding: [
+    { id: 'p9', name: 'Montre homme acier brossé', description: 'Boîtier 42mm, bracelet acier, étanchéité 50m, verre saphir. Élégance pour le Grand Mariage.', category: 'wedding', price_kmf: 99000, price_eur: 200, emoji: '⌚', badge: 'Exclusif', stock: 8, image_url: null },
+    { id: 'p10', name: 'Collier or 18K (8g)', description: 'Or 18 carats certifié Dubai, chaîne maille forçat 45cm. Certificat d\'authenticité inclus.', category: 'wedding', price_kmf: 277200, price_eur: 560, emoji: '📿', badge: 'Premium', stock: 5, image_url: null },
+    { id: 'p11', name: 'Parfum Oud Al Shuyukh 100ml', description: 'Parfum de luxe Dubai, notes de oud, ambre et rose. Longue tenue 12h+. Flacon décoratif.', category: 'wedding', price_kmf: 59400, price_eur: 120, emoji: '🌹', stock: 12, image_url: null },
+    { id: 'p12', name: 'Coffret cadeau mariage (4 pièces)', description: 'Parfum + crème corps + savon artisanal + bracelet fantaisie. Emballage cadeau inclus.', category: 'wedding', price_kmf: 49500, price_eur: 100, emoji: '🎁', badge: 'Populaire', stock: 15, image_url: null },
+  ],
+  // Vêtements
+  fashion: [
+    { id: 'p13', name: 'Djellaba homme brodée (L/XL/XXL)', description: 'Tissu Bazin premium, broderie traditionnelle dorée. Parfaite pour les cérémonies et le vendredi.', category: 'fashion', price_kmf: 34650, price_eur: 70, emoji: '🧥', badge: 'Best-seller', stock: 20, image_url: null },
+    { id: 'p14', name: 'Abaya femme dentelle Dubai (M/L/XL)', description: 'Tissu crêpe fluide, broderie dentelle sur les manches. Élégance moderne et pudeur préservée.', category: 'fashion', price_kmf: 39600, price_eur: 80, emoji: '👗', badge: 'Populaire', stock: 15, image_url: null },
+    { id: 'p15', name: 'Boubou enfant 3-12 ans', description: 'Tissu wax africain, coupe ample confortable. Parfait pour les mariages et cérémonies.', category: 'fashion', price_kmf: 19800, price_eur: 40, emoji: '👕', stock: 18, image_url: null },
+    { id: 'p16', name: 'Caftan femme soiree (S/M/L/XL)', description: 'Tissu satiné Dubai, encolure brodée de perles. Disponible en bleu nuit, bordeaux et vert.', category: 'fashion', price_kmf: 54450, price_eur: 110, emoji: '🥻', badge: 'Nouveau', stock: 10, image_url: null },
+  ],
+  // Cosmétiques
+  services: [
+    { id: 'p17', name: 'Crème visage éclat au safran', description: 'Soin hydratant au safran de Perse + vitamine C. Teint unifié en 4 semaines. 50ml.', category: 'services', price_kmf: 24750, price_eur: 50, emoji: '✨', stock: 20, image_url: null },
+    { id: 'p18', name: 'Parfum Oud Rose (50ml)', description: 'Eau de parfum Dubai, concentrée 20%, notes de rose et oud boisé. 8h de tenue.', category: 'services', price_kmf: 34650, price_eur: 70, emoji: '🌸', badge: 'Best-seller', stock: 18, image_url: null },
+    { id: 'p19', name: 'Huile d\'argan pure Maroc (100ml)', description: 'Argan bio certifié, pressée à froid. Soin cheveux + peau + ongles. Flacon pompe.', category: 'services', price_kmf: 17325, price_eur: 35, emoji: '💧', stock: 25, image_url: null },
+    { id: 'p20', name: 'Coffret soins corps luxe (5 pièces)', description: 'Gommage + lait corps + huile + beurre de karité + savon noir. Soin complet hammam à domicile.', category: 'services', price_kmf: 44550, price_eur: 90, emoji: '🧴', badge: 'Nouveau', stock: 12, image_url: null },
+  ],
+};
+
+// ─── Load Featured Products ──────────────────────────────────────────────────
+async function loadFeatured() {
+  const container = document.getElementById('featuredScroll');
+  if (container) container.innerHTML = Array(4).fill('<div class="featured-card skeleton" style="min-width:160px;height:200px"></div>').join('');
+
+  // Try API first
+  const data = await apiFetch('/products?limit=8&in_stock=true');
+  let products;
+  if (data?.products?.length) {
+    products = data.products;
+  } else {
+    // Fallback to demo data (pick featured items)
+    products = [
+      DEMO_PRODUCTS.electronics[0],
+      DEMO_PRODUCTS.fashion[0],
+      DEMO_PRODUCTS.home[0],
+      DEMO_PRODUCTS.wedding[0],
+      DEMO_PRODUCTS.electronics[1],
+      DEMO_PRODUCTS.fashion[1],
+      DEMO_PRODUCTS.home[2],
+      DEMO_PRODUCTS.wedding[2],
+    ];
+  }
+
+  container.innerHTML = products.map(p => `
+    <div class="featured-card" onclick="openProductModal('${p.id}')">
+      <div class="featured-img">
+        ${p.image_url
+          ? `<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy">`
+          : (p.emoji || '📦')}
+        ${p.badge ? `<div class="featured-badge">${esc(p.badge)}</div>` : ''}
+        ${p.promo_pct ? `<div class="featured-badge">-${p.promo_pct}%</div>` : ''}
+      </div>
+      <div class="featured-info">
+        <div class="featured-name">${esc(p.name)}</div>
+        <div class="featured-price">${fmtKmf(p.price_kmf)}</div>
+        <div class="featured-price-eur">≈ ${fmtEur(p.price_eur || Math.round(p.price_kmf / EUR_KMF))}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Cache products
+  products.forEach(p => productsCache[p.id] = p);
+}
+
+// ─── Render Categories ────────────────────────────────────────────────────────
+function renderCategories() {
+  const section = document.getElementById('categoriesSection');
+  let html = '';
+
+  // 5 product categories
+  CATEGORIES.forEach(cat => {
+    html += `
+      <div class="category-accordion" id="cat-${cat.key}">
+        <button class="category-header" onclick="toggleCategory('${cat.key}')">
+          <div class="category-emoji">${cat.emoji}</div>
+          <div class="category-info">
+            <div class="category-name">${cat.name}</div>
+            <div class="category-count">${cat.desc}</div>
+          </div>
+          <div class="category-chevron">▼</div>
+        </button>
+        <div class="category-body">
+          <div class="category-products" id="products-${cat.key}">
+            <div class="category-loading"><div class="spinner"></div><br>Chargement...</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  // 6th category: Services personnalisés (couture, lunettes, etc.)
+  html += `
+    <div class="category-accordion" id="cat-custom">
+      <button class="category-header" onclick="toggleCategory('custom')">
+        <div class="category-emoji">⚡</div>
+        <div class="category-info">
+          <div class="category-name">Services personnalisés</div>
+          <div class="category-count">Couture sur mesure, lunettes, matériaux…</div>
+        </div>
+        <div class="category-chevron">▼</div>
+      </button>
+      <div class="category-body">
+        <div class="category-products" id="products-custom"></div>
+      </div>
+    </div>
+  `;
+
+  section.innerHTML = html;
+}
+
+// ─── Toggle Category Accordion ────────────────────────────────────────────────
+async function toggleCategory(key) {
+  const el = document.getElementById(`cat-${key}`);
+  const isOpen = el.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.category-accordion').forEach(a => a.classList.remove('open'));
+
+  if (!isOpen) {
+    el.classList.add('open');
+
+    // Load products if not cached
+    if (key === 'custom') {
+      renderServices();
+    } else if (!productsCache[`_cat_${key}`]) {
+      await loadCategoryProducts(key);
+    }
+  }
+}
+
+// ─── Load Category Products ──────────────────────────────────────────────────
+async function loadCategoryProducts(key) {
+  const container = document.getElementById(`products-${key}`);
+  container.innerHTML = '<div class="category-loading"><div class="spinner"></div><br>Chargement...</div>';
+
+  // Try API
+  const data = await apiFetch(`/products?category=${key}&limit=20`);
+  let products;
+  if (data?.products?.length) {
+    products = data.products;
+  } else {
+    // Demo fallback
+    products = DEMO_PRODUCTS[key] || [];
+  }
+
+  productsCache[`_cat_${key}`] = true;
+  products.forEach(p => productsCache[p.id] = p);
+
+  if (!products.length) {
+    container.innerHTML = '<div class="category-loading">Aucun produit pour le moment</div>';
+    return;
+  }
+
+  container.innerHTML = products.map(p => productCardHTML(p)).join('');
+}
+
+// ─── Render Services (Category 6) ──────────────────────────────────────────── 
+function renderServices() {
+  const container = document.getElementById('products-custom');
+  container.innerHTML = SERVICES.map(s => `
+    <div class="service-card" onclick="${s.available ? `openServiceDetail('${s.type}')` : 'showToast(\"Bientôt disponible ! 🚀\")'}">
+      <div class="service-card-header">
+        <span class="service-emoji">${s.emoji}</span>
+        <span class="service-label">${s.label}</span>
+        <span class="service-phase ${s.available ? 'available' : 'coming'}">
+          ${s.available ? '✅ Disponible' : `Phase ${s.phase}`}
+        </span>
+      </div>
+      <div class="service-desc">${s.desc}</div>
+      ${s.need ? `<div class="service-need">💡 ${s.need}</div>` : ''}
+      ${s.delay ? `<div class="service-need">⏱️ Délai supplémentaire : ${s.delay}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function openServiceDetail(type) {
+  // For Phase 1, open WhatsApp with pre-filled message
+  const service = SERVICES.find(s => s.type === type);
+  if (service) {
+    const msg = `Bonjour Komerce ! Je suis intéressé(e) par le service "${service.label}". Pouvez-vous me guider ?`;
+    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+}
+
+// ─── Product Card HTML ────────────────────────────────────────────────────────
+function productCardHTML(p) {
+  const priceEur = p.price_eur || Math.round(p.price_kmf / EUR_KMF);
+  const hasPromo = p.promo_pct && p.promo_pct > 0;
+  const originalPrice = hasPromo ? Math.round(p.price_kmf / (1 - p.promo_pct / 100)) : null;
+
+  return `
+    <div class="product-card" onclick="openProductModal('${p.id}')">
+      <div class="product-thumb">
+        ${p.image_url
+          ? `<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy">`
+          : (p.emoji || '📦')}
+        ${hasPromo ? `<div class="product-promo-badge">-${p.promo_pct}%</div>` : ''}
+      </div>
+      <div class="product-details">
+        <div class="product-name">${esc(p.name)}</div>
+        ${p.description ? `<div class="product-desc">${esc(p.description)}</div>` : ''}
+        <div class="product-price-row">
+          <span class="product-price">${fmtKmf(p.price_kmf)}</span>
+          <span class="product-price-eur">≈ ${fmtEur(priceEur)}</span>
+          ${originalPrice ? `<span class="product-price-old">${fmtKmf(originalPrice)}</span>` : ''}
+        </div>
+      </div>
+      <button class="product-add-btn" onclick="event.stopPropagation(); quickAdd('${p.id}', this)">🛒 Ajouter</button>
+    </div>
+  `;
+}
+
+// ─── Product Modal ────────────────────────────────────────────────────────────
+function openProductModal(id) {
+  const p = productsCache[id];
+  if (!p) return;
+
+  currentProduct = p;
+  document.getElementById('modalQty').value = 1;
+
+  const imgEl = document.getElementById('modalImg');
+  if (p.image_url) {
+    imgEl.innerHTML = `<img src="${p.image_url}" alt="${esc(p.name)}">`;
+  } else {
+    imgEl.innerHTML = p.emoji || '📦';
+  }
+
+  document.getElementById('modalName').textContent = p.name;
+  document.getElementById('modalCategory').textContent = getCategoryLabel(p.category);
+  document.getElementById('modalDesc').textContent = p.description || '';
+  document.getElementById('modalPriceKmf').textContent = fmtKmf(p.price_kmf);
+  document.getElementById('modalPriceEur').textContent = `≈ ${fmtEur(p.price_eur || Math.round(p.price_kmf / EUR_KMF))}`;
+
+  // Deep link — bouton partager ce produit
+  const shareBtn = document.getElementById('modalShareBtn');
+  if (shareBtn) {
+    const productUrl = location.origin + location.pathname + '?product=' + p.id;
+    shareBtn.onclick = () => {
+      if (navigator.share) {
+        navigator.share({ title: p.name, text: `${p.name} sur Komerce — ${fmtKmf(p.price_kmf)}`, url: productUrl });
+      } else {
+        navigator.clipboard.writeText(productUrl).then(() => showToast('Lien copié ! 📋')).catch(() => showToast('Lien : ' + productUrl));
+      }
+    };
+  }
+
+  // GA: view_item
+  trackEvent('view_item', { item_id: p.id, item_name: p.name, price: p.price_eur || Math.round(p.price_kmf / EUR_KMF) });
+
+  const stockEl = document.getElementById('modalStock');
+  if (p.stock !== null && p.stock !== undefined) {
+    if (p.stock > 5) {
+      stockEl.textContent = '✅ En stock';
+      stockEl.className = 'modal-stock-info';
+    } else if (p.stock > 0) {
+      stockEl.textContent = `⚠️ Plus que ${p.stock} en stock`;
+      stockEl.className = 'modal-stock-info low';
+    } else {
+      stockEl.textContent = '❌ Rupture de stock';
+      stockEl.className = 'modal-stock-info low';
+    }
+  } else {
+    stockEl.textContent = '✅ Disponible sur commande';
+    stockEl.className = 'modal-stock-info';
+  }
+
+  document.getElementById('productModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProductModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById('productModal').classList.remove('active');
+  document.body.style.overflow = '';
+  currentProduct = null;
+}
+
+function changeModalQty(delta) {
+  const input = document.getElementById('modalQty');
+  let val = parseInt(input.value) + delta;
+  if (val < 1) val = 1;
+  if (val > 20) val = 20;
+  input.value = val;
+}
+
+function addToCartFromModal() {
+  if (!currentProduct) return;
+  const qty = parseInt(document.getElementById('modalQty').value);
+  addToCart(currentProduct, qty);
+  closeProductModal({ target: document.getElementById('productModal'), currentTarget: document.getElementById('productModal') });
+  showToast(`${currentProduct.emoji || '📦'} ${currentProduct.name} ajouté !`);
+  setTimeout(() => openCart(), 350);
+}
+
+function quickAdd(id, btn) {
+  const p = productsCache[id];
+  if (!p) return;
+  addToCart(p, 1);
+  showToast(`${p.emoji || '📦'} ${p.name} ajouté !`);
+  // Animation ✓ sur le bouton
+  if (btn) {
+    btn.innerHTML = '✓ Ajouté !';
+    btn.style.background = '#16a34a';
+    btn.style.transform = 'scale(1.05)';
+    setTimeout(() => {
+      btn.innerHTML = '🛒 Ajouter';
+      btn.style.background = '';
+      btn.style.transform = '';
+    }, 1000);
+  }
+}
+
+// ─── Cart Logic ──────────────────────────────────────────────────────────────
+function addToCart(product, qty = 1) {
+  // M2: Vérification stock
+  const maxStock = product.stock ?? 99;
+  const existing = cart.find(i => i.id === product.id);
+  const currentQty = existing ? existing.qty : 0;
+  if (currentQty + qty > maxStock) {
+    showToast(`Stock limité : ${maxStock} disponible${maxStock > 1 ? 's' : ''}`);
+    if (currentQty >= maxStock) return;
+    qty = maxStock - currentQty;
+  }
+  if (existing) {
+    existing.qty += qty;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      emoji: product.emoji || '📦',
+      price_kmf: product.price_kmf,
+      price_eur: product.price_eur || Math.round(product.price_kmf / EUR_KMF),
+      image_url: product.image_url,
+      qty,
+    });
+  }
+  saveCart();
+  updateCartBadges();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  saveCart();
+  renderCart();
+  updateCartBadges();
+}
+
+function updateCartItemQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) return removeFromCart(id);
+  saveCart();
+  renderCart();
+  updateCartBadges();
+}
+
+function saveCart() {
+  localStorage.setItem('komerce_cart', JSON.stringify(cart));
+}
+
+function updateCartBadges() {
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  const badge1 = document.getElementById('headerCartBadge');
+  const badge2 = document.getElementById('navCartBadge');
+  badge1.textContent = total || '';
+  badge2.textContent = total || '';
+  if (total > 0) {
+    badge1.setAttribute('data-count', total);
+    badge2.style.display = '';
+  } else {
+    badge1.setAttribute('data-count', '0');
+    badge2.style.display = 'none';
+  }
+}
+
+function renderCart() {
+  const itemsEl = document.getElementById('cartItems');
+  const footerEl = document.getElementById('cartFooter');
+
+  if (!cart.length) {
+    itemsEl.innerHTML = '<div class="cart-empty"><div class="emoji">🛒</div><div>Votre panier est vide</div></div>';
+    footerEl.style.display = 'none';
+    return;
+  }
+
+  let totalKmf = 0;
+  itemsEl.innerHTML = cart.map(item => {
+    totalKmf += item.price_kmf * item.qty;
+    return `
+      <div class="cart-item">
+        <div class="cart-item-thumb">${item.emoji}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(item.name)}</div>
+          <div class="cart-item-price">${fmtKmf(item.price_kmf * item.qty)}</div>
+          <div style="font-size:11px;color:#94a3b8">${fmtKmf(item.price_kmf)} × ${item.qty}</div>
+        </div>
+        <div class="cart-item-qty">
+          <button onclick="updateCartItemQty('${item.id}', -1)" style="color:#ef4444">−</button>
+          <span>${item.qty}</span>
+          <button onclick="updateCartItemQty('${item.id}', 1)" style="color:#16a34a">+</button>
+        </div>
+        <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  const totalEur = Math.round(totalKmf / EUR_KMF);
+  document.getElementById('cartTotals').innerHTML = `
+    <div class="cart-total-row">
+      <span>Articles (${cart.reduce((s,i) => s+i.qty, 0)})</span>
+      <span>${fmtKmf(totalKmf)}</span>
+    </div>
+    <div class="cart-total-row">
+      <span>Livraison</span>
+      <span style="color:var(--green);font-weight:600">Incluse 🚢</span>
+    </div>
+    <div class="cart-total-row total">
+      <span>Total</span>
+      <span>${fmtKmf(totalKmf)} <small style="font-size:12px;color:var(--text-light);font-weight:500">≈ ${fmtEur(totalEur)}</small></span>
+    </div>
+  `;
+  footerEl.style.display = '';
+}
+
+function openCart() {
+  renderCart();
+  document.getElementById('cartOverlay').classList.add('active');
+  document.getElementById('cartPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('active');
+  document.getElementById('cartPanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── Share Cart via WhatsApp ──────────────────────────────────────────────────
+function shareCartWhatsApp() {
+  if (cart.length === 0) return showToast('Votre panier est vide');
+  const totalKmf = cart.reduce((s,i) => s + i.price_kmf * i.qty, 0);
+  const totalEur = Math.round(totalKmf / EUR_KMF);
+  
+  // Build cart data for shareable link
+  const cartData = cart.map(i => `${i.qty}x ${i.name}`).join('\n');
+  const cartEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(cart.map(i => ({id:i.id,q:i.qty}))))));
+  const shareUrl = location.origin + location.pathname + '?cart=' + cartEncoded;
+  
+  // WhatsApp message
+  let msg = `🛍️ Mon panier Komerce\n\n${cartData}\n\n💰 Total: ${fmtKmf(totalKmf)} (≈ ${fmtEur(totalEur)})\n\n👉 Voir mon panier: ${shareUrl}`;
+  
+  // Show share options
+  const cartSection = document.getElementById('cartPanel');
+  const shareDiv = document.createElement('div');
+  shareDiv.id = 'shareOptions';
+  shareDiv.style.cssText = 'background:var(--white);border-radius:var(--radius);padding:16px;margin:12px 16px;box-shadow:var(--shadow);';
+  shareDiv.innerHTML = `
+    <h4 style="color:var(--navy);margin-bottom:12px;">📤 Partager mon panier</h4>
+    <a href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" 
+       style="display:block;background:#25D366;color:#fff;text-align:center;padding:12px;border-radius:var(--radius-sm);text-decoration:none;font-weight:600;margin-bottom:8px;">
+      💬 Envoyer par WhatsApp
+    </a>
+    <button onclick="copyShareLink('${shareUrl}')" 
+       style="display:block;width:100%;background:var(--navy);color:#fff;text-align:center;padding:12px;border-radius:var(--radius-sm);border:none;font-weight:600;cursor:pointer;">
+      🔗 Copier le lien du panier
+    </button>
+    <button onclick="this.parentElement.remove()" 
+       style="display:block;width:100%;background:transparent;color:var(--text-light);text-align:center;padding:8px;border:none;cursor:pointer;margin-top:4px;font-size:0.85rem;">
+      Fermer
+    </button>
+  `;
+  
+  // Remove existing share options if any
+  const existing = document.getElementById('shareOptions');
+  if (existing) existing.remove();
+  
+  // Insert into cart panel
+  cartSection.appendChild(shareDiv);
+}
+
+function copyShareLink(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Lien copié ! 📋');
+  }).catch(() => {
+    // Fallback
+    const input = document.createElement('input');
+    input.value = url;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    showToast('Lien copié ! 📋');
+  });
+}
+
+// ─── Checkout ─────────────────────────────────────────────────────────────────
+function startCheckout() {
+  if (!cart.length) return;
+  closeCart();
+  
+  // Remove existing checkout modal
+  document.getElementById('checkoutModal')?.remove();
+  
+  const totalKmf = cart.reduce((s, i) => s + i.price_kmf * i.qty, 0);
+  const totalEur = Math.round(totalKmf / EUR_KMF);
+  const itemCount = cart.reduce((s, i) => s + i.qty, 0);
+  
+  const modal = document.createElement('div');
+  modal.id = 'checkoutModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+  
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;max-height:90vh;width:100%;max-width:480px;overflow-y:auto;padding:20px;padding-bottom:calc(80px + var(--safe-bottom));animation:slideUp 0.3s ease;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h3 style="font-size:18px;font-weight:800;color:var(--navy);">🛒 Finaliser ma commande</h3>
+        <button onclick="document.getElementById('checkoutModal').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light);">✕</button>
+      </div>
+      
+      <!-- Récapitulatif -->
+      <div style="background:var(--bg);border-radius:var(--radius);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--text-light);margin-bottom:4px;">${itemCount} article${itemCount > 1 ? 's' : ''}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--navy);">${fmtKmf(totalKmf)} <span style="font-size:14px;color:var(--text-light);font-weight:500;">≈ ${fmtEur(totalEur)}</span></div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:4px;">🚢 Livraison incluse · 3-5 semaines</div>
+      </div>
+      
+      <!-- Coordonnées du destinataire (celui qui récupère) -->
+      <div style="margin-bottom:6px;">
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px;">📍 Qui récupère la commande ?</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Nom complet *</label>
+          <input id="checkName" type="text" placeholder="Nom de la personne qui récupère" style="width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Téléphone *</label>
+          <div style="display:flex;align-items:center;border:2px solid #e5e7eb;border-radius:var(--radius-sm);overflow:hidden;background:var(--white);transition:border-color 0.2s;" id="checkPhoneWrapper" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='#e5e7eb'">
+            <span style="padding:11px 10px 11px 14px;font-size:14px;font-weight:700;color:var(--navy);background:#f1f5f9;border-right:2px solid #e5e7eb;white-space:nowrap;">+269</span>
+            <input id="checkPhone" type="tel" placeholder="321 12 34" maxlength="7" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="flex:1;padding:11px 14px;border:none;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;">
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Point relais de retrait *</label>
+          <select id="checkRelais" style="width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;background:var(--white);box-sizing:border-box;">
+            <option value="">Choisir un relais…</option>
+            <option value="mutsamudu" selected>📍 Relais Mutsamudu Centre — Anjouan</option>
+
+          </select>
+        </div>
+      </div>
+      
+      <!-- Toggle : pas la même personne qui commande -->
+      <div style="margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);" onclick="toggleCommanditaire()">
+          <div id="toggleCmdIcon" style="width:40px;height:22px;border-radius:11px;background:#cbd5e1;position:relative;transition:background 0.2s;flex-shrink:0;">
+            <div id="toggleCmdDot" style="width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+          </div>
+          <span style="font-size:13px;font-weight:600;color:var(--text);">Je ne suis pas celui qui récupère</span>
+        </label>
+      </div>
+      
+      <!-- Coordonnées du commanditaire (à l'étranger) — masqué par défaut -->
+      <div id="commanditaireSection" style="display:none;margin-bottom:16px;padding:14px;background:linear-gradient(135deg, rgba(26,58,92,0.04), rgba(232,160,32,0.06));border:2px solid rgba(26,58,92,0.12);border-radius:var(--radius);">
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px;">💳 Coordonnées de celui qui paie</div>
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Pour recevoir la confirmation et le suivi de commande.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Votre nom</label>
+            <input id="cmdName" type="text" placeholder="Votre nom complet" style="width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Email * <span style="font-weight:400;color:var(--text-light);">(pour le suivi)</span></label>
+            <input id="cmdEmail" type="email" placeholder="votre@email.com" style="width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Téléphone * <span style="font-weight:400;color:var(--text-light);">(pour le suivi)</span></label>
+            <input id="cmdPhone" type="tel" placeholder="Ex: +33 6 12 34 56 78" style="width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#e5e7eb'">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Paiement -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px;">💳 Mode de paiement</div>
+        <div id="paymentMethods" style="display:flex;flex-direction:column;gap:6px;">
+          <label id="payLabelCash" onclick="selectPayMethod('cash')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid var(--navy);border-radius:var(--radius-sm);cursor:pointer;background:rgba(26,58,92,0.04);">
+            <input type="radio" name="payMethod" value="cash" checked style="accent-color:var(--navy);">
+            <div>
+              <div style="font-size:13px;font-weight:700;">🏪 Cash au point relais</div>
+              <div style="font-size:11px;color:var(--text-light);">Payez en KMF au retrait · Code + QR par SMS</div>
+            </div>
+          </label>
+          <label id="payLabelStripe" onclick="selectPayMethod('stripe')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:2px solid #e5e7eb;border-radius:var(--radius-sm);cursor:pointer;">
+            <input type="radio" name="payMethod" value="stripe" style="accent-color:var(--navy);">
+            <div>
+              <div style="font-size:13px;font-weight:700;">💳 Carte bancaire (Stripe) <span style="font-size:10px;background:var(--gold);color:var(--white);padding:2px 6px;border-radius:8px;font-weight:600;vertical-align:middle;">(Bientôt)</span></div>
+              <div style="font-size:11px;color:var(--text-light);">Payez en EUR · Paiement sécurisé en ligne</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      
+
+      
+      <button id="checkoutSubmitBtn" onclick="submitCheckout()" style="width:100%;padding:14px;background:var(--gold);color:var(--white);border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        ✅ Confirmer — ${fmtKmf(totalKmf)}
+      </button>
+      <div id="checkoutFooterHint" style="text-align:center;margin-top:10px;font-size:11px;color:var(--text-light);">
+        Vous recevrez un code + QR par SMS pour payer au relais
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+let commanditaireVisible = false;
+
+function toggleCommanditaire() {
+  commanditaireVisible = !commanditaireVisible;
+  const section = document.getElementById('commanditaireSection');
+  const icon = document.getElementById('toggleCmdIcon');
+  const dot = document.getElementById('toggleCmdDot');
+  
+  if (commanditaireVisible) {
+    section.style.display = '';
+    icon.style.background = 'var(--navy)';
+    dot.style.left = '20px';
+    // Scroll vers le bas pour montrer la section
+    setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  } else {
+    section.style.display = 'none';
+    icon.style.background = '#cbd5e1';
+    dot.style.left = '2px';
+  }
+}
+
+function selectPayMethod(method) {
+  const cashLabel = document.getElementById('payLabelCash');
+  const stripeLabel = document.getElementById('payLabelStripe');
+  const hint = document.getElementById('checkoutFooterHint');
+  const totalKmf = cart.reduce((s, i) => s + i.price_kmf * i.qty, 0);
+  const totalEur = Math.round(totalKmf / EUR_KMF);
+  const btn = document.getElementById('checkoutSubmitBtn');
+  
+  if (method === 'stripe') {
+    stripeLabel.style.borderColor = 'var(--navy)';
+    stripeLabel.style.background = 'rgba(26,58,92,0.04)';
+    cashLabel.style.borderColor = '#e5e7eb';
+    cashLabel.style.background = 'transparent';
+    stripeLabel.querySelector('input').checked = true;
+    btn.innerHTML = '💳 Payer par carte — ' + fmtEur(totalEur);
+    hint.textContent = 'Paiement sécurisé via Stripe · Reçu par email';
+  } else {
+    cashLabel.style.borderColor = 'var(--navy)';
+    cashLabel.style.background = 'rgba(26,58,92,0.04)';
+    stripeLabel.style.borderColor = '#e5e7eb';
+    stripeLabel.style.background = 'transparent';
+    cashLabel.querySelector('input').checked = true;
+    btn.innerHTML = '✅ Confirmer — ' + fmtKmf(totalKmf);
+    hint.textContent = 'Vous recevrez un code + QR par SMS pour payer au relais';
+  }
+}
+
+function validatePhone(phone) {
+  const clean = phone.replace(/[\s\-\.]/g, '');
+  const patterns = [
+    /^\+269\d{7}$/,     // Comores
+    /^\+33\d{9}$/,      // France
+    /^\+971\d{8,9}$/,   // UAE
+    /^\+\d{8,15}$/,     // International generic
+    /^\d{7,10}$/        // Local (no country code)
+  ];
+  return patterns.some(p => p.test(clean));
+}
+
+function submitCheckout() {
+  try {
+  const name = document.getElementById('checkName').value.trim();
+  const checkPhoneRaw = document.getElementById('checkPhone').value.trim();
+  const phone = checkPhoneRaw.startsWith('+') ? checkPhoneRaw : '+269' + checkPhoneRaw;
+  const relais = document.getElementById('checkRelais').value;
+  const relaisLabel = document.getElementById('checkRelais').selectedOptions[0]?.textContent || relais;
+  const payMethod = document.querySelector('input[name="payMethod"]:checked')?.value || 'cash';
+  
+  if (!name || !phone) {
+    showToast('Veuillez remplir le nom et téléphone du destinataire');
+    return;
+  }
+  if (!validatePhone(phone)) {
+    showToast('Numéro de téléphone invalide. Format: +269XXXXXXX ou 7 chiffres', 'error');
+    return;
+  }
+  if (!relais) {
+    showToast('Veuillez choisir un point relais');
+    return;
+  }
+
+  
+  // Si commanditaire visible, vérifier email + téléphone obligatoires
+  let commanditaire = null;
+  if (commanditaireVisible) {
+    const cmdName = document.getElementById('cmdName').value.trim();
+    const cmdEmail = document.getElementById('cmdEmail').value.trim();
+    const cmdPhone = document.getElementById('cmdPhone').value.trim();
+    if (!cmdEmail) {
+      showToast('Veuillez renseigner votre email pour recevoir le suivi');
+      return;
+    }
+    if (!cmdPhone) {
+      showToast('Veuillez renseigner votre téléphone pour recevoir le suivi');
+      return;
+    }
+    if (!validatePhone(cmdPhone)) {
+      showToast('Numéro de téléphone du payeur invalide', 'error');
+      return;
+    }
+    commanditaire = { name: cmdName, email: cmdEmail, phone: cmdPhone };
+  }
+  
+  // Stripe: show "bientôt disponible" message
+  if (payMethod === 'stripe') {
+    const checkoutArea = document.querySelector('#checkoutModal > div');
+    if (checkoutArea) {
+      checkoutArea.innerHTML = `
+        <div style="text-align:center;padding:40px 20px;">
+          <div style="font-size:3rem;margin-bottom:16px;">💳</div>
+          <h3 style="color:var(--navy);margin-bottom:12px;">Paiement par carte bientôt disponible</h3>
+          <p style="color:var(--text-light);margin-bottom:8px;">Le paiement Stripe en EUR sera activé très prochainement.</p>
+          <p style="color:var(--text-light);margin-bottom:24px;">En attendant, vous pouvez payer en <strong>cash au relais</strong> de Mutsamudu.</p>
+          <button onclick="startCheckout()" style="background:var(--navy);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:1rem;cursor:pointer;">
+            ← Revenir au checkout
+          </button>
+          <div style="margin-top:16px;">
+            <a href="https://wa.me/33699272526?text=Bonjour, je souhaite payer par carte pour ma commande" style="color:var(--navy);text-decoration:underline;font-size:0.9rem;">
+              Contactez-nous sur WhatsApp pour un arrangement
+            </a>
+          </div>
+        </div>
+      `;
+    }
+    return;
+  }
+  
+  // Generate a demo reference
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let ref = 'K';
+  for (let i = 0; i < 6; i++) ref += chars[Math.floor(Math.random() * chars.length)];
+  
+  // Disable submit button to prevent double-click
+  const submitBtn = document.getElementById('checkoutSubmitBtn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.7';
+    submitBtn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span>Envoi en cours...';
+  }
+
+  const totalKmf = cart.reduce((s, i) => s + i.price_kmf * i.qty, 0);
+  const totalEur = Math.round(totalKmf / EUR_KMF);
+  
+  // Construire et sauvegarder la commande complète
+  const orderData = {
+    ref,
+    created_at: new Date().toISOString(),
+    status: 'pending_payment',
+    payment_method: payMethod,
+    total_kmf: totalKmf,
+    total_eur: totalEur,
+    items: cart.map(i => ({ name: i.name, qty: i.qty, price_kmf: i.price_kmf })),
+    recipient: { name, phone, relais, relais_label: relaisLabel },
+    commanditaire: commanditaire // null si même personne
+  };
+  
+  // Sauvegarder en localStorage (et éventuellement POST vers l'API)
+  const orders = JSON.parse(localStorage.getItem('komerce_orders') || '[]');
+  orders.push(orderData);
+  localStorage.setItem('komerce_orders', JSON.stringify(orders));
+  
+  // Tenter d'envoyer au backend
+  fetch(API_BASE + '/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(orderData)
+  }).then(res => {
+    if (!res.ok) console.warn('Commande non envoyée au serveur (code ' + res.status + ')');
+  }).catch(() => {
+    showToast('⚠️ Commande sauvée localement — elle sera synchronisée quand la connexion reviendra');
+  });
+  
+  document.getElementById('checkoutModal').remove();
+  
+  // Cash flow — confirmation
+  const confirmEl = document.createElement('div');
+    confirmEl.id = 'confirmModal';
+    confirmEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;';
+    
+    // Générer le QR code avec la référence
+    let qrDataUrl = '';
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData('KOMERCE:' + ref + ':' + totalKmf);
+      qr.make();
+      qrDataUrl = qr.createDataURL(6, 0);
+    } catch(e) { console.warn('QR generation failed', e); }
+    
+    confirmEl.innerHTML = `
+      <div style="background:var(--white);border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center;animation:slideUp 0.3s ease;max-height:90vh;overflow-y:auto;">
+        <div style="font-size:64px;margin-bottom:12px;">🎉</div>
+        <h3 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:8px;">Commande enregistrée !</h3>
+        
+        <div style="background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--text-light);margin-bottom:4px;">Votre référence</div>
+          <div style="font-size:28px;font-weight:900;color:var(--navy);letter-spacing:2px;">${ref}</div>
+        </div>
+        
+        ${qrDataUrl ? `<div style="background:var(--white);border:2px solid var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:12px;">
+          <img src="${qrDataUrl}" alt="QR Code ${ref}" style="width:160px;height:160px;image-rendering:pixelated;">
+          <div style="font-size:11px;color:var(--text-light);margin-top:6px;">Présentez ce QR au relais pour le retrait</div>
+        </div>` : ''}
+        
+        <div style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:16px;text-align:left;background:var(--bg);border-radius:var(--radius);padding:14px;">
+          <div style="margin-bottom:6px;">📱 SMS de confirmation envoyé au <strong>${esc(phone)}</strong></div>
+          <div style="margin-bottom:6px;">📲 Vous recevrez un <strong>SMS à chaque étape</strong> : préparation, expédition, arrivée au relais</div>
+          <div style="margin-bottom:6px;">🏪 Payez <strong>${fmtKmf(totalKmf)}</strong> en espèces au relais</div>
+          <div>🚢 Livraison <strong>3 à 5 semaines</strong> depuis Dubai</div>
+        </div>
+        
+        <div style="background:rgba(234,179,8,0.1);border-radius:var(--radius);padding:12px;margin-bottom:12px;text-align:left;">
+          <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px;">⏳ En attente de paiement</div>
+          <div style="font-size:11px;color:#92400e;">Rendez-vous au relais Mutsamudu pour régler votre commande.</div>
+        </div>
+        
+        ${commanditaire ? `<div style="background:rgba(26,58,92,0.06);border-radius:8px;padding:10px 12px;margin-bottom:12px;text-align:left;">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px;">📩 Suivi envoyé aussi à :</div>
+          <div style="font-size:12px;">${esc(commanditaire.name || 'Commanditaire')} — ${esc(commanditaire.email)}</div>
+          <div style="font-size:11px;color:var(--text-light);">${esc(commanditaire.phone)}</div>
+        </div>` : ''}
+        
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <button onclick="document.getElementById('confirmModal').remove();setTimeout(()=>{document.getElementById('trackRef').value='${ref}';openTracking();searchOrder();},100);" style="width:100%;padding:13px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;">
+            🔍 Suivre ma commande
+          </button>
+          <button onclick="document.getElementById('confirmModal').remove()" style="width:100%;padding:11px;background:transparent;color:var(--text-light);border:1px solid #e5e7eb;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;">
+            👍 Compris, je ferme
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(confirmEl);
+    confirmEl.addEventListener('click', (e) => { if (e.target === confirmEl) confirmEl.remove(); });
+  
+  // Clear cart
+  cart = [];
+  saveCart();
+  updateCartBadges();
+  commanditaireVisible = false;
+  showToast('Commande confirmée ! 🎉', 'success');
+  } catch(err) {
+    console.error('submitCheckout error:', err);
+    showToast('Erreur : ' + err.message, 'error');
+    // Re-enable submit button
+    const btn = document.getElementById('checkoutSubmitBtn');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = '✅ Confirmer'; }
+    return;
+  }
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+function openSearchPanel() {
+  document.getElementById('searchPanel').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+}
+
+function closeSearchPanel() {
+  document.getElementById('searchPanel').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+async function searchProducts(query) {
+  const body = document.getElementById('searchResultsBody');
+  if (!query || query.length < 2) {
+    body.innerHTML = '<div class="search-empty"><div class="emoji">🔍</div><div>Tapez pour rechercher parmi tous nos produits</div></div>';
+    return;
+  }
+
+  body.innerHTML = '<div class="category-loading"><div class="spinner"></div><br>Recherche...</div>';
+
+  // Try API
+  const data = await apiFetch(`/products?search=${encodeURIComponent(query)}&limit=20`);
+  let results;
+  if (data?.products?.length) {
+    results = data.products;
+  } else {
+    // Search in demo data
+    const q = query.toLowerCase();
+    results = Object.values(DEMO_PRODUCTS).flat().filter(p =>
+      p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+    );
+  }
+
+  results.forEach(p => productsCache[p.id] = p);
+
+  if (!results.length) {
+    body.innerHTML = `<div class="search-empty"><div class="emoji">😕</div><div>Aucun résultat pour "${esc(query)}"</div><div style="margin-top:8px;font-size:12px">Essayez un autre terme ou contactez-nous sur WhatsApp</div></div>`;
+    return;
+  }
+
+  body.innerHTML = results.map(p => productCardHTML(p)).join('');
+}
+
+// ─── Order Tracking ──────────────────────────────────────────────────────────
+function openTracking() {
+  document.getElementById('trackingPanel').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  renderMyOrders();
+}
+
+function closeTracking() {
+  document.getElementById('trackingPanel').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function renderMyOrders() {
+  const container = document.getElementById('myOrdersSection');
+  const orders = JSON.parse(localStorage.getItem('komerce_orders') || '[]');
+  
+  if (!orders.length) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:20px;background:var(--bg);border-radius:var(--radius);">
+        <div style="font-size:36px;margin-bottom:8px;">📋</div>
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Aucune commande</div>
+        <div style="font-size:12px;color:var(--text-light);">Vos commandes apparaîtront ici</div>
+      </div>`;
+    return;
+  }
+  
+  const statusColors = {
+    pending_payment: { bg: '#fef3c7', color: '#92400e', label: '⏳ En attente de paiement' },
+    confirmed: { bg: '#dbeafe', color: '#1e40af', label: '✅ Confirmée' },
+    paid: { bg: '#d1fae5', color: '#065f46', label: '💰 Payée' },
+    ordered: { bg: '#e0e7ff', color: '#3730a3', label: '📦 Commandée' },
+    purchasing: { bg: '#fce7f3', color: '#9d174d', label: '🛒 Achat en cours' },
+    shipped: { bg: '#dbeafe', color: '#1e40af', label: '🚢 Expédiée' },
+    hub_preparation: { bg: '#e0e7ff', color: '#3730a3', label: '📋 Préparation hub' },
+    in_transit: { bg: '#fed7aa', color: '#c2410c', label: '✈️ En transit' },
+    customs: { bg: '#fef3c7', color: '#92400e', label: '🛃 Douane' },
+    local_delivery: { bg: '#bfdbfe', color: '#1e40af', label: '🚚 Livraison locale' },
+    relais_received: { bg: '#bbf7d0', color: '#166534', label: '🏪 Au relais' },
+    delivered: { bg: '#d1fae5', color: '#065f46', label: '✅ Livrée' },
+    cancelled: { bg: '#fee2e2', color: '#991b1b', label: '❌ Annulée' },
+    refunded: { bg: '#f3e8ff', color: '#7c3aed', label: '↩️ Remboursée' }
+  };
+  
+  // Most recent first
+  const sorted = [...orders].reverse();
+  
+  container.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">📋 Mes commandes (${orders.length})</div>
+    ${sorted.map(o => {
+      const st = statusColors[o.status] || { bg: '#f1f5f9', color: '#475569', label: o.status };
+      const date = new Date(o.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      const itemCount = o.items?.reduce((s, i) => s + (i.qty || 1), 0) || 0;
+      return `
+        <div onclick="document.getElementById('trackRef').value='${o.ref}';searchOrder();" style="background:var(--white);border:1px solid var(--bg);border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:16px;font-weight:800;color:var(--navy);letter-spacing:1px;">${esc(o.ref)}</span>
+            <span style="font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600;background:${st.bg};color:${st.color};">${st.label}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);">
+            <span>${date} · ${itemCount} article${itemCount > 1 ? 's' : ''}</span>
+            <span style="font-weight:700;color:var(--navy);">${fmtKmf(o.total_kmf)}</span>
+          </div>
+          ${o.recipient ? `<div style="font-size:11px;color:var(--text-light);margin-top:4px;">📍 ${esc(o.recipient.relais_label || o.recipient.relais)} — ${esc(o.recipient.name)}</div>` : ''}
+        </div>`;
+    }).join('')}
+  `;
+}
+
+const STATUS_LABELS = {
+  draft: '📝 Brouillon',
+  confirmed: '✔️ Confirmée',
+  paid: '💳 Payée',
+  ordered: '📋 Commandée',
+  purchasing: '🛒 Achat en cours à Dubai',
+  preparation: '📦 En préparation Hub',
+  hub_received: '📦 Réceptionné au hub Dubai',
+  hub_preparation: '📦 Hub — prêt pour groupage',
+  shipped: '🚢 Expédiée',
+  in_transit: '✈️ En transit vers les Comores',
+  transit_comores: '✈️ En transit vers les Comores',
+  customs_cleared: '🛃 Dédouanement terminé',
+  relais_received: '📍 Arrivé au relais Mutsamudu',
+  available: '✅ Disponible au relais',
+  collected: '🎉 Remise au client',
+  picked_up: '✅ Retiré par le client',
+  cancelled: '❌ Annulée',
+  refunded: '💸 Remboursée',
+};
+
+// Demo orders for testing
+const DEMO_ORDERS = {
+  'K4F8A2Z': {
+    reference: 'K4F8A2Z',
+    status: 'shipped',
+    total_kmf: 120000,
+    total_eur: 242,
+    relais: { name: 'Relais Mutsamudu Centre' },
+    history: [
+      { status: 'confirmed', created_at: '2026-03-10T10:00:00Z', note: 'Commande confirmée' },
+      { status: 'paid', created_at: '2026-03-10T14:30:00Z', note: 'Paiement reçu au relais' },
+      { status: 'purchasing', created_at: '2026-03-12T09:00:00Z', note: 'Achat en cours à Dubai' },
+      { status: 'preparation', created_at: '2026-03-15T11:00:00Z', note: 'Articles au Hub Dubai' },
+      { status: 'shipped', created_at: '2026-03-20T16:00:00Z', note: 'Container expédié vers Comores' },
+    ],
+  },
+  'K9B3C7X': {
+    reference: 'K9B3C7X',
+    status: 'available',
+    total_kmf: 85000,
+    total_eur: 172,
+    relais: { name: 'Relais Domoni' },
+    history: [
+      { status: 'confirmed', created_at: '2026-02-20T10:00:00Z', note: 'Commande confirmée' },
+      { status: 'paid', created_at: '2026-02-20T15:00:00Z', note: 'Paiement en ligne EUR' },
+      { status: 'purchasing', created_at: '2026-02-22T09:00:00Z', note: 'Achat en cours' },
+      { status: 'preparation', created_at: '2026-02-25T10:00:00Z', note: 'Préparation Hub' },
+      { status: 'shipped', created_at: '2026-03-01T16:00:00Z', note: 'Container expédié' },
+      { status: 'transit_comores', created_at: '2026-03-18T08:00:00Z', note: 'Arrivée port Mutsamudu' },
+      { status: 'available', created_at: '2026-03-19T10:00:00Z', note: 'Disponible au relais Domoni' },
+    ],
+  },
+};
+
+async function searchOrder() {
+  const ref = document.getElementById('trackRef').value.trim().toUpperCase();
+  const phone = document.getElementById('trackPhone').value.trim();
+  const resultEl = document.getElementById('trackingResult');
+
+  if (!ref && !phone) {
+    resultEl.innerHTML = '<div class="category-loading" style="color:var(--coral)">Entrez une référence ou un numéro de téléphone</div>';
+    return;
+  }
+
+  resultEl.innerHTML = '<div class="category-loading"><div class="spinner"></div><br>Recherche en cours...</div>';
+
+  // Simulate a brief loading delay for UX
+  await new Promise(r => setTimeout(r, 800));
+
+  if (ref) {
+    // Try API first
+    const data = await apiFetch(`/orders/${encodeURIComponent(ref)}`);
+    if (data && data.reference) {
+      renderTrackingResult([data]);
+      return;
+    }
+    // Vérifier dans les commandes locales
+    const localOrders = JSON.parse(localStorage.getItem('komerce_orders') || '[]');
+    const localMatch = localOrders.find(o => o.ref === ref || o.reference === ref);
+    if (localMatch) {
+      renderTrackingResult([{ reference: localMatch.ref, status: localMatch.status || 'pending_payment', total_kmf: localMatch.total_kmf, items: localMatch.items, relais: { name: localMatch.recipient?.relais_label || localMatch.recipient?.relais }, history: localMatch.history || [] }]);
+    } else {
+      resultEl.innerHTML = `<div class="search-empty"><div class="emoji">📭</div><div style="font-weight:700;margin-bottom:4px;">Commande introuvable</div><div style="font-size:12px;color:var(--text-light)">Vérifiez la référence reçue par SMS<br>Ex : <strong>K4F8A2Z</strong></div></div>`;
+    }
+  } else if (phone) {
+    // Try API
+    const data = await apiFetch('/auth/orders-by-phone', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+    if (data?.token) {
+      localStorage.setItem('komerce_token', data.token);
+      const orders = await apiFetch('/orders');
+      if (orders?.length) {
+        renderTrackingResult(orders);
+        return;
+      }
+    }
+    // Aucune commande trouvée pour ce numéro
+    resultEl.innerHTML = `<div class="search-empty"><div class="emoji">📭</div><div style="font-weight:700;margin-bottom:4px;">Aucune commande trouvée</div><div style="font-size:12px;color:var(--text-light)">Aucune commande liée à ce numéro.<br>Utilisez votre référence (ex: K4F8A2Z) pour chercher.</div></div>`;
+  }
+}
+
+function renderTrackingResult(orders) {
+  const resultEl = document.getElementById('trackingResult');
+  resultEl.innerHTML = orders.map(o => {
+    const statusLabel = STATUS_LABELS[o.status] || o.status;
+    return `
+      <div class="tracking-order-card">
+        <div class="tracking-order-ref">📦 ${o.reference || o.id}</div>
+        <div class="tracking-status ${o.status}">${statusLabel}</div>
+        ${o.total_kmf ? `<div style="font-size:13px;margin-bottom:8px"><strong>${fmtKmf(o.total_kmf)}</strong> ${o.total_eur ? `<span style="color:var(--text-light)">≈ ${fmtEur(o.total_eur)}</span>` : ''}</div>` : ''}
+        ${o.history ? renderTimeline(o.history) : ''}
+        ${o.relais ? `<div style="font-size:12px;margin-top:8px;color:var(--text-light)">📍 Relais : ${o.relais.name || o.relais_name || ''}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTimeline(history) {
+  if (!history || !history.length) return '';
+  return `
+    <div class="tracking-timeline">
+      ${history.map((h, i) => {
+        const isCurrent = i === history.length - 1;
+        return `
+          <div class="tracking-step ${isCurrent ? 'current' : 'done'}">
+            <div class="tracking-step-status">${STATUS_LABELS[h.status] || h.status}</div>
+            ${h.note ? `<div style="font-size:11px;color:var(--text-light)">${esc(h.note)}</div>` : ''}
+            <div class="tracking-step-date">${new Date(h.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── Legal Pages ───────────────────────────────────────────────────────────
+const LEGAL_PAGES = {
+  cgv: {
+    title: 'Conditions Générales de Vente',
+    content: `
+<h3 style="color:var(--navy);margin:16px 0 8px;">1. Objet</h3>
+<p>Les présentes CGV régissent les ventes de produits effectuées par Komerce (marque de LYLIA GROUP LIMITED, Dubai, UAE) via l'application web komerce.km à destination des Comores.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">2. Produits</h3>
+<p>Les produits proposés sont sourcés à Dubai (UAE) et livrés aux Comores via notre réseau logistique. Les photos sont indicatives. Les prix sont affichés en KMF (Franc comorien) avec équivalence EUR.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">3. Commande</h3>
+<p>La commande est confirmée après validation du panier et choix du mode de paiement. Une référence unique est attribuée. Le client reçoit un SMS de confirmation avec le suivi.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">4. Prix et paiement</h3>
+<p><strong>Cash au relais</strong> : le paiement en KMF s'effectue au retrait au point relais. La commande est annulée automatiquement après 36h sans paiement.</p>
+<p><strong>Carte bancaire</strong> : paiement sécurisé en EUR via Stripe. Le débit est immédiat à la confirmation.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">5. Livraison</h3>
+<p>Délai estimé : 7 à 14 jours ouvrés selon disponibilité. Le client est notifié par SMS à chaque étape (préparation, transit, arrivée au relais). Le retrait se fait au relais de Mutsamudu sur présentation du QR code ou de la référence commande.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">6. Rétractation</h3>
+<p>Conformément au droit de la consommation applicable, le client diaspora bénéficie d'un droit de rétractation de 14 jours à compter de la réception. Les frais de retour sont à la charge du client. Les produits personnalisés et denrées périssables sont exclus.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">7. Garantie</h3>
+<p>Les produits bénéficient de la garantie constructeur. En cas de produit défectueux, contactez-nous via WhatsApp (+33 6 99 27 25 26) dans les 48h suivant le retrait avec photos.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">8. Litiges</h3>
+<p>En cas de litige, une solution amiable sera recherchée en priorité. À défaut, les tribunaux compétents seront ceux du siège social de LYLIA GROUP LIMITED (Dubai, UAE).</p>
+`
+  },
+  privacy: {
+    title: 'Politique de Confidentialité',
+    content: `
+<h3 style="color:var(--navy);margin:16px 0 8px;">1. Responsable du traitement</h3>
+<p>LYLIA GROUP LIMITED, Dubai, UAE — opérant sous la marque Komerce.<br>Contact : <a href="https://wa.me/33699272526" style="color:var(--navy);">WhatsApp +33 6 99 27 25 26</a></p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">2. Données collectées</h3>
+<p>Nous collectons uniquement les données nécessaires au traitement de votre commande :</p>
+<ul style="margin:8px 0 8px 20px;">
+<li><strong>Destinataire</strong> : nom, prénom, numéro de téléphone</li>
+<li><strong>Commanditaire</strong> (si différent) : nom, email, téléphone</li>
+<li><strong>Commande</strong> : produits, montants, référence, statut</li>
+<li><strong>Technique</strong> : adresse IP (géolocalisation), navigateur</li>
+</ul>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">3. Finalité du traitement</h3>
+<ul style="margin:8px 0 8px 20px;">
+<li>Traitement et suivi de votre commande</li>
+<li>Notifications SMS de suivi</li>
+<li>Service client et support</li>
+<li>Amélioration de nos services (statistiques anonymisées)</li>
+</ul>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">4. Base légale</h3>
+<p>Le traitement est fondé sur l'exécution du contrat de vente (article 6.1.b du RGPD) et votre consentement explicite (article 6.1.a).</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">5. Durée de conservation</h3>
+<ul style="margin:8px 0 8px 20px;">
+<li>Données de commande : 3 ans après la dernière commande</li>
+<li>Données de paiement : durée légale (5 ans)</li>
+<li>Données techniques : 13 mois maximum</li>
+</ul>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">6. Partage des données</h3>
+<p>Vos données ne sont partagées qu'avec :</p>
+<ul style="margin:8px 0 8px 20px;">
+<li>Notre réseau de relais (nom + téléphone pour le retrait)</li>
+<li>Stripe (données de paiement carte, si applicable)</li>
+<li>Notre prestataire SMS (numéro de téléphone)</li>
+</ul>
+<p>Aucune donnée n'est vendue à des tiers.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">7. Vos droits</h3>
+<p>Conformément au RGPD, vous disposez des droits d'accès, de rectification, d'effacement, de limitation, de portabilité et d'opposition. Exercez-les via WhatsApp ou email à privacy@komerce.km.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">8. Cookies</h3>
+<p>L'application utilise le localStorage pour stocker votre panier et vos commandes localement. Aucun cookie tiers de tracking n'est utilisé sans votre consentement.</p>
+`
+  },
+  mentions: {
+    title: 'Mentions Légales',
+    content: `
+<h3 style="color:var(--navy);margin:16px 0 8px;">Éditeur</h3>
+<p><strong>LYLIA GROUP LIMITED</strong><br>
+Dubai, United Arab Emirates<br>
+Marque commerciale : Komerce<br>
+Contact : <a href="https://wa.me/33699272526" style="color:var(--navy);">WhatsApp +33 6 99 27 25 26</a></p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">Directrice de la publication</h3>
+<p>Lylou — Fondatrice de Komerce</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">Hébergement</h3>
+<p><strong>Railway Corp.</strong><br>
+San Francisco, CA, USA<br>
+<a href="https://railway.app" style="color:var(--navy);">railway.app</a></p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">Activité</h3>
+<p>Komerce est une plateforme de e-commerce spécialisée dans l'importation et la livraison de produits depuis Dubai (UAE) vers les Comores (Anjouan). Les produits sont disponibles au retrait dans nos points relais partenaires.</p>
+
+<h3 style="color:var(--navy);margin:16px 0 8px;">Propriété intellectuelle</h3>
+<p>L'ensemble du contenu de l'application (textes, images, logos, design) est la propriété de LYLIA GROUP LIMITED. Toute reproduction sans autorisation est interdite.</p>
+`
+  }
+};
+
+function openLegalPage(page) {
+  const legal = LEGAL_PAGES[page];
+  if (!legal) return;
+  document.getElementById('legal-title').textContent = legal.title;
+  document.getElementById('legal-content').innerHTML = legal.content;
+  // Hide all sections, show legal
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById('legal-page').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function closeLegalPage() {
+  document.getElementById('legal-page').style.display = 'none';
+  // Return to home
+  document.getElementById('home').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function navigateTo(section, btn) {
+  // Update active nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  switch (section) {
+    case 'home':
+      closeCart();
+      closeTracking();
+      closeSearchPanel();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      break;
+    case 'categories':
+      closeCart();
+      closeTracking();
+      closeSearchPanel();
+      document.getElementById('categoriesSection').scrollIntoView({ behavior: 'smooth' });
+      break;
+    case 'cart':
+      closeTracking();
+      closeSearchPanel();
+      openCart();
+      break;
+    case 'tracking':
+      closeCart();
+      closeSearchPanel();
+      openTracking();
+      break;
+  }
+
+  // Push state for browser back button support
+  if (location.hash !== '#' + section) {
+    history.pushState({ section }, '', '#' + section);
+  }
+}
+
+// ── History API for back button ──────────────────────────────────────────
+window.addEventListener('popstate', function(e) {
+  if (e.state && e.state.section) {
+    const section = e.state.section;
+    // Close all panels first
+    closeCart();
+    closeTracking();
+    closeSearchPanel();
+    // Open the right section
+    switch (section) {
+      case 'home':
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        break;
+      case 'categories':
+        document.getElementById('categoriesSection').scrollIntoView({ behavior: 'smooth' });
+        break;
+      case 'cart':
+        openCart();
+        break;
+      case 'tracking':
+        openTracking();
+        break;
+    }
+    // Also hide legal page
+    const legal = document.getElementById('legal-page');
+    if (legal) legal.style.display = 'none';
+    // Update nav buttons
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    const navMap = { home: 0, categories: 1, cart: 2, tracking: 3 };
+    const idx = navMap[section];
+    if (idx !== undefined) {
+      document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
+    }
+  }
+});
+
+// ─── WhatsApp ─────────────────────────────────────────────────────────────────
+function openWhatsApp() {
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, '_blank');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getCategoryLabel(key) {
+  const cat = CATEGORIES.find(c => c.key === key);
+  return cat ? cat.name : key || '';
+}
+
+function fmtKmf(val) {
+  return Number(val).toLocaleString('fr-FR') + ' KMF';
+}
+
+function fmtEur(val) {
+  return Number(val).toLocaleString('fr-FR') + ' €';
+}
+
+function esc(s) {
+  if (!s) return '';
+  const el = document.createElement('span');
+  el.textContent = s;
+  return el.innerHTML;
+}
+
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '';
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.classList.remove('show'); toast.style.background = ''; }, 3200);
+}
+</script>
+
+</body>
+</html>

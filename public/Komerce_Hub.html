@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — 🏭 Hub Dubai</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #f5f6f8; --bg2: #ffffff; --bg3: #f0f2f5; --bg4: #e9ecef;
+  --ln: #e5e7eb; --border: #e2e6ec; --border2: #d0d7e2;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  --ink: #1a202c; --ink2: #4a5568; --ink3: #8a9ab5; --ink4: #9ca3af;
+  --text: #1a202c; --text2: #4a5568; --text3: #8a9ab5;
+  --gold: #d97706; --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fcd34d;
+  --green: #16a34a; --green-bg: #f0fdf4; --green-border: #86efac;
+  --blue: #2563eb; --blue-bg: #eff6ff; --blue-border: #93c5fd;
+  --red: #E8552A; --red-bg: #fff5f3;
+  --teal: #0d9488; --teal-bg: #f0fdfa; --teal-border: #5eead4;
+  --purple: #7c3aed; --purple-bg: #faf5ff; --purple-border: #c4b5fd;
+  --sans: "DM Sans", system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── Login Screen ── */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-overlay.hidden { display: none; }
+.login-card {
+  background: var(--bg2); border-radius: 16px; padding: 40px;
+  width: 100%; max-width: 420px; margin: 16px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+}
+.login-logo { text-align: center; margin-bottom: 28px; }
+.login-logo h1 { font-size: 28px; font-weight: 700; color: var(--ink); }
+.login-logo p { color: var(--text3); font-size: 14px; margin-top: 4px; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.form-input {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border2);
+  border-radius: 8px; font-size: 14px; font-family: var(--sans);
+  background: var(--bg); color: var(--text); outline: none; transition: border 0.2s;
+}
+.form-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.login-error { color: var(--red); font-size: 13px; margin-bottom: 12px; display: none; }
+.login-error.show { display: block; }
+
+/* ── Topbar ── */
+.topbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 12px 24px; display: flex; justify-content: space-between;
+  align-items: center; position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-title { font-size: 18px; font-weight: 700; color: var(--ink); }
+.topbar-user { font-size: 13px; color: var(--text2); }
+.topbar-center { display: flex; align-items: center; gap: 8px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  background: var(--green-bg); color: var(--green);
+  font-size: 12px; font-weight: 600;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.countdown-text { font-size: 12px; color: var(--text3); font-variant-numeric: tabular-nums; }
+.role-badge {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; background: var(--blue-bg); color: var(--blue);
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 8px 16px; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; font-family: var(--sans);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-success { background: var(--green); color: white; }
+.btn-success:hover:not(:disabled) { background: #15803d; }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover:not(:disabled) { background: #c9431f; }
+.btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+.btn-outline:hover:not(:disabled) { background: var(--bg3); }
+.btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+.btn-xs { padding: 3px 8px; font-size: 11px; border-radius: 5px; }
+.btn-amber { background: var(--amber); color: white; }
+.btn-amber:hover:not(:disabled) { background: #b45309; }
+.btn-purple { background: var(--purple); color: white; }
+.btn-purple:hover:not(:disabled) { background: #6d28d9; }
+
+/* ── Layout ── */
+.main-content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+/* ── Stat Cards ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 16px;
+  transition: box-shadow 0.2s;
+}
+.stat-card:hover { box-shadow: var(--shadow-md); }
+.stat-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.stat-info { flex: 1; min-width: 0; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.stat-label { font-size: 13px; color: var(--text3); font-weight: 500; margin-top: 2px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; box-shadow: var(--shadow);
+}
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.card-title { font-size: 16px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.card-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 24px; height: 24px; padding: 0 8px;
+  border-radius: 12px; font-size: 12px; font-weight: 700;
+  background: var(--blue-bg); color: var(--blue);
+}
+
+/* ── Sections Layout ── */
+.split-section {
+  display: grid; grid-template-columns: 380px 1fr;
+  gap: 24px; margin-bottom: 24px;
+}
+.full-section { margin-bottom: 24px; }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600;
+  color: var(--ink3); text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--border); white-space: nowrap;
+}
+td {
+  padding: 10px 12px; border-bottom: 1px solid var(--ln);
+  font-size: 14px; color: var(--text); vertical-align: middle;
+}
+tr:hover { background: var(--bg3); }
+.ref-link { font-weight: 600; color: var(--blue); font-size: 13px; font-family: monospace; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-teal { background: var(--teal-bg); color: var(--teal); }
+.badge-gray { background: var(--bg3); color: var(--ink3); }
+
+/* ── Scanner ── */
+.scanner-section { display: flex; flex-direction: column; gap: 16px; }
+#scanner-zone {
+  width: 100%; min-height: 280px; border-radius: 8px;
+  overflow: hidden; background: #000; position: relative;
+}
+#scanner-zone video { width: 100% !important; border-radius: 8px; }
+.scanner-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.manual-input-group { display: flex; gap: 8px; }
+.manual-input-group input { flex: 1; }
+.scan-result-card {
+  background: var(--green-bg); border: 1px solid var(--green-border);
+  border-radius: 10px; padding: 16px; display: none;
+}
+.scan-result-card.show { display: block; }
+.scan-result-card h4 { color: var(--green); font-size: 14px; margin-bottom: 8px; }
+.scan-result-card .detail-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+.scan-result-card .detail-label { color: var(--text3); }
+.scan-result-card .detail-value { color: var(--text); font-weight: 500; }
+
+/* ── Relais Cards Grid ── */
+.relais-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+}
+.relais-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; gap: 8px; transition: box-shadow 0.2s;
+}
+.relais-card:hover { box-shadow: var(--shadow-md); }
+.relais-icon { font-size: 32px; }
+.relais-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+.relais-island { font-size: 12px; color: var(--text3); }
+.relais-count {
+  font-size: 24px; font-weight: 700; color: var(--blue);
+  margin-top: 4px;
+}
+.relais-count-label { font-size: 12px; color: var(--text3); }
+
+/* ── Row age highlight ── */
+.row-warn { background: var(--amber-bg) !important; }
+.row-warn:hover { background: #fef3c7 !important; }
+.row-alert { background: var(--red-bg) !important; }
+.row-alert:hover { background: #fee2e2 !important; }
+
+/* ── Toast ── */
+#toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast {
+  padding: 12px 20px; border-radius: 8px; font-size: 14px;
+  font-weight: 500; color: white; animation: slideIn 0.3s;
+  box-shadow: var(--shadow-md); pointer-events: auto;
+  max-width: 360px;
+}
+.toast-success { background: var(--green); }
+.toast-error { background: var(--red); }
+.toast-info { background: var(--blue); }
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ── Connection lost banner ── */
+.offline-banner {
+  display: none; background: var(--red); color: white;
+  text-align: center; padding: 8px; font-size: 13px; font-weight: 600;
+}
+.offline-banner.show { display: block; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center; padding: 32px 16px; color: var(--text3); font-size: 14px;
+}
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 8px; }
+
+/* ── Loading spinner ── */
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-overlay {
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px; color: var(--text3);
+}
+.loading-overlay .spinner { border-color: var(--border2); border-top-color: var(--blue); width: 28px; height: 28px; }
+
+/* ── Collapsible ── */
+.collapsible-header { cursor: pointer; user-select: none; }
+.collapsible-header .chevron { transition: transform 0.2s; display: inline-block; }
+.collapsible-header.collapsed .chevron { transform: rotate(-90deg); }
+.collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
+.collapsible-body.collapsed { max-height: 0 !important; padding-top: 0; padding-bottom: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .relais-grid { grid-template-columns: repeat(2, 1fr); }
+  .split-section { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .topbar { padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
+  .topbar-center { order: 3; width: 100%; justify-content: center; }
+  .main-content { padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stat-card { padding: 14px; }
+  .stat-value { font-size: 22px; }
+  .stat-icon { width: 40px; height: 40px; font-size: 18px; }
+  .relais-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .split-section { grid-template-columns: 1fr; }
+  .card { padding: 16px; }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { padding: 12px; gap: 10px; }
+  .stat-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 8px; }
+  .stat-value { font-size: 20px; }
+  .relais-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Login Overlay ── -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>🏭 Komerce Hub</h1>
+      <p>Plateforme logistique — Hub Dubai</p>
+    </div>
+    <form id="loginForm" autocomplete="on">
+      <div class="form-group">
+        <label class="form-label" for="loginEmail">Adresse e-mail</label>
+        <input class="form-input" id="loginEmail" type="email" placeholder="email@komerce.km" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Mot de passe</label>
+        <input class="form-input" id="loginPassword" type="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center;padding:12px;" id="loginBtn">
+        Se connecter
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Offline Banner ── -->
+<div class="offline-banner" id="offlineBanner">⚠️ Connexion perdue — les données peuvent être obsolètes</div>
+
+<!-- ── Main App ── -->
+<div id="appShell" style="display:none;">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">🏭 Hub Dubai</span>
+      <span class="topbar-user" id="topbarUser"></span>
+      <span class="role-badge" id="topbarRole"></span>
+    </div>
+    <div class="topbar-center">
+      <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+    </div>
+    <div class="topbar-right">
+      <span class="countdown-text" id="countdownText">30s</span>
+      <button class="btn btn-outline btn-sm" onclick="handleLogout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Stat Cards -->
+    <section class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--blue-bg);color:var(--blue);">📥</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statReceived">—</div>
+          <div class="stat-label">Reçus aujourd'hui</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--amber-bg);color:var(--amber);">🔧</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPreparation">—</div>
+          <div class="stat-label">En préparation</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--green-bg);color:var(--green);">✅</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statReady">—</div>
+          <div class="stat-label">Prêts à expédier</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--red-bg);color:var(--red);">🚨</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAlerts">—</div>
+          <div class="stat-label">Alertes &gt;7j</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Split: Scanner + Queue -->
+    <section class="split-section">
+      <!-- Scanner -->
+      <div class="card scanner-section">
+        <div class="card-header collapsible-header" id="scannerToggleHeader" onclick="toggleCollapsible('scannerBody', 'scannerToggleHeader')">
+          <span class="card-title">📥 Scan Réception Colis <span class="chevron">▾</span></span>
+        </div>
+        <div class="collapsible-body" id="scannerBody">
+          <div class="scanner-controls" style="margin-bottom:12px;">
+            <button class="btn btn-primary btn-sm" id="btnStartScanner" onclick="toggleScanner()">📷 Activer caméra</button>
+          </div>
+          <div id="scanner-zone" style="display:none;margin-bottom:12px;"></div>
+          <div class="manual-input-group">
+            <input class="form-input" type="text" id="manualRef" placeholder="KOM-YYYY-NNNNNN" aria-label="Référence commande">
+            <button class="btn btn-primary btn-sm" onclick="handleManualScan()">Valider</button>
+          </div>
+          <div class="scan-result-card" id="scanResult">
+            <h4>✅ Colis réceptionné</h4>
+            <div class="detail-row"><span class="detail-label">Référence</span><span class="detail-value" id="scanResRef">—</span></div>
+            <div class="detail-row"><span class="detail-label">Produit</span><span class="detail-value" id="scanResProd">—</span></div>
+            <div class="detail-row"><span class="detail-label">Client</span><span class="detail-value" id="scanResClient">—</span></div>
+            <div class="detail-row"><span class="detail-label">Relais</span><span class="detail-value" id="scanResRelais">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File d'attente -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 File d'attente <span class="card-count" id="queueCount">0</span></span>
+          <button class="btn btn-outline btn-xs" onclick="loadQueue()">↻ Rafraîchir</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Client</th>
+                <th>Produits</th>
+                <th>Relais</th>
+                <th>Statut</th>
+                <th>Depuis</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="queueBody">
+              <tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Expéditions récentes -->
+    <section class="full-section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🚚 Expéditions récentes</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Client</th>
+                <th>Relais destination</th>
+                <th>Expédié le</th>
+                <th>Statut actuel</th>
+              </tr>
+            </thead>
+            <tbody id="shipmentsBody">
+              <tr><td colspan="5"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Répartition par Relais -->
+    <section class="full-section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 Répartition par Relais</span>
+        </div>
+        <div class="relais-grid" id="relaisGrid">
+          <div class="loading-overlay"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toasts -->
+<div id="toast-container"></div>
+
+<script>
+/* ─── Configuration ─── */
+const API_URL = 'https://komerce-backend-production.up.railway.app';
+let token = localStorage.getItem('komerce_token') || '';
+let currentUser = null;
+let refreshInterval = null;
+let countdownInterval = null;
+let countdown = 30;
+let scannerInstance = null;
+let scannerRunning = false;
+let allOrders = [];
+let allRelais = [];
+
+/* ─── BroadcastChannel ─── */
+const liveChannel = new BroadcastChannel('komerce-live');
+liveChannel.onmessage = (e) => {
+  if (e.data && (e.data.type === 'HUB_SCAN' || e.data.type === 'RELAIS_COLLECT')) {
+    loadAllData();
+  }
+};
+
+/* ─── API Helper ─── */
+async function apiCall(method, path, body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+
+  let res;
+  try {
+    res = await fetch(API_URL + path, opts);
+  } catch (err) {
+    document.getElementById('offlineBanner').classList.add('show');
+    throw { status: 0, error: 'Erreur réseau' };
+  }
+  document.getElementById('offlineBanner').classList.remove('show');
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    if (res.status === 401) {
+      handleLogout();
+    }
+    throw { status: res.status, ...err };
+  }
+  return res.json();
+}
+
+/* ─── Toast ─── */
+function toast(msg, type = 'info') {
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => { if (t.parentNode) t.remove(); }, 4000);
+}
+
+/* ─── Auth ─── */
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const data = await apiCall('POST', '/api/auth/login', { email, password });
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('komerce_token', token);
+    localStorage.setItem('komerce_user', JSON.stringify(data.user));
+    showApp();
+  } catch (err) {
+    errEl.textContent = err.error || err.message || 'Identifiants incorrects';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Se connecter';
+  }
+});
+
+async function tryAutoLogin() {
+  if (!token) return false;
+  try {
+    const data = await apiCall('GET', '/api/auth/me');
+    currentUser = data.user || data;
+    localStorage.setItem('komerce_user', JSON.stringify(currentUser));
+    return true;
+  } catch {
+    localStorage.removeItem('komerce_token');
+    localStorage.removeItem('komerce_user');
+    token = '';
+    return false;
+  }
+}
+
+function handleLogout() {
+  token = '';
+  currentUser = null;
+  localStorage.removeItem('komerce_token');
+  localStorage.removeItem('komerce_user');
+  stopAutoRefresh();
+  if (scannerRunning) stopScanner();
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+function showApp() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appShell').style.display = '';
+  renderUserInfo();
+  loadAllData();
+  startAutoRefresh();
+}
+
+function renderUserInfo() {
+  if (!currentUser) return;
+  document.getElementById('topbarUser').textContent = currentUser.name || currentUser.email;
+  const r = document.getElementById('topbarRole');
+  r.textContent = (currentUser.role || 'agent').toUpperCase();
+  if (currentUser.role === 'admin') {
+    r.style.background = 'var(--purple-bg)';
+    r.style.color = 'var(--purple)';
+  }
+}
+
+/* ─── Auto-refresh ─── */
+function startAutoRefresh() {
+  countdown = 30;
+  updateCountdown();
+  countdownInterval = setInterval(() => {
+    countdown--;
+    updateCountdown();
+    if (countdown <= 0) {
+      countdown = 30;
+      loadAllData();
+    }
+  }, 1000);
+}
+
+function stopAutoRefresh() {
+  clearInterval(countdownInterval);
+  clearInterval(refreshInterval);
+}
+
+function updateCountdown() {
+  const el = document.getElementById('countdownText');
+  if (el) el.textContent = countdown + 's';
+}
+
+/* ─── Data Loading ─── */
+async function loadAllData() {
+  await Promise.all([
+    loadStats(),
+    loadQueue(),
+    loadShipments(),
+    loadRelais()
+  ]);
+}
+
+async function loadStats() {
+  try {
+    const data = await apiCall('GET', '/api/dashboard/ops');
+    const bs = data.by_status || {};
+
+    document.getElementById('statPreparation').textContent = bs.preparation || 0;
+    document.getElementById('statReady').textContent = bs.paid || 0;
+
+    // Received today: count orders scanned for preparation today
+    let receivedToday = 0;
+    let alertCount = 0;
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    if (data.recent_orders && Array.isArray(data.recent_orders)) {
+      data.recent_orders.forEach(o => {
+        if (o.status === 'preparation' && o.updated_at && o.updated_at.slice(0, 10) === todayStr) {
+          receivedToday++;
+        }
+        if (o.status === 'preparation' && o.created_at) {
+          const created = new Date(o.created_at);
+          const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+          if (diffDays > 7) alertCount++;
+        }
+      });
+    }
+
+    // Also try from allOrders if available for more accurate count
+    if (allOrders.length > 0) {
+      alertCount = 0;
+      receivedToday = 0;
+      allOrders.forEach(o => {
+        if (o.status === 'preparation' && o.updated_at && o.updated_at.slice(0, 10) === todayStr) {
+          receivedToday++;
+        }
+        if (o.status === 'preparation' && o.created_at) {
+          const created = new Date(o.created_at);
+          const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+          if (diffDays > 7) alertCount++;
+        }
+      });
+    }
+
+    document.getElementById('statReceived').textContent = receivedToday;
+    document.getElementById('statAlerts').textContent = alertCount;
+  } catch (err) {
+    console.error('Stats error:', err);
+  }
+}
+
+async function loadQueue() {
+  try {
+    const data = await apiCall('GET', '/api/admin/orders');
+    const orders = data.orders || data || [];
+    allOrders = orders;
+
+    const queue = orders
+      .filter(o => o.status === 'paid' || o.status === 'preparation')
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    document.getElementById('queueCount').textContent = queue.length;
+    const tbody = document.getElementById('queueBody');
+
+    if (queue.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div>Aucune commande en attente</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = queue.map(o => {
+      const age = daysSince(o.created_at);
+      const rowClass = age > 7 ? 'row-alert' : (age > 3 ? 'row-warn' : '');
+      const statusBadge = getStatusBadge(o.status);
+      const products = getProductSummary(o);
+      const relaisName = getRelaisName(o);
+      const clientName = getClientName(o);
+
+      let actionBtn = '';
+      if (o.status === 'paid') {
+        actionBtn = `<button class="btn btn-primary btn-xs" onclick="scanOrder('${o.id}','preparation')">📥 Réceptionner</button>`;
+      } else if (o.status === 'preparation') {
+        actionBtn = `<button class="btn btn-purple btn-xs" onclick="scanOrder('${o.id}','shipped')">📦 Expédier</button>`;
+      }
+
+      return `<tr class="${rowClass}">
+        <td><span class="ref-link">${esc(o.reference || o.id)}</span></td>
+        <td>${esc(clientName)}</td>
+        <td>${esc(products)}</td>
+        <td>${esc(relaisName)}</td>
+        <td>${statusBadge}</td>
+        <td title="${esc(formatDate(o.created_at))}">${age}j</td>
+        <td>${actionBtn}</td>
+      </tr>`;
+    }).join('');
+
+    // Re-calculate stats from fresh data
+    loadStats();
+  } catch (err) {
+    console.error('Queue error:', err);
+    document.getElementById('queueBody').innerHTML = '<tr><td colspan="7"><div class="empty-state" style="color:var(--red);">Erreur de chargement</div></td></tr>';
+  }
+}
+
+async function loadShipments() {
+  try {
+    const data = await apiCall('GET', '/api/admin/orders');
+    const orders = data.orders || data || [];
+
+    const shipped = orders
+      .filter(o => o.status === 'shipped' || o.status === 'relais_received')
+      .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+      .slice(0, 10);
+
+    const tbody = document.getElementById('shipmentsBody');
+
+    if (shipped.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🚚</div>Aucune expédition récente</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = shipped.map(o => {
+      const relaisName = getRelaisName(o);
+      const clientName = getClientName(o);
+      const statusBadge = getStatusBadge(o.status);
+      const shippedDate = o.updated_at ? formatDate(o.updated_at) : formatDate(o.created_at);
+
+      return `<tr>
+        <td><span class="ref-link">${esc(o.reference || o.id)}</span></td>
+        <td>${esc(clientName)}</td>
+        <td>${esc(relaisName)}</td>
+        <td>${esc(shippedDate)}</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    console.error('Shipments error:', err);
+    document.getElementById('shipmentsBody').innerHTML = '<tr><td colspan="5"><div class="empty-state" style="color:var(--red);">Erreur de chargement</div></td></tr>';
+  }
+}
+
+async function loadRelais() {
+  try {
+    const relaisData = await apiCall('GET', '/api/relais');
+    allRelais = relaisData.relais || relaisData || [];
+
+    // Get orders grouped by relais
+    let relaisOrders = {};
+    try {
+      const roData = await apiCall('GET', '/api/orders/relais');
+      // Try to use the response depending on its shape
+      if (Array.isArray(roData)) {
+        roData.forEach(r => { relaisOrders[r.relais_id || r.id] = r.count || (r.orders && r.orders.length) || 0; });
+      } else if (roData && typeof roData === 'object') {
+        relaisOrders = roData;
+      }
+    } catch {
+      // Fallback: count from allOrders
+      allOrders.forEach(o => {
+        if (o.relais_id && ['paid', 'preparation', 'shipped'].includes(o.status)) {
+          relaisOrders[o.relais_id] = (relaisOrders[o.relais_id] || 0) + 1;
+        }
+      });
+    }
+
+    const grid = document.getElementById('relaisGrid');
+    const defaultRelais = [
+      { name: 'Mutsamudu', island: 'Anjouan', icon: '🏪' },
+      { name: 'Domoni', island: 'Anjouan', icon: '🏬' },
+      { name: 'Moroni', island: 'Grande Comore', icon: '🏢' },
+      { name: 'Fomboni', island: 'Mohéli', icon: '🏣' }
+    ];
+
+    const relaisList = allRelais.length > 0 ? allRelais : defaultRelais;
+
+    grid.innerHTML = relaisList.map(r => {
+      const count = relaisOrders[r.id] || relaisOrders[r._id] || 0;
+      const pendingFromOrders = allOrders.filter(o =>
+        (o.relais_id === r.id || o.relais_id === r._id) &&
+        ['paid', 'preparation', 'shipped'].includes(o.status)
+      ).length;
+      const displayCount = count || pendingFromOrders;
+      const icon = r.icon || defaultRelais.find(d => r.name && r.name.includes(d.name))?.icon || '📦';
+      const island = r.island || r.city || '';
+
+      return `<div class="relais-card">
+        <div class="relais-icon">${icon}</div>
+        <div class="relais-name">${esc(r.name)}</div>
+        <div class="relais-island">${esc(island)}</div>
+        <div class="relais-count">${displayCount}</div>
+        <div class="relais-count-label">expéditions en cours</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Relais error:', err);
+    document.getElementById('relaisGrid').innerHTML = '<div class="empty-state" style="color:var(--red);">Erreur de chargement</div>';
+  }
+}
+
+/* ─── Scanner ─── */
+function toggleScanner() {
+  if (scannerRunning) {
+    stopScanner();
+  } else {
+    startScanner();
+  }
+}
+
+function startScanner() {
+  const zone = document.getElementById('scanner-zone');
+  zone.style.display = 'block';
+  const btn = document.getElementById('btnStartScanner');
+  btn.textContent = '⏹ Désactiver caméra';
+  btn.classList.remove('btn-primary');
+  btn.classList.add('btn-danger');
+
+  scannerInstance = new Html5Qrcode('scanner-zone');
+  scannerInstance.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    (decodedText) => {
+      stopScanner();
+      processScannedCode(decodedText);
+    }
+  ).then(() => {
+    scannerRunning = true;
+  }).catch((err) => {
+    console.warn('Camera error:', err);
+    toast('Caméra indisponible — utilisez la saisie manuelle', 'error');
+    zone.style.display = 'none';
+    btn.textContent = '📷 Activer caméra';
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+  });
+}
+
+function stopScanner() {
+  if (scannerInstance) {
+    scannerInstance.stop().catch(() => {});
+    scannerInstance.clear().catch(() => {});
+    scannerInstance = null;
+  }
+  scannerRunning = false;
+  const zone = document.getElementById('scanner-zone');
+  zone.style.display = 'none';
+  const btn = document.getElementById('btnStartScanner');
+  btn.textContent = '📷 Activer caméra';
+  btn.classList.remove('btn-danger');
+  btn.classList.add('btn-primary');
+}
+
+function handleManualScan() {
+  const ref = document.getElementById('manualRef').value.trim();
+  if (!ref) { toast('Veuillez entrer une référence', 'error'); return; }
+  processScannedCode(ref);
+}
+
+async function processScannedCode(code) {
+  // Extract order_id or reference from scanned code
+  // Could be a URL like /orders/ID or just a reference
+  let orderId = code;
+  const urlMatch = code.match(/orders\/([a-zA-Z0-9-]+)/);
+  if (urlMatch) orderId = urlMatch[1];
+
+  // Find matching order
+  const order = allOrders.find(o =>
+    o.id === orderId || o._id === orderId ||
+    o.reference === code || o.reference === orderId
+  );
+
+  if (order) {
+    orderId = order.id || order._id;
+  }
+
+  try {
+    const scanType = order && order.status === 'preparation' ? 'shipped' : 'preparation';
+    const result = await apiCall('POST', '/api/scans', { order_id: orderId, scan_type: scanType });
+
+    // Show result card
+    const rc = document.getElementById('scanResult');
+    rc.classList.add('show');
+    const o = result.order || order || {};
+    document.getElementById('scanResRef').textContent = o.reference || orderId;
+    document.getElementById('scanResProd').textContent = getProductSummary(o);
+    document.getElementById('scanResClient').textContent = getClientName(o);
+    document.getElementById('scanResRelais').textContent = getRelaisName(o);
+
+    toast(scanType === 'preparation' ? 'Colis réceptionné ✅' : 'Colis expédié 📦', 'success');
+
+    // Broadcast
+    liveChannel.postMessage({ type: 'HUB_SCAN', orderId, status: scanType });
+
+    // Refresh data
+    document.getElementById('manualRef').value = '';
+    await loadAllData();
+  } catch (err) {
+    toast(err.error || err.message || 'Erreur lors du scan', 'error');
+  }
+}
+
+async function scanOrder(orderId, scanType) {
+  const btn = event.target;
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    await apiCall('POST', '/api/scans', { order_id: orderId, scan_type: scanType });
+    toast(scanType === 'preparation' ? 'Colis réceptionné ✅' : 'Colis expédié 📦', 'success');
+    liveChannel.postMessage({ type: 'HUB_SCAN', orderId, status: scanType });
+    await loadAllData();
+  } catch (err) {
+    toast(err.error || err.message || 'Erreur', 'error');
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
+/* ─── Collapsible ─── */
+function toggleCollapsible(bodyId, headerId) {
+  const body = document.getElementById(bodyId);
+  const header = document.getElementById(headerId);
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    header.classList.remove('collapsed');
+  } else {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      body.classList.add('collapsed');
+      body.style.maxHeight = '0';
+      header.classList.add('collapsed');
+    });
+  }
+}
+
+/* ─── Helpers ─── */
+function esc(str) {
+  if (!str) return '—';
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return 0;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return dateStr; }
+}
+
+function getStatusBadge(status) {
+  const map = {
+    draft: ['Brouillon', 'badge-gray'],
+    confirmed: ['Confirmée', 'badge-blue'],
+    paid: ['Payée', 'badge-teal'],
+    preparation: ['Préparation', 'badge-amber'],
+    shipped: ['Expédiée', 'badge-purple'],
+    relais_received: ['Reçue relais', 'badge-blue'],
+    available: ['Disponible', 'badge-green'],
+    collected: ['Collectée', 'badge-green'],
+    cancelled: ['Annulée', 'badge-red']
+  };
+  const [label, cls] = map[status] || [status, 'badge-gray'];
+  return `<span class="badge ${cls}">${esc(label)}</span>`;
+}
+
+function getProductSummary(order) {
+  if (!order) return '—';
+  if (order.items && Array.isArray(order.items)) {
+    return order.items.map(i => (i.product_name || i.name || 'Produit') + (i.quantity > 1 ? ' ×' + i.quantity : '')).join(', ');
+  }
+  if (order.product_name) return order.product_name;
+  if (order.products && Array.isArray(order.products)) {
+    return order.products.map(p => p.name || 'Produit').join(', ');
+  }
+  return '—';
+}
+
+function getClientName(order) {
+  if (!order) return '—';
+  if (order.client_name) return order.client_name;
+  if (order.client && typeof order.client === 'object') return order.client.name || order.client.email || '—';
+  if (order.customer_name) return order.customer_name;
+  if (order.user && typeof order.user === 'object') return order.user.name || order.user.email || '—';
+  return '—';
+}
+
+function getRelaisName(order) {
+  if (!order) return '—';
+  if (order.relais_name) return order.relais_name;
+  if (order.relais && typeof order.relais === 'object') return order.relais.name || '—';
+  if (order.relais_id && allRelais.length > 0) {
+    const r = allRelais.find(r => r.id === order.relais_id || r._id === order.relais_id);
+    if (r) return r.name;
+  }
+  return '—';
+}
+
+/* ─── Init ─── */
+(async function init() {
+  const loggedIn = await tryAutoLogin();
+  if (loggedIn) {
+    showApp();
+  }
+})();
+</script>
+</body>
+</html>
