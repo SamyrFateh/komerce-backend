@@ -28,10 +28,23 @@ const DELAY_AVOIR       = 35;  // 5 semaines → avoir 5%
 const DELAY_REMISE      = 42;  // 6 semaines → remise 10%
 const DELAY_REMBOURSEMENT = 56; // 8 semaines → remboursement
 
+// --- In-memory cache (TTL 30s) ---
+const _cache = new Map();
+function cached(key, ttlMs = 30000) {
+  const entry = _cache.get(key);
+  if (entry && Date.now() - entry.ts < ttlMs) return entry.data;
+  return null;
+}
+function setCache(key, data) {
+  _cache.set(key, { data, ts: Date.now() });
+}
+
 // ─── GET /api/dashboard/ops ──────────────────────────────────────────────────
 
 router.get('/ops', async (req, res) => {
   try {
+    const hit = cached('ops');
+    if (hit) return res.json(hit);
 
     // ── Activité ──────────────────────────────────────────────────────────────
     const { rows: [activ] } = await db.query(`
@@ -131,12 +144,12 @@ router.get('/ops', async (req, res) => {
         ROUND(
           100.0 * COUNT(*) FILTER (
             WHERE status NOT IN ('collected','cancelled')
-              AND EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400 > ${SLA_LATE_DAYS}
+              AND EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400 > $1
           ) / NULLIF(COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled')), 0),
           1
         ) AS pct_en_retard_raw
       FROM orders
-    `);
+    `, [SLA_LATE_DAYS]);
 
     const pct_retard = delais.pct_en_retard_raw !== null
       ? Number(delais.pct_en_retard_raw).toFixed(1) + '%'
@@ -181,10 +194,10 @@ router.get('/ops', async (req, res) => {
       FROM orders o
       LEFT JOIN recipients rc ON rc.id = o.recipient_id
       WHERE o.status NOT IN ('collected','cancelled')
-        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= ${DELAY_PREVENTIF}
+        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= $1
       ORDER BY jours DESC
       LIMIT 20
-    `);
+    `, [DELAY_PREVENTIF]);
 
     const clients_retards = {
       count: retardsRows.length,
@@ -216,7 +229,7 @@ router.get('/ops', async (req, res) => {
       }
     }
 
-    res.json({
+    const result = {
       activite: {
         commandes_aujourd_hui: Number(activ.commandes_aujourd_hui),
         commandes_en_cours:    Number(activ.commandes_en_cours),
@@ -239,7 +252,9 @@ router.get('/ops', async (req, res) => {
       },
       alertes,
       clients_retards,
-    });
+    };
+    setCache('ops', result);
+    res.json(result);
 
   } catch (err) {
     console.error('Dashboard ops error:', err.message);
@@ -258,49 +273,49 @@ router.get('/sales', async (req, res) => {
     const { rows: [kpi] } = await db.query(`
       SELECT
         -- Période courante
-        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '${period} days'), 0)                                                  AS ca_kmf,
-        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '${period} days') / 492.0, 0)                                          AS ca_eur,
-        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '${period} days' AND status != 'cancelled')                                           AS nb_commandes,
-        COALESCE(AVG(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '${period} days' AND status != 'cancelled'), 0)                        AS panier_moyen_kmf,
+        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1), 0)                                                  AS ca_kmf,
+        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1) / 492.0, 0)                                          AS ca_eur,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled')                                           AS nb_commandes,
+        COALESCE(AVG(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled'), 0)                        AS panier_moyen_kmf,
 
         -- Coûts pour marge décomposée (commandes avec cost_real renseigné)
         COALESCE(SUM(total_kmf - cost_real_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
         ), 0)                                                                                                                                         AS marge_produit_kmf,
         COALESCE(SUM(cost_real_kmf * 0.15) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
         ), 0)                                                                                                                                         AS cout_transport_kmf,
         COALESCE(SUM(cost_real_kmf * 0.20) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
         ), 0)                                                                                                                                         AS cout_douane_kmf,
         COALESCE(SUM(total_kmf - cost_real_kmf * 1.35) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
         ), 0)                                                                                                                                         AS marge_reelle_kmf,
         COUNT(*) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
         )                                                                                                                                             AS nb_avec_cost,
         COUNT(*) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND cost_real_kmf IS NULL AND status != 'cancelled'
         )                                                                                                                                             AS nb_sans_cost,
 
         -- Période précédente (pour évolution)
         COALESCE(SUM(total_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period * 2} days'
-            AND created_at <  NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $2
+            AND created_at <  NOW() - INTERVAL '1 day' * $1
         ), 0)                                                                                                                                         AS ca_prev_kmf,
         COUNT(*) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period * 2} days'
-            AND created_at <  NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $2
+            AND created_at <  NOW() - INTERVAL '1 day' * $1
             AND status != 'cancelled'
         )                                                                                                                                             AS commandes_prev
       FROM orders
-    `);
+    `, [period, period * 2]);
 
     const ca        = Number(kpi.ca_kmf);
     const caPrev    = Number(kpi.ca_prev_kmf);
@@ -319,12 +334,12 @@ router.get('/sales', async (req, res) => {
     // Alertes vente à perte
     const { rows: perteRows } = await db.query(`
       SELECT reference FROM orders
-      WHERE created_at >= NOW() - INTERVAL '${period} days'
+      WHERE created_at >= NOW() - INTERVAL '1 day' * $1
         AND cost_real_kmf IS NOT NULL
         AND total_kmf < cost_real_kmf * 1.35
         AND status != 'cancelled'
       LIMIT 10
-    `);
+    `, [period]);
 
     const marge = {
       marge_produit_kmf:   Math.round(Number(kpi.marge_produit_kmf)),
@@ -346,11 +361,11 @@ router.get('/sales', async (req, res) => {
         COALESCE(SUM(total_kmf), 0) AS ca_kmf,
         COALESCE(AVG(total_kmf), 0) AS panier_moyen_kmf
       FROM orders
-      WHERE created_at >= NOW() - INTERVAL '${period} days'
+      WHERE created_at >= NOW() - INTERVAL '1 day' * $1
         AND status != 'cancelled'
       GROUP BY 1
       ORDER BY 1
-    `);
+    `, [period]);
 
     // ── Marge par catégorie ───────────────────────────────────────────────────
     const { rows: catRows } = await db.query(`
@@ -365,11 +380,11 @@ router.get('/sales', async (req, res) => {
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
-      WHERE o.created_at >= NOW() - INTERVAL '${period} days'
+      WHERE o.created_at >= NOW() - INTERVAL '1 day' * $1
         AND o.status != 'cancelled'
       GROUP BY p.category
       ORDER BY ca_kmf DESC
-    `);
+    `, [period]);
 
     // ── Top 10 produits ───────────────────────────────────────────────────────
     const { rows: topProds } = await db.query(`
@@ -388,12 +403,12 @@ router.get('/sales', async (req, res) => {
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
-      WHERE o.created_at >= NOW() - INTERVAL '${period} days'
+      WHERE o.created_at >= NOW() - INTERVAL '1 day' * $1
         AND o.status != 'cancelled'
       GROUP BY p.id, p.name, p.category
       ORDER BY revenue_kmf DESC
       LIMIT 10
-    `);
+    `, [period]);
 
     // ── Produits jamais vendus ────────────────────────────────────────────────
     const { rows: neverRows } = await db.query(`
@@ -412,7 +427,7 @@ router.get('/sales', async (req, res) => {
     const { rows: [clients] } = await db.query(`
       SELECT
         COUNT(DISTINCT user_id) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '${period} days'
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
             AND user_id IS NOT NULL
         ) AS nouveaux_cette_periode,
         COUNT(DISTINCT user_id) FILTER (
@@ -424,7 +439,7 @@ router.get('/sales', async (req, res) => {
         ) AS clients_recurrents,
         COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL) AS total_clients
       FROM orders
-    `);
+    `, [period]);
 
     const nbClients   = Number(clients.total_clients) || 1;
     const nbRecurrents = Number(clients.clients_recurrents);
@@ -509,10 +524,10 @@ router.get('/retards', async (req, res) => {
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN recipients rc ON rc.id = o.recipient_id
       WHERE o.status NOT IN ('collected','cancelled')
-        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= ${DELAY_PREVENTIF}
+        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= $1
       ORDER BY age_jours DESC
       LIMIT 200
-    `);
+    `, [DELAY_PREVENTIF]);
 
     // Classifier et filtrer
     const parNiveau = {
@@ -600,6 +615,10 @@ router.get('/forecast', async (req, res) => {
     const fromDt        = from_date ? new Date(from_date) : new Date(today.getTime() - refPeriod * 86400000);
     const fromStr       = fromDt.toISOString().split('T')[0];
 
+    const cacheKey = `forecast_${fromStr}_${target_date}_${refPeriod}`;
+    const fHit = cached(cacheKey);
+    if (fHit) return res.json(fHit);
+
     // Réalisé depuis from_date
     const { rows: [realise] } = await db.query(`
       SELECT
@@ -618,10 +637,10 @@ router.get('/forecast', async (req, res) => {
         SUM(total_kmf) AS ca_jour
       FROM orders
       WHERE status != 'cancelled'
-        AND created_at >= NOW() - INTERVAL '${refPeriod} days'
+        AND created_at >= NOW() - INTERVAL '1 day' * $1
       GROUP BY 1
       ORDER BY 1
-    `);
+    `, [refPeriod]);
 
     const dailyCAs = statsRows.map(r => Number(r.ca_jour));
     const nbDays   = dailyCAs.length || 1;
@@ -647,7 +666,7 @@ router.get('/forecast', async (req, res) => {
       ? `⚠️ Projection de marge négative (${Math.round(marge_att).toLocaleString('fr-FR')} KMF) — vérifier les coûts`
       : null;
 
-    res.json({
+    const forecastResult = {
       from_date:     fromStr,
       target_date:   target_date,
       days_remaining: daysRemaining,
@@ -673,7 +692,9 @@ router.get('/forecast', async (req, res) => {
         taux_marge_proj: (tauxMargeReel * 100).toFixed(1) + '%',
         alerte_perte:    alertePerte,
       },
-    });
+    };
+    setCache(cacheKey, forecastResult);
+    res.json(forecastResult);
 
   } catch (err) {
     console.error('Dashboard forecast error:', err.message);

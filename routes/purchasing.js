@@ -52,7 +52,8 @@ try {
 }
 
 // ─── Numéro WhatsApp admin (notifications manuelles) ──────────────────────────
-const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN || '33699272526';
+const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
+if (!ADMIN_WA) console.warn('⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled');
 const WA_API   = 'https://api.whatsapp.com/send';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -542,8 +543,8 @@ router.get('/order/:order_id/completeness', ...guard, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[purchasing/completeness] Erreur:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Purchasing error:', err.message);
+    res.status(500).json({ error: 'Erreur interne' });
   }
 });
 
@@ -629,7 +630,12 @@ router.post('/:order_id/confirm', ...guard, async (req, res) => {
 router.post('/:id/receive', ...guard, async (req, res) => {
   const { id } = req.params;
   // qty_recue : quantité reçue maintenant. Défaut = totalité commandée.
-  const qty_recue = parseInt(req.body.qty_recue) || null;
+  const qty_recue = req.body.qty_recue !== undefined && req.body.qty_recue !== null && req.body.qty_recue !== ''
+    ? parseInt(req.body.qty_recue)
+    : null;
+  if (qty_recue !== null && (isNaN(qty_recue) || qty_recue < 0)) {
+    return res.status(400).json({ error: 'qty_recue invalide' });
+  }
 
   try {
     // 1. Récupérer le PO actuel
@@ -739,8 +745,8 @@ router.post('/:id/receive', ...guard, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[purchasing/receive] Erreur:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Purchasing error:', err.message);
+    res.status(500).json({ error: 'Erreur interne' });
   }
 });
 

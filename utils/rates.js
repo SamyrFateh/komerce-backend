@@ -1,7 +1,7 @@
 /**
  * KOMERCE — Taux de change partagés
  * Utilitaire centralisé — remplace les fonctions getRates() dupliquées
- * dans ceremony.js, modules.js, pricing.js, pilotage.js, baskets.js
+ * dans modules.js, pricing.js, pilotage.js, baskets.js, ceremony.js (orphelin)
  */
 
 const db = require('../db');

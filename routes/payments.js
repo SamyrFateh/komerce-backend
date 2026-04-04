@@ -72,8 +72,8 @@ router.post('/stripe/intent', authenticate, async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur création PaymentIntent' });
+    console.error('Payment error:', err.message);
+    res.status(500).json({ error: 'Erreur interne' });
   }
 });
 
@@ -103,23 +103,44 @@ router.post('/stripe/webhook',
       const intent = event.data.object;
       const { order_id, order_reference } = intent.metadata;
 
-      // Paiement confirmé → statut 'ordered' (spec §9.1 statut #1)
-      // 'paid' est un statut interne de validation paiement,
-      // 'ordered' est le statut opérationnel visible client.
-      await db.query(
-        `UPDATE orders SET
-           payment_status = 'paid',
-           status         = 'ordered',
-           ordered_at     = NOW()
-         WHERE id = $1`,
-        [order_id]
+      // Idempotence check — skip if already processed
+      const { rows: [existing] } = await db.query(
+        'SELECT payment_status FROM orders WHERE id = $1', [order_id]
       );
+      if (existing?.payment_status === 'paid') {
+        console.log('Webhook already processed, skipping:', order_id);
+        return res.json({ received: true });
+      }
 
-      await db.query(
-        `INSERT INTO order_status_history (order_id, status, note)
-         VALUES ($1,'ordered','Paiement Stripe confirmé — commande lancée')`,
-        [order_id]
-      );
+      const client = await db.pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        // Paiement confirmé → statut 'ordered' (spec §9.1 statut #1)
+        // 'paid' est un statut interne de validation paiement,
+        // 'ordered' est le statut opérationnel visible client.
+        await client.query(
+          `UPDATE orders SET
+             payment_status = 'paid',
+             status         = 'ordered',
+             ordered_at     = NOW()
+           WHERE id = $1`,
+          [order_id]
+        );
+
+        await client.query(
+          `INSERT INTO order_status_history (order_id, status, note)
+           VALUES ($1,'ordered','Paiement Stripe confirmé — commande lancée')`,
+          [order_id]
+        );
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
 
       // SMS confirmation — non bloquant
       const { rows: [order] } = await db.query(
@@ -260,8 +281,8 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err);
-    res.status(500).json({ error: 'Erreur confirmation paiement cash' });
+    console.error('Payment error:', err.message);
+    res.status(500).json({ error: 'Erreur interne' });
   } finally {
     client.release();
   }

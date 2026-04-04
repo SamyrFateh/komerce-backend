@@ -166,6 +166,17 @@ router.post('/', authenticate, requireRole(['admin']), async (req, res) => {
       return res.status(400).json({ error: 'name, category et price_kmf sont obligatoires' });
     }
 
+    // Validate numeric fields
+    const numericFields = { price_aed, price_kmf, price_eur, weight_kg, stock, customs_risk_coeff, sort_order, unsold_price_kmf };
+    for (const [fname, val] of Object.entries(numericFields)) {
+      if (val !== undefined && val !== null) {
+        const num = Number(val);
+        if (isNaN(num) || num < 0) {
+          return res.status(400).json({ error: `${fname} doit être un nombre positif` });
+        }
+      }
+    }
+
     const { rows: [product] } = await db.query(
       `INSERT INTO products
          (name, description, category, price_aed, price_kmf, price_eur,
@@ -198,6 +209,18 @@ router.put('/:id', authenticate, requireRole(['admin']), async (req, res) => {
       'is_active', 'is_available',
       'requires_secure_transport', 'unsold_price_kmf', 'unsold_channel',
     ];
+
+    // Validate numeric fields if present
+    const numericFieldNames = ['price_aed', 'price_kmf', 'price_eur', 'weight_kg', 'stock', 'customs_risk_coeff', 'sort_order', 'unsold_price_kmf'];
+    for (const fname of numericFieldNames) {
+      const val = req.body[fname];
+      if (val !== undefined && val !== null) {
+        const num = Number(val);
+        if (isNaN(num) || num < 0) {
+          return res.status(400).json({ error: `${fname} doit être un nombre positif` });
+        }
+      }
+    }
 
     const updates = [];
     const values  = [];

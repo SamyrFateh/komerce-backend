@@ -283,7 +283,8 @@ router.get('/margins', ...guard, async (req, res) => {
 
 router.get('/customs', ...guard, async (req, res) => {
   try {
-    const { days = 90, category, anomaly_only } = req.query;
+    const { category, anomaly_only } = req.query;
+    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 90));
 
     const conditions = ['ch.created_at >= NOW() - ($1 || \' days\')::INTERVAL'];
     const params     = [days];
