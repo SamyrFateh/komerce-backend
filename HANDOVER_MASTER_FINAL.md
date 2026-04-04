@@ -1,10 +1,10 @@
 # HANDOVER MASTER — KOMERCE BACKEND
 
-> **Dernière mise à jour :** Session 16 — Avril 2026
+> **Dernière mise à jour :** Session 17 — Avril 2026
 > **Repo :** `SamyrFateh/komerce-backend` · branche `main`
 > **Runtime :** Node.js 20 + Express 4 · PostgreSQL 15 · Déploiement Railway
-> **Version serveur :** `v9.0`
-> **Score intégrité code :** `9.3/10` (Audit Session 15)
+> **Version serveur :** `v9.1`
+> **Score intégrité code :** `9.4/10` (Audit Session 17)
 
 ---
 
@@ -49,7 +49,7 @@ Diaspora (EUR/Stripe) ──→ Hub Dubai (AED) ──→ Fret maritime ──�
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    server.js v9.0                         │
+│                    server.js v9.1                         │
 │  Express + Helmet + CORS + Rate-Limit + Body Parser      │
 ├─────────────────────────────────────────────────────────┤
 │  18 fichiers routes montés sur /api/*                     │
@@ -137,6 +137,8 @@ komerce-backend/
 │   ├── komerce-api.js           # Client API JS (128 KB)
 │   ├── sw.js                    # Service Worker PWA
 │   └── images/                  # Assets visuels
+├── ROADMAP_BOUTIQUE_LIVE.md     # Roadmap Boutique Live (5 étapes ✅)
+├── test_e2e.sh                  # Script test E2E (9 étapes)
 └── HANDOVER_MASTER_FINAL.md     # Ce document
 ```
 
@@ -292,6 +294,12 @@ Voir sections 5.7 à 5.18 de la version précédente — routes pricing, modules
 | 28 | **Méga-cockpit Backend** | public/Komerce_Backend.html | ✅ Nouveau v9 |
 | 29 | **Test Runner E2E** | public/Komerce_Tests.html | ✅ Nouveau v9 |
 | 30 | **customs_history schema** | db/schema.sql (CREATE TABLE) | ✅ Fix v9 |
+| 31 | **Boutique branchée API** | public/Komerce_Boutique.html | ✅ Nouveau v9.1 |
+| 32 | **Auth Boutique (login/register)** | public/Komerce_Boutique.html | ✅ Nouveau v9.1 |
+| 33 | **Checkout réel POST /api/orders** | public/Komerce_Boutique.html | ✅ Nouveau v9.1 |
+| 34 | **Auto-refresh 15s (4 dashboards)** | Admin, Pilotage, Hub, Relais | ✅ Nouveau v9.1 |
+| 35 | **Badge 🔴 LIVE animé** | Admin, Pilotage, Hub, Relais | ✅ Nouveau v9.1 |
+| 36 | **Script test E2E** | test_e2e.sh | ✅ Nouveau v9.1 |
 
 ### 🔶 DÉCLARÉ MAIS NON ENCORE OPÉRATIONNEL
 
@@ -354,7 +362,7 @@ Suite complète de 9 dashboards HTML standalone dans `public/`, tous en thème c
 
 | Fichier | Rôle | Taille | APIs |
 |---------|------|--------|------|
-| `Komerce_Boutique.html` | SPA frontend client | 122 KB | — |
+| `Komerce_Boutique.html` | SPA frontend client (API branchée) | 137 KB | 4 (products, relais, auth, orders) |
 | `Komerce_Mobile.html` | App PWA mobile Anjouan | 54 KB | — |
 | `Komerce_Admin.html` | Back-office administration | 112 KB | 7 |
 | `Komerce_Pilotage.html` | Pilotage coûts & marges | 179 KB | 9 |
@@ -369,7 +377,7 @@ Suite complète de 9 dashboards HTML standalone dans `public/`, tous en thème c
 - Scanner QR réception colis (Html5Qrcode + fallback manuel)
 - File d'attente avec actions (Réceptionner / Expédier)
 - Expéditions récentes + Répartition par relais destination
-- Auto-refresh 30s + BroadcastChannel sync · Responsive mobile
+- Auto-refresh **15s** + BroadcastChannel sync · Responsive mobile
 
 ### Komerce_Relais.html — Agent Relais Anjouan
 - Sélecteur de relais (Mutsamudu, Domoni, Moroni, Fomboni)
@@ -379,7 +387,7 @@ Suite complète de 9 dashboards HTML standalone dans `public/`, tous en thème c
 - Colis en attente avec QR Code modal (WhatsApp, Copier, Télécharger, Imprimer)
 - Caisse du jour (cash + stripe + en attente)
 - 7 scripts pré-rédigés clients à contacter
-- Auto-refresh 30s + BroadcastChannel sync · Mobile-first
+- Auto-refresh **15s** + BroadcastChannel sync · Mobile-first
 
 ### URLs Railway
 
@@ -459,20 +467,24 @@ psql $DATABASE_URL < db/seed.sql
 | 14 | Fidélité + Invendus | loyalty.js, unsold.js, dashboard forecast |
 | 15 | Audit intégrité + Alignement | Audit code 9.3/10, .gitignore/.env.example/rate-limit/health corrigés |
 | 16 | **Dashboards v9.0** | **Fixes P0 dashboard + customs_history · Hub Dubai · Relais Anjouan · Méga-cockpit Backend · Test Runner E2E · Harmonisation noms (9 dashboards)** |
+| 17 | **Boutique Live + Auto-refresh v9.1** | **Boutique branchée API (produits, relais, auth, checkout réel) · Auto-refresh 15s sur 4 dashboards · Badge 🔴 LIVE animé · Script test E2E** |
 
 ---
 
 ## 11. ÉTAT ACTUEL & PROCHAINES ÉTAPES
 
-### État au 4 avril 2026 — v9.0
+### État au 4 avril 2026 — v9.1
 
-- ✅ **30 fonctionnalités** implémentées sur `main`
+- ✅ **36 fonctionnalités** implémentées sur `main`
 - ✅ **9 dashboards** HTML opérationnels dans `public/`
 - ✅ **18 fichiers routes** montés dans server.js v9.0
 - ✅ **15+ tables** PostgreSQL avec triggers automatiques (dont `customs_history`)
 - ✅ **Score intégrité : 9.3/10** — audit Session 15
 - ✅ **Fixes P0 intégrés :** dashboard 500s · scans UUID validation · SQL customs/pilotage · customs_history schema
 - ✅ **Suite de dashboards complète :** Hub Dubai · Relais Anjouan · Backend cockpit · Test Runner
+- ✅ **Boutique Live :** produits API · relais dynamiques · auth JWT · checkout réel
+- ✅ **Auto-refresh 15s :** Admin, Pilotage, Hub, Relais — badge 🔴 LIVE animé
+- ✅ **Test E2E :** script test_e2e.sh (9 étapes, flow complet Boutique → Dashboard)
 
 ### Prochaines étapes recommandées
 
@@ -489,4 +501,4 @@ psql $DATABASE_URL < db/seed.sql
 ---
 
 > **Ce document est la source de vérité pour tout nouveau développeur ou IA reprenant le projet.**
-> Il reflète exactement l'état du code sur `main` au 4 avril 2026 — version v9.0.
+> Il reflète exactement l'état du code sur `main` au 4 avril 2026 — version v9.1.

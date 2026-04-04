@@ -22,14 +22,15 @@ Câbler la Boutique pour que les commandes arrivent en DB → les dashboards se 
 - **Fix colonnes** : `4482bd2` (price_kmf, price_eur, emoji, badge, is_active corrigés)
 - **Status** : ✅ Fait
 
-### 🔲 Étape 2 — Boutique : charger vrais produits depuis l'API
+### ✅ Étape 2 — Boutique : charger vrais produits depuis l'API
 - Remplacer `USE_DEMO = true` → `false`
 - Fixer `loadProducts()` pour appeler `GET /api/products`
 - Mapper les champs API (id, name, price, category, image_url, stock) vers le HTML existant
 - Garder les images démo en fallback si `image_url` est null
-- **Status** : 🔲 À faire
+- **Commit** : `18f592b`
+- **Status** : ✅ Fait
 
-### 🔲 Étape 3 — Boutique : charger vrais relais + checkout réel
+### ✅ Étape 3 — Boutique : charger vrais relais + checkout réel
 - Charger les relais depuis `GET /api/relais` dans le formulaire checkout
 - Ajouter mini-login/register sur la Boutique (modal avant checkout)
 - Fixer `submitCheckout()` pour envoyer le bon payload à `POST /api/orders` :
@@ -44,21 +45,24 @@ Câbler la Boutique pour que les commandes arrivent en DB → les dashboards se 
   }
   ```
 - Token JWT envoyé via header Authorization
-- **Status** : 🔲 À faire
+- **Commit** : `18f592b`
+- **Status** : ✅ Fait
 
-### 🔲 Étape 4 — Auto-refresh dashboards (15s)
+### ✅ Étape 4 — Auto-refresh dashboards (15s)
 - Ajouter `setInterval` sur les dashboards clés :
   - Komerce_Admin.html → refresh `loadOps()`, `loadSales()`
   - Komerce_Pilotage.html → refresh stats
   - Komerce_Hub.html → refresh colis
   - Komerce_Relais.html → refresh livraisons
 - Indicateur visuel "🔴 LIVE" en haut à droite
-- **Status** : 🔲 À faire
+- **Commit** : `b6c09c9`
+- **Status** : ✅ Fait
 
-### 🔲 Étape 5 — Tests end-to-end + Handover v9.1
+### ✅ Étape 5 — Tests end-to-end + Handover v9.1
 - Tester : créer commande Boutique → voir chiffres bouger sur Pilotage
 - Mettre à jour HANDOVER_MASTER_FINAL.md → v9.1
-- **Status** : 🔲 À faire
+- Script test_e2e.sh ajouté au repo
+- **Status** : ✅ Fait
 
 ## Données de référence
 
