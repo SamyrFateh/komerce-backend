@@ -1010,15 +1010,14 @@ async function pwaConfirmGift() {
   if (!cartItems.length) { alert('Votre panier est vide.'); return; }
 
   const items = cartItems.map(i => ({ product_id: i.product.id, quantity: i.qty }));
-  const token = localStorage.getItem('kmrc_token') || '';
-
   const confirmBtn = document.getElementById('pwa-gift-confirm-btn');
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ Envoi…'; }
 
   try {
     const res = await fetch(KOMERCE_API_BASE + '/api/baskets/gift', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items, recipient_name: prenom, recipient_phone: tel }),
     });
     if (!res.ok) throw new Error('Erreur serveur ' + res.status);

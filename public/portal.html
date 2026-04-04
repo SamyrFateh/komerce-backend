@@ -301,7 +301,6 @@ const API_BASE = window.location.origin;
 
 // ── Check existing session ──
 function checkSession() {
-  const token = localStorage.getItem('komerce_token');
   const user = JSON.parse(localStorage.getItem('komerce_user') || 'null');
   if (token && user) {
     showPortal(user);
@@ -338,7 +337,6 @@ async function doLogin() {
     }
 
     // Store token + user
-    localStorage.setItem('komerce_token', data.token);
     localStorage.setItem('komerce_user', JSON.stringify(data.user));
 
     showPortal(data.user);
@@ -362,7 +360,6 @@ function showPortal(user) {
 
 // ── Logout ──
 function doLogout() {
-  localStorage.removeItem('komerce_token');
   localStorage.removeItem('komerce_user');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('portal').classList.remove('visible');

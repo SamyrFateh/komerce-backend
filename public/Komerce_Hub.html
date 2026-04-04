@@ -501,7 +501,6 @@ tr:hover { background: var(--bg3); }
 <script>
 /* ─── Configuration ─── */
 const API_URL = 'https://komerce-backend-production.up.railway.app';
-let token = localStorage.getItem('komerce_token') || '';
 let currentUser = null;
 let refreshInterval = null;
 let countdownInterval = null;
@@ -525,7 +524,7 @@ async function apiCall(method, path, body = null) {
     method,
     headers: { 'Content-Type': 'application/json' }
   };
-  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  opts.credentials = 'include';
   if (body) opts.body = JSON.stringify(body);
 
   let res;
@@ -571,7 +570,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await apiCall('POST', '/api/auth/login', { email, password });
     token = data.token;
     currentUser = data.user;
-    localStorage.setItem('komerce_token', token);
     localStorage.setItem('komerce_user', JSON.stringify(data.user));
     showApp();
   } catch (err) {
@@ -591,7 +589,6 @@ async function tryAutoLogin() {
     localStorage.setItem('komerce_user', JSON.stringify(currentUser));
     return true;
   } catch {
-    localStorage.removeItem('komerce_token');
     localStorage.removeItem('komerce_user');
     token = '';
     return false;
@@ -601,7 +598,6 @@ async function tryAutoLogin() {
 function handleLogout() {
   token = '';
   currentUser = null;
-  localStorage.removeItem('komerce_token');
   localStorage.removeItem('komerce_user');
   stopAutoRefresh();
   if (scannerRunning) stopScanner();

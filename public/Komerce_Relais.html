@@ -1121,7 +1121,6 @@ tr:last-child td { border-bottom: none; }
 
 // ── Configuration ──
 const API_URL = 'https://komerce-backend-production.up.railway.app';
-let token = localStorage.getItem('komerce_token') || '';
 let currentUser = null;
 let selectedRelaisId = localStorage.getItem('komerce_relais_id') || '';
 let selectedRelaisName = localStorage.getItem('komerce_relais_name') || '';
@@ -1157,7 +1156,7 @@ async function apiCall(method, path, body = null) {
     method,
     headers: { 'Content-Type': 'application/json' }
   };
-  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  opts.credentials = 'include';
   if (body) opts.body = JSON.stringify(body);
 
   let res;
@@ -1332,7 +1331,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const data = await apiCall('POST', '/api/auth/login', { email, password });
     token = data.token;
     currentUser = data.user;
-    localStorage.setItem('komerce_token', token);
     localStorage.setItem('komerce_user', JSON.stringify(currentUser));
     toast('Bienvenue, ' + (currentUser.name || currentUser.email) + ' !', 'success');
     afterLogin();
@@ -1354,7 +1352,6 @@ async function tryAutoLogin() {
     afterLogin();
   } catch {
     token = '';
-    localStorage.removeItem('komerce_token');
     localStorage.removeItem('komerce_user');
   }
 }
@@ -1372,7 +1369,6 @@ function afterLogin() {
 function logout() {
   token = '';
   currentUser = null;
-  localStorage.removeItem('komerce_token');
   localStorage.removeItem('komerce_user');
   stopTimers();
   stopScanners();

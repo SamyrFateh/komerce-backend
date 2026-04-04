@@ -726,7 +726,7 @@ if (!token) {
 async function api(method, path, body) {
   const headers = {'Content-Type':'application/json'};
   // BUG-014: Authorization via httpOnly cookie (automatic)
-  const res = await fetch(API + path, {method, headers, body: body ? JSON.stringify(body) : undefined});
+  const res = await fetch(API + path, { credentials: 'include',method, headers, body: body ? JSON.stringify(body) : undefined});
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Erreur ' + res.status);
   return data;

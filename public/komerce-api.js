@@ -1,4 +1,4 @@
-﻿/**
+/**
  * KOMERCE — API Client JS v2.0
  * Spec v7.1 · Mars 2026
  *
@@ -81,7 +81,7 @@ function eur(n) {
 async function apiGet(path) {
   try {
     const res = await fetch(KOMERCE_API + path, {
-      headers: _token ? { Authorization: 'Bearer ' + _token } : {}
+      credentials: 'include'
     });
     return res.ok ? res.json() : null;
   } catch { return null; }
@@ -91,9 +91,9 @@ async function apiPost(path, body) {
   try {
     const res = await fetch(KOMERCE_API + path, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        ...(_token ? { Authorization: 'Bearer ' + _token } : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
     });

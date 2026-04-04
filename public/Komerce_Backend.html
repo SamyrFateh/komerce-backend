@@ -2115,8 +2115,8 @@ td.phase-cell {
 var API = 'https://komerce-backend-production.up.railway.app';
   // URL unified above
 
-const token = localStorage.getItem('kmrc_token') || '';
-_token = token || null;
+const token = '';
+_token = null;
 // Afficher login si pas de token
 (function() {
   var ls = document.getElementById('login-screen');
@@ -2126,8 +2126,7 @@ _token = token || null;
 })();
 async function api(method, path, body) {
   const headers = {'Content-Type':'application/json'};
-  if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API + path, {method, headers, body: body ? JSON.stringify(body) : undefined});
+  const res = await fetch(API + path, { credentials: 'include',method, headers, body: body ? JSON.stringify(body) : undefined});
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Erreur ' + res.status);
   return data;
@@ -2747,7 +2746,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ══ FONCTIONS FUSIONNÉES (admin_v2) ══
 
 // ══ FUSION admin_v2 — Auth & Dashboard ══════════════════════════════════════
-var _token = localStorage.getItem('kmrc_token') || null;
+var _token = null;
 let _salesPeriod = 30;
 
 // Adapter apiFetch pour utiliser la même base API que le Backoffice
@@ -2778,7 +2777,6 @@ async function doLogin() {
 
     _token = data.token;
     token = data.token;
-    localStorage.setItem('kmrc_token', data.token);
     (document.getElementById('login-screen') || {style:{}}).style.display = 'none';
     document.getElementById('bo-app').style.display = 'flex';
     startClock();
@@ -2793,7 +2791,6 @@ async function doLogin() {
 function doLogout() {
   _token = null;
   token = '';
-  localStorage.removeItem('kmrc_token');
   (document.getElementById('login-screen') || {style:{}}).style.display = 'flex';
   document.getElementById('bo-app').style.display = 'none';
   document.getElementById('login-password').value = '';
@@ -2830,7 +2827,8 @@ function refreshCurrent() {
 
 async function apiFetch(path) {
   const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || _token) }
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' }
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -4272,7 +4270,6 @@ async function doSimLogin() {
 
     const token = data.token;
     document.getElementById('scan-token').value = token;
-    localStorage.setItem('kmrc_token', token);
 
     // Afficher statut connecté
     document.getElementById('auth-login-block').style.display  = 'none';
@@ -4288,23 +4285,13 @@ async function doSimLogin() {
 
 function doSimLogout() {
   document.getElementById('scan-token').value = '';
-  localStorage.removeItem('kmrc_token');
   document.getElementById('auth-login-block').style.display  = 'flex';
   document.getElementById('auth-status-block').style.display = 'none';
   document.getElementById('auth-password').value = '';
   setAuthButtons(false);
 }
 
-// Auto-restaurer le token depuis localStorage si disponible
-(function restoreToken() {
-  const saved = localStorage.getItem('kmrc_token');
-  if (!saved) return;
-  document.getElementById('scan-token').value = saved;
-  document.getElementById('auth-login-block').style.display  = 'none';
-  document.getElementById('auth-status-block').style.display = 'flex';
-  document.getElementById('auth-status-label').textContent   = '✅ Connecté (session)';
-  setAuthButtons(true);
-})();
+// BUG-014: auto-restore token supprimé — auth via httpOnly cookie kmrc_jwt
 
 // ── SCANNER PRODUITS RAILWAY ──────────────────────────────────────────────────
 
@@ -4354,7 +4341,7 @@ async function loadProduitsRailway() {
 
   try {
     const res = await fetch(`${KOMERCE_API}/api/products?limit=200&in_stock=true`, {
-      headers: { Authorization: 'Bearer ' + token }
+      credentials: 'include'
     });
 
     if (res.status === 401 || res.status === 403) {
@@ -5278,7 +5265,8 @@ async function pushOne(id) {
   try {
     const res = await fetch(`${KOMERCE_API}/api/products/${id}`, {
       method:  'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         price_kmf: Math.round(newPrice),
         price_aed: _produitsRailway.find(x => x.id === id)?.price_aed || undefined,
@@ -7523,7 +7511,6 @@ async function doPilLogin() {
 
     const token = data.token;
     document.getElementById('pil-token').value = token;
-    localStorage.setItem('kmrc_token', token);
 
     document.getElementById('pil-login-block').style.display  = 'none';
     document.getElementById('pil-status-block').style.display = 'flex';
@@ -7538,7 +7525,6 @@ async function doPilLogin() {
 
 function doPilLogout() {
   document.getElementById('pil-token').value = '';
-  localStorage.removeItem('kmrc_token');
   document.getElementById('pil-login-block').style.display  = 'flex';
   document.getElementById('pil-status-block').style.display = 'none';
   document.getElementById('pil-auth-password').value = '';
@@ -7556,16 +7542,7 @@ function setPilAuthButtons(loggedIn) {
   if (tabCli) tabCli.style.display = loggedIn ? '' : 'none';
 }
 
-// Auto-restaurer le token depuis localStorage (partagé avec le Simulateur)
-(function restorePilToken() {
-  const saved = localStorage.getItem('kmrc_token');
-  if (!saved) return;
-  document.getElementById('pil-token').value = saved;
-  document.getElementById('pil-login-block').style.display  = 'none';
-  document.getElementById('pil-status-block').style.display = 'flex';
-  document.getElementById('pil-status-label').textContent   = '✅ Connecté (session)';
-  setPilAuthButtons(true);
-})();
+// BUG-014: auto-restore token supprimé — auth via httpOnly cookie kmrc_jwt
 
 let _liveData = null;          // données réelles si connecté
 let _douaneEffPct = 0.42;      // taux terrain par défaut : 42%
@@ -7635,10 +7612,10 @@ async function loadLiveData() {
   try {
     const [snapRes, histRes] = await Promise.all([
       fetch(`${KOMERCE_API_URL}/api/pilotage?mois=${mois}`, {
-        headers: { Authorization: 'Bearer ' + token }
+        credentials: 'include'
       }),
       fetch(`${KOMERCE_API_URL}/api/pilotage/history?mois=12`, {
-        headers: { Authorization: 'Bearer ' + token }
+        credentials: 'include'
       }),
     ]);
 
@@ -8254,9 +8231,9 @@ async function loadOps() {
   statusEl.style.color = 'var(--text3)';
   try {
     const [adminRes, purchRes, ordersRes] = await Promise.all([
-      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { headers:{ Authorization:'Bearer '+token } }),
-      fetch(`${KOMERCE_API_URL}/api/purchasing`, { headers:{ Authorization:'Bearer '+token } }),
-      fetch(`${KOMERCE_API_URL}/api/pilotage`, { headers:{ Authorization:'Bearer '+token } }),
+      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { credentials: 'include' }),
+      fetch(`${KOMERCE_API_URL}/api/purchasing`, { credentials: 'include' }),
+      fetch(`${KOMERCE_API_URL}/api/pilotage`, { credentials: 'include' }),
     ]);
     if (!adminRes.ok) { statusEl.textContent = '❌ Token invalide ou non admin'; statusEl.style.color='var(--red)'; return; }
     const adminData = await adminRes.json();
@@ -8461,7 +8438,7 @@ function renderOps() {
 // ══════════════════════════════════════════════════════════════════════
 
 async function loadFidData() {
-  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_token');
+  const token = document.getElementById('pil-token')?.value || '';
   const statusEl = document.getElementById('fid-status');
   if (!token) {
     if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(220,38,38,0.08)'; statusEl.style.color='var(--red)'; statusEl.textContent='Connectez-vous pour accéder aux données fidélité.'; }
@@ -8469,14 +8446,14 @@ async function loadFidData() {
   }
   if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(217,119,6,0.08)'; statusEl.style.color='var(--amber)'; statusEl.textContent='Chargement...'; }
 
-  const h = { 'Authorization': 'Bearer ' + token };
+  const h = {}; // BUG-014: Bearer header supprimé — credentials: 'include' ci-dessous
   const base = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
 
   try {
     const [loyRes, tiersRes, unsRes] = await Promise.all([
-      fetch(base + '/api/loyalty/users',       { headers: h }),
-      fetch(base + '/api/loyalty/tiers',       { headers: h }),
-      fetch(base + '/api/unsold/stats/summary',{ headers: h }),
+      fetch(base + '/api/loyalty/users',       { credentials: 'include', headers: h }),
+      fetch(base + '/api/loyalty/tiers',       { credentials: 'include', headers: h }),
+      fetch(base + '/api/unsold/stats/summary',{ credentials: 'include', headers: h }),
     ]);
 
     if (!loyRes.ok || !tiersRes.ok || !unsRes.ok) throw new Error('Erreur API');
@@ -8581,13 +8558,13 @@ function renderInvendus(d) {
   document.getElementById('uns-canal-both').textContent = d.canal_both || 0;
 
   // Pipeline — on recharge la liste complète si possible
-  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_token');
+  const token = document.getElementById('pil-token')?.value || '';
   const base  = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
   const pEl   = document.getElementById('uns-pipeline');
 
   if (!token) { pEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Non connecté</div>'; return; }
 
-  fetch(base + '/api/unsold', { headers: { 'Authorization': 'Bearer ' + token } })
+  fetch(base + '/api/unsold', { credentials: 'include' })
     .then(r => r.json())
     .then(items => {
       if (!items.length) { pEl.innerHTML = '<div style="color:var(--green);font-size:0.8rem;padding:12px;">Aucun invendu actif — bonne santé du stock.</div>'; return; }
@@ -8674,7 +8651,6 @@ async function unifiedLogin() {
 
     const token = data.token;
     const user  = data.user || {};
-    localStorage.setItem('kmrc_token', token);
 
     // Propagate to Simulateur token input
     const scanTok = document.getElementById('scan-token');
@@ -8704,27 +8680,14 @@ async function unifiedLogin() {
 }
 
 function unifiedLogout() {
-  localStorage.removeItem('kmrc_token');
   localStorage.removeItem('kmrc_active_tab');
   document.getElementById('uni-login').style.display = 'flex';
   document.getElementById('uni-app').style.display   = 'none';
   ['bo','sim','pil'].forEach(t => document.getElementById('tab-' + t).style.display = 'none');
 }
 
-// Auto-login if token in localStorage
-document.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('kmrc_token');
-  if (saved) {
-    const scanTok = document.getElementById('scan-token');
-    if (scanTok) scanTok.value = saved;
-    const pilTok = document.getElementById('pil-token');
-    if (pilTok) pilTok.value = saved;
-    document.getElementById('uni-login').style.display = 'none';
-    document.getElementById('uni-app').style.display   = 'flex';
-    const lastTab = localStorage.getItem('kmrc_active_tab') || 'bo';
-    showTab(lastTab);
-  }
-});
+// BUG-014: auto-login depuis localStorage supprimé — auth via httpOnly cookie kmrc_jwt
+// L'utilisateur doit se connecter ; le cookie sera envoyé automatiquement.
 
 </script>
 
@@ -9484,11 +9447,11 @@ async function showQRModal(orderId, clientName, amount, clientPhone){
   overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.remove(); });
 
   try {
-    // Appel API Railway pour générer le vrai token
-    const jwt = localStorage.getItem('kmrc_token') || _token || '';
+    // Appel API Railway pour générer le vrai token (BUG-014: cookie httpOnly)
     const res = await fetch(`${RAILWAY_BASE}/api/orders/${orderId}/qr-token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt }
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
     });
     const data = await res.json();
 
