@@ -153,22 +153,22 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    3. HERO SPLIT
    ──────────────────────────────────────── */
 #hero {
-  display: flex; min-height: 280px; max-height: 320px;
+  display: flex; min-height: 90px; max-height: 100px;
 }
 .hero-left {
   flex: 0 0 55%; display: flex; flex-direction: column; justify-content: center;
-  padding: 32px 40px;
+  padding: 12px 24px;
   background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%);
 }
 .hero-badge {
   display: inline-block; background: rgba(22,163,74,0.12);
-  color: var(--primary-dark); font-weight: 700; font-size: 0.82rem;
-  padding: 6px 14px; border-radius: 20px; margin-bottom: 18px;
+  color: var(--primary-dark); font-weight: 700; font-size: 0.72rem;
+  padding: 4px 10px; border-radius: 16px; margin-bottom: 6px;
   width: fit-content;
 }
 .hero-title {
-  font-size: 2rem; font-weight: 800; color: var(--dark);
-  margin-bottom: 16px; animation: fadeInUp 0.8s ease-out;
+  font-size: 1.1rem; font-weight: 800; color: var(--dark);
+  margin-bottom: 6px; animation: fadeInUp 0.8s ease-out;
 }
 .hero-accent { color: var(--primary); }
 .hero-search {
@@ -177,12 +177,12 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   box-shadow: var(--shadow);
 }
 .hero-search input {
-  flex: 1; border: none; padding: 14px 18px; font-size: 1rem;
+  flex: 1; border: none; padding: 8px 14px; font-size: 0.85rem;
   outline: none; background: var(--white);
 }
 .hero-search button {
   background: var(--accent); color: var(--white);
-  padding: 14px 26px; font-weight: 700; font-size: 0.95rem;
+  padding: 8px 18px; font-weight: 700; font-size: 0.82rem;
   transition: background 0.2s;
 }
 .hero-search button:hover { background: var(--accent-dark); }
@@ -621,13 +621,53 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .toast-icon { font-size: 1.2rem; }
 
 /* ────────────────────────────────────────
+   BOTTOM TAB BAR (mobile)
+   ──────────────────────────────────────── */
+#bottom-nav {
+  display: none; /* shown on mobile */
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 950;
+  background: var(--white);
+  border-top: 2px solid var(--primary);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+}
+.btab-inner {
+  display: flex; justify-content: space-around; align-items: center;
+  max-width: 500px; margin: 0 auto;
+}
+.btab {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1px; padding: 4px 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--gray); font-size: 0.62rem; font-weight: 600;
+  transition: color 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.btab-icon { font-size: 1.3rem; line-height: 1; }
+.btab:active { transform: scale(0.9); }
+.btab.active, .btab:hover { color: var(--primary); }
+.btab-badge {
+  position: absolute; top: 0; right: 2px;
+  background: var(--red); color: var(--white);
+  font-size: 0.55rem; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.btab-badge.hidden { display: none; }
+
+/* ────────────────────────────────────────
    RESPONSIVE
    ──────────────────────────────────────── */
 @media (max-width: 768px) {
-  #hero { flex-direction: column; max-height: none; }
-  .hero-left { flex: none; padding: 28px 20px; }
-  .hero-title { font-size: 1.6rem; }
-  .hero-right { height: 180px; }
+  #bottom-nav { display: block; }
+  .nav-links a:not(.cart-btn-wrapper) { display: none; }
+  #hero { flex-direction: column; max-height: none; min-height: auto; }
+  .hero-left { flex: none; padding: 12px 16px; }
+  .hero-title { font-size: 1rem; }
+  .hero-right { height: 80px; }
+  body { padding-bottom: 64px; }
   .adv-grid { grid-template-columns: 1fr; gap: 10px; }
   .steps-grid { grid-template-columns: repeat(2, 1fr); }
   .trust-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
@@ -636,8 +676,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-top { flex-direction: column; align-items: center; text-align: center; }
 }
 @media (max-width: 480px) {
-  .hero-left { padding: 30px 16px; }
-  .hero-title { font-size: 1.5rem; }
+  .hero-left { padding: 10px 12px; }
+  .hero-title { font-size: 0.95rem; }
   .hero-search { flex-direction: column; border-radius: var(--radius); }
   .hero-search input { border-radius: var(--radius) var(--radius) 0 0; }
   .hero-search button { border-radius: 0 0 var(--radius) var(--radius); }
@@ -1928,6 +1968,61 @@ async function searchTracking() {
 }
 
 /* ──────────────────────────────────────
+   BOTTOM NAV
+   ────────────────────────────────────── */
+function updateBottomCartBadge() {
+  var badge = document.getElementById('btab-cart-badge');
+  if (!badge) return;
+  var q = cart.reduce(function(s, i) { return s + i.qty; }, 0);
+  badge.textContent = q;
+  badge.className = q > 0 ? 'btab-badge' : 'btab-badge hidden';
+}
+
+function setActiveTab(id) {
+  var tabs = document.querySelectorAll('.btab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function btabHome() {
+  setActiveTab('btab-home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function btabSearch() {
+  setActiveTab('btab-search');
+  var el = document.getElementById('hero-search-input');
+  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function() { el.focus(); }, 400); }
+}
+
+function btabCatalogue() {
+  setActiveTab('btab-catalogue');
+  var el = document.getElementById('catalogue');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function btabSuivi() {
+  setActiveTab('btab-suivi');
+  var el = document.getElementById('tracking');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  var input = document.getElementById('tracking-input');
+  if (input) setTimeout(function() { input.focus(); }, 400);
+}
+
+function btabCart() {
+  setActiveTab('btab-cart');
+  openCart();
+}
+
+/* Wrap original refreshCartBadge to also update bottom nav */
+var _origRefreshCartBadge = refreshCartBadge;
+refreshCartBadge = function() {
+  _origRefreshCartBadge();
+  updateBottomCartBadge();
+};
+
+/* ──────────────────────────────────────
    INIT
    ────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function() {
@@ -1960,6 +2055,28 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+
+<!-- BOTTOM TAB BAR (mobile) -->
+<nav id="bottom-nav" aria-label="Navigation mobile">
+  <div class="btab-inner">
+    <button class="btab active" id="btab-home" onclick="btabHome()" aria-label="Accueil">
+      <span class="btab-icon">🏠</span><span>Accueil</span>
+    </button>
+    <button class="btab" id="btab-search" onclick="btabSearch()" aria-label="Rechercher">
+      <span class="btab-icon">🔍</span><span>Rechercher</span>
+    </button>
+    <button class="btab" id="btab-catalogue" onclick="btabCatalogue()" aria-label="Catalogue">
+      <span class="btab-icon">📦</span><span>Catalogue</span>
+    </button>
+    <button class="btab" id="btab-suivi" onclick="btabSuivi()" aria-label="Suivi commande">
+      <span class="btab-icon">📋</span><span>Suivi</span>
+    </button>
+    <button class="btab" id="btab-cart" onclick="btabCart()" aria-label="Panier">
+      <span class="btab-icon">🛒</span><span>Panier</span>
+      <span id="btab-cart-badge" class="btab-badge hidden">0</span>
+    </button>
+  </div>
+</nav>
 
 </body>
 </html>
