@@ -1106,7 +1106,146 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 .ck-dot-line.done { background: var(--green); }
 
-</style>
+
+    /* ── PROMO TOP-BAR ── */
+    .promo-topbar {
+      background: var(--primary-dark);
+      color: #fff;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 200;
+      overflow: hidden;
+    }
+    .promo-topbar-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: .78rem;
+      letter-spacing: .02em;
+    }
+    .promo-messages {
+      position: relative;
+      height: 22px;
+      min-width: 320px;
+      overflow: hidden;
+    }
+    .promo-msg {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .5s ease, transform .5s ease;
+      white-space: nowrap;
+    }
+    .promo-msg.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .promo-topbar-badge {
+      background: #e63946;
+      color: #fff;
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: 2px 7px;
+      border-radius: 30px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .promo-topbar-nav {
+      position: absolute;
+      right: 1rem;
+      display: flex;
+      gap: .35rem;
+      align-items: center;
+    }
+    .promo-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.3);
+      cursor: pointer;
+      transition: background .3s;
+    }
+    .promo-dot.on { background: #ffd700; }
+
+    /* ── PROVERBE DU JOUR ── */
+    .proverb-band {
+      background: linear-gradient(135deg, #0f172a 0%, #16a34a 100%);
+      padding: .7rem 5%;
+      border-top: 2px solid rgba(245,158,11,0.35);
+      border-bottom: 2px solid rgba(245,158,11,0.35);
+      text-align: center;
+    }
+    .proverb-ornament { color: var(--accent); font-size: .85rem; opacity: .7; margin: 0 .4rem; }
+    .proverb-text {
+      font-size: .78rem;
+      color: rgba(255,255,255,0.88);
+      font-style: italic;
+      letter-spacing: .01em;
+    }
+    .proverb-origin {
+      font-size: .68rem;
+      color: var(--accent);
+      font-weight: 700;
+      font-style: normal;
+      opacity: .85;
+      margin-left: .5rem;
+    }
+
+    /* ── LIVE SEARCH DROPDOWN ── */
+    .search-container { position: relative; width: 100%; }
+    .search-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0; right: 0;
+      background: #fff;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      max-height: 320px;
+      overflow-y: auto;
+      z-index: 999;
+      display: none;
+    }
+    .search-dropdown.open { display: block; }
+    .search-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background .15s;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .search-item:hover, .search-item.active { background: #f0fdf4; }
+    .search-item-img {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #f1f5f9;
+      flex-shrink: 0;
+    }
+    .search-item-emoji {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .search-item-info { flex: 1; min-width: 0; }
+    .search-item-name { font-weight: 600; font-size: .85rem; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .search-item-cat { font-size: .7rem; color: var(--muted); }
+    .search-item-price { font-weight: 700; font-size: .82rem; color: var(--red, #dc2626); white-space: nowrap; }
+    .search-no-result { padding: 16px; text-align: center; color: var(--muted); font-size: .85rem; }
+    .search-count { padding: 6px 14px; font-size: .7rem; color: var(--muted); background: #f8fafc; border-radius: 0 0 12px 12px; text-align: center; }
+
+  </style>
 </head>
 <body>
 
@@ -1139,13 +1278,45 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <!-- ========================================
      3. HERO SPLIT
      ======================================== -->
+<!-- PROMO TOP-BAR -->
+<div class="promo-topbar" id="promoTopbar">
+  <div class="promo-topbar-inner">
+    <span class="promo-topbar-badge">Promo</span>
+    <div class="promo-messages" id="promoMessages">
+      <div class="promo-msg active">🎁 Livraison offerte dès 5 000 KMF d'achats</div>
+      <div class="promo-msg">✨ Première commande : code <strong>BIENVENUE</strong> pour −10 %</div>
+      <div class="promo-msg">🌍 Envoyez un cadeau aux Comores depuis la France</div>
+      <div class="promo-msg">⚡ Nouveaux produits ajoutés chaque semaine</div>
+      <div class="promo-msg">📱 Paiement MVola bientôt disponible</div>
+    </div>
+  </div>
+  <nav class="promo-topbar-nav" aria-label="Messages promotionnels">
+    <span class="promo-dot on" data-idx="0"></span>
+    <span class="promo-dot" data-idx="1"></span>
+    <span class="promo-dot" data-idx="2"></span>
+    <span class="promo-dot" data-idx="3"></span>
+    <span class="promo-dot" data-idx="4"></span>
+  </nav>
+</div>
+
+<!-- PROVERBE DU JOUR -->
+<div class="proverb-band">
+  <span class="proverb-ornament">✦</span>
+  <span class="proverb-text" id="proverb-text"></span>
+  <span class="proverb-origin" id="proverb-origin"></span>
+  <span class="proverb-ornament">✦</span>
+</div>
+
 <section id="hero">
   <div class="hero-left">
     <div class="hero-badge">🇰🇲 E-commerce des Comores</div>
     <h1 class="hero-title">Tout ce que vous voulez,<br><span class="hero-accent">livré aux Comores</span></h1>
-    <div class="hero-search">
-      <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit">
-      <button type="button" id="hero-search-btn">Rechercher</button>
+    <div class="search-container">
+      <div class="hero-search">
+        <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
+        <button type="button" id="hero-search-btn">🔍</button>
+      </div>
+      <div class="search-dropdown" id="search-dropdown"></div>
     </div>
   </div>
   <div class="hero-right">
@@ -1723,8 +1894,11 @@ function scrollCarousel(dir) {
   track.scrollBy({ left: dir * scrollAmt, behavior: 'smooth' });
 }
 
+/* ── LIVE SEARCH E-COMMERCE ── */
+var _searchIdx = -1;
 function heroSearch() {
   var q = $('hero-search-input').value.trim().toLowerCase();
+  closeSearchDropdown();
   if (!q) { renderProducts(_products); return; }
   var filtered = _products.filter(function(p) {
     return (p.name || '').toLowerCase().indexOf(q) !== -1 ||
@@ -1735,12 +1909,132 @@ function heroSearch() {
   document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
 }
 
-function initHeroSearch() {
-  var input = $('hero-search-input');
-  input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') heroSearch();
+function liveSearch(q) {
+  var dd = $('search-dropdown');
+  if (!q || !_products.length) { closeSearchDropdown(); return; }
+  var results = _products.filter(function(p) {
+    return (p.name || '').toLowerCase().indexOf(q) !== -1 ||
+           (p.category || '').toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 8);
+  _searchIdx = -1;
+  if (results.length === 0) {
+    dd.innerHTML = '<div class="search-no-result">Aucun produit trouvé pour «' + q + '»</div>';
+  } else {
+    dd.innerHTML = results.map(function(p, i) {
+      var imgHtml = p.image_url
+        ? '<img class="search-item-img" src="' + p.image_url + '" alt="">'
+        : '<div class="search-item-emoji">' + (p.emoji || '📦') + '</div>';
+      return '<div class="search-item" data-idx="' + i + '" data-pid="' + p.id + '">'
+        + imgHtml
+        + '<div class="search-item-info"><div class="search-item-name">' + sanitize(p.name) + '</div>'
+        + '<div class="search-item-cat">' + sanitize(p.category || '') + '</div></div>'
+        + '<div class="search-item-price">' + fmt(p.price_kmf || 0, 'KMF') + '</div>'
+        + '</div>';
+    }).join('') + '<div class="search-count">' + results.length + ' résultat' + (results.length > 1 ? 's' : '') + '</div>';
+  }
+  dd.classList.add('open');
+  // Click handlers
+  dd.querySelectorAll('.search-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var pid = el.getAttribute('data-pid');
+      var prod = _products.find(function(p) { return String(p.id) === pid; });
+      if (prod) { closeSearchDropdown(); openProductModal(prod); }
+    });
   });
 }
+
+function closeSearchDropdown() {
+  var dd = $('search-dropdown');
+  if (dd) dd.classList.remove('open');
+  _searchIdx = -1;
+}
+
+function initHeroSearch() {
+  var input = $('hero-search-input');
+  var debounce;
+  input.addEventListener('input', function() {
+    clearTimeout(debounce);
+    debounce = setTimeout(function() {
+      liveSearch(input.value.trim().toLowerCase());
+    }, 200);
+  });
+  input.addEventListener('keydown', function(e) {
+    var dd = $('search-dropdown');
+    var items = dd.querySelectorAll('.search-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _searchIdx = Math.min(_searchIdx + 1, items.length - 1);
+      items.forEach(function(el, i) { el.classList.toggle('active', i === _searchIdx); });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _searchIdx = Math.max(_searchIdx - 1, 0);
+      items.forEach(function(el, i) { el.classList.toggle('active', i === _searchIdx); });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (_searchIdx >= 0 && items[_searchIdx]) {
+        items[_searchIdx].click();
+      } else {
+        heroSearch();
+      }
+    } else if (e.key === 'Escape') {
+      closeSearchDropdown();
+    }
+  });
+  input.addEventListener('focus', function() {
+    if (input.value.trim().length >= 2) liveSearch(input.value.trim().toLowerCase());
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-container')) closeSearchDropdown();
+  });
+}
+
+/* ── PROVERBES & CITATIONS AFRICAINS ── */
+var PROVERBS = [
+  { text: "La mer ne se traverse pas avec des regrets.", origin: "🇰🇲 Comores" },
+  { text: "On ne nourrit pas la mer avec ses larmes, mais avec ses bras.", origin: "🌍 Swahili" },
+  { text: "Un seul bracelet ne fait pas de bruit.", origin: "🌍 Afrique de l'Est" },
+  { text: "La patience est la clé du bonheur.", origin: "🇸🇳 Sénégal" },
+  { text: "Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble.", origin: "🌍 Afrique" },
+  { text: "La rivière ne dit pas à la montagne qu'elle est loin.", origin: "🇲🇬 Madagascar" },
+  { text: "On ne récolte que ce que l'on a semé.", origin: "🌍 Swahili" },
+  { text: "Celui qui n'a jamais voyagé croit que sa mère est la meilleure cuisinière.", origin: "🌍 Yoruba" },
+  { text: "Un seul arbre ne fait pas une forêt.", origin: "🌍 Afrique centrale" },
+  { text: "La main droite lave la main gauche.", origin: "🇲🇷 Mauritanie" },
+  { text: "Ce n'est pas la mer qui décide où ira le bateau.", origin: "🇰🇲 Comores" },
+  { text: "Quand la musique change, la danse change.", origin: "🌍 Haoussa" },
+  { text: "Un ventre plein ne comprend pas un ventre vide.", origin: "🌍 Wolof" }
+];
+(function initProverbs() {
+  var textEl = document.getElementById('proverb-text');
+  var originEl = document.getElementById('proverb-origin');
+  if (!textEl || !originEl) return;
+  var p = PROVERBS[Math.floor(Math.random() * PROVERBS.length)];
+  textEl.textContent = '"' + p.text + '"';
+  originEl.textContent = p.origin;
+})();
+
+/* ── PROMO TOP-BAR rotation ── */
+(function() {
+  var msgs = document.querySelectorAll('#promoMessages .promo-msg');
+  var dots = document.querySelectorAll('.promo-topbar-nav .promo-dot');
+  if (!msgs.length) return;
+  var cur = 0;
+  function show(n) {
+    msgs[cur].classList.remove('active');
+    if (dots[cur]) dots[cur].classList.remove('on');
+    cur = (n + msgs.length) % msgs.length;
+    msgs[cur].classList.add('active');
+    if (dots[cur]) dots[cur].classList.add('on');
+  }
+  dots.forEach(function(d) {
+    d.addEventListener('click', function() {
+      show(+d.dataset.idx);
+      clearInterval(timer);
+      timer = setInterval(function() { show(cur + 1); }, 4000);
+    });
+  });
+  var timer = setInterval(function() { show(cur + 1); }, 4000);
+})();
 
 /* ──────────────────────────────────────
    PRODUCT DETAIL MODAL
