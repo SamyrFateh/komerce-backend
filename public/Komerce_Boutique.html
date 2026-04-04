@@ -2474,6 +2474,28 @@ function renderCheckout() {
   cashOpt.appendChild(cashInfo);
   body.appendChild(cashOpt);
 
+  /* MVola option — Bientôt */
+  var mvolaOpt = document.createElement('label');
+  mvolaOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:not-allowed;background:white;opacity:0.6;';
+  var mvolaRadio = document.createElement('input');
+  mvolaRadio.type = 'radio';
+  mvolaRadio.name = 'payment_mode';
+  mvolaRadio.value = 'mvola';
+  mvolaRadio.disabled = true;
+  mvolaRadio.style.cssText = 'width:16px;height:16px;flex-shrink:0;';
+  mvolaOpt.appendChild(mvolaRadio);
+  var mvolaInfo = document.createElement('div');
+  var mvolaL = document.createElement('div');
+  mvolaL.style.cssText = 'font-weight:700;font-size:0.88rem;display:flex;align-items:center;gap:6px;';
+  mvolaL.innerHTML = '<img src="https://www.mvola.km/wp-content/uploads/2024/10/mvola-log.png" alt="MVola" style="height:20px;border-radius:4px;"> MVola <span style="font-size:0.65rem;background:#FF6B00;color:white;padding:1px 6px;border-radius:8px;font-weight:700;">Bient\u00f4t</span>';
+  mvolaInfo.appendChild(mvolaL);
+  var mvolaSub = document.createElement('div');
+  mvolaSub.style.cssText = 'font-size:0.75rem;color:var(--text-light);margin-top:1px;';
+  mvolaSub.textContent = 'Paiement mobile money';
+  mvolaInfo.appendChild(mvolaSub);
+  mvolaOpt.appendChild(mvolaInfo);
+  body.appendChild(mvolaOpt);
+
   var stripeOpt = document.createElement('label');
   stripeOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius);margin-bottom:14px;cursor:not-allowed;background:white;opacity:0.6;';
   var stripeRadio = document.createElement('input');
