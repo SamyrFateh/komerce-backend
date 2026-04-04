@@ -9,24 +9,27 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
 
 :root {
-  --bg:       #0a0e17;
-  --bg2:      #111827;
-  --bg3:      #1a2235;
-  --border:   #1e2d47;
-  --border2:  #2a3f5f;
-  --text:     #e2e8f0;
-  --text2:    #94a3b8;
-  --text3:    #4a6080;
-  --amber:    #f59e0b;
-  --amber2:   #fbbf24;
+  --bg:       #f5f6f8;
+  --bg2:      #ffffff;
+  --bg3:      #f0f2f5;
+  --border:   #e2e6ec;
+  --border2:  #d0d7e2;
+  --text:     #f0f2f5;
+  --text2:    #4a5568;
+  --text3:    #8a9ab5;
+  --amber:    #d97706;
+  --amber2:   #b45309;
   --teal:     #0d9488;
-  --teal2:    #14b8a6;
-  --green:    #10b981;
-  --red:      #ef4444;
-  --blue:     #3b82f6;
-  --purple:   #8b5cf6;
+  --teal2:    #0f766e;
+  --green:    #059669;
+  --red:      #dc2626;
+  --blue:     #2563eb;
+  --purple:   #7c3aed;
+  --gold:     #d97706;
   --mono:     'IBM Plex Mono', monospace;
   --sans:     'IBM Plex Sans', sans-serif;
+  --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,6 +123,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 18px;
+  box-shadow: var(--shadow);
 }
 .card-title {
   font-size: 0.7rem;
@@ -177,8 +181,8 @@ input[type="number"]:focus, select.inp:focus { border-color: var(--amber); }
 
 /* ── RESULT PANEL ── */
 .result-panel {
-  background: linear-gradient(135deg, #0f172a 0%, #1a2235 100%);
-  border: 1px solid var(--border2);
+  background: linear-gradient(135deg, #fefce8 0%, #fffbeb 100%);
+  border: 1px solid #fde68a;
   border-left: 3px solid var(--amber);
   border-radius: 10px;
   padding: 20px;
@@ -325,7 +329,7 @@ input[type="number"]:focus, select.inp:focus { border-color: var(--amber); }
 .timeline-table td.computed.neg { color: var(--red); }
 .timeline-table td.computed.warn { color: #d97706; }
 .timeline-table td.computed.highlight { color: var(--amber2); font-weight: 700; }
-.timeline-table tr:hover td { background: #141e2e; }
+.timeline-table tr:hover td { background: var(--bg3); }
 .tl-input {
   width: 100%;
   background: transparent;
@@ -337,13 +341,13 @@ input[type="number"]:focus, select.inp:focus { border-color: var(--amber); }
   text-align: center;
   outline: none;
 }
-.tl-input:focus { background: rgba(245,158,11,0.08); color: var(--amber); }
+.tl-input:focus { background: rgba(217,119,6,0.06); color: var(--amber2); }
 td.month-cell {
   padding: 8px 12px;
   font-family: var(--mono);
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--amber);
+  color: var(--amber2);
   background: var(--bg3);
   white-space: nowrap;
 }
@@ -393,36 +397,143 @@ td.phase-cell {
 
 /* ── ALERT STRIP ── */
 .alert-strip {
-  background: rgba(239,68,68,0.08);
-  border: 1px solid rgba(239,68,68,0.25);
+  background: rgba(220,38,38,0.06);
+  border: 1px solid rgba(220,38,38,0.2);
   border-left: 3px solid var(--red);
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 0.78rem;
-  color: #fca5a5;
+  color: #b91c1c;
   display: none;
 }
 .alert-strip.warn {
-  background: rgba(245,158,11,0.08);
-  border-color: rgba(245,158,11,0.25);
+  background: rgba(217,119,6,0.06);
+  border-color: rgba(217,119,6,0.2);
   border-left-color: var(--amber);
-  color: #fde68a;
+  color: #92400e;
+}
+.alert-strip.ok {
+  background: rgba(5,150,105,0.06);
+  border-color: rgba(5,150,105,0.2);
+  border-left-color: var(--green);
+  color: #065f46;
 }
 .alert-strip.visible { display: block; }
+
+/* ══ TAB 5 — OPÉRATIONNEL ══ */
+.ops-grid   { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.ops-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.ops-kpi {
+  background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; box-shadow:var(--shadow);
+}
+.ops-kpi-val   { font-family:var(--mono); font-size:1.6rem; font-weight:700; line-height:1; }
+.ops-kpi-label { font-size:0.6rem; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text3); margin-top:4px; }
+.ops-kpi-sub   { font-size:0.62rem; color:var(--text3); margin-top:2px; }
+.ops-kpi.cr    { border-left:3px solid var(--red);   background:rgba(220,38,38,0.03); }
+.ops-kpi.cw    { border-left:3px solid var(--amber); background:rgba(217,119,6,0.03); }
+.ops-kpi.cg    { border-left:3px solid var(--green); background:rgba(5,150,105,0.03); }
+
+.ops-sec {
+  font-family:var(--mono); font-size:0.6rem; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; color:var(--text3); margin:22px 0 10px;
+  padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+.alr {
+  display:flex; align-items:flex-start; gap:10px; padding:9px 13px;
+  border-radius:7px; margin-bottom:5px; font-size:0.76rem;
+}
+.alr.r { background:rgba(220,38,38,0.06); border:1px solid rgba(220,38,38,0.18); color:#b91c1c; }
+.alr.w { background:rgba(217,119,6,0.06);  border:1px solid rgba(217,119,6,0.18);  color:#92400e; }
+.alr.g { background:rgba(5,150,105,0.06); border:1px solid rgba(5,150,105,0.18); color:#065f46; }
+.alr-ico { font-size:0.95rem; flex-shrink:0; margin-top:1px; }
+.alr-ref { font-family:var(--mono); font-size:0.66rem; font-weight:700; }
+.alr-msg { font-size:0.71rem; opacity:0.85; margin-top:1px; }
+
+.dtbl { width:100%; border-collapse:collapse; font-size:0.76rem; }
+.dtbl th { background:var(--bg3); color:var(--text3); font-size:0.58rem; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; padding:8px 10px; border:1px solid var(--border); text-align:center; white-space:nowrap; }
+.dtbl th:first-child { text-align:left; }
+.dtbl td { padding:7px 10px; border:1px solid var(--border); background:var(--bg2); font-family:var(--mono); font-size:0.71rem; text-align:center; color:var(--text2); }
+.dtbl td:first-child { text-align:left; font-family:var(--sans); font-weight:600; color:var(--text); font-size:0.74rem; }
+.dtbl tr:hover td { background:var(--bg3); }
+.dg { color:var(--green); font-weight:700; }
+.dw { color:var(--amber); font-weight:700; }
+.dr { color:var(--red);   font-weight:700; }
+.d-  { color:var(--text3); }
+
+.pbar-wrap { height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; margin-top:3px; }
+.pbar { height:100%; border-radius:3px; transition:width 0.5s ease; }
+
+.perf-badge { display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:0.62rem;font-weight:700; }
+.perf-badge.ok  { background:rgba(5,150,105,0.1);color:var(--green); }
+.perf-badge.warn{ background:rgba(217,119,6,0.1); color:var(--amber); }
+.perf-badge.red { background:rgba(220,38,38,0.1); color:var(--red);   }
 </style>
 </head>
 <body>
 
 <header class="app-header">
   <div class="app-logo">Ko<span>merce</span> // <span style="color:var(--teal2)">Pilotage</span></div>
-  <div class="app-meta">COÛTS & MARGES · v1.0 · MARS 2026</div>
+  <div class="app-meta">COÛTS & MARGES · v5 · MARS 2026</div>
 </header>
+
+<!-- ── BARRE CONNEXION JWT ──────────────────────────────────────────────────── -->
+<div id="pil-auth-bar" style="background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);white-space:nowrap;">🔑 Connexion Railway</span>
+
+  <!-- Bloc login -->
+  <div id="pil-login-block" style="display:flex;align-items:center;gap:6px;">
+    <input type="email" id="pil-auth-email" placeholder="Email admin" value="ilham@komerce.km"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);
+             font-size:0.78rem;padding:6px 10px;outline:none;width:170px;">
+    <input type="password" id="pil-auth-password" placeholder="Mot de passe"
+      onkeydown="if(event.key==='Enter') doPilLogin()"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);
+             font-size:0.78rem;padding:6px 10px;outline:none;width:130px;">
+    <button onclick="doPilLogin()"
+      style="background:var(--teal);color:#fff;border:none;border-radius:7px;
+             padding:7px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+      🔑 Connexion
+    </button>
+  </div>
+
+  <!-- Bloc connecté -->
+  <div id="pil-status-block" style="display:none;align-items:center;gap:8px;">
+    <span id="pil-status-label" style="font-size:0.78rem;color:var(--green);font-weight:600;white-space:nowrap;"></span>
+    <button onclick="doPilLogout()"
+      style="background:var(--bg3);color:var(--text3);border:1px solid var(--border2);border-radius:6px;
+             padding:4px 10px;font-size:0.72rem;cursor:pointer;">
+      Déconnexion
+    </button>
+  </div>
+
+  <!-- Token caché utilisé par tous les appels API -->
+  <input type="hidden" id="pil-token" value="">
+
+  <!-- Boutons d'action conditionnels -->
+  <div style="margin-left:auto;display:flex;gap:8px;">
+    <button id="pil-btn-dashboard" onclick="showTab('dash');loadLiveData()" style="display:none;
+      background:var(--teal);color:#fff;border:none;border-radius:6px;
+      padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+      📊 Charger Dashboard
+    </button>
+    <button id="pil-btn-ops" onclick="showTab('ops');loadOpsData()" style="display:none;
+      background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:6px;
+      padding:6px 12px;font-size:0.75rem;font-weight:600;cursor:pointer;">
+      🚦 Charger Opérationnel
+    </button>
+  </div>
+</div>
 
 <div class="tabs-wrap">
   <div class="tab active" onclick="showTab('sim')">⚙️ Simulateur Produit</div>
   <div class="tab" onclick="showTab('tl')">📅 Pilotage Temporel</div>
   <div class="tab" onclick="showTab('mix')">🗂️ Mix Catégories</div>
   <div class="tab" onclick="showTab('dash')">📊 Dashboard</div>
+  <div class="tab" onclick="showTab('ops')">🚦 Opérationnel</div>
+  <div class="tab" onclick="showTab('hist')">📦 Historique Douane</div>
+  <div class="tab" id="tab-fid" onclick="showTab('fid');loadFidData()" style="display:none;">⭐ Fidélité & Invendus</div>
+  <div class="tab" id="tab-cli" onclick="showTab('cli');loadClientsData()" style="display:none;">👥 Clients & Ventes</div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -449,8 +560,6 @@ td.phase-cell {
     <div class="config-group">
       <span class="config-label">Marché</span>
       <div class="btn-group">
-        <button class="btn-tog active" id="btn-local" onclick="setMarche('local')">🏝️ Local KMF</button>
-        <button class="btn-tog" id="btn-diaspora" onclick="setMarche('diaspora')">✈️ Diaspora EUR</button>
       </div>
     </div>
     <div class="sep-v"></div>
@@ -699,12 +808,7 @@ td.phase-cell {
             <label class="lbl">Commission relais (KMF)</label>
             <input type="number" id="commission-relais" value="500" min="0" step="50" oninput="calculer()">
           </div>
-          <div id="bloc-stripe" style="display:none">
-            <div class="field">
-              <label class="lbl">Frais Stripe (%)</label>
-              <input type="number" id="stripe-pct" value="2.5" min="0" max="10" step="0.1" oninput="calculer()">
-              <div class="hint">Diaspora uniquement</div>
-            </div>
+          
           </div>
         </div>
       </div>
@@ -868,7 +972,29 @@ td.phase-cell {
       </div>
     </div>
   </div>
-</div>
+
+      <!-- 🏪 Prix Terrain — Comparaison marché local -->
+      <div class="section-label mt">🏪 Prix Terrain — Comparaison Marché Local</div>
+      <div class="card" id="terrain-card">
+        <div style="font-size:0.72rem;color:var(--text3);margin-bottom:12px;">
+          Entrez le prix constaté en magasin pour comparer avec votre calcul. Les données sont partagées avec le Simulateur Tarification.
+        </div>
+        <div class="grid-2" style="gap:12px;align-items:end;">
+          <div class="field">
+            <label class="lbl">Prix terrain observé (KMF)</label>
+            <input type="number" id="prix-terrain-pil" placeholder="Ex: 12 500" min="0" step="100" oninput="updatePrixTerrainPil()">
+          </div>
+          <div>
+            <label class="lbl">Produit / Référence (optionnel)</label>
+            <input type="text" id="terrain-ref" placeholder="Ex: Montre dorée S" oninput="updatePrixTerrainPil()" style="width:100%;">
+          </div>
+        </div>
+        <div id="terrain-pil-result" style="display:none;margin-top:14px;padding:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);">
+          <!-- Rempli par JS -->
+        </div>
+        <!-- Prix terrain connus depuis le Simulateur -->
+        <div id="terrain-pil-known" style="margin-top:12px;"></div>
+      </div>
 
 <!-- ══════════════════════════════════════════════════════════
      TAB 2 — PILOTAGE TEMPOREL
@@ -957,8 +1083,7 @@ td.phase-cell {
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <!-- Sélecteur mois -->
       <input type="month" id="dash-mois" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.75rem;padding:6px 10px;outline:none;">
-      <!-- Token JWT -->
-      <input type="password" id="dash-token" placeholder="Bearer token JWT admin" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.75rem;padding:6px 10px;outline:none;width:220px;">
+      <!-- token JWT centralisé via pil-token -->
       <button onclick="loadLiveData()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 Charger données réelles</button>
       <button onclick="refreshDashboard()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:7px 14px;font-size:0.75rem;font-weight:600;cursor:pointer;">📊 Mode simulé</button>
     </div>
@@ -1054,6 +1179,65 @@ td.phase-cell {
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
+     TAB 5 — OPÉRATIONNEL
+══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-ops">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div style="font-size:1.1rem;font-weight:800;color:var(--text)">🚦 Tableau de bord opérationnel</div>
+      <div style="font-size:0.72rem;color:var(--text3);margin-top:3px">Alertes temps réel · Délais par étape · Performance relais & fournisseurs</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <!-- token JWT centralisé via pil-token -->
+      <button onclick="loadOps()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 Charger</button>
+      <span id="ops-status" style="font-size:0.68rem;color:var(--text3);font-family:var(--mono)">—</span>
+    </div>
+  </div>
+
+  <!-- KPIs alertes -->
+  <div class="ops-sec">🔴 Indicateurs critiques temps réel</div>
+  <div id="ops-kpi-zone" class="ops-grid">
+    <div class="ops-kpi" style="grid-column:1/-1;color:var(--text3);font-size:0.78rem;text-align:center;padding:20px">Cliquez "Charger" pour afficher les indicateurs</div>
+  </div>
+
+  <!-- Alertes actives -->
+  <div class="ops-sec">⚡ Alertes actives</div>
+  <div id="ops-alertes" class="card" style="padding:12px">
+    <div style="color:var(--text3);font-size:0.78rem">—</div>
+  </div>
+
+  <!-- Délais par étape -->
+  <div class="ops-sec">⏱️ Délais médians par étape du flux</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="ops-delais" style="overflow-x:auto">
+      <div style="color:var(--text3);font-size:0.78rem;padding:16px">—</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px">
+    <!-- Perf relais -->
+    <div>
+      <div class="ops-sec">🏪 Performance par relais</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="ops-relais" style="overflow-x:auto">
+          <div style="color:var(--text3);font-size:0.78rem;padding:16px">—</div>
+        </div>
+      </div>
+    </div>
+    <!-- Perf fournisseurs -->
+    <div>
+      <div class="ops-sec">🏭 Performance par fournisseur</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="ops-fournisseurs" style="overflow-x:auto">
+          <div style="color:var(--text3);font-size:0.78rem;padding:16px">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
      TAB 4 — MIX CATÉGORIES
 ══════════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-mix">
@@ -1129,6 +1313,7 @@ td.phase-cell {
           <th>Marge brute</th>
           <th>Marge nette B</th>
           <th>Contribution CA</th>
+          <th>🏪 Prix terrain</th>
         </tr>
       </thead>
       <tbody id="mix-body"></tbody>
@@ -1149,6 +1334,317 @@ td.phase-cell {
   </div>
 
 </div>
+
+<div class="screen" id="screen-hist">
+<div style="padding:20px;max-width:1100px;margin:0 auto;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="margin:0;font-size:1.1rem;color:var(--amber);">📦 Historique Douane — Taux effectif terrain</h2>
+      <p style="margin:4px 0 0;font-size:0.75rem;color:var(--text3);">Enregistrez chaque expédition réelle. Le taux moyen peut être appliqué directement dans le Simulateur Produit.</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button style="padding:7px 14px;border-radius:7px;border:none;background:var(--amber);color:#0f172a;font-size:0.82rem;font-weight:700;cursor:pointer;" onclick="showAddHistFormPil()">➕ Ajouter un envoi</button>
+      <button style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.82rem;font-weight:600;cursor:pointer;" onclick="exportHistCSVPil()">⬇️ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Scénarios rapides -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="font-size:0.75rem;color:var(--text3);font-weight:700;">Scénario Pricing :</span>
+    <button id="pil-btn-opt"  onclick="setDouaneScenarioPil('opt')"
+      style="padding:5px 12px;border-radius:6px;border:1px solid #334155;background:var(--bg2);color:#34d399;font-size:0.78rem;font-weight:700;cursor:pointer;">
+      🟢 Optimiste 15%
+    </button>
+    <button id="pil-btn-real" onclick="setDouaneScenarioPil('real')"
+      style="padding:5px 12px;border-radius:6px;border:1px solid var(--amber);background:var(--bg2);color:var(--amber);font-size:0.78rem;font-weight:700;cursor:pointer;">
+      🟡 Réaliste 28%
+    </button>
+    <button id="pil-btn-prud" onclick="setDouaneScenarioPil('prud')"
+      style="padding:5px 12px;border-radius:6px;border:1px solid #334155;background:var(--bg2);color:#f87171;font-size:0.78rem;font-weight:700;cursor:pointer;">
+      🔴 Prudent 40%
+    </button>
+    <span id="pil-scenario-label" style="font-size:0.75rem;color:var(--text3);"></span>
+  </div>
+
+  <!-- Formulaire -->
+  <div id="pil-hist-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">
+    <h3 style="margin:0 0 14px;font-size:0.9rem;color:var(--text);">Nouvel envoi</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Date</label>
+        <input type="date" id="pil-hist-date" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Transitaire</label>
+        <input type="text" id="pil-hist-transit" placeholder="ex: Ahmed Dubai" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Valeur CIF (KMF)</label>
+        <input type="number" id="pil-hist-cif" placeholder="ex: 500000" min="0" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;font-family:var(--mono);">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Droits payés (KMF)</label>
+        <input type="number" id="pil-hist-droits" placeholder="ex: 90000" min="0" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;font-family:var(--mono);">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Poids lot (kg)</label>
+        <input type="number" id="pil-hist-poids" placeholder="ex: 35" min="0" step="0.1" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;font-family:var(--mono);">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Nb articles</label>
+        <input type="number" id="pil-hist-articles" placeholder="ex: 12" min="1" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;font-family:var(--mono);">
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:0.7rem;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">Notes</label>
+        <input type="text" id="pil-hist-notes" placeholder="ex: Téléphones Samsung — inspecté OK" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button style="padding:7px 14px;border-radius:7px;border:none;background:var(--amber);color:#0f172a;font-size:0.82rem;font-weight:700;cursor:pointer;" onclick="addHistEntryPil()">✅ Enregistrer</button>
+      <button style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:0.82rem;font-weight:600;cursor:pointer;" onclick="document.getElementById('pil-hist-form').style.display='none'">Annuler</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:0.68rem;color:var(--text3);font-weight:700;margin-bottom:6px;">Envois enregistrés</div>
+      <div class="kpi-val" id="pil-hk-count" style="color:var(--text2);">0</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:0.68rem;color:var(--text3);font-weight:700;margin-bottom:6px;">Taux moyen effectif</div>
+      <div class="kpi-val" id="pil-hk-moy" style="color:var(--amber);">—%</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:0.68rem;color:var(--text3);font-weight:700;margin-bottom:6px;">Taux min constaté</div>
+      <div class="kpi-val" id="pil-hk-min" style="color:var(--green);">—%</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:0.68rem;color:var(--text3);font-weight:700;margin-bottom:6px;">Taux max constaté</div>
+      <div class="kpi-val" id="pil-hk-max" style="color:var(--red);">—%</div>
+    </div>
+  </div>
+
+  <!-- Tableau -->
+  <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:var(--bg3);">
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:left;">Date</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:left;">Transitaire</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:right;">Valeur CIF</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:right;">Droits payés</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:right;">Taux effectif</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:right;">Poids</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:right;">Articles</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:left;">Notes</th>
+          <th style="padding:10px 12px;font-size:0.7rem;color:var(--text3);font-weight:700;text-align:center;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="pil-hist-tbody">
+        <tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text3);">
+          Aucun envoi enregistré. Cliquez "Ajouter un envoi" après chaque dédouanement.
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="pil-hist-rec" style="display:none;margin-top:16px;padding:12px 16px;background:var(--bg2);border-left:3px solid var(--amber);border-radius:8px;font-size:0.8rem;color:var(--text2);"></div>
+
+</div>
+</div><!-- /screen-hist -->
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!--  SCREEN : Fidélité + Invendus                                     -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-fid">
+
+  <!-- Statut chargement -->
+  <div id="fid-status" style="display:none;padding:9px 14px;border-radius:8px;font-size:0.78rem;font-weight:600;margin-bottom:16px;"></div>
+
+  <!-- ── FIDÉLITÉ ───────────────────────────────────────────────── -->
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Programme Fidélité</div>
+
+  <!-- KPIs fidélité -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;">
+    <div class="kpi-box">
+      <div class="kpi-label">Clients fidélisés</div>
+      <div class="kpi-val green" id="fid-kpi-clients">—</div>
+      <div class="kpi-sub" id="fid-kpi-clients-sub">avec au moins 1 palier</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Remises accordées</div>
+      <div class="kpi-val amber" id="fid-kpi-remises">—</div>
+      <div class="kpi-sub">total KMF ce mois</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Impact marge</div>
+      <div class="kpi-val" id="fid-kpi-impact">—</div>
+      <div class="kpi-sub">% du CA remisé</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Prochain palier</div>
+      <div class="kpi-val teal" id="fid-kpi-prochains">—</div>
+      <div class="kpi-sub">clients à 1 cmd du seuil</div>
+    </div>
+  </div>
+
+  <!-- Répartition par palier -->
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Répartition par palier</div>
+  <div id="fid-paliers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px;">
+    <div style="color:var(--text3);font-size:0.8rem;padding:12px;">Chargement...</div>
+  </div>
+
+  <!-- Top clients fidèles -->
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Top clients — progression</div>
+  <div id="fid-top-clients" style="overflow-x:auto;margin-bottom:24px;">
+    <div style="color:var(--text3);font-size:0.8rem;padding:12px;">Chargement...</div>
+  </div>
+
+  <div style="height:1px;background:var(--border2);margin:8px 0 20px;"></div>
+
+  <!-- ── INVENDUS ───────────────────────────────────────────────── -->
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Pipeline Invendus</div>
+
+  <!-- KPIs invendus -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;">
+    <div class="kpi-box">
+      <div class="kpi-label">Articles invendus</div>
+      <div class="kpi-val" id="uns-kpi-total" style="color:var(--amber);">—</div>
+      <div class="kpi-sub">en stock actuellement</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Valeur liquidation</div>
+      <div class="kpi-val red" id="uns-kpi-valeur">—</div>
+      <div class="kpi-sub">KMF immobilisés</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Valeur initiale</div>
+      <div class="kpi-val" id="uns-kpi-initial" style="color:var(--text2);">—</div>
+      <div class="kpi-sub">avant dépréciation</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Jours moy. en stock</div>
+      <div class="kpi-val" id="uns-kpi-jours" style="color:var(--text2);">—</div>
+      <div class="kpi-sub">depuis bascule invendu</div>
+    </div>
+  </div>
+
+  <!-- Répartition canaux -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+    <div class="kpi-box" style="text-align:center;">
+      <div class="kpi-label">Canal WhatsApp</div>
+      <div class="kpi-val" id="uns-canal-wa" style="color:var(--green);">—</div>
+    </div>
+    <div class="kpi-box" style="text-align:center;">
+      <div class="kpi-label">Canal Revendeur</div>
+      <div class="kpi-val" id="uns-canal-rev" style="color:var(--blue);">—</div>
+    </div>
+    <div class="kpi-box" style="text-align:center;">
+      <div class="kpi-label">Les deux</div>
+      <div class="kpi-val" id="uns-canal-both" style="color:var(--teal2);">—</div>
+    </div>
+  </div>
+
+  <!-- Pipeline invendus liste -->
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Articles en attente de liquidation</div>
+  <div id="uns-pipeline" style="overflow-x:auto;">
+    <div style="color:var(--text3);font-size:0.8rem;padding:12px;">Chargement...</div>
+  </div>
+
+  <!-- Bouton refresh -->
+  <div style="margin-top:20px;text-align:right;">
+    <button onclick="loadFidData()" style="padding:7px 16px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:0.8rem;cursor:pointer;">Rafraîchir</button>
+  </div>
+
+</div><!-- /screen-fid -->
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  ONGLET CLIENTS & VENTES                                      -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-cli">
+
+  <!-- Barre de filtres période -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="section-label" style="margin:0;border:none;padding:0;">Période</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="lbl" style="margin:0;">Du</label>
+        <input type="date" id="cli-debut" class="inp" style="width:150px;padding:6px 10px;font-size:0.82rem;" />
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="lbl" style="margin:0;">Au</label>
+        <input type="date" id="cli-fin" class="inp" style="width:150px;padding:6px 10px;font-size:0.82rem;" />
+      </div>
+      <button onclick="loadClientsData()" style="padding:7px 18px;background:var(--amber);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.82rem;">Filtrer</button>
+      <button onclick="resetCliPeriod()" style="padding:7px 12px;background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:0.78rem;">Tout l'historique</button>
+      <div id="cli-status" style="display:none;padding:6px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;"></div>
+    </div>
+  </div>
+
+  <!-- KPIs globaux -->
+  <div class="section-label">Vue d'ensemble</div>
+  <div class="grid-4" style="margin-bottom:24px;">
+    <div class="kpi-box">
+      <div class="kpi-label">Clients actifs</div>
+      <div class="kpi-val amber" id="cli-kpi-clients">—</div>
+      <div class="kpi-sub" id="cli-kpi-clients-sub"></div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Commandes validées</div>
+      <div class="kpi-val teal" id="cli-kpi-commandes">—</div>
+      <div class="kpi-sub" id="cli-kpi-commandes-sub"></div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Panier moyen</div>
+      <div class="kpi-val green" id="cli-kpi-panier">—</div>
+      <div class="kpi-sub">KMF par commande</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-label">Taux récurrence</div>
+      <div class="kpi-val blue" id="cli-kpi-recurrence">—</div>
+      <div class="kpi-sub" id="cli-kpi-recurrence-sub"></div>
+    </div>
+  </div>
+
+  <!-- Top clients + Top produits -->
+  <div class="grid-2 mt">
+    <div class="card">
+      <div class="card-title">🏆 Top 20 clients — CA total</div>
+      <div id="cli-top-clients" style="overflow-x:auto;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📦 Top 20 produits — Quantité vendue</div>
+      <div id="cli-top-produits" style="overflow-x:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Ventes par relais -->
+  <div class="card mt">
+    <div class="card-title">📍 Ventes par relais</div>
+    <div id="cli-par-relais" style="overflow-x:auto;"></div>
+  </div>
+
+  <!-- Top catégories -->
+  <div class="card mt">
+    <div class="card-title">🗂️ Répartition par catégorie</div>
+    <div id="cli-categories" style="overflow-x:auto;"></div>
+  </div>
+
+  <!-- Évolution mensuelle -->
+  <div class="grid-2 mt">
+    <div class="card">
+      <div class="card-title">📈 Évolution mensuelle — Commandes & CA</div>
+      <canvas id="cli-chart-evolution" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">👥 Nouveaux vs Récurrents par mois</div>
+      <canvas id="cli-chart-retention" height="220"></canvas>
+    </div>
+  </div>
+
+</div><!-- /screen-cli -->
 
 <script>
 // ══════════════════════════════════════════════════════════════════════
@@ -1174,6 +1670,14 @@ let _charts = {};
 
 // État mode douanier : 'cat' | 'eff' | 'lot'
 let _douaneMode = 'cat';
+
+// ── Scénarios douane Pricing Manager ────────────────────────────────────────
+const DOUANE_SCENARIOS_PIL = {
+  opt:  { label:'Optimiste',  pct: 15, color:'#34d399' },
+  real: { label:'Réaliste',   pct: 28, color:'#f59e0b' },
+  prud: { label:'Prudent',    pct: 40, color:'#f87171' },
+};
+let _douaneScenarioPil = 'real';
 
 // État mode Hub : 'a' (répercuté) | 'b' (absorbé)
 let _hubMode = 'b';
@@ -1224,6 +1728,8 @@ let _mixCats = {
   enfants:     { active: false, prixAed: 90,  pct: 0  },
   materiels:   { active: false, prixAed: 200, pct: 5  },
 };
+let _prixTerrainCat = JSON.parse(localStorage.getItem('komerce_prix_terrain_cat') || '{}'); // prix terrain moyen par catégorie
+
 
 // ══════════════════════════════════════════════════════════════════════
 //  INIT
@@ -1269,26 +1775,236 @@ function pctStr(v, total) {
 // ══════════════════════════════════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════
+//  SCÉNARIOS DOUANE PILOTAGE
+// ══════════════════════════════════════════════════════════════════════
+function setDouaneScenarioPil(key) {
+  _douaneScenarioPil = key;
+  const sc = DOUANE_SCENARIOS_PIL[key];
+  ['opt','real','prud'].forEach(k => {
+    const btn = document.getElementById('pil-btn-' + k);
+    if (!btn) return;
+    const active = k === key;
+    btn.style.border = active ? `1px solid ${DOUANE_SCENARIOS_PIL[k].color}` : '1px solid #334155';
+    btn.style.background = active ? `${DOUANE_SCENARIOS_PIL[k].color}22` : 'var(--bg2)';
+  });
+  const lbl = document.getElementById('pil-scenario-label');
+  if (lbl) lbl.textContent = `Scénario actif : ${sc.label} (${sc.pct}% CIF)`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  HISTORIQUE DOUANE PILOTAGE
+// ══════════════════════════════════════════════════════════════════════
+// ── Prix Terrain Pilotage ─────────────────────────────────────────────────────
+
+function updatePrixTerrainPil() {
+  // Recharger depuis localStorage (peut avoir été mis à jour par Simulateur)
+  _prixTerrainPil = JSON.parse(localStorage.getItem('komerce_prix_terrain') || '{}');
+
+  // Lire le CDR calculé (sous-total avant marge)
+  const subtotalEl = document.getElementById('d-subtotal');
+  const totalEl    = document.getElementById('d-total');
+  const ptInput    = document.getElementById('prix-terrain-pil');
+  const refInput   = document.getElementById('terrain-ref');
+  const resultEl   = document.getElementById('terrain-pil-result');
+  const knownEl    = document.getElementById('terrain-pil-known');
+  if (!resultEl) return;
+
+  // Afficher les prix terrain connus depuis le Simulateur
+  const keys = Object.keys(_prixTerrainPil);
+  if (keys.length > 0) {
+    knownEl.innerHTML = `<div style="font-size:0.65rem;color:var(--text3);margin-bottom:6px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;">Prix terrain enregistrés dans le Simulateur</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${keys.map(k => `<button onclick="applyTerrainRef('${k.replace(/'/g,"\\'")}',${_prixTerrainPil[k]})"
+          style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.7rem;cursor:pointer;">
+          ${k} — ${new Intl.NumberFormat('fr-FR').format(_prixTerrainPil[k])} KMF
+        </button>`).join('')}
+      </div>`;
+  } else {
+    knownEl.innerHTML = '<div style="font-size:0.7rem;color:var(--text3);font-style:italic;">Aucun prix terrain enregistré dans le Simulateur.</div>';
+  }
+
+  const ptVal = parseFloat(ptInput?.value);
+  if (isNaN(ptVal) || ptVal <= 0) { resultEl.style.display = 'none'; return; }
+
+  // Lire le CDR depuis le détail (sous-total)
+  const cdrText = subtotalEl?.textContent?.replace(/[^0-9]/g,'');
+  const cdr     = cdrText ? parseInt(cdrText) : 0;
+  const prixCalc = totalEl ? parseInt(totalEl.textContent?.replace(/[^0-9]/g,'') || 0) : 0;
+
+  const ecart   = ptVal - (prixCalc || ptVal);
+  const margeR  = cdr > 0 ? ((ptVal - cdr) / ptVal * 100).toFixed(1) : '—';
+  const margeMin = 10;
+  const ok      = parseFloat(margeR) >= margeMin;
+  const col     = ecart >= 0 ? '#34d399' : '#f87171';
+  const icon    = ecart >= 0 ? '🟢' : '🔴';
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div style="text-align:center;">
+        <div style="font-size:0.62rem;color:var(--text3);margin-bottom:4px;">Prix terrain saisi</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text);font-family:var(--mono);">${N(ptVal)} KMF</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.62rem;color:var(--text3);margin-bottom:4px;">Écart vs prix calculé</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${col};font-family:var(--mono);">${icon} ${ecart > 0 ? '+' : ''}${N(ecart)} KMF</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.62rem;color:var(--text3);margin-bottom:4px;">Marge réelle terrain</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${ok ? '#34d399' : '#f87171'};font-family:var(--mono);">${margeR}%</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;
+      background:${ok ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)'};
+      border:1px solid ${ok ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'};
+      color:${ok ? '#34d399' : '#f87171'};">
+      ${ok ? '✅ Alignement possible — marge terrain supérieure à 10%' : '⚠️ Attention — marge terrain inférieure à la cible minimale (10%)'}
+    </div>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+      <button onclick="savePrixTerrainPil()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border2);background:rgba(245,158,11,0.1);color:var(--amber);font-size:0.72rem;font-weight:600;cursor:pointer;">
+        💾 Enregistrer ce prix terrain
+      </button>
+    </div>
+  `;
+}
+
+function applyTerrainRef(nom, prix) {
+  const ptInput = document.getElementById('prix-terrain-pil');
+  const refInput = document.getElementById('terrain-ref');
+  if (ptInput) ptInput.value = prix;
+  if (refInput) refInput.value = nom;
+  updatePrixTerrainPil();
+}
+
+function savePrixTerrainPil() {
+  const ref  = document.getElementById('terrain-ref')?.value?.trim();
+  const prix = parseFloat(document.getElementById('prix-terrain-pil')?.value);
+  if (!ref) { alert('Entrez une référence produit pour enregistrer.'); return; }
+  if (isNaN(prix) || prix <= 0) { alert('Entrez un prix terrain valide.'); return; }
+  _prixTerrainPil[ref] = prix;
+  localStorage.setItem('komerce_prix_terrain', JSON.stringify(_prixTerrainPil));
+  alert(`✅ Prix terrain "${ref}" = ${new Intl.NumberFormat('fr-FR').format(prix)} KMF enregistré.\nVisible dans le Simulateur Tarification.`);
+  updatePrixTerrainPil();
+}
+
+// Partage le même localStorage que le Simulateur
+let _pilHistData = JSON.parse(localStorage.getItem('komerce_hist_douane') || '[]');
+let _prixTerrainPil = JSON.parse(localStorage.getItem('komerce_prix_terrain') || '{}'); // partagé avec Simulateur
+
+function showAddHistFormPil() {
+  const form = document.getElementById('pil-hist-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('pil-hist-date').value = new Date().toISOString().slice(0,10);
+}
+
+function addHistEntryPil() {
+  const date    = document.getElementById('pil-hist-date').value;
+  const transit = document.getElementById('pil-hist-transit').value.trim();
+  const cif     = parseFloat(document.getElementById('pil-hist-cif').value);
+  const droits  = parseFloat(document.getElementById('pil-hist-droits').value);
+  const poids   = parseFloat(document.getElementById('pil-hist-poids').value) || 0;
+  const articles= parseInt(document.getElementById('pil-hist-articles').value) || 0;
+  const notes   = document.getElementById('pil-hist-notes').value.trim();
+  if (!date || !cif || !droits) { alert('Veuillez remplir Date, Valeur CIF et Droits payés.'); return; }
+  const taux = droits / cif * 100;
+  const entry = { id: Date.now(), date, transit, cif, droits, taux, poids, articles, notes };
+  _pilHistData.unshift(entry);
+  localStorage.setItem('komerce_hist_douane', JSON.stringify(_pilHistData));
+  document.getElementById('pil-hist-form').style.display = 'none';
+  renderHistTablePil();
+}
+
+function deleteHistEntryPil(id) {
+  if (!confirm('Supprimer cet envoi ?')) return;
+  _pilHistData = _pilHistData.filter(e => e.id !== id);
+  localStorage.setItem('komerce_hist_douane', JSON.stringify(_pilHistData));
+  renderHistTablePil();
+}
+
+function renderHistTablePil() {
+  _pilHistData = JSON.parse(localStorage.getItem('komerce_hist_douane') || '[]');
+  const tbody = document.getElementById('pil-hist-tbody');
+  if (!tbody) return;
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+  const count = _pilHistData.length;
+  document.getElementById('pil-hk-count').textContent = count;
+
+  if (count === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text3);">Aucun envoi enregistré.</td></tr>';
+    ['moy','min','max'].forEach(k => document.getElementById('pil-hk-' + k).textContent = '—%');
+    document.getElementById('pil-hist-rec').style.display = 'none';
+    return;
+  }
+
+  const tauxList = _pilHistData.map(e => e.taux);
+  const moy = tauxList.reduce((a,b) => a+b,0) / tauxList.length;
+  const min = Math.min(...tauxList);
+  const max = Math.max(...tauxList);
+  document.getElementById('pil-hk-moy').textContent = moy.toFixed(1) + '%';
+  document.getElementById('pil-hk-min').textContent = min.toFixed(1) + '%';
+  document.getElementById('pil-hk-max').textContent = max.toFixed(1) + '%';
+
+  let scRec = moy <= 18 ? 'opt' : moy <= 32 ? 'real' : 'prud';
+  const scData = DOUANE_SCENARIOS_PIL[scRec];
+  const rec = document.getElementById('pil-hist-rec');
+  rec.style.display = 'block';
+  rec.innerHTML = `📊 <strong>Taux moyen terrain : ${moy.toFixed(1)}%</strong> — 
+    Scénario recommandé : <strong style="color:${scData.color};">${scData.label} (${scData.pct}%)</strong>
+    ${count < 3 ? '<em style="color:var(--text3);"> — moins de 3 envois, données à confirmer</em>' : ''}
+    <button onclick="setDouaneScenarioPil('${scRec}')" 
+      style="margin-left:10px;padding:3px 10px;background:${scData.color}22;border:1px solid ${scData.color};
+             border-radius:5px;color:${scData.color};font-size:0.75rem;cursor:pointer;font-weight:700;">
+      Appliquer →
+    </button>`;
+
+  tbody.innerHTML = _pilHistData.map(e => {
+    const col = e.taux <= 20 ? 'var(--green)' : e.taux <= 35 ? 'var(--amber)' : 'var(--red)';
+    return `<tr style="border-top:1px solid var(--border);">
+      <td style="padding:10px 12px;font-size:0.82rem;font-family:var(--mono);color:var(--text3);">${e.date}</td>
+      <td style="padding:10px 12px;font-size:0.82rem;color:var(--text);">${e.transit || '—'}</td>
+      <td style="padding:10px 12px;font-size:0.82rem;font-family:var(--mono);text-align:right;">${N(e.cif)} KMF</td>
+      <td style="padding:10px 12px;font-size:0.82rem;font-family:var(--mono);text-align:right;">${N(e.droits)} KMF</td>
+      <td style="padding:10px 12px;font-size:0.82rem;font-family:var(--mono);text-align:right;color:${col};font-weight:700;">${e.taux.toFixed(1)}%</td>
+      <td style="padding:10px 12px;font-size:0.82rem;font-family:var(--mono);text-align:right;color:var(--text3);">${e.poids ? e.poids + ' kg' : '—'}</td>
+      <td style="padding:10px 12px;font-size:0.82rem;font-family:var(--mono);text-align:right;color:var(--text3);">${e.articles || '—'}</td>
+      <td style="padding:10px 12px;font-size:0.75rem;color:var(--text3);">${e.notes || ''}</td>
+      <td style="padding:10px 12px;text-align:center;">
+        <button onclick="deleteHistEntryPil(${e.id})" style="padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--red);cursor:pointer;font-size:0.72rem;">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function exportHistCSVPil() {
+  if (_pilHistData.length === 0) { alert('Aucune donnée à exporter.'); return; }
+  const headers = ['Date','Transitaire','CIF KMF','Droits KMF','Taux %','Poids kg','Articles','Notes'];
+  const rows = _pilHistData.map(e => [e.date, e.transit, e.cif, e.droits, e.taux.toFixed(2), e.poids, e.articles, e.notes].join(';'));
+  const blob = new Blob(['\uFEFF' + [headers.join(';'),...rows].join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `komerce_hist_douane_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
 function showTab(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   event.currentTarget.classList.add('active');
   if (id === 'dash') refreshDashboard();
+  if (id === 'hist') renderHistTablePil();
   if (id === 'mix')  computeMix();
+  if (id === 'ops') {
+    // Sync token depuis le champ Dashboard si renseigné
+    const dashToken = document.getElementById('pil-token')?.value?.trim();
+    const opsToken  = document.getElementById('pil-token');
+    if (dashToken && opsToken && !opsToken.value) opsToken.value = dashToken;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
 //  SIMULATEUR — INTERACTIONS
 // ══════════════════════════════════════════════════════════════════════
-function setMarche(m) {
-  marche = m;
-  document.getElementById('btn-local').className    = 'btn-tog' + (m==='local'    ? ' active' : '');
-  document.getElementById('btn-diaspora').className = 'btn-tog' + (m==='diaspora' ? ' active' : '');
-  document.getElementById('bloc-stripe').style.display    = m === 'diaspora' ? 'block' : 'none';
-  document.getElementById('row-stripe').style.display     = m === 'diaspora' ? 'flex'  : 'none';
-  calculer();
-}
 
 function setSource(s) {
   source = s;
@@ -1333,6 +2049,7 @@ function onDimChange() {
   document.getElementById('fret-sub').textContent =
     `${new Intl.NumberFormat('fr-FR').format(Math.round(volCm3))} cm³ = ${volM3.toFixed(5)} m³ × 180 EUR/m³ × ${t.EUR} KMF/EUR`;
   calculer();
+setDouaneScenarioPil('real');
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1720,6 +2437,7 @@ function recomputeTimeline(rebuild) {
   if (rebuild !== false) buildTimeline();
   else renderTimeline();
   if (document.getElementById('screen-dash').classList.contains('active')) refreshDashboard();
+  if (id === 'hist') renderHistTablePil();
 }
 
 function buildAlerts() {
@@ -1775,6 +2493,68 @@ function exportCSV() {
 // ══════════════════════════════════════════════════════════════════════
 
 const KOMERCE_API_URL = 'https://komerce-backend-production.up.railway.app';
+
+// ── Authentification Pilotage ─────────────────────────────────────────────────
+async function doPilLogin() {
+  const email    = document.getElementById('pil-auth-email').value.trim();
+  const password = document.getElementById('pil-auth-password').value;
+  if (!email || !password) { alert('Email et mot de passe requis'); return; }
+
+  try {
+    const res = await fetch(KOMERCE_API_URL + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Connexion échouée : ' + (data.error || res.status)); return; }
+
+    const token = data.token;
+    document.getElementById('pil-token').value = token;
+    localStorage.setItem('kmrc_token', token);
+
+    document.getElementById('pil-login-block').style.display  = 'none';
+    document.getElementById('pil-status-block').style.display = 'flex';
+    const name = data.user ? (data.user.name || data.user.email) : email;
+    document.getElementById('pil-status-label').textContent = '✅ ' + name;
+    setPilAuthButtons(true);
+
+  } catch (err) {
+    alert('Erreur réseau : ' + err.message);
+  }
+}
+
+function doPilLogout() {
+  document.getElementById('pil-token').value = '';
+  localStorage.removeItem('kmrc_token');
+  document.getElementById('pil-login-block').style.display  = 'flex';
+  document.getElementById('pil-status-block').style.display = 'none';
+  document.getElementById('pil-auth-password').value = '';
+  setPilAuthButtons(false);
+}
+
+function setPilAuthButtons(loggedIn) {
+  ['pil-btn-dashboard', 'pil-btn-ops'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = loggedIn ? 'block' : 'none';
+  });
+  const tabFid = document.getElementById('tab-fid');
+  if (tabFid) tabFid.style.display = loggedIn ? '' : 'none';
+  const tabCli = document.getElementById('tab-cli');
+  if (tabCli) tabCli.style.display = loggedIn ? '' : 'none';
+}
+
+// Auto-restaurer le token depuis localStorage (partagé avec le Simulateur)
+(function restorePilToken() {
+  const saved = localStorage.getItem('kmrc_token');
+  if (!saved) return;
+  document.getElementById('pil-token').value = saved;
+  document.getElementById('pil-login-block').style.display  = 'none';
+  document.getElementById('pil-status-block').style.display = 'flex';
+  document.getElementById('pil-status-label').textContent   = '✅ Connecté (session)';
+  setPilAuthButtons(true);
+})();
+
 let _liveData = null;          // données réelles si connecté
 let _douaneEffPct = 0.42;      // taux terrain par défaut : 42%
 
@@ -1799,6 +2579,7 @@ function updateDouaneRange(val) {
   // Recalcul impact
   updateImpactDouane(v);
   refreshDashboard();
+  if (id === 'hist') renderHistTablePil();
 }
 
 function updateImpactDouane(pct) {
@@ -1828,12 +2609,12 @@ function updateImpactDouane(pct) {
 
 // ── Chargement données réelles depuis /api/pilotage ──────────────────────────
 async function loadLiveData() {
-  const token = document.getElementById('dash-token')?.value?.trim();
+  const token = document.getElementById('pil-token')?.value?.trim();
   const mois  = document.getElementById('dash-mois')?.value || new Date().toISOString().slice(0, 7);
   const statusEl = document.getElementById('dash-status');
 
   if (!token) {
-    showDashStatus('⚠️ Saisissez votre Bearer token JWT admin pour charger les données réelles', 'warn');
+    showDashStatus('⚠️ Connectez-vous via la barre en haut pour charger les données réelles', 'warn');
     return;
   }
 
@@ -2018,7 +2799,7 @@ function renderLiveCharts(labels, marges, volumes, equil, snap) {
     const colors    = ['#f59e0b','#0d9488','#3b82f6','#8b5cf6','#10b981','#ec4899','#f97316','#6366f1'];
     renderChart('chart-decompo', 'doughnut', catLabels, [{
       data: catCA, backgroundColor: colors.slice(0, catLabels.length),
-      borderColor: '#111827', borderWidth: 2
+      borderColor: '#ffffff', borderWidth: 2
     }], { isDoughnut: true });
   }
 
@@ -2120,7 +2901,7 @@ function refreshDashboard() {
     renderChart('chart-decompo', 'doughnut', ['Achat+Hub','Fret','Douane','Distribution','Marge'], [{
       data: [Math.round(r.blocAchat), Math.round(r.blocFret), Math.round(r.blocDouane), Math.round(r.blocDistrib), Math.round(r.margeB)],
       backgroundColor: ['#f59e0b','#0d9488','#3b82f6','#8b5cf6','#10b981'],
-      borderColor: '#111827', borderWidth: 2
+      borderColor: '#ffffff', borderWidth: 2
     }], { isDoughnut: true });
   }
 
@@ -2134,7 +2915,13 @@ function renderChart(id, type, labels, datasets, opts={}) {
 
   const isDoughnut = opts.isDoughnut || false;
 
-  _charts[id] = new Chart(ctx, {
+  _charts[id] = 
+  // Chart.js light theme defaults
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.borderColor = '#e2e6ec';
+  Chart.defaults.backgroundColor = 'rgba(0,0,0,0.05)';
+
+  new Chart(ctx, {
     type: isDoughnut ? 'doughnut' : type,
     data: { labels, datasets },
     options: {
@@ -2146,24 +2933,24 @@ function renderChart(id, type, labels, datasets, opts={}) {
           labels: { color: '#94a3b8', font: { size: 10, family: "'IBM Plex Sans'" }, boxWidth: 10 }
         },
         tooltip: {
-          backgroundColor: '#1a2235',
+          backgroundColor: '#f0f2f5',
           titleColor: '#f59e0b',
           bodyColor: '#e2e8f0',
-          borderColor: '#2a3f5f',
+          borderColor: '#d0d7e2',
           borderWidth: 1
         }
       },
       ...(isDoughnut ? {} : {
         scales: {
           x: {
-            ticks: { color: '#4a6080', font: { size: 9 }, maxRotation: 45 },
-            grid: { color: 'rgba(30,45,71,0.8)' }
+            ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 45 },
+            grid: { color: 'rgba(226,230,236,0.8)' }
           },
           y: {
-            ticks: { color: '#4a6080', font: { size: 9 } },
-            grid: { color: 'rgba(30,45,71,0.8)' },
+            ticks: { color: '#64748b', font: { size: 9 } },
+            grid: { color: 'rgba(226,230,236,0.8)' },
             beginAtZero: opts.yBeginAtZero !== false,
-            title: opts.yAxisLabel ? { display: true, text: opts.yAxisLabel, color: '#4a6080', font: { size: 9 } } : undefined
+            title: opts.yAxisLabel ? { display: true, text: opts.yAxisLabel, color: '#64748b', font: { size: 9 } } : undefined
           }
         }
       })
@@ -2209,11 +2996,57 @@ function buildMixTable() {
       <td class="computed pos" id="mix-mb-${key}">—</td>
       <td class="computed" id="mix-mn-${key}">—</td>
       <td class="computed teal" id="mix-ca-${key}">—</td>
+      <td>
+        <div>
+          <input class="tl-input" type="number"
+            id="mix-terrain-${key}"
+            value="${_prixTerrainCat[key] || ''}"
+            placeholder="—"
+            min="0" step="100"
+            oninput="mixTerrainEdit('${key}', this.value)"
+            title="Prix terrain observé pour cette catégorie">
+          <div id="mix-terrain-ecart-${key}" style="font-size:0.6rem;margin-top:2px;color:var(--text3);">—</div>
+        </div>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 
   computeMix();
+}
+
+function mixTerrainEdit(key, val) {
+  const v = parseFloat(val);
+  if (!isNaN(v) && v > 0) {
+    _prixTerrainCat[key] = v;
+  } else {
+    delete _prixTerrainCat[key];
+  }
+  localStorage.setItem('komerce_prix_terrain_cat', JSON.stringify(_prixTerrainCat));
+  updateMixTerrainEcart(key);
+}
+
+function updateMixTerrainEcart(key) {
+  const ecartEl = document.getElementById('mix-terrain-ecart-' + key);
+  if (!ecartEl) return;
+  const pt = _prixTerrainCat[key];
+  const prixClientEl = document.getElementById('mix-prix-client-' + key);
+  if (!pt || !prixClientEl || prixClientEl.textContent === '—') {
+    ecartEl.textContent = '—'; ecartEl.style.color = 'var(--text3)'; return;
+  }
+  const prixStr = prixClientEl.textContent.replace(/[^0-9]/g,'');
+  const pc = parseInt(prixStr) || 0;
+  if (!pc) { ecartEl.textContent = '—'; return; }
+  const ecart = pt - pc;
+  const col = ecart >= 0 ? '#34d399' : '#f87171';
+  const icon = ecart >= 0 ? '🟢' : '🔴';
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+  ecartEl.textContent = `${icon} ${ecart > 0 ? '+' : ''}${N(ecart)} KMF`;
+  ecartEl.style.color = col;
+}
+
+function updateAllMixTerrainEcarts() {
+  Object.keys(window.CATS || {}).forEach(key => updateMixTerrainEcart(key));
 }
 
 function mixToggle(key, active) {
@@ -2341,6 +3174,7 @@ function computeMix() {
 
   // Graphiques mix
   renderMixCharts(labelsActifs, caParCat, margesParCat);
+  updateAllMixTerrainEcarts();
 }
 
 function renderMixCharts(labels, caData, margeData) {
@@ -2351,12 +3185,12 @@ function renderMixCharts(labels, caData, margeData) {
     const colors = ['#f59e0b','#0d9488','#3b82f6','#8b5cf6','#10b981','#ec4899','#f97316','#6366f1'];
     _charts['chart-mix-ca'] = new Chart(ctx1, {
       type: 'doughnut',
-      data: { labels, datasets: [{ data: caData, backgroundColor: colors.slice(0, labels.length), borderColor: '#111827', borderWidth: 2 }] },
+      data: { labels, datasets: [{ data: caData, backgroundColor: colors.slice(0, labels.length), borderColor: '#ffffff', borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } },
-          tooltip: { backgroundColor: '#1a2235', titleColor: '#f59e0b', bodyColor: '#e2e8f0', borderColor: '#2a3f5f', borderWidth: 1 }
+          tooltip: { backgroundColor: '#f0f2f5', titleColor: '#f59e0b', bodyColor: '#e2e8f0', borderColor: '#d0d7e2', borderWidth: 1 }
         }
       }
     });
@@ -2377,17 +3211,409 @@ function renderMixCharts(labels, caData, margeData) {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { labels: { color:'#94a3b8', font:{size:10}, boxWidth:10 } },
-          tooltip: { backgroundColor:'#1a2235', titleColor:'#f59e0b', bodyColor:'#e2e8f0', borderColor:'#2a3f5f', borderWidth:1 }
+          tooltip: { backgroundColor:'#f0f2f5', titleColor:'#f59e0b', bodyColor:'#e2e8f0', borderColor:'#d0d7e2', borderWidth:1 }
         },
         scales: {
-          x: { ticks: { color:'#4a6080', font:{size:9}, maxRotation:30 }, grid: { color:'rgba(30,45,71,0.8)' } },
-          y: { ticks: { color:'#4a6080', font:{size:9} }, grid: { color:'rgba(30,45,71,0.8)' },
-               title: { display:true, text:'%', color:'#4a6080', font:{size:9} } }
+          x: { ticks: { color:'#64748b', font:{size:9}, maxRotation:30 }, grid: { color:'rgba(226,230,236,0.8)' } },
+          y: { ticks: { color:'#64748b', font:{size:9} }, grid: { color:'rgba(226,230,236,0.8)' },
+               title: { display:true, text:'%', color:'#64748b', font:{size:9} } }
         }
       }
     });
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════
+//  ONGLET OPÉRATIONNEL
+// ══════════════════════════════════════════════════════════════════════
+
+let _opsData = null;
+
+async function loadOps() {
+  const token = document.getElementById('pil-token')?.value?.trim()
+             || document.getElementById('pil-token')?.value?.trim();
+  if (!token) {
+    document.getElementById('ops-status').textContent = '⚠️ Connexion requise — utilisez la barre en haut de page';
+    document.getElementById('ops-status').style.color = 'var(--amber)';
+    return;
+  }
+  const statusEl = document.getElementById('ops-status');
+  statusEl.textContent = '⏳ Chargement…';
+  statusEl.style.color = 'var(--text3)';
+  try {
+    const [adminRes, purchRes, ordersRes] = await Promise.all([
+      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { headers:{ Authorization:'Bearer '+token } }),
+      fetch(`${KOMERCE_API_URL}/api/purchasing`, { headers:{ Authorization:'Bearer '+token } }),
+      fetch(`${KOMERCE_API_URL}/api/pilotage`, { headers:{ Authorization:'Bearer '+token } }),
+    ]);
+    if (!adminRes.ok) { statusEl.textContent = '❌ Token invalide ou non admin'; statusEl.style.color='var(--red)'; return; }
+    const adminData = await adminRes.json();
+    const purchData = purchRes.ok ? await purchRes.json() : {};
+    const piloData  = ordersRes.ok ? await ordersRes.json() : {};
+    _opsData = { orders: adminData.orders || adminData || [], pos: purchData.purchase_orders || [], pilotage: piloData };
+    statusEl.textContent = `✅ ${_opsData.orders.length} commandes · ${_opsData.pos.length} POs · ${new Date().toLocaleTimeString('fr-FR')}`;
+    statusEl.style.color = 'var(--green)';
+    renderOps();
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message;
+    statusEl.style.color = 'var(--red)';
+  }
+}
+
+function renderOps() {
+  if (!_opsData) return;
+  const { orders, pos } = _opsData;
+  const now = Date.now();
+
+  // ── Helpers
+  const age  = (d) => d ? Math.round((now - new Date(d).getTime()) / 3600000)  : null; // heures
+  const ageJ = (d) => d ? Math.round((now - new Date(d).getTime()) / 86400000) : null; // jours
+  const fmtH = (h) => h === null ? '—' : h < 24 ? h+'h' : Math.round(h/24)+'j';
+
+  // ── KPIs globaux
+  // Champs dispo sur /api/admin/orders : created_at, shipped_at, available_at, collected_at, relais_name
+  // ordered_at et preparation_at ne sont pas exposés → on utilise created_at comme proxy de paiement
+  const confirmed  = orders.filter(o => o.status === 'confirmed');
+  const available  = orders.filter(o => o.status === 'available');
+  const bloques48h = confirmed.filter(o => age(o.created_at) > 48);
+  const posNotif   = pos.filter(p => p.status === 'notified');
+  const posNotif2h = pos.filter(p => p.status === 'notified' && age(p.created_at) > 2);
+  const avail7j    = available.filter(o => ageJ(o.available_at) > 7);
+
+  // Taux conversion : commandes payées / total non-cancelled
+  const totalNonCancelled = orders.filter(o => o.status !== 'cancelled');
+  const totalPaies = orders.filter(o => o.payment_status === 'paid');
+  const tauxConv = totalNonCancelled.length > 0
+    ? Math.round(totalPaies.length / totalNonCancelled.length * 100)
+    : null;
+
+  // ── Délais médians par étape
+  function medianH(arr, from, to) {
+    const vals = arr
+      .filter(o => o[from] && o[to])
+      .map(o => (new Date(o[to]) - new Date(o[from])) / 3600000);
+    if (!vals.length) return null;
+    vals.sort((a,b) => a-b);
+    return Math.round(vals[Math.floor(vals.length/2)]);
+  }
+  // Tous les timestamps sont désormais exposés par /api/admin/orders v7.6+
+  const dConfOrd  = medianH(orders, 'created_at',   'ordered_at');      // confirmation → paiement
+  const dOrdPrep  = medianH(orders, 'ordered_at',   'preparation_at');  // paiement → hub reçu
+  const dPrepShip = medianH(orders, 'preparation_at', 'shipped_at');    // hub → expédié
+  const dShipAvai = medianH(orders, 'shipped_at',   'available_at');    // transit maritime
+  const dAvaiColl = medianH(orders, 'available_at', 'collected_at');    // retrait relais
+  const dTotal    = medianH(orders, 'created_at',   'collected_at');    // bout en bout
+
+  // ── Perf par relais
+  const relaisMap = {};
+  orders.forEach(o => {
+    if (!o.relais_name) return;
+    const key = o.relais_name;
+    if (!relaisMap[key]) relaisMap[key] = { name:key, total:0, paid:0, collected:0, delais:[] };
+    relaisMap[key].total++;
+    if (o.payment_status === 'paid') relaisMap[key].paid++;
+    if (o.status === 'collected') relaisMap[key].collected++;
+    if (o.available_at && o.collected_at) {
+      relaisMap[key].delais.push((new Date(o.collected_at)-new Date(o.available_at))/86400000);
+    }
+  });
+
+  // ── Perf par fournisseur
+  const supMap = {};
+  pos.forEach(p => {
+    const key = (p.supplier_name||'Inconnu').replace('[TEST] ','');
+    if (!supMap[key]) supMap[key] = { name:key, total:0, hub:0, delais:[] };
+    supMap[key].total++;
+    if (p.status === 'hub_received') supMap[key].hub++;
+    if (p.created_at && p.hub_received_at) {
+      supMap[key].delais.push((new Date(p.hub_received_at)-new Date(p.created_at))/86400000);
+    }
+  });
+
+  // ── Alertes actives
+  const alertes = [];
+  bloques48h.forEach(o => alertes.push({ level:'r', icon:'🔴', ref:o.reference, msg:`Commande en attente de paiement depuis ${fmtH(age(o.created_at))}` }));
+  posNotif2h.forEach(p => alertes.push({ level:'r', icon:'🔴', ref:p.order_ref||'PO', msg:`PO non traitée par l'admin depuis ${fmtH(age(p.created_at))} — fournisseur: ${(p.supplier_name||'?').replace('[TEST] ','')}` }));
+  avail7j.forEach(o => alertes.push({ level:'w', icon:'⚠️', ref:o.reference, msg:`Disponible au relais depuis ${ageJ(o.available_at)}j — destinataire ne s'est pas présenté` }));
+  if (posNotif.length === 0 && bloques48h.length === 0 && avail7j.length === 0) {
+    alertes.push({ level:'g', icon:'✅', ref:'', msg:'Aucune alerte active — tous les flux sont dans les délais' });
+  }
+
+  // ── Render KPIs
+  document.getElementById('ops-kpi-zone').innerHTML = `
+    <div class="ops-kpi ${bloques48h.length > 0 ? 'cr' : 'cg'}">
+      <div class="ops-kpi-val" style="color:${bloques48h.length > 0 ? 'var(--red)' : 'var(--green)'}">${bloques48h.length}</div>
+      <div class="ops-kpi-label">Paiements bloqués &gt;48h</div>
+      <div class="ops-kpi-sub">${confirmed.length} confirmées total</div>
+    </div>
+    <div class="ops-kpi ${posNotif2h.length > 0 ? 'cr' : 'cg'}">
+      <div class="ops-kpi-val" style="color:${posNotif2h.length > 0 ? 'var(--red)' : 'var(--green)'}">${posNotif2h.length}</div>
+      <div class="ops-kpi-label">PO non traitées &gt;2h</div>
+      <div class="ops-kpi-sub">${posNotif.length} notifiées total</div>
+    </div>
+    <div class="ops-kpi ${avail7j.length > 0 ? 'cw' : 'cg'}">
+      <div class="ops-kpi-val" style="color:${avail7j.length > 0 ? 'var(--amber)' : 'var(--green)'}">${avail7j.length}</div>
+      <div class="ops-kpi-label">Retraits en retard &gt;7j</div>
+      <div class="ops-kpi-sub">${available.length} disponibles total</div>
+    </div>
+    <div class="ops-kpi">
+      <div class="ops-kpi-val" style="color:var(--teal)">${tauxConv !== null ? tauxConv+'%' : '—'}</div>
+      <div class="ops-kpi-label">Taux conversion</div>
+      <div class="ops-kpi-sub">confirmed → payé</div>
+    </div>
+  `;
+
+  // ── Alertes
+  document.getElementById('ops-alertes').innerHTML = alertes.map(a => `
+    <div class="alr ${a.level}">
+      <div class="alr-ico">${a.icon}</div>
+      <div>
+        ${a.ref ? `<div class="alr-ref">${a.ref}</div>` : ''}
+        <div class="alr-msg">${a.msg}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // ── Délais par étape
+  const fmtDelai = (h, okH, warnH) => {
+    if (h === null) return '<span class="d-">—</span>';
+    const cls = h <= okH ? 'dg' : h <= warnH ? 'dw' : 'dr';
+    return `<span class="${cls}">${fmtH(h)}</span>`;
+  };
+  // Helper badge statut
+  const statBadge = (h, okH, warnH) => h === null ? '<span class="d-">—</span>'
+    : h <= okH  ? '<span class="perf-badge ok">✅ OK</span>'
+    : h <= warnH ? '<span class="perf-badge warn">⚠️ Lent</span>'
+    : '<span class="perf-badge red">🔴 Critique</span>';
+
+  document.getElementById('ops-delais').innerHTML = `
+    <table class="dtbl">
+      <thead><tr><th>Étape</th><th>Délai médian</th><th>Cible</th><th>Statut</th></tr></thead>
+      <tbody>
+        <tr><td>Confirmation → Paiement</td><td>${fmtDelai(dConfOrd,24,48)}</td><td>&lt; 24h</td><td>${statBadge(dConfOrd,24,48)}</td></tr>
+        <tr><td>Paiement → Hub reçu</td><td>${fmtDelai(dOrdPrep,96,168)}</td><td>&lt; 4j</td><td>${statBadge(dOrdPrep,96,168)}</td></tr>
+        <tr><td>Hub → Expédié</td><td>${fmtDelai(dPrepShip,48,96)}</td><td>&lt; 2j</td><td>${statBadge(dPrepShip,48,96)}</td></tr>
+        <tr><td>Expédié → Disponible relais</td><td>${fmtDelai(dShipAvai,504,840)}</td><td>3–5 sem.</td><td>${statBadge(dShipAvai,504,840)}</td></tr>
+        <tr><td>Disponible → Retiré</td><td>${fmtDelai(dAvaiColl,72,168)}</td><td>&lt; 7j</td><td>${statBadge(dAvaiColl,72,168)}</td></tr>
+        <tr style="background:var(--bg3)"><td><strong>Total bout en bout</strong></td><td>${fmtDelai(dTotal,720,1008)}</td><td>&lt; 42j</td><td>${statBadge(dTotal,720,1008)}</td></tr>
+      </tbody>
+    </table>
+  `;
+
+  // ── Perf relais
+  const relaisArr = Object.values(relaisMap).sort((a,b) => b.total-a.total);
+  document.getElementById('ops-relais').innerHTML = relaisArr.length ? `
+    <table class="dtbl">
+      <thead><tr><th>Relais</th><th>Commandes</th><th>Taux collecte</th><th>Délai médian retrait</th></tr></thead>
+      <tbody>${relaisArr.map(r => {
+        const tauxColl = r.total > 0 ? Math.round(r.collected/r.total*100) : 0;
+        const medD = r.delais.length ? Math.round(r.delais.sort((a,b)=>a-b)[Math.floor(r.delais.length/2)]) : null;
+        const collCls = tauxColl >= 80 ? 'dg' : tauxColl >= 60 ? 'dw' : 'dr';
+        const dCls = medD === null ? 'd-' : medD <= 3 ? 'dg' : medD <= 7 ? 'dw' : 'dr';
+        return `<tr>
+          <td>${r.name}</td>
+          <td>${r.total}</td>
+          <td><span class="${collCls}">${tauxColl}%</span>
+            <div class="pbar-wrap"><div class="pbar" style="width:${tauxColl}%;background:${tauxColl>=80?'var(--green)':tauxColl>=60?'var(--amber)':'var(--red)'}"></div></div>
+          </td>
+          <td><span class="${dCls}">${medD !== null ? medD+'j' : '—'}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  ` : '<div style="color:var(--text3);font-size:0.8rem;padding:16px">Aucune donnée relais disponible</div>';
+
+  // ── Perf fournisseurs
+  const supArr = Object.values(supMap).sort((a,b) => b.total-a.total);
+  document.getElementById('ops-fournisseurs').innerHTML = supArr.length ? `
+    <table class="dtbl">
+      <thead><tr><th>Fournisseur</th><th>PO totales</th><th>Taux livraison Hub</th><th>Délai médian</th></tr></thead>
+      <tbody>${supArr.map(s => {
+        const tauxHub = s.total > 0 ? Math.round(s.hub/s.total*100) : 0;
+        const medD = s.delais.length ? Math.round(s.delais.sort((a,b)=>a-b)[Math.floor(s.delais.length/2)]) : null;
+        const hubCls = tauxHub >= 90 ? 'dg' : tauxHub >= 70 ? 'dw' : 'dr';
+        const dCls = medD === null ? 'd-' : medD <= 3 ? 'dg' : medD <= 7 ? 'dw' : 'dr';
+        return `<tr>
+          <td>${s.name}</td>
+          <td>${s.total}</td>
+          <td><span class="${hubCls}">${tauxHub}%</span>
+            <div class="pbar-wrap"><div class="pbar" style="width:${tauxHub}%;background:${tauxHub>=90?'var(--green)':tauxHub>=70?'var(--amber)':'var(--red)'}"></div></div>
+          </td>
+          <td><span class="${dCls}">${medD !== null ? medD+'j' : '—'}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  ` : '<div style="color:var(--text3);font-size:0.8rem;padding:16px">Aucune donnée fournisseur disponible</div>';
+}
+// ══════════════════════════════════════════════════════════════════════
+//  ONGLET FIDÉLITÉ + INVENDUS
+// ══════════════════════════════════════════════════════════════════════
+
+async function loadFidData() {
+  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_token');
+  const statusEl = document.getElementById('fid-status');
+  if (!token) {
+    if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(220,38,38,0.08)'; statusEl.style.color='var(--red)'; statusEl.textContent='Connectez-vous pour accéder aux données fidélité.'; }
+    return;
+  }
+  if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(217,119,6,0.08)'; statusEl.style.color='var(--amber)'; statusEl.textContent='Chargement...'; }
+
+  const h = { 'Authorization': 'Bearer ' + token };
+  const base = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
+
+  try {
+    const [loyRes, tiersRes, unsRes] = await Promise.all([
+      fetch(base + '/api/loyalty/users',       { headers: h }),
+      fetch(base + '/api/loyalty/tiers',       { headers: h }),
+      fetch(base + '/api/unsold/stats/summary',{ headers: h }),
+    ]);
+
+    if (!loyRes.ok || !tiersRes.ok || !unsRes.ok) throw new Error('Erreur API');
+
+    const users  = await loyRes.json();
+    const tiers  = await tiersRes.json();
+    const unsold = await unsRes.json();
+
+    if (statusEl) statusEl.style.display = 'none';
+
+    renderFidelite(users, tiers);
+    renderInvendus(unsold);
+
+  } catch(err) {
+    if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(220,38,38,0.08)'; statusEl.style.color='var(--red)'; statusEl.textContent='Erreur : ' + err.message; }
+  }
+}
+
+function renderFidelite(users, tiers) {
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const BADGE_MAP = { '*': '★', '**': '★★', '***': '★★★', 'VIP': '♛' };
+
+  // KPIs globaux fidélité
+  const fidelises = users.filter(u => u.tier_label);
+  const totalClients = users.length;
+  const pctFid = totalClients > 0 ? Math.round(fidelises.length / totalClients * 100) : 0;
+
+  document.getElementById('fid-kpi-clients').textContent = fidelises.length;
+  document.getElementById('fid-kpi-clients-sub').textContent = `${pctFid}% de la base (${totalClients} clients)`;
+
+  // Remises — somme discount_kmf si dispo, sinon on affiche —
+  document.getElementById('fid-kpi-remises').textContent = '— KMF';
+  document.getElementById('fid-kpi-impact').textContent = '—';
+
+  // Clients à 1 commande du prochain palier
+  const prochains = users.filter(u => u.orders_until_next_tier === 1).length;
+  document.getElementById('fid-kpi-prochains').textContent = prochains;
+
+  // Répartition par palier
+  const palierEl = document.getElementById('fid-paliers');
+  if (!tiers.length) { palierEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;">Aucun palier configuré</div>'; return; }
+
+  const tierColors = { '*': 'var(--amber)', '**': 'var(--amber)', '***': 'var(--amber)', 'VIP': 'var(--teal2)' };
+
+  palierEl.innerHTML = tiers.map(t => {
+    const nb = users.filter(u => u.tier_label === t.label).length;
+    const pct = totalClients > 0 ? Math.round(nb / totalClients * 100) : 0;
+    const badge = BADGE_MAP[t.badge] || t.badge;
+    const col = tierColors[t.badge] || 'var(--text2)';
+    return `
+      <div class="kpi-box" style="border-left:3px solid ${col};">
+        <div class="kpi-label">${badge} ${t.label}</div>
+        <div class="kpi-val" style="color:${col};">${nb}</div>
+        <div class="kpi-sub">≥ ${t.min_orders} cmd · -${t.discount_pct}% · ${pct}% clients</div>
+      </div>`;
+  }).join('');
+
+  // Top clients
+  const topEl = document.getElementById('fid-top-clients');
+  const sorted = [...users].filter(u => u.orders_count > 0).sort((a,b) => (b.orders_count||0)-(a.orders_count||0)).slice(0,10);
+  if (!sorted.length) { topEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Aucun client avec commande</div>'; return; }
+
+  topEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border2);">
+          <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:600;">Client</th>
+          <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">Cmd</th>
+          <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">Palier</th>
+          <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">Remise</th>
+          <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">Prochain</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(u => {
+          const badge = BADGE_MAP[u.tier_badge] || '—';
+          const remise = u.discount_pct ? u.discount_pct + '%' : '—';
+          const proch = u.orders_until_next_tier > 0 ? `encore ${u.orders_until_next_tier} cmd` : u.next_tier_label ? `→ ${u.next_tier_label}` : 'Max';
+          return `
+            <tr style="border-bottom:0.5px solid var(--border2);">
+              <td style="padding:7px 8px;color:var(--text);">${u.name || '—'}</td>
+              <td style="padding:7px 8px;text-align:center;font-family:var(--mono);color:var(--amber);">${u.orders_count}</td>
+              <td style="padding:7px 8px;text-align:center;">${u.tier_label ? badge + ' ' + u.tier_label : '<span style="color:var(--text3)">—</span>'}</td>
+              <td style="padding:7px 8px;text-align:center;color:var(--green);">${remise}</td>
+              <td style="padding:7px 8px;text-align:center;font-size:0.72rem;color:var(--text3);">${proch}</td>
+            </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderInvendus(d) {
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+
+  document.getElementById('uns-kpi-total').textContent   = d.total_actifs || 0;
+  document.getElementById('uns-kpi-valeur').textContent  = N(d.valeur_liquidation_kmf) + ' KMF';
+  document.getElementById('uns-kpi-initial').textContent = N(d.valeur_initiale_kmf) + ' KMF';
+  document.getElementById('uns-kpi-jours').textContent   = d.jours_moy_en_stock ? d.jours_moy_en_stock + ' j' : '—';
+
+  document.getElementById('uns-canal-wa').textContent   = d.canal_whatsapp || 0;
+  document.getElementById('uns-canal-rev').textContent  = d.canal_revendeur || 0;
+  document.getElementById('uns-canal-both').textContent = d.canal_both || 0;
+
+  // Pipeline — on recharge la liste complète si possible
+  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_token');
+  const base  = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
+  const pEl   = document.getElementById('uns-pipeline');
+
+  if (!token) { pEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Non connecté</div>'; return; }
+
+  fetch(base + '/api/unsold', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(r => r.json())
+    .then(items => {
+      if (!items.length) { pEl.innerHTML = '<div style="color:var(--green);font-size:0.8rem;padding:12px;">Aucun invendu actif — bonne santé du stock.</div>'; return; }
+      pEl.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border2);">
+              <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:600;">Article</th>
+              <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">Ref.</th>
+              <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600;">Prix initial</th>
+              <th style="text-align:right;padding:6px 8px;color:var(--text3);font-weight:600;">Liquidation</th>
+              <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">Remise</th>
+              <th style="text-align:center;padding:6px 8px;color:var(--text3);font-weight:600;">En stock</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:600;">Client</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(i => {
+              const jours = Math.round(i.jours_en_stock || 0);
+              const joursCls = jours > 20 ? 'var(--red)' : jours > 10 ? 'var(--amber)' : 'var(--text2)';
+              const N2 = v => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+              return `
+                <tr style="border-bottom:0.5px solid var(--border2);">
+                  <td style="padding:7px 8px;color:var(--text);">${i.product_name}</td>
+                  <td style="padding:7px 8px;text-align:center;font-family:var(--mono);font-size:0.72rem;color:var(--text3);">${i.order_ref||'—'}</td>
+                  <td style="padding:7px 8px;text-align:right;font-family:var(--mono);color:var(--text2);">${N2(i.original_price_kmf)}</td>
+                  <td style="padding:7px 8px;text-align:right;font-family:var(--mono);color:var(--amber);font-weight:700;">${N2(i.unsold_price_kmf)}</td>
+                  <td style="padding:7px 8px;text-align:center;color:var(--red);">-${i.remise_pct || 0}%</td>
+                  <td style="padding:7px 8px;text-align:center;font-family:var(--mono);color:${joursCls};">${jours}j</td>
+                  <td style="padding:7px 8px;font-size:0.72rem;color:var(--text3);">${i.client_name||'—'}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    })
+    .catch(() => { pEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Erreur chargement pipeline</div>'; });
+}
+
 </script>
 </body>
 </html>

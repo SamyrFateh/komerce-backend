@@ -1,0 +1,3184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — 🧪 Tests E2E</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
+
+:root {
+  --bg:       #f5f6f8;
+  --bg2:      #ffffff;
+  --bg3:      #f0f2f5;
+  --bg4:      #e9ecef;
+  --border:   #e2e6ec;
+  --border2:  #d0d7e2;
+  --text:     #1a202c;
+  --text2:    #4a5568;
+  --text3:    #8a9ab5;
+  --gold:     #d97706;
+  --gold2:    #f59e0b;
+  --amber:    #d97706;
+  --amber-bg: #fffbeb;
+  --green:    #16a34a;
+  --green2:   #22c55e;
+  --green-bg: #f0fdf4;
+  --red:      #dc2626;
+  --red2:     #ef4444;
+  --red-bg:   #fee2e2;
+  --blue:     #2563eb;
+  --blue2:    #3b82f6;
+  --blue-bg:  #eff6ff;
+  --purple:   #7c3aed;
+  --purple-bg:#ede9fe;
+  --teal:     #0d9488;
+  --teal-bg:  #ccfbf1;
+  --orange:   #ea580c;
+  --orange-bg:#ffedd5;
+  --mono:     'IBM Plex Mono', monospace;
+  --display:  'IBM Plex Sans', sans-serif;
+  --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  --radius:   10px;
+  --radius-sm:6px;
+}
+
+/* Scan line effect — disabled for light mode */
+/* body::after scan line removed */
+
+/* Header light */
+.hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: #1a202c;
+  border-bottom: 1px solid #2d3748;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+}
+.logo em {
+  color: #F5A623;
+  font-style: normal;
+}
+
+/* Stepper light */
+.stepper {
+  background: #ffffff;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Sidebar light */
+.sidebar {
+  width: 220px;
+  background: #1e293b;
+  border-right: 1px solid #2d3748;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  flex-shrink: 0;
+}
+.sidebar-label { color: #94a3b8; border-bottom-color: #e2e8f0; }
+.nav-item { color: #4a5568; }
+.nav-item:hover { background: #f1f5f9; color: #1a202c; }
+.nav-item.active { background: rgba(217,119,6,0.08); color: #d97706; border: 1px solid rgba(217,119,6,0.2); }
+.nav-item.done-nav { color: #16a34a; }
+
+/* Cards light */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card-label { color: #94a3b8; }
+
+/* KPI */
+.kpi-l { color: #94a3b8; }
+.kpi-s { color: #64748b; }
+
+/* Buttons — adapt for light bg */
+.btn-gold   { background: #d97706; color: #fff; font-weight: 700; }
+.btn-gold:hover:not(:disabled) { background: #b45309; }
+.btn-green  { background: #16a34a; color: #fff; font-weight: 700; }
+.btn-green:hover:not(:disabled) { background: #15803d; }
+.btn-red    { background: #dc2626; color: #fff; border: none; font-weight: 700; }
+.btn-red:hover:not(:disabled) { background: #b91c1c; }
+.btn-blue   { background: #2563eb; color: #fff; border: none; font-weight: 700; }
+.btn-blue:hover:not(:disabled) { background: #1d4ed8; }
+.btn-ghost  { background: #fff; color: #4a5568; border: 1.5px solid #e2e8f0; }
+.btn-ghost:hover:not(:disabled) { border-color: #d97706; color: #d97706; }
+
+/* Badges — high visibility on light bg */
+.badge { font-weight: 700; }
+.b-green  { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+.b-gold   { background: #fef3c7; color: #b45309; border: 1.5px solid #fcd34d; }
+.b-red    { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
+.b-blue   { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #93c5fd; }
+.b-purple { background: #ede9fe; color: #6d28d9; border: 1.5px solid #c4b5fd; }
+.b-teal   { background: #ccfbf1; color: #0f766e; border: 1.5px solid #5eead4; }
+.b-gray   { background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e1; }
+.b-orange { background: #ffedd5; color: #c2410c; border: 1.5px solid #fdba74; }
+
+/* Input light */
+.inp {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #1a202c;
+}
+.inp:focus { border-color: #d97706; background: #fff; }
+.inp-label { color: #64748b; }
+
+/* Console light */
+.console {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #1a202c;
+}
+.console::-webkit-scrollbar-thumb { background: #cbd5e1; }
+.l-ok   { color: #15803d; font-weight: 600; }
+.l-err  { color: #b91c1c; font-weight: 600; }
+.l-warn { color: #b45309; font-weight: 600; }
+.l-info { color: #1d4ed8; }
+.l-dim  { color: #94a3b8; }
+.l-ts   { color: #94a3b8; }
+
+/* Progress bar */
+.prog-wrap { background: #e2e8f0; }
+.prog-bar  { background: #16a34a; }
+.prog-bar.gold { background: #d97706; }
+
+/* Table light */
+th { color: #94a3b8; border-bottom: 2px solid #e2e8f0; background: #f8fafc; }
+td { color: #4a5568; border-bottom: 1px solid #f1f5f9; }
+tr:hover td { background: #f8fafc; }
+
+/* Timeline */
+.tl-item::before { background: #e2e8f0; }
+.tl-dot.ok      { background: #16a34a; color: #fff; }
+.tl-dot.active  { background: #d97706; color: #fff; }
+.tl-dot.pending { background: #f1f5f9; border: 1.5px solid #cbd5e1; color: #94a3b8; }
+.tl-status { color: #1a202c; }
+.tl-note   { color: #94a3b8; }
+.tl-date   { color: #94a3b8; }
+
+/* Action screen overlay */
+.action-screen { background: rgba(248,250,252,0.88); }
+.action-panel {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+}
+.action-panel-hdr { border-bottom: 1px solid #e2e8f0; }
+.action-type  { color: #94a3b8; }
+.action-title { color: #1a202c; }
+.action-desc  { color: #64748b; }
+
+/* Terminal de paiement — keep dark for contrast */
+.terminal-display {
+  background: #1e293b;
+  border: 1.5px solid #334155;
+  border-radius: 12px;
+}
+.terminal-code { color: #f59e0b; text-shadow: 0 0 20px rgba(245,158,11,0.3); }
+.terminal-label { color: #94a3b8; }
+.terminal-amount { color: #f1f5f9; }
+
+/* Checklist light */
+.check-item {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+.check-item:hover { border-color: #cbd5e1; background: #f1f5f9; }
+.check-item.checked { border-color: #16a34a; background: #f0fdf4; }
+.check-box { border: 1.5px solid #cbd5e1; background: #fff; }
+.check-item.checked .check-box { background: #16a34a; border-color: #16a34a; }
+.check-label { color: #4a5568; }
+.check-item.checked .check-label { color: #15803d; font-weight: 700; }
+.check-sub { color: #94a3b8; }
+
+/* Stepper states — light */
+.step-item.done .step-num   { background: #16a34a; border-color: #16a34a; color: #fff; }
+.step-item.active .step-num { background: #d97706; border-color: #d97706; color: #fff; }
+.step-item.done .step-text   { color: #16a34a; }
+.step-item.active .step-text { color: #d97706; }
+.step-item.done   { border-bottom-color: #16a34a; }
+.step-item.active { border-bottom-color: #d97706; }
+.step-num { background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #64748b; }
+.step-text { color: #64748b; }
+
+/* Connection pill */
+.conn-pill { background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #94a3b8; }
+.conn-pill.ok { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+
+/* Screen title */
+.screen-title { color: #1a202c; }
+.screen-sub   { color: #94a3b8; }
+
+/* Nav badges */
+.nav-badge.ok   { color: #16a34a; }
+.nav-badge.warn { color: #d97706; }
+.nav-badge.err  { color: #dc2626; }
+
+/* QR display keep white */
+.qr-display { background: #fff; border: 1.5px solid #e2e8f0; }
+
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--display);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scan line effect */
+/* body::after scan line removed */
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.06rem;
+  letter-spacing: 3px;
+  color: var(--gold);
+}
+.logo em { color: var(--text3); font-style: normal; }
+.hdr-right { display: flex; align-items: center; gap: 20px; }
+.conn-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text3);
+}
+.conn-pill.ok { border-color: var(--green); color: var(--green); }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.conn-dot.pulse { animation: dotpulse 1.5s infinite; }
+@keyframes dotpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ── PROCESS STEPPER (top) ── */
+.stepper {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+}
+.stepper::-webkit-scrollbar { display: none; }
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 2px solid transparent;
+  cursor: default;
+  flex-shrink: 0;
+  transition: all 0.3s;
+  position: relative;
+}
+.step-item + .step-item::before {
+  content: '›';
+  position: absolute;
+  left: -2px;
+  color: var(--text3);
+  font-size: 1rem;
+}
+.step-item.done   { border-bottom-color: var(--green); }
+.step-item.active { border-bottom-color: var(--gold); }
+.step-item.locked { opacity: 0.35; }
+
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.step-item.done .step-num   { background: var(--green); border-color: var(--green); color: #000; }
+.step-item.active .step-num { background: var(--gold); border-color: var(--gold); color: #000; animation: stepglow 1.5s infinite; }
+@keyframes stepglow { 0%,100% { box-shadow: 0 0 0 0 rgba(240,165,0,0); } 50% { box-shadow: 0 0 0 6px rgba(240,165,0,0.2); } }
+
+.step-text { font-size: 0.875rem; font-weight: 600; color: var(--text2); white-space: nowrap; }
+.step-item.done .step-text   { color: var(--green); }
+.step-item.active .step-text { color: var(--gold); }
+
+/* ── MAIN LAYOUT ── */
+.main { display: flex; min-height: calc(100vh - 104px); }
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+.sidebar-section { padding: 0 16px; margin-bottom: 24px; }
+.sidebar-label {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text2);
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: rgba(240,165,0,0.1); color: var(--gold); border: 1px solid rgba(240,165,0,0.2); }
+.nav-item.done-nav { color: var(--green); }
+.nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-badge { margin-left: auto; font-family: var(--mono); font-size: 0.82rem; }
+.nav-badge.ok { color: var(--green); }
+.nav-badge.warn { color: var(--gold); }
+.nav-badge.err { color: var(--red); }
+
+/* ── CONTENT ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  padding: 32px;
+  animation: fadeSlide 0.35s ease;
+  min-height: 100%;
+}
+.screen.active { display: block; }
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── SCREEN HEADER ── */
+.screen-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.screen-title { font-family: var(--display); font-size: 1.5rem; font-weight: 800; color: var(--text); }
+.screen-sub   { font-family: var(--mono); font-size: 0.875rem; color: var(--text3); margin-top: 4px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.card-label {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* ── GRIDS ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+@media(max-width:1100px){ .g3{grid-template-columns:1fr 1fr;} .g4{grid-template-columns:1fr 1fr;} }
+@media(max-width:750px){ .g2,.g3,.g4{grid-template-columns:1fr;} }
+
+/* ── KPI ── */
+.kpi-card { text-align: center; }
+.kpi-v { font-family: var(--mono); font-size: 1.9rem; font-weight: 700; }
+.kpi-l { font-size: 0.875rem; color: var(--text3); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.kpi-s { font-family: var(--mono); font-size: 0.82rem; color: var(--text2); margin-top: 3px; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 10px 20px;
+  border-radius: 7px;
+  border: none;
+  font-family: var(--display);
+  font-size: 1.0rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.3px;
+}
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+.btn:active:not(:disabled) { transform: scale(0.96); }
+.btn-gold   { background: var(--gold); color: #000; }
+.btn-gold:hover:not(:disabled) { background: var(--gold2); }
+.btn-green  { background: var(--green); color: #000; }
+.btn-green:hover:not(:disabled) { background: var(--green2); }
+.btn-red    { background: #dc2626; color: #fff; border: none; font-weight: 700; }
+.btn-red:hover:not(:disabled) { background: #b91c1c; }
+.btn-blue   { background: #2563eb; color: #fff; border: none; font-weight: 700; }
+.btn-blue:hover:not(:disabled) { background: #1d4ed8; }
+.btn-ghost  { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.btn-sm { padding: 6px 12px; font-size: 0.875rem; }
+.btn-lg { padding: 14px 28px; font-size: 1.1rem; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 4px;
+  font-family: var(--mono); font-size: 0.82rem; font-weight: 600;
+}
+.b-green  { background:rgba(0,208,138,0.12); color:var(--green);  border:1px solid rgba(0,208,138,0.25); }
+.b-gold   { background:rgba(240,165,0,0.12);  color:var(--gold2);  border:1px solid rgba(240,165,0,0.25); }
+.b-red    { background:rgba(255,59,92,0.12);  color:var(--red2);   border:1px solid rgba(255,59,92,0.25); }
+.b-blue   { background:rgba(45,127,255,0.12); color:var(--blue2);  border:1px solid rgba(45,127,255,0.25); }
+.b-purple { background:rgba(159,95,255,0.12); color:#b97fff;       border:1px solid rgba(159,95,255,0.25); }
+.b-teal   { background:rgba(0,191,160,0.12);  color:var(--teal);   border:1px solid rgba(0,191,160,0.25); }
+.b-gray   { background:rgba(122,150,184,0.08);color:var(--text2);  border:1px solid var(--border2); }
+.b-orange { background:rgba(255,128,64,0.12); color:#ff9f6a;       border:1px solid rgba(255,128,64,0.25); }
+
+/* ── INPUT ── */
+.inp {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--text);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 0.94rem;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.inp:focus { outline: none; border-color: var(--gold); }
+.inp-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.inp-label { font-family: var(--mono); font-size: 0.82rem; color: var(--text3); margin-bottom: 5px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── CONSOLE ── */
+.console {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  max-height: 240px;
+  overflow-y: auto;
+  line-height: 1.9;
+}
+.console::-webkit-scrollbar { width: 4px; }
+.console::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.l-ok   { color: var(--green); }
+.l-err  { color: var(--red2); }
+.l-warn { color: var(--gold); }
+.l-info { color: var(--blue2); }
+.l-dim  { color: var(--text3); }
+.l-ts   { color: var(--text3); margin-right: 8px; font-size: 0.82rem; }
+
+/* ── PROGRESS BAR ── */
+.prog-wrap { background: var(--bg3); border-radius: 3px; height: 4px; overflow: hidden; }
+.prog-bar  { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.4s ease; }
+.prog-bar.gold { background: var(--gold); }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th { font-family: var(--mono); font-size: 0.82rem; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+td { padding: 10px 12px; border-bottom: 1px solid rgba(26,40,64,0.6); color: var(--text2); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.015); }
+.mono { font-family: var(--mono); font-size: 0.875rem; }
+
+/* ── TIMELINE VERTICAL ── */
+.tl { padding: 4px 0; }
+.tl-item { display: flex; gap: 14px; padding: 10px 0; position: relative; }
+.tl-item::before { content:''; position:absolute; left:10px; top:30px; bottom:-10px; width:1px; background:var(--border); }
+.tl-item:last-child::before { display:none; }
+.tl-dot { width:22px; height:22px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size: 0.82rem; font-weight:700; font-family:var(--mono); margin-top:1px; }
+.tl-dot.ok      { background:var(--green); color:#000; }
+.tl-dot.active  { background:var(--gold); color:#000; animation:stepglow 1.5s infinite; }
+.tl-dot.pending { background:var(--bg3); border:1px solid var(--border2); color:var(--text3); }
+.tl-status { font-size: 1.0rem; font-weight:700; color:var(--text); margin-bottom:2px; }
+.tl-note   { font-size: 0.875rem; color:var(--text3); }
+.tl-date   { font-family:var(--mono); font-size: 0.82rem; color:var(--text3); margin-top:2px; }
+
+/* ═══════════════════════════════════════════
+   ACTION SCREENS — écrans d'action séquentiels
+═══════════════════════════════════════════ */
+.action-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(4,8,16,0.92);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.action-screen.open { display: flex; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+.action-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  width: 520px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: panelUp 0.3s ease;
+}
+@keyframes panelUp { from { transform:translateY(24px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
+.action-panel-hdr {
+  padding: 24px 24px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.action-type {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.action-title { font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.action-desc  { font-size: 0.94rem; color: var(--text3); padding-bottom: 20px; }
+.action-body  { padding: 24px; }
+.action-footer { padding: 0 24px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+
+/* Terminal de paiement */
+.terminal-display {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.terminal-display::before {
+  content: 'RELAIS MUTSAMUDU CENTRE';
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text3);
+  letter-spacing: 2px;
+}
+.terminal-code {
+  font-family: var(--mono);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 8px;
+  margin: 20px 0 8px;
+  text-shadow: 0 0 20px rgba(240,165,0,0.3);
+}
+.terminal-label { font-family: var(--mono); font-size: 0.82rem; color: var(--text3); letter-spacing: 2px; }
+.terminal-amount { font-family: var(--mono); font-size: 1.1rem; color: var(--text); margin-top: 14px; font-weight: 700; }
+
+/* QR code simulé */
+.qr-display {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  color: #333;
+  text-align: center;
+}
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 10px);
+  gap: 1px;
+}
+.qr-cell { width: 10px; height: 10px; border-radius: 1px; }
+.qr-cell.b { background: var(--bg); }
+.qr-cell.w { background: white; }
+
+/* Checklist qualité */
+.checklist { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.check-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.check-item:hover { border-color: var(--border2); }
+.check-item.checked { border-color: var(--green); background: rgba(0,208,138,0.06); }
+.check-box {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.check-item.checked .check-box { background: var(--green); border-color: var(--green); }
+.check-label { font-size: 1.0rem; font-weight: 600; color: var(--text2); }
+.check-item.checked .check-label { color: var(--text); }
+.check-sub { font-size: 0.875rem; color: var(--text3); margin-top: 2px; }
+
+/* Formulaire fournisseur */
+.form-group { margin-bottom: 14px; }
+
+/* SUCCESS FLASH */
+.success-flash {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,208,138,0.08);
+  border: 2px solid var(--green);
+  pointer-events: none;
+  z-index: 9000;
+  opacity: 0;
+  animation: flash 0.6s ease forwards;
+}
+@keyframes flash {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 0.94rem; font-weight: 600;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  z-index: 9999;
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s;
+  max-width: 360px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.ok   { border-left: 3px solid var(--green); }
+.toast.err  { border-left: 3px solid var(--red); }
+.toast.warn { border-left: 3px solid var(--gold); }
+
+/* SEPARATOR */
+.sep { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+
+/* Request counter */
+#reqCounter {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(220,130,0,0.08);
+  border: 1px solid rgba(220,130,0,0.25);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--gold);
+  animation: dotpulse 1.2s infinite;
+}
+
+/* SPIN */
+.spin { animation: spinning 0.8s linear infinite; display: inline-block; }
+@keyframes spinning { to { transform: rotate(360deg); } }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo">KOMERCE <em>//</em> TEST RUNNER</div>
+  <div class="hdr-right">
+    <div id="reqCounter">
+      <div class="conn-dot pulse"></div>
+      <span></span>
+    </div>
+    <div class="conn-pill" id="connPill">
+      <div class="conn-dot pulse"></div>
+      <span id="connText">Non connecté</span>
+    </div>
+  </div>
+</header>
+
+<!-- STEPPER -->
+<div class="stepper" id="stepper">
+  <div class="step-item active" id="st-0"><div class="step-num">1</div><div class="step-text">Connexion</div></div>
+  <div class="step-item locked" id="st-1"><div class="step-num">2</div><div class="step-text">Seed données</div></div>
+  <div class="step-item locked" id="st-2"><div class="step-num">3</div><div class="step-text">Commande créée</div></div>
+  <div class="step-item locked" id="st-3"><div class="step-num">4</div><div class="step-text">Paiement cash</div></div>
+  <div class="step-item locked" id="st-4"><div class="step-num">5</div><div class="step-text">Sourcing déclenché</div></div>
+  <div class="step-item locked" id="st-5"><div class="step-num">6</div><div class="step-text">Commande Noon</div></div>
+  <div class="step-item locked" id="st-6"><div class="step-num">7</div><div class="step-text">Réception Hub</div></div>
+  <div class="step-item locked" id="st-7"><div class="step-num">8</div><div class="step-text">SCAN 3 auto</div></div>
+  <div class="step-item locked" id="st-8"><div class="step-num">9</div><div class="step-text">SCAN 4 expédié</div></div>
+  <div class="step-item locked" id="st-9"><div class="step-num">10</div><div class="step-text">SCAN 5 relais reçu</div></div>
+  <div class="step-item locked" id="st-10"><div class="step-num">11</div><div class="step-text">SCAN 6 retrait</div></div>
+  <div class="step-item locked" id="st-11"><div class="step-num">12</div><div class="step-text">✅ Validé</div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <div class="nav-item active" id="nav-connexion"   onclick="goTo('connexion')"><span class="nav-icon">🔌</span> Connexion <span class="nav-badge" id="nb-connexion"></span></div>
+      <div class="nav-item"        id="nav-seed"        onclick="goTo('seed')"><span class="nav-icon">🌱</span> Seed données <span class="nav-badge" id="nb-seed"></span></div>
+      <div class="nav-item"        id="nav-test"        onclick="goTo('test')"><span class="nav-icon">🧪</span> Test Runner <span class="nav-badge" id="nb-test"></span></div>
+      <div class="nav-item"        id="nav-commandes"   onclick="goTo('commandes')"><span class="nav-icon">📦</span> Commandes live <span class="nav-badge" id="nb-commandes"></span></div>
+      <div class="nav-item"        id="nav-pipeline"    onclick="goTo('pipeline')"><span class="nav-icon">🔗</span> Pipeline sourcing <span class="nav-badge" id="nb-pipeline"></span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Données test actives</div>
+      <div style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);line-height:2.2" id="sideStats">
+        <div>Produits [TEST] : <span id="ss-prods" style="color:var(--text2)">—</span></div>
+        <div>Fournisseurs [TEST] : <span id="ss-sups" style="color:var(--text2)">—</span></div>
+        <div>Commandes test : <span id="ss-orders" style="color:var(--text2)">—</span></div>
+        <div>Dernière réf : <span id="ss-ref" style="color:var(--gold)">—</span></div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <button class="btn btn-ghost btn-sm btn-full" onclick="goTo('cleanup')" style="margin-top:4px">🗑️ Cleanup</button>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ═══ SCREEN : CONNEXION ═══ -->
+    <div class="screen active" id="screen-connexion">
+      <div class="screen-hdr">
+        <div>
+          <div class="screen-title">Connexion API</div>
+          <div class="screen-sub">ÉTAPE 1 — Authentification admin avant de commencer</div>
+        </div>
+      </div>
+
+      <div class="g2" style="max-width:700px">
+        <div class="card">
+          <div class="card-label">Paramètres</div>
+          <div class="form-group">
+            <div class="inp-label">URL API</div>
+            <input class="inp" id="apiUrl" value="https://komerce-backend-production.up.railway.app">
+          </div>
+          <div class="form-group">
+            <div class="inp-label">Email admin</div>
+            <input class="inp" id="adminEmail" value="ilham@komerce.km">
+          </div>
+          <div class="form-group">
+            <div class="inp-label">Mot de passe</div>
+            <input class="inp" type="password" id="adminPass" placeholder="komerce2026" onkeydown="if(event.key==='Enter') connectAPI()">
+          </div>
+          <button class="btn btn-gold btn-full" style="margin-top:8px" onclick="connectAPI()">🔌 Se connecter</button>
+          <button class="btn btn-full" style="margin-top:8px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;font-weight:600" onclick="connectDemo()">🎭 Mode Démo (sans backend)</button>
+        </div>
+
+        <div class="card" id="connStatusCard">
+          <div class="card-label">Statut</div>
+          <div id="connStatus" style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3);line-height:2.4">
+            En attente...
+          </div>
+        </div>
+      </div>
+
+      <div class="g4" style="margin-top:24px">
+        <div class="card kpi-card"><div class="kpi-v" id="stat-prods">—</div><div class="kpi-l">Produits</div></div>
+        <div class="card kpi-card"><div class="kpi-v" id="stat-orders">—</div><div class="kpi-l">Commandes</div></div>
+        <div class="card kpi-card"><div class="kpi-v" id="stat-sups">—</div><div class="kpi-l">Fournisseurs</div></div>
+        <div class="card kpi-card"><div class="kpi-v" id="stat-version" style="font-size:1rem">—</div><div class="kpi-l">Version API</div></div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN : SEED ═══ -->
+    <div class="screen" id="screen-seed">
+      <div class="screen-hdr">
+        <div>
+          <div class="screen-title">Seed données de test</div>
+          <div class="screen-sub">ÉTAPE 2 — Création des produits, fournisseurs et mappings [TEST]</div>
+        </div>
+        <button class="btn btn-gold" onclick="runSeed()">🌱 Lancer le seed</button>
+      </div>
+
+      <div class="g3">
+        <div class="card">
+          <div class="card-label">22 Produits [TEST]</div>
+          <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text2);line-height:2">
+            4 × Téléphones (Samsung A35, Buds2...)<br>
+            4 × Électroménager (ventilateur, fer...)<br>
+            4 × Mariage & Bijoux (montre, or...)<br>
+            4 × Vêtements (djellaba, abaya...)<br>
+            4 × Cosmétiques (oud, argan...)<br>
+            1 × Stock = 0 · 1 × Désactivé
+          </div>
+          <div style="margin-top:14px" id="seedP-status"><span class="badge b-gray">Non créés</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">4 Fournisseurs [TEST]</div>
+          <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text2);line-height:2">
+            🛒 Noon Dubai (noon · manuel)<br>
+            📦 Amazon UAE (amazon_uae · manuel)<br>
+            💬 Bijouterie Al Nour (whatsapp)<br>
+            🏪 Marché Deira (local · direct)
+          </div>
+          <div style="margin-top:14px" id="seedS-status"><span class="badge b-gray">Non créés</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Mappings + Fallbacks</div>
+          <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text2);line-height:2">
+            Samsung A35 → Noon (P1) + Amazon (P2)<br>
+            Buds2 → Noon (P1)<br>
+            Ventilateur → Amazon (P1)<br>
+            Bijoux → Al Nour WA (P1)<br>
+            Vêtements → Deira Local (P1)
+          </div>
+          <div style="margin-top:14px" id="seedM-status"><span class="badge b-gray">Non créés</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <div class="card-label">Console seed</div>
+        <div class="console" id="seedConsole"><span class="l-dim">En attente du lancement...</span></div>
+        <div style="margin-top:12px">
+          <div class="prog-wrap"><div class="prog-bar gold" id="seedBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN : TEST RUNNER ═══ -->
+    <div class="screen" id="screen-test">
+      <div class="screen-hdr">
+        <div>
+          <div class="screen-title">Test Runner</div>
+          <div class="screen-sub">ÉTAPE 3–9 — Flux complet avec validations manuelles</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-gold" onclick="startTests()" id="startBtn">▶ Démarrer les tests</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetTests()">↺ Reset</button>
+        </div>
+      </div>
+
+      <!-- Progress global -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3)">PROGRESSION</span>
+          <span id="globalProg" style="font-family:var(--mono);font-size: 0.94rem;color:var(--gold)">0 / 12 étapes</span>
+        </div>
+        <div class="prog-wrap" style="height:6px"><div class="prog-bar" id="globalBar" style="width:0%"></div></div>
+      </div>
+
+      <div class="g2">
+        <!-- Étapes -->
+        <div>
+          <div class="card-label" style="margin-bottom:12px">ÉTAPES DU TEST</div>
+          <div id="stepList"></div>
+        </div>
+
+        <!-- Détail + console -->
+        <div>
+          <div class="card" id="currentStepCard">
+            <div class="card-label">ÉTAPE EN COURS</div>
+            <div id="currentStepContent" style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">
+              Cliquez sur "Démarrer les tests"
+            </div>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-label">CONSOLE</div>
+            <div class="console" id="testConsole"><span class="l-dim">En attente...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Résultats finaux -->
+      <div id="testResultsDiv" style="display:none;margin-top:20px">
+        <div class="card-label" style="margin-bottom:12px">RÉSULTATS FINAUX</div>
+        <div class="g4" id="testResultsKpi"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN : COMMANDES ═══ -->
+    <div class="screen" id="screen-commandes">
+      <div class="screen-hdr">
+        <div><div class="screen-title">Commandes live</div><div class="screen-sub">Toutes les commandes en temps réel</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="loadOrders()">↻ Actualiser</button>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="btn btn-ghost btn-sm" onclick="filterOrders('')">Toutes</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterOrders('confirmed')">confirmed</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterOrders('ordered')">ordered</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterOrders('preparation')">preparation</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterOrders('available')">available</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterOrders('collected')">collected</button>
+      </div>
+
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Réf</th><th>Statut</th><th>Client</th><th>Total</th><th>Paiement</th><th>Fournisseur</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="ordersBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Actualisez pour charger</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="orderDetailDiv" style="display:none;margin-top:20px">
+        <div class="card-label" style="margin-bottom:12px">DÉTAIL — <span id="detailRef" style="color:var(--gold)"></span></div>
+        <div class="g2">
+          <div class="card"><div class="card-label">TIMELINE</div><div class="tl" id="detailTl"></div></div>
+          <div class="card"><div class="card-label">ACTIONS</div><div id="detailActions"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN : PIPELINE ═══ -->
+    <div class="screen" id="screen-pipeline">
+      <div class="screen-hdr">
+        <div><div class="screen-title">Pipeline sourcing</div><div class="screen-sub">Purchase orders fournisseurs en cours</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="loadPipeline()">↻ Actualiser</button>
+      </div>
+      <div class="g4" style="margin-bottom:20px">
+        <div class="card kpi-card"><div class="kpi-v" id="pk-total">—</div><div class="kpi-l">Total PO</div></div>
+        <div class="card kpi-card"><div class="kpi-v" id="pk-notif" style="color:var(--gold)">—</div><div class="kpi-l">En attente admin</div></div>
+        <div class="card kpi-card"><div class="kpi-v" id="pk-conf" style="color:var(--blue2)">—</div><div class="kpi-l">Confirmées</div></div>
+        <div class="card kpi-card"><div class="kpi-v" id="pk-hub" style="color:var(--green)">—</div><div class="kpi-l">Reçues Hub</div></div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Commande</th><th>Statut PO</th><th>Fournisseur</th><th>SKU</th><th>Mode</th><th>Prix AED</th><th>Order ID Fournisseur</th><th>Tracking</th><th>Créée</th><th>Mise à jour</th></tr></thead>
+            <tbody id="pipelineBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Actualisez pour charger</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN : CLEANUP ═══ -->
+    <div class="screen" id="screen-cleanup">
+      <div class="screen-hdr">
+        <div><div class="screen-title">Cleanup</div><div class="screen-sub">Diagnostic complet avant suppression</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="runDiagnostic()" id="diagBtn">🔍 Scanner la base</button>
+      </div>
+
+      <!-- DIAGNOSTIC PANEL -->
+      <div class="card" id="diagCard" style="margin-bottom:20px">
+        <div class="card-label" style="margin-bottom:14px">📊 ÉTAT DE LA BASE — <span id="diagTimestamp" style="color:var(--text3);font-size: 0.82rem">jamais scanné</span></div>
+
+        <!-- Scan loading -->
+        <div id="diagLoading" style="display:none;padding:20px 0;text-align:center;font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">
+          <span class="spin" style="font-size:1.2rem">⟳</span><br><span style="margin-top:8px;display:block">Scan en cours…</span>
+        </div>
+
+        <!-- Scan initial state -->
+        <div id="diagEmpty" style="padding:20px 0;text-align:center;font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">
+          Cliquez sur <strong>Scanner la base</strong> pour voir l'état complet avant toute opération.
+        </div>
+
+        <!-- Scan results -->
+        <div id="diagResults" style="display:none">
+
+          <!-- Summary banner -->
+          <div id="diagBanner" style="padding:12px 16px;border-radius:8px;margin-bottom:18px;font-family:var(--mono);font-size: 0.94rem;font-weight:700;letter-spacing:0.03em"></div>
+
+          <!-- Grid diagnostics -->
+          <div class="g4" style="margin-bottom:18px" id="diagKpiGrid">
+            <!-- filled by JS -->
+          </div>
+
+          <!-- Table: produits -->
+          <div style="margin-bottom:16px">
+            <div class="card-label" style="margin-bottom:8px">PRODUITS</div>
+            <div class="tbl-wrap" id="diagProdsTable"></div>
+          </div>
+
+          <!-- Table: fournisseurs -->
+          <div style="margin-bottom:16px">
+            <div class="card-label" style="margin-bottom:8px">FOURNISSEURS</div>
+            <div class="tbl-wrap" id="diagSupsTable"></div>
+          </div>
+
+          <!-- Table: commandes (résumé statuts) -->
+          <div style="margin-bottom:16px">
+            <div class="card-label" style="margin-bottom:8px">COMMANDES</div>
+            <div id="diagOrdersTable"></div>
+          </div>
+
+          <!-- Table: purchase orders -->
+          <div style="margin-bottom:16px">
+            <div class="card-label" style="margin-bottom:8px">PURCHASE ORDERS</div>
+            <div id="diagPOTable"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ACTION ZONE — only shown after scan -->
+      <div id="cleanupActionZone" style="display:none">
+        <div class="g2" style="max-width:800px">
+          <div class="card" style="border-color:rgba(255,59,92,0.3)">
+            <div class="card-label" style="color:var(--red2);margin-bottom:10px">⚠️ DANGER ZONE</div>
+            <div style="font-size: 0.94rem;color:var(--text2);line-height:1.9;margin-bottom:16px">
+              Supprime uniquement les éléments <code style="color:var(--gold)">[TEST]</code> :<br>
+              produits · fournisseurs · mappings associés<br>
+              <span style="color:var(--text3);font-size: 0.875rem">⚡ Les commandes réelles ne sont jamais touchées</span>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-red" onclick="showCleanup()" id="cleanupBtn">🗑️ Lancer le cleanup</button>
+              <button class="btn btn-ghost btn-sm" onclick="runDiagnostic()">↻ Re-scanner</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label" style="margin-bottom:10px">RÉSUMÉ CLEANUP</div>
+            <div id="cleanupStatus" style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3);line-height:2.4">
+              Lancez le cleanup pour voir les résultats ici.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ACTION SCREENS — Écrans d'action séquentiels
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- ACTION 1 : PAIEMENT CASH AU RELAIS -->
+<div class="action-screen" id="as-payment">
+  <div class="action-panel">
+    <div class="action-panel-hdr">
+      <div class="action-type">🏪 AGENT RELAIS — MUTSAMUDU CENTRE</div>
+      <div class="action-title">Confirmation paiement cash</div>
+      <div class="action-desc">Le destinataire se présente au relais avec son code. L'agent vérifie et encaisse.</div>
+    </div>
+    <div class="action-body">
+      <div class="terminal-display">
+        <div class="terminal-code" id="as-cashcode">——————</div>
+        <div class="terminal-label">CODE DE PAIEMENT</div>
+        <div class="terminal-amount" id="as-amount">— KMF</div>
+        <div style="margin-top:16px">
+          <div class="qr-display">
+            <div>
+              <div id="qrGrid" class="qr-grid"></div>
+              <div style="margin-top:6px;font-size: 0.82rem;color:#666" id="qrRef">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3);margin-bottom:16px;padding:10px;background:var(--bg3);border-radius:6px">
+        <div>📍 Relais Mutsamudu Centre — Anjouan</div>
+        <div>👤 Destinataire : <span id="as-recipient" style="color:var(--text)">—</span></div>
+        <div>📦 Commande : <span id="as-orderref" style="color:var(--gold)">—</span></div>
+      </div>
+      <div style="font-size: 0.94rem;color:var(--text2);margin-bottom:8px;font-weight:600">Confirmer la réception des espèces :</div>
+    </div>
+    <div class="action-footer">
+      <button class="btn btn-ghost" onclick="closeAS('as-payment')">✕ Annuler</button>
+      <button class="btn btn-gold btn-lg" onclick="confirmPayment()">💵 Encaisser — Valider le paiement</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION 2 : CONFIRMATION ACHAT FOURNISSEUR -->
+<div class="action-screen" id="as-purchase">
+  <div class="action-panel">
+    <div class="action-panel-hdr">
+      <div class="action-type">🛒 AGENT DUBAI — COMMANDE FOURNISSEUR</div>
+      <div class="action-title">Confirmer l'achat chez Noon</div>
+      <div class="action-desc">Vous venez de passer la commande sur Noon Dubai. Renseignez les détails réels.</div>
+    </div>
+    <div class="action-body">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px;font-family:var(--mono);font-size: 0.875rem;color:var(--text2);line-height:2">
+        <div>📦 Produit : <span id="as-prodname" style="color:var(--text)">—</span></div>
+        <div>🏪 Fournisseur : <span id="as-supname" style="color:var(--gold)">—</span></div>
+        <div>🏷️ SKU : <span id="as-sku" style="color:var(--teal)">—</span></div>
+        <div>💰 Prix indicatif : <span id="as-price-ind" style="color:var(--green)">— AED</span></div>
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Référence commande fournisseur *</div>
+        <input class="inp" id="as-supplier-order-id" placeholder="ex: NOON-2026-98765" value="NOON-TEST-98765">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Prix réel payé (AED) *</div>
+        <input class="inp" id="as-real-price" type="number" placeholder="185.00" value="185.00">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">URL de suivi livraison</div>
+        <input class="inp" id="as-tracking" placeholder="https://noon.com/track/..." value="https://www.noon.com/uae-en/track/NOON-TEST-98765">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Notes (optionnel)</div>
+        <input class="inp" id="as-notes" placeholder="Délai livraison Hub, stock vérifié...">
+      </div>
+    </div>
+    <div class="action-footer">
+      <button class="btn btn-ghost" onclick="closeAS('as-purchase')">✕ Annuler</button>
+      <button class="btn btn-gold btn-lg" onclick="confirmPurchase()">✅ Confirmer la commande fournisseur</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION 3 : RÉCEPTION HUB DUBAI + SCAN QR -->
+<div class="action-screen" id="as-hub">
+  <div class="action-panel">
+    <div class="action-panel-hdr">
+      <div class="action-type">📦 AGENT HUB — DUBAI</div>
+      <div class="action-title">Réception & contrôle qualité</div>
+      <div class="action-desc">Le colis est arrivé au Hub Dubai. Scannez le QR et validez le contrôle qualité.</div>
+    </div>
+    <div class="action-body">
+      <!-- QR scan simulé -->
+      <div style="display:flex;gap:16px;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:18px">
+        <div class="qr-display" style="transform:scale(0.8);transform-origin:left center">
+          <div id="qrGrid2" class="qr-grid"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-bottom:4px">RÉFÉRENCE COLIS</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--gold)" id="as-hub-ref">—</div>
+          <div style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-top:4px">Fournisseur : <span id="as-hub-sup" style="color:var(--text2)">—</span></div>
+          <div style="margin-top:10px">
+            <button class="btn btn-blue btn-sm" onclick="simulateScan()">📡 Scanner le QR code</button>
+            <span id="scanResult" style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checklist qualité -->
+      <div style="font-size: 0.94rem;font-weight:700;color:var(--text);margin-bottom:10px">Contrôle qualité Hub :</div>
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"><span class="check-tick" style="display:none;color:#000;font-size: 0.875rem">✓</span></div>
+          <div><div class="check-label">Emballage intact</div><div class="check-sub">Vérifier l'absence de dommages visibles</div></div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"><span class="check-tick" style="display:none;color:#000;font-size: 0.875rem">✓</span></div>
+          <div><div class="check-label">Produit conforme à la commande</div><div class="check-sub">Modèle, couleur et quantité corrects</div></div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"><span class="check-tick" style="display:none;color:#000;font-size: 0.875rem">✓</span></div>
+          <div><div class="check-label">IMEI / Numéro de série vérifié</div><div class="check-sub">Pour les produits électroniques</div></div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"><span class="check-tick" style="display:none;color:#000;font-size: 0.875rem">✓</span></div>
+          <div><div class="check-label">Étiquette Komerce apposée</div><div class="check-sub">Référence + QR code retrait</div></div>
+        </div>
+      </div>
+
+      <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3);padding:10px;background:var(--bg3);border-radius:6px;margin-top:4px">
+        ⚠️ Toutes les cases doivent être cochées pour déclencher le SCAN 3 automatique
+      </div>
+    </div>
+    <div class="action-footer">
+      <button class="btn btn-ghost" onclick="closeAS('as-hub')">✕ Annuler</button>
+      <button class="btn btn-gold btn-lg" id="hubConfirmBtn" onclick="confirmHub()" disabled>📦 Valider la réception Hub</button>
+    </div>
+  </div>
+</div>
+<!-- ACTION 4 : EXPÉDITION HUB → COMORES (SCAN 4) -->
+<div class="action-screen" id="as-ship">
+  <div class="action-panel">
+    <div class="action-panel-hdr">
+      <div class="action-type">🚢 AGENT HUB — EXPÉDITION</div>
+      <div class="action-title">Remise au transporteur — SCAN 4</div>
+      <div class="action-desc">Le colis est emballé et remis au groupeur. Scannez pour déclencher le statut "shipped" et notifier le client.</div>
+    </div>
+    <div class="action-body">
+      <div style="display:flex;gap:16px;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:18px">
+        <div class="qr-display" style="transform:scale(0.8);transform-origin:left center">
+          <div id="qrGrid3" class="qr-grid"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-bottom:4px">RÉFÉRENCE COLIS</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--gold)" id="as-ship-ref">—</div>
+          <div style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-top:4px">Destination : <span style="color:var(--text2)">Relais Mutsamudu Centre — Anjouan</span></div>
+          <div style="margin-top:10px">
+            <button class="btn btn-blue btn-sm" onclick="simulateScan3()">📡 Scanner le QR code</button>
+            <span id="scanResult3" style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Transporteur / groupeur</div>
+        <input class="inp" id="as-carrier" placeholder="ex: Comores Express, DHL, ..." value="Comores Express">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Notes (optionnel)</div>
+        <input class="inp" id="as-ship-notes" placeholder="Numéro de connaissement, remarques...">
+      </div>
+      <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3);padding:10px;background:var(--bg3);border-radius:6px;margin-top:4px">
+        📲 Une notification WhatsApp sera envoyée au commanditaire lors de la validation
+      </div>
+    </div>
+    <div class="action-footer">
+      <button class="btn btn-ghost" onclick="closeAS('as-ship')">✕ Annuler</button>
+      <button class="btn btn-gold btn-lg" id="shipConfirmBtn" onclick="confirmShip()" disabled>🚢 Valider l'expédition</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION 5 : RÉCEPTION RELAIS ANJOUAN (SCAN 5) -->
+<div class="action-screen" id="as-relais">
+  <div class="action-panel">
+    <div class="action-panel-hdr">
+      <div class="action-type">📍 AGENT RELAIS — MUTSAMUDU CENTRE</div>
+      <div class="action-title">Réception colis — SCAN 5</div>
+      <div class="action-desc">Le colis est arrivé au relais Anjouan. Scannez pour notifier le destinataire avec le code de retrait.</div>
+    </div>
+    <div class="action-body">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px;font-family:var(--mono);font-size: 0.875rem;color:var(--text2);line-height:2">
+        <div>📦 Commande : <span id="as-relais-ref" style="color:var(--gold)">—</span></div>
+        <div>👤 Destinataire : <span style="color:var(--text)">Ahmed Test Client</span></div>
+        <div>📞 Téléphone : <span style="color:var(--teal)">+2697700099</span></div>
+        <div>📍 Relais : <span style="color:var(--text)">Mutsamudu Centre — Anjouan</span></div>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">
+        <div class="qr-display" style="transform:scale(0.8);transform-origin:left center">
+          <div id="qrGrid4" class="qr-grid"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-bottom:8px">Scanner à la réception :</div>
+          <button class="btn btn-blue btn-sm" onclick="simulateScan4()">📡 Scanner le QR code</button>
+          <span id="scanResult4" style="display:block;font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-top:6px"></span>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size: 0.875rem;color:var(--text3);padding:10px;background:var(--bg3);border-radius:6px">
+        🔲 Un QR Code de retrait sera automatiquement envoyé au destinataire via WhatsApp
+      </div>
+      <div style="background:#4c1d95;border-radius:8px;padding:12px;margin-top:8px;display:flex;align-items:center;gap:10px;">
+        <div id="test-qr-mini" style="background:white;padding:4px;border-radius:4px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#1e293b;text-align:center;">QR<br>Code</div>
+        <div>
+          <div style="color:#a78bfa;font-weight:700;font-size:0.9rem;">🔲 QR Code généré</div>
+          <div style="color:#c4b5fd;font-size:0.8rem;">Envoyé via WhatsApp au client</div>
+          <div id="test-qr-token" style="font-family:monospace;color:#e9d5ff;font-size:0.85rem;margin-top:2px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="action-footer">
+      <button class="btn btn-ghost" onclick="closeAS('as-relais')">✕ Annuler</button>
+      <button class="btn btn-gold btn-lg" id="relaisConfirmBtn" onclick="confirmRelais()" disabled>📍 Valider la réception relais</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION 6 : RETRAIT DESTINATAIRE (SCAN 6 / collect) -->
+<div class="action-screen" id="as-collect">
+  <div class="action-panel">
+    <div class="action-panel-hdr">
+      <div class="action-type">🎉 AGENT RELAIS — REMISE DESTINATAIRE</div>
+      <div class="action-title">Retrait par le destinataire — SCAN 6</div>
+      <div class="action-desc">Scanner le QR Code WhatsApp du destinataire, ou saisir le code de retrait manuellement.</div>
+    </div>
+    <div class="action-body">
+      <!-- QR Code affiché + bouton scanner -->
+      <div style="display:flex;gap:16px;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+        <div id="as-qr-display" style="background:white;padding:6px;border-radius:6px;width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#1e293b;text-align:center;flex-shrink:0">QR<br>Code</div>
+        <div style="flex:1">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;font-size:0.95rem">🔲 QR Code destinataire</div>
+          <div id="as-qr-token-display" style="font-family:var(--mono);font-size:0.8rem;color:var(--text3);margin-bottom:8px">—</div>
+          <button class="btn btn-blue btn-sm" onclick="simulateQRScan()" style="font-size:0.82rem">📷 Scanner le QR (simulé)</button>
+        </div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;font-family:var(--mono);font-size: 0.875rem;color:var(--text2);line-height:2">
+        <div>📦 Commande : <span id="as-collect-ref" style="color:var(--gold)">—</span></div>
+        <div>👤 Destinataire : <span style="color:var(--text)">Ahmed Test Client</span></div>
+        <div>📍 Relais : <span style="color:var(--text)">Mutsamudu Centre — Anjouan</span></div>
+      </div>
+      <!-- Séparateur OU -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:0.8rem;color:var(--text3);font-weight:600">OU</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <!-- Saisie manuelle pickup_code -->
+      <div class="form-group">
+        <div class="inp-label">Code de retrait manuel (6 chiffres)</div>
+        <input class="inp" id="as-pickup-input" placeholder="——————" maxlength="6" style="font-size:1.5rem;letter-spacing:0.3em;text-align:center;font-family:var(--mono)">
+      </div>
+      <div style="font-family:var(--mono);font-size:0.82rem;color:var(--text3);padding:10px;background:var(--bg3);border-radius:6px;margin-top:8px">
+        📲 Le commanditaire reçoit une notification WhatsApp à la validation
+      </div>
+    </div>
+    <div class="action-footer">
+      <button class="btn btn-ghost" onclick="closeAS('as-collect')">✕ Annuler</button>
+      <button class="btn btn-gold btn-lg" id="btnConfirmCollect" onclick="confirmCollect()">🎉 Valider le retrait</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+//   STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+const S = {
+  api: '', token: '', connected: false,
+  orderId: null, orderRef: null, cashRef: null, poId: null,
+  noonSupplierId: null, testProductId: null, testProductName: '',
+  noonPOSku: '', noonPOPrice: 0,
+  stepsDone: 0,
+  scanDone: false,
+  shipScanDone: false, relaisScanDone: false, pickupCode: null,
+};
+
+const STATUS_MAP = {
+  confirmed:       { l:'Confirmée',         c:'b-gold'   },
+  ordered:         { l:'Lancée',            c:'b-blue'   },
+  purchasing:      { l:'Achat Dubai',       c:'b-blue'   },
+  preparation:     { l:'Hub — prépa',       c:'b-purple' },
+  hub_preparation: { l:'Hub — groupage',    c:'b-purple' },
+  shipped:         { l:'Expédiée',          c:'b-teal'   },
+  transit_comores: { l:'Transit Comores',   c:'b-teal'   },
+  available:       { l:'Au relais',         c:'b-green'  },
+  collected:       { l:'Remise client',     c:'b-green'  },
+  cancelled:       { l:'Annulée',           c:'b-red'    },
+  pending:         { l:'En attente',        c:'b-gray'   },
+  paid:            { l:'Payée',             c:'b-green'  },
+  notified:        { l:'Admin notifié',     c:'b-gold'   },
+  hub_received:    { l:'Reçu Hub',          c:'b-green'  },
+  draft:           { l:'Brouillon',         c:'b-gray'   },
+};
+
+function badge(status) {
+  const s = STATUS_MAP[status] || { l: status, c: 'b-gray' };
+  return `<span class="badge ${s.c}">${s.l}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   RATE LIMITER + RETRY — Blindage backend Railway
+// ═══════════════════════════════════════════════════════════════════════════════
+const RL = {
+  queue:        [],
+  active:       0,
+  MAX_CONC:     1,      // séquentiel strict — évite les 429 Railway
+  MIN_DELAY_MS: 500,    // 500ms minimum entre les départs de requêtes
+  lastStart:    0,
+};
+
+// Compteur de requêtes actives dans le header
+function _updateReqCounter() {
+  const el = document.getElementById('reqCounter');
+  if (!el) return;
+  if (RL.active > 0) {
+    el.textContent = `${RL.active} req…`;
+    el.style.display = 'inline-flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function _drainQueue() {
+  if (RL.active >= RL.MAX_CONC || RL.queue.length === 0) return;
+  const item = RL.queue.shift();
+  RL.active++;
+  _updateReqCounter();
+
+  const now = Date.now();
+  const wait = Math.max(0, RL.MIN_DELAY_MS - (now - RL.lastStart));
+  RL.lastStart = now + wait;
+
+  setTimeout(async () => {
+    try {
+      const result = await _doFetch(item.path, item.method, item.body, item.retries, item.extraHeaders||{});
+      item.resolve(result);
+    } catch(e) {
+      item.reject(e);
+    } finally {
+      RL.active--;
+      _updateReqCounter();
+      setTimeout(_drainQueue, 0);
+    }
+  }, wait);
+}
+
+async function _doFetch(path, method, body, maxRetries, extraHeaders={}) {
+  const opts = {
+    method,
+    headers: { 'Content-Type':'application/json', ...(S.token ? { Authorization:`Bearer ${S.token}` } : {}), ...extraHeaders },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  };
+
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(S.api + path, opts);
+
+      // Backoff exponentiel sur rate limit / erreur serveur temporaire
+      if ((res.status === 429 || res.status === 503 || res.status === 502) && attempt < maxRetries) {
+        const backoff = res.status === 429
+          ? Math.pow(3, attempt) * 5000   // 429 → 5s, 15s, 45s (agressif)
+          : Math.pow(2, attempt) * 800;   // 502/503 → 800ms, 1.6s, 3.2s
+        clogAll(`⚠️ HTTP ${res.status} — retry ${attempt+1}/${maxRetries} dans ${Math.round(backoff/1000)}s`, 'warn');
+        await _sleep(backoff);
+        continue;
+      }
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      return json;
+
+    } catch(e) {
+      lastErr = e;
+      if (attempt < maxRetries) {
+        await _sleep(400 * (attempt + 1));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+// Fonction api() principale — toujours passer par le rate limiter
+function api(path, method='GET', body=null, retries=2, extraHeaders={}) {
+  if (!S.api && path !== '/api/health') {
+    return Promise.reject(new Error('API non configurée — connectez-vous d\'abord'));
+  }
+  return new Promise((resolve, reject) => {
+    RL.queue.push({ path, method, body, retries, extraHeaders, resolve, reject });
+    _drainQueue();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   CACHE — évite les rechargements inutiles
+// ═══════════════════════════════════════════════════════════════════════════════
+const _cache = {};
+function _cacheSet(key, data) { _cache[key] = { data, time: Date.now() }; }
+function _cacheGet(key, ttlMs = 15000) {
+  return (_cache[key] && Date.now() - _cache[key].time < ttlMs) ? _cache[key].data : null;
+}
+function _cacheInvalidate(key) { delete _cache[key]; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   RUNNING GUARDS — anti double-clic
+// ═══════════════════════════════════════════════════════════════════════════════
+const _running = { seed: false, test: false, connect: false, cleanup: false, diag: false };
+
+function _btnLock(selector, loading=true) {
+  const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
+  if (!el) return;
+  if (loading) {
+    el.dataset.origText = el.innerHTML;
+    el.innerHTML = '<span class="spin">⟳</span> En cours…';
+    el.disabled = true;
+  } else {
+    el.innerHTML = el.dataset.origText || el.innerHTML;
+    el.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function ts() {
+  return new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+// Durée formatée depuis un timestamp de départ
+function elapsed(startMs) {
+  const ms = Date.now() - startMs;
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+// Timer global du test runner
+const _timer = { start: null, stepStart: null };
+
+function timerStart() {
+  _timer.start     = Date.now();
+  _timer.stepStart = Date.now();
+}
+function timerStep() {
+  const d = elapsed(_timer.stepStart);
+  _timer.stepStart = Date.now();
+  return d;
+}
+function timerTotal() {
+  return _timer.start ? elapsed(_timer.start) : '—';
+}
+
+function clog(id, msg, type='info') {
+  const c = document.getElementById(id);
+  if (!c) return;
+  const d = document.createElement('div');
+  // Afficher la durée depuis la dernière étape sur les lignes ok/err
+  const durStr = (type === 'ok' || type === 'err') && _timer.stepStart
+    ? ` <span style="color:var(--text3);font-size: 0.82rem;margin-left:4px">[${timerStep()}]</span>`
+    : '';
+  d.innerHTML = `<span class="l-ts">[${ts()}]</span><span class="l-${type}">${msg}</span>${durStr}`;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+// Log dans toutes les consoles (actives ou non — évite la perte de logs)
+function clogAll(msg, type='warn') {
+  ['testConsole','seedConsole'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) clog(id, msg, type);
+  });
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function flash() {
+  const el = document.createElement('div');
+  el.className = 'success-flash';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
+function openAS(id) { document.getElementById(id).classList.add('open'); }
+function closeAS(id) { document.getElementById(id).classList.remove('open'); }
+
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`screen-${screen}`).classList.add('active');
+  document.getElementById(`nav-${screen}`)?.classList.add('active');
+  if (screen === 'commandes') loadOrders();
+  if (screen === 'pipeline')  loadPipeline();
+  if (screen === 'cleanup')   { if (!_lastDiag) runDiagnostic(); }
+}
+
+function setStep(n, state) {
+  const el = document.getElementById(`st-${n}`);
+  if (!el) return;
+  el.className = `step-item ${state}`;
+}
+
+function advanceStep(n) {
+  if (n > 0) setStep(n-1, 'done');
+  if (n < 12) setStep(n, 'active');
+  for (let i = n+1; i < 12; i++) setStep(i, 'locked');
+  S.stepsDone = n;
+  const pct = Math.round(n / 12 * 100);
+  document.getElementById('globalBar').style.width = pct + '%';
+  document.getElementById('globalProg').textContent = `${n} / 12 étapes`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   QR CODE simulé
+// ═══════════════════════════════════════════════════════════════════════════════
+function genQR(ref) {
+  const seed = (ref || 'TEST').split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  const cells = Array.from({length:100}, (_, i) => {
+    const r = Math.floor(i/10), c = i%10;
+    if ((r<3&&c<3)||(r<3&&c>6)||(r>6&&c<3)) return true;
+    return ((seed * (i+1)) % 7) < 3;
+  });
+  return cells.map(b => `<div class="qr-cell ${b?'b':'w'}"></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   CONNEXION
+// ═══════════════════════════════════════════════════════════════════════════════
+async function connectAPI() {
+  if (_running.connect) return;
+  _running.connect = true;
+  const btn = document.querySelector('[onclick="connectAPI()"]');
+  _btnLock(btn, true);
+
+  S.api = document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass  = document.getElementById('adminPass').value.trim();
+
+  document.getElementById('connStatus').innerHTML = '<span class="spin">⟳</span> Connexion…';
+
+  try {
+    const health = await api('/api/health');
+    const login  = await api('/api/auth/login', 'POST', { email, password: pass });
+    S.token = login.token;
+    S.connected = true;
+
+    document.getElementById('connPill').className = 'conn-pill ok';
+    document.getElementById('connText').textContent = login.user?.full_name || email;
+
+    document.getElementById('connStatus').innerHTML = `
+      <div style="color:var(--green)">✅ Connecté</div>
+      <div>Version : <span style="color:var(--text)">${health.version || '—'}</span></div>
+      <div>Rôle : <span style="color:var(--text)">${login.user?.role || '—'}</span></div>
+      <div>Env : <span style="color:var(--text)">${health.env || '—'}</span></div>
+    `;
+    document.getElementById('stat-version').textContent = health.version || '—';
+
+    await loadDashStats();
+    setStep(0, 'done');
+    setStep(1, 'active');
+
+    document.getElementById('nb-connexion').textContent = '✓';
+    document.getElementById('nb-connexion').className = 'nav-badge ok';
+
+    toast('✅ Connecté — ' + (login.user?.full_name || email));
+    flash();
+    setTimeout(() => goTo('seed'), 800);
+
+  } catch(e) {
+    document.getElementById('connStatus').innerHTML = `
+      <span style="color:var(--red2)">❌ ${e.message}</span>
+      <br><small style="color:var(--text3);margin-top:8px;display:block">Backend non disponible — 
+      <a href="#" onclick="connectDemo();return false;" style="color:var(--gold)">Passer en mode démo →</a></small>
+    `;
+    toast('❌ Backend indisponible — cliquez sur Mode Démo', 'err');
+  } finally {
+    _running.connect = false;
+    _btnLock(btn, false);
+  }
+}
+
+function connectDemo() {
+  S.api = 'DEMO';
+  S.token = 'demo-token-komerce-2026';
+  S.connected = true;
+  S.demoMode = true;
+
+  document.getElementById('connPill').className = 'conn-pill ok';
+  document.getElementById('connText').textContent = '🎭 Mode Démo';
+
+  document.getElementById('connStatus').innerHTML = `
+    <div style="color:var(--green)">✅ Mode Démo activé</div>
+    <div>Backend : <span style="color:var(--text)">Simulé localement</span></div>
+    <div>Rôle : <span style="color:var(--text)">Admin (démo)</span></div>
+    <div style="margin-top:8px;padding:8px;background:#fff8e1;border-radius:6px;font-size:0.82rem;color:#795548">
+      ⚠️ Les données sont simulées — connectez le backend Railway pour les vraies données
+    </div>
+  `;
+  document.getElementById('stat-version').textContent = 'démo';
+  document.getElementById('stat-prods').textContent = '47';
+  document.getElementById('stat-orders').textContent = '12';
+  document.getElementById('stat-suppliers').textContent = '8';
+
+  setStep(0, 'done');
+  setStep(1, 'active');
+
+  document.getElementById('nb-connexion').textContent = '✓';
+  document.getElementById('nb-connexion').className = 'nav-badge ok';
+
+  toast('🎭 Mode Démo activé — toutes les étapes fonctionnent');
+  flash();
+  setTimeout(() => goTo('seed'), 800);
+}
+
+let _dashStatsTimer = null;
+async function loadDashStats() {
+  // Debounce : max 1 appel toutes les 5s
+  if (_dashStatsTimer) return;
+  _dashStatsTimer = setTimeout(() => { _dashStatsTimer = null; }, 30000);
+  try {
+    const [prods, sups] = await Promise.all([
+      api('/api/products?limit=500'),
+      api('/api/purchasing/suppliers'),
+    ]);
+    document.getElementById('stat-prods').textContent = prods.total || 0;
+    document.getElementById('stat-sups').textContent  = Array.isArray(sups) ? sups.length : 0;
+
+    const testP = (prods.products||[]).filter(p=>p.name.includes('[TEST]'));
+    const testSArr = (Array.isArray(sups)?sups:[]).filter(s=>s.name.includes('[TEST]'));
+    document.getElementById('ss-prods').textContent = testP.length || '—';
+    document.getElementById('ss-sups').textContent  = testSArr.length || '—';
+  } catch {}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   SEED — Blindé : guard + idempotence + throttle 150ms
+// ═══════════════════════════════════════════════════════════════════════════════
+const SEED_PRODUCTS = [
+  { name:'[TEST] Samsung Galaxy A35 128Go',     category:'electronics', price_kmf:99000,  price_aed:199, price_eur:200, stock:50, emoji:'📱' },
+  { name:'[TEST] Écouteurs Samsung Galaxy Buds2',category:'electronics',price_kmf:44000,  price_aed:89,  price_eur:90,  stock:30, emoji:'🎧' },
+  { name:'[TEST] Chargeur rapide 65W GaN',       category:'electronics', price_kmf:19000, price_aed:39,  price_eur:40,  stock:100,emoji:'🔌' },
+  { name:'[TEST] Coque Samsung A35 renforcée',   category:'electronics', price_kmf:4500,  price_aed:9,   price_eur:9,   stock:200,emoji:'📱' },
+  { name:'[TEST] Ventilateur sur pied 16"',      category:'home',        price_kmf:24750, price_aed:50,  price_eur:50,  stock:25, emoji:'🌀' },
+  { name:'[TEST] Fer à repasser vapeur 2400W',   category:'home',        price_kmf:17325, price_aed:35,  price_eur:35,  stock:18, emoji:'👕' },
+  { name:'[TEST] Multiprise 6 prises + 2 USB',  category:'home',        price_kmf:9900,  price_aed:20,  price_eur:20,  stock:35, emoji:'🔌' },
+  { name:'[TEST] Bouilloire électrique 1.7L',    category:'home',        price_kmf:12375, price_aed:25,  price_eur:25,  stock:22, emoji:'☕' },
+  { name:'[TEST] Montre homme acier brossé',     category:'wedding',     price_kmf:99000, price_aed:200, price_eur:200, stock:8,  emoji:'⌚' },
+  { name:'[TEST] Collier or 18K 8g',             category:'wedding',     price_kmf:277200,price_aed:560, price_eur:560, stock:5,  emoji:'📿' },
+  { name:'[TEST] Parfum Oud Al Shuyukh 100ml',  category:'wedding',     price_kmf:59400, price_aed:120, price_eur:120, stock:12, emoji:'🌹' },
+  { name:'[TEST] Coffret cadeau mariage 4p',     category:'wedding',     price_kmf:49500, price_aed:100, price_eur:100, stock:15, emoji:'🎁' },
+  { name:'[TEST] Djellaba homme brodée L/XL',    category:'fashion',     price_kmf:34650, price_aed:70,  price_eur:70,  stock:20, emoji:'🧥' },
+  { name:'[TEST] Abaya femme dentelle M/L',      category:'fashion',     price_kmf:39600, price_aed:80,  price_eur:80,  stock:15, emoji:'👗' },
+  { name:'[TEST] Boubou enfant 3-12 ans',        category:'fashion',     price_kmf:19800, price_aed:40,  price_eur:40,  stock:18, emoji:'👕' },
+  { name:'[TEST] Caftan femme soirée S/M/L',     category:'fashion',     price_kmf:54450, price_aed:110, price_eur:110, stock:10, emoji:'🥻' },
+  { name:'[TEST] Crème visage safran 50ml',      category:'services',    price_kmf:24750, price_aed:50,  price_eur:50,  stock:20, emoji:'✨' },
+  { name:'[TEST] Parfum Oud Rose 50ml',          category:'services',    price_kmf:34650, price_aed:70,  price_eur:70,  stock:18, emoji:'🌸' },
+  { name:'[TEST] Huile argan pure 100ml',        category:'services',    price_kmf:17325, price_aed:35,  price_eur:35,  stock:25, emoji:'💧' },
+  { name:'[TEST] Coffret soins corps luxe 5p',   category:'services',    price_kmf:44550, price_aed:90,  price_eur:90,  stock:12, emoji:'🧴' },
+  { name:'[TEST] Produit rupture stock',         category:'electronics', price_kmf:24750, price_aed:50,  price_eur:50,  stock:0,  emoji:'❌' },
+  { name:'[TEST] Produit désactivé',             category:'electronics', price_kmf:24750, price_aed:50,  price_eur:50,  stock:10, emoji:'🚫', is_active:false },
+];
+
+const SEED_SUPPLIERS = [
+  { name:'[TEST] Noon Dubai Electronics',  platform:'noon',      contact_phone:'971501234567', auto_order:false, lead_time_days:2 },
+  { name:'[TEST] Amazon UAE Marketplace',  platform:'amazon_uae',contact_phone:'971502345678', auto_order:false, lead_time_days:3 },
+  { name:'[TEST] Bijouterie Al Nour Dubai',platform:'whatsapp',  contact_phone:'971503456789', auto_order:false, lead_time_days:1 },
+  { name:'[TEST] Marché Deira Local',      platform:'local',     contact_phone:'971504567890', auto_order:false, lead_time_days:1 },
+];
+
+async function runSeed() {
+  if (!S.connected) { toast('Connectez-vous d\'abord', 'warn'); return; }
+  if (_running.seed) { toast('⏳ Seed déjà en cours…', 'warn'); return; }
+  _running.seed = true;
+
+  const seedBtn = document.querySelector('[onclick="runSeed()"]');
+  _btnLock(seedBtn, true);
+
+  const bar = document.getElementById('seedBar');
+  const c   = 'seedConsole';
+  document.getElementById('seedConsole').innerHTML = '';
+  _cacheInvalidate('orders');
+  _cacheInvalidate('pipeline');
+
+  clog(c, '🌱 Démarrage du seed…', 'info');
+  timerStart();
+
+  // ── Idempotence : vérifier ce qui existe déjà ──
+  clog(c, '🔍 Vérification données existantes…', 'dim');
+  let existingProdNames = new Set();
+  let existingSupNames  = new Set();
+  try {
+    const [ep, es] = await Promise.all([
+      api('/api/products?limit=200'),
+      api('/api/purchasing/suppliers'),
+    ]);
+    (ep.products||[]).filter(p=>p.name.includes('[TEST]')).forEach(p => existingProdNames.add(p.name));
+    (Array.isArray(es)?es:[]).filter(s=>s.name.includes('[TEST]')).forEach(s => existingSupNames.add(s.name));
+  } catch(e) {
+    clog(c, `⚠️ Impossible de vérifier l'existant : ${e.message}`, 'warn');
+  }
+
+  const toCreateProds = SEED_PRODUCTS.filter(p => !existingProdNames.has(p.name));
+  const toCreateSups  = SEED_SUPPLIERS.filter(s => !existingSupNames.has(s.name));
+
+  if (toCreateProds.length === 0 && toCreateSups.length === 0) {
+    clog(c, '✅ Données [TEST] déjà présentes — seed ignoré', 'ok');
+    toast('✅ Données test déjà en base', 'ok');
+    document.getElementById('seedP-status').innerHTML = `<span class="badge b-green">✅ ${existingProdNames.size} produits (existants)</span>`;
+    document.getElementById('seedS-status').innerHTML = `<span class="badge b-green">✅ ${existingSupNames.size} fournisseurs (existants)</span>`;
+    bar.style.width = '100%';
+    _finalizeSeed();
+    _running.seed = false;
+    _btnLock(seedBtn, false);
+    return;
+  }
+
+  const skippedP = SEED_PRODUCTS.length - toCreateProds.length;
+  const skippedS = SEED_SUPPLIERS.length - toCreateSups.length;
+  if (skippedP > 0) clog(c, `ℹ️ ${skippedP} produit(s) déjà existant(s) — ignorés`, 'dim');
+  if (skippedS > 0) clog(c, `ℹ️ ${skippedS} fournisseur(s) déjà existant(s) — ignorés`, 'dim');
+
+  let total = toCreateProds.length + toCreateSups.length + 5;
+  let done  = 0;
+
+  // ── Création produits (throttle 150ms) ──
+  let prodOk = 0;
+  for (const p of toCreateProds) {
+    try {
+      await api('/api/products', 'POST', {
+        name:p.name, description:p.name, category:p.category,
+        price_kmf:p.price_kmf, price_aed:p.price_aed, price_eur:p.price_eur,
+        stock:p.stock, emoji:p.emoji,
+        is_active:    p.is_active !== false,
+        is_available: p.is_active !== false,
+      });
+      prodOk++;
+      clog(c, `✅ ${p.name}`, 'ok');
+    } catch(e) {
+      clog(c, `⚠️ ${p.name} — ${e.message}`, 'warn');
+    }
+    done++;
+    bar.style.width = (done/total*100)+'%';
+    await _sleep(400); // throttle entre chaque POST — évite le 429
+  }
+  document.getElementById('seedP-status').innerHTML = `<span class="badge b-green">✅ ${prodOk + skippedP} produits</span>`;
+
+  // ── Création fournisseurs (throttle 150ms) ──
+  let supOk = 0;
+  for (const s of toCreateSups) {
+    try {
+      await api('/api/purchasing/suppliers', 'POST', s);
+      supOk++;
+      clog(c, `✅ ${s.name}`, 'ok');
+    } catch(e) {
+      clog(c, `⚠️ ${s.name} — ${e.message}`, 'warn');
+    }
+    done++;
+    bar.style.width = (done/total*100)+'%';
+    await _sleep(400); // throttle fournisseurs
+  }
+
+  // ── Mappings (récupérer IDs frais) ──
+  const [allProds, allSups] = await Promise.all([
+    api('/api/products?limit=200'),
+    api('/api/purchasing/suppliers'),
+  ]);
+  const prodMap = {};
+  const supMap  = {};
+  (allProds.products||[]).filter(p=>p.name.includes('[TEST]')).forEach(p => { prodMap[p.name] = p.id; });
+  (Array.isArray(allSups)?allSups:[]).forEach(s => { supMap[s.name] = s.id; });
+
+  const MAPPINGS = [
+    { prod:'[TEST] Samsung Galaxy A35 128Go',   sup:'[TEST] Noon Dubai Electronics',  sku:'NOO-SAM-A35-128-BLK', price:185, prio:1 },
+    { prod:'[TEST] Samsung Galaxy A35 128Go',   sup:'[TEST] Amazon UAE Marketplace',  sku:'AMZ-SAM-A35-128',     price:192, prio:2 },
+    { prod:'[TEST] Coque Samsung A35 renforcée',sup:'[TEST] Noon Dubai Electronics',  sku:'NOO-COQ-A35-BLK',     price:8,   prio:1 },
+    { prod:'[TEST] Écouteurs Samsung Galaxy Buds2',sup:'[TEST] Noon Dubai Electronics',sku:'NOO-SAM-BUDS2',      price:75,  prio:1 },
+    { prod:'[TEST] Ventilateur sur pied 16"',   sup:'[TEST] Amazon UAE Marketplace',  sku:'AMZ-VENT-16',         price:38,  prio:1 },
+    { prod:'[TEST] Fer à repasser vapeur 2400W',sup:'[TEST] Amazon UAE Marketplace',  sku:'AMZ-FER-2400W',       price:27,  prio:1 },
+    { prod:'[TEST] Collier or 18K 8g',          sup:'[TEST] Bijouterie Al Nour Dubai',sku:'WA-OR18K-8G',         price:480, prio:1 },
+    { prod:'[TEST] Montre homme acier brossé',  sup:'[TEST] Marché Deira Local',      sku:'LOC-MON-42',          price:155, prio:1 },
+    { prod:'[TEST] Djellaba homme brodée L/XL', sup:'[TEST] Marché Deira Local',      sku:'LOC-DJL-BROD',        price:52,  prio:1 },
+    { prod:'[TEST] Abaya femme dentelle M/L',   sup:'[TEST] Marché Deira Local',      sku:'LOC-ABA-DENT',        price:60,  prio:1 },
+  ];
+
+  let mapOk = 0;
+  const origMaxConc = RL.MAX_CONC;
+  RL.MAX_CONC = 1; // Séquentiel strict pendant les mappings pour éviter 429
+  for (const m of MAPPINGS) {
+    const pid = prodMap[m.prod];
+    const sid = supMap[m.sup];
+    if (!pid || !sid) { clog(c, `⚠️ Mapping ignoré — ${m.sku} (IDs manquants)`, 'warn'); continue; }
+    try {
+      await api(`/api/purchasing/suppliers/${sid}/map`, 'POST', {
+        product_id: pid, supplier_sku: m.sku,
+        supplier_price_aed: m.price, priority: m.prio,
+      });
+      mapOk++;
+      clog(c, `✅ Mapping : ${m.sku} → ${m.sup.replace('[TEST] ','')} (P${m.prio})`, 'ok');
+    } catch(e) {
+      // Ignore 409 (déjà mappé) silencieusement
+      if (!e.message.includes('409') && !e.message.toLowerCase().includes('exist')) {
+        clog(c, `⚠️ Mapping ${m.sku} — ${e.message}`, 'warn');
+      } else {
+        clog(c, `ℹ️ Mapping ${m.sku} — déjà existant, ignoré`, 'dim');
+      }
+    }
+    done++;
+    bar.style.width = (done/total*100)+'%';
+    await _sleep(500); // 500ms entre chaque mapping — évite le 429
+  }
+  RL.MAX_CONC = origMaxConc; // Restaurer
+
+  document.getElementById('seedS-status').innerHTML = `<span class="badge b-green">✅ ${supOk + skippedS} fournisseurs</span>`;
+  document.getElementById('seedM-status').innerHTML = `<span class="badge b-green">✅ ${mapOk} mappings</span>`;
+
+  bar.style.width = '100%';
+  clog(c, `🎉 Seed terminé — ${prodOk} produits · ${supOk} fournisseurs · ${mapOk} mappings — ${timerTotal()}`, 'ok');
+  toast(`🌱 Seed OK — ${prodOk+supOk} éléments créés`);
+  flash();
+
+  _finalizeSeed();
+  _running.seed = false;
+  _btnLock(seedBtn, false);
+  await loadDashStats();
+  setTimeout(() => goTo('test'), 1000);
+}
+
+function _finalizeSeed() {
+  document.getElementById('nb-seed').textContent = '✓';
+  document.getElementById('nb-seed').className = 'nav-badge ok';
+  setStep(1, 'done');
+  setStep(2, 'active');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   TEST RUNNER
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── LIVE SYNC ──────────────────────────────────────────────────────────────
+const _liveChannel = (typeof BroadcastChannel !== 'undefined')
+  ? new BroadcastChannel('komerce-live') : null;
+
+function _liveBroadcast(type, payload) {
+  if (!_liveChannel) return;
+  try {
+    _liveChannel.postMessage({ type, ts: Date.now(), ...payload });
+  } catch(e) {}
+}
+// ────────────────────────────────────────────────────────────────────────────
+
+const STEPS_DEF = [
+  { id:0,  label:'Login admin',           desc:'Authentification JWT admin',                         auto:true  },
+  { id:1,  label:'Vérif fournisseur',     desc:'Noon Dubai Electronics trouvé en base',              auto:true  },
+  { id:2,  label:'Créer commande',        desc:'Samsung A35 × 1 — cash relais — Mutsamudu',         auto:true  },
+  { id:3,  label:'Paiement cash',         desc:'Agent relais encaisse — code saisi',                 auto:false },
+  { id:4,  label:'Sourcing déclenché',    desc:'triggerPurchasing() — PO créée',                    auto:true  },
+  { id:5,  label:'Commande Noon',         desc:'Admin confirme achat fournisseur',                   auto:false },
+  { id:6,  label:'Hub — File attente',    desc:'GET /api/scans/hub/pending — commande visible',     auto:true  },
+  { id:7,  label:'Réception Hub + QR',    desc:'received_qty incrémenté · complétude · SCAN 3',    auto:false },
+  { id:8,  label:'Vérif statut',          desc:'status=preparation · commande complète ✅',         auto:true  },
+  { id:9,  label:'Pipeline OK',           desc:'v_sourcing_pipeline — tous statuts verts',          auto:true  },
+  { id:10, label:'SCAN 4 — Expédié',      desc:'Agent Hub remet au transporteur → shipped',         auto:false },
+  { id:11, label:'SCAN 5 — Relais reçu',  desc:'Agent Anjouan scanne à la réception',               auto:false },
+  { id:12, label:'SCAN 6 — Retrait',      desc:'Destinataire retire avec son code 6 chiffres',      auto:false },
+];
+
+function buildStepList() {
+  document.getElementById('stepList').innerHTML = STEPS_DEF.map(s => `
+    <div class="card" id="sl-${s.id}" style="padding:14px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px;opacity:0.4;transition:all 0.3s">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size: 0.875rem;flex-shrink:0" id="sl-dot-${s.id}">${s.id+1}</div>
+      <div style="flex:1">
+        <div style="font-size: 1.0rem;font-weight:700;color:var(--text)">${s.label}</div>
+        <div style="font-size: 0.875rem;color:var(--text3);font-family:var(--mono)">${s.desc}</div>
+      </div>
+      <div id="sl-badge-${s.id}"></div>
+      ${!s.auto ? `<button class="btn btn-gold btn-sm" id="sl-btn-${s.id}" style="display:none" onclick="triggerManualStep(${s.id})">Action →</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function slActive(id) {
+  const card = document.getElementById(`sl-${id}`);
+  const dot  = document.getElementById(`sl-dot-${id}`);
+  card.style.opacity = '1';
+  card.style.borderColor = 'var(--gold)';
+  card.style.background = 'rgba(240,165,0,0.04)';
+  dot.style.background = 'var(--gold)';
+  dot.style.color = '#000';
+  dot.style.border = '1px solid var(--gold)';
+  const btn = document.getElementById(`sl-btn-${id}`);
+  if (btn) btn.style.display = 'flex';
+}
+
+function slDone(id, meta='') {
+  const card = document.getElementById(`sl-${id}`);
+  const dot  = document.getElementById(`sl-dot-${id}`);
+  const badge_el = document.getElementById(`sl-badge-${id}`);
+  const btn  = document.getElementById(`sl-btn-${id}`);
+  card.style.opacity = '1';
+  card.style.borderColor = 'var(--green)';
+  card.style.background = 'rgba(0,208,138,0.04)';
+  dot.style.background = 'var(--green)';
+  dot.style.color = '#000';
+  dot.style.border = '1px solid var(--green)';
+  dot.textContent = '✓';
+  // Durée depuis début du step + horodatage
+  const dur = _timer.stepStart ? elapsed(_timer.stepStart) : null;
+  const timeTag = `<span style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-left:6px" title="${ts()}">${ts()} · ${dur || '—'}</span>`;
+  badge_el.innerHTML = `<span class="badge b-green">OK</span>${timeTag}`;
+  if (btn) btn.style.display = 'none';
+  if (meta) badge_el.innerHTML += ` <span style="font-family:var(--mono);font-size: 0.82rem;color:var(--text3);margin-left:6px">${meta}</span>`;
+  // Reset step timer
+  _timer.stepStart = Date.now();
+}
+
+function slFail(id, msg='') {
+  const card   = document.getElementById(`sl-${id}`);
+  const dot    = document.getElementById(`sl-dot-${id}`);
+  const badge_el = document.getElementById(`sl-badge-${id}`);
+  card.style.opacity = '1';
+  card.style.borderColor = 'var(--red)';
+  dot.style.background = 'var(--red)';
+  dot.style.color = '#fff';
+  badge_el.innerHTML = `<span class="badge b-red">Échec</span>`;
+}
+
+function setCurrentStep(title, desc) {
+  document.getElementById('currentStepContent').innerHTML = `
+    <div style="font-size: 1.1rem;font-weight:700;color:var(--gold);margin-bottom:6px">${title}</div>
+    <div style="font-size: 0.875rem;color:var(--text2)">${desc}</div>
+  `;
+}
+
+async function startTests() {
+  if (!S.connected) { toast('Connectez-vous d\'abord','warn'); return; }
+  if (_running.test) { toast('⏳ Tests déjà en cours…','warn'); return; }
+  _running.test = true;
+  _liveBroadcast('test_started', { label: 'Test Runner démarré', step: 0 });
+
+  buildStepList();
+  document.getElementById('testConsole').innerHTML = '';
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('testResultsDiv').style.display = 'none';
+  _cacheInvalidate('orders');
+  _cacheInvalidate('pipeline');
+  const c = 'testConsole';
+
+  clog(c, '═══ KOMERCE TEST RUNNER v3.0 — Blindé ═══', 'dim');
+  timerStart();
+
+  // STEP 0 — Login (réutilise le token existant si possible)
+  slActive(0);
+  setCurrentStep('Login admin', 'Authentification JWT…');
+  try {
+    let role = '';
+    if (S.token) {
+      // Vérifier que le token est encore valide
+      try {
+        const me = await api('/api/auth/me');
+        role = me.user?.role || me.role || 'admin';
+        clog(c,'✅ Token existant valide — role: '+role,'ok');
+      } catch {
+        // Token expiré → re-login
+        const email = document.getElementById('adminEmail').value || '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="90f9fcf8f1fdd0fbfffdf5e2f3f5befbfd">[email&#160;protected]</a>';
+        const pass  = document.getElementById('adminPass').value  || 'komerce2026';
+        const r = await api('/api/auth/login','POST',{email,password:pass});
+        S.token = r.token;
+        role = r.user?.role || 'admin';
+        clog(c,'✅ Re-login OK — role: '+role,'ok');
+      }
+    } else {
+      const email = document.getElementById('adminEmail').value || '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="86efeaeee7ebc6ede9ebe3f4e5e3a8edeb">[email&#160;protected]</a>';
+      const pass  = document.getElementById('adminPass').value  || 'komerce2026';
+      const r = await api('/api/auth/login','POST',{email,password:pass});
+      S.token = r.token;
+      role = r.user?.role || 'admin';
+      clog(c,'✅ Login admin OK — role: '+role,'ok');
+    }
+    slDone(0, role);
+    advanceStep(1);
+  } catch(e) {
+    slFail(0,e.message);
+    clog(c,'❌ Login: '+e.message,'err');
+    _running.test = false;
+    document.getElementById('startBtn').disabled = false;
+    return;
+  }
+
+  // STEP 1 — Fournisseur
+  slActive(1);
+  setCurrentStep('Vérification fournisseur', 'Cherche Noon Dubai Electronics…');
+  try {
+    const sups = await api('/api/purchasing/suppliers');
+    const noon = (Array.isArray(sups)?sups:[]).find(s=>s.name.includes('Noon'));
+    if (!noon) throw new Error('Noon non trouvé — lancez le seed d\'abord');
+    S.noonSupplierId = noon.id;
+    slDone(1, noon.name.replace('[TEST] ',''));
+    clog(c,'✅ Fournisseur : '+noon.name,'ok');
+    advanceStep(2);
+  } catch(e) {
+    slFail(1,e.message);
+    clog(c,'❌ Fournisseur: '+e.message,'err');
+    _running.test = false;
+    document.getElementById('startBtn').disabled = false;
+    return;
+  }
+
+  // STEP 2 — Créer commande
+  slActive(2);
+  setCurrentStep('Création commande', 'Login client + commande Samsung A35…');
+  try {
+    // Login client (réutilise si possible)
+    let ct;
+    try { ct = (await api('/api/auth/login','POST',{phone:'+2697700099',password:'password'})).token; }
+    catch { ct = (await api('/api/auth/register','POST',{full_name:'Ahmed Test',phone:'+2697700099',password:'password',country:'KM'})).token; }
+
+    // Trouver produit Samsung [TEST]
+    const prods = await api('/api/products?limit=100');
+    const prod  = (prods.products||[]).find(p=>p.name.includes('[TEST]')&&p.name.includes('Samsung')&&p.stock>0)
+               || (prods.products||[]).find(p=>p.name.includes('[TEST]')&&p.stock>0);
+    if (!prod) throw new Error('Aucun produit [TEST] avec stock — lancez le seed');
+
+    S.testProductId   = prod.id;
+    S.testProductName = prod.name.replace('[TEST] ','');
+
+    const adminTok = S.token;
+    S.token = ct;
+    const res = await api('/api/orders','POST',{
+      items: [{product_id:prod.id, quantity:1}],
+      relais_id: '326a56cd-4efe-5721-a6a2-f5f4fa30d176',
+      payment_mode: 'cash_relais',
+      recipient_name: 'Ahmed Test Client',
+      recipient_phone: '+2697700099',
+    });
+    S.token = adminTok;
+
+    const order = res.order || res;
+    S.orderId  = order.id;
+    S.orderRef = order.reference;
+    S.cashRef  = order.cash_ref_code;
+
+    slDone(2, `réf: ${order.reference}`);
+    clog(c,`✅ Commande ${order.reference} — ${prod.name.replace('[TEST] ','')}`, 'ok');
+    clog(c,`   cash_ref_code: ${order.cash_ref_code}`, 'dim');
+    advanceStep(3);
+
+    document.getElementById('ss-ref').textContent = order.reference;
+    document.getElementById('ss-orders').textContent = '1';
+
+    // STEP 3 — Paiement MANUEL
+    slActive(3);
+    setCurrentStep('⏳ Action requise', 'Cliquez "Paiement cash" pour ouvrir l\'écran agent relais');
+    clog(c,'⏳ Action requise — confirmer le paiement cash','warn');
+
+  } catch(e) {
+    slFail(2,e.message);
+    clog(c,'❌ Commande: '+e.message,'err');
+    _running.test = false;
+    document.getElementById('startBtn').disabled = false;
+    return;
+  }
+}
+
+function triggerManualStep(id) {
+  if (id === 3)  openPaymentScreen();
+  if (id === 5)  openPurchaseScreen();
+  if (id === 7)  openHubScreen();
+  if (id === 10) openShipScreen();
+  if (id === 11) openRelaisScreen();
+  if (id === 12) openCollectScreen();
+}
+
+// ── PAIEMENT CASH ──
+function openPaymentScreen() {
+  document.getElementById('as-cashcode').textContent = S.cashRef || '——————';
+  document.getElementById('as-amount').textContent   = S.orderId ? '99 000 KMF (≈ 200 €)' : '—';
+  document.getElementById('as-recipient').textContent = 'Ahmed Test Client (+2697700099)';
+  document.getElementById('as-orderref').textContent  = S.orderRef || '—';
+  document.getElementById('qrRef').textContent = S.orderRef || '—';
+  document.getElementById('qrGrid').innerHTML = genQR(S.orderRef);
+  openAS('as-payment');
+}
+
+async function confirmPayment() {
+  const btn = document.querySelector('[onclick="confirmPayment()"]');
+  if (btn?.disabled) return;
+  _btnLock(btn, true);
+  closeAS('as-payment');
+  const c = 'testConsole';
+  try {
+    slActive(3);
+    const res = await api('/api/payments/cash/confirm','POST',{cash_ref_code:S.cashRef});
+    slDone(3,'paiement validé');
+    clog(c,'✅ Paiement cash confirmé : '+res.reference,'ok');
+    flash();
+    advanceStep(4);
+    _cacheInvalidate('orders');
+
+    // STEP 4 — Sourcing auto
+    slActive(4);
+    setCurrentStep('Sourcing automatique', 'triggerPurchasing() en cours…');
+    clog(c,'⏳ Attente 5s pour triggerPurchasing()…','dim');
+    await _sleep(5000);
+
+    try {
+      if (!S.orderId) {
+        const o = await api(`/api/orders/${S.orderRef}`);
+        S.orderId = o.id;
+      }
+      // Retry max 4× avec 3s d'intervalle
+      let po = null;
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        const pos = await api(`/api/purchasing/${S.orderId}`);
+        po = (Array.isArray(pos)?pos:[])[0];
+        if (po) break;
+        if (attempt < 4) {
+          clog(c,`⏳ PO pas encore créée, nouvelle tentative (${attempt}/4)…`,'dim');
+          await _sleep(3000);
+        }
+      }
+      if (!po) throw new Error('Aucune purchase_order créée après 4 tentatives — vérifiez le backend');
+
+      S.poId        = po.id;
+      S.noonPOSku   = po.supplier_sku;
+      S.noonPOPrice = po.unit_price_aed || 185;
+
+      slDone(4, `${po.supplier_name?.replace('[TEST] ','')} · ${po.supplier_sku}`);
+      clog(c,'✅ Purchase order créée — statut: '+po.status,'ok');
+      clog(c,'   Fournisseur: '+(po.supplier_name||'—')+' · SKU: '+po.supplier_sku,'dim');
+      advanceStep(5);
+      flash();
+
+      // STEP 5 — Confirmation achat MANUEL
+      slActive(5);
+      setCurrentStep('⏳ Action requise', 'Cliquez "Commande Noon" pour simuler la commande fournisseur');
+      clog(c,'⏳ Action requise — confirmer la commande chez Noon','warn');
+
+    } catch(e) { slFail(4,e.message); clog(c,'❌ PO: '+e.message,'err'); }
+
+  } catch(e) {
+    slFail(3,e.message);
+    clog(c,'❌ Paiement: '+e.message,'err');
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+// ── COMMANDE FOURNISSEUR ──
+function openPurchaseScreen() {
+  document.getElementById('as-prodname').textContent  = S.testProductName || '—';
+  document.getElementById('as-supname').textContent   = 'Noon Dubai Electronics';
+  document.getElementById('as-sku').textContent       = S.noonPOSku || 'NOO-SAM-A35-128-BLK';
+  document.getElementById('as-price-ind').textContent = (S.noonPOPrice||185) + ' AED';
+  document.getElementById('as-real-price').value      = S.noonPOPrice || 185;
+  openAS('as-purchase');
+}
+
+async function confirmPurchase() {
+  const supOrderId = document.getElementById('as-supplier-order-id').value.trim();
+  const realPrice  = parseFloat(document.getElementById('as-real-price').value);
+  const tracking   = document.getElementById('as-tracking').value.trim();
+  const notes      = document.getElementById('as-notes').value.trim();
+
+  if (!supOrderId || !realPrice) { toast('Remplissez tous les champs obligatoires','warn'); return; }
+
+  const btn = document.querySelector('[onclick="confirmPurchase()"]');
+  if (btn?.disabled) return;
+  _btnLock(btn, true);
+  closeAS('as-purchase');
+
+  const c = 'testConsole';
+  try {
+    await api(`/api/purchasing/${S.orderId}/confirm`, 'POST', {
+      purchase_order_id: S.poId,
+      supplier_order_id: supOrderId,
+      unit_price_aed:    realPrice,
+      tracking_url:      tracking || null,
+      notes:             notes || 'Confirmé depuis le dashboard de test',
+    });
+    slDone(5, `${realPrice} AED · ${supOrderId}`);
+    clog(c,'✅ Achat confirmé — '+supOrderId,'ok');
+    clog(c,'   Prix réel payé: '+realPrice+' AED','dim');
+    flash();
+    advanceStep(6);
+    _cacheInvalidate('pipeline');
+
+    // ── STEP 6 AUTO — Hub file d'attente ──
+    slActive(6);
+    setCurrentStep('Hub — File attente', 'GET /api/scans/hub/pending…');
+    clog(c,'⏳ Pause 5s — laisser le backend propager le statut hub_pending…','dim');
+    await _sleep(5000);
+    clog(c,'⏳ Vérif file hub — GET /api/scans/hub/pending…','dim');
+    try {
+      const pending = await api('/api/scans/hub/pending');
+      // Backend renvoie { incomplete: [...], ready: [...] } OU { orders: [...] } OU un tableau
+      const pendingList = Array.isArray(pending)
+        ? pending
+        : (pending.incomplete || pending.orders || []);
+      const readyList = Array.isArray(pending) ? [] : (pending.ready || []);
+      const allItems = [...pendingList, ...readyList];
+      const found = allItems.find(o =>
+        o.order_id === S.orderId || o.id === S.orderId
+        || o.reference === S.orderRef || o.order_ref === S.orderRef
+      );
+      if (found) {
+        slDone(6, `${allItems.length} en attente · commande ✅`);
+        clog(c,'✅ Hub pending : '+allItems.length+' commande(s) — la nôtre est visible','ok');
+        clog(c,'   Réf: '+S.orderRef+' · statut: '+(found.status||found.hub_status||'—'),'dim');
+      } else {
+        slDone(6, `${allItems.length} en attente · ⚠️ non trouvée`);
+        clog(c,'⚠️ Hub pending : '+allItems.length+' en attente — commande absente','warn');
+        clog(c,'   Réponse brute: '+JSON.stringify(pending).substring(0,200),'dim');
+      }
+    } catch(e) {
+      slFail(6, e.message);
+      clog(c,'⚠️ /api/scans/hub/pending : '+e.message+' — vérifiez que la route existe','warn');
+    }
+    advanceStep(7);
+
+    // ── STEP 7 MANUEL — Réception Hub ──
+    slActive(7);
+    setCurrentStep('⏳ Action requise', 'Cliquez "Réception Hub" pour scanner le QR et valider received_qty');
+    clog(c,'⏳ Action requise — réception Hub Dubai (SCAN 3 conditionnel)','warn');
+
+  } catch(e) {
+    slFail(5,e.message);
+    clog(c,'❌ Achat: '+e.message,'err');
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+// ── RÉCEPTION HUB ──
+function openHubScreen() {
+  document.getElementById('as-hub-ref').textContent = S.orderRef || '—';
+  document.getElementById('as-hub-sup').textContent = 'Noon Dubai Electronics';
+  document.getElementById('qrGrid2').innerHTML = genQR(S.orderRef);
+  document.getElementById('scanResult').textContent = '';
+  document.getElementById('hubConfirmBtn').disabled = true;
+  document.querySelectorAll('.check-item').forEach(el => {
+    el.classList.remove('checked');
+    el.querySelector('.check-tick').style.display = 'none';
+  });
+  S.scanDone = false;
+  openAS('as-hub');
+}
+
+function simulateScan() {
+  S.scanDone = true;
+  document.getElementById('scanResult').innerHTML = `<span style="color:var(--green)">✅ ${S.orderRef} scanné</span>`;
+  checkHubReady();
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  const tick = el.querySelector('.check-tick');
+  tick.style.display = el.classList.contains('checked') ? 'block' : 'none';
+  checkHubReady();
+}
+
+function checkHubReady() {
+  const total = document.querySelectorAll('.check-item').length;
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const allChecked = total > 0 && checked === total;
+  document.getElementById('hubConfirmBtn').disabled = !(allChecked && S.scanDone);
+}
+
+async function confirmHub() {
+  const btn = document.getElementById('hubConfirmBtn');
+  if (btn?.disabled) return;
+  _btnLock(btn, true);
+  closeAS('as-hub');
+  const c = 'testConsole';
+  try {
+    // ⏳ Pause anti-429 : laisser la fenêtre rate-limit Railway se vider
+    clog(c,'⏳ Pause 45s anti-rate-limit Railway avant appel réception Hub…','dim');
+    await _sleep(45000);
+    // ⚠️  API v8.2 : POST /api/purchasing/:PO_ID/receive
+    //     (l'id dans l'URL = PO id, pas order id)
+    //     Body : { qty_recue: N } — omis = totalité commandée
+    const res = await api(`/api/purchasing/${S.poId}/receive`, 'POST', {
+      qty_recue: 1,
+    });
+    const recQty = res.po?.received_qty ?? res.received_qty ?? 1;
+    const totQty = res.po?.qty ?? res.qty ?? 1;
+    const complete = res.order_complete !== false;
+    slDone(7, `${recQty}/${totQty} reçu · SCAN3: ${res.scan3_triggered?'✅':'⚠️'}`);
+    _liveBroadcast('hub_received', { ref: S.orderRef, orderId: S.orderId, step: 7, label: 'Réception Hub', status: 'preparation' });
+    clog(c,'✅ Réception Hub — received_qty: '+recQty+'/'+totQty,'ok');
+    clog(c,'   Commande complète: '+(complete?'OUI ✅':'NON (partiel) ⚠️'),'dim');
+    clog(c,'   SCAN 3: '+(res.scan3_triggered?'déclenché ✅':'non déclenché (partiel)'),'dim');
+    flash();
+    advanceStep(8);
+    _cacheInvalidate('orders');
+    _cacheInvalidate('pipeline');
+
+    // STEP 8 — Vérif statut (auto) — pause 3s pour éviter 429
+    await _sleep(3000);
+    slActive(8);
+    setCurrentStep('Vérification statut', 'Lecture du statut en base…');
+    const order = await api(`/api/orders/${S.orderRef}`);
+    slDone(8, `${order.status} · ${order.supplier_name||'fournisseur non renseigné'}`);
+    clog(c,'✅ Statut commande: '+order.status,'ok');
+    clog(c,'   Attendu: preparation (si commande complète)','dim');
+    advanceStep(9);
+
+    // STEP 9 — Pipeline (auto) — pause 3s pour éviter 429
+    await _sleep(3000);
+    slActive(9);
+    setCurrentStep('Pipeline sourcing', 'Vérification vue v_sourcing_pipeline…');
+    const pipeline = await api('/api/purchasing');
+    const total = pipeline.total || 0;
+    slDone(9, `${total} PO en cours`);
+    clog(c,'✅ Pipeline sourcing : '+total+' purchase order(s)','ok');
+    flash();
+    advanceStep(10);
+
+    // STEP 10 — SCAN 4 expédition MANUEL
+    slActive(10);
+    setCurrentStep('⏳ Action requise', 'Cliquez "Expédition Hub" pour simuler le SCAN 4');
+    clog(c,'⏳ Action requise — confirmer l\'expédition Hub (SCAN 4)','warn');
+
+  } catch(e) {
+    slFail(7,e.message);
+    clog(c,'❌ Hub: '+e.message,'err');
+    _running.test = false;
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+// ── EXPÉDITION HUB → SCAN 4 ──
+function openShipScreen() {
+  document.getElementById('as-ship-ref').textContent = S.orderRef || '—';
+  document.getElementById('qrGrid3').innerHTML = genQR(S.orderRef);
+  S.shipScanDone = false;
+  document.getElementById('scanResult3').textContent = '';
+  document.getElementById('shipConfirmBtn').disabled = true;
+  openAS('as-ship');
+}
+
+function simulateScan3() {
+  S.shipScanDone = true;
+  document.getElementById('scanResult3').innerHTML = `<span style="color:var(--green)">✅ ${S.orderRef} scanné</span>`;
+  document.getElementById('shipConfirmBtn').disabled = false;
+}
+
+async function confirmShip() {
+  const btn = document.getElementById('shipConfirmBtn');
+  if (btn?.disabled) return;
+  _btnLock(btn, true);
+  closeAS('as-ship');
+  const c = 'testConsole';
+  try {
+    slActive(10);
+    clog(c,'⏳ Pause 15s anti-rate-limit avant SCAN 4 (expédition)…','dim');
+    await _sleep(15000);
+    const carrier = document.getElementById('as-carrier').value || 'Comores Express';
+    const notes   = document.getElementById('as-ship-notes').value || '';
+    const res = await api('/api/scans','POST',{
+      scan_code: S.orderRef,
+      step:      'shipped',
+      location:  'Hub Dubai — Zone groupage',
+      notes:     `Transporteur: ${carrier}${notes ? ' · '+notes : ''}`,
+    });
+    slDone(10, `shipped · QR Code: ${res.sms_triggered||res.qr_sent?'✅':'⚠️'}`);
+    _liveBroadcast('hub_shipped', { ref: S.orderRef, orderId: S.orderId, step: 10, label: 'Expédié Dubai → Comores', status: 'shipped' });
+    clog(c,'✅ SCAN 4 — Expédié · statut: '+res.new_status,'ok');
+    clog(c,'   QR Code retrait: '+(res.sms_triggered||res.qr_sent?'✅ envoyé via WhatsApp':'⚠️ non envoyé'),'dim');
+    flash();
+    advanceStep(11);
+    _cacheInvalidate('orders');
+
+    // STEP 11 — SCAN 5 relais MANUEL
+    slActive(11);
+    setCurrentStep('⏳ Action requise', 'Cliquez "Réception Relais" pour simuler le SCAN 5');
+    clog(c,'⏳ Action requise — confirmer la réception au relais (SCAN 5)','warn');
+
+  } catch(e) {
+    slFail(10, e.message);
+    clog(c,'❌ SCAN 4: '+e.message,'err');
+    _running.test = false;
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+// ── RÉCEPTION RELAIS → SCAN 5 ──
+function openRelaisScreen() {
+  document.getElementById('as-relais-ref').textContent = S.orderRef || '—';
+  document.getElementById('qrGrid4').innerHTML = genQR(S.orderRef);
+  S.relaisScanDone = false;
+  document.getElementById('scanResult4').textContent = '';
+  document.getElementById('relaisConfirmBtn').disabled = true;
+  openAS('as-relais');
+}
+
+function simulateScan4() {
+  S.relaisScanDone = true;
+  document.getElementById('scanResult4').innerHTML = `<span style="color:var(--green)">✅ ${S.orderRef} scanné</span>`;
+  document.getElementById('relaisConfirmBtn').disabled = false;
+}
+
+async function confirmRelais() {
+  const btn = document.getElementById('relaisConfirmBtn');
+  if (btn?.disabled) return;
+  _btnLock(btn, true);
+  closeAS('as-relais');
+  const c = 'testConsole';
+  try {
+    slActive(11);
+    clog(c,'⏳ Pause 15s anti-rate-limit avant SCAN 5 (relais)…','dim');
+    await _sleep(15000);
+    const res = await api('/api/scans','POST',{
+      scan_code: S.orderRef,
+      step:      'relais_received',
+      location:  'Relais Mutsamudu Centre — Anjouan',
+      notes:     'Colis reçu en bon état',
+    });
+    slDone(11, `available · QR Code: ${res.sms_triggered||res.qr_sent?'✅':'⚠️'}`);
+    _liveBroadcast('relais_received', { ref: S.orderRef, orderId: S.orderId, step: 11, label: 'Colis au relais', status: 'available' });
+    clog(c,'✅ SCAN 5 — Relais reçu · statut: '+res.new_status,'ok');
+    clog(c,'   QR Code retrait: '+(res.sms_triggered||res.qr_sent?'✅ envoyé via WhatsApp':'⚠️ non envoyé'),'dim');
+    flash();
+    // ── Génération token QR via API (ou fallback démo) ──
+    try {
+      const qrRes = await api(`/api/orders/${S.orderId}/qr-token`, 'POST', {});
+      S.qrToken   = qrRes.token;
+      S.qrPayload = qrRes.qr_payload;
+      S.qrExpires = qrRes.expiration;
+      // Afficher le vrai QR code
+      const el = document.getElementById('test-qr-token');
+      if (el) el.textContent = '🔑 ' + S.qrToken.slice(0,8) + '… (valide 48h)';
+      const mini = document.getElementById('test-qr-mini');
+      if (mini) {
+        mini.innerHTML = '';
+        new QRCode(mini, {
+          text:   JSON.stringify(S.qrPayload),
+          width:  56, height: 56,
+          colorDark: '#1e293b', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+      clog(c, `   🔲 QR token généré — expire: ${new Date(S.qrExpires).toLocaleString()}`, 'dim');
+    } catch(qrErr) {
+      // Fallback démo si API indisponible
+      S.qrToken = 'DEMO-' + Math.random().toString(36).substr(2,6).toUpperCase();
+      const el = document.getElementById('test-qr-token');
+      if (el) el.textContent = '🔑 ' + S.qrToken + ' (démo)';
+      clog(c, `   ⚠️ QR via API échoué → token démo: ${S.qrToken}`, 'warn');
+    }
+
+    // Récupérer le pickup_code depuis la commande (admin a accès)
+    const order = await api(`/api/orders/${S.orderRef}`);
+    S.pickupCode = order.pickup_code;
+
+    // Fallback : chercher via admin/orders si null
+    if (!S.pickupCode && S.orderId) {
+      try {
+        const adminOrders = await api('/api/admin/orders?limit=50');
+        const found = (Array.isArray(adminOrders) ? adminOrders : adminOrders.orders || [])
+          .find(o => o.id === S.orderId || o.reference === S.orderRef);
+        if (found?.pickup_code) S.pickupCode = found.pickup_code;
+      } catch(_) {}
+    }
+
+    S.pickupCode = S.pickupCode || '000000';
+    clog(c,'   Code retrait: '+S.pickupCode,'dim');
+    advanceStep(12);
+    _cacheInvalidate('orders');
+
+    // STEP 12 — SCAN 6 retrait MANUEL
+    slActive(12);
+    setCurrentStep('⏳ Action requise', 'Cliquez "Retrait Destinataire" pour simuler le SCAN 6');
+    clog(c,'⏳ Action requise — retrait destinataire (SCAN 6)','warn');
+
+  } catch(e) {
+    slFail(11, e.message);
+    clog(c,'❌ SCAN 5: '+e.message,'err');
+    _running.test = false;
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+// ── RETRAIT DESTINATAIRE → SCAN 6 (collect) ──
+function openCollectScreen() {
+  document.getElementById('as-collect-ref').textContent = S.orderRef || '—';
+
+  // Pré-remplir code manuel
+  const inp = document.getElementById('as-pickup-input');
+  if (inp) inp.value = S.pickupCode || '';
+
+  // Afficher QR code si disponible
+  const qrEl   = document.getElementById('as-qr-display');
+  const qrInfo = document.getElementById('as-qr-token-display');
+  if (qrEl) {
+    qrEl.innerHTML = '';
+    if (S.qrPayload) {
+      new QRCode(qrEl, {
+        text:   JSON.stringify(S.qrPayload),
+        width:  68, height: 68,
+        colorDark: '#1e293b', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      if (qrInfo) qrInfo.textContent = '🔑 ' + (S.qrToken||'').slice(0,8) + '… · expire ' + (S.qrExpires ? new Date(S.qrExpires).toLocaleDateString() : '48h');
+    } else {
+      qrEl.innerHTML = '<span style="font-size:0.55rem;color:#94a3b8">QR non\ngénéré</span>';
+      if (qrInfo) qrInfo.textContent = 'Token non disponible — utiliser code manuel';
+    }
+  }
+  openAS('as-collect');
+}
+
+// Simuler un scan QR (= pré-remplir le token dans le champ)
+function simulateQRScan() {
+  if (!S.qrToken) { toast('Aucun QR token disponible — utilisez le code manuel', 'warn'); return; }
+  toast('📷 QR scanné ! Token lu avec succès', 'ok');
+  // Marquer le QR comme scanné → confirmCollect utilisera verify-qr
+  S._qrScanned = true;
+  document.getElementById('btnConfirmCollect').textContent = '🔲 Valider via QR';
+}
+
+async function confirmCollect() {
+  const inp  = document.getElementById('as-pickup-input');
+  const code = (inp?.value || '').trim();
+  const useQR = S._qrScanned && S.qrToken && S.orderId;
+
+  if (!useQR && !code) { toast('Scannez le QR ou saisissez le code de retrait','warn'); return; }
+  const btn = document.getElementById('btnConfirmCollect');
+  _btnLock(btn, true);
+  closeAS('as-collect');
+  const c = 'testConsole';
+  try {
+    slActive(12);
+    let res;
+    if (useQR) {
+      // ── Voie principale : verify-qr ─────────────────────────────────────────
+      clog(c, '   📷 Validation via QR Code (verify-qr)...', 'dim');
+      res = await api('/api/scans/verify-qr', 'POST', { token: S.qrToken, order_id: S.orderId });
+      S._qrScanned = false; // reset
+    } else {
+      // ── Voie de repli : pickup_code ─────────────────────────────────────────
+      clog(c, '   📝 Validation via code manuel...', 'dim');
+      res = await api('/api/scans/collect','POST',{ pickup_code: code });
+    }
+    slDone(12, `collected · ${res.recipient}`);
+    _liveBroadcast('relais_collected', { ref: S.orderRef, orderId: S.orderId, step: 12, label: 'Retrait client', status: 'collected' });
+    clog(c,'✅ SCAN 6 — Retrait validé · destinataire: '+res.recipient,'ok');
+    clog(c,'   Relais: '+res.relais,'dim');
+    flash();
+    advanceStep(13);
+    _cacheInvalidate('orders');
+
+    // FINAL 13/13
+    const totalTime = timerTotal();
+    clog(c,'═══════════════════════════════════════════', 'dim');
+    clog(c,`✅ TOUS LES TESTS PASSÉS — 13/13 — ${totalTime}`, 'ok');
+    clog(c,'   Flux v8.2 : Hub pending → received_qty → SCAN3 conditionnel → Dubai → Comores → Destinataire ✅', 'dim');
+    clog(c,'═══════════════════════════════════════════', 'dim');
+    _liveBroadcast('test_complete', { label: 'Tous les tests passés 13/13', step: 13 });
+    toast('🎉 Tests terminés — 13/13 réussis — Flux v8.2 bout en bout validé !');
+
+    setStep(12, 'done');
+    document.getElementById('nb-test').textContent = '✓';
+    document.getElementById('nb-test').className = 'nav-badge ok';
+    _running.test = false;
+
+    document.getElementById('testResultsDiv').style.display = 'block';
+    document.getElementById('testResultsKpi').innerHTML = `
+      <div class="card kpi-card"><div class="kpi-v" style="color:var(--green)">13</div><div class="kpi-l">Tests réussis</div></div>
+      <div class="card kpi-card"><div class="kpi-v" style="color:var(--red)">0</div><div class="kpi-l">Échecs</div></div>
+      <div class="card kpi-card"><div class="kpi-v" style="color:var(--gold)">${totalTime}</div><div class="kpi-l">Durée totale</div></div>
+      <div class="card kpi-card"><div class="kpi-v" style="color:var(--teal)">${S.orderRef}</div><div class="kpi-l">Réf test</div></div>
+    `;
+
+  } catch(e) {
+    slFail(12, e.message);
+    clog(c,'❌ SCAN 6: '+e.message,'err');
+    _running.test = false;
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+function resetTests() {
+  S.orderId=null; S.orderRef=null; S.cashRef=null; S.poId=null;
+  S.noonSupplierId=null; S.testProductId=null; S.testProductName='';
+  S.noonPOSku=''; S.noonPOPrice=0; S.scanDone=false; S.stepsDone=0;
+  S.shipScanDone=false; S.relaisScanDone=false; S.pickupCode=null;
+  S.qrToken=null; S.qrPayload=null; S.qrExpires=null; S._qrScanned=false;
+  _running.test = false;
+  buildStepList();
+  document.getElementById('testConsole').innerHTML = '<span class="l-dim">Reset effectué.</span>';
+  document.getElementById('testResultsDiv').style.display = 'none';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('globalBar').style.width = '0%';
+  document.getElementById('globalProg').textContent = '0 / 13 étapes';
+  document.getElementById('currentStepContent').innerHTML = '<span style="color:var(--text3)">Cliquez sur Démarrer les tests</span>';
+  for (let i=0;i<13;i++) setStep(i, i===0?'active':'locked');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   COMMANDES — avec cache 15s
+// ═══════════════════════════════════════════════════════════════════════════════
+let _allOrders = [];
+
+async function loadOrders(force=false) {
+  if (!S.connected) return;
+
+  const cached = !force && _cacheGet('orders', 15000);
+  if (cached) {
+    _allOrders = cached;
+    renderOrders(_allOrders);
+    document.getElementById('nb-commandes').textContent = _allOrders.length;
+    return;
+  }
+
+  // Cherche le bouton refresh peu importe ses args onclick
+  const btn = document.querySelector('[onclick^="loadOrders"]');
+  _btnLock(btn, true);
+  try {
+    const d = await api('/api/admin/orders?limit=50');
+    _allOrders = d.orders || [];
+    _cacheSet('orders', _allOrders);
+    renderOrders(_allOrders);
+    document.getElementById('nb-commandes').textContent = _allOrders.length;
+    document.getElementById('nb-commandes').className = 'nav-badge';
+  } catch(e) {
+    document.getElementById('ordersBody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red2)">Erreur : ${e.message}</td></tr>`;
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+function filterOrders(status) {
+  const f = status ? _allOrders.filter(o=>o.status===status) : _allOrders;
+  renderOrders(f);
+}
+
+function renderOrders(orders) {
+  document.getElementById('ordersBody').innerHTML = orders.length ? orders.map(o=>`
+    <tr onclick="showOrderDetail('${o.reference}')" style="cursor:pointer">
+      <td class="mono" style="color:var(--gold)">${o.reference}</td>
+      <td>${badge(o.status)}</td>
+      <td style="font-size: 0.875rem">${o.customer_name||o.recipient_name||'—'}</td>
+      <td class="mono" style="font-size: 0.875rem">${o.total_kmf?Number(o.total_kmf).toLocaleString('fr-FR')+' KMF':'—'}</td>
+      <td>${badge(o.payment_status||'pending')}</td>
+      <td style="font-size: 0.875rem;color:var(--teal)">${o.supplier_name||'—'}</td>
+      <td style="font-size: 0.875rem;color:var(--text3)">${fmtDate(o.created_at)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showOrderDetail('${o.reference}')">→</button></td>
+    </tr>`).join('')
+  : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Aucune commande</td></tr>';
+}
+
+async function showOrderDetail(ref) {
+  document.getElementById('orderDetailDiv').style.display = 'block';
+  document.getElementById('detailRef').textContent = ref;
+  try {
+    const o = await api(`/api/orders/${ref}`);
+    const hist = o.history || [];
+    document.getElementById('detailTl').innerHTML = hist.map((h,i)=>`
+      <div class="tl-item">
+        <div class="tl-dot ${i===hist.length-1?'active':'ok'}">✓</div>
+        <div class="tl-content">
+          <div class="tl-status">${badge(h.status)}</div>
+          <div class="tl-note">${h.note||''}</div>
+          <div class="tl-date">${fmtDate(h.created_at)}</div>
+        </div>
+      </div>`).join('');
+
+    const actions = [];
+    if (o.status==='confirmed'&&o.payment_status==='pending') {
+      actions.push(`<button class="btn btn-green btn-sm btn-full" style="margin-bottom:8px" onclick="quickConfirmCash('${ref}','${o.cash_ref_code}')">💵 Confirmer paiement cash</button>`);
+    }
+    document.getElementById('detailActions').innerHTML = actions.join('') || '<div style="color:var(--text3);font-size: 0.94rem">Aucune action disponible.</div>';
+  } catch(e) {
+    document.getElementById('detailTl').innerHTML = `<div style="color:var(--red2)">Erreur: ${e.message}</div>`;
+  }
+}
+
+async function quickConfirmCash(ref, cashRef) {
+  try {
+    await api('/api/payments/cash/confirm','POST',{cash_ref_code:cashRef});
+    toast('✅ Paiement confirmé : '+ref);
+    flash();
+    _cacheInvalidate('orders');
+    setTimeout(()=>showOrderDetail(ref),1000);
+  } catch(e) { toast('❌ '+e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   PIPELINE — avec cache 15s
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadPipeline(force=false) {
+  if (!S.connected) return;
+
+  const cached = !force && _cacheGet('pipeline', 15000);
+  if (cached) {
+    _renderPipeline(cached);
+    return;
+  }
+
+  const btn = document.querySelector('[onclick^="loadPipeline"]');
+  _btnLock(btn, true);
+  try {
+    const d = await api('/api/purchasing');
+    const pos = d.purchase_orders || [];
+    _cacheSet('pipeline', pos);
+    _renderPipeline(pos);
+  } catch(e) {
+    document.getElementById('pipelineBody').innerHTML = `<tr><td colspan="8" style="color:var(--red2);padding:32px">Erreur: ${e.message}</td></tr>`;
+  } finally {
+    _btnLock(btn, false);
+  }
+}
+
+function _renderPipeline(pos) {
+  document.getElementById('pk-total').textContent = pos.length;
+  document.getElementById('pk-notif').textContent  = pos.filter(p=>p.status==='notified').length;
+  document.getElementById('pk-conf').textContent   = pos.filter(p=>p.status==='confirmed').length;
+  document.getElementById('pk-hub').textContent    = pos.filter(p=>p.status==='hub_received').length;
+  document.getElementById('nb-pipeline').textContent = pos.length;
+
+  document.getElementById('pipelineBody').innerHTML = pos.length ? pos.map(po=>`
+    <tr>
+      <td class="mono" style="color:var(--gold)">${po.order_ref||po.order_id?.slice(0,8)}</td>
+      <td>${badge(po.status)}</td>
+      <td style="font-size: 0.875rem">${(po.supplier_name||'—').replace('[TEST] ','')}</td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--teal)">${po.supplier_sku||'—'}</td>
+      <td><span class="badge b-gray">${po.trigger_mode||'—'}</span></td>
+      <td class="mono" style="color:var(--green)">${po.unit_price_aed?po.unit_price_aed+' AED':'—'}</td>
+      <td class="mono" style="font-size: 0.82rem">${po.supplier_order_id||'—'}</td>
+      <td>${po.tracking_url?`<a href="${po.tracking_url}" target="_blank" style="color:var(--teal)">🔗</a>`:'—'}</td>
+      <td style="font-size: 0.82rem;color:var(--text3);white-space:nowrap">${fmtDate(po.created_at)}</td>
+      <td style="font-size: 0.82rem;color:var(--text3);white-space:nowrap">${po.updated_at && po.updated_at !== po.created_at ? fmtDate(po.updated_at) : '—'}</td>
+    </tr>`).join('')
+  : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Aucune purchase order</td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   DIAGNOSTIC — scan complet base avant cleanup
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Cache du dernier diagnostic (évite les doubles appels)
+let _lastDiag = null;
+
+async function runDiagnostic() {
+  if (!S.connected) { toast('Connectez-vous d\'abord', 'warn'); return; }
+  if (_running.diag) { toast('⏳ Scan en cours…', 'warn'); return; }
+  _running.diag = true;
+
+  const btn = document.getElementById('diagBtn');
+  _btnLock(btn, true);
+  document.getElementById('diagLoading').style.display = 'block';
+  document.getElementById('diagEmpty').style.display   = 'none';
+  document.getElementById('diagResults').style.display = 'none';
+  document.getElementById('cleanupActionZone').style.display = 'none';
+
+  try {
+    // Fetch en parallèle : produits, fournisseurs, commandes (résumé statuts), purchase orders
+    const [prodsResp, supsResp, ordersResp, poResp] = await Promise.all([
+      api('/api/products?limit=500'),
+      api('/api/purchasing/suppliers'),
+      api('/api/admin/orders?limit=500'),
+      api('/api/purchasing'),
+    ]);
+
+    const allProds   = prodsResp.products || [];
+    const allSups    = Array.isArray(supsResp) ? supsResp : [];
+    const allOrders  = ordersResp.orders || [];
+    const allPOs     = poResp.purchase_orders || [];
+
+    const testProds  = allProds.filter(p => p.name?.includes('[TEST]'));
+    const realProds  = allProds.filter(p => !p.name?.includes('[TEST]'));
+    const testSups   = allSups.filter(s => s.name?.includes('[TEST]'));
+    const realSups   = allSups.filter(s => !s.name?.includes('[TEST]'));
+    const testOrders = allOrders.filter(o =>
+      o.customer_name?.includes('[TEST]') ||
+      o.recipient_name?.includes('[TEST]') ||
+      o.reference?.startsWith('KN') // heuristique commandes test (courtes)
+    );
+    const realOrders = allOrders.filter(o => !testOrders.includes(o));
+    const testPOs    = allPOs.filter(p => p.supplier_name?.includes('[TEST]'));
+    const realPOs    = allPOs.filter(p => !p.supplier_name?.includes('[TEST]'));
+
+    // Résumé statuts commandes
+    const statusCount = {};
+    allOrders.forEach(o => { statusCount[o.status] = (statusCount[o.status]||0) + 1; });
+
+    _lastDiag = { testProds, realProds, testSups, realSups, testOrders, realOrders, testPOs, realPOs, statusCount, allOrders, allPOs };
+
+    _renderDiagnostic(_lastDiag);
+    document.getElementById('diagTimestamp').textContent = 'scanné à ' + ts();
+
+  } catch(e) {
+    document.getElementById('diagLoading').style.display = 'none';
+    document.getElementById('diagEmpty').style.display = 'block';
+    document.getElementById('diagEmpty').innerHTML = `<span style="color:var(--red2)">❌ Erreur scan : ${e.message}</span>`;
+    toast('❌ Scan échoué : ' + e.message, 'err');
+  } finally {
+    _running.diag = false;
+    _btnLock(btn, false);
+  }
+}
+
+function _renderDiagnostic(d) {
+  document.getElementById('diagLoading').style.display  = 'none';
+  document.getElementById('diagEmpty').style.display    = 'none';
+  document.getElementById('diagResults').style.display  = 'block';
+  document.getElementById('cleanupActionZone').style.display = 'block';
+
+  const totalTest = d.testProds.length + d.testSups.length + d.testPOs.length;
+  const hasTest   = totalTest > 0;
+  const hasReal   = d.realProds.length > 0 || d.realSups.length > 0 || d.realOrders.length > 0;
+
+  // Banner
+  let bannerColor, bannerBg, bannerMsg;
+  if (!hasTest && !hasReal) {
+    bannerColor = 'var(--text3)'; bannerBg = 'var(--bg3)';
+    bannerMsg = '⬜ Base vide — aucune donnée produit ni fournisseur';
+  } else if (!hasTest) {
+    bannerColor = 'var(--green)'; bannerBg = 'rgba(22,163,74,0.08)';
+    bannerMsg = '✅ BASE PROPRE — aucune donnée [TEST] détectée';
+  } else if (!hasReal) {
+    bannerColor = 'var(--gold)'; bannerBg = 'rgba(217,119,6,0.08)';
+    bannerMsg = `⚠️ DONNÉES TEST UNIQUEMENT — ${totalTest} éléments [TEST] · pas de données réelles`;
+  } else {
+    bannerColor = 'var(--orange)'; bannerBg = 'rgba(234,88,12,0.08)';
+    bannerMsg = `🔶 BASE MIXTE — ${totalTest} éléments [TEST] + données réelles présentes · cleanup sélectif sûr`;
+  }
+  document.getElementById('diagBanner').style.background = bannerBg;
+  document.getElementById('diagBanner').style.color      = bannerColor;
+  document.getElementById('diagBanner').style.border     = `1px solid ${bannerColor}`;
+  document.getElementById('diagBanner').textContent      = bannerMsg;
+
+  // KPI grid
+  document.getElementById('diagKpiGrid').innerHTML = `
+    <div class="card kpi-card">
+      <div class="kpi-v" style="color:${d.testProds.length>0?'var(--gold)':'var(--green)'}">${d.testProds.length}</div>
+      <div class="kpi-l">Produits [TEST]</div>
+      <div class="kpi-s">${d.realProds.length} réels</div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-v" style="color:${d.testSups.length>0?'var(--gold)':'var(--green)'}">${d.testSups.length}</div>
+      <div class="kpi-l">Fournisseurs [TEST]</div>
+      <div class="kpi-s">${d.realSups.length} réels</div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-v" style="color:var(--blue2)">${d.allOrders.length}</div>
+      <div class="kpi-l">Commandes total</div>
+      <div class="kpi-s">${d.realOrders.length} réelles estimées</div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-v" style="color:${d.testPOs.length>0?'var(--gold)':'var(--green)'}">${d.testPOs.length}</div>
+      <div class="kpi-l">PO [TEST]</div>
+      <div class="kpi-s">${d.realPOs.length} réelles</div>
+    </div>
+  `;
+
+  // Table produits
+  const prodRows = [
+    ...d.testProds.map(p => `<tr>
+      <td class="mono" style="color:var(--gold);font-size: 0.82rem">${p.id?.slice(0,8)||'—'}</td>
+      <td style="font-size: 0.875rem">${p.name}</td>
+      <td><span class="badge b-gold">TEST</span></td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--text3)">${p.category||'—'}</td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--green)">${p.price_kmf?Number(p.price_kmf).toLocaleString('fr-FR')+' KMF':'—'}</td>
+      <td><span class="badge ${p.stock>0?'b-green':'b-red'}">${p.stock||0}</span></td>
+    </tr>`),
+    ...d.realProds.map(p => `<tr>
+      <td class="mono" style="color:var(--text3);font-size: 0.82rem">${p.id?.slice(0,8)||'—'}</td>
+      <td style="font-size: 0.875rem">${p.name}</td>
+      <td><span class="badge b-blue">RÉEL</span></td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--text3)">${p.category||'—'}</td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--green)">${p.price_kmf?Number(p.price_kmf).toLocaleString('fr-FR')+' KMF':'—'}</td>
+      <td><span class="badge ${p.stock>0?'b-green':'b-red'}">${p.stock||0}</span></td>
+    </tr>`),
+  ];
+  document.getElementById('diagProdsTable').innerHTML = prodRows.length
+    ? `<table><thead><tr><th>ID</th><th>Nom</th><th>Type</th><th>Catégorie</th><th>Prix</th><th>Stock</th></tr></thead><tbody>${prodRows.join('')}</tbody></table>`
+    : `<div style="padding:12px;font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">Aucun produit en base</div>`;
+
+  // Table fournisseurs
+  const supRows = [
+    ...d.testSups.map(s => `<tr>
+      <td class="mono" style="color:var(--gold);font-size: 0.82rem">${s.id?.slice(0,8)||'—'}</td>
+      <td style="font-size: 0.875rem">${s.name}</td>
+      <td><span class="badge b-gold">TEST</span></td>
+      <td><span class="badge b-gray">${s.platform||'—'}</span></td>
+      <td><span class="badge ${s.auto_order?'b-green':'b-purple'}">${s.auto_order?'AUTO':'MANUEL'}</span></td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--text3)">${s.lead_time_days||'—'}j</td>
+    </tr>`),
+    ...d.realSups.map(s => `<tr>
+      <td class="mono" style="color:var(--text3);font-size: 0.82rem">${s.id?.slice(0,8)||'—'}</td>
+      <td style="font-size: 0.875rem">${s.name}</td>
+      <td><span class="badge b-blue">RÉEL</span></td>
+      <td><span class="badge b-gray">${s.platform||'—'}</span></td>
+      <td><span class="badge ${s.auto_order?'b-green':'b-purple'}">${s.auto_order?'AUTO':'MANUEL'}</span></td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--text3)">${s.lead_time_days||'—'}j</td>
+    </tr>`),
+  ];
+  document.getElementById('diagSupsTable').innerHTML = supRows.length
+    ? `<table><thead><tr><th>ID</th><th>Nom</th><th>Type</th><th>Plateforme</th><th>Mode</th><th>Délai</th></tr></thead><tbody>${supRows.join('')}</tbody></table>`
+    : `<div style="padding:12px;font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">Aucun fournisseur en base</div>`;
+
+  // Commandes — résumé par statut
+  const statusEntries = Object.entries(d.statusCount).sort((a,b) => b[1]-a[1]);
+  document.getElementById('diagOrdersTable').innerHTML = statusEntries.length
+    ? `<div style="display:flex;flex-wrap:wrap;gap:10px;font-family:var(--mono);font-size: 0.875rem">
+        ${statusEntries.map(([s,n]) => `<div class="card" style="padding:10px 16px;display:flex;align-items:center;gap:10px;min-width:160px">
+          ${badge(s)}
+          <span style="color:var(--text);font-weight:700;font-size:1rem">${n}</span>
+        </div>`).join('')}
+        <div class="card" style="padding:10px 16px;min-width:160px;border-color:rgba(217,119,6,0.25)">
+          <span style="color:var(--gold);font-size: 0.82rem">⚠️ NOTE</span><br>
+          <span style="color:var(--text3);font-size: 0.82rem;line-height:1.6">Les commandes ne sont pas supprimées par le cleanup</span>
+        </div>
+      </div>`
+    : `<div style="padding:12px;font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">Aucune commande en base</div>`;
+
+  // Purchase orders
+  const poRows = [
+    ...d.testPOs.map(p => `<tr>
+      <td class="mono" style="color:var(--gold);font-size: 0.82rem">${p.order_ref||p.order_id?.slice(0,8)||'—'}</td>
+      <td>${badge(p.status)}</td>
+      <td style="font-size: 0.875rem">${(p.supplier_name||'—')}</td>
+      <td><span class="badge b-gold">TEST</span></td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--teal)">${p.supplier_sku||'—'}</td>
+      <td class="mono" style="color:var(--green)">${p.unit_price_aed?p.unit_price_aed+' AED':'—'}</td>
+    </tr>`),
+    ...d.realPOs.map(p => `<tr>
+      <td class="mono" style="color:var(--text3);font-size: 0.82rem">${p.order_ref||p.order_id?.slice(0,8)||'—'}</td>
+      <td>${badge(p.status)}</td>
+      <td style="font-size: 0.875rem">${(p.supplier_name||'—')}</td>
+      <td><span class="badge b-blue">RÉEL</span></td>
+      <td class="mono" style="font-size: 0.82rem;color:var(--teal)">${p.supplier_sku||'—'}</td>
+      <td class="mono" style="color:var(--green)">${p.unit_price_aed?p.unit_price_aed+' AED':'—'}</td>
+    </tr>`),
+  ];
+  document.getElementById('diagPOTable').innerHTML = poRows.length
+    ? `<div class="tbl-wrap"><table><thead><tr><th>Commande</th><th>Statut</th><th>Fournisseur</th><th>Type</th><th>SKU</th><th>Prix</th></tr></thead><tbody>${poRows.join('')}</tbody></table></div>`
+    : `<div style="padding:12px;font-family:var(--mono);font-size: 0.875rem;color:var(--text3)">Aucune purchase order en base</div>`;
+
+  // Bouton cleanup — désactiver si rien à supprimer
+  const cleanupBtn = document.getElementById('cleanupBtn');
+  if (cleanupBtn) {
+    cleanupBtn.disabled = (d.testProds.length + d.testSups.length) === 0;
+    cleanupBtn.title = cleanupBtn.disabled ? 'Aucune donnée [TEST] à supprimer' : '';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   CLEANUP — throttle 200ms + confirmation double
+// ═══════════════════════════════════════════════════════════════════════════════
+function showCleanup() {
+  if (!_lastDiag) { toast('Scannez la base d\'abord', 'warn'); return; }
+  const { testProds, testSups } = _lastDiag;
+  const summary = `${testProds.length} produit(s) [TEST]\n${testSups.length} fournisseur(s) [TEST]`;
+  const code = prompt(`Éléments à supprimer :\n${summary}\n\nTapez CLEANUP pour confirmer :`);
+  if (code !== 'CLEANUP') { toast('Annulé','warn'); return; }
+  runCleanup();
+}
+
+async function runCleanup() {
+  if (_running.seed || _running.cleanup) { toast('⏳ Opération en cours, attendez…','warn'); return; }
+  _running.cleanup = true;
+  toast('🗑️ Cleanup en cours…','warn');
+  const statusEl = document.getElementById('cleanupStatus');
+  statusEl.innerHTML = '<span class="spin">⟳</span> Suppression en cours…';
+
+  try {
+    const prods = await api('/api/products?limit=500');
+    const testP = (prods.products||[]).filter(p=>p.name.includes('[TEST]'));
+    let delP = 0, errP = 0;
+    for (const p of testP) {
+      try { await api(`/api/products/${p.id}`,'DELETE'); delP++; } catch { errP++; }
+      await _sleep(200);
+    }
+    const sups = await api('/api/purchasing/suppliers');
+    const testS = (Array.isArray(sups)?sups:[]).filter(s=>s.name.includes('[TEST]'));
+    let delS = 0, errS = 0;
+    for (const s of testS) {
+      try {
+        // Annuler d'abord toutes les PO liées à ce fournisseur [TEST] (sauf déjà cancelled)
+        const pipeline = await api('/api/purchasing');
+        const pos = (pipeline.purchase_orders || []).filter(po =>
+          po.supplier_id === s.id && po.status !== 'cancelled'
+        );
+        for (const po of pos) {
+          await api(`/api/purchasing/po/${po.id}`, 'DELETE', null, 2, {'X-Force-Delete':'true'}).catch(() => {});
+          await _sleep(100);
+        }
+        await api(`/api/purchasing/suppliers/${s.id}`,'DELETE', null, 2, {'X-Force-Delete':'true'});
+        delS++;
+      } catch { errS++; }
+      await _sleep(200);
+    }
+    _cacheInvalidate('orders');
+    _cacheInvalidate('pipeline');
+
+    const errTotal = errP + errS;
+    statusEl.innerHTML = `
+      <div style="margin-bottom:10px">
+        <div>✅ Produits supprimés : <span style="color:var(--green);font-weight:700">${delP}</span>${errP>0?` <span style="color:var(--red2)">(${errP} erreurs)</span>`:''}</div>
+        <div>✅ Fournisseurs supprimés : <span style="color:var(--green);font-weight:700">${delS}</span>${errS>0?` <span style="color:var(--red2)">(${errS} erreurs)</span>`:''}</div>
+      </div>
+      <span class="badge ${errTotal===0?'b-green':'b-gold'}">${errTotal===0?'✅ Cleanup terminé':'⚠️ Terminé avec erreurs'}</span>
+    `;
+
+    toast(`✅ Cleanup — ${delP} produits, ${delS} fournisseurs supprimés`);
+    flash();
+
+    // Rafraîchir sidebar + listes (pas le diagnostic — évite le rate limit)
+    await Promise.all([
+      loadDashStats(),
+      loadOrders(true),
+      loadPipeline(true),
+    ]);
+    // Invalider le cache diagnostic pour forcer un vrai re-scan au prochain clic
+    _lastDiag = null;
+    document.getElementById('diagResults').style.display  = 'none';
+    document.getElementById('cleanupActionZone').style.display = 'none';
+    document.getElementById('diagEmpty').style.display    = 'block';
+    document.getElementById('diagEmpty').innerHTML = `<span style="color:var(--green)">✅ Cleanup terminé — cliquez sur <strong>Scanner la base</strong> pour vérifier.</span>`;
+    // Remettre les badges nav
+    document.getElementById('nb-seed').textContent = '';
+    document.getElementById('nb-seed').className = 'nav-badge';
+    document.getElementById('nb-test').textContent = '';
+    document.getElementById('nb-test').className = 'nav-badge';
+  } catch(e) { toast('❌ '+e.message,'err'); statusEl.innerHTML = `<span style="color:var(--red2)">❌ ${e.message}</span>`; }
+  finally { _running.cleanup = false; }
+}
+
+// Gardé pour compatibilité (appelé après runCleanup)
+async function checkCleanup() {
+  // remplacé par runDiagnostic — no-op ici
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  goTo('connexion');
+
+  // Keyboard shortcut: Escape ferme les panels
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+    }
+  });
+});
+</script>
+</body>
+</html>

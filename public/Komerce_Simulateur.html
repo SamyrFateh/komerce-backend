@@ -3,105 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Komerce — Simulateur Tarification v7</title>
+  <title>Komerce — Simulateur Tarification v17</title>
   <style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
     /* ── Reset + Variables ─────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --blue:    #3b82f6;
-      --blue-bg: #eff6ff;
-      --blue-border: #93c5fd;
-      --teal:    #0d9488;
-      --teal-bg: #f0fdfa;
-      --teal-border: #5eead4;
-      --amber:   #d97706;
-      --amber-bg: #fffbeb;
-      --amber-border: #fcd34d;
-      --green:   #16a34a;
-      --green-bg: #f0fdf4;
-      --green-border: #86efac;
-      --purple:  #7c3aed;
-      --purple-bg: #faf5ff;
-      --purple-border: #c4b5fd;
-      --gray-bg: #f8fafc;
-      --border:  #e2e8f0;
+      /* ── Thème clair harmonisé Pilotage ── */
+      --bg:      #f5f6f8;
+      --bg2:     #ffffff;
+      --bg3:     #f0f2f5;
+      --border:  #e2e6ec;
+      --border2: #d0d7e2;
+      --shadow:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+      --radius:  12px;
+      /* Couleurs texte */
       --ink:     #1a202c;
       --ink2:    #4a5568;
-      --ink3:    #718096;
-      --shadow:  0 2px 8px rgba(0,0,0,0.08);
-      --radius:  12px;
+      --ink3:    #8a9ab5;
+      /* Alias compatibilité */
+      --gray-bg: var(--bg);
+      --text:    #1a202c;
+      --text2:   #4a5568;
+      --text3:   #8a9ab5;
+      /* Accents */
+      --amber:   #d97706;
+      --amber2:  #b45309;
+      --teal:    #0d9488;
+      --teal2:   #0f766e;
+      --green:   #16a34a;
+      --red:     #dc2626;
+      --blue:    #2563eb;
+      --purple:  #7c3aed;
+      /* Step colors (conservés) */
+      --blue-bg: #eff6ff;
+      --blue-border: #93c5fd;
+      --teal-bg: #f0fdfa;
+      --teal-border: #5eead4;
+      --amber-bg: #fffbeb;
+      --amber-border: #fcd34d;
+      --green-bg: #f0fdf4;
+      --green-border: #86efac;
+      --purple-bg: #faf5ff;
+      --purple-border: #c4b5fd;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--gray-bg);
+      font-family: var(--sans);
+      background: var(--bg);
       color: var(--ink);
       min-height: 100vh;
     }
 
     /* ── Header ───────────────────────────────────────────────────────── */
     .site-header {
-      background: #1e293b;
-      color: #f8fafc;
-      padding: 20px 24px 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 210;
     }
     .site-header h1 {
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
+      font-family: var(--mono);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 2px;
+      text-transform: uppercase;
     }
-    .site-header h1 em { color: #f59e0b; font-style: normal; }
-    .site-header p { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; }
+    .site-header h1 em { color: var(--ink2); font-style: normal; }
+    .site-header p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--ink3);
+      letter-spacing: 1px;
+    }
 
     /* ── Topbar Config Sticky ─────────────────────────────────────────── */
     .topbar {
       position: sticky;
-      top: 0;
+      top: 56px;
       z-index: 100;
-      background: #1e293b;
-      border-bottom: 3px solid #f59e0b;
+      background: var(--bg2);
+      border-bottom: 2px solid var(--amber);
       padding: 10px 24px;
       display: flex;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
+      box-shadow: var(--shadow);
     }
     .topbar-label {
-      font-size: 0.68rem;
+      font-family: var(--mono);
+      font-size: 0.65rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #94a3b8;
+      color: var(--ink3);
     }
     .topbar select {
-      background: #334155;
-      color: #f1f5f9;
-      border: 1.5px solid #475569;
+      background: var(--bg3);
+      color: var(--ink);
+      border: 1px solid var(--border2);
       border-radius: 8px;
       padding: 7px 12px;
       font-size: 0.85rem;
       outline: none;
       cursor: pointer;
+      font-family: var(--sans);
     }
-    .topbar select:focus { border-color: #f59e0b; }
+    .topbar select:focus { border-color: var(--amber); }
     .source-group, .marche-group { display: flex; gap: 4px; }
     .source-group button, .marche-group button {
-      background: #334155;
-      color: #94a3b8;
-      border: 1.5px solid #475569;
+      background: var(--bg3);
+      color: var(--ink3);
+      border: 1px solid var(--border2);
       border-radius: 8px;
       padding: 7px 12px;
       font-size: 0.82rem;
       cursor: pointer;
       transition: all 0.15s;
-      font-weight: 500;
+      font-weight: 600;
+    }
+    .source-group button:hover, .marche-group button:hover {
+      color: var(--ink);
+      border-color: var(--amber);
     }
     .source-group button.active, .marche-group button.active {
-      background: #f59e0b;
-      color: #1c1611;
-      border-color: #f59e0b;
+      background: var(--amber);
+      color: #fff;
+      border-color: var(--amber);
       font-weight: 700;
     }
-    .topbar-sep { width: 1px; height: 30px; background: #475569; }
+    .topbar-sep { width: 1px; height: 30px; background: var(--border); }
 
     /* ── Main Container ───────────────────────────────────────────────── */
     .main-wrap {
@@ -209,7 +250,7 @@
       align-items: center;
       justify-content: center;
       height: 36px;
-      color: #94a3b8;
+      color: var(--ink3);
       font-size: 1.2rem;
       position: relative;
     }
@@ -242,7 +283,7 @@
     input[type="number"], select.inp {
       width: 100%;
       padding: 9px 12px;
-      border: 1.5px solid #e2e8f0;
+      border: 1.5px solid var(--border);
       border-radius: 8px;
       font-size: 0.92rem;
       color: var(--ink);
@@ -251,7 +292,7 @@
     }
     input:focus, select.inp:focus { outline: none; border-color: #f59e0b; background: #fff; }
     input[readonly] { background: #f1f5f9; color: var(--ink3); cursor: default; }
-    .hint { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; line-height: 1.4; }
+    .hint { font-size: 0.72rem; color: var(--ink3); margin-top: 3px; line-height: 1.4; }
     .hint.warn { color: #d97706; }
     .hint.err  { color: #dc2626; }
 
@@ -312,44 +353,47 @@
 
     /* ── Résultat Final ───────────────────────────────────────────────── */
     .result-final {
-      background: #1e293b;
+      background: linear-gradient(135deg, #fefce8 0%, #fffbeb 100%);
+      border: 1px solid #fde68a;
+      border-left: 4px solid var(--amber);
       border-radius: var(--radius);
       padding: 28px 24px 20px;
-      color: #f8fafc;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      color: var(--ink);
+      box-shadow: var(--shadow-md);
       margin-top: 0;
     }
     .result-final .res-label {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      opacity: 0.6;
+      color: var(--amber2);
       margin-bottom: 10px;
     }
     .result-final .price-main {
+      font-family: var(--mono);
       font-size: 3rem;
       font-weight: 900;
       letter-spacing: -1.5px;
       line-height: 1;
-      color: #fbbf24;
+      color: var(--amber2);
       font-variant-numeric: tabular-nums;
     }
     .result-final .price-secondary {
       font-size: 1rem;
-      opacity: 0.7;
+      color: var(--ink2);
       margin-top: 6px;
     }
     .result-final .qty-label {
       font-size: 0.85rem;
-      opacity: 0.5;
+      color: var(--ink3);
       margin-top: 4px;
     }
     .detail-toggle {
       margin-top: 16px;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #f1f5f9;
+      background: rgba(180,83,9,0.08);
+      border: 1px solid rgba(180,83,9,0.2);
+      color: var(--amber2);
       font-size: 0.82rem;
       font-weight: 600;
       padding: 8px 16px;
@@ -357,17 +401,18 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    .detail-toggle:hover { background: rgba(255,255,255,0.2); }
-    .detail-table { display: none; margin-top: 16px; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.06); }
+    .detail-toggle:hover { background: rgba(180,83,9,0.14); }
+    .detail-table { display: none; margin-top: 16px; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.7); border: 1px solid #fde68a; }
     .detail-table.visible { display: block; }
-    .detail-section { padding: 6px 14px 2px; font-size: 0.68rem; font-weight: 700; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.6px; }
-    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; font-size: 0.83rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .detail-section { padding: 6px 14px 2px; font-size: 0.68rem; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.6px; background: #fef3c7; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; font-size: 0.83rem; border-bottom: 1px solid #fde68a; background: #fff; }
     .detail-row:last-child { border-bottom: none; }
-    .detail-row .lbl { opacity: 0.82; }
-    .detail-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .detail-row.warn-row .lbl { color: #fde68a; opacity: 1; }
-    .detail-row.total-row { background: rgba(255,255,255,0.1); font-size: 0.9rem; }
-    .detail-row.total-row .lbl { font-weight: 700; opacity: 1; }
+    .detail-row .lbl { color: var(--ink2); }
+    .detail-row .val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .detail-row.warn-row .lbl { color: var(--amber); }
+    .detail-row.total-row { background: #fef3c7; font-size: 0.9rem; }
+    .detail-row.total-row .lbl { font-weight: 700; color: var(--amber2); }
+    .detail-row.total-row .val { color: var(--amber2); }
 
     /* ── Hub Section ──────────────────────────────────────────────────── */
     .hub-section {
@@ -454,29 +499,30 @@
 
     /* ── Onglets navigation ───────────────────────────────────────────── */
     .sim-tabs {
-      background: #1e293b;
-      border-bottom: 2px solid #334155;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
       display: flex;
       padding: 0 24px;
     }
     .sim-tab {
-      padding: 12px 18px;
-      font-size: 0.82rem;
+      padding: 14px 20px;
+      font-size: 0.8rem;
       font-weight: 600;
-      color: #64748b;
+      color: var(--ink3);
       cursor: pointer;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-      transition: all 0.15s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
       white-space: nowrap;
+      letter-spacing: 0.3px;
     }
-    .sim-tab:hover { color: #94a3b8; }
-    .sim-tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+    .sim-tab:hover { color: var(--ink2); }
+    .sim-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
     .sim-screen { display: none; }
     .sim-screen.active { display: block; }
 
     /* ── Tableau pricing masse ────────────────────────────────────────── */
-    .pm-wrap { padding: 20px 24px 60px; background: #0f172a; min-height: 100vh; }
+    .pm-wrap { padding: 20px 24px 60px; background: var(--bg); min-height: 100vh; }
     .pm-toolbar {
       display: flex; align-items: center; gap: 10px;
       flex-wrap: wrap; margin-bottom: 16px;
@@ -484,74 +530,76 @@
     .pm-btn {
       padding: 7px 14px; border-radius: 7px; font-size: 0.78rem;
       font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;
+      font-family: var(--sans);
     }
-    .pm-btn-teal  { background: #0d9488; color: #fff; }
-    .pm-btn-teal:hover  { background: #0f766e; }
-    .pm-btn-amber { background: #d97706; color: #fff; }
-    .pm-btn-amber:hover { background: #b45309; }
-    .pm-btn-ghost { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-    .pm-btn-ghost:hover { color: #e2e8f0; border-color: #475569; }
-    .pm-btn-push  { background: #7c3aed; color: #fff; }
+    .pm-btn-teal  { background: var(--teal); color: #fff; }
+    .pm-btn-teal:hover  { background: var(--teal2); }
+    .pm-btn-amber { background: var(--amber); color: #fff; }
+    .pm-btn-amber:hover { background: var(--amber2); }
+    .pm-btn-ghost { background: var(--bg3); color: var(--ink2); border: 1px solid var(--border2); }
+    .pm-btn-ghost:hover { color: var(--ink); border-color: var(--amber); }
+    .pm-btn-push  { background: var(--purple); color: #fff; }
     .pm-btn-push:hover  { background: #6d28d9; }
     .pm-filter-group { display: flex; gap: 4px; }
     .pm-filter {
       padding: 6px 12px; border-radius: 20px; font-size: 0.72rem;
-      font-weight: 700; cursor: pointer; border: 1.5px solid #334155;
-      background: #1e293b; color: #64748b; transition: all 0.15s;
+      font-weight: 700; cursor: pointer; border: 1.5px solid var(--border2);
+      background: var(--bg2); color: var(--ink3); transition: all 0.15s;
     }
-    .pm-filter.active-all    { border-color: #475569; color: #e2e8f0; background: #334155; }
-    .pm-filter.active-ok     { border-color: rgba(16,185,129,0.5); color: #34d399; background: rgba(16,185,129,0.1); }
-    .pm-filter.active-warn   { border-color: rgba(245,158,11,0.5); color: #fbbf24; background: rgba(245,158,11,0.1); }
-    .pm-filter.active-err    { border-color: rgba(239,68,68,0.5); color: #f87171; background: rgba(239,68,68,0.1); }
+    .pm-filter.active-all    { border-color: var(--border2); color: var(--ink); background: var(--bg3); }
+    .pm-filter.active-ok     { border-color: rgba(5,150,105,0.4); color: #059669; background: rgba(5,150,105,0.08); }
+    .pm-filter.active-warn   { border-color: rgba(217,119,6,0.4); color: var(--amber); background: rgba(217,119,6,0.08); }
+    .pm-filter.active-err    { border-color: rgba(220,38,38,0.4); color: var(--red); background: rgba(220,38,38,0.08); }
     .pm-kpis { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 16px; }
-    .pm-kpi { background: #1e293b; border: 1px solid #1e2d47; border-radius: 8px; padding: 12px 14px; }
-    .pm-kpi-lbl { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #475569; margin-bottom: 5px; }
-    .pm-kpi-val { font-family: monospace; font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .pm-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #1e2d47; }
+    .pm-kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; box-shadow: var(--shadow); }
+    .pm-kpi-lbl { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--ink3); margin-bottom: 5px; }
+    .pm-kpi-val { font-family: var(--mono); font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .pm-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow-md); }
     .pm-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 1000px; }
     .pm-table th {
-      background: #1e293b; color: #475569; font-size: 0.62rem; font-weight: 700;
+      background: var(--bg3); color: var(--ink3); font-size: 0.62rem; font-weight: 700;
       letter-spacing: 0.8px; text-transform: uppercase; padding: 10px 12px;
-      border-bottom: 1px solid #1e2d47; text-align: left; white-space: nowrap;
+      border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap;
       cursor: pointer; user-select: none;
     }
-    .pm-table th:hover { color: #94a3b8; }
-    .pm-table th.sorted { color: #f59e0b; }
+    .pm-table th:hover { color: var(--ink2); }
+    .pm-table th.sorted { color: var(--amber); }
     .pm-table td {
-      padding: 9px 12px; border-bottom: 1px solid #1e2d47;
-      background: #0f172a; vertical-align: middle;
+      padding: 9px 12px; border-bottom: 1px solid var(--border);
+      background: var(--bg2); vertical-align: middle; color: var(--ink);
     }
-    .pm-table tr:hover td { background: #141e2e; }
-    .pm-table tr.modified td { background: #1a1a2e; }
+    .pm-table tr:hover td { background: var(--bg3); }
+    .pm-table tr.modified td { background: #fffbf0; }
     .pm-badge {
       display: inline-block; padding: 2px 8px; border-radius: 10px;
       font-size: 0.68rem; font-weight: 700; white-space: nowrap;
     }
-    .pm-badge-ok   { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-    .pm-badge-warn { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-    .pm-badge-err  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .pm-badge-ok   { background: rgba(5,150,105,0.1); color: #059669; border: 1px solid rgba(5,150,105,0.25); }
+    .pm-badge-warn { background: rgba(217,119,6,0.1); color: var(--amber); border: 1px solid rgba(217,119,6,0.25); }
+    .pm-badge-err  { background: rgba(220,38,38,0.1); color: var(--red); border: 1px solid rgba(220,38,38,0.25); }
     .pm-price-input {
-      background: #1e293b; border: 1.5px solid #334155; border-radius: 6px;
-      color: #e2e8f0; font-family: monospace; font-size: 0.82rem;
+      background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px;
+      color: var(--ink3); font-family: var(--mono); font-size: 0.82rem;
       padding: 5px 8px; width: 110px; outline: none; text-align: right;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s; font-style: italic;
     }
-    .pm-price-input:focus { border-color: #f59e0b; background: #111827; }
-    .pm-price-input.changed { border-color: #7c3aed; color: #c4b5fd; }
+    .pm-price-input.changed { border-color: var(--teal) !important; background: rgba(13,148,136,0.06) !important; color: var(--teal2) !important; font-style: normal; font-weight: 600; }
+    .pm-price-input:focus { border-color: var(--amber); background: #fff; }
     .pm-push-btn {
       padding: 4px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: 700;
       cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
     }
-    .pm-push-btn.pending { background: rgba(124,58,237,0.2); color: #c4b5fd; border: 1px solid rgba(124,58,237,0.4); }
-    .pm-push-btn.success { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-    .pm-push-btn.error   { background: rgba(239,68,68,0.2);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .pm-push-btn.pending { background: rgba(124,58,237,0.1); color: var(--purple); border: 1px solid rgba(124,58,237,0.3); }
+    .pm-push-btn.success { background: rgba(5,150,105,0.1); color: #059669; border: 1px solid rgba(5,150,105,0.25); }
+    .pm-push-btn.error   { background: rgba(220,38,38,0.1); color: var(--red); border: 1px solid rgba(220,38,38,0.25); }
     .pm-push-all-bar {
-      display: none; background: #1e293b; border: 1px solid #334155;
+      display: none; background: var(--bg2); border: 1px solid var(--border);
       border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;
       align-items: center; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 0; z-index: 10; box-shadow: var(--shadow);
     }
     .pm-push-all-bar.visible { display: flex; }
-    .pm-mono { font-family: monospace; font-variant-numeric: tabular-nums; }
+    .pm-mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
     /* ── Responsive ───────────────────────────────────────────────────── */
     @media (max-width: 600px) {
@@ -565,27 +613,49 @@
 <body>
 
 <!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
-<div class="site-header">
-  <h1>Kom<em>erce</em> — Simulateur de Tarification <em>v7</em></h1>
-  <p>Calculez le coût complet d'une commande Dubai → Comores · Pipeline en 5 étapes · Taux mars 2026</p>
-</div>
+<header class="site-header">
+  <h1>Ko<em>merce</em> // <em style="color:var(--teal2)">Simulateur</em></h1>
+  <p>TARIFICATION · v16 · DUBAI → COMORES</p>
+</header>
 
 <!-- ══ SCANNER PRODUITS RAILWAY ══════════════════════════════════════════════ -->
-<div id="scanner-bar" style="background:#0f172a;border-bottom:2px solid #1e2d47;padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+<div id="scanner-bar" style="background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
 
-  <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#475569;white-space:nowrap;">
+  <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);white-space:nowrap;">
     🔍 Scanner produit
   </div>
 
-  <!-- Token JWT -->
-  <input type="password" id="scan-token" placeholder="Token JWT admin"
-    style="background:#1e293b;border:1px solid #334155;border-radius:7px;color:#e2e8f0;
-           font-family:monospace;font-size:0.78rem;padding:6px 10px;outline:none;width:200px;">
+  <!-- Login admin -->
+  <div id="auth-login-block" style="display:flex;align-items:center;gap:6px;">
+    <input type="email" id="auth-email" placeholder="Email admin" value="ilham@komerce.km"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);
+             font-size:0.78rem;padding:6px 10px;outline:none;width:160px;">
+    <input type="password" id="auth-password" placeholder="Mot de passe"
+      onkeydown="if(event.key==='Enter') doSimLogin()"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);
+             font-size:0.78rem;padding:6px 10px;outline:none;width:130px;">
+    <button onclick="doSimLogin()"
+      style="background:#0d9488;color:#fff;border:none;border-radius:7px;
+             padding:7px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+      🔑 Connexion
+    </button>
+  </div>
+  <div id="auth-status-block" style="display:none;align-items:center;gap:8px;">
+    <span id="auth-status-label"
+      style="font-size:0.78rem;color:#4ade80;font-weight:600;white-space:nowrap;"></span>
+    <button onclick="doSimLogout()"
+      style="background:var(--bg3);color:var(--ink3);border:1px solid var(--border2);border-radius:6px;
+             padding:4px 10px;font-size:0.72rem;cursor:pointer;">
+      Déconnexion
+    </button>
+  </div>
+  <!-- Token caché utilisé par les appels API -->
+  <input type="hidden" id="scan-token" value="">
 
   <!-- Bouton charger -->
-  <button onclick="loadProduitsRailway()"
+  <button id="btn-charger-produits" onclick="loadProduitsRailway()"
     style="background:#0d9488;color:#fff;border:none;border-radius:7px;
-           padding:7px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+           padding:7px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;display:none;">
     ⬇️ Charger produits
   </button>
 
@@ -593,8 +663,8 @@
   <div style="width:1px;height:28px;background:#1e2d47;flex-shrink:0;"></div>
 
   <!-- Sélecteur produit -->
-  <select id="scan-produit-select"
-    style="background:#1e293b;border:1px solid #334155;border-radius:7px;color:#e2e8f0;
+  <select id="scan-produit-select" style="display:none;"
+    style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--ink);
            font-size:0.82rem;padding:7px 12px;outline:none;flex:1;min-width:260px;max-width:420px;cursor:pointer;"
     onchange="injecterProduit(this.value)">
     <option value="">— Sélectionnez un produit Railway —</option>
@@ -604,7 +674,7 @@
   <div id="scan-badge" style="display:none;padding:5px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;white-space:nowrap;"></div>
 
   <!-- Statut chargement -->
-  <div id="scan-status" style="font-size:0.72rem;color:#475569;"></div>
+  <div id="scan-status" style="font-size:0.72rem;color:var(--ink2);"></div>
 
 </div>
 
@@ -612,6 +682,7 @@
 <div class="sim-tabs">
   <div class="sim-tab active" onclick="switchSimTab('simulateur', this)">⚙️ Simulateur</div>
   <div class="sim-tab" onclick="switchSimTab('pricing', this)">📋 Pricing en masse</div>
+  <div class="sim-tab" onclick="switchSimTab('hist', this)">📦 Historique Douane</div>
 </div>
 
 <!-- ══ ONGLET 1 : SIMULATEUR ══════════════════════════════════════════════════ -->
@@ -630,14 +701,6 @@
       <button id="btn-s1" class="active" onclick="setSource('s1')">👤 S1 Agent</button>
       <button id="btn-s2" onclick="setSource('s2')">🏭 S2 Grossiste</button>
       <button id="btn-s4" onclick="setSource('s4')">🇨🇳 S4 Importateur CN</button>
-    </div>
-  </div>
-  <div class="topbar-sep"></div>
-  <div>
-    <div class="topbar-label">Marché</div>
-    <div class="marche-group">
-      <button id="btn-local" class="active" onclick="setMarche('local')">🏝️ Local</button>
-      <button id="btn-diaspora" onclick="setMarche('diaspora')">✈️ Diaspora</button>
     </div>
   </div>
 </div>
@@ -868,7 +931,7 @@
         <div class="three-col">
           <div class="terrain-item" style="margin-bottom:0">
             <label class="lbl">Frais de port (KMF) ⚠️</label>
-            <input type="number" id="frais-port-distrib" value="0" min="0" step="50" oninput="calculer()" readonly style="background:#f1f5f9;color:#94a3b8"/>
+            <input type="number" id="frais-port-distrib" value="0" min="0" step="50" oninput="calculer()" readonly style="background:var(--bg3);color:var(--ink3)"/>
             <div class="hint">Inclus étape 3</div>
           </div>
           <div class="terrain-item" style="margin-bottom:0">
@@ -905,12 +968,7 @@
             <input type="number" id="marge-pct" value="12" min="0" max="100" step="0.5" oninput="calculer()" />
             <div class="hint">Inclut coussin de change ~3% · Absorbe Hub Dubai</div>
           </div>
-          <div id="bloc-stripe" style="display:none">
-            <div class="field-group">
-              <label class="lbl">Frais Stripe/PayPal (%)</label>
-              <input type="number" id="stripe-pct" value="2.5" min="0" max="10" step="0.1" oninput="calculer()" />
-              <div class="hint">Diaspora uniquement</div>
-            </div>
+          
           </div>
         </div>
         <div id="marge-detail" style="margin-top:4px;font-size:0.8rem;color:#4c1d95;font-weight:600;"></div>
@@ -1113,7 +1171,7 @@
 
   <!-- Toolbar -->
   <div class="pm-toolbar">
-    <button class="pm-btn pm-btn-teal" onclick="loadPricingMasse()">⬇️ Charger / Actualiser</button>
+    <button class="pm-btn pm-btn-teal" id="btn-charger-actualiser" onclick="loadPricingMasse()" style="display:none;">⬇️ Charger / Actualiser</button>
 
     <div class="pm-filter-group">
       <button class="pm-filter active-all" id="pmf-all"  onclick="filterPricing('all')">Tous</button>
@@ -1124,29 +1182,81 @@
 
     <div style="flex:1;"></div>
 
-    <!-- Taux douane terrain -->
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Taux terrain</span>
-      <input type="number" id="pm-douane-taux" value="42" min="1" max="80" step="1"
+    <!-- Scénarios douane -->
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span style="font-size:0.68rem;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Douane</span>
+      <button id="btn-douane-opt"  onclick="setDouaneScenario('opt')"
+        style="padding:5px 11px;border-radius:6px;border:1px solid rgba(5,150,105,0.3);background:rgba(5,150,105,0.08);color:#059669;font-size:0.75rem;font-weight:700;cursor:pointer;">
+        🟢 Optimiste 15%
+      </button>
+      <button id="btn-douane-real" onclick="setDouaneScenario('real')"
+        style="padding:5px 11px;border-radius:6px;border:1px solid var(--amber);background:rgba(217,119,6,0.12);color:var(--amber);font-size:0.75rem;font-weight:700;cursor:pointer;">
+        🟡 Réaliste 28%
+      </button>
+      <button id="btn-douane-prud" onclick="setDouaneScenario('prud')"
+        style="padding:5px 11px;border-radius:6px;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.08);color:var(--red);font-size:0.75rem;font-weight:700;cursor:pointer;">
+        🔴 Prudent 40%
+      </button>
+      <input type="number" id="pm-douane-taux" value="28" min="1" max="80" step="1"
         oninput="recalcPricing()"
-        style="background:#1e293b;border:1px solid #334155;border-radius:6px;color:#f59e0b;
-               font-family:monospace;font-size:0.88rem;font-weight:700;
-               padding:5px 8px;width:60px;outline:none;text-align:center;">
-      <span style="font-size:0.78rem;color:#64748b;">% CIF</span>
+        style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--amber);
+               font-family:var(--mono);font-size:0.88rem;font-weight:700;
+               padding:5px 8px;width:60px;outline:none;text-align:center;" title="Taux personnalisé">
+      <span style="font-size:0.78rem;color:var(--ink3);">% CIF</span>
+    </div>
+    <!-- Arrondi psychologique -->
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.68rem;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Arrondi Psycho</span>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="checkbox" id="pm-psycho" checked onchange="recalcPricing()"
+          style="accent-color:#f59e0b;width:15px;height:15px;">
+        <span style="font-size:0.75rem;color:var(--ink3);">On</span>
+      </label>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Marge cible</span>
+      <span style="font-size:0.68rem;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Marge cible</span>
       <input type="number" id="pm-marge-cible" value="12" min="1" max="60" step="0.5"
         oninput="recalcPricing()"
-        style="background:#1e293b;border:1px solid #334155;border-radius:6px;color:#fbbf24;
-               font-family:monospace;font-size:0.88rem;font-weight:700;
+        style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--amber2);
+               font-family:var(--mono);font-size:0.88rem;font-weight:700;
                padding:5px 8px;width:55px;outline:none;text-align:center;">
-      <span style="font-size:0.78rem;color:#64748b;">%</span>
+      <span style="font-size:0.78rem;color:var(--ink3);">%</span>
+    </div>
+
+    <!-- FIX v8 — Agent % + Transport Dubai -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:0.68rem;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Agent</span>
+      <input type="number" id="pm-agent-pct" value="5" min="0" max="20" step="0.5"
+        oninput="recalcPricing()"
+        style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--teal2);
+               font-family:var(--mono);font-size:0.88rem;font-weight:700;
+               padding:5px 8px;width:52px;outline:none;text-align:center;">
+      <span style="font-size:0.78rem;color:var(--ink3);">%</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:0.68rem;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">T.Dubai</span>
+      <input type="number" id="pm-tdubai" value="500" min="0" max="3000" step="50"
+        oninput="recalcPricing()"
+        style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--teal2);
+               font-family:var(--mono);font-size:0.88rem;font-weight:700;
+               padding:5px 8px;width:72px;outline:none;text-align:center;">
+      <span style="font-size:0.78rem;color:var(--ink3);">KMF</span>
     </div>
 
     <button class="pm-btn pm-btn-ghost" onclick="exportPricingCSV()">⬇️ Export CSV</button>
-    <button class="pm-btn pm-btn-ghost" onclick="appliquerConseilles()">✨ Appliquer prix conseillés</button>
+    <button class="pm-btn pm-btn-push" id="btn-appliquer-conseilles" onclick="appliquerConseilles()">✨ Appliquer prix conseillés</button>
+    <button class="pm-btn pm-btn-push" id="btn-push-all-toolbar" onclick="pushAllModified()" style="background:#4f46e5;">🚀 Mettre à jour le catalogue Komerce</button>
+    <label class="pm-btn pm-btn-ghost" style="cursor:pointer;" title="CSV: nom,categorie,price_aed,weight_kg,volume_m3">
+      📥 Importer CSV
+      <input type="file" accept=".csv" style="display:none;" onchange="importerCSV(this)">
+    </label>
+    <button class="pm-btn pm-btn-ghost" onclick="exporterCSVTemplate()">📤 Modèle CSV</button>
+    <label class="pm-btn pm-btn-ghost" style="cursor:pointer;" title="CSV: nom_produit,prix_terrain_kmf">
+      🏪 Import prix terrain
+      <input type="file" accept=".csv" style="display:none;" onchange="importPrixTerrainCSV(this)">
+    </label>
   </div>
 
   <!-- Barre push en masse -->
@@ -1154,14 +1264,14 @@
     <span id="pm-push-count" style="font-size:0.82rem;color:#c4b5fd;font-weight:700;"></span>
     <button class="pm-btn pm-btn-push" onclick="pushAllModified()">🚀 Pousser les modifications vers Railway</button>
     <button class="pm-btn pm-btn-ghost" onclick="resetModifications()">↩ Annuler tout</button>
-    <div id="pm-push-status" style="font-size:0.72rem;color:#64748b;"></div>
+    <div id="pm-push-status" style="font-size:0.72rem;color:var(--ink3);"></div>
   </div>
 
   <!-- KPIs -->
   <div class="pm-kpis">
     <div class="pm-kpi">
       <div class="pm-kpi-lbl">Total produits</div>
-      <div class="pm-kpi-val" id="pmk-total" style="color:#94a3b8;">—</div>
+      <div class="pm-kpi-val" id="pmk-total" style="color:var(--ink3);">—</div>
     </div>
     <div class="pm-kpi">
       <div class="pm-kpi-lbl">✅ Rentables</div>
@@ -1179,6 +1289,10 @@
       <div class="pm-kpi-lbl">Prix à ajuster</div>
       <div class="pm-kpi-val" id="pmk-modified" style="color:#c4b5fd;">0</div>
     </div>
+    <div class="pm-kpi">
+      <div class="pm-kpi-lbl">🔴 Sous pression marché</div>
+      <div class="pm-kpi-val" id="pmk-terrain" style="color:#f87171;">—</div>
+    </div>
   </div>
 
   <!-- Tableau -->
@@ -1193,6 +1307,7 @@
           <th onclick="sortPricing('prix_min')">Prix plancher</th>
           <th onclick="sortPricing('prix_min_viable')">Min viable (10%)</th>
           <th>Prix conseillé</th>
+          <th>🏪 Prix terrain</th>
           <th onclick="sortPricing('price_kmf')">Prix actuel Railway</th>
           <th>Nouveau prix</th>
           <th onclick="sortPricing('verdict')">Verdict actuel</th>
@@ -1200,7 +1315,7 @@
         </tr>
       </thead>
       <tbody id="pm-tbody">
-        <tr><td colspan="11" style="text-align:center;padding:40px;color:#475569;">
+        <tr><td colspan="12" style="text-align:center;padding:40px;color:var(--ink2);">
           Collez votre token JWT dans la barre de scan et cliquez "Charger / Actualiser"
         </td></tr>
       </tbody>
@@ -1210,12 +1325,153 @@
 </div>
 </div><!-- /sim-screen-pricing -->
 
+<div class="sim-screen" id="sim-screen-hist">
+<div class="pm-wrap" style="padding:20px;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="margin:0;font-size:1.1rem;color:#f59e0b;">📦 Historique Douane — Taux effectif terrain</h2>
+      <p style="margin:4px 0 0;font-size:0.75rem;color:var(--ink3);">Enregistrez chaque expédition réelle pour calculer votre taux moyen. Ce taux est utilisé dans le Pricing Manager.</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="pm-btn pm-btn-teal" onclick="showAddHistForm()">➕ Ajouter un envoi</button>
+      <button class="pm-btn pm-btn-ghost" onclick="exportHistCSV()">⬇️ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Formulaire ajout -->
+  <div id="hist-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:var(--shadow-md);">
+    <h3 style="margin:0 0 14px;font-size:0.9rem;color:var(--ink);font-weight:700;">Nouvel envoi</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+      <div>
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Date</label>
+        <input type="date" id="hist-date" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Transitaire / Capitaine</label>
+        <input type="text" id="hist-transit" placeholder="ex: Ahmed Dubai" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Valeur CIF (KMF)</label>
+        <input type="number" id="hist-cif" placeholder="ex: 500000" min="0" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;font-family:monospace;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Droits payés (KMF)</label>
+        <input type="number" id="hist-droits" placeholder="ex: 90000" min="0" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;font-family:monospace;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Poids lot (kg)</label>
+        <input type="number" id="hist-poids" placeholder="ex: 35" min="0" step="0.1" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;font-family:monospace;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Nb articles</label>
+        <input type="number" id="hist-articles" placeholder="ex: 12" min="1" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;font-family:monospace;">
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:0.7rem;color:var(--ink3);font-weight:700;display:block;margin-bottom:4px;">Notes (optionnel)</label>
+        <input type="text" id="hist-notes" placeholder="ex: Tout téléphones — inspecté OK" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--ink);padding:7px 10px;font-size:0.82rem;">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="pm-btn pm-btn-push" onclick="addHistEntry()">✅ Enregistrer</button>
+      <button class="pm-btn pm-btn-ghost" onclick="document.getElementById('hist-form').style.display='none'">Annuler</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="pm-kpis" style="margin-bottom:20px;">
+    <div class="pm-kpi">
+      <div class="pm-kpi-lbl">Envois enregistrés</div>
+      <div class="pm-kpi-val" id="hk-count" style="color:var(--ink3);">0</div>
+    </div>
+    <div class="pm-kpi">
+      <div class="pm-kpi-lbl">Taux moyen effectif</div>
+      <div class="pm-kpi-val" id="hk-taux-moy" style="color:#f59e0b;">—%</div>
+    </div>
+    <div class="pm-kpi">
+      <div class="pm-kpi-lbl">Taux min constaté</div>
+      <div class="pm-kpi-val" id="hk-taux-min" style="color:#34d399;">—%</div>
+    </div>
+    <div class="pm-kpi">
+      <div class="pm-kpi-lbl">Taux max constaté</div>
+      <div class="pm-kpi-val" id="hk-taux-max" style="color:#f87171;">—%</div>
+    </div>
+    <div class="pm-kpi">
+      <div class="pm-kpi-lbl">Scénario actif PM</div>
+      <div class="pm-kpi-val" id="hk-scenario" style="color:#c4b5fd;">—</div>
+    </div>
+  </div>
+
+  <!-- Tableau -->
+  <div class="pm-table-wrap">
+    <table class="pm-table" id="hist-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Transitaire</th>
+          <th>Valeur CIF</th>
+          <th>Droits payés</th>
+          <th>Taux effectif</th>
+          <th>Poids (kg)</th>
+          <th>Articles</th>
+          <th>Notes</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="hist-tbody">
+        <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--ink2);">
+          Aucun envoi enregistré. Cliquez "Ajouter un envoi" après votre premier dédouanement.
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Message scénario recommandé -->
+  <div id="hist-recommandation" style="display:none;margin-top:16px;padding:12px 16px;background:#fffbeb;border-left:3px solid var(--amber);border-radius:8px;font-size:0.8rem;color:var(--ink2);"></div>
+
+</div>
+</div><!-- /sim-screen-hist -->
+
 <script>
 // ── Taux (mars 2026) ──────────────────────────────────────────────────────────
 const TAUX_EUR = 495;   // 1 EUR = 495 KMF
 const TAUX_AED = 139;   // 1 AED = 139 KMF
 const EMBARK   = 3 * TAUX_AED; // 3 AED emballage = 417 KMF
 const TAUX_FRET_M3 = 180 * TAUX_EUR; // 180 EUR/m³ = 89 100 KMF/m³
+
+// ── Scénarios douane ─────────────────────────────────────────────────────────
+const DOUANE_SCENARIOS = {
+  opt:  { label:'Optimiste',  pct: 15, color:'#34d399' },
+  real: { label:'Réaliste',   pct: 28, color:'#f59e0b' },
+  prud: { label:'Prudent',    pct: 40, color:'#f87171' },
+};
+let _douaneScenario = 'real';
+
+// ── Arrondi psychologique par catégorie ─────────────────────────────────────
+// Logique : on cherche le palier immédiatement en dessous dans la liste
+const PSYCHO_ENDINGS = {
+  phones:      [990, 1990, 2990, 4990, 7990, 9990, 14990, 19990, 24990, 34990, 49990],
+  vetements:   [490, 990, 1490, 1990, 2990, 3990, 4990, 7990],
+  ceremonie:   [990, 1990, 2990, 4990, 7990, 9990, 14990, 19990],
+  electro:     [990, 1990, 2990, 4990, 7990, 9990, 14990, 24990],
+  cosmetiques: [290, 490, 990, 1490, 1990, 2990, 4990],
+  mariage:     [490, 990, 1490, 1990, 2990, 4990, 7990, 9990],
+  enfants:     [290, 490, 990, 1490, 1990, 2990],
+  materiels:   [490, 990, 1490, 1990, 2990, 4990, 7990],
+};
+
+function arrondirPsycho(prix, catKey) {
+  const psychoOn = document.getElementById('pm-psycho')?.checked;
+  if (!psychoOn) return Math.round(prix);
+  const paliers = PSYCHO_ENDINGS[catKey] || PSYCHO_ENDINGS.phones;
+  // Trouver le palier >= prix, sinon dernier palier * prochain multiple
+  for (let i = 0; i < paliers.length; i++) {
+    if (paliers[i] >= prix) return paliers[i];
+  }
+  // Au-delà de la liste : arrondi à la millaine -10
+  const millaine = Math.ceil(prix / 1000) * 1000;
+  return millaine - 10;
+}
 
 // ── Catégories ────────────────────────────────────────────────────────────────
 const CATS = {
@@ -1232,6 +1488,69 @@ const CATS = {
 let marche = 'local';
 let source  = 's1';
 let _produitsRailway = []; // cache produits chargés
+
+// ── AUTH SIMULATEUR ───────────────────────────────────────────────────────────
+
+
+function setAuthButtons(loggedIn) {
+  const show = loggedIn ? 'inline-flex' : 'none';
+  const showBlk = loggedIn ? 'flex' : 'none';
+  ['btn-charger-produits','btn-charger-actualiser'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = loggedIn ? '' : 'none';
+  });
+  const sel = document.getElementById('scan-produit-select');
+  if (sel) sel.style.display = loggedIn ? '' : 'none';
+}
+async function doSimLogin() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if (!email || !password) { alert('Email et mot de passe requis'); return; }
+
+  try {
+    const res = await fetch(KOMERCE_API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Connexion échouée : ' + (data.error || res.status)); return; }
+
+    const token = data.token;
+    document.getElementById('scan-token').value = token;
+    localStorage.setItem('kmrc_token', token);
+
+    // Afficher statut connecté
+    document.getElementById('auth-login-block').style.display  = 'none';
+    document.getElementById('auth-status-block').style.display = 'flex';
+    const name = data.user ? (data.user.name || data.user.email) : email;
+    document.getElementById('auth-status-label').textContent = '✅ ' + name;
+    setAuthButtons(true);
+
+  } catch (err) {
+    alert('Erreur réseau : ' + err.message);
+  }
+}
+
+function doSimLogout() {
+  document.getElementById('scan-token').value = '';
+  localStorage.removeItem('kmrc_token');
+  document.getElementById('auth-login-block').style.display  = 'flex';
+  document.getElementById('auth-status-block').style.display = 'none';
+  document.getElementById('auth-password').value = '';
+  setAuthButtons(false);
+}
+
+// Auto-restaurer le token depuis localStorage si disponible
+(function restoreToken() {
+  const saved = localStorage.getItem('kmrc_token');
+  if (!saved) return;
+  document.getElementById('scan-token').value = saved;
+  document.getElementById('auth-login-block').style.display  = 'none';
+  document.getElementById('auth-status-block').style.display = 'flex';
+  document.getElementById('auth-status-label').textContent   = '✅ Connecté (session)';
+  setAuthButtons(true);
+})();
 
 // ── SCANNER PRODUITS RAILWAY ──────────────────────────────────────────────────
 
@@ -1277,7 +1596,7 @@ async function loadProduitsRailway() {
   }
 
   status.textContent = '⏳ Chargement…';
-  status.style.color = '#94a3b8';
+  status.style.color = '#8a9ab5';
 
   try {
     const res = await fetch(`${KOMERCE_API}/api/products?limit=200&in_stock=true`, {
@@ -1418,15 +1737,6 @@ function updateScanBadge(nomProduit) {
 })();
 
 // ── setMarche ────────────────────────────────────────────────────────────────
-function setMarche(m) {
-  marche = m;
-  document.getElementById('btn-local').className    = m === 'local'    ? 'active' : '';
-  document.getElementById('btn-diaspora').className = m === 'diaspora' ? 'active' : '';
-  document.getElementById('bloc-stripe').style.display = m === 'diaspora' ? 'block' : 'none';
-  document.getElementById('row-stripe').style.display  = m === 'diaspora' ? 'flex'  : 'none';
-  document.getElementById('section-stripe').style.display = m === 'diaspora' ? 'block' : 'none';
-  calculer();
-}
 
 // ── setSource ────────────────────────────────────────────────────────────────
 function setSource(s) {
@@ -1620,8 +1930,9 @@ function calculer() {
 
   const stripeKmfB = marche === 'diaspora' ? subtotalB * stripePct : 0;
   const subtotalBavecStripe = subtotalB + stripeKmfB;
-  const margeKmfB  = subtotalBavecStripe * margePct;
-  const totalB     = subtotalBavecStripe + margeKmfB;
+  // FIX v8 — vraie marge % sur prix de vente (ex 12% = CDR / 0.88)
+  const totalB     = subtotalBavecStripe / (1 - margePct);
+  const margeKmfB  = totalB - subtotalBavecStripe;
 
   // Marge nette Option B = marge brute − coût Hub fixe mensuel/cmd
   const hubParCmdFixe  = getHubParCmd();
@@ -1632,8 +1943,9 @@ function calculer() {
   const subtotalA = subtotalB + hubParCmdFixe;
   const stripeKmfA = marche === 'diaspora' ? subtotalA * stripePct : 0;
   const subtotalAavecStripe = subtotalA + stripeKmfA;
-  const margeKmfA  = subtotalAavecStripe * margePct;
-  const totalA     = subtotalAavecStripe + margeKmfA;
+  // FIX v8 — vraie marge % sur prix de vente (Option A)
+  const totalA     = subtotalAavecStripe / (1 - margePct);
+  const margeKmfA  = totalA - subtotalAavecStripe;
   const margeNetteA    = margeKmfA; // Hub déjà dans le prix → marge = marge brute
   const margePctNetteAval = totalA > 0 ? (margeNetteA / totalA * 100) : 0;
 
@@ -1823,7 +2135,7 @@ function updateVerdictRentabilite(r) {
   $('verdict-prix-min',        fmtV(prixMin));
   $('verdict-prix-conseille',  fmtV(prixCible));
 
-  document.getElementById('verdict-prix-plancher').style.color  = '#94a3b8';
+  document.getElementById('verdict-prix-plancher').style.color  = '#8a9ab5';
   document.getElementById('verdict-prix-min').style.color       = '#fbbf24';
   document.getElementById('verdict-prix-conseille').style.color = iconColor;
 
@@ -1863,9 +2175,30 @@ function updateVerdictRentabilite(r) {
   }
 
   const alertesEl = document.getElementById('verdict-alertes');
-  alertesEl.style.color = '#e2e8f0';
+  alertesEl.style.color = '#1a202c';
   alertesEl.innerHTML   = alertes.map(a => `<div style="margin-bottom:3px;">${a}</div>`).join('');
   alertesEl.style.display = alertes.length ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  SCÉNARIOS DOUANE
+// ══════════════════════════════════════════════════════════════════════
+function setDouaneScenario(key) {
+  _douaneScenario = key;
+  const sc = DOUANE_SCENARIOS[key];
+  // Mettre à jour slider
+  const inp = document.getElementById('pm-douane-taux');
+  if (inp) inp.value = sc.pct;
+  // Mettre à jour boutons
+  ['opt','real','prud'].forEach(k => {
+    const btn = document.getElementById('btn-douane-' + k);
+    if (!btn) return;
+    const isActive = k === key;
+    btn.style.border = isActive ? `1px solid ${DOUANE_SCENARIOS[k].color}` : '1px solid var(--border2)';
+    btn.style.background = isActive ? 'rgba(217,119,6,0.1)' : '';
+    btn.style.boxShadow = isActive ? `0 0 8px ${DOUANE_SCENARIOS[k].color}55` : 'none';
+  });
+  recalcPricing();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1877,6 +2210,7 @@ function switchSimTab(id, el) {
   document.getElementById('sim-screen-' + id).classList.add('active');
   el.classList.add('active');
   if (id === 'pricing' && _produitsRailway.length > 0) renderPricingTable();
+  if (id === 'hist') renderHistTable();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1884,13 +2218,14 @@ function switchSimTab(id, el) {
 // ══════════════════════════════════════════════════════════════════════
 
 let _pmData       = [];   // [{produit, cdr_kmf, prix_min, prix_min_viable, prix_conseille, verdict, newPrice}]
+let _prixTerrain  = JSON.parse(localStorage.getItem('komerce_prix_terrain') || '{}'); // {nom_produit: prixKMF}
 let _pmFilter     = 'all';
 let _pmSort       = { col: 'name', asc: true };
 let _pmModified   = {};   // { id: newPriceKmf }
 
 // Calcul CDR au taux terrain pour un produit
 function calcCDRProduit(p) {
-  const douanePct = (parseFloat(document.getElementById('pm-douane-taux')?.value) || 42) / 100;
+  const douanePct = (parseFloat(document.getElementById('pm-douane-taux')?.value) || 28) / 100;
   const margePct  = (parseFloat(document.getElementById('pm-marge-cible')?.value) || 12) / 100;
   const catKey    = mapCat(p.category);
   const cat       = CATS[catKey] || CATS.phones;
@@ -1901,6 +2236,10 @@ function calcCDRProduit(p) {
   const volM3      = dims[0] * dims[1] * dims[2] / 1e6;
   const fret       = volM3 * TAUX_FRET_M3;
   const couv       = prixAchat * 0.004;
+  // FIX v8 — agent 5% + transport Dubai ajoutés (manquaient dans v7)
+  const agentPctPM = (parseFloat(document.getElementById('pm-agent-pct')?.value) || 5) / 100;
+  const agentKmfPM = prixAchat * agentPctPM;
+  const tDubaiPM   = parseFloat(document.getElementById('pm-tdubai')?.value) || 500;
   const valCIF     = prixAchat + fret;
   const douane     = valCIF * douanePct;          // taux terrain global
   const trans      = valCIF * 0.02 + 450;
@@ -1909,11 +2248,12 @@ function calcCDRProduit(p) {
   const hubCmd     = 1000 + 150 + 100;
   const emb        = EMBARK;
 
-  const cdr = prixAchat + emb + hubCmd + fret + couv + douane + trans + port + distrib;
+  const cdr = prixAchat + agentKmfPM + tDubaiPM + emb + hubCmd + fret + couv + douane + trans + port + distrib;
 
-  const prixMin        = cdr;                          // plancher absolu
-  const prixMinViable  = cdr / (1 - 0.10);             // marge 10% plancher
-  const prixConseille  = cdr / (1 - margePct);         // marge cible
+  const prixMin           = cdr;                          // plancher absolu
+  const prixMinViable     = cdr / (1 - 0.10);             // marge 10% plancher
+  const prixConseilleRaw  = cdr / (1 - margePct);         // marge cible
+  const prixConseille     = arrondirPsycho(prixConseilleRaw, catKey); // arrondi psycho
 
   const prixActuel = parseFloat(p.price_kmf);
   const margeActuelle = prixActuel > 0 ? (prixActuel - cdr) / prixActuel * 100 : -999;
@@ -1932,7 +2272,8 @@ function calcCDRProduit(p) {
     cdr_kmf:       Math.round(cdr),
     prix_min:      Math.round(prixMin),
     prix_min_viable: Math.round(prixMinViable),
-    prix_conseille:  Math.round(prixConseille),
+    prix_conseille:  prixConseille,
+    prix_conseille_raw: Math.round(prixConseilleRaw),
     price_kmf:     prixActuel,
     marge_actuelle_pct: margeActuelle,
     verdict,
@@ -1940,17 +2281,14 @@ function calcCDRProduit(p) {
 }
 
 function loadPricingMasse() {
-  if (_produitsRailway.length === 0) {
-    // Déclencher le chargement depuis la barre de scan
-    loadProduitsRailway().then(() => {
-      if (_produitsRailway.length > 0) {
-        recalcPricing();
-        switchSimTab('pricing', document.querySelector('.sim-tab:nth-child(2)'));
-      }
-    });
-    return;
-  }
-  recalcPricing();
+  // Toujours réinitialiser l'état modifié + recharger depuis Railway
+  _pmModified = {};
+  loadProduitsRailway().then(() => {
+    if (_produitsRailway.length > 0) {
+      recalcPricing();
+      switchSimTab('pricing', document.querySelector('.sim-tab:nth-child(2)'));
+    }
+  });
 }
 
 function recalcPricing() {
@@ -2019,6 +2357,26 @@ function renderPricingTable() {
     return '<span class="pm-badge pm-badge-err">❌ Non rentable</span>';
   };
 
+  // ── Prix terrain helper ──────────────────────────────────
+  const renderTerrainCell = (p) => {
+    const pt  = _prixTerrain[p.name];
+    const val = pt ? pt : '';
+    const input = `<input type="number" class="pm-price-input" ${val ? `value="${val}"` : 'placeholder="—"'} style="width:90px;font-size:0.75rem;" oninput="onPrixTerrainChange('${p.id}','${p.name}',this.value)" title="Prix observé en magasin">`;
+    if (!pt) return `<td>${input}<div style="font-size:0.6rem;color:var(--ink3);margin-top:2px;">saisir prix terrain</div></td>`;
+    const N2 = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+    const ecart   = pt - p.prix_conseille;
+    const margeR  = pt > 0 ? ((pt - p.cdr_kmf) / pt * 100).toFixed(1) : '—';
+    const col     = ecart >= 0 ? '#34d399' : '#f87171';
+    const icon    = ecart >= 0 ? '🟢' : '🔴';
+    const ecartFmt = `${ecart > 0 ? '+' : ''}${N2(ecart)}`;
+    return `<td><div>${input}<div style="font-size:0.62rem;color:${col};margin-top:3px;">${icon} ${ecartFmt} KMF · marge réelle <strong>${margeR}%</strong></div></div></td>`;
+  };
+  // Compter sous pression
+  let _terrainCount = 0;
+  data.forEach(p => { const pt = _prixTerrain[p.name]; if (pt && pt < p.prix_conseille) _terrainCount++; });
+  const pmkT = document.getElementById('pmk-terrain');
+  if (pmkT) pmkT.textContent = _terrainCount > 0 ? _terrainCount : (Object.keys(_prixTerrain).length > 0 ? '0 ✅' : '—');
+
   tbody.innerHTML = data.map(p => {
     const modified    = _pmModified[p.id] !== undefined;
     const currentNew  = _pmModified[p.id] ?? p.prix_conseille;
@@ -2026,19 +2384,33 @@ function renderPricingTable() {
     const pushLabel   = pushState === 'success' ? '✅ Envoyé' : pushState === 'error' ? '❌ Erreur' : modified ? '🚀 Pousser' : '—';
     const pushClass   = pushState === 'success' ? 'success' : pushState === 'error' ? 'error' : modified ? 'pending' : '';
     const margePct    = p.price_kmf > 0 ? ((p.price_kmf - p.cdr_kmf) / p.price_kmf * 100).toFixed(1) : '—';
-    const margeCouleur = p.verdict === 'ok' ? '#34d399' : p.verdict === 'warn' ? '#fbbf24' : '#f87171';
+    // Verdict effectif : basé sur le nouveau prix si modifié, sinon prix Railway actuel
+    const margeNouveau  = currentNew > 0 ? (currentNew - p.cdr_kmf) / currentNew * 100 : -999;
+    const verdictEff    = modified
+      ? (margeNouveau >= 10 ? 'ok' : margeNouveau >= 0 ? 'warn' : 'err')
+      : p.verdict;
+    const margeCouleur = verdictEff === 'ok' ? '#34d399' : verdictEff === 'warn' ? '#fbbf24' : '#f87171';
 
     return `<tr id="pm-row-${p.id}" class="${modified ? 'modified' : ''}">
       <td style="font-size:1.1rem;text-align:center;">${p.emoji}</td>
       <td>
-        <div style="font-weight:600;color:#e2e8f0;font-size:0.82rem;">${p.name}</div>
-        <div style="font-size:0.65rem;color:#475569;margin-top:2px;">${p.category}</div>
+        <div style="font-weight:600;color:var(--ink);font-size:0.82rem;">${p.name}</div>
+        <div style="font-size:0.65rem;color:var(--ink2);margin-top:2px;">${p.category}</div>
       </td>
-      <td class="pm-mono" style="color:#94a3b8;">${p.price_aed} AED</td>
-      <td class="pm-mono" style="color:#64748b;">${N(p.cdr_kmf)} KMF</td>
-      <td class="pm-mono" style="color:#94a3b8;">${N(p.prix_min)} KMF</td>
+      <td>
+        <input type="number" class="pm-price-input"
+          id="pm-aed-${p.id}"
+          value="${p.price_aed}"
+          min="1" step="1" style="width:80px;"
+          oninput="onAedChange('${p.id}', this.value)"
+          title="Modifier le prix d'achat Dubai">
+        <span style="font-size:0.65rem;color:var(--ink2);"> AED</span>
+      </td>
+      <td class="pm-mono" style="color:var(--ink3);">${N(p.cdr_kmf)} KMF</td>
+      <td class="pm-mono" style="color:var(--ink3);">${N(p.prix_min)} KMF</td>
       <td class="pm-mono" style="color:#fbbf24;">${N(p.prix_min_viable)} KMF</td>
       <td class="pm-mono" style="color:#34d399;font-weight:700;">${N(p.prix_conseille)} KMF</td>
+      ${renderTerrainCell(p)}
       <td>
         <div class="pm-mono" style="color:${margeCouleur};font-weight:700;">${N(p.price_kmf)} KMF</div>
         <div style="font-size:0.65rem;color:${margeCouleur};margin-top:1px;">marge ${margePct}%</div>
@@ -2050,15 +2422,15 @@ function renderPricingTable() {
           min="0" step="100"
           oninput="onPriceChange('${p.id}', this.value)">
       </td>
-      <td>${verdictBadge(p.verdict)}</td>
+      <td>${verdictBadge(verdictEff)}</td>
       <td>
-        ${pushClass ? `<button class="pm-push-btn ${pushClass}" onclick="pushOne('${p.id}')">${pushLabel}</button>` : '<span style="color:#334155;font-size:0.7rem;">—</span>'}
+        ${pushClass ? `<button class="pm-push-btn ${pushClass}" onclick="pushOne('${p.id}')">${pushLabel}</button>` : '<span style="color:var(--ink3);font-size:0.7rem;">—</span>'}
       </td>
     </tr>`;
   }).join('');
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:30px;color:#475569;">
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--ink2);">
       Aucun produit pour ce filtre</td></tr>`;
   }
 }
@@ -2082,17 +2454,55 @@ function onPriceChange(id, val) {
   updatePricingKPIs();
 }
 
-function appliquerConseilles() {
-  _pmData.forEach(p => {
-    if (p.verdict !== 'ok') {
-      _pmModified[p.id] = p.prix_conseille;
-      const input = document.getElementById('pm-input-' + p.id);
-      if (input) { input.value = p.prix_conseille; input.classList.add('changed'); }
-      const row = document.getElementById('pm-row-' + p.id);
-      if (row) row.className = 'modified';
-    }
-  });
+// Recalcul live quand l'utilisateur change le prix d'achat AED
+function onAedChange(id, val) {
+  const aed = parseFloat(val);
+  if (!aed || aed <= 0) return;
+  // Mettre à jour le produit dans _pmData
+  const idx = _pmData.findIndex(p => p.id === id);
+  if (idx < 0) return;
+  // Mettre à jour price_aed dans _produitsRailway aussi (source de vérité locale)
+  const src = _produitsRailway.find(p => p.id === id);
+  if (src) src.price_aed = aed;
+  // Recalculer CDR avec le nouveau AED
+  const srcProd = Object.assign({}, _produitsRailway.find(p => p.id === id) || _pmData[idx], { price_aed: aed });
+  _pmData[idx] = calcCDRProduit(srcProd);
+  // Re-rendre la ligne
+  renderPricingTable();
   updatePricingKPIs();
+}
+
+function appliquerConseilles() {
+  let count = 0;
+  _pmData.forEach(p => {
+    _pmModified[p.id] = p.prix_conseille;
+    const input = document.getElementById('pm-input-' + p.id);
+    if (input) { input.value = p.prix_conseille; input.classList.add('changed'); }
+    const row = document.getElementById('pm-row-' + p.id);
+    if (row) row.className = 'modified';
+    count++;
+  });
+  renderPricingTable();
+  updatePushBar();
+  // Scroll vers la barre push + flash pour attirer l'attention
+  setTimeout(() => {
+    const bar = document.getElementById('pm-push-bar');
+    if (bar) {
+      bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      bar.style.transition = 'box-shadow 0.3s';
+      bar.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.6)';
+      setTimeout(() => { bar.style.boxShadow = ''; }, 1200);
+    }
+  }, 100);
+  // Feedback bouton
+  const btn = document.querySelector('[onclick="appliquerConseilles()"]');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = `✅ ${count} prix prêts`;
+    btn.style.background = 'rgba(16,185,129,0.15)';
+    btn.style.color = '#34d399';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 2500);
+  }
 }
 
 function resetModifications() {
@@ -2115,12 +2525,22 @@ async function pushOne(id) {
     const res = await fetch(`${KOMERCE_API}/api/products/${id}`, {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body:    JSON.stringify({ price_kmf: Math.round(newPrice) }),
+      body:    JSON.stringify({
+        price_kmf: Math.round(newPrice),
+        price_aed: _produitsRailway.find(x => x.id === id)?.price_aed || undefined,
+      }),
     });
 
     const produit = _pmData.find(p => p.id === id);
     if (res.ok) {
-      if (produit) { produit._pushState = 'success'; produit.price_kmf = Math.round(newPrice); }
+      if (produit) {
+        produit._pushState = 'success';
+        produit.price_kmf = Math.round(newPrice);
+        // Recalculer le verdict avec le nouveau prix (FIX v15)
+        const margeNew = newPrice > 0 ? (newPrice - produit.cdr_kmf) / newPrice * 100 : -999;
+        produit.verdict = margeNew >= 10 ? 'ok' : margeNew >= 0 ? 'warn' : 'err';
+        produit.marge_actuelle_pct = margeNew;
+      }
       delete _pmModified[id];
     } else {
       if (produit) produit._pushState = 'error';
@@ -2154,12 +2574,134 @@ async function pushAllModified() {
   updatePricingKPIs();
 }
 
+// ── Import CSV prix d'achat ─────────────────────────────────────────────────
+// Format attendu : nom,categorie,price_aed[,weight_kg,volume_m3]
+// Les colonnes weight_kg et volume_m3 sont optionnelles
+function importerCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    if (lines.length < 2) { alert('CSV vide ou invalide'); return; }
+    const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+    const iNom  = header.indexOf('nom');       const iName = header.indexOf('name');
+    const iCat  = header.indexOf('categorie') >= 0 ? header.indexOf('categorie') : header.indexOf('category');
+    const iAed  = header.indexOf('price_aed') >= 0 ? header.indexOf('price_aed') : header.indexOf('aed');
+    const iWkg  = header.indexOf('weight_kg');
+    const iVol  = header.indexOf('volume_m3');
+    if ((iNom < 0 && iName < 0) || iAed < 0) {
+      alert('Colonnes manquantes. Colonnes requises : nom (ou name), price_aed\nColonnes optionnelles : categorie, weight_kg, volume_m3'); return;
+    }
+    let added = 0, updated = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const nom  = cols[iNom >= 0 ? iNom : iName];
+      const cat  = iCat >= 0 ? cols[iCat] : 'Divers';
+      const aed  = parseFloat(cols[iAed]);
+      if (!nom || !aed) continue;
+      // Chercher si produit existe déjà (par nom, insensible casse)
+      const existing = _produitsRailway.find(p => p.name.toLowerCase() === nom.toLowerCase());
+      if (existing) {
+        existing.price_aed = aed;
+        if (iWkg >= 0 && cols[iWkg]) existing.weight_kg = parseFloat(cols[iWkg]);
+        if (iVol >= 0 && cols[iVol]) existing.volume_m3 = parseFloat(cols[iVol]);
+        updated++;
+      } else {
+        // Créer un produit local (pas encore dans Railway)
+        const fakeId = 'csv_' + Date.now() + '_' + i;
+        _produitsRailway.push({
+          id: fakeId, name: nom, category: cat,
+          price_aed: aed,
+          price_kmf: Math.round(aed * TAUX_AED),
+          weight_kg: iWkg >= 0 ? parseFloat(cols[iWkg]) || 0.5 : 0.5,
+          volume_m3: iVol >= 0 ? parseFloat(cols[iVol]) || 0.001 : 0.001,
+          emoji: '📦',
+        });
+        added++;
+      }
+    }
+    _pmData = _produitsRailway.map(p => calcCDRProduit(p));
+    renderPricingTable();
+    updatePricingKPIs();
+    const msg = `✅ Import terminé : ${updated} produits mis à jour, ${added} nouveaux produits ajoutés.`;
+    alert(msg);
+    console.log(msg);
+  };
+  reader.readAsText(file);
+  input.value = ''; // reset pour pouvoir re-importer
+}
+
+function exporterCSVTemplate() {
+  const header = 'nom,categorie,price_aed,weight_kg,volume_m3';
+  const exemples = [
+    'iPhone 14,phones,1200,0.174,0.00085',
+    'Samsung Galaxy A54,phones,600,0.202,0.00096',
+    'Robe soirée,fashion,80,0.3,0.002',
+    'Cafetière,maison,150,1.2,0.005',
+  ].join('\n');
+  const blob = new Blob([header + '\n' + exemples], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'komerce_produits_modele.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Prix Terrain ─────────────────────────────────────────────────────────────
+
+function onPrixTerrainChange(id, nomProduit, val) {
+  const v = parseFloat(val);
+  if (!isNaN(v) && v > 0) {
+    _prixTerrain[nomProduit] = v;
+  } else {
+    delete _prixTerrain[nomProduit];
+  }
+  localStorage.setItem('komerce_prix_terrain', JSON.stringify(_prixTerrain));
+  renderPricingTable();
+}
+
+function importPrixTerrainCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    let count = 0, skipped = [];
+    lines.slice(1).forEach(line => {
+      const parts = line.split(/[;,]/);
+      if (parts.length < 2) return;
+      const nom   = parts[0].trim().replace(/^"|"$/g,'');
+      const prix  = parseFloat(parts[1]);
+      if (!nom || isNaN(prix) || prix <= 0) { skipped.push(nom || '?'); return; }
+      _prixTerrain[nom] = prix;
+      count++;
+    });
+    localStorage.setItem('komerce_prix_terrain', JSON.stringify(_prixTerrain));
+    let msg = `✅ ${count} prix terrain importés.`;
+    if (skipped.length) msg += `\n⚠️ ${skipped.length} ligne(s) ignorée(s) : ${skipped.slice(0,5).join(', ')}`;
+    alert(msg);
+    renderPricingTable();
+  };
+  reader.readAsText(file, 'utf-8');
+  input.value = '';
+}
+
+function exportPrixTerrainCSV() {
+  const rows = Object.entries(_prixTerrain).map(([n,p]) => `"${n}";${p}`);
+  const csv  = ['nom_produit;prix_terrain_kmf', ...rows].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `komerce_prix_terrain_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
 function exportPricingCSV() {
-  const headers = ['Produit','Catégorie','Prix achat AED','CDR KMF','Prix plancher','Min viable 10%','Prix conseillé','Prix actuel Railway','Marge actuelle %','Verdict'];
+  const headers = ['Produit','Catégorie','Prix achat AED','CDR KMF','Prix plancher','Min viable 10%','Prix conseillé','Prix terrain KMF','Marge terrain %','Prix actuel Railway','Marge actuelle %','Verdict'];
   const rows = _pmData.map(p => [
     p.name, p.category, p.price_aed,
     Math.round(p.cdr_kmf), Math.round(p.prix_min),
     Math.round(p.prix_min_viable), Math.round(p.prix_conseille),
+    (_prixTerrain[p.name] || ''), (_prixTerrain[p.name] ? (((_prixTerrain[p.name] - p.cdr_kmf) / _prixTerrain[p.name] * 100).toFixed(1) + '%') : ''),
     Math.round(p.price_kmf),
     p.marge_actuelle_pct.toFixed(1),
     p.verdict === 'ok' ? 'Rentable' : p.verdict === 'warn' ? 'Faible' : 'Non rentable'
@@ -2179,9 +2721,119 @@ function toggleDetail() {
   b.textContent = t.classList.contains('visible') ? '▲ Masquer le détail' : '▼ Voir le détail ligne par ligne';
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  HISTORIQUE DOUANE
+// ══════════════════════════════════════════════════════════════════════
+let _histData = JSON.parse(localStorage.getItem('komerce_hist_douane') || '[]');
+
+function showAddHistForm() {
+  const form = document.getElementById('hist-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  // Pré-remplir date du jour
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('hist-date').value = today;
+}
+
+function addHistEntry() {
+  const date     = document.getElementById('hist-date').value;
+  const transit  = document.getElementById('hist-transit').value.trim();
+  const cif      = parseFloat(document.getElementById('hist-cif').value);
+  const droits   = parseFloat(document.getElementById('hist-droits').value);
+  const poids    = parseFloat(document.getElementById('hist-poids').value) || 0;
+  const articles = parseInt(document.getElementById('hist-articles').value) || 0;
+  const notes    = document.getElementById('hist-notes').value.trim();
+
+  if (!date || !cif || !droits) {
+    alert('Veuillez remplir : Date, Valeur CIF et Droits payés.'); return;
+  }
+
+  const taux = (droits / cif * 100);
+  const entry = { id: Date.now(), date, transit, cif, droits, taux, poids, articles, notes };
+  _histData.unshift(entry); // plus récent en premier
+  localStorage.setItem('komerce_hist_douane', JSON.stringify(_histData));
+  document.getElementById('hist-form').style.display = 'none';
+  renderHistTable();
+}
+
+function deleteHistEntry(id) {
+  if (!confirm('Supprimer cet envoi ?')) return;
+  _histData = _histData.filter(e => e.id !== id);
+  localStorage.setItem('komerce_hist_douane', JSON.stringify(_histData));
+  renderHistTable();
+}
+
+function renderHistTable() {
+  const tbody = document.getElementById('hist-tbody');
+  if (!tbody) return;
+  const N = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+
+  // KPIs
+  const count = _histData.length;
+  document.getElementById('hk-count').textContent = count;
+  const sc = DOUANE_SCENARIOS[_douaneScenario];
+  document.getElementById('hk-scenario').textContent = sc ? `${sc.label} ${sc.pct}%` : '—';
+
+  if (count === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--ink2);">Aucun envoi enregistré. Cliquez "Ajouter un envoi" après votre premier dédouanement.</td></tr>';
+    document.getElementById('hk-taux-moy').textContent = '—%';
+    document.getElementById('hk-taux-min').textContent = '—%';
+    document.getElementById('hk-taux-max').textContent = '—%';
+    document.getElementById('hist-recommandation').style.display = 'none';
+    return;
+  }
+
+  const tauxList = _histData.map(e => e.taux);
+  const tauxMoy  = tauxList.reduce((a,b) => a + b, 0) / tauxList.length;
+  const tauxMin  = Math.min(...tauxList);
+  const tauxMax  = Math.max(...tauxList);
+  document.getElementById('hk-taux-moy').textContent = tauxMoy.toFixed(1) + '%';
+  document.getElementById('hk-taux-min').textContent = tauxMin.toFixed(1) + '%';
+  document.getElementById('hk-taux-max').textContent = tauxMax.toFixed(1) + '%';
+
+  // Recommandation scénario
+  let scRec = tauxMoy <= 18 ? 'opt' : tauxMoy <= 32 ? 'real' : 'prud';
+  const recBox = document.getElementById('hist-recommandation');
+  const scRecData = DOUANE_SCENARIOS[scRec];
+  recBox.style.display = 'block';
+  recBox.innerHTML = `📊 <strong>Taux moyen terrain : ${tauxMoy.toFixed(1)}%</strong> — 
+    Scénario recommandé : <strong style="color:${scRecData.color};">${scRecData.label} (${scRecData.pct}%)</strong> 
+    ${count < 3 ? '<em style="color:var(--ink3);"> — données insuffisantes, au moins 3 envois recommandés</em>' : ''}
+    <button onclick="setDouaneScenario('${scRec}');switchSimTab('pricing',document.querySelector('.sim-tab:nth-child(2)'))" 
+      style="margin-left:12px;padding:3px 10px;background:${scRecData.color}22;border:1px solid ${scRecData.color};
+             border-radius:5px;color:${scRecData.color};font-size:0.75rem;cursor:pointer;font-weight:700;">
+      Appliquer au Pricing Manager →
+    </button>`;
+
+  tbody.innerHTML = _histData.map(e => {
+    const color = e.taux <= 20 ? '#34d399' : e.taux <= 35 ? '#f59e0b' : '#f87171';
+    return `<tr>
+      <td class="pm-mono" style="color:var(--ink3);">${e.date}</td>
+      <td style="color:var(--ink);">${e.transit || '—'}</td>
+      <td class="pm-mono">${N(e.cif)} KMF</td>
+      <td class="pm-mono">${N(e.droits)} KMF</td>
+      <td class="pm-mono" style="color:${color};font-weight:700;">${e.taux.toFixed(1)}%</td>
+      <td class="pm-mono" style="color:var(--ink3);">${e.poids ? e.poids + ' kg' : '—'}</td>
+      <td class="pm-mono" style="color:var(--ink3);">${e.articles || '—'}</td>
+      <td style="color:var(--ink3);font-size:0.75rem;">${e.notes || ''}</td>
+      <td><button onclick="deleteHistEntry(${e.id})" style="padding:3px 8px;border-radius:5px;border:1px solid rgba(220,38,38,0.3);background:transparent;color:var(--red);cursor:pointer;font-size:0.72rem;">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function exportHistCSV() {
+  if (_histData.length === 0) { alert('Aucune donnée à exporter.'); return; }
+  const headers = ['Date','Transitaire','CIF KMF','Droits KMF','Taux effectif %','Poids kg','Articles','Notes'];
+  const rows = _histData.map(e => [e.date, e.transit, e.cif, e.droits, e.taux.toFixed(2), e.poids, e.articles, e.notes].join(';'));
+  const blob = new Blob(['﻿' + [headers.join(';'), ...rows].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `komerce_hist_douane_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 updateHub();
 onCatChange(); // triggers onDimChange() → calculer()
+setDouaneScenario('real'); // scénario réaliste par défaut
 </script>
 </body>
 </html>

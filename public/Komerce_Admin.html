@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Komerce — Back-office Admin</title>
+<title>Komerce — ⚙️ Administration</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -156,10 +156,108 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--ln);color:var(--ink);padding:12px 20px;border-radius:10px;font-size:13px;opacity:0;transition:all .25s;pointer-events:none;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .toast.on{opacity:1}
+
+/* ══ FUSION admin_v2 ══════════════════════════════════════════════════ */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.kpi-card { background:var(--bg2); border-radius:12px; padding:1.2rem 1.4rem; border:1px solid var(--ln); position:relative; overflow:hidden; }
+.kpi-card.green { border-left:3px solid var(--grn); background:var(--grn-bg); }
+.kpi-card.orange { border-left:3px solid var(--ter); background:var(--ter-bg); }
+.kpi-card.red   { border-left:3px solid var(--red); background:var(--red-bg); }
+.kpi-card.blue  { border-left:3px solid var(--blu); background:var(--blu-bg); }
+.kpi-icon  { position:absolute; right:1rem; top:1rem; font-size:1.8rem; opacity:.12; }
+.kpi-label { font-size:.68rem; font-weight:700; color:var(--ink3); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.4rem; }
+.kpi-sub   { font-size:.75rem; color:var(--ink3); margin-top:.3rem; }
+.kpi-value { font-size:1.8rem; font-weight:800; color:var(--ink); line-height:1; }
+.card      { background:var(--bg2); border-radius:12px; border:1px solid var(--ln); overflow:hidden; margin-bottom:1.2rem; }
+.card-body { padding:1.2rem; }
+.card-header { padding:1rem 1.4rem; border-bottom:1px solid var(--ln); font-weight:700; font-size:.88rem; color:var(--ink); display:flex; align-items:center; gap:.5rem; }
+.fade-in   { animation:fadeIn .3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.loading   { text-align:center; padding:3rem; color:var(--ink3); }
+.spinner   { display:inline-block; width:30px; height:30px; border:3px solid var(--ln); border-top-color:var(--ter); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.sla-bar   { display:flex; gap:.4rem; margin-bottom:1rem; height:12px; border-radius:6px; overflow:hidden; }
+.sla-seg   { height:100%; }
+.scenario-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.2rem; }
+.scenario-card { background:var(--bg2); border-radius:10px; border:2px solid var(--ln); padding:1.2rem; text-align:center; }
+.scenario-card.attendu { border-color:var(--ter); }
+.scenario-label { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink3); margin-bottom:.5rem; }
+.scenario-value { font-size:1.5rem; font-weight:800; color:var(--ink); }
+.pessimiste .scenario-value { color:var(--red); }
+.optimiste  .scenario-value { color:var(--grn); }
+.badge        { display:inline-block; padding:.2rem .6rem; border-radius:20px; font-size:.68rem; font-weight:700; }
+.badge-gray   { background:var(--bg3); color:var(--ink3); }
+.badge-blue   { background:var(--blu-bg); color:var(--blu); }
+.badge-orange { background:var(--ter-bg); color:var(--ter2); }
+.badge-red    { background:var(--red-bg); color:var(--red); }
+
+/* ══ LOGIN SCREEN ══════════════════════════════════════════════════════ */
+#login-screen {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+}
+.login-card {
+  background:var(--bg2); border:1px solid var(--ln); border-radius:16px;
+  padding:2.5rem; width:100%; max-width:380px; box-shadow:0 8px 32px rgba(0,0,0,.08);
+}
+.login-logo {
+  font-family:monospace; font-size:1.3rem; font-weight:800;
+  color:var(--ter); letter-spacing:2px; text-transform:uppercase;
+  margin-bottom:1.8rem; text-align:center;
+}
+.login-logo sup { font-size:.5em; color:var(--ink3); letter-spacing:1px; }
+#login-error { color:var(--red); font-size:.82rem; margin-top:.8rem; display:none; }
+.btn-login {
+  width:100%; padding:.85rem; border:none; border-radius:8px;
+  background:var(--ter); color:var(--bg2); font-size:.9rem; font-weight:700;
+  cursor:pointer; margin-top:1rem; transition:background .2s;
+}
+.btn-login:hover { background:var(--ter2); }
+
+/* ══ TABS DASHBOARD ════════════════════════════════════════════════════ */
+.dash-tabs { display:flex; gap:0; border-bottom:2px solid var(--ln); margin-bottom:1.5rem; }
+.dash-tab {
+  padding:.7rem 1.2rem; font-size:.8rem; font-weight:600; color:var(--ink3);
+  cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px;
+  transition:all .15s; white-space:nowrap;
+}
+.dash-tab:hover { color:var(--ink2); }
+.dash-tab.active { color:var(--ter); border-bottom-color:var(--ter); }
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* ══ TOPBAR LOGOUT ═════════════════════════════════════════════════════ */
+.btn-logout {
+  padding:.35rem .9rem; border:1px solid var(--ln); border-radius:6px;
+  background:transparent; color:var(--ink3); font-size:.75rem; cursor:pointer;
+}
+.btn-logout:hover { color:var(--red); border-color:var(--red); }
 </style>
 </head>
 <body>
-<div class="layout">
+
+<!-- ══ ÉCRAN DE CONNEXION ═══════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span>Komerce<sup>ADMIN</sup></span>
+      <div style="font-size:.8rem;color:#94a3b8;margin-top:.3rem;">Tableau de bord opérationnel</div>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" value="ilham@komerce.km" />
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Connexion →</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+
+<div class="layout" id="bo-app">
 
   <!-- SIDEBAR -->
   <div class="sb">
@@ -169,6 +267,10 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
     </div>
     <nav class="sb-nav">
       <div class="sb-sec">Pilotage</div>
+      <div class="ni" onclick="go('dashboard',this)"><span class="ni-ic">◈</span>Activité</div>
+      <div class="ni" onclick="go('ventes',this)"><span class="ni-ic">◉</span>Ventes</div>
+      <div class="ni" onclick="go('retards',this)"><span class="ni-ic">◎</span>Retards</div>
+      <div class="ni" onclick="go('forecast',this)"><span class="ni-ic">◐</span>Prévisions</div>
       <div class="ni sel" onclick="go('dash',this)"><span class="ni-ic">&#9672;</span>Tableau de bord</div>
       <div class="ni" onclick="go('orders',this)"><span class="ni-ic">&#9685;</span>Commandes<span class="ni-bdg">7</span></div>
       <div class="ni" onclick="go('logistic',this)"><span class="ni-ic">&#9678;</span>Logistique</div>
@@ -194,7 +296,10 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
     <div class="topbar">
       <div class="tb-title" id="tb-title">Tableau de bord</div>
       <div class="tb-right">
-        <div class="tb-pill live">&#9679; Live</div>
+        <span id="topbar-time" style="font-size:.72rem;color:var(--ink3);opacity:.8;margin-right:.5rem;font-family:monospace;"></span>
+        <div class="tb-pill live">&#9679; Live
+      <button class="btn-logout" onclick="doLogout()" style="margin-left:.5rem;">Déconnexion</button>
+    </div>
         <div class="tb-pill">&#127462;&#127466; 1 AED = 139 KMF</div>
         <div class="tb-pill">&#127467;&#127479; 1 EUR = 495 KMF</div>
         <div class="tb-pill">&#128674; 180 EUR/m3</div>
@@ -596,6 +701,15 @@ const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ? 'http://localhost:3000/api' : '/api';
 
 const token = localStorage.getItem('kmrc_token') || '';
+_token = token || null;
+// Afficher login si pas de token
+if (!token) {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('bo-app').style.display = 'none';
+} else {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('bo-app').style.display = 'flex';
+}
 async function api(method, path, body) {
   const headers = {'Content-Type':'application/json'};
   if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -610,7 +724,8 @@ var TITLES = {
   dash:"Tableau de bord",orders:"Commandes",logistic:"Logistique",
   litiges:"Litiges et Remboursements",catalogue:"Catalogue produits",
   ceremony:"Modules spécialisés",finance:"Comptabilite multi-devises",
-  pricing:"Moteur de pricing",relais:"Point relais",settings:"Parametres systeme"
+  pricing:"Moteur de pricing",relais:"Point relais",settings:"Parametres systeme",
+  dashboard:"Activité",ventes:"Ventes",retards:"Retards",forecast:"Prévisions"
 };
 function go(id, el) {
   document.querySelectorAll(".scr").forEach(s => s.classList.remove("on"));
@@ -625,6 +740,8 @@ function go(id, el) {
     dash: loadDashboard, orders: loadOrders, logistic: loadLogistique,
     litiges: loadLitiges, finance: loadFinance, pricing: loadPricing,
     catalogue: loadCatalogue, relais: loadRelais,
+    dashboard: loadOps, ventes: () => loadSales(_salesPeriod),
+    retards: () => loadRetards(null), forecast: initForecastForm,
   };
   if (loaders[id]) loaders[id]();
 }
@@ -990,6 +1107,731 @@ document.addEventListener('DOMContentLoaded', () => {
     showT('Back-end non connecté — données fictives');
   });
 });
+
+
+// ══ FONCTIONS FUSIONNÉES (admin_v2) ══
+
+// ══ FUSION admin_v2 — Auth & Dashboard ══════════════════════════════════════
+let _token = localStorage.getItem('kmrc_token') || null;
+let _salesPeriod = 30;
+
+// Adapter apiFetch pour utiliser la même base API que le Backoffice
+function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.style.display = 'block';
+      return;
+    }
+    if (data.user.role !== 'admin') {
+      errEl.textContent = 'Accès réservé aux administrateurs.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    _token = data.token;
+    token = data.token;
+    localStorage.setItem('kmrc_token', data.token);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('bo-app').style.display = 'flex';
+    startClock();
+    loadOps();
+
+  } catch (e) {
+    errEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  _token = null;
+  token = '';
+  localStorage.removeItem('kmrc_token');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('bo-app').style.display = 'none';
+  document.getElementById('login-password').value = '';
+}
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  _currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+
+  if (tab === 'ops')      loadOps();
+  if (tab === 'sales')    loadSales(_salesPeriod);
+  if (tab === 'retards')  loadRetards(null);
+  if (tab === 'forecast') initForecastForm();
+}
+
+function refreshCurrent() {
+  if (_currentTab === 'ops')     loadOps();
+  if (_currentTab === 'sales')   loadSales(_salesPeriod);
+  if (_currentTab === 'retards') loadRetards(null);
+  if (_currentTab === 'forecast') loadForecast();
+}
+
+// ── API CALLS ─────────────────────────────────────────────────────────────────
+
+function apiFetch(path) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || _token) }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+
+function kmf(n) { return Number(n || 0).toLocaleString('fr-FR') + ' KMF'; }
+
+function pct(n) { return (Number(n || 0)).toFixed(1) + '%'; }
+
+function badge(text, type) {
+  const cls = { green:'badge-green', orange:'badge-orange', red:'badge-red', blue:'badge-blue', gray:'badge-gray' };
+  return `<span class="badge ${cls[type] || 'badge-gray'}">${text}</span>`;
+}
+
+function slaColor(status) {
+  if (status === 'collected') return 'green';
+  if (status === 'shipped')   return 'blue';
+  if (status === 'available') return 'orange';
+  if (status === 'paid' || status === 'preparation') return 'gray';
+  return 'gray';
+}
+
+function startClock() {
+  const el = document.getElementById('topbar-time');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }, 1000);
+}
+
+// ── PILOTAGE ──────────────────────────────────────────────────────────────────
+
+function loadOps() {
+  const el = document.getElementById('ops-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const d = await apiFetch('/api/dashboard/ops');
+    const a = d.activite;
+    const l = d.logistique;
+    const s = d.sla;
+    const total_sla = s.on_time + s.warning + s.late + s.blocked || 1;
+
+    el.innerHTML = `
+      <div class="fade-in">
+
+        <!-- KPIs activité -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">📦</div>
+            <div class="kpi-label">Aujourd'hui</div>
+            <div class="kpi-value">${a.commandes_aujourd_hui}</div>
+            <div class="kpi-sub">nouvelles commandes</div>
+          </div>
+          <div class="kpi-card orange">
+            <div class="kpi-icon">⏳</div>
+            <div class="kpi-label">En cours</div>
+            <div class="kpi-value">${a.commandes_en_cours}</div>
+            <div class="kpi-sub">actives</div>
+          </div>
+          <div class="kpi-card ${a.commandes_bloquees > 0 ? 'red' : 'green'}">
+            <div class="kpi-icon">🚨</div>
+            <div class="kpi-label">Bloquées</div>
+            <div class="kpi-value">${a.commandes_bloquees}</div>
+            <div class="kpi-sub">sans activité 7j+</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-label">Livrées</div>
+            <div class="kpi-value">${a.livrees_aujourd_hui}</div>
+            <div class="kpi-sub">aujourd'hui · ${a.livrees_30j} sur 30j</div>
+          </div>
+        </div>
+
+        <!-- SLA -->
+        <div class="card">
+          <div class="card-header">🎯 SLA — Respect des délais (3–5 semaines)</div>
+          <div class="card-body">
+            <div class="sla-bar">
+              <div class="sla-seg" style="flex:${s.on_time};background:#16a34a;" title="Dans les délais : ${s.on_time}"></div>
+              <div class="sla-seg" style="flex:${s.warning};background:#f59e0b;" title="Attention : ${s.warning}"></div>
+              <div class="sla-seg" style="flex:${s.late};background:#ef4444;" title="En retard : ${s.late}"></div>
+              <div class="sla-seg" style="flex:${s.blocked};background:#7c3aed;" title="Bloqué : ${s.blocked}"></div>
+            </div>
+            <div style="display:flex;gap:1.2rem;font-size:.82rem;flex-wrap:wrap;">
+              <span>🟢 Dans les délais : <strong>${s.on_time}</strong></span>
+              <span>🟡 Attention : <strong>${s.warning}</strong></span>
+              <span>🔴 En retard : <strong>${s.late}</strong></span>
+              <span>🟣 Bloqué : <strong>${s.blocked}</strong></span>
+            </div>
+            ${s.details.late.length ? `
+              <div style="margin-top:1rem;">
+                <div style="font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.5rem;">Commandes en retard</div>
+                ${s.details.late.map(c => `
+                  <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.83rem;">
+                    <span>${c.reference}</span>
+                    <span>${badge(c.status, 'orange')}</span>
+                    <span style="color:var(--red);">${c.jours}j</span>
+                  </div>`).join('')}
+              </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Logistique par zone -->
+        <div class="kpi-grid">
+          <div class="kpi-card blue" style="cursor:pointer;" onclick="toggleDetail('detail-dubai')">
+            <div class="kpi-icon">✈️</div>
+            <div class="kpi-label">Dubai – À préparer</div>
+            <div class="kpi-value" style="color:var(--primary);">${l.dubai.count}</div>
+            <div class="kpi-sub">colis en attente d'expédition</div>
+          </div>
+          <div class="kpi-card" style="cursor:pointer;" onclick="toggleDetail('detail-bateau')">
+            <div class="kpi-icon">🚢</div>
+            <div class="kpi-label">Bateau – En transit</div>
+            <div class="kpi-value">${l.bateau.count}</div>
+            <div class="kpi-sub">en mer</div>
+          </div>
+          <div class="kpi-card orange" style="cursor:pointer;" onclick="toggleDetail('detail-anjouan')">
+            <div class="kpi-icon">🏝️</div>
+            <div class="kpi-label">Anjouan – À récupérer</div>
+            <div class="kpi-value">${l.anjouan.count}</div>
+            <div class="kpi-sub">au relais</div>
+          </div>
+        </div>
+
+        <!-- Détails logistiques -->
+        <div id="detail-dubai" style="display:none;margin-bottom:1rem;">
+          ${tableCommandes(l.dubai.items, ['reference','status','jours_dans_etape'], ['Référence','Statut','Jours étape'])}
+        </div>
+        <div id="detail-bateau" style="display:none;margin-bottom:1rem;">
+          ${tableCommandes(l.bateau.items, ['reference','shipment_ref','jours_en_mer','eta_arrivee'], ['Référence','Expédition','Jours en mer','ETA'])}
+        </div>
+        <div id="detail-anjouan" style="display:none;margin-bottom:1rem;">
+          ${tableCommandes(l.anjouan.items, ['reference','destinataire','relais_nom','heures_en_attente'], ['Référence','Destinataire','Relais','Heures attente'])}
+        </div>
+
+        <!-- Délais moyens -->
+        <div class="card">
+          <div class="card-header">⏱️ Délais moyens</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;">
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:2rem;font-weight:800;color:var(--primary);">${d.delais.avg_preparation_jours || '—'}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">jours préparation</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:2rem;font-weight:800;color:var(--primary);">${d.delais.avg_livraison_totale_jours || '—'}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">jours livraison totale</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:2rem;font-weight:800;color:${parseFloat(d.delais.pct_en_retard) > 10 ? 'var(--red)' : 'var(--green)'};">${d.delais.pct_en_retard}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">% en retard</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertes -->
+        ${alertesBlock(d.alertes)}
+
+        <!-- Clients à contacter -->
+        ${d.clients_retards && d.clients_retards.count > 0 ? `
+        <div class="card">
+          <div class="card-header" style="color:var(--red);">⚠️ Clients à contacter (${d.clients_retards.count})</div>
+          <div class="card-body">
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+              ${Object.entries(d.clients_retards.par_niveau || {}).map(([k,v]) =>
+                `<span class="badge ${k.includes('remboursement') ? 'badge-red' : k.includes('10pct') ? 'badge-orange' : 'badge-blue'}">${k} : ${v}</span>`
+              ).join('')}
+            </div>
+            ${d.clients_retards.urgents?.length ? `
+              <table>
+                <tr><th>Référence</th><th>Client</th><th>Retard</th><th>Action</th></tr>
+                ${d.clients_retards.urgents.map(c => `
+                  <tr>
+                    <td><strong>${c.reference}</strong></td>
+                    <td>${c.client || '—'}<br><span style="font-size:.75rem;color:var(--muted);">${c.email || ''}</span></td>
+                    <td style="color:var(--red);">${c.jours_retard}j</td>
+                    <td>${badge(c.compensation, c.compensation.includes('remb') ? 'red' : 'orange')}</td>
+                  </tr>`).join('')}
+              </table>
+              <div style="margin-top:.8rem;font-size:.82rem;color:var(--muted);">→ Voir tous les détails dans l'onglet <strong>Retards</strong></div>
+            ` : ''}
+          </div>
+        </div>` : ''}
+
+      </div>
+    `;
+
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+function tableCommandes(items, fields, headers) {
+  if (!items || !items.length) return '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;">Aucune commande dans cette étape.</div>';
+  return `
+    <div class="card">
+      <div class="card-body" style="overflow-x:auto;">
+        <table>
+          <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          ${items.map(item => `
+            <tr>${fields.map(f => {
+              const v = item[f];
+              if (f === 'status') return `<td>${badge(v, slaColor(v))}</td>`;
+              if (f === 'eta_arrivee' && v) return `<td>${new Date(v).toLocaleDateString('fr-FR')}</td>`;
+              if (f === 'heures_en_attente') return `<td style="color:${Number(v)>48?'var(--red)':'inherit'}">${Math.round(v)}h</td>`;
+              if (f === 'jours_en_mer') return `<td style="color:${Number(v)>30?'var(--red)':Number(v)>25?'var(--accent)':'inherit'}">${v}j</td>`;
+              return `<td>${v || '—'}</td>`;
+            }).join('')}</tr>
+          `).join('')}
+        </table>
+      </div>
+    </div>`;
+}
+
+function alertesBlock(a) {
+  const items = [
+    { key: 'cash_pending', icon: '💵', label: 'Cash relais en attente +12h', color: 'orange' },
+    { key: 'anomalies',    icon: '🔍', label: 'Anomalies scan non traitées', color: 'red' },
+    { key: 'low_stock',    icon: '📦', label: 'Stock faible (<3 unités)',    color: 'orange' },
+    { key: 'sms_failed',   icon: '📵', label: 'SMS échoués (24h)',           color: 'red' },
+  ].filter(i => a[i.key]?.count > 0);
+
+  if (!items.length) return `<div style="background:#f0fdf4;border-radius:12px;padding:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:1rem;">✅ Aucune alerte active</div>`;
+
+  return `
+    <div class="kpi-grid">
+      ${items.map(i => `
+        <div class="kpi-card ${i.color === 'red' ? 'red' : 'orange'}">
+          <div class="kpi-icon">${i.icon}</div>
+          <div class="kpi-label">${i.label}</div>
+          <div class="kpi-value">${a[i.key].count}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── VENTES ────────────────────────────────────────────────────────────────────
+
+function loadSales(period) {
+  _salesPeriod = period;
+  const el = document.getElementById('sales-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const d = await apiFetch(`/api/dashboard/sales?period=${period}`);
+    const r = d.kpi_l1;
+    const m = r.marge;
+
+    el.innerHTML = `
+      <div class="fade-in">
+
+        <!-- KPI L1 -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">💶</div>
+            <div class="kpi-label">Chiffre d'affaires</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(r.ca_kmf)}</div>
+            <div class="kpi-sub">${r.ca_eur} EUR · évol. ${r.evolution.ca_pct}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🛒</div>
+            <div class="kpi-label">Commandes</div>
+            <div class="kpi-value">${r.nb_commandes}</div>
+            <div class="kpi-sub">évol. ${r.evolution.commandes_pct}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🧺</div>
+            <div class="kpi-label">Panier moyen</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(r.panier_moyen_kmf)}</div>
+            <div class="kpi-sub">conversion ${r.taux_conversion}</div>
+          </div>
+          <div class="kpi-card ${parseInt(m.marge_reelle_kmf) < 0 ? 'red' : 'green'}">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-label">Marge réelle</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(m.marge_reelle_kmf)}</div>
+            <div class="kpi-sub">${m.taux_marge_moy} · taux moyen</div>
+          </div>
+        </div>
+
+        <!-- Alerte marge -->
+        ${m.alerte_vente_a_perte ? `
+          <div style="background:#fef2f2;border:2px solid var(--red);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+            <strong style="color:var(--red);">🚨 Attention — ${m.alerte_vente_a_perte.count} commande(s) potentiellement à perte</strong>
+            <div style="font-size:.82rem;color:var(--muted);margin-top:.3rem;">${m.alerte_vente_a_perte.commandes.map(c => c.reference).join(', ')}</div>
+          </div>` : ''}
+        ${m.nb_sans_cost_renseigne > 0 ? `
+          <div style="background:#fef3c7;border:2px solid var(--accent);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+            <strong style="color:#d97706;">⚠️ ${m.nb_sans_cost_renseigne} commande(s) sans coût renseigné</strong> — marge inconnue pour ces articles
+          </div>` : ''}
+
+        <!-- Décomposition marge -->
+        <div class="card">
+          <div class="card-header">💸 Décomposition de la marge</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;">
+              <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">MARGE PRODUIT</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--primary);">${kmf(m.marge_produit_kmf)}</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#fff7ed;border-radius:10px;">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">− TRANSPORT</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--accent);">${kmf(m.cout_transport_kmf)}</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:#fff7ed;border-radius:10px;">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">− DOUANE</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--accent);">${kmf(m.cout_douane_kmf)}</div>
+              </div>
+              <div style="text-align:center;padding:1rem;background:${parseInt(m.marge_reelle_kmf)>=0?'#f0fdf4':'#fef2f2'};border-radius:10px;border:2px solid ${parseInt(m.marge_reelle_kmf)>=0?'#16a34a':'var(--red)'};">
+                <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:.3rem;">= MARGE RÉELLE</div>
+                <div style="font-size:1.3rem;font-weight:800;color:${parseInt(m.marge_reelle_kmf)>=0?'var(--green)':'var(--red)'};">${kmf(m.marge_reelle_kmf)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diaspora vs local -->
+        <div class="card">
+          <div class="card-header">🌍 Diaspora vs Local</div>
+          <div class="card-body">
+            <table>
+              <tr><th>Origine</th><th>Commandes</th><th>CA</th><th>Panier moyen</th></tr>
+              ${(d.kpi_l2.diaspora_vs_local || []).map(r => `
+                <tr>
+                  <td>${r.origine === 'local' ? '🇰🇲 Local' : '✈️ Diaspora'}</td>
+                  <td>${r.nb_commandes}</td>
+                  <td>${kmf(r.ca_kmf)}</td>
+                  <td>${kmf(r.panier_moyen_kmf)}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <!-- Marge par catégorie -->
+        <div class="card">
+          <div class="card-header">📦 Marge par catégorie</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table>
+              <tr><th>Catégorie</th><th>Commandes</th><th>CA</th><th>Marge produit</th><th>Taux</th></tr>
+              ${(d.kpi_l2.marge_par_categorie || []).map(c => `
+                <tr>
+                  <td><strong>${c.category || 'Non catégorisé'}</strong></td>
+                  <td>${c.nb_commandes}</td>
+                  <td>${kmf(c.ca_kmf)}</td>
+                  <td>${kmf(c.marge_produit_kmf)}</td>
+                  <td>${badge(c.taux_marge_pct + '%', Number(c.taux_marge_pct) > 20 ? 'green' : Number(c.taux_marge_pct) > 10 ? 'orange' : 'red')}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <!-- Top 10 produits -->
+        <div class="card">
+          <div class="card-header">🏆 Top 10 produits</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table>
+              <tr><th>#</th><th>Produit</th><th>Qté</th><th>CA</th><th>Marge</th><th>Taux</th></tr>
+              ${(d.produits.top_10 || []).map((p, i) => `
+                <tr>
+                  <td style="color:var(--muted);font-weight:700;">${i + 1}</td>
+                  <td>${p.emoji || ''} <strong>${p.name}</strong><br><span style="font-size:.75rem;color:var(--muted);">${p.category || ''}</span></td>
+                  <td>${p.qty_vendue}</td>
+                  <td>${kmf(p.revenue_kmf)}</td>
+                  <td>${p.marge_kmf ? kmf(p.marge_kmf) : '—'}</td>
+                  <td>${p.taux_marge_pct ? badge(p.taux_marge_pct + '%', Number(p.taux_marge_pct) > 20 ? 'green' : 'orange') : '—'}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+
+        <!-- Produits jamais vendus -->
+        ${d.produits.jamais_vendus?.count > 0 ? `
+          <div class="card">
+            <div class="card-header" style="color:var(--muted);">💤 Produits jamais vendus (${d.produits.jamais_vendus.count})</div>
+            <div class="card-body">
+              <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+                ${d.produits.jamais_vendus.items.map(p => `
+                  <span class="badge badge-gray">${p.emoji || ''} ${p.name}</span>`).join('')}
+              </div>
+            </div>
+          </div>` : ''}
+
+        <!-- Clients -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">👤</div>
+            <div class="kpi-label">Nouveaux clients</div>
+            <div class="kpi-value">${d.clients.nouveaux_cette_periode}</div>
+            <div class="kpi-sub">sur la période</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">🔄</div>
+            <div class="kpi-label">Taux réachat</div>
+            <div class="kpi-value">${d.kpi_l3.taux_reachat_pct}</div>
+            <div class="kpi-sub">${d.clients.clients_recurrents} clients récurrents</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">💎</div>
+            <div class="kpi-label">LTV moyen</div>
+            <div class="kpi-value" style="font-size:1.3rem;">${kmf(d.kpi_l3.ltv_moyen_kmf)}</div>
+            <div class="kpi-sub">valeur vie client</div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ── RETARDS ───────────────────────────────────────────────────────────────────
+
+function loadRetards(niveau) {
+  const el = document.getElementById('retards-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const url = '/api/dashboard/retards' + (niveau ? `?niveau=${encodeURIComponent(niveau)}` : '');
+    const d = await apiFetch(url);
+
+    if (!d.clients?.length) {
+      el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--green);font-size:1.1rem;font-weight:600;">✅ Aucun retard — toutes les commandes sont dans les délais</div>';
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="fade-in">
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+          ${Object.entries(d.par_niveau || {}).map(([k, v]) => `
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.8rem 1.2rem;text-align:center;">
+              <div style="font-size:1.3rem;font-weight:800;color:${k.includes('remb')?'var(--red)':k.includes('10')?'var(--accent)':'var(--primary)'};">${v.count}</div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem;max-width:120px;">${v.label}</div>
+            </div>`).join('')}
+        </div>
+
+        <div class="card">
+          <div class="card-header">📋 Liste des clients à contacter (${d.total})</div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table>
+              <tr><th>Référence</th><th>Client</th><th>Statut</th><th>Retard</th><th>Action</th><th>Message suggéré</th></tr>
+              ${d.clients.map(c => `
+                <tr>
+                  <td><strong>${c.reference}</strong></td>
+                  <td>
+                    <strong>${c.client_nom || '—'}</strong><br>
+                    <span style="font-size:.75rem;color:var(--muted);">${c.client_email || ''}</span><br>
+                    <span style="font-size:.75rem;color:var(--muted);">${c.client_phone || ''}</span>
+                  </td>
+                  <td>${badge(c.status, slaColor(c.status))}</td>
+                  <td style="color:${Number(c.jours_de_retard) > 14 ? 'var(--red)' : 'var(--accent)'}; font-weight:700;">
+                    ${c.jours_de_retard > 0 ? c.jours_de_retard + 'j' : c.type_retard || '—'}
+                  </td>
+                  <td>${badge(c.compensation_recommandee || '—', c.compensation_recommandee?.includes('remb') ? 'red' : c.compensation_recommandee?.includes('10') ? 'orange' : 'blue')}</td>
+                  <td style="font-size:.75rem;color:var(--muted);max-width:260px;">${c.sms_suggere || '—'}</td>
+                </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+      </div>`;
+
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ── PRÉVISIONS ────────────────────────────────────────────────────────────────
+
+function initForecastForm() {
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  document.getElementById('fc-target').value = lastDay.toISOString().split('T')[0];
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('fc-from').value = firstDay.toISOString().split('T')[0];
+}
+
+function loadForecast() {
+  const el = document.getElementById('forecast-content');
+  const target = document.getElementById('fc-target').value;
+  const period = document.getElementById('fc-period').value;
+  const from   = document.getElementById('fc-from').value;
+
+  if (!target) { alert('Choisissez une date cible'); return; }
+
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Calcul des projections…</p></div>';
+
+  try {
+    const url = `/api/dashboard/forecast?target_date=${target}&ref_period=${period}${from ? '&from_date=' + from : ''}`;
+    const d = await apiFetch(url);
+
+    const tauxMargeReel = d.realise.ca_kmf > 0
+      ? ((d.realise.marge_reelle_kmf / d.realise.ca_kmf) * 100).toFixed(1) + '%'
+      : '—';
+
+    el.innerHTML = `
+      <div class="fade-in">
+
+        <!-- Réalisé -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-label">CA réalisé</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(d.realise.ca_kmf)}</div>
+            <div class="kpi-sub">depuis le ${new Date(d.from_date).toLocaleDateString('fr-FR')}</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-label">Marge réalisée</div>
+            <div class="kpi-value" style="font-size:1.4rem;">${kmf(d.realise.marge_reelle_kmf)}</div>
+            <div class="kpi-sub">${tauxMargeReel}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">📅</div>
+            <div class="kpi-label">Jours restants</div>
+            <div class="kpi-value">${d.days_remaining}</div>
+            <div class="kpi-sub">jusqu'au ${new Date(d.target_date).toLocaleDateString('fr-FR')}</div>
+          </div>
+        </div>
+
+        <!-- Note modèle -->
+        <div style="background:#f0f9ff;border-radius:10px;padding:1rem;margin-bottom:1.2rem;font-size:.85rem;color:#1a3a5c;">
+          ${d.modele.note} · Basé sur ${d.modele.ref_period_jours}j d'historique ·
+          Moyenne ${kmf(d.modele.avg_ca_par_jour)}/jour · ±${kmf(d.modele.stddev_ca)}
+        </div>
+
+        <!-- Scénarios CA -->
+        <div class="card">
+          <div class="card-header">📈 Projection CA au ${new Date(d.target_date).toLocaleDateString('fr-FR')}</div>
+          <div class="card-body">
+            <div class="scenario-grid">
+              <div class="scenario-card pessimiste">
+                <div class="scenario-label">Pessimiste</div>
+                <div class="scenario-value">${kmf(d.projection_ca.pessimiste)}</div>
+              </div>
+              <div class="scenario-card attendu">
+                <div class="scenario-label">⭐ Attendu</div>
+                <div class="scenario-value">${kmf(d.projection_ca.attendu)}</div>
+              </div>
+              <div class="scenario-card optimiste">
+                <div class="scenario-label">Optimiste</div>
+                <div class="scenario-value">${kmf(d.projection_ca.optimiste)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scénarios marge -->
+        <div class="card">
+          <div class="card-header">💸 Projection marge réelle au ${new Date(d.target_date).toLocaleDateString('fr-FR')}</div>
+          <div class="card-body">
+            ${d.projection_marge.alerte_perte ? `<div style="background:#fef2f2;border:2px solid var(--red);border-radius:8px;padding:.8rem;margin-bottom:1rem;color:var(--red);font-weight:700;">${d.projection_marge.alerte_perte}</div>` : ''}
+            <div class="scenario-grid">
+              <div class="scenario-card pessimiste">
+                <div class="scenario-label">Pessimiste</div>
+                <div class="scenario-value">${kmf(d.projection_marge.pessimiste)}</div>
+              </div>
+              <div class="scenario-card attendu">
+                <div class="scenario-label">⭐ Attendu</div>
+                <div class="scenario-value">${kmf(d.projection_marge.attendu)}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.3rem;">taux ${d.projection_marge.taux_marge_proj}</div>
+              </div>
+              <div class="scenario-card optimiste">
+                <div class="scenario-label">Optimiste</div>
+                <div class="scenario-value">${kmf(d.projection_marge.optimiste)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>`;
+
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:2rem;text-align:center;">Erreur : ${e.message}</div>`;
+  }
+}
+
+initForecastForm();
+
 </script>
+
+<!-- ══ SCREENS DASHBOARD (fusionnés depuis admin_v2) ════════════════════════ -->
+<div class="scr" id="scr-dashboard">
+  <div class="pg-ttl">📊 Activité</div>
+  <div id="ops-content"><div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Chargement…</p></div></div>
+</div>
+
+<div class="scr" id="scr-ventes">
+  <div class="pg-ttl">💰 Ventes</div>
+  <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
+    <span style="font-size:.78rem;font-weight:700;color:var(--ink3);">Période :</span>
+    <button onclick="loadSales(7)"  style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">7j</button>
+    <button onclick="loadSales(30)" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:700;background:var(--ter);color:white;">30j</button>
+    <button onclick="loadSales(90)" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">90j</button>
+  </div>
+  <div id="sales-content"><div class="loading"><div class="spinner"></div></div></div>
+</div>
+
+<div class="scr" id="scr-retards">
+  <div class="pg-ttl">⚠️ Retards</div>
+  <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;">
+    <button onclick="loadRetards(null)" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:700;background:var(--ter);color:white;">Tous</button>
+    <button onclick="loadRetards('remboursement_possible')" style="padding:.35rem .8rem;border:1px solid var(--red);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--red);">🚨 Remboursement</button>
+    <button onclick="loadRetards('remise_10pct_prochaine_cmd')" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--ter2);">−10%</button>
+    <button onclick="loadRetards('avoir_5pct')" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">Avoir 5%</button>
+    <button onclick="loadRetards('contact_préventif')" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">Préventif</button>
+  </div>
+  <div id="retards-content"><div class="loading"><div class="spinner"></div></div></div>
+</div>
+
+<div class="scr" id="scr-forecast">
+  <div class="pg-ttl">📈 Prévisions</div>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.5rem;background:var(--bg2);padding:1rem;border-radius:10px;border:1px solid var(--ln);">
+    <div>
+      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">DATE CIBLE</label>
+      <input type="date" id="fc-target" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
+    </div>
+    <div>
+      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">PÉRIODE RÉFÉRENCE</label>
+      <select id="fc-period" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
+        <option value="7">7 derniers jours</option>
+        <option value="14">14 derniers jours</option>
+        <option value="30" selected>30 derniers jours</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">DEPUIS (optionnel)</label>
+      <input type="date" id="fc-from" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
+    </div>
+    <button onclick="loadForecast()" style="padding:.45rem 1.2rem;background:var(--ter);color:white;border:none;border-radius:6px;font-weight:700;font-size:.82rem;cursor:pointer;">📈 Calculer</button>
+  </div>
+  <div id="forecast-content"></div>
+</div>
 </body>
 </html>
