@@ -13,12 +13,13 @@ Câbler la Boutique pour que les commandes arrivent en DB → les dashboards se 
 - Boutique reste publique
 - **Commit** : `f40b41b`
 
-### 🔲 Étape 1 — Seed produits + relais dans server.js
+### ✅ Étape 1 — Seed produits + relais dans server.js
 - Ajouter `seedProducts()` dans server.js (20 produits Comores)
 - Ajouter `seedRelais()` dans server.js (5 relais : Moroni, Mutsamudu, Fomboni, Domoni, Sima)
 - Les seeds s'exécutent au démarrage (INSERT IF NOT EXISTS)
 - **Routes concernées** : GET /api/products, GET /api/relais
-- **Status** : 🔲 À faire
+- **Commit** : `7894ad2`
+- **Status** : ✅ Fait
 
 ### 🔲 Étape 2 — Boutique : charger vrais produits depuis l'API
 - Remplacer `USE_DEMO = true` → `false`
