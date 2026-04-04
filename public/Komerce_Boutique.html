@@ -2214,14 +2214,14 @@ function shareCartWhatsApp() {
 }
 
 /* ──────────────────────────────────────
-   ORDER FORM — SINGLE PAGE CHECKOUT
+   ORDER FORM — SINGLE PAGE CHECKOUT v3
    ────────────────────────────────────── */
 var _orderData = {};
 
 function checkoutCart() {
   if (_cart.length === 0) { toast('Votre panier est vide.', 'error'); return; }
   closeCart();
-  _orderData = { payment_mode: 'cash_relais', is_self_pickup: true };
+  _orderData = { payment_mode: 'cash_relais' };
   renderCheckout();
   $('order-modal').classList.add('open');
 }
@@ -2237,238 +2237,178 @@ function renderCheckout() {
 
   /* ── Cart Summary ── */
   var summary = document.createElement('div');
-  summary.style.cssText = 'background:#f8fafc;border-radius:10px;padding:14px 18px;margin-bottom:22px;border:1px solid var(--border);';
+  summary.style.cssText = 'background:#f8fafc;border-radius:10px;padding:10px 14px;margin-bottom:14px;border:1px solid var(--border);';
 
   var countLine = document.createElement('div');
-  countLine.style.cssText = 'font-size:0.85rem;color:var(--muted);margin-bottom:2px;';
+  countLine.style.cssText = 'font-size:0.82rem;color:var(--muted);margin-bottom:2px;';
   countLine.textContent = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
   summary.appendChild(countLine);
 
   var priceLine = document.createElement('div');
   priceLine.style.cssText = 'display:flex;align-items:baseline;gap:8px;';
   var bigPrice = document.createElement('span');
-  bigPrice.style.cssText = 'font-family:Poppins,sans-serif;font-weight:800;font-size:1.5rem;color:var(--text);';
+  bigPrice.style.cssText = 'font-family:Poppins,sans-serif;font-weight:800;font-size:1.25rem;color:var(--text);';
   bigPrice.textContent = fmt(cartTotal(), 'KMF');
   priceLine.appendChild(bigPrice);
   var eurEquiv = document.createElement('span');
-  eurEquiv.style.cssText = 'font-size:0.92rem;color:var(--muted);';
+  eurEquiv.style.cssText = 'font-size:0.88rem;color:var(--muted);';
   eurEquiv.textContent = '\u2248 ' + fmt(cartTotal(), 'EUR');
   priceLine.appendChild(eurEquiv);
   summary.appendChild(priceLine);
 
   var delivLine = document.createElement('div');
-  delivLine.style.cssText = 'font-size:0.82rem;color:var(--primary);font-weight:600;margin-top:6px;';
+  delivLine.style.cssText = 'font-size:0.78rem;color:var(--primary);font-weight:600;margin-top:4px;';
   delivLine.textContent = '\u{1F69A} Livraison incluse \u00b7 3-5 semaines';
   summary.appendChild(delivLine);
 
   body.appendChild(summary);
 
-  /* ── Section: Qui recup\u00e8re la commande ? ── */
-  var recipTitle = document.createElement('div');
-  recipTitle.style.cssText = 'font-weight:700;font-size:1rem;margin-bottom:14px;color:var(--text);';
-  recipTitle.textContent = '\u{1F4CD} Qui r\u00e9cup\u00e8re la commande ?';
-  body.appendChild(recipTitle);
+  /* ── Section 1: Client / Payeur ── */
+  var clientTitle = document.createElement('div');
+  clientTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:10px;color:var(--text);';
+  clientTitle.textContent = '\u{1F464} Vos coordonn\u00e9es';
+  body.appendChild(clientTitle);
+
+  var clientHint = document.createElement('div');
+  clientHint.style.cssText = 'font-size:0.78rem;color:var(--muted);margin-bottom:10px;margin-top:-6px;';
+  clientHint.textContent = 'Pour recevoir le suivi de votre commande';
+  body.appendChild(clientHint);
+
+  /* Client name */
+  var cnGroup = document.createElement('div');
+  cnGroup.className = 'of-group';
+  var cnLabel = document.createElement('label');
+  cnLabel.textContent = 'Nom complet *';
+  cnGroup.appendChild(cnLabel);
+  var cnInput = document.createElement('input');
+  cnInput.type = 'text';
+  cnInput.id = 'of-client-name';
+  cnInput.placeholder = 'Votre nom et pr\u00e9nom';
+  cnGroup.appendChild(cnInput);
+  body.appendChild(cnGroup);
+
+  /* Client phone + email row */
+  var clientRow = document.createElement('div');
+  clientRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+
+  var cpGroup = document.createElement('div');
+  cpGroup.className = 'of-group';
+  var cpLabel = document.createElement('label');
+  cpLabel.textContent = 'T\u00e9l\u00e9phone *';
+  cpGroup.appendChild(cpLabel);
+  var cpInput = document.createElement('input');
+  cpInput.type = 'tel';
+  cpInput.id = 'of-client-phone';
+  cpInput.placeholder = '+33 6 ... ou +269 ...';
+  cpGroup.appendChild(cpInput);
+  clientRow.appendChild(cpGroup);
+
+  var ceGroup = document.createElement('div');
+  ceGroup.className = 'of-group';
+  var ceLabel = document.createElement('label');
+  ceLabel.textContent = 'Email';
+  ceGroup.appendChild(ceLabel);
+  var ceInput = document.createElement('input');
+  ceInput.type = 'email';
+  ceInput.id = 'of-client-email';
+  ceInput.placeholder = 'votre@email.com';
+  ceGroup.appendChild(ceInput);
+  clientRow.appendChild(ceGroup);
+
+  body.appendChild(clientRow);
+
+  /* ── Section 2: Pickup Person ── */
+  var pickupTitle = document.createElement('div');
+  pickupTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:10px;margin-top:8px;color:var(--text);';
+  pickupTitle.textContent = '\u{1F3EA} Personne qui r\u00e9cup\u00e8re au relais';
+  body.appendChild(pickupTitle);
 
   /* Recipient name */
-  var nameGroup = document.createElement('div');
-  nameGroup.className = 'of-group';
-  var nameLabel = document.createElement('label');
-  nameLabel.textContent = 'Nom complet *';
-  nameGroup.appendChild(nameLabel);
-  var nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.id = 'of-recip-name';
-  nameInput.placeholder = 'Nom de la personne qui r\u00e9cup\u00e8re';
-  nameInput.value = _orderData.recipient_name || '';
-  nameGroup.appendChild(nameInput);
-  body.appendChild(nameGroup);
+  var rnGroup = document.createElement('div');
+  rnGroup.className = 'of-group';
+  var rnLabel = document.createElement('label');
+  rnLabel.textContent = 'Nom complet *';
+  rnGroup.appendChild(rnLabel);
+  var rnInput = document.createElement('input');
+  rnInput.type = 'text';
+  rnInput.id = 'of-recip-name';
+  rnInput.placeholder = 'Nom de la personne aux Comores';
+  rnGroup.appendChild(rnInput);
+  body.appendChild(rnGroup);
 
   /* Recipient phone with +269 prefix */
-  var phoneGroup = document.createElement('div');
-  phoneGroup.className = 'of-group';
-  var phoneLabel = document.createElement('label');
-  phoneLabel.textContent = 'T\u00e9l\u00e9phone *';
-  phoneGroup.appendChild(phoneLabel);
-  var phoneWrap = document.createElement('div');
-  phoneWrap.style.cssText = 'display:flex;gap:0;';
-  var phonePrefix = document.createElement('div');
-  phonePrefix.style.cssText = 'background:var(--bg);border:2px solid var(--border);border-right:none;border-radius:var(--radius) 0 0 var(--radius);padding:11px 12px;font-weight:700;color:var(--muted);white-space:nowrap;display:flex;align-items:center;font-size:0.9rem;';
-  phonePrefix.textContent = '+269';
-  phoneWrap.appendChild(phonePrefix);
-  var phoneInput = document.createElement('input');
-  phoneInput.type = 'tel';
-  phoneInput.id = 'of-recip-phone';
-  phoneInput.placeholder = '321 12 34';
-  phoneInput.value = _orderData.recipient_phone || '';
-  phoneInput.style.cssText = 'flex:1;border-radius:0 var(--radius) var(--radius) 0;padding:11px 14px;border:2px solid var(--border);outline:none;font-size:inherit;transition:border-color 0.2s;';
-  phoneInput.addEventListener('focus', function() { this.style.borderColor = 'var(--primary)'; });
-  phoneInput.addEventListener('blur', function() { this.style.borderColor = 'var(--border)'; });
-  phoneWrap.appendChild(phoneInput);
-  phoneGroup.appendChild(phoneWrap);
-  body.appendChild(phoneGroup);
+  var rpGroup = document.createElement('div');
+  rpGroup.className = 'of-group';
+  var rpLabel = document.createElement('label');
+  rpLabel.textContent = 'T\u00e9l\u00e9phone (+269) *';
+  rpGroup.appendChild(rpLabel);
+  var rpWrap = document.createElement('div');
+  rpWrap.style.cssText = 'display:flex;gap:0;';
+  var rpPrefix = document.createElement('div');
+  rpPrefix.style.cssText = 'background:var(--bg);border:2px solid var(--border);border-right:none;border-radius:var(--radius) 0 0 var(--radius);padding:9px 12px;font-weight:700;color:var(--muted);white-space:nowrap;display:flex;align-items:center;font-size:0.9rem;';
+  rpPrefix.textContent = '+269';
+  rpWrap.appendChild(rpPrefix);
+  var rpInput = document.createElement('input');
+  rpInput.type = 'tel';
+  rpInput.id = 'of-recip-phone';
+  rpInput.placeholder = '321 12 34';
+  rpInput.style.cssText = 'flex:1;border-radius:0 var(--radius) var(--radius) 0;padding:9px 14px;border:2px solid var(--border);outline:none;font-size:inherit;transition:border-color 0.2s;';
+  rpInput.addEventListener('focus', function() { this.style.borderColor = 'var(--primary)'; });
+  rpInput.addEventListener('blur', function() { this.style.borderColor = 'var(--border)'; });
+  rpWrap.appendChild(rpInput);
+  rpGroup.appendChild(rpWrap);
+  body.appendChild(rpGroup);
 
-  /* Point relais */
-  var relaisGroup = document.createElement('div');
-  relaisGroup.className = 'of-group';
-  var relaisLabel = document.createElement('label');
-  relaisLabel.textContent = 'Point relais de retrait *';
-  relaisGroup.appendChild(relaisLabel);
-  var relaisSelect = document.createElement('select');
-  relaisSelect.id = 'of-relais';
-  var defOpt = document.createElement('option');
-  defOpt.value = '';
-  defOpt.textContent = '\u2014 Choisir un point relais \u2014';
-  relaisSelect.appendChild(defOpt);
-  _relais.forEach(function(r) {
-    var opt = document.createElement('option');
-    opt.value = r.id;
-    opt.textContent = '\u{1F4CD} ' + sanitize(r.name + (r.city ? ' \u2014 ' + r.city : ''));
-    if (_orderData.relais_id === r.id) opt.selected = true;
-    relaisSelect.appendChild(opt);
-  });
-  relaisGroup.appendChild(relaisSelect);
-  body.appendChild(relaisGroup);
-
-  /* Toggle: "Je ne suis pas celui qui recup\u00e8re" */
-  var toggleWrap = document.createElement('div');
-  toggleWrap.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:var(--radius);margin-bottom:22px;cursor:pointer;border:1px solid var(--border);transition:background 0.2s;user-select:none;';
-
-  var toggleTrack = document.createElement('div');
-  toggleTrack.id = 'toggle-not-me';
-  toggleTrack.style.cssText = 'width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;transition:background 0.3s;flex-shrink:0;';
-  var toggleThumb = document.createElement('div');
-  toggleThumb.id = 'toggle-thumb';
-  toggleThumb.style.cssText = 'width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:transform 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.2);';
-  toggleTrack.appendChild(toggleThumb);
-  toggleWrap.appendChild(toggleTrack);
-
-  var toggleLabel = document.createElement('span');
-  toggleLabel.style.cssText = 'font-size:0.9rem;color:var(--text);font-weight:500;';
-  toggleLabel.textContent = 'Je ne suis pas celui qui r\u00e9cup\u00e8re';
-  toggleWrap.appendChild(toggleLabel);
-
-  toggleWrap.addEventListener('click', function() {
-    _orderData.is_self_pickup = !_orderData.is_self_pickup;
-    var track = document.getElementById('toggle-not-me');
-    var thumb = document.getElementById('toggle-thumb');
-    var sec = document.getElementById('sender-section');
-    if (!_orderData.is_self_pickup) {
-      track.style.background = 'var(--primary)';
-      thumb.style.transform = 'translateX(20px)';
-      sec.style.display = 'block';
-    } else {
-      track.style.background = 'var(--border)';
-      thumb.style.transform = 'translateX(0)';
-      sec.style.display = 'none';
-    }
-  });
-
-  body.appendChild(toggleWrap);
-
-  /* ── Sender Section (hidden by default) ── */
-  var senderSec = document.createElement('div');
-  senderSec.id = 'sender-section';
-  senderSec.style.cssText = 'display:none;margin-bottom:22px;padding:16px;background:#eff6ff;border-radius:var(--radius);border:1px solid #bfdbfe;';
-
-  var senderTitle = document.createElement('div');
-  senderTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:12px;color:#1e40af;';
-  senderTitle.textContent = '\u{1F4E4} Vos coordonn\u00e9es (exp\u00e9diteur)';
-  senderSec.appendChild(senderTitle);
-
-  var snGroup = document.createElement('div');
-  snGroup.className = 'of-group';
-  var snLabel = document.createElement('label');
-  snLabel.textContent = 'Votre nom';
-  snGroup.appendChild(snLabel);
-  var snInput = document.createElement('input');
-  snInput.type = 'text';
-  snInput.id = 'of-sender-name';
-  snInput.placeholder = 'Votre nom et pr\u00e9nom';
-  snGroup.appendChild(snInput);
-  senderSec.appendChild(snGroup);
-
-  var rowSender = document.createElement('div');
-  rowSender.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;';
-
-  var spGroup = document.createElement('div');
-  spGroup.className = 'of-group';
-  var spLabel = document.createElement('label');
-  spLabel.textContent = 'T\u00e9l\u00e9phone';
-  spGroup.appendChild(spLabel);
-  var spInput = document.createElement('input');
-  spInput.type = 'tel';
-  spInput.id = 'of-sender-phone';
-  spInput.placeholder = '+33 6 ...';
-  spGroup.appendChild(spInput);
-  rowSender.appendChild(spGroup);
-
-  var seGroup = document.createElement('div');
-  seGroup.className = 'of-group';
-  var seLabel = document.createElement('label');
-  seLabel.textContent = 'Email';
-  seGroup.appendChild(seLabel);
-  var seInput = document.createElement('input');
-  seInput.type = 'email';
-  seInput.id = 'of-sender-email';
-  seInput.placeholder = 'votre@email.com';
-  seGroup.appendChild(seInput);
-  rowSender.appendChild(seGroup);
-
-  senderSec.appendChild(rowSender);
-  body.appendChild(senderSec);
-
-  /* ── Section: Mode de paiement ── */
+  /* ── Section 3: Payment ── */
   var payTitle = document.createElement('div');
-  payTitle.style.cssText = 'font-weight:700;font-size:1rem;margin-bottom:10px;color:var(--text);';
+  payTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:8px;margin-top:8px;color:var(--text);';
   payTitle.textContent = '\u{1F4B3} Mode de paiement';
   body.appendChild(payTitle);
 
   /* Cash option */
   var cashOpt = document.createElement('label');
-  cashOpt.id = 'pay-opt-cash';
-  cashOpt.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--primary);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;background:var(--primary-light);transition:all 0.2s;';
+  cashOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--primary);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;background:var(--primary-light);transition:all 0.2s;';
   var cashRadio = document.createElement('input');
   cashRadio.type = 'radio';
   cashRadio.name = 'payment_mode';
   cashRadio.value = 'cash_relais';
   cashRadio.checked = true;
-  cashRadio.style.cssText = 'width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;';
+  cashRadio.style.cssText = 'width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;';
   cashOpt.appendChild(cashRadio);
   var cashInfo = document.createElement('div');
   var cashLabel2 = document.createElement('div');
-  cashLabel2.style.cssText = 'font-weight:700;font-size:0.92rem;';
+  cashLabel2.style.cssText = 'font-weight:700;font-size:0.88rem;';
   cashLabel2.textContent = '\u{1F3EA} Cash au point relais';
   cashInfo.appendChild(cashLabel2);
   var cashSub = document.createElement('div');
-  cashSub.style.cssText = 'font-size:0.78rem;color:var(--muted);margin-top:2px;';
+  cashSub.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:1px;';
   cashSub.textContent = 'Payez en KMF au retrait \u00b7 Code + QR par SMS';
   cashInfo.appendChild(cashSub);
   cashOpt.appendChild(cashInfo);
   body.appendChild(cashOpt);
 
-  /* Stripe option (disabled / Bientot) */
+  /* Stripe option (disabled) */
   var stripeOpt = document.createElement('label');
-  stripeOpt.id = 'pay-opt-stripe';
-  stripeOpt.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);margin-bottom:22px;cursor:not-allowed;background:white;transition:all 0.2s;opacity:0.65;';
+  stripeOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius);margin-bottom:14px;cursor:not-allowed;background:white;opacity:0.65;';
   var stripeRadio = document.createElement('input');
   stripeRadio.type = 'radio';
   stripeRadio.name = 'payment_mode';
   stripeRadio.value = 'stripe_eur';
   stripeRadio.disabled = true;
-  stripeRadio.style.cssText = 'width:18px;height:18px;flex-shrink:0;';
+  stripeRadio.style.cssText = 'width:16px;height:16px;flex-shrink:0;';
   stripeOpt.appendChild(stripeRadio);
   var stripeInfo = document.createElement('div');
   var stripeLabel2 = document.createElement('div');
-  stripeLabel2.style.cssText = 'font-weight:700;font-size:0.92rem;display:flex;align-items:center;gap:8px;';
+  stripeLabel2.style.cssText = 'font-weight:700;font-size:0.88rem;display:flex;align-items:center;gap:8px;';
   var stripeTxt = document.createTextNode('\u{1F4B3} Carte bancaire (Stripe) ');
   stripeLabel2.appendChild(stripeTxt);
   var bientotBadge = document.createElement('span');
-  bientotBadge.style.cssText = 'font-size:0.68rem;background:var(--accent);color:white;padding:2px 8px;border-radius:10px;font-weight:700;';
+  bientotBadge.style.cssText = 'font-size:0.65rem;background:var(--accent);color:white;padding:2px 7px;border-radius:10px;font-weight:700;';
   bientotBadge.textContent = 'Bient\u00f4t';
   stripeLabel2.appendChild(bientotBadge);
   stripeInfo.appendChild(stripeLabel2);
   var stripeSub = document.createElement('div');
-  stripeSub.style.cssText = 'font-size:0.78rem;color:var(--muted);margin-top:2px;';
+  stripeSub.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:1px;';
   stripeSub.textContent = 'Payez en EUR \u00b7 Paiement s\u00e9curis\u00e9 en ligne';
   stripeInfo.appendChild(stripeSub);
   stripeOpt.appendChild(stripeInfo);
@@ -2477,7 +2417,7 @@ function renderCheckout() {
   /* ── Confirm Button ── */
   var confirmBtn = document.createElement('button');
   confirmBtn.id = 'btn-confirm-order';
-  confirmBtn.style.cssText = 'width:100%;padding:16px;border-radius:var(--radius);background:linear-gradient(135deg,#d97706,#f59e0b);color:white;font-weight:800;font-size:1.05rem;border:none;cursor:pointer;transition:filter 0.2s,transform 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(217,119,6,0.3);';
+  confirmBtn.style.cssText = 'width:100%;padding:12px;border-radius:var(--radius);background:linear-gradient(135deg,#d97706,#f59e0b);color:white;font-weight:800;font-size:1rem;border:none;cursor:pointer;transition:filter 0.2s,transform 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(217,119,6,0.3);';
   confirmBtn.textContent = '\u2705 Confirmer \u2014 ' + fmt(cartTotal(), 'KMF');
   confirmBtn.addEventListener('click', function() { submitOrder(confirmBtn); });
   confirmBtn.addEventListener('mouseenter', function() { this.style.filter = 'brightness(1.08)'; this.style.transform = 'translateY(-1px)'; });
@@ -2486,30 +2426,25 @@ function renderCheckout() {
 
   /* Hint */
   var hintDiv = document.createElement('div');
-  hintDiv.style.cssText = 'text-align:center;font-size:0.78rem;color:var(--muted);margin-top:10px;';
+  hintDiv.style.cssText = 'text-align:center;font-size:0.75rem;color:var(--muted);margin-top:8px;';
   hintDiv.textContent = 'Vous recevez un code + QR par SMS pour payer au relais';
   body.appendChild(hintDiv);
 }
 
 async function submitOrder(btn) {
+  var clientName = (document.getElementById('of-client-name').value || '').trim();
+  var clientPhone = (document.getElementById('of-client-phone').value || '').trim();
+  var clientEmail = (document.getElementById('of-client-email').value || '').trim();
   var recipName = (document.getElementById('of-recip-name').value || '').trim();
   var recipPhone = (document.getElementById('of-recip-phone').value || '').trim();
-  var relaisId = (document.getElementById('of-relais').value || '');
 
+  if (!clientName) { toast('Veuillez indiquer votre nom.', 'error'); return; }
+  if (!clientPhone) { toast('Veuillez indiquer votre t\u00e9l\u00e9phone.', 'error'); return; }
   if (!recipName) { toast('Veuillez indiquer le nom de la personne qui r\u00e9cup\u00e8re.', 'error'); return; }
   if (!recipPhone) { toast('Veuillez indiquer le t\u00e9l\u00e9phone du destinataire.', 'error'); return; }
-  if (!relaisId) { toast('Veuillez choisir un point relais.', 'error'); return; }
 
   var fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
-  var senderName = recipName;
-  var senderPhone = fullRecipPhone;
-  var senderEmail = '';
-
-  if (!_orderData.is_self_pickup) {
-    senderName = (document.getElementById('of-sender-name').value || '').trim() || recipName;
-    senderPhone = (document.getElementById('of-sender-phone').value || '').trim() || fullRecipPhone;
-    senderEmail = (document.getElementById('of-sender-email').value || '').trim();
-  }
+  var relaisId = (_relais && _relais.length > 0) ? _relais[0].id : '';
 
   btn.disabled = true;
   btn.textContent = '\u23f3 Envoi en cours\u2026';
@@ -2517,9 +2452,9 @@ async function submitOrder(btn) {
 
   try {
     await apiPost('/api/auth/guest-checkout', {
-      full_name: senderName,
-      phone: senderPhone,
-      email: senderEmail || undefined
+      full_name: clientName,
+      phone: clientPhone,
+      email: clientEmail || undefined
     });
 
     var items = _cart.map(function(i) {
@@ -2537,7 +2472,7 @@ async function submitOrder(btn) {
     _cart = [];
     saveCart();
     renderCartBody();
-    renderOrderSuccess(result, recipName);
+    renderOrderSuccess(result, recipName, clientEmail);
     toast('Commande confirm\u00e9e !', 'success');
   } catch (e) {
     console.error('submitOrder:', e);
@@ -2548,21 +2483,21 @@ async function submitOrder(btn) {
   }
 }
 
-function renderOrderSuccess(result, recipientName) {
+function renderOrderSuccess(result, recipientName, clientEmail) {
   var body = $('order-modal-body');
   body.innerHTML = '';
   $('order-modal-title').textContent = '\u2705 Commande confirm\u00e9e';
 
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'text-align:center;padding:20px 0;';
+  wrap.style.cssText = 'text-align:center;padding:16px 0;';
 
   var icon = document.createElement('div');
-  icon.style.cssText = 'font-size:4rem;margin-bottom:14px;';
+  icon.style.cssText = 'font-size:3.5rem;margin-bottom:10px;';
   icon.textContent = '\u{1F389}';
   wrap.appendChild(icon);
 
   var h3 = document.createElement('h3');
-  h3.style.cssText = 'font-family:Poppins,sans-serif;color:var(--primary);margin-bottom:8px;font-size:1.25rem;';
+  h3.style.cssText = 'font-family:Poppins,sans-serif;color:var(--primary);margin-bottom:6px;font-size:1.15rem;';
   h3.textContent = 'Commande enregistr\u00e9e !';
   wrap.appendChild(h3);
 
@@ -2572,40 +2507,42 @@ function renderOrderSuccess(result, recipientName) {
   wrap.appendChild(p1);
 
   var ref = document.createElement('div');
-  ref.style.cssText = 'display:inline-block;background:var(--primary-light);color:var(--primary-dark);font-weight:800;font-size:1.2rem;padding:10px 24px;border-radius:10px;margin:14px 0;letter-spacing:2px;font-family:monospace;';
+  ref.style.cssText = 'display:inline-block;background:var(--primary-light);color:var(--primary-dark);font-weight:800;font-size:1.1rem;padding:8px 20px;border-radius:10px;margin:10px 0;letter-spacing:2px;font-family:monospace;';
   ref.textContent = result.reference || result.order_reference || result.id || '\u2014';
   wrap.appendChild(ref);
 
   if (result.pickup_code || result.order_pickup_code) {
     var pickupLabel = document.createElement('p');
-    pickupLabel.style.cssText = 'margin-top:16px;font-weight:700;color:var(--text);';
+    pickupLabel.style.cssText = 'margin-top:12px;font-weight:700;color:var(--text);';
     pickupLabel.textContent = '\u{1F3EA} Code de retrait :';
     wrap.appendChild(pickupLabel);
 
     var pickupCode = document.createElement('div');
-    pickupCode.style.cssText = 'display:inline-block;background:#fffbeb;color:#92400e;font-weight:800;font-size:1.4rem;padding:12px 28px;border-radius:10px;margin:10px 0;letter-spacing:3px;border:2px solid #fde68a;font-family:monospace;';
+    pickupCode.style.cssText = 'display:inline-block;background:#fffbeb;color:#92400e;font-weight:800;font-size:1.3rem;padding:10px 24px;border-radius:10px;margin:8px 0;letter-spacing:3px;border:2px solid #fde68a;font-family:monospace;';
     pickupCode.textContent = result.pickup_code || result.order_pickup_code || '';
     wrap.appendChild(pickupCode);
   }
 
   var info = document.createElement('div');
-  info.style.cssText = 'margin-top:14px;padding:14px;background:var(--bg);border-radius:10px;font-size:0.88rem;color:var(--muted);line-height:1.6;text-align:left;';
+  info.style.cssText = 'margin-top:12px;padding:12px;background:var(--bg);border-radius:10px;font-size:0.85rem;color:var(--muted);line-height:1.6;text-align:left;';
 
   var line1 = document.createElement('div');
-  line1.textContent = '\u{1F3EA} Paiement en cash (KMF) au point relais lors du retrait.';
+  line1.textContent = '\u{1F3EA} Paiement cash (KMF) au point relais.';
   info.appendChild(line1);
   var line2 = document.createElement('div');
-  line2.style.marginTop = '6px';
+  line2.style.marginTop = '4px';
   line2.textContent = '\u{1F4F1} ' + sanitize(recipientName || '') + ' recevra un SMS avec le code de retrait.';
   info.appendChild(line2);
-  var line3 = document.createElement('div');
-  line3.style.marginTop = '6px';
-  line3.textContent = '\u{1F4CD} Pr\u00e9sentez la r\u00e9f\u00e9rence ou le code de retrait au point relais.';
-  info.appendChild(line3);
+  if (clientEmail) {
+    var line3 = document.createElement('div');
+    line3.style.marginTop = '4px';
+    line3.textContent = '\u{1F4E7} Suivi envoy\u00e9 \u00e0 ' + sanitize(clientEmail);
+    info.appendChild(line3);
+  }
   wrap.appendChild(info);
 
   var trackBtn = document.createElement('button');
-  trackBtn.style.cssText = 'margin-top:18px;width:100%;padding:13px;border-radius:var(--radius);font-weight:700;font-size:0.95rem;background:var(--primary);color:white;border:none;cursor:pointer;transition:background 0.2s;';
+  trackBtn.style.cssText = 'margin-top:14px;width:100%;padding:11px;border-radius:var(--radius);font-weight:700;font-size:0.9rem;background:var(--primary);color:white;border:none;cursor:pointer;transition:background 0.2s;';
   trackBtn.textContent = '\u{1F4CD} Suivre ma commande';
   trackBtn.addEventListener('mouseenter', function() { this.style.background = 'var(--primary-dark)'; });
   trackBtn.addEventListener('mouseleave', function() { this.style.background = 'var(--primary)'; });
@@ -2621,7 +2558,7 @@ function renderOrderSuccess(result, recipientName) {
   wrap.appendChild(trackBtn);
 
   var closeBtn = document.createElement('button');
-  closeBtn.style.cssText = 'margin-top:8px;width:100%;padding:11px;border-radius:var(--radius);font-weight:600;font-size:0.9rem;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;transition:background 0.2s;';
+  closeBtn.style.cssText = 'margin-top:6px;width:100%;padding:10px;border-radius:var(--radius);font-weight:600;font-size:0.88rem;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;transition:background 0.2s;';
   closeBtn.textContent = 'Fermer';
   closeBtn.addEventListener('mouseenter', function() { this.style.background = 'var(--border)'; });
   closeBtn.addEventListener('mouseleave', function() { this.style.background = 'var(--bg)'; });
