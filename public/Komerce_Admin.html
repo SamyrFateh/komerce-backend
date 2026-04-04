@@ -297,6 +297,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <div class="sb-sec">Config</div>
       <div class="ni" onclick="go('relais',this)"><span class="ni-ic">&#9650;</span>Point relais</div>
       <div class="ni" onclick="go('settings',this)"><span class="ni-ic">&#9711;</span>Parametres</div>
+      <div class="ni" onclick="go('reset',this)"><span class="ni-ic">&#9888;</span>Reset données</div>
     </nav>
     <div class="sb-foot">
       <span class="dot-live"></span>Systeme en ligne<br>
@@ -738,7 +739,8 @@ var TITLES = {
   litiges:"Litiges et Remboursements",catalogue:"Catalogue produits",
   ceremony:"Modules spécialisés",finance:"Comptabilite multi-devises",
   pricing:"Moteur de pricing",relais:"Point relais",settings:"Parametres systeme",
-  dashboard:"Activité",ventes:"Ventes",retards:"Retards",forecast:"Prévisions"
+  dashboard:"Activité",ventes:"Ventes",retards:"Retards",forecast:"Prévisions",
+  reset:"🧹 Reset données"
 };
 function go(id, el) {
   document.querySelectorAll(".scr").forEach(s => s.classList.remove("on"));
@@ -755,6 +757,7 @@ function go(id, el) {
     catalogue: loadCatalogue, relais: loadRelais,
     dashboard: loadOps, ventes: () => loadSales(_salesPeriod),
     retards: () => loadRetards(null), forecast: initForecastForm,
+    reset: loadCounts,
   };
   if (loaders[id]) loaders[id]();
 }
@@ -1795,6 +1798,63 @@ initForecastForm();
 
 
 // ── AUTO-REFRESH 15s ──────────────────────────────────────────────────────────
+
+  // ── Reset Panel Functions ──────────────────────────────────────
+  async function loadCounts() {
+    try {
+      const t = localStorage.getItem('kmrc_token') || '';
+      const res = await fetch(API + '/admin/counts', {
+        headers: { 'Authorization': 'Bearer ' + t }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      document.getElementById('cnt-orders').textContent = d.orders ?? '-';
+      document.getElementById('cnt-items').textContent = d.order_items ?? '-';
+      document.getElementById('cnt-users').textContent = d.users ?? '-';
+      document.getElementById('cnt-products').textContent = d.products ?? '-';
+      document.getElementById('cnt-relais').textContent = d.relais ?? '-';
+    } catch(e) { console.warn('loadCounts error:', e); }
+  }
+
+  async function doReset(mode) {
+    const labels = {
+      orders: 'Supprimer toutes les commandes ?',
+      users: 'Supprimer commandes + clients (non-admin) ?',
+      factory: '\u{1F6A8} FACTORY RESET — Tout supprimer et re-seed ?'
+    };
+    if (!confirm(labels[mode] + '\n\nCette action est irréversible.')) return;
+    if (mode === 'factory' && !confirm('\u26A0\uFE0F DERNIÈRE CONFIRMATION — Vraiment tout remettre à zéro ?')) return;
+
+    const resultDiv = document.getElementById('reset-result');
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = '#e0f2fe';
+    resultDiv.style.color = '#0369a1';
+    resultDiv.textContent = '\u23F3 Reset en cours...';
+
+    try {
+      const t = localStorage.getItem('kmrc_token') || '';
+      const res = await fetch(API + '/admin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t },
+        body: JSON.stringify({ mode, confirm: true })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Erreur ' + res.status);
+
+      resultDiv.style.background = '#dcfce7';
+      resultDiv.style.color = '#166534';
+      let msg = '\u2705 Reset "' + mode + '" effectué ! ';
+      if (d.deleted) msg += Object.entries(d.deleted).map(([k,v]) => k + ': ' + v + ' supprimé(s)').join(' \u00B7 ');
+      if (d.seeded) msg += ' | ' + Object.entries(d.seeded).map(([k,v]) => k + ': ' + v + ' créé(s)').join(' \u00B7 ');
+      resultDiv.textContent = msg;
+      loadCounts();
+    } catch(e) {
+      resultDiv.style.background = '#fef2f2';
+      resultDiv.style.color = '#991b1b';
+      resultDiv.textContent = '\u274C Erreur : ' + e.message;
+    }
+  }
+
 (function() {
   let _refreshCountdown = 15;
   const countdownEl = document.getElementById('live-countdown');
@@ -1865,5 +1925,69 @@ initForecastForm();
   </div>
   <div id="forecast-content"></div>
 </div>
+
+<!-- ═══ SCREEN RESET DONNÉES ═══════════════════════════════════════════ -->
+<div class="scr" id="scr-reset">
+  <div class="pg-ttl">🧹 Reset données</div>
+  
+  <div style="margin-bottom:1.5rem;padding:1.2rem;background:var(--bg2);border-radius:10px;border:1px solid var(--ln);">
+    <div style="font-weight:700;margin-bottom:.8rem;font-size:.85rem;color:var(--ink2);">📊 État actuel de la base</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem;">
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--ter);" id="cnt-orders">-</div>
+        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Commandes</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--ter2);" id="cnt-items">-</div>
+        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Items</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--sec);" id="cnt-users">-</div>
+        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Utilisateurs</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--ink2);" id="cnt-products">-</div>
+        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Produits</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--ink2);" id="cnt-relais">-</div>
+        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Relais</div>
+      </div>
+    </div>
+    <button onclick="loadCounts()" style="margin-top:.8rem;padding:.4rem 1rem;background:var(--ter);color:white;border:none;border-radius:6px;font-weight:600;font-size:.75rem;cursor:pointer;">🔄 Rafraîchir</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem;">
+    <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid var(--ln);">
+      <div style="font-size:1.2rem;margin-bottom:.3rem;">🧹</div>
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Supprimer les commandes</div>
+      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
+        Supprime commandes, items, douane, recipients.<br>
+        <strong style="color:var(--sec);">✅ Conserve :</strong> produits, relais, tous les users.
+      </div>
+      <button onclick="doReset('orders')" style="width:100%;padding:.6rem;background:var(--ter);color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">Nettoyer les commandes</button>
+    </div>
+    <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid #f59e0b;">
+      <div style="font-size:1.2rem;margin-bottom:.3rem;">👥</div>
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Commandes + Clients</div>
+      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
+        Supprime commandes <strong>ET</strong> clients (non-admin).<br>
+        <strong style="color:var(--sec);">✅ Conserve :</strong> produits, relais, comptes admin.
+      </div>
+      <button onclick="doReset('users')" style="width:100%;padding:.6rem;background:#f59e0b;color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">⚠️ Commandes + clients</button>
+    </div>
+    <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid var(--red);">
+      <div style="font-size:1.2rem;margin-bottom:.3rem;">🏭</div>
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Factory Reset</div>
+      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
+        Supprime <strong>TOUT</strong> → re-seed produits & relais.<br>
+        <strong style="color:var(--sec);">✅ Conserve :</strong> uniquement comptes admin.
+      </div>
+      <button onclick="doReset('factory')" style="width:100%;padding:.6rem;background:var(--red);color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">🚨 Factory Reset</button>
+    </div>
+  </div>
+  <div id="reset-result" style="margin-top:1.2rem;display:none;padding:1rem;border-radius:8px;font-size:.82rem;font-weight:600;"></div>
+</div>
+
 </body>
 </html>

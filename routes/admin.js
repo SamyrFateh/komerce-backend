@@ -532,4 +532,149 @@ router.put('/partners/:id', ...guard, async (req, res) => {
   }
 });
 
+
+// ─── POST /api/admin/reset — Nettoyage données (3 modes) ────────────────────
+// mode = "orders"  → supprime commandes + items + douane + recipients (défaut)
+// mode = "users"   → idem + supprime clients (sauf admin)
+// mode = "factory" → tout reset + re-seed produits & relais depuis zéro
+
+router.post('/reset', ...guard, async (req, res) => {
+  const mode = req.body.mode || 'orders';
+  const validModes = ['orders', 'users', 'factory'];
+
+  if (!validModes.includes(mode)) {
+    return res.status(400).json({ error: `Mode invalide. Utilisez: ${validModes.join(', ')}` });
+  }
+
+  const report = { mode, deleted: {}, reseeded: [], timestamp: new Date().toISOString() };
+
+  try {
+    // ── Étape 1 : Toujours supprimer commandes + dépendances ──
+    const items   = await db.query('DELETE FROM order_items RETURNING id');
+    report.deleted.order_items = items.rowCount;
+
+    try {
+      const customs = await db.query('DELETE FROM customs_history RETURNING id');
+      report.deleted.customs_history = customs.rowCount;
+    } catch (_) { report.deleted.customs_history = 'table absente'; }
+
+    const orders  = await db.query('DELETE FROM orders RETURNING id');
+    report.deleted.orders = orders.rowCount;
+
+    try {
+      const recip = await db.query('DELETE FROM recipients RETURNING id');
+      report.deleted.recipients = recip.rowCount;
+    } catch (_) { report.deleted.recipients = 'table absente'; }
+
+    // ── Étape 2 : Mode users/factory → supprimer clients non-admin ──
+    if (mode === 'users' || mode === 'factory') {
+      const users = await db.query("DELETE FROM users WHERE role != 'admin' RETURNING id");
+      report.deleted.users_non_admin = users.rowCount;
+    }
+
+    // ── Étape 3 : Mode factory → vider + re-seed complet ──
+    if (mode === 'factory') {
+      const prods = await db.query('DELETE FROM products RETURNING id');
+      report.deleted.products = prods.rowCount;
+
+      const rels = await db.query('DELETE FROM relais RETURNING id');
+      report.deleted.relais = rels.rowCount;
+
+      try {
+        const parts = await db.query('DELETE FROM partners RETURNING id');
+        report.deleted.partners = parts.rowCount;
+      } catch (_) { /* table may not exist */ }
+
+      // Re-seed 20 produits
+      const seedProducts = [
+        ['Samsung Galaxy A35 (128Go)', 99000, 200, 'electronics', 15, '📱', 'Populaire', 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh.'],
+        ['Écouteurs Samsung Galaxy Buds2', 39600, 80, 'electronics', 20, '🎧', null, 'Réduction de bruit active, 5h autonomie.'],
+        ['Pack coques + accessoires (5 pièces)', 14850, 30, 'electronics', 30, '📱', 'Nouveau', 'Coque + verre + chargeur 25W + câble + support.'],
+        ['Chargeur rapide 65W GaN (multi-ports)', 19800, 40, 'electronics', 25, '🔌', null, '3 ports, compact.'],
+        ['Ventilateur sur pied 16"', 24750, 50, 'home', 25, '🌀', 'Best-seller', 'Oscillant 3 vitesses, silencieux.'],
+        ['Fer à repasser vapeur 2400W', 17325, 35, 'home', 18, '👕', null, 'Semelle céramique, réservoir 300ml.'],
+        ['Multiprise 6 prises + 2 USB', 9900, 20, 'home', 35, '🔌', null, 'Câble 2m, disjoncteur sécurité.'],
+        ['Bouilloire électrique 1.7L inox', 12375, 25, 'home', 22, '☕', null, 'Arrêt auto, protection anti-surchauffe.'],
+        ['Montre homme acier brossé', 99000, 200, 'wedding', 8, '⌚', 'Exclusif', 'Boîtier 42mm, étanchéité 50m.'],
+        ['Collier or 18K (8g)', 277200, 560, 'wedding', 5, '📿', 'Premium', 'Or 18 carats certifié Dubai.'],
+        ['Parfum Oud Al Shuyukh 100ml', 59400, 120, 'wedding', 12, '🌹', null, 'Notes de oud, ambre et rose. 12h+.'],
+        ['Coffret cadeau mariage (4 pièces)', 49500, 100, 'wedding', 15, '🎁', 'Populaire', 'Parfum + crème + savon + bracelet.'],
+        ['Djellaba homme brodée (L/XL/XXL)', 34650, 70, 'fashion', 20, '🧥', 'Best-seller', 'Tissu Bazin premium.'],
+        ['Abaya femme dentelle Dubai (M/L/XL)', 39600, 80, 'fashion', 15, '👗', 'Populaire', 'Tissu crêpe fluide.'],
+        ['Boubou enfant 3-12 ans', 19800, 40, 'fashion', 18, '👕', null, 'Tissu wax africain.'],
+        ['Caftan femme soiree (S/M/L/XL)', 54450, 110, 'fashion', 10, '🥻', 'Nouveau', 'Tissu satiné, perles.'],
+        ['Crème visage éclat au safran', 24750, 50, 'services', 20, '✨', null, 'Safran + vitamine C. 50ml.'],
+        ['Parfum Oud Rose (50ml)', 34650, 70, 'services', 18, '🌸', 'Best-seller', 'Concentrée 20%, oud boisé.'],
+        ['Huile argan pure Maroc (100ml)', 17325, 35, 'services', 25, '💧', null, 'Argan bio, pressée à froid.'],
+        ['Coffret soins corps luxe (5 pièces)', 44550, 90, 'services', 12, '🧴', 'Nouveau', 'Gommage + lait + huile + karité + savon.'],
+      ];
+
+      for (const p of seedProducts) {
+        await db.query(
+          `INSERT INTO products (name, price_kmf, price_eur, category, stock, emoji, badge, description)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          p
+        );
+      }
+      report.reseeded.push('products (20)');
+
+      // Re-seed 5 relais
+      const seedRelais = [
+        ['Relais Moroni Centre', 'Avenue de la République, Moroni', 'Moroni centre', 'Grande Comore', '0321001001'],
+        ['Relais Mutsamudu Centre', 'Rue du Port, Mutsamudu', 'Mutsamudu centre', 'Anjouan', '0321002002'],
+        ['Relais Fomboni', 'Place du Marché, Fomboni', 'Fomboni centre', 'Mohéli', '0321003003'],
+        ['Relais Domoni', 'Centre-ville, Domoni', 'Domoni', 'Anjouan', '0321004004'],
+        ['Relais Sima', 'Route principale, Sima', 'Sima', 'Anjouan', '0321005005'],
+      ];
+
+      for (const r of seedRelais) {
+        await db.query(
+          'INSERT INTO relais (name, address, zone, island, phone, is_active) VALUES ($1,$2,$3,$4,$5,TRUE)',
+          r
+        );
+      }
+      report.reseeded.push('relais (5)');
+    }
+
+    // Mode orders/users : remonter les stocks faibles
+    if (mode !== 'factory') {
+      const restocked = await db.query('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
+      if (restocked.rowCount > 0) {
+        report.restocked = restocked.rowCount;
+      }
+    }
+
+    console.log(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
+    res.json({ success: true, message: `Reset "${mode}" effectué avec succès ✅`, ...report });
+
+  } catch (err) {
+    console.error('Reset error:', err.message);
+    res.status(500).json({ error: 'Erreur reset : ' + err.message });
+  }
+});
+
+// ─── GET /api/admin/counts — Vue rapide avant reset ──────────────────────────
+
+router.get('/counts', ...guard, async (req, res) => {
+  try {
+    const [orders, items, products, relais, users] = await Promise.all([
+      db.query('SELECT COUNT(*)::int AS c FROM orders'),
+      db.query('SELECT COUNT(*)::int AS c FROM order_items'),
+      db.query('SELECT COUNT(*)::int AS c FROM products'),
+      db.query('SELECT COUNT(*)::int AS c FROM relais'),
+      db.query("SELECT COUNT(*)::int AS c FROM users WHERE role != 'admin'"),
+    ]);
+
+    res.json({
+      orders:     orders.rows[0].c,
+      order_items: items.rows[0].c,
+      products:   products.rows[0].c,
+      relais:     relais.rows[0].c,
+      users_non_admin: users.rows[0].c,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur counts' });
+  }
+});
+
 module.exports = router;
