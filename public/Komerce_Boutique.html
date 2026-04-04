@@ -645,11 +645,6 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   font-weight: 600; font-size: 0.9rem;
 }
 .of-radio-opt.selected { border-color: var(--primary); background: var(--primary-light); }
-#stripe-card-container { margin-top: 14px; padding: 14px; border: 2px solid var(--border); border-radius: var(--radius); background: white; display: none; }
-#stripe-card-container.visible { display: block; }
-#stripe-card-container label { font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; display: block; color: var(--text); }
-#stripe-card-element { padding: 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fafafa; }
-#stripe-card-errors { color: #e53e3e; font-size: 0.82rem; margin-top: 8px; min-height: 20px; }
 .of-nav { display: flex; gap: 12px; margin-top: 20px; }
 .of-nav button {
   flex: 1; padding: 12px; border-radius: var(--radius);
@@ -792,8 +787,315 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   70% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
+
+/* ────────────────────────────────────────
+   CHECKOUT STEP-CARDS (v84 design)
+   ──────────────────────────────────────── */
+:root {
+  --ck-blue: #3b82f6;
+  --ck-blue-bg: #eff6ff;
+  --ck-blue-border: #bfdbfe;
+  --ck-teal: #14b8a6;
+  --ck-teal-bg: #f0fdfa;
+  --ck-teal-border: #99f6e4;
+  --ck-amber: #f59e0b;
+  --ck-amber-bg: #fffbeb;
+  --ck-amber-border: #fde68a;
+  --ck-green-step: #22c55e;
+  --ck-green-bg: #f0fdf4;
+  --ck-green-border: #bbf7d0;
+}
+
+/* Step card container */
+.ck-step-card {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border: 1.5px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.ck-step-card:last-child { margin-bottom: 0; }
+
+/* Step header */
+.ck-step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.ck-step-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.ck-step-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.ck-step-hint {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Step body */
+.ck-step-body {
+  padding: 18px 20px;
+}
+
+/* Step colors */
+.ck-step-1 { border-top: 3px solid var(--ck-blue); }
+.ck-step-1 .ck-step-header { background: var(--ck-blue-bg); }
+.ck-step-1 .ck-step-badge { background: var(--ck-blue); color: #fff; }
+.ck-step-1 .ck-step-title { color: #1e40af; }
+.ck-step-1 .ck-step-hint { background: var(--ck-blue-bg); color: var(--ck-blue); border: 1px solid var(--ck-blue-border); }
+
+.ck-step-2 { border-top: 3px solid var(--ck-teal); }
+.ck-step-2 .ck-step-header { background: var(--ck-teal-bg); }
+.ck-step-2 .ck-step-badge { background: var(--ck-teal); color: #fff; }
+.ck-step-2 .ck-step-title { color: #0f766e; }
+.ck-step-2 .ck-step-hint { background: var(--ck-teal-bg); color: var(--ck-teal); border: 1px solid var(--ck-teal-border); }
+
+.ck-step-3 { border-top: 3px solid var(--ck-amber); }
+.ck-step-3 .ck-step-header { background: var(--ck-amber-bg); }
+.ck-step-3 .ck-step-badge { background: var(--ck-amber); color: #fff; }
+.ck-step-3 .ck-step-title { color: #92400e; }
+.ck-step-3 .ck-step-hint { background: var(--ck-amber-bg); color: var(--ck-amber); border: 1px solid var(--ck-amber-border); }
+
+/* Checkout field groups */
+.ck-field { margin-bottom: 14px; }
+.ck-field:last-child { margin-bottom: 0; }
+.ck-field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+}
+.ck-field input, .ck-field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  font-size: 0.95rem;
+  background: #fafafa;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ck-field input:focus, .ck-field select:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+.ck-field input::placeholder { color: #9ca3af; }
+
+/* Two-column field row */
+.ck-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .ck-field-row { grid-template-columns: 1fr; }
+}
+
+/* Section separator */
+.ck-separator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ck-separator::before, .ck-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Payment options */
+.ck-pay-options {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+.ck-pay-opt {
+  flex: 1;
+  padding: 16px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.ck-pay-opt:hover { border-color: #94a3b8; transform: translateY(-1px); }
+.ck-pay-opt.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.1);
+}
+.ck-pay-icon { font-size: 1.5rem; margin-bottom: 6px; }
+
+/* Recap card */
+.ck-recap {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+.ck-recap-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ck-recap-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+  padding: 3px 0;
+}
+.ck-recap-line.total {
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid var(--border);
+  color: var(--primary);
+}
+
+/* Checkout navigation */
+.ck-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.ck-nav button {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background 0.2s, transform 0.15s;
+}
+.ck-btn-back {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.ck-btn-back:hover { background: var(--border); }
+.ck-btn-next {
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+}
+.ck-btn-next:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.ck-btn-next:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.ck-btn-confirm {
+  background: linear-gradient(135deg, var(--primary), var(--green));
+  color: var(--white);
+  border: none;
+  font-size: 1rem;
+}
+.ck-btn-confirm:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
+/* Success card */
+.ck-success {
+  text-align: center;
+  padding: 24px 0;
+}
+.ck-success-icon {
+  font-size: 4rem;
+  margin-bottom: 14px;
+  animation: cartBounce 0.6s ease-out;
+}
+.ck-success h3 {
+  font-family: 'Poppins', sans-serif;
+  color: var(--primary);
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+}
+.ck-success .ck-ref {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-weight: 800;
+  font-size: 1.2rem;
+  padding: 10px 24px;
+  border-radius: 10px;
+  margin: 14px 0;
+  letter-spacing: 2px;
+  font-family: monospace;
+}
+.ck-success .ck-pickup {
+  display: inline-block;
+  background: var(--ck-amber-bg);
+  color: #92400e;
+  font-weight: 800;
+  font-size: 1.4rem;
+  padding: 12px 28px;
+  border-radius: 10px;
+  margin: 10px 0;
+  letter-spacing: 3px;
+  border: 2px solid var(--ck-amber-border);
+  font-family: monospace;
+}
+.ck-success-info {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Progress dots */
+.ck-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.ck-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s, transform 0.3s;
+}
+.ck-dot.done { background: var(--green); }
+.ck-dot.active { background: var(--primary); transform: scale(1.3); }
+.ck-dot-line {
+  width: 30px; height: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.ck-dot-line.done { background: var(--green); }
+
 </style>
-<script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -996,7 +1298,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <div class="modal-overlay" id="order-modal">
   <div class="modal-box">
     <div class="modal-header">
-      <span id="order-modal-title">Commander</span>
+      <span id="order-modal-title">🛒 Passer commande</span>
       <button class="modal-close" id="order-modal-close" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body" id="order-modal-body"></div>
@@ -1034,9 +1336,6 @@ let _relais = [];
 let _rates = { EUR: 495, KMF: 1 };
 let _currency = detectCurrency();
 let _pdQty = 1;
-  var _stripe = null;
-  var _stripeElements = null;
-  var _cardElement = null;
 
 /* ── Helpers ── */
 function $(id) { return document.getElementById(id); }
@@ -1861,18 +2160,6 @@ function renderCartBody(highlightId) {
 /* ──────────────────────────────────────
    RELAIS
    ────────────────────────────────────── */
-async function initStripe() {
-  try {
-    var cfg = await apiGet('/api/payments/config');
-    if (cfg.publishable_key) {
-      _stripe = Stripe(cfg.publishable_key);
-      _stripeElements = _stripe.elements({ locale: 'fr' });
-    }
-  } catch (e) {
-    console.warn('Stripe init skipped:', e.message);
-  }
-}
-
 async function loadRelais() {
   try {
     var data = await apiGet('/api/relais/public');
@@ -1905,60 +2192,116 @@ function closeOrderModal() {
 function renderOrderStep() {
   var body = $('order-modal-body');
   body.innerHTML = '';
-  var stepsBar = document.createElement('div');
-  stepsBar.className = 'of-steps';
+
+  /* Progress dots */
+  var prog = document.createElement('div');
+  prog.className = 'ck-progress';
   for (var s = 1; s <= 3; s++) {
-    var ind = document.createElement('div');
-    ind.className = 'of-step-indicator';
-    if (s < _orderStep) ind.classList.add('done');
-    if (s === _orderStep) ind.classList.add('active');
-    stepsBar.appendChild(ind);
+    var dot = document.createElement('div');
+    dot.className = 'ck-dot';
+    if (s < _orderStep) dot.classList.add('done');
+    if (s === _orderStep) dot.classList.add('active');
+    prog.appendChild(dot);
+    if (s < 3) {
+      var line = document.createElement('div');
+      line.className = 'ck-dot-line';
+      if (s < _orderStep) line.classList.add('done');
+      prog.appendChild(line);
+    }
   }
-  body.appendChild(stepsBar);
+  body.appendChild(prog);
+
   if (_orderStep === 1) renderOrderStep1(body);
   else if (_orderStep === 2) renderOrderStep2(body);
   else if (_orderStep === 3) renderOrderStep3(body);
 }
 
+/* ── Step 1: Expéditeur (Diaspora) ── */
 function renderOrderStep1(body) {
-  var title = document.createElement('h3');
-  title.style.cssText = 'font-family:Poppins,sans-serif;margin-bottom:16px;';
-  title.textContent = '1. Vos informations';
-  body.appendChild(title);
+  var card = document.createElement('div');
+  card.className = 'ck-step-card ck-step-1';
 
-  var fields = [
-    { id: 'of-name', label: 'Nom complet', type: 'text', placeholder: 'Votre nom', key: 'full_name' },
-    { id: 'of-phone', label: 'Téléphone', type: 'tel', placeholder: '+33 6 ...', key: 'phone' },
-    { id: 'of-email', label: 'Email', type: 'email', placeholder: 'votre@email.com', key: 'email' }
-  ];
-  fields.forEach(function(f) {
-    var group = document.createElement('div');
-    group.className = 'of-group';
-    var label = document.createElement('label');
-    label.textContent = f.label;
-    label.setAttribute('for', f.id);
-    group.appendChild(label);
-    var input = document.createElement('input');
-    input.type = f.type;
-    input.id = f.id;
-    input.placeholder = f.placeholder;
-    input.value = _orderData[f.key] || '';
-    input.required = true;
-    group.appendChild(input);
-    body.appendChild(group);
-  });
+  var header = document.createElement('div');
+  header.className = 'ck-step-header';
+  var badge = document.createElement('div');
+  badge.className = 'ck-step-badge';
+  badge.textContent = '📤';
+  header.appendChild(badge);
+  var title = document.createElement('div');
+  title.className = 'ck-step-title';
+  title.textContent = 'Vos coordonnées';
+  header.appendChild(title);
+  var hint = document.createElement('div');
+  hint.className = 'ck-step-hint';
+  hint.textContent = 'Expéditeur';
+  header.appendChild(hint);
+  card.appendChild(header);
 
-  var cGroup = document.createElement('div');
-  cGroup.className = 'of-group';
+  var stepBody = document.createElement('div');
+  stepBody.className = 'ck-step-body';
+
+  /* Name field */
+  var nameField = document.createElement('div');
+  nameField.className = 'ck-field';
+  var nameLabel = document.createElement('label');
+  nameLabel.textContent = 'Nom complet';
+  nameLabel.setAttribute('for', 'of-name');
+  nameField.appendChild(nameLabel);
+  var nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = 'of-name';
+  nameInput.placeholder = 'Votre nom et prénom';
+  nameInput.value = _orderData.full_name || '';
+  nameField.appendChild(nameInput);
+  stepBody.appendChild(nameField);
+
+  /* Phone + Email row */
+  var row = document.createElement('div');
+  row.className = 'ck-field-row';
+
+  var phoneField = document.createElement('div');
+  phoneField.className = 'ck-field';
+  var phoneLabel = document.createElement('label');
+  phoneLabel.textContent = 'Téléphone';
+  phoneLabel.setAttribute('for', 'of-phone');
+  phoneField.appendChild(phoneLabel);
+  var phoneInput = document.createElement('input');
+  phoneInput.type = 'tel';
+  phoneInput.id = 'of-phone';
+  phoneInput.placeholder = '+33 6 ...';
+  phoneInput.value = _orderData.phone || '';
+  phoneField.appendChild(phoneInput);
+  row.appendChild(phoneField);
+
+  var emailField = document.createElement('div');
+  emailField.className = 'ck-field';
+  var emailLabel = document.createElement('label');
+  emailLabel.textContent = 'Email';
+  emailLabel.setAttribute('for', 'of-email');
+  emailField.appendChild(emailLabel);
+  var emailInput = document.createElement('input');
+  emailInput.type = 'email';
+  emailInput.id = 'of-email';
+  emailInput.placeholder = 'votre@email.com';
+  emailInput.value = _orderData.email || '';
+  emailField.appendChild(emailInput);
+  row.appendChild(emailField);
+
+  stepBody.appendChild(row);
+
+  /* Country */
+  var cField = document.createElement('div');
+  cField.className = 'ck-field';
   var cLabel = document.createElement('label');
-  cLabel.textContent = 'Pays';
+  cLabel.textContent = 'Pays de résidence';
   cLabel.setAttribute('for', 'of-country');
-  cGroup.appendChild(cLabel);
+  cField.appendChild(cLabel);
   var cSelect = document.createElement('select');
   cSelect.id = 'of-country';
   var countries = [
-    { v: 'KM', t: '🇰🇲 Comores' },
     { v: 'FR', t: '🇫🇷 France' },
+    { v: 'AE', t: '🇦🇪 Émirats Arabes Unis' },
+    { v: 'KM', t: '🇰🇲 Comores' },
     { v: 'YT', t: '🇾🇹 Mayotte' },
     { v: 'OTHER', t: '🌍 Autre' }
   ];
@@ -1970,14 +2313,18 @@ function renderOrderStep1(body) {
     if ((_orderData.country || detectedCountry) === c.v) opt.selected = true;
     cSelect.appendChild(opt);
   });
-  cGroup.appendChild(cSelect);
-  body.appendChild(cGroup);
+  cField.appendChild(cSelect);
+  stepBody.appendChild(cField);
 
+  card.appendChild(stepBody);
+  body.appendChild(card);
+
+  /* Nav */
   var nav = document.createElement('div');
-  nav.className = 'of-nav';
+  nav.className = 'ck-nav';
   var nextBtn = document.createElement('button');
-  nextBtn.className = 'of-next';
-  nextBtn.textContent = 'Suivant →';
+  nextBtn.className = 'ck-btn-next';
+  nextBtn.textContent = 'Continuer → Livraison';
   nextBtn.addEventListener('click', function() {
     var name = document.getElementById('of-name').value.trim();
     var phone = document.getElementById('of-phone').value.trim();
@@ -1995,18 +2342,78 @@ function renderOrderStep1(body) {
   body.appendChild(nav);
 }
 
+/* ── Step 2: Destinataire & Point relais ── */
 function renderOrderStep2(body) {
-  var title = document.createElement('h3');
-  title.style.cssText = 'font-family:Poppins,sans-serif;margin-bottom:16px;';
-  title.textContent = '2. Livraison';
-  body.appendChild(title);
+  /* Relais card */
+  var card1 = document.createElement('div');
+  card1.className = 'ck-step-card ck-step-2';
 
-  var rGroup = document.createElement('div');
-  rGroup.className = 'of-group';
+  var header1 = document.createElement('div');
+  header1.className = 'ck-step-header';
+  var badge1 = document.createElement('div');
+  badge1.className = 'ck-step-badge';
+  badge1.textContent = '📥';
+  header1.appendChild(badge1);
+  var title1 = document.createElement('div');
+  title1.className = 'ck-step-title';
+  title1.textContent = 'Destinataire & Livraison';
+  header1.appendChild(title1);
+  var hint1 = document.createElement('div');
+  hint1.className = 'ck-step-hint';
+  hint1.textContent = 'Aux Comores';
+  header1.appendChild(hint1);
+  card1.appendChild(header1);
+
+  var stepBody1 = document.createElement('div');
+  stepBody1.className = 'ck-step-body';
+
+  /* Recipient name + phone row */
+  var row = document.createElement('div');
+  row.className = 'ck-field-row';
+
+  var rnField = document.createElement('div');
+  rnField.className = 'ck-field';
+  var rnLabel = document.createElement('label');
+  rnLabel.textContent = 'Nom du destinataire';
+  rnLabel.setAttribute('for', 'of-recip-name');
+  rnField.appendChild(rnLabel);
+  var rnInput = document.createElement('input');
+  rnInput.type = 'text';
+  rnInput.id = 'of-recip-name';
+  rnInput.placeholder = 'Qui reçoit le colis ?';
+  rnInput.value = _orderData.recipient_name || '';
+  rnField.appendChild(rnInput);
+  row.appendChild(rnField);
+
+  var rpField = document.createElement('div');
+  rpField.className = 'ck-field';
+  var rpLabel = document.createElement('label');
+  rpLabel.textContent = 'Téléphone destinataire';
+  rpLabel.setAttribute('for', 'of-recip-phone');
+  rpField.appendChild(rpLabel);
+  var rpInput = document.createElement('input');
+  rpInput.type = 'tel';
+  rpInput.id = 'of-recip-phone';
+  rpInput.placeholder = '+269 3xx xx xx';
+  rpInput.value = _orderData.recipient_phone || '';
+  rpField.appendChild(rpInput);
+  row.appendChild(rpField);
+
+  stepBody1.appendChild(row);
+
+  /* Separator */
+  var sep = document.createElement('div');
+  sep.className = 'ck-separator';
+  sep.textContent = 'point de retrait';
+  stepBody1.appendChild(sep);
+
+  /* Relais select */
+  var rField = document.createElement('div');
+  rField.className = 'ck-field';
   var rLabel = document.createElement('label');
   rLabel.textContent = 'Point relais';
   rLabel.setAttribute('for', 'of-relais');
-  rGroup.appendChild(rLabel);
+  rField.appendChild(rLabel);
   var rSelect = document.createElement('select');
   rSelect.id = 'of-relais';
   var defOpt = document.createElement('option');
@@ -2016,47 +2423,35 @@ function renderOrderStep2(body) {
   _relais.forEach(function(r) {
     var opt = document.createElement('option');
     opt.value = r.id;
-    opt.textContent = sanitize(r.name + (r.city ? ' — ' + r.city : ''));
+    opt.textContent = sanitize(r.name + (r.city ? ' — ' + r.city : '') + (r.island ? ' (' + r.island + ')' : ''));
     if (_orderData.relais_id === r.id) opt.selected = true;
     rSelect.appendChild(opt);
   });
-  rGroup.appendChild(rSelect);
-  body.appendChild(rGroup);
+  rField.appendChild(rSelect);
+  stepBody1.appendChild(rField);
 
-  var fields2 = [
-    { id: 'of-recip-name', label: 'Nom du destinataire', placeholder: 'Nom complet du destinataire', key: 'recipient_name' },
-    { id: 'of-recip-phone', label: 'Téléphone du destinataire', placeholder: '+269 ...', key: 'recipient_phone' }
-  ];
-  fields2.forEach(function(f) {
-    var group = document.createElement('div');
-    group.className = 'of-group';
-    var label = document.createElement('label');
-    label.textContent = f.label;
-    label.setAttribute('for', f.id);
-    group.appendChild(label);
-    var input = document.createElement('input');
-    input.type = 'text';
-    input.id = f.id;
-    input.placeholder = f.placeholder;
-    input.value = _orderData[f.key] || '';
-    group.appendChild(input);
-    body.appendChild(group);
-  });
+  card1.appendChild(stepBody1);
+  body.appendChild(card1);
 
+  /* Nav */
   var nav = document.createElement('div');
-  nav.className = 'of-nav';
+  nav.className = 'ck-nav';
   var backBtn = document.createElement('button');
-  backBtn.className = 'of-back';
+  backBtn.className = 'ck-btn-back';
   backBtn.textContent = '← Retour';
   backBtn.addEventListener('click', function() { _orderStep = 1; renderOrderStep(); });
   nav.appendChild(backBtn);
   var nextBtn = document.createElement('button');
-  nextBtn.className = 'of-next';
-  nextBtn.textContent = 'Suivant →';
+  nextBtn.className = 'ck-btn-next';
+  nextBtn.textContent = 'Continuer → Paiement';
   nextBtn.addEventListener('click', function() {
     _orderData.relais_id = document.getElementById('of-relais').value || null;
     _orderData.recipient_name = document.getElementById('of-recip-name').value.trim();
     _orderData.recipient_phone = document.getElementById('of-recip-phone').value.trim();
+    if (!_orderData.recipient_name) {
+      toast('Veuillez indiquer le nom du destinataire.', 'error');
+      return;
+    }
     _orderStep = 3;
     renderOrderStep();
   });
@@ -2064,21 +2459,42 @@ function renderOrderStep2(body) {
   body.appendChild(nav);
 }
 
+/* ── Step 3: Récapitulatif & Paiement ── */
 function renderOrderStep3(body) {
-  var title = document.createElement('h3');
-  title.style.cssText = 'font-family:Poppins,sans-serif;margin-bottom:16px;';
-  title.textContent = '3. Paiement';
-  body.appendChild(title);
+  var card = document.createElement('div');
+  card.className = 'ck-step-card ck-step-3';
 
-  var summ = document.createElement('div');
-  summ.style.cssText = 'background:var(--bg);border-radius:8px;padding:14px;margin-bottom:18px;';
-  var summTitle = document.createElement('div');
-  summTitle.style.cssText = 'font-weight:700;margin-bottom:8px;';
-  summTitle.textContent = 'Récapitulatif';
-  summ.appendChild(summTitle);
+  var header = document.createElement('div');
+  header.className = 'ck-step-header';
+  var badge = document.createElement('div');
+  badge.className = 'ck-step-badge';
+  badge.textContent = '💳';
+  header.appendChild(badge);
+  var title = document.createElement('div');
+  title.className = 'ck-step-title';
+  title.textContent = 'Récapitulatif & Paiement';
+  header.appendChild(title);
+  var hint = document.createElement('div');
+  hint.className = 'ck-step-hint';
+  hint.textContent = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
+  header.appendChild(hint);
+  card.appendChild(header);
+
+  var stepBody = document.createElement('div');
+  stepBody.className = 'ck-step-body';
+
+  /* Recap */
+  var recap = document.createElement('div');
+  recap.className = 'ck-recap';
+
+  var recapTitle = document.createElement('div');
+  recapTitle.className = 'ck-recap-title';
+  recapTitle.textContent = '🛒 Votre commande';
+  recap.appendChild(recapTitle);
+
   _cart.forEach(function(item) {
     var line = document.createElement('div');
-    line.style.cssText = 'display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:4px;';
+    line.className = 'ck-recap-line';
     var lName = document.createElement('span');
     lName.textContent = (item.product.name || 'Produit') + ' × ' + item.qty;
     line.appendChild(lName);
@@ -2086,105 +2502,95 @@ function renderOrderStep3(body) {
     lPrice.style.fontWeight = '600';
     lPrice.textContent = fmt((item.product.price_kmf || 0) * item.qty, 'KMF');
     line.appendChild(lPrice);
-    summ.appendChild(line);
+    recap.appendChild(line);
   });
+
+  /* Delivery info */
+  var delLine = document.createElement('div');
+  delLine.className = 'ck-recap-line';
+  delLine.style.color = 'var(--muted)';
+  delLine.style.fontSize = '0.82rem';
+  var delLabel = document.createElement('span');
+  delLabel.textContent = '📥 ' + (_orderData.recipient_name || '—') + ' • ' + (_orderData.recipient_phone || '');
+  delLine.appendChild(delLabel);
+  var relName = '';
+  if (_orderData.relais_id) {
+    var rel = _relais.find(function(r) { return r.id === _orderData.relais_id; });
+    if (rel) relName = rel.name;
+  }
+  var delVal = document.createElement('span');
+  delVal.textContent = relName ? '📍 ' + relName : '—';
+  delLine.appendChild(delVal);
+  recap.appendChild(delLine);
+
   var totalLine = document.createElement('div');
-  totalLine.style.cssText = 'display:flex;justify-content:space-between;font-weight:800;font-size:1.05rem;margin-top:10px;padding-top:8px;border-top:2px solid var(--border);';
+  totalLine.className = 'ck-recap-line total';
   var tLabel = document.createElement('span');
   tLabel.textContent = 'Total';
   totalLine.appendChild(tLabel);
   var tVal = document.createElement('span');
-  tVal.style.color = 'var(--primary)';
   tVal.textContent = fmtBoth(cartTotal());
   totalLine.appendChild(tVal);
-  summ.appendChild(totalLine);
-  body.appendChild(summ);
+  recap.appendChild(totalLine);
 
-  var pmGroup = document.createElement('div');
-  pmGroup.className = 'of-group';
-  var pmLabel = document.createElement('label');
-  pmLabel.textContent = 'Mode de paiement';
-  pmGroup.appendChild(pmLabel);
-  var radioGroup = document.createElement('div');
-  radioGroup.className = 'of-radio-group';
+  stepBody.appendChild(recap);
+
+  /* Separator */
+  var sep = document.createElement('div');
+  sep.className = 'ck-separator';
+  sep.textContent = 'mode de paiement';
+  stepBody.appendChild(sep);
+
+  /* Payment options */
+  var payOpts = document.createElement('div');
+  payOpts.className = 'ck-pay-options';
+
   var modes = [
-    { v: 'cash_relais', t: '🏪 Paiement au relais' },
-    { v: 'stripe_eur', t: '💳 Carte bancaire (€)' }
+    { v: 'cash_relais', icon: '🏪', t: 'Cash au relais', sub: 'Paiement en KMF à la livraison' },
+    { v: 'stripe_eur', icon: '💳', t: 'Carte bancaire', sub: 'Paiement sécurisé en EUR' }
   ];
-
-  /* ── Stripe Card Element container ── */
-  var stripeContainer = document.createElement('div');
-  stripeContainer.id = 'stripe-card-container';
-  var stripeLabel = document.createElement('label');
-  stripeLabel.textContent = 'Informations de carte';
-  stripeContainer.appendChild(stripeLabel);
-  var cardDiv = document.createElement('div');
-  cardDiv.id = 'stripe-card-element';
-  stripeContainer.appendChild(cardDiv);
-  var cardErrors = document.createElement('div');
-  cardErrors.id = 'stripe-card-errors';
-  stripeContainer.appendChild(cardErrors);
-
-  function toggleStripeCard(mode) {
-    if (mode === 'stripe_eur' && _stripe) {
-      stripeContainer.classList.add('visible');
-      if (!_cardElement) {
-        _cardElement = _stripeElements.create('card', {
-          style: {
-            base: { fontSize: '16px', color: '#1a202c', fontFamily: 'Poppins, sans-serif', '::placeholder': { color: '#a0aec0' } },
-            invalid: { color: '#e53e3e' }
-          },
-          hidePostalCode: true
-        });
-      }
-      setTimeout(function() { _cardElement.mount('#stripe-card-element'); }, 50);
-      _cardElement.on('change', function(ev) {
-        cardErrors.textContent = ev.error ? ev.error.message : '';
-      });
-    } else {
-      stripeContainer.classList.remove('visible');
-      if (_cardElement) {
-        try { _cardElement.unmount(); } catch(e) {}
-      }
-    }
-  }
-
   modes.forEach(function(m) {
     var opt = document.createElement('div');
-    opt.className = 'of-radio-opt';
+    opt.className = 'ck-pay-opt';
     if (_orderData.payment_mode === m.v) opt.classList.add('selected');
-    opt.textContent = m.t;
+
+    var iconDiv = document.createElement('div');
+    iconDiv.className = 'ck-pay-icon';
+    iconDiv.textContent = m.icon;
+    opt.appendChild(iconDiv);
+
+    var label = document.createElement('div');
+    label.textContent = m.t;
+    opt.appendChild(label);
+
+    var sub = document.createElement('div');
+    sub.style.cssText = 'font-size:0.72rem;color:var(--muted);font-weight:400;margin-top:3px;';
+    sub.textContent = m.sub;
+    opt.appendChild(sub);
+
     opt.addEventListener('click', function() {
       _orderData.payment_mode = m.v;
-      radioGroup.querySelectorAll('.of-radio-opt').forEach(function(o) { o.classList.remove('selected'); });
+      payOpts.querySelectorAll('.ck-pay-opt').forEach(function(o) { o.classList.remove('selected'); });
       opt.classList.add('selected');
-      toggleStripeCard(m.v);
     });
-    radioGroup.appendChild(opt);
+    payOpts.appendChild(opt);
   });
-  pmGroup.appendChild(radioGroup);
-  pmGroup.appendChild(stripeContainer);
-  body.appendChild(pmGroup);
+  stepBody.appendChild(payOpts);
 
-  /* show card element if stripe already selected */
-  if (_orderData.payment_mode === 'stripe_eur') {
-    setTimeout(function() { toggleStripeCard('stripe_eur'); }, 100);
-  }
+  card.appendChild(stepBody);
+  body.appendChild(card);
 
+  /* Nav */
   var nav = document.createElement('div');
-  nav.className = 'of-nav';
+  nav.className = 'ck-nav';
   var backBtn = document.createElement('button');
-  backBtn.className = 'of-back';
+  backBtn.className = 'ck-btn-back';
   backBtn.textContent = '← Retour';
-  backBtn.addEventListener('click', function() {
-    if (_cardElement) { try { _cardElement.unmount(); } catch(e) {} }
-    _orderStep = 2;
-    renderOrderStep();
-  });
+  backBtn.addEventListener('click', function() { _orderStep = 2; renderOrderStep(); });
   nav.appendChild(backBtn);
   var submitBtn = document.createElement('button');
-  submitBtn.className = 'of-next';
-  submitBtn.textContent = _orderData.payment_mode === 'stripe_eur' ? '💳 Payer par carte' : '✅ Confirmer la commande';
+  submitBtn.className = 'ck-btn-confirm';
+  submitBtn.textContent = '✅ Confirmer la commande';
   submitBtn.addEventListener('click', function() { submitOrder(submitBtn); });
   nav.appendChild(submitBtn);
   body.appendChild(nav);
@@ -2192,17 +2598,14 @@ function renderOrderStep3(body) {
 
 async function submitOrder(btn) {
   btn.disabled = true;
-  btn.textContent = 'Envoi en cours…';
+  btn.textContent = '⏳ Envoi en cours…';
   try {
-    /* 1. Guest checkout (cookie auth) */
     await apiPost('/api/auth/guest-checkout', {
       full_name: _orderData.full_name,
       phone: _orderData.phone,
       email: _orderData.email || undefined,
       country: _orderData.country
     });
-
-    /* 2. Create order */
     var items = _cart.map(function(i) {
       return { product_id: String(i.product.id), quantity: i.qty, confection_type: 'aucun' };
     });
@@ -2214,96 +2617,108 @@ async function submitOrder(btn) {
       payment_mode: _orderData.payment_mode
     };
     var result = await apiPost('/api/orders', orderPayload);
-
-    /* 3. If Stripe — process card payment */
-    if (_orderData.payment_mode === 'stripe_eur') {
-      if (!_stripe || !_cardElement) {
-        throw new Error('Le paiement par carte n\'est pas disponible. Veuillez réessayer ou choisir le paiement au relais.');
-      }
-      btn.textContent = 'Traitement du paiement…';
-
-      /* Create PaymentIntent via backend */
-      var intentResp = await apiPost('/api/payments/stripe/intent', {
-        order_reference: result.reference || result.order_reference
-      });
-
-      /* Confirm card payment with Stripe.js */
-      var stripeResult = await _stripe.confirmCardPayment(intentResp.client_secret, {
-        payment_method: {
-          card: _cardElement,
-          billing_details: {
-            name: _orderData.full_name,
-            email: _orderData.email || undefined,
-            phone: _orderData.phone
-          }
-        }
-      });
-
-      if (stripeResult.error) {
-        throw new Error(stripeResult.error.message);
-      }
-      /* Payment succeeded — webhook will update order status server-side */
-    }
-
-    /* 4. Success */
     _cart = [];
     saveCart();
     renderCartBody();
-    updateCartBadges();
-    renderOrderSuccess(result, _orderData.payment_mode);
+    renderOrderSuccess(result);
     toast('Commande confirmée !', 'success');
   } catch (e) {
     console.error('submitOrder:', e);
     toast(e.message || 'Erreur lors de la commande.', 'error');
     btn.disabled = false;
-    btn.textContent = _orderData.payment_mode === 'stripe_eur' ? '💳 Payer par carte' : '✅ Confirmer la commande';
+    btn.textContent = '✅ Confirmer la commande';
   }
 }
 
-function renderOrderSuccess(result, paymentMode) {
+function renderOrderSuccess(result) {
   var body = $('order-modal-body');
   body.innerHTML = '';
+
   var wrap = document.createElement('div');
-  wrap.className = 'order-success';
+  wrap.className = 'ck-success';
+
   var icon = document.createElement('div');
-  icon.className = 'success-icon';
-  icon.textContent = paymentMode === 'stripe_eur' ? '💳' : '🎉';
+  icon.className = 'ck-success-icon';
+  icon.textContent = '🎉';
   wrap.appendChild(icon);
+
   var h3 = document.createElement('h3');
-  h3.textContent = paymentMode === 'stripe_eur' ? 'Paiement confirmé !' : 'Commande enregistrée !';
+  h3.textContent = _orderData.payment_mode === 'cash_relais' ? 'Commande enregistrée !' : 'Paiement confirmé !';
   wrap.appendChild(h3);
+
   var p1 = document.createElement('p');
-  p1.textContent = paymentMode === 'stripe_eur'
-    ? 'Votre paiement par carte a été accepté. Votre commande est lancée !'
-    : 'Présentez-vous au point relais avec votre code de référence pour payer.';
+  p1.style.color = 'var(--muted)';
+  p1.textContent = 'Voici votre référence de commande :';
   wrap.appendChild(p1);
+
   var ref = document.createElement('div');
-  ref.className = 'order-ref';
+  ref.className = 'ck-ref';
   ref.textContent = result.reference || result.order_reference || result.id || '—';
   wrap.appendChild(ref);
-  if (paymentMode === 'cash_relais' && result.cash_ref_code) {
-    var cashNote = document.createElement('div');
-    cashNote.style.cssText = 'margin-top:12px;padding:12px;background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;text-align:center;';
-    var cashLabel = document.createElement('div');
-    cashLabel.style.cssText = 'font-size:0.82rem;color:#975a16;margin-bottom:4px;';
-    cashLabel.textContent = 'Code de paiement relais';
-    cashNote.appendChild(cashLabel);
-    var cashCode = document.createElement('div');
-    cashCode.style.cssText = 'font-size:1.3rem;font-weight:800;letter-spacing:2px;color:#975a16;';
-    cashCode.textContent = result.cash_ref_code;
-    cashNote.appendChild(cashCode);
-    wrap.appendChild(cashNote);
+
+  /* Pickup code for cash relais */
+  if (_orderData.payment_mode === 'cash_relais' && (result.pickup_code || result.order_pickup_code)) {
+    var pickupLabel = document.createElement('p');
+    pickupLabel.style.cssText = 'margin-top:16px;font-weight:700;color:var(--text);';
+    pickupLabel.textContent = '🏪 Code de retrait :';
+    wrap.appendChild(pickupLabel);
+
+    var pickupCode = document.createElement('div');
+    pickupCode.className = 'ck-pickup';
+    pickupCode.textContent = result.pickup_code || result.order_pickup_code || '';
+    wrap.appendChild(pickupCode);
   }
-  var p2 = document.createElement('p');
-  p2.style.cssText = 'margin-top:12px;font-size:0.88rem;color:var(--muted);';
-  p2.textContent = 'Conservez cette référence pour suivre votre commande.';
-  wrap.appendChild(p2);
+
+  /* Info box */
+  var info = document.createElement('div');
+  info.className = 'ck-success-info';
+  if (_orderData.payment_mode === 'cash_relais') {
+    info.innerHTML = '';
+    var line1 = document.createElement('div');
+    line1.textContent = '🏪 Paiement en cash (KMF) au point relais lors du retrait.';
+    info.appendChild(line1);
+    var line2 = document.createElement('div');
+    line2.style.marginTop = '6px';
+    line2.textContent = '📱 Le destinataire ' + sanitize(_orderData.recipient_name || '') + ' recevra un SMS de confirmation.';
+    info.appendChild(line2);
+    var line3 = document.createElement('div');
+    line3.style.marginTop = '6px';
+    line3.textContent = '📍 Présentez la référence ou le code de retrait au point relais.';
+    info.appendChild(line3);
+  } else {
+    var line1 = document.createElement('div');
+    line1.textContent = '💳 Paiement par carte confirmé.';
+    info.appendChild(line1);
+    var line2 = document.createElement('div');
+    line2.style.marginTop = '6px';
+    line2.textContent = '📱 Vous recevrez un email de confirmation.';
+    info.appendChild(line2);
+  }
+  wrap.appendChild(info);
+
+  /* Tracking link */
+  var trackBtn = document.createElement('button');
+  trackBtn.className = 'ck-btn-next';
+  trackBtn.style.cssText = 'margin-top:18px;width:100%;';
+  trackBtn.textContent = '📍 Suivre ma commande';
+  trackBtn.addEventListener('click', function() {
+    closeOrderModal();
+    var refVal = result.reference || result.order_reference || '';
+    if (refVal) {
+      document.getElementById('tracking-input').value = refVal;
+      document.getElementById('tracking').scrollIntoView({ behavior: 'smooth' });
+      setTimeout(function() { searchTracking(); }, 500);
+    }
+  });
+  wrap.appendChild(trackBtn);
+
   var closeBtn = document.createElement('button');
-  closeBtn.className = 'of-next';
-  closeBtn.style.cssText = 'margin-top:20px;width:100%;';
+  closeBtn.className = 'ck-btn-back';
+  closeBtn.style.cssText = 'margin-top:8px;width:100%;';
   closeBtn.textContent = 'Fermer';
   closeBtn.addEventListener('click', closeOrderModal);
   wrap.appendChild(closeBtn);
+
   body.appendChild(wrap);
 }
 
@@ -2385,7 +2800,6 @@ function clearCart() {
 document.addEventListener('DOMContentLoaded', function() {
   loadProducts();
   loadRelais();
-  initStripe();
   refreshCartBadge();
   initPromoBar();
   initHeroSearch();
