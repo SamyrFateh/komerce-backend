@@ -302,4 +302,12 @@ router.get('/rates', async (req, res) => {
   }
 });
 
+// ── GET /api/payments/config ──────────────────────────────────────────────────
+// Expose la clé publique Stripe au frontend (clé publique = safe to expose)
+router.get('/config', (req, res) => {
+  const key = process.env.STRIPE_PUBLISHABLE_KEY;
+  if (!key) return res.status(500).json({ error: 'Stripe non configuré' });
+  res.json({ publishable_key: key });
+});
+
 module.exports = router;
