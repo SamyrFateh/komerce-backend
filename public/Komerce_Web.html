@@ -707,7 +707,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <a href="#" class="nav-logo" aria-label="Komerce accueil"><span class="ko">Ko</span><span class="merce">merce</span></a>
     <div class="nav-links">
       <a href="#how-it-works">🌟 Situations</a>
-      <a href="#catalogue">📦 Catalogue</a>
+      <a href="#catalogue">Catalogue</a>
       <button class="cart-btn" onclick="openCart()" aria-label="Ouvrir le panier">
         <img src="/images/avatar_panier.png" class="cart-avatar" width="42" height="42" alt="Panier">
         <span id="cart-count" class="hidden">0</span>
@@ -738,7 +738,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
      ======================================== -->
 <section id="advantages" aria-label="Nos avantages">
   <div class="adv-grid">
-    <div class="adv-item">📦 Livraison rapide <small>· 7-14 jours</small></div>
+    <div class="adv-item">Livraison rapide <small>· 7-14 jours</small></div>
     <div class="adv-item">🔒 Paiement sécurisé <small>· Carte ou relais</small></div>
     <div class="adv-item">🇰🇲 100% Comores <small>· Moroni &amp; Anjouan</small></div>
   </div>
@@ -749,7 +749,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
      ======================================== -->
 <section id="catalogue">
   <div class="container">
-    <h2 class="section-title">📦 Notre Catalogue</h2>
+    <h2 class="section-title">Notre Catalogue</h2>
     <div class="carousel-wrapper">
       <button class="carousel-btn prev" onclick="scrollCarousel(-1)" aria-label="Précédent">‹</button>
       <div class="carousel-track" id="product-track">
@@ -822,7 +822,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
         <div class="trust-label">Paiement sécurisé</div>
       </div>
       <div class="trust-item">
-        <div class="trust-icon">📦</div>
+        <div class="trust-icon"><svg width="32" height="32" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg></div>
         <div class="trust-label">Suivi en temps réel</div>
       </div>
       <div class="trust-item">
@@ -874,7 +874,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   </div>
   <div class="cart-body" id="cart-body">
     <div class="cart-empty">
-      <div class="empty-icon">🛒</div>
+      <div class="empty-icon"><svg width="48" height="48" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg></div>
       <p>Votre panier est vide</p>
     </div>
   </div>
@@ -964,9 +964,7 @@ function fmtBoth(kmf) {
   return s;
 }
 
-function productEmoji(p) {
-  return p.emoji || '📦';
-}
+var PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' fill='none'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3Cpath d='M170 220h60l-15-20-10 13-12-8-23 15z' fill='%23d1d5db'/%3E%3Ccircle cx='220' cy='175' r='12' fill='%23d1d5db'/%3E%3Crect x='150' y='155' width='100' height='80' rx='8' stroke='%23d1d5db' stroke-width='4' fill='none'/%3E%3C/svg%3E";
 
 /* ── API ── */
 async function apiGet(path) {
@@ -1078,10 +1076,11 @@ function renderProducts(list) {
       img.loading = 'lazy';
       imgDiv.appendChild(img);
     } else {
-      var emojiSpan = document.createElement('span');
-      emojiSpan.style.cssText = 'font-size:4rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.1));';
-      emojiSpan.textContent = productEmoji(p);
-      imgDiv.appendChild(emojiSpan);
+      var img = document.createElement('img');
+      img.src = PLACEHOLDER_IMG;
+      img.alt = 'Image non disponible';
+      img.loading = 'lazy';
+      imgDiv.appendChild(img);
     }
     card.appendChild(imgDiv);
 
@@ -1117,7 +1116,7 @@ function renderProducts(list) {
 
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
-    addBtn.textContent = '🛒 Ajouter';
+    addBtn.textContent = 'Ajouter';
     addBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       addToCart(p, 1);
@@ -1189,7 +1188,10 @@ function openProductModal(p) {
     img.alt = sanitize(p.name);
     emojiBox.appendChild(img);
   } else {
-    emojiBox.textContent = productEmoji(p);
+    var phImg = document.createElement('img');
+    phImg.src = PLACEHOLDER_IMG;
+    phImg.alt = 'Image non disponible';
+    emojiBox.appendChild(phImg);
   }
   top.appendChild(emojiBox);
 
@@ -1281,7 +1283,7 @@ function openProductModal(p) {
 
   var addBtn = document.createElement('button');
   addBtn.className = 'pd-add-btn';
-  addBtn.textContent = '🛒 Ajouter au panier';
+  addBtn.textContent = 'Ajouter au panier';
   addBtn.addEventListener('click', function() {
     addToCart(p, _pdQty);
     closeProductModal();
@@ -1316,7 +1318,11 @@ function openProductModal(p) {
         mEmoji.innerHTML = '';
         mEmoji.appendChild(mImg);
       } else {
-        mEmoji.textContent = productEmoji(sp);
+        var mPhImg = document.createElement('img');
+        mPhImg.src = PLACEHOLDER_IMG;
+        mPhImg.alt = '';
+        mPhImg.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:6px;margin:0 auto;';
+        mEmoji.appendChild(mPhImg);
       }
       mini.appendChild(mEmoji);
 
@@ -1417,7 +1423,7 @@ function renderCartBody() {
     empty.className = 'cart-empty';
     var icon = document.createElement('div');
     icon.className = 'empty-icon';
-    icon.textContent = '🛒';
+    icon.innerHTML = '<svg width="24" height="24" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>';
     empty.appendChild(icon);
     var msg = document.createElement('p');
     msg.textContent = 'Votre panier est vide';
@@ -1441,7 +1447,11 @@ function renderCartBody() {
       emojiBox.innerHTML = '';
       emojiBox.appendChild(img);
     } else {
-      emojiBox.textContent = productEmoji(item.product);
+      var phImg = document.createElement('img');
+      phImg.src = PLACEHOLDER_IMG;
+      phImg.alt = '';
+      phImg.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:8px;';
+      emojiBox.appendChild(phImg);
     }
     row.appendChild(emojiBox);
 
@@ -1892,8 +1902,8 @@ function renderOrderSuccess(result) {
    ────────────────────────────────────── */
 var TRACKING_STEPS = [
   { key: 'ordered', label: 'Commande reçue', icon: '📋' },
-  { key: 'purchasing', label: 'Achat en cours', icon: '🛒' },
-  { key: 'preparation', label: 'Préparation', icon: '📦' },
+  { key: 'purchasing', label: 'Achat en cours', icon: '●' },
+  { key: 'preparation', label: 'Préparation', icon: '●' },
   { key: 'shipped', label: 'Expédié', icon: '✈️' },
   { key: 'transit', label: 'En transit', icon: '🚚' },
   { key: 'available', label: 'Disponible au relais', icon: '🏪' },
@@ -2060,19 +2070,19 @@ document.addEventListener('DOMContentLoaded', function() {
 <nav id="bottom-nav" aria-label="Navigation mobile">
   <div class="btab-inner">
     <button class="btab active" id="btab-home" onclick="btabHome()" aria-label="Accueil">
-      <span class="btab-icon">🏠</span><span>Accueil</span>
+      <span class="btab-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-8 9 8"/><path d="M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10"/></svg></span><span>Accueil</span>
     </button>
     <button class="btab" id="btab-search" onclick="btabSearch()" aria-label="Rechercher">
-      <span class="btab-icon">🔍</span><span>Rechercher</span>
+      <span class="btab-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span><span>Rechercher</span>
     </button>
     <button class="btab" id="btab-catalogue" onclick="btabCatalogue()" aria-label="Catalogue">
-      <span class="btab-icon">📦</span><span>Catalogue</span>
+      <span class="btab-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span>Catalogue</span>
     </button>
     <button class="btab" id="btab-suivi" onclick="btabSuivi()" aria-label="Suivi commande">
       <span class="btab-icon">📋</span><span>Suivi</span>
     </button>
     <button class="btab" id="btab-cart" onclick="btabCart()" aria-label="Panier">
-      <span class="btab-icon">🛒</span><span>Panier</span>
+      <span class="btab-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg></span><span>Panier</span>
       <span id="btab-cart-badge" class="btab-badge hidden">0</span>
     </button>
   </div>
