@@ -3,14 +3,15 @@
  *
  * Toutes les routes sont protégées : authenticate + requireRole(['admin'])
  *
- * GET /api/admin/dashboard         → KPIs globaux
- * GET /api/admin/orders            → toutes les commandes + filtres
- * GET /api/admin/margins           → dashboard marge réelle
- * GET /api/admin/customs           → historique douane
- * GET /api/admin/partners          → gestion partenaires / relais
- * POST /api/admin/partners         → créer un partenaire
- * PUT  /api/admin/partners/:id     → modifier un partenaire
- * GET /api/admin/alerts            → alertes marge négative + anomalies douane
+ * GET    /api/admin/dashboard         → KPIs globaux
+ * GET    /api/admin/orders            → toutes les commandes + filtres
+ * DELETE /api/admin/orders/:id        → supprimer une commande par ID
+ * GET    /api/admin/margins           → dashboard marge réelle
+ * GET    /api/admin/customs           → historique douane
+ * GET    /api/admin/partners          → gestion partenaires / relais
+ * POST   /api/admin/partners         → créer un partenaire
+ * PUT    /api/admin/partners/:id     → modifier un partenaire
+ * GET    /api/admin/alerts            → alertes marge négative + anomalies douane
  */
 
 const express = require('express');
@@ -208,6 +209,48 @@ router.get('/orders', ...guard, async (req, res) => {
   }
 });
 
+// ─── DELETE /api/admin/orders/:id — Supprimer une commande ───────────────────
+
+router.delete('/orders/:id', ...guard, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Vérifier que la commande existe
+    const { rows: [order] } = await db.query(
+      'SELECT id, reference, status FROM orders WHERE id = $1',
+      [id]
+    );
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    // Supprimer dans l'ordre des dépendances
+    await db.query('DELETE FROM order_items WHERE order_id = $1', [id]);
+
+    try {
+      await db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]);
+    } catch (_) { /* table may not exist */ }
+
+    try {
+      await db.query('DELETE FROM customs_history WHERE order_id = $1::text', [id]);
+    } catch (_) { /* table may not exist */ }
+
+    await db.query('DELETE FROM orders WHERE id = $1', [id]);
+
+    console.log(`🗑️ Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
+    res.json({
+      success: true,
+      message: `Commande ${order.reference} supprimée`,
+      deleted: { id, reference: order.reference, status: order.status },
+    });
+
+  } catch (err) {
+    console.error('Delete order error:', err.message);
+    res.status(500).json({ error: 'Erreur suppression commande' });
+  }
+});
+
 // ─── GET /api/admin/margins — dashboard marge réelle ─────────────────────────
 
 router.get('/margins', ...guard, async (req, res) => {
@@ -288,7 +331,7 @@ router.get('/customs', ...guard, async (req, res) => {
     const { category, anomaly_only } = req.query;
     const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 90));
 
-    const conditions = ['ch.created_at >= NOW() - ($1 || \' days\')::INTERVAL'];
+    const conditions = [`ch.created_at >= NOW() - ($1 || ' days')::INTERVAL`];
     const params     = [days];
     let   pi         = 2;
 
@@ -946,4 +989,3 @@ router.post('/seed-test', ...guard, validate(admin.seedTest), async (req, res) =
 });
 
 module.exports = router;
-
