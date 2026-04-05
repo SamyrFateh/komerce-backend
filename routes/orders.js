@@ -17,6 +17,10 @@
  *   · CEREMONY_TYPES remplacé par MODULE_TYPES — extensible sans migration DB
  *   · confection_type étendu : 'couture_standard' | 'sur_mesure' | 'lunettes_vue' | ...
  *   · Commentaires alignés sur Brand Truth v7 (local d'abord, modules spécialisés)
+ *
+ * Changelog v7.7 :
+ *   · cash_ref_code : code 6 chiffres lisibles (ex: 482917) au lieu de hex 16 chars
+ *     → plus facile à dicter oralement par le client à l'agent relais
  */
 
 'use strict';
@@ -150,6 +154,30 @@ async function getUniqueRef() {
     if (!rows.length) return ref;
   }
   throw new Error('Impossible de générer une référence unique après 5 tentatives');
+}
+
+/**
+ * generateCashCode — Code cash 6 chiffres crypto-safe (v7.7)
+ *
+ * Génère un code numérique à 6 chiffres (000000–999999) sans biais de modulo.
+ * Valeurs 250–255 rejetées car 250 = 25×10 → division uniforme parfaite.
+ *
+ * Exemple : "482917"
+ *
+ * Remplacement du hash hex 16 chars (ex: 0c92c35b321fb02b) — illisible oralement.
+ * Un code 6 chiffres se dicte en 3 secondes, sans risque d'erreur.
+ *
+ * Espace de 1 000 000 codes — largement suffisant pour des commandes en attente simultanées.
+ * L'unicité est garantie par la contrainte DB unique sur (cash_ref_code, payment_status='pending').
+ */
+function generateCashCode() {
+  const digits = [];
+  while (digits.length < 6) {
+    const b = randomBytes(1)[0];
+    // Rejeter 250–255 pour éviter le biais de modulo (250 = 25 × 10)
+    if (b < 250) digits.push(b % 10);
+  }
+  return digits.join('');
 }
 
 // ─── POST /api/orders ─────────────────────────────────────────────────────────
@@ -298,8 +326,6 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
       : 0;
 
-    // ── Code cash si paiement relais ────────────────────────────────────────
-    // Codes générés avec crypto — pas Math.random()
     // ── Loyalty : récupérer le rabais du client connecté ──────────────────
     let discountPct   = 0;
     let discountKmf   = 0;
@@ -312,8 +338,11 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
       total_kmf    = total_kmf - discountKmf;
     }
 
+    // ── Code cash 6 chiffres (v7.7) — lisible oralement ─────────────────────
+    // Ex: "482917" au lieu de "0c92c35b321fb02b"
+    // Le client dicte le code à l'agent relais en 3 secondes.
     const cash_ref_code = payment_mode === 'cash_relais'
-      ? randomBytes(8).toString('hex')  // 16 chars hex = 64 bits of entropy
+      ? generateCashCode()
       : null;
 
     // Code de retrait 6 caractères alphanumériques (crypto)
@@ -540,6 +569,7 @@ router.get('/', authenticate, async (req, res) => {
 // ─── GET /api/orders/relais ───────────────────────────────────────────────────
 // Liste les commandes disponibles (status = 'available') au relais de l'agent connecté.
 // Inclut aussi les commandes en transit vers ce relais (statut shipped / transit_comores).
+// Inclut les commandes cash en attente de paiement (status='confirmed', payment_mode='cash_relais').
 // Rôles : admin, agent_relais
 //
 // INSÉRER AVANT router.get('/:ref', ...)
@@ -597,6 +627,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
            WHEN 'available'       THEN 1
            WHEN 'transit_comores' THEN 2
            WHEN 'shipped'         THEN 3
+           WHEN 'confirmed'       THEN 4
          END,
          o.available_at ASC NULLS LAST,
          o.created_at   ASC`,
@@ -1152,11 +1183,10 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     let pickupCodePatch = '';
     if (status === 'available' && !order.pickup_code) {
       const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      const crypto = require('crypto');
-const { randomBytes } = crypto;
+      const { randomBytes: rb } = require('crypto');
       const newCode = Array.from({ length: 6 }, () => {
         let b;
-        do { b = randomBytes(1)[0]; } while (b >= 216);
+        do { b = rb(1)[0]; } while (b >= 216);
         return PICKUP_CHARS[b % 36];
       }).join('');
       pickupCodePatch = `, pickup_code = '${newCode}'`;
