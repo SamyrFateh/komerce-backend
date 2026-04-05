@@ -1691,9 +1691,8 @@ async function processReception(ref) {
     if (matchingOrder) orderId = getOrderId(matchingOrder);
 
     const data = await apiCall('POST', '/api/scans', {
-      order_id: orderId,
-      scan_type: 'relais_received',
-      relais_id: selectedRelaisId
+      scan_code: ref,
+      step: 'relais_received'
     });
 
     const order = data.order || {};
@@ -1872,7 +1871,7 @@ async function handleCodeCollect() {
   resultEl.classList.remove('scan-result-error');
 
   try {
-    const data = await apiCall('POST', '/api/scans/collect', { code });
+    const data = await apiCall('POST', '/api/scans/collect', { pickup_code: code });
     showCollectSuccess(data);
     input.value = '';
     if (liveChannel) {
