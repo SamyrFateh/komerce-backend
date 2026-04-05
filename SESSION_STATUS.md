@@ -7,14 +7,54 @@
 Restructurer la documentation du projet Komerce-backend :
 1. ✅ **Étape 1** — Analyser la doc existante (8 fichiers, 86 KB) et identifier les problèmes
 2. 🔄 **Étape 2** — Revue de code complète pour établir la "vérité terrain"
-3. ⏳ **Étape 3** — Rédiger les 4 nouveaux documents (README, ARCHITECTURE, STATUS, DEPLOYMENT)
+3. ⏳ **Étape 3** — Produire la cartographie d'impact 360° (NOUVEAU)
+4. ⏳ **Étape 4** — Rédiger les 4 nouveaux documents (README, ARCHITECTURE, STATUS, DEPLOYMENT)
 
-## Structure documentaire cible (validée)
+## 🗺️ Cartographie d'impact 360° (OBJECTIF CLÉ)
+
+### Objectif
+Permettre à tout développeur de répondre instantanément à :
+> **"Si je touche à X, qu'est-ce qui est impacté ?"**
+
+Sécuriser chaque modification en ayant une vue complète sur tous les composants liés.
+
+### Structure de la cartographie
+
+#### A. Matrice de dépendances croisées
+Tableau exhaustif croisant CHAQUE composant avec ses dépendances :
+
+| Composant | Routes | Middleware | Utils | Tables DB | Frontends |
+|-----------|--------|-----------|-------|-----------|----------|
+| *chaque route* | — | auth utilisées | fonctions appelées | tables lues/écrites | dashboards liés |
+| *chaque table* | routes qui y accèdent | — | utils qui la référencent | tables jointes | dashboards affichant ses données |
+| *chaque util* | routes appelantes | — | autres utils | tables accédées | — |
+| *chaque dashboard* | endpoints API appelés | — | — | — | — |
+
+#### B. Vue par fonctionnalité métier
+Pour chaque fonctionnalité (commandes, fidélité, paiements, stocks...) :
+- Routes impliquées
+- Tables DB touchées
+- Utils et middleware concernés
+- Dashboards impactés
+- ⚠️ Effets de bord et dépendances cachées
+
+#### C. Graphe d'impact par table DB
+Pour chaque table :
+- Qui la lit (SELECT) → quelles routes, quels dashboards
+- Qui l'écrit (INSERT/UPDATE/DELETE) → quelles routes
+- Jointures → quelles autres tables
+- Triggers / cascades
+
+#### D. Fichier cible
+`docs/CARTOGRAPHY.md` — le 5ème document structurant du projet
+
+## Structure documentaire cible (mise à jour)
 
 | Document | Rôle |
 |----------|------|
 | `README.md` | Point d'entrée, quickstart, structure repo |
 | `docs/ARCHITECTURE.md` | Référence technique (DB, API, flux, middlewares) |
+| `docs/CARTOGRAPHY.md` | 🗺️ **Cartographie d'impact 360°** — dépendances croisées entre tous les composants |
 | `docs/STATUS.md` | État vivant : features, bugs ouverts, backlog, changelog |
 | `docs/DEPLOYMENT.md` | Config, sécurité, déploiement Railway |
 
@@ -28,6 +68,7 @@ Restructurer la documentation du projet Komerce-backend :
 | Middleware + utils + schéma DB | ❌ Interrompu — À refaire | — |
 | Frontends (dashboards HTML + komerce-api.js) | ⏳ Pas commencé | — |
 | Vérification des 7 écarts identifiés | ⏳ Pas commencé | — |
+| Cartographie d'impact 360° | ⏳ Pas commencé — après revue de code | — |
 | Rapport de revue de code consolidé | ⏳ Pas commencé | — |
 
 ## Résumé des découvertes critiques (routes)
@@ -55,5 +96,6 @@ Restructurer la documentation du projet Komerce-backend :
 1. **Refaire l'analyse middleware + utils + schema.sql** (interrompue)
 2. **Auditer les 17 dashboards HTML** dans public/
 3. **Vérifier les 7 écarts docs ↔ code**
-4. **Consolider tout dans un rapport de revue unique**
-5. **Rédiger les 4 documents cibles** (uniquement basés sur le code réel)
+4. **Construire la cartographie d'impact 360°** (matrice croisée + vues métier + graphe DB)
+5. **Consolider tout dans un rapport de revue unique**
+6. **Rédiger les 5 documents cibles** (README, ARCHITECTURE, CARTOGRAPHY, STATUS, DEPLOYMENT)
