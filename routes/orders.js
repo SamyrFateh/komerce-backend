@@ -561,6 +561,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
          o.available_at,
          o.shipped_at,
          o.created_at,
+         o.cash_ref_code,
          rc.full_name  AS recipient_name,
          rc.phone      AS recipient_phone,
          r.name        AS relais_name,
@@ -577,7 +578,10 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
        LEFT JOIN relais     r  ON r.id  = o.relais_id
        WHERE ${conditions}
-         AND o.status IN ('shipped', 'transit_comores', 'available')
+         AND (
+           o.status IN ('shipped', 'transit_comores', 'available')
+           OR (o.status = 'confirmed' AND o.payment_mode = 'cash_relais' AND o.payment_status = 'pending')
+         )
          AND o.status NOT IN ('collected', 'cancelled', 'refunded')
        ORDER BY
          CASE o.status
@@ -603,9 +607,10 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
     }));
 
     const summary = {
-      en_attente:  enriched.filter(o => o.status === 'available').length,
-      en_transit:  enriched.filter(o => ['shipped', 'transit_comores'].includes(o.status)).length,
-      alertes_48h: enriched.filter(o => o.alert_48h).length,
+      en_attente:    enriched.filter(o => o.status === 'available').length,
+      en_transit:    enriched.filter(o => ['shipped', 'transit_comores'].includes(o.status)).length,
+      alertes_48h:   enriched.filter(o => o.alert_48h).length,
+      cash_pending:  enriched.filter(o => o.status === 'confirmed' && o.payment_mode === 'cash_relais').length,
     };
 
     res.json({ summary, orders: enriched });
