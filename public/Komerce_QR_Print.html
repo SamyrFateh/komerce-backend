@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — 🏷️ Impression QR Colis</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏷️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #f5f6f8; --bg2: #ffffff; --blue: #2563eb; --green: #16a34a;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #9ca3af;
+  --border: #e2e6ec; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+
+/* ── Header ── */
+.header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow);
+}
+.header h1 { font-size: 20px; font-weight: 700; }
+.header .subtitle { font-size: 13px; color: var(--text3); }
+.btn { padding: 8px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
+
+/* ── Controls ── */
+.controls { padding: 16px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.controls select, .controls input {
+  padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 14px; font-family: inherit; background: var(--bg2);
+}
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #e0e7ff; color: var(--blue); }
+
+/* ── QR Labels Grid ── */
+.labels-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px; padding: 16px 24px; max-width: 1200px; margin: 0 auto;
+}
+.qr-label {
+  background: var(--bg2); border: 2px dashed var(--border); border-radius: 12px;
+  padding: 20px; text-align: center; break-inside: avoid; page-break-inside: avoid;
+}
+.qr-label .logo { font-size: 14px; font-weight: 700; color: var(--text3); letter-spacing: 1px; margin-bottom: 4px; }
+.qr-label .ref { font-family: monospace; font-size: 18px; font-weight: 700; color: var(--blue); margin: 6px 0; }
+.qr-label canvas { margin: 10px auto; display: block; }
+.qr-label .info { font-size: 11px; color: var(--text2); margin: 3px 0; line-height: 1.4; }
+.qr-label .info strong { color: var(--text); }
+.qr-label .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-top: 6px; }
+.status-preparation { background: #fef3c7; color: #92400e; }
+.status-purchasing { background: #dbeafe; color: #1e40af; }
+.status-paid { background: #d1fae5; color: #065f46; }
+.status-shipped { background: #ede9fe; color: #5b21b6; }
+
+/* ── Empty ── */
+.empty { text-align: center; padding: 60px 24px; color: var(--text3); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* ── Loading ── */
+.loading { text-align: center; padding: 60px; color: var(--text3); }
+
+/* ── Print Styles ── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .labels-grid { gap: 8px; padding: 8px; grid-template-columns: repeat(3, 1fr); }
+  .qr-label { border: 1.5px dashed #ccc; padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header no-print">
+  <div>
+    <h1>🏷️ Impression QR Colis</h1>
+    <div class="subtitle">Générer et imprimer les étiquettes QR pour les commandes</div>
+  </div>
+  <div style="margin-left:auto; display:flex; gap:8px;">
+    <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimer tout</button>
+    <button class="btn btn-outline" onclick="loadOrders()">🔄 Rafraîchir</button>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls no-print">
+  <label style="font-size:13px;font-weight:600;">Filtrer :</label>
+  <select id="statusFilter" onchange="renderLabels()">
+    <option value="all">Tous les statuts</option>
+    <option value="paid">💳 Payées</option>
+    <option value="purchasing" selected>🛒 En achat</option>
+    <option value="preparation">📦 En préparation</option>
+    <option value="shipped">✈️ Expédiées</option>
+  </select>
+  <input type="text" id="searchInput" placeholder="🔍 Rechercher ref, client..." oninput="renderLabels()">
+  <span class="badge" id="countBadge">0 étiquettes</span>
+</div>
+
+<!-- Labels -->
+<div class="loading" id="loadingState">⏳ Chargement des commandes...</div>
+<div class="labels-grid" id="labelsGrid" style="display:none;"></div>
+<div class="empty" id="emptyState" style="display:none;">
+  <div class="empty-icon">📭</div>
+  <div>Aucune commande à étiqueter</div>
+</div>
+
+<script>
+const API = window.location.origin + '/api';
+let token = '';
+let allOrders = [];
+
+async function apiCall(method, path, body) {
+  const opts = {
+    method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw data;
+  return data;
+}
+
+async function login() {
+  // Check if already logged in (same-origin session)
+  const stored = localStorage.getItem('komerce_token');
+  if (stored) { token = stored; return true; }
+
+  const email = prompt('Email admin :');
+  const password = prompt('Mot de passe :');
+  if (!email || !password) return false;
+
+  try {
+    const data = await apiCall('POST', '/auth/login', { email, password });
+    token = data.token;
+    localStorage.setItem('komerce_token', token);
+    return true;
+  } catch (err) {
+    alert('Erreur de connexion : ' + (err.error || err.message));
+    return false;
+  }
+}
+
+async function loadOrders() {
+  try {
+    const data = await apiCall('GET', '/orders?limit=200');
+    allOrders = (data.orders || data || []).filter(o =>
+      ['paid', 'purchasing', 'preparation', 'shipped', 'ordered'].includes(o.status)
+    );
+    renderLabels();
+  } catch (err) {
+    console.error('Load error:', err);
+    document.getElementById('loadingState').innerHTML = '❌ Erreur : ' + (err.error || err.message);
+  }
+}
+
+function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function getClientName(o) {
+  if (o.recipient_name) return o.recipient_name;
+  if (o.recipient && o.recipient.full_name) return o.recipient.full_name;
+  if (o.user_name) return o.user_name;
+  if (o.user && o.user.full_name) return o.user.full_name;
+  return '—';
+}
+
+function getProducts(o) {
+  if (o.items && o.items.length) return o.items.map(i => i.product_name || i.name || '?').join(', ');
+  if (o.item_count) return o.item_count + ' article(s)';
+  return '—';
+}
+
+function getRelais(o) {
+  if (o.relais_name) return o.relais_name;
+  if (o.relais && o.relais.name) return o.relais.name;
+  return '—';
+}
+
+function renderLabels() {
+  const filter = document.getElementById('statusFilter').value;
+  const search = document.getElementById('searchInput').value.toLowerCase();
+
+  let filtered = allOrders;
+  if (filter !== 'all') filtered = filtered.filter(o => o.status === filter || (filter === 'purchasing' && o.status === 'ordered'));
+  if (search) filtered = filtered.filter(o =>
+    (o.reference || '').toLowerCase().includes(search) ||
+    getClientName(o).toLowerCase().includes(search)
+  );
+
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('countBadge').textContent = filtered.length + ' étiquette(s)';
+
+  if (!filtered.length) {
+    document.getElementById('labelsGrid').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  const grid = document.getElementById('labelsGrid');
+  grid.style.display = 'grid';
+
+  grid.innerHTML = filtered.map((o, i) => {
+    const statusClass = 'status-' + (o.status || 'paid');
+    return `<div class="qr-label">
+      <div class="logo">KOMERCE</div>
+      <div class="ref">${esc(o.reference)}</div>
+      <canvas id="qr-${i}" width="160" height="160"></canvas>
+      <div class="info"><strong>Client :</strong> ${esc(getClientName(o))}</div>
+      <div class="info"><strong>Produits :</strong> ${esc(getProducts(o))}</div>
+      <div class="info"><strong>Relais :</strong> ${esc(getRelais(o))}</div>
+      <div class="status ${statusClass}">${esc(o.status)}</div>
+    </div>`;
+  }).join('');
+
+  // Generate QR codes
+  filtered.forEach((o, i) => {
+    const canvas = document.getElementById('qr-' + i);
+    if (canvas) {
+      QRCode.toCanvas(canvas, o.reference || o.id, { width: 160, margin: 1 }, function(err) {
+        if (err) console.error('QR error:', err);
+      });
+    }
+  });
+}
+
+// Init
+(async function() {
+  const ok = await login();
+  if (ok) await loadOrders();
+})();
+</script>
+</body>
+</html>

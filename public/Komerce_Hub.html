@@ -7,6 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root {
   --bg: #f5f6f8; --bg2: #ffffff; --bg3: #f0f2f5; --bg4: #e9ecef;
@@ -737,9 +738,9 @@ async function loadQueue() {
 
       let actionBtn = '';
       if (o.status === 'paid') {
-        actionBtn = `<button class="btn btn-primary btn-xs" onclick="scanOrder('${o.id}','preparation')">📥 Réceptionner</button>`;
+        actionBtn = `<button class="btn btn-primary btn-xs" onclick="scanOrder('${o.reference}','preparation')">📥 Réceptionner</button> <button class="btn btn-outline btn-xs" onclick="printQR('${o.reference}','${esc(clientName)}','${esc(products)}','${esc(relaisName)}')">🏷️</button>`;
       } else if (o.status === 'preparation') {
-        actionBtn = `<button class="btn btn-purple btn-xs" onclick="scanOrder('${o.id}','shipped')">📦 Expédier</button>`;
+        actionBtn = `<button class="btn btn-purple btn-xs" onclick="scanOrder('${o.reference}','shipped')">📦 Expédier</button> <button class="btn btn-outline btn-xs" onclick="printQR('${o.reference}','${esc(clientName)}','${esc(products)}','${esc(relaisName)}')">🏷️</button>`;
       }
 
       return `<tr class="${rowClass}">
@@ -933,7 +934,8 @@ async function processScannedCode(code) {
 
   try {
     const scanType = order && order.status === 'preparation' ? 'shipped' : 'preparation';
-    const result = await apiCall('POST', '/api/scans', { order_id: orderId, scan_type: scanType });
+    const scanCode = order ? order.reference : code;
+    const result = await apiCall('POST', '/api/scans', { scan_code: scanCode, step: scanType });
 
     // Show result card
     const rc = document.getElementById('scanResult');
@@ -947,7 +949,7 @@ async function processScannedCode(code) {
     toast(scanType === 'preparation' ? 'Colis réceptionné ✅' : 'Colis expédié 📦', 'success');
 
     // Broadcast
-    liveChannel.postMessage({ type: 'HUB_SCAN', orderId, status: scanType });
+    liveChannel.postMessage({ type: 'HUB_SCAN', reference, status: scanType });
 
     // Refresh data
     document.getElementById('manualRef').value = '';
@@ -957,16 +959,16 @@ async function processScannedCode(code) {
   }
 }
 
-async function scanOrder(orderId, scanType) {
+async function scanOrder(reference, scanType) {
   const btn = event.target;
   const origText = btn.textContent;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
 
   try {
-    await apiCall('POST', '/api/scans', { order_id: orderId, scan_type: scanType });
+    await apiCall('POST', '/api/scans', { scan_code: reference, step: scanType });
     toast(scanType === 'preparation' ? 'Colis réceptionné ✅' : 'Colis expédié 📦', 'success');
-    liveChannel.postMessage({ type: 'HUB_SCAN', orderId, status: scanType });
+    liveChannel.postMessage({ type: 'HUB_SCAN', reference, status: scanType });
     await loadAllData();
   } catch (err) {
     toast(err.error || err.message || 'Erreur', 'error');
@@ -1073,6 +1075,38 @@ function getRelaisName(order) {
     document.getElementById('loginOverlay').style.display = 'flex';
   }
 })();
+
+/* ─── QR Print ─── */
+function printQR(reference, client, products, relais) {
+  const w = window.open('', '_blank', 'width=400,height=500');
+  w.document.write(`<!DOCTYPE html><html><head><title>QR ${reference}</title>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; text-align: center; padding: 20px; }
+    .qr-label { border: 2px dashed #ccc; border-radius: 12px; padding: 24px; display: inline-block; margin: 20px auto; }
+    .qr-label h2 { font-size: 18px; margin: 0 0 4px; color: #1a1a2e; }
+    .qr-label .ref { font-family: monospace; font-size: 22px; font-weight: 700; color: #2563eb; margin: 8px 0; }
+    .qr-label .info { font-size: 12px; color: #666; margin: 4px 0; }
+    .qr-label canvas { margin: 12px auto; display: block; }
+    .qr-label .logo { font-size: 28px; margin-bottom: 8px; }
+    @media print { .no-print { display: none; } body { padding: 0; } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
+  </head><body>
+    <div class="qr-label">
+      <div class="logo">🏷️ KOMERCE</div>
+      <div class="ref">${reference}</div>
+      <canvas id="qr"></canvas>
+      <div class="info"><strong>Client :</strong> ${client}</div>
+      <div class="info"><strong>Produits :</strong> ${products}</div>
+      <div class="info"><strong>Relais :</strong> ${relais}</div>
+    </div>
+    <br><button class="no-print" onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;border-radius:8px;border:none;background:#2563eb;color:#fff;">🖨️ Imprimer</button>
+    <script>
+      QRCode.toCanvas(document.getElementById('qr'), '${reference}', { width: 200, margin: 2 }, function(err) { if(err) console.error(err); });
+    <\/script>
+  </body></html>`);
+  w.document.close();
+}
 </script>
 </body>
 </html>
