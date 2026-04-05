@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Komerce — Pilotage Coûts & Marges</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap');
 
@@ -2646,10 +2646,10 @@ async function loadLiveData() {
   try {
     const [snapRes, histRes] = await Promise.all([
       fetch(`${KOMERCE_API_URL}/api/pilotage?mois=${mois}`, {
-        headers: {}, credentials: 'include' // BUG-014
+        credentials: 'include'
       }),
       fetch(`${KOMERCE_API_URL}/api/pilotage/history?mois=12`, {
-        headers: {}, credentials: 'include' // BUG-014
+        credentials: 'include'
       }),
     ]);
 
@@ -3265,9 +3265,9 @@ async function loadOps() {
   statusEl.style.color = 'var(--text3)';
   try {
     const [adminRes, purchRes, ordersRes] = await Promise.all([
-      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { credentials: 'include', headers: {}, credentials: 'include' // BUG-014 }),
-      fetch(`${KOMERCE_API_URL}/api/purchasing`, { credentials: 'include', headers: {}, credentials: 'include' // BUG-014 }),
-      fetch(`${KOMERCE_API_URL}/api/pilotage`, { credentials: 'include', headers: {}, credentials: 'include' // BUG-014 }),
+      fetch(`${KOMERCE_API_URL}/api/admin/orders?limit=200`, { credentials: 'include' }),
+      fetch(`${KOMERCE_API_URL}/api/purchasing`, { credentials: 'include' }),
+      fetch(`${KOMERCE_API_URL}/api/pilotage`, { credentials: 'include' }),
     ]);
     if (!adminRes.ok) { statusEl.textContent = '❌ Token invalide ou non admin'; statusEl.style.color='var(--red)'; return; }
     const adminData = await adminRes.json();
@@ -3480,7 +3480,7 @@ async function loadFidData() {
   }
   if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(217,119,6,0.08)'; statusEl.style.color='var(--amber)'; statusEl.textContent='Chargement...'; }
 
-  const h = { /* BUG-014: auth via httpOnly cookie */ }, credentials: 'include';
+  const h = {}; // auth via httpOnly cookie
   const base = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
 
   try {
@@ -3598,7 +3598,7 @@ function renderInvendus(d) {
 
   if (!token) { pEl.innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:12px;">Non connecté</div>'; return; }
 
-  fetch(base + '/api/unsold', { credentials: 'include', headers: { /* BUG-014: auth via httpOnly cookie */ }, credentials: 'include' })
+  fetch(base + '/api/unsold', { credentials: 'include' })
     .then(r => r.json())
     .then(items => {
       if (!items.length) { pEl.innerHTML = '<div style="color:var(--green);font-size:0.8rem;padding:12px;">Aucun invendu actif — bonne santé du stock.</div>'; return; }
