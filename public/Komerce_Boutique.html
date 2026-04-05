@@ -1311,6 +1311,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   margin-top: 0.6rem;
   font-size: 0.75rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: visible;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #555;
@@ -1460,9 +1462,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .orb-maison  { background: linear-gradient(135deg, #0891b2, #67e8f9); --cat-color: #0891b2; }
 .orb-tech    { background: linear-gradient(135deg, #0369a1, #38bdf8); --cat-color: #0369a1; }
 .orb-beaute  { background: linear-gradient(135deg, #db2777, #f9a8d4); --cat-color: #db2777; }
-.orb-enfants { background: linear-gradient(135deg, #f59e0b, #fcd34d); --cat-color: #f59e0b; }
+.orb-enfants { background: linear-gradient(135deg, #e11d48, #fb7185); --cat-color: #e11d48; }
 .orb-surmesure { 
-  background: linear-gradient(135deg, #b45309, #f59e0b, #fbbf24, #f59e0b); 
+  background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc, #a855f7); 
   background-size: 200% 200%;
   animation: shimmerGold 3s ease-in-out infinite;
   --cat-color: #b45309;
@@ -1474,7 +1476,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   50% { background-position: 100% 50%; }
 }
 .cat-item[data-cat="surmesure"] .cat-orb-label {
-  color: #b45309;
+  color: #7e22ce;
   font-weight: 700;
   letter-spacing: 0.3px;
 }
@@ -1502,11 +1504,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     scrollbar-width: none;
     justify-content: flex-start;
     gap: 0.6rem;
-    padding: 0.8rem 1rem;
+    padding: 0.8rem 1.2rem;
     flex-wrap: nowrap;
   }
   .cat-row::-webkit-scrollbar { display: none; }
-  .cat-item { min-width: 65px; max-width: 80px; flex: 0 0 auto; }
+  .cat-item { min-width: 70px; max-width: 85px; flex: 0 0 auto; }
   .cat-orb { width: 60px; height: 60px; font-size: 1.6rem; }
   .cat-orb-label { font-size: 0.6rem; }
   .bloom-panel.open { padding: 0.8rem; max-height: 350px; }
@@ -1912,7 +1914,7 @@ var _situations = {
     ]
   },
   enfants: {
-    icon: '\u{1F9F8}', label: 'Enfants & b\u00e9b\u00e9', color: '#f59e0b', rgb: '245,158,11',
+    icon: '\u{1F9F8}', label: 'Enfants & b\u00e9b\u00e9', color: '#e11d48', rgb: '225,29,72',
     matchCats: ['enfants','enfant','bebe','jouets','ecole','kids'],
     subcats: [
       { id:'enf-vetements', name:'V\u00eatements enfant', emoji:'\u{1F476}', category:'vetements-enfant', desc:'Boubous, robes' },
@@ -1922,7 +1924,7 @@ var _situations = {
     ]
   },
   surmesure: {
-    icon: '\u2728', label: 'Sur Mesure', color: '#b45309', rgb: '180,83,9',
+    icon: '\u2728', label: 'Sur Mesure', color: '#7e22ce', rgb: '126,34,206',
     matchCats: ['surmesure','couture','personnalise','custom','sur-mesure','mariage-custom','optique','scolaire','traditionnel','ceremonie-custom','wedding'],
     subcats: [
       { id:'sm-couture',    name:'Couture',             emoji:'\u2702\uFE0F', category:'couture',          desc:'Tissus, abayas, salouva, caftans' },
