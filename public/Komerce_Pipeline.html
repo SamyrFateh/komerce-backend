@@ -698,6 +698,72 @@ function getVisibleStages() {
   return STAGES; // 'all'
 }
 
+
+// ─── VALID TRANSITIONS (must match backend) ──────────────────────────────────
+const VALID_TRANSITIONS = {
+  draft:           ['confirmed', 'cancelled'],
+  confirmed:       ['paid', 'cancelled'],
+  paid:            ['ordered', 'cancelled'],
+  ordered:         ['purchasing', 'cancelled'],
+  purchasing:      ['preparation', 'cancelled'],
+  preparation:     ['hub_preparation', 'cancelled'],
+  hub_preparation: ['shipped', 'cancelled'],
+  shipped:         ['transit_comores', 'available', 'cancelled'],
+  transit_comores: ['available', 'cancelled'],
+  available:       ['collected', 'cancelled'],
+  collected:       [],
+  cancelled:       [],
+  refunded:        [],
+};
+
+const STATUS_LABELS = {
+  confirmed: '✅ Valider',
+  paid: '💰 Marquer payée',
+  ordered: '📋 Lancer commande',
+  purchasing: '🛒 En achat Dubai',
+  preparation: '📦 Réception Hub',
+  hub_preparation: '🏗️ Emballage Hub',
+  shipped: '🚢 Expédier',
+  transit_comores: '🏝️ Arrivée Comores',
+  available: '📍 Disponible au relais',
+  collected: '🎉 Remis au client',
+  cancelled: '❌ Annuler',
+};
+
+async function advanceOrder(orderId, newStatus) {
+  if (newStatus === 'cancelled' && !confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) return;
+  try {
+    const res = await fetch('/api/orders/' + orderId + '/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Erreur: ' + (data.error || res.status)); return; }
+    closeModal();
+    await loadPipeline();
+  } catch (e) {
+    alert('Erreur réseau: ' + e.message);
+  }
+}
+
+function getActionButtons(order) {
+  const transitions = VALID_TRANSITIONS[order.status] || [];
+  if (transitions.length === 0) return '';
+  
+  let html = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">';
+  transitions.forEach(function(t) {
+    var label = STATUS_LABELS[t] || t;
+    var isCancelBtn = t === 'cancelled';
+    var btnStyle = isCancelBtn 
+      ? 'background:transparent;color:#e74c3c;border:1px solid #e74c3c;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'
+      : 'background:#6c5ce7;color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600';
+    html += '<button style="' + btnStyle + '" onclick="event.stopPropagation();advanceOrder(\x27' + order.id + '\x27, \x27' + t + '\x27)">' + label + '</button>';
+  });
+  html += '</div>';
+  return html;
+}
+
 // ─── RENDER BOARD ────────────────────────────────────────────────────────────
 function renderBoard() {
   if (!DATA) return;
@@ -773,6 +839,7 @@ function showDetail(ref) {
   const timelineStages = [
     { key: 'draft',           label: 'Brouillon',      ts: order.created_at,          icon: '📝' },
     { key: 'confirmed',       label: 'Validée',         ts: order.created_at,          icon: '✅' },
+    { key: 'paid',            label: 'Payée',           ts: order.ordered_at || (order.status === 'paid' ? order.updated_at : null), icon: '💰' },
     { key: 'ordered',         label: 'Commandée',       ts: order.ordered_at,          icon: '📋' },
     { key: 'purchasing',          label: 'Sourcing Dubai',       ts: order.purchasing_at,       icon: '🛒' },
     { key: 'partially_received', label: 'Réception partielle', ts: order.status === 'partially_received' ? order.updated_at : null, icon: '📬' },
@@ -856,6 +923,7 @@ function showDetail(ref) {
 
       <h3 style="font-size: 15px; margin-bottom: 16px;">📍 Parcours de la commande</h3>
       ${timelineHTML}
+      ${getActionButtons(order)}
     </div>
   `;
 
