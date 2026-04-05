@@ -13,6 +13,8 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { validate } = require('../middleware/validate');
+const { products } = require('../validators');
 
 // ─── GET /api/products ───────────────────────────────────────────────────────
 
@@ -319,8 +321,6 @@ router.post('/:id/images', authenticate, requireRole(['admin']), upload.array('i
 
     if (!product) {
       const fs = require('fs');
-const { validate } = require('../middleware/validate');
-const { products } = require('../validators');
       req.files.forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
       return res.status(404).json({ error: 'Produit introuvable' });
     }
