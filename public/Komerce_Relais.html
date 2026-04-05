@@ -942,7 +942,7 @@ tr:last-child td { border-bottom: none; }
       
       <!-- Input pour le code cash -->
       <div class="manual-input-group" style="margin-top: 14px;">
-        <input class="form-input" id="cash-code-input" placeholder="Code cash du client (ex: a1b2c3d4e5f6g7h8)" maxlength="32" autocomplete="off" style="font-family: monospace; letter-spacing: 1px;">
+        <input class="form-input" id="cash-code-input" placeholder="Code à 6 chiffres (ex: 482917)" maxlength="6" autocomplete="off" inputmode="numeric" style="font-family: monospace; letter-spacing: 4px; font-size: 20px; text-align: center; font-weight: 700;">
         <button class="btn btn-success" onclick="handleCashConfirm()" id="cash-confirm-btn">💵 Encaisser</button>
       </div>
       <div class="scan-result" id="cash-result"></div>
@@ -956,7 +956,9 @@ tr:last-child td { border-bottom: none; }
               <th>Client</th>
               <th>Téléphone</th>
               <th>Total KMF</th>
+              <th>Code Cash</th>
               <th>Depuis</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="cash-pending-tbody">
@@ -2328,6 +2330,14 @@ async function loadIncoming() {
 // KEYBOARD & UX HANDLERS
 // ══════════════════════════════════════
 
+// Cash code input: digits only, Enter to submit
+document.getElementById('cash-code-input').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+});
+document.getElementById('cash-code-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); handleCashConfirm(); }
+});
+
 // Enter to submit code
 document.getElementById('collect-code-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); handleCodeCollect(); }
@@ -2416,7 +2426,7 @@ function renderCashPendingTable() {
   document.getElementById('cash-pending-count').textContent = cashPendingOrders.length;
   
   if (!cashPendingOrders.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="table-empty"><span class="table-empty-icon">✅</span>Aucun paiement cash en attente</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty"><span class="table-empty-icon">✅</span>Aucun paiement cash en attente</td></tr>';
     return;
   }
   
@@ -2436,11 +2446,11 @@ function renderCashPendingTable() {
   }).join('');
 }
 
-async function handleCashConfirm() {
+async function handleCashConfirm(codeParam) {
   const input = document.getElementById('cash-code-input');
   const resultDiv = document.getElementById('cash-result');
   const btn = document.getElementById('cash-confirm-btn');
-  const code = input.value.trim();
+  const code = codeParam || input.value.trim();
   
   if (!code) {
     resultDiv.innerHTML = '<div class="scan-error">❌ Veuillez entrer le code cash du client</div>';
