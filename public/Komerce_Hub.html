@@ -509,6 +509,7 @@ let scannerInstance = null;
 let scannerRunning = false;
 let allOrders = [];
 let allRelais = [];
+let token = localStorage.getItem('komerce_token') || '';
 
 /* ─── BroadcastChannel ─── */
 const liveChannel = new BroadcastChannel('komerce-live');
@@ -1068,6 +1069,8 @@ function getRelaisName(order) {
   const loggedIn = await tryAutoLogin();
   if (loggedIn) {
     showApp();
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
   }
 })();
 </script>

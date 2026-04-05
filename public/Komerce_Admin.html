@@ -713,7 +713,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 // ── Config API ────────────────────────────────────────────────────────────────
 const API = '/api';  // BUG-001 fix: relative URL only (no localhost)
 
-const token = localStorage.getItem('kmrc_logged_in') || ''; // BUG-014: flag only
+const token = localStorage.getItem('komerce_token') || '';
 _token = token || null;
 // Afficher login si pas de token
 if (!token) {
@@ -1127,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ══ FONCTIONS FUSIONNÉES (admin_v2) ══
 
 // ══ FUSION admin_v2 — Auth & Dashboard ══════════════════════════════════════
-let _token = localStorage.getItem('kmrc_logged_in') || null; // BUG-014: flag only
+let _token = localStorage.getItem('komerce_token') || null;
 let _salesPeriod = 30;
 
 // Adapter apiFetch pour utiliser la même base API que le Backoffice
@@ -1156,9 +1156,10 @@ async function doLogin() {
       return;
     }
 
-    _token = '1';
-    token = '1'; // BUG-014: flag only
-    localStorage.setItem('kmrc_logged_in', '1'); // BUG-014: JWT in httpOnly cookie
+    _token = data.token || '1';
+    token = data.token || '1';
+    localStorage.setItem('komerce_token', data.token || '');
+    localStorage.setItem('kmrc_logged_in', '1');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('bo-app').style.display = 'flex';
     startClock();
@@ -1174,7 +1175,8 @@ function doLogout() {
   fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
   _token = null;
   token = '';
-  localStorage.removeItem('kmrc_logged_in'); // BUG-014: cookie cleared by /api/auth/logout
+  localStorage.removeItem('kmrc_logged_in');
+  localStorage.removeItem('komerce_token');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('bo-app').style.display = 'none';
   document.getElementById('login-password').value = '';

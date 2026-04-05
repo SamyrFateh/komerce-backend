@@ -1133,6 +1133,7 @@ let currentQrUrl = '';
 let currentQrRef = '';
 let allRelaisOrders = [];
 let isRefreshing = false;
+let token = localStorage.getItem('komerce_token') || '';
 
 // ── BroadcastChannel for real-time sync ──
 let liveChannel;
@@ -1344,15 +1345,17 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 });
 
 async function tryAutoLogin() {
-  if (!token) return;
+  if (!token) return false;
   try {
     const data = await apiCall('GET', '/api/auth/me');
     currentUser = data.user || data;
     localStorage.setItem('komerce_user', JSON.stringify(currentUser));
     afterLogin();
+    return true;
   } catch {
     token = '';
     localStorage.removeItem('komerce_user');
+    return false;
   }
 }
 
@@ -2330,9 +2333,13 @@ document.addEventListener('touchend', (e) => {
 // ══════════════════════════════════════
 // INITIALIZATION
 // ══════════════════════════════════════
-(function init() {
+(async function init() {
   // Try auto-login on page load
-  tryAutoLogin();
+  const loggedIn = await tryAutoLogin();
+  if (!loggedIn && !localStorage.getItem('komerce_token')) {
+    window.location.href = 'portal.html';
+    return;
+  }
 
   // Restore user from localStorage if needed
   if (!currentUser) {

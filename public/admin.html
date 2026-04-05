@@ -226,6 +226,10 @@
 </div>
 
 <script>
+// Auth guard
+if (!localStorage.getItem('komerce_token') && !localStorage.getItem('kmrc_logged_in')) {
+  window.location.href = 'portal.html';
+}
 const API = 'https://komerce-backend-production.up.railway.app';
 let _token = null;
 let _currentTab = 'ops';

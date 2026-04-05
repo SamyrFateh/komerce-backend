@@ -475,7 +475,7 @@ td.phase-cell {
 <script>
 // ── Komerce Auth Guard ──
 (function(){
-  if(!localStorage.getItem('kmrc_logged_in')){ // BUG-014
+  if(!localStorage.getItem('komerce_token') && !localStorage.getItem('kmrc_logged_in')){
     window.location.replace('/portal.html');
   }
 })();
@@ -2521,8 +2521,9 @@ async function doPilLogin() {
     if (!res.ok) { alert('Connexion échouée : ' + (data.error || res.status)); return; }
 
     const token = data.token;
-    document.getElementById('pil-token').value = '1'; // BUG-014: flag only, JWT in httpOnly cookie
-    localStorage.setItem('kmrc_logged_in', '1'); // BUG-014: JWT in httpOnly cookie
+    document.getElementById('pil-token').value = token || '1';
+    localStorage.setItem('komerce_token', token || '');
+    localStorage.setItem('kmrc_logged_in', '1');
 
     document.getElementById('pil-login-block').style.display  = 'none';
     document.getElementById('pil-status-block').style.display = 'flex';
@@ -2536,8 +2537,9 @@ async function doPilLogin() {
 }
 
 function doPilLogout() {
-  document.getElementById('pil-token').value = ''; // BUG-014: cleared
-  localStorage.removeItem('kmrc_logged_in'); // BUG-014
+  document.getElementById('pil-token').value = '';
+  localStorage.removeItem('kmrc_logged_in');
+  localStorage.removeItem('komerce_token');
   fetch(KOMERCE_API_URL + '/api/auth/logout', { credentials: 'include', method: 'POST', credentials: 'include' }).catch(() => {});
   document.getElementById('pil-login-block').style.display  = 'flex';
   document.getElementById('pil-status-block').style.display = 'none';
@@ -2558,9 +2560,9 @@ function setPilAuthButtons(loggedIn) {
 
 // Auto-restaurer le token depuis localStorage (partagé avec le Simulateur)
 (function restorePilToken() {
-  const saved = localStorage.getItem('kmrc_logged_in'); // BUG-014: flag only
+  const saved = localStorage.getItem('komerce_token') || localStorage.getItem('kmrc_logged_in');
   if (!saved) return;
-  document.getElementById('pil-token').value = saved; // BUG-014: flag ('1')
+  document.getElementById('pil-token').value = saved;
   document.getElementById('pil-login-block').style.display  = 'none';
   document.getElementById('pil-status-block').style.display = 'flex';
   document.getElementById('pil-status-label').textContent   = '✅ Connecté (session)';
@@ -3461,7 +3463,7 @@ function renderOps() {
 // ══════════════════════════════════════════════════════════════════════
 
 async function loadFidData() {
-  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_logged_in'); // BUG-014
+  const token = document.getElementById('pil-token')?.value || localStorage.getItem('komerce_token') || '';
   const statusEl = document.getElementById('fid-status');
   if (!token) {
     if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(220,38,38,0.08)'; statusEl.style.color='var(--red)'; statusEl.textContent='Connectez-vous pour accéder aux données fidélité.'; }
@@ -3581,7 +3583,7 @@ function renderInvendus(d) {
   document.getElementById('uns-canal-both').textContent = d.canal_both || 0;
 
   // Pipeline — on recharge la liste complète si possible
-  const token = document.getElementById('pil-token')?.value || localStorage.getItem('kmrc_logged_in'); // BUG-014
+  const token = document.getElementById('pil-token')?.value || localStorage.getItem('komerce_token') || '';
   const base  = (typeof KOMERCE_API_URL !== 'undefined' ? KOMERCE_API_URL : '');
   const pEl   = document.getElementById('uns-pipeline');
 

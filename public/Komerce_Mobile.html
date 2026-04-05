@@ -942,6 +942,7 @@
 <script>
 // ── PANIER PARTAGÉ PWA ──────────────────────────────────────────────────
 const KOMERCE_API_BASE = 'https://komerce-backend-production.up.railway.app';
+let token = localStorage.getItem('komerce_token') || '';
 
 // Code WA à réutiliser dans pwaShareWA (rempli par pwaOpenShare)
 let _pwaShareWaUrl = null;
