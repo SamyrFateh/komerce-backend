@@ -134,18 +134,20 @@
   <div class="login-card">
     <div class="login-logo">
       <span>Komerce<sup>ADMIN</sup></span>
-      <div style="font-size:.8rem;color:#94a3b8;margin-top:.3rem;">Tableau de bord opérationnel</div>
+      <div style="font-size:.85rem;color:#94a3b8;margin-top:.5rem;">Tableau de bord opérationnel</div>
     </div>
     <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="login-email" value="admin@komerce.km" />
+      <label for="login-email">📧 Adresse email</label>
+      <input type="email" id="login-email" value="admin@komerce.km" autocomplete="email" placeholder="admin@komerce.km" />
     </div>
     <div class="form-group">
-      <label>Mot de passe</label>
-      <input type="password" id="login-password" placeholder="••••••••" />
+      <label for="login-password">🔒 Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') doLogin()" />
     </div>
-    <button class="btn-login" onclick="doLogin()">Connexion →</button>
+    <button class="btn-login" onclick="doLogin()">Se connecter →</button>
     <div id="login-error"></div>
+    <div style="text-align:center;margin-top:1rem;font-size:.75rem;color:#94a3b8;">🔐 Connexion sécurisée — Accès admin uniquement</div>
   </div>
 </div>
 
