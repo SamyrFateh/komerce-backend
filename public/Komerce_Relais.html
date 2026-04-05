@@ -930,6 +930,42 @@ tr:last-child td { border-bottom: none; }
     </section>
 
     <!-- ═══ SCAN RECEPTION + RETRAIT CLIENT (Twin Grid) ═══ -->
+
+    <!-- ── Encaissement Cash Relais ── -->
+    <div class="section-divider">💵 Encaissement Cash</div>
+    <section class="card" id="card-cash">
+      <div class="card-header">
+        <h2 class="card-title">💵 Encaissement Cash Relais <span class="card-count" id="cash-pending-count">0</span></h2>
+        <button class="btn btn-outline btn-sm" onclick="loadCashPending()">🔄 Rafraîchir</button>
+      </div>
+      <p class="card-description">Le client présente son code cash — entrez-le ci-dessous pour confirmer le paiement.</p>
+      
+      <!-- Input pour le code cash -->
+      <div class="manual-input-group" style="margin-top: 14px;">
+        <input class="form-input" id="cash-code-input" placeholder="Code cash du client (ex: a1b2c3d4e5f6g7h8)" maxlength="32" autocomplete="off" style="font-family: monospace; letter-spacing: 1px;">
+        <button class="btn btn-success" onclick="handleCashConfirm()" id="cash-confirm-btn">💵 Encaisser</button>
+      </div>
+      <div class="scan-result" id="cash-result"></div>
+
+      <!-- Table des commandes en attente de paiement cash -->
+      <div class="table-wrap" style="margin-top: 16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Client</th>
+              <th>Téléphone</th>
+              <th>Total KMF</th>
+              <th>Depuis</th>
+            </tr>
+          </thead>
+          <tbody id="cash-pending-tbody">
+            <tr><td colspan="5" class="table-empty"><span class="table-empty-icon">✅</span>Aucun paiement en attente</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="section-divider">Opérations de scan</div>
     <section class="twin-grid">
 
@@ -1548,6 +1584,7 @@ async function loadRelaisOrders() {
   computeStats();
   renderWaitingTable();
   renderContacts();
+  loadCashPending();
 }
 
 function computeStats() {
@@ -2348,6 +2385,98 @@ document.addEventListener('touchend', (e) => {
     } catch {}
   }
 })();
+// ══════════════════════════════════════
+// CASH PAYMENT CONFIRMATION
+// ══════════════════════════════════════
+let cashPendingOrders = [];
+
+async function loadCashPending() {
+  try {
+    // Load all orders and filter for confirmed + cash_relais
+    const data = await apiCall('GET', '/api/orders/relais?relais_id=' + encodeURIComponent(selectedRelaisId) + '&include_confirmed=true');
+    const orders = Array.isArray(data) ? data : (data.orders || []);
+    cashPendingOrders = orders.filter(o => 
+      o.status === 'confirmed' && 
+      o.payment_mode === 'cash_relais' && 
+      o.payment_status === 'pending'
+    );
+  } catch (err) {
+    // Fallback: try getting from allRelaisOrders
+    cashPendingOrders = allRelaisOrders.filter(o => 
+      o.status === 'confirmed' && 
+      o.payment_mode === 'cash_relais' && 
+      o.payment_status !== 'paid'
+    );
+  }
+  renderCashPendingTable();
+}
+
+function renderCashPendingTable() {
+  const tbody = document.getElementById('cash-pending-tbody');
+  document.getElementById('cash-pending-count').textContent = cashPendingOrders.length;
+  
+  if (!cashPendingOrders.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty"><span class="table-empty-icon">✅</span>Aucun paiement cash en attente</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = cashPendingOrders.map(o => {
+    const ref = escHtml(getOrderRef(o));
+    const client = escHtml(o.recipient_name || getClientName(o) || '—');
+    const phone = escHtml(o.recipient_phone || getClientPhone(o) || '—');
+    const total = formatKMF(getOrderTotal(o));
+    const since = timeSinceLabel(o.created_at);
+    return '<tr>' +
+      '<td class="td-ref">' + ref + '</td>' +
+      '<td>' + client + '</td>' +
+      '<td class="td-phone">' + phone + '</td>' +
+      '<td class="td-nowrap">' + total + '</td>' +
+      '<td><span class="badge badge-amber">' + since + '</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function handleCashConfirm() {
+  const input = document.getElementById('cash-code-input');
+  const resultDiv = document.getElementById('cash-result');
+  const btn = document.getElementById('cash-confirm-btn');
+  const code = input.value.trim();
+  
+  if (!code) {
+    resultDiv.innerHTML = '<div class="scan-error">❌ Veuillez entrer le code cash du client</div>';
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = '⏳ Vérification...';
+  resultDiv.innerHTML = '';
+  
+  try {
+    const res = await apiCall('POST', '/api/payments/cash/confirm', { cash_ref_code: code });
+    
+    resultDiv.innerHTML = '<div class="scan-success">' +
+      '✅ Paiement confirmé !<br>' +
+      '<strong>' + escHtml(res.reference || '') + '</strong> — ' + (res.message || 'Commande validée') +
+      '<br><small style="color:#94a3b8">Prochaine étape : achat à Dubai</small>' +
+    '</div>';
+    
+    input.value = '';
+    toast('💵 Paiement cash confirmé !', 'success');
+    
+    // Reload data
+    loadCashPending();
+    loadRelaisOrders();
+    
+  } catch (err) {
+    const msg = err.error || err.message || 'Code invalide ou paiement déjà enregistré';
+    resultDiv.innerHTML = '<div class="scan-error">❌ ' + escHtml(msg) + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💵 Encaisser';
+  }
+}
+
+
 </script>
 </body>
 </html>
