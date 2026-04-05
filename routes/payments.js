@@ -112,7 +112,7 @@ router.post('/stripe/webhook',
         return res.json({ received: true });
       }
 
-      const client = await db.pool.connect();
+      const client = await db.getClient();
       try {
         await client.query('BEGIN');
 
@@ -186,7 +186,7 @@ router.post('/stripe/webhook',
 // C'est ICI que la commande est vraiment validée et le stock décrémenté.
 // Body : { cash_ref_code }
 router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
-  const client = await db.pool.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
 

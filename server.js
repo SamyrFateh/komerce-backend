@@ -18,6 +18,22 @@
 
 require('dotenv').config();
 
+// ── Validation des variables d'environnement critiques ──────────────────────
+const REQUIRED_ENV = ['DATABASE_URL'];
+const RECOMMENDED_ENV = ['JWT_SECRET', 'ADMIN_PASSWORD', 'STRIPE_SECRET_KEY'];
+
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`❌ FATAL: ${key} manquant — impossible de démarrer`);
+    process.exit(1);
+  }
+}
+for (const key of RECOMMENDED_ENV) {
+  if (!process.env[key]) {
+    console.warn(`⚠️  ${key} non défini — valeur par défaut utilisée (à configurer avant la prod)`);
+  }
+}
+
 const express    = require('express');
 const cors       = require('cors');
 const helmet     = require('helmet');

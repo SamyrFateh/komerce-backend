@@ -25,9 +25,9 @@ VALUES (
 -- Mot de passe démo : client123
 INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
 VALUES
-  ('Fatouma Ali',     'fatouma.ali@gmail.com',   '+33612345678', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
-  ('Said Mohamed',   'said.m@hotmail.com',       '+33698765432', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
-  ('Nadjma Hassan',  'nadjma.h@gmail.com',       '+97155123456', 'client', 'AED', 'AE', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Fatouma Ali',     'fatouma.ali@example.com',   '+33600000001', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Said Mohamed',   'said.m@example.com',       '+33600000002', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
+  ('Nadjma Hassan',  'nadjma.h@example.com',       '+97150000003', 'client', 'AED', 'AE', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
   ('Omar Abdou',     'omar.abdou@komerce.km',    '+269321001',   'client', 'KMF', 'KM', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
   ('Rayhana Said',   'rayhana.s@komerce.km',     '+269321002',   'client', 'KMF', 'KM', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.');
 
@@ -90,7 +90,7 @@ VALUES
    'https://images.unsplash.com/photo-1588850561407-ed78c334e67a?w=400&h=400&fit=crop&auto=format&q=80');
 
 -- ── TISSUS FICTIFS (M11) ──────────────────────────────────────────────────────
-INSERT INTO fabrics (name, material, price_per_meter_aed, colors, occasions) VALUES
+INSERT INTO ceremony_fabrics (name, material, price_per_meter_aed, colors, occasions) VALUES
   ('Bazin blanc brillant',  'Bazin',    28, ARRAY['blanc','ivoire'],          ARRAY['mariage','bapteme']),
   ('Bazin coloré imprimé',  'Bazin',    25, ARRAY['bleu','vert','rouge'],     ARRAY['fete','ceremonie']),
   ('Soie imprimée Deira',   'Soie',     45, ARRAY['bleu nuit','bordeaux'],    ARRAY['mariage']),
@@ -100,7 +100,7 @@ INSERT INTO fabrics (name, material, price_per_meter_aed, colors, occasions) VAL
 ON CONFLICT DO NOTHING;
 
 -- ── MODÈLES TENUES FICTIFS (M11) ─────────────────────────────────────────────
-INSERT INTO garment_models (name, making_cost_aed, fabric_meters, occasions) VALUES
+INSERT INTO ceremony_models (name, making_cost_aed, fabric_meters, occasions) VALUES
   ('Robe longue cérémonie', 35, 3.5, ARRAY['mariage','ceremonie']),
   ('Ensemble 2 pièces',     40, 4.0, ARRAY['mariage','fete']),
   ('Boubou traditionnel',   30, 3.0, ARRAY['ceremonie','quotidien']),

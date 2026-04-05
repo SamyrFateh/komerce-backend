@@ -43,7 +43,7 @@ CREATE TYPE scan_step AS ENUM (
 
 CREATE TABLE users (
   id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email         TEXT        UNIQUE,
+  email         TEXT        UNIQUE CHECK (email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
   phone         TEXT        UNIQUE,
   full_name     TEXT        NOT NULL,
   role          user_role   NOT NULL DEFAULT 'client',
