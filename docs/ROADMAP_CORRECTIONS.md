@@ -99,9 +99,12 @@ Sprint 5 ██████░░░░░░░░░░ Starter Kit 🚀
 
 | Sprint | Statut | Bugs corrigés |
 |--------|--------|:-------------:|
-| Sprint 1 | ✅ Terminé | **5/4** (+N3 bonus) |
-| Sprint 2 | ⬜ À faire | 0/2 |
-| Sprint 3 | ⬜ À faire | 0/6 |
-| Sprint 4 | ⬜ À faire | 0/6 |
+| Sprint 1 | ✅ Terminé | **5/5** (P1, P2, P4, P5, N3) |
+| Sprint 2 | ✅ Terminé | **2/2** (R2✅déjà, R3) |
+| Sprint 3 | ✅ Terminé | **5/5** (N2, N5, N6, N7, N8) |
+| Sprint 4 | ✅ Terminé | **5/6** (S1, S2, S3, S4, S6) |
 | Sprint 5 | ⬜ À faire | — |
-| **Total** | | **5/18** |
+| **Total** | | **17/18** |
+
+### ⏳ Restant : S7 (JWT localStorage → httpOnly cookies)
+> Chantier front+back conséquent — à planifier séparément.
