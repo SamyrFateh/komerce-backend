@@ -484,6 +484,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 /* ===== END BLOOM NAV CSS ===== */
 
+@media (max-width: 768px) {
   .hero-left { flex: none; padding: 16px 18px; }
   .hero-title { font-size: 1rem; }
   .hero-right { height: 100px; }
@@ -506,74 +507,13 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .trust-grid { grid-template-columns: 1fr 1fr; }
   #cart-drawer { width: 100%; }
 }
-/* === CATEGORY CIRCLES === */
-    .cat-nav-section {
-      padding: 18px 0 10px;
-      background: #f0faf4;
-    }
-
-    .cat-circle:hover { transform: scale(1.08); }
-    .cat-circle.active .cat-circle-icon {
-      box-shadow: 0 0 0 3px #22c55e;
-      border-radius: 18px;
-    }
-    
-    .cat-circle-icon {
-      width: 72px;
-      height: 72px;
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      color: #fff;
-      transition: box-shadow 0.2s;
-    }
-    
-    /* Gradient backgrounds per category */
-    .cg-all { background: linear-gradient(135deg, #22c55e, #16a34a); }
-    .cg-electronics { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-    .cg-home { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .cg-wedding { background: linear-gradient(135deg, #ec4899, #db2777); }
-    .cg-fashion { background: linear-gradient(135deg, #a855f7, #7c3aed); }
-    .cg-beauty { background: linear-gradient(135deg, #f43f5e, #e11d48); }
-    .cg-food { background: linear-gradient(135deg, #14b8a6, #0d9488); }
-    .cg-services { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-    .cg-jewelry { background: linear-gradient(135deg, #eab308, #ca8a04); }
-    .cg-toys { background: linear-gradient(135deg, #f97316, #ea580c); }
-    
-    .cat-circle-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #374151;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 600px) {
-      .cat-circle-bar {
-        justify-content: flex-start;
-        gap: 14px;
-        padding: 8px 12px;
-      }
-      .cat-circle-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 15px;
-        font-size: 26px;
-      }
-      .cat-circle { min-width: 65px; }
-      .cat-circle-label { font-size: 10px; }
-    }
-    /* === END CATEGORY CIRCLES === */
+/* Old Category Circles removed — replaced by Bloom Navigation */
     
 @keyframes orbPulse {
   0%, 100% { box-shadow: 0 4px 20px rgba(var(--cat-rgb,22,163,74),0.25); }
   50% { box-shadow: 0 4px 28px rgba(var(--cat-rgb,22,163,74),0.4); }
 }
-.bloom-orb.active { animation: orbPulse 2.5s ease-in-out infinite; }
+.cat-item.active .cat-orb { animation: orbPulse 2.5s ease-in-out infinite; }
 </style>
 </head>
 <body>
