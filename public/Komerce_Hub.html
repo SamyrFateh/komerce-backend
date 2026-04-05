@@ -949,7 +949,7 @@ async function processScannedCode(code) {
     toast(scanType === 'preparation' ? 'Colis réceptionné ✅' : 'Colis expédié 📦', 'success');
 
     // Broadcast
-    liveChannel.postMessage({ type: 'HUB_SCAN', reference, status: scanType });
+    liveChannel.postMessage({ type: 'HUB_SCAN', reference: scanCode, status: scanType });
 
     // Refresh data
     document.getElementById('manualRef').value = '';
