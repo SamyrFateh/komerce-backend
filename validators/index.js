@@ -321,14 +321,15 @@ const baskets = {
 const scans = {
   create: {
     body: Joi.object({
-      order_id:   uuid.required(),
-      scan_type:  Joi.string().valid(
-        'hub_reception', 'hub_groupage', 'relais_arrival',
-        'client_collection', 'qr_verify'
+      scan_code:  safeStr(200).required(),
+      step:       Joi.string().valid(
+        'preparation', 'shipped', 'relais_received', 'collected'
       ).required(),
       location:   safeStr(200),
       notes:      safeStr(500),
-      qr_code:    safeStr(200),
+      is_anomaly: Joi.boolean().default(false),
+      latitude:   Joi.number().min(-90).max(90),
+      longitude:  Joi.number().min(-180).max(180),
     }),
   },
 
