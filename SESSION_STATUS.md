@@ -99,7 +99,10 @@ Pour chaque table :
 | Routes lot 1 — admin, auth, baskets, dashboard, finance, health, logistics, loyalty, modules (57 endpoints) | ✅ Terminé | `docs/review/analysis_routes_batch1.md` |
 | Routes lot 2 — orders, payments, pilotage, pricing, products, purchasing, relais, scans, unsold (56 endpoints) | ✅ Terminé | `docs/review/analysis_routes_batch2.md` |
 | Middleware + utils + schéma DB | ❌ Interrompu — À refaire | — |
-| Frontends (dashboards HTML + komerce-api.js) | ⏳ Pas commencé | — |
+| Frontends — Lot 2 (Admin, Boutique, Pilotage) | ✅ Terminé | `docs/audit/batch_2.md` |
+| Frontends — Lot 3 (Simulateur, Tests, Web) | ✅ Terminé | `docs/audit/batch_3.md` |
+| Frontends — Lot 5 (Hub, Mobile, PWA, Pipeline, Relais) | ✅ Terminé | `docs/audit/batch_5.md` |
+| Frontends — Lot 6 (Legacy & secondaires) | ✅ Terminé | `docs/audit/batch_6.md` |
 | Vérification des 7 écarts identifiés | ⏳ Pas commencé | — |
 | Cartographie d'impact 360° | ⏳ Pas commencé — après revue de code | — |
 | Rapport de revue de code consolidé | ⏳ Pas commencé | — |
@@ -132,8 +135,8 @@ Pour chaque table :
 
 1. **🚨 Discuter hotfix des 4 failles critiques** (si production)
 2. **Refaire l'analyse middleware + utils + schema.sql** (interrompue)
-3. **Auditer les 17 dashboards HTML** dans public/
-4. **Identifier les dashboards morts** (versions _v2, _v7...)
+3. ~~**Auditer les 17 dashboards HTML** dans public/~~ ✅ Fait (lots 2, 3, 5, 6)
+4. ~~**Identifier les dashboards morts**~~ ✅ Fait (voir batch_6.md — 3 fichiers candidats à suppression)
 5. **Vérifier les 7 écarts docs ↔ code**
 6. **Construire la cartographie d'impact 360°** (matrice croisée + vues métier + graphe DB)
 7. **Nettoyage repo** (.old, migrations mal placées, docs obsolètes)
