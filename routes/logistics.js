@@ -17,11 +17,13 @@ const { generateShipmentRef } = require('../utils/reference');
 const PDFDocument = require('pdfkit');
 const { sendSMS }   = require('../utils/sms');
 const QRCode = require('qrcode');
+const { validate } = require('../middleware/validate');
+const { logistics } = require('../validators');
 
 const adminOnly = [authenticate, requireRole(['admin'])];
 
 // POST /api/logistics/shipments
-router.post('/shipments', ...adminOnly, async (req, res) => {
+router.post('/shipments', ...adminOnly, validate(logistics.createShipment), async (req, res) => {
   try {
     const { carrier, container_ref, departed_at, eta, notes } = req.body;
     const reference = await generateShipmentRef(db);
@@ -47,7 +49,7 @@ router.get('/shipments', ...adminOnly, async (req, res) => {
 });
 
 // PATCH /api/logistics/shipments/:id
-router.patch('/shipments/:id', ...adminOnly, async (req, res) => {
+router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment), async (req, res) => {
   try {
     const { carrier, container_ref, departed_at, eta, arrived_at, customs_cleared_at, notes } = req.body;
     const { rows } = await db.query(

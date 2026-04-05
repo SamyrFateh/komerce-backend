@@ -98,7 +98,7 @@ async function triggerScan3(order_id, scanned_by = null) {
 // scan_code peut être :
 //   - un code article  : KOM-ITEM-XXXX  (order_item)
 //   - une référence    : KOM-2026-XXXX  (order entière)
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, validate(scans.create), async (req, res) => {
   try {
     const {
       scan_code,
@@ -240,7 +240,7 @@ router.post('/', authenticate, async (req, res) => {
 // ── POST /api/scans/collect ───────────────────────────────────────────────────
 // Retrait par le destinataire : l'agent relais saisit le code à 6 chiffres.
 // Body : { pickup_code }
-router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
+router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res) => {
   try {
     const { pickup_code } = req.body;
     if (!pickup_code) return res.status(400).json({ error: 'pickup_code requis' });
@@ -301,7 +301,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), as
 // Réception hub via QR — délègue à POST /api/purchasing/:id/receive
 // Body : { qr_code?, po_id? }
 // [B7] receiveItem() n'existe pas → 501 explicite avec po_id résolu
-router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res) => {
+router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), validate(scans.hubReceive), async (req, res) => {
   const { qr_code, po_id } = req.body;
 
   try {
@@ -383,7 +383,7 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
 // IMPORTANT : doit rester EN DERNIER (route générique /:order_id)
 
 // ─── POST /api/scans/verify-qr ─────────────────────────────────────────────
-router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
+router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.verifyQr), async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -492,6 +492,8 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
     // Recalculer fidélité (non bloquant)
     if (order.user_id) {
       const { recalculateLoyalty } = require('./loyalty');
+const { validate } = require('../middleware/validate');
+const { scans } = require('../validators');
       recalculateLoyalty(db, order.user_id)
         .catch(e => console.error('[LOYALTY] recalculate error:', e.message));
     }

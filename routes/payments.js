@@ -19,12 +19,14 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 const { triggerPurchasing } = require('./purchasing'); // Sourcing semi-automatisé v7.6
+const { validate } = require('../middleware/validate');
+const { payments } = require('../validators');
 
 // ── POST /api/payments/stripe/intent ─────────────────────────────────────────
 // Crée un Stripe PaymentIntent pour une commande.
 // Le client utilise le client_secret retourné pour finaliser le paiement côté front.
 // Body : { order_reference }
-router.post('/stripe/intent', authenticate, async (req, res) => {
+router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), async (req, res) => {
   try {
     const { order_reference } = req.body;
     if (!order_reference) return res.status(400).json({ error: 'order_reference requis' });
@@ -112,7 +114,7 @@ router.post('/stripe/webhook',
         return res.json({ received: true });
       }
 
-      const client = await db.getClient();
+      const client = await db.pool.connect();
       try {
         await client.query('BEGIN');
 
@@ -185,8 +187,8 @@ router.post('/stripe/webhook',
 // L'agent relais confirme la réception des espèces.
 // C'est ICI que la commande est vraiment validée et le stock décrémenté.
 // Body : { cash_ref_code }
-router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
-  const client = await db.getClient();
+router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), validate(payments.cashConfirm), async (req, res) => {
+  const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 

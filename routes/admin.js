@@ -466,7 +466,7 @@ router.get('/partners', ...guard, async (req, res) => {
 
 // ─── POST /api/admin/partners ────────────────────────────────────────────────
 
-router.post('/partners', ...guard, async (req, res) => {
+router.post('/partners', ...guard, validate(admin.createPartner), async (req, res) => {
   try {
     const {
       name, partner_type, contact_name, contact_phone, contact_email,
@@ -496,7 +496,7 @@ router.post('/partners', ...guard, async (req, res) => {
 
 // ─── PUT /api/admin/partners/:id ─────────────────────────────────────────────
 
-router.put('/partners/:id', ...guard, async (req, res) => {
+router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req, res) => {
   try {
     const fields = [
       'name', 'partner_type', 'contact_name', 'contact_phone', 'contact_email',
@@ -538,7 +538,7 @@ router.put('/partners/:id', ...guard, async (req, res) => {
 // mode = "users"   → idem + supprime clients (sauf admin)
 // mode = "factory" → tout reset + re-seed produits & relais depuis zéro
 
-router.post('/reset', ...guard, async (req, res) => {
+router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
   const mode = req.body.mode || 'orders';
   const validModes = ['orders', 'users', 'factory'];
 
@@ -680,9 +680,11 @@ router.get('/counts', ...guard, async (req, res) => {
 
 // ─── POST /api/admin/seed-test — Jeu de données réaliste (28 commandes / 3 mois) ───
 
-router.post('/seed-test', ...guard, async (req, res) => {
+router.post('/seed-test', ...guard, validate(admin.seedTest), async (req, res) => {
   const bcrypt = require('bcryptjs');
   const { v4: uuidv4 } = require('uuid');
+const { validate } = require('../middleware/validate');
+const { admin } = require('../validators');
 
   try {
     const { confirm, months = 3 } = req.body;

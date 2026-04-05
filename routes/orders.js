@@ -164,7 +164,7 @@ async function getUniqueRef() {
 //   module_type  → si commande cérémonie globale
 //   module_*          → autres champs module au niveau commande
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, validate(orders.create), async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -1005,8 +1005,9 @@ router.get('/:ref', async (req, res) => {
     );
 
     // Route publique — req.user est undefined sauf si le middleware authenticate est présent.
-    // NOTE: soft-auth non nécessaire — le guard `if (!req.user)` L1016 retourne les données
-    //       publiques minimales. Les agents/admins utilisent GET /api/admin/orders.
+    // TODO: Ajouter un middleware « soft-auth » (optionalAuthenticate) pour peupler req.user
+    //       sans bloquer la requête quand le token est absent/invalide.
+    // cash_ref_code est masqué pour tous les accès publics (toujours false ici).
     // Les agents accèdent aux détails complets via GET /api/admin/orders.
     const isAdmin       = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
     const isRelaisAdmin = req.user && ['admin', 'agent_relais'].includes(req.user.role);
@@ -1066,7 +1067,7 @@ router.get('/:ref', async (req, res) => {
 
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 
-router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), async (req, res) => {
+router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.updateStatus), async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -1128,6 +1129,8 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     if (status === 'available' && !order.pickup_code) {
       const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       const crypto = require('crypto');
+const { validate } = require('../middleware/validate');
+const { orders } = require('../validators');
 const { randomBytes } = crypto;
       const newCode = Array.from({ length: 6 }, () => {
         let b;
@@ -1176,7 +1179,7 @@ const { randomBytes } = crypto;
 
 // ─── PATCH /api/orders/:id/cost ──────────────────────────────────────────────
 
-router.patch('/:id/cost', authenticate, requireRole(['admin']), async (req, res) => {
+router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.updateCost), async (req, res) => {
   try {
     const {
       cost_real_kmf,

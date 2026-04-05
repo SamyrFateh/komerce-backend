@@ -139,7 +139,7 @@ router.get('/:id', async (req, res) => {
 
 // ─── POST /api/products (admin) ──────────────────────────────────────────────
 
-router.post('/', authenticate, requireRole(['admin']), async (req, res) => {
+router.post('/', authenticate, requireRole(['admin']), validate(products.create), async (req, res) => {
   try {
     const {
       name,
@@ -201,7 +201,7 @@ router.post('/', authenticate, requireRole(['admin']), async (req, res) => {
 
 // ─── PUT /api/products/:id (admin) ───────────────────────────────────────────
 
-router.put('/:id', authenticate, requireRole(['admin']), async (req, res) => {
+router.put('/:id', authenticate, requireRole(['admin']), validate(products.update), async (req, res) => {
   try {
     const fields = [
       'name', 'description', 'category', 'price_aed', 'price_kmf', 'price_eur',
@@ -255,7 +255,7 @@ router.put('/:id', authenticate, requireRole(['admin']), async (req, res) => {
 
 // ─── DELETE /api/products/:id (admin) ────────────────────────────────────────
 
-router.delete('/:id', authenticate, requireRole(['admin']), async (req, res) => {
+router.delete('/:id', authenticate, requireRole(['admin']), validate(products.delete), async (req, res) => {
   try {
     await db.query(
       `UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1`,
@@ -319,6 +319,8 @@ router.post('/:id/images', authenticate, requireRole(['admin']), upload.array('i
 
     if (!product) {
       const fs = require('fs');
+const { validate } = require('../middleware/validate');
+const { products } = require('../validators');
       req.files.forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
       return res.status(404).json({ error: 'Produit introuvable' });
     }

@@ -14,6 +14,8 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const db       = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+const { auth } = require('../validators');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -78,7 +80,7 @@ function userResponse(user) {
 
 // ─── POST /api/auth/register ─────────────────────────────────────────────────
 
-router.post('/register', async (req, res) => {
+router.post('/register', validate(auth.register), async (req, res) => {
   try {
     const {
       full_name,
@@ -146,7 +148,7 @@ router.post('/register', async (req, res) => {
 
 // ─── POST /api/auth/login ────────────────────────────────────────────────────
 
-router.post('/login', async (req, res) => {
+router.post('/login', validate(auth.login), async (req, res) => {
   try {
     const { email, phone, password } = req.body;
 
@@ -219,7 +221,7 @@ router.get('/me', authenticate, async (req, res) => {
 
 // ─── PUT /api/auth/me ────────────────────────────────────────────────────────
 
-router.put('/me', authenticate, async (req, res) => {
+router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) => {
   try {
     const { full_name, phone, currency_pref } = req.body;
 
@@ -268,7 +270,7 @@ function guestCheckoutRateLimit(req, res, next) {
   next();
 }
 
-router.post('/guest-checkout', guestCheckoutRateLimit, async (req, res) => {
+router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestCheckout), async (req, res) => {
   try {
     const {
       full_name,
@@ -336,7 +338,7 @@ function requireInternalKey(req, res, next) {
   next();
 }
 
-router.post('/auto-register', requireInternalKey, async (req, res) => {
+router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), async (req, res) => {
   try {
     const {
       full_name,
@@ -425,7 +427,7 @@ function checkPhoneLookupRateLimit(req, res, next) {
   next();
 }
 
-router.post('/orders-by-phone', checkPhoneLookupRateLimit, async (req, res) => {
+router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersByPhone), async (req, res) => {
   try {
     const { phone } = req.body;
 
@@ -482,7 +484,7 @@ router.post('/logout', (req, res) => {
 // Usage: POST /api/auth/admin-reset { "key": "<ADMIN_RESET_KEY>", "new_password": "..." }
 // After use, remove ADMIN_RESET_KEY from Railway env vars for security.
 
-router.post('/admin-reset', async (req, res) => {
+router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
   try {
     const resetKey = process.env.ADMIN_RESET_KEY;
     if (!resetKey) {

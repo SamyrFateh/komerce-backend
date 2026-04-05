@@ -87,6 +87,8 @@ const MODULES_REGISTRY = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const { getRates } = require('../utils/rates');
+const { validate } = require('../middleware/validate');
+const { modules } = require('../validators');
 
 // ─── GET /api/modules ─────────────────────────────────────────────────────────
 // Liste tous les modules avec leur statut de disponibilité
@@ -215,7 +217,7 @@ router.get('/models', async (req, res) => {
 //   module_instructions → description besoin / dimensions
 //   Prix = devis — retourne estimation indicative
 
-router.post('/price', async (req, res) => {
+router.post('/price', validate(modules.calculatePrice), async (req, res) => {
   try {
     const {
       module_type,
@@ -412,7 +414,7 @@ router.post('/price', async (req, res) => {
 // ─── POST /api/modules/fabrics (admin) ───────────────────────────────────────
 // Ajouter un tissu au catalogue couture
 
-router.post('/fabrics', authenticate, requireRole(['admin']), async (req, res) => {
+router.post('/fabrics', authenticate, requireRole(['admin']), validate(modules.createFabric), async (req, res) => {
   try {
     const {
       name,
@@ -467,7 +469,7 @@ router.post('/fabrics', authenticate, requireRole(['admin']), async (req, res) =
 // ─── POST /api/modules/models (admin) ────────────────────────────────────────
 // Ajouter un modèle de tenue au catalogue couture
 
-router.post('/models', authenticate, requireRole(['admin']), async (req, res) => {
+router.post('/models', authenticate, requireRole(['admin']), validate(modules.createModel), async (req, res) => {
   try {
     const {
       name,

@@ -16,6 +16,8 @@ const { generateBasketCode } = require('../utils/reference');
 const { sendSMS } = require('../utils/sms');
 
 const { getRates } = require('../utils/rates');
+const { validate } = require('../middleware/validate');
+const { baskets } = require('../validators');
 
 // GET /api/baskets — lister les paniers (admin: tous, client: les siens)
 router.get('/', authenticate, async (req, res) => {
@@ -44,7 +46,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // POST /api/baskets/share
-router.post('/share', async (req, res) => {
+router.post('/share', validate(baskets.share), async (req, res) => {
   try {
     const { items, creator_name } = req.body;
     if (!items?.length) return res.status(400).json({ error: 'Panier vide' });
@@ -114,7 +116,7 @@ router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res) => {
 });
 
 // PATCH /api/baskets/:code
-router.patch('/:code', authenticate, async (req, res) => {
+router.patch('/:code', authenticate, validate(baskets.updateBasket), async (req, res) => {
   try {
     const { rows: [basket] } = await db.query(
       'SELECT * FROM baskets WHERE code=$1 AND expires_at>NOW() AND is_locked=FALSE', [req.params.code]
@@ -180,7 +182,7 @@ router.post('/:code/pay', authenticate, async (req, res) => {
 });
 
 // POST /api/baskets/gift — Ali offre un panier
-router.post('/gift', authenticate, async (req, res) => {
+router.post('/gift', authenticate, validate(baskets.gift), async (req, res) => {
   try {
     const { items, recipient_phone, recipient_name } = req.body;
     if (!items?.length || !recipient_phone) return res.status(400).json({ error: 'items et recipient_phone requis' });
@@ -227,7 +229,7 @@ router.post('/gift', authenticate, async (req, res) => {
 });
 
 // POST /api/baskets/gift/:code/confirm — SMS destinataire
-router.post('/gift/:code/confirm', authenticate, async (req, res) => {
+router.post('/gift/:code/confirm', authenticate, validate(baskets.giftConfirm), async (req, res) => {
   try {
     const { recipient_phone, recipient_name, relais_name, order_reference } = req.body;
     if (!recipient_phone) return res.status(400).json({ error: 'recipient_phone requis' });
