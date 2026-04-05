@@ -1,11 +1,17 @@
 /**
- * KOMERCE — Routes scan logistique — v8.2 MERGED
+ * KOMERCE — Routes scan logistique — v8.3 SECURE COLLECT
  *
  * POST /api/scans             → enregistrer un scan (agent hub ou relais)
  * POST /api/scans/collect     → scan de retrait destinataire (code à 6 chiffres)
  * POST /api/scans/hub/receive → réception hub via QR (délègue à purchasing)
  * GET  /api/scans/hub/pending → commandes en attente de réception hub
  * GET  /api/scans/:order_id   → historique des scans d'une commande (admin)
+ *
+ * SÉCURITÉ v8.3 :
+ *   [S1] 'collected' retiré du endpoint générique POST /api/scans
+ *        → retrait DOIT passer par /scans/collect ou /scans/verify-qr
+ *   [S2] verify-qr : order_id optionnel, recherche par token seul
+ *        → corrige le bug frontend qui n'envoyait pas order_id
  *
  * BUGS CORRIGÉS v8.2 :
  *   [B1] po.quantity → po.qty         (vraie colonne purchase_orders)
@@ -117,7 +123,10 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
       return res.status(400).json({ error: 'scan_code et step sont requis' });
     }
 
-    const validSteps = ['preparation', 'shipped', 'relais_received', 'collected'];
+    const validSteps = ['preparation', 'shipped', 'relais_received'];
+    // 🔒 SÉCURITÉ : 'collected' retiré — le retrait client doit passer par
+    // POST /api/scans/collect (code 6 chiffres) ou POST /api/scans/verify-qr (QR token)
+    // pour garantir la double vérification agent relais + client.
     if (!validSteps.includes(step)) {
       return res.status(400).json({ error: `step invalide. Valeurs acceptées : ${validSteps.join(', ')}` });
     }
@@ -392,13 +401,15 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
     const { token, order_id } = req.body;
 
-    if (!token || !order_id) {
-      return res.status(400).json({ error: 'token et order_id sont requis' });
+    if (!token) {
+      return res.status(400).json({ error: 'token est requis' });
     }
 
-    // Chercher la commande avec ce token
-    const { rows: [order] } = await client.query(
-      `SELECT o.*,
+    // 🔒 Chercher la commande par token seul OU token + order_id
+    // Le token est unique et lié à une seule commande
+    let queryText, queryParams;
+    if (order_id) {
+      queryText = `SELECT o.*,
               rc.full_name  AS recipient_name,
               rc.phone      AS recipient_phone,
               r.name        AS relais_name,
@@ -407,9 +418,23 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
        LEFT JOIN relais     r  ON r.id  = o.relais_id
        LEFT JOIN users      u  ON u.id  = o.user_id
-       WHERE o.id = $1`,
-      [order_id]
-    );
+       WHERE o.id = $1 AND o.qr_token = $2`;
+      queryParams = [order_id, token];
+    } else {
+      queryText = `SELECT o.*,
+              rc.full_name  AS recipient_name,
+              rc.phone      AS recipient_phone,
+              r.name        AS relais_name,
+              u.phone       AS user_phone
+       FROM orders o
+       LEFT JOIN recipients rc ON rc.id = o.recipient_id
+       LEFT JOIN relais     r  ON r.id  = o.relais_id
+       LEFT JOIN users      u  ON u.id  = o.user_id
+       WHERE o.qr_token = $1`;
+      queryParams = [token];
+    }
+
+    const { rows: [order] } = await client.query(queryText, queryParams);
 
     if (!order) {
       return res.status(404).json({ error: 'Commande introuvable' });
