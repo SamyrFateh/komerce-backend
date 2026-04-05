@@ -44,33 +44,13 @@ CREATE TABLE IF NOT EXISTS ceremony_order_items (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ── LITIGES — M13 ────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS disputes (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_id        UUID        NOT NULL REFERENCES orders(id),
-  type            TEXT        NOT NULL,
-  -- non_conforme | endommage | perdu | taille_erreur | client_absent | annulation
-  level           INTEGER     NOT NULL DEFAULT 1 CHECK (level IN (1,2,3)),
-  status          TEXT        NOT NULL DEFAULT 'open',
-  -- open | processing | resolved | closed
-  description     TEXT,
-  photo_urls      TEXT[]      DEFAULT '{}',
-  resolution      TEXT,
-  refund_kmf      INTEGER     DEFAULT 0,
-  refund_eur      NUMERIC(8,2) DEFAULT 0,
-  created_by      UUID        REFERENCES users(id),
-  resolved_by     UUID        REFERENCES users(id),
-  resolved_at     TIMESTAMPTZ,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- LITIGES → voir schema.sql (table disputes avec CHECK constraints + ON DELETE CASCADE)
+-- Définition dupliquée supprimée (Sprint 1 — P5)
 
 -- ── INDEX extension ──────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_ceremony_order_items_order ON ceremony_order_items(order_id);
-CREATE INDEX IF NOT EXISTS idx_disputes_order             ON disputes(order_id);
-CREATE INDEX IF NOT EXISTS idx_disputes_status            ON disputes(status);
+-- disputes indexes déjà dans schema.sql
 
 -- ── DONNÉES INITIALES CÉRÉMONIE ──────────────────────────────
 

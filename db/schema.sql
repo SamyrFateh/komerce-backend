@@ -49,7 +49,7 @@ CREATE TABLE users (
   role          user_role   NOT NULL DEFAULT 'client',
   timezone      TEXT,
   currency_pref TEXT        NOT NULL DEFAULT 'KMF',
-  password_hash TEXT,                                -- SHA-256 + JWT_SECRET
+  password_hash TEXT,                                -- bcrypt hash
   country       CHAR(2)     NOT NULL DEFAULT 'FR',   -- ISO 3166 : 'KM' local, 'FR'/'AE'… diaspora
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -316,6 +316,10 @@ CREATE INDEX IF NOT EXISTS idx_order_items_product   ON order_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_recipients_user       ON recipients(user_id);
 CREATE INDEX IF NOT EXISTS idx_osh_order             ON order_status_history(order_id);
 
+-- Sprint 1 fix (P1): index manquants pour performance requêtes fréquentes
+CREATE INDEX IF NOT EXISTS idx_products_category       ON products(category);
+CREATE INDEX IF NOT EXISTS idx_scans_scanned_by        ON scans(scanned_by);
+
 
 -- ============================================================
 -- TRIGGERS updated_at
@@ -393,31 +397,8 @@ VALUES (492, 138, CURRENT_DATE);
 -- EXTENSION v6.4 — Tables complémentaires
 -- ============================================================
 
--- TISSUS (catalogue M11)
-CREATE TABLE IF NOT EXISTS fabrics (
-  id                   UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name                 TEXT        NOT NULL,
-  material             TEXT,
-  price_per_meter_aed  NUMERIC(8,2) NOT NULL,
-  colors               TEXT[]      DEFAULT '{}',
-  occasions            TEXT[]      DEFAULT '{}',
-  image_url            TEXT,
-  active               BOOLEAN     NOT NULL DEFAULT TRUE,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- MODÈLES TENUES (M11)
-CREATE TABLE IF NOT EXISTS garment_models (
-  id                UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name              TEXT        NOT NULL,
-  making_cost_aed   NUMERIC(8,2) NOT NULL,
-  fabric_meters     NUMERIC(6,2) NOT NULL,
-  occasions         TEXT[]      DEFAULT '{}',
-  sizes_available   TEXT[]      DEFAULT '{S,M,L,XL,XXL}',
-  image_url         TEXT,
-  active            BOOLEAN     NOT NULL DEFAULT TRUE,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- TISSUS et MODÈLES → voir schema_extension.sql (ceremony_fabrics, ceremony_models)
+-- Tables orphelines fabrics/garment_models supprimées (Sprint 1 — P4)
 
 -- LITIGES & REMBOURSEMENTS (M13)
 CREATE TABLE IF NOT EXISTS disputes (
