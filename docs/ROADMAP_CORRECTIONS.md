@@ -106,5 +106,29 @@ Sprint 5 ██████░░░░░░░░░░ Starter Kit 🚀
 | Sprint 5 | ⬜ À faire | — |
 | **Total** | | **17/18** |
 
-### ⏳ Restant : S7 (JWT localStorage → httpOnly cookies)
-> Chantier front+back conséquent — à planifier séparément.
+### ⏳ Restant :
+- **S7** — JWT localStorage → httpOnly cookies (chantier front+back)
+
+---
+
+## 📅 Sprint 5a — Validation des données ✅ TERMINÉ
+> **Objectif :** Pipeline de validation/sanitisation centralisé
+> **Commit :** `3e6b1df` (5 avril 2026)
+
+| Livrable | Description |
+|----------|-------------|
+| `middleware/validate.js` | Middleware validate() + sanitize() + anti-XSS/injection |
+| `validators/index.js` | 31 schémas Joi couvrant 9 fichiers routes |
+| `docs/VALIDATION_GUIDE.md` | Guide d'intégration route par route |
+
+**Prochaine action :** Brancher `validate()` sur chaque route + `npm install joi`
+
+---
+
+## 📅 Sprint 5b — JWT httpOnly cookies ⬜
+> Migrer JWT du localStorage vers cookies httpOnly (S7)
+
+---
+
+## 📅 Sprint 6 — Starter Kit universel 🚀 ⬜
+> Extraire un boilerplate réutilisable depuis Komerce
