@@ -185,7 +185,7 @@ app.get('*', (req, res) => {
     return res.status(404).json({ error: 'Endpoint introuvable' });
   }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.sendFile(path.join(__dirname, 'public', 'Komerce_Boutique.html'));
+  res.sendFile(path.join(__dirname, 'public', 'Komerce_Web.html'));
 });
 
 // ── Erreurs globales ──────────────────────────────────────────────────────────
