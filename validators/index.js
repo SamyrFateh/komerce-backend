@@ -7,7 +7,7 @@
  * Convention : 
  *   · Strings : trimmed, min 1, max raisonnable
  *   · Nombres : positifs, bornés
- *   · UUIDs : format v4 strict
+ *   · UUIDs : format strict (toute version)
  *   · Enums : .valid() avec les valeurs de l'app
  *   · Dates : format ISO ou timestamp
  */
@@ -18,7 +18,7 @@ const Joi = require('joi');
 
 // ── Helpers réutilisables ────────────────────────────────────────────────────────
 
-const uuid     = Joi.string().uuid({ version: 'uuidv4' });
+const uuid     = Joi.string().uuid();
 const safeStr  = (max = 255) => Joi.string().trim().max(max);
 const email    = Joi.string().trim().lowercase().email();
 const phone    = Joi.string().trim().pattern(/^\+?[0-9\s\-().]{6,20}$/).message('Numéro de téléphone invalide');
