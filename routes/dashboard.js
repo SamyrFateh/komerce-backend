@@ -705,4 +705,90 @@ router.get('/forecast', async (req, res) => {
   }
 });
 
+// ─── GET /api/dashboard/pipeline ──────────────────────────────────────────────
+// Pipeline Kanban — toutes les commandes avec leur statut actuel + timestamps
+// Retourne les commandes groupées par étape du pipeline
+
+router.get('/pipeline', async (req, res) => {
+  try {
+    const hit = cached('pipeline');
+    if (hit) return res.json(hit);
+
+    const { rows } = await db.query(`
+      SELECT
+        o.id,
+        o.reference,
+        o.status,
+        o.total_kmf,
+        o.payment_mode,
+        o.payment_status,
+        o.confection_type,
+        o.module_type,
+        o.created_at,
+        o.ordered_at,
+        o.purchasing_at,
+        o.preparation_at,
+        o.hub_preparation_at,
+        o.shipped_at,
+        o.transit_comores_at,
+        o.available_at,
+        o.collected_at,
+        o.cancelled_at,
+        o.updated_at,
+        u.full_name   AS client_name,
+        u.phone       AS client_phone,
+        rc.full_name  AS recipient_name,
+        rc.phone      AS recipient_phone,
+        r.name        AS relais_name,
+        (SELECT p.name FROM order_items oi
+         JOIN products p ON p.id = oi.product_id
+         WHERE oi.order_id = o.id
+         ORDER BY oi.created_at ASC LIMIT 1
+        ) AS product_name,
+        (SELECT p.image_url FROM order_items oi
+         JOIN products p ON p.id = oi.product_id
+         WHERE oi.order_id = o.id
+         ORDER BY oi.created_at ASC LIMIT 1
+        ) AS product_image_url,
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.id)::int AS items_count,
+        EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours,
+        EXTRACT(EPOCH FROM (NOW() - o.updated_at)) / 86400 AS inactif_jours
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN recipients rc ON rc.id = o.recipient_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      ORDER BY o.created_at DESC
+    `);
+
+    // Group by status
+    const STAGES = [
+      'draft', 'confirmed', 'paid', 'ordered', 'purchasing',
+      'preparation', 'hub_preparation', 'shipped', 'transit_comores',
+      'available', 'collected', 'cancelled', 'refunded'
+    ];
+
+    const pipeline = {};
+    for (const s of STAGES) {
+      pipeline[s] = { count: 0, orders: [] };
+    }
+
+    let active = 0;
+    for (const order of rows) {
+      const s = order.status;
+      if (pipeline[s]) {
+        pipeline[s].count++;
+        pipeline[s].orders.push(order);
+      }
+      if (!['collected', 'cancelled', 'refunded'].includes(s)) active++;
+    }
+
+    const result = { total: rows.length, active, pipeline };
+    setCache('pipeline', result);
+    res.json(result);
+  } catch (err) {
+    console.error('[dashboard/pipeline] Erreur:', err.message);
+    res.status(500).json({ error: 'Erreur pipeline' });
+  }
+});
+
 module.exports = router;

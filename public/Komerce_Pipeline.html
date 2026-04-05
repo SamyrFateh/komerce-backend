@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Pipeline Commandes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3347;
+  --text: #e4e6f0;
+  --text-dim: #8b8fa3;
+  --accent: #6c5ce7;
+  --accent2: #a29bfe;
+  --green: #00b894;
+  --orange: #fdcb6e;
+  --red: #ff6b6b;
+  --blue: #74b9ff;
+  --pink: #fd79a8;
+  --teal: #81ecec;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── LOGIN ────────────────────────────────────── */
+#login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top, #1a1d2f 0%, var(--bg) 70%);
+}
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  width: 360px;
+  text-align: center;
+}
+.login-box h1 { font-size: 24px; margin-bottom: 8px; }
+.login-box p { color: var(--text-dim); margin-bottom: 24px; font-size: 14px; }
+.login-box input {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.login-box input:focus { border-color: var(--accent); }
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.login-box button:hover { background: #5a4bd1; }
+.login-error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+
+/* ── MAIN LAYOUT ──────────────────────────────── */
+#app { display: none; }
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.top-bar h1 { font-size: 20px; font-weight: 700; }
+.top-bar h1 span { color: var(--accent2); }
+.top-bar-right { display: flex; align-items: center; gap: 16px; }
+.refresh-info { font-size: 12px; color: var(--text-dim); }
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn-sm:hover { border-color: var(--accent); }
+
+/* ── STATS BAR ────────────────────────────────── */
+.stats-bar {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  overflow-x: auto;
+  background: var(--bg);
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  min-width: 140px;
+  flex-shrink: 0;
+}
+.stat-card .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+.stat-card .value.green { color: var(--green); }
+.stat-card .value.orange { color: var(--orange); }
+.stat-card .value.red { color: var(--red); }
+.stat-card .value.blue { color: var(--blue); }
+.stat-card .value.accent { color: var(--accent2); }
+
+/* ── FILTER BAR ───────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.search-input {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  width: 260px;
+  outline: none;
+}
+.search-input:focus { border-color: var(--accent); }
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-btn:hover { border-color: var(--text-dim); color: var(--text); }
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ── KANBAN BOARD ─────────────────────────────── */
+.kanban-wrapper {
+  padding: 16px 24px;
+  overflow-x: auto;
+  flex: 1;
+}
+.kanban-board {
+  display: flex;
+  gap: 12px;
+  min-height: calc(100vh - 260px);
+}
+.kanban-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 220px;
+  max-width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 260px);
+}
+.kanban-col-header {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  z-index: 1;
+}
+.kanban-col-header .col-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.kanban-col-header .col-count {
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.kanban-col-body {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.kanban-col-body::-webkit-scrollbar { width: 4px; }
+.kanban-col-body::-webkit-scrollbar-track { background: transparent; }
+.kanban-col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Column indicator bar */
+.col-indicator {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 8px;
+}
+
+/* ── ORDER CARD ───────────────────────────────── */
+.order-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.order-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.order-card .card-ref {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent2);
+  margin-bottom: 4px;
+}
+.order-card .card-product {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.order-card .card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.order-card .card-amount {
+  font-weight: 600;
+  color: var(--green);
+  font-size: 12px;
+}
+.order-card .card-age {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface);
+}
+.order-card .card-age.late {
+  background: rgba(255,107,107,0.15);
+  color: var(--red);
+}
+.order-card .card-age.warning {
+  background: rgba(253,203,110,0.15);
+  color: var(--orange);
+}
+.order-card .card-client {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.order-card .card-items {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* ── PIPELINE ARROW CONNECTOR ─────────────────── */
+.kanban-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  color: var(--border);
+  font-size: 18px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 40px;
+}
+
+/* ── ORDER DETAIL MODAL ───────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.modal-header h2 { font-size: 18px; }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 24px;
+  cursor: pointer;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 24px; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--surface);
+}
+.timeline-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(108,92,231,0.5);
+}
+.timeline-dot.done { background: var(--green); }
+.timeline-dot.cancelled { background: var(--red); }
+.timeline-item .tl-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.timeline-item .tl-date {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.timeline-item .tl-duration {
+  font-size: 10px;
+  color: var(--accent2);
+  margin-top: 2px;
+}
+
+/* Detail grid */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.detail-item { }
+.detail-item .di-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-item .di-value { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty column */
+.empty-col {
+  text-align: center;
+  padding: 20px 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media (max-width: 768px) {
+  .stats-bar { flex-wrap: nowrap; }
+  .kanban-col { min-width: 200px; }
+  .filter-bar { gap: 8px; }
+  .search-input { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size: 48px; margin-bottom: 12px;">🔄</div>
+    <h1>Pipeline Commandes</h1>
+    <p>Suivi temps réel de toutes les commandes Komerce</p>
+    <input type="text" id="login-user" placeholder="Identifiant ou email">
+    <input type="password" id="login-pass" placeholder="Mot de passe">
+    <button onclick="doLogin()">Connexion</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <!-- Top bar -->
+  <div class="top-bar">
+    <h1>🔄 <span>Pipeline</span> Commandes</h1>
+    <div class="top-bar-right">
+      <span class="refresh-info" id="refresh-info">Actualisation auto 30s</span>
+      <button class="btn-sm" onclick="loadPipeline()">↻ Actualiser</button>
+      <button class="btn-sm" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <input type="text" class="search-input" id="search-input" placeholder="🔍 Rechercher par référence, client, produit...">
+    <button class="filter-btn active" data-filter="active" onclick="setFilter('active')">🟢 En cours</button>
+    <button class="filter-btn" data-filter="all" onclick="setFilter('all')">Toutes</button>
+    <button class="filter-btn" data-filter="late" onclick="setFilter('late')">⚠️ En retard</button>
+    <button class="filter-btn" data-filter="delivered" onclick="setFilter('delivered')">✅ Livrées</button>
+    <button class="filter-btn" data-filter="cancelled" onclick="setFilter('cancelled')">❌ Annulées</button>
+  </div>
+
+  <!-- Kanban -->
+  <div class="kanban-wrapper">
+    <div class="kanban-board" id="kanban-board">
+      <div class="loading"><span class="spinner"></span> Chargement du pipeline...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL ═══════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content" id="modal-content"></div>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const API = window.location.origin;
+let TOKEN = localStorage.getItem('km_token');
+let DATA = null;
+let currentFilter = 'active';
+let searchQuery = '';
+let refreshInterval = null;
+
+// ─── STAGES DEFINITION ──────────────────────────────────────────────────────
+const STAGES = [
+  { key: 'draft',           icon: '📝', label: 'Brouillon',     color: '#636e72', group: 'active' },
+  { key: 'confirmed',       icon: '✅', label: 'Validée',       color: '#6c5ce7', group: 'active' },
+  { key: 'paid',            icon: '💰', label: 'Payée',         color: '#00b894', group: 'active' },
+  { key: 'ordered',         icon: '📋', label: 'Commandée',     color: '#0984e3', group: 'active' },
+  { key: 'purchasing',      icon: '🛒', label: 'Sourcing Dubai', color: '#e17055', group: 'active' },
+  { key: 'preparation',     icon: '📦', label: 'Hub Dubai (CQ)', color: '#fdcb6e', group: 'active' },
+  { key: 'hub_preparation', icon: '🏗️', label: 'Emballage Hub', color: '#fd79a8', group: 'active' },
+  { key: 'shipped',         icon: '🚢', label: 'En mer',        color: '#74b9ff', group: 'active' },
+  { key: 'transit_comores', icon: '🏝️', label: 'Comores',       color: '#81ecec', group: 'active' },
+  { key: 'available',       icon: '📍', label: 'Au relais',     color: '#a29bfe', group: 'active' },
+  { key: 'collected',       icon: '🎉', label: 'Livré client',  color: '#00b894', group: 'delivered' },
+  { key: 'cancelled',       icon: '❌', label: 'Annulée',       color: '#ff6b6b', group: 'cancelled' },
+  { key: 'refunded',        icon: '💸', label: 'Remboursée',    color: '#dfe6e9', group: 'cancelled' },
+];
+
+// Timestamp field per stage for timeline
+const STAGE_TS = {
+  draft:           'created_at',
+  confirmed:       'created_at',
+  paid:            'ordered_at',
+  ordered:         'ordered_at',
+  purchasing:      'purchasing_at',
+  preparation:     'preparation_at',
+  hub_preparation: 'hub_preparation_at',
+  shipped:         'shipped_at',
+  transit_comores: 'transit_comores_at',
+  available:       'available_at',
+  collected:       'collected_at',
+  cancelled:       'cancelled_at',
+};
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(`${API}/api${path}`, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TOKEN}`,
+      ...(opts.headers || {}),
+    },
+  });
+  if (res.status === 401 || res.status === 403) {
+    doLogout();
+    throw new Error('Session expirée');
+  }
+  return res;
+}
+
+async function doLogin() {
+  const id = document.getElementById('login-user').value.trim();
+  const pw = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: id, password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Échec connexion');
+    TOKEN = data.token;
+    localStorage.setItem('km_token', TOKEN);
+    showApp();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  TOKEN = null;
+  localStorage.removeItem('km_token');
+  clearInterval(refreshInterval);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadPipeline();
+  refreshInterval = setInterval(loadPipeline, 30000);
+}
+
+// ─── LOAD DATA ───────────────────────────────────────────────────────────────
+async function loadPipeline() {
+  try {
+    const res = await apiFetch('/dashboard/pipeline');
+    if (!res.ok) throw new Error('Erreur API');
+    DATA = await res.json();
+    renderStats();
+    renderBoard();
+    document.getElementById('refresh-info').textContent =
+      `Mis à jour : ${new Date().toLocaleTimeString('fr-FR')}`;
+  } catch (e) {
+    console.error('Pipeline load error:', e);
+  }
+}
+
+// ─── RENDER STATS ────────────────────────────────────────────────────────────
+function renderStats() {
+  const p = DATA.pipeline;
+  const active = DATA.active;
+  const total = DATA.total;
+  const delivered = p.collected.count;
+  const cancelled = p.cancelled.count + p.refunded.count;
+
+  // Count late orders (> 35 days)
+  let lateCount = 0;
+  STAGES.forEach(s => {
+    if (s.group === 'active' && p[s.key]) {
+      p[s.key].orders.forEach(o => {
+        if (Number(o.age_jours) > 35) lateCount++;
+      });
+    }
+  });
+
+  // Dubai (purchasing + preparation)
+  const dubai = (p.purchasing?.count || 0) + (p.preparation?.count || 0) + (p.hub_preparation?.count || 0);
+  // En transit
+  const transit = (p.shipped?.count || 0) + (p.transit_comores?.count || 0);
+  // Au relais
+  const relais = p.available?.count || 0;
+
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat-card"><div class="label">Total commandes</div><div class="value">${total}</div></div>
+    <div class="stat-card"><div class="label">En cours</div><div class="value accent">${active}</div></div>
+    <div class="stat-card"><div class="label">🏗️ À Dubai</div><div class="value orange">${dubai}</div></div>
+    <div class="stat-card"><div class="label">🚢 En transit</div><div class="value blue">${transit}</div></div>
+    <div class="stat-card"><div class="label">📍 Au relais</div><div class="value accent">${relais}</div></div>
+    <div class="stat-card"><div class="label">✅ Livrées</div><div class="value green">${delivered}</div></div>
+    <div class="stat-card"><div class="label">⚠️ En retard</div><div class="value ${lateCount > 0 ? 'red' : ''}">${lateCount}</div></div>
+    <div class="stat-card"><div class="label">❌ Annulées</div><div class="value">${cancelled}</div></div>
+  `;
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────────────────────
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  renderBoard();
+}
+
+document.getElementById('search-input').addEventListener('input', (e) => {
+  searchQuery = e.target.value.toLowerCase();
+  renderBoard();
+});
+
+function filterOrders(orders) {
+  let filtered = [...orders];
+
+  // Search
+  if (searchQuery) {
+    filtered = filtered.filter(o =>
+      (o.reference || '').toLowerCase().includes(searchQuery) ||
+      (o.client_name || '').toLowerCase().includes(searchQuery) ||
+      (o.recipient_name || '').toLowerCase().includes(searchQuery) ||
+      (o.product_name || '').toLowerCase().includes(searchQuery) ||
+      (o.relais_name || '').toLowerCase().includes(searchQuery)
+    );
+  }
+
+  // Late filter
+  if (currentFilter === 'late') {
+    filtered = filtered.filter(o => Number(o.age_jours) > 35 && !['collected','cancelled','refunded'].includes(o.status));
+  }
+
+  return filtered;
+}
+
+function getVisibleStages() {
+  if (currentFilter === 'delivered') return STAGES.filter(s => s.key === 'collected');
+  if (currentFilter === 'cancelled') return STAGES.filter(s => s.group === 'cancelled');
+  if (currentFilter === 'active' || currentFilter === 'late') return STAGES.filter(s => s.group === 'active');
+  return STAGES; // 'all'
+}
+
+// ─── RENDER BOARD ────────────────────────────────────────────────────────────
+function renderBoard() {
+  if (!DATA) return;
+  const board = document.getElementById('kanban-board');
+  const stages = getVisibleStages();
+  let html = '';
+
+  stages.forEach((stage, i) => {
+    const orders = filterOrders(DATA.pipeline[stage.key]?.orders || []);
+    const count = orders.length;
+
+    if (i > 0) html += `<div class="kanban-arrow">→</div>`;
+
+    html += `
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <div class="col-title">
+            <span>${stage.icon}</span>
+            <span>${stage.label}</span>
+            <span class="col-count">${count}</span>
+          </div>
+          <div class="col-indicator" style="background: ${stage.color}"></div>
+        </div>
+        <div class="kanban-col-body">
+    `;
+
+    if (count === 0) {
+      html += `<div class="empty-col">Aucune commande</div>`;
+    } else {
+      orders.forEach(o => {
+        const age = Math.round(Number(o.age_jours));
+        let ageClass = '';
+        if (age > 42) ageClass = 'late';
+        else if (age > 35) ageClass = 'warning';
+
+        const amount = o.total_kmf ? Number(o.total_kmf).toLocaleString('fr-FR') + ' KMF' : '—';
+
+        html += `
+          <div class="order-card" onclick="showDetail('${o.reference}')">
+            <div class="card-ref">${o.reference}</div>
+            <div class="card-client">${o.client_name || o.recipient_name || '—'}</div>
+            <div class="card-product">${o.product_name || 'N/A'}${o.items_count > 1 ? ` +${o.items_count - 1}` : ''}</div>
+            <div class="card-meta">
+              <span class="card-amount">${amount}</span>
+              <span class="card-age ${ageClass}">J+${age}</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `</div></div>`;
+  });
+
+  board.innerHTML = html;
+}
+
+// ─── DETAIL MODAL ────────────────────────────────────────────────────────────
+function showDetail(ref) {
+  // Find the order in DATA
+  let order = null;
+  for (const stageKey of Object.keys(DATA.pipeline)) {
+    const found = DATA.pipeline[stageKey].orders.find(o => o.reference === ref);
+    if (found) { order = found; break; }
+  }
+  if (!order) return;
+
+  const stageInfo = STAGES.find(s => s.key === order.status) || {};
+  const age = Math.round(Number(order.age_jours));
+  const amount = order.total_kmf ? Number(order.total_kmf).toLocaleString('fr-FR') + ' KMF' : '—';
+
+  // Build timeline
+  const timelineStages = [
+    { key: 'draft',           label: 'Brouillon',      ts: order.created_at,          icon: '📝' },
+    { key: 'confirmed',       label: 'Validée',         ts: order.created_at,          icon: '✅' },
+    { key: 'ordered',         label: 'Commandée',       ts: order.ordered_at,          icon: '📋' },
+    { key: 'purchasing',      label: 'Sourcing Dubai',  ts: order.purchasing_at,       icon: '🛒' },
+    { key: 'preparation',     label: 'Hub Dubai (CQ)',  ts: order.preparation_at,      icon: '📦' },
+    { key: 'hub_preparation', label: 'Emballage Hub',   ts: order.hub_preparation_at,  icon: '🏗️' },
+    { key: 'shipped',         label: 'Expédiée',        ts: order.shipped_at,          icon: '🚢' },
+    { key: 'transit_comores', label: 'Arrivée Comores', ts: order.transit_comores_at,  icon: '🏝️' },
+    { key: 'available',       label: 'Au relais',       ts: order.available_at,        icon: '📍' },
+    { key: 'collected',       label: 'Livré client',    ts: order.collected_at,        icon: '🎉' },
+  ];
+
+  if (order.status === 'cancelled' || order.cancelled_at) {
+    timelineStages.push({ key: 'cancelled', label: 'Annulée', ts: order.cancelled_at, icon: '❌' });
+  }
+
+  // Find current stage index
+  const currentIdx = STAGES.findIndex(s => s.key === order.status);
+
+  let timelineHTML = '<div class="timeline">';
+  timelineStages.forEach((ts) => {
+    const stageIdx = STAGES.findIndex(s => s.key === ts.key);
+    let dotClass = '';
+    if (ts.key === order.status) dotClass = 'active';
+    else if (ts.ts && stageIdx < currentIdx) dotClass = 'done';
+    else if (ts.key === 'cancelled') dotClass = 'cancelled';
+
+    const dateStr = ts.ts ? new Date(ts.ts).toLocaleDateString('fr-FR', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) : '—';
+
+    timelineHTML += `
+      <div class="timeline-item">
+        <div class="timeline-dot ${dotClass}"></div>
+        <div class="tl-label">${ts.icon} ${ts.label}</div>
+        <div class="tl-date">${ts.ts ? dateStr : 'En attente'}</div>
+      </div>
+    `;
+  });
+  timelineHTML += '</div>';
+
+  const modalHTML = `
+    <div class="modal-header">
+      <h2>${stageInfo.icon || ''} ${order.reference}</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="di-label">Statut</div>
+          <div class="di-value" style="color: ${stageInfo.color}">${stageInfo.icon} ${stageInfo.label}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Montant</div>
+          <div class="di-value">${amount}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Client</div>
+          <div class="di-value">${order.client_name || '—'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Destinataire</div>
+          <div class="di-value">${order.recipient_name || '—'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Produit</div>
+          <div class="di-value">${order.product_name || '—'} ${order.items_count > 1 ? `(+${order.items_count - 1} article${order.items_count > 2 ? 's' : ''})` : ''}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Relais</div>
+          <div class="di-value">${order.relais_name || '—'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Âge</div>
+          <div class="di-value">J+${age}</div>
+        </div>
+        <div class="detail-item">
+          <div class="di-label">Paiement</div>
+          <div class="di-value">${order.payment_status || '—'} (${order.payment_mode || '—'})</div>
+        </div>
+      </div>
+
+      <h3 style="font-size: 15px; margin-bottom: 16px;">📍 Parcours de la commande</h3>
+      ${timelineHTML}
+    </div>
+  `;
+
+  document.getElementById('modal-content').innerHTML = modalHTML;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+if (TOKEN) {
+  showApp();
+} else {
+  document.getElementById('login-screen').style.display = 'flex';
+}
+</script>
+</body>
+</html>
