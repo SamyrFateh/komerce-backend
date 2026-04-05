@@ -146,6 +146,11 @@ app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
 app.use('/api/orders',     ordersRouter);
 app.use('/api/relais',     relaisRouter);
+// ── Route aliases — les dashboards HTML appellent /api/admin/pilotage, /api/admin/finance, /api/admin/stats
+app.use('/api/admin/pilotage', pilotageRouter);
+app.use('/api/admin/finance',  financeRouter);
+app.use('/api/admin/stats',    pilotageRouter);
+
 app.use('/api/admin',      adminRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/pricing',    pricingRouter);
