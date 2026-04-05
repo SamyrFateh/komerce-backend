@@ -46,7 +46,7 @@ const auth = {
       email:    email,
       phone:    phone,
       password: safeStr(128).required(),
-    }).or('email', 'phone'), // Au moins un identifiant
+    }).or('email', 'phone'),
   },
 
   updateProfile: {
@@ -54,7 +54,7 @@ const auth = {
       full_name:     safeStr(100),
       phone:         phone,
       currency_pref: Joi.string().valid('KMF', 'EUR'),
-    }).min(1), // Au moins un champ
+    }).min(1),
   },
 
   guestCheckout: {
@@ -109,7 +109,6 @@ const products = {
       is_active:   Joi.boolean().default(true),
       image_url:   url,
       tags:        Joi.array().items(safeStr(50)).max(20),
-      // Module spécialisé
       module_type:        safeStr(50),
       origin_country:     safeStr(50),
       hs_code:            safeStr(20),
@@ -159,7 +158,6 @@ const orders = {
       items: Joi.array().items(Joi.object({
         product_id: uuid.required(),
         quantity:   posInt.max(100).default(1),
-        // Overrides module niveau item
         module_type:       Joi.string().valid(...MODULE_TYPES),
         module_fabric_id:  uuid,
         module_fabric_type: safeStr(100),
@@ -173,7 +171,6 @@ const orders = {
       stripe_payment_intent: safeStr(200),
       recipient_name:        safeStr(100),
       recipient_phone:       phone,
-      // Module niveau commande
       confection_type:           Joi.string().valid(...CONFECTION_TYPES).default('aucun'),
       confection_instructions:   safeStr(1000),
       confection_delay_days:     Joi.number().integer().min(0).max(365).default(0),
@@ -260,7 +257,7 @@ const admin = {
 
   reset: {
     body: Joi.object({
-      mode: Joi.string().valid('orders', 'products', 'all', 'users').default('orders'),
+      mode: Joi.string().valid('orders', 'users', 'factory').default('orders'),
     }),
   },
 
