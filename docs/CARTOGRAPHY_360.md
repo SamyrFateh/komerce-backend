@@ -802,7 +802,7 @@ scans.js → loyalty.js        (recalculateLoyalty)
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-05 14:59:52 UTC
+> Mise à jour : 2026-04-05 15:06:41 UTC
 
 | Métrique | Valeur |
 |----------|--------|
@@ -810,6 +810,6 @@ scans.js → loyalty.js        (recalculateLoyalty)
 | Tables cartographiées | 20 |
 | Services externes | 9 |
 | Score de risque global | 100/100 |
-| Alertes sécurité | 509 |
+| Alertes sécurité | 504 |
 
 *Régénéré automatiquement par le coffre-fort Komerce v1.0*
