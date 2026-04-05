@@ -1676,7 +1676,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
         </div>
       </div>
 
-      <div class="bloom-panel" id="bloom-panel" onmouseleave="bloomLeave()">
+      <div class="bloom-panel" id="bloom-panel">
         <div class="bloom-pointer" id="bloom-pointer"></div>
         <div class="bloom-header" id="bloom-header">
           <span class="bloom-header-icon"></span>
@@ -2006,7 +2006,7 @@ function openBloom(catKey) {
   var h = '';
   sit.subcats.forEach(function(sc) {
     var sel = (_activeSubCat && _activeSubCat.id === sc.id) ? ' selected' : '';
-    h += '<div class="bloom-chip' + sel + '" onclick="selectSubcat(\'' + sc.id + '\',\'' + catKey + '\')" style="--bloom-color:' + sit.color + ';--bloom-rgb:' + sit.rgb + '">' +
+    h += '<div class="bloom-chip' + sel + '" data-sc-id="' + sc.id + '" data-cat-key="' + catKey + '" style="--bloom-color:' + sit.color + ';--bloom-rgb:' + sit.rgb + '">' +
          '<span class="chip-emoji">' + sc.emoji + '</span>' +
          '<span class="chip-name">' + sc.name + '</span></div>';
   });
@@ -3714,6 +3714,17 @@ document.addEventListener('DOMContentLoaded', function() {
   var catNavWrapper = document.querySelector('.cat-nav-wrapper');
   if (catNavWrapper) {
     catNavWrapper.addEventListener('mouseleave', function() { bloomLeave(); });
+  }
+  /* ── Bloom chip click delegation (CSP-safe, no inline onclick) ── */
+  var bloomGrid = document.getElementById('bloom-grid');
+  if (bloomGrid) {
+    bloomGrid.addEventListener('click', function(e) {
+      var chip = e.target.closest('.bloom-chip');
+      if (!chip) return;
+      var scId = chip.dataset.scId;
+      var catKey = chip.dataset.catKey;
+      if (scId && catKey) selectSubcat(scId, catKey);
+    });
   }
   loadProducts();
   loadRelais();
