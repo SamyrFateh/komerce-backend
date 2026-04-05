@@ -1214,7 +1214,7 @@ function refreshCurrent() {
 
 async function apiFetch(path) {
   const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json', // Authorization handled by httpOnly cookie }
+    headers: { 'Content-Type': 'application/json' }, // Authorization handled by httpOnly cookie
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
