@@ -1,12 +1,12 @@
 # Session de revue de code — Statut
 
-> **Dernière mise à jour :** 5 avril 2026
+> **Dernière mise à jour :** 5 avril 2026 (session 2 — 14h51 GMT+2)
 
 ## Objectif global
 
 Restructurer la documentation du projet Komerce-backend :
 1. ✅ **Étape 1** — Analyser la doc existante (8 fichiers, 86 KB) et identifier les problèmes
-2. 🔄 **Étape 2** — Revue de code complète pour établir la "vérité terrain"
+2. ✅ **Étape 2** — Revue de code complète pour établir la "vérité terrain"
 3. ⏳ **Étape 3** — Produire la cartographie d'impact 360°
 4. ⏳ **Étape 4** — Rédiger les 5 nouveaux documents (README, ARCHITECTURE, CARTOGRAPHY, STATUS, DEPLOYMENT)
 
@@ -98,7 +98,9 @@ Pour chaque table :
 | server.js (570 lignes) | ✅ Terminé | `docs/review/analysis_server_js.md` |
 | Routes lot 1 — admin, auth, baskets, dashboard, finance, health, logistics, loyalty, modules (57 endpoints) | ✅ Terminé | `docs/review/analysis_routes_batch1.md` |
 | Routes lot 2 — orders, payments, pilotage, pricing, products, purchasing, relais, scans, unsold (56 endpoints) | ✅ Terminé | `docs/review/analysis_routes_batch2.md` |
-| Middleware + utils + schéma DB | ❌ Interrompu — À refaire | — |
+| Middleware (auth, rate-limit, upload) | ✅ Terminé | `docs/audit/middleware_audit.md` |
+| Utils (email, pricing, rates, reference, sms) | ✅ Terminé | `docs/audit/utils_audit.md` |
+| DB (connexion, schéma, seed) | ✅ Terminé | `docs/audit/db_audit.md` |
 | Frontends — Lot 2 (Admin, Boutique, Pilotage) | ✅ Terminé | `docs/audit/batch_2.md` |
 | Frontends — Lot 3 (Simulateur, Tests, Web) | ✅ Terminé | `docs/audit/batch_3.md` |
 | Frontends — Lot 5 (Hub, Mobile, PWA, Pipeline, Relais) | ✅ Terminé | `docs/audit/batch_5.md` |
@@ -117,6 +119,15 @@ Pour chaque table :
 - **SQL injection** dans `products.js` et `orders.js` — interpolation de strings au lieu de requêtes paramétrées
 - **Endpoint admin-reset non authentifié** — reset/seed destructif accessible sans auth
 
+### 🔴 Critiques (session 2 — Middleware, Utils, DB)
+- **Mot de passe admin en clair** dans `seed.sql` (commentaire : `Komerce2026!`)
+- **Hash bcrypt identique** admin ↔ comptes démo — compromission croisée
+- **`rejectUnauthorized: false`** sur connexion PostgreSQL — vulnérabilité MITM en prod
+- **Deux modules DB concurrents** (`db.js` racine vs `db/index.js`) — 2 pools, configs différentes
+- **Validation upload par extension uniquement** — XSS potentiel via fichiers polyglotes
+- **Incohérence taux de change** entre `pricing.js` ({492, 138}) et `rates.js` ({495, 139})
+- **Duplication tables** entre `schema.sql` et `schema_extension.sql` (disputes, fabrics)
+
 ### 🟠 Importants
 - JWT fallback secret unsafe
 - Pas d'auth sur les routes POST pricing
@@ -134,7 +145,7 @@ Pour chaque table :
 ## Prochaines étapes (session suivante)
 
 1. **🚨 Discuter hotfix des 4 failles critiques** (si production)
-2. **Refaire l'analyse middleware + utils + schema.sql** (interrompue)
+2. ~~**Refaire l'analyse middleware + utils + schema.sql**~~ ✅ Fait (middleware_audit + utils_audit + db_audit)
 3. ~~**Auditer les 17 dashboards HTML** dans public/~~ ✅ Fait (lots 2, 3, 5, 6)
 4. ~~**Identifier les dashboards morts**~~ ✅ Fait (voir batch_6.md — 3 fichiers candidats à suppression)
 5. **Vérifier les 7 écarts docs ↔ code**
