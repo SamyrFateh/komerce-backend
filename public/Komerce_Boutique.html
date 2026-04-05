@@ -1502,7 +1502,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     scrollbar-width: none;
     justify-content: flex-start;
     gap: 0.6rem;
-    padding: 0.8rem 0.3rem;
+    padding: 0.8rem 1rem;
     flex-wrap: nowrap;
   }
   .cat-row::-webkit-scrollbar { display: none; }
@@ -3750,6 +3750,17 @@ document.addEventListener('DOMContentLoaded', function() {
   $('tracking-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') searchTracking();
   });
+
+  // ─── Service Worker Registration ──────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      console.log('[App] SW registered, scope:', reg.scope);
+      // Force la vérification de mise à jour à chaque visite
+      reg.update();
+    }).catch(function(err) {
+      console.warn('[App] SW registration failed:', err);
+    });
+  }
 });
 </script>
 
