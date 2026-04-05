@@ -1618,13 +1618,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="hero-left">
     <div class="hero-badge">🇰🇲 E-commerce des Comores</div>
     <h1 class="hero-title">Tout ce que vous voulez,<br><span class="hero-accent">livré aux Comores</span></h1>
-    <div class="search-container">
-      <div class="hero-search">
-        <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
-        <button type="button" id="hero-search-btn">🔍</button>
-      </div>
-      <div class="search-dropdown" id="search-dropdown"></div>
-    </div>
+
   </div>
   <div class="hero-right">
     <img src="/images/hero_banner.jpg" alt="Livraison aux Comores">
@@ -1690,6 +1684,21 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       </div>
 
       <div class="cat-path" id="cat-path"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================
+     BARRE DE RECHERCHE
+     ======================================== -->
+<section id="search-section" style="padding: 1rem 0 0.5rem; background: var(--bg);">
+  <div class="container">
+    <div class="search-container" style="max-width: 600px; margin: 0 auto;">
+      <div class="hero-search">
+        <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
+        <button type="button" id="hero-search-btn">🔍</button>
+      </div>
+      <div class="search-dropdown" id="search-dropdown"></div>
     </div>
   </div>
 </section>
@@ -1894,7 +1903,7 @@ var _situations = {
   },
   beaute: {
     icon: '\u{1F484}', label: 'Beaut\u00e9 & bien-\u00eatre', color: '#db2777', rgb: '219,39,119',
-    matchCats: ['beaute','beauty','soins','cheveux','parfums','maquillage'],
+    matchCats: ['beaute','beauty','soins','cheveux','parfums','maquillage','services'],
     subcats: [
       { id:'beaute-soins',    name:'Soins',       emoji:'\u{1F9F4}', category:'soins',     desc:'Visage, corps' },
       { id:'beaute-cheveux',  name:'Cheveux',     emoji:'\u{1F487}', category:'cheveux',   desc:'Huiles, soins' },
@@ -1914,7 +1923,7 @@ var _situations = {
   },
   surmesure: {
     icon: '\u2728', label: 'Sur Mesure', color: '#b45309', rgb: '180,83,9',
-    matchCats: ['surmesure','couture','personnalise','custom','sur-mesure','mariage-custom','optique','scolaire','traditionnel','ceremonie-custom'],
+    matchCats: ['surmesure','couture','personnalise','custom','sur-mesure','mariage-custom','optique','scolaire','traditionnel','ceremonie-custom','wedding'],
     subcats: [
       { id:'sm-couture',    name:'Couture',             emoji:'\u2702\uFE0F', category:'couture',          desc:'Tissus, abayas, salouva, caftans' },
       { id:'sm-mariage',    name:'Mariage',             emoji:'\u{1F492}',     category:'mariage-custom',   desc:'Tenue mari\u00e9e, d\u00e9co, coffret' },
