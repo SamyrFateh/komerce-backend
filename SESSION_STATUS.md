@@ -7,8 +7,36 @@
 Restructurer la documentation du projet Komerce-backend :
 1. ✅ **Étape 1** — Analyser la doc existante (8 fichiers, 86 KB) et identifier les problèmes
 2. 🔄 **Étape 2** — Revue de code complète pour établir la "vérité terrain"
-3. ⏳ **Étape 3** — Produire la cartographie d'impact 360° (NOUVEAU)
-4. ⏳ **Étape 4** — Rédiger les 4 nouveaux documents (README, ARCHITECTURE, STATUS, DEPLOYMENT)
+3. ⏳ **Étape 3** — Produire la cartographie d'impact 360°
+4. ⏳ **Étape 4** — Rédiger les 5 nouveaux documents (README, ARCHITECTURE, CARTOGRAPHY, STATUS, DEPLOYMENT)
+
+---
+
+## 🚨 Actions prioritaires (avant de continuer la revue)
+
+### Si le projet est EN PRODUCTION — Hotfix immédiat recommandé
+
+| # | Faille | Fichier | Sévérité |
+|---|--------|---------|----------|
+| 1 | **SQL injection** — interpolation de strings dans les requêtes | `routes/products.js`, `routes/orders.js` | 🔴 CRITIQUE |
+| 2 | **XSS** — `client_name`/`relais_name` non-échappés dans template HTML | `routes/orders.js` | 🔴 CRITIQUE |
+| 3 | **Admin-reset sans auth** — endpoint destructif (reset/seed) accessible sans authentification | `routes/admin.js` | 🔴 CRITIQUE |
+| 4 | **Route ordering bug** — `GET /:type` masque `GET /fabrics` et `GET /models` → 404 | `routes/modules.js` | 🔴 CRITIQUE |
+
+> ⚠️ Ces 4 failles doivent être corrigées en priorité si l'app est accessible publiquement.
+
+---
+
+## 🧹 Nettoyage du repo prévu
+
+| Problème | Détails |
+|----------|---------|
+| **Fichiers `.old`** | `public/komerce-api.old` — ancienne version à supprimer |
+| **Migrations SQL mal placées** | `public/migration_v6_to_v71.sql` et `public/migration_v7_2_ceremony_orders.sql` devraient être dans `db/migrations/` |
+| **Dashboards en doublon** | Versions `_v2`, `_v7`... dans `public/` — identifier les versions mortes et ne garder que les actuelles |
+| **Documentation obsolète** | 3 roadmaps 100% terminées, audit frontend périmé — à archiver ou supprimer après rédaction des nouveaux docs |
+
+---
 
 ## 🗺️ Cartographie d'impact 360° (OBJECTIF CLÉ)
 
@@ -45,18 +73,23 @@ Pour chaque table :
 - Jointures → quelles autres tables
 - Triggers / cascades
 
-#### D. Fichier cible
-`docs/CARTOGRAPHY.md` — le 5ème document structurant du projet
+#### D. Format
+- **Option 1** : `docs/CARTOGRAPHY.md` — document markdown structuré
+- **Option 2** : **App interactive** — cliquer sur un composant pour voir tous ses liens en temps réel (recommandé si le projet grossit)
 
-## Structure documentaire cible (mise à jour)
+---
+
+## Structure documentaire cible (5 documents)
 
 | Document | Rôle |
 |----------|------|
 | `README.md` | Point d'entrée, quickstart, structure repo |
 | `docs/ARCHITECTURE.md` | Référence technique (DB, API, flux, middlewares) |
-| `docs/CARTOGRAPHY.md` | 🗺️ **Cartographie d'impact 360°** — dépendances croisées entre tous les composants |
+| `docs/CARTOGRAPHY.md` | 🗺️ Cartographie d'impact 360° — dépendances croisées entre tous les composants |
 | `docs/STATUS.md` | État vivant : features, bugs ouverts, backlog, changelog |
 | `docs/DEPLOYMENT.md` | Config, sécurité, déploiement Railway |
+
+---
 
 ## Revue de code — Avancement
 
@@ -70,6 +103,8 @@ Pour chaque table :
 | Vérification des 7 écarts identifiés | ⏳ Pas commencé | — |
 | Cartographie d'impact 360° | ⏳ Pas commencé — après revue de code | — |
 | Rapport de revue de code consolidé | ⏳ Pas commencé | — |
+
+---
 
 ## Résumé des découvertes critiques (routes)
 
@@ -91,11 +126,23 @@ Pour chaque table :
 - Try/catch présent sur toutes les routes
 - Cookies sécurisés (httpOnly, SameSite, Secure)
 
+---
+
 ## Prochaines étapes (session suivante)
 
-1. **Refaire l'analyse middleware + utils + schema.sql** (interrompue)
-2. **Auditer les 17 dashboards HTML** dans public/
-3. **Vérifier les 7 écarts docs ↔ code**
-4. **Construire la cartographie d'impact 360°** (matrice croisée + vues métier + graphe DB)
-5. **Consolider tout dans un rapport de revue unique**
-6. **Rédiger les 5 documents cibles** (README, ARCHITECTURE, CARTOGRAPHY, STATUS, DEPLOYMENT)
+1. **🚨 Discuter hotfix des 4 failles critiques** (si production)
+2. **Refaire l'analyse middleware + utils + schema.sql** (interrompue)
+3. **Auditer les 17 dashboards HTML** dans public/
+4. **Identifier les dashboards morts** (versions _v2, _v7...)
+5. **Vérifier les 7 écarts docs ↔ code**
+6. **Construire la cartographie d'impact 360°** (matrice croisée + vues métier + graphe DB)
+7. **Nettoyage repo** (.old, migrations mal placées, docs obsolètes)
+8. **Consolider tout dans un rapport de revue unique**
+9. **Rédiger les 5 documents cibles** (README, ARCHITECTURE, CARTOGRAPHY, STATUS, DEPLOYMENT)
+
+---
+
+## Pour reprendre
+
+> **Instruction à donner à n'importe quel agent :**
+> *"Connecte-toi à GitHub SamyrFateh/komerce-backend, lis SESSION_STATUS.md et reprends là où ça s'est arrêté."*
