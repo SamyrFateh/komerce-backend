@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_comment": "Komerce Backend — Configuration du système coffre-fort d'analyse d'impact",
+  "_version": "1.0.0",
+
+  "thresholds": {
+    "safe":   { "min": 0,  "max": 29, "label": "SAFE",   "emoji": "🟢", "action": "auto-merge OK" },
+    "review": { "min": 30, "max": 69, "label": "REVIEW", "emoji": "🟡", "action": "revue manuelle obligatoire" },
+    "block":  { "min": 70, "max": 100,"label": "BLOCK",  "emoji": "🔴", "action": "merge bloqué" }
+  },
+
+  "scoring": {
+    "weights": {
+      "filesChanged":        1,
+      "criticalFileChanged": 15,
+      "tablesAffected":      5,
+      "criticalTableAffected": 12,
+      "externalServiceAffected": 8,
+      "securityIssue":       20,
+      "cascadeDepth":        3,
+      "linesChanged":        0.02
+    },
+    "maxScore": 100
+  },
+
+  "architecture": {
+    "routes": {
+      "admin.js":      { "tables": ["users", "products", "orders", "relais", "exchange_rates", "shipments", "disputes"], "services": ["email"], "middleware": ["auth", "rate-limit"], "critical": true },
+      "auth.js":       { "tables": ["users"], "services": ["email", "sms"], "middleware": ["rate-limit"], "critical": true },
+      "baskets.js":    { "tables": ["baskets", "basket_items", "products", "users"], "services": [], "middleware": ["auth"] },
+      "dashboard.js":  { "tables": ["orders", "order_items", "products", "users", "scans", "shipments", "sms_log", "disputes"], "services": [], "middleware": ["auth"], "critical": true },
+      "finance.js":    { "tables": ["orders", "order_items", "products", "exchange_rates"], "services": ["stripe"], "middleware": ["auth"], "critical": true },
+      "health.js":     { "tables": [], "services": ["pg"], "middleware": [] },
+      "logistics.js":  { "tables": ["shipments", "orders", "scans"], "services": [], "middleware": ["auth"] },
+      "loyalty.js":    { "tables": ["orders", "users"], "services": [], "middleware": ["auth"] },
+      "modules.js":    { "tables": ["products", "ceremony_fabrics", "ceremony_models", "ceremony_order_items", "exchange_rates"], "services": [], "middleware": ["auth"] },
+      "orders.js":     { "tables": ["orders", "order_items", "products", "baskets", "basket_items", "users", "recipients", "relais", "scans", "sms_log", "order_status_history", "shipments"], "services": ["stripe", "sms", "email"], "middleware": ["auth", "rate-limit"], "critical": true },
+      "payments.js":   { "tables": ["orders", "sms_log"], "services": ["stripe", "sms"], "middleware": ["auth"], "critical": true },
+      "pilotage.js":   { "tables": ["orders", "order_items", "products", "users", "scans", "shipments", "disputes", "relais", "exchange_rates"], "services": [], "middleware": ["auth"] },
+      "pricing.js":    { "tables": ["exchange_rates"], "services": [], "middleware": ["auth"] },
+      "products.js":   { "tables": ["products"], "services": [], "middleware": ["auth", "upload"] },
+      "purchasing.js": { "tables": ["orders", "order_items", "products", "scans", "shipments"], "services": ["sms"], "middleware": ["auth"], "critical": true },
+      "relais.js":     { "tables": ["relais"], "services": [], "middleware": ["auth"] },
+      "scans.js":      { "tables": ["scans", "orders", "order_items", "order_status_history", "sms_log", "recipients", "relais"], "services": ["sms"], "middleware": ["auth"], "critical": true },
+      "unsold.js":     { "tables": ["products", "order_items"], "services": [], "middleware": ["auth"] }
+    },
+
+    "middleware": {
+      "auth.js":       { "critical": true, "affects": "all_authenticated_routes" },
+      "rate-limit.js": { "critical": true, "affects": "all_rate_limited_routes" },
+      "upload.js":     { "critical": false, "affects": ["products"] }
+    },
+
+    "utils": {
+      "email.js":     { "services": ["nodemailer"], "usedBy": ["auth", "orders", "admin"] },
+      "pricing.js":   { "services": [], "usedBy": ["orders", "modules", "purchasing", "finance"] },
+      "rates.js":     { "services": [], "usedBy": ["orders", "pricing", "finance"] },
+      "reference.js": { "services": [], "usedBy": ["orders", "purchasing", "scans"] },
+      "sms.js":       { "services": ["africastalking"], "usedBy": ["orders", "payments", "scans", "purchasing", "auth"], "critical": true }
+    },
+
+    "db": {
+      "index.js":            { "critical": true, "affects": "all" },
+      "schema.sql":          { "critical": true, "affects": "all" },
+      "schema_extension.sql":{ "critical": true, "affects": ["modules", "orders", "disputes"] },
+      "seed.sql":            { "critical": false, "affects": "dev_only" }
+    },
+
+    "core": {
+      "server.js":    { "critical": true, "affects": "all" },
+      "db.js":        { "critical": true, "affects": "all" },
+      "package.json": { "critical": true, "affects": "all" }
+    }
+  },
+
+  "tables": {
+    "critical": ["users", "orders", "order_items", "scans", "payments", "order_status_history"],
+    "sensitive": ["sms_log", "exchange_rates", "disputes", "shipments", "recipients"],
+    "standard": ["products", "baskets", "basket_items", "relais", "fabrics", "garment_models", "ceremony_fabrics", "ceremony_models", "ceremony_order_items"]
+  },
+
+  "externalServices": {
+    "stripe":         { "risk": "critical", "files": ["routes/payments.js", "routes/orders.js", "routes/finance.js"] },
+    "africastalking": { "risk": "critical", "files": ["utils/sms.js"] },
+    "nodemailer":     { "risk": "high",     "files": ["utils/email.js"] },
+    "pg":             { "risk": "critical", "files": ["db.js", "db/index.js"] },
+    "jsonwebtoken":   { "risk": "critical", "files": ["middleware/auth.js"] },
+    "bcryptjs":       { "risk": "high",     "files": ["routes/auth.js"] },
+    "multer":         { "risk": "medium",   "files": ["middleware/upload.js"] },
+    "stripe_webhook": { "risk": "critical", "files": ["routes/payments.js"] },
+    "pdfkit":         { "risk": "low",      "files": ["routes/orders.js", "routes/purchasing.js"] }
+  },
+
+  "securityPatterns": {
+    "sqlInjection": {
+      "patterns": [
+        "\\$\\{.*\\}.*(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE)",
+        "\\+\\s*(?:req\\.|params\\.|query\\.|body\\.).*(?:SELECT|INSERT|UPDATE|DELETE)",
+        "'\\s*\\+\\s*(?:req\\.|params\\.|query\\.|body\\.)",
+        "(?:query|exec)\\s*\\(\\s*[`'\"].*\\$\\{",
+        "pool\\.query\\s*\\(\\s*[`'\"].*\\+\\s*(?:req|params|query|body)"
+      ],
+      "severity": "critical",
+      "score": 25
+    },
+    "xss": {
+      "patterns": [
+        "innerHTML\\s*=",
+        "document\\.write\\(",
+        "res\\.send\\(.*req\\.(body|query|params)",
+        "\\$\\{.*req\\.(body|query|params).*\\}.*<"
+      ],
+      "severity": "critical",
+      "score": 20
+    },
+    "hardcodedSecrets": {
+      "patterns": [
+        "(?:password|secret|key|token|api_key)\\s*[:=]\\s*['\"][^'\"]{8,}['\"]",
+        "(?:STRIPE_|JWT_|SMS_|DB_|SMTP_)\\w+\\s*[:=]\\s*['\"][^'\"]+['\"]",
+        "Bearer\\s+[A-Za-z0-9\\-._~+/]+=*"
+      ],
+      "severity": "critical",
+      "score": 25
+    },
+    "dangerousOps": {
+      "patterns": [
+        "DROP\\s+(?:TABLE|DATABASE|INDEX|SCHEMA)",
+        "TRUNCATE\\s+",
+        "DELETE\\s+FROM\\s+\\w+\\s*(?:;|$)",
+        "ALTER\\s+TABLE.*DROP\\s+COLUMN",
+        "eval\\s*\\(",
+        "child_process",
+        "exec\\s*\\(",
+        "rm\\s+-rf"
+      ],
+      "severity": "high",
+      "score": 15
+    },
+    "missingAuth": {
+      "patterns": [
+        "router\\.(?:get|post|put|patch|delete)\\s*\\([^)]*(?!auth|verify|check)[^)]*,\\s*(?:async\\s+)?\\(req"
+      ],
+      "severity": "medium",
+      "score": 10
+    },
+    "unsafeFileOps": {
+      "patterns": [
+        "fs\\.(?:writeFile|unlink|rmdir|rename)\\s*\\(",
+        "path\\.join\\s*\\(.*req\\."
+      ],
+      "severity": "high",
+      "score": 15
+    }
+  },
+
+  "ignorePatterns": [
+    "node_modules/**",
+    "package-lock.json",
+    "*.md",
+    "docs/**",
+    ".gitignore",
+    "public/uploads/**"
+  ],
+
+  "cascade": {
+    "maxDepth": 5,
+    "chains": {
+      "orders_full": ["orders.js", "payments.js", "purchasing.js", "scans.js", "loyalty.js"],
+      "scan_chain":  ["scans.js", "orders.js", "sms.js", "order_status_history"],
+      "auth_chain":  ["auth.js", "middleware/auth.js", "all_authenticated_routes"],
+      "payment_flow":["payments.js", "orders.js", "sms.js", "email.js", "stripe"]
+    }
+  }
+}
