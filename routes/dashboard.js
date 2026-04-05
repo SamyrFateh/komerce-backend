@@ -763,7 +763,8 @@ router.get('/pipeline', async (req, res) => {
     // Group by status
     const STAGES = [
       'draft', 'confirmed', 'paid', 'ordered', 'purchasing',
-      'preparation', 'hub_preparation', 'shipped', 'transit_comores',
+      'partially_received', 'preparation', 'hub_preparation',
+      'shipped', 'transit_comores',
       'available', 'collected', 'cancelled', 'refunded'
     ];
 

@@ -516,8 +516,9 @@ const STAGES = [
   { key: 'confirmed',       icon: '✅', label: 'Validée',       color: '#6c5ce7', group: 'active' },
   { key: 'paid',            icon: '💰', label: 'Payée',         color: '#00b894', group: 'active' },
   { key: 'ordered',         icon: '📋', label: 'Commandée',     color: '#0984e3', group: 'active' },
-  { key: 'purchasing',      icon: '🛒', label: 'Sourcing Dubai', color: '#e17055', group: 'active' },
-  { key: 'preparation',     icon: '📦', label: 'Hub Dubai (CQ)', color: '#fdcb6e', group: 'active' },
+  { key: 'purchasing',           icon: '🛒', label: 'Sourcing Dubai',       color: '#e17055', group: 'active' },
+  { key: 'partially_received',  icon: '📬', label: 'Réception partielle', color: '#fab1a0', group: 'active' },
+  { key: 'preparation',         icon: '📦', label: 'Hub Dubai (CQ)',      color: '#fdcb6e', group: 'active' },
   { key: 'hub_preparation', icon: '🏗️', label: 'Emballage Hub', color: '#fd79a8', group: 'active' },
   { key: 'shipped',         icon: '🚢', label: 'En mer',        color: '#74b9ff', group: 'active' },
   { key: 'transit_comores', icon: '🏝️', label: 'Comores',       color: '#81ecec', group: 'active' },
@@ -533,8 +534,9 @@ const STAGE_TS = {
   confirmed:       'created_at',
   paid:            'ordered_at',
   ordered:         'ordered_at',
-  purchasing:      'purchasing_at',
-  preparation:     'preparation_at',
+  purchasing:          'purchasing_at',
+  partially_received:  'updated_at',
+  preparation:         'preparation_at',
   hub_preparation: 'hub_preparation_at',
   shipped:         'shipped_at',
   transit_comores: 'transit_comores_at',
@@ -632,7 +634,7 @@ function renderStats() {
   });
 
   // Dubai (purchasing + preparation)
-  const dubai = (p.purchasing?.count || 0) + (p.preparation?.count || 0) + (p.hub_preparation?.count || 0);
+  const dubai = (p.purchasing?.count || 0) + (p.partially_received?.count || 0) + (p.preparation?.count || 0) + (p.hub_preparation?.count || 0);
   // En transit
   const transit = (p.shipped?.count || 0) + (p.transit_comores?.count || 0);
   // Au relais
@@ -769,8 +771,9 @@ function showDetail(ref) {
     { key: 'draft',           label: 'Brouillon',      ts: order.created_at,          icon: '📝' },
     { key: 'confirmed',       label: 'Validée',         ts: order.created_at,          icon: '✅' },
     { key: 'ordered',         label: 'Commandée',       ts: order.ordered_at,          icon: '📋' },
-    { key: 'purchasing',      label: 'Sourcing Dubai',  ts: order.purchasing_at,       icon: '🛒' },
-    { key: 'preparation',     label: 'Hub Dubai (CQ)',  ts: order.preparation_at,      icon: '📦' },
+    { key: 'purchasing',          label: 'Sourcing Dubai',       ts: order.purchasing_at,       icon: '🛒' },
+    { key: 'partially_received', label: 'Réception partielle', ts: order.status === 'partially_received' ? order.updated_at : null, icon: '📬' },
+    { key: 'preparation',        label: 'Hub Dubai (CQ)',      ts: order.preparation_at,      icon: '📦' },
     { key: 'hub_preparation', label: 'Emballage Hub',   ts: order.hub_preparation_at,  icon: '🏗️' },
     { key: 'shipped',         label: 'Expédiée',        ts: order.shipped_at,          icon: '🚢' },
     { key: 'transit_comores', label: 'Arrivée Comores', ts: order.transit_comores_at,  icon: '🏝️' },
