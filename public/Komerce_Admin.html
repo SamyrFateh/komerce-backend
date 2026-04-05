@@ -1001,12 +1001,12 @@ async function loadFinance() {
 
       if (txt.includes('CSV')) {
         btn.onclick = () => {
-          window.open(API + `/api/finance/export?month=${month}&year=${year}`, '_blank');
+          window.open(API + `/finance/export?month=${month}&year=${year}`, '_blank');
         };
       }
       if (txt.includes('PDF') || txt.includes('Rapport')) {
         btn.onclick = () => {
-          window.open(API + `/api/finance/report?month=${month}&year=${year}`, '_blank');
+          window.open(API + `/finance/report?month=${month}&year=${year}`, '_blank');
         };
       }
       if (txt.includes('Stripe')) {
@@ -1140,7 +1140,7 @@ async function doLogin() {
   errEl.style.display = 'none';
 
   try {
-    const res = await fetch(API + '/api/auth/login', {
+    const res = await fetch(API + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -1253,7 +1253,7 @@ async function loadOps() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
-    const d = await apiFetch('/api/dashboard/ops');
+    const d = await apiFetch('/dashboard/ops');
     const a = d.activite;
     const l = d.logistique;
     const s = d.sla;
@@ -1466,7 +1466,7 @@ async function loadSales(period) {
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
-    const d = await apiFetch(`/api/dashboard/sales?period=${period}`);
+    const d = await apiFetch(`/dashboard/sales?period=${period}`);
     const r = d.kpi_l1;
     const m = r.marge;
 
@@ -1639,7 +1639,7 @@ async function loadRetards(niveau) {
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
-    const url = '/api/dashboard/retards' + (niveau ? `?niveau=${encodeURIComponent(niveau)}` : '');
+    const url = '/dashboard/retards' + (niveau ? `?niveau=${encodeURIComponent(niveau)}` : '');
     const d = await apiFetch(url);
 
     if (!d.clients?.length) {
@@ -1708,7 +1708,7 @@ async function loadForecast() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Calcul des projections…</p></div>';
 
   try {
-    const url = `/api/dashboard/forecast?target_date=${target}&ref_period=${period}${from ? '&from_date=' + from : ''}`;
+    const url = `/dashboard/forecast?target_date=${target}&ref_period=${period}${from ? '&from_date=' + from : ''}`;
     const d = await apiFetch(url);
 
     const tauxMargeReel = d.realise.ca_kmf > 0
