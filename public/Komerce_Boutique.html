@@ -1540,6 +1540,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 </style>
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-/hMJ5+fTPOaQFQFz+kw6LlMhQdSrx3QaH2X9TfYWw3ig5JP3Fc1gGRGZmIzEVZAp" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -1856,9 +1857,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <div id="toast-container"></div>
 
 <!-- ========================================
-     JAVASCRIPT
+     JAVASCRIPT (XSS-hardened with DOMPurify — Sprint 4b)
      ======================================== -->
 <script>
+// ── DOMPurify safe innerHTML wrapper (Sprint 4b — S6 XSS fix) ──
+var _dpConfig = { ADD_ATTR: ['style'], ADD_TAGS: ['img'], ALLOW_DATA_ATTR: true };
+function safeHTML(el, h) { el.innerHTML = (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
+function sanitize(h) { return (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
+
+
 
 /* ═══════════════════════════════════════════════════
    BLOOM NAVIGATION JS — Injected from Web
@@ -1994,7 +2001,7 @@ function openBloom(catKey) {
   panel.style.setProperty('--bloom-rgb', sit.rgb);
 
   // Header
-  header.innerHTML = '<span class="bloom-header-icon">' + sit.icon + '</span><span class="bloom-header-text" style="color:' + sit.color + '">' + sit.label + '</span>';
+  safeHTML(header, '<span class="bloom-header-icon">' + sanitize(sit.icon) + '</span><span class="bloom-header-text" style="color:' + sanitize(sit.color) + '">' + sanitize(sit.label) + '</span>');
   header.style.borderBottom = '2px solid ' + sit.color + '33';
 
   // Chips
@@ -2005,7 +2012,7 @@ function openBloom(catKey) {
          '<span class="chip-emoji">' + sc.emoji + '</span>' +
          '<span class="chip-name">' + sc.name + '</span></div>';
   });
-  grid.innerHTML = h;
+  safeHTML(grid, h);
   panel.classList.add('open');
 }
 
@@ -2049,7 +2056,7 @@ function updatePath() {
   var s = _situations[_activeMainCat];
   var h = '<span style="color:' + s.color + '">' + s.icon + ' ' + s.label + '</span>';
   if (_activeSubCat) h += ' <span style="color:#ccc">\u203a</span> <span style="color:' + s.color + '">' + _activeSubCat.emoji + ' ' + _activeSubCat.name + '</span>';
-  p.innerHTML = h;
+  safeHTML(p, h);
 }
 
 function filterProductsByNav() {
@@ -2510,9 +2517,9 @@ function liveSearch(q) {
   }).slice(0, 8);
   _searchIdx = -1;
   if (results.length === 0) {
-    dd.innerHTML = '<div class="search-no-result">Aucun produit trouvé pour «' + q + '»</div>';
+    safeHTML(dd, '<div class="search-no-result">Aucun produit trouvé pour «' + sanitize(q) + '»</div>');
   } else {
-    dd.innerHTML = results.map(function(p, i) {
+    safeHTML(dd, results.map(function(p, i) {
       var imgHtml = p.image_url
         ? '<img class="search-item-img" src="' + p.image_url + '" alt="">'
         : '<div class="search-item-emoji">' + (p.emoji || '📦') + '</div>';
@@ -2601,7 +2608,7 @@ var PROVERBS = [
   var el = document.getElementById('promo-proverb');
   if (!el || !PROVERBS.length) return;
   var p = PROVERBS[Math.floor(Math.random() * PROVERBS.length)];
-  el.innerHTML = '\u2728 "' + p.text + '" \u2014 ' + p.origin;
+  safeHTML(el, '\u2728 "' + sanitize(p.text) + '" \u2014 ' + sanitize(p.origin));
 })();
 
 /* promo-topbar JS removed — merged into #promo-bar */
