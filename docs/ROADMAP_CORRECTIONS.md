@@ -113,15 +113,16 @@ Sprint 5 ██████░░░░░░░░░░ Starter Kit 🚀
 
 ## 📅 Sprint 5a — Validation des données ✅ TERMINÉ
 > **Objectif :** Pipeline de validation/sanitisation centralisé
-> **Commit :** `3e6b1df` (5 avril 2026)
+> **Commits :** `3e6b1df` + `14bdf36` (5 avril 2026)
 
 | Livrable | Description |
 |----------|-------------|
 | `middleware/validate.js` | Middleware validate() + sanitize() + anti-XSS/injection |
-| `validators/index.js` | 31 schémas Joi couvrant 9 fichiers routes |
+| `validators/index.js` | 31 schémas Joi couvrant toutes les routes mutation |
 | `docs/VALIDATION_GUIDE.md` | Guide d'intégration route par route |
+| **9 fichiers routes patchés** | **32 routes** protégées par validate() |
 
-**Prochaine action :** Brancher `validate()` sur chaque route + `npm install joi`
+**✅ Complet** — Penser à `npm install joi` au déploiement
 
 ---
 
