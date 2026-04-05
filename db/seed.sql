@@ -5,10 +5,8 @@
 
 -- ── ADMIN ────────────────────────────────────────────────────
 -- Compte administrateur par défaut.
--- Mot de passe : Komerce2026!
--- ⚠️  Changer le mot de passe dès la première connexion.
---
--- Hash bcrypt valide pour "Komerce2026!" (10 rounds)
+-- ⚠️  Le mot de passe admin est défini via ADMIN_PASSWORD (variable d'env).
+-- Le hash ci-dessous est un placeholder — il sera écrasé au démarrage par server.js.
 
 INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
 VALUES (
@@ -18,18 +16,19 @@ VALUES (
   'admin',
   'KMF',
   'KM',
-  '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'
+  '$2b$10$PLACEHOLDER_ADMIN_HASH_SET_VIA_ADMIN_PASSWORD_ENV_VAR_000'
 );
 
 -- Clients de démonstration : diaspora + local
--- Mot de passe démo : client123
+-- Comptes de démonstration — hash placeholder (différent par compte)
+-- En dev: utiliser le endpoint POST /api/auth/register pour créer de vrais comptes
 INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
 VALUES
-  ('Fatouma Ali',     'fatouma.ali@example.com',   '+33600000001', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
-  ('Said Mohamed',   'said.m@example.com',       '+33600000002', 'client', 'EUR', 'FR', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
-  ('Nadjma Hassan',  'nadjma.h@example.com',       '+97150000003', 'client', 'AED', 'AE', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
-  ('Omar Abdou',     'omar.abdou@komerce.km',    '+269321001',   'client', 'KMF', 'KM', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.'),
-  ('Rayhana Said',   'rayhana.s@komerce.km',     '+269321002',   'client', 'KMF', 'KM', '$2b$10$t28odHA9/nVHztbjsVLQGOkp0dkaMmkCw3m5qfihuml3.fUwJ2Z/.');
+  ('Fatouma Ali',     'fatouma.ali@example.com',   '+33600000001', 'client', 'EUR', 'FR', '$2b$10$demo1_fatouma_CHANGE_IN_PROD_aaaaaaaaaaaaaaaaaaaaaaaa'),
+  ('Said Mohamed',   'said.m@example.com',       '+33600000002', 'client', 'EUR', 'FR', '$2b$10$demo2_said_CHANGE_IN_PRODUCTION_bbbbbbbbbbbbbbbbbbbbbbb'),
+  ('Nadjma Hassan',  'nadjma.h@example.com',       '+97150000003', 'client', 'AED', 'AE', '$2b$10$demo3_nadjma_CHANGE_IN_PRODUCTION_cccccccccccccccccccccc'),
+  ('Omar Abdou',     'omar.abdou@komerce.km',    '+269321001',   'client', 'KMF', 'KM', '$2b$10$demo4_omar_CHANGE_IN_PRODUCTION_dddddddddddddddddddddddd'),
+  ('Rayhana Said',   'rayhana.s@komerce.km',     '+269321002',   'client', 'KMF', 'KM', '$2b$10$demo5_rayhana_CHANGE_IN_PROD_eeeeeeeeeeeeeeeeeeeeeeeee');
 
 -- ── TAUX DE CHANGE ───────────────────────────────────────────
 INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from)

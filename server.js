@@ -19,8 +19,8 @@
 require('dotenv').config();
 
 // ── Validation des variables d'environnement critiques ──────────────────────
-const REQUIRED_ENV = ['DATABASE_URL'];
-const RECOMMENDED_ENV = ['JWT_SECRET', 'ADMIN_PASSWORD', 'STRIPE_SECRET_KEY'];
+const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET'];
+const RECOMMENDED_ENV = ['ADMIN_PASSWORD', 'STRIPE_SECRET_KEY'];
 
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
@@ -249,12 +249,12 @@ const bcryptMigrate = require('bcryptjs');
 async function fixAdminHash() {
   try {
     // D3 : Si ADMIN_PASSWORD est défini dans l'env, utiliser ce mot de passe au lieu du défaut
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Komerce2026!';
-    if (process.env.ADMIN_PASSWORD) {
-      console.log('🔒 ADMIN_PASSWORD défini — utilisation du mot de passe personnalisé');
-    } else {
-      console.warn('⚠️  ADMIN_PASSWORD non défini — utilisation du mot de passe par défaut (changer en prod !)');
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      console.warn('⚠️  ADMIN_PASSWORD non défini — migration admin hash ignorée');
+      return;
     }
+    console.log('🔒 ADMIN_PASSWORD défini — migration du hash admin');
     const newAdminHash = await bcryptMigrate.hash(adminPassword, 10);
     const adminResult = await db.query(
       "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
