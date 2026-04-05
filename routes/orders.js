@@ -30,6 +30,8 @@ const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 const { sendOrderConfirmation } = require('../utils/email');
+const { validate } = require('../middleware/validate');
+const { orders } = require('../validators');
 
 // ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
 //
@@ -1129,8 +1131,6 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     if (status === 'available' && !order.pickup_code) {
       const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       const crypto = require('crypto');
-const { validate } = require('../middleware/validate');
-const { orders } = require('../validators');
 const { randomBytes } = crypto;
       const newCode = Array.from({ length: 6 }, () => {
         let b;

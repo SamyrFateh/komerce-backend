@@ -17,6 +17,8 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+const { admin } = require('../validators');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -683,8 +685,6 @@ router.get('/counts', ...guard, async (req, res) => {
 router.post('/seed-test', ...guard, validate(admin.seedTest), async (req, res) => {
   const bcrypt = require('bcryptjs');
   const { v4: uuidv4 } = require('uuid');
-const { validate } = require('../middleware/validate');
-const { admin } = require('../validators');
 
   try {
     const { confirm, months = 3 } = req.body;

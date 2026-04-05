@@ -27,6 +27,8 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS } = require('../utils/sms');
+const { validate } = require('../middleware/validate');
+const { scans } = require('../validators');
 
 // Alias middleware (le fichier original utilisait requireAuth dans certains endroits)
 const requireAuth = authenticate;
@@ -492,8 +494,6 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
     // Recalculer fidélité (non bloquant)
     if (order.user_id) {
       const { recalculateLoyalty } = require('./loyalty');
-const { validate } = require('../middleware/validate');
-const { scans } = require('../validators');
       recalculateLoyalty(db, order.user_id)
         .catch(e => console.error('[LOYALTY] recalculate error:', e.message));
     }
