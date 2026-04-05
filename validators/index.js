@@ -62,12 +62,7 @@ const auth = {
       full_name: safeStr(100).required(),
       phone:     phone.required(),
       email:     email,
-      items:     Joi.array().items(Joi.object({
-        product_id: uuid.required(),
-        quantity:   posInt.max(100).default(1),
-      })).min(1).required(),
-      relais_id:    uuid,
-      payment_mode: Joi.string().valid('stripe_eur', 'cash_relais').required(),
+      country:   Joi.string().length(2).default('KM'),
     }),
   },
 
