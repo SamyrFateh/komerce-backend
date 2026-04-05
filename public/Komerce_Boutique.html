@@ -15,21 +15,21 @@
 <style>
 /* ── CSS Variables ── */
 :root {
-  --primary: #16a34a;
-  --primary-dark: #15803d;
-  --primary-light: #dcfce7;
+  --primary: #2d9f6f;
+  --primary-dark: #247a5a;
+  --primary-light: #e8f5ee;
   --accent: #f59e0b;
   --accent-dark: #d97706;
-  --green: #22c55e;
+  --green: #4abe8a;
   --red: #ef4444;
-  --bg: #f0fdf4;
+  --bg: #f7faf8;
   --text: #1e293b;
   --muted: #64748b;
   --border: #e2e8f0;
   --white: #ffffff;
   --dark: #0f172a;
   --radius: 10px;
-  --shadow: 0 4px 24px rgba(22,163,74,0.13);
+  --shadow: 0 4px 24px rgba(45,159,111,0.1);
 }
 
 /* ── Reset ── */
@@ -51,8 +51,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ── Utility ── */
 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 .section-title {
-  font-size: 1.75rem; font-weight: 700; text-align: center;
-  margin-bottom: 2rem; color: var(--text);
+  font-size: 1.6rem; font-weight: 700; text-align: center;
+  margin-bottom: 1.5rem; color: var(--text);
+  letter-spacing: -0.02em;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
@@ -89,7 +90,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    1. PROMO TOP BAR
    ──────────────────────────────────────── */
 #promo-bar {
-  background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--green));
+  background: linear-gradient(90deg, #247a5a, #2d9f6f, #4abe8a);
   color: var(--white);
   text-align: center;
   padding: 8px 16px;
@@ -115,7 +116,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 #main-nav {
   position: sticky; top: 0; z-index: 900;
   background: var(--white);
-  border-bottom: 3px solid var(--primary);
+  border-bottom: 2px solid var(--primary);
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   padding: 0 20px;
 }
@@ -170,7 +171,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex-direction: column;
   justify-content: center;
   padding: 28px 32px 28px 4%;
-  background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%);
+  background: linear-gradient(135deg, #e8f5ee 0%, #c5e8d5 50%, #a3d9bc 100%);
   min-width: 0;
 }
 .hero-badge {
@@ -186,6 +187,26 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   line-height: 1.15;
 }
 .hero-accent { color: var(--primary); }
+
+.hero-cta {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 12px 28px;
+  background: var(--primary);
+  color: var(--white);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(45,159,111,0.2);
+}
+.hero-cta:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(45,159,111,0.28);
+}
 .hero-search {
   display: flex; gap: 0; max-width: 480px;
   border-radius: var(--radius); overflow: hidden;
@@ -206,7 +227,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   position: relative;
   overflow: hidden;
   min-height: 240px;
-  background: linear-gradient(135deg, #dcfce7 0%, #a7f3d0 100%);
+  background: linear-gradient(135deg, #e8f5ee 0%, #c5e8d5 100%);
 }
 .hero-right img {
   position: absolute;
@@ -221,8 +242,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    4. ADVANTAGE STRIP
    ──────────────────────────────────────── */
 #advantages {
-  background: linear-gradient(90deg, var(--accent), #fbbf24, var(--accent));
-  padding: 18px 20px;
+  background: var(--white);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
 }
 .adv-grid {
   max-width: 1200px; margin: 0 auto;
@@ -230,14 +252,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   text-align: center;
 }
 .adv-item {
-  font-weight: 700; font-size: 0.88rem; color: var(--dark);
+  font-weight: 600; font-size: 0.82rem; color: var(--text);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
-.adv-item small { font-weight: 400; opacity: 0.8; }
+.adv-item small { font-weight: 400; color: var(--muted); }
 
 /* ────────────────────────────────────────
    5. PRODUCT CATALOGUE
    ──────────────────────────────────────── */
-#catalogue { padding: 60px 0; }
+#catalogue { padding: 24px 0 40px; }
 .carousel-wrapper { position: relative; }
 .carousel-track {
   display: flex; gap: 20px; overflow-x: auto; scroll-behavior: smooth;
@@ -258,14 +281,14 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .carousel-btn.prev { left: -16px; }
 .carousel-btn.next { right: -16px; }
 .product-card {
-  flex: 0 0 210px; background: var(--white);
+  flex: 0 0 230px; background: var(--white);
   border-radius: var(--radius); overflow: hidden;
   box-shadow: var(--shadow); transition: transform 0.25s, box-shadow 0.25s;
   cursor: pointer; position: relative;
 }
 .product-card:hover { transform: translateY(-6px); box-shadow: 0 8px 32px rgba(22,163,74,0.18); }
 .product-card .card-img {
-  height: 120px; display: flex; align-items: center; justify-content: center;
+  height: 160px; display: flex; align-items: center; justify-content: center;
   background: var(--primary-light); font-size: 2.5rem;
   overflow: hidden;
 }
@@ -312,7 +335,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ────────────────────────────────────────
    6. HOW IT WORKS
    ──────────────────────────────────────── */
-#how-it-works { padding: 60px 0; background: var(--white); }
+#how-it-works { padding: 40px 0; background: var(--white); }
 .steps-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
   max-width: 1000px; margin: 0 auto;
@@ -339,7 +362,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ────────────────────────────────────────
    7. TRACKING
    ──────────────────────────────────────── */
-#tracking { padding: 60px 0; }
+#tracking { padding: 40px 0; }
 .tracking-box {
   max-width: 600px; margin: 0 auto;
   background: var(--white); border-radius: var(--radius);
@@ -719,7 +742,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   vertical-align: middle; display: inline-block;
 }
 .cart-header.celebrating {
-  background: linear-gradient(135deg, #15803d, #d97706) !important;
+  background: linear-gradient(135deg, #247a5a, #d97706) !important;
 }
 .cart-ctas { display: flex; flex-direction: column; gap: 10px; }
 .btn-continue {
@@ -814,9 +837,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   --ck-amber: #f59e0b;
   --ck-amber-bg: #fffbeb;
   --ck-amber-border: #fde68a;
-  --ck-green-step: #22c55e;
-  --ck-green-bg: #f0fdf4;
-  --ck-green-border: #bbf7d0;
+  --ck-green-step: #4abe8a;
+  --ck-green-bg: #f7faf8;
+  --ck-green-border: #c5e8d5;
 }
 
 /* Step card container */
@@ -1140,7 +1163,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       transition: background .15s;
       border-bottom: 1px solid #f1f5f9;
     }
-    .search-item:hover, .search-item.active { background: #f0fdf4; }
+    .search-item:hover, .search-item.active { background: #f7faf8; }
     .search-item-img {
       width: 40px; height: 40px;
       border-radius: 8px;
@@ -1174,7 +1197,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .cat-nav-wrapper {
   width: 100%;
   max-width: 100%;
-  margin: 0 auto 1.2rem;
+  margin: 0 auto 0.6rem;
   padding: 1rem 2rem 0;
   overflow: visible;
   background: linear-gradient(180deg, rgba(240,253,244,0.5) 0%, transparent 100%);
@@ -1224,7 +1247,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   box-shadow: 0 8px 28px rgba(0,0,0,0.2);
 }
 .cat-item.active .cat-orb::after {
-  border-color: var(--cat-color, #16a34a);
+  border-color: var(--cat-color, #2d9f6f);
   transform: scale(1.06);
 }
 .cat-orb-label {
@@ -1235,8 +1258,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   font-weight: 700;
   white-space: nowrap;
   overflow: visible;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0.02em;
   color: #555;
   text-align: center;
   transition: color 0.3s;
@@ -1246,7 +1269,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .cat-item.active .cat-orb-label {
   position: relative;
   z-index: 3;
-  color: var(--cat-color, #16a34a);
+  color: var(--cat-color, #2d9f6f);
 }
 
 /* ── Bloom Panel ── */
@@ -1355,7 +1378,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   box-shadow: 0 8px 24px rgba(var(--bloom-rgb,22,163,74),0.18), 0 0 16px rgba(var(--bloom-rgb,22,163,74),0.06);
 }
 .bloom-chip.selected {
-  background: linear-gradient(145deg, var(--bloom-color, #16a34a), rgba(var(--bloom-rgb,22,163,74),0.85));
+  background: linear-gradient(145deg, var(--bloom-color, #2d9f6f), rgba(var(--bloom-rgb,45,159,111),0.85));
   color: white;
   border-color: transparent;
   box-shadow: 0 5px 20px rgba(var(--bloom-rgb,22,163,74),0.3), 0 0 24px rgba(var(--bloom-rgb,22,163,74),0.1);
@@ -1381,7 +1404,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .cat-path span { font-weight: 600; }
 
 /* ── Orb gradients ── */
-.orb-all     { background: linear-gradient(135deg, #16a34a, #22d3ee); --cat-color: #16a34a; }
+.orb-all     { background: linear-gradient(135deg, #2d9f6f, #22d3ee); --cat-color: #2d9f6f; }
 .orb-mode    { background: linear-gradient(135deg, #7c3aed, #c084fc); --cat-color: #7c3aed; }
 .orb-maison  { background: linear-gradient(135deg, #0891b2, #67e8f9); --cat-color: #0891b2; }
 .orb-tech    { background: linear-gradient(135deg, #0369a1, #38bdf8); --cat-color: #0369a1; }
@@ -1524,7 +1547,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="hero-left">
     <div class="hero-badge">🇰🇲 E-commerce des Comores</div>
     <h1 class="hero-title">Tout ce que vous voulez,<br><span class="hero-accent">livré aux Comores</span></h1>
-
+    <a href="#catalogue" class="hero-cta">Découvrir le catalogue →</a>
   </div>
   <div class="hero-right">
     <img src="/images/hero_banner.jpg" alt="Livraison aux Comores">
@@ -1546,7 +1569,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <!-- ═══════════════════════════════════════════════════
      BLOOM CATEGORY NAVIGATION — Injected
      ═══════════════════════════════════════════════════ -->
-<section id="bloom-nav" style="padding-top: 1.5rem; padding-bottom: 0;">
+<section id="bloom-nav" style="padding-top: 0.8rem; padding-bottom: 0;">
   <div class="container">
     <div class="cat-nav-wrapper">
       <div class="cat-row" id="cat-row">
@@ -1597,7 +1620,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <!-- ========================================
      BARRE DE RECHERCHE
      ======================================== -->
-<section id="search-section" style="padding: 1rem 0 0.5rem; background: var(--bg);">
+<section id="search-section" style="padding: 0.5rem 0 0.3rem; background: var(--bg);">
   <div class="container">
     <div class="search-container" style="max-width: 600px; margin: 0 auto;">
       <div class="hero-search">
