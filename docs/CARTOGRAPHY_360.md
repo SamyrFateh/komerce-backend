@@ -798,12 +798,11 @@ scans.js → loyalty.js        (recalculateLoyalty)
 
 > 📝 *Ce document a été généré automatiquement à partir de l'analyse statique du code source. Il reflète l'état du code au moment de l'analyse et doit être mis à jour lors de modifications significatives de l'architecture.*
 
-
 ---
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-05 14:52:58 UTC
+> Mise à jour : 2026-04-05 14:58:43 UTC
 
 | Métrique | Valeur |
 |----------|--------|
