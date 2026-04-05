@@ -1,174 +1,96 @@
-# 📋 SESSION STATUS — Komerce Backend
+# Komerce — État de session (5 avril 2026)
 
-> **Dernière mise à jour :** 05/04/2026  
-> **Statut global :** ✅ **TERMINÉ**  
-> **Version API :** v9.3
+## ✅ Ce qui a été fait
 
----
+### PR #52 — Mergée ✅
+- Fix scan QR sur Hub et Relais (`scan_code` + `step` au lieu de `order_id` + `scan_type`)
+- Bouton 🏷️ Print QR ajouté sur Hub
+- Page `Komerce_QR_Print.html` créée (impression batch étiquettes QR)
 
-## 🔄 Résumé de la session
+### PR #53 — Mergée ✅
+- Section **💵 Encaissement Cash** ajoutée sur `Komerce_Relais.html`
+  - Input code cash + bouton Encaisser
+  - Tableau des commandes `confirmed` en attente de paiement
+- Endpoint `GET /api/orders/relais` modifié pour inclure les commandes `confirmed` cash_relais
 
-| Élément | Statut |
-|---------|--------|
-| Audit de sécurité | ✅ TERMINÉ |
-| Corrections critiques | ✅ TERMINÉ |
-| Corrections importantes | ✅ TERMINÉ |
-| Corrections mineures | ✅ TERMINÉ |
-| Coffre-fort (Vault) | ✅ TERMINÉ |
-| Documentation (README) | ✅ TERMINÉ |
-| Documentation (ARCHITECTURE) | ✅ TERMINÉ |
-| Documentation (DEPLOYMENT) | ✅ TERMINÉ |
-| SESSION_STATUS mise à jour | ✅ TERMINÉ |
+### Vérifications
+- Flux API complet testé : `confirmed → ordered → preparation → shipped → available → collected` ✅
+- Infrastructure SMS déjà en place (Africa's Talking) — SMS envoyé automatiquement quand paiement cash confirmé ✅
+- Base purgée (0 commandes, 50 produits)
 
----
+## ⚠️ Bugs trouvés pendant les tests (à corriger)
 
-## 🔒 Phase 1 — Audit de sécurité
+### Format des IDs pour créer une commande
+L'API `/api/orders` attend des **UUID strings**, pas des integers :
+- `product_id` → doit être un UUID string (ex: `"7c19dde1-..."`)
+- `delivery_relay_id` → doit être un UUID string (ex: `"02c78574-..."`)
 
-### Problèmes critiques (~32 trouvés → 32 corrigés ✅)
+### Structure réponse `/api/orders`
+- Retourne un **array** directement, pas `{orders: [...]}`
 
-- Injection SQL dans les requêtes dynamiques → requêtes paramétrées
-- Authentification JWT renforcée (httpOnly cookies)
-- Validation des entrées utilisateur (express-validator)
-- Protection CSRF
-- Hashage bcrypt pour tous les mots de passe
-- Rate-limiting sur les endpoints sensibles (6 limiters déployés)
-- Helmet configuré avec CSP strict
-- CORS restreint aux origines autorisées
-- Sanitisation des uploads (Multer + validation MIME)
-- Protection contre les attaques de traversée de chemin
-- Gestion sécurisée des erreurs (pas de fuite d'info en production)
-- Secrets externalisés dans les variables d'environnement
-
-### Problèmes importants (~21 trouvés → 21 corrigés ✅)
-
-- Logs structurés sans données sensibles
-- Timeout sur les appels externes (Stripe, SMS, Cloudinary)
-- Validation des webhooks Stripe (signature)
-- Gestion des sessions expirées
-- Protection contre le brute-force sur /api/auth/login
-- Nettoyage des tokens expirés
-- Pagination sécurisée sur toutes les routes de listing
-- Contrôle d'accès granulaire (requireRole, requireAdmin)
-- Validation des montants de paiement côté serveur
-- Vérification de propriété sur les ressources utilisateur
-
-### Problèmes mineurs (~5 trouvés ✅)
-
-- Headers de sécurité additionnels
-- Amélioration des messages d'erreur
-- Documentation des codes d'erreur
-- Nettoyage du code mort
-- Optimisation des index DB
-
----
-
-## 🏰 Phase 2 — Coffre-fort (Vault System)
-
-**6/6 fichiers déployés ✅**
-
-| # | Fichier | Description | Statut |
-|---|---------|-------------|--------|
-| 1 | `scripts/impact-config.json` | Règles et graphe de dépendances | ✅ |
-| 2 | `scripts/impact-check.js` | Moteur d'analyse d'impact (~500 lignes, 0 dépendances) | ✅ |
-| 3 | `.github/workflows/impact-check.yml` | Action GitHub — analyse sur PR | ✅ |
-| 4 | `.github/workflows/auto-cartography.yml` | Action GitHub — cartographie auto sur merge | ✅ |
-| 5 | `scripts/setup-hooks.sh` | Hook local pre-push | ✅ |
-| 6 | `docs/IMPACT_SYSTEM.md` | Documentation complète du système | ✅ |
-
-### Fonctionnalités du coffre-fort
-
-- 🔍 Analyse d'impact automatique sur chaque PR
-- 🗺️ Cartographie 360° auto-générée à chaque merge sur main
-- 🚨 Alertes sur modifications à haut risque (tables critiques, middleware auth)
-- 📊 Score de risque calculé (low / medium / high / critical)
-- 🔗 Graphe de dépendances inter-routes
-- 🛡️ Hook pre-push local pour vérification avant envoi
-- 📝 Commentaire automatique sur les PR avec rapport d'impact
-
----
-
-## 📚 Phase 3 — Documentation
-
-**4/4 documents générés ✅**
-
-| Document | Chemin | Description | Statut |
-|----------|--------|-------------|--------|
-| README.md | `README.md` | Présentation complète du projet | ✅ |
-| ARCHITECTURE.md | `docs/ARCHITECTURE.md` | Architecture technique détaillée | ✅ |
-| DEPLOYMENT.md | `docs/DEPLOYMENT.md` | Guide de déploiement complet | ✅ |
-| SESSION_STATUS.md | `docs/SESSION_STATUS.md` | Suivi de session (ce fichier) | ✅ |
-
-### Documentation existante (préservée)
-
-- `docs/CARTOGRAPHY_360.md` — Cartographie d'impact 360°
-- `docs/IMPACT_SYSTEM.md` — Documentation du système coffre-fort
-- `docs/PROPOSITION_DOCS_KOMERCE.md` — Proposition de documentation
-- `docs/audit/` — Rapports d'audit de sécurité
-- `docs/review/` — Rapports de revue de code
-
----
-
-## 📊 Statistiques finales
-
-### Codebase
-
-| Métrique | Valeur |
-|----------|--------|
-| Routes | 18 fichiers |
-| Endpoints | 118 |
-| Tables DB | 27 |
-| Vues DB | 2 |
-| Fonctions DB | 2 |
-| Triggers DB | 6 |
-| Middleware | 5 (authenticate, requireRole, requireAdmin, rate-limit, upload) |
-| Rate limiters | 6 |
-
-### Travail accompli
-
-| Métrique | Valeur |
-|----------|--------|
-| Problèmes critiques corrigés | ~32 |
-| Problèmes importants corrigés | ~21 |
-| Problèmes mineurs identifiés | ~5 |
-| Fichiers coffre-fort déployés | 6/6 |
-| Documents générés | 4/4 |
-| Score de couverture sécurité | 100% |
-
-### Dépendances inter-routes
-
+### Relais IDs disponibles
 ```
-orders ──→ loyalty (getLoyaltyDiscount, recalculateLoyalty)
-payments ──→ purchasing (triggerPurchasing)
-purchasing ──→ scans (triggerScan3)
-scans ──→ loyalty (recalculateLoyalty)
+"02c78574-0086-5905-a5cd-e0f48a4d134c" → Relais Moroni Volo-Volo
+"7c19dde1-9142-5045-83eb-1c1162adb1b9" → Relais Domoni
+"326a56cd-4efe-5721-a6a2-f5f4fa30d176" → Relais Mutsamudu Centre
+"48224a8f-5f3f-509a-8a38-5bb153f69a59" → Relais Fomboni
 ```
 
-### Cycle de vie des commandes
+## 🎯 Prochaine séance — TODO
+
+### 1. Tester le flux complet avec les bons IDs
+```bash
+# Récupérer un product_id valide
+GET /api/products → prendre un UUID
+
+# Créer commande avec UUIDs
+POST /api/orders { items: [{product_id: "uuid", quantity: 1}], delivery_relay_id: "uuid", payment_mode: "cash_relais", ... }
+
+# Confirmer paiement cash (agent relais)
+POST /api/payments/cash/confirm { cash_ref_code: "CODE" }
+
+# 4 scans
+POST /api/scans { scan_code: "KOM-XXXX", step: "preparation" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "shipped" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "relais_received" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "collected" }
+```
+
+### 2. Tester les pages dans le navigateur
+- [ ] Boutique : passer une commande
+- [ ] Relais : encaisser le code cash
+- [ ] Hub : imprimer QR + scanner préparation + expédié
+- [ ] Relais : scanner réception + retrait
+- [ ] Pipeline : vérifier que tout avance visuellement
+
+### 3. Préparer le guide pour l'équipe
+- Guide Agent Dubai (Hub)
+- Guide Agent Relais
+- Guide test client
+
+## 📋 Flux validé complet
 
 ```
-pending → paid → purchasing → hub_received → shipped → relais_received → collected
+🛍️ CLIENT commande sur la boutique (cash_relais)
+   → Reçoit un code cash
+        ↓
+💵 AGENT RELAIS encaisse le cash + entre le code
+   → SMS confirmation envoyé au client
+   → Commande passe en "ordered"
+        ↓
+🛒 AGENT DUBAI voit la commande → achète le produit
+        ↓
+🏭 HUB DUBAI
+   🏷️ Imprime étiquette QR (Komerce_QR_Print.html)
+   📱 Scan 1 → preparation
+   📱 Scan 2 → shipped ✈️
+        ↓
+📦 RELAIS COMORES
+   📱 Scan 3 → relais_received (SMS "disponible" envoyé au client)
+   📱 Scan 4 → collected (client vient chercher)
 ```
 
----
-
-## 🎯 Prochaines étapes recommandées
-
-1. **Tests automatisés** — Ajouter des tests unitaires et d'intégration (Jest/Supertest)
-2. **Monitoring avancé** — Intégrer Sentry ou un APM pour le suivi en production
-3. **Documentation API** — Générer une doc Swagger/OpenAPI interactive
-4. **Performance** — Ajouter du caching Redis pour les endpoints fréquents
-5. **Backup** — Mettre en place des sauvegardes automatiques PostgreSQL
-6. **Load testing** — Tester la charge avec k6 ou Artillery
-
----
-
-## ✅ Conclusion
-
-Le projet **Komerce Backend v9.3** est désormais :
-
-- 🔒 **Sécurisé** — Audit complet réalisé, ~58 problèmes corrigés
-- 🏰 **Protégé** — Coffre-fort avec analyse d'impact automatique sur chaque PR
-- 📚 **Documenté** — README, Architecture, Déploiement, et suivi de session
-- 🚀 **Prêt pour la production** — Déployé sur Railway avec CI/CD GitHub Actions
-
-> **Session terminée le 05/04/2026** | Statut : ✅ TERMINÉ
+## 🔗 Ressources
+- Backend : https://komerce-backend-production.up.railway.app/
+- Admin : admin@komerce.km / USJQ9oRx6rSfzzqIubW3Nw
+- GitHub : SamyrFateh/komerce-backend
