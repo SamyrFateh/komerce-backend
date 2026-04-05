@@ -569,10 +569,13 @@ async function doLogin() {
   errEl.style.display = 'none';
 
   try {
+    // L'API attend 'email' ou 'phone', pas 'identifier'
+    const isEmail = id.includes('@');
+    const payload = isEmail ? { email: id, password: pw } : { phone: id, password: pw };
     const res = await fetch(`${API}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier: id, password: pw }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Échec connexion');
