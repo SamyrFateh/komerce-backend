@@ -160,7 +160,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    ──────────────────────────────────────── */
 #hero {
   display: flex;
-  min-height: 90px;
+  min-height: 55px;
   overflow: hidden;
 }
 .hero-left {
@@ -168,20 +168,20 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 12px 20px 12px 5%;
+  padding: 8px 16px 8px 4%;
   background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%);
   min-width: 0;
 }
 .hero-badge {
   display: inline-block; background: rgba(22,163,74,0.12);
-  color: var(--primary-dark); font-weight: 700; font-size: 0.72rem;
-  padding: 3px 10px; border-radius: 16px; margin-bottom: 6px;
+  color: var(--primary-dark); font-weight: 700; font-size: 0.65rem;
+  padding: 2px 8px; border-radius: 16px; margin-bottom: 3px;
   width: fit-content;
 }
 .hero-title {
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-size: clamp(0.95rem, 1.8vw, 1.25rem);
   font-weight: 800; color: var(--dark);
-  margin-bottom: 8px; animation: fadeInUp 0.8s ease-out;
+  margin-bottom: 0; animation: fadeInUp 0.8s ease-out;
   line-height: 1.15;
 }
 .hero-accent { color: var(--primary); }
@@ -201,10 +201,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 .hero-search button:hover { background: var(--accent-dark); }
 .hero-right {
-  flex: 0 0 45%;
+  flex: 0 0 40%;
   position: relative;
   overflow: hidden;
-  min-height: 90px;
+  min-height: 55px;
   background: linear-gradient(135deg, #dcfce7 0%, #a7f3d0 100%);
 }
 .hero-right img {
@@ -741,9 +741,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 @media (max-width: 768px) {
   #hero { flex-direction: column; min-height: auto; }
-  .hero-left { flex: none; padding: 10px 12px; }
-  .hero-title { font-size: 1.1rem; }
-  .hero-right { flex: none; height: 70px; min-height: 70px; }
+  .hero-left { flex: none; padding: 6px 10px; }
+  .hero-title { font-size: 0.95rem; }
+  .hero-right { flex: none; height: 50px; min-height: 50px; }
   .hero-right img { position: relative; width: 100%; height: 100%; }
   .adv-grid { grid-template-columns: 1fr; gap: 10px; }
   .steps-grid { grid-template-columns: repeat(2, 1fr); }
@@ -753,8 +753,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-top { flex-direction: column; align-items: center; text-align: center; }
 }
 @media (max-width: 480px) {
-  .hero-left { padding: 10px 10px; }
-  .hero-title { font-size: 1rem; }
+  .hero-left { padding: 6px 8px; }
+  .hero-title { font-size: 0.9rem; }
   .hero-search { flex-direction: column; border-radius: var(--radius); }
   .hero-search input { border-radius: var(--radius) var(--radius) 0 0; }
   .hero-search button { border-radius: 0 0 var(--radius) var(--radius); }
@@ -1521,9 +1521,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ===== END BLOOM NAV CSS ===== */
 
 @media (max-width: 768px) {
-  .hero-left { flex: none; padding: 16px 18px; }
-  .hero-title { font-size: 1rem; }
-  .hero-right { height: 100px; }
+  .hero-left { flex: none; padding: 8px 14px; }
+  .hero-title { font-size: 0.9rem; }
+  .hero-right { height: 60px; }
   body { padding-bottom: 64px; }
   .adv-grid { grid-template-columns: 1fr; gap: 10px; }
   .steps-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1533,8 +1533,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-top { flex-direction: column; align-items: center; text-align: center; }
 }
 @media (max-width: 480px) {
-  .hero-left { padding: 10px 12px; }
-  .hero-title { font-size: 0.95rem; }
+  .hero-left { padding: 6px 10px; }
+  .hero-title { font-size: 0.85rem; }
   .hero-search { flex-direction: column; border-radius: var(--radius); }
   .hero-search input { border-radius: var(--radius) var(--radius) 0 0; }
   .hero-search button { border-radius: 0 0 var(--radius) var(--radius); }
@@ -1618,13 +1618,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="hero-left">
     <div class="hero-badge">🇰🇲 E-commerce des Comores</div>
     <h1 class="hero-title">Tout ce que vous voulez,<br><span class="hero-accent">livré aux Comores</span></h1>
-    <div class="search-container">
-      <div class="hero-search">
-        <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
-        <button type="button" id="hero-search-btn">🔍</button>
-      </div>
-      <div class="search-dropdown" id="search-dropdown"></div>
-    </div>
+
   </div>
   <div class="hero-right">
     <img src="/images/hero_banner.jpg" alt="Livraison aux Comores">
@@ -1690,6 +1684,21 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       </div>
 
       <div class="cat-path" id="cat-path"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================
+     BARRE DE RECHERCHE
+     ======================================== -->
+<section id="search-section" style="padding: 1rem 0 0.5rem; background: var(--bg);">
+  <div class="container">
+    <div class="search-container" style="max-width: 600px; margin: 0 auto;">
+      <div class="hero-search">
+        <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
+        <button type="button" id="hero-search-btn">🔍</button>
+      </div>
+      <div class="search-dropdown" id="search-dropdown"></div>
     </div>
   </div>
 </section>
