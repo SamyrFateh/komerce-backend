@@ -426,8 +426,16 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
     // ── SMS confirmation ────────────────────────────────────────────────────
     const smsPhone = req.user.phone;
     if (smsPhone) {
-      sendSMS(smsPhone, STATUS_SMS.ordered(reference), 'confirmation', order.id)
-        .catch(console.error);
+      if (payment_mode === 'cash_relais') {
+        // Cash relais : informer le client d'aller au relais pour payer
+        const totalStr = Number(order.total_kmf).toLocaleString('fr-FR');
+        const cashSms = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez 36h.`;
+        sendSMS(smsPhone, cashSms, 'cash_relais_confirm', order.id)
+          .catch(console.error);
+      } else {
+        sendSMS(smsPhone, STATUS_SMS.ordered(reference), 'confirmation', order.id)
+          .catch(console.error);
+      }
     }
 
     // ── Email confirmation (D2/BUG-017) ─────────────────────────────────────
