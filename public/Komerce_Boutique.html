@@ -2529,7 +2529,7 @@ function liveSearch(q) {
         + '<div class="search-item-cat">' + sanitize(categoryLabel(p.category)) + '</div></div>'
         + '<div class="search-item-price">' + fmt(p.price_kmf || 0, 'KMF') + '</div>'
         + '</div>';
-    }).join('') + '<div class="search-count">' + results.length + ' résultat' + (results.length > 1 ? 's' : '') + '</div>';
+    }).join('') + '<div class="search-count">' + results.length + ' résultat' + (results.length > 1 ? 's' : '') + '</div>');
   }
   dd.classList.add('open');
   // Click handlers
