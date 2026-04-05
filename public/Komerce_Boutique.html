@@ -3459,7 +3459,7 @@ async function submitOrder(btn) {
       return { product_id: String(i.product.id), quantity: i.qty, confection_type: 'aucun' };
     });
 
-    var relaisId = _relais.length > 0 ? _relais[0].id : '';
+    var relaisId = _relais.length > 0 ? _relais[0].id : undefined;
 
     var apiResult = await apiPost('/api/orders', {
       items: items,
