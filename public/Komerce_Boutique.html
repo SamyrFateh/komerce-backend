@@ -1255,7 +1255,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   width: 100%;
   max-width: 100%;
   margin: 0 auto 1.2rem;
-  padding: 1rem 1rem 0;
+  padding: 1rem 2rem 0;
+  overflow: visible;
   background: linear-gradient(180deg, rgba(240,253,244,0.5) 0%, transparent 100%);
   border-radius: 16px 16px 0 0;
 }
@@ -1649,31 +1650,31 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="container">
     <div class="cat-nav-wrapper">
       <div class="cat-row" id="cat-row">
-        <div class="cat-item active" data-cat="" onclick="bloomNav(null)" onmouseenter="bloomHover(null)">
+        <div class="cat-item active" data-cat="">
           <div class="cat-orb orb-all"><span>🛒</span></div>
           <div class="cat-orb-label">Tout</div>
         </div>
-        <div class="cat-item" data-cat="mode" onclick="bloomNav('mode')" onmouseenter="bloomHover('mode')">
+        <div class="cat-item" data-cat="mode">
           <div class="cat-orb orb-mode"><span>👗</span></div>
           <div class="cat-orb-label">Mode</div>
         </div>
-        <div class="cat-item" data-cat="maison" onclick="bloomNav('maison')" onmouseenter="bloomHover('maison')">
+        <div class="cat-item" data-cat="maison">
           <div class="cat-orb orb-maison"><span>🏠</span></div>
           <div class="cat-orb-label">Maison</div>
         </div>
-        <div class="cat-item" data-cat="tech" onclick="bloomNav('tech')" onmouseenter="bloomHover('tech')">
+        <div class="cat-item" data-cat="tech">
           <div class="cat-orb orb-tech"><span>📱</span></div>
           <div class="cat-orb-label">Électronique</div>
         </div>
-        <div class="cat-item" data-cat="beaute" onclick="bloomNav('beaute')" onmouseenter="bloomHover('beaute')">
+        <div class="cat-item" data-cat="beaute">
           <div class="cat-orb orb-beaute"><span>💄</span></div>
           <div class="cat-orb-label">Beauté</div>
         </div>
-        <div class="cat-item" data-cat="enfants" onclick="bloomNav('enfants')" onmouseenter="bloomHover('enfants')">
+        <div class="cat-item" data-cat="enfants">
           <div class="cat-orb orb-enfants"><span>🧸</span></div>
           <div class="cat-orb-label">Enfants</div>
         </div>
-        <div class="cat-item" data-cat="surmesure" onclick="bloomNav('surmesure')" onmouseenter="bloomHover('surmesure')">
+        <div class="cat-item" data-cat="surmesure">
           <div class="cat-orb orb-surmesure"><span>✨</span></div>
           <div class="cat-orb-label">Sur Mesure</div>
         </div>
@@ -2064,45 +2065,7 @@ function filterProductsByNav() {
   }
 }
 
-function navCategory(k) { bloomNav(k); }
-function navSubcategory() {}
-function loadCategoryCircles() {}
 
-function renderCategoryCircles() {
-  updateCategoryCounts();
-}
-
-// Load categories from API then render circles
-async function loadCategoryCircles() {
-  try {
-    var cats = await apiGet('/api/products/categories');
-    if (Array.isArray(cats) && cats.length) {
-      renderCategoryCircles(cats);
-    } else {
-      // Fallback: extract categories from loaded products
-      var seen = {};
-      var fallback = [];
-      _products.forEach(function(p) {
-        if (p.category && !seen[p.category]) {
-          seen[p.category] = true;
-          fallback.push({ category: p.category });
-        }
-      });
-      renderCategoryCircles(fallback);
-    }
-  } catch (e) {
-    // Fallback from products
-    var seen = {};
-    var fallback = [];
-    _products.forEach(function(p) {
-      if (p.category && !seen[p.category]) {
-        seen[p.category] = true;
-        fallback.push({ category: p.category });
-      }
-    });
-    renderCategoryCircles(fallback);
-  }
-}
 
 
 /* ── State ── */
@@ -3725,6 +3688,22 @@ function clearCart() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+
+  /* ── Bloom Navigation event listeners ── */
+  var catItems = document.querySelectorAll('.cat-item[data-cat]');
+  catItems.forEach(function(item) {
+    var catKey = item.dataset.cat || null;
+    item.addEventListener('click', function() { bloomNav(catKey); });
+    item.addEventListener('mouseenter', function() { bloomHover(catKey); });
+  });
+  var bloomPanel = document.getElementById('bloom-panel');
+  if (bloomPanel) {
+    bloomPanel.addEventListener('mouseleave', function() { bloomLeave(); });
+  }
+  var catNavWrapper = document.querySelector('.cat-nav-wrapper');
+  if (catNavWrapper) {
+    catNavWrapper.addEventListener('mouseleave', function() { bloomLeave(); });
+  }
   loadProducts();
   loadRelais();
   refreshCartBadge();
