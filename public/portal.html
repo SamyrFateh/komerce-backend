@@ -337,8 +337,10 @@ async function doLogin() {
       throw new Error(data.error || 'Identifiants invalides');
     }
 
-    // Store token + user
+    // Store token + user + auth flags for all dashboards
     localStorage.setItem('komerce_user', JSON.stringify(data.user));
+    localStorage.setItem('komerce_token', data.token || '1');
+    localStorage.setItem('kmrc_logged_in', '1');
 
     showPortal(data.user);
 
@@ -363,6 +365,8 @@ function showPortal(user) {
 async function doLogout() {
   try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch(e) {}
   localStorage.removeItem('komerce_user');
+  localStorage.removeItem('komerce_token');
+  localStorage.removeItem('kmrc_logged_in');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('portal').classList.remove('visible');
   document.getElementById('password').value = '';
