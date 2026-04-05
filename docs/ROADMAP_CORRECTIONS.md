@@ -99,9 +99,9 @@ Sprint 5 ██████░░░░░░░░░░ Starter Kit 🚀
 
 | Sprint | Statut | Bugs corrigés |
 |--------|--------|:-------------:|
-| Sprint 1 | ⬜ À faire | 0/4 |
+| Sprint 1 | ✅ Terminé | **5/4** (+N3 bonus) |
 | Sprint 2 | ⬜ À faire | 0/2 |
 | Sprint 3 | ⬜ À faire | 0/6 |
 | Sprint 4 | ⬜ À faire | 0/6 |
 | Sprint 5 | ⬜ À faire | — |
-| **Total** | | **0/18** |
+| **Total** | | **5/18** |
