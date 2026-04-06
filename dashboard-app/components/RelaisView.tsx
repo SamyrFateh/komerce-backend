@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { ClipboardCheck, HandCoins, Phone, AlertTriangle, CheckCircle, Clock, XCircle, Ban, HelpCircle, ChevronDown, ChevronUp, CreditCard, Banknote } from 'lucide-react';
 import { mockRelaisOrders } from '../data/mockData';
 import { formatKMF } from '../utils/formatters';
-import type { RelaisOrder, OrderProduct, ProductStatus } from '../types';
+import { api } from '../utils/api';
+import { useApi } from '../utils/useApi';
+import { LoadingError } from './LoadingError';
+import type { RelaisOrder, RelaisOrderData, OrderProduct, ProductStatus } from '../types';
 
 type RelaisSection = 'valider' | 'remettre';
 
@@ -51,7 +54,7 @@ const RelaisOrderCard: React.FC<{
   const hasIssue = order.produits.some(p => !['complet', 'annule'].includes(p.status));
 
   return (
-    <div className={`card bg-base-200 ${done ? 'opacity-50' : ''} ${order.priorite === 'urgente' ? 'border-l-4 border-error' : ''} ${order.heures_attente > 120 ? 'border-r-4 border-warning' : ''}`}>
+    <div className={`card bg-base-200 ${done ? 'opacity-50' : ''} ${order.priorite === 'urgente' ? 'border-l-4 border-error' : '' } ${order.heures_attente > 120 ? 'border-r-4 border-warning' : ''}`}>
       <div className="card-body p-4 gap-2">
         {/* Header row */}
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -161,6 +164,7 @@ const RelaisOrderCard: React.FC<{
 };
 
 export const RelaisView: React.FC = () => {
+  const { data: relaisData, loading, error, reload, usingMock } = useApi(() => api.relaisOrders(), mockRelaisOrders, 15000);
   const [activeSection, setActiveSection] = useState<RelaisSection>('valider');
   const [processed, setProcessed] = useState<Set<string>>(new Set());
   const [filterRelais, setFilterRelais] = useState<string>('Tous');
@@ -169,18 +173,18 @@ export const RelaisView: React.FC = () => {
     setProcessed(prev => new Set(prev).add(ref));
   };
 
-  const allOrders = activeSection === 'valider' ? mockRelaisOrders.a_valider : mockRelaisOrders.a_remettre;
+  const allOrders = activeSection === 'valider' ? relaisData!.a_valider : relaisData!.a_remettre;
 
   // Get unique relais names
-  const allRelaisNames = [...new Set([...mockRelaisOrders.a_valider, ...mockRelaisOrders.a_remettre].map(o => o.relais_nom))];
+  const allRelaisNames = [...new Set([...relaisData!.a_valider, ...relaisData!.a_remettre].map(o => o.relais_nom))];
 
   const filteredOrders = filterRelais === 'Tous' ? allOrders : allOrders.filter(o => o.relais_nom === filterRelais);
 
   const nbDone = filteredOrders.filter(o => processed.has(o.reference)).length;
 
   const sections: { key: RelaisSection; label: string; icon: React.ReactNode; count: number }[] = [
-    { key: 'valider', label: 'Valider commandes', icon: <ClipboardCheck size={20} />, count: mockRelaisOrders.a_valider.length },
-    { key: 'remettre', label: 'Remettre colis', icon: <HandCoins size={20} />, count: mockRelaisOrders.a_remettre.length },
+    { key: 'valider', label: 'Valider commandes', icon: <ClipboardCheck size={20} />, count: relaisData!.a_valider.length },
+    { key: 'remettre', label: 'Remettre colis', icon: <HandCoins size={20} />, count: relaisData!.a_remettre.length },
   ];
 
   // Cash à encaisser
@@ -190,84 +194,89 @@ export const RelaisView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Section Tabs — 2 big buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        {sections.map(s => {
-          const isActive = activeSection === s.key;
-          const doneCount = (s.key === 'valider' ? mockRelaisOrders.a_valider : mockRelaisOrders.a_remettre)
-            .filter(o => processed.has(o.reference)).length;
-          return (
-            <button
-              key={s.key}
-              className={`btn btn-lg ${isActive ? (s.key === 'valider' ? 'btn-primary' : 'btn-success') : 'btn-ghost bg-base-200'} flex-col h-auto py-4 gap-1`}
-              onClick={() => setActiveSection(s.key)}
+      <LoadingError loading={loading} error={error} usingMock={usingMock} reload={reload} />
+      {!loading && relaisData && (
+        <>
+          {/* Section Tabs — 2 big buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            {sections.map(s => {
+              const isActive = activeSection === s.key;
+              const doneCount = (s.key === 'valider' ? relaisData!.a_valider : relaisData!.a_remettre)
+                .filter(o => processed.has(o.reference)).length;
+              return (
+                <button
+                  key={s.key}
+                  className={`btn btn-lg ${isActive ? (s.key === 'valider' ? 'btn-primary' : 'btn-success') : 'btn-ghost bg-base-200'} flex-col h-auto py-4 gap-1`}
+                  onClick={() => setActiveSection(s.key)}
+                >
+                  {s.icon}
+                  <span className="font-bold text-sm">{s.label}</span>
+                  <div className="flex gap-2 text-xs">
+                    <span className="badge badge-sm">{s.count}</span>
+                    {doneCount > 0 && <span className="text-success">✅ {doneCount}</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Relais filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">📍 Relais :</span>
+            <select
+              className="select select-sm select-bordered"
+              value={filterRelais}
+              onChange={(e) => setFilterRelais(e.target.value)}
             >
-              {s.icon}
-              <span className="font-bold text-sm">{s.label}</span>
-              <div className="flex gap-2 text-xs">
-                <span className="badge badge-sm">{s.count}</span>
-                {doneCount > 0 && <span className="text-success">✅ {doneCount}</span>}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              <option value="Tous">Tous ({allOrders.length})</option>
+              {allRelaisNames.map(name => {
+                const count = allOrders.filter(o => o.relais_nom === name).length;
+                return <option key={name} value={name}>{name} ({count})</option>;
+              })}
+            </select>
 
-      {/* Relais filter */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium">📍 Relais :</span>
-        <select
-          className="select select-sm select-bordered"
-          value={filterRelais}
-          onChange={(e) => setFilterRelais(e.target.value)}
-        >
-          <option value="Tous">Tous ({allOrders.length})</option>
-          {allRelaisNames.map(name => {
-            const count = allOrders.filter(o => o.relais_nom === name).length;
-            return <option key={name} value={name}>{name} ({count})</option>;
-          })}
-        </select>
+            {cashPending > 0 && (
+              <span className="badge badge-warning gap-1 ml-auto">
+                <Banknote size={14} /> Cash à encaisser : {formatKMF(cashPending)}
+              </span>
+            )}
+          </div>
 
-        {cashPending > 0 && (
-          <span className="badge badge-warning gap-1 ml-auto">
-            <Banknote size={14} /> Cash à encaisser : {formatKMF(cashPending)}
-          </span>
-        )}
-      </div>
+          {/* Progress */}
+          <div className="flex items-center gap-3">
+            <progress
+              className={`progress flex-1 ${activeSection === 'valider' ? 'progress-primary' : 'progress-success'}`}
+              value={nbDone}
+              max={filteredOrders.length}
+            />
+            <span className="text-sm font-medium whitespace-nowrap">{nbDone}/{filteredOrders.length} traités</span>
+          </div>
 
-      {/* Progress */}
-      <div className="flex items-center gap-3">
-        <progress
-          className={`progress flex-1 ${activeSection === 'valider' ? 'progress-primary' : 'progress-success'}`}
-          value={nbDone}
-          max={filteredOrders.length}
-        />
-        <span className="text-sm font-medium whitespace-nowrap">{nbDone}/{filteredOrders.length} traités</span>
-      </div>
-
-      {/* Order cards */}
-      <div className="flex flex-col gap-3">
-        {filteredOrders.length === 0 ? (
-          <div className="text-center py-8 opacity-60">Aucune commande dans cette section pour ce relais</div>
-        ) : (
-          filteredOrders
-            .sort((a, b) => {
-              // Urgents first, then longest wait first
-              if (a.priorite === 'urgente' && b.priorite !== 'urgente') return -1;
-              if (b.priorite === 'urgente' && a.priorite !== 'urgente') return 1;
-              return b.heures_attente - a.heures_attente;
-            })
-            .map(order => (
-              <RelaisOrderCard
-                key={order.reference}
-                order={order}
-                section={activeSection}
-                onAction={handleAction}
-                done={processed.has(order.reference)}
-              />
-            ))
-        )}
-      </div>
+          {/* Order cards */}
+          <div className="flex flex-col gap-3">
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-8 opacity-60">Aucune commande dans cette section pour ce relais</div>
+            ) : (
+              filteredOrders
+                .sort((a, b) => {
+                  // Urgents first, then longest wait first
+                  if (a.priorite === 'urgente' && b.priorite !== 'urgente') return -1;
+                  if (b.priorite === 'urgente' && a.priorite !== 'urgente') return 1;
+                  return b.heures_attente - a.heures_attente;
+                })
+                .map(order => (
+                  <RelaisOrderCard
+                    key={order.reference}
+                    order={order}
+                    section={activeSection}
+                    onAction={handleAction}
+                    done={processed.has(order.reference)}
+                  />
+                ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

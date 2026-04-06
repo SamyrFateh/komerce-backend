@@ -3,7 +3,7 @@
  * ================================================
  * Consolidation de dashboard.js + pilotage.js + finance/summary + admin/margins
  *
- * 8 endpoints · 0 overlap · auth blindée · rate-limited · taux dynamiques
+ * 10 endpoints · 0 overlap · auth blindée · rate-limited · taux dynamiques
  *
  * GET /api/dashboard/ops         → pilotage opérationnel quotidien
  * GET /api/dashboard/finance     → KPIs financiers (CA, marges, paiements)
@@ -12,7 +12,9 @@
  * GET /api/dashboard/retards     → clients en retard (SLA) + compensations
  * GET /api/dashboard/forecast    → projections CA/marge
  * GET /api/dashboard/clients     → analyse comportement clients
- * GET /api/dashboard/history     → historique mensuel (graphiques)
+ * GET /api/dashboard/history     
+ * GET /api/dashboard/hub-dubai   
+ * GET /api/dashboard/relais      → historique mensuel (graphiques)
  *
  * Auth : JWT (cookie httpOnly ou Bearer) + rôle admin
  * Rate limit : dashboardLimiter (60 req/min)
@@ -713,4 +715,160 @@ router.get('/history', async (req, res) => {
   }
 });
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 9. GET /hub-dubai — Operations Hub Dubai (reception, emballage, expedition)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/hub-dubai', async (req, res) => {
+  try {
+    const hit = cached('hub-dubai');
+    if (hit) return res.json(hit);
+
+    const { rows: orders } = await db.query(`
+      SELECT o.id, o.reference, o.status, o.total_kmf, o.created_at,
+        u.full_name AS client_nom,
+        EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS jours
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.status IN ('confirmed', 'ordered', 'preparation', 'shipped')
+      ORDER BY o.created_at ASC
+    `);
+
+    const orderIds = orders.map(o => o.id);
+    const itemsMap = {};
+
+    if (orderIds.length > 0) {
+      const { rows: items } = await db.query(`
+        SELECT oi.order_id, p.name AS nom, oi.quantity AS quantite,
+          oi.price_kmf AS prix_kmf, p.stock,
+          CASE
+            WHEN p.is_active = FALSE THEN 'annule'
+            WHEN p.stock IS NOT NULL AND p.stock <= 0 THEN 'hors_stock'
+            WHEN p.stock IS NOT NULL AND p.stock > 0 THEN 'complet'
+            ELSE 'en_attente'
+          END AS status
+        FROM order_items oi
+        JOIN products p ON p.id = oi.product_id
+        WHERE oi.order_id = ANY($1)
+      `, [orderIds]);
+
+      for (const item of items) {
+        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+        itemsMap[item.order_id].push({
+          nom: item.nom,
+          quantite: Number(item.quantite),
+          prix_kmf: Number(item.prix_kmf),
+          status: item.status,
+          note: item.status === 'hors_stock' ? 'Rupture de stock' : null,
+        });
+      }
+    }
+
+    function toHubOrder(o) {
+      const jours = Math.round(Number(o.jours));
+      return {
+        reference: o.reference,
+        client_nom: o.client_nom || 'Client',
+        produits: itemsMap[o.id] || [{ nom: 'Produit', quantite: 1, prix_kmf: Number(o.total_kmf), status: 'en_attente' }],
+        total_kmf: Number(o.total_kmf),
+        date_commande: o.created_at,
+        jours,
+        priorite: jours > 35 ? 'urgente' : 'normale',
+      };
+    }
+
+    const result = {
+      a_receptionner: orders.filter(o => ['confirmed', 'ordered'].includes(o.status)).map(toHubOrder),
+      a_emballer:     orders.filter(o => o.status === 'preparation').map(toHubOrder),
+      a_expedier:     orders.filter(o => o.status === 'shipped').map(toHubOrder),
+    };
+
+    setCache('hub-dubai', result);
+    res.json(result);
+  } catch (err) {
+    console.error('Dashboard hub-dubai error:', err.message);
+    res.status(500).json({ error: 'Erreur hub Dubai' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 10. GET /relais — Operations Relais (validation, remise colis)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/relais', async (req, res) => {
+  try {
+    const hit = cached('relais');
+    if (hit) return res.json(hit);
+
+    const { rows: orders } = await db.query(`
+      SELECT o.id, o.reference, o.status, o.total_kmf,
+        o.payment_mode, o.payment_status,
+        o.available_at, o.created_at, o.updated_at,
+        COALESCE(EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600, 0) AS heures_attente,
+        rc.full_name AS client_nom, rc.phone AS client_phone,
+        r.name AS relais_nom, r.island AS ile
+      FROM orders o
+      LEFT JOIN recipients rc ON rc.id = o.recipient_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.status IN ('in_transit', 'available')
+      ORDER BY o.available_at ASC NULLS LAST, o.updated_at ASC
+    `);
+
+    const orderIds = orders.map(o => o.id);
+    const itemsMap = {};
+
+    if (orderIds.length > 0) {
+      const { rows: items } = await db.query(`
+        SELECT oi.order_id, p.name AS nom, oi.quantity AS quantite,
+          oi.price_kmf AS prix_kmf
+        FROM order_items oi
+        JOIN products p ON p.id = oi.product_id
+        WHERE oi.order_id = ANY($1)
+      `, [orderIds]);
+
+      for (const item of items) {
+        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+        itemsMap[item.order_id].push({
+          nom: item.nom,
+          quantite: Number(item.quantite),
+          prix_kmf: Number(item.prix_kmf),
+          status: 'complet',
+        });
+      }
+    }
+
+    function toRelaisOrder(o) {
+      const heures = Math.round(Number(o.heures_attente));
+      return {
+        reference: o.reference,
+        client_nom: o.client_nom || 'Client',
+        client_phone: o.client_phone || '',
+        produits: itemsMap[o.id] || [{ nom: 'Produit', quantite: 1, prix_kmf: Number(o.total_kmf), status: 'complet' }],
+        total_kmf: Number(o.total_kmf),
+        payment_mode: o.payment_mode === 'stripe_eur' ? 'stripe' : 'cash_relais',
+        payment_status: o.payment_status === 'paid' ? 'paid' : 'pending',
+        date_arrivee: o.available_at || o.created_at,
+        heures_attente: heures,
+        relais_nom: o.relais_nom || 'Relais inconnu',
+        ile: o.ile || 'Comores',
+        priorite: heures > 120 ? 'urgente' : 'normale',
+      };
+    }
+
+    const result = {
+      a_valider:  orders.filter(o => o.status === 'in_transit').map(toRelaisOrder),
+      a_remettre: orders.filter(o => o.status === 'available').map(toRelaisOrder),
+    };
+
+    setCache('relais', result);
+    res.json(result);
+  } catch (err) {
+    console.error('Dashboard relais error:', err.message);
+    res.status(500).json({ error: 'Erreur relais' });
+  }
+});
+
 module.exports = router;
+
