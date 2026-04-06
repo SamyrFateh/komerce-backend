@@ -1236,12 +1236,11 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
 > *Mise à jour : approche DELTA (ne modifier que les lignes impactées)*
 
-
 ---
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 14:55:41 UTC
+> Mise à jour : 2026-04-06 16:00:29 UTC
 
 | Métrique | Valeur |
 |----------|--------|
@@ -1249,7 +1248,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Middlewares | 4 fichiers |
 | Utilitaires | 5 fichiers |
 | Frontend (public/) | 20 fichiers |
-| Dashboard App | 12 fichiers |
+| Dashboard App | 17 fichiers |
 | Score de risque | 100/100 |
 
 *Métriques auto-générées — workflow auto-cartography v2.0*
