@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
 > 📅 **Mise à jour** : 6 avril 2026  
-> 🏷️ **Version** : v13.0  
+> 🏷️ **Version** : v14.0  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables**
 
@@ -11,14 +11,15 @@
 
 1. [Progression globale](#1--progression-globale)
 2. [🟣 Priorité 1 — Dashboard de Pilotage Unifié](#2--priorité-1--dashboard-de-pilotage-unifié)
-3. [🔴 Priorité 2 — Sécurité](#3--priorité-2--sécurité)
-4. [🔴 Priorité 3 — Go-Live](#4--priorité-3--go-live)
-5. [🟡 Priorité 4 — UX avant lancement marketing](#5--priorité-4--ux-avant-lancement-marketing)
-6. [🟢 Priorité 5 — Améliorations futures](#6--priorité-5--améliorations-futures)
-7. [🔵 Nice to have](#7--nice-to-have)
-8. [PRs & Issues ouvertes](#8--prs--issues-ouvertes)
-9. [✅ Historique complété](#9--historique-complété)
-10. [Ordre de travail recommandé](#10--ordre-de-travail-recommandé)
+3. [🟠 Priorité 2 — Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai](#3--priorité-2--catalogue-pièces-automoto--marque-exclusive-sav-dubai)
+4. [🔴 Priorité 3 — Sécurité](#4--priorité-3--sécurité)
+5. [🔴 Priorité 4 — Go-Live](#5--priorité-4--go-live)
+6. [🟡 Priorité 5 — UX avant lancement marketing](#6--priorité-5--ux-avant-lancement-marketing)
+7. [🟢 Priorité 6 — Améliorations futures](#7--priorité-6--améliorations-futures)
+8. [🔵 Nice to have](#8--nice-to-have)
+9. [PRs & Issues ouvertes](#9--prs--issues-ouvertes)
+10. [✅ Historique complété](#10--historique-complété)
+11. [Ordre de travail recommandé](#11--ordre-de-travail-recommandé)
 
 ---
 
@@ -33,7 +34,8 @@
 | Sécurité audit initial | ✅ ~58 problèmes corrigés | — |
 | Sécurité audit deep | ⬜ 14 issues ouvertes | 6 critiques + 8 majeures |
 | Dashboard unifié v11 | ✅ Mergé | Remplacé par Dashboard Pilotage |
-| **Dashboard Pilotage Unifié** | ⬜ En cours | **PRIORITÉ 1** |
+| **Dashboard Pilotage Unifié** | 🟡 En cours | **PRIORITÉ 1** |
+| **Catalogue Pièces Auto/Moto** | ⬜ Nouveau | **PRIORITÉ 2** |
 | Cartographie 360° v12 | ✅ Poussée | — |
 | Coffre-fort (Vault) | ✅ 6/6 fichiers | — |
 
@@ -65,22 +67,85 @@
 
 | # | Tâche | Statut |
 |---|-------|:------:|
-| 2.1 | Analyse Cartographie 360° (fichiers/endpoints impactés) | ⬜ |
-| 2.2 | Analyse Coffre-Fort Sécurité (risques liés) | ⬜ |
-| 2.3 | Scaffolding Instant App (structure + routing) | ⬜ |
-| 2.4 | Vue Ops (Kanban + pipeline) | ⬜ |
-| 2.5 | Vue Finance (CA, marges, top produits) | ⬜ |
-| 2.6 | Vue Pilotage (coûts, clients, taux de change) | ⬜ |
+| 2.1 | Analyse Cartographie 360° (fichiers/endpoints impactés) | ✅ |
+| 2.2 | Analyse Coffre-Fort Sécurité (risques liés) | ✅ |
+| 2.3 | Scaffolding Instant App (structure + routing) | ✅ |
+| 2.4 | Vue Ops (Kanban + pipeline) | ✅ |
+| 2.5 | Vue Finance (CA, marges, top produits) | ✅ |
+| 2.6 | Vue Pilotage (coûts, clients, taux de change) | ✅ |
 | 2.7 | Vue Tendances (graphiques + projections) | ⬜ |
 | 2.8 | Vue Retards (liste + actions SMS) | ⬜ |
-| 2.9 | Tests & validation | ⬜ |
-| 2.10 | Dépréciation des anciens dashboards | ⬜ |
+| 2.9 | Branchement API réelle (remplacer mock data) | ⬜ |
+| 2.10 | Tests & validation | ⬜ |
+| 2.11 | Dépréciation des anciens dashboards | ⬜ |
 
 ---
 
-## 3. 🔴 Priorité 2 — Sécurité (14 issues ouvertes)
+## 3. 🟠 Priorité 2 — Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai
 
-### 3.1 🚨 6 Vulnérabilités CRITIQUES
+> 🚗🏍️ **Nouveau service de vente de pièces automobiles et moto**, avec possibilité de proposer une **marque exclusive** accompagnée de son **SAV basé à Dubai**.
+
+### 3.1 Vision
+
+Komerce devient une plateforme multi-verticale : au-delà du commerce général, elle propose un **catalogue spécialisé pièces auto/moto** avec :
+- Un catalogue structuré par **véhicule / marque / catégorie de pièce**
+- La possibilité de créer et gérer une **marque exclusive Komerce** (private label)
+- Un **SAV professionnel** opéré depuis Dubai (garantie, retours, support technique)
+- Un sourcing direct depuis les fournisseurs Dubai/Chine avec traçabilité complète
+
+### 3.2 Fonctionnalités clés
+
+| Module | Description | Priorité |
+|--------|-------------|:--------:|
+| 🗂️ **Catalogue structuré** | Navigation par véhicule → marque → modèle → année → catégorie pièce | Haute |
+| 🔍 **Recherche intelligente** | Recherche par référence OEM, nom de pièce, compatibilité véhicule | Haute |
+| 🏷️ **Marque exclusive** | Espace dédié "marque Komerce" avec branding, packaging, certifications | Haute |
+| 🛡️ **SAV Dubai** | Système de tickets SAV, suivi garantie, procédure retour depuis les Comores | Haute |
+| 📦 **Gestion stock** | Stock par référence, alertes rupture, réapprovisionnement auto | Moyenne |
+| 💰 **Pricing dynamique** | Prix par devise (KMF/EUR/AED), marges par catégorie, promotions | Moyenne |
+| 📊 **Dashboard pièces** | Vue dédiée dans le Dashboard Pilotage (CA pièces, top références, SAV) | Moyenne |
+| 🔗 **Compatibilité** | Base de données compatibilité pièce ↔ véhicules (cross-reference) | Haute |
+
+### 3.3 Architecture technique (à définir)
+
+| Composant | Description |
+|-----------|-------------|
+| **Tables DB** | `parts`, `vehicles`, `vehicle_parts` (cross-ref), `brands`, `sav_tickets`, `warranties` |
+| **Routes API** | `/api/parts`, `/api/vehicles`, `/api/sav`, `/api/brands` |
+| **Frontend** | Nouveau module catalogue dans la boutique + section marque exclusive |
+| **SAV** | Système de tickets intégré + emails automatiques + suivi garantie |
+| **Intégration Dashboard** | Nouvelle vue "🔧 Pièces Auto/Moto" dans le Dashboard Pilotage |
+
+### 3.4 Tâches
+
+| # | Tâche | Statut |
+|---|-------|:------:|
+| 3.1 | Étude de marché pièces auto/moto aux Comores (demande, concurrence) | ⬜ |
+| 3.2 | Modélisation DB : tables parts, vehicles, cross-reference, SAV | ⬜ |
+| 3.3 | Analyse Cartographie 360° (impact sur l'existant) | ⬜ |
+| 3.4 | Analyse Coffre-Fort Sécurité (risques nouveau service) | ⬜ |
+| 3.5 | API CRUD pièces + recherche + compatibilité véhicule | ⬜ |
+| 3.6 | API gestion marque exclusive (branding, catalogue dédié) | ⬜ |
+| 3.7 | API SAV (tickets, garanties, retours) | ⬜ |
+| 3.8 | Frontend catalogue pièces (navigation véhicule → pièce) | ⬜ |
+| 3.9 | Frontend espace marque exclusive | ⬜ |
+| 3.10 | Intégration Dashboard Pilotage (vue Pièces Auto/Moto) | ⬜ |
+| 3.11 | Workflow SAV Dubai (emails, suivi, escalade) | ⬜ |
+| 3.12 | Tests & validation | ⬜ |
+
+### 3.5 Marque Exclusive — Points clés
+
+- **Nom & branding** : à définir (marque Komerce ou sous-marque dédiée)
+- **Positionnement** : qualité premium, garantie SAV Dubai, prix compétitifs
+- **SAV** : garantie minimum 6 mois, support technique via WhatsApp/email, retour gratuit sous 30j
+- **Sourcing** : fournisseurs certifiés Dubai (Sharjah/Deira auto parts district) + Chine (Guangzhou)
+- **Packaging** : packaging brandé avec QR code traçabilité
+
+---
+
+## 4. 🔴 Priorité 3 — Sécurité (14 issues ouvertes)
+
+### 4.1 🚨 6 Vulnérabilités CRITIQUES
 
 | Issue | Vulnérabilité | Fichier(s) | Fix |
 |:-----:|---------------|------------|-----|
@@ -91,7 +156,7 @@
 | [#75](https://github.com/SamyrFateh/komerce-backend/issues/75) | **Données sensibles exposées** | auth.js, admin.js | Remplacer `SELECT *`, créer `sanitizeUser()` |
 | [#76](https://github.com/SamyrFateh/komerce-backend/issues/76) | **Webhook Stripe non vérifié** | payments.js | `stripe.webhooks.constructEvent()` + signature |
 
-### 3.2 🟠 8 Vulnérabilités MAJEURES
+### 4.2 🟠 8 Vulnérabilités MAJEURES
 
 | Issue | Vulnérabilité | Fix |
 |:-----:|---------------|-----|
@@ -108,9 +173,9 @@
 
 ---
 
-## 4. 🔴 Priorité 3 — Go-Live
+## 5. 🔴 Priorité 4 — Go-Live
 
-### 4.1 Tests E2E restants
+### 5.1 Tests E2E restants
 
 | Phase | Description | Statut |
 |-------|-------------|--------|
@@ -122,7 +187,7 @@
 | **Phase 6** | Checklist Go-Live (voir ci-dessous) | ⬜ |
 | ~~Phase 7~~ | 14 bugs corrigés (7A/7B/7C) | ✅ |
 
-### 4.2 Saisie des coûts réels ([#48](https://github.com/SamyrFateh/komerce-backend/issues/48))
+### 5.2 Saisie des coûts réels ([#48](https://github.com/SamyrFateh/komerce-backend/issues/48))
 
 > ⚠️ **BLOQUANT** pour le calcul des marges nettes sur le dashboard Pilotage.
 
@@ -131,7 +196,7 @@
 - [ ] Renseigner `douane_kmf` (~20-42% valeur AED)
 - [ ] Vérifier cohérence sur dashboard Pilotage
 
-### 4.3 Checklist Go-Live
+### 5.3 Checklist Go-Live
 
 | # | Élément | Statut |
 |---|---------|--------|
@@ -146,7 +211,7 @@
 | 6.9 | Monitoring / logs activés | ⬜ |
 | 6.10 | Backup DB programmé (pg_dump quotidien) | ⬜ |
 
-### 4.4 Nettoyage PRs obsolètes — ✅ FAIT
+### 5.4 Nettoyage PRs obsolètes — ✅ FAIT
 
 | PR | Action | Statut |
 |---|---|---|
@@ -158,7 +223,7 @@
 
 ---
 
-## 5. 🟡 Priorité 4 — UX avant lancement marketing (~11h)
+## 6. 🟡 Priorité 5 — UX avant lancement marketing (~11h)
 
 | # | Feature | Effort | Statut |
 |---|---------|:------:|:------:|
@@ -174,7 +239,7 @@
 
 ---
 
-## 6. 🟢 Priorité 5 — Améliorations futures
+## 7. 🟢 Priorité 6 — Améliorations futures
 
 | # | Amélioration | Impact | Priorité |
 |---|-------------|--------|:--------:|
@@ -189,7 +254,7 @@
 
 ---
 
-## 7. 🔵 Nice to have (~15h)
+## 8. 🔵 Nice to have (~15h)
 
 | # | Feature | Effort |
 |---|---------|:------:|
@@ -201,7 +266,7 @@
 
 ---
 
-## 8. 📋 PRs & Issues ouvertes
+## 9. 📋 PRs & Issues ouvertes
 
 ### Issues (15)
 
@@ -229,20 +294,23 @@
 
 ---
 
-## 9. ✅ Historique complété
+## 10. ✅ Historique complété
 
 <details>
 <summary>Cliquer pour voir tout ce qui a été accompli</summary>
 
-### Session 06/04/2026 — Audit deep + Dashboard unifié
+### Session 06/04/2026 — Audit deep + Dashboard unifié + Catalogue Pièces
 | # | Action | PR | Status |
 |---|--------|-----|--------|
 | 1 | Connexion GitHub + exploration repo | — | ✅ |
 | 2 | Audit deep de la Cartographie 360° | — | ✅ |
 | 3 | Carto Coffre-Fort v10.0 → v12.0 | PR #90 | ✅ Mergée |
 | 4 | Dashboard Unifié v11.0 (4 fichiers → 1, 8 endpoints) | PR #91 | ✅ Mergée |
-| 5 | Documentation architecture dashboard | PR #92 | 🟡 À merger |
+| 5 | Documentation architecture dashboard | PR #92 | ✅ Mergée |
 | 6 | Rapport d'audit (`docs/AUDIT_REPORT.md`) | PR #90 | ✅ Mergée |
+| 7 | Gouvernance : commit auto 10min + workflow roadmap | — | ✅ |
+| 8 | Dashboard Pilotage Instant App (4 vues scaffoldées) | — | ✅ |
+| 9 | Roadmap v14.0 : Catalogue Pièces Auto/Moto → Priorité 2 | — | ✅ |
 
 ### Boutique Live (5 étapes — toutes ✅)
 - ✅ Portail + Auth Guards (`f40b41b`)
@@ -282,14 +350,24 @@
 
 ---
 
-## 10. 📋 Ordre de travail recommandé
+## 11. 📋 Ordre de travail recommandé
 
 ```
 🟣 MAINTENANT :
   └── Dashboard Pilotage Unifié (remplace tous les dashboards)
-      ├── Analyse Carto 360°
-      ├── Analyse Coffre-Fort
-      └── Implémentation 5 vues
+      ├── ✅ Analyse Carto 360°
+      ├── ✅ Analyse Coffre-Fort
+      ├── ✅ Scaffolding 4 vues (Ops, Finance, Pilotage, Alertes)
+      └── ⬜ Finitions (Tendances, Retards, branchement API)
+
+🟠 ENSUITE :
+  └── Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai
+      ├── Étude de marché
+      ├── Modélisation DB (parts, vehicles, cross-ref, SAV)
+      ├── Analyse Carto 360° + Coffre-Fort
+      ├── API (CRUD pièces, recherche, marque, SAV)
+      ├── Frontend catalogue + espace marque
+      └── Intégration Dashboard Pilotage
 
 Prochaine session :
   └── Fix 6 vulnérabilités CRITIQUES (#71→#76)
