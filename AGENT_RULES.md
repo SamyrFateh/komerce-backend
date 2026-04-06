@@ -10,9 +10,9 @@
 
 1. Lire en entier le fichier `docs/CARTOGRAPHY_360.md`
 2. Ce fichier contient la **vue 360° du projet** :
-   - 123 endpoints répartis sur 18 fichiers de routes
+   - 111 endpoints répartis sur 18 fichiers de routes
    - 27 tables DB avec leurs relations et criticités
-   - 3 middlewares d'authentification (`authenticate`, `requireRole`, `requireAdmin`)
+   - 4 middlewares (`authenticate`, `requireRole`, `requireAdmin`, `validate`)
    - 6 rate limiters configurés
    - 9 services externes intégrés
    - 5 chaînes d'appels inter-routes critiques
