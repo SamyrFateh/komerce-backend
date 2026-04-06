@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
-> 📅 **Mise à jour** : 6 avril 2026  
-> 🏷️ **Version** : v15.1  
+> 📅 **Mise à jour** : 7 avril 2026  
+> 🏷️ **Version** : v15.2  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables**
 
@@ -37,7 +37,7 @@
 | Dashboard unifié v11 | ✅ Mergé | Remplacé par Dashboard Pilotage |
 | **Dashboard Pilotage Unifié** | ✅ 11/11 | **TERMINÉ 🎉** |
 | **Catalogue Pièces Auto/Moto** | ⬜ Nouveau | **PRIORITÉ 2** |
-| **Gouvernance Opérationnelle** | ⬜ 0/8 — [Plan détaillé](./komerce-point6-gouvernance-operationnelle.md) | **PRIORITÉ 6 · 34h** |
+| **Gouvernance Opérationnelle** | 🔄 3/5 phases — [Plan détaillé](./komerce-point6-gouvernance-operationnelle.md) | **PRIORITÉ 6 · Phase 4 suivante** |
 | Cartographie 360° v12 | ✅ Poussée | — |
 | Coffre-fort (Vault) | ✅ 6/6 fichiers | — |
 
@@ -252,26 +252,33 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 
 ### 5 Phases d'implémentation — 34h total
 
-| Phase | Contenu | Effort | Livrable |
-|:-----:|---------|:------:|----------|
-| **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque |
-| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement |
-| **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client |
-| **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée |
-| **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet |
+| Phase | Contenu | Effort | Livrable | Statut |
+|:-----:|---------|:------:|----------|---------|
+| **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque | ✅ Mergée |
+| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée |
+| **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client | 🔄 PR #105 en cours |
+| **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée | ⬜ |
+| **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet | ⬜ |
 
 ### Tâches
 
 | # | Tâche | Phase | Statut |
 |---|-------|:-----:|:------:|
-| 7.1 | Migration DB `007_business_rules.sql` (6 tables) | 1 | ⬜ |
-| 7.2 | Moteur `utils/rules.js` (cache TTL + fallback) | 1 | ⬜ |
-| 7.3 | API admin `routes/config.js` (5 endpoints CRUD) | 1 | ⬜ |
-| 7.4 | Migration 47 constantes → `getRule()` dans 9 fichiers | 2 | ⬜ |
-| 7.5 | `POST /api/orders/:id/cancel` + logique remboursement | 3 | ⬜ |
-| 7.6 | Système crédit boutique (`store_credits`) | 3 | ⬜ |
+| 7.1 | Migration DB `007_business_rules.sql` (6 tables) | 1 | ✅ |
+| 7.2 | Moteur `utils/rules.js` (cache TTL + fallback) | 1 | ✅ |
+| 7.3 | API admin `routes/config.js` (5 endpoints CRUD) | 1 | ✅ |
+| 7.4 | Migration 47 constantes → `getRule()` dans 9 fichiers | 2 | ✅ |
+| 7.5 | `POST /api/orders/:id/cancel` + logique remboursement | 3 | 🔄 PR #105 |
+| 7.6 | Système crédit boutique (`store_credits`) | 3 | 🔄 PR #105 |
 | 7.7 | Logique sous-commandes + expédition partielle | 4 | ⬜ |
 | 7.8 | Vue ⚙️ Configuration dashboard + indicateurs | 5 | ⬜ |
+
+### Nouveaux endpoints Phase 3 (PR #105)
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `POST /api/orders/:id/cancel` | client / admin | Annuler une commande avec remboursement automatique |
+| `GET /api/orders/credits` | client / admin | Consulter crédits boutique disponibles |
 
 ---
 ## 8. 🟢 Priorité 7 — Améliorations futures
@@ -323,9 +330,11 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 | #84 | 🟠 Pool PostgreSQL | `enhancement` | MAJEUR |
 | #48 | 💰 Saisie coûts réels | `finance`, `data-entry` | BLOQUANT |
 
-### PRs ouvertes : 0
+### PRs ouvertes : 1
 
-> Toutes les PRs ont été traitées. Les PRs #44 et #38 étaient supersédées par #45 et #39 (déjà mergées) et ont été fermées.
+| PR | Titre | Statut |
+|----|-------|--------|
+| [#105](https://github.com/SamyrFateh/komerce-backend/pull/105) | feat(governance): Phase 3 — Annulation & Remboursement | 🔄 En attente review |
 
 ---
 
@@ -333,6 +342,11 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 
 <details>
 <summary>Cliquer pour voir tout ce qui a été accompli</summary>
+
+### Session 07/04/2026 — Phase 3 Gouvernance Opérationnelle
+| # | Action | PR | Status |
+|---|--------|-----|--------|
+| 1 | Phase 3 : POST /cancel + Stripe refund + crédit boutique + GET /credits | PR #105 | 🔄 En cours |
 
 ### Session 06/04/2026 — Audit deep + Dashboard unifié + Catalogue Pièces
 | # | Action | PR | Status |
@@ -395,29 +409,20 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 ## 12. 📋 Ordre de travail recommandé
 
 ```
-🟣 MAINTENANT :
-  └── Dashboard Pilotage Unifié (remplace tous les dashboards)
-      ├── ✅ Analyse Carto 360°
-      ├── ✅ Analyse Coffre-Fort
-      ├── ✅ Scaffolding 4 vues (Ops, Finance, Pilotage, Alertes)
-      ├── ✅ Tendances, Retards, branchement API (PR #97)
-      └── ✅ Tests & validation, dépréciation anciens dashboards → **PRIORITÉ 1 TERMINÉE 🎉**
+✅ TERMINÉ :
+  └── Dashboard Pilotage Unifié (11/11) 🎉
+
+🔄 EN COURS :
+  └── Gouvernance Opérationnelle — Phase 3 (PR #105)
+      └── POST /cancel + Stripe refund + crédit boutique
 
 🟠 ENSUITE :
   └── Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai
       └── (12 tâches)
 
-🔶 APRÈS :
-  └── Règles Opérationnelles Commandes (8 tâches)
-      ├── Délai annulation sans frais post-paiement (variable configurable)
-      ├── Expédition partielle Hub Dubai (seuils configurables)
-      └── Mécanisme annulation & MAJ commande
-      ├── Étude de marché
-      ├── Modélisation DB (parts, vehicles, cross-ref, SAV)
-      ├── Analyse Carto 360° + Coffre-Fort
-      ├── API (CRUD pièces, recherche, marque, SAV)
-      ├── Frontend catalogue + espace marque
-      └── Intégration Dashboard Pilotage
+🔶 GOUVERNANCE (suite) :
+  └── Phase 4 — Expédition partielle Hub Dubai
+  └── Phase 5 — Dashboard Configuration ⚙️
 
 Prochaine session :
   └── Fix 6 vulnérabilités CRITIQUES (#71→#76)
