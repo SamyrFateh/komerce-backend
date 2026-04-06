@@ -56,32 +56,35 @@ const ORDER_STATUSES = [
   'confirmed',    // commande créée
   'ordered',      // paiement validé → commande lancée
   'preparation',  // SCAN Hub — emballage
-  'shipped',      // départ maritime
+  'shipped',      // remis au transitaire à Dubai
+  'in_transit',   // 🚢 embarqué — confirmation transitaire
   'available',    // SCAN Relais — colis reçu
   'collected',    // SCAN QR — remis au client
   'cancelled',
   'refunded',
 ];
 
-// Matrice de transitions valides — pipeline MVP 6 étapes (v8.0)
+// Matrice de transitions valides — pipeline MVP 7 étapes (v9.0)
 // Les admins peuvent toujours basculer vers cancelled/refunded depuis n'importe quel statut.
 const VALID_TRANSITIONS = {
   confirmed:   ['ordered', 'cancelled'],
   ordered:     ['preparation', 'cancelled'],
   preparation: ['shipped', 'cancelled'],
-  shipped:     ['available', 'cancelled'],
+  shipped:     ['in_transit', 'cancelled'],
+  in_transit:  ['available', 'cancelled'],
   available:   ['collected', 'cancelled'],
   collected:   [],
   cancelled:   ['refunded'],
   refunded:    [],
 };
 
-// Rôles autorisés par transition — pipeline MVP 6 étapes (v8.0)
+// Rôles autorisés par transition — pipeline MVP 7 étapes (v9.0)
 const TRANSITION_ROLES = {
   ordered:     ['admin', 'agent_relais'],  // cash validé par agent_relais, ou webhook Stripe
   preparation: ['admin', 'agent_hub'],     // SCAN Hub
-  shipped:     ['admin', 'agent_hub'],     // départ maritime
-  available:   ['admin', 'agent_relais'],  // SCAN Relais
+  shipped:     ['admin', 'agent_hub'],     // remis au transitaire
+  in_transit:  ['admin'],                  // confirmation embarquement transitaire
+  available:   ['admin', 'agent_relais'],  // SCAN Relais — arrivée
   collected:   ['admin', 'agent_relais'],  // SCAN QR
   cancelled:   ['admin'],
   refunded:    ['admin'],
@@ -98,12 +101,13 @@ const CONFECTION_TYPES = [
 // Les autres modules (lunettes, construction, cosmetiques) n'ont pas de sous-type
 const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 
-// SMS déclenchés par changement de statut — pipeline MVP 6 étapes (v8.0)
+// SMS déclenchés par changement de statut — pipeline MVP 7 étapes (v9.0)
 // Seuls les statuts visibles client reçoivent un SMS
 const STATUS_SMS = {
   ordered:     (ref) => `Komerce : Commande ${ref} lancée ! Votre article est en cours de traitement.`,
   preparation: (ref) => `Komerce : Commande ${ref} — colis reçu au Hub, contrôle qualité en cours.`,
-  shipped:     (ref) => `Komerce : Commande ${ref} — votre colis a pris la mer ! Arrivée estimée 3–5 semaines.`,
+  shipped:     (ref) => `Komerce : Commande ${ref} — votre colis est prêt, remis au transitaire à Dubai.`,
+  in_transit:  (ref) => `Komerce : Commande ${ref} — votre colis est embarqué sur le bateau ! 🚢 Arrivée estimée 3–5 semaines.`,
   available:   (ref, relais) => `Komerce : Commande ${ref} disponible au relais ${relais || ''}. Venez le récupérer !`,
   collected:   (ref) => `Komerce : Commande ${ref} remise. Merci de votre confiance ! 🎉`,
 };

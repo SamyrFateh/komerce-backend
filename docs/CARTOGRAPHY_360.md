@@ -259,7 +259,7 @@
 | 9 | 🟠 `PATCH` | `/api/orders/:id/cost` | ✅ | admin | `orders` |
 | 10 | 🟢 `GET` | `/api/orders/:id/history` | ✅ | role-based | `order_status_history` |
 
-> ℹ️ Utilise le middleware `validate` — nouveau pipeline v8.0
+> ℹ️ Utilise le middleware `validate` — pipeline v9.0 (7 étapes)
 
 > 🔗 **Appels inter-routes** : `loyalty.recalculateLoyalty()`, `loyalty.getLoyaltyDiscount()`
 
@@ -577,20 +577,23 @@ Table                   │ Nb routes │ Barre de criticité
 | 2b | 💵 Paiement Cash | `payments.js` | `POST /api/payments/cash/confirm` | `ordered` | `orders`, `order_status_history`, `products` | SMS |
 | 3 | 📋 Déclenchement achat | `purchasing.js` | `triggerPurchasing()` | `ordered` | `purchase_orders`, `order_items` | SMS + WhatsApp |
 | 4 | 📦 Réception hub | `purchasing.js` | `POST /api/purchasing/:id/receive` | `preparation` | `purchase_orders`, `orders` | SMS (via triggerScan3) |
-| 5 | 🚚 Expédition | `scans.js` | `POST /api/scans` (step=shipped) | `shipped` | `scans`, `order_status_history` | SMS |
-| 6 | 📍 Réception relais | `scans.js` | `POST /api/scans` (step=relais_received) | `available` | `scans`, `order_status_history` | SMS |
-| 7 | ✅ Collecte client | `scans.js` | `POST /api/scans/collect` ou `/verify-qr` | `collected` | `scans`, `order_status_history`, `orders` | SMS |
-| 8 | ⭐ Recalcul fidélité | `loyalty.js` | `recalculateLoyalty()` | — | `users`, `loyalty_tiers` | — |
+| 5 | 📦 Remise transitaire | `scans.js` | `POST /api/scans` (step=shipped) | `shipped` | `scans`, `order_status_history` | SMS |
+| 6 | 🚢 Embarquement bateau | `scans.js` | `POST /api/scans` (step=in_transit) | `in_transit` | `scans`, `order_status_history` | SMS |
+| 7 | 📍 Réception relais | `scans.js` | `POST /api/scans` (step=relais_received) | `available` | `scans`, `order_status_history` | SMS |
+| 8 | ✅ Collecte client | `scans.js` | `POST /api/scans/collect` ou `/verify-qr` | `collected` | `scans`, `order_status_history`, `orders` | SMS |
+| 9 | ⭐ Recalcul fidélité | `loyalty.js` | `recalculateLoyalty()` | — | `users`, `loyalty_tiers` | — |
 
-### Statuts de commande (cycle de vie v8.0 — post migration 004)
+### Statuts de commande (cycle de vie v9.0 — post migration 005)
 
 ```
-confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ available ──▶ collected
-                                                                        │
-                         cancelled (admin à tout moment) ◄──────────────┤
-                         refunded (après cancelled) ◄───────────────────┤
-                                                                        │
-                         recalculateLoyalty() ◄─────────────────────────┘
+confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in_transit ──▶ available ──▶ collected
+                                             │            │                            │
+                                        Transitaire  🚢 Bateau                        │
+                                                                                       │
+                         cancelled (admin à tout moment) ◄─────────────────────────────┤
+                         refunded (après cancelled) ◄──────────────────────────────────┤
+                                                                                       │
+                         recalculateLoyalty() ◄────────────────────────────────────────┘
 ```
 
 ---

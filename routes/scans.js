@@ -44,6 +44,7 @@ const STEP_ROLES = {
   preparation:     ['admin', 'agent_hub'],
   hub_preparation: ['admin', 'agent_hub'],
   shipped:         ['admin', 'agent_hub'],
+  in_transit:      ['admin'],                  // confirmation embarquement transitaire
   relais_received: ['admin', 'agent_relais'],
   collected:       ['admin', 'agent_relais'],
 };
@@ -123,7 +124,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
       return res.status(400).json({ error: 'scan_code et step sont requis' });
     }
 
-    const validSteps = ['preparation', 'shipped', 'relais_received'];
+    const validSteps = ['preparation', 'shipped', 'in_transit', 'relais_received'];
     // 🔒 SÉCURITÉ : 'collected' retiré — le retrait client doit passer par
     // POST /api/scans/collect (code 6 chiffres) ou POST /api/scans/verify-qr (QR token)
     // pour garantir la double vérification agent relais + client.
@@ -183,7 +184,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
 
     if (!is_anomaly) {
       if (step === 'shipped') {
-        // SMS au commanditaire — non bloquant
+        // SMS au commanditaire — colis remis au transitaire
         const { rows: [fullOrder] } = await db.query(
           `SELECT o.*, u.phone AS user_phone
            FROM orders o LEFT JOIN users u ON u.id = o.user_id
@@ -192,9 +193,26 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
         if (fullOrder?.user_phone) {
           sendSMS(
             fullOrder.user_phone,
-            `Komerce · Votre commande ${order.reference} est en route ! Délai estimé : 3 à 5 semaines.`,
+            `Komerce · Votre commande ${order.reference} est prête, remise au transitaire à Dubai.`,
             'shipped', order_id
           ).catch(err => console.error('SMS shipped error:', err.message));
+          sms_triggered = true;
+        }
+      }
+
+      if (step === 'in_transit') {
+        // SMS au commanditaire — confirmation embarquement bateau
+        const { rows: [fullOrder] } = await db.query(
+          `SELECT o.*, u.phone AS user_phone
+           FROM orders o LEFT JOIN users u ON u.id = o.user_id
+           WHERE o.id = $1`, [order_id]
+        );
+        if (fullOrder?.user_phone) {
+          sendSMS(
+            fullOrder.user_phone,
+            `Komerce · Votre commande ${order.reference} est embarquée sur le bateau ! 🚢 Arrivée estimée 3–5 semaines.`,
+            'in_transit', order_id
+          ).catch(err => console.error('SMS in_transit error:', err.message));
           sms_triggered = true;
         }
       }
