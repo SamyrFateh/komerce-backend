@@ -1,14 +1,25 @@
 # 🛒 Komerce Backend
 
-> Plateforme e-commerce multi-vendeurs — Node.js / Express / Supabase
+> Plateforme e-commerce multi-vendeurs pour les Comores — Node.js / Express / Supabase
 
 ---
 
-## 🤖 Agents IA
+## 🤖 Agents IA — LIRE EN PREMIER
 
-**Avant de toucher au code, lire obligatoirement [`AGENT_RULES.md`](./AGENT_RULES.md)**
+> **⚠️ OBLIGATOIRE** — Avant de toucher au code :
 
-Ce fichier contient les 6 règles à respecter, dont la lecture de la cartographie 360° du projet.
+### 1. [`AGENT_RULES.md`](./AGENT_RULES.md) → Règles d'entrée
+### 2. [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) → Protocole de gouvernance
+
+Ce protocole lie les **3 piliers** du projet que tout agent doit lire :
+
+| Pilier | Document | Rôle |
+|--------|----------|------|
+| 🗺️ **La Carte** | [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Vue 360° du système |
+| 📋 **Le Plan** | [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | Roadmap unique de référence |
+| 🔒 **Le Bouclier** | [`docs/AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | Audit de sécurité |
+
+**Sans cette lecture, aucun code ne doit être écrit.**
 
 ---
 
@@ -16,12 +27,14 @@ Ce fichier contient les 6 règles à respecter, dont la lecture de la cartograph
 
 | Document | Description |
 |----------|-------------|
-| [`AGENT_RULES.md`](./AGENT_RULES.md) | ⚠️ Règles obligatoires pour tout agent IA |
-| [`docs/README.md`](./docs/README.md) | Présentation complète du projet, stack, installation |
-| [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Vue 360° — source de vérité (111 endpoints, 27 tables, 4 middlewares) |
-| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Architecture technique détaillée |
-| [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Guide de déploiement Railway |
-| [`docs/SESSION_STATUS.md`](./docs/SESSION_STATUS.md) | Journal de session inter-agents |
+| [`AGENT_RULES.md`](./AGENT_RULES.md) | ⚠️ Point d'entrée obligatoire pour tout agent IA |
+| [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) | 🔗 Protocole de gouvernance (lie les 3 piliers) |
+| [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | 🗺️ Cartographie 360° — source de vérité |
+| [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | 📋 Roadmap unique de référence |
+| [`docs/AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | 🔒 Rapport d'audit sécurité |
+| [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | 🚀 Guide de déploiement Railway |
+| [`docs/VALIDATION_GUIDE.md`](./docs/VALIDATION_GUIDE.md) | ✅ Guide de validation Joi |
+| [`docs/IMPACT_SYSTEM.md`](./docs/IMPACT_SYSTEM.md) | 🛡️ Système coffre-fort |
 
 ---
 

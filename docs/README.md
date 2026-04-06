@@ -14,9 +14,17 @@
   <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white" alt="Railway" />
-  <img src="https://img.shields.io/badge/API-v9.3-blue" alt="API Version" />
+  <img src="https://img.shields.io/badge/API-v12.0-blue" alt="API Version" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
+
+---
+
+## 🤖 Agents IA — LIRE EN PREMIER
+
+> **⚠️ [`../AGENT_RULES.md`](../AGENT_RULES.md) → [`AGENTS_PROTOCOL.md`](./AGENTS_PROTOCOL.md)**
+>
+> Tout agent IA doit lire le protocole de gouvernance AVANT toute modification.
 
 ---
 
@@ -104,7 +112,7 @@ Les colis sont livrés via un réseau de **5 points relais** répartis sur les 3
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/votre-org/komerce-backend.git
+git clone https://github.com/SamyrFateh/komerce-backend.git
 cd komerce-backend
 
 # 2. Installer les dépendances
@@ -127,25 +135,9 @@ Le serveur démarre sur `http://localhost:3000` par défaut.
 ### Vérification
 
 ```bash
-# Health check
 curl http://localhost:3000/health
-
-# Réponse attendue :
-# { "status": "ok", "version": "9.3", "timestamp": "..." }
+# { "status": "ok", "version": "12.0", "timestamp": "..." }
 ```
-
-### Variables d'environnement essentielles
-
-```env
-NODE_ENV=development
-PORT=3000
-DATABASE_URL=postgresql://user:password@localhost:5432/komerce
-JWT_SECRET=votre_secret_jwt
-STRIPE_SECRET_KEY=sk_test_...
-FRONTEND_URL=http://localhost:5173
-```
-
-> 📖 Voir [DEPLOYMENT.md](DEPLOYMENT.md) pour la liste complète des variables.
 
 ---
 
@@ -153,28 +145,7 @@ FRONTEND_URL=http://localhost:5173
 
 **18 fichiers de routes — 118 endpoints au total**
 
-| Route | Endpoints | Auth | Description |
-|-------|:---------:|:----:|-------------|
-| `/api/auth` | 9 | Mixte | Inscription, connexion, JWT, guest checkout |
-| `/api/products` | 8 | Mixte | CRUD produits + upload images |
-| `/api/orders` | 15 | 🔒 | Cycle de vie complet des commandes |
-| `/api/payments` | 5 | 🔒 | Paiements Stripe + cash |
-| `/api/relais` | 3 | 🌐 | Points relais (public) |
-| `/api/admin` | 11 | 🔑 | Dashboard administrateur |
-| `/api/dashboard` | 5 | 🔑 | Tableaux de bord opérationnels |
-| `/api/admin/pilotage` | 3 | 🔑 | Pilotage business |
-| `/api/admin/finance` | 4 | 🔑 | Finance + rapports PDF |
-| `/api/pricing` | 4 | 🔒 | Calculateur de prix |
-| `/api/modules` | 7 | 🔒 | Module couture |
-| `/api/baskets` | 7 | 🔒 | Paniers partagés |
-| `/api/logistics` | 5 | 🔑 | Expéditions + étiquettes |
-| `/api/scans` | 6 | 🔑 | Suivi QR code |
-| `/api/purchasing` | 10 | 🔑 | Fournisseurs + achats |
-| `/api/loyalty` | 7 | 🔒 | Programme de fidélité |
-| `/api/unsold` | 7 | 🔑 | Gestion des invendus |
-| `/health` | 2 | 🌐 | Vérification santé (public) |
-
-**Légende :** 🌐 Public · 🔒 Authentifié · 🔑 Admin
+Voir [`CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) pour la liste complète.
 
 ### Dépendances inter-routes
 
@@ -193,111 +164,54 @@ scans ──→ loyalty (recalcul fidélité à la collecte)
 komerce-backend/
 ├── server.js                 # Point d'entrée
 ├── package.json
-├── .env.example              # Template variables d'environnement
+├── .env.example
+├── AGENT_RULES.md            # ⚠️ Point d'entrée agents IA
 │
 ├── routes/                   # 18 fichiers de routes (118 endpoints)
-│   ├── auth.js
-│   ├── products.js
-│   ├── orders.js
-│   ├── payments.js
-│   ├── relais.js
-│   ├── admin.js
-│   ├── dashboard.js
-│   ├── pilotage.js
-│   ├── finance.js
-│   ├── pricing.js
-│   ├── modules.js
-│   ├── baskets.js
-│   ├── logistics.js
-│   ├── scans.js
-│   ├── purchasing.js
-│   ├── loyalty.js
-│   ├── unsold.js
-│   └── health.js
-│
-├── middleware/                # Middleware Express
-│   ├── authenticate.js       # Vérification JWT
-│   ├── requireRole.js        # Contrôle de rôle
-│   ├── requireAdmin.js       # Accès administrateur
-│   ├── rateLimiter.js        # 6 limiteurs de débit
-│   └── upload.js             # Multer (upload fichiers)
-│
-├── utils/                    # Utilitaires
-│   ├── db.js                 # Pool PostgreSQL
-│   ├── sms.js                # Africa's Talking SMS
-│   ├── whatsapp.js           # Notifications WhatsApp
-│   ├── email.js              # Mailjet
-│   ├── qrcode.js             # Génération QR
-│   └── pdf.js                # Génération PDF (PDFKit)
-│
-├── scripts/                  # Scripts et coffre-fort
-│   ├── impact-config.json    # Configuration impact analysis
-│   ├── impact-check.js       # Moteur d'analyse (~500 lignes)
-│   └── setup-hooks.sh        # Hook pre-push local
-│
+├── middleware/               # authenticate, requireRole, requireAdmin, rateLimiter, upload
+├── utils/                    # db, sms, whatsapp, email, qrcode, pdf
+├── scripts/                  # Coffre-fort + hooks
 ├── .github/workflows/        # CI/CD
-│   ├── impact-check.yml      # Analyse d'impact sur PR
-│   └── auto-cartography.yml  # Cartographie auto au merge
 │
 ├── docs/                     # Documentation
-│   ├── ARCHITECTURE.md       # Architecture technique
+│   ├── AGENTS_PROTOCOL.md    # 🔗 Protocole de gouvernance
+│   ├── CARTOGRAPHY_360.md    # 🗺️ Pilier 1 — La Carte
+│   ├── ROADMAP_KOMERCE.md    # 📋 Pilier 2 — Le Plan
+│   ├── AUDIT_REPORT.md       # 🔒 Pilier 3 — Le Bouclier
+│   ├── audit/                # Rapports d'audit détaillés
 │   ├── DEPLOYMENT.md         # Guide de déploiement
-│   ├── CARTOGRAPHY_360.md    # Cartographie 360°
 │   ├── IMPACT_SYSTEM.md      # Système coffre-fort
-│   └── audit/                # Rapports d'audit
+│   ├── VALIDATION_GUIDE.md   # Guide validation Joi
+│   └── README.md             # Présentation complète
 │
-├── uploads/                  # Fichiers uploadés (local)
-└── SESSION_STATUS.md         # Suivi de session
+├── public/                   # Frontend
+└── uploads/                  # Fichiers uploadés
 ```
 
 ---
 
 ## 🔐 Sécurité
 
-Komerce intègre plusieurs couches de sécurité :
+Voir [`AUDIT_REPORT.md`](./AUDIT_REPORT.md) et le dossier [`audit/`](./audit/) pour le détail complet.
 
-### Authentification
-- **JWT** avec cookies **httpOnly** (protection XSS)
-- **bcrypt** pour le hachage des mots de passe
-- Secret QR dédié (`QR_SECRET`) pour les tokens de scan
-
-### Protection réseau
-- **Helmet** — En-têtes HTTP sécurisés
-- **CORS** — Origines autorisées configurables
-- **6 Rate Limiters** — Protection contre les abus :
-  - Global, Auth, API, Admin, Upload, Webhook
-
-### Audit de sécurité
-- **~32 issues critiques** identifiées et corrigées
-- **~21 issues importantes** identifiées et corrigées
-- **~5 issues mineures** documentées
-- Audit complet avec rapports dans `audit/`
+- **JWT** avec cookies **httpOnly**
+- **Helmet** + **CORS** + **6 Rate Limiters**
+- **14 issues de sécurité ouvertes** (#71-#84) — voir la roadmap
+- Système **coffre-fort** (analyse d'impact automatique sur chaque PR)
 
 ---
 
 ## 🏰 Coffre-fort (Vault)
 
-Le système **coffre-fort** protège le code en production via une analyse d'impact automatisée.
-
-### Composants (6 fichiers)
+Voir [`IMPACT_SYSTEM.md`](./IMPACT_SYSTEM.md) pour la documentation complète.
 
 | Fichier | Rôle |
 |---------|------|
 | `scripts/impact-config.json` | Règles et graphe de dépendances |
-| `scripts/impact-check.js` | Moteur d'analyse (0 dépendances, ~500 lignes) |
-| `.github/workflows/impact-check.yml` | Action GitHub : analyse sur chaque PR |
-| `.github/workflows/auto-cartography.yml` | Mise à jour cartographie au merge |
+| `scripts/impact-check.js` | Moteur d'analyse |
+| `.github/workflows/impact-check.yml` | Action GitHub sur PR |
+| `.github/workflows/auto-cartography.yml` | Cartographie auto au merge |
 | `scripts/setup-hooks.sh` | Hook git pre-push local |
-| `IMPACT_SYSTEM.md` | Documentation complète |
-
-### Fonctionnement
-
-1. **À chaque PR** → `impact-check.js` analyse les fichiers modifiés
-2. **Détection automatique** des routes, tables et dépendances impactées
-3. **Rapport d'impact** posté en commentaire sur la PR
-4. **Au merge** → Cartographie 360° mise à jour automatiquement
-
-> 📖 Voir [IMPACT_SYSTEM.md](IMPACT_SYSTEM.md) pour les détails.
 
 ---
 
@@ -305,36 +219,32 @@ Le système **coffre-fort** protège le code en production via une analyse d'imp
 
 | Document | Description |
 |----------|-------------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture technique détaillée |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | Guide de déploiement complet |
-| [CARTOGRAPHY_360.md](CARTOGRAPHY_360.md) | Cartographie d'impact 360° |
-| [IMPACT_SYSTEM.md](IMPACT_SYSTEM.md) | Documentation du coffre-fort |
-| [SESSION_STATUS.md](SESSION_STATUS.md) | Suivi des sessions de travail |
+| [`AGENTS_PROTOCOL.md`](./AGENTS_PROTOCOL.md) | 🔗 Protocole de gouvernance — **LIRE EN PREMIER** |
+| [`CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) | 🗺️ Cartographie 360° — source de vérité |
+| [`ROADMAP_KOMERCE.md`](./ROADMAP_KOMERCE.md) | 📋 Roadmap unique de référence |
+| [`AUDIT_REPORT.md`](./AUDIT_REPORT.md) | 🔒 Rapport d'audit sécurité |
+| [`DEPLOYMENT.md`](./DEPLOYMENT.md) | 🚀 Guide de déploiement Railway |
+| [`VALIDATION_GUIDE.md`](./VALIDATION_GUIDE.md) | ✅ Guide validation Joi |
+| [`IMPACT_SYSTEM.md`](./IMPACT_SYSTEM.md) | 🛡️ Documentation coffre-fort |
 
 ---
 
 ## 🤝 Contribuer
 
-1. **Fork** le dépôt
-2. **Créer** une branche (`git checkout -b feature/ma-fonctionnalite`)
-3. **Installer** le hook pre-push : `bash scripts/setup-hooks.sh`
-4. **Commiter** vos changements (`git commit -m "feat: description"`)
-5. **Pousser** la branche (`git push origin feature/ma-fonctionnalite`)
-6. **Ouvrir** une Pull Request
+1. **Lire** `AGENT_RULES.md` → `docs/AGENTS_PROTOCOL.md`
+2. **Fork** le dépôt
+3. **Créer** une branche (`git checkout -b feature/ma-fonctionnalite`)
+4. **Installer** le hook pre-push : `bash scripts/setup-hooks.sh`
+5. **Commiter** vos changements (`git commit -m "feat: description"`)
+6. **Pousser** et ouvrir une **Pull Request**
 
-> ⚠️ Le système d'analyse d'impact commentera automatiquement votre PR avec les fichiers et tables impactés. Vérifiez le rapport avant de demander une review.
-
-### Conventions
-
-- **Commits** : format conventionnel (`feat:`, `fix:`, `docs:`, `refactor:`)
-- **Branches** : `feature/`, `fix/`, `docs/`, `hotfix/`
-- **Code** : JavaScript ES6+, async/await, gestion d'erreurs systématique
+> ⚠️ Le système d'analyse d'impact commentera automatiquement votre PR.
 
 ---
 
 ## 📄 Licence
 
-Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+**MIT** — Voir [LICENSE](LICENSE)
 
 ---
 
