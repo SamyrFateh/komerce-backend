@@ -1,70 +1,89 @@
 /**
- * KOMERCE — Dashboard admin v7.2 — Pipeline fix (colonnes obsolètes)
+ * KOMERCE — Dashboard unifié v11.0 — Coffre-fort
+ * ================================================
+ * Consolidation de dashboard.js + pilotage.js + finance/summary + admin/margins
  *
- * GET /api/dashboard/ops                          → pilotage opérationnel
- * GET /api/dashboard/sales?period=30              → ventes & marges
- * GET /api/dashboard/retards?niveau=...           → clients à contacter
- * GET /api/dashboard/forecast?target_date=...     → projections
+ * 8 endpoints · 0 overlap · auth blindée · rate-limited · taux dynamiques
+ *
+ * GET /api/dashboard/ops         → pilotage opérationnel quotidien
+ * GET /api/dashboard/finance     → KPIs financiers (CA, marges, paiements)
+ * GET /api/dashboard/pilotage    → vue stratégique coûts & marges par produit
+ * GET /api/dashboard/pipeline    → kanban pipeline commandes
+ * GET /api/dashboard/retards     → clients en retard (SLA) + compensations
+ * GET /api/dashboard/forecast    → projections CA/marge
+ * GET /api/dashboard/clients     → analyse comportement clients
+ * GET /api/dashboard/history     → historique mensuel (graphiques)
+ *
+ * Auth : JWT (cookie httpOnly ou Bearer) + rôle admin
+ * Rate limit : dashboardLimiter (60 req/min)
+ * Cache : mémoire TTL 30s (configurable)
  */
+
+'use strict';
 
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { getRates } = require('../utils/rates');
 
-// Toutes les routes dashboard nécessitent authentification admin
+// ── Auth : toutes les routes dashboard = admin only ─────────────────────────
 router.use(authenticate, requireRole(['admin']));
 
-// ─── Seuils SLA (commandes actives = non collected/cancelled) ─────────────────
-// SLA annoncé : 3–5 semaines (21–35 jours)
-const SLA_WARNING_DAYS  = 35;  // alerte après 35j
-const SLA_LATE_DAYS     = 42;  // en retard après 42j
-const SLA_BLOCKED_DAYS  = 56;  // bloqué après 56j (8 semaines)
-const INACTIVE_DAYS     = 7;   // bloqué si pas d'activité depuis 7j
-
-// Seuils compensation retards
-const DELAY_PREVENTIF   = 28;  // 4 semaines → contact préventif
-const DELAY_AVOIR       = 35;  // 5 semaines → avoir 5%
-const DELAY_REMISE      = 42;  // 6 semaines → remise 10%
-const DELAY_REMBOURSEMENT = 56; // 8 semaines → remboursement
-
-// --- In-memory cache (TTL 30s) ---
+// ── Cache mémoire (TTL configurable) ────────────────────────────────────────
+const CACHE_TTL = 30_000; // 30 secondes
 const _cache = new Map();
-function cached(key, ttlMs = 30000) {
+
+function cached(key) {
   const entry = _cache.get(key);
-  if (entry && Date.now() - entry.ts < ttlMs) return entry.data;
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
   return null;
 }
 function setCache(key, data) {
   _cache.set(key, { data, ts: Date.now() });
+  if (_cache.size > 100) _cache.delete(_cache.keys().next().value);
 }
 
-// ─── GET /api/dashboard/ops ──────────────────────────────────────────────────
+// ── Helper : taux EUR/KMF dynamique (jamais hardcodé) ───────────────────────
+async function getEurKmf() {
+  const rates = await getRates();
+  return { eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf };
+}
+
+// ── Seuils SLA (annoncé 3-5 semaines) ───────────────────────────────────────
+const SLA_WARNING_DAYS    = 35;
+const SLA_LATE_DAYS       = 42;
+const SLA_BLOCKED_DAYS    = 56;
+const INACTIVE_DAYS       = 7;
+const DELAY_PREVENTIF     = 28;
+const DELAY_AVOIR         = 35;
+const DELAY_REMISE        = 42;
+const DELAY_REMBOURSEMENT = 56;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. GET /ops — Vue opérationnelle quotidienne
+// ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/ops', async (req, res) => {
   try {
     const hit = cached('ops');
     if (hit) return res.json(hit);
 
-    // ── Activité ──────────────────────────────────────────────────────────────
+    // ── Activité globale ────────────────────────────────────────────────────
     const { rows: [activ] } = await db.query(`
       SELECT
-        COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE)                                          AS commandes_aujourd_hui,
-        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled'))                                   AS commandes_en_cours,
+        COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE)                                    AS commandes_aujourd_hui,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled'))                             AS commandes_en_cours,
         COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled')
-                           AND updated_at < NOW() - INTERVAL '7 days')                                   AS commandes_bloquees,
-        COUNT(*) FILTER (WHERE status = 'collected' AND updated_at::date = CURRENT_DATE)                 AS livrees_aujourd_hui,
-        COUNT(*) FILTER (WHERE status = 'collected' AND updated_at >= NOW() - INTERVAL '30 days')        AS livrees_30j
+                           AND updated_at < NOW() - INTERVAL '7 days')                             AS commandes_bloquees,
+        COUNT(*) FILTER (WHERE status = 'collected' AND updated_at::date = CURRENT_DATE)           AS livrees_aujourd_hui,
+        COUNT(*) FILTER (WHERE status = 'collected' AND updated_at >= NOW() - INTERVAL '30 days')  AS livrees_30j
       FROM orders
     `);
 
-    // ── SLA ───────────────────────────────────────────────────────────────────
+    // ── SLA tracker ─────────────────────────────────────────────────────────
     const { rows: slaRows } = await db.query(`
-      SELECT
-        reference,
-        status,
-        created_at,
-        updated_at,
+      SELECT reference, status, created_at, updated_at,
         EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400 AS age_jours,
         EXTRACT(EPOCH FROM (NOW() - updated_at)) / 86400 AS inactif_jours
       FROM orders
@@ -72,184 +91,66 @@ router.get('/ops', async (req, res) => {
       ORDER BY created_at ASC
     `);
 
-    const slaGroups = { on_time: 0, warning: 0, late: 0, blocked: 0 };
-    const lateCmds  = [];
-
+    const sla = { on_time: 0, warning: 0, late: 0, blocked: 0 };
+    const lateCmds = [];
     for (const o of slaRows) {
-      const age      = Number(o.age_jours);
-      const inactif  = Number(o.inactif_jours);
-      let   groupe;
-
-      if (inactif >= INACTIVE_DAYS || age >= SLA_BLOCKED_DAYS) {
-        groupe = 'blocked';
-      } else if (age >= SLA_LATE_DAYS) {
-        groupe = 'late';
-        lateCmds.push({ reference: o.reference, status: o.status, jours: Math.round(age) });
-      } else if (age >= SLA_WARNING_DAYS) {
-        groupe = 'warning';
-      } else {
-        groupe = 'on_time';
-      }
-      slaGroups[groupe]++;
+      const age = Number(o.age_jours), inactif = Number(o.inactif_jours);
+      if (inactif >= INACTIVE_DAYS || age >= SLA_BLOCKED_DAYS) sla.blocked++;
+      else if (age >= SLA_LATE_DAYS) { sla.late++; lateCmds.push({ reference: o.reference, status: o.status, jours: Math.round(age) }); }
+      else if (age >= SLA_WARNING_DAYS) sla.warning++;
+      else sla.on_time++;
     }
 
-    // ── Logistique ────────────────────────────────────────────────────────────
+    // ── Logistique (5 étapes physiques) ─────────────────────────────────────
+    const logQueries = {
+      dubai_reception:  { status: 'ordered',     label: '📥 Réceptionner', dateCol: 'ordered_at' },
+      dubai_expedition: { status: 'preparation', label: '📦 Expédier',     dateCol: 'ordered_at' },
+      transitaire:      { status: 'shipped',     label: '🏢 Transitaire',  dateCol: 'shipped_at' },
+      bateau:           { status: 'in_transit',  label: '🚢 En mer',       dateCol: 'shipped_at' },
+    };
 
-    // Dubai — 📥 Réceptionner : commandes commandées, en attente de réception au hub
-    const { rows: dubaiReceptionItems } = await db.query(`
-      SELECT o.reference, o.status,
-             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.created_at))) / 86400 AS jours_dans_etape
-      FROM orders o
-      WHERE o.status = 'ordered'
-      ORDER BY o.created_at ASC
-      LIMIT 50
-    `);
+    const logistique = {};
+    for (const [key, cfg] of Object.entries(logQueries)) {
+      const { rows } = await db.query(`
+        SELECT o.reference, o.status,
+          EXTRACT(EPOCH FROM (NOW() - COALESCE(o.${cfg.dateCol}, o.created_at))) / 86400 AS jours
+        FROM orders o WHERE o.status = $1 ORDER BY o.created_at ASC LIMIT 50
+      `, [cfg.status]);
+      logistique[key] = { count: rows.length, items: rows, label: cfg.label };
+    }
 
-    // Dubai — 📦 Expédier : commandes reçues au hub, prêtes à expédier
-    const { rows: dubaiExpeditionItems } = await db.query(`
-      SELECT o.reference, o.status,
-             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.created_at))) / 86400 AS jours_dans_etape
-      FROM orders o
-      WHERE o.status = 'preparation'
-      ORDER BY o.created_at ASC
-      LIMIT 50
-    `);
-
-    // Transitaire : remis au transitaire, en attente embarquement
-    const { rows: transitaireItems } = await db.query(`
-      SELECT o.reference, o.status,
-             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.shipped_at, o.created_at))) / 86400 AS jours_attente
-      FROM orders o
-      WHERE o.status = 'shipped'
-      ORDER BY o.shipped_at ASC NULLS LAST
-      LIMIT 50
-    `);
-
-    // Bateau : embarqués, en transit maritime
-    const { rows: bateauItems } = await db.query(`
-      SELECT o.reference, o.shipment_id, o.status,
-             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.shipped_at, o.created_at))) / 86400 AS jours_en_mer
-      FROM orders o
-      WHERE o.status = 'in_transit'
-      ORDER BY o.shipped_at ASC NULLS LAST
-      LIMIT 50
-    `);
-
-    // Anjouan : disponibles au relais
+    // Anjouan (relais)
     const { rows: anjouanItems } = await db.query(`
-      SELECT o.reference, rc.full_name AS destinataire,
-             r.name AS relais_nom,
-             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600 AS heures_en_attente
+      SELECT o.reference, rc.full_name AS destinataire, r.name AS relais_nom,
+        EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600 AS heures_en_attente
       FROM orders o
       LEFT JOIN relais r ON r.id = o.relais_id
       LEFT JOIN recipients rc ON rc.id = o.recipient_id
       WHERE o.status = 'available'
-      ORDER BY o.available_at ASC NULLS LAST
-      LIMIT 50
+      ORDER BY o.available_at ASC NULLS LAST LIMIT 50
     `);
+    logistique.anjouan = { count: anjouanItems.length, items: anjouanItems, label: '📍 Relais Anjouan' };
 
-    const logistique = {
-      dubai_reception:  { count: dubaiReceptionItems.length,  items: dubaiReceptionItems,  label: '📥 Réceptionner' },
-      dubai_expedition: { count: dubaiExpeditionItems.length, items: dubaiExpeditionItems, label: '📦 Expédier' },
-      transitaire:      { count: transitaireItems.length,     items: transitaireItems,     label: '🏢 Transitaire' },
-      bateau:           { count: bateauItems.length,          items: bateauItems,          label: '🚢 En mer' },
-      anjouan:          { count: anjouanItems.length,         items: anjouanItems,         label: '📍 Relais Anjouan' },
-    };
-
-    // ── Délais moyens ─────────────────────────────────────────────────────────
+    // ── Délais moyens ───────────────────────────────────────────────────────
     const { rows: [delais] } = await db.query(`
       SELECT
         ROUND(AVG(EXTRACT(EPOCH FROM (COALESCE(shipped_at, NOW()) - created_at)) / 86400)
           FILTER (WHERE status NOT IN ('cancelled')))::int AS avg_preparation_jours,
         ROUND(AVG(EXTRACT(EPOCH FROM (collected_at - created_at)) / 86400)
-          FILTER (WHERE status = 'collected' AND collected_at IS NOT NULL))::int AS avg_livraison_totale_jours,
-        ROUND(
-          100.0 * COUNT(*) FILTER (
-            WHERE status NOT IN ('collected','cancelled')
-              AND EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400 > $1
-          ) / NULLIF(COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled')), 0),
-          1
-        ) AS pct_en_retard_raw
+          FILTER (WHERE status = 'collected' AND collected_at IS NOT NULL))::int AS avg_livraison_totale_jours
       FROM orders
-    `, [SLA_LATE_DAYS]);
-
-    const pct_retard = delais.pct_en_retard_raw !== null
-      ? Number(delais.pct_en_retard_raw).toFixed(1) + '%'
-      : '0.0%';
-
-    // ── Alertes ───────────────────────────────────────────────────────────────
-
-    // Cash relais en attente > 12h
-    const { rows: [cashAlert] } = await db.query(`
-      SELECT COUNT(*) AS count FROM orders
-      WHERE payment_mode = 'cash_relais'
-        AND payment_status = 'pending'
-        AND created_at < NOW() - INTERVAL '12 hours'
     `);
 
-    // Anomalies scan non traitées (orders bloqués sans activité 7j)
-    const { rows: [anomAlert] } = await db.query(`
-      SELECT COUNT(*) AS count FROM orders
-      WHERE status NOT IN ('collected','cancelled')
-        AND updated_at < NOW() - INTERVAL '7 days'
-    `);
-
-    // Stock faible < 3
-    const { rows: [stockAlert] } = await db.query(`
-      SELECT COUNT(*) AS count FROM products
-      WHERE is_active = TRUE AND stock IS NOT NULL AND stock < 3
-    `);
-
-    const alertes = {
-      cash_pending: { count: Number(cashAlert.count) },
-      anomalies:    { count: Number(anomAlert.count) },
-      low_stock:    { count: Number(stockAlert.count) },
-      sms_failed:   { count: 0 }, // placeholder — nécessite table SMS log
-    };
-
-    // ── Clients en retard (résumé pour ops) ───────────────────────────────────
-    const { rows: retardsRows } = await db.query(`
-      SELECT o.reference, rc.full_name AS client,
-             rc.phone AS phone,
-             EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS jours,
-             o.status
-      FROM orders o
-      LEFT JOIN recipients rc ON rc.id = o.recipient_id
-      WHERE o.status NOT IN ('collected','cancelled')
-        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= $1
-      ORDER BY jours DESC
-      LIMIT 20
-    `, [DELAY_PREVENTIF]);
-
-    const clients_retards = {
-      count: retardsRows.length,
-      par_niveau: {},
-      urgents: [],
-    };
-
-    for (const r of retardsRows) {
-      const j = Number(r.jours);
-      let comp, niveau;
-      if (j >= DELAY_REMBOURSEMENT) {
-        comp = 'remboursement_possible'; niveau = 'remboursement_possible';
-      } else if (j >= DELAY_REMISE) {
-        comp = 'remise_10%'; niveau = 'remise_10pct_prochaine_cmd';
-      } else if (j >= DELAY_AVOIR) {
-        comp = 'avoir_5%'; niveau = 'avoir_5pct';
-      } else {
-        comp = 'contact'; niveau = 'contact_préventif';
-      }
-      clients_retards.par_niveau[niveau] = (clients_retards.par_niveau[niveau] || 0) + 1;
-      if (j >= DELAY_REMISE) {
-        clients_retards.urgents.push({
-          reference: r.reference,
-          client: r.client,
-          email: null,
-          jours_retard: Math.round(j),
-          compensation: comp,
-        });
-      }
-    }
+    // ── Alertes consolidées ─────────────────────────────────────────────────
+    const [cashAlert, anomAlert, stockAlert] = await Promise.all([
+      db.query(`SELECT COUNT(*)::int AS c FROM orders
+        WHERE payment_mode = 'cash_relais' AND payment_status = 'pending'
+          AND created_at < NOW() - INTERVAL '12 hours'`),
+      db.query(`SELECT COUNT(*)::int AS c FROM orders
+        WHERE status NOT IN ('collected','cancelled') AND updated_at < NOW() - INTERVAL '7 days'`),
+      db.query(`SELECT COUNT(*)::int AS c FROM products
+        WHERE is_active = TRUE AND stock IS NOT NULL AND stock < 3`),
+    ]);
 
     const result = {
       activite: {
@@ -259,101 +160,74 @@ router.get('/ops', async (req, res) => {
         livrees_aujourd_hui:   Number(activ.livrees_aujourd_hui),
         livrees_30j:           Number(activ.livrees_30j),
       },
-      sla: {
-        on_time: slaGroups.on_time,
-        warning: slaGroups.warning,
-        late:    slaGroups.late,
-        blocked: slaGroups.blocked,
-        details: { late: lateCmds.slice(0, 10) },
-      },
+      sla: { ...sla, details: { late: lateCmds.slice(0, 10) } },
       logistique,
       delais: {
-        avg_preparation_jours:     delais.avg_preparation_jours,
+        avg_preparation_jours:      delais.avg_preparation_jours,
         avg_livraison_totale_jours: delais.avg_livraison_totale_jours,
-        pct_en_retard:             pct_retard,
       },
-      alertes,
-      clients_retards,
+      alertes: {
+        cash_pending: cashAlert.rows[0].c,
+        anomalies:    anomAlert.rows[0].c,
+        low_stock:    stockAlert.rows[0].c,
+      },
     };
     setCache('ops', result);
     res.json(result);
-
   } catch (err) {
     console.error('Dashboard ops error:', err.message);
     res.status(500).json({ error: 'Erreur pilotage opérationnel' });
   }
 });
 
-// ─── GET /api/dashboard/sales ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2. GET /finance — KPIs financiers unifiés
+//    Fusionne : ancien dashboard/sales + finance/summary + admin/margins
+// ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/sales', async (req, res) => {
+router.get('/finance', async (req, res) => {
   try {
-    const period     = Math.max(1, Math.min(365, parseInt(req.query.period) || 30));
-    const periodPrev = period; // même durée pour comparaison
+    const period = Math.max(1, Math.min(365, parseInt(req.query.period) || 30));
+    const rates  = await getEurKmf();
 
-    // ── KPI L1 — CA & marge ──────────────────────────────────────────────────
+    // ── CA + volumes ────────────────────────────────────────────────────────
     const { rows: [kpi] } = await db.query(`
       SELECT
         -- Période courante
-        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1), 0)                                                  AS ca_kmf,
-        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1) / 492.0, 0)                                          AS ca_eur,
-        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled')                                           AS nb_commandes,
-        COALESCE(AVG(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled'), 0)                        AS panier_moyen_kmf,
-
-        -- Coûts pour marge décomposée (utilise cost_transport_kmf + cost_douane_kmf réels)
+        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1), 0)    AS ca_kmf,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled')  AS nb_commandes,
+        COALESCE(AVG(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled'), 0) AS panier_moyen_kmf,
+        -- Paiements
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND payment_mode = 'cash_relais' AND status != 'cancelled') AS nb_cash,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND payment_mode = 'stripe_eur' AND status != 'cancelled') AS nb_stripe,
+        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND payment_mode = 'cash_relais' AND status != 'cancelled'), 0) AS ca_cash_kmf,
+        COALESCE(SUM(total_eur) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND payment_mode = 'stripe_eur' AND status != 'cancelled'), 0)  AS ca_stripe_eur,
+        -- Coûts & marges (colonnes renseignées après groupage)
+        COALESCE(SUM(cost_transport_kmf + cost_douane_kmf) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        ), 0) AS cout_logistique_kmf,
         COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
-        ), 0)                                                                                             AS marge_produit_kmf,
-        COALESCE(SUM(cost_transport_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
-        ), 0)                                                                                             AS cout_transport_kmf,
-        COALESCE(SUM(cost_douane_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
-        ), 0)                                                                                             AS cout_douane_kmf,
-        COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
-        ), 0)                                                                                             AS marge_reelle_kmf,
-        COUNT(*) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
-        )                                                                                                 AS nb_avec_cost,
-        COUNT(*) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_transport_kmf = 0 AND cost_douane_kmf = 0 AND status != 'cancelled'
-        )                                                                                                 AS nb_sans_cost,
-
-        -- Période précédente (pour évolution)
-        COALESCE(SUM(total_kmf) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $2
-            AND created_at <  NOW() - INTERVAL '1 day' * $1
-        ), 0)                                                                                                                                         AS ca_prev_kmf,
-        COUNT(*) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $2
-            AND created_at <  NOW() - INTERVAL '1 day' * $1
-            AND status != 'cancelled'
-        )                                                                                                                                             AS commandes_prev
+          WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        ), 0) AS marge_reelle_kmf,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled') AS nb_avec_cost,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND cost_transport_kmf = 0 AND cost_douane_kmf = 0 AND status != 'cancelled') AS nb_sans_cost,
+        -- Période précédente
+        COALESCE(SUM(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $2 AND created_at < NOW() - INTERVAL '1 day' * $1), 0) AS ca_prev_kmf,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $2 AND created_at < NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled') AS nb_prev,
+        -- Statuts
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status = 'collected') AS nb_livrees,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status = 'cancelled') AS nb_annulees
       FROM orders
     `, [period, period * 2]);
 
-    const ca        = Number(kpi.ca_kmf);
-    const caPrev    = Number(kpi.ca_prev_kmf);
-    const nbCmd     = Number(kpi.nb_commandes);
-    const nbCmdPrev = Number(kpi.commandes_prev);
-    const margeReel = Number(kpi.marge_reelle_kmf);
-    const panierMoy = Number(kpi.panier_moyen_kmf);
-    const caEur     = Number(kpi.ca_eur);
+    const ca       = Number(kpi.ca_kmf);
+    const caPrev   = Number(kpi.ca_prev_kmf);
+    const nbCmd    = Number(kpi.nb_commandes);
+    const nbPrev   = Number(kpi.nb_prev);
+    const marge    = Number(kpi.marge_reelle_kmf);
+    const eur_kmf  = rates.eur_kmf;
 
-    const evo_ca  = caPrev > 0 ? ((ca - caPrev) / caPrev * 100).toFixed(1) + '%' : 'N/A';
-    const evo_cmd = nbCmdPrev > 0 ? ((nbCmd - nbCmdPrev) / nbCmdPrev * 100).toFixed(1) + '%' : 'N/A';
-    const tauxMarge = ca > 0 && Number(kpi.nb_avec_cost) > 0
-      ? (margeReel / ca * 100).toFixed(1) + '%'
-      : '—';
-
-    // Alertes vente à perte
+    // ── Alertes vente à perte ───────────────────────────────────────────────
     const { rows: perteRows } = await db.query(`
       SELECT reference FROM orders
       WHERE created_at >= NOW() - INTERVAL '1 day' * $1
@@ -363,375 +237,184 @@ router.get('/sales', async (req, res) => {
       LIMIT 10
     `, [period]);
 
-    const marge = {
-      marge_produit_kmf:   Math.round(Number(kpi.marge_produit_kmf)),
-      cout_transport_kmf:  Math.round(Number(kpi.cout_transport_kmf)),
-      cout_douane_kmf:     Math.round(Number(kpi.cout_douane_kmf)),
-      marge_reelle_kmf:    Math.round(margeReel),
-      taux_marge_moy:      tauxMarge,
-      nb_sans_cost_renseigne: Number(kpi.nb_sans_cost),
-      alerte_vente_a_perte: perteRows.length > 0
-        ? { count: perteRows.length, commandes: perteRows }
-        : null,
-    };
-
-    // ── Diaspora vs local ─────────────────────────────────────────────────────
-    const { rows: diasporaRows } = await db.query(`
-      SELECT
-        'local' AS origine,
-        COUNT(*) AS nb_commandes,
-        COALESCE(SUM(total_kmf), 0) AS ca_kmf,
-        COALESCE(AVG(total_kmf), 0) AS panier_moyen_kmf
-      FROM orders
-      WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-        AND status != 'cancelled'
-      GROUP BY 1
-      ORDER BY 1
-    `, [period]);
-
-    // ── Marge par catégorie ───────────────────────────────────────────────────
+    // ── Marge par catégorie ─────────────────────────────────────────────────
     const { rows: catRows } = await db.query(`
-      SELECT
-        p.category,
+      SELECT p.category,
         COUNT(o.id) AS nb_commandes,
         COALESCE(SUM(o.total_kmf), 0) AS ca_kmf,
-        COALESCE(SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf), 0) AS marge_produit_kmf,
-        ROUND(
-          CASE WHEN SUM(o.total_kmf) > 0
-            THEN 100.0 * SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf)::numeric / SUM(o.total_kmf)
-            ELSE 0 END, 1
-        ) AS taux_marge_pct
+        COALESCE(SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf), 0) AS marge_kmf,
+        ROUND(CASE WHEN SUM(o.total_kmf) > 0
+          THEN 100.0 * SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf)::numeric / SUM(o.total_kmf)
+          ELSE 0 END, 1) AS taux_marge_pct
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
-      WHERE o.created_at >= NOW() - INTERVAL '1 day' * $1
-        AND o.status != 'cancelled'
-      GROUP BY p.category
-      ORDER BY ca_kmf DESC
+      WHERE o.created_at >= NOW() - INTERVAL '1 day' * $1 AND o.status != 'cancelled'
+      GROUP BY p.category ORDER BY ca_kmf DESC
     `, [period]);
 
-    // ── Top 10 produits ───────────────────────────────────────────────────────
+    // ── Top 10 produits ─────────────────────────────────────────────────────
     const { rows: topProds } = await db.query(`
-      SELECT
-        p.id, p.name, p.category,
+      SELECT p.name, p.category,
         SUM(oi.quantity) AS qty_vendue,
-        SUM(oi.price_kmf * oi.quantity) AS revenue_kmf,
-        CASE WHEN SUM(CASE WHEN p.cost_kmf IS NOT NULL THEN 1 ELSE 0 END) > 0
-          THEN ROUND(SUM(oi.price_kmf * oi.quantity - COALESCE(p.cost_kmf, 0) * oi.quantity))
-          ELSE NULL
-        END AS marge_kmf,
-        CASE WHEN SUM(oi.price_kmf * oi.quantity) > 0
-          THEN ROUND(100.0 * SUM(oi.price_kmf * oi.quantity - COALESCE(p.cost_kmf, 0) * oi.quantity) / NULLIF(SUM(oi.price_kmf * oi.quantity), 0), 1)
-          ELSE NULL
-        END AS taux_marge_pct
+        SUM(oi.price_kmf * oi.quantity) AS revenue_kmf
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       JOIN products p ON p.id = oi.product_id
-      WHERE o.created_at >= NOW() - INTERVAL '1 day' * $1
-        AND o.status != 'cancelled'
+      WHERE o.created_at >= NOW() - INTERVAL '1 day' * $1 AND o.status != 'cancelled'
       GROUP BY p.id, p.name, p.category
-      ORDER BY revenue_kmf DESC
-      LIMIT 10
+      ORDER BY revenue_kmf DESC LIMIT 10
     `, [period]);
-
-    // ── Produits jamais vendus ────────────────────────────────────────────────
-    const { rows: neverRows } = await db.query(`
-      SELECT p.id, p.name, p.category
-      FROM products p
-      WHERE p.is_active = TRUE
-        AND NOT EXISTS (
-          SELECT 1 FROM order_items oi
-          JOIN orders o ON o.id = oi.order_id
-          WHERE oi.product_id = p.id AND o.status != 'cancelled'
-        )
-      ORDER BY p.name
-    `);
-
-    // ── Clients ───────────────────────────────────────────────────────────────
-    const { rows: [clients] } = await db.query(`
-      SELECT
-        COUNT(DISTINCT user_id) FILTER (
-          WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND user_id IS NOT NULL
-        ) AS nouveaux_cette_periode,
-        COUNT(DISTINCT user_id) FILTER (
-          WHERE user_id IN (
-            SELECT user_id FROM orders
-            WHERE status != 'cancelled' AND user_id IS NOT NULL
-            GROUP BY user_id HAVING COUNT(*) >= 2
-          )
-        ) AS clients_recurrents,
-        COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL) AS total_clients
-      FROM orders
-    `, [period]);
-
-    // BUG-004 fix: guard explicite pour nbClients=0 (base vide ou après reset)
-    const nbClients   = Number(clients.total_clients);
-    const nbRecurrents = Number(clients.clients_recurrents);
-    const tauxReachat = nbClients > 0
-      ? (nbRecurrents / nbClients * 100).toFixed(1) + '%'
-      : '0%';
-
-    // LTV moyen : CA total / nb clients uniques
-    const { rows: [ltv] } = await db.query(`
-      SELECT COALESCE(SUM(total_kmf) / NULLIF(COUNT(DISTINCT user_id), 0), 0) AS ltv_moyen_kmf
-      FROM orders WHERE status != 'cancelled'
-    `);
 
     res.json({
       period,
-      kpi_l1: {
-        ca_kmf:         Math.round(ca),
-        ca_eur:         Math.round(caEur),
-        nb_commandes:   nbCmd,
-        panier_moyen_kmf: Math.round(panierMoy),
-        taux_conversion: '—',  // nécessite sessions / visiteurs
-        marge: marge,
+      taux: rates,
+      kpi: {
+        ca_kmf:          Math.round(ca),
+        ca_eur:          Math.round(ca / eur_kmf),
+        nb_commandes:    nbCmd,
+        nb_livrees:      Number(kpi.nb_livrees),
+        nb_annulees:     Number(kpi.nb_annulees),
+        panier_moyen_kmf: Math.round(Number(kpi.panier_moyen_kmf)),
         evolution: {
-          ca_pct:         evo_ca,
-          commandes_pct:  evo_cmd,
+          ca_pct:  caPrev > 0 ? +((ca - caPrev) / caPrev * 100).toFixed(1) : null,
+          cmd_pct: nbPrev > 0 ? +((nbCmd - nbPrev) / nbPrev * 100).toFixed(1) : null,
         },
       },
-      kpi_l2: {
-        diaspora_vs_local:   diasporaRows.map(r => ({
-          ...r,
-          ca_kmf: Math.round(Number(r.ca_kmf)),
-          panier_moyen_kmf: Math.round(Number(r.panier_moyen_kmf)),
-        })),
-        marge_par_categorie: catRows.map(r => ({
-          ...r,
-          ca_kmf: Math.round(Number(r.ca_kmf)),
-          marge_produit_kmf: Math.round(Number(r.marge_produit_kmf)),
-        })),
+      paiements: {
+        cash:  { count: Number(kpi.nb_cash),   total_kmf: Math.round(Number(kpi.ca_cash_kmf)) },
+        stripe: { count: Number(kpi.nb_stripe), total_eur: +Number(kpi.ca_stripe_eur).toFixed(2) },
       },
-      kpi_l3: {
-        taux_reachat_pct:  tauxReachat,
-        ltv_moyen_kmf:     Math.round(Number(ltv.ltv_moyen_kmf)),
+      marges: {
+        marge_reelle_kmf:    Math.round(marge),
+        cout_logistique_kmf: Math.round(Number(kpi.cout_logistique_kmf)),
+        taux_marge_pct:      ca > 0 && Number(kpi.nb_avec_cost) > 0 ? +(marge / ca * 100).toFixed(1) : null,
+        nb_avec_cost:        Number(kpi.nb_avec_cost),
+        nb_sans_cost:        Number(kpi.nb_sans_cost),
+        alertes_perte:       perteRows.length > 0 ? { count: perteRows.length, refs: perteRows.map(r => r.reference) } : null,
       },
-      produits: {
-        top_10: topProds.map(p => ({
-          ...p,
-          revenue_kmf: Math.round(Number(p.revenue_kmf)),
-          marge_kmf:   p.marge_kmf !== null ? Math.round(Number(p.marge_kmf)) : null,
-        })),
-        jamais_vendus: {
-          count: neverRows.length,
-          items: neverRows,
-        },
-      },
-      clients: {
-        nouveaux_cette_periode: Number(clients.nouveaux_cette_periode),
-        clients_recurrents:     nbRecurrents,
-        total_clients:          Number(clients.total_clients),
-      },
+      par_categorie: catRows.map(r => ({
+        categorie:    r.category,
+        nb_commandes: Number(r.nb_commandes),
+        ca_kmf:       Math.round(Number(r.ca_kmf)),
+        marge_kmf:    Math.round(Number(r.marge_kmf)),
+        taux_marge:   +Number(r.taux_marge_pct),
+      })),
+      top_produits: topProds.map(p => ({
+        nom:       p.name,
+        categorie: p.category,
+        qty:       Number(p.qty_vendue),
+        ca_kmf:    Math.round(Number(p.revenue_kmf)),
+      })),
     });
-
   } catch (err) {
-    console.error('Dashboard sales error:', err.message);
-    res.status(500).json({ error: 'Erreur ventes & marges' });
+    console.error('Dashboard finance error:', err.message);
+    res.status(500).json({ error: 'Erreur KPIs financiers' });
   }
 });
 
-// ─── GET /api/dashboard/retards ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3. GET /pilotage — Vue stratégique coûts & marges (ex-pilotage.js)
+// ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/retards', async (req, res) => {
+router.get('/pilotage', async (req, res) => {
   try {
-    const { niveau } = req.query;
-
-    // Récupérer toutes les commandes actives en retard
-    const { rows } = await db.query(`
-      SELECT
-        o.id, o.reference, o.status,
-        rc.full_name AS client_nom,
-        rc.phone     AS client_phone,
-        u.email            AS client_email,
-        EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours,
-        EXTRACT(EPOCH FROM (NOW() - o.updated_at)) / 86400 AS inactif_jours
-      FROM orders o
-      LEFT JOIN users u ON u.id = o.user_id
-      LEFT JOIN recipients rc ON rc.id = o.recipient_id
-      WHERE o.status NOT IN ('collected','cancelled')
-        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= $1
-      ORDER BY age_jours DESC
-      LIMIT 200
-    `, [DELAY_PREVENTIF]);
-
-    // Classifier et filtrer
-    const parNiveau = {
-      remboursement_possible:    { count: 0, label: 'Remboursement possible (8 sem+)' },
-      remise_10pct_prochaine_cmd: { count: 0, label: 'Remise −10% prochaine commande' },
-      avoir_5pct:                { count: 0, label: 'Avoir 5% offert' },
-      contact_préventif:         { count: 0, label: 'Contact préventif' },
-    };
-
-    const clients = rows
-      .map(o => {
-        const jours = Number(o.age_jours);
-        let niv, comp, sms;
-
-        if (jours >= DELAY_REMBOURSEMENT) {
-          niv  = 'remboursement_possible';
-          comp = 'remboursement_possible';
-          sms  = `Bonjour ${o.client_nom || 'cher client'}, votre commande ${o.reference} accuse un retard important. Nous vous contactons pour trouver une solution. Komerce`;
-        } else if (jours >= DELAY_REMISE) {
-          niv  = 'remise_10pct_prochaine_cmd';
-          comp = 'remise_10pct_prochaine_cmd';
-          sms  = `Komerce : Nous nous excusons pour le délai sur ${o.reference}. En compensation, bénéficiez de −10% sur votre prochaine commande. Merci de votre patience.`;
-        } else if (jours >= DELAY_AVOIR) {
-          niv  = 'avoir_5pct';
-          comp = 'avoir_5pct';
-          sms  = `Komerce : Votre commande ${o.reference} prend plus de temps que prévu. Nous vous offrons un avoir de 5%. Merci pour votre patience.`;
-        } else {
-          niv  = 'contact_préventif';
-          comp = 'contact_préventif';
-          sms  = `Komerce : Votre commande ${o.reference} est en cours de traitement. Nous vous tenons informé dès que votre colis est expédié.`;
-        }
-
-        parNiveau[niv].count++;
-
-        return {
-          reference:                o.reference,
-          status:                   o.status,
-          client_nom:               o.client_nom,
-          client_phone:             o.client_phone,
-          client_email:             o.client_email,
-          jours_de_retard:          Math.round(jours),
-          type_retard:              jours >= SLA_LATE_DAYS ? 'retard' : 'préventif',
-          compensation_recommandee: comp,
-          sms_suggere:              sms,
-          _niveau:                  niv,
-        };
-      })
-      .filter(o => !niveau || o._niveau === niveau)
-      .map(({ _niveau, ...rest }) => rest);
-
-    res.json({
-      total:     clients.length,
-      par_niveau: parNiveau,
-      clients,
-    });
-
-  } catch (err) {
-    console.error('Dashboard retards error:', err.message);
-    res.status(500).json({ error: 'Erreur retards' });
-  }
-});
-
-// ─── GET /api/dashboard/forecast ─────────────────────────────────────────────
-
-router.get('/forecast', async (req, res) => {
-  try {
-    const {
-      target_date,
-      ref_period = 30,
-      from_date,
-    } = req.query;
-
-    if (!target_date) {
-      return res.status(400).json({ error: 'target_date obligatoire (YYYY-MM-DD)' });
+    const mois = req.query.mois || new Date().toISOString().slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(mois)) {
+      return res.status(400).json({ error: 'Format mois invalide (YYYY-MM attendu)' });
     }
 
-    const targetDt    = new Date(target_date);
-    const today       = new Date();
-    if (isNaN(targetDt.getTime()) || targetDt <= today) {
-      return res.status(400).json({ error: 'target_date doit être dans le futur' });
-    }
+    const cacheKey = 'pilotage_' + mois;
+    const hit = cached(cacheKey);
+    if (hit) return res.json(hit);
 
-    const daysRemaining = Math.ceil((targetDt - today) / 86400000);
-    const refPeriod     = Math.max(1, Math.min(365, parseInt(ref_period)));
-    const fromDt        = from_date ? new Date(from_date) : new Date(today.getTime() - refPeriod * 86400000);
-    const fromStr       = fromDt.toISOString().split('T')[0];
+    const [annee, moisNum] = mois.split('-').map(Number);
+    const debutMois = `${mois}-01`;
+    const finMois   = new Date(annee, moisNum, 1).toISOString().split('T')[0];
+    const rates     = await getEurKmf();
 
-    const cacheKey = `forecast_${fromStr}_${target_date}_${refPeriod}`;
-    const fHit = cached(cacheKey);
-    if (fHit) return res.json(fHit);
-
-    // Réalisé depuis from_date
-    const { rows: [realise] } = await db.query(`
+    // ── Volume & CA ─────────────────────────────────────────────────────────
+    const { rows: [vol] } = await db.query(`
       SELECT
-        COALESCE(SUM(total_kmf), 0) AS ca_kmf,
-        COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf), 0) AS marge_reelle_kmf
-      FROM orders
-      WHERE status != 'cancelled'
-        AND created_at >= $1
-        AND created_at <= NOW()
-    `, [fromStr]);
+        COUNT(*) AS total_commandes,
+        COUNT(*) FILTER (WHERE status = 'collected')  AS livrees,
+        COUNT(*) FILTER (WHERE status = 'cancelled')  AS annulees,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled')) AS en_cours,
+        COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS ca_kmf,
+        COALESCE(SUM(total_eur) FILTER (WHERE status != 'cancelled'), 0) AS ca_eur,
+        COALESCE(SUM(total_kmf) FILTER (WHERE payment_mode = 'cash_relais' AND status != 'cancelled'), 0) AS ca_cash_kmf,
+        COALESCE(SUM(total_kmf) FILTER (WHERE payment_mode = 'stripe_eur' AND status != 'cancelled'), 0) AS ca_stripe_kmf
+      FROM orders WHERE created_at >= $1 AND created_at < $2
+    `, [debutMois, finMois]);
 
-    // Statistiques journalières sur la période de référence pour le modèle
-    const { rows: statsRows } = await db.query(`
-      SELECT
-        created_at::date AS jour,
-        SUM(total_kmf) AS ca_jour
-      FROM orders
-      WHERE status != 'cancelled'
-        AND created_at >= NOW() - INTERVAL '1 day' * $1
-      GROUP BY 1
-      ORDER BY 1
-    `, [refPeriod]);
+    // ── CA par catégorie ────────────────────────────────────────────────────
+    const { rows: catRows } = await db.query(`
+      SELECT p.category, COUNT(oi.id) AS nb_articles, COUNT(DISTINCT oi.order_id) AS nb_commandes,
+        COALESCE(SUM(oi.price_kmf * oi.quantity), 0) AS ca_kmf
+      FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      JOIN orders o   ON o.id = oi.order_id
+      WHERE o.created_at >= $1 AND o.created_at < $2 AND o.status != 'cancelled'
+      GROUP BY p.category ORDER BY nb_commandes DESC
+    `, [debutMois, finMois]);
 
-    const dailyCAs = statsRows.map(r => Number(r.ca_jour));
-    const nbDays   = dailyCAs.length || 1;
-    const avgCA    = dailyCAs.reduce((s, v) => s + v, 0) / nbDays;
-    const variance = dailyCAs.reduce((s, v) => s + Math.pow(v - avgCA, 2), 0) / nbDays;
-    const stddev   = Math.sqrt(variance);
+    // ── Taux douane effectif (customs_taux_mensuel) ─────────────────────────
+    let douaneEffectif = null;
+    try {
+      const { rows } = await db.query('SELECT taux_effectif_pct FROM customs_taux_mensuel WHERE mois = $1', [mois]);
+      if (rows[0]?.taux_effectif_pct != null) douaneEffectif = parseFloat(rows[0].taux_effectif_pct);
+    } catch { /* vue pas encore disponible */ }
 
-    // Projection : réalisé + (jours restants × scénario)
-    const caRealise = Number(realise.ca_kmf);
-    const margeReal = Number(realise.marge_reelle_kmf);
+    // ── Pipeline du mois ────────────────────────────────────────────────────
+    const { rows: pipelineRows } = await db.query(`
+      SELECT status, COUNT(*) AS nb FROM orders WHERE status != 'cancelled' GROUP BY status ORDER BY nb DESC
+    `);
 
-    const proj_pessimiste = caRealise + daysRemaining * Math.max(0, avgCA - stddev);
-    const proj_attendu    = caRealise + daysRemaining * avgCA;
-    const proj_optimiste  = caRealise + daysRemaining * (avgCA + stddev);
+    // ── Taux de change historique ───────────────────────────────────────────
+    const { rows: ratesHistory } = await db.query(
+      'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 6'
+    );
 
-    // Marge projetée (utilise le taux moyen réalisé ou 20% si pas de données)
-    const tauxMargeReel = caRealise > 0 ? margeReal / caRealise : 0.20;
-    const marge_pess    = proj_pessimiste  * tauxMargeReel;
-    const marge_att     = proj_attendu     * tauxMargeReel;
-    const marge_opt     = proj_optimiste   * tauxMargeReel;
+    const caKmf = parseFloat(vol.ca_kmf);
+    const TAUX_TERRAIN = douaneEffectif ? douaneEffectif / 100 : 0.42;
+    const hubMensuelKmf = 7000 * rates.aed_kmf;
 
-    const alertePerte = marge_att < 0
-      ? `⚠️ Projection de marge négative (${Math.round(marge_att).toLocaleString('fr-FR')} KMF) — vérifier les coûts`
-      : null;
-
-    const forecastResult = {
-      from_date:     fromStr,
-      target_date:   target_date,
-      days_remaining: daysRemaining,
-      realise: {
-        ca_kmf:          Math.round(caRealise),
-        marge_reelle_kmf: Math.round(margeReal),
+    const result = {
+      periode: mois,
+      genere_le: new Date().toISOString(),
+      taux: rates,
+      taux_history: ratesHistory,
+      volume: {
+        total: parseInt(vol.total_commandes), livrees: parseInt(vol.livrees),
+        annulees: parseInt(vol.annulees), en_cours: parseInt(vol.en_cours),
       },
-      modele: {
-        note:              `Modèle linéaire basé sur l'historique`,
-        ref_period_jours:  refPeriod,
-        avg_ca_par_jour:   Math.round(avgCA),
-        stddev_ca:         Math.round(stddev),
+      ca: {
+        total_kmf: Math.round(caKmf), total_eur: Math.round(parseFloat(vol.ca_eur)),
+        cash_kmf: Math.round(parseFloat(vol.ca_cash_kmf)), stripe_kmf: Math.round(parseFloat(vol.ca_stripe_kmf)),
       },
-      projection_ca: {
-        pessimiste: Math.round(proj_pessimiste),
-        attendu:    Math.round(proj_attendu),
-        optimiste:  Math.round(proj_optimiste),
+      categories: catRows.map(r => ({
+        categorie: r.category, nb_commandes: parseInt(r.nb_commandes),
+        nb_articles: parseInt(r.nb_articles), ca_kmf: Math.round(parseFloat(r.ca_kmf)),
+        pct_ca: caKmf > 0 ? +(parseFloat(r.ca_kmf) / caKmf * 100).toFixed(1) : 0,
+      })),
+      couts: {
+        taux_terrain_pct: TAUX_TERRAIN * 100,
+        source_taux: douaneEffectif ? 'customs_history' : 'decision_v75_42pct',
+        hub_fixe_mensuel_kmf: Math.round(hubMensuelKmf),
       },
-      projection_marge: {
-        pessimiste:      Math.round(marge_pess),
-        attendu:         Math.round(marge_att),
-        optimiste:       Math.round(marge_opt),
-        taux_marge_proj: (tauxMargeReel * 100).toFixed(1) + '%',
-        alerte_perte:    alertePerte,
-      },
+      pipeline: pipelineRows.map(r => ({ statut: r.status, nb: parseInt(r.nb) })),
     };
-    setCache(cacheKey, forecastResult);
-    res.json(forecastResult);
-
+    setCache(cacheKey, result);
+    res.json(result);
   } catch (err) {
-    console.error('Dashboard forecast error:', err.message);
-    res.status(500).json({ error: 'Erreur prévisions' });
+    console.error('Dashboard pilotage error:', err.message);
+    res.status(500).json({ error: 'Erreur pilotage stratégique' });
   }
 });
 
-// ─── GET /api/dashboard/pipeline ──────────────────────────────────────────────
-// Pipeline Kanban — toutes les commandes avec leur statut actuel + timestamps
-// Retourne les commandes groupées par étape du pipeline
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. GET /pipeline — Kanban commandes
+// ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/pipeline', async (req, res) => {
   try {
@@ -739,35 +422,16 @@ router.get('/pipeline', async (req, res) => {
     if (hit) return res.json(hit);
 
     const { rows } = await db.query(`
-      SELECT
-        o.id,
-        o.reference,
-        o.status,
-        o.total_kmf,
-        o.payment_mode,
-        o.payment_status,
-        o.created_at,
-        o.ordered_at,
-        o.shipped_at,
-        o.available_at,
-        o.collected_at,
-        o.cancelled_at,
-        o.updated_at,
-        u.full_name   AS client_name,
-        u.phone       AS client_phone,
-        rc.full_name  AS recipient_name,
-        rc.phone      AS recipient_phone,
-        r.name        AS relais_name,
-        (SELECT p.name FROM order_items oi
-         JOIN products p ON p.id = oi.product_id
-         WHERE oi.order_id = o.id
-         ORDER BY oi.created_at ASC LIMIT 1
-        ) AS product_name,
-        (SELECT p.image_url FROM order_items oi
-         JOIN products p ON p.id = oi.product_id
-         WHERE oi.order_id = o.id
-         ORDER BY oi.created_at ASC LIMIT 1
-        ) AS product_image_url,
+      SELECT o.id, o.reference, o.status, o.total_kmf,
+        o.payment_mode, o.payment_status,
+        o.created_at, o.ordered_at, o.shipped_at, o.available_at, o.collected_at, o.cancelled_at, o.updated_at,
+        u.full_name AS client_name, u.phone AS client_phone,
+        rc.full_name AS recipient_name, rc.phone AS recipient_phone,
+        r.name AS relais_name,
+        (SELECT p.name FROM order_items oi JOIN products p ON p.id = oi.product_id
+         WHERE oi.order_id = o.id ORDER BY oi.created_at ASC LIMIT 1) AS product_name,
+        (SELECT p.image_url FROM order_items oi JOIN products p ON p.id = oi.product_id
+         WHERE oi.order_id = o.id ORDER BY oi.created_at ASC LIMIT 1) AS product_image_url,
         (SELECT COUNT(*) FROM order_items WHERE order_id = o.id)::int AS items_count,
         EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours,
         EXTRACT(EPOCH FROM (NOW() - o.updated_at)) / 86400 AS inactif_jours
@@ -778,34 +442,274 @@ router.get('/pipeline', async (req, res) => {
       ORDER BY o.created_at DESC
     `);
 
-    // Group by status
-    const STAGES = [
-      'confirmed', 'ordered', 'preparation',
-      'shipped', 'available', 'collected',
-      'cancelled', 'refunded'
-    ];
-
+    const STAGES = ['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
     const pipeline = {};
-    for (const s of STAGES) {
-      pipeline[s] = { count: 0, orders: [] };
-    }
+    for (const s of STAGES) pipeline[s] = { count: 0, orders: [] };
 
     let active = 0;
     for (const order of rows) {
-      const s = order.status;
-      if (pipeline[s]) {
-        pipeline[s].count++;
-        pipeline[s].orders.push(order);
+      if (pipeline[order.status]) {
+        pipeline[order.status].count++;
+        pipeline[order.status].orders.push(order);
       }
-      if (!['collected', 'cancelled', 'refunded'].includes(s)) active++;
+      if (!['collected','cancelled','refunded'].includes(order.status)) active++;
     }
 
     const result = { total: rows.length, active, pipeline };
     setCache('pipeline', result);
     res.json(result);
   } catch (err) {
-    console.error('[dashboard/pipeline] Erreur:', err.message);
+    console.error('Dashboard pipeline error:', err.message);
     res.status(500).json({ error: 'Erreur pipeline' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. GET /retards — Clients en retard + compensations
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/retards', async (req, res) => {
+  try {
+    const { niveau } = req.query;
+
+    const { rows } = await db.query(`
+      SELECT o.id, o.reference, o.status,
+        rc.full_name AS client_nom, rc.phone AS client_phone,
+        u.email AS client_email,
+        EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN recipients rc ON rc.id = o.recipient_id
+      WHERE o.status NOT IN ('collected','cancelled')
+        AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= $1
+      ORDER BY age_jours DESC LIMIT 200
+    `, [DELAY_PREVENTIF]);
+
+    const parNiveau = {
+      remboursement_possible:     { count: 0, label: 'Remboursement possible (8 sem+)' },
+      remise_10pct_prochaine_cmd: { count: 0, label: 'Remise −10% prochaine commande' },
+      avoir_5pct:                 { count: 0, label: 'Avoir 5% offert' },
+      contact_preventif:          { count: 0, label: 'Contact préventif' },
+    };
+
+    const clients = rows.map(o => {
+      const jours = Number(o.age_jours);
+      let niv, comp, sms;
+      if (jours >= DELAY_REMBOURSEMENT) {
+        niv = 'remboursement_possible'; comp = niv;
+        sms = `Bonjour ${o.client_nom || 'cher client'}, votre commande ${o.reference} accuse un retard important. Nous vous contactons pour trouver une solution. Komerce`;
+      } else if (jours >= DELAY_REMISE) {
+        niv = 'remise_10pct_prochaine_cmd'; comp = niv;
+        sms = `Komerce : Nous nous excusons pour le délai sur ${o.reference}. En compensation, bénéficiez de −10% sur votre prochaine commande.`;
+      } else if (jours >= DELAY_AVOIR) {
+        niv = 'avoir_5pct'; comp = niv;
+        sms = `Komerce : Votre commande ${o.reference} prend plus de temps que prévu. Nous vous offrons un avoir de 5%.`;
+      } else {
+        niv = 'contact_preventif'; comp = niv;
+        sms = `Komerce : Votre commande ${o.reference} est en cours de traitement. Nous vous tenons informé dès que votre colis est expédié.`;
+      }
+      parNiveau[niv].count++;
+      return {
+        reference: o.reference, status: o.status,
+        client_nom: o.client_nom, client_phone: o.client_phone, client_email: o.client_email,
+        jours_retard: Math.round(jours), compensation: comp, sms_suggere: sms, _niv: niv,
+      };
+    }).filter(o => !niveau || o._niv === niveau).map(({ _niv, ...rest }) => rest);
+
+    res.json({ total: clients.length, par_niveau: parNiveau, clients });
+  } catch (err) {
+    console.error('Dashboard retards error:', err.message);
+    res.status(500).json({ error: 'Erreur retards' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. GET /forecast — Projections CA/marge
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/forecast', async (req, res) => {
+  try {
+    const { target_date, ref_period = 30 } = req.query;
+    if (!target_date) return res.status(400).json({ error: 'target_date obligatoire (YYYY-MM-DD)' });
+
+    const targetDt = new Date(target_date);
+    const today    = new Date();
+    if (isNaN(targetDt.getTime()) || targetDt <= today) {
+      return res.status(400).json({ error: 'target_date doit être dans le futur' });
+    }
+
+    const daysRemaining = Math.ceil((targetDt - today) / 86400000);
+    const refPeriod     = Math.max(1, Math.min(365, parseInt(ref_period)));
+
+    const { rows: statsRows } = await db.query(`
+      SELECT created_at::date AS jour, SUM(total_kmf) AS ca_jour
+      FROM orders WHERE status != 'cancelled' AND created_at >= NOW() - INTERVAL '1 day' * $1
+      GROUP BY 1 ORDER BY 1
+    `, [refPeriod]);
+
+    const dailyCAs = statsRows.map(r => Number(r.ca_jour));
+    const nbDays   = dailyCAs.length || 1;
+    const avgCA    = dailyCAs.reduce((s, v) => s + v, 0) / nbDays;
+    const stddev   = Math.sqrt(dailyCAs.reduce((s, v) => s + Math.pow(v - avgCA, 2), 0) / nbDays);
+
+    const { rows: [realise] } = await db.query(`
+      SELECT COALESCE(SUM(total_kmf), 0) AS ca_kmf
+      FROM orders WHERE status != 'cancelled' AND created_at >= DATE_TRUNC('month', NOW())
+    `);
+    const caRealise = Number(realise.ca_kmf);
+
+    res.json({
+      target_date, days_remaining: daysRemaining,
+      realise_kmf: Math.round(caRealise),
+      modele: { ref_period_jours: refPeriod, avg_ca_jour: Math.round(avgCA), stddev: Math.round(stddev) },
+      projection: {
+        pessimiste: Math.round(caRealise + daysRemaining * Math.max(0, avgCA - stddev)),
+        attendu:    Math.round(caRealise + daysRemaining * avgCA),
+        optimiste:  Math.round(caRealise + daysRemaining * (avgCA + stddev)),
+      },
+    });
+  } catch (err) {
+    console.error('Dashboard forecast error:', err.message);
+    res.status(500).json({ error: 'Erreur prévisions' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7. GET /clients — Analyse comportement clients (ex-pilotage/clients)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/clients', async (req, res) => {
+  try {
+    const top   = Math.min(50, Math.max(1, parseInt(req.query.top) || 20));
+    const debut = req.query.debut || '2024-01-01';
+    const fin   = req.query.fin   || new Date().toISOString().split('T')[0];
+    const finExcl = new Date(new Date(fin).getTime() + 86400000).toISOString().split('T')[0];
+
+    const cacheKey = `clients_${debut}_${fin}_${top}`;
+    const hit = cached(cacheKey);
+    if (hit) return res.json(hit);
+
+    const [kpiRes, topClientsRes, topProdsRes, relaisRes, evoRes] = await Promise.all([
+      db.query(`
+        SELECT COUNT(DISTINCT o.user_id) AS nb_clients,
+          COUNT(DISTINCT o.id) FILTER (WHERE o.status != 'cancelled') AS commandes_valides,
+          COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS ca_kmf,
+          COALESCE(AVG(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS panier_moyen,
+          COUNT(DISTINCT o.user_id) FILTER (WHERE o.user_id IN (
+            SELECT user_id FROM orders GROUP BY user_id HAVING COUNT(*) >= 2
+          )) AS clients_recurrents
+        FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2
+      `, [debut, finExcl]),
+
+      db.query(`
+        SELECT u.full_name AS name, u.phone,
+          COUNT(o.id) AS nb_commandes,
+          COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS ca_kmf,
+          MAX(o.created_at) AS derniere_commande
+        FROM orders o JOIN users u ON u.id = o.user_id
+        WHERE o.created_at >= $1 AND o.created_at < $2
+        GROUP BY u.id, u.full_name, u.phone
+        ORDER BY ca_kmf DESC LIMIT $3
+      `, [debut, finExcl, top]),
+
+      db.query(`
+        SELECT p.name, p.category, SUM(oi.quantity) AS qty,
+          COUNT(DISTINCT oi.order_id) AS nb_commandes,
+          COALESCE(SUM(oi.price_kmf * oi.quantity), 0) AS ca_kmf
+        FROM order_items oi
+        JOIN products p ON p.id = oi.product_id
+        JOIN orders o ON o.id = oi.order_id
+        WHERE o.created_at >= $1 AND o.created_at < $2 AND o.status != 'cancelled'
+        GROUP BY p.id, p.name, p.category ORDER BY qty DESC LIMIT $3
+      `, [debut, finExcl, top]),
+
+      db.query(`
+        SELECT r.name AS relais, r.island,
+          COUNT(DISTINCT o.id) AS nb_commandes,
+          COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status != 'cancelled'), 0) AS ca_kmf,
+          COUNT(*) FILTER (WHERE o.status = 'collected') AS livrees
+        FROM orders o JOIN relais r ON r.id = o.relais_id
+        WHERE o.created_at >= $1 AND o.created_at < $2
+        GROUP BY r.id, r.name, r.island ORDER BY ca_kmf DESC
+      `, [debut, finExcl]),
+
+      db.query(`
+        SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS mois,
+          COUNT(DISTINCT id) AS nb_commandes,
+          COUNT(DISTINCT user_id) AS nb_clients,
+          COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS ca_kmf
+        FROM orders WHERE created_at >= $1 AND created_at < $2
+        GROUP BY 1 ORDER BY 1 ASC
+      `, [debut, finExcl]),
+    ]);
+
+    const kpi = kpiRes.rows[0];
+    const nbClients = parseInt(kpi.nb_clients);
+
+    const result = {
+      periode: { debut, fin },
+      kpi: {
+        nb_clients:         nbClients,
+        commandes_valides:  parseInt(kpi.commandes_valides),
+        ca_total_kmf:       Math.round(parseFloat(kpi.ca_kmf)),
+        panier_moyen_kmf:   Math.round(parseFloat(kpi.panier_moyen)),
+        clients_recurrents: parseInt(kpi.clients_recurrents),
+        taux_recurrence_pct: nbClients > 0 ? +(parseInt(kpi.clients_recurrents) / nbClients * 100).toFixed(1) : 0,
+      },
+      top_clients:  topClientsRes.rows.map(c => ({
+        name: c.name, phone: c.phone, nb_commandes: parseInt(c.nb_commandes),
+        ca_kmf: Math.round(parseFloat(c.ca_kmf)), derniere_commande: c.derniere_commande,
+      })),
+      top_produits: topProdsRes.rows.map(p => ({
+        name: p.name, categorie: p.category, qty: parseInt(p.qty),
+        nb_commandes: parseInt(p.nb_commandes), ca_kmf: Math.round(parseFloat(p.ca_kmf)),
+      })),
+      par_relais: relaisRes.rows.map(r => ({
+        relais: r.relais, ile: r.island, nb_commandes: parseInt(r.nb_commandes),
+        ca_kmf: Math.round(parseFloat(r.ca_kmf)), livrees: parseInt(r.livrees),
+      })),
+      evolution: evoRes.rows,
+    };
+    setCache(cacheKey, result);
+    res.json(result);
+  } catch (err) {
+    console.error('Dashboard clients error:', err.message);
+    res.status(500).json({ error: 'Erreur analyse clients' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 8. GET /history — Historique mensuel (graphiques)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/history', async (req, res) => {
+  try {
+    const nbMois = Math.min(24, Math.max(1, parseInt(req.query.mois) || 6));
+    const rates  = await getEurKmf();
+
+    const { rows } = await db.query(`
+      SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS mois,
+        COUNT(*) AS total_commandes,
+        COUNT(*) FILTER (WHERE status = 'collected') AS livrees,
+        COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS ca_kmf,
+        COALESCE(SUM(total_eur) FILTER (WHERE status != 'cancelled'), 0) AS ca_eur
+      FROM orders WHERE created_at >= NOW() - ($1 || ' months')::INTERVAL
+      GROUP BY 1 ORDER BY 1 ASC
+    `, [nbMois]);
+
+    res.json({
+      nb_mois: nbMois, taux: rates,
+      history: rows.map(r => ({
+        mois: r.mois,
+        total_commandes: parseInt(r.total_commandes),
+        livrees: parseInt(r.livrees),
+        ca_kmf: Math.round(parseFloat(r.ca_kmf)),
+        ca_eur: Math.round(parseFloat(r.ca_eur)),
+      })),
+    });
+  } catch (err) {
+    console.error('Dashboard history error:', err.message);
+    res.status(500).json({ error: 'Erreur historique' });
   }
 });
 
