@@ -391,7 +391,7 @@ tr:hover { background: var(--bg3); }
         <div class="stat-icon" style="background:var(--green-bg);color:var(--green);">✅</div>
         <div class="stat-info">
           <div class="stat-value" id="statReady">—</div>
-          <div class="stat-label">Prêts à expédier</div>
+          <div class="stat-label">À réceptionner</div>
         </div>
       </div>
       <div class="stat-card">
@@ -662,23 +662,29 @@ async function loadAllData() {
 }
 
 async function loadStats() {
-  // Stats dérivées depuis allOrders (déjà chargées par loadQueue)
-  // On recompute après loadQueue pour être sûr d'avoir les données
   try {
     const ordered     = allOrders.filter(o => o.status === 'ordered').length;
     const preparation = allOrders.filter(o => o.status === 'preparation').length;
-    const shipped     = allOrders.filter(o => o.status === 'shipped' || o.status === 'transit_comores').length;
-    const available   = allOrders.filter(o => o.status === 'available').length;
+    // Reçus aujourd'hui = passés en preparation aujourd'hui
+    const today = new Date().toISOString().slice(0, 10);
+    const receivedToday = allOrders.filter(o =>
+      o.status !== 'ordered' && o.status !== 'confirmed' &&
+      o.updated_at && o.updated_at.slice(0, 10) === today
+    ).length;
+    // Alertes >7j = commandes en ordered/preparation depuis > 7 jours
+    const alerts = allOrders.filter(o =>
+      (o.status === 'ordered' || o.status === 'preparation') && daysSince(o.created_at) > 7
+    ).length;
 
-    const statPrep = document.getElementById('statPreparation');
-    const statReady = document.getElementById('statReady');
-    const statShipped = document.getElementById('statShipped');
-    const statAvailable = document.getElementById('statAvailable');
+    const elReceived = document.getElementById('statReceived');
+    const elPrep     = document.getElementById('statPreparation');
+    const elReady    = document.getElementById('statReady');
+    const elAlerts   = document.getElementById('statAlerts');
 
-    if (statPrep)       statPrep.textContent       = preparation;
-    if (statReady)      statReady.textContent       = ordered;
-    if (statShipped)    statShipped.textContent     = shipped;
-    if (statAvailable)  statAvailable.textContent   = available;
+    if (elReceived) elReceived.textContent = receivedToday;
+    if (elPrep)     elPrep.textContent     = preparation;
+    if (elReady)    elReady.textContent    = ordered;
+    if (elAlerts)   elAlerts.textContent   = alerts;
   } catch (err) {
     console.error('Stats error:', err);
   }
@@ -691,7 +697,7 @@ async function loadQueue() {
     allOrders = orders;
 
     const queue = orders
-      .filter(o => o.status === 'paid' || o.status === 'ordered' || o.status === 'preparation')
+      .filter(o => o.status === 'ordered' || o.status === 'preparation')
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     document.getElementById('queueCount').textContent = queue.length;
@@ -711,7 +717,7 @@ async function loadQueue() {
       const clientName = getClientName(o);
 
       let actionBtn = '';
-      if (o.status === 'paid') {
+      if (o.status === 'ordered') {
         actionBtn = `<button class="btn btn-primary btn-xs" onclick="scanOrder('${o.reference}','preparation')">📥 Réceptionner</button> <button class="btn btn-outline btn-xs" onclick="printQR('${o.reference}','${esc(clientName)}','${esc(products)}','${esc(relaisName)}')">🏷️</button>`;
       } else if (o.status === 'preparation') {
         actionBtn = `<button class="btn btn-purple btn-xs" onclick="scanOrder('${o.reference}','shipped')">📦 Expédier</button> <button class="btn btn-outline btn-xs" onclick="printQR('${o.reference}','${esc(clientName)}','${esc(products)}','${esc(relaisName)}')">🏷️</button>`;
@@ -742,7 +748,7 @@ async function loadShipments() {
     const orders = data.orders || data || [];
 
     const shipped = orders
-      .filter(o => o.status === 'shipped' || o.status === 'relais_received')
+      .filter(o => o.status === 'shipped' || o.status === 'available' || o.status === 'collected')
       .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
       .slice(0, 10);
 
@@ -791,7 +797,7 @@ async function loadRelais() {
     } catch {
       // Fallback: count from allOrders
       allOrders.forEach(o => {
-        if (o.relais_id && ['paid', 'preparation', 'shipped'].includes(o.status)) {
+        if (o.relais_id && ['ordered', 'preparation', 'shipped'].includes(o.status)) {
           relaisOrders[o.relais_id] = (relaisOrders[o.relais_id] || 0) + 1;
         }
       });
@@ -811,7 +817,7 @@ async function loadRelais() {
       const count = relaisOrders[r.id] || relaisOrders[r._id] || 0;
       const pendingFromOrders = allOrders.filter(o =>
         (o.relais_id === r.id || o.relais_id === r._id) &&
-        ['paid', 'preparation', 'shipped'].includes(o.status)
+        ['ordered', 'preparation', 'shipped'].includes(o.status)
       ).length;
       const displayCount = count || pendingFromOrders;
       const icon = r.icon || defaultRelais.find(d => r.name && r.name.includes(d.name))?.icon || '📦';
@@ -994,15 +1000,14 @@ function formatDate(dateStr) {
 
 function getStatusBadge(status) {
   const map = {
-    draft: ['Brouillon', 'badge-gray'],
-    confirmed: ['Confirmée', 'badge-blue'],
-    paid: ['Payée', 'badge-teal'],
+    confirmed: ['Confirmée', 'badge-gray'],
+    ordered: ['Commandée', 'badge-blue'],
     preparation: ['Préparation', 'badge-amber'],
     shipped: ['Expédiée', 'badge-purple'],
-    relais_received: ['Reçue relais', 'badge-blue'],
-    available: ['Disponible', 'badge-green'],
+    available: ['Disponible', 'badge-teal'],
     collected: ['Collectée', 'badge-green'],
-    cancelled: ['Annulée', 'badge-red']
+    cancelled: ['Annulée', 'badge-red'],
+    refunded: ['Remboursée', 'badge-red']
   };
   const [label, cls] = map[status] || [status, 'badge-gray'];
   return `<span class="badge ${cls}">${esc(label)}</span>`;

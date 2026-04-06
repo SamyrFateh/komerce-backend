@@ -1,6 +1,41 @@
-# Komerce — État de session (5 avril 2026)
+# Komerce — État de session
 
-## ✅ Ce qui a été fait
+---
+
+## 📅 Session du 6 avril 2026
+
+### [2026-04-06 04:30 GMT+2] — 🐛 Fix désynchronisation DB ↔ Code — Pipeline MVP 6 étapes
+
+- **Statut** : ✅ Terminé (PR #62 ouverte)
+- **Problème** : L'enum PostgreSQL `order_status` (9 valeurs) était désynchronisé avec le code `orders.js` qui utilisait 13 statuts dont 4 absents de la DB (`ordered`, `purchasing`, `hub_preparation`, `transit_comores`). Toute transition vers ces statuts crashait en DB.
+- **Solution** :
+  - Pipeline simplifié de 10 à **6 étapes opérationnelles** : `confirmed → ordered → preparation → shipped → available → collected` (+ `cancelled`, `refunded`)
+  - Suppression des statuts inutiles : `draft`, `paid`, `purchasing`, `hub_preparation`, `transit_comores`
+- **Fichiers modifiés** :
+  - `db/migrations/004_fix_order_status_enum.sql` (nouveau) — migration sécurisée avec mapping des données existantes
+  - `routes/orders.js` (v8.0) — 15 patches : ORDER_STATUSES, VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_SMS, filtres relais, règles problems
+- **DB impactée** :
+  - Enum `order_status` : recréé avec 8 valeurs (`confirmed`, `ordered`, `preparation`, `shipped`, `available`, `collected`, `cancelled`, `refunded`)
+  - Table `orders` : colonne `status` mise à jour (mapping automatique `paid→ordered`, `purchasing→ordered`, `hub_preparation→preparation`, `transit_comores→shipped`, `draft→confirmed`)
+  - Table `order_status_history` : colonne `status` mise à jour (même mapping)
+- **PR** : #62 — `fix/order-status-pipeline-mvp`
+- **⚠️ Ordre d'exécution** : Exécuter `004_fix_order_status_enum.sql` sur Supabase AVANT de merger la PR
+- **Points en suspens** :
+  - Mettre à jour `payments.js`, `scans.js`, `purchasing.js` pour aligner les statuts utilisés dans ces routes
+  - Tester le flux complet en staging après migration
+
+### [2026-04-06 04:35 GMT+2] — 📝 Ajout README.md racine + mise à jour documentation
+
+- **Statut** : ✅ Terminé
+- **Fichiers modifiés** :
+  - `README.md` (nouveau, racine) — Bloc ⚠️ AGENT IA visible en premier, liens vers toute la doc
+  - `docs/CARTOGRAPHY_360.md` — Section 6 mise à jour avec le nouveau pipeline MVP 6 étapes
+  - `docs/SESSION_STATUS.md` — Journal mis à jour avec les actions de cette session
+- **Objectif** : Tout agent IA voit les règles immédiatement dès l'ouverture du repo
+
+---
+
+## 📅 Session du 5 avril 2026
 
 ### PR #52 — Mergée ✅
 - Fix scan QR sur Hub et Relais (`scan_code` + `step` au lieu de `order_id` + `scan_type`)
@@ -18,7 +53,7 @@
 - Infrastructure SMS déjà en place (Africa's Talking) — SMS envoyé automatiquement quand paiement cash confirmé ✅
 - Base purgée (0 commandes, 50 produits)
 
-## ⚠️ Bugs trouvés pendant les tests (à corriger)
+## ⚠️ Bugs connus
 
 ### Format des IDs pour créer une commande
 L'API `/api/orders` attend des **UUID strings**, pas des integers :
@@ -38,56 +73,52 @@ L'API `/api/orders` attend des **UUID strings**, pas des integers :
 
 ## 🎯 Prochaine séance — TODO
 
-### 1. Tester le flux complet avec les bons IDs
+### 1. Merger PR #62 et exécuter la migration
 ```bash
-# Récupérer un product_id valide
-GET /api/products → prendre un UUID
+# 1. Exécuter la migration SQL sur Supabase
+# 2. Merger PR #62
+# 3. Vérifier que le déploiement Railway fonctionne
+```
 
-# Créer commande avec UUIDs
-POST /api/orders { items: [{product_id: "uuid", quantity: 1}], delivery_relay_id: "uuid", payment_mode: "cash_relais", ... }
+### 2. Aligner les autres routes sur le nouveau pipeline
+- `payments.js` — vérifier les statuts utilisés après paiement
+- `scans.js` — vérifier les steps vs nouveaux statuts
+- `purchasing.js` — simplifier ou supprimer si le flux est allégé
 
-# Confirmer paiement cash (agent relais)
+### 3. Tester le flux complet avec les bons IDs
+```bash
+POST /api/orders { items: [{product_id: "uuid", quantity: 1}], delivery_relay_id: "uuid", payment_mode: "cash_relais" }
 POST /api/payments/cash/confirm { cash_ref_code: "CODE" }
-
-# 4 scans
 POST /api/scans { scan_code: "KOM-XXXX", step: "preparation" }
 POST /api/scans { scan_code: "KOM-XXXX", step: "shipped" }
-POST /api/scans { scan_code: "KOM-XXXX", step: "relais_received" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "available" }
 POST /api/scans { scan_code: "KOM-XXXX", step: "collected" }
 ```
 
-### 2. Tester les pages dans le navigateur
-- [ ] Boutique : passer une commande
-- [ ] Relais : encaisser le code cash
-- [ ] Hub : imprimer QR + scanner préparation + expédié
-- [ ] Relais : scanner réception + retrait
-- [ ] Pipeline : vérifier que tout avance visuellement
-
-### 3. Préparer le guide pour l'équipe
+### 4. Préparer les guides pour l'équipe
 - Guide Agent Dubai (Hub)
 - Guide Agent Relais
 - Guide test client
 
-## 📋 Flux validé complet
+## 📋 Pipeline validé (MVP 6 étapes)
 
 ```
 🛍️ CLIENT commande sur la boutique (cash_relais)
+   → Statut : confirmed
    → Reçoit un code cash
         ↓
 💵 AGENT RELAIS encaisse le cash + entre le code
+   → Statut : ordered
    → SMS confirmation envoyé au client
-   → Commande passe en "ordered"
-        ↓
-🛒 AGENT DUBAI voit la commande → achète le produit
         ↓
 🏭 HUB DUBAI
    🏷️ Imprime étiquette QR (Komerce_QR_Print.html)
-   📱 Scan 1 → preparation
-   📱 Scan 2 → shipped ✈️
+   📱 Scan → preparation
+   📱 Scan → shipped ✈️
         ↓
 📦 RELAIS COMORES
-   📱 Scan 3 → relais_received (SMS "disponible" envoyé au client)
-   📱 Scan 4 → collected (client vient chercher)
+   📱 Scan → available (SMS "disponible" envoyé au client)
+   📱 Scan → collected (client vient chercher)
 ```
 
 ## 🔗 Ressources
