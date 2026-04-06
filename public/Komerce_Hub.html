@@ -527,6 +527,7 @@ async function apiCall(method, path, body = null) {
     headers: { 'Content-Type': 'application/json' }
   };
   opts.credentials = 'include';
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
   if (body) opts.body = JSON.stringify(body);
 
   let res;
