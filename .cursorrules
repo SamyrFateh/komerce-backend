@@ -1,0 +1,39 @@
+# 🔒 Komerce — Règles Agent Cursor
+
+## ⚠️ INSTRUCTION OBLIGATOIRE — LIRE AVANT TOUTE ACTION
+
+Avant de modifier, corriger ou implémenter quoi que ce soit dans ce projet,
+tu DOIS lire et suivre le protocole de gouvernance :
+
+👉 **docs/AGENTS_PROTOCOL.md**
+
+Ce protocole exige la consultation de 3 documents obligatoires :
+
+1. **docs/ROADMAP_KOMERCE.md** — Le Plan (priorités, progression, issues)
+2. **docs/CARTOGRAPHY_360.md** — La Carte (architecture, endpoints, tables, dépendances)
+3. **docs/AUDIT_REPORT.md** + **docs/audit/** — Le Bouclier (sécurité, vulnérabilités)
+
+## Workflow
+
+```
+AVANT de coder :
+1. Lire ROADMAP → quelle est la priorité ?
+2. Lire CARTOGRAPHY → quels fichiers impactés ?
+3. Lire AUDIT → risque sécurité ?
+4. SEULEMENT ALORS → implémenter
+
+APRÈS avoir codé :
+1. Mettre à jour CARTOGRAPHY si endpoints/tables changés
+2. Mettre à jour ROADMAP (cocher tâches, ajouter découvertes)
+3. Mettre à jour AUDIT si fix sécurité
+4. Commit avec message clair + références issues/PRs
+```
+
+## Règles Absolues
+
+- JAMAIS de modification sans lecture préalable des 3 piliers
+- JAMAIS de commit sans mise à jour des documents impactés
+- JAMAIS de fix sécurité sans mise à jour de l'AUDIT_REPORT et des issues
+- TOUJOURS vérifier la véracité — croiser les claims avec le code réel
+
+> _"Pas de carte, pas de plan, pas de bouclier → pas de code."_
