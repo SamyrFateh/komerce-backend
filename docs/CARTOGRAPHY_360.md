@@ -1,14 +1,14 @@
 # 🗺️ CARTOGRAPHIE D'IMPACT 360° — Komerce Backend
 
-> 📅 Générée automatiquement — 06/04/2026 à 04:40
-> 📊 **18 routes** · **112 endpoints** · **24 tables** · **2 vues** · **9 services externes**
+> 📅 Audit coffre-fort — 06/04/2026 à 12:39 (corrigée par analyse exhaustive du code)
+> 📊 **18 routes** · **120 endpoints** · **19 tables repo + 7 Supabase-only** · **3 vues** · **9 services externes**
 
 ---
 
 ## 📑 Table des matières
 
 1. [Vue d'ensemble architecture](#1--vue-densemble-architecture)
-2. [Matrice des endpoints (112 endpoints)](#2--matrice-des-endpoints-112-endpoints)
+2. [Matrice des endpoints (120 endpoints)](#2--matrice-des-endpoints-112-endpoints)
 3. [Matrice des dépendances inter-routes](#3--matrice-des-dépendances-inter-routes)
 4. [Cartographie des tables DB](#4--cartographie-des-tables-db)
 5. [Services externes](#5--services-externes)
@@ -70,9 +70,9 @@
 │   PostgreSQL DB   │  │ Services externes │  │   Fichiers / Uploads          │
 │                   │  │                   │  │                               │
 │  24 tables        │  │  Stripe (paiement)│  │  Multer → /uploads/            │
-│  2 vues           │  │  SMS (Orange)     │  │  PDFKit → PDF labels/reports  │
+│  2 vues           │  │  SMS (Africa's Talking)     │  │  PDFKit → PDF labels/reports  │
 │  2 fonctions      │  │  WhatsApp         │  │  QRCode → QR generation       │
-│  6 triggers       │  │  Email (Mailjet)  │  │                               │
+│  6 triggers       │  │  Email (Nodemailer)  │  │                               │
 │                   │  │  JWT / bcrypt     │  │                               │
 └───────────────────┘  └───────────────────┘  └───────────────────────────────┘
 ```
@@ -109,7 +109,7 @@
 ---
 
 
-## 2. 📡 Matrice des endpoints (112 endpoints)
+## 2. 📡 Matrice des endpoints (120 endpoints)
 
 ### 📁 admin.js — `/api/admin` (17 endpoints, 9 tables, 29.9 Ko)
 
@@ -169,7 +169,7 @@
 | 6 | 🔵 `POST` | `/api/baskets/gift` | ✅ | — | `basket_items`, `baskets`, `products`, `users` |
 | 7 | 🔵 `POST` | `/api/baskets/gift/:code/confirm` | ✅ | — | `basket_items`, `baskets`, `products`, `users` |
 
-> 🌐 **Services externes** : `SMS (Orange)`, `WhatsApp`
+> 🌐 **Services externes** : `SMS (Africa's Talking)`, `WhatsApp`
 
 
 ### 📁 dashboard.js — `/api/dashboard` (5 endpoints, 6 tables, 32.8 Ko)
@@ -182,7 +182,7 @@
 | 4 | 🟢 `GET` | `/api/dashboard/forecast` | ✅ | role-based | `order_items`, `orders`, `products`, `recipients`, `relais`, `users` |
 | 5 | 🟢 `GET` | `/api/dashboard/pipeline` | ✅ | role-based | `order_items`, `orders`, `products`, `recipients`, `relais`, `users` |
 
-> 🌐 **Services externes** : `SMS (Orange)`
+> 🌐 **Services externes** : `SMS (Africa's Talking)`
 
 
 ### 📁 finance.js — `/api/admin/finance` (4 endpoints, 4 tables, 15.7 Ko)
@@ -217,7 +217,7 @@
 | 4 | 🟢 `GET` | `/api/logistics/labels/:shipment_id` | ✅ | role-based | `order_items`, `orders`, `products`, `recipients`, `relais`, `shipments`, `users` |
 | 5 | 🟢 `GET` | `/api/logistics/manifest/:shipment_id` | ✅ | role-based | `order_items`, `orders`, `products`, `recipients`, `relais`, `shipments`, `users` |
 
-> 🌐 **Services externes** : `PDFKit`, `QRCode`, `SMS (Orange)`
+> 🌐 **Services externes** : `PDFKit`, `QRCode`, `SMS (Africa's Talking)`
 
 
 ### 📁 loyalty.js — `/api/loyalty` (7 endpoints, 3 tables, 5.4 Ko)
@@ -264,7 +264,7 @@
 > 🔗 **Appels inter-routes** : `loyalty.recalculateLoyalty()`, `loyalty.getLoyaltyDiscount()`
 
 
-> 🌐 **Services externes** : `Email (Mailjet)`, `QRCode`, `SMS (Orange)`, `Stripe`, `WhatsApp`
+> 🌐 **Services externes** : `Email (Nodemailer)`, `QRCode`, `SMS (Africa's Talking)`, `Stripe`, `WhatsApp`
 
 
 ### 📁 payments.js — `/api/payments` (5 endpoints, 6 tables, 11.7 Ko)
@@ -282,7 +282,7 @@
 > 🔗 **Appels inter-routes** : `purchasing.triggerPurchasing()`
 
 
-> 🌐 **Services externes** : `SMS (Orange)`, `Stripe`
+> 🌐 **Services externes** : `SMS (Africa's Talking)`, `Stripe`
 
 
 ### 📁 pilotage.js — `/api/admin/pilotage` (3 endpoints, 8 tables, 27.2 Ko)
@@ -293,7 +293,7 @@
 | 2 | 🟢 `GET` | `/api/admin/pilotage/history` | ✅ | role-based | `customs_taux_mensuel`, `exchange_rates`, `loyalty_tiers`, `order_items`, `orders`, `products`, `relais`, `users` |
 | 3 | 🟢 `GET` | `/api/admin/pilotage/clients` | ✅ | role-based | `customs_taux_mensuel`, `exchange_rates`, `loyalty_tiers`, `order_items`, `orders`, `products`, `relais`, `users` |
 
-> 🌐 **Services externes** : `JWT`, `SMS (Orange)`, `Stripe`
+> 🌐 **Services externes** : `JWT`, `SMS (Africa's Talking)`, `Stripe`
 
 
 ### 📁 pricing.js — `/api/pricing` (4 endpoints, 4 tables, 3.5 Ko)
@@ -336,7 +336,7 @@
 > 🔗 **Appels inter-routes** : `scans.triggerScan3()`
 
 
-> 🌐 **Services externes** : `SMS (Orange)`, `WhatsApp`
+> 🌐 **Services externes** : `SMS (Africa's Talking)`, `WhatsApp`
 
 
 ### 📁 relais.js — `/api/relais` (3 endpoints, 1 tables, 1.6 Ko)
@@ -363,7 +363,7 @@
 > 🔗 **Appels inter-routes** : `loyalty.recalculateLoyalty()`
 
 
-> 🌐 **Services externes** : `SMS (Orange)`
+> 🌐 **Services externes** : `SMS (Africa's Talking)`
 
 
 ### 📁 unsold.js — `/api/unsold` (7 endpoints, 5 tables, 6.3 Ko)
@@ -491,11 +491,11 @@ Table                   │ Nb routes │ Barre de criticité
 
 | # | Service | Type | Routes utilisatrices | Nb routes | Usage principal |
 |---|---------|------|---------------------|-----------|-----------------| 
-| 1 | **Email (Mailjet)** | 📧 Email | `orders.js` | 1 | Emails transactionnels : confirmation de commande, factures |
+| 1 | **Email (Nodemailer)** | 📧 Email | `orders.js` | 1 | Emails transactionnels : confirmation de commande, factures |
 | 2 | **JWT** | 🔐 Auth Token | `auth.js`, `pilotage.js` | 2 | Génération et vérification de tokens d'authentification |
 | 3 | **PDFKit** | 📄 Génération PDF | `finance.js`, `logistics.js` | 2 | Étiquettes d'expédition, manifestes, rapports financiers |
 | 4 | **QRCode** | 📲 QR Code | `logistics.js`, `orders.js` | 2 | Génération de QR codes pour retrait et étiquettes |
-| 5 | **SMS (Orange)** | 📱 Notification | `baskets.js`, `dashboard.js`, `logistics.js`, `orders.js`, `payments.js`, `pilotage.js`, `purchasing.js`, `scans.js` | 8 | Notifications SMS : confirmation commande, expédition, collecte, alertes |
+| 5 | **SMS (Africa's Talking)** | 📱 Notification | `baskets.js`, `dashboard.js`, `logistics.js`, `orders.js`, `payments.js`, `pilotage.js`, `purchasing.js`, `scans.js` | 8 | Notifications SMS : confirmation commande, expédition, collecte, alertes |
 | 6 | **Stripe** | 💳 Paiement | `admin.js`, `finance.js`, `orders.js`, `payments.js`, `pilotage.js` | 5 | Création d'intents, webhooks, vérification de paiements, preuves |
 | 7 | **WhatsApp** | 💬 Messagerie | `baskets.js`, `orders.js`, `purchasing.js`, `unsold.js` | 4 | Notifications WhatsApp : paniers partagés, achats, invendus |
 | 8 | **bcrypt** | 🔒 Hashing | `admin.js`, `auth.js` | 2 | Hachage et vérification de mots de passe |
@@ -530,7 +530,7 @@ Table                   │ Nb routes │ Barre de criticité
 | Fichier | Taille | Rôle |
 |---------|--------|------|
 | `utils/sms.js` | 7.4 Ko | Envoi SMS via Orange API |
-| `utils/email.js` | 6.7 Ko | Emails transactionnels via Mailjet |
+| `utils/email.js` | 6.7 Ko | Emails transactionnels via Nodemailer |
 | `utils/rates.js` | 0.7 Ko | Taux de change EUR/KMF, AED/KMF |
 | `utils/pricing.js` | 3.7 Ko | Moteur de calcul prix (marge, fret, douane) |
 | `utils/reference.js` | 2.5 Ko | Génération de références commande (KOM-2026-XXXX) |
@@ -841,11 +841,203 @@ scans.js → loyalty.js        (recalculateLoyalty)
 
 > 📝 *Ce document a été généré automatiquement à partir de l'analyse statique du code source. Il reflète l'état du code au moment de l'analyse et doit être mis à jour lors de modifications significatives de l'architecture.*
 
+
+## 11. 📋 Tables manquantes de la carto précédente
+
+> ⚠️ Ces tables existent dans le repo (CREATE TABLE) mais étaient absentes de la cartographie.
+
+### 11.1 `sms_log` (schema.sql)
+
+```sql
+CREATE TABLE sms_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    phone TEXT NOT NULL,
+    message TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    provider_response JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+**Utilisée par** : `utils/sms.js` (log de chaque SMS envoyé via Africa's Talking)
+
+### 11.2 `disputes` (schema.sql)
+
+```sql
+CREATE TABLE disputes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES orders(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    type TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'open',
+    resolution TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TRIGGER trg_disputes_updated BEFORE UPDATE ON disputes
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+```
+**Utilisée par** : Aucune route directement (probablement via Supabase Dashboard)
+
+### 11.3 `ceremony_fabrics` (schema_extension.sql)
+
+```sql
+CREATE TABLE ceremony_fabrics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    material TEXT,
+    price_per_meter_aed NUMERIC(10,2),
+    price_per_meter_kmf NUMERIC(10,2),
+    available BOOLEAN DEFAULT TRUE,
+    image_url TEXT,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+**⚠️ Note** : Le code dans `modules.js` et `pricing.js` requête la table `fabrics` (sans préfixe `ceremony_`). Ce sont potentiellement des tables différentes, `fabrics` étant probablement créée dans Supabase.
+
+### 11.4 `ceremony_models` (schema_extension.sql)
+
+```sql
+CREATE TABLE ceremony_models (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    making_cost_aed NUMERIC(10,2),
+    fabric_meters NUMERIC(5,2) DEFAULT 1.5,
+    description TEXT,
+    image_url TEXT,
+    active BOOLEAN DEFAULT TRUE,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+**⚠️ Note** : Le code dans `modules.js` et `pricing.js` requête `garment_models` (pas `ceremony_models`). Tables différentes.
+
+### 11.5 `ceremony_order_items` (schema_extension.sql)
+
+```sql
+CREATE TABLE ceremony_order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_item_id UUID REFERENCES order_items(id),
+    fabric_id UUID REFERENCES ceremony_fabrics(id),
+    model_id UUID REFERENCES ceremony_models(id),
+    measurements JSONB,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## 12. 📊 Inventaire DB complet et vérifié
+
+### Tables créées dans le repo (19)
+
+| # | Table | Source | Trigger |
+|---|-------|--------|---------|
+| 1 | `users` | schema.sql | trg_users_updated |
+| 2 | `relais` | schema.sql | — |
+| 3 | `products` | schema.sql | trg_products_updated |
+| 4 | `baskets` | schema.sql | — |
+| 5 | `basket_items` | schema.sql | — |
+| 6 | `recipients` | schema.sql | — |
+| 7 | `shipments` | schema.sql | trg_shipments_updated |
+| 8 | `orders` | schema.sql | trg_orders_updated |
+| 9 | `order_items` | schema.sql | — |
+| 10 | `scans` | schema.sql | trg_scan_sync_status |
+| 11 | `order_status_history` | schema.sql | — |
+| 12 | `sms_log` | schema.sql | — |
+| 13 | `exchange_rates` | schema.sql | — |
+| 14 | `disputes` | schema.sql | trg_disputes_updated |
+| 15 | `ceremony_fabrics` | schema_extension.sql | — |
+| 16 | `ceremony_models` | schema_extension.sql | — |
+| 17 | `ceremony_order_items` | schema_extension.sql | — |
+| 18 | `partners` | server.js (auto-migration) | — |
+| 19 | `loyalty_tiers` | server.js (auto-migration) | — |
+
+### Tables/vues Supabase-only (pas de CREATE dans le repo) (9)
+
+| # | Nom | Type | Requêtée dans |
+|---|-----|------|---------------|
+| 1 | `customs_history` | Table | admin.js, orders.js, server.js |
+| 2 | `fabrics` | Table | modules.js, pricing.js |
+| 3 | `garment_models` | Table | modules.js, pricing.js |
+| 4 | `product_suppliers` | Table | purchasing.js, scans.js |
+| 5 | `purchase_orders` | Table | purchasing.js, scans.js |
+| 6 | `suppliers` | Table | purchasing.js |
+| 7 | `unsold_items` | Table | unsold.js |
+| 8 | `v_loyalty_summary` | Vue | loyalty.js |
+| 9 | `v_unsold_pipeline` | Vue | unsold.js |
+
+### Vues dans le repo (1)
+
+| # | Vue | Source |
+|---|-----|--------|
+| 1 | `customs_taux_mensuel` | server.js (`CREATE OR REPLACE VIEW`) |
+
+### Enums (6)
+
+| Enum | Valeurs |
+|------|---------|
+| `user_role` | admin, hub, hub_dubai, client, guest |
+| `order_status` | confirmed, ordered, preparation, shipped, in_transit, available, collected, cancelled, refunded |
+| `payment_mode` | stripe, cash |
+| `payment_status` | pending, paid, partial, refunded |
+| `basket_type` | standard, gift, shared |
+| `scan_step` | preparation, shipped, in_transit, relais_received, collected |
+
+### Fonctions PostgreSQL (2)
+
+| Fonction | Description |
+|----------|-------------|
+| `set_updated_at()` | Met à jour `updated_at` automatiquement via triggers |
+| `sync_order_status_from_scan()` | Synchronise le statut de commande depuis les scans |
+
+### Triggers (6)
+
+| Trigger | Table | Événement |
+|---------|-------|-----------|
+| `trg_users_updated` | users | BEFORE UPDATE |
+| `trg_products_updated` | products | BEFORE UPDATE |
+| `trg_orders_updated` | orders | BEFORE UPDATE |
+| `trg_shipments_updated` | shipments | BEFORE UPDATE |
+| `trg_scan_sync_status` | scans | AFTER INSERT |
+| `trg_disputes_updated` | disputes | BEFORE UPDATE |
+
+---
+
+## 13. 🛡️ Matrice middleware corrigée
+
+| Route | authenticate | requireRole | requireAdmin | validate | upload |
+|-------|:-----------:|:-----------:|:------------:|:--------:|:------:|
+| admin.js | ✅ | ✅ | — | ✅ (4) | — |
+| auth.js | ✅ (partiel) | — | — | ✅ (7) | — |
+| baskets.js | ✅ | — | — | ✅ (4) | — |
+| dashboard.js | ✅ | ✅ | — | — | — |
+| finance.js | ✅ | ✅ | — | — | — |
+| health.js | — | — | — | — | — |
+| logistics.js | ✅ | ✅ | — | ✅ (2) | — |
+| loyalty.js | ✅ | — | ✅ | — | — |
+| modules.js | ✅ | ✅ | — | ✅ (3) | — |
+| orders.js | ✅ | ✅ | — | ✅ (3) | — |
+| payments.js | ✅ | ✅ | — | ✅ (2) | — |
+| pilotage.js | ✅ | ✅ | — | — | — |
+| pricing.js | ✅ | ✅ | — | — | — |
+| **products.js** | ✅ | ✅ | — | **✅ (3)** | ✅ |
+| purchasing.js | ✅ | ✅ | — | — | — |
+| relais.js | — | — | — | — | — |
+| scans.js | ✅ | ✅ | — | ✅ (4) | — |
+| unsold.js | ✅ | — | ✅ | — | — |
+
+> ⚠️ **Correction** : products.js utilise bien le middleware validate (3 appels), contrairement à ce que disait la carto précédente.
+
+
+
 ---
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 10:18:47 UTC
+> Mise à jour : 2026-04-06 11:11:46 UTC
 
 | Métrique | Valeur |
 |----------|--------|
@@ -853,6 +1045,6 @@ scans.js → loyalty.js        (recalculateLoyalty)
 | Tables cartographiées | 20 |
 | Services externes | 9 |
 | Score de risque global | 100/100 |
-| Alertes sécurité | 550 |
+| Alertes sécurité | 554 |
 
 *Régénéré automatiquement par le coffre-fort Komerce v1.0*
