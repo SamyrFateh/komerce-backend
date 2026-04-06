@@ -165,6 +165,7 @@ const purchasingRouter = require('./routes/purchasing');
 const loyaltyRouter    = require('./routes/loyalty');
 const unsoldRouter     = require('./routes/unsold');
 const healthRouter     = require('./routes/health');
+const configRouter     = require('./routes/config');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -189,6 +190,7 @@ app.use('/api/finance',    financeRouter);
 app.use('/api/purchasing', purchasingRouter);
 app.use('/api/loyalty',    loyaltyRouter);
 app.use('/api/unsold',     unsoldRouter);
+app.use('/api/config',  configRouter);                                   // Règles métier admin (Point 6)
 app.use('/health',         healthRouter);    // Railway readiness probe
 
 // ── Healthcheck (avec test DB) ───────────────────────────────────────────────
@@ -380,6 +382,149 @@ async function fixMissingSchema() {
     }
   } catch (err) {
     console.error(`  ⚠️ loyalty seed: ${err.message}`);
+  }
+
+  // 7. business_rules — moteur de règles opérationnelles (Point 6)
+  await run('business_rules table', `
+    CREATE TABLE IF NOT EXISTS business_rules (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      category    TEXT NOT NULL,
+      key         TEXT NOT NULL UNIQUE,
+      value       JSONB NOT NULL,
+      value_type  TEXT NOT NULL DEFAULT 'number',
+      label_fr    TEXT NOT NULL,
+      description TEXT,
+      min_value   NUMERIC,
+      max_value   NUMERIC,
+      is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await run('business_rules_history table', `
+    CREATE TABLE IF NOT EXISTS business_rules_history (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      rule_id       UUID NOT NULL REFERENCES business_rules(id),
+      old_value     JSONB,
+      new_value     JSONB NOT NULL,
+      changed_by    UUID REFERENCES users(id),
+      change_reason TEXT,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await run('refunds table', `
+    CREATE TABLE IF NOT EXISTS refunds (
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      order_id         UUID NOT NULL REFERENCES orders(id),
+      amount_kmf       INTEGER NOT NULL,
+      amount_eur       NUMERIC(10,2),
+      refund_type      TEXT NOT NULL,
+      refund_method    TEXT NOT NULL,
+      stripe_refund_id TEXT,
+      store_credit_id  UUID,
+      reason           TEXT,
+      initiated_by     UUID REFERENCES users(id),
+      status           TEXT NOT NULL DEFAULT 'pending',
+      completed_at     TIMESTAMPTZ,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await run('store_credits table', `
+    CREATE TABLE IF NOT EXISTS store_credits (
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id          UUID NOT NULL REFERENCES users(id),
+      amount_kmf       INTEGER NOT NULL,
+      remaining_kmf    INTEGER NOT NULL,
+      reason           TEXT,
+      source_order_id  UUID REFERENCES orders(id),
+      expires_at       TIMESTAMPTZ,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await run('sub_orders table', `
+    CREATE TABLE IF NOT EXISTS sub_orders (
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      parent_order_id  UUID NOT NULL REFERENCES orders(id),
+      type             TEXT NOT NULL,
+      status           TEXT NOT NULL DEFAULT 'preparation',
+      tracking_ref     TEXT,
+      estimated_date   TIMESTAMPTZ,
+      shipped_at       TIMESTAMPTZ,
+      notes            TEXT,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await run('sub_order_items table', `
+    CREATE TABLE IF NOT EXISTS sub_order_items (
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sub_order_id     UUID NOT NULL REFERENCES sub_orders(id),
+      order_item_id    UUID NOT NULL REFERENCES order_items(id),
+      quantity         INTEGER NOT NULL,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await run('order_items.availability_status',
+    `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS availability_status TEXT DEFAULT 'pending'`);
+  await run('order_items.estimated_available_at',
+    `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS estimated_available_at TIMESTAMPTZ`);
+  await run('order_items.backorder_reason',
+    `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS backorder_reason TEXT`);
+
+  // Seed business_rules (37 règles par défaut) — ON CONFLICT DO NOTHING
+  try {
+    const { rows } = await db.query('SELECT COUNT(*)::int AS c FROM business_rules');
+    if (rows[0].c === 0) {
+      await run('business_rules seed', `
+        INSERT INTO business_rules (category, key, value, value_type, label_fr, description, min_value, max_value)
+        VALUES
+          ('orders', 'CANCEL_FREE_WINDOW_HOURS', '{"value": 24}', 'number', 'Fenêtre annulation gratuite (heures)', 'Délai après paiement pour annulation avec remboursement 100%', 1, 168),
+          ('orders', 'CANCEL_PARTIAL_REFUND_PCT', '{"value": 80}', 'number', 'Remboursement hors fenêtre (%)', 'Pourcentage remboursé si annulation hors fenêtre gratuite', 0, 100),
+          ('orders', 'CANCEL_CUTOFF_STATUS', '{"value": "shipped"}', 'string', 'Statut max pour annulation', 'Au-delà de ce statut, annulation impossible', NULL, NULL),
+          ('orders', 'CASH_PAYMENT_TIMEOUT_HOURS', '{"value": 36}', 'number', 'Délai paiement cash relais (heures)', NULL, 12, 168),
+          ('orders', 'QR_EXPIRATION_HOURS', '{"value": 48}', 'number', 'Validité QR retrait (heures)', NULL, 6, 168),
+          ('orders', 'MAX_QUANTITY_PER_ITEM', '{"value": 100}', 'number', 'Quantité max par article', NULL, 1, 1000),
+          ('orders', 'ORDER_ALERT_48H_AVAILABLE', '{"value": 48}', 'number', 'Alerte colis non retiré (heures)', NULL, 12, 168),
+          ('shipping', 'PARTIAL_SHIP_DELAY_THRESHOLD_DAYS', '{"value": 7}', 'number', 'Retard déclenchant expédition partielle (jours)', NULL, 1, 60),
+          ('shipping', 'PARTIAL_SHIP_MIN_AVAILABLE_PCT', '{"value": 60}', 'number', 'Articles dispo min pour expé partielle (%)', NULL, 10, 100),
+          ('shipping', 'PARTIAL_SHIP_AUTO_NOTIFY', '{"value": true}', 'boolean', 'Notification auto expédition partielle', NULL, NULL, NULL),
+          ('shipping', 'BACKORDER_MAX_DAYS', '{"value": 30}', 'number', 'Backorder max (jours)', NULL, 7, 90),
+          ('sla', 'SLA_WARNING_DAYS', '{"value": 35}', 'number', 'SLA Warning (jours)', NULL, 7, 90),
+          ('sla', 'SLA_LATE_DAYS', '{"value": 42}', 'number', 'SLA Late (jours)', NULL, 14, 120),
+          ('sla', 'SLA_BLOCKED_DAYS', '{"value": 56}', 'number', 'SLA Blocked (jours)', NULL, 21, 180),
+          ('sla', 'SLA_INACTIVE_DAYS', '{"value": 7}', 'number', 'SLA Inactif (jours)', NULL, 1, 30),
+          ('sla', 'PROBLEM_PREP_BLOCKED_DAYS', '{"value": 4}', 'number', 'Préparation bloquée max (jours)', NULL, 1, 14),
+          ('sla', 'PROBLEM_TRANSIT_MAX_DAYS', '{"value": 12}', 'number', 'Transit max (jours)', NULL, 5, 60),
+          ('sla', 'PROBLEM_WAITING_MAX_DAYS', '{"value": 7}', 'number', 'Attente retrait max (jours)', NULL, 1, 30),
+          ('sla', 'PROBLEM_STALLED_DAYS', '{"value": 30}', 'number', 'Commande stagnante (jours)', NULL, 7, 90),
+          ('sla', 'PROBLEM_NO_NOTIF_HOURS', '{"value": 1}', 'number', 'Pas de notif après (heures)', NULL, 0.5, 24),
+          ('compensation', 'COMP_PREVENTIVE_DAYS', '{"value": 28}', 'number', 'Compensation préventive (jours)', NULL, 7, 60),
+          ('compensation', 'COMP_CREDIT_DAYS', '{"value": 35}', 'number', 'Avoir boutique (jours)', NULL, 14, 90),
+          ('compensation', 'COMP_DISCOUNT_DAYS', '{"value": 42}', 'number', 'Remise (jours)', NULL, 21, 120),
+          ('compensation', 'COMP_REFUND_DAYS', '{"value": 56}', 'number', 'Remboursement auto (jours)', NULL, 28, 180),
+          ('loyalty', 'LOYALTY_SILVER_ORDERS', '{"value": 3}', 'number', 'Seuil Silver (commandes)', NULL, 1, 50),
+          ('loyalty', 'LOYALTY_GOLD_ORDERS', '{"value": 10}', 'number', 'Seuil Gold (commandes)', NULL, 5, 100),
+          ('loyalty', 'LOYALTY_PLATINUM_ORDERS', '{"value": 25}', 'number', 'Seuil Platinum (commandes)', NULL, 10, 200),
+          ('loyalty', 'LOYALTY_SILVER_DISCOUNT', '{"value": 2}', 'number', 'Remise Silver (%)', NULL, 0, 20),
+          ('loyalty', 'LOYALTY_GOLD_DISCOUNT', '{"value": 5}', 'number', 'Remise Gold (%)', NULL, 0, 30),
+          ('loyalty', 'LOYALTY_PLATINUM_DISCOUNT', '{"value": 8}', 'number', 'Remise Platinum (%)', NULL, 0, 50),
+          ('pricing', 'CUSTOMS_DEFAULT_PCT', '{"value": 20}', 'number', 'Douane estimée (%)', NULL, 5, 50),
+          ('pricing', 'FREIGHT_KMF_PER_KG', '{"value": 65}', 'number', 'Fret par kg (KMF)', NULL, 10, 500),
+          ('pricing', 'EUR_KMF_FALLBACK', '{"value": 492}', 'number', 'Taux EUR/KMF fallback', NULL, 400, 600),
+          ('pricing', 'AED_KMF_FALLBACK', '{"value": 138}', 'number', 'Taux AED/KMF fallback', NULL, 100, 200),
+          ('system', 'DASHBOARD_CACHE_TTL_SEC', '{"value": 30}', 'number', 'Cache dashboard (secondes)', NULL, 5, 300),
+          ('system', 'CASH_REMINDER_INTERVAL_MIN', '{"value": 60}', 'number', 'Intervalle rappels cash (minutes)', NULL, 15, 360)
+        ON CONFLICT (key) DO NOTHING
+      `);
+    }
+  } catch (err) {
+    console.error(`  ⚠️ business_rules seed: ${err.message}`);
   }
 
   console.log('🔧 Schema migrations complete.');

@@ -419,6 +419,22 @@ const logistics = {
   },
 };
 
+// ── Schémas : config.js (règles métier admin) ───────────────────────────────────
+
+const config = {
+  updateRule: {
+    params: Joi.object({ key: safeStr(100).required() }),
+    body: Joi.object({
+      value:  Joi.alternatives().try(
+        Joi.number(),
+        Joi.boolean(),
+        Joi.string().trim().max(255)
+      ).required(),
+      reason: safeStr(500),
+    }),
+  },
+};
+
 // ── Export ───────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -431,4 +447,5 @@ module.exports = {
   scans,
   modules,
   logistics,
+  config,
 };
