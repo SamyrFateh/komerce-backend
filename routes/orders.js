@@ -38,6 +38,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
+const { getRule } = require('../utils/rules');
 const { sendOrderConfirmation } = require('../utils/email');
 const { validate } = require('../middleware/validate');
 const { orders } = require('../validators');
@@ -287,9 +288,10 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
         return res.status(404).json({ error: `Produit introuvable : ${item.product_id}` });
       }
       const qty = parseInt(item.quantity) || 1;
-      if (qty < 1 || qty > 100) {
+      const maxQty = await getRule('MAX_QUANTITY_PER_ITEM', 100);
+      if (qty < 1 || qty > maxQty) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ error: `Quantité invalide pour ${item.product_id}: min 1, max 100` });
+        return res.status(400).json({ error: `Quantité invalide pour ${item.product_id}: min 1, max ${maxQty}` });
       }
       if (product.stock !== null && product.stock < qty) {
         await client.query('ROLLBACK');
@@ -300,10 +302,13 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
       }
       total_kmf += product.price_kmf * qty;
 
-      // Estimation coût : sourcing + fret + douane estimée
-      const fret_kmf     = (product.weight_kg || 0.5) * qty * 65;
-      const base_aed_kmf = (product.price_aed || 0) * 138 * qty;
-      const customs_est  = base_aed_kmf * 0.20 * (product.customs_risk_coeff || 1.0);
+      // Estimation coût : sourcing + fret + douane estimée (valeurs depuis business_rules)
+      const fretPerKg    = await getRule('FREIGHT_KMF_PER_KG', 65);
+      const fret_kmf     = (product.weight_kg || 0.5) * qty * fretPerKg;
+      const aedFallback  = await getRule('AED_KMF_FALLBACK', 138);
+      const base_aed_kmf = (product.price_aed || 0) * aedFallback * qty;
+      const customsPct   = await getRule('CUSTOMS_DEFAULT_PCT', 20) / 100;
+      const customs_est  = base_aed_kmf * customsPct * (product.customs_risk_coeff || 1.0);
       cost_estimated    += base_aed_kmf + fret_kmf + customs_est;
     }
 
@@ -443,8 +448,9 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
     if (smsPhone) {
       if (payment_mode === 'cash_relais') {
         // Cash relais : informer le client d'aller au relais pour payer
+        const cashTimeout = await getRule('CASH_PAYMENT_TIMEOUT_HOURS', 36);
         const totalStr = Number(order.total_kmf).toLocaleString('fr-FR');
-        const cashSms = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez 36h.`;
+        const cashSms = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez ${cashTimeout}h.`;
         sendSMS(smsPhone, cashSms, 'cash_relais_confirm', order.id)
           .catch(console.error);
       } else {
@@ -618,12 +624,13 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
       params
     );
 
-    // Calculer alertes >48h (colis disponibles non retirés)
+    // Calculer alertes (colis disponibles non retirés — seuil configurable)
+    const alertHours = await getRule('ORDER_ALERT_48H_AVAILABLE', 48);
     const now = Date.now();
     const enriched = rows.map(o => ({
       ...o,
       alert_48h: o.status === 'available' && o.available_at
-        ? (now - new Date(o.available_at).getTime()) > 48 * 60 * 60 * 1000
+        ? (now - new Date(o.available_at).getTime()) > alertHours * 60 * 60 * 1000
         : false,
       hours_waiting: o.available_at
         ? Math.floor((now - new Date(o.available_at).getTime()) / (60 * 60 * 1000))
@@ -662,6 +669,13 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
       relaisFilter = `AND o.relais_id = $${params.length}`;
     }
 
+    // Seuils problèmes — configurables via business_rules
+    const prepDays     = await getRule('PROBLEM_PREP_BLOCKED_DAYS', 4);
+    const transitDays  = await getRule('PROBLEM_TRANSIT_MAX_DAYS', 12);
+    const waitDays     = await getRule('PROBLEM_WAITING_MAX_DAYS', 7);
+    const noNotifHours = await getRule('PROBLEM_NO_NOTIF_HOURS', 1);
+    const stalledDays  = await getRule('PROBLEM_STALLED_DAYS', 30);
+
     // 10 règles de détection — chaque règle retourne des commandes avec problem_type
     const { rows } = await db.query(
       `SELECT DISTINCT ON (o.id)
@@ -691,28 +705,28 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
 
            -- Règle 3 : préparation bloquée >4 jours
            WHEN o.status = 'preparation'
-            AND o.preparation_at < NOW() - INTERVAL '4 days'
+            AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDays}
             THEN 'preparation_too_long'
 
            -- Règle 4 : transit >12 jours
            WHEN o.status = 'shipped'
-            AND o.shipped_at < NOW() - INTERVAL '12 days'
+            AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDays}
             THEN 'transit_too_long'
 
            -- Règle 5 : disponible depuis >7 jours (non retiré)
            WHEN o.status = 'available'
-            AND o.available_at < NOW() - INTERVAL '7 days'
+            AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDays}
             THEN 'waiting_too_long'
 
            -- Règle 6 : disponible sans notification (qr_token NULL après 1h)
            WHEN o.status = 'available'
-            AND o.available_at < NOW() - INTERVAL '1 hour'
+            AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHours}
             AND o.qr_token IS NULL
             THEN 'no_notification'
 
            -- Règle 7 : commande active depuis >30 jours sans avancement
            WHEN o.status = 'ordered'
-            AND o.created_at < NOW() - INTERVAL '30 days'
+            AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDays}
             THEN 'stalled'
 
            -- Règle 8 : paiement cash non soldé après collecte (si possible à détecter)
@@ -740,15 +754,15 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
            -- Règle 1
            (o.payment_status = 'paid' AND o.status IN ('confirmed', 'ordered') AND o.purchasing_at IS NULL)
            -- Règle 3
-           OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '4 days')
+           OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDays})
            -- Règle 4
-           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '12 days')
+           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDays})
            -- Règle 5
-           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '7 days')
+           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDays})
            -- Règle 6
-           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' AND o.qr_token IS NULL)
+           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHours} AND o.qr_token IS NULL)
            -- Règle 7
-           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '30 days')
+           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDays})
            -- Règle 9
            OR (o.relais_id IS NULL AND o.status NOT IN ('confirmed', 'cancelled', 'refunded'))
          )
@@ -821,7 +835,8 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
       .digest('hex')
       .slice(0, 24); // 24 caractères hex = suffisamment unique et lisible
 
-    const expiration = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
+    const qrHours = await getRule('QR_EXPIRATION_HOURS', 48);
+    const expiration = new Date(Date.now() + qrHours * 60 * 60 * 1000);
 
     // Sauvegarder en DB
     await db.query(
