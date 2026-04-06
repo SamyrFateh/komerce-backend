@@ -1,6 +1,6 @@
 # 🔒 AGENTS_PROTOCOL.md — Protocole de Gouvernance Komerce
 
-> **Version** : 1.4 — 06/04/2026
+> **Version** : 1.5 — 06/04/2026
 > **Statut** : OBLIGATOIRE pour tout agent (IA ou humain)
 > **Repo** : `SamyrFateh/komerce-backend`
 
@@ -53,9 +53,6 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 ### Exception unique :
 
 > **Seule une demande EXPLICITE du propriétaire peut déroger à cet ordre.**
->
-> Si le propriétaire donne une instruction précise (ex: "travaille sur la sécurité", "fais la vue Retards d'abord"), l'agent suit cette instruction.
-> Sinon, l'agent suit strictement l'ordre de la Roadmap.
 
 ### Logique de sélection de tâche :
 
@@ -67,20 +64,6 @@ Pour chaque priorité (de la plus haute à la plus basse) :
       → Commencer immédiatement
       → STOP (ne pas chercher plus loin)
 ```
-
-### Exemple concret :
-
-```
-Roadmap actuelle :
-  Priorité 1 — Dashboard Pilotage :
-    2.1 ✅ | 2.2 ✅ | 2.3 ✅ | 2.4 ✅ | 2.5 ✅ | 2.6 ✅ | 2.7 ⬜ | 2.8 ⬜ | ...
-
-→ L'agent présente le statut
-→ L'agent dit : "Je continue avec la tâche 2.7 — Vue Tendances"
-→ L'agent commence à travailler
-```
-
-**Cette règle garantit une progression linéaire et prévisible du projet, sans temps mort.**
 
 ---
 
@@ -100,59 +83,106 @@ Roadmap actuelle :
 - ✅ Après ajout/suppression/modification d'un endpoint
 - ✅ Après ajout/modification d'une table ou vue
 - ✅ Après modification d'un middleware ou service externe
-- ✅ Après modification des dépendances inter-routes
-
----
 
 ### 2️⃣ ROADMAP_KOMERCE.md — Le Plan
 > `docs/ROADMAP_KOMERCE.md`
-
-**Ce que c'est** : Roadmap unifiée v14 — progression globale, issues ouvertes, priorités, ordre de travail session par session.
 
 **Quand la consulter** :
 - ✅ **Immédiatement après lecture du README** (règle d'entrée ci-dessus)
 - ✅ Avant de commencer toute session de travail
 - ✅ Pour vérifier les priorités actuelles
-- ✅ Pour s'assurer qu'on ne duplique pas un travail déjà fait
 
 **Quand la mettre à jour** :
-- ✅ Après fermeture d'une issue ou PR
 - ✅ Après complétion d'une tâche de la roadmap
 - ✅ Après découverte d'un nouveau bug ou besoin
 - ✅ Après changement de priorités
-- ✅ **Avant toute nouvelle implémentation** (ajouter la demande à la roadmap d'abord)
-
----
 
 ### 3️⃣ Coffre-Fort Sécurité — Le Bouclier
 > `docs/AUDIT_REPORT.md` + `docs/audit/` + Issues #71-#84
 
-**Ce que c'est** : L'ensemble des audits de sécurité et de qualité du projet.
-
 | Document | Rôle |
 |----------|------|
-| `docs/AUDIT_REPORT.md` | Rapport principal — 8 écarts identifiés entre carto et code |
-| `docs/audit/SECURITY_CHECKLIST.md` | Checklist sécurité à valider avant Go-Live |
+| `docs/AUDIT_REPORT.md` | Rapport principal — 8 écarts identifiés |
+| `docs/audit/SECURITY_CHECKLIST.md` | Checklist sécurité avant Go-Live |
 | `docs/audit/AUDIT_BUGS.md` | Bugs identifiés par audit |
-| `docs/audit/AUDIT_CODE_INTEGRITY.md` | Intégrité du code — cohérence imports/exports |
-| `docs/audit/FRONTEND_AUDIT.md` | Audit du frontend |
-| `docs/audit/db_audit.md` | Audit de la base de données |
-| `docs/audit/middleware_audit.md` | Audit des middlewares |
-| `docs/audit/utils_audit.md` | Audit des utilitaires |
-| `docs/audit/batch_2.md` à `batch_6.md` | Audits par lot de fichiers |
-| **Issues #71-#76** | 🔴 6 vulnérabilités CRITIQUES ouvertes |
-| **Issues #77-#84** | 🟠 8 vulnérabilités MAJEURES ouvertes |
+| `docs/audit/AUDIT_CODE_INTEGRITY.md` | Intégrité du code |
+| `docs/audit/FRONTEND_AUDIT.md` | Audit frontend |
+| `docs/audit/db_audit.md` | Audit base de données |
+| `docs/audit/middleware_audit.md` | Audit middlewares |
+| `docs/audit/utils_audit.md` | Audit utilitaires |
+| `docs/audit/batch_2.md` à `batch_6.md` | Audits par lot |
+| **Issues #71-#76** | 🔴 6 vulnérabilités CRITIQUES |
+| **Issues #77-#84** | 🟠 8 vulnérabilités MAJEURES |
 
-**Quand le consulter** :
-- ✅ Avant toute modification touchant l'authentification, les paiements, ou les données sensibles
-- ✅ Avant d'ajouter un nouvel endpoint ou middleware
-- ✅ Avant tout déploiement
-- ✅ Pour vérifier si un fix sécurité est déjà planifié
+---
 
-**Quand le mettre à jour** :
-- ✅ Après correction d'une vulnérabilité
-- ✅ Après découverte d'un nouveau risque
-- ✅ Après modification d'un middleware de sécurité (auth, validate, rateLimit)
+## 📂 Système de Deltas — `docs/_pending/`
+
+> **🔴 NOUVEAU v1.5 — Mécanisme universel de mise à jour des docs**
+
+### Principe
+
+Après chaque session de travail, tout agent DOIT déposer un **fichier delta** dans `docs/_pending/` décrivant les changements à appliquer aux documents de gouvernance.
+
+### Format du fichier
+
+**Nom** : `YYYY-MM-DD_HH-MM_description-courte.md`
+
+**Contenu** :
+```markdown
+# Delta — [Description courte]
+
+## Contexte
+[Ce qui a été fait dans cette session]
+
+## ROADMAP
+- Section X: [changement à appliquer]
+- Tâche Y.Z: ⬜ → ✅
+- Ajout tâche: [description]
+
+## CARTOGRAPHY
+- Section X: [changement à appliquer]
+- Ajout fichier: path/to/file.tsx
+- Suppression fichier: path/to/old.tsx
+- Compteur fichiers: N → M
+
+## AUDIT (si applicable)
+- [changement sécurité]
+```
+
+### Cycle de vie
+
+```
+┌───────────────────────────────────────────────┐
+│  Agent (Cursor/Tasklet/humain) fait du travail │
+│  → Dépose un delta dans docs/_pending/         │
+└──────────────────────┬────────────────────────┘
+                       │
+            ⏱️ Toutes les 10 min
+                       │
+┌──────────────────────▼────────────────────────┐
+│  Trigger Tasklet (gardien de gouvernance)      │
+│  1. Lit les deltas                             │
+│  2. Scanne le repo (détection dérive)          │
+│  3. Applique les changements aux docs          │
+│  4. Commit + supprime les deltas traités       │
+└───────────────────────────────────────────────┘
+```
+
+### Règles
+
+1. **TOUJOURS déposer un delta** après une session de travail
+2. **NE JAMAIS modifier directement** ROADMAP ou CARTOGRAPHY si un trigger Tasklet est actif — passer par un delta
+3. **Un delta par session** (pas un par fichier modifié)
+4. **Format DELTA uniquement** — décrire les changements, pas régénérer les docs
+
+---
+
+## 🤖 Bootstrap Agent Tasklet
+
+> **Si tu es un agent Tasklet**, lis `docs/GOVERNANCE_BOOTSTRAP.md` pour te configurer comme gardien de la gouvernance.
+
+Le système est conçu pour être **zéro état agent** — tout vit dans le repo. N'importe quel agent Tasklet peut reprendre le rôle de gardien en suivant le bootstrap.
 
 ---
 
@@ -177,45 +207,25 @@ Roadmap actuelle :
 │     de la priorité la plus haute                     │
 │  → Sauf demande EXPLICITE contraire du propriétaire │
 │  → Suivre l'ordre numérique des tâches              │
-│                                                      │
-│  ⚠️ PAS DE TEMPS MORT — ON AVANCE TOUJOURS          │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
 │           AVANT DE CODER / CORRIGER                 │
 │                                                      │
 │  1. 📖 Lire ROADMAP_KOMERCE.md                      │
-│     → Quelle est la priorité ? Est-ce déjà fait?    │
-│                                                      │
 │  2. 🗺️  Lire CARTOGRAPHY_360.md                     │
-│     → Quels fichiers sont impactés ?                 │
-│     → Quelles dépendances inter-routes ?             │
-│                                                      │
 │  3. 🔒 Consulter le Coffre-Fort Sécurité            │
-│     → Y a-t-il une vulnérabilité liée ?              │
-│     → Le changement introduit-il un risque ?         │
-│                                                      │
 │  4. ✅ SEULEMENT ALORS → Implémenter                │
 └─────────────────────────────────────────────────────┘
-```
 
-```
 ┌─────────────────────────────────────────────────────┐
 │           APRÈS AVOIR CODÉ / CORRIGÉ                │
 │                                                      │
 │  1. 🗺️  Mettre à jour CARTOGRAPHY_360.md            │
-│     → Si endpoints/tables/middlewares changés        │
-│                                                      │
 │  2. 📋 Mettre à jour ROADMAP_KOMERCE.md              │
-│     → Cocher les tâches complétées                   │
-│     → Ajouter les nouvelles tâches découvertes       │
-│                                                      │
-│  3. 🔒 Mettre à jour le Coffre-Fort                  │
-│     → Si vulnérabilité corrigée → fermer l'issue     │
-│     → Si nouveau risque → créer une issue            │
-│                                                      │
-│  4. 📝 Commit avec message clair                     │
-│     → Référencer les issues/PRs liées                │
+│  3. 🔒 Mettre à jour le Coffre-Fort si applicable    │
+│  4. 📂 Déposer un DELTA dans docs/_pending/          │
+│  5. 📝 Commit avec message clair                     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -228,45 +238,23 @@ Roadmap actuelle :
 ### Pourquoi ?
 - **Zéro perte de travail** — si une session est interrompue, on reprend exactement là où on s'est arrêté
 - **Traçabilité complète** — chaque étape de progression est historisée
-- **Reprise facile** — un nouvel agent peut lire les derniers commits et continuer le travail
+- **Reprise facile** — un nouvel agent peut lire les derniers commits et continuer
 
-### Ce qui est couvert
-| Type de travail | Commité automatiquement |
-|-----------------|------------------------|
-| Code source (backend, frontend, apps) | ✅ Oui |
-| Documentation (roadmap, carto, audit) | ✅ Oui |
-| Analyses et rapports d'impact | ✅ Oui |
-| Fichiers de configuration | ✅ Oui |
-| Fichiers temporaires / brouillons | ❌ Non |
+### Architecture (v1.5 — Stateless)
 
-### Comment ça fonctionne
-- Un **trigger automatique** (Tasklet) s'exécute toutes les 10 minutes
-- Il détecte les fichiers modifiés depuis le dernier commit
-- Il pousse un commit WIP sur `main` avec le format : `wip: auto-save progress – [description]`
-- Si aucun changement détecté → aucun commit (pas de bruit)
+Le trigger de gouvernance est **stateless** et **repo-contained** :
+- Aucune base de données agent requise
+- Aucun fichier local requis
+- Tout est dans le repo → n'importe quel agent Tasklet peut reprendre le rôle
+- Voir `docs/GOVERNANCE_BOOTSTRAP.md` pour la configuration
 
 ### Règles pour les agents
 1. **Ne jamais désactiver** le trigger de commit automatique
-2. **Ne pas attendre** le commit auto pour les changements critiques → commiter manuellement immédiatement
+2. **Ne pas attendre** le commit auto pour les changements critiques → commiter manuellement
 3. **Toujours vérifier** que le dernier commit reflète l'état réel du travail en début de session
 4. **En cas de conflit** → le commit manuel prime sur l'auto-commit
 
 ---
-
-## ⚠️ Règles Absolues
-
-1. **JAMAIS de modification sans lecture préalable des 3 piliers**
-2. **JAMAIS de commit sans mise à jour des documents impactés**
-3. **JAMAIS de fix sécurité sans mise à jour de l'AUDIT_REPORT et des issues**
-4. **TOUJOURS vérifier la véracité** — croiser les claims avec le code réel
-5. **TOUJOURS garder la roadmap comme source de vérité** pour la progression
-6. **TOUJOURS commiter le travail en cours toutes les 10 minutes maximum** — zéro perte tolérée
-7. **TOUJOURS présenter le statut roadmap après lecture du README** — le propriétaire doit voir l'état du projet immédiatement
-8. **TOUJOURS suivre l'ordre de priorité de la roadmap** — sauf demande explicite contraire du propriétaire
-9. **TOUJOURS mettre à jour la CARTOGRAPHY_360.md** dans le même commit que le code modifié — approche DELTA (ne changer que les lignes impactées)
-
----
-
 
 ## 🗺️ Règle #9 — Mise à Jour Cartographie Obligatoire
 
@@ -282,32 +270,39 @@ Roadmap actuelle :
 | Modification table/vue BDD | ✅ Section BDD |
 | Ajout/modification middleware | ✅ Section middleware |
 | Modification frontend (HTML/JS/CSS) | ✅ Section frontend |
-| Modification docs uniquement | ❌ Pas nécessaire (sauf si doc ajouté/supprimé) |
+| Modification docs uniquement | ❌ Pas nécessaire |
 
-### Approche DELTA (pas de régénération complète) :
+### Approche DELTA :
 
 ```
 ❌ INTERDIT : Régénérer toute la cartographie à chaque commit
 ✅ OBLIGATOIRE : Ne modifier que les lignes impactées par le changement
-
-Exemple — ajout d'un endpoint dans routes/orders.js :
-1. Mettre à jour le SHA de orders.js dans l'arbre
-2. Ajouter la ligne de l'endpoint dans la section routes/orders.js
-3. C'est tout.
 ```
 
-### Responsabilité :
-- **Agents IA** : mettre à jour la carto dans le MÊME commit que le code
-- **Humains** : le workflow `carto-guard.yml` rappellera de mettre à jour si oublié
-- **Auto-cartography** : le workflow ajoute les métriques automatiquement (en complément, pas en remplacement)
+---
+
+## ⚠️ Règles Absolues
+
+1. **JAMAIS de modification sans lecture préalable des 3 piliers**
+2. **JAMAIS de commit sans mise à jour des documents impactés**
+3. **JAMAIS de fix sécurité sans mise à jour de l'AUDIT_REPORT et des issues**
+4. **TOUJOURS vérifier la véracité** — croiser les claims avec le code réel
+5. **TOUJOURS garder la roadmap comme source de vérité** pour la progression
+6. **TOUJOURS commiter le travail en cours toutes les 10 minutes maximum**
+7. **TOUJOURS présenter le statut roadmap après lecture du README**
+8. **TOUJOURS suivre l'ordre de priorité de la roadmap**
+9. **TOUJOURS mettre à jour la CARTOGRAPHY_360.md** dans le même commit que le code modifié
+10. **TOUJOURS déposer un delta dans docs/_pending/** après une session de travail
+
+---
 
 ## 📡 Synchronisation Automatique
 
 | Document / Travail | Fréquence sync | Méthode |
 |--------------------|----------------|---------|
-| **Tout travail en cours** | **Toutes les 10 min** | **Auto-commit via Tasklet trigger** |
-| `ROADMAP_KOMERCE.md` | Toutes les 10 min + commit manuel | Auto-commit + commit après chaque changement |
-| `CARTOGRAPHY_360.md` | À chaque modification de code | Commit manuel obligatoire |
+| **Tout travail en cours** | **Toutes les 10 min** | **Auto-commit via trigger Tasklet** |
+| `ROADMAP_KOMERCE.md` | Via deltas + auto-sync | Trigger Tasklet stateless |
+| `CARTOGRAPHY_360.md` | À chaque modification de code | Commit manuel + deltas |
 | Coffre-Fort Sécurité | À chaque fix sécurité | Commit manuel + fermeture issue |
 
 ---
@@ -320,6 +315,8 @@ Exemple — ajout d'un endpoint dans routes/orders.js :
 | Roadmap | `docs/ROADMAP_KOMERCE.md` |
 | Audit Principal | `docs/AUDIT_REPORT.md` |
 | Checklist Sécurité | `docs/audit/SECURITY_CHECKLIST.md` |
+| Deltas en attente | `docs/_pending/` |
+| Bootstrap Tasklet | `docs/GOVERNANCE_BOOTSTRAP.md` |
 | Issues Critiques | GitHub Issues #71-#76 |
 | Issues Majeures | GitHub Issues #77-#84 |
 | Ce protocole | `docs/AGENTS_PROTOCOL.md` |
@@ -328,7 +325,6 @@ Exemple — ajout d'un endpoint dans routes/orders.js :
 
 > _"Pas de carte, pas de plan, pas de bouclier → pas de code."_
 > _"Pas de commit régulier → pas de filet de sécurité."_
-> _"Pas de statut roadmap → pas de visibilité."_
-> _"Pas de demande contraire → on suit la roadmap, point."_
-> _"Pas de mise à jour carto → pas de commit accepté."_
-> — Protocole Komerce v1.4
+> _"Pas de delta → pas de mise à jour."_
+> _"Le repo est le système. L'agent est remplaçable."_
+> — Protocole Komerce v1.5
