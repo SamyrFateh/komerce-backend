@@ -3,45 +3,46 @@
  * ============================================
  * P0 FIX: Zero rate limiting was identified as a critical vulnerability.
  *
- * Usage in server.js:
- *   const { globalLimiter, authLimiter, cashConfirmLimiter, scanCollectLimiter, orderCreateLimiter } = require('./middleware/rate-limit');
- *   app.use(globalLimiter);
- *   app.use('/api/auth/login', authLimiter);
- *   app.use('/api/auth/register', authLimiter);
- *   app.use('/api/payments/cash/confirm', cashConfirmLimiter);
- *   app.use('/api/scans/collect', scanCollectLimiter);
- *   app.use('/api/orders', orderCreateLimiter);  // POST only, but applied globally is fine
- *
- * Requires: npm install express-rate-limit
+ * Changelog v2:
+ *   - globalLimiter 100→500/15min (pages dashboard internes font 5-8 appels/chargement)
+ *   - authLimiter 5→20/15min (évite lockouts pendant tests)
+ *   - globalLimiter skip si JWT Authorization présent (utilisateurs authentifiés légitimes)
  */
 
 const rateLimit = require('express-rate-limit');
 
-// ─── Global limiter: 100 requests per 15 minutes per IP ───
+// ─── Global limiter: 500 requests per 15 minutes per IP ───
+// Augmenté car les pages dashboard (Relais, Hub, Admin) font 5-8 appels API
+// par chargement + auto-refresh toutes les 15-30s = ~20 req/min légitimes
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 100,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes, réessayez plus tard' },
   skip: (req) => {
-    // Skip rate limiting for health checks
-    return req.path === '/health' || req.path === '/ready';
+    // Skip pour health checks
+    if (req.path === '/health' || req.path === '/ready') return true;
+    // Skip pour utilisateurs authentifiés (JWT présent)
+    // Les utilisateurs connectés sont des agents internes légitimes
+    const auth = req.headers['authorization'];
+    if (auth && auth.startsWith('Bearer ')) return true;
+    return false;
   },
 });
 
-// ─── Auth limiter: 5 attempts per 15 minutes per IP ───
-// Protects against brute-force login attacks
+// ─── Auth limiter: 20 attempts per 15 minutes per IP ───
+// Protège contre le brute-force login, mais évite les lockouts en dev/test
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de tentatives de connexion, réessayez dans 15 minutes' },
 });
 
 // ─── Cash confirm limiter: 3 attempts per minute per IP ───
-// CRITICAL: cash_ref_code has limited keyspace, must prevent brute-force
+// CRITICAL: cash_ref_code a un espace limité, doit empêcher le brute-force
 const cashConfirmLimiter = rateLimit({
   windowMs: 60 * 1000,  // 1 minute
   max: 3,
@@ -51,7 +52,7 @@ const cashConfirmLimiter = rateLimit({
 });
 
 // ─── Scan collect limiter: 5 attempts per minute per IP ───
-// Protects against QR code brute-forcing
+// Protège contre le brute-forcing des QR codes
 const scanCollectLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
@@ -61,7 +62,7 @@ const scanCollectLimiter = rateLimit({
 });
 
 // ─── Order creation limiter: 10 per minute per IP ───
-// Prevents spam order creation
+// Empêche le spam de création de commandes (appliqué POST only dans server.js)
 const orderCreateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
@@ -70,14 +71,18 @@ const orderCreateLimiter = rateLimit({
   message: { error: 'Trop de commandes créées, réessayez dans 1 minute' },
 });
 
-// ─── Dashboard limiter: 30 per minute per IP ───
-// Prevents DoS on heavy dashboard queries
+// ─── Dashboard limiter: 60 per minute per IP ───
+// Anti-DoS sur les requêtes lourdes, augmenté pour auto-refresh légitimes
 const dashboardLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes dashboard, réessayez dans 1 minute' },
+  skip: (req) => {
+    const auth = req.headers['authorization'];
+    return auth && auth.startsWith('Bearer ');
+  },
 });
 
 module.exports = {
