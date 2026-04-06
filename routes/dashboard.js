@@ -95,12 +95,22 @@ router.get('/ops', async (req, res) => {
 
     // ── Logistique ────────────────────────────────────────────────────────────
 
-    // Dubai : commandes en préparation ou achat (avant expédition)
-    const { rows: dubaiItems } = await db.query(`
+    // Dubai — 📥 Réceptionner : commandes commandées, en attente de réception au hub
+    const { rows: dubaiReceptionItems } = await db.query(`
       SELECT o.reference, o.status,
              EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.created_at))) / 86400 AS jours_dans_etape
       FROM orders o
-      WHERE o.status IN ('ordered','preparation')
+      WHERE o.status = 'ordered'
+      ORDER BY o.created_at ASC
+      LIMIT 50
+    `);
+
+    // Dubai — 📦 Expédier : commandes reçues au hub, prêtes à expédier
+    const { rows: dubaiExpeditionItems } = await db.query(`
+      SELECT o.reference, o.status,
+             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.created_at))) / 86400 AS jours_dans_etape
+      FROM orders o
+      WHERE o.status = 'preparation'
       ORDER BY o.created_at ASC
       LIMIT 50
     `);
@@ -129,9 +139,10 @@ router.get('/ops', async (req, res) => {
     `);
 
     const logistique = {
-      dubai:   { count: dubaiItems.length,   items: dubaiItems   },
-      bateau:  { count: bateauItems.length,  items: bateauItems  },
-      anjouan: { count: anjouanItems.length, items: anjouanItems },
+      dubai_reception:  { count: dubaiReceptionItems.length,  items: dubaiReceptionItems,  label: '📥 Réceptionner' },
+      dubai_expedition: { count: dubaiExpeditionItems.length, items: dubaiExpeditionItems, label: '📦 Expédier' },
+      bateau:           { count: bateauItems.length,          items: bateauItems           },
+      anjouan:          { count: anjouanItems.length,         items: anjouanItems          },
     };
 
     // ── Délais moyens ─────────────────────────────────────────────────────────
