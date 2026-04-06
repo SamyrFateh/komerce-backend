@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/chart.umd.min.js"></script>
+<style>
+  .scrollbar-thin::-webkit-scrollbar{height:6px}
+  .scrollbar-thin::-webkit-scrollbar-thumb{background:oklch(var(--bc)/.2);border-radius:3px}
+  .tab-nav-btn{min-width:4.5rem;transition:all .15s}
+  .tab-nav-btn:hover{background:oklch(var(--b2))}
+  .kanban-col{min-width:220px;max-height:60vh}
+  @keyframes pulse-dot{0%,100%{opacity:.4}50%{opacity:1}}
+  .loading-dot{animation:pulse-dot 1.2s infinite}
+  .radial-progress{--size:6rem;--thickness:0.5rem;width:var(--size);height:var(--size);border-radius:50%;background:conic-gradient(currentColor calc(var(--value)*1%),oklch(var(--b3)) 0);display:flex;align-items:center;justify-content:center;position:relative}
+  .radial-progress::before{content:'';position:absolute;inset:var(--thickness);border-radius:50%;background:oklch(var(--b2))}
+  .radial-progress>*{position:relative;z-index:1}
+</style>
+</head>
+<body class="min-h-screen bg-base-100">
+
+<!-- ═══════════════════════════════ APP ROOT ═══════════════════════════════ -->
+<div id="app" class="flex flex-col min-h-screen">
+
+  <!-- TAB NAV -->
+  <div class="sticky top-0 z-50 bg-base-100 border-b border-base-300 shadow-sm">
+    <div class="overflow-x-auto scrollbar-thin">
+      <div class="flex gap-0 min-w-max px-1 pt-1" id="tabBar"></div>
+    </div>
+  </div>
+
+  <!-- VIEW CONTAINER -->
+  <div class="flex-1 p-4 overflow-y-auto" id="viewContainer"></div>
+
+</div>
+
+<!-- SETTINGS MODAL -->
+<dialog id="settingsModal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Configuration API</h3>
+    <p class="text-base-content/60 text-sm mt-2">URL de base de l'API du dashboard. Par défaut : <code>/api/dashboard</code></p>
+    <div class="form-control mt-4">
+      <label class="label"><span class="label-text">URL de l'API</span></label>
+      <input type="text" id="apiUrlInput" class="input input-bordered w-full" placeholder="/api/dashboard" />
+    </div>
+    <div class="modal-action">
+      <button class="btn btn-ghost" onclick="settingsModal.close()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Enregistrer</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+const LS_KEY = 'komerce_api_base';
+let API_BASE = localStorage.getItem(LS_KEY) || '/api/dashboard';
+let activeTab = 'overview';
+const cache = {};
+const CACHE_TTL = 30000;
+const REFRESH_INTERVAL = 30000;
+let refreshTimer = null;
+
+// Hub/Relais processed sets (UI-only)
+const hubProcessed = new Set();
+const relaisProcessed = new Set();
+
+// Retards expanded row
+let retardsExpandedRow = null;
+
+// Hub active section
+let hubActiveSection = 'reception';
+
+// Relais active section & filter
+let relaisActiveSection = 'valider';
+let relaisFilter = 'Tous';
+
+// Chart.js instances
+let chartInstances = {};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════════════════════
+const tabs = [
+  { id:'overview',  label:"Vue d'ensemble", icon:'📊' },
+  { id:'pipeline',  label:'Pipeline',       icon:'📋' },
+  { id:'hub',       label:'Hub Dubai',      icon:'🏢' },
+  { id:'relais',    label:'Relais',         icon:'📍' },
+  { id:'finance',   label:'Finance',        icon:'💰' },
+  { id:'clients',   label:'Clients',        icon:'👥' },
+  { id:'catalogue', label:'Catalogue',      icon:'🛍️' },
+  { id:'retards',   label:'Retards & SAV',  icon:'⚠️' },
+  { id:'tendances', label:'Tendances',      icon:'📈' },
+];
+
+function buildTabBar(){
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = '';
+  tabs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = `tab-nav-btn flex flex-col items-center justify-center px-3 py-2 text-xs border-b-2 transition-colors ${
+      activeTab === t.id
+        ? 'border-primary text-primary font-bold'
+        : 'border-transparent text-base-content/60 hover:text-base-content'
+    }`;
+    btn.innerHTML = `<span class="mb-0.5 text-base">${t.icon}</span><span class="truncate max-w-[5rem]">${t.label}</span>`;
+    btn.onclick = () => switchTab(t.id);
+    bar.appendChild(btn);
+  });
+  // Settings gear
+  const gear = document.createElement('button');
+  gear.className = 'tab-nav-btn flex flex-col items-center justify-center px-3 py-2 text-xs border-b-2 border-transparent text-base-content/60 hover:text-base-content ml-auto';
+  gear.innerHTML = '<span class="mb-0.5 text-base">⚙️</span><span class="truncate">API</span>';
+  gear.onclick = () => { document.getElementById('apiUrlInput').value = API_BASE; settingsModal.showModal(); };
+  bar.appendChild(gear);
+}
+
+function saveSettings(){
+  const v = document.getElementById('apiUrlInput').value.trim() || '/api/dashboard';
+  API_BASE = v.replace(/\/$/,'');
+  localStorage.setItem(LS_KEY, API_BASE);
+  settingsModal.close();
+  // Clear cache & reload current view
+  Object.keys(cache).forEach(k => delete cache[k]);
+  renderCurrentView();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FORMATTERS (matching formatters.ts exactly)
+// ═══════════════════════════════════════════════════════════════════════════════
+function formatKMF(amount){
+  if(amount==null) return '—';
+  return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' KMF';
+}
+function formatEUR(amount){
+  if(amount==null) return '—';
+  return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
+}
+function formatPct(value){
+  if(value==null) return '—';
+  const sign = value > 0 ? '+' : '';
+  return sign+value.toFixed(1)+'%';
+}
+function formatDate(dateStr){
+  if(!dateStr) return '—';
+  const parts = dateStr.split('T')[0].split('-');
+  if(parts.length<3) return dateStr;
+  return parts[2]+'/'+parts[1]+'/'+parts[0];
+}
+function getStatusLabel(s){
+  return {confirmed:'Confirmée',ordered:'Commandée',preparation:'En préparation',shipped:'Expédiée',in_transit:'En transit',available:'Disponible',collected:'Collectée',cancelled:'Annulée',refunded:'Remboursée'}[s]||s;
+}
+function getStatusColor(s){
+  return {confirmed:'badge-info',ordered:'badge-info',preparation:'badge-warning',shipped:'badge-primary',in_transit:'badge-primary',available:'badge-success',collected:'badge-success',cancelled:'badge-error',refunded:'badge-error'}[s]||'badge-ghost';
+}
+function getStatusBg(s){
+  return {confirmed:'bg-info',ordered:'bg-info',preparation:'bg-warning',shipped:'bg-primary',in_transit:'bg-primary',available:'bg-success',collected:'bg-success',cancelled:'bg-error',refunded:'bg-error'}[s]||'bg-base-300';
+}
+function getCompensationLabel(c){
+  return {contact_preventif:'Contact préventif',avoir_5pct:'Avoir 5%',remise_10pct_prochaine_cmd:'Remise −10%',remboursement_possible:'Remboursement'}[c]||c;
+}
+function getCompensationColor(c){
+  return {contact_preventif:'badge-info',avoir_5pct:'badge-warning',remise_10pct_prochaine_cmd:'badge-error',remboursement_possible:'badge-error'}[c]||'badge-ghost';
+}
+function shortMonth(mois){
+  const m={'01':'Jan','02':'Fév','03':'Mar','04':'Avr','05':'Mai','06':'Juin','07':'Juil','08':'Aoû','09':'Sep','10':'Oct','11':'Nov','12':'Déc'};
+  const p=mois.split('-');
+  return (m[p[1]]||p[1])+' '+p[0].slice(2);
+}
+function endOfMonth(){
+  const n=new Date(), e=new Date(n.getFullYear(), n.getMonth()+1, 0);
+  return e.toISOString().split('T')[0];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API FETCH WITH CACHE
+// ═══════════════════════════════════════════════════════════════════════════════
+async function fetchApi(endpoint){
+  const key = endpoint;
+  const entry = cache[key];
+  if(entry && Date.now()-entry.ts < CACHE_TTL) return entry.data;
+
+  const url = API_BASE + '/' + endpoint;
+  const res = await fetch(url, { headers:{'Accept':'application/json'}, credentials:'include' });
+  if(!res.ok){
+    if(res.status===401||res.status===403) throw new Error('AUTH');
+    const txt = await res.text().catch(()=>'');
+    throw new Error('API '+res.status+': '+(txt||res.statusText));
+  }
+  const data = await res.json();
+  cache[key] = {data, ts:Date.now()};
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RENDERING HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+function h(tag, cls, inner){
+  return '<'+tag+(cls?' class="'+cls+'"':'')+'>'+(inner||'')+'</'+tag+'>';
+}
+function spinner(){
+  return '<div class="flex justify-center items-center py-16"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
+}
+function errorBox(msg, isAuth){
+  if(isAuth) return '<div class="alert alert-error max-w-lg mx-auto mt-8"><span>🔒 Session expirée — connectez-vous en tant qu\'admin</span></div>';
+  return '<div class="alert alert-error max-w-lg mx-auto mt-8"><div><span>'+esc(msg)+'</span></div><button class="btn btn-sm btn-ghost" onclick="renderCurrentView()">🔄 Réessayer</button></div>';
+}
+function esc(s){ return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function statCard(icon,label,value,extra){
+  extra=extra||'';
+  return '<div class="card bg-base-200 '+extra+'"><div class="card-body p-4 flex flex-row items-center gap-3"><span class="text-2xl opacity-60">'+icon+'</span><div><div class="text-xs text-base-content/60">'+esc(label)+'</div><div class="text-xl font-bold">'+esc(String(value))+'</div></div></div></div>';
+}
+
+function trendBadge(val){
+  if(val==null) return '';
+  const cls = val>=0?'badge-success':'badge-error';
+  return ' <span class="badge '+cls+' badge-sm">'+formatPct(val)+'</span>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB SWITCHING & RENDER
+// ═══════════════════════════════════════════════════════════════════════════════
+function switchTab(id){
+  activeTab = id;
+  buildTabBar();
+  renderCurrentView();
+  startAutoRefresh();
+}
+
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(()=> renderCurrentView(), REFRESH_INTERVAL);
+}
+
+async function renderCurrentView(){
+  const vc = document.getElementById('viewContainer');
+  vc.innerHTML = spinner();
+  try{
+    switch(activeTab){
+      case 'overview':  await renderOverview(vc); break;
+      case 'pipeline':  await renderPipeline(vc); break;
+      case 'hub':       await renderHub(vc); break;
+      case 'relais':    await renderRelais(vc); break;
+      case 'finance':   await renderFinance(vc); break;
+      case 'clients':   await renderClients(vc); break;
+      case 'catalogue': await renderCatalogue(vc); break;
+      case 'retards':   await renderRetards(vc); break;
+      case 'tendances': await renderTendances(vc); break;
+    }
+  }catch(e){
+    vc.innerHTML = errorBox(e.message, e.message==='AUTH');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. OVERVIEW
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderOverview(vc){
+  const [ops,finance,pilotage] = await Promise.all([fetchApi('ops'),fetchApi('finance'),fetchApi('pilotage')]);
+  const a = ops.activite, sla = ops.sla, al = ops.alertes;
+  const slaTotal = sla.on_time+sla.warning+sla.late+sla.blocked;
+  const health = slaTotal>0?Math.round(sla.on_time/slaTotal*100):0;
+  const hc = health>=80?'text-success':health>=60?'text-warning':'text-error';
+  const hb = health>=80?'badge-success':health>=60?'badge-warning':'badge-error';
+  const hl = health>=80?'Bon':health>=60?'Attention':'Critique';
+
+  // Pipeline
+  const pCounts={};
+  pilotage.pipeline.forEach(p=>{pCounts[p.statut]=p.nb});
+  const pTotal = pilotage.pipeline.reduce((s,p)=>s+p.nb,0);
+  const STATUSES=['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
+
+  // Logistics chain
+  const STEPS=[
+    {key:'dubai_reception', icon:'📥'},
+    {key:'dubai_expedition', icon:'📦'},
+    {key:'transitaire', icon:'🏢'},
+    {key:'bateau', icon:'🚢'},
+    {key:'anjouan', icon:'📍'}
+  ];
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // Stat cards
+  html += '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">';
+  html += statCard('📦',"Commandes aujourd'hui", a.commandes_aujourd_hui);
+  html += statCard('✅',"Livrées aujourd'hui", a.livrees_aujourd_hui);
+  html += statCard('⚠️','Bloquées', a.commandes_bloquees,'ring-1 ring-error/30');
+  html += statCard('💰','CA 30j', formatKMF(finance.kpi.ca_kmf));
+  html += '</div>';
+
+  // Health + SLA
+  html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">';
+  // Health
+  html += '<div class="card bg-base-200"><div class="card-body p-4 flex flex-row items-center gap-6">';
+  html += '<div class="radial-progress '+hc+'" style="--value:'+health+'"><span class="text-xl font-bold">'+health+'%</span></div>';
+  html += '<div><div class="text-lg font-bold">Score Santé</div><div class="text-base-content/60 text-sm">Basé sur le ratio SLA à temps</div>';
+  html += '<span class="badge '+hb+' mt-2">'+hl+'</span></div>';
+  html += '</div></div>';
+  // SLA breakdown
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<div class="text-sm font-bold mb-3">Répartition SLA</div>';
+  html += '<div class="grid grid-cols-4 gap-2">';
+  [{l:'À temps',v:sla.on_time,b:'badge-success'},{l:'Attention',v:sla.warning,b:'badge-warning'},{l:'En retard',v:sla.late,b:'badge-error'},{l:'Bloquées',v:sla.blocked,b:'badge-error'}].forEach(x=>{
+    html += '<div class="card bg-base-300"><div class="card-body p-3 items-center text-center"><span class="badge '+x.b+' badge-sm">'+x.l+'</span><div class="text-xl font-bold">'+x.v+'</div></div></div>';
+  });
+  html += '</div></div></div>';
+  html += '</div>';
+
+  // Alerts
+  html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-3">';
+  html += '<div class="alert alert-warning"><span class="text-lg">💵</span><div><div class="font-bold">Cash en attente</div><div class="text-sm">'+al.cash_pending+' paiement(s) à encaisser</div></div></div>';
+  html += '<div class="alert alert-error"><span class="text-lg">🐛</span><div><div class="font-bold">Anomalies</div><div class="text-sm">'+al.anomalies+' anomalie(s) détectée(s)</div></div></div>';
+  html += '<div class="alert alert-warning"><span class="text-lg">📦</span><div><div class="font-bold">Stock bas</div><div class="text-sm">'+al.low_stock+' produit(s) en rupture</div></div></div>';
+  html += '</div>';
+
+  // Pipeline bar
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<div class="text-sm font-bold mb-2">Pipeline des commandes</div>';
+  html += '<div class="flex w-full h-8 rounded-lg overflow-hidden">';
+  STATUSES.forEach(s=>{
+    const c=pCounts[s]||0; if(!c) return;
+    const pct=c/pTotal*100;
+    html += '<div class="'+getStatusBg(s)+' flex items-center justify-center text-xs font-bold" style="width:'+pct+'%;min-width:24px" title="'+getStatusLabel(s)+': '+c+'">'+(pct>6?c:'')+'</div>';
+  });
+  html += '</div>';
+  html += '<div class="flex flex-wrap gap-3 mt-2">';
+  STATUSES.forEach(s=>{
+    const c=pCounts[s]||0; if(!c) return;
+    html += '<div class="flex items-center gap-1 text-xs"><span class="badge '+getStatusColor(s)+' badge-xs">&nbsp;</span><span class="text-base-content/60">'+getStatusLabel(s)+': '+c+'</span></div>';
+  });
+  html += '</div></div></div>';
+
+  // Logistics chain
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<div class="text-sm font-bold mb-3">Chaîne logistique</div>';
+  html += '<div class="flex items-center justify-between gap-2">';
+  STEPS.forEach((st,i)=>{
+    const step = ops.logistique[st.key];
+    const count = step ? step.count : 0;
+    const label = step ? step.label.replace(/^[^\s]+\s/,'') : st.key;
+    html += '<div class="flex flex-col items-center flex-1"><span class="text-2xl">'+st.icon+'</span><span class="text-2xl font-bold mt-1">'+count+'</span><span class="text-xs text-base-content/60 text-center mt-1">'+esc(label)+'</span></div>';
+    if(i < STEPS.length-1) html += '<span class="opacity-40 flex-shrink-0">→</span>';
+  });
+  html += '</div></div></div>';
+
+  html += '</div>';
+  vc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2. PIPELINE
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderPipeline(vc){
+  const data = await fetchApi('pipeline');
+  const STATUSES=['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
+  const ACTIVE = new Set(['confirmed','ordered','preparation','shipped','in_transit','available']);
+
+  function ageColor(a){ return a<28?'text-success':a<35?'text-warning':'text-error'; }
+  function payBadge(s){ return s==='paid'?'badge-success':s==='pending'?'badge-warning':s==='refunded'?'badge-info':'badge-ghost'; }
+  function payLabel(s){ return {paid:'Payé',pending:'En attente',refunded:'Remboursé'}[s]||s; }
+
+  let html = '<div class="flex flex-col gap-3">';
+  html += '<div class="flex items-center gap-4"><div class="text-base-content/60 text-sm">Total : <span class="font-bold text-base-content">'+data.total+'</span> commandes</div>';
+  html += '<div class="text-base-content/60 text-sm">Actives : <span class="font-bold text-base-content">'+data.active+'</span></div></div>';
+
+  html += '<div class="flex flex-row overflow-x-auto gap-3 pb-4">';
+  STATUSES.forEach(status=>{
+    const col = data.pipeline[status]; if(!col) return;
+    const isAct = ACTIVE.has(status);
+    html += '<div class="min-w-[220px] flex-shrink-0 flex flex-col">';
+    html += '<div class="flex items-center gap-2 mb-2 px-1"><span class="text-sm font-bold">'+getStatusLabel(status)+'</span><span class="badge '+(isAct?'badge-primary':'badge-neutral')+' badge-sm">'+col.count+'</span></div>';
+    html += '<div class="flex-1 max-h-[60vh] overflow-y-auto pr-1">';
+    if(col.orders.length===0){
+      html += '<div class="text-xs text-base-content/40 text-center py-4">'+(col.count>0?col.count+' commande(s)':'Aucune commande')+'</div>';
+    } else {
+      col.orders.forEach(o=>{
+        const age = Math.round(Number(o.age_jours||0));
+        html += '<div class="card bg-base-300 mb-2"><div class="card-body p-3">';
+        html += '<div class="font-bold text-sm">'+esc(o.reference)+'</div>';
+        html += '<div class="text-xs text-base-content/60">'+esc(o.client_name||'')+'</div>';
+        html += '<div class="text-xs text-base-content/60 truncate">'+esc(o.product_name||'')+'</div>';
+        html += '<div class="flex items-center justify-between mt-1"><span class="text-sm font-semibold">'+formatKMF(o.total_kmf)+'</span></div>';
+        html += '<div class="flex items-center justify-between mt-1"><span class="text-xs font-bold '+ageColor(age)+'">'+age+'j</span>';
+        html += '<span class="badge '+payBadge(o.payment_status)+' badge-xs">'+payLabel(o.payment_status)+'</span></div>';
+        html += '</div></div>';
+      });
+    }
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  vc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3. HUB DUBAI
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderHub(vc){
+  const data = await fetchApi('hub-dubai');
+  const sections = [
+    {key:'reception', label:'Réceptionner', icon:'📥', orders:data.a_receptionner, action:'Réceptionné ✅'},
+    {key:'emballage', label:'Emballer', icon:'📦', orders:data.a_emballer, action:'Emballé ✅'},
+    {key:'expedition', label:'Expédier', icon:'🚚', orders:data.a_expedier, action:'Expédié ✅'},
+  ];
+  const cur = sections.find(s=>s.key===hubActiveSection)||sections[0];
+
+  const statusCfg = {complet:{l:'Complet',c:'badge-success'},hors_stock:{l:'Hors stock',c:'badge-error'},en_attente:{l:'En attente',c:'badge-info'},annule:{l:'Annulé',c:'badge-neutral'},defectueux:{l:'Défectueux',c:'badge-error'},incomplet:{l:'Incomplet',c:'badge-warning'},retard:{l:'Retard',c:'badge-error'}};
+
+  // Status counts for current section
+  const sCounts={};
+  cur.orders.forEach(o=>(o.produits||[]).forEach(p=>{sCounts[p.status]=(sCounts[p.status]||0)+1}));
+  const nbDone = cur.orders.filter(o=>hubProcessed.has(o.reference)).length;
+  const totalProds = cur.orders.reduce((s,o)=>s+(o.produits||[]).length,0);
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // Section tabs
+  html += '<div class="grid grid-cols-3 gap-2">';
+  sections.forEach(s=>{
+    const isA = hubActiveSection===s.key;
+    const done = s.orders.filter(o=>hubProcessed.has(o.reference)).length;
+    html += '<button class="btn '+(isA?'btn-primary':'btn-ghost bg-base-200')+' flex-col h-auto py-3 gap-1" onclick="hubActiveSection=\''+s.key+'\';renderCurrentView()">';
+    html += '<div class="flex items-center gap-2"><span>'+s.icon+'</span><span class="font-bold">'+s.label+'</span></div>';
+    html += '<div class="flex items-center gap-2 text-xs"><span class="badge badge-sm">'+s.orders.length+'</span>';
+    if(done>0) html += '<span class="text-success">✅ '+done+'</span>';
+    html += '</div></button>';
+  });
+  html += '</div>';
+
+  // Status chips
+  html += '<div class="flex flex-wrap gap-2">';
+  Object.entries(sCounts).forEach(([st,cnt])=>{
+    const cfg = statusCfg[st]||{l:st,c:'badge-ghost'};
+    html += '<div class="badge gap-1 '+cfg.c+'">'+cnt+' '+cfg.l+'</div>';
+  });
+  html += '<div class="badge badge-outline gap-1">📦 '+totalProds+' produits total</div>';
+  html += '</div>';
+
+  // Progress
+  html += '<div class="flex items-center gap-3"><progress class="progress progress-primary flex-1" value="'+nbDone+'" max="'+cur.orders.length+'"></progress><span class="text-sm font-medium whitespace-nowrap">'+nbDone+'/'+cur.orders.length+' traités</span></div>';
+
+  // Order cards
+  const sorted = [...cur.orders].sort((a,b)=>{
+    if(a.priorite==='urgente'&&b.priorite!=='urgente') return -1;
+    if(b.priorite==='urgente'&&a.priorite!=='urgente') return 1;
+    return (b.jours||0)-(a.jours||0);
+  });
+  html += '<div class="flex flex-col gap-3">';
+  if(sorted.length===0) html += '<div class="text-center py-8 opacity-60">Aucune commande dans cette section</div>';
+  sorted.forEach(o=>{
+    const done = hubProcessed.has(o.reference);
+    const prods = o.produits||[];
+    const nbOk = prods.filter(p=>p.status==='complet').length;
+    html += '<div class="card bg-base-200 '+(done?'opacity-50':'')+(o.priorite==='urgente'?' border-l-4 border-error':'')+'">';
+    html += '<div class="card-body p-4 gap-2">';
+    html += '<div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="font-mono font-bold text-primary">'+esc(o.reference)+'</span>';
+    if(o.priorite==='urgente') html += '<span class="badge badge-error badge-sm">URGENT</span>';
+    html += '</div><span class="text-sm opacity-60">J+'+Math.round(o.jours||0)+'</span></div>';
+    html += '<div class="flex flex-wrap gap-x-4 gap-y-1 text-sm"><span class="font-medium">'+esc(o.client_nom)+'</span><span class="opacity-60">'+formatKMF(o.total_kmf)+'</span></div>';
+    html += '<div class="text-sm">'+nbOk+'/'+prods.length+' produits complets</div>';
+
+    // Product list (always shown, compact)
+    if(prods.length>0){
+      html += '<div class="overflow-x-auto"><table class="table table-xs w-full"><thead><tr><th>Produit</th><th>Qté</th><th>Prix</th><th>Statut</th></tr></thead><tbody>';
+      prods.forEach(p=>{
+        const sc = statusCfg[p.status]||{l:p.status,c:'badge-ghost'};
+        html += '<tr'+(p.status==='annule'?' class="opacity-40"':'')+'><td class="font-medium">'+esc(p.nom)+'</td><td>'+p.quantite+'</td><td>'+formatKMF(p.prix_kmf)+'</td><td><span class="badge badge-sm '+sc.c+'">'+sc.l+'</span></td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    html += '<div class="flex justify-end mt-1"><button class="btn btn-sm '+(done?'btn-disabled':'btn-primary')+'" onclick="hubProcessed.add(\''+esc(o.reference)+'\');renderCurrentView()"'+(done?' disabled':'')+'>'+( done?'✅ Fait':cur.action)+'</button></div>';
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  vc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. RELAIS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderRelais(vc){
+  const data = await fetchApi('relais');
+  const secs = [
+    {key:'valider', label:'Valider commandes', icon:'📋', orders:data.a_valider},
+    {key:'remettre', label:'Remettre colis', icon:'🤝', orders:data.a_remettre},
+  ];
+  const cur = secs.find(s=>s.key===relaisActiveSection)||secs[0];
+  const allOrders = cur.orders;
+
+  // Unique relais names
+  const allNames = [...new Set([...data.a_valider,...data.a_remettre].map(o=>o.relais_nom))];
+  const filtered = relaisFilter==='Tous'?allOrders:allOrders.filter(o=>o.relais_nom===relaisFilter);
+  const nbDone = filtered.filter(o=>relaisProcessed.has(o.reference)).length;
+
+  // Cash pending
+  const cashPending = filtered.filter(o=>o.payment_status==='pending'&&!relaisProcessed.has(o.reference)).reduce((s,o)=>s+o.total_kmf,0);
+
+  function waitFmt(h){ return h<24?h+'h':Math.floor(h/24)+'j '+(h%24)+'h'; }
+  function waitCls(h){ return h>120?'text-error font-bold':h>48?'text-warning font-semibold':'text-base-content'; }
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // Section tabs
+  html += '<div class="grid grid-cols-2 gap-3">';
+  secs.forEach(s=>{
+    const isA = relaisActiveSection===s.key;
+    const clr = s.key==='valider'?'btn-primary':'btn-success';
+    const done = (s.key==='valider'?data.a_valider:data.a_remettre).filter(o=>relaisProcessed.has(o.reference)).length;
+    html += '<button class="btn btn-lg '+(isA?clr:'btn-ghost bg-base-200')+' flex-col h-auto py-4 gap-1" onclick="relaisActiveSection=\''+s.key+'\';renderCurrentView()">';
+    html += s.icon+' <span class="font-bold text-sm">'+s.label+'</span>';
+    html += '<div class="flex gap-2 text-xs"><span class="badge badge-sm">'+s.orders.length+'</span>';
+    if(done>0) html += '<span class="text-success">✅ '+done+'</span>';
+    html += '</div></button>';
+  });
+  html += '</div>';
+
+  // Filter + cash
+  html += '<div class="flex items-center gap-2 flex-wrap"><span class="text-sm font-medium">📍 Relais :</span>';
+  html += '<select class="select select-sm select-bordered" onchange="relaisFilter=this.value;renderCurrentView()">';
+  html += '<option value="Tous"'+(relaisFilter==='Tous'?' selected':'')+'>Tous ('+allOrders.length+')</option>';
+  allNames.forEach(n=>{
+    const cnt = allOrders.filter(o=>o.relais_nom===n).length;
+    html += '<option value="'+esc(n)+'"'+(relaisFilter===n?' selected':'')+'>'+esc(n)+' ('+cnt+')</option>';
+  });
+  html += '</select>';
+  if(cashPending>0) html += '<span class="badge badge-warning gap-1 ml-auto">💵 Cash à encaisser : '+formatKMF(cashPending)+'</span>';
+  html += '</div>';
+
+  // Progress
+  const progClr = relaisActiveSection==='valider'?'progress-primary':'progress-success';
+  html += '<div class="flex items-center gap-3"><progress class="progress '+progClr+' flex-1" value="'+nbDone+'" max="'+filtered.length+'"></progress><span class="text-sm font-medium whitespace-nowrap">'+nbDone+'/'+filtered.length+' traités</span></div>';
+
+  // Cards
+  const sorted = [...filtered].sort((a,b)=>{
+    if(a.priorite==='urgente'&&b.priorite!=='urgente') return -1;
+    if(b.priorite==='urgente'&&a.priorite!=='urgente') return 1;
+    return (b.heures_attente||0)-(a.heures_attente||0);
+  });
+  html += '<div class="flex flex-col gap-3">';
+  if(sorted.length===0) html += '<div class="text-center py-8 opacity-60">Aucune commande dans cette section</div>';
+  sorted.forEach(o=>{
+    const done = relaisProcessed.has(o.reference);
+    const prods = o.produits||[];
+    html += '<div class="card bg-base-200 '+(done?'opacity-50':'')+(o.priorite==='urgente'?' border-l-4 border-error':'')+(o.heures_attente>120?' border-r-4 border-warning':'')+'">';
+    html += '<div class="card-body p-4 gap-2">';
+    // Header
+    html += '<div class="flex items-center justify-between flex-wrap gap-2"><div class="flex items-center gap-2"><span class="font-mono font-bold text-primary">'+esc(o.reference)+'</span>';
+    if(o.priorite==='urgente') html += '<span class="badge badge-error badge-sm">URGENT</span>';
+    html += '</div><span class="text-sm '+waitCls(o.heures_attente)+'">⏱️ '+waitFmt(Math.round(o.heures_attente))+'</span></div>';
+    // Client
+    html += '<div class="flex flex-wrap items-center gap-x-4 gap-y-1"><span class="font-medium">'+esc(o.client_nom)+'</span>';
+    html += '<a href="tel:'+esc(o.client_phone)+'" class="link link-hover text-sm flex items-center gap-1">📞 '+esc(o.client_phone)+'</a>';
+    html += '<span class="text-sm opacity-60">📍 '+esc(o.relais_nom)+'</span></div>';
+    // Payment & total
+    html += '<div class="flex items-center gap-3 text-sm"><span class="font-semibold">'+formatKMF(o.total_kmf)+'</span>';
+    html += '<span class="badge badge-sm gap-1 '+(o.payment_mode==='stripe'?'badge-info':'badge-warning')+'">'+(o.payment_mode==='stripe'?'💳 Stripe':'💵 Cash')+'</span>';
+    html += '<span class="badge badge-sm '+(o.payment_status==='paid'?'badge-success':'badge-warning')+'">'+(o.payment_status==='paid'?'✅ Payé':'💰 À encaisser')+'</span></div>';
+    // Products
+    if(prods.length>0){
+      html += '<div class="overflow-x-auto"><table class="table table-xs w-full"><thead><tr><th>Produit</th><th>Qté</th><th>Prix</th></tr></thead><tbody>';
+      prods.forEach(p=>{
+        html += '<tr><td class="font-medium">'+esc(p.nom)+'</td><td>'+p.quantite+'</td><td>'+formatKMF(p.prix_kmf)+'</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    // Actions
+    html += '<div class="flex items-center justify-between mt-1 flex-wrap gap-2">';
+    if(relaisActiveSection==='remettre'&&o.payment_status==='pending'&&!done) html += '<span class="text-warning text-sm font-semibold">💰 Encaisser '+formatKMF(o.total_kmf)+' avant remise</span>';
+    html += '<div class="flex gap-2 ml-auto">';
+    html += '<a href="tel:'+esc(o.client_phone)+'" class="btn btn-sm btn-ghost">📞 Appeler</a>';
+    const btnCls = relaisActiveSection==='valider'?'btn-primary':'btn-success';
+    const btnLbl = relaisActiveSection==='valider'?'Valider':'Colis remis';
+    html += '<button class="btn btn-sm '+(done?'btn-disabled':btnCls)+'" onclick="relaisProcessed.add(\''+esc(o.reference)+'\');renderCurrentView()"'+(done?' disabled':'')+'>'+(done?'✅ Fait':btnLbl)+'</button>';
+    html += '</div></div>';
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  vc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. FINANCE
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderFinance(vc){
+  const d = await fetchApi('finance');
+  const {kpi,paiements,marges,par_categorie,top_produits,taux} = d;
+  const totalPay = paiements.cash.count+paiements.stripe.count;
+  const cashPct = totalPay>0?(paiements.cash.count/totalPay*100):50;
+  const stripePct = 100-cashPct;
+  const maxCA = par_categorie.length?Math.max(...par_categorie.map(c=>c.ca_kmf)):1;
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // KPIs
+  html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">';
+  html += statCard('💰','CA KMF',formatKMF(kpi.ca_kmf));
+  html += statCard('💳','CA EUR',formatEUR(kpi.ca_eur));
+  html += statCard('📊','Panier moyen',formatKMF(kpi.panier_moyen_kmf));
+  html += statCard('📈','Taux marge',(marges.taux_marge_pct!=null?marges.taux_marge_pct+'%':'—'));
+  html += '</div>';
+
+  // Payment split
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">💳 Répartition des paiements</h3>';
+  html += '<div class="flex w-full h-8 rounded-lg overflow-hidden mt-2">';
+  html += '<div class="bg-primary flex items-center justify-center text-primary-content text-sm font-bold" style="width:'+cashPct.toFixed(0)+'%">'+cashPct.toFixed(0)+'%</div>';
+  html += '<div class="bg-secondary flex items-center justify-center text-secondary-content text-sm font-bold" style="width:'+stripePct.toFixed(0)+'%">'+stripePct.toFixed(0)+'%</div>';
+  html += '</div>';
+  html += '<div class="grid grid-cols-2 gap-4 mt-3">';
+  html += '<div class="flex flex-col gap-1"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-primary"></div><span class="font-semibold">Cash</span></div><div class="text-base-content/60 text-sm">'+paiements.cash.count+' paiements · '+formatKMF(paiements.cash.total_kmf)+'</div></div>';
+  html += '<div class="flex flex-col gap-1"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-secondary"></div><span class="font-semibold">Stripe</span></div><div class="text-base-content/60 text-sm">'+paiements.stripe.count+' paiements · '+formatEUR(paiements.stripe.total_eur)+'</div></div>';
+  html += '</div>';
+  html += '<div class="divider my-1"></div>';
+  html += '<div class="flex gap-4 text-sm text-base-content/60"><span>Taux EUR/KMF: <strong class="text-base-content">'+(taux?taux.eur_kmf:'—')+'</strong></span>';
+  html += '<span>Taux AED/KMF: <strong class="text-base-content">'+(taux?taux.aed_kmf:'—')+'</strong></span></div>';
+  html += '</div></div>';
+
+  // Marges + Par catégorie
+  html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">';
+  // Marges
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">📈 Marges</h3>';
+  html += '<div class="flex flex-col gap-3 mt-2">';
+  html += '<div class="flex justify-between items-center"><span class="text-base-content/60">Marge réelle</span><span class="font-bold '+(marges.marge_reelle_kmf>=0?'text-success':'text-error')+'">'+formatKMF(marges.marge_reelle_kmf)+'</span></div>';
+  html += '<div class="flex justify-between items-center"><span class="text-base-content/60">Coûts logistique</span><span class="font-bold">'+formatKMF(marges.cout_logistique_kmf)+'</span></div>';
+  const costTotal = marges.nb_avec_cost+marges.nb_sans_cost;
+  html += '<div><div class="flex justify-between text-sm text-base-content/60 mb-1"><span>Avec coût renseigné</span><span>'+marges.nb_avec_cost+' / '+costTotal+'</span></div>';
+  html += '<progress class="progress progress-primary w-full" value="'+marges.nb_avec_cost+'" max="'+costTotal+'"></progress></div>';
+  if(marges.alertes_perte&&marges.alertes_perte.count>0){
+    html += '<div class="alert alert-error"><span>⚠️</span><div><div class="font-bold">'+marges.alertes_perte.count+' alerte(s) perte</div><div class="text-sm">Références: '+esc(marges.alertes_perte.refs.join(', '))+'</div></div></div>';
+  }
+  html += '</div></div></div>';
+
+  // Par catégorie
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">📊 Par catégorie</h3>';
+  html += '<div class="overflow-x-auto mt-2"><table class="table table-sm"><thead><tr><th>Catégorie</th><th>Cmd</th><th>CA</th><th>Marge</th><th>Taux</th></tr></thead><tbody>';
+  par_categorie.forEach(cat=>{
+    const tm = cat.taux_marge||0;
+    const bc = tm>=30?'badge-success':tm>=20?'badge-warning':'badge-error';
+    html += '<tr><td><span class="badge badge-ghost badge-sm capitalize">'+esc(cat.categorie)+'</span></td><td>'+cat.nb_commandes+'</td><td class="text-sm">'+formatKMF(cat.ca_kmf)+'</td><td class="text-sm">'+formatKMF(cat.marge_kmf||0)+'</td><td><span class="badge badge-sm '+bc+'">'+tm+'%</span></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="flex flex-col gap-2 mt-3">';
+  par_categorie.forEach(cat=>{
+    const pct = maxCA>0?(cat.ca_kmf/maxCA*100):0;
+    html += '<div class="flex items-center gap-2"><span class="text-xs text-base-content/60 w-20 capitalize">'+esc(cat.categorie)+'</span><div class="flex-1 bg-base-300 rounded-full h-3 overflow-hidden"><div class="bg-primary h-full rounded-full" style="width:'+pct+'%"></div></div></div>';
+  });
+  html += '</div></div></div>';
+  html += '</div>';
+
+  // Top 5 produits
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">🏆 Top 5 produits</h3>';
+  html += '<div class="overflow-x-auto mt-2"><table class="table table-zebra"><thead><tr><th>#</th><th>Produit</th><th>Catégorie</th><th>Qté</th><th>CA</th></tr></thead><tbody>';
+  top_produits.slice(0,5).forEach((p,i)=>{
+    html += '<tr><td><span class="badge badge-sm '+(i===0?'badge-primary':'badge-ghost')+'">'+(i+1)+'</span></td><td class="font-semibold">'+esc(p.nom)+'</td><td><span class="badge badge-ghost badge-sm capitalize">'+esc(p.categorie)+'</span></td><td>'+p.qty+'</td><td class="font-bold">'+formatKMF(p.ca_kmf)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  html += '</div>';
+  vc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. CLIENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderClients(vc){
+  const d = await fetchApi('clients');
+  const {kpi,top_clients,evolution,par_relais} = d;
+
+  const islandBadge = {'Anjouan':'badge-info','Grande Comore':'badge-success','Mohéli':'badge-warning'};
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // KPIs
+  html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">';
+  html += statCard('👥','Clients',kpi.nb_clients);
+  html += statCard('🔄','Récurrents',kpi.clients_recurrents);
+  html += statCard('📊','Taux récurrence',formatPct(kpi.taux_recurrence_pct));
+  html += statCard('🛒','Panier moyen',formatKMF(kpi.panier_moyen_kmf));
+  html += '</div>';
+
+  // Top clients + Évolution
+  html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">';
+  // Top clients
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">👥 Top clients</h3>';
+  html += '<div class="overflow-x-auto mt-2"><table class="table table-zebra table-sm"><thead><tr><th>#</th><th>Nom</th><th>Téléphone</th><th>Cmd</th><th>CA</th><th>Dernière</th></tr></thead><tbody>';
+  top_clients.forEach((c,i)=>{
+    html += '<tr'+(i===0?' class="bg-primary/10"':'')+'><td><span class="badge badge-sm '+(i===0?'badge-primary':'badge-ghost')+'">'+(i+1)+'</span></td><td class="font-semibold">'+esc(c.name)+'</td><td class="text-base-content/60 text-sm">'+esc(c.phone)+'</td><td>'+c.nb_commandes+'</td><td class="font-bold text-sm">'+formatKMF(c.ca_kmf)+'</td><td class="text-base-content/60 text-sm">'+formatDate(c.derniere_commande)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // Évolution - Chart.js canvas
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">📈 Évolution mensuelle</h3>';
+  html += '<div style="position:relative;height:250px"><canvas id="clientsChart"></canvas></div>';
+  html += '<div class="text-center text-xs text-base-content/60 mt-2">Nombre de commandes par mois</div>';
+  html += '</div></div>';
+  html += '</div>';
+
+  // Par relais
+  html += '<div class="card bg-base-200"><div class="card-body">';
+  html += '<h3 class="card-title text-lg">📍 Par relais</h3>';
+  html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">';
+  par_relais.forEach(r=>{
+    const dr = r.nb_commandes>0?(r.livrees/r.nb_commandes*100):0;
+    const ib = islandBadge[r.ile]||'badge-ghost';
+    html += '<div class="card bg-base-300"><div class="card-body p-4">';
+    html += '<div class="flex items-center justify-between"><h4 class="font-bold text-sm">'+esc(r.relais)+'</h4><span class="badge badge-sm '+ib+'">'+esc(r.ile)+'</span></div>';
+    html += '<div class="flex flex-col gap-1 mt-2 text-sm">';
+    html += '<div class="flex justify-between"><span class="text-base-content/60">Commandes</span><span class="font-bold">'+r.nb_commandes+'</span></div>';
+    html += '<div class="flex justify-between"><span class="text-base-content/60">CA</span><span class="font-bold">'+formatKMF(r.ca_kmf)+'</span></div>';
+    html += '<div class="flex justify-between"><span class="text-base-content/60">Livrées</span><span class="font-bold">'+r.livrees+'</span></div>';
+    html += '</div>';
+    html += '<div class="mt-2"><div class="flex justify-between text-xs text-base-content/60 mb-1"><span>Taux livraison</span><span>'+dr.toFixed(0)+'%</span></div><progress class="progress progress-primary w-full" value="'+dr+'" max="100"></progress></div>';
+    html += '</div></div>';
+  });
+  html += '</div></div></div>';
+
+  html += '</div>';
+  vc.innerHTML = html;
+
+  // Init Chart.js for evolution
+  initClientsChart(evolution);
+}
+
+function initClientsChart(evolution){
+  destroyChart('clientsChart');
+  const canvas = document.getElementById('clientsChart');
+  if(!canvas || typeof Chart === 'undefined') return;
+  const labels = evolution.map(e=>shortMonth(e.mois));
+  const data = evolution.map(e=>e.nb_commandes);
+  const clients = evolution.map(e=>e.nb_clients);
+  chartInstances['clientsChart'] = new Chart(canvas, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Commandes', data, backgroundColor:'oklch(0.623 0.214 259.815)', borderRadius:4},
+        {label:'Clients', data:clients, backgroundColor:'oklch(0.723 0.219 149.579)', borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'oklch(0.841 0 0)'}}},
+      scales:{
+        x:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
+        y:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7. CATALOGUE
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderCatalogue(vc){
+  const [pilotage,clients,finance] = await Promise.all([fetchApi('pilotage'),fetchApi('clients'),fetchApi('finance')]);
+  const categories = pilotage.categories||[];
+  const pipeline = pilotage.pipeline||[];
+  const topProduits = clients.top_produits||[];
+
+  const catEmoji = {ceremony:'👗',beauty:'💄',accessories:'⌚',electronics:'📱'};
+  const catBadge = {ceremony:'badge-secondary',beauty:'badge-primary',accessories:'badge-warning',electronics:'badge-info'};
+
+  const totalCat = categories.length;
+  const totalCmd = categories.reduce((s,c)=>s+c.nb_commandes,0);
+  const totalCA = categories.reduce((s,c)=>s+c.ca_kmf,0);
+  const leader = categories.length?categories.reduce((b,c)=>(c.pct_ca||0)>(b.pct_ca||0)?c:b,categories[0]):{categorie:'—'};
+  const leaderN = leader.categorie.charAt(0).toUpperCase()+leader.categorie.slice(1);
+
+  const pTotal = pipeline.reduce((s,p)=>s+p.nb,0);
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // Stat cards
+  html += '<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">';
+  html += statCard('🏷️','Total catégories',totalCat);
+  html += statCard('🛍️','Total commandes',totalCmd);
+  html += statCard('📊','CA total',formatKMF(totalCA));
+  html += statCard('🏆','Catégorie leader',(catEmoji[leader.categorie]||'')+' '+leaderN);
+  html += '</div>';
+
+  // Category cards
+  html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+  categories.forEach(cat=>{
+    const name = cat.categorie.charAt(0).toUpperCase()+cat.categorie.slice(1);
+    const emoji = catEmoji[cat.categorie]||'📦';
+    const finCat = finance.par_categorie.find(fc=>fc.categorie===cat.categorie);
+    html += '<div class="card bg-base-200"><div class="card-body p-4">';
+    html += '<div class="flex items-center gap-2 mb-2"><span class="text-2xl">'+emoji+'</span><span class="text-lg font-bold">'+esc(name)+'</span>';
+    if(finCat&&finCat.taux_marge!=null) html += '<span class="badge badge-ghost badge-sm ml-auto">Marge '+finCat.taux_marge+'%</span>';
+    html += '</div>';
+    html += '<div class="grid grid-cols-3 gap-2 text-sm mb-3">';
+    html += '<div><div class="text-base-content/60">Commandes</div><div class="font-bold">'+cat.nb_commandes+'</div></div>';
+    html += '<div><div class="text-base-content/60">Articles</div><div class="font-bold">'+(cat.nb_articles||'—')+'</div></div>';
+    html += '<div><div class="text-base-content/60">CA</div><div class="font-bold">'+formatKMF(cat.ca_kmf)+'</div></div>';
+    html += '</div>';
+    html += '<div class="flex items-center gap-2"><progress class="progress progress-primary flex-1" value="'+(cat.pct_ca||0)+'" max="100"></progress><span class="text-sm font-semibold">'+(cat.pct_ca!=null?cat.pct_ca.toFixed(1):'0')+'% CA</span></div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  // Pipeline distribution
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-3">📦 Distribution pipeline</h3>';
+  html += '<div class="w-full rounded-lg overflow-hidden flex h-10">';
+  pipeline.forEach(p=>{
+    const pct = pTotal>0?p.nb/pTotal*100:0; if(!pct) return;
+    html += '<div class="'+getStatusBg(p.statut)+' flex items-center justify-center text-xs font-bold" style="width:'+pct+'%;min-width:'+(pct>3?'auto':'24px')+'" title="'+getStatusLabel(p.statut)+': '+p.nb+'">'+(pct>8?p.nb:'')+'</div>';
+  });
+  html += '</div>';
+  html += '<div class="flex flex-wrap gap-3 mt-3">';
+  pipeline.forEach(p=>{
+    html += '<div class="flex items-center gap-1 text-xs"><span class="badge '+getStatusColor(p.statut)+' badge-xs"></span><span class="text-base-content/60">'+getStatusLabel(p.statut)+' ('+p.nb+')</span></div>';
+  });
+  html += '</div></div></div>';
+
+  // Top produits
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-3">📈 Top produits</h3>';
+  html += '<div class="overflow-x-auto"><table class="table table-zebra"><thead><tr><th>#</th><th>Nom</th><th>Catégorie</th><th class="text-right">Qté</th><th class="text-right">Commandes</th><th class="text-right">CA</th></tr></thead><tbody>';
+  topProduits.forEach((p,i)=>{
+    html += '<tr><td class="font-bold text-base-content/60">'+(i+1)+'</td><td class="font-semibold">'+esc(p.name||p.nom)+'</td>';
+    const c = p.categorie||p.category||'';
+    html += '<td><span class="badge '+(catBadge[c]||'badge-ghost')+' badge-sm">'+(catEmoji[c]||'')+' '+esc(c)+'</span></td>';
+    html += '<td class="text-right">'+p.qty+'</td><td class="text-right">'+(p.nb_commandes||'—')+'</td><td class="text-right font-semibold">'+formatKMF(p.ca_kmf)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  html += '</div>';
+  vc.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 8. RETARDS & SAV
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderRetards(vc){
+  const d = await fetchApi('retards');
+  const levels = [
+    {key:'contact_preventif', icon:'📞', name:'Contact préventif', threshold:'28j+', badge:'badge-info', bg:'card bg-base-200'},
+    {key:'avoir_5pct', icon:'🛡️', name:'Avoir 5%', threshold:'35j+', badge:'badge-warning', bg:'card bg-base-200'},
+    {key:'remise_10pct_prochaine_cmd', icon:'⚠️', name:'Remise −10%', threshold:'42j+', badge:'badge-error', bg:'card bg-base-200'},
+    {key:'remboursement_possible', icon:'🕐', name:'Remboursement', threshold:'56j+', badge:'badge-error', bg:'card bg-error/10'},
+  ];
+
+  function delayBadge(j){ return j>=56?'badge-error':j>=42?'badge-error':j>=35?'badge-warning':j>=28?'badge-info':'badge-ghost'; }
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // Big total
+  html += '<div class="flex items-center justify-center gap-3 py-4"><span class="text-3xl">⚠️</span><div class="text-center"><div class="text-4xl font-bold text-error">'+d.total+'</div><div class="text-base-content/60 text-sm">commandes en retard</div></div></div>';
+
+  // Level cards
+  html += '<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">';
+  levels.forEach(lv=>{
+    const info = d.par_niveau[lv.key]||{count:0,label:''};
+    html += '<div class="'+lv.bg+'"><div class="card-body p-4 items-center text-center">';
+    html += '<div class="opacity-60 mb-1 text-2xl">'+lv.icon+'</div>';
+    html += '<div class="text-3xl font-bold">'+info.count+'</div>';
+    html += '<div class="font-semibold text-sm">'+lv.name+'</div>';
+    html += '<span class="badge '+lv.badge+' badge-sm mt-1">'+lv.threshold+'</span>';
+    html += '<div class="text-xs text-base-content/60 mt-1">'+esc(info.label)+'</div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  // Client action table
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-3">💬 Clients à traiter</h3>';
+  html += '<div class="overflow-x-auto"><table class="table table-zebra"><thead><tr><th>Référence</th><th>Client</th><th class="text-center">Jours retard</th><th>Compensation</th><th>Actions</th></tr></thead><tbody>';
+  d.clients.forEach(c=>{
+    html += '<tr><td class="font-mono font-bold">'+esc(c.reference)+'</td>';
+    html += '<td><div class="font-semibold">'+esc(c.client_nom)+'</div><div class="text-xs text-base-content/60">'+esc(c.client_phone)+'</div></td>';
+    html += '<td class="text-center"><span class="badge '+delayBadge(c.jours_retard)+' font-bold">'+c.jours_retard+'j</span></td>';
+    html += '<td><span class="badge '+getCompensationColor(c.compensation)+' badge-sm">'+getCompensationLabel(c.compensation)+'</span></td>';
+    html += '<td><div class="flex gap-1 flex-wrap">';
+    html += '<button class="btn btn-info btn-sm" onclick="toggleRetardSms(\''+esc(c.reference)+'\')">📱 SMS</button>';
+    html += '<button class="btn btn-primary btn-sm">📧 Email</button>';
+    html += '<button class="btn btn-success btn-sm">✅ Traité</button>';
+    html += '</div></td></tr>';
+    // SMS row
+    html += '<tr id="sms_'+esc(c.reference)+'" style="display:'+(retardsExpandedRow===c.reference?'table-row':'none')+'"><td colspan="5"><div class="bg-base-300 rounded-lg p-3 text-sm"><div class="text-xs font-bold text-base-content/60 mb-1">SMS suggéré :</div><div>'+esc(c.sms_suggere)+'</div></div></td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  // SLA thresholds info
+  html += '<div class="card bg-base-200"><div class="card-body p-3"><div class="flex items-center gap-2 text-sm text-base-content/60"><span>🛡️</span><span class="font-semibold">Seuils SLA :</span><span>Préventif 28j → Avoir 35j → Remise 42j → Remboursement 56j</span></div></div></div>';
+
+  html += '</div>';
+  vc.innerHTML = html;
+}
+
+function toggleRetardSms(ref){
+  retardsExpandedRow = retardsExpandedRow===ref?null:ref;
+  // Toggle visibility
+  const row = document.getElementById('sms_'+ref);
+  if(row) row.style.display = retardsExpandedRow===ref?'table-row':'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 9. TENDANCES
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderTendances(vc){
+  const [histData,forecastData] = await Promise.all([fetchApi('history'),fetchApi('forecast?target_date='+endOfMonth())]);
+  const forecast = forecastData;
+  const history = histData.history||[];
+
+  const progressPct = forecast.projection.attendu>0?Math.min(100,forecast.realise_kmf/forecast.projection.attendu*100):0;
+
+  let html = '<div class="flex flex-col gap-4">';
+
+  // 3 forecast cards
+  html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+  html += '<div class="card bg-base-200"><div class="card-body p-4 items-center text-center"><span class="badge badge-error badge-sm mb-1">Pessimiste</span><span class="text-2xl opacity-60">📉</span><div class="text-2xl font-bold mt-1">'+formatKMF(forecast.projection.pessimiste)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
+  html += '<div class="card bg-base-200 ring-2 ring-warning"><div class="card-body p-4 items-center text-center"><span class="badge badge-warning badge-sm mb-1">Attendu</span><span class="text-2xl opacity-60">🎯</span><div class="text-3xl font-bold mt-1">'+formatKMF(forecast.projection.attendu)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
+  html += '<div class="card bg-base-200"><div class="card-body p-4 items-center text-center"><span class="badge badge-success badge-sm mb-1">Optimiste</span><span class="text-2xl opacity-60">📈</span><div class="text-2xl font-bold mt-1">'+formatKMF(forecast.projection.optimiste)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
+  html += '</div>';
+
+  // Progress
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-3">📊 Réalisé ce mois</h3>';
+  html += '<div class="flex items-center gap-2 mb-2"><span class="text-2xl font-bold">'+formatKMF(forecast.realise_kmf)+'</span><span class="opacity-60">→</span><span class="text-base-content/60">'+formatKMF(forecast.projection.attendu)+'</span></div>';
+  html += '<progress class="progress progress-primary w-full" value="'+progressPct+'" max="100"></progress>';
+  html += '<div class="flex items-center justify-between mt-2 text-sm"><span class="text-base-content/60">'+progressPct.toFixed(1)+'% atteint</span><span class="badge badge-info badge-sm">📅 '+forecast.days_remaining+' jours restants</span></div>';
+  html += '<div class="flex gap-4 mt-3 text-sm text-base-content/60"><div><span class="font-semibold text-base-content">Moy. CA/jour :</span> '+formatKMF(forecast.modele.avg_ca_jour)+'</div><div><span class="font-semibold text-base-content">Écart-type :</span> '+formatKMF(forecast.modele.stddev)+'</div></div>';
+  html += '</div></div>';
+
+  // Chart.js bar chart
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-4">📊 Évolution sur 6 mois</h3>';
+  html += '<div style="position:relative;height:280px"><canvas id="tendancesChart"></canvas></div>';
+  html += '<div class="flex gap-4 mt-3 justify-center"><div class="flex items-center gap-1 text-xs"><div class="w-3 h-3 bg-primary rounded"></div><span class="text-base-content/60">Commandes</span></div><div class="flex items-center gap-1 text-xs"><div class="w-3 h-3 bg-secondary rounded"></div><span class="text-base-content/60">Livrées</span></div></div>';
+  html += '</div></div>';
+
+  // Comparison table
+  html += '<div class="card bg-base-200"><div class="card-body p-4">';
+  html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-3">📅 Comparaison mensuelle</h3>';
+  html += '<div class="overflow-x-auto"><table class="table table-zebra"><thead><tr><th>Mois</th><th class="text-right">Commandes</th><th class="text-right">Livrées</th><th class="text-center">Taux livraison</th><th class="text-right">CA KMF</th><th class="text-right">CA EUR</th></tr></thead><tbody>';
+  history.forEach(m=>{
+    const taux = m.total_commandes>0?(m.livrees/m.total_commandes*100):0;
+    const tb = taux>=80?'badge-success':taux>=60?'badge-warning':'badge-error';
+    html += '<tr><td class="font-semibold">'+shortMonth(m.mois)+'</td><td class="text-right">'+m.total_commandes+'</td><td class="text-right">'+m.livrees+'</td><td class="text-center"><span class="badge '+tb+' badge-sm">'+taux.toFixed(0)+'%</span></td><td class="text-right font-semibold">'+formatKMF(m.ca_kmf)+'</td><td class="text-right text-base-content/60">'+formatEUR(m.ca_eur)+'</td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+
+  html += '</div>';
+  vc.innerHTML = html;
+
+  // Init chart
+  initTendancesChart(history);
+}
+
+function initTendancesChart(history){
+  destroyChart('tendancesChart');
+  const canvas = document.getElementById('tendancesChart');
+  if(!canvas || typeof Chart === 'undefined') return;
+  const labels = history.map(h=>shortMonth(h.mois));
+  chartInstances['tendancesChart'] = new Chart(canvas, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Commandes', data:history.map(h=>h.total_commandes), backgroundColor:'oklch(0.623 0.214 259.815)', borderRadius:4},
+        {label:'Livrées', data:history.map(h=>h.livrees), backgroundColor:'oklch(0.723 0.219 149.579)', borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'oklch(0.841 0 0)'}},
+        tooltip:{callbacks:{afterBody:function(ctx){
+          const i=ctx[0].dataIndex;
+          return 'CA: '+formatKMF(history[i].ca_kmf);
+        }}}
+      },
+      scales:{
+        x:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
+        y:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
+      }
+    }
+  });
+}
+
+function destroyChart(id){
+  if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════════
+buildTabBar();
+renderCurrentView();
+startAutoRefresh();
+</script>
+</body>
+</html>
