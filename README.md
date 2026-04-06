@@ -27,6 +27,14 @@ Ce protocole lie les **3 piliers** du projet que tout agent doit lire :
 
 ---
 
+## ➕ Nouvelle demande ou fonctionnalité ?
+
+> **Toute nouvelle demande, tâche ou fonctionnalité DOIT être ajoutée à la [Roadmap Komerce](./docs/ROADMAP_KOMERCE.md) avant d'être implémentée.**
+>
+> Aucun développement ne doit démarrer en dehors de la roadmap. Elle centralise tout : demandes en cours, priorités, et état d'avancement.
+
+---
+
 ## 📚 Documentation
 
 | Document | Description |
@@ -54,4 +62,4 @@ Pour plus de détails → [`docs/README.md`](./docs/README.md)
 
 ---
 
-> 📋 **Rappel** — La [Roadmap Komerce](./docs/ROADMAP_KOMERCE.md) est la source de vérité pour toutes les décisions du projet.
+> 📋 **Rappel** — La [Roadmap Komerce](./docs/ROADMAP_KOMERCE.md) est la source de vérité pour toutes les décisions du projet. Toute nouvelle demande doit y être ajoutée.
