@@ -1,14 +1,14 @@
 # 🗺️ CARTOGRAPHIE D'IMPACT 360° — Komerce Backend
 
 > 📅 Générée automatiquement — 06/04/2026 à 04:40
-> 📊 **18 routes** · **111 endpoints** · **27 tables** · **9 services externes**
+> 📊 **18 routes** · **112 endpoints** · **24 tables** · **2 vues** · **9 services externes**
 
 ---
 
 ## 📑 Table des matières
 
 1. [Vue d'ensemble architecture](#1--vue-densemble-architecture)
-2. [Matrice des endpoints (111 endpoints)](#2--matrice-des-endpoints-111-endpoints)
+2. [Matrice des endpoints (112 endpoints)](#2--matrice-des-endpoints-112-endpoints)
 3. [Matrice des dépendances inter-routes](#3--matrice-des-dépendances-inter-routes)
 4. [Cartographie des tables DB](#4--cartographie-des-tables-db)
 5. [Services externes](#5--services-externes)
@@ -69,7 +69,7 @@
 ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────────────────┐
 │   PostgreSQL DB   │  │ Services externes │  │   Fichiers / Uploads          │
 │                   │  │                   │  │                               │
-│  27 tables        │  │  Stripe (paiement)│  │  Multer → /uploads/            │
+│  24 tables        │  │  Stripe (paiement)│  │  Multer → /uploads/            │
 │  2 vues           │  │  SMS (Orange)     │  │  PDFKit → PDF labels/reports  │
 │  2 fonctions      │  │  WhatsApp         │  │  QRCode → QR generation       │
 │  6 triggers       │  │  Email (Mailjet)  │  │                               │
@@ -109,7 +109,7 @@
 ---
 
 
-## 2. 📡 Matrice des endpoints (111 endpoints)
+## 2. 📡 Matrice des endpoints (112 endpoints)
 
 ### 📁 admin.js — `/api/admin` (17 endpoints, 9 tables, 29.9 Ko)
 
@@ -203,6 +203,9 @@
 |---|---------|---------------|------|-------|-----------------|
 | 1 | 🟢 `GET` | `/health` | ❌ | — | — |
 | 2 | 🟢 `GET` | `/health/ready` | ❌ | — | — |
+
+
+> ⚠️ **Endpoint caché** : `GET /api/health` est défini directement dans `server.js` (pas dans health.js). Il retourne la version, latence DB et timestamp. Total réel : **112 endpoints**.
 
 ### 📁 logistics.js — `/api/logistics` (5 endpoints, 7 tables, 9.3 Ko)
 
@@ -451,14 +454,14 @@ orders.js ──payment──▶ payments.js ──trigger──▶ purchasing.j
 | 9 | `loyalty_tiers` | `auth.js`, `loyalty.js`, `pilotage.js` | 3 | 🟠 ÉLEVÉE (3) |
 | 10 | `scans` | `admin.js`, `scans.js` | 2 | 🟡 MOYENNE (2) |
 | 11 | `customs_history` | `admin.js` | 1 | 🟢 FAIBLE (1) |
-| 12 | `fabrics` | `modules.js`, `pricing.js` | 2 | 🟡 MOYENNE (2) |
-| 13 | `garment_models` | `modules.js`, `pricing.js` | 2 | 🟡 MOYENNE (2) |
+| 12 | `fabrics` | `modules.js`, `pricing.js` | 2 | 🟡 MOYENNE (2) ⚠️ supprimée Sprint 1 |
+| 13 | `garment_models` | `modules.js`, `pricing.js` | 2 | 🟡 MOYENNE (2) ⚠️ supprimée Sprint 1 |
 | 14 | `product_suppliers` | `purchasing.js` | 1 | 🟢 FAIBLE (1) |
 | 15 | `purchase_orders` | `admin.js`, `purchasing.js` | 2 | 🟡 MOYENNE (2) |
 | 16 | `suppliers` | `purchasing.js` | 1 | 🟢 FAIBLE (1) |
 | 17 | `basket_items` | `baskets.js` | 1 | 🟢 FAIBLE (1) |
 | 18 | `baskets` | `baskets.js` | 1 | 🟢 FAIBLE (1) |
-| 19 | `customs_taux_mensuel` | `pilotage.js` | 1 | 🟢 FAIBLE (1) |
+| 19 | `customs_taux_mensuel` | `pilotage.js` | 1 | 🟢 FAIBLE (1) — 👁️ Vue |
 | 20 | `partners` | `admin.js` | 1 | 🟢 FAIBLE (1) |
 | 21 | `shipments` | `logistics.js` | 1 | 🟢 FAIBLE (1) |
 | 22 | `unsold_items` | `unsold.js` | 1 | 🟢 FAIBLE (1) |
@@ -572,22 +575,22 @@ Table                   │ Nb routes │ Barre de criticité
 | 1 | 🛒 Création commande | `orders.js` | `POST /api/orders` | `confirmed` | `orders`, `order_items`, `recipients` | SMS + Email |
 | 2a | 💳 Paiement Stripe | `payments.js` | `POST /api/payments/stripe/webhook` | `ordered` | `orders`, `order_status_history` | SMS |
 | 2b | 💵 Paiement Cash | `payments.js` | `POST /api/payments/cash/confirm` | `ordered` | `orders`, `order_status_history`, `products` | SMS |
-| 3 | 📋 Déclenchement achat | `purchasing.js` | `triggerPurchasing()` | `purchasing` | `purchase_orders`, `order_items` | SMS + WhatsApp |
+| 3 | 📋 Déclenchement achat | `purchasing.js` | `triggerPurchasing()` | `ordered` | `purchase_orders`, `order_items` | SMS + WhatsApp |
 | 4 | 📦 Réception hub | `purchasing.js` | `POST /api/purchasing/:id/receive` | `preparation` | `purchase_orders`, `orders` | SMS (via triggerScan3) |
 | 5 | 🚚 Expédition | `scans.js` | `POST /api/scans` (step=shipped) | `shipped` | `scans`, `order_status_history` | SMS |
 | 6 | 📍 Réception relais | `scans.js` | `POST /api/scans` (step=relais_received) | `available` | `scans`, `order_status_history` | SMS |
 | 7 | ✅ Collecte client | `scans.js` | `POST /api/scans/collect` ou `/verify-qr` | `collected` | `scans`, `order_status_history`, `orders` | SMS |
 | 8 | ⭐ Recalcul fidélité | `loyalty.js` | `recalculateLoyalty()` | — | `users`, `loyalty_tiers` | — |
 
-### Statuts de commande (cycle de vie v8.0)
+### Statuts de commande (cycle de vie v8.0 — post migration 004)
 
 ```
-confirmed ──▶ ordered ──▶ purchasing ──▶ partially_received ──▶ preparation ──▶ shipped ──▶ available ──▶ collected
-                                              │                                                              │
-                                              ├── cancelled (admin à tout moment)                            │
-                                              └── refunded (après cancelled)                                 │
-                                                                                                             │
-                                                                                 recalculateLoyalty() ◀──────┘
+confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ available ──▶ collected
+                                                                        │
+                         cancelled (admin à tout moment) ◄──────────────┤
+                         refunded (après cancelled) ◄───────────────────┤
+                                                                        │
+                         recalculateLoyalty() ◄─────────────────────────┘
 ```
 
 ---
@@ -644,21 +647,21 @@ confirmed ──▶ ordered ──▶ purchasing ──▶ partially_received �
 
 ## 9. 📐 Schéma DB
 
-### Tables (27)
+### Tables (24)
 
 | # | Table | Type | Description |
 |---|-------|------|-------------|
 | 1 | `basket_items` | 📋 Table | Articles dans les paniers |
 | 2 | `baskets` | 📋 Table | Paniers partagés |
-| 3 | `ceremony_fabrics` | 📋 Table | Tissus cérémonie |
-| 4 | `ceremony_models` | 📋 Table | Modèles cérémonie |
-| 5 | `ceremony_order_items` | 📋 Table | Articles commande cérémonie |
+| 3 | `ceremony_fabrics` | 📋 Table | Tissus cérémonie (schema_extension.sql) |
+| 4 | `ceremony_models` | 📋 Table | Modèles cérémonie (schema_extension.sql) |
+| 5 | `ceremony_order_items` | 📋 Table | Articles commande cérémonie (schema_extension.sql) |
 | 6 | `customs_history` | 📋 Table | Historique douane |
-| 7 | `customs_taux_mensuel` | 📋 Table | Taux douaniers mensuels |
+| 7 | `customs_taux_mensuel` | 👁️ Vue | Vue des taux douaniers mensuels (créée dans server.js) |
 | 8 | `disputes` | 📋 Table | Litiges et réclamations |
 | 9 | `exchange_rates` | 📋 Table | Taux de change EUR/XOF |
-| 10 | `fabrics` | 📋 Table | Tissus (module couture) |
-| 11 | `garment_models` | 📋 Table | Modèles de vêtements (module couture) |
+| 10 | `fabrics` | 📋 Table | ⚠️ Supprimée Sprint 1 — P4 (tables auto-migrées par server.js, absentes de schema.sql) |
+| 11 | `garment_models` | 📋 Table | ⚠️ Supprimée Sprint 1 — P4 (tables auto-migrées par server.js, absentes de schema.sql) |
 | 12 | `loyalty_tiers` | 📋 Table | Niveaux fidélité (paliers) |
 | 13 | `order_items` | 📋 Table | Articles de commande |
 | 14 | `order_status_history` | 📋 Table | Historique des changements de statut |
@@ -676,12 +679,13 @@ confirmed ──▶ ordered ──▶ purchasing ──▶ partially_received �
 | 26 | `unsold_items` | 📋 Table | Articles invendus |
 | 27 | `users` | 📋 Table | Utilisateurs (clients, admins, hubs, relais) |
 
-### Vues (2)
+### Vues (3)
 
 | # | Vue | Description |
 |---|-----|-------------|
 | 1 | `v_loyalty_summary` | Vue résumé fidélité |
 | 2 | `v_unsold_pipeline` | Vue pipeline invendus |
+| 3 | `customs_taux_mensuel` | Vue des taux douaniers mensuels (créée dans server.js) |
 
 ### Fonctions (2)
 
@@ -819,9 +823,9 @@ scans.js → loyalty.js        (recalculateLoyalty)
 | Métrique | Valeur |
 |----------|--------|
 | Fichiers route analysés | **18** |
-| Endpoints totaux | **111** |
-| Tables PostgreSQL | **27** |
-| Vues | **2** (`v_loyalty_summary`, `v_unsold_pipeline`) |
+| Endpoints totaux | **112** |
+| Tables PostgreSQL | **24** |
+| Vues | **3** (`v_loyalty_summary`, `v_unsold_pipeline`, `customs_taux_mensuel`) |
 | Fonctions DB | **2** |
 | Triggers DB | **6** |
 | Services externes | **9** |
@@ -839,14 +843,12 @@ scans.js → loyalty.js        (recalculateLoyalty)
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 03:26:35 UTC
+> Mise à jour : 2026-04-06 04:46:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
 | Routes analysées | 18 |
-| Tables cartographiées | 20 |
+| Tables cartographiées | 24 |
 | Services externes | 9 |
-| Score de risque global | 100/100 |
-| Alertes sécurité | 550 |
 
 *Régénéré automatiquement par le coffre-fort Komerce v1.0*
