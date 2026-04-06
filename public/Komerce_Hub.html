@@ -654,58 +654,31 @@ function updateCountdown() {
 /* ─── Data Loading ─── */
 async function loadAllData() {
   await Promise.all([
-    loadStats(),
     loadQueue(),
     loadShipments(),
     loadRelais()
   ]);
+  await loadStats(); // loadStats doit tourner après loadQueue (allOrders requis)
 }
 
 async function loadStats() {
+  // Stats dérivées depuis allOrders (déjà chargées par loadQueue)
+  // On recompute après loadQueue pour être sûr d'avoir les données
   try {
-    const data = await apiCall('GET', '/api/dashboard/ops');
-    const bs = data.by_status || {};
+    const ordered     = allOrders.filter(o => o.status === 'ordered').length;
+    const preparation = allOrders.filter(o => o.status === 'preparation').length;
+    const shipped     = allOrders.filter(o => o.status === 'shipped' || o.status === 'transit_comores').length;
+    const available   = allOrders.filter(o => o.status === 'available').length;
 
-    document.getElementById('statPreparation').textContent = bs.preparation || 0;
-    document.getElementById('statReady').textContent = bs.paid || 0;
+    const statPrep = document.getElementById('statPreparation');
+    const statReady = document.getElementById('statReady');
+    const statShipped = document.getElementById('statShipped');
+    const statAvailable = document.getElementById('statAvailable');
 
-    // Received today: count orders scanned for preparation today
-    let receivedToday = 0;
-    let alertCount = 0;
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-
-    if (data.recent_orders && Array.isArray(data.recent_orders)) {
-      data.recent_orders.forEach(o => {
-        if (o.status === 'preparation' && o.updated_at && o.updated_at.slice(0, 10) === todayStr) {
-          receivedToday++;
-        }
-        if (o.status === 'preparation' && o.created_at) {
-          const created = new Date(o.created_at);
-          const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-          if (diffDays > 7) alertCount++;
-        }
-      });
-    }
-
-    // Also try from allOrders if available for more accurate count
-    if (allOrders.length > 0) {
-      alertCount = 0;
-      receivedToday = 0;
-      allOrders.forEach(o => {
-        if (o.status === 'preparation' && o.updated_at && o.updated_at.slice(0, 10) === todayStr) {
-          receivedToday++;
-        }
-        if (o.status === 'preparation' && o.created_at) {
-          const created = new Date(o.created_at);
-          const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-          if (diffDays > 7) alertCount++;
-        }
-      });
-    }
-
-    document.getElementById('statReceived').textContent = receivedToday;
-    document.getElementById('statAlerts').textContent = alertCount;
+    if (statPrep)       statPrep.textContent       = preparation;
+    if (statReady)      statReady.textContent       = ordered;
+    if (statShipped)    statShipped.textContent     = shipped;
+    if (statAvailable)  statAvailable.textContent   = available;
   } catch (err) {
     console.error('Stats error:', err);
   }
@@ -718,7 +691,7 @@ async function loadQueue() {
     allOrders = orders;
 
     const queue = orders
-      .filter(o => o.status === 'paid' || o.status === 'preparation')
+      .filter(o => o.status === 'paid' || o.status === 'ordered' || o.status === 'preparation')
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     document.getElementById('queueCount').textContent = queue.length;
