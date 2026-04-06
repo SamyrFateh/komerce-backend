@@ -988,4 +988,226 @@ router.post('/seed-test', ...guard, validate(admin.seedTest), async (req, res) =
   }
 });
 
+
+// ─── GET /api/admin/users — Liste tous les utilisateurs ──────────────────────
+
+router.get('/users', ...guard, async (req, res) => {
+  try {
+    const { role, search, limit = 100, offset = 0 } = req.query;
+
+    const conditions = ['1=1'];
+    const params     = [];
+    let   pi         = 1;
+
+    if (role && ['client', 'relais', 'admin'].includes(role)) {
+      conditions.push(`u.role = $${pi++}`);
+      params.push(role);
+    }
+    if (search) {
+      conditions.push(`(u.full_name ILIKE $${pi} OR u.email ILIKE $${pi} OR u.phone ILIKE $${pi})`);
+      params.push(`%${search}%`);
+      pi++;
+    }
+
+    const where = conditions.join(' AND ');
+
+    const { rows } = await db.query(
+      `SELECT
+         u.id, u.full_name, u.email, u.phone, u.role,
+         u.currency_pref, u.country, u.created_at, u.updated_at,
+         u.last_login_at
+       FROM users u
+       WHERE ${where}
+       ORDER BY u.created_at DESC
+       LIMIT $${pi} OFFSET $${pi + 1}`,
+      [...params, Number(limit), Number(offset)]
+    );
+
+    const { rows: [{ count }] } = await db.query(
+      `SELECT COUNT(*) FROM users u WHERE ${where}`,
+      params
+    );
+
+    res.json({ users: rows, total: Number(count) });
+
+  } catch (err) {
+    console.error('Admin users list error:', err.message);
+    res.status(500).json({ error: 'Erreur liste utilisateurs' });
+  }
+});
+
+// ─── POST /api/admin/users — Créer un utilisateur ────────────────────────────
+
+router.post('/users', ...guard, async (req, res) => {
+  const bcrypt = require('bcryptjs');
+
+  try {
+    const { full_name, email, phone, password, role = 'client', currency_pref = 'KMF' } = req.body;
+
+    if (!full_name || !email || !password) {
+      return res.status(400).json({ error: 'full_name, email et password sont obligatoires' });
+    }
+
+    const validRoles = ['client', 'relais', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Rôle invalide. Utilisez : ${validRoles.join(', ')}` });
+    }
+
+    // Vérifier doublon email
+    const { rows: existing } = await db.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    if (existing.length) {
+      return res.status(409).json({ error: 'Un utilisateur avec cet email existe déjà' });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const { rows: [user] } = await db.query(
+      `INSERT INTO users (full_name, email, phone, role, currency_pref, password_hash, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+       RETURNING id, full_name, email, phone, role, currency_pref, created_at`,
+      [full_name, email.toLowerCase().trim(), phone || null, role, currency_pref, password_hash]
+    );
+
+    console.log(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
+    res.status(201).json(user);
+
+  } catch (err) {
+    console.error('Admin create user error:', err.message);
+    res.status(500).json({ error: 'Erreur création utilisateur' });
+  }
+});
+
+// ─── PUT /api/admin/users/:id/role — Changer le rôle d'un utilisateur ────────
+
+router.put('/users/:id/role', ...guard, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const validRoles = ['client', 'relais', 'admin'];
+    if (!role || !validRoles.includes(role)) {
+      return res.status(400).json({ error: `Rôle invalide. Utilisez : ${validRoles.join(', ')}` });
+    }
+
+    // Empêcher un admin de se retirer lui-même le rôle admin
+    if (id === req.user.id && role !== 'admin') {
+      return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle' });
+    }
+
+    const { rows: [user] } = await db.query(
+      `UPDATE users SET role = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, full_name, email, role`,
+      [role, id]
+    );
+
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    console.log(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
+    res.json({ success: true, user });
+
+  } catch (err) {
+    console.error('Admin change role error:', err.message);
+    res.status(500).json({ error: 'Erreur changement de rôle' });
+  }
+});
+
+// ─── PUT /api/admin/users/:id/password — Réinitialiser le mot de passe ────────
+
+router.put('/users/:id/password', ...guard, async (req, res) => {
+  const bcrypt = require('bcryptjs');
+
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+    }
+
+    const { rows: [existing] } = await db.query(
+      'SELECT id, full_name, email FROM users WHERE id = $1',
+      [id]
+    );
+    if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    await db.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [password_hash, id]
+    );
+
+    console.log(`🔒 Admin reset password for ${existing.email} by ${req.user.email}`);
+    res.json({ success: true, message: `Mot de passe réinitialisé pour ${existing.full_name}` });
+
+  } catch (err) {
+    console.error('Admin reset password error:', err.message);
+    res.status(500).json({ error: 'Erreur réinitialisation mot de passe' });
+  }
+});
+
+// ─── DELETE /api/admin/users/:id — Supprimer un utilisateur ──────────────────
+
+router.delete('/users/:id', ...guard, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Empêcher la suppression de son propre compte
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
+    }
+
+    const { rows: [user] } = await db.query(
+      'SELECT id, full_name, email, role FROM users WHERE id = $1',
+      [id]
+    );
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    // Hard delete (vérification des dépendances commandes)
+    const { rows: [{ count: orderCount }] } = await db.query(
+      'SELECT COUNT(*) FROM orders WHERE user_id = $1',
+      [id]
+    );
+
+    if (Number(orderCount) > 0) {
+      // Soft delete : anonymiser l'utilisateur plutôt que de le supprimer
+      await db.query(
+        `UPDATE users SET
+           email        = 'deleted_' || id || '@komerce.deleted',
+           full_name    = '[Compte supprimé]',
+           phone        = NULL,
+           password_hash = '',
+           updated_at   = NOW()
+         WHERE id = $1`,
+        [id]
+      );
+      console.log(`🗑️ Admin soft-deleted user ${user.email} (has ${orderCount} orders) by ${req.user.email}`);
+      res.json({
+        success: true,
+        message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`,
+        type: 'soft_delete',
+        deleted: { id, email: user.email, full_name: user.full_name },
+      });
+    } else {
+      // Hard delete si aucune commande
+      await db.query('DELETE FROM users WHERE id = $1', [id]);
+      console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
+      res.json({
+        success: true,
+        message: `Utilisateur ${user.full_name} supprimé définitivement`,
+        type: 'hard_delete',
+        deleted: { id, email: user.email, full_name: user.full_name },
+      });
+    }
+
+  } catch (err) {
+    console.error('Admin delete user error:', err.message);
+    res.status(500).json({ error: 'Erreur suppression utilisateur' });
+  }
+});
+
 module.exports = router;
