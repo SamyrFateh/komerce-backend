@@ -106,13 +106,15 @@
 | 6.9 | Monitoring / logs activés | ⬜ |
 | 6.10 | Backup DB programmé (pg_dump quotidien) | ⬜ |
 
-### 3.4 Nettoyage PRs obsolètes
+### 3.4 Nettoyage PRs obsolètes — ✅ FAIT
 
-| PR | Action |
-|---|---|
-| **#88** — Dashboard Hub Dubai split | ❌ Fermer (supersédée par #89 mergée) |
-| **#63** — README + Fix Hub Dubai | ❌ Fermer (supersédée par #64 mergée) |
-| **#92** — DASHBOARD_REDESIGN.md | ✅ À merger |
+| PR | Action | Statut |
+|---|---|---|
+| **#88** — Dashboard Hub Dubai split | Fermée (supersédée par #89 mergée) | ✅ Done 06/04 |
+| **#63** — README + Fix Hub Dubai | Fermée (supersédée par #64 mergée) | ✅ Done 06/04 |
+| **#92** — DASHBOARD_REDESIGN.md | Mergée | ✅ Done 06/04 |
+| **#44** — Polish palette sage | Fermée (supersédée par PR #45 mergée) | ✅ Done 06/04 |
+| **#38** — Searchbar vers catalogue | Fermée (supersédée par PR #39 mergée) | ✅ Done 06/04 |
 
 ---
 
@@ -126,12 +128,9 @@
 | E4 | Page produit détaillée (modal) | 4h | ⬜ |
 | E5 | Stock en temps réel (badge rupture) | 1h | ⬜ |
 
-### PRs à merger
+### PRs UX — ✅ Toutes traitées
 
-| PR | Description |
-|---|---|
-| [#44](https://github.com/SamyrFateh/komerce-backend/pull/44) | ✨ Polish: palette sage + CTA hero + trust bar + espacement |
-| [#38](https://github.com/SamyrFateh/komerce-backend/pull/38) | UI: Déplacer barre de recherche vers le catalogue |
+> Les PRs #44 et #38 étaient supersédées par #45 et #39 (déjà mergées). Fermées le 06/04.
 
 ---
 
@@ -203,12 +202,9 @@
 | #84 | 🟠 Pool PostgreSQL | `enhancement` | MAJEUR |
 | #48 | 💰 Saisie coûts réels | `finance`, `data-entry` | BLOQUANT |
 
-### PRs ouvertes (2)
+### PRs ouvertes : 0
 
-| PR | Titre | Branche |
-|---|---|---|
-| #44 | ✨ Polish palette sage + CTA | `polish/visual-refinements` → `main` |
-| #38 | UI: Barre recherche → catalogue | `fix/move-searchbar-below-hero` → `main` |
+> Toutes les PRs ont été traitées. Les PRs #44 et #38 étaient supersédées par #45 et #39 (déjà mergées) et ont été fermées.
 
 ---
 
@@ -269,8 +265,6 @@
 
 ```
 Prochaine session :
-  ├── Merger PR #92 (DASHBOARD_REDESIGN.md)
-  ├── Fermer PRs obsolètes (#88, #63)
   └── Fix 6 vulnérabilités CRITIQUES (#71→#76)
 
 Session suivante :
@@ -283,13 +277,14 @@ Session Go-Live :
   └── Go-Live checklist (Phase 6)
 
 Après Go-Live :
-  ├── Merger PRs UX (#44, #38)
   ├── Features UX (E1→E5)
   └── App Pilotage Komerce (Instant App)
 
 Long terme :
   └── Améliorations (architecture, tests, CI/CD, monitoring)
 ```
+
+> ✅ **Déjà fait** : PR #92 mergée, PRs #88/#63 fermées, PRs #44/#38 fermées (supersédées)
 
 ---
 
