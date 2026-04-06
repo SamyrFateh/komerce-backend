@@ -1692,4 +1692,781 @@ async function getAvailableCredits(dbClient, userId) {
   return { total_kmf: rows[0]?.total_kmf || 0 };
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Phase 4 — Expédition Partielle (Hub Dubai)
+//
+// POST   /api/orders/:id/mark-availability   → marquer la disponibilité des articles
+// POST   /api/orders/:id/partial-ship        → créer une expédition partielle
+// GET    /api/orders/:id/sub-orders          → liste des sous-commandes
+// PATCH  /api/orders/sub-orders/:subId/status → changer statut sous-commande
+// POST   /api/orders/:id/cancel-backorder    → annuler un backorder
+// ═══════════════════════════════════════════════════════════════════════════════
+
+
+// ─── Constantes — sous-commandes ─────────────────────────────────────────────
+
+const SUB_ORDER_STATUSES = [
+  'preparation', 'shipped', 'in_transit', 'available', 'collected', 'cancelled',
+];
+
+const SUB_ORDER_TRANSITIONS = {
+  preparation: ['shipped', 'cancelled'],
+  shipped:     ['in_transit', 'cancelled'],
+  in_transit:  ['available', 'cancelled'],
+  available:   ['collected', 'cancelled'],
+  collected:   [],
+  cancelled:   [],
+};
+
+const SUB_ORDER_SMS = {
+  shipped:   (ref, tracking) =>
+    `Komerce : Sous-commande ${ref} expediee.${tracking ? ` Suivi : ${tracking}` : ''} Vous serez notifie a l'arrivee.`,
+  available: (ref, relais) =>
+    `Komerce : Sous-commande ${ref} disponible au relais ${relais || ''}. Venez la recuperer !`,
+  collected: (ref) =>
+    `Komerce : Sous-commande ${ref} remise. Merci ! 🎉`,
+};
+
+// ─── POST /api/orders/:id/mark-availability ──────────────────────────────────
+// Marquer la disponibilité de chaque article au hub Dubai.
+// Corps : { items: [{ order_item_id, status, reason?, estimated_available_at? }] }
+
+router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.markAvailability), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+    const { items } = req.body;
+
+    // Vérifier que la commande existe
+    const { rows: [order] } = await client.query(
+      'SELECT id, reference, status FROM orders WHERE id = $1',
+      [id]
+    );
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    // Vérifier que les items appartiennent à la commande
+    const itemIds = items.map(i => i.order_item_id);
+    const { rows: existingItems } = await client.query(
+      'SELECT id FROM order_items WHERE id = ANY($1) AND order_id = $2',
+      [itemIds, id]
+    );
+    if (existingItems.length !== itemIds.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: `Certains articles n'appartiennent pas à cette commande`,
+        expected: itemIds.length,
+        found: existingItems.length,
+      });
+    }
+
+    // Mettre à jour chaque article
+    const updatedItems = [];
+    for (const item of items) {
+      const { rows: [updated] } = await client.query(
+        `UPDATE order_items
+         SET availability_status = $1,
+             estimated_available_at = $2,
+             backorder_reason = $3,
+             updated_at = NOW()
+         WHERE id = $4
+         RETURNING id, product_id, quantity, availability_status, estimated_available_at, backorder_reason`,
+        [
+          item.status,
+          item.estimated_available_at || null,
+          item.reason || null,
+          item.order_item_id,
+        ]
+      );
+      updatedItems.push(updated);
+    }
+
+    // Historiser
+    const availCount = items.filter(i => i.status === 'available').length;
+    const delayCount = items.filter(i => i.status === 'delayed').length;
+    const boCount    = items.filter(i => i.status === 'backorder').length;
+
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        id,
+        order.status,
+        `Disponibilité mise à jour — ${availCount} disponible(s), ${delayCount} retardé(s), ${boCount} en backorder`,
+        req.user.id,
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      reference: order.reference,
+      items: updatedItems,
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[mark-availability] Error:', err.message);
+    res.status(500).json({ error: 'Erreur mise à jour disponibilité' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── POST /api/orders/:id/partial-ship ───────────────────────────────────────
+// Créer une expédition partielle : sous-commande « partial_ship » + sous-commande « backorder ».
+// Corps : { available_items: [{ order_item_id, quantity }], notes? }
+
+router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.partialShip), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+    const { available_items, notes } = req.body;
+
+    // ── 1. Valider la commande ──────────────────────────────────────────────
+    const { rows: [order] } = await client.query(
+      `SELECT o.*, u.phone AS user_phone
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       WHERE o.id = $1`,
+      [id]
+    );
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    if (!['ordered', 'preparation'].includes(order.status)) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Expédition partielle impossible — statut actuel : ${order.status} (attendu : ordered ou preparation)`,
+        current_status: order.status,
+      });
+    }
+
+    // ── 2. Charger les règles métier ────────────────────────────────────────
+    const delayThresholdDays = await getRuleNumber('PARTIAL_SHIP_DELAY_THRESHOLD_DAYS', 7);
+    const minAvailablePct    = await getRuleNumber('PARTIAL_SHIP_MIN_AVAILABLE_PCT', 30);
+    const backorderMaxDays   = await getRuleNumber('BACKORDER_MAX_DAYS', 45);
+    const autoNotify         = await getRule('PARTIAL_SHIP_AUTO_NOTIFY', true);
+
+    // ── 3. Vérifier le seuil de délai ───────────────────────────────────────
+    const orderedAt = order.ordered_at || order.created_at;
+    const daysSinceOrdered = (Date.now() - new Date(orderedAt).getTime()) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceOrdered < delayThresholdDays) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Expédition partielle trop tôt — ${Math.round(daysSinceOrdered)} jour(s) depuis la commande, seuil : ${delayThresholdDays} jours`,
+        days_since_ordered: Math.round(daysSinceOrdered),
+        threshold_days: delayThresholdDays,
+      });
+    }
+
+    // ── 4. Charger tous les items de la commande ────────────────────────────
+    const { rows: allItems } = await client.query(
+      `SELECT oi.*, p.name AS product_name, p.price_kmf AS product_price_kmf
+       FROM order_items oi
+       JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id = $1
+       FOR UPDATE`,
+      [id]
+    );
+
+    // Vérifier que les available_items appartiennent à la commande
+    const availItemIds = new Set(available_items.map(i => i.order_item_id));
+    const availItemMap = new Map(available_items.map(i => [i.order_item_id, i]));
+
+    for (const ai of available_items) {
+      const found = allItems.find(oi => oi.id === ai.order_item_id);
+      if (!found) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: `Article ${ai.order_item_id} introuvable dans cette commande`,
+        });
+      }
+      if (ai.quantity > found.quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: `Quantité demandée (${ai.quantity}) > quantité commandée (${found.quantity}) pour l'article ${found.product_name}`,
+        });
+      }
+    }
+
+    // ── 5. Vérifier le % minimum de disponibilité ──────────────────────────
+    const totalQty     = allItems.reduce((sum, i) => sum + i.quantity, 0);
+    const availableQty = available_items.reduce((sum, i) => sum + i.quantity, 0);
+    const availPct     = (availableQty / totalQty) * 100;
+
+    if (availPct < minAvailablePct) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Pourcentage disponible insuffisant : ${availPct.toFixed(1)}% (minimum : ${minAvailablePct}%)`,
+        available_pct: parseFloat(availPct.toFixed(1)),
+        min_required_pct: minAvailablePct,
+      });
+    }
+
+    // ── 6. Déterminer le numéro séquentiel ──────────────────────────────────
+    const { rows: existingSubs } = await client.query(
+      `SELECT id FROM sub_orders WHERE parent_order_id = $1`,
+      [id]
+    );
+    const seqNum = existingSubs.length + 1;
+
+    // ── 7a. Créer la sous-commande « partial_ship » ─────────────────────────
+    const psRef = `PS-${order.reference}-${seqNum}`;
+    const psId  = uuidv4();
+
+    await client.query(
+      `INSERT INTO sub_orders (
+         id, parent_order_id, type, status, tracking_ref, created_by, notes
+       ) VALUES ($1, $2, 'partial_ship', 'preparation', $3, $4, $5)`,
+      [psId, id, psRef, req.user.id, notes || null]
+    );
+
+    // Insérer les articles de la sous-commande partial_ship
+    const psItems = [];
+    for (const ai of available_items) {
+      const original = allItems.find(oi => oi.id === ai.order_item_id);
+      const soiId = uuidv4();
+      await client.query(
+        `INSERT INTO sub_order_items (id, sub_order_id, order_item_id, product_id, quantity, price_kmf)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [soiId, psId, ai.order_item_id, original.product_id, ai.quantity, original.price_kmf]
+      );
+      psItems.push({
+        id: soiId,
+        order_item_id: ai.order_item_id,
+        product_name: original.product_name,
+        quantity: ai.quantity,
+        price_kmf: original.price_kmf,
+      });
+
+      // Marquer l'article comme disponible
+      await client.query(
+        `UPDATE order_items SET availability_status = 'available', updated_at = NOW()
+         WHERE id = $1`,
+        [ai.order_item_id]
+      );
+    }
+
+    // ── 7b. Créer la sous-commande « backorder » pour les articles restants ─
+    const backorderItems = allItems.filter(oi => !availItemIds.has(oi.id));
+    // Also handle partial quantities (items where only part of qty is shipped)
+    const partialBackorders = available_items
+      .filter(ai => {
+        const orig = allItems.find(oi => oi.id === ai.order_item_id);
+        return orig && ai.quantity < orig.quantity;
+      })
+      .map(ai => {
+        const orig = allItems.find(oi => oi.id === ai.order_item_id);
+        return { ...orig, quantity: orig.quantity - ai.quantity, _isPartial: true };
+      });
+
+    const allBackorderItems = [...backorderItems, ...partialBackorders];
+
+    let boId = null;
+    let boRef = null;
+    const boItems = [];
+
+    if (allBackorderItems.length > 0) {
+      boRef = `BO-${order.reference}-${seqNum + 1}`;
+      boId  = uuidv4();
+
+      await client.query(
+        `INSERT INTO sub_orders (
+           id, parent_order_id, type, status, tracking_ref, created_by,
+           estimated_date
+         ) VALUES ($1, $2, 'backorder', 'preparation', $3, $4, NOW() + INTERVAL '1 day' * $5)`,
+        [boId, id, boRef, req.user.id, backorderMaxDays]
+      );
+
+      for (const boi of allBackorderItems) {
+        const soiId = uuidv4();
+        await client.query(
+          `INSERT INTO sub_order_items (id, sub_order_id, order_item_id, product_id, quantity, price_kmf)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [soiId, boId, boi.id, boi.product_id, boi.quantity, boi.price_kmf]
+        );
+        boItems.push({
+          id: soiId,
+          order_item_id: boi.id,
+          product_name: boi.product_name,
+          quantity: boi.quantity,
+          price_kmf: boi.price_kmf,
+        });
+
+        // Marquer comme backorder (seulement si l'article entier est en backorder)
+        if (!boi._isPartial) {
+          await client.query(
+            `UPDATE order_items SET availability_status = 'backorder', updated_at = NOW()
+             WHERE id = $1`,
+            [boi.id]
+          );
+        }
+      }
+    }
+
+    // ── 8. Historique ───────────────────────────────────────────────────────
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        id,
+        order.status,
+        `Expédition partielle créée — ${availableQty} articles expédiés, ${allBackorderItems.reduce((s, i) => s + i.quantity, 0)} en backorder`,
+        req.user.id,
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    // ── 9. SMS notification (non bloquant) ──────────────────────────────────
+    if (autoNotify && order.user_phone) {
+      const boCount = allBackorderItems.reduce((s, i) => s + i.quantity, 0);
+      const smsText = `Komerce : Commande ${order.reference} — expedition partielle : ${availableQty} article(s) expedie(s), ${boCount} en attente (backorder). Ref suivi : ${psRef}`;
+      sendSMS(order.user_phone, smsText, 'partial_ship', id).catch(console.error);
+    }
+
+    // ── Réponse ─────────────────────────────────────────────────────────────
+    res.status(201).json({
+      success: true,
+      reference: order.reference,
+      partial_ship: {
+        id: psId,
+        tracking_ref: psRef,
+        type: 'partial_ship',
+        status: 'preparation',
+        items: psItems,
+      },
+      backorder: boId ? {
+        id: boId,
+        tracking_ref: boRef,
+        type: 'backorder',
+        status: 'preparation',
+        items: boItems,
+        estimated_date: new Date(Date.now() + backorderMaxDays * 24 * 60 * 60 * 1000).toISOString(),
+      } : null,
+      summary: {
+        shipped_qty: availableQty,
+        backorder_qty: allBackorderItems.reduce((s, i) => s + i.quantity, 0),
+        available_pct: parseFloat(availPct.toFixed(1)),
+      },
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[partial-ship] Error:', err.message);
+    res.status(500).json({ error: 'Erreur création expédition partielle' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── GET /api/orders/:id/sub-orders ──────────────────────────────────────────
+// Liste les sous-commandes d'une commande avec leurs articles.
+// Auth : admin, agent_hub, agent_relais, ou propriétaire de la commande.
+
+router.get('/:id/sub-orders', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier accès
+    const { rows: [order] } = await db.query(
+      'SELECT id, reference, user_id, status FROM orders WHERE id = $1',
+      [id]
+    );
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    const isPrivileged = ['admin', 'agent_hub', 'agent_relais'].includes(req.user.role);
+    if (!isPrivileged && order.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
+
+    // Charger les sous-commandes
+    const { rows: subOrders } = await db.query(
+      `SELECT
+         so.id, so.type, so.status, so.tracking_ref,
+         so.estimated_date, so.shipped_at, so.notes,
+         so.created_at, so.updated_at
+       FROM sub_orders so
+       WHERE so.parent_order_id = $1
+       ORDER BY so.created_at ASC`,
+      [id]
+    );
+
+    // Charger les articles pour chaque sous-commande
+    const enriched = [];
+    for (const so of subOrders) {
+      const { rows: items } = await db.query(
+        `SELECT
+           soi.id, soi.order_item_id, soi.quantity, soi.price_kmf,
+           p.name AS product_name, p.image_url AS product_image
+         FROM sub_order_items soi
+         JOIN products p ON p.id = soi.product_id
+         WHERE soi.sub_order_id = $1
+         ORDER BY soi.created_at ASC`,
+        [so.id]
+      );
+
+      enriched.push({
+        ...so,
+        items,
+        total_kmf: items.reduce((sum, i) => sum + (Number(i.price_kmf) * i.quantity), 0),
+      });
+    }
+
+    res.json({
+      order_reference: order.reference,
+      order_status: order.status,
+      sub_orders: enriched,
+    });
+
+  } catch (err) {
+    console.error('[sub-orders] Error:', err.message);
+    res.status(500).json({ error: 'Erreur récupération sous-commandes' });
+  }
+});
+
+// ─── PATCH /api/orders/sub-orders/:subId/status ──────────────────────────────
+// Changer le statut d'une sous-commande.
+// Corps : { status, note?, tracking_ref? }
+//
+// IMPORTANT : cette route utilise un préfixe « sub-orders » fixe (pas de :id parent)
+// → insérer AVANT les routes /:id/* pour éviter collision Express
+
+router.patch('/sub-orders/:subId/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.subOrderStatus), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { subId } = req.params;
+    const { status, note, tracking_ref } = req.body;
+
+    // Valider le statut
+    if (!SUB_ORDER_STATUSES.includes(status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: `Statut invalide. Valeurs : ${SUB_ORDER_STATUSES.join(', ')}`,
+      });
+    }
+
+    // Charger la sous-commande + commande parent
+    const { rows: [subOrder] } = await client.query(
+      `SELECT so.*, o.reference AS parent_reference, o.id AS parent_id,
+              o.user_id, o.relais_id, o.status AS parent_status,
+              u.phone AS user_phone, r.name AS relais_name
+       FROM sub_orders so
+       JOIN orders o ON o.id = so.parent_order_id
+       LEFT JOIN users u ON u.id = o.user_id
+       LEFT JOIN relais r ON r.id = o.relais_id
+       WHERE so.id = $1`,
+      [subId]
+    );
+
+    if (!subOrder) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Sous-commande introuvable' });
+    }
+
+    // Valider la transition
+    const allowedNext = SUB_ORDER_TRANSITIONS[subOrder.status] || [];
+    if (!allowedNext.includes(status)) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Transition invalide : ${subOrder.status} → ${status}. Transitions autorisées : ${allowedNext.join(', ') || 'aucune (état terminal)'}`,
+        current_status: subOrder.status,
+      });
+    }
+
+    // Mettre à jour le statut
+    const updates = ['status = $1', 'updated_at = NOW()'];
+    const params  = [status];
+    let pi = 2;
+
+    if (status === 'shipped') {
+      updates.push(`shipped_at = NOW()`);
+    }
+    if (tracking_ref) {
+      updates.push(`tracking_ref = $${pi++}`);
+      params.push(tracking_ref);
+    }
+    params.push(subId);
+
+    await client.query(
+      `UPDATE sub_orders SET ${updates.join(', ')} WHERE id = $${pi}`,
+      params
+    );
+
+    // Historique sur la commande parent
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        subOrder.parent_id,
+        subOrder.parent_status,
+        `Sous-commande ${subOrder.tracking_ref} → ${status}${note ? ` — ${note}` : ''}`,
+        req.user.id,
+      ]
+    );
+
+    // Vérifier si TOUTES les sous-commandes sont « collected » → parent aussi
+    if (status === 'collected') {
+      const { rows: allSubs } = await client.query(
+        `SELECT id, status FROM sub_orders WHERE parent_order_id = $1`,
+        [subOrder.parent_id]
+      );
+
+      // Prendre en compte le statut mis à jour de la sous-commande courante
+      const allCollected = allSubs.every(s =>
+        s.id === subId ? true : (s.status === 'collected' || s.status === 'cancelled')
+      );
+
+      if (allCollected) {
+        await client.query(
+          `UPDATE orders SET status = 'collected', collected_at = NOW(), updated_at = NOW()
+           WHERE id = $1`,
+          [subOrder.parent_id]
+        );
+        await client.query(
+          `INSERT INTO order_status_history (order_id, status, note, changed_by)
+           VALUES ($1, 'collected', 'Toutes les sous-commandes collectées — commande terminée', $2)`,
+          [subOrder.parent_id, req.user.id]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    // SMS client (non bloquant) — sur shipped / available / collected
+    if (subOrder.user_phone && SUB_ORDER_SMS[status]) {
+      const smsText = SUB_ORDER_SMS[status](subOrder.tracking_ref, subOrder.relais_name);
+      sendSMS(subOrder.user_phone, smsText, `sub_${status}`, subOrder.parent_id).catch(console.error);
+    }
+
+    res.json({
+      success: true,
+      sub_order_id: subId,
+      status,
+      tracking_ref: tracking_ref || subOrder.tracking_ref,
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[sub-order/status] Error:', err.message);
+    res.status(500).json({ error: 'Erreur mise à jour statut sous-commande' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── POST /api/orders/:id/cancel-backorder ───────────────────────────────────
+// Annuler une sous-commande backorder : restauration stock + crédit boutique ou refund Stripe.
+// Corps : { sub_order_id, reason? }
+
+router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackorder), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+    const { sub_order_id, reason } = req.body;
+
+    // Charger la commande parent
+    const { rows: [order] } = await client.query(
+      `SELECT o.*, u.phone AS user_phone
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       WHERE o.id = $1`,
+      [id]
+    );
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    // Vérifier les droits (admin, agent_hub, ou propriétaire)
+    const isPrivileged = ['admin', 'agent_hub'].includes(req.user.role);
+    if (!isPrivileged && order.user_id !== req.user.id) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
+
+    // Charger la sous-commande backorder
+    const { rows: [subOrder] } = await client.query(
+      `SELECT * FROM sub_orders
+       WHERE id = $1 AND parent_order_id = $2 AND type = 'backorder'`,
+      [sub_order_id, id]
+    );
+    if (!subOrder) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Sous-commande backorder introuvable pour cette commande' });
+    }
+
+    if (subOrder.status === 'cancelled') {
+      await client.query('ROLLBACK');
+      return res.status(422).json({ error: 'Backorder déjà annulé' });
+    }
+
+    if (['shipped', 'in_transit', 'available', 'collected'].includes(subOrder.status)) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Annulation impossible — la sous-commande est en statut "${subOrder.status}"`,
+        current_status: subOrder.status,
+      });
+    }
+
+    // Charger les articles du backorder
+    const { rows: boItems } = await client.query(
+      `SELECT soi.*, p.name AS product_name
+       FROM sub_order_items soi
+       JOIN products p ON p.id = soi.product_id
+       WHERE soi.sub_order_id = $1`,
+      [sub_order_id]
+    );
+
+    // Calculer la valeur totale du backorder
+    const backorderValueKmf = boItems.reduce(
+      (sum, i) => sum + (Number(i.price_kmf) * i.quantity), 0
+    );
+
+    // Annuler la sous-commande
+    await client.query(
+      `UPDATE sub_orders
+       SET status = 'cancelled', cancel_reason = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [reason || 'Annulation backorder client', sub_order_id]
+    );
+
+    // Restaurer le stock
+    for (const item of boItems) {
+      await client.query(
+        'UPDATE products SET stock = stock + $1 WHERE id = $2',
+        [item.quantity, item.product_id]
+      );
+    }
+
+    // Crédit boutique ou remboursement Stripe
+    let refundMethod = null;
+    let storeCreditId = null;
+    let stripeRefundId = null;
+    let refundAmountEur = 0;
+
+    if (backorderValueKmf > 0 && order.payment_status === 'paid') {
+      if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
+        // Remboursement Stripe partiel
+        const eurKmfRate = order.total_eur && order.total_kmf
+          ? Number(order.total_kmf) / Number(order.total_eur)
+          : 492;
+        refundAmountEur = parseFloat((backorderValueKmf / eurKmfRate).toFixed(2));
+        const amountCents = Math.round(refundAmountEur * 100);
+
+        try {
+          const stripeRefund = await stripe.refunds.create({
+            payment_intent: order.stripe_payment_id,
+            amount: amountCents,
+            reason: 'requested_by_customer',
+            metadata: {
+              order_reference: order.reference,
+              refund_type: 'backorder_cancellation',
+              sub_order_id,
+              komerce: 'true',
+            },
+          });
+          stripeRefundId = stripeRefund.id;
+          refundMethod = 'stripe';
+        } catch (stripeErr) {
+          // Fallback vers crédit boutique si Stripe échoue
+          console.error('[cancel-backorder] Stripe refund failed, using store credit:', stripeErr.message);
+          refundMethod = 'store_credit';
+        }
+      }
+
+      if (!refundMethod || refundMethod === 'store_credit') {
+        refundMethod = 'store_credit';
+        const { rows: [credit] } = await client.query(
+          `INSERT INTO store_credits
+             (user_id, amount_kmf, remaining_kmf, reason, source_order_id)
+           VALUES ($1, $2, $2, 'backorder_cancellation', $3)
+           RETURNING id`,
+          [order.user_id, backorderValueKmf, id]
+        );
+        storeCreditId = credit.id;
+      }
+
+      // Enregistrer dans la table refunds
+      await client.query(
+        `INSERT INTO refunds
+           (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+            stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
+         VALUES ($1,$2,$3,'partial','$4',$5,$6,$7,$8,'completed',NOW())`,
+        [
+          id, backorderValueKmf, refundAmountEur,
+          refundMethod,
+          stripeRefundId, storeCreditId,
+          reason || 'Annulation backorder', req.user.id,
+        ]
+      );
+    }
+
+    // Historique
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        id,
+        order.status,
+        `Backorder ${subOrder.tracking_ref} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${refundMethod === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)'}`,
+        req.user.id,
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    // SMS notification (non bloquant)
+    if (order.user_phone) {
+      const creditStr = refundMethod === 'stripe'
+        ? `${refundAmountEur.toFixed(2)}EUR rembourse via Stripe`
+        : `${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF credite sur votre compte`;
+      const smsText = `Komerce : Backorder ${subOrder.tracking_ref} annule. ${creditStr}. Merci de votre comprehension.`;
+      sendSMS(order.user_phone, smsText, 'backorder_cancelled', id).catch(console.error);
+    }
+
+    res.json({
+      success: true,
+      reference: order.reference,
+      sub_order_ref: subOrder.tracking_ref,
+      cancelled_items: boItems.map(i => ({
+        product_name: i.product_name,
+        quantity: i.quantity,
+        price_kmf: i.price_kmf,
+      })),
+      refund: backorderValueKmf > 0 ? {
+        amount_kmf: backorderValueKmf,
+        amount_eur: refundAmountEur,
+        method: refundMethod,
+        stripe_refund_id: stripeRefundId,
+        store_credit_id: storeCreditId,
+      } : null,
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[cancel-backorder] Error:', err.message);
+    res.status(500).json({ error: 'Erreur annulation backorder' });
+  } finally {
+    client.release();
+  }
+});
+
+
 module.exports = router;

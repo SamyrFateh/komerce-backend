@@ -221,4 +221,109 @@ async function processCashRelaisReminders() {
   console.log(`Rappels cash relais : ${h12.length} H+12, ${h36.length} H+36 annulations`);
 }
 
-module.exports = { sendSMS, processCashRelaisReminders };
+
+// ── Phase 4 — Templates SMS Expédition Partielle ──────────────────────────
+
+const PARTIAL_SHIP_SMS = {
+  /**
+   * Envoyé quand une expédition partielle est créée.
+   * @param {string} ref - Référence commande parent
+   * @param {number} shipped_count - Nb d'articles expédiés
+   * @param {number} backorder_count - Nb d'articles en backorder
+   */
+  partial_created: (ref, shipped_count, backorder_count) =>
+    `Komerce : Commande ${ref} — expedition partielle : ${shipped_count} article(s) expedie(s), ${backorder_count} en attente. Vous serez notifie pour chaque expedition.`,
+
+  /**
+   * Mise à jour sur un backorder (date estimée connue).
+   * @param {string} ref - Référence sous-commande backorder
+   * @param {string} estimated_date - Date estimée format lisible (ex: "15/05/2026")
+   */
+  backorder_update: (ref, estimated_date) =>
+    `Komerce : Backorder ${ref} — date d'expedition estimee : ${estimated_date}. Nous faisons le maximum pour accelerer.`,
+
+  /**
+   * Backorder annulé avec crédit/remboursement.
+   * @param {string} ref - Référence sous-commande backorder
+   * @param {string} credit_amount - Montant crédité/remboursé (ex: "15 000 KMF" ou "30.50 EUR")
+   */
+  backorder_cancelled: (ref, credit_amount) =>
+    `Komerce : Backorder ${ref} annule. ${credit_amount} credite sur votre compte. Merci de votre comprehension.`,
+
+  /**
+   * Sous-commande expédiée.
+   * @param {string} ref - Référence sous-commande
+   * @param {string} tracking - Référence de suivi (optionnel)
+   */
+  sub_order_shipped: (ref, tracking) =>
+    `Komerce : Sous-commande ${ref} expediee.${tracking ? ` Suivi : ${tracking}` : ''} Arrivee estimee 3-5 semaines.`,
+
+  /**
+   * Sous-commande disponible au relais.
+   * @param {string} ref - Référence sous-commande
+   * @param {string} relais - Nom du point relais
+   */
+  sub_order_available: (ref, relais) =>
+    `Komerce : Sous-commande ${ref} disponible au relais ${relais || ''}. Venez la recuperer !`,
+};
+
+// ── Phase 4 — Rappels automatiques backorder ──────────────────────────────
+//
+// Appelé par un cron job toutes les 6 heures.
+// Détecte les backorders expirés et propose l'annulation au client par SMS.
+
+async function processBackorderReminders() {
+  try {
+    const backorderMaxDays = await getRuleNumber('BACKORDER_MAX_DAYS', 45);
+
+    // Trouver les backorders expirés non encore notifiés
+    const { rows: expiredBackorders } = await db.query(
+      `SELECT
+         so.id AS sub_order_id,
+         so.tracking_ref,
+         so.estimated_date,
+         so.parent_order_id,
+         o.reference AS order_reference,
+         o.user_id,
+         u.phone AS user_phone
+       FROM sub_orders so
+       JOIN orders o ON o.id = so.parent_order_id
+       LEFT JOIN users u ON u.id = o.user_id
+       WHERE so.type = 'backorder'
+         AND so.status = 'preparation'
+         AND so.backorder_reminder_sent = FALSE
+         AND (
+           so.estimated_date < NOW()
+           OR so.created_at < NOW() - INTERVAL '1 day' * $1
+         )`,
+      [backorderMaxDays]
+    );
+
+    let sentCount = 0;
+
+    for (const bo of expiredBackorders) {
+      if (bo.user_phone) {
+        const smsText = `Komerce : Votre backorder ${bo.tracking_ref} (commande ${bo.order_reference}) depasse le delai prevu. Vous pouvez l'annuler pour obtenir un credit boutique. Contactez-nous ou annulez depuis l'app.`;
+
+        await sendSMS(bo.user_phone, smsText, 'backorder_reminder', bo.parent_order_id);
+        sentCount++;
+      }
+
+      // Marquer comme notifié pour ne pas renvoyer le SMS
+      await db.query(
+        `UPDATE sub_orders SET backorder_reminder_sent = TRUE, updated_at = NOW()
+         WHERE id = $1`,
+        [bo.sub_order_id]
+      );
+    }
+
+    console.log(`[BACKORDER] Rappels backorder : ${sentCount} SMS envoyés sur ${expiredBackorders.length} backorders expirés`);
+    return { processed: expiredBackorders.length, sms_sent: sentCount };
+
+  } catch (err) {
+    console.error('[BACKORDER] Erreur rappels backorder:', err.message);
+    return { processed: 0, sms_sent: 0, error: err.message };
+  }
+}
+
+module.exports = { sendSMS, processCashRelaisReminders, processBackorderReminders, PARTIAL_SHIP_SMS };

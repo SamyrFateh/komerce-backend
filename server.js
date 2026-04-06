@@ -234,7 +234,7 @@ app.use((err, req, res, next) => {
 
 // ── Cron cash relais (avec verrou anti-concurrence) ──────────────────────────
 
-const { processCashRelaisReminders } = require('./utils/sms');
+const { processCashRelaisReminders, processBackorderReminders } = require('./utils/sms');
 const { getRuleNumber: _getRuleNum } = require('./utils/rules');
 
 let cronRunning = false;
@@ -260,6 +260,35 @@ let cronRunning = false;
     }
   }, intervalMin * 60 * 1000);
 })();
+
+// ── Phase 4 — Backorder checker cron (toutes les 6 heures) ───────────────
+// Détecte les backorders dont la date estimée est dépassée
+// et propose l'annulation au client par SMS (sans annuler automatiquement).
+
+const BACKORDER_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 heures
+let backorderCronRunning = false;
+
+setInterval(async () => {
+  if (backorderCronRunning) return;
+  backorderCronRunning = true;
+  try {
+    const result = await processBackorderReminders();
+    if (result.processed > 0) {
+      console.log(`[CRON] Backorder check: ${result.processed} traités, ${result.sms_sent} SMS envoyés`);
+    }
+  } catch (err) {
+    console.error('[CRON] Backorder check error:', err.message);
+  } finally {
+    backorderCronRunning = false;
+  }
+}, BACKORDER_CHECK_INTERVAL_MS);
+
+// Run once at startup (délai 30s pour laisser le serveur démarrer)
+setTimeout(() => {
+  processBackorderReminders()
+    .then(result => { if (result.processed > 0) console.log(`[CRON] Initial backorder check: ${result.processed} traités`); })
+    .catch(err => console.error('[CRON] Initial backorder check error:', err.message));
+}, 30 * 1000);
 
 // ── Démarrage + Graceful Shutdown ────────────────────────────────────────────
 

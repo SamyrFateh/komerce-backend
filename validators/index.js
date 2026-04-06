@@ -208,6 +208,49 @@ const orders = {
       reason: safeStr(500),
     }),
   },
+
+  // Phase 4 — Expédition Partielle
+  markAvailability: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      items: Joi.array().items(Joi.object({
+        order_item_id: uuid.required(),
+        status: Joi.string().valid('available', 'delayed', 'backorder').required(),
+        reason: safeStr(500),
+        estimated_available_at: isoDate,
+      })).min(1).required(),
+    }),
+  },
+
+  partialShip: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      available_items: Joi.array().items(Joi.object({
+        order_item_id: uuid.required(),
+        quantity: posInt.max(1000).required(),
+      })).min(1).required(),
+      notes: safeStr(1000),
+    }),
+  },
+
+  subOrderStatus: {
+    params: Joi.object({ subId: uuid.required() }),
+    body: Joi.object({
+      status: Joi.string().valid(
+        'preparation', 'shipped', 'in_transit', 'available', 'collected', 'cancelled'
+      ).required(),
+      note: safeStr(500),
+      tracking_ref: safeStr(100),
+    }),
+  },
+
+  cancelBackorder: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      sub_order_id: uuid.required(),
+      reason: safeStr(500),
+    }),
+  },
 };
 
 // ── Schémas : payments.js ───────────────────────────────────────────────────────
