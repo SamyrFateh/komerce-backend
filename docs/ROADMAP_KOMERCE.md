@@ -1,8 +1,7 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
 > 📅 **Mise à jour** : 6 avril 2026  
-> 🏷️ **Version** : v12.1-test  
-> 🧪 **Test sync** : trigger 10min — changement détecté ?  
+> 🏷️ **Version** : v12.0  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables**
 
