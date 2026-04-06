@@ -14,7 +14,16 @@
 
 **Aucune question, aucune action ne doit précéder cette présentation.**
 
-→ Détails complets dans [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) § "Règle d'Entrée"
+---
+
+## 🚀 DEUXIÈME ACTION — Continuer le travail
+
+> **Après la présentation du statut, l'agent enchaîne automatiquement sur la prochaine tâche de la priorité la plus haute.**
+
+- 🟢 **Par défaut** : suivre l'ordre des priorités et des tâches de la Roadmap
+- 🟠 **Exception** : seule une demande **EXPLICITE** du propriétaire peut déroger à cet ordre
+
+→ Détails complets dans [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) § "Règle de Continuité"
 
 ---
 
@@ -35,9 +44,10 @@ Ce fichier contient le **protocole obligatoire** qui lie les 3 documents de réf
 ## Résumé des règles
 
 1. **D'ABORD** → Lire le README → Présenter le statut Roadmap + dernier point en cours
-2. **AVANT** toute modification → Lire `AGENTS_PROTOCOL.md` + les 3 piliers
-3. **PENDANT** → Respecter l'architecture existante, utiliser les middlewares
-4. **APRÈS** → Mettre à jour la Cartographie + la Roadmap + commiter
+2. **ENSUITE** → Enchaîner sur la prochaine tâche (ordre de priorité, sauf demande contraire)
+3. **AVANT** toute modification → Lire `AGENTS_PROTOCOL.md` + les 3 piliers
+4. **PENDANT** → Respecter l'architecture existante, utiliser les middlewares
+5. **APRÈS** → Mettre à jour la Cartographie + la Roadmap + commiter
 
 **Sans cette lecture, aucun code ne doit être écrit.**
 

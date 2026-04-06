@@ -1,6 +1,6 @@
 # 🔒 AGENTS_PROTOCOL.md — Protocole de Gouvernance Komerce
 
-> **Version** : 1.2 — 06/04/2026
+> **Version** : 1.3 — 06/04/2026
 > **Statut** : OBLIGATOIRE pour tout agent (IA ou humain)
 > **Repo** : `SamyrFateh/komerce-backend`
 
@@ -36,6 +36,51 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 ```
 
 **Cette présentation est NON NÉGOCIABLE.** Elle permet au propriétaire du projet de savoir immédiatement où en est le projet sans avoir à le demander.
+
+---
+
+## 🚀 Règle de Continuité — Suivre l'Ordre de Priorité
+
+> **🔴 APRÈS la présentation du statut, l'agent DOIT automatiquement enchaîner sur le travail.**
+
+### Comportement par défaut (SANS demande explicite du propriétaire) :
+
+1. **Identifier la prochaine tâche à faire** de la **priorité la plus haute** dans la Roadmap
+2. **Commencer à travailler dessus immédiatement** après la présentation du statut
+3. **Suivre l'ordre des tâches** au sein de chaque priorité (2.1 → 2.2 → 2.3, etc.)
+4. **Passer à la priorité suivante** uniquement quand toutes les tâches de la priorité en cours sont terminées
+
+### Exception unique :
+
+> **Seule une demande EXPLICITE du propriétaire peut déroger à cet ordre.**
+>
+> Si le propriétaire donne une instruction précise (ex: "travaille sur la sécurité", "fais la vue Retards d'abord"), l'agent suit cette instruction.
+> Sinon, l'agent suit strictement l'ordre de la Roadmap.
+
+### Logique de sélection de tâche :
+
+```
+Pour chaque priorité (de la plus haute à la plus basse) :
+  Pour chaque tâche (dans l'ordre numérique) :
+    Si statut == ⬜ (non fait) :
+      → C'EST LA TÂCHE À FAIRE
+      → Commencer immédiatement
+      → STOP (ne pas chercher plus loin)
+```
+
+### Exemple concret :
+
+```
+Roadmap actuelle :
+  Priorité 1 — Dashboard Pilotage :
+    2.1 ✅ | 2.2 ✅ | 2.3 ✅ | 2.4 ✅ | 2.5 ✅ | 2.6 ✅ | 2.7 ⬜ | 2.8 ⬜ | ...
+
+→ L'agent présente le statut
+→ L'agent dit : "Je continue avec la tâche 2.7 — Vue Tendances"
+→ L'agent commence à travailler
+```
+
+**Cette règle garantit une progression linéaire et prévisible du projet, sans temps mort.**
 
 ---
 
@@ -126,6 +171,17 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
+│       ÉTAPE 0.5 — CONTINUITÉ AUTOMATIQUE             │
+│                                                      │
+│  🚀 Enchaîner sur la prochaine tâche ⬜              │
+│     de la priorité la plus haute                     │
+│  → Sauf demande EXPLICITE contraire du propriétaire │
+│  → Suivre l'ordre numérique des tâches              │
+│                                                      │
+│  ⚠️ PAS DE TEMPS MORT — ON AVANCE TOUJOURS          │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
 │           AVANT DE CODER / CORRIGER                 │
 │                                                      │
 │  1. 📖 Lire ROADMAP_KOMERCE.md                      │
@@ -206,6 +262,7 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 5. **TOUJOURS garder la roadmap comme source de vérité** pour la progression
 6. **TOUJOURS commiter le travail en cours toutes les 10 minutes maximum** — zéro perte tolérée
 7. **TOUJOURS présenter le statut roadmap après lecture du README** — le propriétaire doit voir l'état du projet immédiatement
+8. **TOUJOURS suivre l'ordre de priorité de la roadmap** — sauf demande explicite contraire du propriétaire
 
 ---
 
@@ -237,4 +294,5 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 > _"Pas de carte, pas de plan, pas de bouclier → pas de code."_
 > _"Pas de commit régulier → pas de filet de sécurité."_
 > _"Pas de statut roadmap → pas de visibilité."_
-> — Protocole Komerce v1.2
+> _"Pas de demande contraire → on suit la roadmap, point."_
+> — Protocole Komerce v1.3
