@@ -21,6 +21,11 @@
  * Changelog v7.7 :
  *   · cash_ref_code : code 6 chiffres lisibles (ex: 482917) au lieu de hex 16 chars
  *     → plus facile à dicter oralement par le client à l'agent relais
+ *
+ * Changelog v8.0 :
+ *   · Pipeline simplifié à 6 étapes : confirmed→ordered→preparation→shipped→available→collected
+ *   · Supprimé : draft, paid, purchasing, hub_preparation, transit_comores
+ *   · Fix désynchronisation DB ↔ Code (bug enum violation)
  */
 
 'use strict';
@@ -37,69 +42,49 @@ const { sendOrderConfirmation } = require('../utils/email');
 const { validate } = require('../middleware/validate');
 const { orders } = require('../validators');
 
-// ─── Constantes alignées sur l'enum PostgreSQL réel ──────────────────────────
+// ─── Constantes — pipeline MVP 6 étapes (v8.0) ──────────────────────────────
 //
-// Mapping spec v7.5 §9.1 :
-//   ordered         → #1 — paiement confirmé (système)
-//   purchasing      → #2 — achat en cours (admin manuel)
-//   preparation     → #3 — SCAN 3 Hub réception (agent_hub)
-//   hub_preparation → #4 — SCAN 4 Hub groupage prêt groupeur (agent_hub)
-//   shipped         → #5 — expédié (admin / groupeur)
-//   transit_comores → #6 — arrivé Comores, dédouanement (admin manuel)
-//   available       → #7 — SCAN 6 arrivé au relais (agent_relais)
-//   collected       → #8 — SCAN QR 7 remis au client (agent_relais)
-//
-// draft / confirmed / paid : étapes de création/validation commande (avant ordered)
-// 'purchasing' et 'transit_comores' : mise à jour admin manuelle uniquement
+// confirmed   → commande créée, paiement en attente
+// ordered     → paiement validé (cash relais par agent_relais, ou webhook Stripe)
+// preparation → [SCAN Hub] colis reçu, emballé au hub
+// shipped     → départ maritime
+// available   → [SCAN Relais] colis reçu au relais → SMS client
+// collected   → [SCAN QR] remis au client
+// cancelled / refunded → admin
 
 const ORDER_STATUSES = [
-  'draft',
-  'confirmed',
-  'paid',
-  'ordered',           // #1 spec — paiement validé, commande lancée
-  'purchasing',        // #2 spec — achat en cours Dubai
-  'preparation',       // #3 spec — SCAN 3 Hub réception
-  'hub_preparation',   // #4 spec — SCAN 4 Hub groupage / prêt groupeur
-  'shipped',           // #5 spec — expédié groupeur
-  'transit_comores',   // #6 spec — arrivé Comores, dédouanement
-  'available',         // #7 spec — SCAN 6 arrivé au relais
-  'collected',         // #8 spec — SCAN QR 7 remis au client
+  'confirmed',    // commande créée
+  'ordered',      // paiement validé → commande lancée
+  'preparation',  // SCAN Hub — emballage
+  'shipped',      // départ maritime
+  'available',    // SCAN Relais — colis reçu
+  'collected',    // SCAN QR — remis au client
   'cancelled',
   'refunded',
 ];
 
-// Matrice de transitions valides — alignée spec v7.5 §9.1 (8 statuts opérationnels)
+// Matrice de transitions valides — pipeline MVP 6 étapes (v8.0)
 // Les admins peuvent toujours basculer vers cancelled/refunded depuis n'importe quel statut.
 const VALID_TRANSITIONS = {
-  draft:           ['confirmed', 'cancelled'],
-  confirmed:       ['paid', 'cancelled'],
-  paid:            ['ordered', 'cancelled'],
-  ordered:         ['purchasing', 'cancelled'],
-  purchasing:      ['preparation', 'cancelled'],
-  preparation:     ['hub_preparation', 'cancelled'],    // SCAN 3 → SCAN 4
-  hub_preparation: ['shipped', 'cancelled'],            // SCAN 4 → expédié
-  shipped:         ['transit_comores', 'available', 'cancelled'],
-  transit_comores: ['available', 'cancelled'],
-  available:       ['collected', 'cancelled'],
-  collected:       [],
-  cancelled:       ['refunded'],
-  refunded:        [],
+  confirmed:   ['ordered', 'cancelled'],
+  ordered:     ['preparation', 'cancelled'],
+  preparation: ['shipped', 'cancelled'],
+  shipped:     ['available', 'cancelled'],
+  available:   ['collected', 'cancelled'],
+  collected:   [],
+  cancelled:   ['refunded'],
+  refunded:    [],
 };
 
-// Rôles autorisés par transition — alignés spec v7.5 §9.1
+// Rôles autorisés par transition — pipeline MVP 6 étapes (v8.0)
 const TRANSITION_ROLES = {
-  confirmed:       ['admin', 'agent_hub'],
-  paid:            ['admin', 'agent_relais'],   // agent_relais pour cash_relais uniquement
-  ordered:         ['admin'],                           // déclenché par webhook paiement
-  purchasing:      ['admin'],
-  preparation:     ['admin', 'agent_hub'],              // SCAN 3
-  hub_preparation: ['admin', 'agent_hub'],              // SCAN 4
-  shipped:         ['admin', 'agent_hub'],
-  transit_comores: ['admin'],
-  available:       ['admin', 'agent_relais'],           // SCAN 6
-  collected:       ['admin', 'agent_relais'],           // SCAN QR 7
-  cancelled:       ['admin'],
-  refunded:        ['admin'],
+  ordered:     ['admin', 'agent_relais'],  // cash validé par agent_relais, ou webhook Stripe
+  preparation: ['admin', 'agent_hub'],     // SCAN Hub
+  shipped:     ['admin', 'agent_hub'],     // départ maritime
+  available:   ['admin', 'agent_relais'],  // SCAN Relais
+  collected:   ['admin', 'agent_relais'],  // SCAN QR
+  cancelled:   ['admin'],
+  refunded:    ['admin'],
 };
 
 // confection_type — extensible sans migration DB (champ TEXT en base)
@@ -113,18 +98,14 @@ const CONFECTION_TYPES = [
 // Les autres modules (lunettes, construction, cosmetiques) n'ont pas de sous-type
 const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 
-// SMS déclenchés par changement de statut — alignés spec v7.5 §9.1
-// Seuls les statuts visibles client reçoivent un SMS (pas les statuts internes Hub)
+// SMS déclenchés par changement de statut — pipeline MVP 6 étapes (v8.0)
+// Seuls les statuts visibles client reçoivent un SMS
 const STATUS_SMS = {
-  paid:             (ref) => `Komerce : Paiement recu pour la commande ${ref} ! Votre article est en cours de traitement.`,
-  ordered:          (ref) => `Komerce : Commande ${ref} confirmée et lancée ! Votre article est en cours d'achat à Dubai.`,
-  purchasing:       (ref) => `Komerce : Commande ${ref} — votre article est en cours d'achat à Dubai.`,
-  preparation:      (ref) => `Komerce : Commande ${ref} — colis reçu au Hub Dubai, contrôle qualité en cours.`,
-  hub_preparation:  (ref) => `Komerce : Commande ${ref} — colis emballé et prêt pour expédition. Départ imminent !`,
-  shipped:          (ref) => `Komerce : Commande ${ref} — votre colis a pris la mer ! Arrivée estimée 3–5 semaines.`,
-  transit_comores:  (ref) => `Komerce : Commande ${ref} — colis arrivé aux Comores, en cours de dédouanement.`,
-  available:        (ref, relais) => `Komerce : Commande ${ref} disponible au relais ${relais || ''}. Venez le récupérer !`,
-  collected:        (ref) => `Komerce : Commande ${ref} remise. Merci de votre confiance ! 🎉`,
+  ordered:     (ref) => `Komerce : Commande ${ref} lancée ! Votre article est en cours de traitement.`,
+  preparation: (ref) => `Komerce : Commande ${ref} — colis reçu au Hub, contrôle qualité en cours.`,
+  shipped:     (ref) => `Komerce : Commande ${ref} — votre colis a pris la mer ! Arrivée estimée 3–5 semaines.`,
+  available:   (ref, relais) => `Komerce : Commande ${ref} disponible au relais ${relais || ''}. Venez le récupérer !`,
+  collected:   (ref) => `Komerce : Commande ${ref} remise. Merci de votre confiance ! 🎉`,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -618,16 +599,15 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
        LEFT JOIN relais     r  ON r.id  = o.relais_id
        WHERE ${conditions}
          AND (
-           o.status IN ('shipped', 'transit_comores', 'available')
+           o.status IN ('shipped', 'available')
            OR (o.status = 'confirmed' AND o.payment_mode = 'cash_relais' AND o.payment_status = 'pending')
          )
          AND o.status NOT IN ('collected', 'cancelled', 'refunded')
        ORDER BY
          CASE o.status
-           WHEN 'available'       THEN 1
-           WHEN 'transit_comores' THEN 2
-           WHEN 'shipped'         THEN 3
-           WHEN 'confirmed'       THEN 4
+           WHEN 'available' THEN 1
+           WHEN 'shipped'   THEN 2
+           WHEN 'confirmed' THEN 3
          END,
          o.available_at ASC NULLS LAST,
          o.created_at   ASC`,
@@ -648,7 +628,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
 
     const summary = {
       en_attente:    enriched.filter(o => o.status === 'available').length,
-      en_transit:    enriched.filter(o => ['shipped', 'transit_comores'].includes(o.status)).length,
+      en_transit:    enriched.filter(o => o.status === 'shipped').length,
       alertes_48h:   enriched.filter(o => o.alert_48h).length,
       cash_pending:  enriched.filter(o => o.status === 'confirmed' && o.payment_mode === 'cash_relais').length,
     };
@@ -711,7 +691,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
             THEN 'preparation_too_long'
 
            -- Règle 4 : transit >12 jours
-           WHEN o.status IN ('shipped', 'transit_comores')
+           WHEN o.status = 'shipped'
             AND o.shipped_at < NOW() - INTERVAL '12 days'
             THEN 'transit_too_long'
 
@@ -727,7 +707,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
             THEN 'no_notification'
 
            -- Règle 7 : commande active depuis >30 jours sans avancement
-           WHEN o.status IN ('ordered', 'purchasing')
+           WHEN o.status = 'ordered'
             AND o.created_at < NOW() - INTERVAL '30 days'
             THEN 'stalled'
 
@@ -736,7 +716,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
 
            -- Règle 9 : commande active sans relais assigné
            WHEN o.relais_id IS NULL
-            AND o.status NOT IN ('draft', 'confirmed', 'cancelled', 'refunded')
+            AND o.status NOT IN ('confirmed', 'cancelled', 'refunded')
             THEN 'no_relais'
 
            ELSE 'other'
@@ -750,7 +730,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
        FROM orders o
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
        LEFT JOIN relais     r  ON r.id  = o.relais_id
-       WHERE o.status NOT IN ('collected', 'cancelled', 'refunded', 'draft')
+       WHERE o.status NOT IN ('collected', 'cancelled', 'refunded')
          ${relaisFilter}
          AND (
            -- Règle 1
@@ -758,15 +738,15 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
            -- Règle 3
            OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '4 days')
            -- Règle 4
-           OR (o.status IN ('shipped', 'transit_comores') AND o.shipped_at < NOW() - INTERVAL '12 days')
+           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '12 days')
            -- Règle 5
            OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '7 days')
            -- Règle 6
            OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' AND o.qr_token IS NULL)
            -- Règle 7
-           OR (o.status IN ('ordered', 'purchasing') AND o.created_at < NOW() - INTERVAL '30 days')
+           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '30 days')
            -- Règle 9
-           OR (o.relais_id IS NULL AND o.status NOT IN ('draft', 'confirmed', 'cancelled', 'refunded'))
+           OR (o.relais_id IS NULL AND o.status NOT IN ('confirmed', 'cancelled', 'refunded'))
          )
        ORDER BY o.id, hours_since_last_event DESC`,
       params
@@ -1156,8 +1136,8 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       });
     }
 
-    // agent_relais ne peut passer à 'paid' que pour les commandes cash_relais
-    if (status === 'paid' && req.user.role === 'agent_relais' && order.payment_mode !== 'cash_relais') {
+    // agent_relais ne peut passer à 'ordered' que pour les commandes cash_relais
+    if (status === 'ordered' && req.user.role === 'agent_relais' && order.payment_mode !== 'cash_relais') {
       await client.query('ROLLBACK');
       return res.status(403).json({
         error: "L'agent relais ne peut valider le paiement que pour les commandes cash relais",
@@ -1166,15 +1146,12 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
     // Timestamp correspondant au statut — aligné spec v7.5 §9.1
     const tsField = {
-      ordered:         'ordered_at',
-      purchasing:      'purchasing_at',
-      preparation:     'preparation_at',
-      hub_preparation: 'hub_preparation_at',
-      shipped:         'shipped_at',
-      transit_comores: 'transit_comores_at',
-      available:       'available_at',
-      collected:       'collected_at',
-      cancelled:       'cancelled_at',
+      ordered:     'ordered_at',
+      preparation: 'preparation_at',
+      shipped:     'shipped_at',
+      available:   'available_at',
+      collected:   'collected_at',
+      cancelled:   'cancelled_at',
     }[status];
 
     const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
@@ -1198,8 +1175,8 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       [status, order.id]
     );
 
-    // Mettre à jour payment_status pour les commandes cash_relais passées à 'paid'
-    if (status === 'paid' && order.payment_mode === 'cash_relais') {
+    // Mettre à jour payment_status pour les commandes cash_relais passées à 'ordered'
+    if (status === 'ordered' && order.payment_mode === 'cash_relais') {
       await client.query(
         `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
         [order.id]
