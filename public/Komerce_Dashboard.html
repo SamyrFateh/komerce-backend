@@ -1,23 +1,313 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Komerce — Dashboard</title>
-<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" />
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="/chart.umd.min.js"></script>
 <style>
-  .scrollbar-thin::-webkit-scrollbar{height:6px}
-  .scrollbar-thin::-webkit-scrollbar-thumb{background:oklch(var(--bc)/.2);border-radius:3px}
-  .tab-nav-btn{min-width:4.5rem;transition:all .15s}
-  .tab-nav-btn:hover{background:oklch(var(--b2))}
-  .kanban-col{min-width:220px;max-height:60vh}
-  @keyframes pulse-dot{0%,100%{opacity:.4}50%{opacity:1}}
-  .loading-dot{animation:pulse-dot 1.2s infinite}
-  .radial-progress{--size:6rem;--thickness:0.5rem;width:var(--size);height:var(--size);border-radius:50%;background:conic-gradient(currentColor calc(var(--value)*1%),oklch(var(--b3)) 0);display:flex;align-items:center;justify-content:center;position:relative}
-  .radial-progress::before{content:'';position:absolute;inset:var(--thickness);border-radius:50%;background:oklch(var(--b2))}
-  .radial-progress>*{position:relative;z-index:1}
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE DESIGN SYSTEM — CSP-Compliant Dashboard Styles
+   All styles inline — no external CSS frameworks
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Custom Properties ─── */
+:root {
+  --bg:#f8f9fa; --bg2:#ffffff; --bg3:#f3f4f6; --bg4:#e9ecef;
+  --ln:#e5e7eb; --ink:#111827; --ink2:#374151; --ink3:#6b7280; --ink4:#9ca3af;
+  --ter:#F5A623; --ter2:#E8941A; --ter-bg:#FFFBF2;
+  --grn:#16a34a; --grn-bg:#f0fdf4;
+  --blu:#2563eb; --blu-bg:#eff6ff;
+  --amb:#F5A623; --amb-bg:#FFFBF2;
+  --red:#E8552A; --red-bg:#fff5f3;
+  --pur:#7c3aed;
+  --radius:12px;
+}
+
+/* ─── Reset & Base ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;-webkit-font-smoothing:antialiased}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh}
+a{color:var(--ter);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:"JetBrains Mono",monospace;font-size:.9em;background:var(--bg3);padding:2px 6px;border-radius:4px}
+button{font-family:inherit}
+
+/* ═══ COMPONENTS (defined first so utilities can override) ═══ */
+
+/* ─── Card ─── */
+.card{background:var(--bg2);border:1px solid var(--ln);border-radius:var(--radius);overflow:hidden}
+.card-body{display:flex;flex-direction:column;padding:1.25rem}
+.card-title{font-weight:700;font-size:1.143rem;display:flex;align-items:center;gap:.5rem}
+
+/* ─── Badge ─── */
+.badge{display:inline-flex;align-items:center;padding:.15rem .5rem;font-size:.75rem;font-weight:600;border-radius:9999px;white-space:nowrap;line-height:1.4;background:var(--bg3);color:var(--ink3)}
+.badge-sm{font-size:.7rem;padding:.1rem .4rem}
+.badge-xs{font-size:.6rem;padding:.05rem .3rem;min-width:.5rem;min-height:.5rem}
+.badge-primary{background:var(--ter);color:#fff}
+.badge-secondary{background:var(--pur);color:#fff}
+.badge-info{background:var(--blu);color:#fff}
+.badge-success{background:var(--grn);color:#fff}
+.badge-warning{background:var(--amb);color:#fff}
+.badge-error{background:var(--red);color:#fff}
+.badge-neutral{background:var(--ink3);color:#fff}
+.badge-ghost{background:var(--bg3);color:var(--ink3)}
+.badge-outline{background:transparent;border:1px solid var(--ln);color:var(--ink3)}
+
+/* ─── Button ─── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.5rem 1rem;font-size:.857rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;background:var(--bg3);color:var(--ink);line-height:1.4}
+.btn:hover{filter:brightness(.95)}
+.btn-sm{padding:.3rem .6rem;font-size:.75rem}
+.btn-lg{padding:.75rem 1.5rem;font-size:1rem}
+.btn-primary{background:var(--ter);color:#fff}
+.btn-primary:hover{background:var(--ter2)}
+.btn-success{background:var(--grn);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-info{background:var(--blu);color:#fff}
+.btn-info:hover{background:#1d4ed8}
+.btn-ghost{background:transparent}
+.btn-ghost:hover{background:var(--bg3)}
+.btn-disabled,.btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+
+/* ─── Alert ─── */
+.alert{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:var(--radius);font-size:.857rem}
+.alert-warning{background:var(--amb-bg);border:1px solid rgba(245,166,35,.3);color:var(--ink)}
+.alert-error{background:var(--red-bg);border:1px solid rgba(232,85,42,.3);color:var(--ink)}
+
+/* ─── Table ─── */
+.table{width:100%;border-collapse:collapse;font-size:.857rem}
+.table th{text-align:left;padding:.5rem .75rem;font-weight:600;color:var(--ink3);border-bottom:2px solid var(--ln);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
+.table td{padding:.5rem .75rem;border-bottom:1px solid var(--ln);vertical-align:middle}
+.table-xs th,.table-xs td{padding:.3rem .5rem;font-size:.75rem}
+.table-sm th,.table-sm td{padding:.4rem .6rem;font-size:.8rem}
+.table-zebra tbody tr:nth-child(even){background:var(--bg3)}
+.table th.text-center,.table td.text-center{text-align:center}
+.table th.text-right,.table td.text-right{text-align:right}
+
+/* ─── Progress ─── */
+progress{-webkit-appearance:none;appearance:none;height:.5rem;border-radius:9999px;overflow:hidden;border:none;background:var(--bg4)}
+progress::-webkit-progress-bar{background:var(--bg4);border-radius:9999px}
+progress::-webkit-progress-value{background:var(--ter);border-radius:9999px;transition:width .3s}
+progress::-moz-progress-bar{background:var(--ter);border-radius:9999px}
+progress.progress-primary::-webkit-progress-value{background:var(--ter)}
+progress.progress-primary::-moz-progress-bar{background:var(--ter)}
+progress.progress-success::-webkit-progress-value{background:var(--grn)}
+progress.progress-success::-moz-progress-bar{background:var(--grn)}
+
+/* ─── Form ─── */
+.form-control{display:flex;flex-direction:column;gap:.25rem}
+.label{display:flex;padding:.25rem 0}
+.label-text{font-size:.857rem;font-weight:500;color:var(--ink2)}
+.select,.input{padding:.4rem .75rem;border:1px solid var(--ln);border-radius:8px;font-family:inherit;font-size:.857rem;background:var(--bg2);color:var(--ink);outline:none;transition:border-color .15s}
+.select:focus,.input:focus{border-color:var(--ter)}
+.select-sm{padding:.25rem .5rem;font-size:.75rem}
+.select-bordered,.input-bordered{border:1px solid var(--ln)}
+
+/* ─── Dialog / Modal ─── */
+dialog.modal{border:none;padding:0;background:transparent;max-width:100vw;max-height:100vh;width:100vw;height:100vh}
+dialog.modal::backdrop{background:rgba(0,0,0,.4)}
+dialog.modal[open]{display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--bg2);border-radius:var(--radius);padding:1.5rem;max-width:28rem;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.15);position:relative;z-index:1}
+.modal-action{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1.5rem}
+.modal-backdrop{position:fixed;inset:0}
+.modal-backdrop button{position:fixed;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:none}
+
+/* ─── Divider ─── */
+.divider{height:1px;background:var(--ln)}
+
+/* ─── Link ─── */
+.link{color:var(--ter)}
+.link-hover:hover{text-decoration:underline}
+
+/* ─── Tab Nav ─── */
+.tab-nav-btn{min-width:4.5rem;transition:all .15s;background:none;border:none;cursor:pointer;font-family:inherit}
+.tab-nav-btn:hover{background:var(--bg3)}
+
+/* ─── Spinner ─── */
+@keyframes k-spin{to{transform:rotate(360deg)}}
+.k-spinner{width:2.5rem;height:2.5rem;border:3px solid var(--bg4);border-top-color:var(--ter);border-radius:50%;animation:k-spin .8s linear infinite}
+
+/* ─── Radial Progress ─── */
+.radial-progress{--size:6rem;--thickness:.5rem;width:var(--size);height:var(--size);border-radius:50%;background:conic-gradient(currentColor calc(var(--value)*1%),var(--bg4) 0);display:flex;align-items:center;justify-content:center;position:relative}
+.radial-progress::before{content:'';position:absolute;inset:var(--thickness);border-radius:50%;background:var(--bg2)}
+.radial-progress>*{position:relative;z-index:1}
+
+/* ─── Scrollbar ─── */
+.scrollbar-thin::-webkit-scrollbar{height:6px}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+
+/* ─── Pulse Animation ─── */
+@keyframes pulse-dot{0%,100%{opacity:.4}50%{opacity:1}}
+.loading-dot{animation:pulse-dot 1.2s infinite}
+
+
+/* ═══ UTILITIES (after components so they can override) ═══ */
+
+/* ─── Display / Flex / Grid ─── */
+.flex{display:flex}
+.flex-col{flex-direction:column}
+.flex-row{flex-direction:row}
+.flex-1{flex:1 1 0%}
+.flex-shrink-0{flex-shrink:0}
+.flex-wrap{flex-wrap:wrap}
+.items-center{align-items:center}
+.justify-center{justify-content:center}
+.justify-between{justify-content:space-between}
+.justify-end{justify-content:flex-end}
+.grid{display:grid}
+.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}
+.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+/* ─── Gap ─── */
+.gap-0{gap:0}
+.gap-1{gap:.25rem}
+.gap-2{gap:.5rem}
+.gap-3{gap:.75rem}
+.gap-4{gap:1rem}
+.gap-6{gap:1.5rem}
+.gap-x-2{column-gap:.5rem}
+.gap-x-4{column-gap:1rem}
+.gap-y-1{row-gap:.25rem}
+
+/* ─── Spacing ─── */
+.p-1{padding:.25rem}
+.p-3{padding:.75rem}
+.p-4{padding:1rem}
+.px-1{padding-left:.25rem;padding-right:.25rem}
+.px-3{padding-left:.75rem;padding-right:.75rem}
+.py-2{padding-top:.5rem;padding-bottom:.5rem}
+.py-3{padding-top:.75rem;padding-bottom:.75rem}
+.py-4{padding-top:1rem;padding-bottom:1rem}
+.py-8{padding-top:2rem;padding-bottom:2rem}
+.py-16{padding-top:4rem;padding-bottom:4rem}
+.mt-1{margin-top:.25rem}
+.mt-2{margin-top:.5rem}
+.mt-3{margin-top:.75rem}
+.mt-4{margin-top:1rem}
+.mb-1{margin-bottom:.25rem}
+.mb-2{margin-bottom:.5rem}
+.mb-3{margin-bottom:.75rem}
+.mb-4{margin-bottom:1rem}
+.my-1{margin-top:.25rem;margin-bottom:.25rem}
+.ml-auto{margin-left:auto}
+.mx-auto{margin-left:auto;margin-right:auto}
+.pb-4{padding-bottom:1rem}
+.pr-1{padding-right:.25rem}
+.mb-0\.5{margin-bottom:.125rem}
+
+/* ─── Sizing ─── */
+.w-full{width:100%}
+.w-3{width:.75rem}
+.w-20{width:5rem}
+.h-3{height:.75rem}
+.h-8{height:2rem}
+.h-10{height:2.5rem}
+.h-auto{height:auto}
+.h-full{height:100%}
+.min-h-screen{min-height:100vh}
+.min-w-max{min-width:max-content}
+.max-w-lg{max-width:32rem}
+.min-w-\[220px\]{min-width:220px}
+.max-h-\[60vh\]{max-height:60vh}
+.max-w-\[5rem\]{max-width:5rem}
+
+/* ─── Overflow & Position ─── */
+.overflow-x-auto{overflow-x:auto}
+.overflow-y-auto{overflow-y:auto}
+.overflow-hidden{overflow:hidden}
+.sticky{position:sticky}
+.top-0{top:0}
+.z-50{z-index:50}
+.relative{position:relative}
+
+/* ─── Border ─── */
+.rounded{border-radius:.25rem}
+.rounded-lg{border-radius:var(--radius)}
+.rounded-full{border-radius:9999px}
+.border-b{border-bottom:1px solid var(--ln)}
+.border-b-2{border-bottom:2px solid transparent}
+.border-l-4{border-left:4px solid var(--red)}
+.border-r-4{border-right:4px solid var(--amb)}
+.border-base-300{border-color:var(--ln)}
+.border-transparent{border-color:transparent}
+.border-primary{border-color:var(--ter)}
+
+/* ─── Shadow & Ring ─── */
+.shadow-sm{box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.ring-1{box-shadow:0 0 0 1px var(--ring-c,var(--ln))}
+.ring-2{box-shadow:0 0 0 2px var(--ring-c,var(--ln))}
+.ring-error\/30{--ring-c:rgba(232,85,42,.3);box-shadow:0 0 0 1px rgba(232,85,42,.3)}
+.ring-warning{--ring-c:var(--amb);box-shadow:0 0 0 2px var(--amb)}
+
+/* ─── Typography ─── */
+.text-xs{font-size:.714rem;line-height:1.4}
+.text-sm{font-size:.857rem;line-height:1.5}
+.text-base{font-size:1rem;line-height:1.5}
+.text-lg{font-size:1.143rem;line-height:1.4}
+.text-xl{font-size:1.286rem;line-height:1.3}
+.text-2xl{font-size:1.571rem;line-height:1.2}
+.text-3xl{font-size:2rem;line-height:1.2}
+.text-4xl{font-size:2.571rem;line-height:1.1}
+.font-medium{font-weight:500}
+.font-semibold{font-weight:600}
+.font-bold{font-weight:700}
+.font-mono{font-family:"JetBrains Mono",monospace}
+.text-center{text-align:center}
+.text-right{text-align:right}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.whitespace-nowrap{white-space:nowrap}
+.capitalize{text-transform:capitalize}
+
+/* ─── Text Colors ─── */
+.text-primary{color:var(--ter)}
+.text-success{color:var(--grn)}
+.text-warning{color:var(--amb)}
+.text-error{color:var(--red)}
+.text-base-content{color:var(--ink)}
+.text-base-content\/60{color:var(--ink3)}
+.text-base-content\/40{color:var(--ink4)}
+.text-primary-content{color:#fff}
+.text-secondary-content{color:#fff}
+
+/* ─── Background Colors ─── */
+.bg-base-100{background:var(--bg)}
+.bg-base-200{background:var(--bg2)}
+.bg-base-300{background:var(--bg3)}
+.bg-primary{background:var(--ter);color:#fff}
+.bg-secondary{background:var(--blu);color:#fff}
+.bg-info{background:var(--blu);color:#fff}
+.bg-success{background:var(--grn);color:#fff}
+.bg-warning{background:var(--amb);color:#fff}
+.bg-error{background:var(--red);color:#fff}
+.bg-primary\/10{background:rgba(245,166,35,.1)}
+.bg-error\/10{background:rgba(232,85,42,.1)}
+
+/* ─── Opacity ─── */
+.opacity-40{opacity:.4}
+.opacity-50{opacity:.5}
+.opacity-60{opacity:.6}
+
+/* ─── Transition ─── */
+.transition-colors{transition:color .15s,background-color .15s,border-color .15s}
+
+/* ─── Responsive ─── */
+@media(min-width:640px){
+  .sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:768px){
+  .md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1024px){
+  .lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .lg\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
 </style>
 </head>
 <body class="min-h-screen bg-base-100">
@@ -106,7 +396,7 @@ function buildTabBar(){
     btn.className = `tab-nav-btn flex flex-col items-center justify-center px-3 py-2 text-xs border-b-2 transition-colors ${
       activeTab === t.id
         ? 'border-primary text-primary font-bold'
-        : 'border-transparent text-base-content/60 hover:text-base-content'
+        : 'border-transparent text-base-content/60'
     }`;
     btn.innerHTML = `<span class="mb-0.5 text-base">${t.icon}</span><span class="truncate max-w-[5rem]">${t.label}</span>`;
     btn.onclick = () => switchTab(t.id);
@@ -114,7 +404,7 @@ function buildTabBar(){
   });
   // Settings gear
   const gear = document.createElement('button');
-  gear.className = 'tab-nav-btn flex flex-col items-center justify-center px-3 py-2 text-xs border-b-2 border-transparent text-base-content/60 hover:text-base-content ml-auto';
+  gear.className = 'tab-nav-btn flex flex-col items-center justify-center px-3 py-2 text-xs border-b-2 border-transparent text-base-content/60 ml-auto';
   gear.innerHTML = '<span class="mb-0.5 text-base">⚙️</span><span class="truncate">API</span>';
   gear.onclick = () => { document.getElementById('apiUrlInput').value = API_BASE; settingsModal.showModal(); };
   bar.appendChild(gear);
@@ -204,7 +494,7 @@ function h(tag, cls, inner){
   return '<'+tag+(cls?' class="'+cls+'"':'')+'>'+(inner||'')+'</'+tag+'>';
 }
 function spinner(){
-  return '<div class="flex justify-center items-center py-16"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
+  return '<div class="flex justify-center items-center py-16"><div class="k-spinner"></div></div>';
 }
 function errorBox(msg, isAuth){
   if(isAuth) return '<div class="alert alert-error max-w-lg mx-auto mt-8"><span>🔒 Session expirée — connectez-vous en tant qu\'admin</span></div>';
@@ -214,7 +504,7 @@ function esc(s){ return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,
 
 function statCard(icon,label,value,extra){
   extra=extra||'';
-  return '<div class="card bg-base-200 '+extra+'"><div class="card-body p-4 flex flex-row items-center gap-3"><span class="text-2xl opacity-60">'+icon+'</span><div><div class="text-xs text-base-content/60">'+esc(label)+'</div><div class="text-xl font-bold">'+esc(String(value))+'</div></div></div></div>';
+  return '<div class="card bg-base-200 '+extra+'"><div class="card-body p-4 flex flex-row items-center gap-3"><span class="text-2xl opacity-60">'+icon+'</span><div><div class="text-xs text-base-content/60">'+esc(label)+'</div><div class="text-xl font-bold font-mono">'+esc(String(value))+'</div></div></div></div>';
 }
 
 function trendBadge(val){
@@ -291,7 +581,7 @@ async function renderOverview(vc){
   html += '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">';
   html += statCard('📦',"Commandes aujourd'hui", a.commandes_aujourd_hui);
   html += statCard('✅',"Livrées aujourd'hui", a.livrees_aujourd_hui);
-  html += statCard('⚠️','Bloquées', a.commandes_bloquees,'ring-1 ring-error/30');
+  html += statCard('⚠️','Bloquées', a.commandes_bloquees,'ring-error/30');
   html += statCard('💰','CA 30j', formatKMF(finance.kpi.ca_kmf));
   html += '</div>';
 
@@ -745,16 +1035,16 @@ function initClientsChart(evolution){
     data:{
       labels,
       datasets:[
-        {label:'Commandes', data, backgroundColor:'oklch(0.623 0.214 259.815)', borderRadius:4},
-        {label:'Clients', data:clients, backgroundColor:'oklch(0.723 0.219 149.579)', borderRadius:4},
+        {label:'Commandes', data, backgroundColor:'#F5A623', borderRadius:4},
+        {label:'Clients', data:clients, backgroundColor:'#16a34a', borderRadius:4},
       ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'oklch(0.841 0 0)'}}},
+      plugins:{legend:{labels:{color:'#6b7280'}}},
       scales:{
-        x:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
-        y:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
+        x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
+        y:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
       }
     }
   });
@@ -922,7 +1212,7 @@ async function renderTendances(vc){
   // 3 forecast cards
   html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
   html += '<div class="card bg-base-200"><div class="card-body p-4 items-center text-center"><span class="badge badge-error badge-sm mb-1">Pessimiste</span><span class="text-2xl opacity-60">📉</span><div class="text-2xl font-bold mt-1">'+formatKMF(forecast.projection.pessimiste)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
-  html += '<div class="card bg-base-200 ring-2 ring-warning"><div class="card-body p-4 items-center text-center"><span class="badge badge-warning badge-sm mb-1">Attendu</span><span class="text-2xl opacity-60">🎯</span><div class="text-3xl font-bold mt-1">'+formatKMF(forecast.projection.attendu)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
+  html += '<div class="card bg-base-200 ring-warning"><div class="card-body p-4 items-center text-center"><span class="badge badge-warning badge-sm mb-1">Attendu</span><span class="text-2xl opacity-60">🎯</span><div class="text-3xl font-bold mt-1">'+formatKMF(forecast.projection.attendu)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
   html += '<div class="card bg-base-200"><div class="card-body p-4 items-center text-center"><span class="badge badge-success badge-sm mb-1">Optimiste</span><span class="text-2xl opacity-60">📈</span><div class="text-2xl font-bold mt-1">'+formatKMF(forecast.projection.optimiste)+'</div><div class="text-xs text-base-content/60">Projection fin de mois</div></div></div>';
   html += '</div>';
 
@@ -939,7 +1229,7 @@ async function renderTendances(vc){
   html += '<div class="card bg-base-200"><div class="card-body p-4">';
   html += '<h3 class="font-bold text-lg flex items-center gap-2 mb-4">📊 Évolution sur 6 mois</h3>';
   html += '<div style="position:relative;height:280px"><canvas id="tendancesChart"></canvas></div>';
-  html += '<div class="flex gap-4 mt-3 justify-center"><div class="flex items-center gap-1 text-xs"><div class="w-3 h-3 bg-primary rounded"></div><span class="text-base-content/60">Commandes</span></div><div class="flex items-center gap-1 text-xs"><div class="w-3 h-3 bg-secondary rounded"></div><span class="text-base-content/60">Livrées</span></div></div>';
+  html += '<div class="flex gap-4 mt-3 justify-center"><div class="flex items-center gap-1 text-xs"><div class="w-3 h-3 bg-primary rounded"></div><span class="text-base-content/60">Commandes</span></div><div class="flex items-center gap-1 text-xs"><div class="w-3 h-3 bg-success rounded"></div><span class="text-base-content/60">Livrées</span></div></div>';
   html += '</div></div>';
 
   // Comparison table
@@ -970,22 +1260,22 @@ function initTendancesChart(history){
     data:{
       labels,
       datasets:[
-        {label:'Commandes', data:history.map(h=>h.total_commandes), backgroundColor:'oklch(0.623 0.214 259.815)', borderRadius:4},
-        {label:'Livrées', data:history.map(h=>h.livrees), backgroundColor:'oklch(0.723 0.219 149.579)', borderRadius:4},
+        {label:'Commandes', data:history.map(h=>h.total_commandes), backgroundColor:'#F5A623', borderRadius:4},
+        {label:'Livrées', data:history.map(h=>h.livrees), backgroundColor:'#16a34a', borderRadius:4},
       ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
-        legend:{labels:{color:'oklch(0.841 0 0)'}},
+        legend:{labels:{color:'#6b7280'}},
         tooltip:{callbacks:{afterBody:function(ctx){
           const i=ctx[0].dataIndex;
           return 'CA: '+formatKMF(history[i].ca_kmf);
         }}}
       },
       scales:{
-        x:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
-        y:{ticks:{color:'oklch(0.641 0 0)'},grid:{color:'oklch(0.341 0 0 / 0.3)'}},
+        x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
+        y:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
       }
     }
   });
