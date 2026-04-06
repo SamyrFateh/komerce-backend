@@ -1,5 +1,7 @@
 /**
- * KOMERCE — Comptabilité & Export Finance
+ * KOMERCE — Comptabilité & Export Finance v2.0 (nettoyé)
+ *
+ * ⚠️  GET /summary déplacé vers /api/dashboard/finance (v11.0)
  *
  * GET /api/finance/export          → export CSV transactions du mois (query: month, year)
  * GET /api/finance/stripe-proofs   → liste PaymentIntents Stripe confirmés (query: month, year)
@@ -40,62 +42,15 @@ function csvRow(...cols) {
   return cols.map(csvEscape).join(',') + '\r\n';
 }
 
-// ── GET /api/finance/summary ─────────────────────────────────────────────────
-// Synthèse JSON du mois (attendu par le frontend dashboard finance)
-// Query params : ?month=3&year=2026
-
-router.get('/summary', ...adminOnly, async (req, res) => {
-  try {
-    const { m, y, debut, fin, label } = sanitizePeriod(req.query.month, req.query.year);
-    const rates = await getRates();
-
-    const { rows: [kpi] } = await db.query(`
-      SELECT
-        COUNT(*)                                                        AS nb_commandes,
-        COUNT(*) FILTER (WHERE payment_mode = 'cash_relais')           AS nb_cash,
-        COUNT(*) FILTER (WHERE payment_mode = 'stripe_eur')            AS nb_stripe,
-        COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0)  AS ca_kmf,
-        COALESCE(SUM(total_eur) FILTER (WHERE status != 'cancelled'), 0)  AS ca_eur,
-        COALESCE(SUM(total_kmf) FILTER (
-          WHERE payment_mode = 'cash_relais' AND status != 'cancelled'), 0) AS ca_cash_kmf,
-        COALESCE(SUM(total_eur) FILTER (
-          WHERE payment_mode = 'stripe_eur' AND status != 'cancelled'), 0)  AS ca_stripe_eur,
-        COALESCE(SUM(cost_real_kmf) FILTER (
-          WHERE cost_real_kmf IS NOT NULL AND status != 'cancelled'), 0)     AS couts_reels_kmf,
-        COALESCE(AVG(margin_real_pct) FILTER (
-          WHERE margin_real_pct IS NOT NULL), 0)                         AS marge_moy_pct,
-        COUNT(*) FILTER (WHERE status = 'cancelled')                   AS nb_annulations,
-        COUNT(*) FILTER (WHERE status = 'collected')                   AS nb_livrees
-      FROM orders
-      WHERE created_at >= $1 AND created_at < $2
-    `, [debut, fin]);
-
-    const ca_kmf = parseFloat(kpi.ca_kmf);
-    const couts  = parseFloat(kpi.couts_reels_kmf);
-
-    res.json({
-      month: m,
-      year: y,
-      period: label,
-      nb_commandes:    parseInt(kpi.nb_commandes),
-      nb_livrees:      parseInt(kpi.nb_livrees),
-      nb_annulations:  parseInt(kpi.nb_annulations),
-      nb_cash:         parseInt(kpi.nb_cash),
-      nb_stripe:       parseInt(kpi.nb_stripe),
-      ca_kmf:          Math.round(ca_kmf),
-      ca_eur:          parseFloat(parseFloat(kpi.ca_eur).toFixed(2)),
-      ca_cash_kmf:     Math.round(parseFloat(kpi.ca_cash_kmf)),
-      ca_stripe_eur:   parseFloat(parseFloat(kpi.ca_stripe_eur).toFixed(2)),
-      couts_reels_kmf: Math.round(couts),
-      marge_nette_kmf: Math.round(ca_kmf - couts),
-      marge_moy_pct:   parseFloat(parseFloat(kpi.marge_moy_pct).toFixed(1)),
-      taux: { eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf },
-    });
-  } catch (err) {
-    console.error('Finance summary error:', err.message);
-    res.status(500).json({ error: 'Erreur synthèse finance' });
-  }
+// ── GET /api/finance/summary → DÉPLACÉ vers /api/dashboard/finance ────────────
+router.get('/summary', ...adminOnly, (req, res) => {
+  res.status(301).json({
+    error: 'Endpoint déplacé',
+    redirect: '/api/dashboard/finance',
+    message: 'Utilisez GET /api/dashboard/finance?period=30 à la place',
+  });
 });
+
 
 // ── GET /api/finance/export ───────────────────────────────────────────────────
 // Export CSV de toutes les transactions du mois avec taux de change figés.

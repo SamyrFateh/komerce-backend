@@ -1,22 +1,27 @@
 /**
- * KOMERCE — Back-office Admin v7.3
+ * KOMERCE — Back-office Admin v8.0 (nettoyé)
  *
  * Toutes les routes sont protégées : authenticate + requireRole(['admin'])
  *
- * GET    /api/admin/dashboard         → KPIs globaux
+ * ⚠️  Endpoints dashboard déplacés vers /api/dashboard/* (v11.0) :
+ *   - GET /dashboard  → /api/dashboard/ops
+ *   - GET /margins    → /api/dashboard/finance
+ *   - GET /alerts     → /api/dashboard/ops (section alertes)
+ *
  * GET    /api/admin/orders            → toutes les commandes + filtres
  * DELETE /api/admin/orders/:id        → supprimer une commande par ID
- * GET    /api/admin/margins           → dashboard marge réelle
  * GET    /api/admin/customs           → historique douane
  * GET    /api/admin/partners          → gestion partenaires / relais
  * POST   /api/admin/partners         → créer un partenaire
  * PUT    /api/admin/partners/:id     → modifier un partenaire
- * GET    /api/admin/alerts            → alertes marge négative + anomalies douane
  * GET    /api/admin/users             → liste utilisateurs + filtres
  * POST   /api/admin/users             → créer un utilisateur
  * PUT    /api/admin/users/:id/role    → changer le rôle
  * PUT    /api/admin/users/:id/password → réinitialiser MDP
  * DELETE /api/admin/users/:id         → supprimer (soft/hard selon dépendances)
+ * GET    /api/admin/counts            → compteurs globaux
+ * POST   /api/admin/reset             → reset base (dangereux)
+ * POST   /api/admin/seed-test         → seed données test
  *
  * NOTE: user_role enum DB = ('client', 'admin', 'agent_relais', 'agent_hub')
  */
@@ -33,91 +38,6 @@ const guard = [authenticate, requireRole(['admin'])];
 // Valeurs valides du enum user_role en DB
 const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 
-// ─── GET /api/admin/dashboard ────────────────────────────────────────────────
-
-router.get('/dashboard', ...guard, async (req, res) => {
-  try {
-    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
-
-    const [
-      { rows: [kpi] },
-      { rows: statusDist },
-      { rows: topProducts },
-      { rows: marginKpi },
-      { rows: recentOrders },
-    ] = await Promise.all([
-      db.query(`
-        SELECT
-          COUNT(*)                                  AS total_orders,
-          COUNT(*) FILTER (WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL) AS orders_period,
-          SUM(total_kmf) FILTER (WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL) AS revenue_kmf,
-          ROUND(AVG(total_kmf) FILTER (WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL)) AS avg_basket_kmf,
-          COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_total,
-          COUNT(*) FILTER (WHERE confection_type != 'aucun') AS couture_orders
-        FROM orders
-      `, [days]),
-
-      db.query(`
-        SELECT status, COUNT(*) AS count
-        FROM orders
-        GROUP BY status
-        ORDER BY count DESC
-      `),
-
-      db.query(`
-        SELECT
-          p.name,
-          p.category,
-          COUNT(DISTINCT oi.order_id)      AS order_count,
-          SUM(oi.quantity)                 AS units_sold,
-          SUM(oi.price_kmf * oi.quantity)  AS revenue_kmf
-        FROM order_items oi
-        JOIN products p ON p.id = oi.product_id
-        JOIN orders o   ON o.id = oi.order_id
-        WHERE o.created_at >= NOW() - ($1 || ' days')::INTERVAL
-          AND o.status != 'cancelled'
-        GROUP BY p.id, p.name, p.category
-        ORDER BY units_sold DESC
-        LIMIT 10
-      `, [days]),
-
-      db.query(`
-        SELECT
-          COUNT(*) FILTER (WHERE margin_real_pct IS NOT NULL) AS orders_costed,
-          ROUND(AVG(margin_real_pct) FILTER (WHERE margin_real_pct IS NOT NULL), 2) AS avg_margin_pct,
-          COUNT(*) FILTER (WHERE margin_alert = TRUE) AS margin_alerts,
-          COUNT(*) FILTER (WHERE sourcing_blocked = TRUE) AS sourcing_blocked,
-          COUNT(*) FILTER (WHERE margin_real_pct >= 10) AS healthy_margin_count,
-          COUNT(*) FILTER (WHERE margin_real_pct < 0)  AS negative_margin_count
-        FROM orders
-        WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL
-      `, [days]),
-
-      db.query(`
-        SELECT
-          o.reference, o.status, o.total_kmf, o.margin_real_pct,
-          o.confection_type, o.payment_mode, o.created_at,
-          p.name AS product_name,
-          u.full_name AS customer_name
-        FROM orders o
-        LEFT JOIN order_items oi ON oi.order_id = o.id
-        LEFT JOIN products p ON p.id = oi.product_id
-        LEFT JOIN users    u ON u.id = o.user_id
-        ORDER BY o.created_at DESC
-        LIMIT 10
-      `),
-    ]);
-
-    res.json({
-      kpi, status_dist: statusDist, top_products: topProducts,
-      margin_kpi: marginKpi, recent_orders: recentOrders, period_days: Number(days),
-    });
-
-  } catch (err) {
-    console.error('Dashboard error:', err.message);
-    res.status(500).json({ error: 'Erreur dashboard' });
-  }
-});
 
 // ─── GET /api/admin/orders ───────────────────────────────────────────────────
 
@@ -205,52 +125,6 @@ router.delete('/orders/:id', ...guard, async (req, res) => {
   }
 });
 
-// ─── GET /api/admin/margins ───────────────────────────────────────────────────
-
-router.get('/margins', ...guard, async (req, res) => {
-  try {
-    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
-    const [{ rows: byCategory }, { rows: alerts }, { rows: timeline }] = await Promise.all([
-      db.query(`
-        SELECT p.category,
-          COUNT(o.id) AS order_count,
-          ROUND(AVG(o.margin_estimated_pct), 2) AS avg_margin_estimated,
-          ROUND(AVG(o.margin_real_pct) FILTER (WHERE o.margin_real_pct IS NOT NULL), 2) AS avg_margin_real,
-          COUNT(*) FILTER (WHERE o.margin_alert = TRUE) AS alert_count,
-          COUNT(*) FILTER (WHERE o.margin_real_pct < 0) AS negative_count,
-          COUNT(*) FILTER (WHERE o.margin_real_pct >= 10) AS healthy_count
-        FROM orders o
-        LEFT JOIN order_items oi ON oi.order_id = o.id
-        LEFT JOIN products p ON p.id = oi.product_id
-        WHERE o.created_at >= NOW() - ($1 || ' days')::INTERVAL
-        GROUP BY p.category ORDER BY avg_margin_real ASC NULLS LAST
-      `, [days]),
-      db.query(`
-        SELECT o.reference, o.status, o.total_kmf,
-          o.cost_estimated_kmf, o.cost_real_kmf, o.cost_delta_pct,
-          o.margin_estimated_pct, o.margin_real_pct, o.sourcing_blocked,
-          p.name AS product_name, p.category
-        FROM orders o
-        LEFT JOIN order_items oi ON oi.order_id = o.id
-        LEFT JOIN products p ON p.id = oi.product_id
-        WHERE o.margin_alert = TRUE AND o.created_at >= NOW() - ($1 || ' days')::INTERVAL
-        ORDER BY o.margin_real_pct ASC NULLS LAST LIMIT 50
-      `, [days]),
-      db.query(`
-        SELECT DATE_TRUNC('week', o.cost_closed_at) AS week,
-          ROUND(AVG(o.margin_real_pct), 2) AS avg_margin_real,
-          COUNT(*) AS orders_costed
-        FROM orders o
-        WHERE o.cost_closed_at IS NOT NULL AND o.cost_closed_at >= NOW() - ($1 || ' days')::INTERVAL
-        GROUP BY week ORDER BY week ASC
-      `, [days]),
-    ]);
-    res.json({ by_category: byCategory, alerts, timeline, period_days: Number(days) });
-  } catch (err) {
-    console.error('Margins error:', err.message);
-    res.status(500).json({ error: 'Erreur dashboard marges' });
-  }
-});
 
 // ─── GET /api/admin/customs ───────────────────────────────────────────────────
 
@@ -301,35 +175,6 @@ router.get('/customs', ...guard, async (req, res) => {
   }
 });
 
-// ─── GET /api/admin/alerts ───────────────────────────────────────────────────
-
-router.get('/alerts', ...guard, async (req, res) => {
-  try {
-    const [{ rows: marginAlerts }, { rows: customsAnomalies }, { rows: sourcingBlocked }] = await Promise.all([
-      db.query(`SELECT o.reference, o.status, o.total_kmf, o.margin_real_pct, p.name AS product_name
-        FROM orders o LEFT JOIN order_items oi ON oi.order_id = o.id LEFT JOIN products p ON p.id = oi.product_id
-        WHERE o.margin_alert = TRUE AND o.status NOT IN ('cancelled','collected')
-        ORDER BY o.margin_real_pct ASC NULLS LAST LIMIT 20`),
-      db.query(`SELECT ch.created_at, o.reference, p.category, ch.customs_real_kmf, ch.customs_delta_pct
-        FROM customs_history ch LEFT JOIN orders o ON o.id = ch.order_id::uuid
-        LEFT JOIN order_items oi ON oi.order_id = o.id LEFT JOIN products p ON p.id = oi.product_id
-        WHERE ch.is_anomaly = TRUE AND ch.created_at >= NOW() - INTERVAL '30 days'
-        ORDER BY ch.created_at DESC LIMIT 10`),
-      db.query(`SELECT o.reference, o.status, o.total_kmf, o.margin_real_pct, p.name AS product_name
-        FROM orders o LEFT JOIN order_items oi ON oi.order_id = o.id LEFT JOIN products p ON p.id = oi.product_id
-        WHERE o.sourcing_blocked = TRUE AND o.status NOT IN ('cancelled','collected')
-        ORDER BY o.created_at DESC LIMIT 10`),
-    ]);
-    res.json({
-      margin_alerts: marginAlerts, customs_anomalies: customsAnomalies,
-      sourcing_blocked: sourcingBlocked,
-      total_alerts: marginAlerts.length + customsAnomalies.length + sourcingBlocked.length,
-    });
-  } catch (err) {
-    console.error('Alerts error:', err.message);
-    res.status(500).json({ error: 'Erreur alertes' });
-  }
-});
 
 // ─── GET /api/admin/partners ─────────────────────────────────────────────────
 
@@ -613,6 +458,35 @@ router.delete('/users/:id', ...guard, async (req, res) => {
     console.error('Admin delete user error:', err.message);
     res.status(500).json({ error: 'Erreur suppression utilisateur' });
   }
+});
+
+
+// ── Redirections rétro-compatibles (dashboard endpoints déplacés) ────────────
+// Ces endpoints sont désormais dans /api/dashboard/*
+// Gardés temporairement pour ne pas casser les clients existants
+
+router.get('/dashboard', ...guard, (req, res) => {
+  res.status(301).json({
+    error: 'Endpoint déplacé',
+    redirect: '/api/dashboard/ops',
+    message: 'Utilisez GET /api/dashboard/ops à la place',
+  });
+});
+
+router.get('/margins', ...guard, (req, res) => {
+  res.status(301).json({
+    error: 'Endpoint déplacé',
+    redirect: '/api/dashboard/finance',
+    message: 'Utilisez GET /api/dashboard/finance à la place',
+  });
+});
+
+router.get('/alerts', ...guard, (req, res) => {
+  res.status(301).json({
+    error: 'Endpoint déplacé',
+    redirect: '/api/dashboard/ops',
+    message: 'Les alertes sont maintenant dans GET /api/dashboard/ops (section alertes)',
+  });
 });
 
 module.exports = router;

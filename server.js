@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v9.2 (sécurisé)
+ * KOMERCE — Serveur API v10.0 (dashboards unifiés)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v10.0 : Dashboards unifiés v11 — pilotage.js absorbé, 0 overlap, auth blindée
  * Changelog v9.2 : Helmet CSP corrigé — inline scripts + Google Fonts + images HTTPS autorisés
  * Changelog v9.1 : BUG-014 cookie-parser ajouté — JWT migré vers httpOnly cookie
  * Changelog v8.8 : migration robuste (try/catch individuel) + CREATE TABLE partners + gen_random_uuid
@@ -154,7 +155,7 @@ const adminRouter      = require('./routes/admin');
 const dashboardRouter  = require('./routes/dashboard');
 const pricingRouter    = require('./routes/pricing');
 const modulesRouter    = require('./routes/modules');
-const pilotageRouter   = require('./routes/pilotage');
+// const pilotageRouter   = require('./routes/pilotage');  // ← absorbé dans dashboard.js v11
 const basketsRouter    = require('./routes/baskets');
 const logisticsRouter  = require('./routes/logistics');
 const paymentsRouter   = require('./routes/payments');
@@ -169,16 +170,17 @@ app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
 app.use('/api/orders',     ordersRouter);
 app.use('/api/relais',     relaisRouter);
-// ── Route aliases — les dashboards HTML appellent /api/admin/pilotage, /api/admin/finance, /api/admin/stats
-app.use('/api/admin/pilotage', pilotageRouter);
+// ── Route aliases — rétro-compatibilité dashboards HTML ─────────────────────
+// pilotage absorbé dans dashboard.js v11 → rediriger
 app.use('/api/admin/finance',  financeRouter);
-app.use('/api/admin/stats',    pilotageRouter);
+app.use('/api/admin/pilotage', dashboardRouter);  // redirige vers dashboard unifié
+app.use('/api/admin/stats',    dashboardRouter);  // redirige vers dashboard unifié
 
 app.use('/api/admin',      adminRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
-app.use('/api/pilotage',   pilotageRouter);
+// app.use('/api/pilotage',   pilotageRouter);  // ← absorbé dans /api/dashboard/pilotage
 app.use('/api/baskets',    basketsRouter);
 app.use('/api/logistics',  logisticsRouter);
 app.use('/api/payments',   paymentsRouter);
@@ -197,7 +199,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '9.3',
+      version:       '10.0',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -577,7 +579,7 @@ async function fixProductCategories() {
 
 fixAdminHash().then(() => fixMissingSchema()).then(() => fixProductEncoding()).then(() => seedProducts()).then(() => fixProductCategories()).then(() => seedRelais()).then(() => fixProductImages()).then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`KOMERCE API v9.3 — port ${PORT} — helmet OK — rate-limit OK — CORS hardened — CSP fixed — migrations OK`);
+    console.log(`KOMERCE API v10.0 — port ${PORT} — dashboards unified — helmet OK — rate-limit OK — CORS hardened — CSP fixed — migrations OK`);
   });
 
   process.on('SIGTERM', () => {
