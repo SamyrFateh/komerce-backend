@@ -73,9 +73,9 @@
 | 2.4 | Vue Ops (Kanban + pipeline) | ✅ |
 | 2.5 | Vue Finance (CA, marges, top produits) | ✅ |
 | 2.6 | Vue Pilotage (coûts, clients, taux de change) | ✅ |
-| 2.7 | Vue Tendances (graphiques + projections) | ⬜ |
-| 2.8 | Vue Retards (liste + actions SMS) | ⬜ |
-| 2.9 | Branchement API réelle (remplacer mock data) | ⬜ |
+| 2.7 | Vue Tendances (graphiques + projections) | ✅ |
+| 2.8 | Vue Retards (liste + actions SMS) | ✅ |
+| 2.9 | Branchement API réelle (remplacer mock data) | ✅ |
 | 2.10 | Tests & validation | ⬜ |
 | 2.11 | Dépréciation des anciens dashboards | ⬜ |
 
@@ -311,6 +311,9 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
 | 7 | Gouvernance : commit auto 10min + workflow roadmap | — | ✅ |
 | 8 | Dashboard Pilotage Instant App (4 vues scaffoldées) | — | ✅ |
 | 9 | Roadmap v14.0 : Catalogue Pièces Auto/Moto → Priorité 2 | — | ✅ |
+| 10 | Vue Tendances validée + API connectée | PR #97 | ✅ |
+| 11 | Vue Retards validée + API connectée | PR #97 | ✅ |
+| 12 | Branchement API réelle (8 endpoints, auto-refresh 15s) | PR #97 | ✅ |
 
 ### Boutique Live (5 étapes — toutes ✅)
 - ✅ Portail + Auth Guards (`f40b41b`)
@@ -358,7 +361,8 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
       ├── ✅ Analyse Carto 360°
       ├── ✅ Analyse Coffre-Fort
       ├── ✅ Scaffolding 4 vues (Ops, Finance, Pilotage, Alertes)
-      └── ⬜ Finitions (Tendances, Retards, branchement API)
+      ├── ✅ Tendances, Retards, branchement API (PR #97)
+      └── ⬜ Tests & validation, dépréciation anciens dashboards
 
 🟠 ENSUITE :
   └── Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai
