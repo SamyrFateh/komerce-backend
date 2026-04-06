@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { LayoutDashboard, Kanban, Building2, MapPin, DollarSign, Users, ShoppingBag, AlertTriangle, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Kanban, Building2, MapPin, DollarSign, Users, ShoppingBag, AlertTriangle, TrendingUp, Settings } from 'lucide-react';
+import { setApiBase, getApiBase } from './utils/api';
 import { OverviewView } from './components/OverviewView';
 import { PipelineView } from './components/PipelineView';
 import { HubDubaiView } from './components/HubDubaiView';
@@ -31,8 +32,29 @@ const tabs: Tab[] = [
   { id: 'tendances', label: 'Tendances', icon: <TrendingUp size={16} /> },
 ];
 
+const LS_KEY = 'komerce_api_base';
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiUrl, setApiUrl] = useState('/api/dashboard');
+
+  // On mount: read from localStorage and configure API base
+  useEffect(() => {
+    const stored = localStorage.getItem(LS_KEY);
+    if (stored) {
+      setApiUrl(stored);
+      setApiBase(stored);
+    }
+  }, []);
+
+  const handleSaveSettings = () => {
+    const trimmed = apiUrl.trim() || '/api/dashboard';
+    localStorage.setItem(LS_KEY, trimmed);
+    setApiBase(trimmed);
+    setApiUrl(trimmed);
+    setShowSettings(false);
+  };
 
   const renderView = () => {
     switch (activeTab) {
@@ -69,6 +91,15 @@ const App: React.FC = () => {
                 <span className="truncate max-w-[5rem]">{tab.label}</span>
               </button>
             ))}
+            {/* Settings gear button */}
+            <button
+              className="flex flex-col items-center justify-center px-3 py-2 min-w-[3rem] text-xs border-b-2 border-transparent text-base-content/60 hover:text-base-content hover:bg-base-200 transition-colors ml-auto"
+              onClick={() => setShowSettings(true)}
+              title="Configuration API"
+            >
+              <Settings size={16} />
+              <span className="truncate">API</span>
+            </button>
           </div>
         </div>
       </div>
@@ -77,6 +108,39 @@ const App: React.FC = () => {
       <div className="flex-1 p-4 overflow-y-auto">
         {renderView()}
       </div>
+
+      {/* Settings modal */}
+      {showSettings && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Configuration API</h3>
+            <p className="text-base-content/60 text-sm mt-2">
+              URL de base de l'API du dashboard. Par défaut : <code>/api/dashboard</code>
+            </p>
+            <div className="form-control mt-4">
+              <label className="label">
+                <span className="label-text">URL de l'API</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={apiUrl}
+                onChange={(e) => setApiUrl(e.target.value)}
+                placeholder="/api/dashboard"
+              />
+            </div>
+            <div className="modal-action">
+              <button className="btn btn-ghost" onClick={() => setShowSettings(false)}>
+                Annuler
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveSettings}>
+                Enregistrer
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setShowSettings(false)} />
+        </div>
+      )}
     </div>
   );
 };
