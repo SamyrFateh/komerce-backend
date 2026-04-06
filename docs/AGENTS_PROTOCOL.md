@@ -1,6 +1,6 @@
 # 🔒 AGENTS_PROTOCOL.md — Protocole de Gouvernance Komerce
 
-> **Version** : 1.0 — 06/04/2026
+> **Version** : 1.1 — 06/04/2026
 > **Statut** : OBLIGATOIRE pour tout agent (IA ou humain)
 > **Repo** : `SamyrFateh/komerce-backend`
 
@@ -37,7 +37,7 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 ### 2️⃣ ROADMAP_KOMERCE.md — Le Plan
 > `docs/ROADMAP_KOMERCE.md`
 
-**Ce que c'est** : Roadmap unifiée v12 — progression globale, issues ouvertes, priorités, ordre de travail session par session.
+**Ce que c'est** : Roadmap unifiée v13 — progression globale, issues ouvertes, priorités, ordre de travail session par session.
 
 **Quand la consulter** :
 - ✅ Avant de commencer toute session de travail
@@ -49,8 +49,7 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 - ✅ Après complétion d'une tâche de la roadmap
 - ✅ Après découverte d'un nouveau bug ou besoin
 - ✅ Après changement de priorités
-
-**📡 Sync automatique** : Ce fichier est auto-commité sur GitHub toutes les 10 minutes.
+- ✅ **Avant toute nouvelle implémentation** (ajouter la demande à la roadmap d'abord)
 
 ---
 
@@ -129,6 +128,38 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 
 ---
 
+## ⏱️ Règle de Sauvegarde Continue — Commit Automatique
+
+> **🔴 RÈGLE ABSOLUE : Tout travail en cours DOIT être commité sur GitHub toutes les 10 minutes maximum.**
+
+### Pourquoi ?
+- **Zéro perte de travail** — si une session est interrompue, on reprend exactement là où on s'est arrêté
+- **Traçabilité complète** — chaque étape de progression est historisée
+- **Reprise facile** — un nouvel agent peut lire les derniers commits et continuer le travail
+
+### Ce qui est couvert
+| Type de travail | Commité automatiquement |
+|-----------------|------------------------|
+| Code source (backend, frontend, apps) | ✅ Oui |
+| Documentation (roadmap, carto, audit) | ✅ Oui |
+| Analyses et rapports d'impact | ✅ Oui |
+| Fichiers de configuration | ✅ Oui |
+| Fichiers temporaires / brouillons | ❌ Non |
+
+### Comment ça fonctionne
+- Un **trigger automatique** (Tasklet) s'exécute toutes les 10 minutes
+- Il détecte les fichiers modifiés depuis le dernier commit
+- Il pousse un commit WIP sur `main` avec le format : `wip: auto-save progress – [description]`
+- Si aucun changement détecté → aucun commit (pas de bruit)
+
+### Règles pour les agents
+1. **Ne jamais désactiver** le trigger de commit automatique
+2. **Ne pas attendre** le commit auto pour les changements critiques → commiter manuellement immédiatement
+3. **Toujours vérifier** que le dernier commit reflète l'état réel du travail en début de session
+4. **En cas de conflit** → le commit manuel prime sur l'auto-commit
+
+---
+
 ## ⚠️ Règles Absolues
 
 1. **JAMAIS de modification sans lecture préalable des 3 piliers**
@@ -136,14 +167,16 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 3. **JAMAIS de fix sécurité sans mise à jour de l'AUDIT_REPORT et des issues**
 4. **TOUJOURS vérifier la véracité** — croiser les claims avec le code réel
 5. **TOUJOURS garder la roadmap comme source de vérité** pour la progression
+6. **TOUJOURS commiter le travail en cours toutes les 10 minutes maximum** — zéro perte tolérée
 
 ---
 
 ## 📡 Synchronisation Automatique
 
-| Document | Fréquence sync | Méthode |
-|----------|----------------|---------|
-| `ROADMAP_KOMERCE.md` | Toutes les 10 min | Auto-commit via Tasklet trigger |
+| Document / Travail | Fréquence sync | Méthode |
+|--------------------|----------------|---------|
+| **Tout travail en cours** | **Toutes les 10 min** | **Auto-commit via Tasklet trigger** |
+| `ROADMAP_KOMERCE.md` | Toutes les 10 min + commit manuel | Auto-commit + commit après chaque changement |
 | `CARTOGRAPHY_360.md` | À chaque modification de code | Commit manuel obligatoire |
 | Coffre-Fort Sécurité | À chaque fix sécurité | Commit manuel + fermeture issue |
 
@@ -164,4 +197,5 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 ---
 
 > _"Pas de carte, pas de plan, pas de bouclier → pas de code."_
-> — Protocole Komerce v1.0
+> _"Pas de commit régulier → pas de filet de sécurité."_
+> — Protocole Komerce v1.1

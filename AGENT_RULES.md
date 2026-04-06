@@ -28,4 +28,16 @@ Ce fichier contient le **protocole obligatoire** qui lie les 3 documents de réf
 
 ---
 
+## ⏱️ Règle de Sauvegarde Continue
+
+> **TOUT travail en cours DOIT être commité sur GitHub toutes les 10 minutes maximum.**
+
+- Cela inclut : code, documentation, analyses, fichiers de configuration, apps front-end
+- Objectif : **zéro perte de travail** — on peut toujours reprendre là où on s'est arrêté
+- Un trigger automatique est en place pour garantir cette règle
+- Format du commit WIP : `wip: auto-save progress – [description]`
+- Voir [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) pour les détails complets
+
+---
+
 *Ce fichier redirige vers [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) qui est la source de vérité pour la gouvernance.*
