@@ -2452,23 +2452,20 @@ function renderCashPendingTable() {
 }
 
 function handleCashConfirmRow(code) {
-  // Pre-fill input and scroll to it — agent must confirm manually
+  // Pre-fill input, focus immediately (no delay to avoid race with scroll), then scroll into view
   const input = document.getElementById('cash-code-input');
   input.value = code;
-  document.getElementById('card-cash').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  // Focus the confirm button (not auto-submit — agent verifies code with client first)
+  input.focus();   // focus FIRST — avant le scroll pour éviter que le scroll ne dévie le focus
+  input.select();
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' }); // scroll vers l'input, pas la carte entière
+  // Highlight the confirm button
+  const btn = document.getElementById('cash-confirm-btn');
+  btn.style.transform = 'scale(1.05)';
+  btn.style.boxShadow = '0 0 0 4px rgba(22,163,74,0.3)';
   setTimeout(() => {
-    input.focus();
-    input.select();
-    // Highlight the confirm button
-    const btn = document.getElementById('cash-confirm-btn');
-    btn.style.transform = 'scale(1.05)';
-    btn.style.boxShadow = '0 0 0 4px rgba(22,163,74,0.3)';
-    setTimeout(() => {
-      btn.style.transform = '';
-      btn.style.boxShadow = '';
-    }, 1500);
-  }, 450);
+    btn.style.transform = '';
+    btn.style.boxShadow = '';
+  }, 1500);
 }
 
 async function handleCashConfirm(codeParam) {
