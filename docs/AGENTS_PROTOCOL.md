@@ -1,6 +1,6 @@
 # 🔒 AGENTS_PROTOCOL.md — Protocole de Gouvernance Komerce
 
-> **Version** : 1.1 — 06/04/2026
+> **Version** : 1.2 — 06/04/2026
 > **Statut** : OBLIGATOIRE pour tout agent (IA ou humain)
 > **Repo** : `SamyrFateh/komerce-backend`
 
@@ -11,6 +11,31 @@
 **Toute implémentation, correction ou modification du projet Komerce DOIT obligatoirement consulter et mettre à jour les 3 documents de référence suivants.**
 
 Aucune exception. Aucun raccourci. Quel que soit l'agent.
+
+---
+
+## 📊 Règle d'Entrée — Présentation Roadmap Obligatoire
+
+> **🔴 PREMIÈRE ACTION de tout agent après lecture du README :**
+
+**Dès qu'un agent IA lit le README du projet, il DOIT impérativement :**
+
+1. **Lire la Roadmap** → `docs/ROADMAP_KOMERCE.md`
+2. **Présenter un résumé de la progression globale** → tableau avec tous les domaines et leur avancement
+3. **Identifier et afficher le dernier point en cours** → la tâche active de la priorité la plus haute
+
+**Format attendu :**
+```
+📊 STATUT PROJET KOMERCE
+─────────────────────────
+✅ Fait : [liste des domaines complétés]
+🟡 En cours : [priorité N — nom] → tâche X/Y (pourcentage)
+   → Dernière tâche active : [description]
+⬜ À venir : [prochaines priorités]
+🔴 Bloquants : [issues critiques]
+```
+
+**Cette présentation est NON NÉGOCIABLE.** Elle permet au propriétaire du projet de savoir immédiatement où en est le projet sans avoir à le demander.
 
 ---
 
@@ -37,9 +62,10 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 ### 2️⃣ ROADMAP_KOMERCE.md — Le Plan
 > `docs/ROADMAP_KOMERCE.md`
 
-**Ce que c'est** : Roadmap unifiée v13 — progression globale, issues ouvertes, priorités, ordre de travail session par session.
+**Ce que c'est** : Roadmap unifiée v14 — progression globale, issues ouvertes, priorités, ordre de travail session par session.
 
 **Quand la consulter** :
+- ✅ **Immédiatement après lecture du README** (règle d'entrée ci-dessus)
 - ✅ Avant de commencer toute session de travail
 - ✅ Pour vérifier les priorités actuelles
 - ✅ Pour s'assurer qu'on ne duplique pas un travail déjà fait
@@ -88,42 +114,53 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 ## 🔄 Workflow Obligatoire — Avant Toute Action
 
 ```
-┌─────────────────────────────────────────────────┐
-│           AVANT DE CODER / CORRIGER             │
-│                                                  │
-│  1. 📖 Lire ROADMAP_KOMERCE.md                  │
-│     → Quelle est la priorité ? Est-ce déjà fait?│
-│                                                  │
-│  2. 🗺️  Lire CARTOGRAPHY_360.md                 │
-│     → Quels fichiers sont impactés ?             │
-│     → Quelles dépendances inter-routes ?         │
-│                                                  │
-│  3. 🔒 Consulter le Coffre-Fort Sécurité        │
-│     → Y a-t-il une vulnérabilité liée ?          │
-│     → Le changement introduit-il un risque ?     │
-│                                                  │
-│  4. ✅ SEULEMENT ALORS → Implémenter            │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│       ÉTAPE 0 — APRÈS LECTURE DU README             │
+│                                                      │
+│  📊 Lire ROADMAP_KOMERCE.md                          │
+│  → Présenter la progression globale au propriétaire  │
+│  → Identifier le dernier point EN COURS              │
+│  → Afficher les bloquants éventuels                  │
+│                                                      │
+│  ⚠️ CETTE ÉTAPE EST OBLIGATOIRE ET AUTOMATIQUE       │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│           AVANT DE CODER / CORRIGER                 │
+│                                                      │
+│  1. 📖 Lire ROADMAP_KOMERCE.md                      │
+│     → Quelle est la priorité ? Est-ce déjà fait?    │
+│                                                      │
+│  2. 🗺️  Lire CARTOGRAPHY_360.md                     │
+│     → Quels fichiers sont impactés ?                 │
+│     → Quelles dépendances inter-routes ?             │
+│                                                      │
+│  3. 🔒 Consulter le Coffre-Fort Sécurité            │
+│     → Y a-t-il une vulnérabilité liée ?              │
+│     → Le changement introduit-il un risque ?         │
+│                                                      │
+│  4. ✅ SEULEMENT ALORS → Implémenter                │
+└─────────────────────────────────────────────────────┘
 ```
 
 ```
-┌─────────────────────────────────────────────────┐
-│           APRÈS AVOIR CODÉ / CORRIGÉ            │
-│                                                  │
-│  1. 🗺️  Mettre à jour CARTOGRAPHY_360.md        │
-│     → Si endpoints/tables/middlewares changés    │
-│                                                  │
-│  2. 📋 Mettre à jour ROADMAP_KOMERCE.md          │
-│     → Cocher les tâches complétées               │
-│     → Ajouter les nouvelles tâches découvertes   │
-│                                                  │
-│  3. 🔒 Mettre à jour le Coffre-Fort              │
-│     → Si vulnérabilité corrigée → fermer l'issue │
-│     → Si nouveau risque → créer une issue        │
-│                                                  │
-│  4. 📝 Commit avec message clair                 │
-│     → Référencer les issues/PRs liées            │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│           APRÈS AVOIR CODÉ / CORRIGÉ                │
+│                                                      │
+│  1. 🗺️  Mettre à jour CARTOGRAPHY_360.md            │
+│     → Si endpoints/tables/middlewares changés        │
+│                                                      │
+│  2. 📋 Mettre à jour ROADMAP_KOMERCE.md              │
+│     → Cocher les tâches complétées                   │
+│     → Ajouter les nouvelles tâches découvertes       │
+│                                                      │
+│  3. 🔒 Mettre à jour le Coffre-Fort                  │
+│     → Si vulnérabilité corrigée → fermer l'issue     │
+│     → Si nouveau risque → créer une issue            │
+│                                                      │
+│  4. 📝 Commit avec message clair                     │
+│     → Référencer les issues/PRs liées                │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -168,6 +205,7 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 4. **TOUJOURS vérifier la véracité** — croiser les claims avec le code réel
 5. **TOUJOURS garder la roadmap comme source de vérité** pour la progression
 6. **TOUJOURS commiter le travail en cours toutes les 10 minutes maximum** — zéro perte tolérée
+7. **TOUJOURS présenter le statut roadmap après lecture du README** — le propriétaire doit voir l'état du projet immédiatement
 
 ---
 
@@ -198,4 +236,5 @@ Aucune exception. Aucun raccourci. Quel que soit l'agent.
 
 > _"Pas de carte, pas de plan, pas de bouclier → pas de code."_
 > _"Pas de commit régulier → pas de filet de sécurité."_
-> — Protocole Komerce v1.1
+> _"Pas de statut roadmap → pas de visibilité."_
+> — Protocole Komerce v1.2

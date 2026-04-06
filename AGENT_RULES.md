@@ -4,7 +4,21 @@
 
 ---
 
-## 👉 LIRE IMMÉDIATEMENT
+## 📊 PREMIÈRE ACTION — Statut Roadmap
+
+> **🔴 Immédiatement après lecture de ce README, tout agent DOIT :**
+
+1. **Lire** [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md)
+2. **Présenter la progression globale** du projet (tableau résumé)
+3. **Identifier et afficher le dernier point en cours** (priorité la plus haute, tâche active)
+
+**Aucune question, aucune action ne doit précéder cette présentation.**
+
+→ Détails complets dans [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) § "Règle d'Entrée"
+
+---
+
+## 👉 LIRE ENSUITE
 
 ### [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md)
 
@@ -20,9 +34,10 @@ Ce fichier contient le **protocole obligatoire** qui lie les 3 documents de réf
 
 ## Résumé des règles
 
-1. **AVANT** toute modification → Lire `AGENTS_PROTOCOL.md` + les 3 piliers
-2. **PENDANT** → Respecter l'architecture existante, utiliser les middlewares
-3. **APRÈS** → Mettre à jour la Cartographie + la Roadmap + commiter
+1. **D'ABORD** → Lire le README → Présenter le statut Roadmap + dernier point en cours
+2. **AVANT** toute modification → Lire `AGENTS_PROTOCOL.md` + les 3 piliers
+3. **PENDANT** → Respecter l'architecture existante, utiliser les middlewares
+4. **APRÈS** → Mettre à jour la Cartographie + la Roadmap + commiter
 
 **Sans cette lecture, aucun code ne doit être écrit.**
 
