@@ -1057,34 +1057,35 @@ function getRelaisName(order) {
 
 /* ─── QR Print ─── */
 function printQR(reference, client, products, relais) {
-  const w = window.open('', '_blank', 'width=400,height=500');
-  w.document.write(`<!DOCTYPE html><html><head><title>QR ${reference}</title>
-  <style>
-    body { font-family: 'DM Sans', sans-serif; text-align: center; padding: 20px; }
-    .qr-label { border: 2px dashed #ccc; border-radius: 12px; padding: 24px; display: inline-block; margin: 20px auto; }
-    .qr-label h2 { font-size: 18px; margin: 0 0 4px; color: #1a1a2e; }
-    .qr-label .ref { font-family: monospace; font-size: 22px; font-weight: 700; color: #2563eb; margin: 8px 0; }
-    .qr-label .info { font-size: 12px; color: #666; margin: 4px 0; }
-    .qr-label canvas { margin: 12px auto; display: block; }
-    .qr-label .logo { font-size: 28px; margin-bottom: 8px; }
-    @media print { .no-print { display: none; } body { padding: 0; } }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
-  </head><body>
-    <div class="qr-label">
-      <div class="logo">🏷️ KOMERCE</div>
-      <div class="ref">${reference}</div>
-      <canvas id="qr"></canvas>
-      <div class="info"><strong>Client :</strong> ${client}</div>
-      <div class="info"><strong>Produits :</strong> ${products}</div>
-      <div class="info"><strong>Relais :</strong> ${relais}</div>
-    </div>
-    <br><button class="no-print" onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;border-radius:8px;border:none;background:#2563eb;color:#fff;">🖨️ Imprimer</button>
-    <script>
-      QRCode.toCanvas(document.getElementById('qr'), '${reference}', { width: 200, margin: 2 }, function(err) { if(err) console.error(err); });
-    <\/script>
-  </body></html>`);
-  w.document.close();
+  // Fix: Generate QR in parent window where library is already loaded
+  // This avoids the race condition where the CDN script hasn't loaded yet in the popup
+  QRCode.toDataURL(reference, { width: 200, margin: 2 }, function(err, url) {
+    if (err) { console.error(err); toast('Erreur génération QR', 'error'); return; }
+    const w = window.open('', '_blank', 'width=400,height=500');
+    w.document.write(`<!DOCTYPE html><html><head><title>QR ${reference}</title>
+    <style>
+      body { font-family: 'DM Sans', sans-serif; text-align: center; padding: 20px; }
+      .qr-label { border: 2px dashed #ccc; border-radius: 12px; padding: 24px; display: inline-block; margin: 20px auto; }
+      .qr-label h2 { font-size: 18px; margin: 0 0 4px; color: #1a1a2e; }
+      .qr-label .ref { font-family: monospace; font-size: 22px; font-weight: 700; color: #2563eb; margin: 8px 0; }
+      .qr-label .info { font-size: 12px; color: #666; margin: 4px 0; }
+      .qr-label img { margin: 12px auto; display: block; }
+      .qr-label .logo { font-size: 28px; margin-bottom: 8px; }
+      @media print { .no-print { display: none; } body { padding: 0; } }
+    </style>
+    </head><body>
+      <div class="qr-label">
+        <div class="logo">🏷️ KOMERCE</div>
+        <div class="ref">${reference}</div>
+        <img src="${url}" width="200" height="200" alt="QR ${reference}" />
+        <div class="info"><strong>Client :</strong> ${client}</div>
+        <div class="info"><strong>Produits :</strong> ${products}</div>
+        <div class="info"><strong>Relais :</strong> ${relais}</div>
+      </div>
+      <br><button class="no-print" onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;border-radius:8px;border:none;background:#2563eb;color:#fff;">🖨️ Imprimer</button>
+    </body></html>`);
+    w.document.close();
+  });
 }
 </script>
 </body>
