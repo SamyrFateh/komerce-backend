@@ -1285,7 +1285,7 @@ function statusBadge(status) {
     paid: ['Payé', 'badge-teal'],
     preparation: ['Préparation', 'badge-amber'],
     shipped: ['Expédié', 'badge-purple'],
-    relais_received: ['Réceptionné', 'badge-blue'],
+    // relais_received supprimé — remplacé par available
     available: ['Disponible', 'badge-green'],
     collected: ['Retiré', 'badge-green'],
     cancelled: ['Annulé', 'badge-red']
@@ -1603,7 +1603,7 @@ function computeStats() {
   const cashPending = allRelaisOrders.filter(o =>
     o.payment_mode === 'cash_relais' &&
     o.payment_status !== 'paid' &&
-    ['available', 'relais_received'].includes(o.status)
+    o.status === 'available'
   );
   const cashSum = cashPending.reduce((s, o) => s + getOrderTotal(o), 0);
   const contacts = buildContactList();
@@ -1732,7 +1732,7 @@ async function processReception(ref) {
 
     const data = await apiCall('POST', '/api/scans', {
       scan_code: ref,
-      step: 'relais_received'
+      step: 'available'
     });
 
     const order = data.order || {};
@@ -1741,7 +1741,7 @@ async function processReception(ref) {
       '<p><strong>Référence :</strong> ' + escHtml(getOrderRef(order) || ref) + '</p>' +
       '<p><strong>Client :</strong> ' + escHtml(getClientName(order)) + '</p>' +
       '<p><strong>Téléphone :</strong> ' + escHtml(getClientPhone(order) || '—') + '</p>' +
-      '<p><strong>Statut :</strong> ' + statusBadge(order.status || 'relais_received') + '</p>' +
+      '<p><strong>Statut :</strong> ' + statusBadge(order.status || 'available') + '</p>' +
       '<p style="margin-top:10px;font-size:12px;color:var(--text3);">📱 Le QR code client sera généré lors du passage en "disponible".</p>';
     resultEl.classList.remove('scan-result-error');
     resultEl.style.display = 'block';
@@ -1749,7 +1749,7 @@ async function processReception(ref) {
 
     // Broadcast event
     if (liveChannel) {
-      liveChannel.postMessage({ type: 'HUB_SCAN', orderId: getOrderId(order) || orderId, status: 'relais_received' });
+      liveChannel.postMessage({ type: 'HUB_SCAN', orderId: getOrderId(order) || orderId, status: 'available' });
     }
 
     document.getElementById('reception-manual-ref').value = '';
@@ -2409,14 +2409,14 @@ async function loadCashPending() {
     cashPendingOrders = orders.filter(o => 
       o.payment_mode === 'cash_relais' && 
       o.payment_status !== 'paid' &&
-      ['confirmed', 'available', 'relais_received'].includes(o.status)
+      ['confirmed', 'available'].includes(o.status)
     );
   } catch (err) {
     // Fallback: try getting from allRelaisOrders
     cashPendingOrders = allRelaisOrders.filter(o => 
       o.payment_mode === 'cash_relais' && 
       o.payment_status !== 'paid' &&
-      ['confirmed', 'available', 'relais_received'].includes(o.status)
+      ['confirmed', 'available'].includes(o.status)
     );
   }
   renderCashPendingTable();
