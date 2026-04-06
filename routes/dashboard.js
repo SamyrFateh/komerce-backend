@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Dashboard admin v7.1
+ * KOMERCE — Dashboard admin v7.2 — Pipeline fix (colonnes obsolètes)
  *
  * GET /api/dashboard/ops                          → pilotage opérationnel
  * GET /api/dashboard/sales?period=30              → ventes & marges
@@ -98,9 +98,9 @@ router.get('/ops', async (req, res) => {
     // Dubai : commandes en préparation ou achat (avant expédition)
     const { rows: dubaiItems } = await db.query(`
       SELECT o.reference, o.status,
-             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.purchasing_at, o.created_at))) / 86400 AS jours_dans_etape
+             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.created_at))) / 86400 AS jours_dans_etape
       FROM orders o
-      WHERE o.status IN ('ordered','purchasing','preparation')
+      WHERE o.status IN ('ordered','preparation')
       ORDER BY o.created_at ASC
       LIMIT 50
     `);
@@ -110,7 +110,7 @@ router.get('/ops', async (req, res) => {
       SELECT o.reference, o.shipment_id, o.status,
              EXTRACT(EPOCH FROM (NOW() - COALESCE(o.shipped_at, o.created_at))) / 86400 AS jours_en_mer
       FROM orders o
-      WHERE o.status IN ('shipped','transit_comores')
+      WHERE o.status = 'shipped'
       ORDER BY o.shipped_at ASC NULLS LAST
       LIMIT 50
     `);
@@ -278,31 +278,31 @@ router.get('/sales', async (req, res) => {
         COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled')                                           AS nb_commandes,
         COALESCE(AVG(total_kmf) FILTER (WHERE created_at >= NOW() - INTERVAL '1 day' * $1 AND status != 'cancelled'), 0)                        AS panier_moyen_kmf,
 
-        -- Coûts pour marge décomposée (commandes avec cost_real renseigné)
-        COALESCE(SUM(total_kmf - cost_real_kmf) FILTER (
+        -- Coûts pour marge décomposée (utilise cost_transport_kmf + cost_douane_kmf réels)
+        COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf) FILTER (
           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
-        ), 0)                                                                                                                                         AS marge_produit_kmf,
-        COALESCE(SUM(cost_real_kmf * 0.15) FILTER (
+            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        ), 0)                                                                                             AS marge_produit_kmf,
+        COALESCE(SUM(cost_transport_kmf) FILTER (
           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
-        ), 0)                                                                                                                                         AS cout_transport_kmf,
-        COALESCE(SUM(cost_real_kmf * 0.20) FILTER (
+            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        ), 0)                                                                                             AS cout_transport_kmf,
+        COALESCE(SUM(cost_douane_kmf) FILTER (
           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
-        ), 0)                                                                                                                                         AS cout_douane_kmf,
-        COALESCE(SUM(total_kmf - cost_real_kmf * 1.35) FILTER (
+            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        ), 0)                                                                                             AS cout_douane_kmf,
+        COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf) FILTER (
           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
-        ), 0)                                                                                                                                         AS marge_reelle_kmf,
+            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        ), 0)                                                                                             AS marge_reelle_kmf,
         COUNT(*) FILTER (
           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_real_kmf IS NOT NULL AND status != 'cancelled'
-        )                                                                                                                                             AS nb_avec_cost,
+            AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0) AND status != 'cancelled'
+        )                                                                                                 AS nb_avec_cost,
         COUNT(*) FILTER (
           WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-            AND cost_real_kmf IS NULL AND status != 'cancelled'
-        )                                                                                                                                             AS nb_sans_cost,
+            AND cost_transport_kmf = 0 AND cost_douane_kmf = 0 AND status != 'cancelled'
+        )                                                                                                 AS nb_sans_cost,
 
         -- Période précédente (pour évolution)
         COALESCE(SUM(total_kmf) FILTER (
@@ -335,8 +335,8 @@ router.get('/sales', async (req, res) => {
     const { rows: perteRows } = await db.query(`
       SELECT reference FROM orders
       WHERE created_at >= NOW() - INTERVAL '1 day' * $1
-        AND cost_real_kmf IS NOT NULL
-        AND total_kmf < cost_real_kmf * 1.35
+        AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0)
+        AND total_kmf < (cost_transport_kmf + cost_douane_kmf)
         AND status != 'cancelled'
       LIMIT 10
     `, [period]);
@@ -373,9 +373,11 @@ router.get('/sales', async (req, res) => {
         p.category,
         COUNT(o.id) AS nb_commandes,
         COALESCE(SUM(o.total_kmf), 0) AS ca_kmf,
-        COALESCE(SUM(o.total_kmf - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf)), 0) AS marge_produit_kmf,
+        COALESCE(SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf), 0) AS marge_produit_kmf,
         ROUND(
-          100.0 * AVG(COALESCE(o.margin_real_pct, o.margin_estimated_pct)), 1
+          CASE WHEN SUM(o.total_kmf) > 0
+            THEN 100.0 * SUM(o.total_kmf - o.cost_transport_kmf - o.cost_douane_kmf)::numeric / SUM(o.total_kmf)
+            ELSE 0 END, 1
         ) AS taux_marge_pct
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -392,12 +394,12 @@ router.get('/sales', async (req, res) => {
         p.id, p.name, p.category,
         SUM(oi.quantity) AS qty_vendue,
         SUM(oi.price_kmf * oi.quantity) AS revenue_kmf,
-        CASE WHEN SUM(CASE WHEN o.cost_real_kmf IS NOT NULL THEN 1 ELSE 0 END) > 0
-          THEN ROUND(SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)))
+        CASE WHEN SUM(CASE WHEN p.cost_kmf IS NOT NULL THEN 1 ELSE 0 END) > 0
+          THEN ROUND(SUM(oi.price_kmf * oi.quantity - COALESCE(p.cost_kmf, 0) * oi.quantity))
           ELSE NULL
         END AS marge_kmf,
         CASE WHEN SUM(oi.price_kmf * oi.quantity) > 0
-          THEN ROUND(100.0 * SUM(oi.price_kmf * oi.quantity - COALESCE(o.cost_real_kmf, o.cost_estimated_kmf, 0)) / NULLIF(SUM(oi.price_kmf * oi.quantity), 0), 1)
+          THEN ROUND(100.0 * SUM(oi.price_kmf * oi.quantity - COALESCE(p.cost_kmf, 0) * oi.quantity) / NULLIF(SUM(oi.price_kmf * oi.quantity), 0), 1)
           ELSE NULL
         END AS taux_marge_pct
       FROM orders o
@@ -626,7 +628,7 @@ router.get('/forecast', async (req, res) => {
     const { rows: [realise] } = await db.query(`
       SELECT
         COALESCE(SUM(total_kmf), 0) AS ca_kmf,
-        COALESCE(SUM(total_kmf - COALESCE(cost_real_kmf, cost_estimated_kmf, 0)), 0) AS marge_reelle_kmf
+        COALESCE(SUM(total_kmf - cost_transport_kmf - cost_douane_kmf), 0) AS marge_reelle_kmf
       FROM orders
       WHERE status != 'cancelled'
         AND created_at >= $1
@@ -722,15 +724,9 @@ router.get('/pipeline', async (req, res) => {
         o.total_kmf,
         o.payment_mode,
         o.payment_status,
-        o.confection_type,
-        o.module_type,
         o.created_at,
         o.ordered_at,
-        o.purchasing_at,
-        o.preparation_at,
-        o.hub_preparation_at,
         o.shipped_at,
-        o.transit_comores_at,
         o.available_at,
         o.collected_at,
         o.cancelled_at,
@@ -762,10 +758,9 @@ router.get('/pipeline', async (req, res) => {
 
     // Group by status
     const STAGES = [
-      'draft', 'confirmed', 'paid', 'ordered', 'purchasing',
-      'partially_received', 'preparation', 'hub_preparation',
-      'shipped', 'transit_comores',
-      'available', 'collected', 'cancelled', 'refunded'
+      'confirmed', 'ordered', 'preparation',
+      'shipped', 'available', 'collected',
+      'cancelled', 'refunded'
     ];
 
     const pipeline = {};
