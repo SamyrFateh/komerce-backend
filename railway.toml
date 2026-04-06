@@ -1,0 +1,23 @@
+# ============================================================
+# KOMERCE — Configuration Railway
+# Filtre les déploiements pour éviter les builds inutiles
+# sur commits docs-only ou auto-cartography
+# ============================================================
+
+[deploy]
+# Railway ne déploiera QUE si un fichier matchant ces patterns change.
+# Les commits qui ne touchent que docs/, .github/, scripts/ seront ignorés.
+watchPatterns = [
+  "routes/**",
+  "middleware/**",
+  "utils/**",
+  "validators/**",
+  "db/**",
+  "public/**",
+  "dashboard-app/**",
+  "server.js",
+  "db.js",
+  "package.json",
+  "package-lock.json",
+  "railway.toml"
+]
