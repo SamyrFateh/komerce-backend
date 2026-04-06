@@ -1,32 +1,199 @@
-# 🗺️ CARTOGRAPHIE D'IMPACT 360° — Komerce Backend
+# 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> 📅 **Date** : 6 avril 2026  
-> 🏷️ **Version** : v12.0  
+> **Version** : 15.0 — 06/04/2026 (fusion v12+v14)
+> **Statut** : Source de vérité architecture — MIROIR EXACT du repo
+> **Repo** : `SamyrFateh/komerce-backend`
+> **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables** · **3 vues** · **9 services externes**
 
 ---
 
 ## 📑 Table des matières
 
-1. [Vue d'ensemble architecture](#1--vue-densemble-architecture)
-2. [Carte des routes (endpoints)](#2--carte-des-routes)
-3. [Schéma de base de données](#3--schéma-de-base-de-données)
-4. [Middleware & sécurité](#4--middleware--sécurité)
-5. [Dépendances inter-routes](#5--dépendances-inter-routes)
-6. [Chaîne de traitement des commandes](#6--chaîne-de-traitement-des-commandes)
-7. [Services externes](#7--services-externes)
-8. [Utilitaires](#8--utilitaires)
-9. [Audit de sécurité](#9--audit-de-sécurité)
-10. [Dashboard Komerce Pilotage (Instant App)](#10--dashboard-komerce-pilotage)
-11. [PRs & Issues — État actuel](#11--prs--issues)
-12. [Roadmap](#12--roadmap)
-13. [Stack technique](#13--stack-technique)
-14. [Points de vigilance](#14--points-de-vigilance)
-15. [Statistiques finales](#15--statistiques-finales)
+1. [Métriques Globales](#1--métriques-globales)
+2. [Arbre Complet du Projet](#2--arbre-complet-du-projet)
+3. [Vue d'ensemble architecture](#3--vue-densemble-architecture)
+4. [Carte des routes (endpoints)](#4--carte-des-routes)
+5. [Schéma de base de données](#5--schéma-de-base-de-données)
+6. [Middleware & sécurité](#6--middleware--sécurité)
+7. [Dépendances inter-routes](#7--dépendances-inter-routes)
+8. [Chaîne de traitement des commandes](#8--chaîne-de-traitement-des-commandes)
+9. [Services externes](#9--services-externes)
+10. [Utilitaires](#10--utilitaires)
+11. [Validators](#11--validators)
+12. [Frontend — Architecture Monolithique (`public/`)](#12--frontend--architecture-monolithique-public)
+13. [Dashboard App — Tasklet Instant App](#13--dashboard-app--tasklet-instant-app)
+14. [Scripts](#14--scripts)
+15. [Documentation (`docs/`)](#15--documentation-docs)
+16. [CI/CD — GitHub Actions](#16--cicd--github-actions)
+17. [Fichiers Racine](#17--fichiers-racine)
+18. [Audit de sécurité](#18--audit-de-sécurité)
+19. [Stack technique](#19--stack-technique)
+20. [Points de vigilance](#20--points-de-vigilance)
+21. [Statistiques finales](#21--statistiques-finales)
+22. [Règle de Mise à Jour (DELTA)](#22--règle-de-mise-à-jour-delta)
 
 ---
 
-## 1. 🏗️ Vue d'ensemble architecture
+## 1. 📊 Métriques Globales
+
+| Métrique | Valeur |
+|----------|--------|
+| **Fichiers totaux** | ~93 |
+| **Dossiers** | 14 |
+| **Routes API** | 18 fichiers |
+| **Middlewares** | 4 |
+| **Utilitaires** | 5 |
+| **Validators** | 1 |
+| **Fichiers DB** | 4 + 3 migrations |
+| **Frontend (public/)** | 15 HTML + 3 JS + 2 images |
+| **Dashboard App** | 12 fichiers (React/TSX) |
+| **Scripts** | 4 |
+| **Docs** | 11 + 11 audit |
+| **CI/CD Workflows** | 2 |
+| **Taille totale estimée** | ~3.5 MB (hors package-lock.json) |
+
+---
+
+## 2. 🌳 Arbre Complet du Projet
+
+```
+komerce-backend/
+├── .cursorrules                          (1.4 KB)  [3dd2643a]
+├── .env.example                          (1.9 KB)  [6568d664]
+├── .gitignore                            (258 B)   [61e13d23]
+├── AGENT_RULES.md                        (2.9 KB)  [c610dfeb]
+├── CONTRIBUTING.md                       (3.2 KB)  [a18b8868]
+├── README.md                             (3.9 KB)  [1c05bc68]
+├── db.js                                 (770 B)   [08d9e6c6]
+├── package.json                          (923 B)   [f7944e67]
+├── package-lock.json                     (113.9 KB)[3bb09e87]
+├── server.js                             (33.9 KB) [5b9d8eac]
+│
+├── routes/                               (18 fichiers)
+│   ├── admin.js                          (24.3 KB) [6bb443fe]
+│   ├── auth.js                           (18.5 KB) [cef6b0d4]
+│   ├── baskets.js                        (11.7 KB) [6f41e7a1]
+│   ├── dashboard.js                      (37.7 KB) [c89e311d]
+│   ├── finance.js                        (13.7 KB) [a919836e]
+│   ├── health.js                         (1.4 KB)  [e29fabcb]
+│   ├── logistics.js                      (9.7 KB)  [f78d7537]
+│   ├── loyalty.js                        (5.8 KB)  [c4540300]
+│   ├── modules.js                        (20.6 KB) [3ea6fa01]
+│   ├── orders.js                         (55.4 KB) [bd3501e2]
+│   ├── payments.js                       (12.0 KB) [1ba52974]
+│   ├── pilotage.js                       (1.2 KB)  [9af27985]
+│   ├── pricing.js                        (3.5 KB)  [a3b26f39]
+│   ├── products.js                       (12.0 KB) [11f09636]
+│   ├── purchasing.js                     (32.6 KB) [a17bb100]
+│   ├── relais.js                         (1.7 KB)  [d6e93c3c]
+│   ├── scans.js                          (23.0 KB) [c667d95e]
+│   └── unsold.js                         (6.7 KB)  [215dd595]
+│
+├── middleware/                            (4 fichiers)
+│   ├── auth.js                           (4.5 KB)  [b84255eb]
+│   ├── rate-limit.js                     (3.2 KB)  [061f0e94]
+│   ├── upload.js                         (1.5 KB)  [5ea7f1af]
+│   └── validate.js                       (5.6 KB)  [4c671ec0]
+│
+├── utils/                                (5 fichiers)
+│   ├── email.js                          (6.7 KB)  [daf607c3]
+│   ├── pricing.js                        (3.7 KB)  [6f505ed0]
+│   ├── rates.js                          (719 B)   [933ed3c4]
+│   ├── reference.js                      (2.5 KB)  [253751b9]
+│   └── sms.js                            (7.4 KB)  [af6ae916]
+│
+├── validators/                           (1 fichier)
+│   └── index.js                          (13.6 KB) [dcc266a7]
+│
+├── db/                                   (4 + 3 migrations)
+│   ├── schema.sql                        (19.2 KB) [31333f3c]
+│   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
+│   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
+│   └── migrations/
+│       ├── 004_fix_order_status_enum.sql  (3.9 KB)  [c4cdffa2]
+│       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
+│       └── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
+│
+├── public/                               (15 HTML + 3 JS + 2 images)
+│   ├── index.html                        (143.9 KB)[c925b4b8]
+│   ├── Komerce_Admin.html                (121.4 KB)[d8e57998]
+│   ├── Komerce_Admin_Users.html          (32.2 KB) [90591618]
+│   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
+│   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
+│   ├── Komerce_Hub.html                  (42.8 KB) [763e9794]
+│   ├── Komerce_Mobile.html               (53.9 KB) [d0348e70]
+│   ├── Komerce_Pilotage_v2.html          (109.6 KB)[667718df]
+│   ├── Komerce_Pipeline.html             (32.7 KB) [64b87f00]
+│   ├── Komerce_QR_Print.html             (9.4 KB)  [e9a09169]
+│   ├── Komerce_Relais.html               (99.6 KB) [756a114e]
+│   ├── Komerce_Simulateur.html           (106.1 KB)[1f74411d]
+│   ├── Komerce_Tests.html                (147.0 KB)[f053cfc0]
+│   ├── Komerce_Web.html                  (81.1 KB) [caa83c27]
+│   ├── portal.html                       (15.8 KB) [8a511d9e]
+│   ├── chart.umd.min.js                  (200.8 KB)[ebfe8019]
+│   ├── komerce-api.js                    (127.8 KB)[400380df]
+│   ├── sw.js                             (6.5 KB)  [f4238e4d]
+│   └── images/
+│       ├── avatar_panier.png             (13.3 KB) [8ed44a7c]
+│       └── hero_banner.jpg               (139.1 KB)[b486987e]
+│
+├── dashboard-app/                        (12 fichiers — React/TSX)
+│   ├── app.tsx                           (2.1 KB)  [593bfadc]
+│   ├── index.html                        (2.7 KB)  [40a99817]
+│   ├── styles.css                        (126 B)   [826e8a56]
+│   ├── tasklet.config.json               (184 B)   [eed57f48]
+│   ├── types.ts                          (3.1 KB)  [65389896]
+│   ├── components/
+│   │   ├── AlertsView.tsx                (3.4 KB)  [69708424]
+│   │   ├── FinanceView.tsx               (7.7 KB)  [3bf26622]
+│   │   ├── OpsView.tsx                   (4.6 KB)  [fa693aaf]
+│   │   ├── PilotageView.tsx              (6.8 KB)  [fd7f1d0c]
+│   │   └── StatCard.tsx                  (1.1 KB)  [693fa866]
+│   ├── data/
+│   │   └── mockData.ts                   (5.0 KB)  [4fda0a37]
+│   └── utils/
+│       └── formatters.ts                 (1.8 KB)  [530ffb88]
+│
+├── scripts/                              (4 fichiers)
+│   ├── impact-check.js                   (25.5 KB) [d0fef162]
+│   ├── impact-config.json                (8.4 KB)  [e81e48fd]
+│   ├── setup-hooks.sh                    (4.5 KB)  [1d4ba37f]
+│   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
+│
+├── docs/                                 (11 fichiers + audit/)
+│   ├── AGENTS_PROTOCOL.md                (13.9 KB) [676f2c17]
+│   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
+│   ├── CARTOGRAPHY_360.md                (CE FICHIER)
+│   ├── DASHBOARD_REDESIGN.md             (8.5 KB)  [0f46d186]
+│   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
+│   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
+│   ├── README.md                         (8.6 KB)  [914fef23]
+│   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
+│   ├── ROADMAP_KOMERCE.md                (18.8 KB) [31a0284e]
+│   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
+│   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
+│   └── audit/                            (11 fichiers)
+│       ├── AUDIT_BUGS.md                 (7.9 KB)  [92fa541a]
+│       ├── AUDIT_CODE_INTEGRITY.md       (10.9 KB) [2ce96aec]
+│       ├── FRONTEND_AUDIT.md             (21.3 KB) [2dbbfde5]
+│       ├── SECURITY_CHECKLIST.md         (2.5 KB)  [f9480b40]
+│       ├── batch_2.md                    (17.3 KB) [3c94ffd2]
+│       ├── batch_3.md                    (15.0 KB) [b82bc77b]
+│       ├── batch_5.md                    (16.6 KB) [6b0b6d31]
+│       ├── batch_6.md                    (14.4 KB) [19a32efb]
+│       ├── db_audit.md                   (15.1 KB) [7ee3d48a]
+│       ├── middleware_audit.md           (12.5 KB) [f3533515]
+│       └── utils_audit.md               (15.9 KB) [cc2b9d7a]
+│
+└── .github/workflows/                    (2 fichiers)
+    ├── auto-cartography.yml              (4.9 KB)  [1daacd02]
+    └── carto-guard.yml                   (3.3 KB)  [d1e3c317]
+```
+
+---
+
+## 3. 🏗️ Vue d'ensemble architecture
 
 ### Architecture générale
 
@@ -111,7 +278,7 @@
 
 ---
 
-## 2. 🗂️ Carte des routes
+## 4. 🗂️ Carte des routes (endpoints)
 
 ### 📁 auth.js — `/api/auth` (5 endpoints)
 
@@ -368,7 +535,7 @@
 
 ---
 
-## 3. 🗄️ Schéma de base de données
+## 5. 🗄️ Schéma de base de données
 
 ### Tables principales (27+)
 
@@ -480,7 +647,7 @@ scans                   │     2     │ ██░░░░░░░░░░�
 
 ---
 
-## 4. 🛡️ Middleware & sécurité
+## 6. 🛡️ Middleware & sécurité
 
 ### Middleware applicatifs
 
@@ -540,7 +707,7 @@ scans                   │     2     │ ██░░░░░░░░░░�
 
 ---
 
-## 5. 🔗 Dépendances inter-routes
+## 7. 🔗 Dépendances inter-routes
 
 ### Appels croisés
 
@@ -587,7 +754,7 @@ orders.js ──payment──▶ payments.js ──trigger──▶ purchasing.j
 
 ---
 
-## 6. 🔄 Chaîne de traitement des commandes
+## 8. 🔄 Chaîne de traitement des commandes
 
 ### Cycle de vie complet
 
@@ -626,7 +793,7 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 ---
 
-## 7. 🌐 Services externes
+## 9. 🌐 Services externes
 
 | # | Service | Type | Dépendance npm | Routes | Usage |
 |---|---------|------|---------------|--------|-------|
@@ -642,7 +809,7 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 ---
 
-## 8. 🛠️ Utilitaires
+## 10. 🛠️ Utilitaires
 
 | Fichier | Rôle |
 |---------|------|
@@ -668,43 +835,80 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 ---
 
-## 9. 🔐 Audit de sécurité
+## 11. ✅ Validators (1 fichier)
 
-### Issues critiques (#71–#76) — STATUT : 🔴 OPEN
-
-| # | Issue | Sévérité | Description | Fichier |
-|---|-------|----------|-------------|---------|
-| #71 | Injection SQL potentielle | 🔴 Critique | Vérifier toutes les requêtes dynamiques avec interpolation de string | Plusieurs routes |
-| #72 | JWT secret faible en dev | 🔴 Critique | Fallback `komerce_secret_dev_UNSAFE` si JWT_SECRET manquant | `auth.js:26` |
-| #73 | Admin password reset non sécurisé | 🔴 Critique | Pas de vérification ancien MDP pour `/api/admin/users/:id/password` | `admin.js` |
-| #74 | CORS trop permissif | 🔴 Critique | `*.up.railway.app` autorise tous les sous-domaines Railway | `server.js:66` |
-| #75 | Rate limiting insuffisant | 🔴 Critique | Certaines routes admin sans rate limiting | `server.js` |
-| #76 | `POST /api/admin/reset` en production | 🔴 Critique | Endpoint de reset DB accessible en production | `admin.js` |
-
-### Issues majeures (#77–#84) — STATUT : 🔴 OPEN
-
-| # | Issue | Sévérité | Description | Fichier |
-|---|-------|----------|-------------|---------|
-| #77 | `unsafe-inline` dans CSP | 🟠 Majeur | Scripts inline autorisés par CSP | `server.js:94` |
-| #78 | Pas de HTTPS forcé | 🟠 Majeur | `secure: isProd` sur cookie mais pas de redirection HTTPS | `auth.js:50` |
-| #79 | Stock race condition | 🟠 Majeur | `FOR UPDATE` ajouté (BUG-008) mais vérifier edge cases | `orders.js:270` |
-| #80 | SMS sans rate-limit | 🟠 Majeur | Les SMS sont envoyés en fire-and-forget, pas de throttling | Plusieurs routes |
-| #81 | Stripe webhook sans idempotency key | 🟠 Majeur | Check `payment_status` mais pas d'idempotency key Stripe | `payments.js:109` |
-| #82 | Données sensibles dans logs | 🟠 Majeur | `console.error` peut exposer des données sensibles | Partout |
-| #83 | Multer sans validation de type | 🟠 Majeur | Vérifier que les uploads sont bien filtrés par type MIME | `middleware/upload.js` |
-| #84 | Pas de pagination max | 🟠 Majeur | `limit` accepte des valeurs arbitraires (LIMIT 999999) | `products.js`, `orders.js` |
-
-### Patterns SQL sécurisés utilisés
-
-- ✅ **Requêtes paramétrées** : `$1`, `$2`, ... partout
-- ✅ **FOR UPDATE** : Verrouillage stock lors des commandes (BUG-008)
-- ✅ **Transactions** : `BEGIN` / `COMMIT` / `ROLLBACK` pour création commande
-- ✅ **COALESCE** : Mises à jour partielles sécurisées
-- ⚠️ **Construction dynamique** : Quelques requêtes construisent le WHERE dynamiquement (paramétré, mais à surveiller)
+### `validators/index.js` (13.6 KB) [dcc266a7]
+**Schémas Joi centralisés**
+- Validation utilisateur (register, login)
+- Validation produit
+- Validation commande
+- Validation paiement
+- Export de tous les schémas
 
 ---
 
-## 10. 📊 Dashboard Komerce Pilotage (Instant App)
+## 12. 🖥️ Frontend — Architecture Monolithique (`public/`)
+
+### ⚠️ ARCHITECTURE CRITIQUE À CONNAÎTRE
+
+> **CHAQUE fichier HTML est un monolithe autonome (50-512 KB) avec CSS + JS inline.**
+> Pas de framework. Pas de build. Pas de bundler. Pas de composants partagés (sauf `komerce-api.js`).
+
+### Fichier partagé : `komerce-api.js` (127.8 KB) [400380df]
+Client API JavaScript vanille — 128 KB monolithique :
+- Toutes les fonctions d'appel API (fetch wrappers)
+- Gestion du token JWT (localStorage)
+- Importé par tous les HTML via `<script src="/komerce-api.js">`
+
+### Fichier partagé : `chart.umd.min.js` (200.8 KB) [ebfe8019]
+Chart.js UMD bundle — copie locale (pas CDN)
+- Utilisé par les dashboards et pages statistiques
+
+### Service Worker : `sw.js` (6.5 KB) [f4238e4d]
+PWA Service Worker :
+- Cache des assets statiques
+- Stratégie cache-first pour les images
+- Network-first pour les API calls
+
+### CDN et dépendances externes :
+
+| Librairie | Version | Source | Utilisé par |
+|-----------|---------|--------|-------------|
+| DOMPurify | v3.1.0 | `cdnjs.cloudflare.com` | Tous les HTML (sanitization XSS) |
+| Google Fonts (Poppins) | - | `fonts.googleapis.com` | Tous les HTML (typographie) |
+| QR Code Generator | - | `cdn.jsdelivr.net` + `unpkg.com` | QR_Print, Scans |
+| Chart.js | bundlé | Local (`chart.umd.min.js`) | Dashboards, Stats |
+
+### Pages Frontend :
+
+| Fichier | Taille | SHA | Rôle | Accès |
+|---------|--------|-----|------|-------|
+| `index.html` | 143.9 KB | c925b4b8 | 🏪 **Boutique principale** (route `/`) | Public |
+| `Komerce_Admin.html` | 121.4 KB | d8e57998 | 👑 Panel admin principal | Admin |
+| `Komerce_Admin_Users.html` | 32.2 KB | 90591618 | 👥 Gestion utilisateurs | Admin |
+| `Komerce_Backend.html` | 512.6 KB | f02590ab | ⚙️ **Backend admin complet** (512 KB !) | Admin |
+| `Komerce_Backoffice_Admin_v2.html` | 68.2 KB | 3eafa998 | 🏢 Backoffice admin v2 | Admin |
+| `Komerce_Hub.html` | 42.8 KB | 763e9794 | 🔗 Hub central / portail | Multi-rôle |
+| `Komerce_Mobile.html` | 53.9 KB | d0348e70 | 📱 Version mobile PWA | Public |
+| `Komerce_Pilotage_v2.html` | 109.6 KB | 667718df | 📊 Dashboard pilotage v2 | Admin |
+| `Komerce_Pipeline.html` | 32.7 KB | 64b87f00 | 🔄 Pipeline commandes | Vendeur |
+| `Komerce_QR_Print.html` | 9.4 KB | e9a09169 | 🏷️ Impression QR codes | Vendeur/Relais |
+| `Komerce_Relais.html` | 99.6 KB | 756a114e | 📦 Interface points relais | Relais |
+| `Komerce_Simulateur.html` | 106.1 KB | 1f74411d | 🧮 Simulateur tarifs/livraison | Public |
+| `Komerce_Tests.html` | 147.0 KB | f053cfc0 | 🧪 Page de tests | Dev |
+| `Komerce_Web.html` | 81.1 KB | caa83c27 | 🌐 Version web classique | Public |
+| `portal.html` | 15.8 KB | 8a511d9e | 🚪 Portail d'entrée | Public |
+
+### Images :
+
+| Fichier | Taille | SHA |
+|---------|--------|-----|
+| `images/avatar_panier.png` | 13.3 KB | 8ed44a7c |
+| `images/hero_banner.jpg` | 139.1 KB | b486987e |
+
+---
+
+## 13. 📊 Dashboard App — Tasklet Instant App (`dashboard-app/`)
 
 ### Architecture
 
@@ -742,70 +946,167 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 }
 ```
 
----
+### Fichiers (`dashboard-app/`)
 
-## 11. 📋 PRs & Issues — État actuel
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `app.tsx` | 2.1 KB | 593bfadc | Composant principal — routing entre vues |
+| `index.html` | 2.7 KB | 40a99817 | Point d'entrée HTML |
+| `styles.css` | 126 B | 826e8a56 | Styles additionnels |
+| `tasklet.config.json` | 184 B | eed57f48 | Config Tasklet (displayName, description) |
+| `types.ts` | 3.1 KB | 65389896 | Types TypeScript partagés |
 
-### Issues de sécurité
+### Composants (`components/`) :
 
-- **#71–#76** : 6 issues critiques — 🔴 OPEN
-- **#77–#84** : 8 issues majeures — 🔴 OPEN
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `AlertsView.tsx` | 3.4 KB | 69708424 | Vue alertes — affiche les alertes critiques |
+| `FinanceView.tsx` | 7.7 KB | 3bf26622 | Vue finance — soldes, retraits, transactions |
+| `OpsView.tsx` | 4.6 KB | fa693aaf | Vue opérations — commandes, livraisons |
+| `PilotageView.tsx` | 6.8 KB | fd7f1d0c | Vue pilotage — KPIs, graphiques |
+| `StatCard.tsx` | 1.1 KB | 693fa866 | Composant carte statistique réutilisable |
 
-### Historique des versions
+### Données (`data/`) :
 
-| Version | Changements majeurs |
-|---------|-------------------|
-| v7.5 | `ceremony_*` → `module_*`, modules génériques |
-| v7.6 | `triggerPurchasing()` dans payments.js |
-| v7.7 | Code cash 6 chiffres (au lieu de hex 16) |
-| v8.0 | Pipeline simplifié 6→7 étapes, `/api/loyalty`, `/api/unsold` |
-| v8.1 | Helmet, CORS fix, graceful shutdown, health check DB |
-| v8.5 | Rate-limit middleware branché, health route montée |
-| v8.6 | Auto-migration bcrypt admin hash, fix P0 dashboard |
-| v8.7 | customs_history colonnes, loyalty_tiers table |
-| v8.8 | Migration robuste (try/catch), partners table |
-| v9.1 | BUG-014 cookie-parser ajouté — JWT → httpOnly cookie |
-| v9.2 | Helmet CSP corrigé — inline scripts + Google Fonts |
-| v10.0 | Dashboards unifiés v11 — pilotage.js absorbé |
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `mockData.ts` | 5.0 KB | 4fda0a37 | Données mock pour développement |
 
----
+### Utilitaires (`utils/`) :
 
-## 12. 🗺️ Roadmap
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `formatters.ts` | 1.8 KB | 530ffb88 | Formatage nombres, dates, devises (KMF) |
 
-### ✅ Fait
 
-- [x] Architecture Express + PostgreSQL sur Railway
-- [x] Pipeline commande complet (9 statuts, transitions validées)
-- [x] Paiements Stripe + Cash relais
-- [x] Système de scans (hub/relais/QR collect)
-- [x] Dashboard unifié v11 (8 endpoints, cache 30s)
-- [x] Fidélité 4 paliers (Bronze → Platinum)
-- [x] Logistique (expéditions, étiquettes PDF, manifestes)
-- [x] Finance (export CSV, preuves Stripe, rapport PDF)
-- [x] Purchasing (fournisseurs, bons de commande)
-- [x] Modules couture (tissus, modèles, calcul prix)
-- [x] JWT httpOnly cookie (BUG-014)
-- [x] Rate limiting (6 limiters)
-- [x] Validation Joi centralisée
-- [x] Auto-migrations au démarrage
-- [x] Paniers partagés, invendus, relais
+## 14. ⚙️ Scripts (4 fichiers)
 
-### 🔲 À faire
+### `scripts/impact-check.js` (25.5 KB) [d0fef162]
+**Analyse d'impact des modifications**
+- Scanne les fichiers modifiés
+- Calcule un score de risque
+- Identifie les dépendances impactées
+- Utilisé par le workflow CI/CD `auto-cartography.yml`
 
-- [ ] Corriger les 6 issues critiques de sécurité (#71–#76)
-- [ ] Corriger les 8 issues majeures (#77–#84)
-- [ ] Ajouter index DB (`orders.user_id`, `order_items.order_id`, `orders.status`)
-- [ ] Découpler chaîne payments→purchasing→scans via file de messages (Redis/BullMQ)
-- [ ] Refactorer `orders.js` (53.8 Ko) en sous-modules
-- [ ] Tests d'intégration sur la chaîne commande complète
-- [ ] Pagination max (limiter `limit` à 100)
-- [ ] Throttling SMS
-- [ ] Monitoring et alerting (Sentry ou équivalent)
-- [ ] Phase 2 modules : construction, cosmétiques
+### `scripts/impact-config.json` (8.4 KB) [e81e48fd]
+**Configuration de l'analyse d'impact**
+- Mapping routes → tables → middlewares
+- Services externes référencés
+- Seuils d'alerte
+
+### `scripts/setup-hooks.sh` (4.5 KB) [1d4ba37f]
+**Installation des git hooks**
+- Pre-commit : lint, validation
+- Pre-push : vérification carto
+
+### `scripts/test_e2e_full.sh` (11.7 KB) [f2e5fdf8]
+**Tests end-to-end complets**
+- Scénario complet : inscription → commande → paiement → livraison
+- Vérifie chaque endpoint
+- Rapport de résultat
 
 ---
 
-## 13. 🔧 Stack technique
+## 15. 📚 Documentation (`docs/`)
+
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `AGENTS_PROTOCOL.md` | ~15 KB | (v1.4) | 🔒 Protocole de gouvernance |
+| `AUDIT_REPORT.md` | 8.0 KB | 6b4fc1c7 | 📋 Rapport d'audit principal |
+| `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
+| `DASHBOARD_REDESIGN.md` | 8.5 KB | 0f46d186 | 📐 Specs redesign dashboard |
+| `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
+| `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
+| `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
+| `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
+| `ROADMAP_KOMERCE.md` | 18.8 KB | 31a0284e | 📋 Roadmap v14 — source de vérité |
+| `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
+| `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
+
+### Audit (`docs/audit/`) — 11 fichiers
+
+| Fichier | Taille | SHA | Contenu |
+|---------|--------|-----|---------|
+| `AUDIT_BUGS.md` | 7.9 KB | 92fa541a | Bugs identifiés par audit |
+| `AUDIT_CODE_INTEGRITY.md` | 10.9 KB | 2ce96aec | Intégrité code — imports/exports |
+| `FRONTEND_AUDIT.md` | 21.3 KB | 2dbbfde5 | Audit complet du frontend |
+| `SECURITY_CHECKLIST.md` | 2.5 KB | f9480b40 | Checklist sécurité pré-Go-Live |
+| `batch_2.md` | 17.3 KB | 3c94ffd2 | Audit lot 2 |
+| `batch_3.md` | 15.0 KB | b82bc77b | Audit lot 3 |
+| `batch_5.md` | 16.6 KB | 6b0b6d31 | Audit lot 5 |
+| `batch_6.md` | 14.4 KB | 19a32efb | Audit lot 6 |
+| `db_audit.md` | 15.1 KB | 7ee3d48a | Audit base de données |
+| `middleware_audit.md` | 12.5 KB | f3533515 | Audit middlewares |
+| `utils_audit.md` | 15.9 KB | cc2b9d7a | Audit utilitaires |
+
+---
+
+## 16. 🤖 CI/CD — GitHub Actions (`.github/workflows/`)
+
+### `auto-cartography.yml` (~5 KB) [v2.0]
+**Métriques automatiques de la cartographie**
+- Trigger : push sur `main` (paths étendus à public/, scripts/, dashboard-app/, validators/, .github/)
+- Action : exécute `impact-check.js` et met à jour la section métriques en fin de carto
+- ⚠️ Ne régénère PAS le contenu complet — les agents doivent faire la mise à jour DELTA manuellement
+
+### `carto-guard.yml` (~3.5 KB) [v2.0]
+**Vérification coffre-fort dans les PR**
+- Trigger : pull_request (opened, synchronize)
+- Paths surveillés : routes/, middleware/, utils/, validators/, db/, scripts/, public/, dashboard-app/, server.js, db.js, package.json, .github/workflows/
+- Commente la PR si la carto n'est pas à jour — avec instructions DELTA
+
+---
+
+## 17. 📁 Fichiers Racine
+
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `.cursorrules` | 1.4 KB | 3dd2643a | Règles pour l'éditeur Cursor |
+| `.env.example` | 1.9 KB | 6568d664 | Template variables d'environnement |
+| `.gitignore` | 258 B | 61e13d23 | Fichiers exclus de Git |
+| `AGENT_RULES.md` | ~3 KB | (v mise à jour) | Règles obligatoires agents IA |
+| `CONTRIBUTING.md` | 3.2 KB | a18b8868 | Guide de contribution |
+| `README.md` | 3.9 KB | 1c05bc68 | README principal |
+
+---
+
+## 18. 🔐 Audit de sécurité
+
+### Issues critiques (#71–#76) — STATUT : 🔴 OPEN
+
+| # | Issue | Sévérité | Description | Fichier |
+|---|-------|----------|-------------|---------|
+| #71 | Injection SQL potentielle | 🔴 Critique | Vérifier toutes les requêtes dynamiques avec interpolation de string | Plusieurs routes |
+| #72 | JWT secret faible en dev | 🔴 Critique | Fallback `komerce_secret_dev_UNSAFE` si JWT_SECRET manquant | `auth.js:26` |
+| #73 | Admin password reset non sécurisé | 🔴 Critique | Pas de vérification ancien MDP pour `/api/admin/users/:id/password` | `admin.js` |
+| #74 | CORS trop permissif | 🔴 Critique | `*.up.railway.app` autorise tous les sous-domaines Railway | `server.js:66` |
+| #75 | Rate limiting insuffisant | 🔴 Critique | Certaines routes admin sans rate limiting | `server.js` |
+| #76 | `POST /api/admin/reset` en production | 🔴 Critique | Endpoint de reset DB accessible en production | `admin.js` |
+
+### Issues majeures (#77–#84) — STATUT : 🔴 OPEN
+
+| # | Issue | Sévérité | Description | Fichier |
+|---|-------|----------|-------------|---------|
+| #77 | `unsafe-inline` dans CSP | 🟠 Majeur | Scripts inline autorisés par CSP | `server.js:94` |
+| #78 | Pas de HTTPS forcé | 🟠 Majeur | `secure: isProd` sur cookie mais pas de redirection HTTPS | `auth.js:50` |
+| #79 | Stock race condition | 🟠 Majeur | `FOR UPDATE` ajouté (BUG-008) mais vérifier edge cases | `orders.js:270` |
+| #80 | SMS sans rate-limit | 🟠 Majeur | Les SMS sont envoyés en fire-and-forget, pas de throttling | Plusieurs routes |
+| #81 | Stripe webhook sans idempotency key | 🟠 Majeur | Check `payment_status` mais pas d'idempotency key Stripe | `payments.js:109` |
+| #82 | Données sensibles dans logs | 🟠 Majeur | `console.error` peut exposer des données sensibles | Partout |
+| #83 | Multer sans validation de type | 🟠 Majeur | Vérifier que les uploads sont bien filtrés par type MIME | `middleware/upload.js` |
+| #84 | Pas de pagination max | 🟠 Majeur | `limit` accepte des valeurs arbitraires (LIMIT 999999) | `products.js`, `orders.js` |
+
+### Patterns SQL sécurisés utilisés
+
+- ✅ **Requêtes paramétrées** : `$1`, `$2`, ... partout
+- ✅ **FOR UPDATE** : Verrouillage stock lors des commandes (BUG-008)
+- ✅ **Transactions** : `BEGIN` / `COMMIT` / `ROLLBACK` pour création commande
+- ✅ **COALESCE** : Mises à jour partielles sécurisées
+- ⚠️ **Construction dynamique** : Quelques requêtes construisent le WHERE dynamiquement (paramétré, mais à surveiller)
+
+---
+
+## 19. 🔧 Stack technique
 
 ### Dépendances production
 
@@ -849,7 +1150,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-## 14. ⚠️ Points de vigilance
+## 20. ⚠️ Points de vigilance
 
 ### 🔴 Tables à risque (points de défaillance unique)
 
@@ -889,7 +1190,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-## 15. 📊 Statistiques finales
+## 21. 📊 Statistiques finales
 
 | Métrique | Valeur |
 |----------|--------|
@@ -912,6 +1213,25 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° générée le 6 avril 2026 — Version v12.0*  
-> *Basée sur l'analyse exhaustive du code source : server.js, db.js, 18 fichiers route, middleware, utilitaires, validators.*  
-> *Ce document doit être mis à jour lors de modifications significatives de l'architecture.*
+## 22. 📝 Règle de Mise à Jour (DELTA)
+
+> **Chaque commit modifiant du code DOIT mettre à jour cette cartographie — UNIQUEMENT les lignes impactées.**
+>
+> | Action | Mise à jour |
+> |--------|------------|
+> | Ajout/suppression de fichier | Arbre + section concernée |
+> | Modification de fichier | SHA dans l'arbre |
+> | Ajout/modification d'endpoint | Section routes |
+> | Modification table/vue | Section BDD |
+>
+> **❌ INTERDIT de régénérer toute la carto à chaque commit**
+> **✅ OBLIGATOIRE de ne modifier que les lignes impactées**
+
+
+---
+
+> 📝 *Cartographie 360° — Version v15.0 — 6 avril 2026*
+> *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
+> *Source de vérité architecture : consulter avant toute modification de code.*
+> *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
+> *Mise à jour : approche DELTA (ne modifier que les lignes impactées)*
