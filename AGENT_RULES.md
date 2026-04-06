@@ -47,7 +47,8 @@ Ce fichier contient le **protocole obligatoire** qui lie les 3 documents de réf
 2. **ENSUITE** → Enchaîner sur la prochaine tâche (ordre de priorité, sauf demande contraire)
 3. **AVANT** toute modification → Lire `AGENTS_PROTOCOL.md` + les 3 piliers
 4. **PENDANT** → Respecter l'architecture existante, utiliser les middlewares
-5. **APRÈS** → Mettre à jour la Cartographie + la Roadmap + commiter
+5. **APRÈS** → Mettre à jour la Cartographie (DELTA) + la Roadmap + commiter dans le MÊME commit
+6. **CARTO** → Approche DELTA : ne modifier que les lignes impactées (SHA, endpoints, sections concernées)
 
 **Sans cette lecture, aucun code ne doit être écrit.**
 
