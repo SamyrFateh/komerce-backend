@@ -1,162 +1,250 @@
 import React from 'react';
-import { DollarSign, CreditCard, TrendingUp, AlertTriangle } from 'lucide-react';
-import { FinanceData } from '../types';
+import { DollarSign, TrendingUp, CreditCard, AlertTriangle, BarChart3 } from 'lucide-react';
+import { mockFinanceData } from '../data/mockData';
 import { formatKMF, formatEUR, formatPct } from '../utils/formatters';
 import { StatCard } from './StatCard';
 
-interface FinanceViewProps {
-  data: FinanceData;
-}
+export const FinanceView: React.FC = () => {
+  const { kpi, paiements, marges, par_categorie, top_produits, taux } = mockFinanceData;
 
-export const FinanceView: React.FC<FinanceViewProps> = ({ data }) => {
+  // Compute payment proportions
+  const totalPaiements = paiements.cash.count + paiements.stripe.count;
+  const cashPct = totalPaiements > 0 ? (paiements.cash.count / totalPaiements) * 100 : 50;
+  const stripePct = 100 - cashPct;
+
+  // Max CA for category bar chart
+  const maxCaCat = Math.max(...par_categorie.map(c => c.ca_kmf));
+
   return (
-    <div className="space-y-6">
-      {/* Period info */}
-      <div className="text-xs text-base-content/50">
-        Période: {data.period.start} → {data.period.end} ({data.period.days} jours)
-      </div>
-
-      {/* Revenue KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="flex flex-col gap-4 p-4">
+      {/* ROW 1: KPI StatCards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="CA (KMF)"
-          value={formatKMF(data.revenue.ca_kmf)}
-          trend={data.revenue.vs_previous.ca_pct}
-          icon={<DollarSign size={16} />}
+          icon={<DollarSign size={24} />}
+          label="CA KMF"
+          value={formatKMF(kpi.ca_kmf)}
+          trend={kpi.evolution.ca_pct}
         />
         <StatCard
-          label="CA (EUR)"
-          value={formatEUR(data.revenue.ca_eur)}
-          sub={`Taux: ${data.revenue.taux_eur_kmf} KMF/€`}
-          icon={<DollarSign size={16} />}
+          icon={<CreditCard size={24} />}
+          label="CA EUR"
+          value={formatEUR(kpi.ca_eur)}
+          trend={kpi.evolution.ca_pct}
         />
         <StatCard
-          label="Commandes"
-          value={data.revenue.nb_commandes}
-          trend={data.revenue.vs_previous.nb_pct}
-          icon={<CreditCard size={16} />}
-        />
-        <StatCard
+          icon={<BarChart3 size={24} />}
           label="Panier moyen"
-          value={formatKMF(data.revenue.panier_moyen_kmf)}
-          icon={<TrendingUp size={16} />}
+          value={formatKMF(kpi.panier_moyen_kmf)}
+        />
+        <StatCard
+          icon={<TrendingUp size={24} />}
+          label="Taux marge"
+          value={`${marges.taux_marge_pct}%`}
+          className={marges.taux_marge_pct >= 30 ? '' : ''}
         />
       </div>
 
-      {/* Payments Breakdown */}
-      <div className="card bg-base-200 shadow-sm">
-        <div className="card-body p-4">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            <CreditCard size={16} className="opacity-60" /> Répartition des paiements
+      {/* ROW 2: Paiements split */}
+      <div className="card bg-base-200">
+        <div className="card-body">
+          <h3 className="card-title text-lg">
+            <CreditCard size={20} className="opacity-60" />
+            Répartition des paiements
           </h3>
-          <div className="grid grid-cols-2 gap-4 mt-3">
-            {/* Cash Relais */}
-            <div className="p-3 rounded-lg bg-base-300">
-              <div className="text-xs text-base-content/60 mb-1">💵 Cash Relais</div>
-              <div className="text-lg font-bold">{formatKMF(data.payments.cash_relais.total_kmf)}</div>
-              <div className="flex justify-between text-xs text-base-content/50 mt-1">
-                <span>{data.payments.cash_relais.count} paiements</span>
-                <span className="font-medium">{data.payments.cash_relais.pct}%</span>
-              </div>
-              <progress className="progress progress-primary w-full mt-1" value={data.payments.cash_relais.pct} max={100} />
+
+          {/* Visual bar */}
+          <div className="flex w-full h-8 rounded-lg overflow-hidden mt-2">
+            <div
+              className="bg-primary flex items-center justify-center text-primary-content text-sm font-bold"
+              style={{ width: `${cashPct}%` }}
+            >
+              {cashPct.toFixed(0)}%
             </div>
-            {/* Stripe EUR */}
-            <div className="p-3 rounded-lg bg-base-300">
-              <div className="text-xs text-base-content/60 mb-1">💳 Stripe EUR</div>
-              <div className="text-lg font-bold">{formatKMF(data.payments.stripe_eur.total_kmf)}</div>
-              <div className="flex justify-between text-xs text-base-content/50 mt-1">
-                <span>{data.payments.stripe_eur.count} paiements</span>
-                <span className="font-medium">{data.payments.stripe_eur.pct}%</span>
-              </div>
-              <progress className="progress progress-secondary w-full mt-1" value={data.payments.stripe_eur.pct} max={100} />
+            <div
+              className="bg-secondary flex items-center justify-center text-secondary-content text-sm font-bold"
+              style={{ width: `${stripePct}%` }}
+            >
+              {stripePct.toFixed(0)}%
             </div>
           </div>
-          <div className="flex gap-4 mt-3 text-xs">
-            <span className="text-success">✅ Confirmés: {data.payments.confirmed.count} ({formatKMF(data.payments.confirmed.total_kmf)})</span>
-            <span className="text-warning">⏳ En attente: {data.payments.pending.count} ({formatKMF(data.payments.pending.total_kmf)})</span>
+
+          {/* Details below bar */}
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-primary" />
+                <span className="font-semibold">Cash</span>
+              </div>
+              <div className="text-base-content/60 text-sm">
+                {paiements.cash.count} paiements · {formatKMF(paiements.cash.total_kmf)}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-secondary" />
+                <span className="font-semibold">Stripe</span>
+              </div>
+              <div className="text-base-content/60 text-sm">
+                {paiements.stripe.count} paiements · {formatEUR(paiements.stripe.total_eur)}
+              </div>
+            </div>
+          </div>
+
+          {/* Taux de change */}
+          <div className="divider my-1" />
+          <div className="flex gap-4 text-sm text-base-content/60">
+            <span>Taux EUR/KMF: <strong className="text-base-content">{taux.eur_kmf}</strong></span>
+            <span>Taux AED/KMF: <strong className="text-base-content">{taux.aed_kmf}</strong></span>
           </div>
         </div>
       </div>
 
-      {/* Margins */}
-      <div className="card bg-base-200 shadow-sm">
-        <div className="card-body p-4">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            <TrendingUp size={16} className="opacity-60" /> Analyse des marges
-          </h3>
-          <div className="grid grid-cols-3 gap-3 mt-3">
-            <div className="text-center p-3 rounded-lg bg-base-300">
-              <div className="text-xs text-base-content/60">Marge estimée</div>
-              <div className="text-xl font-bold text-primary">{formatPct(data.margins.avg_estimated_pct, false)}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-base-300">
-              <div className="text-xs text-base-content/60">Marge réelle</div>
-              <div className="text-xl font-bold text-secondary">{formatPct(data.margins.avg_real_pct, false)}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-base-300">
-              <div className="text-xs text-base-content/60">Écart</div>
-              <div className={`text-xl font-bold ${data.margins.gap_pct < 0 ? 'text-error' : 'text-success'}`}>
-                {formatPct(data.margins.gap_pct)}
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-base-content/60">Marge totale</span>
-              <span className="font-medium">{formatKMF(data.margins.total_margin_kmf)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-base-content/60">Transport</span>
-              <span className="font-medium">{formatKMF(data.margins.transport_kmf)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-base-content/60">Douane</span>
-              <span className="font-medium">{formatKMF(data.margins.douane_kmf)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-base-content/60">Chiffrées / Non chiffrées</span>
-              <span className="font-medium">{data.margins.orders_costed} / {data.margins.orders_not_costed}</span>
-            </div>
-          </div>
+      {/* ROW 3: Marges + Par catégorie */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* LEFT: Marges */}
+        <div className="card bg-base-200">
+          <div className="card-body">
+            <h3 className="card-title text-lg">
+              <TrendingUp size={20} className="opacity-60" />
+              Marges
+            </h3>
 
-          {data.margins.alerts.length > 0 && (
-            <div className="mt-3">
-              <div className="text-xs text-error flex items-center gap-1 mb-1">
-                <AlertTriangle size={12} /> Alertes marges
+            <div className="flex flex-col gap-3 mt-2">
+              <div className="flex justify-between items-center">
+                <span className="text-base-content/60">Marge réelle</span>
+                <span className={`font-bold ${marges.marge_reelle_kmf >= 0 ? 'text-success' : 'text-error'}`}>
+                  {formatKMF(marges.marge_reelle_kmf)}
+                </span>
               </div>
-              {data.margins.alerts.map((a) => (
-                <div key={a.reference} className="text-xs bg-error/10 text-error rounded p-2 mb-1">
-                  <span className="font-mono">{a.reference}</span> — Marge: {formatPct(a.margin_real_pct)}
+
+              <div className="flex justify-between items-center">
+                <span className="text-base-content/60">Coûts logistique</span>
+                <span className="font-bold">{formatKMF(marges.cout_logistique_kmf)}</span>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-sm text-base-content/60 mb-1">
+                  <span>Avec coût renseigné</span>
+                  <span>{marges.nb_avec_cost} / {marges.nb_avec_cost + marges.nb_sans_cost}</span>
+                </div>
+                <progress
+                  className="progress progress-primary w-full"
+                  value={marges.nb_avec_cost}
+                  max={marges.nb_avec_cost + marges.nb_sans_cost}
+                />
+              </div>
+
+              {/* Alertes perte */}
+              {marges.alertes_perte.count > 0 && (
+                <div className="alert alert-error">
+                  <AlertTriangle size={18} />
+                  <div>
+                    <div className="font-bold">
+                      {marges.alertes_perte.count} alerte{marges.alertes_perte.count > 1 ? 's' : ''} perte
+                    </div>
+                    <div className="text-sm">
+                      Références: {marges.alertes_perte.refs.join(', ')}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: Par catégorie */}
+        <div className="card bg-base-200">
+          <div className="card-body">
+            <h3 className="card-title text-lg">
+              <BarChart3 size={20} className="opacity-60" />
+              Par catégorie
+            </h3>
+
+            <div className="overflow-x-auto mt-2">
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Catégorie</th>
+                    <th>Cmd</th>
+                    <th>CA</th>
+                    <th>Marge</th>
+                    <th>Taux</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {par_categorie.map(cat => (
+                    <tr key={cat.categorie}>
+                      <td>
+                        <span className="badge badge-ghost badge-sm capitalize">{cat.categorie}</span>
+                      </td>
+                      <td>{cat.nb_commandes}</td>
+                      <td className="text-sm">{formatKMF(cat.ca_kmf)}</td>
+                      <td className="text-sm">{formatKMF(cat.marge_kmf || 0)}</td>
+                      <td>
+                        <span className={`badge badge-sm ${
+                          (cat.taux_marge || 0) >= 30 ? 'badge-success' :
+                          (cat.taux_marge || 0) >= 20 ? 'badge-warning' : 'badge-error'
+                        }`}>
+                          {cat.taux_marge || 0}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Visual CA bars */}
+            <div className="flex flex-col gap-2 mt-3">
+              {par_categorie.map(cat => (
+                <div key={cat.categorie} className="flex items-center gap-2">
+                  <span className="text-xs text-base-content/60 w-20 capitalize">{cat.categorie}</span>
+                  <div className="flex-1 bg-base-300 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-primary h-full rounded-full"
+                      style={{ width: `${maxCaCat > 0 ? (cat.ca_kmf / maxCaCat) * 100 : 0}%` }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Monthly Trend */}
-      <div className="card bg-base-200 shadow-sm">
-        <div className="card-body p-4">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            <TrendingUp size={16} className="opacity-60" /> Tendance mensuelle
+      {/* ROW 4: Top 5 produits */}
+      <div className="card bg-base-200">
+        <div className="card-body">
+          <h3 className="card-title text-lg">
+            <DollarSign size={20} className="opacity-60" />
+            Top 5 produits
           </h3>
+
           <div className="overflow-x-auto mt-2">
-            <table className="table table-sm">
+            <table className="table table-zebra">
               <thead>
                 <tr>
-                  <th>Mois</th>
-                  <th>CA (KMF)</th>
-                  <th>Commandes</th>
-                  <th>Marge</th>
+                  <th>#</th>
+                  <th>Produit</th>
+                  <th>Catégorie</th>
+                  <th>Qté</th>
+                  <th>CA</th>
                 </tr>
               </thead>
               <tbody>
-                {data.monthly_trend.map((m) => (
-                  <tr key={m.mois}>
-                    <td className="font-medium">{m.mois}</td>
-                    <td>{formatKMF(m.ca_kmf)}</td>
-                    <td>{m.nb}</td>
-                    <td><span className="badge badge-sm badge-primary">{formatPct(m.marge_pct, false)}</span></td>
+                {top_produits.map((prod, idx) => (
+                  <tr key={prod.nom}>
+                    <td>
+                      <span className={`badge badge-sm ${idx === 0 ? 'badge-primary' : 'badge-ghost'}`}>
+                        {idx + 1}
+                      </span>
+                    </td>
+                    <td className="font-semibold">{prod.nom}</td>
+                    <td>
+                      <span className="badge badge-ghost badge-sm capitalize">{prod.categorie}</span>
+                    </td>
+                    <td>{prod.qty}</td>
+                    <td className="font-bold">{formatKMF(prod.ca_kmf)}</td>
                   </tr>
                 ))}
               </tbody>
