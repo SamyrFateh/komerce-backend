@@ -29,9 +29,29 @@ Ce protocole lie les **3 piliers** du projet que tout agent doit lire :
 
 ## ➕ Nouvelle demande ou fonctionnalité ?
 
-> **Toute nouvelle demande, tâche ou fonctionnalité DOIT être ajoutée à la [Roadmap Komerce](./docs/ROADMAP_KOMERCE.md) avant d'être implémentée.**
->
-> Aucun développement ne doit démarrer en dehors de la roadmap. Elle centralise tout : demandes en cours, priorités, et état d'avancement.
+> **Toute nouvelle demande DOIT suivre ce workflow avant toute implémentation :**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  ① 📋 Ajouter la demande à la ROADMAP                  │
+│     → docs/ROADMAP_KOMERCE.md                         │
+│     → Commit immédiat de la mise à jour                │
+│                                                       │
+│  ② 🗺️  Analyser la CARTOGRAPHIE 360°                    │
+│     → docs/CARTOGRAPHY_360.md                         │
+│     → Quels fichiers / tables / routes sont impactés ? │
+│                                                       │
+│  ③ 🔒 Consulter le COFFRE-FORT SÉCURITÉ                 │
+│     → docs/AUDIT_REPORT.md + docs/audit/              │
+│     → Y a-t-il une vulnérabilité liée ?               │
+│     → Le changement introduit-il un risque ?           │
+│                                                       │
+│  ④ ✅ SEULEMENT ALORS → Implémenter                    │
+└─────────────────────────────────────────────────────┘
+```
+
+> ⚠️ **Aucun développement ne doit démarrer en dehors de la roadmap.**
+> Elle centralise tout : demandes en cours, priorités, et état d'avancement.
 
 ---
 
