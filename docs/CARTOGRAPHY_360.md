@@ -833,3 +833,20 @@ scans.js → loyalty.js        (recalculateLoyalty)
 ---
 
 > 📝 *Ce document a été généré automatiquement à partir de l'analyse statique du code source. Il reflète l'état du code au moment de l'analyse et doit être mis à jour lors de modifications significatives de l'architecture.*
+
+
+---
+
+## 🤖 Dernière analyse automatique
+
+> Mise à jour : 2026-04-06 03:26:35 UTC
+
+| Métrique | Valeur |
+|----------|--------|
+| Routes analysées | 18 |
+| Tables cartographiées | 20 |
+| Services externes | 9 |
+| Score de risque global | 100/100 |
+| Alertes sécurité | 550 |
+
+*Régénéré automatiquement par le coffre-fort Komerce v1.0*
