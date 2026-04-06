@@ -1,10 +1,10 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.7 — 06/04/2026 (v15.6 + sync drift: HubDubaiView.tsx, RelaisView.tsx, api.ts, CONTRIBUTING.md SHA)
+> **Version** : 15.8 — 06/04/2026 (v15.7 + sync drift: +config.js, +rules.js, +007_business_rules.sql, +komerce-point6, server.js/dashboard.js/orders.js SHA)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 06/04/2026 — governance auto-sync (dashboard-app drift: 3 fichiers + CONTRIBUTING.md SHA)
-> 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables** · **3 vues** · **9 services externes**
+> **Dernière vérification** : 06/04/2026 — governance auto-sync (structural drift: 4 new files + 6 SHA updates)
+> 📊 **19 fichiers route** · **~120 endpoints** · **27+ tables** · **3 vues** · **9 services externes**
 
 ---
 
@@ -41,15 +41,15 @@
 |----------|--------|
 | **Fichiers totaux** | ~105 |
 | **Dossiers** | 14 |
-| **Routes API** | 18 fichiers |
+| **Routes API** | 19 fichiers |
 | **Middlewares** | 4 |
-| **Utilitaires** | 5 |
+| **Utilitaires** | 6 |
 | **Validators** | 1 |
-| **Fichiers DB** | 4 + 3 migrations |
+| **Fichiers DB** | 4 + 4 migrations |
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 12 + 11 audit + _pending/ |
+| **Docs** | 13 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
@@ -68,19 +68,20 @@ komerce-backend/
 ├── db.js                                 (770 B)   [08d9e6c6]
 ├── package.json                          (923 B)   [f7944e67]
 ├── package-lock.json                     (113.9 KB)[3bb09e87]
-├── server.js                             (33.9 KB) [5b9d8eac]
+├── server.js                             (41.6 KB) [f87414ae]
 │
-├── routes/                               (18 fichiers)
+├── routes/                               (19 fichiers)
 │   ├── admin.js                          (24.3 KB) [6bb443fe]
 │   ├── auth.js                           (18.5 KB) [cef6b0d4]
 │   ├── baskets.js                        (11.7 KB) [6f41e7a1]
-│   ├── dashboard.js                      (43.1 KB) [d6cd15c0]
+│   ├── config.js                         (7.3 KB)  [1b3f634f]
+│   ├── dashboard.js                      (43.8 KB) [cc16c326]
 │   ├── finance.js                        (13.7 KB) [a919836e]
 │   ├── health.js                         (1.4 KB)  [e29fabcb]
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
 │   ├── loyalty.js                        (5.6 KB)  [c454e300]
 │   ├── modules.js                        (20.6 KB) [3ea6fa01]
-│   ├── orders.js                         (55.4 KB) [bd3501e2]
+│   ├── orders.js                         (55.3 KB) [46c0833a]
 │   ├── payments.js                       (12.0 KB) [1ba52974]
 │   ├── pilotage.js                       (1.2 KB)  [9af27985]
 │   ├── pricing.js                        (3.5 KB)  [a3b26f39]
@@ -96,29 +97,31 @@ komerce-backend/
 │   ├── upload.js                         (1.5 KB)  [5ea7f1af]
 │   └── validate.js                       (5.6 KB)  [4c671ec0]
 │
-├── utils/                                (5 fichiers)
+├── utils/                                (6 fichiers)
 │   ├── email.js                          (6.7 KB)  [daf607c3]
 │   ├── pricing.js                        (3.7 KB)  [6f505ed0]
 │   ├── rates.js                          (719 B)   [933ed3c4]
 │   ├── reference.js                      (2.5 KB)  [253751b9]
+│   ├── rules.js                          (7.9 KB)  [2905ee4b]
 │   └── sms.js                            (7.4 KB)  [af6ae916]
 │
 ├── validators/                           (1 fichier)
-│   └── index.js                          (13.6 KB) [dcc266a7]
+│   └── index.js                          (13.7 KB) [d8ed1ee6]
 │
-├── db/                                   (4 + 3 migrations)
+├── db/                                   (4 + 4 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
 │   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
 │   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
 │   └── migrations/
 │       ├── 004_fix_order_status_enum.sql  (3.9 KB)  [c4cdffa2]
 │       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
-│       └── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
+│       ├── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
+│       └── 007_business_rules.sql         (10.9 KB) [0971318d]
 │
 ├── public/                               (16 HTML + 3 JS + 2 images)
 │   ├── index.html                        (143.9 KB)[c925b4b8]
 │   ├── Komerce_Admin.html                (121.4 KB)[d8e57998]
-│   ├── Komerce_Admin_Users.html          (32.2 KB) [90591618]
+│   ├── Komerce_Admin_Users.html          (31.5 KB) [9059161a]
 │   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
 │   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
 │   ├── Komerce_Dashboard.html            (75.8 KB) [4d455c1a]
@@ -170,7 +173,7 @@ komerce-backend/
 │   ├── setup-hooks.sh                    (4.5 KB)  [1d4ba37f]
 │   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
 │
-├── docs/                                 (12 fichiers + audit/ + _pending/)
+├── docs/                                 (13 fichiers + audit/ + _pending/)
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
 │   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
@@ -180,9 +183,10 @@ komerce-backend/
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (23.3 KB) [0ea267c0]
+│   ├── ROADMAP_KOMERCE.md                (21.3 KB) [5cb5a44f]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
+│   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
 │   ├── _pending/                          (dossier delta governance)
 │   │   └── README.md                     (2.3 KB)  [8f1a2e46]
 │   └── audit/                            (11 fichiers)
