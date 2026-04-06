@@ -10,7 +10,7 @@
 
 1. Lire en entier le fichier `docs/CARTOGRAPHY_360.md`
 2. Ce fichier contient la **vue 360° du projet** :
-   - 118 endpoints répartis sur 18 fichiers de routes
+   - 123 endpoints répartis sur 18 fichiers de routes
    - 27 tables DB avec leurs relations et criticités
    - 3 middlewares d'authentification (`authenticate`, `requireRole`, `requireAdmin`)
    - 6 rate limiters configurés
@@ -56,11 +56,34 @@ Après chaque feature, produire un rapport avec :
 
 ---
 
+## RÈGLE N°5 — Documenter dans SESSION_STATUS.md et commiter régulièrement
+
+**À chaque action significative (implémentation, migration, bugfix, décision) :**
+
+1. Lire le fichier `docs/SESSION_STATUS.md` depuis GitHub (ou le créer s'il n'existe pas)
+2. Ajouter une entrée horodatée avec :
+   ```
+   ### [DATE HEURE] — [TITRE ACTION]
+   - **Statut** : ✅ Terminé / 🔄 En cours / ⚠️ Bloqué
+   - **Fichiers modifiés** : liste
+   - **DB impactée** : colonnes/tables ajoutées ou modifiées
+   - **Commits** : SHA(s) du ou des commits
+   - **Points en suspens** : ce qui reste à faire ou à vérifier
+   - **Credentials/Accès nécessaires** : ce dont le prochain agent aura besoin
+   ```
+3. Commiter `docs/SESSION_STATUS.md` sur GitHub **après chaque action** — pas en fin de session
+4. En début de session, lire `docs/SESSION_STATUS.md` pour reprendre exactement où on s'est arrêté
+
+**Objectif** : zéro perte de contexte entre sessions, quel que soit l'agent.
+
+---
+
 ## Ressources clés
 
 | Fichier | Description |
 |---|---|
 | `docs/CARTOGRAPHY_360.md` | Vue 360° du projet — **SOURCE DE VÉRITÉ** |
+| `docs/SESSION_STATUS.md` | Journal de session — **REPRENDRE ICI À CHAQUE SESSION** |
 | `docs/ARCHITECTURE.md` | Architecture technique détaillée |
 | `docs/DEPLOYMENT.md` | Guide de déploiement Railway |
 | `routes/` | Tous les endpoints backend |
