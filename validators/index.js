@@ -201,6 +201,13 @@ const orders = {
       supplier_invoice_url: url,
     }),
   },
+
+  cancelOrder: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      reason: safeStr(500),
+    }),
+  },
 };
 
 // ── Schémas : payments.js ───────────────────────────────────────────────────────
