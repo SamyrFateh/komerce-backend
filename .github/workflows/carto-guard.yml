@@ -1,0 +1,81 @@
+name: 🗺️ Carto Guard — Vérification coffre-fort
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  carto-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Vérifier si des fichiers code ont changé
+        id: code_changes
+        run: |
+          CODE_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|server\.js|db\.js)' || true)
+          if [ -n "$CODE_CHANGED" ]; then
+            echo "code_changed=true" >> $GITHUB_OUTPUT
+            echo "files<<ENDFILES" >> $GITHUB_OUTPUT
+            echo "$CODE_CHANGED" >> $GITHUB_OUTPUT
+            echo "ENDFILES" >> $GITHUB_OUTPUT
+          else
+            echo "code_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🗺️ Vérifier si la carto a été mise à jour
+        id: carto_check
+        if: steps.code_changes.outputs.code_changed == 'true'
+        run: |
+          CARTO_UPDATED=$(git diff --name-only origin/main...HEAD | grep -c 'docs/CARTOGRAPHY_360.md' || true)
+          if [ "$CARTO_UPDATED" = "0" ]; then
+            echo "carto_updated=false" >> $GITHUB_OUTPUT
+          else
+            echo "carto_updated=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ⚠️ Commenter si la carto n'est pas mise à jour
+        if: steps.code_changes.outputs.code_changed == 'true' && steps.carto_check.outputs.carto_updated == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = `${{ steps.code_changes.outputs.files }}`;
+            const body = [
+              '## ⚠️ Carto Guard — Coffre-Fort non mis à jour',
+              '',
+              'Cette PR modifie des fichiers code mais la **Cartographie 360°** n\'a pas été mise à jour.',
+              '',
+              '### 📁 Fichiers code modifiés :',
+              '```',
+              files,
+              '```',
+              '',
+              '### ✅ Action requise :',
+              '1. Ouvrir [`docs/CARTOGRAPHY_360.md`](../docs/CARTOGRAPHY_360.md)',
+              '2. Vérifier que vos modifications sont **cohérentes** avec la carto',
+              '3. **Mettre à jour la carto** dans cette PR si nécessaire',
+              '4. Si aucun changement d\'endpoint/table/middleware → cocher la checklist et expliquer pourquoi',
+              '',
+              '> 🔒 *Le coffre-fort protège le code. Pas de merge sans vérification.*'
+            ].join('\n');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: ✅ Carto à jour
+        if: steps.code_changes.outputs.code_changed == 'true' && steps.carto_check.outputs.carto_updated == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## ✅ Carto Guard — Coffre-Fort mis à jour\n\nLa Cartographie 360° a été mise à jour dans cette PR. 🔒👍'
+            });
