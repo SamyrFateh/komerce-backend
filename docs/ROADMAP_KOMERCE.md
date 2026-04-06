@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
 > 📅 **Mise à jour** : 6 avril 2026  
-> 🏷️ **Version** : v15.0  
+> 🏷️ **Version** : v15.1  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables**
 
@@ -15,7 +15,7 @@
 4. [🔴 Priorité 3 — Sécurité](#4--priorité-3--sécurité)
 5. [🔴 Priorité 4 — Go-Live](#5--priorité-4--go-live)
 6. [🟡 Priorité 5 — UX avant lancement marketing](#6--priorité-5--ux-avant-lancement-marketing)
-7. [🔶 Priorité 6 — Règles Opérationnelles Commandes](#7--priorité-6--règles-opérationnelles-commandes)
+7. [🔶 Priorité 6 — Gouvernance Opérationnelle Komerce](#7--priorité-6--règles-opérationnelles-commandes)
 8. [🟢 Priorité 7 — Améliorations futures](#8--priorité-7--améliorations-futures)
 9. [🔵 Nice to have](#9--nice-to-have)
 10. [PRs & Issues ouvertes](#10--prs--issues-ouvertes)
@@ -37,7 +37,7 @@
 | Dashboard unifié v11 | ✅ Mergé | Remplacé par Dashboard Pilotage |
 | **Dashboard Pilotage Unifié** | ✅ 11/11 | **TERMINÉ 🎉** |
 | **Catalogue Pièces Auto/Moto** | ⬜ Nouveau | **PRIORITÉ 2** |
-| **Règles Opérationnelles Commandes** | ⬜ Nouveau | **PRIORITÉ 6** |
+| **Gouvernance Opérationnelle** | ⬜ 0/8 — [Plan détaillé](./komerce-point6-gouvernance-operationnelle.md) | **PRIORITÉ 6 · 34h** |
 | Cartographie 360° v12 | ✅ Poussée | — |
 | Coffre-fort (Vault) | ✅ 6/6 fichiers | — |
 
@@ -241,77 +241,39 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
 
 ---
 
-## 7. 🔶 Priorité 6 — Règles Opérationnelles Commandes
+## 7. 🔶 Priorité 6 — Gouvernance Opérationnelle Komerce
 
-> 🛒 **Règles métier configurables** pour la gestion des commandes, annulations et expéditions partielles.
+> 📖 **Document détaillé** : [`docs/komerce-point6-gouvernance-operationnelle.md`](./komerce-point6-gouvernance-operationnelle.md)  
+> 🎯 **Philosophie** : _"Tout paramètre métier doit vivre en base, jamais dans le code. Le terrain ajuste, le code obéit."_
 
-### 7.1 Délai d'annulation sans frais post-paiement
+### Vision
 
-**Objectif** : Permettre au client d'annuler sa commande **sans frais** dans un délai configurable après le paiement.
+Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47 constantes** aujourd'hui hardcodées dans 12 fichiers. Plus les nouveaux flux d'**annulation**, d'**expédition partielle** et de **remboursement**.
 
-| Paramètre | Description | Valeur par défaut |
-|-----------|-------------|:-----------------:|
-| `CANCEL_FREE_WINDOW_HOURS` | Fenêtre d'annulation gratuite (en heures) | 24h |
-| `CANCEL_PARTIAL_REFUND_PCT` | % remboursé si annulation hors fenêtre | 80% |
-| `CANCEL_CUTOFF_STATUS` | Statut commande au-delà duquel annulation impossible | `shipped` |
+### 5 Phases d'implémentation — 34h total
 
-**Règles** :
-- Si `now - payment_date < CANCEL_FREE_WINDOW_HOURS` → annulation **gratuite**, remboursement 100%
-- Si commande encore `pending` ou `confirmed` et hors fenêtre → remboursement partiel (`CANCEL_PARTIAL_REFUND_PCT`)
-- Si commande `shipped` ou au-delà → annulation **impossible** (retour SAV uniquement)
-- Toutes les variables sont modifiables par l'admin via une page de configuration
+| Phase | Contenu | Effort | Livrable |
+|:-----:|---------|:------:|----------|
+| **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque |
+| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement |
+| **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client |
+| **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée |
+| **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet |
 
-### 7.2 Règles d'expédition partielle Hub Dubai
+### Tâches
 
-**Objectif** : Définir quand expédier une commande **partiellement** depuis le Hub Dubai, en fonction du statut des articles et du retard estimé.
-
-| Paramètre | Description | Valeur par défaut |
-|-----------|-------------|:-----------------:|
-| `PARTIAL_SHIP_DELAY_THRESHOLD_DAYS` | Retard estimé (jours) déclenchant l'expédition partielle | 7 |
-| `PARTIAL_SHIP_MIN_AVAILABLE_PCT` | % minimum d'articles disponibles pour déclencher | 60% |
-| `PARTIAL_SHIP_AUTO_NOTIFY` | Notification auto au client | `true` |
-
-**Règles** :
-- Si `articles_disponibles >= PARTIAL_SHIP_MIN_AVAILABLE_PCT` ET `retard_estimé >= PARTIAL_SHIP_DELAY_THRESHOLD_DAYS` → **expédition partielle automatique** des articles disponibles
-- Le reste de la commande passe en statut `backorder` avec date estimée de disponibilité
-- Le client est notifié automatiquement (email/SMS) avec le détail de l'expédition partielle
-- L'admin peut ajuster les seuils à tout moment via la page de configuration
-- **Cas spécial** : si retard estimé > 30 jours sur articles manquants → proposer annulation partielle au client
-
-### 7.3 Mécanisme d'annulation & mise à jour commande
-
-**Objectif** : Processus complet d'annulation et de mise à jour de commande (totale ou partielle).
-
-**Flux d'annulation** :
-1. Client demande annulation → vérification éligibilité (fenêtre + statut)
-2. Si éligible → calcul remboursement (total ou partiel selon fenêtre)
-3. Remboursement déclenché (même moyen de paiement ou crédit boutique)
-4. Stock re-incrémenté sur articles annulés
-5. Commande mise à jour : statut → `cancelled` ou `partially_cancelled`
-6. Notification client (email + SMS) avec détail et montant remboursé
-7. Historique d'annulation enregistré (audit trail)
-
-**Flux de mise à jour commande partielle** :
-1. Articles disponibles expédiés → sous-commande créée avec tracking
-2. Articles en backorder → sous-commande séparée avec date estimée
-3. Si backorder dépasse 30j → notification client avec option annulation partielle
-4. Dashboard Pilotage → indicateur temps réel des commandes partielles
-
-### 7.4 Tâches
-
-| # | Tâche | Statut |
-|---|-------|:------:|
-| 7.1 | Modélisation config admin (table `business_rules`) | ⬜ |
-| 7.2 | API règles d'annulation (vérification éligibilité + exécution) | ⬜ |
-| 7.3 | API expédition partielle Hub Dubai (détection + déclenchement) | ⬜ |
-| 7.4 | Mécanisme remboursement (Stripe refund + crédit boutique) | ⬜ |
-| 7.5 | Notifications client (email/SMS annulation + expédition partielle) | ⬜ |
-| 7.6 | Page admin configuration règles (UI) | ⬜ |
-| 7.7 | Intégration Dashboard Pilotage (indicateurs annulations + partielles) | ⬜ |
-| 7.8 | Tests & validation | ⬜ |
+| # | Tâche | Phase | Statut |
+|---|-------|:-----:|:------:|
+| 7.1 | Migration DB `007_business_rules.sql` (6 tables) | 1 | ⬜ |
+| 7.2 | Moteur `utils/rules.js` (cache TTL + fallback) | 1 | ⬜ |
+| 7.3 | API admin `routes/config.js` (5 endpoints CRUD) | 1 | ⬜ |
+| 7.4 | Migration 47 constantes → `getRule()` dans 9 fichiers | 2 | ⬜ |
+| 7.5 | `POST /api/orders/:id/cancel` + logique remboursement | 3 | ⬜ |
+| 7.6 | Système crédit boutique (`store_credits`) | 3 | ⬜ |
+| 7.7 | Logique sous-commandes + expédition partielle | 4 | ⬜ |
+| 7.8 | Vue ⚙️ Configuration dashboard + indicateurs | 5 | ⬜ |
 
 ---
-
 ## 8. 🟢 Priorité 7 — Améliorations futures
 
 | # | Amélioration | Impact | Priorité |
