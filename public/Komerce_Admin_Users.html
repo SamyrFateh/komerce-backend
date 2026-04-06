@@ -279,6 +279,10 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 <script>
 'use strict';
 
+// ── Config (DOIT être déclaré en premier — utilisé par l'auth check) ──────────
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000/api' : '/api';
+
 // ── Auth guard ────────────────────────────────────────────────────────────────
 const token = localStorage.getItem('komerce_token') || localStorage.getItem('kmrc_token') || '';
 if (!token && !localStorage.getItem('kmrc_logged_in')) {
@@ -298,14 +302,9 @@ if (!token && !localStorage.getItem('kmrc_logged_in')) {
     document.getElementById('foot-user').textContent = user.full_name || user.email;
     CURRENT_USER_ID = user.id;
   } catch(e) {
-    // En développement, accepter si token présent
-    console.warn('Auth check failed, continuing in dev mode');
+    console.warn('Auth check failed:', e.message);
   }
 })();
-
-// ── Config ────────────────────────────────────────────────────────────────────
-const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3000/api' : '/api';
 
 let CURRENT_USER_ID = null;
 let PENDING_DELETE_ID = null;
@@ -331,7 +330,7 @@ function toast(msg, type = '') {
   t.textContent = msg;
   t.className = 'toast on ' + type;
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.className = 'toast', 3000);
+  t._timer = setTimeout(() => t.className = 'toast', 5000);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -346,7 +345,7 @@ function roleBadge(role) {
     relais: '<span class="b ba">&#128204; Relais</span>',
     admin:  '<span class="b br">&#128737; Admin</span>',
   };
-  return map[role] || `<span class="b bk">${role}</span>`;
+  return map[role] || `<span class="b bk">&#10067; ${role || 'Sans rôle'}</span>`;
 }
 
 // ── Load & render ─────────────────────────────────────────────────────────────
@@ -385,7 +384,7 @@ function renderUsers(users) {
     <tr data-id="${u.id}">
       <td>
         <div class="bold">${esc(u.full_name || '—')}</div>
-        <div style="font-size:10px;color:var(--ink4);margin-top:2px">${esc(u.email)}</div>
+        <div style="font-size:10px;color:var(--ink4);margin-top:2px">${esc(u.email || '—')}</div>
       </td>
       <td class="mono">${esc(u.phone || '—')}</td>
       <td>${roleBadge(u.role)}</td>
@@ -393,13 +392,13 @@ function renderUsers(users) {
       <td class="mono" style="font-size:11px">${fmtDate(u.last_login_at)}</td>
       <td>
         <div class="actions">
-          <select class="role-select" data-uid="${u.id}" onchange="changeRole('${u.id}', this.value, '${esc(u.full_name)}', this)">
+          <select class="role-select" data-uid="${u.id}" onchange="changeRole('${u.id}', this.value, '${esc(u.full_name || u.email)}', this)">
             <option value="client"  ${u.role==='client' ?'selected':''}>Client</option>
             <option value="relais"  ${u.role==='relais' ?'selected':''}>Relais</option>
             <option value="admin"   ${u.role==='admin'  ?'selected':''}>Admin</option>
           </select>
-          <button class="btn-sm" onclick="openModalPwd('${u.id}', '${esc(u.full_name)}')">&#128274; MDP</button>
-          <button class="btn-sm danger" onclick="openModalDelete('${u.id}', '${esc(u.full_name)} (${esc(u.email)})')">&#128465;</button>
+          <button class="btn-sm" onclick="openModalPwd('${u.id}', '${esc(u.full_name || u.email)}')">&#128274; MDP</button>
+          <button class="btn-sm danger" onclick="openModalDelete('${u.id}', '${esc((u.full_name || u.email) + ' (' + (u.email || '') + ')')}')">&#128465;</button>
         </div>
       </td>
     </tr>
@@ -437,19 +436,15 @@ function debounceLoad() {
 
 // ── Change role (inline) ──────────────────────────────────────────────────────
 async function changeRole(userId, newRole, userName, selectEl) {
-  const oldRole = selectEl.dataset.oldRole || [...selectEl.options].find(o => !o.selected && o.defaultSelected)?.value;
   if (!confirm(`Changer le rôle de "${userName}" vers "${newRole}" ?`)) {
-    // Restaurer la valeur
     const user = allUsers.find(u => u.id === userId);
-    if (user) selectEl.value = user.role;
+    if (user) selectEl.value = user.role || 'client';
     return;
   }
   try {
     await api('PUT', `/admin/users/${userId}/role`, { role: newRole });
-    // Mettre à jour localement
     const user = allUsers.find(u => u.id === userId);
     if (user) user.role = newRole;
-    // Mettre à jour le badge dans la ligne
     const row = selectEl.closest('tr');
     if (row) {
       const badgeCell = row.cells[2];
@@ -458,9 +453,8 @@ async function changeRole(userId, newRole, userName, selectEl) {
     updateStats(allUsers);
     toast(`Rôle de ${userName} changé vers "${newRole}"`, 'ok');
   } catch(e) {
-    // Restaurer la valeur en cas d'erreur
     const user = allUsers.find(u => u.id === userId);
-    if (user) selectEl.value = user.role;
+    if (user) selectEl.value = user.role || 'client';
     toast('Erreur : ' + e.message, 'err');
   }
 }
@@ -583,14 +577,12 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('on');
 }
 
-// Fermer modal au clic sur l'overlay
 document.querySelectorAll('.overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) overlay.classList.remove('on');
   });
 });
 
-// Escape pour fermer les modals
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.overlay.on').forEach(m => m.classList.remove('on'));
