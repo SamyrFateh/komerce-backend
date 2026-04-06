@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.6 — 06/04/2026 (v15.5 + sync drift: dashboard.js SHA+size 43.1KB, Komerce_Dashboard.html ajouté public/)
+> **Version** : 15.7 — 06/04/2026 (v15.6 + sync drift: HubDubaiView.tsx, RelaisView.tsx, api.ts, CONTRIBUTING.md SHA)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 06/04/2026 — governance auto-sync (dashboard.js drift + Komerce_Dashboard.html)
+> **Dernière vérification** : 06/04/2026 — governance auto-sync (dashboard-app drift: 3 fichiers + CONTRIBUTING.md SHA)
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -63,7 +63,7 @@ komerce-backend/
 ├── .env.example                          (1.9 KB)  [6568d664]
 ├── .gitignore                            (258 B)   [61e13d23]
 ├── AGENT_RULES.md                        (3.0 KB)  [965976d8]
-├── CONTRIBUTING.md                       (3.2 KB)  [a18b8868]
+├── CONTRIBUTING.md                       (3.1 KB)  [a18b88a6]
 ├── README.md                             (3.9 KB)  [1c05bc68]
 ├── db.js                                 (770 B)   [08d9e6c6]
 ├── package.json                          (923 B)   [f7944e67]
@@ -149,18 +149,18 @@ komerce-backend/
 │   │   ├── CatalogueView.tsx             (8.9 KB)  [c47e8c75]
 │   │   ├── ClientsView.tsx               (8.5 KB)  [6383d2a2]
 │   │   ├── FinanceView.tsx               (11.2 KB) [df4382a6]
-│   │   ├── HubDubaiView.tsx              (9.9 KB)  [1fc68bcd]
+│   │   ├── HubDubaiView.tsx              (10.5 KB) [fbe66418]
 │   │   ├── LoadingError.tsx              (1.7 KB)  [5108f6d1]
 │   │   ├── OverviewView.tsx              (10.3 KB) [be16d0ef]
 │   │   ├── PipelineView.tsx              (4.5 KB)  [5b346aa9]
-│   │   ├── RelaisView.tsx                (12.2 KB) [24c70bc7]
+│   │   ├── RelaisView.tsx                (12.6 KB) [672b1e71]
 │   │   ├── RetardsView.tsx               (7.4 KB)  [bc6b115a]
 │   │   ├── StatCard.tsx                  (889 B)   [8dcabbaf]
 │   │   └── TendancesView.tsx             (10.5 KB) [9b16b6a5]
 │   ├── data/
 │   │   └── mockData.ts                   (30.2 KB) [07646943]
 │   └── utils/
-│       ├── api.ts                        (1.9 KB)  [fab89f3f]
+│       ├── api.ts                        (2.4 KB)  [ae6efd22]
 │       ├── formatters.ts                 (2.8 KB)  [edd50898]
 │       └── useApi.ts                     (2.0 KB)  [777baa92]
 │
@@ -984,11 +984,11 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `CatalogueView.tsx` | 8.9 KB | c47e8c75 | Vue catalogue — navigation produits (3 useApi hooks) |
 | `ClientsView.tsx` | 8.5 KB | 6383d2a2 | Vue clients — comportement, fidélité (1 useApi hook) |
 | `FinanceView.tsx` | 11.2 KB | df4382a6 | Vue finance — CA, marges, devises (1 useApi hook) |
-| `HubDubaiView.tsx` | 9.9 KB | 1fc68bcd | Vue hub Dubai — opérations hub |
+| `HubDubaiView.tsx` | 10.5 KB | fbe66418 | Vue hub Dubai — opérations hub |
 | `LoadingError.tsx` | 1.7 KB | 5108f6d1 | Composant UI loading/erreur réutilisable |
 | `OverviewView.tsx` | 10.3 KB | be16d0ef | Vue d'ensemble — KPIs principaux (3 useApi hooks) |
 | `PipelineView.tsx` | 4.5 KB | 5b346aa9 | Vue pipeline — kanban commandes (1 useApi hook) |
-| `RelaisView.tsx` | 12.2 KB | 24c70bc7 | Vue relais — réseau de points relais |
+| `RelaisView.tsx` | 12.6 KB | 672b1e71 | Vue relais — réseau de points relais |
 | `RetardsView.tsx` | 7.4 KB | bc6b115a | Vue retards — SLA, compensations (1 useApi hook) |
 | `StatCard.tsx` | 889 B | 8dcabbaf | Composant carte statistique réutilisable |
 | `TendancesView.tsx` | 10.5 KB | 9b16b6a5 | Vue tendances — graphiques, projections (2 useApi hooks) |
@@ -1003,7 +1003,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `api.ts` | 1.9 KB | fab89f3f | Service API typé — fetch wrapper avec base URL configurable |
+| `api.ts` | 2.4 KB | ae6efd22 | Service API typé — fetch wrapper avec base URL configurable |
 | `formatters.ts` | 2.8 KB | edd50898 | Formatage nombres, dates, devises (KMF) |
 | `useApi.ts` | 2.0 KB | 777baa92 | Hook React — loading/error/auto-refresh (15s) |
 
@@ -1273,7 +1273,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.5 — 6 avril 2026*
+> 📝 *Cartographie 360° — Version v15.7 — 6 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
@@ -1283,7 +1283,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 19:26:00 UTC
+> Mise à jour : 2026-04-06 19:31:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
