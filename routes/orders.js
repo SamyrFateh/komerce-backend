@@ -41,6 +41,7 @@ const { getRates } = require('../utils/rates');
 const { getRule } = require('../utils/rules');
 const { sendOrderConfirmation } = require('../utils/email');
 const { validate } = require('../middleware/validate');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { orders } = require('../validators');
 
 // ─── Constantes — pipeline MVP 6 étapes (v8.0) ──────────────────────────────
@@ -328,6 +329,36 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
       total_kmf    = total_kmf - discountKmf;
     }
 
+    // ── Crédits boutique — appliquer si disponibles ──────────────────────────
+    let creditApplied = 0;
+    let creditRows = [];
+    if (req.user?.id) {
+      const creditsData = await getAvailableCredits(client, req.user.id);
+      if (creditsData.total_kmf > 0) {
+        creditApplied = Math.min(creditsData.total_kmf, total_kmf);
+        total_kmf -= creditApplied;
+
+        // Décrémenter les crédits dans l'ordre FIFO
+        const { rows: credits } = await client.query(
+          `SELECT id, remaining_kmf FROM store_credits
+           WHERE user_id = $1 AND remaining_kmf > 0
+             AND (expires_at IS NULL OR expires_at > NOW())
+           ORDER BY created_at ASC`,
+          [req.user.id]
+        );
+        let toApply = creditApplied;
+        for (const credit of credits) {
+          if (toApply <= 0) break;
+          const used = Math.min(credit.remaining_kmf, toApply);
+          await client.query(
+            'UPDATE store_credits SET remaining_kmf = remaining_kmf - $1 WHERE id = $2',
+            [used, credit.id]
+          );
+          toApply -= used;
+        }
+      }
+    }
+
     // ── Code cash 6 chiffres (v7.7) — lisible oralement ─────────────────────
     // Ex: "482917" au lieu de "0c92c35b321fb02b"
     // Le client dicte le code à l'agent relais en 3 secondes.
@@ -478,6 +509,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
         discount_pct:     order.discount_pct || 0,
         discount_kmf:     order.discount_kmf || 0,
         loyalty_label:    order.loyalty_label || null,
+        credit_applied_kmf: creditApplied,
       order: {
         id:               order.id,
         reference:        order.reference,
@@ -792,6 +824,48 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
   } catch (err) {
     console.error('[orders/problems] Erreur:', err.message);
     res.status(500).json({ error: 'Erreur récupération problèmes' });
+  }
+});
+
+// ─── GET /api/orders/credits — crédits boutique disponibles ──────────────────
+// Retourne la somme des crédits boutique disponibles pour le client connecté.
+// Rôles : client (ses propres crédits) ou admin (tous les crédits d'un user)
+
+router.get('/credits', authenticate, async (req, res) => {
+  try {
+    const userId = req.query.user_id && req.user.role === 'admin'
+      ? req.query.user_id
+      : req.user.id;
+
+    const { rows } = await db.query(
+      `SELECT
+         id, amount_kmf, remaining_kmf, reason, source_order_id,
+         expires_at, created_at
+       FROM store_credits
+       WHERE user_id = $1
+         AND remaining_kmf > 0
+         AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY created_at ASC`,
+      [userId]
+    );
+
+    const total_kmf = rows.reduce((sum, c) => sum + Number(c.remaining_kmf), 0);
+
+    res.json({
+      total_kmf,
+      credits: rows.map(c => ({
+        id:          c.id,
+        amount_kmf:  c.amount_kmf,
+        remaining_kmf: c.remaining_kmf,
+        reason:      c.reason,
+        source_order_id: c.source_order_id,
+        expires_at:  c.expires_at,
+        created_at:  c.created_at,
+      })),
+    });
+  } catch (err) {
+    console.error('[CREDITS] Error:', err.message);
+    res.status(500).json({ error: 'Erreur récupération crédits boutique' });
   }
 });
 
@@ -1111,6 +1185,250 @@ router.get('/:ref', async (req, res) => {
   }
 });
 
+// ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
+// Annulation avec remboursement automatique (Stripe refund ou crédit boutique)
+//
+// Auth : client (sa propre commande) ou admin (toute commande)
+// Body : { reason?: string }
+//
+// Règles (business_rules) :
+//   CANCEL_FREE_WINDOW_HOURS  → fenêtre remboursement 100% (défaut: 24h)
+//   CANCEL_PARTIAL_REFUND_PCT → % remboursé hors fenêtre  (défaut: 80%)
+//   CANCEL_CUTOFF_STATUS      → statut max pour annulation (défaut: shipped)
+
+router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { id }     = req.params;
+    const { reason } = req.body;
+
+    // ── 1. Récupérer la commande ──────────────────────────────────────────────
+    const { rows: [order] } = await client.query(
+      `SELECT o.*, u.phone AS user_phone, u.email AS user_email
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       WHERE o.id = $1`,
+      [id]
+    );
+
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    // ── 2. Droits d'accès ────────────────────────────────────────────────────
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin && order.user_id !== req.user.id) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Accès refusé — commande appartenant à un autre client' });
+    }
+
+    // ── 3. Vérifier que la commande n'est pas déjà terminée ──────────────────
+    if (['cancelled', 'refunded'].includes(order.status)) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Commande déjà ${order.status} — aucune action possible`,
+        current_status: order.status,
+      });
+    }
+    if (order.status === 'collected') {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: 'Impossible d\'annuler une commande déjà collectée — contactez le SAV',
+        current_status: order.status,
+      });
+    }
+
+    // ── 4. Vérifier le statut de coupure (CANCEL_CUTOFF_STATUS) ──────────────
+    const cutoffStatus = await getRule('CANCEL_CUTOFF_STATUS', 'shipped');
+    const STATUS_ORDER = [
+      'confirmed', 'ordered', 'preparation',
+      'shipped', 'in_transit', 'available', 'collected',
+    ];
+    const currentIdx = STATUS_ORDER.indexOf(order.status);
+    const cutoffIdx  = STATUS_ORDER.indexOf(cutoffStatus);
+
+    if (currentIdx >= cutoffIdx) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({
+        error: `Annulation impossible — commande en statut "${order.status}". L'annulation n'est possible que jusqu'au statut "${cutoffStatus}" exclu. Pour un retour, contactez le SAV.`,
+        current_status: order.status,
+        cutoff_status:  cutoffStatus,
+      });
+    }
+
+    // ── 5. Calculer le remboursement ──────────────────────────────────────────
+    const isPaid         = order.payment_status === 'paid';
+    let refundAmountKmf  = 0;
+    let refundAmountEur  = 0;
+    let refundType       = 'none';
+    let refundMethod     = null;
+    let inFreeWindow     = false;
+
+    if (isPaid) {
+      const freeWindowHours  = await getRule('CANCEL_FREE_WINDOW_HOURS', 24);
+      const partialRefundPct = await getRule('CANCEL_PARTIAL_REFUND_PCT', 80);
+
+      // Référence temporelle : ordered_at (moment du paiement réel)
+      const paidAt        = order.ordered_at || order.created_at;
+      const hoursSincePaid = (Date.now() - new Date(paidAt).getTime()) / (1000 * 60 * 60);
+      inFreeWindow         = hoursSincePaid <= freeWindowHours;
+
+      const refundPct    = inFreeWindow ? 100 : partialRefundPct;
+      refundAmountKmf    = Math.round(Number(order.total_kmf) * refundPct / 100);
+
+      // Convertir en EUR (pro-rata basé sur total_eur/total_kmf)
+      const eurKmfRate   = order.total_eur && order.total_kmf
+        ? Number(order.total_kmf) / Number(order.total_eur)
+        : 492;
+      refundAmountEur    = parseFloat((refundAmountKmf / eurKmfRate).toFixed(2));
+
+      refundType   = inFreeWindow ? 'full' : 'partial';
+      refundMethod = order.payment_mode === 'stripe_eur' ? 'stripe' : 'store_credit';
+    }
+
+    // ── 6. Exécuter le remboursement Stripe AVANT le COMMIT ──────────────────
+    let stripeRefundId = null;
+    let storeCreditId  = null;
+
+    if (isPaid && refundAmountKmf > 0 && refundMethod === 'stripe') {
+      if (!order.stripe_payment_id) {
+        await client.query('ROLLBACK');
+        return res.status(422).json({
+          error: 'Stripe payment ID introuvable — contactez le support',
+        });
+      }
+      try {
+        const amountCents  = Math.round(refundAmountEur * 100);
+        const stripeRefund = await stripe.refunds.create({
+          payment_intent: order.stripe_payment_id,
+          amount:         amountCents,
+          reason:         'requested_by_customer',
+          metadata: {
+            order_reference: order.reference,
+            refund_type:     refundType,
+            komerce:         'true',
+          },
+        });
+        stripeRefundId = stripeRefund.id;
+        console.log(`[CANCEL] Stripe refund OK: ${stripeRefundId} — ${refundAmountEur}€ pour ${order.reference}`);
+      } catch (stripeErr) {
+        await client.query('ROLLBACK');
+        console.error('[CANCEL] Stripe refund error:', stripeErr.message);
+        return res.status(500).json({
+          error: `Annulation impossible — erreur remboursement Stripe: ${stripeErr.message}`,
+        });
+      }
+    }
+
+    // ── 7. Annuler la commande ────────────────────────────────────────────────
+    await client.query(
+      `UPDATE orders
+       SET status = 'cancelled', cancelled_at = NOW(), cancel_reason = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [reason || null, id]
+    );
+
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, 'cancelled', $2, $3)`,
+      [id, reason ? `Annulation : ${reason}` : 'Annulation client', req.user.id]
+    );
+
+    // ── 8. Restaurer le stock ─────────────────────────────────────────────────
+    const { rows: items } = await client.query(
+      'SELECT product_id, quantity FROM order_items WHERE order_id = $1', [id]
+    );
+    for (const item of items) {
+      await client.query(
+        'UPDATE products SET stock = stock + $1 WHERE id = $2',
+        [item.quantity, item.product_id]
+      );
+    }
+
+    // ── 9. Crédit boutique (cash relais) ──────────────────────────────────────
+    if (isPaid && refundAmountKmf > 0 && refundMethod === 'store_credit') {
+      const { rows: [credit] } = await client.query(
+        `INSERT INTO store_credits
+           (user_id, amount_kmf, remaining_kmf, reason, source_order_id)
+         VALUES ($1, $2, $2, 'cancellation_refund', $3)
+         RETURNING id`,
+        [order.user_id, refundAmountKmf, id]
+      );
+      storeCreditId = credit.id;
+    }
+
+    // ── 10. Enregistrer dans la table refunds ─────────────────────────────────
+    if (isPaid && refundAmountKmf > 0) {
+      await client.query(
+        `INSERT INTO refunds
+           (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+            stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'completed',NOW())`,
+        [
+          id, refundAmountKmf, refundAmountEur,
+          refundType, refundMethod,
+          stripeRefundId, storeCreditId,
+          reason || 'Annulation client', req.user.id,
+        ]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    // ── 11. SMS client (non bloquant) ─────────────────────────────────────────
+    const userPhone = order.user_phone;
+    if (userPhone) {
+      let smsText;
+      if (!isPaid) {
+        smsText = `Komerce : Commande ${order.reference} annulee. Aucun paiement n'a ete preleve.`;
+      } else if (refundMethod === 'stripe') {
+        smsText = `Komerce : Commande ${order.reference} annulee. Remboursement de ${refundAmountEur.toFixed(2)}EUR en cours (2-5 jours ouvres Stripe).`;
+      } else {
+        smsText = `Komerce : Commande ${order.reference} annulee. Credit boutique de ${Number(refundAmountKmf).toLocaleString('fr-FR')} KMF credite sur votre compte.`;
+      }
+      sendSMS(userPhone, smsText, 'cancellation', id).catch(console.error);
+    }
+
+    // ── Réponse ───────────────────────────────────────────────────────────────
+    const refundInfo = isPaid && refundAmountKmf > 0 ? {
+      amount_kmf:      refundAmountKmf,
+      amount_eur:      refundAmountEur,
+      type:            refundType,
+      method:          refundMethod,
+      in_free_window:  inFreeWindow,
+      stripe_refund_id: stripeRefundId,
+      store_credit_id:  storeCreditId,
+    } : null;
+
+    let message;
+    if (!isPaid) {
+      message = 'Commande annulée — aucun prélèvement effectué';
+    } else if (refundMethod === 'stripe') {
+      message = `Remboursement de ${refundAmountEur.toFixed(2)}€ initié via Stripe (2–5 jours ouvrés)`;
+    } else {
+      message = `Crédit boutique de ${Number(refundAmountKmf).toLocaleString('fr-FR')} KMF crédité sur votre compte`;
+    }
+
+    res.json({
+      success:   true,
+      reference: order.reference,
+      status:    'cancelled',
+      refund:    refundInfo,
+      message,
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[CANCEL] Error:', err.message);
+    res.status(500).json({ error: 'Erreur annulation commande' });
+  } finally {
+    client.release();
+  }
+});
+
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 
 router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.updateStatus), async (req, res) => {
@@ -1340,5 +1658,19 @@ router.get('/:id/history', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Erreur historique' });
   }
 });
+
+// ─── Helper : crédits boutique disponibles ────────────────────────────────────
+
+async function getAvailableCredits(dbClient, userId) {
+  const { rows } = await dbClient.query(
+    `SELECT COALESCE(SUM(remaining_kmf), 0)::INTEGER AS total_kmf
+     FROM store_credits
+     WHERE user_id = $1
+       AND remaining_kmf > 0
+       AND (expires_at IS NULL OR expires_at > NOW())`,
+    [userId]
+  );
+  return { total_kmf: rows[0]?.total_kmf || 0 };
+}
 
 module.exports = router;
