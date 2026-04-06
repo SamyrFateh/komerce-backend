@@ -1,9 +1,9 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
 > 📅 **Mise à jour** : 7 avril 2026  
-> 🏷️ **Version** : v15.3  
+> 🏷️ **Version** : v15.4  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
-> 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables**
+> 📊 **18 fichiers route** · **~122 endpoints** · **29+ tables**
 
 ---
 
@@ -256,7 +256,7 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 |:-----:|---------|:------:|----------|---------|
 | **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque | ✅ Mergée |
 | **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée |
-| **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client | 🔄 PR #106 en cours |
+| **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client | ✅ PR #105 mergée |
 | **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée | ⬜ |
 | **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet | ⬜ |
 
@@ -268,12 +268,12 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 | 7.2 | Moteur `utils/rules.js` (cache TTL + fallback) | 1 | ✅ |
 | 7.3 | API admin `routes/config.js` (5 endpoints CRUD) | 1 | ✅ |
 | 7.4 | Migration 47 constantes → `getRule()` dans 9 fichiers | 2 | ✅ |
-| 7.5 | `POST /api/orders/:id/cancel` + logique remboursement | 3 | 🔄 PR #106 |
-| 7.6 | Système crédit boutique (`store_credits`) | 3 | 🔄 PR #106 |
+| 7.5 | `POST /api/orders/:id/cancel` + logique remboursement | 3 | ✅ PR #105 |
+| 7.6 | Système crédit boutique (`store_credits`) | 3 | ✅ PR #105 |
 | 7.7 | Logique sous-commandes + expédition partielle | 4 | ⬜ |
 | 7.8 | Vue ⚙️ Configuration dashboard + indicateurs | 5 | ⬜ |
 
-### Nouveaux endpoints Phase 3 (PR #106)
+### Nouveaux endpoints Phase 3 (PR #105) ✅
 
 | Endpoint | Auth | Description |
 |----------|------|-------------|
@@ -330,11 +330,9 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 | #84 | 🟠 Pool PostgreSQL | `enhancement` | MAJEUR |
 | #48 | 💰 Saisie coûts réels | `finance`, `data-entry` | BLOQUANT |
 
-### PRs ouvertes : 1
+### PRs ouvertes : 0
 
-| PR | Titre | Statut |
-|----|-------|--------|
-| [#106](https://github.com/SamyrFateh/komerce-backend/pull/106) | feat(governance): Phase 3 — Annulation & Remboursement | 🔄 En attente review |
+Aucune PR ouverte — alignement gouvernance à jour.
 
 ---
 
@@ -343,10 +341,14 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 <details>
 <summary>Cliquer pour voir tout ce qui a été accompli</summary>
 
-### Session 07/04/2026 — Phase 3 Gouvernance Opérationnelle
+### Session 07/04/2026 — Alignement Gouvernance & Fix Déploiement
 | # | Action | PR | Status |
 |---|--------|-----|--------|
-| 1 | Phase 3 : POST /cancel + Stripe refund + crédit boutique + GET /credits | PR #106 | 🔄 En cours |
+| 1 | Phase 3 : POST /cancel + Stripe refund + crédit boutique + GET /credits | PR #105 | ✅ Mergée |
+| 2 | Phase 2 : Migration 47 constantes → getRule()/getRuleNumber() | PR #106 | ✅ Mergée |
+| 3 | Fix déploiement : railway.toml watch patterns (filtre docs-only) | PR #107 | ✅ Mergée |
+| 4 | Fix crash : SyntaxError backticks imbriquées dans utils/sms.js | PR #108 | ✅ Mergée |
+| 5 | Alignement documents de gouvernance (Roadmap, Carto, Delta) | PR #109 | 🔄 |
 
 ### Session 06/04/2026 — Audit deep + Dashboard unifié + Catalogue Pièces
 | # | Action | PR | Status |
@@ -410,11 +412,8 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 
 ```
 ✅ TERMINÉ :
-  └── Dashboard Pilotage Unifié (11/11) 🎉
-
-🔄 EN COURS :
-  └── Gouvernance Opérationnelle — Phase 3 (PR #106)
-      └── POST /cancel + Stripe refund + crédit boutique
+  ├── Dashboard Pilotage Unifié (11/11) 🎉
+  └── Gouvernance Opérationnelle — Phases 1-3 ✅
 
 🟠 ENSUITE :
   └── Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai
