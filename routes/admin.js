@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Back-office Admin v7.2
+ * KOMERCE — Back-office Admin v7.3
  *
  * Toutes les routes sont protégées : authenticate + requireRole(['admin'])
  *
@@ -17,6 +17,8 @@
  * PUT    /api/admin/users/:id/role    → changer le rôle
  * PUT    /api/admin/users/:id/password → réinitialiser MDP
  * DELETE /api/admin/users/:id         → supprimer (soft/hard selon dépendances)
+ *
+ * NOTE: user_role enum DB = ('client', 'admin', 'agent_relais', 'agent_hub')
  */
 
 const express = require('express');
@@ -27,6 +29,9 @@ const { validate } = require('../middleware/validate');
 const { admin } = require('../validators');
 
 const guard = [authenticate, requireRole(['admin'])];
+
+// Valeurs valides du enum user_role en DB
+const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 
 // ─── GET /api/admin/dashboard ────────────────────────────────────────────────
 
@@ -463,6 +468,7 @@ router.post('/seed-test', ...guard, validate(admin.seedTest), async (req, res) =
 });
 
 // ─── GET /api/admin/users — Liste tous les utilisateurs ──────────────────────
+// NOTE: user_role enum = ('client', 'admin', 'agent_relais', 'agent_hub')
 
 router.get('/users', ...guard, async (req, res) => {
   try {
@@ -472,7 +478,7 @@ router.get('/users', ...guard, async (req, res) => {
     const params     = [];
     let   pi         = 1;
 
-    if (role && ['client', 'relais', 'admin'].includes(role)) {
+    if (role && VALID_ROLES.includes(role)) {
       conditions.push(`u.role = $${pi++}`);
       params.push(role);
     }
@@ -484,7 +490,6 @@ router.get('/users', ...guard, async (req, res) => {
 
     const where = conditions.join(' AND ');
 
-    // Requête principale — colonnes confirmées dans le schéma users
     const { rows } = await db.query(
       `SELECT
          u.id,
@@ -512,7 +517,6 @@ router.get('/users', ...guard, async (req, res) => {
     res.json({ users: rows, total: Number(countRow.count) });
 
   } catch (err) {
-    // Retourner le vrai message d'erreur SQL pour faciliter le debug
     console.error('Admin users list error:', err.message, err.stack);
     res.status(500).json({ error: 'Erreur liste utilisateurs : ' + err.message });
   }
@@ -525,8 +529,7 @@ router.post('/users', ...guard, async (req, res) => {
   try {
     const { full_name, email, phone, password, role = 'client', currency_pref = 'KMF' } = req.body;
     if (!full_name || !email || !password) return res.status(400).json({ error: 'full_name, email et password sont obligatoires' });
-    const validRoles = ['client', 'relais', 'admin'];
-    if (!validRoles.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${validRoles.join(', ')}` });
+    if (!VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
     const { rows: existing } = await db.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.length) return res.status(409).json({ error: 'Un utilisateur avec cet email existe déjà' });
     const password_hash = await bcrypt.hash(password, 10);
@@ -550,8 +553,7 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
-    const validRoles = ['client', 'relais', 'admin'];
-    if (!role || !validRoles.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${validRoles.join(', ')}` });
+    if (!role || !VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
     if (id === req.user.id && role !== 'admin') return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle' });
     const { rows: [user] } = await db.query(
       `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, full_name, email, role`,
@@ -562,7 +564,7 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
     res.json({ success: true, user });
   } catch (err) {
     console.error('Admin change role error:', err.message);
-    res.status(500).json({ error: 'Erreur changement de rôle' });
+    res.status(500).json({ error: 'Erreur changement de rôle : ' + err.message });
   }
 });
 

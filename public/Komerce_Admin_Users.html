@@ -75,6 +75,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 .ba{background:var(--amb-bg);color:var(--amb)}
 .br{background:var(--red-bg);color:var(--red)}
 .bk{background:var(--bg3);color:var(--ink4)}
+.bpur{background:#f5f3ff;color:#7c3aed}
 
 /* FORM */
 .inp{width:100%;background:var(--bg3);border:1px solid var(--ln);border-radius:8px;padding:8px 12px;color:var(--ink);font-family:"DM Sans",sans-serif;font-size:13px;outline:none}
@@ -175,7 +176,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <div class="stats" id="stats-row">
         <div class="sc"><div class="sc-lbl">Total utilisateurs</div><div class="sc-val ter" id="stat-total">—</div><div class="sc-sub">Tous rôles confondus</div></div>
         <div class="sc"><div class="sc-lbl">Clients</div><div class="sc-val blu" id="stat-clients">—</div><div class="sc-sub">Rôle client</div></div>
-        <div class="sc"><div class="sc-lbl">Relais</div><div class="sc-val amb" id="stat-relais">—</div><div class="sc-sub">Points relais actifs</div></div>
+        <div class="sc"><div class="sc-lbl">Relais</div><div class="sc-val amb" id="stat-relais">—</div><div class="sc-sub">Agents relais actifs</div></div>
         <div class="sc"><div class="sc-lbl">Admins</div><div class="sc-val red" id="stat-admins">—</div><div class="sc-sub">Accès back-office</div></div>
       </div>
 
@@ -185,7 +186,8 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
         <select id="role-filter" onchange="loadUsers()">
           <option value="">Tous les rôles</option>
           <option value="client">Clients</option>
-          <option value="relais">Relais</option>
+          <option value="agent_relais">Agent Relais</option>
+          <option value="agent_hub">Agent Hub</option>
           <option value="admin">Admins</option>
         </select>
         <span class="filter-count" id="filter-count"></span>
@@ -224,7 +226,8 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
         <label class="inp-lbl">Rôle *</label>
         <select class="inp" id="c-role">
           <option value="client">Client</option>
-          <option value="relais">Relais</option>
+          <option value="agent_relais">Agent Relais</option>
+          <option value="agent_hub">Agent Hub</option>
           <option value="admin">Admin</option>
         </select>
       </div>
@@ -279,7 +282,8 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 <script>
 'use strict';
 
-// ── Config (DOIT être déclaré en premier — utilisé par l'auth check) ──────────
+// ── Config (DOIT être déclaré en premier) ─────────────────────────────────────
+// user_role enum DB = ('client', 'admin', 'agent_relais', 'agent_hub')
 const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:3000/api' : '/api';
 
@@ -339,13 +343,15 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
 }
 
+// Mapping rôles DB → labels + badges visuels
 function roleBadge(role) {
   const map = {
-    client: '<span class="b bb">&#128100; Client</span>',
-    relais: '<span class="b ba">&#128204; Relais</span>',
-    admin:  '<span class="b br">&#128737; Admin</span>',
+    client:       '<span class="b bb">&#128100; Client</span>',
+    agent_relais: '<span class="b ba">&#128204; Agent Relais</span>',
+    agent_hub:    '<span class="b bpur">&#128262; Agent Hub</span>',
+    admin:        '<span class="b br">&#128737; Admin</span>',
   };
-  return map[role] || `<span class="b bk">&#10067; ${role || 'Sans rôle'}</span>`;
+  return map[role] || `<span class="b bk">&#10067; ${esc(role || 'Sans rôle')}</span>`;
 }
 
 // ── Load & render ─────────────────────────────────────────────────────────────
@@ -393,9 +399,10 @@ function renderUsers(users) {
       <td>
         <div class="actions">
           <select class="role-select" data-uid="${u.id}" onchange="changeRole('${u.id}', this.value, '${esc(u.full_name || u.email)}', this)">
-            <option value="client"  ${u.role==='client' ?'selected':''}>Client</option>
-            <option value="relais"  ${u.role==='relais' ?'selected':''}>Relais</option>
-            <option value="admin"   ${u.role==='admin'  ?'selected':''}>Admin</option>
+            <option value="client"       ${u.role==='client'       ?'selected':''}>Client</option>
+            <option value="agent_relais" ${u.role==='agent_relais' ?'selected':''}>Agent Relais</option>
+            <option value="agent_hub"    ${u.role==='agent_hub'    ?'selected':''}>Agent Hub</option>
+            <option value="admin"        ${u.role==='admin'        ?'selected':''}>Admin</option>
           </select>
           <button class="btn-sm" onclick="openModalPwd('${u.id}', '${esc(u.full_name || u.email)}')">&#128274; MDP</button>
           <button class="btn-sm danger" onclick="openModalDelete('${u.id}', '${esc((u.full_name || u.email) + ' (' + (u.email || '') + ')')}')">&#128465;</button>
@@ -424,7 +431,7 @@ function renderUsers(users) {
 function updateStats(users) {
   document.getElementById('stat-total').textContent   = users.length;
   document.getElementById('stat-clients').textContent = users.filter(u => u.role === 'client').length;
-  document.getElementById('stat-relais').textContent  = users.filter(u => u.role === 'relais').length;
+  document.getElementById('stat-relais').textContent  = users.filter(u => u.role === 'agent_relais' || u.role === 'agent_hub').length;
   document.getElementById('stat-admins').textContent  = users.filter(u => u.role === 'admin').length;
 }
 
@@ -436,7 +443,8 @@ function debounceLoad() {
 
 // ── Change role (inline) ──────────────────────────────────────────────────────
 async function changeRole(userId, newRole, userName, selectEl) {
-  if (!confirm(`Changer le rôle de "${userName}" vers "${newRole}" ?`)) {
+  const roleLabel = { client: 'Client', agent_relais: 'Agent Relais', agent_hub: 'Agent Hub', admin: 'Admin' };
+  if (!confirm(`Changer le rôle de "${userName}" vers "${roleLabel[newRole] || newRole}" ?`)) {
     const user = allUsers.find(u => u.id === userId);
     if (user) selectEl.value = user.role || 'client';
     return;
@@ -451,7 +459,7 @@ async function changeRole(userId, newRole, userName, selectEl) {
       if (badgeCell) badgeCell.innerHTML = roleBadge(newRole);
     }
     updateStats(allUsers);
-    toast(`Rôle de ${userName} changé vers "${newRole}"`, 'ok');
+    toast(`Rôle de ${userName} changé vers "${roleLabel[newRole] || newRole}"`, 'ok');
   } catch(e) {
     const user = allUsers.find(u => u.id === userId);
     if (user) selectEl.value = user.role || 'client';
