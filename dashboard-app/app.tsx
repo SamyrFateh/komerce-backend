@@ -52,19 +52,22 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Tab navigation */}
-      <div className="sticky top-0 z-50 bg-base-100 border-b border-base-300">
-        <div className="overflow-x-auto">
-          <div role="tablist" className="tabs tabs-bordered flex-nowrap px-2 pt-1">
+      <div className="sticky top-0 z-50 bg-base-100 border-b border-base-300 shadow-sm">
+        <div className="overflow-x-auto scrollbar-thin">
+          <div className="flex gap-0 min-w-max px-1 pt-1">
             {tabs.map((tab) => (
-              <a
+              <button
                 key={tab.id}
-                role="tab"
-                className={`tab gap-1 whitespace-nowrap text-sm ${activeTab === tab.id ? 'tab-active font-semibold' : ''}`}
+                className={`flex flex-col items-center justify-center px-3 py-2 min-w-[4.5rem] text-xs border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary text-primary font-bold'
+                    : 'border-transparent text-base-content/60 hover:text-base-content hover:bg-base-200'
+                }`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.icon}
-                {tab.label}
-              </a>
+                <span className="mb-0.5">{tab.icon}</span>
+                <span className="truncate max-w-[5rem]">{tab.label}</span>
+              </button>
             ))}
           </div>
         </div>

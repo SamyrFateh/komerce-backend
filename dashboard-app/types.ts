@@ -95,6 +95,71 @@ export interface RetardClient {
   sms_suggere: string;
 }
 
+// ── Product & Order statuses ───────────────────────────────────────
+
+export type ProductStatus =
+  | 'complet'
+  | 'incomplet'
+  | 'retard'
+  | 'defectueux'
+  | 'annule'
+  | 'hors_stock'
+  | 'en_attente';
+
+export interface OrderProduct {
+  nom: string;
+  quantite: number;
+  prix_kmf: number;
+  status: ProductStatus;
+  note?: string;
+}
+
+export type OrderGlobalStatus =
+  | 'tous_complets'
+  | 'partiel'
+  | 'bloque'
+  | 'annule';
+
+export interface HubOrder {
+  reference: string;
+  client_nom: string;
+  produits: OrderProduct[];
+  total_kmf: number;
+  date_commande: string;
+  jours: number;
+  fournisseur?: string;
+  poids_kg?: number;
+  priorite?: 'normale' | 'urgente';
+  note?: string;
+}
+
+export interface HubData {
+  a_receptionner: HubOrder[];
+  a_emballer: HubOrder[];
+  a_expedier: HubOrder[];
+}
+
+export interface RelaisOrder {
+  reference: string;
+  client_nom: string;
+  client_phone: string;
+  produits: OrderProduct[];
+  total_kmf: number;
+  payment_mode: 'cash_relais' | 'stripe';
+  payment_status: 'paid' | 'pending';
+  date_arrivee: string;
+  heures_attente: number;
+  relais_nom: string;
+  ile: string;
+  priorite?: 'normale' | 'urgente';
+  note?: string;
+}
+
+export interface RelaisOrderData {
+  a_valider: RelaisOrder[];
+  a_remettre: RelaisOrder[];
+}
+
 // ── Endpoint data shapes ────────────────────────────────────────────
 
 export interface OpsData {

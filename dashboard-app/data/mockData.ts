@@ -7,7 +7,172 @@ import type {
   ForecastData,
   ClientsData,
   HistoryData,
+  HubData,
+  RelaisOrderData,
 } from '../types';
+
+// ── Hub Dubai ─────────────────────────────────────────────────────────
+
+export const mockHubData: HubData = {
+  a_receptionner: [
+    {
+      reference: 'K101', client_nom: 'Ali Mohamed', total_kmf: 170000, date_commande: '2026-03-28', jours: 9, fournisseur: 'Al Fahim Textiles', poids_kg: 2.4, priorite: 'urgente',
+      produits: [
+        { nom: 'Ensemble cérémonie doré', quantite: 1, prix_kmf: 95000, status: 'complet' },
+        { nom: 'Ceinture assortie', quantite: 1, prix_kmf: 35000, status: 'complet' },
+        { nom: 'Chaussures dorées', quantite: 1, prix_kmf: 40000, status: 'hors_stock', note: 'Rupture fournisseur, retour prévu 10/04' },
+      ],
+    },
+    {
+      reference: 'K102', client_nom: 'Mariama Said', total_kmf: 127000, date_commande: '2026-04-01', jours: 5, fournisseur: 'Dubai Perfumes LLC', poids_kg: 0.9,
+      produits: [
+        { nom: 'Parfum Oud Collection 100ml', quantite: 1, prix_kmf: 55000, status: 'complet' },
+        { nom: 'Parfum Musc 50ml', quantite: 1, prix_kmf: 32000, status: 'complet' },
+        { nom: 'Coffret miniatures x5', quantite: 1, prix_kmf: 40000, status: 'defectueux', note: '2 flacons fissurés' },
+      ],
+    },
+    {
+      reference: 'K103', client_nom: 'Ibrahim Youssouf', total_kmf: 45000, date_commande: '2026-04-03', jours: 3, fournisseur: 'Gold Souk Store', poids_kg: 0.3,
+      produits: [
+        { nom: 'Montre Casio Vintage', quantite: 1, prix_kmf: 45000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K104', client_nom: 'Fatima Abdou', total_kmf: 185000, date_commande: '2026-03-30', jours: 7, fournisseur: 'Leather World', poids_kg: 2.8, priorite: 'urgente',
+      produits: [
+        { nom: 'Sac à main cuir noir', quantite: 1, prix_kmf: 95000, status: 'complet' },
+        { nom: 'Portefeuille assorti', quantite: 1, prix_kmf: 40000, status: 'retard', note: 'Livraison fournisseur J+3' },
+        { nom: 'Ceinture cuir', quantite: 1, prix_kmf: 50000, status: 'annule', note: 'Client a annulé cet article' },
+      ],
+    },
+  ],
+  a_emballer: [
+    {
+      reference: 'K201', client_nom: 'Said Omar', total_kmf: 180000, date_commande: '2026-03-25', jours: 12, poids_kg: 0.5,
+      produits: [
+        { nom: 'Collier plaqué or', quantite: 1, prix_kmf: 55000, status: 'complet' },
+        { nom: 'Bracelet plaqué or', quantite: 1, prix_kmf: 35000, status: 'complet' },
+        { nom: 'Boucles oreilles', quantite: 1, prix_kmf: 45000, status: 'complet' },
+        { nom: 'Bague assortie', quantite: 1, prix_kmf: 45000, status: 'incomplet', note: 'Taille non confirmée' },
+      ],
+    },
+    {
+      reference: 'K202', client_nom: 'Amina Hassan', total_kmf: 65000, date_commande: '2026-03-27', jours: 10, poids_kg: 1.0,
+      produits: [
+        { nom: 'Chaussures cérémonie ivoire', quantite: 1, prix_kmf: 65000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K203', client_nom: 'Houssein Ali', total_kmf: 150000, date_commande: '2026-03-26', jours: 11, poids_kg: 2.5, priorite: 'urgente',
+      produits: [
+        { nom: 'Tissu Bazin Riche 3 yards', quantite: 1, prix_kmf: 75000, status: 'complet' },
+        { nom: 'Tissu Bazin Doré 3 yards', quantite: 1, prix_kmf: 75000, status: 'defectueux', note: 'Tâche sur le tissu, remplacement demandé' },
+      ],
+    },
+  ],
+  a_expedier: [
+    {
+      reference: 'K301', client_nom: 'Nouria Ahmed', total_kmf: 210000, date_commande: '2026-03-20', jours: 17, poids_kg: 2.0,
+      produits: [
+        { nom: 'Fond de teint MAC', quantite: 1, prix_kmf: 35000, status: 'complet' },
+        { nom: 'Palette yeux Huda', quantite: 1, prix_kmf: 55000, status: 'complet' },
+        { nom: 'Rouge lèvres set x3', quantite: 1, prix_kmf: 40000, status: 'complet' },
+        { nom: 'Pinceaux set pro', quantite: 1, prix_kmf: 45000, status: 'complet' },
+        { nom: 'Trousse beauté', quantite: 1, prix_kmf: 35000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K302', client_nom: 'Youssouf Abdallah', total_kmf: 120000, date_commande: '2026-03-22', jours: 15, poids_kg: 0.4,
+      produits: [
+        { nom: 'Ray-Ban Aviator', quantite: 1, prix_kmf: 70000, status: 'complet' },
+        { nom: 'Ray-Ban Wayfarer', quantite: 1, prix_kmf: 50000, status: 'retard', note: 'En transit depuis Abu Dhabi' },
+      ],
+    },
+  ],
+};
+
+// ── Relais Orders ─────────────────────────────────────────────────────
+
+export const mockRelaisOrders: RelaisOrderData = {
+  a_valider: [
+    {
+      reference: 'K401', client_nom: 'Ali Mohamed', client_phone: '+269 321 45 67', total_kmf: 170000, payment_mode: 'cash_relais', payment_status: 'pending', date_arrivee: '2026-04-05', heures_attente: 18, relais_nom: 'Relais Mutsamudu', ile: 'Anjouan',
+      produits: [
+        { nom: 'Ensemble cérémonie doré', quantite: 1, prix_kmf: 95000, status: 'complet' },
+        { nom: 'Ceinture assortie', quantite: 1, prix_kmf: 35000, status: 'complet' },
+        { nom: 'Chaussures dorées', quantite: 1, prix_kmf: 40000, status: 'hors_stock', note: 'Non livré — rupture' },
+      ],
+    },
+    {
+      reference: 'K402', client_nom: 'Fatima Abdou', client_phone: '+269 322 11 22', total_kmf: 42000, payment_mode: 'stripe', payment_status: 'paid', date_arrivee: '2026-04-05', heures_attente: 12, relais_nom: 'Relais Mutsamudu', ile: 'Anjouan',
+      produits: [
+        { nom: 'Parfum Oud 100ml', quantite: 1, prix_kmf: 42000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K403', client_nom: 'Ibrahim Youssouf', client_phone: '+269 323 33 44', total_kmf: 90000, payment_mode: 'cash_relais', payment_status: 'pending', date_arrivee: '2026-04-04', heures_attente: 36, relais_nom: 'Relais Domoni', ile: 'Anjouan', priorite: 'urgente',
+      produits: [
+        { nom: 'Montre Casio Vintage', quantite: 1, prix_kmf: 45000, status: 'complet' },
+        { nom: 'Bracelet cuir', quantite: 1, prix_kmf: 25000, status: 'defectueux', note: 'Fermoir cassé' },
+        { nom: 'Étui montre', quantite: 1, prix_kmf: 20000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K404', client_nom: 'Nouria Ahmed', client_phone: '+269 771 22 33', total_kmf: 95000, payment_mode: 'stripe', payment_status: 'paid', date_arrivee: '2026-04-06', heures_attente: 6, relais_nom: 'Relais Moroni Centre', ile: 'Grande Comore',
+      produits: [
+        { nom: 'Sac cuir noir', quantite: 1, prix_kmf: 95000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K405', client_nom: 'Houssein Ali', client_phone: '+269 772 44 55', total_kmf: 150000, payment_mode: 'cash_relais', payment_status: 'pending', date_arrivee: '2026-04-04', heures_attente: 42, relais_nom: 'Relais Moroni Centre', ile: 'Grande Comore', priorite: 'urgente',
+      produits: [
+        { nom: 'Tissu Bazin Riche', quantite: 1, prix_kmf: 75000, status: 'complet' },
+        { nom: 'Tissu Bazin Doré', quantite: 1, prix_kmf: 75000, status: 'incomplet', note: '2 yards sur 3 livrés' },
+      ],
+    },
+  ],
+  a_remettre: [
+    {
+      reference: 'K501', client_nom: 'Mariama Said', client_phone: '+269 321 88 99', total_kmf: 180000, payment_mode: 'stripe', payment_status: 'paid', date_arrivee: '2026-04-01', heures_attente: 120, relais_nom: 'Relais Mutsamudu', ile: 'Anjouan',
+      produits: [
+        { nom: 'Collier plaqué or', quantite: 1, prix_kmf: 55000, status: 'complet' },
+        { nom: 'Bracelet plaqué or', quantite: 1, prix_kmf: 35000, status: 'complet' },
+        { nom: 'Boucles oreilles', quantite: 1, prix_kmf: 45000, status: 'complet' },
+        { nom: 'Bague assortie', quantite: 1, prix_kmf: 45000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K502', client_nom: 'Said Omar', client_phone: '+269 322 55 66', total_kmf: 65000, payment_mode: 'cash_relais', payment_status: 'pending', date_arrivee: '2026-04-02', heures_attente: 96, relais_nom: 'Relais Mutsamudu', ile: 'Anjouan',
+      produits: [
+        { nom: 'Chaussures cérémonie', quantite: 1, prix_kmf: 65000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K503', client_nom: 'Amina Hassan', client_phone: '+269 323 77 88', total_kmf: 210000, payment_mode: 'stripe', payment_status: 'paid', date_arrivee: '2026-04-03', heures_attente: 72, relais_nom: 'Relais Domoni', ile: 'Anjouan',
+      produits: [
+        { nom: 'Fond de teint MAC', quantite: 1, prix_kmf: 35000, status: 'complet' },
+        { nom: 'Palette Huda', quantite: 1, prix_kmf: 55000, status: 'complet' },
+        { nom: 'Rouge lèvres set', quantite: 1, prix_kmf: 40000, status: 'retard', note: 'Manquant au colis' },
+        { nom: 'Pinceaux set pro', quantite: 1, prix_kmf: 45000, status: 'complet' },
+        { nom: 'Trousse beauté', quantite: 1, prix_kmf: 35000, status: 'complet' },
+      ],
+    },
+    {
+      reference: 'K504', client_nom: 'Youssouf Abdallah', client_phone: '+269 771 99 00', total_kmf: 120000, payment_mode: 'cash_relais', payment_status: 'pending', date_arrivee: '2026-03-30', heures_attente: 168, relais_nom: 'Relais Moroni Centre', ile: 'Grande Comore', priorite: 'urgente',
+      produits: [
+        { nom: 'Ray-Ban Aviator', quantite: 1, prix_kmf: 70000, status: 'complet' },
+        { nom: 'Ray-Ban Wayfarer', quantite: 1, prix_kmf: 50000, status: 'annule', note: 'Client a annulé' },
+      ],
+    },
+    {
+      reference: 'K505', client_nom: 'Zaïna Mohamed', client_phone: '+269 341 22 33', total_kmf: 85000, payment_mode: 'stripe', payment_status: 'paid', date_arrivee: '2026-04-02', heures_attente: 96, relais_nom: 'Relais Fomboni', ile: 'Mohéli',
+      produits: [
+        { nom: 'Parfum Oud 100ml', quantite: 1, prix_kmf: 55000, status: 'complet' },
+        { nom: 'Parfum Musc 50ml', quantite: 1, prix_kmf: 30000, status: 'complet' },
+      ],
+    },
+  ],
+};
 
 // ── Ops ─────────────────────────────────────────────────────────────
 
