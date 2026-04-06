@@ -1,7 +1,7 @@
 # 🗺️ CARTOGRAPHIE D'IMPACT 360° — Komerce Backend
 
 > 📅 Générée automatiquement — 05/04/2026 à 13:08
-> 📊 **18 routes** · **118 endpoints** · **27 tables** · **9 services externes**
+> 📊 **18 routes** · **123 endpoints** · **27 tables** · **9 services externes**
 
 ---
 
@@ -108,7 +108,7 @@
 
 ## 2. 📡 Matrice des endpoints (118 endpoints)
 
-### 📁 admin.js — `/api/admin` (11 endpoints, 9 tables, 38.1 Ko)
+### 📁 admin.js — `/api/admin` (16 endpoints, 9 tables)
 
 | # | Méthode | Chemin complet | Auth | Rôles | Tables touchées |
 |---|---------|---------------|------|-------|-----------------|
@@ -122,7 +122,12 @@
 | 8 | 🟡 `PUT` | `/api/admin/partners/:id` | ✅ | role-based | `customs_history`, `order_items`, `order_status_history`, `orders`, `partners`, `products`, `recipients`, `relais`, `users` |
 | 9 | 🔵 `POST` | `/api/admin/reset` | ✅ | role-based | `customs_history`, `order_items`, `order_status_history`, `orders`, `partners`, `products`, `recipients`, `relais`, `users` |
 | 10 | 🟢 `GET` | `/api/admin/counts` | ✅ | role-based | `customs_history`, `order_items`, `order_status_history`, `orders`, `partners`, `products`, `recipients`, `relais`, `users` |
-| 11 | 🔵 `POST` | `/api/admin/seed-test` | ✅ | role-based | `customs_history`, `order_items`, `order_status_history`, `orders`, `partners`, `products`, `recipients`, `relais`, `users` |
+| 11 | 🔵 `POST` | `/api/admin/seed-test` | ✅ | admin | `customs_history`, `order_items`, `order_status_history`, `orders`, `partners`, `products`, `recipients`, `relais`, `users` |
+| 12 | 🟢 `GET` | `/api/admin/users` | ✅ | admin | `users` |
+| 13 | 🔵 `POST` | `/api/admin/users` | ✅ | admin | `users` |
+| 14 | 🟡 `PUT` | `/api/admin/users/:id/role` | ✅ | admin | `users` |
+| 15 | 🟡 `PUT` | `/api/admin/users/:id/password` | ✅ | admin | `users` |
+| 16 | 🔴 `DELETE` | `/api/admin/users/:id` | ✅ | admin | `users`, `orders` |
 
 > 🌐 **Services externes** : `Stripe`, `bcrypt`
 
@@ -577,7 +582,7 @@ pending ──▶ paid ──▶ purchasing ──▶ hub_received ──▶ shi
 
 | Route | `authenticate` | `requireRole` | `requireAdmin` | `rate-limit` | `upload (multer)` | `express.raw` |
 |-------|:--------------:|:-------------:|:--------------:|:------------:|:-----------------:|:-------------:|
-| `admin.js` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `admin.js` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `auth.js` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `baskets.js` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `dashboard.js` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -802,7 +807,7 @@ scans.js → loyalty.js        (recalculateLoyalty)
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 00:57:52 UTC
+> Mise à jour : 2026-04-05 22:54:58 UTC
 
 | Métrique | Valeur |
 |----------|--------|
@@ -810,6 +815,9 @@ scans.js → loyalty.js        (recalculateLoyalty)
 | Tables cartographiées | 20 |
 | Services externes | 9 |
 | Score de risque global | 100/100 |
-| Alertes sécurité | 548 |
+| Alertes sécurité | 538 |
 
 *Régénéré automatiquement par le coffre-fort Komerce v1.0*
+
+## Changelog
+- [2026-04-06] [FEAT] Panel Admin — Gestion des Utilisateurs et des Rôles : ajout de 5 endpoints `/api/admin/users` (GET, POST, PUT role, PUT password, DELETE) protégés par `authenticate + requireAdmin`. Nouvelle page frontend `public/Komerce_Admin_Users.html`.
