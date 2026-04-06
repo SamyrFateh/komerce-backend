@@ -1,5 +1,5 @@
 // Komerce Dashboard — API Service
-// Typed fetch functions for the 8 dashboard endpoints
+// Typed fetch functions for the 10 dashboard endpoints
 
 import type {
   OpsData,
@@ -10,6 +10,8 @@ import type {
   ForecastData,
   ClientsData,
   HistoryData,
+  HubData,
+  RelaisOrderData,
 } from '../types';
 
 // ── Configuration ───────────────────────────────────────────────────
@@ -40,15 +42,25 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
   return res.json();
 }
 
+// ── Helper: end of current month ────────────────────────────────────
+
+function endOfMonth(): string {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return end.toISOString().split('T')[0];
+}
+
 // ── Typed API functions ─────────────────────────────────────────────
 
 export const api = {
-  ops:      () => fetchApi<OpsData>('ops'),
-  finance:  () => fetchApi<FinanceData>('finance'),
-  pilotage: () => fetchApi<PilotageData>('pilotage'),
-  pipeline: () => fetchApi<PipelineData>('pipeline'),
-  retards:  () => fetchApi<RetardsData>('retards'),
-  forecast: () => fetchApi<ForecastData>('forecast'),
-  clients:  () => fetchApi<ClientsData>('clients'),
-  history:  () => fetchApi<HistoryData>('history'),
+  ops:           () => fetchApi<OpsData>('ops'),
+  finance:       () => fetchApi<FinanceData>('finance'),
+  pilotage:      () => fetchApi<PilotageData>('pilotage'),
+  pipeline:      () => fetchApi<PipelineData>('pipeline'),
+  retards:       () => fetchApi<RetardsData>('retards'),
+  forecast:      () => fetchApi<ForecastData>(`forecast?target_date=${endOfMonth()}`),
+  clients:       () => fetchApi<ClientsData>('clients'),
+  history:       () => fetchApi<HistoryData>('history'),
+  hubDubai:      () => fetchApi<HubData>('hub-dubai'),
+  relaisOrders:  () => fetchApi<RelaisOrderData>('relais'),
 };

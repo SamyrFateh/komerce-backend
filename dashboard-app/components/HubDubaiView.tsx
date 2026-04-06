@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { Package, BoxSelect, Truck, AlertTriangle, CheckCircle, Clock, XCircle, Ban, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { mockHubData } from '../data/mockData';
 import { formatKMF } from '../utils/formatters';
-import type { HubOrder, OrderProduct, ProductStatus } from '../types';
+import { api } from '../utils/api';
+import { useApi } from '../utils/useApi';
+import { LoadingError } from './LoadingError';
+import type { HubOrder, HubData, OrderProduct, ProductStatus } from '../types';
 
 type HubSection = 'reception' | 'emballage' | 'expedition';
 
@@ -132,6 +135,7 @@ const OrderCard: React.FC<{
 };
 
 export const HubDubaiView: React.FC = () => {
+  const { data: hubData, loading, error, reload, usingMock } = useApi(() => api.hubDubai(), mockHubData, 15000);
   const [activeSection, setActiveSection] = useState<HubSection>('reception');
   const [processed, setProcessed] = useState<Set<string>>(new Set());
 
@@ -144,7 +148,7 @@ export const HubDubaiView: React.FC = () => {
       key: 'reception',
       label: 'Réceptionner',
       icon: <Package size={18} />,
-      orders: mockHubData.a_receptionner,
+      orders: hubData!.a_receptionner,
       action: 'Réceptionné ✅',
       actionIcon: <Package size={14} />,
     },
@@ -152,7 +156,7 @@ export const HubDubaiView: React.FC = () => {
       key: 'emballage',
       label: 'Emballer',
       icon: <BoxSelect size={18} />,
-      orders: mockHubData.a_emballer,
+      orders: hubData!.a_emballer,
       action: 'Emballé ✅',
       actionIcon: <BoxSelect size={14} />,
     },
@@ -160,7 +164,7 @@ export const HubDubaiView: React.FC = () => {
       key: 'expedition',
       label: 'Expédier',
       icon: <Truck size={18} />,
-      orders: mockHubData.a_expedier,
+      orders: hubData!.a_expedier,
       action: 'Expédié ✅',
       actionIcon: <Truck size={14} />,
     },
@@ -172,76 +176,84 @@ export const HubDubaiView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Section Tabs */}
-      <div className="grid grid-cols-3 gap-2">
-        {sections.map(s => {
-          const count = s.orders.length;
-          const doneCount = s.orders.filter(o => processed.has(o.reference)).length;
-          const isActive = activeSection === s.key;
-          return (
-            <button
-              key={s.key}
-              className={`btn ${isActive ? 'btn-primary' : 'btn-ghost bg-base-200'} flex-col h-auto py-3 gap-1`}
-              onClick={() => setActiveSection(s.key)}
-            >
-              <div className="flex items-center gap-2">
-                {s.icon}
-                <span className="font-bold">{s.label}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className={`badge badge-sm ${isActive ? 'badge-primary-content' : ''}`}>{count}</span>
-                {doneCount > 0 && <span className="text-success">✅ {doneCount}</span>}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <LoadingError loading={loading} error={error} usingMock={usingMock} reload={reload} />
+      {!loading && hubData && (
+        <>
+          {/* Section Tabs */}
+          <div className="grid grid-cols-3 gap-2">
+            {sections.map(s => {
+              const count = s.orders.length;
+              const doneCount = s.orders.filter(o => processed.has(o.reference)).length;
+              const isActive = activeSection === s.key;
+              return (
+                <button
+                  key={s.key}
+                  className={`btn ${isActive ? 'btn-primary' : 'btn-ghost bg-base-200'} flex-col h-auto py-3 gap-1`}
+                  onClick={() => setActiveSection(s.key)}
+                >
+                  <div className="flex items-center gap-2">
+                    {s.icon}
+                    <span className="font-bold">{s.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={`badge badge-sm ${isActive ? 'badge-primary-content' : ''}`}>{count}</span>
+                    {doneCount > 0 && <span className="text-success">✅ {doneCount}</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Status summary chips */}
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(statusCounts).map(([status, count]) => {
-          const sc = statusConfig[status as ProductStatus];
-          return (
-            <div key={status} className={`badge gap-1 ${sc.class}`}>
-              {sc.icon} {count} {sc.label}
+          {/* Status summary chips */}
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(statusCounts).map(([status, count]) => {
+              const sc = statusConfig[status as ProductStatus];
+              return (
+                <div key={status} className={`badge gap-1 ${sc.class}`}>
+                  {sc.icon} {count} {sc.label}
+                </div>
+              );
+            })}
+            <div className="badge badge-outline gap-1">
+              📦 {currentSection.orders.reduce((s, o) => s + o.produits.length, 0)} produits total
             </div>
-          );
-        })}
-        <div className="badge badge-outline gap-1">
-          📦 {currentSection.orders.reduce((s, o) => s + o.produits.length, 0)} produits total
-        </div>
-      </div>
+          </div>
 
-      {/* Progress bar */}
-      <div className="flex items-center gap-3">
-        <progress
-          className="progress progress-primary flex-1"
-          value={nbDone}
-          max={currentSection.orders.length}
-        />
-        <span className="text-sm font-medium whitespace-nowrap">{nbDone}/{currentSection.orders.length} traités</span>
-      </div>
-
-      {/* Order cards */}
-      <div className="flex flex-col gap-3">
-        {currentSection.orders
-          .sort((a, b) => {
-            // Urgents first, then by age desc
-            if (a.priorite === 'urgente' && b.priorite !== 'urgente') return -1;
-            if (b.priorite === 'urgente' && a.priorite !== 'urgente') return 1;
-            return b.jours - a.jours;
-          })
-          .map(order => (
-            <OrderCard
-              key={order.reference}
-              order={order}
-              actionLabel={currentSection.action}
-              actionIcon={currentSection.actionIcon}
-              onAction={handleAction}
-              done={processed.has(order.reference)}
+          {/* Progress bar */}
+          <div className="flex items-center gap-3">
+            <progress
+              className="progress progress-primary flex-1"
+              value={nbDone}
+              max={currentSection.orders.length}
             />
-          ))}
-      </div>
+            <span className="text-sm font-medium whitespace-nowrap">{nbDone}/{currentSection.orders.length} traités</span>
+          </div>
+
+          {/* Order cards */}
+          <div className="flex flex-col gap-3">
+            {currentSection.orders
+              .sort((a, b) => {
+                // Urgents first, then by age desc
+                if (a.priorite === 'urgente' && b.priorite !== 'urgente') return -1;
+                if (b.priorite === 'urgente' && a.priorite !== 'urgente') return 1;
+                return b.jours - a.jours;
+              })
+              .map(order => (
+                <OrderCard
+                  key={order.reference}
+                  order={order}
+                  actionLabel={currentSection.action}
+                  actionIcon={currentSection.actionIcon}
+                  onAction={handleAction}
+                  done={processed.has(order.reference)}
+                />
+              ))}
+            {currentSection.orders.length === 0 && (
+              <div className="text-center py-8 opacity-60">Aucune commande dans cette section</div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
