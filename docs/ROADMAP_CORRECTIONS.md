@@ -1,135 +1,129 @@
-# 🗺️ ROADMAP DE CORRECTIONS — Komerce Backend
+# 🗺️ Komerce — Roadmap Restante (5 avril 2026)
 
-**Créée le :** 5 avril 2026 | **18 bugs restants sur 31**
-**Stratégie :** Performance & stabilité d'abord, sécurité avant mise en prod
-
----
-
-## 📅 Sprint 1 — Performance & BDD (4 bugs)
-> **Objectif :** Base de données propre et performante
-> **Effort estimé :** ~2h | **Impact :** 🔥🔥🔥
-
-| # | Bug | Action | Fichier(s) |
-|---|-----|--------|------------|
-| P2 | Duplication module DB | Supprimer `db/index.js`, tout centraliser sur `db.js` | `db/index.js` → delete |
-| P1 | 3 index manquants | Ajouter index `users(email)`, `products(category)`, `scans(scanned_by)` | `db/schema.sql` |
-| P4 | Duplication table tissus | Fusionner `fabrics` + `ceremony_fabrics` dans un seul schema | `db/schema.sql` + `db/schema_extension.sql` |
-| P5 | Table disputes dupliquée | Garder une seule définition de `disputes` | `db/schema.sql` + `db/schema_extension.sql` |
-
-**Commit :** `🔧 perf(sprint-1): index SQL + suppression doublon DB + schéma unifié`
+> **Repo** : SamyrFateh/komerce-backend · **Version** : v9.3  
+> **Statut global** : Backend sécurisé ✅ · Boutique fonctionnelle ✅ · Go-live en attente
 
 ---
 
-## 📅 Sprint 2 — Robustesse Backend (2 bugs)
-> **Objectif :** Zéro crash possible côté serveur
-> **Effort estimé :** ~30min | **Impact :** 🔥🔥
+## 📊 Vue d'ensemble
 
-| # | Bug | Action | Fichier(s) |
-|---|-----|--------|------------|
-| R2 | DIV/0 forecast CA | Ajouter guard `nbJours > 0` avant calcul forecast | `routes/dashboard.js` |
-| R3 | Fetch sans error handler | Ajouter `.catch()` aux 3 fetch manquants (section Pilotage) | `public/Komerce_Admin.html` |
-
-**Commit :** `🛡️ fix(sprint-2): guards forecast + error handlers fetch`
-
----
-
-## 📅 Sprint 3 — Nettoyage & Qualité (6 bugs)
-> **Objectif :** Code propre, données réalistes, bonnes pratiques
-> **Effort estimé :** ~1h30 | **Impact :** 🔥
-
-| # | Bug | Action | Fichier(s) |
-|---|-----|--------|------------|
-| N2 | pool.connect vs getClient | Remplacer `pool.connect` par pattern `getClient` dans payments | `routes/payments.js` |
-| N3 | Commentaire SHA-256 trompeur | Corriger commentaire → "bcrypt" | `db/schema.sql` |
-| N5 | QR_SECRET par défaut | Ajouter validation process.env au démarrage | `server.js` |
-| N6 | Données réalistes en seed | Remplacer emails/téléphones réels par des faux | `db/seed.sql` |
-| N7 | Contrainte contact user | Ajouter `CHECK (email ~* '^.+@.+$')` sur users | `db/schema.sql` |
-| N8 | TODO soft-auth | Vérifier et nettoyer zone orders.js ~L988 | `routes/orders.js` |
-
-**Commit :** `🧹 clean(sprint-3): qualité code + seed réaliste + contraintes`
+| Roadmap | Progression | Restant |
+|---------|:-----------:|:-------:|
+| Boutique Live | ✅ 5/5 étapes | — |
+| Corrections (bugs) | ✅ 22/23 bugs | 1 item (Starter Kit) |
+| Tests & Validation | 🟡 3/6 phases | Phases 4→6 restantes |
+| UX Sprint | ✅ Haute priorité done | 10 features |
+| Sécurité & Audit | ✅ ~58 problèmes corrigés | — |
+| Coffre-fort (Vault) | ✅ 6/6 fichiers | — |
 
 ---
 
-## 📅 Sprint 4 — Sécurité (6 bugs) ⚠️ AVANT PROD
-> **Objectif :** Zéro faille de sécurité avant déploiement
-> **Effort estimé :** ~3h | **Impact :** 🔥🔥🔥🔥
+## 🔴 Issues ouvertes sur GitHub
 
-| # | Bug | Action | Fichier(s) |
-|---|-----|--------|------------|
-| S1 | Mot de passe en clair | Supprimer `Komerce2026!` du seed, utiliser variable d'env | `db/seed.sql` |
-| S2 | JWT_SECRET par défaut | Valider `process.env.JWT_SECRET` au démarrage, crash si absent | `server.js` |
-| S3 | SSL sans vérification | `rejectUnauthorized: true` (résolu avec P2 si doublon supprimé) | `db.js` |
-| S4 | Hash identique admin/démo | Générer des hash bcrypt différents par compte | `db/seed.sql` |
-| S6 | XSS stocké (21 innerHTML) | Ajouter DOMPurify ou `textContent` partout | `public/Komerce_Boutique.html` |
-| S7 | JWT dans localStorage | Migrer vers cookies httpOnly (chantier front+back) | Admin + Boutique + server.js |
-
-**Commit 1 :** `🔒 sec(sprint-4a): seed sécurisé + JWT env + SSL strict`
-**Commit 2 :** `🔒 sec(sprint-4b): DOMPurify XSS + httpOnly cookies`
+| # | Titre | Labels | Type |
+|---|-------|--------|------|
+| [#48](https://github.com/SamyrFateh/komerce-backend/issues/48) | 💰 Saisir les coûts réels sur les commandes collectées | `finance`, `data-entry` | Issue |
+| [#44](https://github.com/SamyrFateh/komerce-backend/pull/44) | ✨ Polish: palette sage + CTA hero + trust bar + espacement | — | PR ouverte |
+| [#38](https://github.com/SamyrFateh/komerce-backend/pull/38) | UI: Déplacer la barre de recherche du Hero vers le catalogue | — | PR ouverte |
 
 ---
 
-## 📅 Sprint 5 — Starter Kit 🚀
-> **Objectif :** Extraire un boilerplate universel depuis Komerce
-> **Effort estimé :** ~2h
+## 🟡 À faire avant Go-Live (BLOQUANT)
 
-- [ ] Créer repo template `express-starter-kit`
-- [ ] Extraire : server.js, db.js, auth JWT, rate-limit, helmet, health
-- [ ] Structure routes/ générique (CRUD)
-- [ ] Schema SQL de base (users, sessions, config)
-- [ ] README "Quick Start" + checklist sécurité
-- [ ] .env.example avec toutes les vars
+### 1. Exécuter les tests E2E (ROADMAP_TEST.md)
+> ✅ Phases 1-3 validées le 5 avril 2026 — 19/19 tests passent
 
----
+- ~~**Phase 1** — Tests API (19/19 passent : health, auth, catalogue, commandes, statuts)~~ ✅
+- ~~**Phase 2** — Seed données historiques (28 commandes de test)~~ ✅
+- ~~**Phase 3** — Validation des 6 dashboards (CA 6.6M KMF, ops, finance, pilotage)~~ ✅
+- **Phase 4** — Audit comptable croisé (8 vérifications SQL) ⬜
+- **Phase 5** — Reset & cleanup ⬜
+- **Phase 6** — Checklist Go-Live (voir ci-dessous) ⬜
 
-## 📊 Timeline
+### 2. Saisie des coûts réels (Issue #48)
+- Renseigner `cost_real_kmf` sur les commandes `collected`/`shipped`
+- Renseigner `transport_kmf` et `douane_kmf`
+- Sans ça, les marges nettes sont incalculables sur le dashboard Pilotage
 
-```
-Sprint 1 ████████░░░░░░░░ Performance & BDD
-Sprint 2 ██░░░░░░░░░░░░░░ Robustesse
-Sprint 3 █████░░░░░░░░░░░ Nettoyage
-Sprint 4 █████████░░░░░░░ Sécurité (avant prod)
-Sprint 5 ██████░░░░░░░░░░ Starter Kit 🚀
-```
+### 3. Go-Live Checklist
 
-**Total estimé : ~9h de travail**
-
----
-
-## ✅ Progression
-
-| Sprint | Statut | Bugs corrigés |
-|--------|--------|:-------------:|
-| Sprint 1 | ✅ Terminé | **5/5** (P1, P2, P4, P5, N3) |
-| Sprint 2 | ✅ Terminé | **2/2** (R2✅déjà, R3) |
-| Sprint 3 | ✅ Terminé | **5/5** (N2, N5, N6, N7, N8) |
-| Sprint 4 | ✅ Terminé | **5/6** (S1, S2, S3, S4, S6) |
-| Sprint 5 | ⬜ À faire | — |
-| **Total** | | **17/18** |
-
-### ⏳ Restant :
-- **S7** — JWT localStorage → httpOnly cookies (chantier front+back)
+| # | Élément | Statut |
+|---|---------|--------|
+| 6.1 | Tests E2E passent (19/19) | ✅ |
+| 6.2 | Dashboards affichent données réalistes (CA 6.6M KMF) | ✅ |
+| 6.3 | Audit comptable validé | ⬜ |
+| 6.4 | Reset factory exécuté en Prod | ⬜ |
+| 6.5 | Mot de passe admin changé | ⬜ |
+| 6.6 | JWT_SECRET unique en Prod | ⬜ |
+| 6.7 | HTTPS activé | ✅ (Railway natif) |
+| 6.8 | Domaine configuré (boutique.komerce.km) | ⬜ |
+| 6.9 | Monitoring / logs activés | ⬜ |
+| 6.10 | Backup DB programmé | ⬜ |
 
 ---
 
-## 📅 Sprint 5a — Validation des données ✅ TERMINÉ
-> **Objectif :** Pipeline de validation/sanitisation centralisé
-> **Commits :** `3e6b1df` + `14bdf36` (5 avril 2026)
+## 🟠 Avant lancement marketing (~11h de dev)
 
-| Livrable | Description |
-|----------|-------------|
-| `middleware/validate.js` | Middleware validate() + sanitize() + anti-XSS/injection |
-| `validators/index.js` | 31 schémas Joi couvrant toutes les routes mutation |
-| `docs/VALIDATION_GUIDE.md` | Guide d'intégration route par route |
-| **9 fichiers routes patchés** | **32 routes** protégées par validate() |
+> Priorité MOYENNE — Features UX manquantes
 
-**✅ Complet** — Penser à `npm install joi` au déploiement
+| # | Feature | Effort | Statut |
+|---|---------|:------:|:------:|
+| E1 | Filtrage produits par catégorie | 2h | ⬜ |
+| E2 | Recherche produits par nom | 1h | ⬜ |
+| E3 | Responsive mobile (iPhone SE / Galaxy A) | 3h | ⬜ |
+| E4 | Page produit détaillée (modal) | 4h | ⬜ |
+| E5 | Stock en temps réel (badge rupture) | 1h | ⬜ |
 
----
-
-## 📅 Sprint 5b — JWT httpOnly cookies ⬜
-> Migrer JWT du localStorage vers cookies httpOnly (S7)
+### PRs à merger
+- **#44** — Polish palette sage (couleurs, CTA hero, trust bar, espacement)
+- **#38** — Barre de recherche déplacée vers le catalogue
 
 ---
 
-## 📅 Sprint 6 — Starter Kit universel 🚀 ⬜
-> Extraire un boilerplate réutilisable depuis Komerce
+## 🔵 Nice to have (~15h de dev)
+
+| # | Feature | Effort |
+|---|---------|:------:|
+| F1 | Avis produits (étoiles + commentaires) | 6h |
+| F2 | Wishlist (♡ Sauvegarder) | 2h |
+| F3 | Partage produit (lien direct) | 1h |
+| F4 | Mode sombre | 2h |
+| F5 | PWA (install mobile) | 4h |
+
+---
+
+## 🟣 Améliorations long terme (SESSION_STATUS recommandations)
+
+| # | Amélioration | Priorité |
+|---|-------------|:--------:|
+| 1 | Tests automatisés (Jest/Supertest) | Haute |
+| 2 | Monitoring avancé (Sentry / APM) | Haute |
+| 3 | Documentation API (Swagger/OpenAPI) | Moyenne |
+| 4 | Cache Redis (endpoints fréquents) | Moyenne |
+| 5 | Backup auto PostgreSQL | Haute |
+| 6 | Load testing (k6 / Artillery) | Basse |
+| 7 | Starter Kit universel (extraire boilerplate) | Basse |
+
+---
+
+## 📈 Ce qui est FAIT (résumé)
+
+- ✅ **58 problèmes de sécurité** corrigés (audit complet)
+- ✅ **14 bugs** corrigés (Phase 7A/7B/7C)
+- ✅ **12 bugs frontend** corrigés (BUG-018)
+- ✅ **Coffre-fort** avec analyse d'impact automatique sur chaque PR
+- ✅ **Boutique fonctionnelle** : catalogue, panier, checkout, fly-to-cart, drawer
+- ✅ **5 dashboards** temps réel (Admin, Pilotage, Hub, Relais, Finance)
+- ✅ **JWT httpOnly cookies** (migration complète)
+- ✅ **Validation centralisée** (31 schémas Joi, 32 routes protégées)
+- ✅ **Upload images** produits (Multer)
+- ✅ **Email confirmation** commande (Nodemailer)
+- ✅ **Documentation complète** (README, Architecture, Deployment, Session)
+- ✅ **CI/CD** déployé sur Railway + GitHub Actions
+- ✅ **Fix imports validate** (products, orders, admin, scans — 4 fichiers)
+- ✅ **Fix joi@17** + package-lock.json regénéré (compatibilité Node 18)
+- ✅ **Tests E2E 19/19** passent en production (script v2 commité)
+
+---
+
+*Généré le 5 avril 2026 par Tasklet depuis le repo GitHub*

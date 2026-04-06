@@ -1,67 +1,96 @@
-# 📋 SESSION STATUS — Komerce Backend
+# Komerce — État de session (5 avril 2026)
 
-> **RÈGLE** : Ce fichier est mis à jour après chaque action significative et commité sur GitHub.
-> Tout agent doit lire ce fichier en début de session pour reprendre exactement où on s'est arrêté.
+## ✅ Ce qui a été fait
 
----
+### PR #52 — Mergée ✅
+- Fix scan QR sur Hub et Relais (`scan_code` + `step` au lieu de `order_id` + `scan_type`)
+- Bouton 🏷️ Print QR ajouté sur Hub
+- Page `Komerce_QR_Print.html` créée (impression batch étiquettes QR)
 
-## 🔄 EN COURS / POINTS EN SUSPENS
+### PR #53 — Mergée ✅
+- Section **💵 Encaissement Cash** ajoutée sur `Komerce_Relais.html`
+  - Input code cash + bouton Encaisser
+  - Tableau des commandes `confirmed` en attente de paiement
+- Endpoint `GET /api/orders/relais` modifié pour inclure les commandes `confirmed` cash_relais
 
-### Connexion Supabase PostgreSQL
-- **Statut** : ⚠️ À créer (optionnel — utile pour futures migrations)
-- **Action requise** : Créer une connexion Supabase dans Tasklet pour permettre à l'agent d'exécuter des migrations SQL directement
-- **Credentials nécessaires** : URL projet Supabase + Service Role Key (Settings → API dans Supabase)
+### Vérifications
+- Flux API complet testé : `confirmed → ordered → preparation → shipped → available → collected` ✅
+- Infrastructure SMS déjà en place (Africa's Talking) — SMS envoyé automatiquement quand paiement cash confirmé ✅
+- Base purgée (0 commandes, 50 produits)
 
-### Test page Komerce_Admin_Users.html
-- **Statut** : ⚠️ À tester en production
-- **URL** : `https://komerce-backend-production.up.railway.app/Komerce_Admin_Users.html`
-- **Prérequis** : ✅ Migration `last_login_at` exécutée — prêt à tester
+## ⚠️ Bugs trouvés pendant les tests (à corriger)
 
----
+### Format des IDs pour créer une commande
+L'API `/api/orders` attend des **UUID strings**, pas des integers :
+- `product_id` → doit être un UUID string (ex: `"7c19dde1-..."`)
+- `delivery_relay_id` → doit être un UUID string (ex: `"02c78574-..."`)
 
-## ✅ TERMINÉ CETTE SESSION
+### Structure réponse `/api/orders`
+- Retourne un **array** directement, pas `{orders: [...]}`
 
-### [2026-04-06 03:05] — Migration DB `last_login_at`
-- **Statut** : ✅ Terminé
-- **Action exécutée** : `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;`
-- **Exécuté par** : Utilisateur via Supabase SQL Editor
-- **Impact** : La page `Komerce_Admin_Users.html` peut maintenant afficher la date de dernière connexion
+### Relais IDs disponibles
+```
+"02c78574-0086-5905-a5cd-e0f48a4d134c" → Relais Moroni Volo-Volo
+"7c19dde1-9142-5045-83eb-1c1162adb1b9" → Relais Domoni
+"326a56cd-4efe-5721-a6a2-f5f4fa30d176" → Relais Mutsamudu Centre
+"48224a8f-5f3f-509a-8a38-5bb153f69a59" → Relais Fomboni
+```
 
-### [2026-04-06] — Panel Admin Gestion des Utilisateurs
-- **Statut** : ✅ Terminé
-- **Fichiers modifiés** :
-  - `routes/admin.js` — 5 nouveaux endpoints (11 → 16)
-  - `public/Komerce_Admin_Users.html` — nouvelle page créée
-  - `docs/CARTOGRAPHY_360.md` — mise à jour 118 → 123 endpoints
-- **Commits** : `8b6703c`, `706b942`
-- **Endpoints ajoutés** :
-  - `GET /api/admin/users`
-  - `POST /api/admin/users`
-  - `PUT /api/admin/users/:id/role`
-  - `PUT /api/admin/users/:id/password`
-  - `DELETE /api/admin/users/:id`
+## 🎯 Prochaine séance — TODO
 
-### [2026-04-06] — Système de règles universelles agent
-- **Statut** : ✅ Terminé
-- **Fichiers modifiés** :
-  - `AGENT_RULES.md` — créé à la racine du repo (5 règles)
-  - `docs/SESSION_STATUS.md` — créé (ce fichier)
-- **Commits** : `8140656`, `9c48fd2`
+### 1. Tester le flux complet avec les bons IDs
+```bash
+# Récupérer un product_id valide
+GET /api/products → prendre un UUID
 
-### [2026-04-06] — Encaissement Cash Relais (codes 6 chiffres)
-- **Statut** : ✅ Terminé
-- **Fichiers modifiés** :
-  - `routes/orders.js` — `generateCashCode()` → codes 6 chiffres numériques
-  - `public/Komerce_Relais.html` — colonne CODE CASH + bouton Encaisser par ligne
-- **Commits** : `703d430`, `2e178f2`
-- **Point résiduel** : Les 2 commandes existantes (KBC4L5W, K4TMBL7) ont d'anciens codes hex en DB
+# Créer commande avec UUIDs
+POST /api/orders { items: [{product_id: "uuid", quantity: 1}], delivery_relay_id: "uuid", payment_mode: "cash_relais", ... }
 
----
+# Confirmer paiement cash (agent relais)
+POST /api/payments/cash/confirm { cash_ref_code: "CODE" }
 
-## 📌 BACKLOG
+# 4 scans
+POST /api/scans { scan_code: "KOM-XXXX", step: "preparation" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "shipped" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "relais_received" }
+POST /api/scans { scan_code: "KOM-XXXX", step: "collected" }
+```
 
-- [ ] Tester la page `Komerce_Admin_Users.html` en production
-- [ ] Ajouter `last_login_at` mis à jour à chaque login dans `routes/auth.js`
-- [ ] Protéger la page Relais par rôle (`relais` ou `admin` uniquement)
-- [ ] Augmenter le rate limit login (actuellement trop strict — blocage admin)
-- [ ] Migrer les anciens codes hex des commandes KBC4L5W et K4TMBL7
+### 2. Tester les pages dans le navigateur
+- [ ] Boutique : passer une commande
+- [ ] Relais : encaisser le code cash
+- [ ] Hub : imprimer QR + scanner préparation + expédié
+- [ ] Relais : scanner réception + retrait
+- [ ] Pipeline : vérifier que tout avance visuellement
+
+### 3. Préparer le guide pour l'équipe
+- Guide Agent Dubai (Hub)
+- Guide Agent Relais
+- Guide test client
+
+## 📋 Flux validé complet
+
+```
+🛍️ CLIENT commande sur la boutique (cash_relais)
+   → Reçoit un code cash
+        ↓
+💵 AGENT RELAIS encaisse le cash + entre le code
+   → SMS confirmation envoyé au client
+   → Commande passe en "ordered"
+        ↓
+🛒 AGENT DUBAI voit la commande → achète le produit
+        ↓
+🏭 HUB DUBAI
+   🏷️ Imprime étiquette QR (Komerce_QR_Print.html)
+   📱 Scan 1 → preparation
+   📱 Scan 2 → shipped ✈️
+        ↓
+📦 RELAIS COMORES
+   📱 Scan 3 → relais_received (SMS "disponible" envoyé au client)
+   📱 Scan 4 → collected (client vient chercher)
+```
+
+## 🔗 Ressources
+- Backend : https://komerce-backend-production.up.railway.app/
+- Admin : admin@komerce.km / USJQ9oRx6rSfzzqIubW3Nw
+- GitHub : SamyrFateh/komerce-backend
