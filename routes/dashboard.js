@@ -28,17 +28,18 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { getRates } = require('../utils/rates');
+const { getRule } = require('../utils/rules');
 
 // ── Auth : toutes les routes dashboard = admin only ─────────────────────────
 router.use(authenticate, requireRole(['admin']));
 
-// ── Cache mémoire (TTL configurable) ────────────────────────────────────────
-const CACHE_TTL = 30_000; // 30 secondes
+// ── Cache mémoire (TTL configurable via business_rules) ─────────────────────
+let _cacheTtlMs = 30_000; // default 30s — rafraîchi depuis DB
 const _cache = new Map();
 
 function cached(key) {
   const entry = _cache.get(key);
-  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  if (entry && Date.now() - entry.ts < _cacheTtlMs) return entry.data;
   return null;
 }
 function setCache(key, data) {
@@ -52,15 +53,23 @@ async function getEurKmf() {
   return { eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf };
 }
 
-// ── Seuils SLA (annoncé 3-5 semaines) ───────────────────────────────────────
-const SLA_WARNING_DAYS    = 35;
-const SLA_LATE_DAYS       = 42;
-const SLA_BLOCKED_DAYS    = 56;
-const INACTIVE_DAYS       = 7;
-const DELAY_PREVENTIF     = 28;
-const DELAY_AVOIR         = 35;
-const DELAY_REMISE        = 42;
-const DELAY_REMBOURSEMENT = 56;
+// ── Config SLA & Compensations (chargée depuis business_rules) ──────────────
+// Fallback = valeurs actuelles hardcodées → zéro régression si DB vide
+async function loadDashConfig() {
+  const [slaWarn, slaLate, slaBlocked, inactive, compPrev, compCredit, compDiscount, compRefund, cacheSec] = await Promise.all([
+    getRule('SLA_WARNING_DAYS', 35),
+    getRule('SLA_LATE_DAYS', 42),
+    getRule('SLA_BLOCKED_DAYS', 56),
+    getRule('SLA_INACTIVE_DAYS', 7),
+    getRule('COMP_PREVENTIVE_DAYS', 28),
+    getRule('COMP_CREDIT_DAYS', 35),
+    getRule('COMP_DISCOUNT_DAYS', 42),
+    getRule('COMP_REFUND_DAYS', 56),
+    getRule('DASHBOARD_CACHE_TTL_SEC', 30),
+  ]);
+  _cacheTtlMs = cacheSec * 1000;
+  return { SLA_WARNING_DAYS: slaWarn, SLA_LATE_DAYS: slaLate, SLA_BLOCKED_DAYS: slaBlocked, INACTIVE_DAYS: inactive, DELAY_PREVENTIF: compPrev, DELAY_AVOIR: compCredit, DELAY_REMISE: compDiscount, DELAY_REMBOURSEMENT: compRefund };
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. GET /ops — Vue opérationnelle quotidienne
@@ -70,6 +79,8 @@ router.get('/ops', async (req, res) => {
   try {
     const hit = cached('ops');
     if (hit) return res.json(hit);
+
+    const cfg = await loadDashConfig();
 
     // ── Activité globale ────────────────────────────────────────────────────
     const { rows: [activ] } = await db.query(`
@@ -97,9 +108,9 @@ router.get('/ops', async (req, res) => {
     const lateCmds = [];
     for (const o of slaRows) {
       const age = Number(o.age_jours), inactif = Number(o.inactif_jours);
-      if (inactif >= INACTIVE_DAYS || age >= SLA_BLOCKED_DAYS) sla.blocked++;
-      else if (age >= SLA_LATE_DAYS) { sla.late++; lateCmds.push({ reference: o.reference, status: o.status, jours: Math.round(age) }); }
-      else if (age >= SLA_WARNING_DAYS) sla.warning++;
+      if (inactif >= cfg.INACTIVE_DAYS || age >= cfg.SLA_BLOCKED_DAYS) sla.blocked++;
+      else if (age >= cfg.SLA_LATE_DAYS) { sla.late++; lateCmds.push({ reference: o.reference, status: o.status, jours: Math.round(age) }); }
+      else if (age >= cfg.SLA_WARNING_DAYS) sla.warning++;
       else sla.on_time++;
     }
 
@@ -473,6 +484,7 @@ router.get('/pipeline', async (req, res) => {
 router.get('/retards', async (req, res) => {
   try {
     const { niveau } = req.query;
+    const cfg = await loadDashConfig();
 
     const { rows } = await db.query(`
       SELECT o.id, o.reference, o.status,
@@ -484,8 +496,8 @@ router.get('/retards', async (req, res) => {
       LEFT JOIN recipients rc ON rc.id = o.recipient_id
       WHERE o.status NOT IN ('collected','cancelled')
         AND EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 >= $1
-      ORDER BY age_jours DESC LIMIT 200
-    `, [DELAY_PREVENTIF]);
+      Order by age_jours DESC LIMIT 200
+    `, [cfg.DELAY_PREVENTIF]);
 
     const parNiveau = {
       remboursement_possible:     { count: 0, label: 'Remboursement possible (8 sem+)' },
@@ -497,13 +509,13 @@ router.get('/retards', async (req, res) => {
     const clients = rows.map(o => {
       const jours = Number(o.age_jours);
       let niv, comp, sms;
-      if (jours >= DELAY_REMBOURSEMENT) {
+      if (jours >= cfg.DELAY_REMBOURSEMENT) {
         niv = 'remboursement_possible'; comp = niv;
         sms = `Bonjour ${o.client_nom || 'cher client'}, votre commande ${o.reference} accuse un retard important. Nous vous contactons pour trouver une solution. Komerce`;
-      } else if (jours >= DELAY_REMISE) {
+      } else if (jours >= cfg.DELAY_REMISE) {
         niv = 'remise_10pct_prochaine_cmd'; comp = niv;
         sms = `Komerce : Nous nous excusons pour le délai sur ${o.reference}. En compensation, bénéficiez de −10% sur votre prochaine commande.`;
-      } else if (jours >= DELAY_AVOIR) {
+      } else if (jours >= cfg.DELAY_AVOIR) {
         niv = 'avoir_5pct'; comp = niv;
         sms = `Komerce : Votre commande ${o.reference} prend plus de temps que prévu. Nous vous offrons un avoir de 5%.`;
       } else {
