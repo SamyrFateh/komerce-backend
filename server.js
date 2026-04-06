@@ -90,11 +90,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
       styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
       imgSrc:      ["'self'", "data:", "https:", "http:"],
-      connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+      connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
       mediaSrc:    ["'self'"],
       objectSrc:   ["'none'"],
       frameAncestors: ["'none'"],
@@ -123,7 +123,14 @@ app.use('/api/auth/login', authLimiter);                    // 5 req/15min brute
 app.use('/api/auth/register', authLimiter);                 // 5 req/15min anti-spam
 app.use('/api/payments/cash/confirm', cashConfirmLimiter);  // 3 req/min cash code
 app.use('/api/scans/collect', scanCollectLimiter);          // 5 req/min QR brute-force
-app.use('/api/orders', orderCreateLimiter);                 // 10 req/min spam commandes
+// orderCreateLimiter appliqué UNIQUEMENT au POST /api/orders (créer une commande)
+// Ne pas appliquer sur GET /api/orders/relais, /api/orders/:ref, etc.
+app.use('/api/orders', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/') {
+    return orderCreateLimiter(req, res, next);
+  }
+  next();
+});                                                        // 10 req/min spam commandes (POST only)
 app.use('/api/dashboard', dashboardLimiter);                // 30 req/min anti-DoS queries
 
 app.use(express.static(path.join(__dirname, 'public'), {
