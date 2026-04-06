@@ -2,7 +2,7 @@
 
 <!-- Logo placeholder -->
 <p align="center">
-  <img src="docs/assets/komerce-logo.png" alt="Komerce Logo" width="200" />
+  <img src="assets/komerce-logo.png" alt="Komerce Logo" width="200" />
 </p>
 
 <p align="center">
@@ -112,7 +112,7 @@ npm install
 
 # 3. Configurer les variables d'environnement
 cp .env.example .env
-# Éditer .env avec vos valeurs (voir docs/DEPLOYMENT.md)
+# Éditer .env avec vos valeurs (voir DEPLOYMENT.md)
 
 # 4. Initialiser la base de données
 npm run db:migrate
@@ -145,7 +145,7 @@ STRIPE_SECRET_KEY=sk_test_...
 FRONTEND_URL=http://localhost:5173
 ```
 
-> 📖 Voir [DEPLOYMENT.md](docs/DEPLOYMENT.md) pour la liste complète des variables.
+> 📖 Voir [DEPLOYMENT.md](DEPLOYMENT.md) pour la liste complète des variables.
 
 ---
 
@@ -271,7 +271,7 @@ Komerce intègre plusieurs couches de sécurité :
 - **~32 issues critiques** identifiées et corrigées
 - **~21 issues importantes** identifiées et corrigées
 - **~5 issues mineures** documentées
-- Audit complet avec rapports dans `docs/audit/`
+- Audit complet avec rapports dans `audit/`
 
 ---
 
@@ -288,7 +288,7 @@ Le système **coffre-fort** protège le code en production via une analyse d'imp
 | `.github/workflows/impact-check.yml` | Action GitHub : analyse sur chaque PR |
 | `.github/workflows/auto-cartography.yml` | Mise à jour cartographie au merge |
 | `scripts/setup-hooks.sh` | Hook git pre-push local |
-| `docs/IMPACT_SYSTEM.md` | Documentation complète |
+| `IMPACT_SYSTEM.md` | Documentation complète |
 
 ### Fonctionnement
 
@@ -297,7 +297,7 @@ Le système **coffre-fort** protège le code en production via une analyse d'imp
 3. **Rapport d'impact** posté en commentaire sur la PR
 4. **Au merge** → Cartographie 360° mise à jour automatiquement
 
-> 📖 Voir [IMPACT_SYSTEM.md](docs/IMPACT_SYSTEM.md) pour les détails.
+> 📖 Voir [IMPACT_SYSTEM.md](IMPACT_SYSTEM.md) pour les détails.
 
 ---
 
@@ -305,10 +305,10 @@ Le système **coffre-fort** protège le code en production via une analyse d'imp
 
 | Document | Description |
 |----------|-------------|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique détaillée |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Guide de déploiement complet |
-| [CARTOGRAPHY_360.md](docs/CARTOGRAPHY_360.md) | Cartographie d'impact 360° |
-| [IMPACT_SYSTEM.md](docs/IMPACT_SYSTEM.md) | Documentation du coffre-fort |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture technique détaillée |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Guide de déploiement complet |
+| [CARTOGRAPHY_360.md](CARTOGRAPHY_360.md) | Cartographie d'impact 360° |
+| [IMPACT_SYSTEM.md](IMPACT_SYSTEM.md) | Documentation du coffre-fort |
 | [SESSION_STATUS.md](SESSION_STATUS.md) | Suivi des sessions de travail |
 
 ---

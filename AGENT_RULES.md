@@ -78,12 +78,25 @@ Après chaque feature, produire un rapport avec :
 
 ---
 
+## RÈGLE N°6 — Lire le README pour le contexte général
+
+**À la fin de la lecture des règles, lire aussi `docs/README.md`** pour comprendre :
+- La présentation générale du projet Komerce
+- La stack technique utilisée
+- Les commandes d'installation et de lancement
+- Les liens vers les autres docs (architecture, déploiement, etc.)
+
+Ce fichier donne le **contexte business et technique** nécessaire pour travailler efficacement.
+
+---
+
 ## Ressources clés
 
 | Fichier | Description |
 |---|---|
 | `docs/CARTOGRAPHY_360.md` | Vue 360° du projet — **SOURCE DE VÉRITÉ** |
 | `docs/SESSION_STATUS.md` | Journal de session — **REPRENDRE ICI À CHAQUE SESSION** |
+| `docs/README.md` | Présentation du projet, stack, installation — **CONTEXTE GÉNÉRAL** |
 | `docs/ARCHITECTURE.md` | Architecture technique détaillée |
 | `docs/DEPLOYMENT.md` | Guide de déploiement Railway |
 | `routes/` | Tous les endpoints backend |
