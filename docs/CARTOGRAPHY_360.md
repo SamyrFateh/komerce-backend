@@ -1031,3 +1031,20 @@ CREATE TABLE ceremony_order_items (
 
 > ⚠️ **Correction** : products.js utilise bien le middleware validate (3 appels), contrairement à ce que disait la carto précédente.
 
+
+
+---
+
+## 🤖 Dernière analyse automatique
+
+> Mise à jour : 2026-04-06 11:11:46 UTC
+
+| Métrique | Valeur |
+|----------|--------|
+| Routes analysées | 18 |
+| Tables cartographiées | 20 |
+| Services externes | 9 |
+| Score de risque global | 100/100 |
+| Alertes sécurité | 554 |
+
+*Régénéré automatiquement par le coffre-fort Komerce v1.0*
