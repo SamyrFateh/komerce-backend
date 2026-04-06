@@ -7,6 +7,8 @@
  * PATCH /api/orders/:id/status    → changer statut (admin/agent_hub/agent_relais)
  * PATCH /api/orders/:id/cost      → saisir le coût réel (admin)
  * GET   /api/orders/:id/history   → historique statuts
+ * POST  /api/orders/:id/cancel   → annuler une commande (client ou admin) — Phase 3
+ * GET   /api/orders/credits       → solde crédits boutique du client
  *
  * Changelog v7.6 vs v7.5 :
  *   · PATCH /api/orders/:id/cost : ajout supplier_name + supplier_invoice_url
@@ -39,6 +41,7 @@ const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 const { getRule } = require('../utils/rules');
+const { getAvailableCredits, applyCredits } = require('../utils/store-credits');
 const { sendOrderConfirmation } = require('../utils/email');
 const { validate } = require('../middleware/validate');
 const { orders } = require('../validators');
@@ -328,6 +331,19 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
       total_kmf    = total_kmf - discountKmf;
     }
 
+    // ── Crédits boutique — déduction automatique (Phase 3) ───────────────────
+    let creditAppliedKmf = 0;
+    let creditsUsed      = [];
+    if (req.user?.id) {
+      const available = await getAvailableCredits(client, req.user.id);
+      if (available.total_kmf > 0) {
+        const result = await applyCredits(client, req.user.id, total_kmf);
+        creditAppliedKmf = result.applied_kmf;
+        creditsUsed      = result.credits_used;
+        total_kmf        = total_kmf - creditAppliedKmf;
+      }
+    }
+
     // ── Code cash 6 chiffres (v7.7) — lisible oralement ─────────────────────
     // Ex: "482917" au lieu de "0c92c35b321fb02b"
     // Le client dicte le code à l'agent relais en 3 secondes.
@@ -402,10 +418,13 @@ router.post('/', authenticate, validate(orders.create), async (req, res) => {
     );
 
     // ── Historiser statut initial ───────────────────────────────────────────
+    const creditNote = creditAppliedKmf > 0
+      ? ` — Crédit boutique appliqué: ${creditAppliedKmf.toLocaleString('fr-FR')} KMF`
+      : '';
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'confirmed', 'Commande créée', $2)`,
-      [order.id, req.user.id]
+       VALUES ($1, 'confirmed', $3, $2)`,
+      [order.id, req.user.id, `Commande créée${creditNote}`]
     );
 
     // ── Créer les order_items ───────────────────────────────────────────────
@@ -1005,6 +1024,29 @@ router.get('/retrait/:token', async (req, res) => {
 
 // ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
 
+// ── GET /api/orders/credits ──────────────────────────────────────────────────
+// Solde crédits boutique du client connecté
+router.get('/credits', authenticate, async (req, res) => {
+  try {
+    const { credits, total_kmf } = await getAvailableCredits(db, req.user.id);
+    res.json({
+      total_kmf,
+      credits: credits.map(c => ({
+        id:              c.id,
+        amount_kmf:      c.amount_kmf,
+        remaining_kmf:   c.remaining_kmf,
+        reason:          c.reason,
+        source_order_id: c.source_order_id,
+        expires_at:      c.expires_at,
+        created_at:      c.created_at,
+      })),
+    });
+  } catch (err) {
+    console.error('Credits error:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 router.get('/:ref', async (req, res) => {
   try {
     const isUuid = /^[0-9a-f-]{36}$/.test(req.params.ref);
@@ -1340,5 +1382,198 @@ router.get('/:id/history', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Erreur historique' });
   }
 });
+
+
+// ── POST /api/orders/:id/cancel ──────────────────────────────────────────────
+// Annulation client ou admin — Phase 3 Gouvernance Opérationnelle
+// Body: { reason?: string }
+// Auth: client (propre commande) ou admin (toute commande)
+//
+// Table de décision :
+//   - Statut < cutoff + dans fenêtre gratuite → 100% remboursé
+//   - Statut < cutoff + hors fenêtre          → CANCEL_PARTIAL_REFUND_PCT% remboursé
+//   - Statut ≥ cutoff                          → Annulation refusée
+//   - Commande non payée                       → Annulation sans remboursement
+router.post('/:id/cancel', authenticate, async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Charger la commande (FOR UPDATE pour lock)
+    const { rows: [order] } = await client.query(
+      `SELECT o.*, u.phone AS user_phone, u.email AS user_email
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       WHERE o.id = $1
+       FOR UPDATE OF o`,
+      [req.params.id]
+    );
+
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    // 2. Vérification droits : client = sa propre commande, admin = toute commande
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin && order.user_id !== req.user.id) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Non autorisé — vous ne pouvez annuler que vos propres commandes' });
+    }
+
+    // 3. Vérification éligibilité : statut ≤ CANCEL_CUTOFF_STATUS
+    if (order.status === 'cancelled' || order.status === 'refunded') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Commande déjà annulée ou remboursée' });
+    }
+    if (order.status === 'collected') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Commande déjà récupérée — annulation impossible' });
+    }
+
+    const cutoffStatus = await getRule('CANCEL_CUTOFF_STATUS', 'shipped');
+    const currentIdx   = ORDER_STATUSES.indexOf(order.status);
+    const cutoffIdx    = ORDER_STATUSES.indexOf(cutoffStatus);
+
+    if (currentIdx >= cutoffIdx) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: `Annulation impossible — commande en statut "${order.status}" (seuil: "${cutoffStatus}"). Contactez le SAV.`,
+      });
+    }
+
+    // 4. Calculer le remboursement
+    const freeWindowHours  = await getRule('CANCEL_FREE_WINDOW_HOURS', 24);
+    const partialRefundPct = await getRule('CANCEL_PARTIAL_REFUND_PCT', 80);
+
+    const paidAt = order.cash_paid_at || order.ordered_at || order.created_at;
+    const hoursSincePaid = (Date.now() - new Date(paidAt).getTime()) / (1000 * 60 * 60);
+
+    let refundPct, refundType;
+    if (order.payment_status !== 'paid') {
+      refundPct  = 0;
+      refundType = 'none';
+    } else if (hoursSincePaid <= freeWindowHours) {
+      refundPct  = 100;
+      refundType = 'full';
+    } else {
+      refundPct  = partialRefundPct;
+      refundType = 'partial';
+    }
+
+    // 5. Annuler la commande
+    const cancelReason = req.body.reason || `Annulation ${isAdmin ? 'admin' : 'client'}`;
+    await client.query(
+      `UPDATE orders SET
+         status = 'cancelled',
+         cancelled_at = NOW(),
+         cancel_reason = $2
+       WHERE id = $1`,
+      [order.id, cancelReason]
+    );
+
+    // 6. Historique
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, changed_by, note)
+       VALUES ($1, 'cancelled', $2, $3)`,
+      [order.id, req.user.id,
+       `Annulation ${refundType} — ${refundPct}% remboursé${req.body.reason ? ' — Raison: ' + req.body.reason : ''}`]
+    );
+
+    // 7. Restaurer le stock
+    const { rows: items } = await client.query(
+      'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
+      [order.id]
+    );
+    for (const item of items) {
+      await client.query(
+        'UPDATE products SET stock = stock + $1 WHERE id = $2',
+        [item.quantity, item.product_id]
+      );
+    }
+
+    // 8. Traiter le remboursement
+    let refundResult = null;
+    if (refundPct > 0 && order.payment_status === 'paid') {
+      const { processRefund } = require('../utils/refunds');
+      refundResult = await processRefund(client, {
+        order,
+        refundType,
+        refundPct,
+        reason: cancelReason,
+        initiatedBy: req.user.id,
+      });
+      if (refundResult.error) {
+        console.error(`⚠️ Refund error for ${order.reference}:`, refundResult.error);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    // 9. Notifications (hors transaction — non bloquant)
+    const amountRefund = Math.round(order.total_kmf * refundPct / 100);
+
+    if (order.user_phone) {
+      const refundMsg = refundPct === 0
+        ? 'Aucun remboursement (commande non payée).'
+        : refundPct === 100
+          ? 'Remboursement intégral en cours.'
+          : `Remboursement de ${refundPct}% en cours.`;
+
+      sendSMS(
+        order.user_phone,
+        `Komerce : Votre commande ${order.reference} a ete annulee. ${refundMsg}`,
+        'cancellation', order.id
+      ).catch(err => console.error('Cancel SMS error:', err.message));
+    }
+
+    if (order.user_email) {
+      const { sendEmail } = require('../utils/email');
+      sendEmail(
+        order.user_email,
+        `❌ Commande ${order.reference} annulée — Komerce`,
+        `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
+          <h2 style="color:#dc2626;margin-top:0">Commande annulée</h2>
+          <p>Votre commande <strong>${order.reference}</strong> a été annulée.</p>
+          ${refundPct > 0 ? `
+          <div style="background:#f0fdf4;padding:16px;border-radius:8px;margin:16px 0">
+            <p style="margin:0;font-weight:700">${amountRefund.toLocaleString('fr-FR')} KMF remboursés (${refundPct}%)</p>
+            <p style="margin:4px 0 0;color:#64748b;font-size:14px">
+              ${refundResult?.refund?.refund_method === 'stripe'
+                ? 'Via Stripe — délai 5-10 jours ouvrés'
+                : 'Crédit boutique — utilisable sur votre prochaine commande'}
+            </p>
+          </div>` : '<p><em>Aucun remboursement — commande non payée.</em></p>'}
+          ${req.body.reason ? `<p style="color:#64748b"><em>Raison : ${req.body.reason}</em></p>` : ''}
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">
+          <p style="color:#94a3b8;font-size:12px">© 2026 Komerce — Le e-commerce qui rapproche la diaspora des Comores</p>
+        </div>`
+      ).catch(err => console.error('Cancel email error:', err.message));
+    }
+
+    // 10. Réponse
+    res.json({
+      message:      'Commande annulée avec succès',
+      reference:    order.reference,
+      cancelled_at: new Date().toISOString(),
+      refund: {
+        type:            refundType,
+        percentage:      refundPct,
+        amount_kmf:      amountRefund,
+        method:          refundResult?.refund?.refund_method || 'none',
+        status:          refundResult?.refund?.status || (refundPct === 0 ? 'not_applicable' : 'pending'),
+        store_credit_id: refundResult?.refund?.store_credit_id || null,
+      },
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Cancel error:', err.message);
+    res.status(500).json({ error: 'Erreur interne lors de l\'annulation' });
+  } finally {
+    client.release();
+  }
+});
+
 
 module.exports = router;
