@@ -1196,6 +1196,7 @@ async function apiCall(method, path, body = null) {
     headers: { 'Content-Type': 'application/json' }
   };
   opts.credentials = 'include';
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
   if (body) opts.body = JSON.stringify(body);
 
   let res;
@@ -2406,16 +2407,16 @@ async function loadCashPending() {
     const data = await apiCall('GET', '/api/orders/relais?relais_id=' + encodeURIComponent(selectedRelaisId) + '&include_confirmed=true');
     const orders = Array.isArray(data) ? data : (data.orders || []);
     cashPendingOrders = orders.filter(o => 
-      o.status === 'confirmed' && 
       o.payment_mode === 'cash_relais' && 
-      o.payment_status === 'pending'
+      o.payment_status !== 'paid' &&
+      ['confirmed', 'available', 'relais_received'].includes(o.status)
     );
   } catch (err) {
     // Fallback: try getting from allRelaisOrders
     cashPendingOrders = allRelaisOrders.filter(o => 
-      o.status === 'confirmed' && 
       o.payment_mode === 'cash_relais' && 
-      o.payment_status !== 'paid'
+      o.payment_status !== 'paid' &&
+      ['confirmed', 'available', 'relais_received'].includes(o.status)
     );
   }
   renderCashPendingTable();
@@ -2436,14 +2437,26 @@ function renderCashPendingTable() {
     const phone = escHtml(o.recipient_phone || getClientPhone(o) || '—');
     const total = formatKMF(getOrderTotal(o));
     const since = timeSinceLabel(o.created_at);
+    const cashCode = escHtml(o.cash_ref_code || '—');
+    const safeCode = escHtml(o.cash_ref_code || '');
     return '<tr>' +
       '<td class="td-ref">' + ref + '</td>' +
       '<td>' + client + '</td>' +
       '<td class="td-phone">' + phone + '</td>' +
       '<td class="td-nowrap">' + total + '</td>' +
+      '<td><span style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:4px;color:var(--ink);">' + cashCode + '</span></td>' +
       '<td><span class="badge badge-amber">' + since + '</span></td>' +
+      '<td><button class="btn btn-success btn-sm" onclick="handleCashConfirmRow(\'' + safeCode + '\')">💵 Encaisser</button></td>' +
     '</tr>';
   }).join('');
+}
+
+function handleCashConfirmRow(code) {
+  // Pre-fill input and scroll to it
+  const input = document.getElementById('cash-code-input');
+  input.value = code;
+  document.getElementById('card-cash').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => handleCashConfirm(code), 400);
 }
 
 async function handleCashConfirm(codeParam) {
