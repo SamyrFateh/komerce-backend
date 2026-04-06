@@ -1,7 +1,7 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
 > 📅 **Mise à jour** : 6 avril 2026  
-> 🏷️ **Version** : v12.0  
+> 🏷️ **Version** : v13.0  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables**
 
@@ -10,10 +10,10 @@
 ## 📑 Table des matières
 
 1. [Progression globale](#1--progression-globale)
-2. [🔴 Priorité 1 — Sécurité](#2--priorité-1--sécurité)
-3. [🔴 Priorité 2 — Go-Live](#3--priorité-2--go-live)
-4. [🟡 Priorité 3 — UX avant lancement marketing](#4--priorité-3--ux-avant-lancement-marketing)
-5. [🟡 Priorité 4 — App Pilotage Komerce](#5--priorité-4--app-pilotage-komerce)
+2. [🟣 Priorité 1 — Dashboard de Pilotage Unifié](#2--priorité-1--dashboard-de-pilotage-unifié)
+3. [🔴 Priorité 2 — Sécurité](#3--priorité-2--sécurité)
+4. [🔴 Priorité 3 — Go-Live](#4--priorité-3--go-live)
+5. [🟡 Priorité 4 — UX avant lancement marketing](#5--priorité-4--ux-avant-lancement-marketing)
 6. [🟢 Priorité 5 — Améliorations futures](#6--priorité-5--améliorations-futures)
 7. [🔵 Nice to have](#7--nice-to-have)
 8. [PRs & Issues ouvertes](#8--prs--issues-ouvertes)
@@ -32,15 +32,55 @@
 | Tests E2E (7 phases) | ✅ Phases 1-3 + 7 | Phases 4-6 |
 | Sécurité audit initial | ✅ ~58 problèmes corrigés | — |
 | Sécurité audit deep | ⬜ 14 issues ouvertes | 6 critiques + 8 majeures |
-| Dashboard unifié v11 | ✅ Mergé | — |
+| Dashboard unifié v11 | ✅ Mergé | Remplacé par Dashboard Pilotage |
+| **Dashboard Pilotage Unifié** | ⬜ En cours | **PRIORITÉ 1** |
 | Cartographie 360° v12 | ✅ Poussée | — |
 | Coffre-fort (Vault) | ✅ 6/6 fichiers | — |
 
 ---
 
-## 2. 🔴 Priorité 1 — Sécurité (14 issues ouvertes)
+## 2. 🟣 Priorité 1 — Dashboard de Pilotage Unifié
 
-### 2.1 🚨 6 Vulnérabilités CRITIQUES
+> 🎯 **Ce dashboard REMPLACE TOUS les dashboards existants.** C'est le cockpit unique pour piloter Komerce.
+
+**Concept** : Application web interactive unique connectée aux 8 endpoints du dashboard unifié v11, regroupant toutes les vues en un seul point d'entrée.
+
+### 5 Vues du Dashboard
+
+| Vue | Endpoint(s) | Fonctionnalités |
+|-----|-------------|-----------------|
+| 📦 **Ops** | `/ops` + `/pipeline` | Kanban pipeline, SLA tracker, alertes temps réel |
+| 💰 **Finance** | `/finance` | CA EUR/KMF, marges, top produits, paiements |
+| 🎯 **Pilotage** | `/pilotage` + `/clients` | Coûts par catégorie, meilleurs clients, taux de change |
+| 📈 **Tendances** | `/history` + `/forecast` | Graphiques mensuels, projections 30j |
+| 🚨 **Retards** | `/retards` | Liste clients en retard, compensations, actions SMS |
+
+### Spécifications
+
+- **Stack** : React TSX + DaisyUI + Recharts
+- **Pré-requis** : Dashboard unifié mergé ✅ · URL API Railway · Carto à jour ✅
+- **Objectif** : Remplacer tous les dashboards séparés par un cockpit unique
+
+### Tâches
+
+| # | Tâche | Statut |
+|---|-------|:------:|
+| 2.1 | Analyse Cartographie 360° (fichiers/endpoints impactés) | ⬜ |
+| 2.2 | Analyse Coffre-Fort Sécurité (risques liés) | ⬜ |
+| 2.3 | Scaffolding Instant App (structure + routing) | ⬜ |
+| 2.4 | Vue Ops (Kanban + pipeline) | ⬜ |
+| 2.5 | Vue Finance (CA, marges, top produits) | ⬜ |
+| 2.6 | Vue Pilotage (coûts, clients, taux de change) | ⬜ |
+| 2.7 | Vue Tendances (graphiques + projections) | ⬜ |
+| 2.8 | Vue Retards (liste + actions SMS) | ⬜ |
+| 2.9 | Tests & validation | ⬜ |
+| 2.10 | Dépréciation des anciens dashboards | ⬜ |
+
+---
+
+## 3. 🔴 Priorité 2 — Sécurité (14 issues ouvertes)
+
+### 3.1 🚨 6 Vulnérabilités CRITIQUES
 
 | Issue | Vulnérabilité | Fichier(s) | Fix |
 |:-----:|---------------|------------|-----|
@@ -51,7 +91,7 @@
 | [#75](https://github.com/SamyrFateh/komerce-backend/issues/75) | **Données sensibles exposées** | auth.js, admin.js | Remplacer `SELECT *`, créer `sanitizeUser()` |
 | [#76](https://github.com/SamyrFateh/komerce-backend/issues/76) | **Webhook Stripe non vérifié** | payments.js | `stripe.webhooks.constructEvent()` + signature |
 
-### 2.2 🟠 8 Vulnérabilités MAJEURES
+### 3.2 🟠 8 Vulnérabilités MAJEURES
 
 | Issue | Vulnérabilité | Fix |
 |:-----:|---------------|-----|
@@ -68,9 +108,9 @@
 
 ---
 
-## 3. 🔴 Priorité 2 — Go-Live
+## 4. 🔴 Priorité 3 — Go-Live
 
-### 3.1 Tests E2E restants
+### 4.1 Tests E2E restants
 
 | Phase | Description | Statut |
 |-------|-------------|--------|
@@ -82,7 +122,7 @@
 | **Phase 6** | Checklist Go-Live (voir ci-dessous) | ⬜ |
 | ~~Phase 7~~ | 14 bugs corrigés (7A/7B/7C) | ✅ |
 
-### 3.2 Saisie des coûts réels ([#48](https://github.com/SamyrFateh/komerce-backend/issues/48))
+### 4.2 Saisie des coûts réels ([#48](https://github.com/SamyrFateh/komerce-backend/issues/48))
 
 > ⚠️ **BLOQUANT** pour le calcul des marges nettes sur le dashboard Pilotage.
 
@@ -91,7 +131,7 @@
 - [ ] Renseigner `douane_kmf` (~20-42% valeur AED)
 - [ ] Vérifier cohérence sur dashboard Pilotage
 
-### 3.3 Checklist Go-Live
+### 4.3 Checklist Go-Live
 
 | # | Élément | Statut |
 |---|---------|--------|
@@ -106,7 +146,7 @@
 | 6.9 | Monitoring / logs activés | ⬜ |
 | 6.10 | Backup DB programmé (pg_dump quotidien) | ⬜ |
 
-### 3.4 Nettoyage PRs obsolètes — ✅ FAIT
+### 4.4 Nettoyage PRs obsolètes — ✅ FAIT
 
 | PR | Action | Statut |
 |---|---|---|
@@ -118,7 +158,7 @@
 
 ---
 
-## 4. 🟡 Priorité 3 — UX avant lancement marketing (~11h)
+## 5. 🟡 Priorité 4 — UX avant lancement marketing (~11h)
 
 | # | Feature | Effort | Statut |
 |---|---------|:------:|:------:|
@@ -131,25 +171,6 @@
 ### PRs UX — ✅ Toutes traitées
 
 > Les PRs #44 et #38 étaient supersédées par #45 et #39 (déjà mergées). Fermées le 06/04.
-
----
-
-## 5. 🟡 Priorité 4 — App Pilotage Komerce (Instant App)
-
-**Concept** : Application web interactive connectée aux 8 endpoints du dashboard unifié v11.
-
-**5 Vues** :
-
-| Vue | Endpoint(s) | Fonctionnalités |
-|-----|-------------|-----------------|
-| 📦 **Ops** | `/ops` + `/pipeline` | Kanban pipeline, SLA tracker, alertes temps réel |
-| 💰 **Finance** | `/finance` | CA EUR/KMF, marges, top produits, paiements |
-| 🎯 **Pilotage** | `/pilotage` + `/clients` | Coûts par catégorie, meilleurs clients, taux de change |
-| 📈 **Tendances** | `/history` + `/forecast` | Graphiques mensuels, projections 30j |
-| 🚨 **Retards** | `/retards` | Liste clients en retard, compensations, actions SMS |
-
-**Stack** : React TSX + DaisyUI + Recharts  
-**Pré-requis** : Dashboard unifié mergé ✅ · URL API Railway · Carto à jour ✅
 
 ---
 
@@ -264,6 +285,12 @@
 ## 10. 📋 Ordre de travail recommandé
 
 ```
+🟣 MAINTENANT :
+  └── Dashboard Pilotage Unifié (remplace tous les dashboards)
+      ├── Analyse Carto 360°
+      ├── Analyse Coffre-Fort
+      └── Implémentation 5 vues
+
 Prochaine session :
   └── Fix 6 vulnérabilités CRITIQUES (#71→#76)
 
@@ -277,14 +304,11 @@ Session Go-Live :
   └── Go-Live checklist (Phase 6)
 
 Après Go-Live :
-  ├── Features UX (E1→E5)
-  └── App Pilotage Komerce (Instant App)
+  └── Features UX (E1→E5)
 
 Long terme :
   └── Améliorations (architecture, tests, CI/CD, monitoring)
 ```
-
-> ✅ **Déjà fait** : PR #92 mergée, PRs #88/#63 fermées, PRs #44/#38 fermées (supersédées)
 
 ---
 
