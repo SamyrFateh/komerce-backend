@@ -1,6 +1,6 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.1 — 06/04/2026 (v15.0 + sync structurel dashboard-app)
+> **Version** : 15.2 — 06/04/2026 (v15.1 + sync .github/ — ajout copilot-instructions.md & pull_request_template.md)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
 > **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
@@ -194,10 +194,13 @@ komerce-backend/
 │       ├── middleware_audit.md           (12.5 KB) [f3533515]
 │       └── utils_audit.md               (15.9 KB) [cc2b9d7a]
 │
-└── .github/workflows/                    (3 fichiers)
-    ├── auto-cartography.yml              (4.7 KB)  [be8f81c8]
-    ├── carto-guard.yml                   (3.5 KB)  [c02ea302]
-    └── impact-check.yml                  (5.2 KB)  [9358686c]
+└── .github/                              (2 fichiers + workflows/)
+    ├── copilot-instructions.md           (1.4 KB)  [a6a92e74]
+    ├── pull_request_template.md          (1.2 KB)  [2f34087a]
+    └── workflows/                        (3 fichiers)
+        ├── auto-cartography.yml          (4.7 KB)  [be8f81c8]
+        ├── carto-guard.yml              (3.5 KB)  [c02ea302]
+        └── impact-check.yml             (5.2 KB)  [9358686c]
 ```
 
 ---
@@ -1060,7 +1063,14 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-## 16. 🤖 CI/CD — GitHub Actions (`.github/workflows/`)
+## 16. 🤖 CI/CD — GitHub Actions (`.github/`)
+
+### Fichiers de configuration `.github/`
+
+| Fichier | Taille | SHA | Rôle |
+|---------|--------|-----|------|
+| `copilot-instructions.md` | 1.4 KB | a6a92e74 | Instructions pour GitHub Copilot |
+| `pull_request_template.md` | 1.2 KB | 2f34087a | Template de pull request |
 
 ### `auto-cartography.yml` (~5 KB) [v2.0]
 **Métriques automatiques de la cartographie**
@@ -1255,7 +1265,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.1 — 6 avril 2026*
+> 📝 *Cartographie 360° — Version v15.2 — 6 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
@@ -1265,7 +1275,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 16:33:00 UTC
+> Mise à jour : 2026-04-06 17:03:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
