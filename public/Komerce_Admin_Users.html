@@ -100,6 +100,16 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 .filters input{width:220px}
 .filter-count{font-size:12px;color:var(--ink4);margin-left:auto}
 
+/* EMAIL SPLIT INPUT */
+.email-split{display:flex;align-items:stretch;background:var(--bg3);border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+.email-split:focus-within{border-color:var(--ter)}
+.email-split input{flex:1;background:transparent;border:none;padding:8px 10px;color:var(--ink);font-family:"DM Sans",sans-serif;font-size:13px;outline:none;min-width:0}
+.email-split .email-suffix{display:flex;align-items:center;padding:0 10px;background:var(--bg4);color:var(--ink3);font-size:12px;font-weight:600;border-left:1px solid var(--ln);white-space:nowrap;user-select:none}
+
+/* PHONE HINT */
+.inp-hint{font-size:10px;color:var(--ink4);margin-top:3px}
+.inp-hint.err{color:var(--red)}
+
 /* MODAL OVERLAY */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000}
 .overlay.on{display:flex}
@@ -218,10 +228,26 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <button class="modal-close" onclick="closeModal('modal-create')">&#10005;</button>
     </div>
     <div class="modal-body">
-      <div class="form-row"><label class="inp-lbl">Nom complet *</label><input class="inp" id="c-name" placeholder="Ex : Amina Soilihi"></div>
-      <div class="form-row"><label class="inp-lbl">Email *</label><input class="inp" id="c-email" type="email" placeholder="amina@exemple.com"></div>
-      <div class="form-row"><label class="inp-lbl">Téléphone</label><input class="inp" id="c-phone" placeholder="+269 321 ..."></div>
-      <div class="form-row"><label class="inp-lbl">Mot de passe *</label><input class="inp" id="c-password" type="password" placeholder="6 caractères minimum"></div>
+      <div class="form-row">
+        <label class="inp-lbl">Nom complet *</label>
+        <input class="inp" id="c-name" placeholder="Ex : Amina Soilihi">
+      </div>
+      <div class="form-row">
+        <label class="inp-lbl">Email * <span style="color:var(--ter2);font-size:10px">(domaine @komerce.km obligatoire)</span></label>
+        <div class="email-split">
+          <input id="c-email-prefix" type="text" placeholder="amina.soilihi" autocomplete="off" spellcheck="false">
+          <span class="email-suffix">@komerce.km</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="inp-lbl">Téléphone <span style="color:var(--ink4);font-size:10px">(optionnel)</span></label>
+        <input class="inp" id="c-phone" placeholder="+269 321 0000" maxlength="16" oninput="validatePhone(this)">
+        <div class="inp-hint" id="c-phone-hint">Format : +269 suivi de 7 chiffres (ex: +269 3210000)</div>
+      </div>
+      <div class="form-row">
+        <label class="inp-lbl">Mot de passe *</label>
+        <input class="inp" id="c-password" type="password" placeholder="6 caractères minimum">
+      </div>
       <div class="form-row">
         <label class="inp-lbl">Rôle *</label>
         <select class="inp" id="c-role">
@@ -287,13 +313,17 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
 const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? 'http://localhost:3000/api' : '/api';
 
+const EMAIL_DOMAIN = '@komerce.km';
+
+// Regex téléphone Comores : +269 suivi de 7 chiffres (espaces optionnels)
+const PHONE_RE = /^\+269[\s]?\d{3}[\s]?\d{4}$/;
+
 // ── Auth guard ────────────────────────────────────────────────────────────────
 const token = localStorage.getItem('komerce_token') || localStorage.getItem('kmrc_token') || '';
 if (!token && !localStorage.getItem('kmrc_logged_in')) {
   window.location.href = 'portal.html';
 }
 
-// Vérifier le rôle admin
 (async () => {
   if (!token) return;
   try {
@@ -343,7 +373,6 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
 }
 
-// Mapping rôles DB → labels + badges visuels
 function roleBadge(role) {
   const map = {
     client:       '<span class="b bb">&#128100; Client</span>',
@@ -352,6 +381,30 @@ function roleBadge(role) {
     admin:        '<span class="b br">&#128737; Admin</span>',
   };
   return map[role] || `<span class="b bk">&#10067; ${esc(role || 'Sans rôle')}</span>`;
+}
+
+// ── Validation téléphone ──────────────────────────────────────────────────────
+function validatePhone(input) {
+  const val = input.value.trim();
+  const hint = document.getElementById('c-phone-hint');
+  if (!val) {
+    // Champ vide = OK (optionnel)
+    hint.className = 'inp-hint';
+    hint.textContent = 'Format : +269 suivi de 7 chiffres (ex: +269 3210000)';
+    input.style.borderColor = '';
+    return true;
+  }
+  const ok = PHONE_RE.test(val);
+  if (ok) {
+    hint.className = 'inp-hint';
+    hint.textContent = '✓ Format valide';
+    input.style.borderColor = 'var(--grn)';
+  } else {
+    hint.className = 'inp-hint err';
+    hint.textContent = '✗ Format invalide — attendu : +269 XXXXXXX (7 chiffres)';
+    input.style.borderColor = 'var(--red)';
+  }
+  return ok;
 }
 
 // ── Load & render ─────────────────────────────────────────────────────────────
@@ -435,7 +488,6 @@ function updateStats(users) {
   document.getElementById('stat-admins').textContent  = users.filter(u => u.role === 'admin').length;
 }
 
-// ── Debounce search ───────────────────────────────────────────────────────────
 function debounceLoad() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(loadUsers, 350);
@@ -469,26 +521,52 @@ async function changeRole(userId, newRole, userName, selectEl) {
 
 // ── Modal : Créer un utilisateur ──────────────────────────────────────────────
 function openModalCreate() {
-  document.getElementById('c-name').value     = '';
-  document.getElementById('c-email').value    = '';
-  document.getElementById('c-phone').value    = '';
-  document.getElementById('c-password').value = '';
-  document.getElementById('c-role').value     = 'client';
+  document.getElementById('c-name').value          = '';
+  document.getElementById('c-email-prefix').value  = '';
+  document.getElementById('c-phone').value          = '';
+  document.getElementById('c-phone').style.borderColor = '';
+  document.getElementById('c-phone-hint').className = 'inp-hint';
+  document.getElementById('c-phone-hint').textContent = 'Format : +269 suivi de 7 chiffres (ex: +269 3210000)';
+  document.getElementById('c-password').value       = '';
+  document.getElementById('c-role').value           = 'client';
   openModal('modal-create');
 }
 
 async function submitCreate() {
-  const full_name = document.getElementById('c-name').value.trim();
-  const email     = document.getElementById('c-email').value.trim();
-  const phone     = document.getElementById('c-phone').value.trim();
-  const password  = document.getElementById('c-password').value;
-  const role      = document.getElementById('c-role').value;
+  const full_name    = document.getElementById('c-name').value.trim();
+  const emailPrefix  = document.getElementById('c-email-prefix').value.trim().toLowerCase();
+  const phone        = document.getElementById('c-phone').value.trim();
+  const password     = document.getElementById('c-password').value;
+  const role         = document.getElementById('c-role').value;
 
-  if (!full_name || !email || !password) {
-    toast('Nom, email et mot de passe sont obligatoires', 'err');
+  // Validation nom
+  if (!full_name) {
+    toast('Le nom est obligatoire', 'err');
     return;
   }
-  if (password.length < 6) {
+
+  // Validation email
+  if (!emailPrefix) {
+    toast('L\'email est obligatoire', 'err');
+    document.getElementById('c-email-prefix').focus();
+    return;
+  }
+  // Interdire le caractère @ dans le préfixe (l'utilisateur n'a pas à taper le domaine)
+  if (emailPrefix.includes('@')) {
+    toast('Tapez uniquement la partie avant @, le domaine est automatique', 'err');
+    return;
+  }
+  const email = emailPrefix + EMAIL_DOMAIN;
+
+  // Validation téléphone (si renseigné)
+  if (phone && !PHONE_RE.test(phone)) {
+    toast('Numéro de téléphone invalide — format attendu : +269 XXXXXXX', 'err');
+    document.getElementById('c-phone').focus();
+    return;
+  }
+
+  // Validation mot de passe
+  if (!password || password.length < 6) {
     toast('Le mot de passe doit contenir au moins 6 caractères', 'err');
     return;
   }
@@ -498,9 +576,15 @@ async function submitCreate() {
   btn.textContent = '⏳ Création...';
 
   try {
-    await api('POST', '/admin/users', { full_name, email, phone: phone || undefined, password, role });
+    await api('POST', '/admin/users', {
+      full_name,
+      email,
+      phone: phone || undefined,
+      password,
+      role
+    });
     closeModal('modal-create');
-    toast(`Utilisateur "${full_name}" créé avec succès`, 'ok');
+    toast(`Utilisateur "${full_name}" (${email}) créé avec succès`, 'ok');
     loadUsers();
   } catch(e) {
     toast('Erreur : ' + e.message, 'err');
