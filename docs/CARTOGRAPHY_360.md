@@ -1,6 +1,6 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.4 — 06/04/2026 (v15.3 + delta dépréciation anciens dashboards — 4 fichiers → redirects ~1KB)
+> **Version** : 15.5 — 06/04/2026 (v15.4 + sync SHA drift: ROADMAP v15 23.3KB, loyalty.js, GOVERNANCE_BOOTSTRAP, DASHBOARD_REDESIGN)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
 > **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
@@ -78,7 +78,7 @@ komerce-backend/
 │   ├── finance.js                        (13.7 KB) [a919836e]
 │   ├── health.js                         (1.4 KB)  [e29fabcb]
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
-│   ├── loyalty.js                        (5.8 KB)  [c4540300]
+│   ├── loyalty.js                        (5.6 KB)  [c454e300]
 │   ├── modules.js                        (20.6 KB) [3ea6fa01]
 │   ├── orders.js                         (55.4 KB) [bd3501e2]
 │   ├── payments.js                       (12.0 KB) [1ba52974]
@@ -173,13 +173,13 @@ komerce-backend/
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
 │   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
-│   ├── DASHBOARD_REDESIGN.md             (8.5 KB)  [0f46d186]
+│   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
 │   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
-│   ├── GOVERNANCE_BOOTSTRAP.md            (3.1 KB)  [6f68fb39]
+│   ├── GOVERNANCE_BOOTSTRAP.md            (3.0 KB)  [6f68fb3b]
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (18.8 KB) [31a0284e]
+│   ├── ROADMAP_KOMERCE.md                (23.3 KB) [0ea267c0]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
 │   ├── _pending/                          (dossier delta governance)
@@ -1041,13 +1041,13 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
 | `AUDIT_REPORT.md` | 8.0 KB | 6b4fc1c7 | 📋 Rapport d'audit principal |
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
-| `DASHBOARD_REDESIGN.md` | 8.5 KB | 0f46d186 | 📐 Specs redesign dashboard |
+| `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
 | `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
-| `GOVERNANCE_BOOTSTRAP.md` | 3.1 KB | 6f68fb39 | 🤖 Bootstrap gouvernance automatique |
+| `GOVERNANCE_BOOTSTRAP.md` | 3.0 KB | 6f68fb3b | 🤖 Bootstrap gouvernance automatique |
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
 | `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
-| `ROADMAP_KOMERCE.md` | 18.8 KB | 31a0284e | 📋 Roadmap v14 — source de vérité |
+| `ROADMAP_KOMERCE.md` | 23.3 KB | 0ea267c0 | 📋 Roadmap v15 — source de vérité |
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
 
@@ -1271,7 +1271,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.4 — 6 avril 2026*
+> 📝 *Cartographie 360° — Version v15.5 — 6 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
@@ -1281,7 +1281,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 17:23:43 UTC
+> Mise à jour : 2026-04-06 17:32:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
