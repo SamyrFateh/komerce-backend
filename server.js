@@ -235,19 +235,31 @@ app.use((err, req, res, next) => {
 // ── Cron cash relais (avec verrou anti-concurrence) ──────────────────────────
 
 const { processCashRelaisReminders } = require('./utils/sms');
+const { getRuleNumber: _getRuleNum } = require('./utils/rules');
 
 let cronRunning = false;
-setInterval(async () => {
-  if (cronRunning) return;
-  cronRunning = true;
+
+// Start cron after reading interval from business_rules
+(async () => {
+  let intervalMin = 60;
   try {
-    await processCashRelaisReminders();
-  } catch (err) {
-    console.error('Cash reminder cron error:', err.message);
-  } finally {
-    cronRunning = false;
-  }
-}, 60 * 60 * 1000);
+    intervalMin = await _getRuleNum('CASH_REMINDER_INTERVAL_MIN', 60);
+  } catch (_) { /* fallback 60min */ }
+  
+  console.log(`⏰ Cash reminder cron: every ${intervalMin}min`);
+  
+  setInterval(async () => {
+    if (cronRunning) return;
+    cronRunning = true;
+    try {
+      await processCashRelaisReminders();
+    } catch (err) {
+      console.error('Cash reminder cron error:', err.message);
+    } finally {
+      cronRunning = false;
+    }
+  }, intervalMin * 60 * 1000);
+})();
 
 // ── Démarrage + Graceful Shutdown ────────────────────────────────────────────
 
@@ -477,7 +489,7 @@ async function fixMissingSchema() {
   await run('order_items.backorder_reason',
     `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS backorder_reason TEXT`);
 
-  // Seed business_rules (37 règles par défaut) — ON CONFLICT DO NOTHING
+  // Seed business_rules (46 règles par défaut — 36 originales + 10 pricing) — ON CONFLICT DO NOTHING
   try {
     const { rows } = await db.query('SELECT COUNT(*)::int AS c FROM business_rules');
     if (rows[0].c === 0) {
@@ -508,18 +520,28 @@ async function fixMissingSchema() {
           ('compensation', 'COMP_CREDIT_DAYS', '{"value": 35}', 'number', 'Avoir boutique (jours)', NULL, 14, 90),
           ('compensation', 'COMP_DISCOUNT_DAYS', '{"value": 42}', 'number', 'Remise (jours)', NULL, 21, 120),
           ('compensation', 'COMP_REFUND_DAYS', '{"value": 56}', 'number', 'Remboursement auto (jours)', NULL, 28, 180),
-          ('loyalty', 'LOYALTY_SILVER_ORDERS', '{"value": 3}', 'number', 'Seuil Silver (commandes)', NULL, 1, 50),
-          ('loyalty', 'LOYALTY_GOLD_ORDERS', '{"value": 10}', 'number', 'Seuil Gold (commandes)', NULL, 5, 100),
-          ('loyalty', 'LOYALTY_PLATINUM_ORDERS', '{"value": 25}', 'number', 'Seuil Platinum (commandes)', NULL, 10, 200),
-          ('loyalty', 'LOYALTY_SILVER_DISCOUNT', '{"value": 2}', 'number', 'Remise Silver (%)', NULL, 0, 20),
-          ('loyalty', 'LOYALTY_GOLD_DISCOUNT', '{"value": 5}', 'number', 'Remise Gold (%)', NULL, 0, 30),
-          ('loyalty', 'LOYALTY_PLATINUM_DISCOUNT', '{"value": 8}', 'number', 'Remise Platinum (%)', NULL, 0, 50),
+          ('loyalty', 'LOYALTY_SILVER_ORDERS', '{"value": 3}', 'number', 'Seuil Silver (commandes)', 'Info — géré via PUT /api/loyalty/tiers/:id', 1, 50),
+          ('loyalty', 'LOYALTY_GOLD_ORDERS', '{"value": 10}', 'number', 'Seuil Gold (commandes)', 'Info — géré via PUT /api/loyalty/tiers/:id', 5, 100),
+          ('loyalty', 'LOYALTY_PLATINUM_ORDERS', '{"value": 25}', 'number', 'Seuil Platinum (commandes)', 'Info — géré via PUT /api/loyalty/tiers/:id', 10, 200),
+          ('loyalty', 'LOYALTY_SILVER_DISCOUNT', '{"value": 2}', 'number', 'Remise Silver (%)', 'Info — géré via PUT /api/loyalty/tiers/:id', 0, 20),
+          ('loyalty', 'LOYALTY_GOLD_DISCOUNT', '{"value": 5}', 'number', 'Remise Gold (%)', 'Info — géré via PUT /api/loyalty/tiers/:id', 0, 30),
+          ('loyalty', 'LOYALTY_PLATINUM_DISCOUNT', '{"value": 8}', 'number', 'Remise Platinum (%)', 'Info — géré via PUT /api/loyalty/tiers/:id', 0, 50),
           ('pricing', 'CUSTOMS_DEFAULT_PCT', '{"value": 20}', 'number', 'Douane estimée (%)', NULL, 5, 50),
           ('pricing', 'FREIGHT_KMF_PER_KG', '{"value": 65}', 'number', 'Fret par kg (KMF)', NULL, 10, 500),
           ('pricing', 'EUR_KMF_FALLBACK', '{"value": 492}', 'number', 'Taux EUR/KMF fallback', NULL, 400, 600),
           ('pricing', 'AED_KMF_FALLBACK', '{"value": 138}', 'number', 'Taux AED/KMF fallback', NULL, 100, 200),
           ('system', 'DASHBOARD_CACHE_TTL_SEC', '{"value": 30}', 'number', 'Cache dashboard (secondes)', NULL, 5, 300),
-          ('system', 'CASH_REMINDER_INTERVAL_MIN', '{"value": 60}', 'number', 'Intervalle rappels cash (minutes)', NULL, 15, 360)
+          ('system', 'CASH_REMINDER_INTERVAL_MIN', '{"value": 60}', 'number', 'Intervalle rappels cash (minutes)', NULL, 15, 360),
+          ('pricing', 'COMMISSION_AGENT_PCT', '{"value": 5}', 'number', 'Commission agent S1 (%)', 'Pourcentage commission agent source S1', 0, 30),
+          ('pricing', 'TRANSPORT_DXB_KMF', '{"value": 500}', 'number', 'Transport intra-Dubai (KMF)', NULL, 0, 5000),
+          ('pricing', 'TRANSITAIRE_PCT', '{"value": 2}', 'number', 'Commission transitaire (%)', NULL, 0, 20),
+          ('pricing', 'TRANSITAIRE_FIXED_KMF', '{"value": 450}', 'number', 'Frais fixes transitaire (KMF)', NULL, 0, 5000),
+          ('pricing', 'PORTUAIRES_KMF', '{"value": 1200}', 'number', 'Frais portuaires (KMF)', NULL, 0, 10000),
+          ('pricing', 'TRANSPORT_RELAIS_KMF', '{"value": 840}', 'number', 'Transport relais (KMF)', NULL, 0, 5000),
+          ('pricing', 'COMMISSION_RELAIS_STANDARD_KMF', '{"value": 500}', 'number', 'Commission relais standard (KMF)', NULL, 0, 5000),
+          ('pricing', 'COMMISSION_RELAIS_SHOWROOM_KMF', '{"value": 750}', 'number', 'Commission relais showroom (KMF)', NULL, 0, 5000),
+          ('pricing', 'FRAIS_STRIPE_PCT', '{"value": 2.5}', 'number', 'Frais Stripe diaspora (%)', NULL, 0, 10),
+          ('pricing', 'MARGE_PCT', '{"value": 12}', 'number', 'Marge commerciale (%)', 'Pourcentage de marge appliqué sur le prix final', 0, 50)
         ON CONFLICT (key) DO NOTHING
       `);
     }

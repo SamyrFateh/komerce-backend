@@ -18,6 +18,7 @@
 
 const AfricasTalking = require('africastalking');
 const db = require('../db');
+const { getRuleNumber } = require('./rules');
 
 // Initialisation conditionnelle — Africa's Talking uniquement si les clés sont renseignées.
 let smsClient = null;
@@ -117,7 +118,11 @@ async function sendSMS(to, message, type, order_id = null) {
  * H+36 : annulation automatique + restauration stock (TRANSACTIONNEL)
  */
 async function processCashRelaisReminders() {
-  // H+12 : commandes cash non payées créées il y a 12h, rappel pas encore envoyé
+  // Seuils dynamiques depuis business_rules
+  const cashTimeoutHours = await getRuleNumber('CASH_PAYMENT_TIMEOUT_HOURS', 36);
+  const reminderH12Hours = Math.round(cashTimeoutHours / 3);  // 12h for 36h timeout
+
+  // H+12 : commandes cash non payées créées il y a reminderH12Hours, rappel pas encore envoyé
   const { rows: h12 } = await db.query(
     `SELECT o.*, u.phone AS user_phone
      FROM orders o
@@ -126,14 +131,15 @@ async function processCashRelaisReminders() {
        AND o.payment_status = 'pending'
        AND o.status         = 'confirmed'
        AND o.reminder_h12_sent = FALSE
-       AND o.created_at <= NOW() - INTERVAL '12 hours'`
+       AND o.created_at <= NOW() - INTERVAL '1 hour' * $1`,
+    [reminderH12Hours]
   );
 
   for (const order of h12) {
     if (order.user_phone) {
       await sendSMS(
         order.user_phone,
-        `Komerce : Rappel : votre commande ${order.reference} attend le paiement au relais. Code : ${order.cash_ref_code}. Delai restant : 24h.`,
+        `Komerce : Rappel : votre commande ${order.reference} attend le paiement au relais. Code : ${order.cash_ref_code}. Delai restant : ${cashTimeoutHours - reminderH12Hours}h.`,
         'reminder_h12', order.id
       );
     }
@@ -153,7 +159,8 @@ async function processCashRelaisReminders() {
        AND o.payment_status = 'pending'
        AND o.status         = 'confirmed'
        AND o.reminder_h36_sent = FALSE
-       AND o.created_at <= NOW() - INTERVAL '36 hours'`
+       AND o.created_at <= NOW() - INTERVAL '1 hour' * $1`,
+    [cashTimeoutHours]
   );
 
   for (const order of h36) {
@@ -167,7 +174,7 @@ async function processCashRelaisReminders() {
         `UPDATE orders SET
            status        = 'cancelled',
            cancelled_at  = NOW(),
-           cancel_reason = 'Non-paiement cash relais apres 36h',
+           cancel_reason = `Non-paiement cash relais apres ${cashTimeoutHours}h`,
            reminder_h36_sent = TRUE
          WHERE id = $1`,
         [order.id]
@@ -176,7 +183,7 @@ async function processCashRelaisReminders() {
       // Historique
       await client.query(
         `INSERT INTO order_status_history (order_id, status, note)
-         VALUES ($1,'cancelled','Annulation automatique H+36 - non paiement')`,
+         VALUES ($1,'cancelled',`Annulation automatique H+${cashTimeoutHours} - non paiement`)`,
         [order.id]
       );
 

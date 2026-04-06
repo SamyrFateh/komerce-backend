@@ -38,7 +38,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
-const { getRule } = require('../utils/rules');
+const { getRule, getRuleNumber } = require('../utils/rules');
 const { sendOrderConfirmation } = require('../utils/email');
 const { validate } = require('../middleware/validate');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -701,12 +701,24 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
       relaisFilter = `AND o.relais_id = $${params.length}`;
     }
 
-    // Seuils problèmes — configurables via business_rules
-    const prepDays     = await getRule('PROBLEM_PREP_BLOCKED_DAYS', 4);
-    const transitDays  = await getRule('PROBLEM_TRANSIT_MAX_DAYS', 12);
-    const waitDays     = await getRule('PROBLEM_WAITING_MAX_DAYS', 7);
-    const noNotifHours = await getRule('PROBLEM_NO_NOTIF_HOURS', 1);
-    const stalledDays  = await getRule('PROBLEM_STALLED_DAYS', 30);
+    // Seuils problèmes — configurables via business_rules (safe cast via getRuleNumber)
+    const prepDays     = await getRuleNumber('PROBLEM_PREP_BLOCKED_DAYS', 4);
+    const transitDays  = await getRuleNumber('PROBLEM_TRANSIT_MAX_DAYS', 12);
+    const waitDays     = await getRuleNumber('PROBLEM_WAITING_MAX_DAYS', 7);
+    const noNotifHours = await getRuleNumber('PROBLEM_NO_NOTIF_HOURS', 1);
+    const stalledDays  = await getRuleNumber('PROBLEM_STALLED_DAYS', 30);
+
+    // Add threshold params for parameterized query
+    const prepDaysIdx     = params.length + 1;
+    params.push(prepDays);
+    const transitDaysIdx  = params.length + 1;
+    params.push(transitDays);
+    const waitDaysIdx     = params.length + 1;
+    params.push(waitDays);
+    const noNotifHoursIdx = params.length + 1;
+    params.push(noNotifHours);
+    const stalledDaysIdx  = params.length + 1;
+    params.push(stalledDays);
 
     // 10 règles de détection — chaque règle retourne des commandes avec problem_type
     const { rows } = await db.query(
@@ -737,28 +749,28 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
 
            -- Règle 3 : préparation bloquée >4 jours
            WHEN o.status = 'preparation'
-            AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDays}
+            AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDaysIdx}
             THEN 'preparation_too_long'
 
            -- Règle 4 : transit >12 jours
            WHEN o.status = 'shipped'
-            AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDays}
+            AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDaysIdx}
             THEN 'transit_too_long'
 
            -- Règle 5 : disponible depuis >7 jours (non retiré)
            WHEN o.status = 'available'
-            AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDays}
+            AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDaysIdx}
             THEN 'waiting_too_long'
 
            -- Règle 6 : disponible sans notification (qr_token NULL après 1h)
            WHEN o.status = 'available'
-            AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHours}
+            AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHoursIdx}
             AND o.qr_token IS NULL
             THEN 'no_notification'
 
            -- Règle 7 : commande active depuis >30 jours sans avancement
            WHEN o.status = 'ordered'
-            AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDays}
+            AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDaysIdx}
             THEN 'stalled'
 
            -- Règle 8 : paiement cash non soldé après collecte (si possible à détecter)
@@ -786,15 +798,15 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
            -- Règle 1
            (o.payment_status = 'paid' AND o.status IN ('confirmed', 'ordered') AND o.purchasing_at IS NULL)
            -- Règle 3
-           OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDays})
+           OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDaysIdx})
            -- Règle 4
-           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDays})
+           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDaysIdx})
            -- Règle 5
-           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDays})
+           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDaysIdx})
            -- Règle 6
-           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHours} AND o.qr_token IS NULL)
+           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHoursIdx} AND o.qr_token IS NULL)
            -- Règle 7
-           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDays})
+           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDaysIdx})
            -- Règle 9
            OR (o.relais_id IS NULL AND o.status NOT IN ('confirmed', 'cancelled', 'refunded'))
          )
@@ -1494,7 +1506,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
 
     // Si passage à available et pickup_code manquant → en générer un
-    let pickupCodePatch = '';
+    let pickupCodeValue = null;
     if (status === 'available' && !order.pickup_code) {
       const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       const { randomBytes: rb } = require('crypto');
@@ -1503,14 +1515,21 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
         do { b = rb(1)[0]; } while (b >= 216);
         return PICKUP_CHARS[b % 36];
       }).join('');
-      pickupCodePatch = `, pickup_code = '${newCode}'`;
+      pickupCodeValue = newCode;
       console.log(`[ORDERS] pickup_code auto-généré pour ${order.reference}: ${newCode}`);
     }
 
-    await client.query(
-      `UPDATE orders SET status = $1${tsUpdate}${pickupCodePatch}, updated_at = NOW() WHERE id = $2`,
-      [status, order.id]
-    );
+    if (pickupCodeValue) {
+      await client.query(
+        `UPDATE orders SET status = $1${tsUpdate}, pickup_code = $2, updated_at = NOW() WHERE id = $3`,
+        [status, pickupCodeValue, order.id]
+      );
+    } else {
+      await client.query(
+        `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW() WHERE id = $2`,
+        [status, order.id]
+      );
+    }
 
     // Mettre à jour payment_status pour les commandes cash_relais passées à 'ordered'
     if (status === 'ordered' && order.payment_mode === 'cash_relais') {
