@@ -13,7 +13,8 @@ router.get('/tiers', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -27,7 +28,8 @@ router.get('/me', authenticate, async (req, res) => {
     if (!rows.length) return res.json({ orders_count: 0, tier_label: null, discount_pct: 0 });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -37,7 +39,8 @@ router.get('/users', authenticate, requireAdmin, async (req, res) => {
     const { rows } = await db.query('SELECT * FROM v_loyalty_summary');
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -56,7 +59,8 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     }
     res.json({ tiers, total_clients, tier_distribution, users });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -77,7 +81,8 @@ router.put('/tiers/:id', authenticate, requireAdmin, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Palier introuvable' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -88,7 +93,8 @@ router.post('/recalculate/:user_id', authenticate, requireAdmin, async (req, res
     const { rows } = await db.query('SELECT * FROM v_loyalty_summary WHERE id = $1', [req.params.user_id]);
     res.json(rows[0] || {});
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -101,7 +107,8 @@ router.post('/recalculate-all', authenticate, requireAdmin, async (req, res) => 
     }
     res.json({ recalculated: users.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

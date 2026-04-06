@@ -6,7 +6,7 @@
  * Changelog v2:
  *   - globalLimiter 100→500/15min (pages dashboard internes font 5-8 appels/chargement)
  *   - authLimiter 5→20/15min (évite lockouts pendant tests)
- *   - globalLimiter skip si JWT Authorization présent (utilisateurs authentifiés légitimes)
+ *   - SECURITY FIX: Bearer skip removed — rate limiting applies to all users
  */
 
 const rateLimit = require('express-rate-limit');
@@ -21,12 +21,9 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Trop de requêtes, réessayez plus tard' },
   skip: (req) => {
-    // Skip pour health checks
+    // Skip pour health checks only
     if (req.path === '/health' || req.path === '/ready') return true;
-    // Skip pour utilisateurs authentifiés (JWT présent)
-    // Les utilisateurs connectés sont des agents internes légitimes
-    const auth = req.headers['authorization'];
-    if (auth && auth.startsWith('Bearer ')) return true;
+    // ⚠️ SECURITY FIX: Bearer skip removed — rate limiting now applies to ALL users
     return false;
   },
 });
@@ -79,10 +76,7 @@ const dashboardLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes dashboard, réessayez dans 1 minute' },
-  skip: (req) => {
-    const auth = req.headers['authorization'];
-    return auth && auth.startsWith('Bearer ');
-  },
+  // ⚠️ SECURITY FIX: Rate limiting now applies to ALL users including authenticated ones
 });
 
 module.exports = {

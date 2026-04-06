@@ -14,9 +14,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TYPE user_role AS ENUM ('client', 'admin', 'agent_relais', 'agent_hub');
 
 CREATE TYPE order_status AS ENUM (
-  'draft',        -- panier en cours
   'confirmed',    -- commande confirmée, en attente paiement
-  'paid',         -- paiement reçu
+  'ordered',      -- commande passée (migration 004)
   'preparation',  -- [SCAN 1] article préparé au hub
   'shipped',      -- [SCAN 2] expédié (chargé et parti)
   'available',    -- [SCAN 3] reçu au relais → SMS envoyé au destinataire
@@ -187,6 +186,7 @@ CREATE TABLE orders (
   shipped_at          TIMESTAMPTZ,
   available_at        TIMESTAMPTZ,
   collected_at        TIMESTAMPTZ,
+  ordered_at          TIMESTAMPTZ,
   cancelled_at        TIMESTAMPTZ,
   cancel_reason       TEXT,
 

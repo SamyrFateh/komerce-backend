@@ -139,4 +139,9 @@ function requireRole(roles) {
 // Raccourci : vérifie que l'utilisateur est admin
 const requireAdmin = requireRole(['admin']);
 
-module.exports = { authenticate, requireRole, requireAdmin };
+// ⚠️ SECURITY FIX: Allow explicit cache invalidation on role changes
+function invalidateUserCache(userId) {
+  userCache.delete(userId);
+}
+
+module.exports = { authenticate, requireRole, requireAdmin, invalidateUserCache };
