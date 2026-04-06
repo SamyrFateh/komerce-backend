@@ -1,4 +1,4 @@
-name: 🗺️ Carto Guard — Vérification coffre-fort
+name: 🗺️ Carto Guard — Vérification coffre-fort v2.0
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
       - name: 🔍 Vérifier si des fichiers code ont changé
         id: code_changes
         run: |
-          CODE_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|server\.js|db\.js)' || true)
+          CODE_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|scripts/|public/|dashboard-app/|server\.js|db\.js|package\.json|\.github/workflows/)' || true)
           if [ -n "$CODE_CHANGED" ]; then
             echo "code_changed=true" >> $GITHUB_OUTPUT
             echo "files<<ENDFILES" >> $GITHUB_OUTPUT
@@ -52,13 +52,16 @@ jobs:
               files,
               '```',
               '',
-              '### ✅ Action requise :',
+              '### ✅ Action requise (approche DELTA) :',
               '1. Ouvrir [`docs/CARTOGRAPHY_360.md`](../docs/CARTOGRAPHY_360.md)',
-              '2. Vérifier que vos modifications sont **cohérentes** avec la carto',
-              '3. **Mettre à jour la carto** dans cette PR si nécessaire',
-              '4. Si aucun changement d\'endpoint/table/middleware → cocher la checklist et expliquer pourquoi',
+              '2. Mettre à jour **uniquement les lignes impactées** :',
+              '   - SHA du fichier modifié dans l\'arbre',
+              '   - Endpoints ajoutés/modifiés dans la section routes',
+              '   - Tables/vues modifiées dans la section BDD',
+              '3. Committer la mise à jour carto dans cette PR',
               '',
-              '> 🔒 *Le coffre-fort protège le code. Pas de merge sans vérification.*'
+              '> 🔒 *Règle #9 : Pas de mise à jour carto → pas de merge.*',
+              '> 📐 *Approche DELTA : ne modifier que ce qui a changé.*'
             ].join('\n');
 
             github.rest.issues.createComment({

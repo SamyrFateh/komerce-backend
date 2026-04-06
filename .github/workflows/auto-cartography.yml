@@ -1,6 +1,6 @@
 # ============================================================
-# KOMERCE — GitHub Action : Régénération auto de la cartographie
-# Se déclenche après chaque merge sur main
+# KOMERCE — GitHub Action : Métriques auto cartographie
+# v2.0 — 06/04/2026 — paths étendus à TOUT le code
 # ============================================================
 
 name: '🗺️ Auto-Cartography'
@@ -12,10 +12,15 @@ on:
       - 'routes/**'
       - 'middleware/**'
       - 'utils/**'
+      - 'validators/**'
       - 'db/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'dashboard-app/**'
       - 'server.js'
       - 'db.js'
       - 'package.json'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -26,7 +31,7 @@ concurrency:
 
 jobs:
   regenerate-cartography:
-    name: '🗺️ Régénérer la cartographie'
+    name: '🗺️ Mettre à jour les métriques cartographie'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -44,65 +49,62 @@ jobs:
 
       - name: '📊 Exécuter l''analyse complète'
         run: |
-          # Analyse complète pour la cartographie
           node scripts/impact-check.js --all --json > /tmp/full-analysis.json 2>/dev/null || true
 
-      - name: '🗺️ Régénérer CARTOGRAPHY_360.md'
+      - name: '🗺️ Mettre à jour les métriques CARTOGRAPHY_360.md'
         run: |
           cat > /tmp/update-carto.js << 'SCRIPT'
           const fs = require('fs');
           const path = require('path');
           
-          // Charger l'analyse
           let analysis = {};
           try {
             const raw = fs.readFileSync('/tmp/full-analysis.json', 'utf-8');
             const jsonMatch = raw.match(/\{[\s\S]*"score"[\s\S]*\}/);
             if (jsonMatch) analysis = JSON.parse(jsonMatch[0]);
-          } catch { console.log('⚠️ Pas d\'analyse disponible, régénération basique'); }
+          } catch { console.log('⚠️ Pas d analyse disponible'); }
           
-          // Charger la config
-          const config = JSON.parse(fs.readFileSync('scripts/impact-config.json', 'utf-8'));
-          
-          // Lire la carto existante
           const cartoPath = 'docs/CARTOGRAPHY_360.md';
           let existingCarto = '';
           try { existingCarto = fs.readFileSync(cartoPath, 'utf-8'); } catch {}
           
-          // Ajouter la section "Dernière analyse d'impact" à la fin
+          const countFiles = (dir) => {
+            try {
+              return fs.readdirSync(dir, { recursive: true })
+                .filter(f => !fs.statSync(path.join(dir, f)).isDirectory()).length;
+            } catch { return 0; }
+          };
+          
           const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-          const routeCount = Object.keys(config.architecture.routes).length;
-          const tableCount = Object.values(config.tables).flat().length;
-          const serviceCount = Object.keys(config.externalServices).length;
           
           let updateSection = `\n\n---\n\n## 🤖 Dernière analyse automatique\n\n`;
           updateSection += `> Mise à jour : ${now} UTC\n\n`;
           updateSection += `| Métrique | Valeur |\n|----------|--------|\n`;
-          updateSection += `| Routes analysées | ${routeCount} |\n`;
-          updateSection += `| Tables cartographiées | ${tableCount} |\n`;
-          updateSection += `| Services externes | ${serviceCount} |\n`;
+          updateSection += `| Routes | ${countFiles('routes')} fichiers |\n`;
+          updateSection += `| Middlewares | ${countFiles('middleware')} fichiers |\n`;
+          updateSection += `| Utilitaires | ${countFiles('utils')} fichiers |\n`;
+          updateSection += `| Frontend (public/) | ${countFiles('public')} fichiers |\n`;
+          updateSection += `| Dashboard App | ${countFiles('dashboard-app')} fichiers |\n`;
           
           if (analysis.score !== undefined) {
-            updateSection += `| Score de risque global | ${analysis.score}/100 |\n`;
-            updateSection += `| Alertes sécurité | ${analysis.summary?.securityIssues || 0} |\n`;
+            updateSection += `| Score de risque | ${analysis.score}/100 |\n`;
           }
           
-          updateSection += `\n*Régénéré automatiquement par le coffre-fort Komerce v1.0*\n`;
+          updateSection += `\n*Métriques auto-générées — workflow auto-cartography v2.0*\n`;
+          updateSection += `*⚠️ Complète la carto mais ne remplace pas la mise à jour DELTA manuelle.*\n`;
           
-          // Remplacer la section existante ou l'ajouter
           const marker = '## 🤖 Dernière analyse automatique';
           if (existingCarto.includes(marker)) {
             const idx = existingCarto.indexOf('---\n\n' + marker);
-            if (idx > 0) {
-              existingCarto = existingCarto.substring(0, idx).trimEnd();
-            } else {
+            if (idx > 0) existingCarto = existingCarto.substring(0, idx).trimEnd();
+            else {
               const idx2 = existingCarto.indexOf(marker);
               existingCarto = existingCarto.substring(0, idx2).trimEnd();
             }
           }
           
           fs.writeFileSync(cartoPath, existingCarto + updateSection);
-          console.log('✅ CARTOGRAPHY_360.md mis à jour');
+          console.log('✅ Métriques cartographie mises à jour');
           SCRIPT
           
           node /tmp/update-carto.js
@@ -114,17 +116,15 @@ jobs:
           
           git add docs/CARTOGRAPHY_360.md
           
-          # Ne committer que s'il y a des changements
           if git diff --cached --quiet; then
-            echo "ℹ️ Aucun changement dans la cartographie"
+            echo "ℹ️ Aucun changement"
           else
-            git commit -m "🗺️ auto: régénération cartographie [skip ci]"
+            git commit -m "🗺️ auto: métriques cartographie [skip ci]"
             git push
-            echo "✅ Cartographie mise à jour et pushée"
+            echo "✅ Métriques mises à jour"
           fi
 
       - name: '📊 Résumé'
         run: |
-          echo "🗺️ Régénération de la cartographie terminée"
-          echo "   Déclenchée par : ${{ github.event.head_commit.message }}"
-          echo "   Auteur : ${{ github.event.head_commit.author.name }}"
+          echo "🗺️ Mise à jour métriques terminée"
+          echo "   Commit : ${{ github.event.head_commit.message }}"
