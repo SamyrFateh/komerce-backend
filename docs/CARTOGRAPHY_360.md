@@ -1,6 +1,6 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.0 — 06/04/2026 (fusion v12+v14)
+> **Version** : 15.1 — 06/04/2026 (v15.0 + sync structurel dashboard-app)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
 > **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
@@ -39,7 +39,7 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| **Fichiers totaux** | ~93 |
+| **Fichiers totaux** | ~101 |
 | **Dossiers** | 14 |
 | **Routes API** | 18 fichiers |
 | **Middlewares** | 4 |
@@ -47,10 +47,10 @@
 | **Validators** | 1 |
 | **Fichiers DB** | 4 + 3 migrations |
 | **Frontend (public/)** | 15 HTML + 3 JS + 2 images |
-| **Dashboard App** | 12 fichiers (React/TSX) |
+| **Dashboard App** | 17 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 11 + 11 audit |
-| **CI/CD Workflows** | 2 |
+| **Docs** | 12 + 11 audit + _pending/ |
+| **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.5 MB (hors package-lock.json) |
 
 ---
@@ -59,10 +59,10 @@
 
 ```
 komerce-backend/
-├── .cursorrules                          (1.4 KB)  [3dd2643a]
+├── .cursorrules                          (2.3 KB)  [5638f005]
 ├── .env.example                          (1.9 KB)  [6568d664]
 ├── .gitignore                            (258 B)   [61e13d23]
-├── AGENT_RULES.md                        (2.9 KB)  [c610dfeb]
+├── AGENT_RULES.md                        (3.0 KB)  [965976d8]
 ├── CONTRIBUTING.md                       (3.2 KB)  [a18b8868]
 ├── README.md                             (3.9 KB)  [1c05bc68]
 ├── db.js                                 (770 B)   [08d9e6c6]
@@ -138,22 +138,27 @@ komerce-backend/
 │       ├── avatar_panier.png             (13.3 KB) [8ed44a7c]
 │       └── hero_banner.jpg               (139.1 KB)[b486987e]
 │
-├── dashboard-app/                        (12 fichiers — React/TSX)
-│   ├── app.tsx                           (2.1 KB)  [593bfadc]
+├── dashboard-app/                        (17 fichiers — React/TSX)
+│   ├── app.tsx                           (3.5 KB)  [c125a47c]
 │   ├── index.html                        (2.7 KB)  [40a99817]
-│   ├── styles.css                        (126 B)   [826e8a56]
+│   ├── styles.css                        (505 B)   [1a1807c6]
 │   ├── tasklet.config.json               (184 B)   [eed57f48]
-│   ├── types.ts                          (3.1 KB)  [65389896]
-│   ├── components/
-│   │   ├── AlertsView.tsx                (3.4 KB)  [69708424]
-│   │   ├── FinanceView.tsx               (7.7 KB)  [3bf26622]
-│   │   ├── OpsView.tsx                   (4.6 KB)  [fa693aaf]
-│   │   ├── PilotageView.tsx              (6.8 KB)  [fd7f1d0c]
-│   │   └── StatCard.tsx                  (1.1 KB)  [693fa866]
+│   ├── types.ts                          (7.1 KB)  [e86643d0]
+│   ├── components/                        (10 fichiers)
+│   │   ├── CatalogueView.tsx             (7.5 KB)  [98390045]
+│   │   ├── ClientsView.tsx               (7.5 KB)  [83078e95]
+│   │   ├── FinanceView.tsx               (9.9 KB)  [ce9b0bdd]
+│   │   ├── HubDubaiView.tsx              (9.9 KB)  [1fc68bcd]
+│   │   ├── OverviewView.tsx              (8.9 KB)  [a3672252]
+│   │   ├── PipelineView.tsx              (4.0 KB)  [8c5ff6db]
+│   │   ├── RelaisView.tsx                (12.2 KB) [24c70bc7]
+│   │   ├── RetardsView.tsx               (6.6 KB)  [1c76a1dc]
+│   │   ├── StatCard.tsx                  (889 B)   [8dcabbaf]
+│   │   └── TendancesView.tsx             (9.1 KB)  [140349e5]
 │   ├── data/
-│   │   └── mockData.ts                   (5.0 KB)  [4fda0a37]
+│   │   └── mockData.ts                   (30.2 KB) [07646943]
 │   └── utils/
-│       └── formatters.ts                 (1.8 KB)  [530ffb88]
+│       └── formatters.ts                 (2.8 KB)  [edd50898]
 │
 ├── scripts/                              (4 fichiers)
 │   ├── impact-check.js                   (25.5 KB) [d0fef162]
@@ -161,18 +166,21 @@ komerce-backend/
 │   ├── setup-hooks.sh                    (4.5 KB)  [1d4ba37f]
 │   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
 │
-├── docs/                                 (11 fichiers + audit/)
-│   ├── AGENTS_PROTOCOL.md                (13.9 KB) [676f2c17]
+├── docs/                                 (12 fichiers + audit/ + _pending/)
+│   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
 │   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
 │   ├── DASHBOARD_REDESIGN.md             (8.5 KB)  [0f46d186]
 │   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
+│   ├── GOVERNANCE_BOOTSTRAP.md            (3.1 KB)  [6f68fb39]
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
 │   ├── ROADMAP_KOMERCE.md                (18.8 KB) [31a0284e]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
+│   ├── _pending/                          (dossier delta governance)
+│   │   └── README.md                     (2.3 KB)  [8f1a2e46]
 │   └── audit/                            (11 fichiers)
 │       ├── AUDIT_BUGS.md                 (7.9 KB)  [92fa541a]
 │       ├── AUDIT_CODE_INTEGRITY.md       (10.9 KB) [2ce96aec]
@@ -186,9 +194,10 @@ komerce-backend/
 │       ├── middleware_audit.md           (12.5 KB) [f3533515]
 │       └── utils_audit.md               (15.9 KB) [cc2b9d7a]
 │
-└── .github/workflows/                    (2 fichiers)
-    ├── auto-cartography.yml              (4.9 KB)  [1daacd02]
-    └── carto-guard.yml                   (3.3 KB)  [d1e3c317]
+└── .github/workflows/                    (3 fichiers)
+    ├── auto-cartography.yml              (4.7 KB)  [be8f81c8]
+    ├── carto-guard.yml                   (3.5 KB)  [c02ea302]
+    └── impact-check.yml                  (5.2 KB)  [9358686c]
 ```
 
 ---
@@ -914,15 +923,19 @@ PWA Service Worker :
 
 L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alimentée par les endpoints `/api/dashboard/*`.
 
-### 5 Vues
+### 9 Vues + 1 composant utilitaire
 
 | # | Vue | Endpoint source | Description |
 |---|-----|----------------|-------------|
-| 1 | **Opérations** | `/api/dashboard/ops` | Commandes du jour, en cours, bloquées, SLA tracker |
+| 1 | **Overview** | `/api/dashboard/ops` | Vue d'ensemble — KPIs principaux |
 | 2 | **Finance** | `/api/dashboard/finance` | CA total, marges, répartition cash/Stripe, devises |
 | 3 | **Pipeline** | `/api/dashboard/pipeline` | Kanban visuel des commandes par statut |
 | 4 | **Retards** | `/api/dashboard/retards` | Clients en retard SLA, compensations automatiques |
 | 5 | **Clients** | `/api/dashboard/clients` | Comportement, fidélité, top clients |
+| 6 | **Catalogue** | `/api/products` | Vue catalogue produits |
+| 7 | **Hub Dubai** | `/api/dashboard/ops` | Vue opérations hub Dubai |
+| 8 | **Relais** | `/api/relais` | Vue réseau de relais |
+| 9 | **Tendances** | `/api/dashboard/history` + `/forecast` | Graphiques mensuels, projections |
 
 ### Structure données (mock)
 
@@ -950,33 +963,38 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `app.tsx` | 2.1 KB | 593bfadc | Composant principal — routing entre vues |
+| `app.tsx` | 3.5 KB | c125a47c | Composant principal — routing entre 9 vues |
 | `index.html` | 2.7 KB | 40a99817 | Point d'entrée HTML |
-| `styles.css` | 126 B | 826e8a56 | Styles additionnels |
+| `styles.css` | 505 B | 1a1807c6 | Styles additionnels |
 | `tasklet.config.json` | 184 B | eed57f48 | Config Tasklet (displayName, description) |
-| `types.ts` | 3.1 KB | 65389896 | Types TypeScript partagés |
+| `types.ts` | 7.1 KB | e86643d0 | Types TypeScript partagés (9 vues) |
 
-### Composants (`components/`) :
+### Composants (`components/`) — 10 fichiers :
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `AlertsView.tsx` | 3.4 KB | 69708424 | Vue alertes — affiche les alertes critiques |
-| `FinanceView.tsx` | 7.7 KB | 3bf26622 | Vue finance — soldes, retraits, transactions |
-| `OpsView.tsx` | 4.6 KB | fa693aaf | Vue opérations — commandes, livraisons |
-| `PilotageView.tsx` | 6.8 KB | fd7f1d0c | Vue pilotage — KPIs, graphiques |
-| `StatCard.tsx` | 1.1 KB | 693fa866 | Composant carte statistique réutilisable |
+| `CatalogueView.tsx` | 7.5 KB | 98390045 | Vue catalogue — navigation produits |
+| `ClientsView.tsx` | 7.5 KB | 83078e95 | Vue clients — comportement, fidélité |
+| `FinanceView.tsx` | 9.9 KB | ce9b0bdd | Vue finance — CA, marges, devises |
+| `HubDubaiView.tsx` | 9.9 KB | 1fc68bcd | Vue hub Dubai — opérations hub |
+| `OverviewView.tsx` | 8.9 KB | a3672252 | Vue d'ensemble — KPIs principaux |
+| `PipelineView.tsx` | 4.0 KB | 8c5ff6db | Vue pipeline — kanban commandes |
+| `RelaisView.tsx` | 12.2 KB | 24c70bc7 | Vue relais — réseau de points relais |
+| `RetardsView.tsx` | 6.6 KB | 1c76a1dc | Vue retards — SLA, compensations |
+| `StatCard.tsx` | 889 B | 8dcabbaf | Composant carte statistique réutilisable |
+| `TendancesView.tsx` | 9.1 KB | 140349e5 | Vue tendances — graphiques, projections |
 
 ### Données (`data/`) :
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `mockData.ts` | 5.0 KB | 4fda0a37 | Données mock pour développement |
+| `mockData.ts` | 30.2 KB | 07646943 | Données mock pour développement (9 vues) |
 
 ### Utilitaires (`utils/`) :
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `formatters.ts` | 1.8 KB | 530ffb88 | Formatage nombres, dates, devises (KMF) |
+| `formatters.ts` | 2.8 KB | edd50898 | Formatage nombres, dates, devises (KMF) |
 
 
 ## 14. ⚙️ Scripts (4 fichiers)
@@ -1011,11 +1029,12 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `AGENTS_PROTOCOL.md` | ~15 KB | (v1.4) | 🔒 Protocole de gouvernance |
+| `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
 | `AUDIT_REPORT.md` | 8.0 KB | 6b4fc1c7 | 📋 Rapport d'audit principal |
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
 | `DASHBOARD_REDESIGN.md` | 8.5 KB | 0f46d186 | 📐 Specs redesign dashboard |
 | `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
+| `GOVERNANCE_BOOTSTRAP.md` | 3.1 KB | 6f68fb39 | 🤖 Bootstrap gouvernance automatique |
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
 | `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
@@ -1054,6 +1073,12 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 - Trigger : pull_request (opened, synchronize)
 - Paths surveillés : routes/, middleware/, utils/, validators/, db/, scripts/, public/, dashboard-app/, server.js, db.js, package.json, .github/workflows/
 - Commente la PR si la carto n'est pas à jour — avec instructions DELTA
+
+### `impact-check.yml` (~5.2 KB) [9358686c]
+**Analyse d'impact automatique**
+- Trigger : push sur `main`
+- Exécute `scripts/impact-check.js` pour évaluer le risque des modifications
+- Calcule un score de risque et identifie les dépendances impactées
 
 ---
 
@@ -1230,7 +1255,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.0 — 6 avril 2026*
+> 📝 *Cartographie 360° — Version v15.1 — 6 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
@@ -1240,7 +1265,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 16:11:32 UTC
+> Mise à jour : 2026-04-06 16:33:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
