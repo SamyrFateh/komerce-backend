@@ -107,20 +107,6 @@ router.get('/', (req, res) => {
   res.json({ modules, total: modules.length });
 });
 
-// ─── GET /api/modules/:type ───────────────────────────────────────────────────
-// Détail d'un module spécifique
-
-router.get('/:type', (req, res) => {
-  const module = MODULES_REGISTRY[req.params.type];
-  if (!module) {
-    return res.status(404).json({
-      error: `Module inconnu : ${req.params.type}`,
-      modules_disponibles: Object.keys(MODULES_REGISTRY),
-    });
-  }
-  res.json({ type: req.params.type, ...module });
-});
-
 // ─── GET /api/modules/fabrics ─────────────────────────────────────────────────
 // Catalogue tissus pour le module couture
 // Filtres optionnels : ?fabric_type=Wax&available=true
@@ -191,6 +177,20 @@ router.get('/models', async (req, res) => {
     console.error('GET /modules/models error:', e.message);
     res.status(500).json({ error: 'Erreur catalogue modèles' });
   }
+});
+
+// ─── GET /api/modules/:type ───────────────────────────────────────────────────
+// Détail d'un module spécifique
+
+router.get('/:type', (req, res) => {
+  const module = MODULES_REGISTRY[req.params.type];
+  if (!module) {
+    return res.status(404).json({
+      error: `Module inconnu : ${req.params.type}`,
+      modules_disponibles: Object.keys(MODULES_REGISTRY),
+    });
+  }
+  res.json({ type: req.params.type, ...module });
 });
 
 // ─── POST /api/modules/price ──────────────────────────────────────────────────

@@ -11,7 +11,8 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
     const { rows } = await db.query('SELECT * FROM v_unsold_pipeline');
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -45,7 +46,29 @@ router.post('/scan', authenticate, requireAdmin, async (req, res) => {
 
     res.json({ scanned: parseInt(count), items_created: newUnsold.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// ── GET /api/unsold/stats — statistiques invendus ─────────────────────────────
+router.get('/stats/summary', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        COUNT(*)                                    AS total_actifs,
+        SUM(unsold_price_kmf)                       AS valeur_liquidation_kmf,
+        SUM(original_price_kmf)                     AS valeur_initiale_kmf,
+        AVG(jours_en_stock)::NUMERIC(5,1)           AS jours_moy_en_stock,
+        COUNT(*) FILTER (WHERE channel = 'whatsapp') AS canal_whatsapp,
+        COUNT(*) FILTER (WHERE channel = 'reseller') AS canal_revendeur,
+        COUNT(*) FILTER (WHERE channel = 'both')     AS canal_both
+      FROM v_unsold_pipeline
+    `);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -58,7 +81,8 @@ router.get('/:id', authenticate, requireAdmin, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -77,7 +101,8 @@ router.patch('/:id', authenticate, requireAdmin, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -101,7 +126,8 @@ router.post('/:id/resolve', authenticate, requireAdmin, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -132,28 +158,10 @@ router.get('/:id/whatsapp', authenticate, requireAdmin, async (req, res) => {
 
     res.json({ message, item });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
-// ── GET /api/unsold/stats — statistiques invendus ─────────────────────────────
-router.get('/stats/summary', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const { rows } = await db.query(`
-      SELECT
-        COUNT(*)                                    AS total_actifs,
-        SUM(unsold_price_kmf)                       AS valeur_liquidation_kmf,
-        SUM(original_price_kmf)                     AS valeur_initiale_kmf,
-        AVG(jours_en_stock)::NUMERIC(5,1)           AS jours_moy_en_stock,
-        COUNT(*) FILTER (WHERE channel = 'whatsapp') AS canal_whatsapp,
-        COUNT(*) FILTER (WHERE channel = 'reseller') AS canal_revendeur,
-        COUNT(*) FILTER (WHERE channel = 'both')     AS canal_both
-      FROM v_unsold_pipeline
-    `);
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 module.exports = router;

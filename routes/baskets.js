@@ -116,37 +116,52 @@ router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res) => {
 });
 
 // PATCH /api/baskets/:code
+// ⚠️ SECURITY FIX: Wrapped in transaction for atomicity
 router.patch('/:code', authenticate, validate(baskets.updateBasket), async (req, res) => {
+  const client = await db.pool.connect();
   try {
-    const { rows: [basket] } = await db.query(
+    await client.query('BEGIN');
+
+    const { rows: [basket] } = await client.query(
       'SELECT * FROM baskets WHERE code=$1 AND expires_at>NOW() AND is_locked=FALSE', [req.params.code]
     );
-    if (!basket) return res.status(404).json({ error: 'Panier introuvable ou verrouillé' });
+    if (!basket) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Panier introuvable ou verrouillé' });
+    }
 
     const { add=[], remove=[], update_qty={} } = req.body;
     const uid = req.user?.id || null;
 
     for (const item of add) {
-      const p = await db.query('SELECT price_kmf FROM products WHERE id=$1', [item.product_id]);
+      const p = await client.query('SELECT price_kmf FROM products WHERE id=$1', [item.product_id]);
       if (!p.rows.length) continue;
-      const ex = await db.query('SELECT id FROM basket_items WHERE basket_id=$1 AND product_id=$2', [basket.id, item.product_id]);
-      if (ex.rows.length) await db.query('UPDATE basket_items SET quantity=quantity+$1 WHERE id=$2', [item.quantity||1, ex.rows[0].id]);
-      else await db.query('INSERT INTO basket_items (basket_id,product_id,added_by,quantity,price_kmf) VALUES ($1,$2,$3,$4,$5)', [basket.id, item.product_id, uid, item.quantity||1, p.rows[0].price_kmf]);
+      const ex = await client.query('SELECT id FROM basket_items WHERE basket_id=$1 AND product_id=$2', [basket.id, item.product_id]);
+      if (ex.rows.length) await client.query('UPDATE basket_items SET quantity=quantity+$1 WHERE id=$2', [item.quantity||1, ex.rows[0].id]);
+      else await client.query('INSERT INTO basket_items (basket_id,product_id,added_by,quantity,price_kmf) VALUES ($1,$2,$3,$4,$5)', [basket.id, item.product_id, uid, item.quantity||1, p.rows[0].price_kmf]);
     }
 
-    if (remove.length) await db.query('DELETE FROM basket_items WHERE basket_id=$1 AND product_id=ANY($2)', [basket.id, remove]);
+    if (remove.length) await client.query('DELETE FROM basket_items WHERE basket_id=$1 AND product_id=ANY($2)', [basket.id, remove]);
 
     for (const [pid, qty] of Object.entries(update_qty)) {
-      if (parseInt(qty) <= 0) await db.query('DELETE FROM basket_items WHERE basket_id=$1 AND product_id=$2', [basket.id, pid]);
-      else await db.query('UPDATE basket_items SET quantity=$1 WHERE basket_id=$2 AND product_id=$3', [qty, basket.id, pid]);
+      if (parseInt(qty) <= 0) await client.query('DELETE FROM basket_items WHERE basket_id=$1 AND product_id=$2', [basket.id, pid]);
+      else await client.query('UPDATE basket_items SET quantity=$1 WHERE basket_id=$2 AND product_id=$3', [qty, basket.id, pid]);
     }
 
-    const { rows: items } = await db.query(
+    const { rows: items } = await client.query(
       'SELECT bi.*, p.name, p.emoji, p.price_kmf FROM basket_items bi JOIN products p ON p.id=bi.product_id WHERE bi.basket_id=$1',
       [basket.id]
     );
+
+    await client.query('COMMIT');
     res.json({ code: req.params.code, items, total_kmf: items.reduce((s,i)=>s+i.price_kmf*i.quantity,0) });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur modification panier' }); }
+  } catch(e) {
+    await client.query('ROLLBACK');
+    console.error(e);
+    res.status(500).json({ error: 'Erreur modification panier' });
+  } finally {
+    client.release();
+  }
 });
 
 // POST /api/baskets/:code/pay — Amina paie
