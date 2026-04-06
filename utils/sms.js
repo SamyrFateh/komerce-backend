@@ -169,22 +169,22 @@ async function processCashRelaisReminders() {
     try {
       await client.query('BEGIN');
 
-      // Annuler la commande
+      // Annuler la commande — requête paramétrée pour cancel_reason
       await client.query(
         `UPDATE orders SET
            status        = 'cancelled',
            cancelled_at  = NOW(),
-           cancel_reason = `Non-paiement cash relais apres ${cashTimeoutHours}h`,
+           cancel_reason = $2,
            reminder_h36_sent = TRUE
          WHERE id = $1`,
-        [order.id]
+        [order.id, `Non-paiement cash relais apres ${cashTimeoutHours}h`]
       );
 
-      // Historique
+      // Historique — requête paramétrée pour note
       await client.query(
         `INSERT INTO order_status_history (order_id, status, note)
-         VALUES ($1,'cancelled',`Annulation automatique H+${cashTimeoutHours} - non paiement`)`,
-        [order.id]
+         VALUES ($1, 'cancelled', $2)`,
+        [order.id, `Annulation automatique H+${cashTimeoutHours} - non paiement`]
       );
 
       // Restaurer le stock
