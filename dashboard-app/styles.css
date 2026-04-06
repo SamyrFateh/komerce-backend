@@ -1,1 +1,12 @@
-/* A Tasklet theme + DaisyUI + Tailwind CSS are loaded from CDN. You may edit this file to extend or add styles as needed. */
+/* Override DaisyUI theme colors — no more pink! */
+:root {
+  --p: 217 91% 60%;       /* primary: blue */
+  --pf: 217 91% 50%;      /* primary focus */
+  --pc: 0 0% 100%;        /* primary content: white */
+  --s: 160 84% 39%;       /* secondary: emerald */
+  --sf: 160 84% 32%;      /* secondary focus */
+  --sc: 0 0% 100%;        /* secondary content: white */
+  --a: 43 96% 56%;        /* accent: amber */
+  --af: 43 96% 46%;       /* accent focus */
+  --ac: 0 0% 15%;         /* accent content */
+}

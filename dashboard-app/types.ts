@@ -1,148 +1,251 @@
-// === OPS Dashboard ===
-export interface OpsData {
-  date: string;
-  pipeline: {
-    confirmed: number;
-    ordered: number;
-    preparation: number;
-    shipped: number;
-    in_transit: number;
-    available: number;
-    collected: number;
-    cancelled: number;
-    total_actif: number;
-    total_termine: number;
-  };
-  today: {
-    nouvelles_commandes: number;
-    scans_effectues: number;
-    collectes: number;
-    ca_kmf: number;
-  };
-  bottlenecks: Bottleneck[];
-  hub_dubai: {
-    en_preparation: number;
-    expedies: number;
-    en_transit: number;
-  };
-}
+// Komerce Dashboard — Shared Types
 
-export interface Bottleneck {
+// ── Reusable sub-types ──────────────────────────────────────────────
+
+export interface LogistiqueItem {
   reference: string;
   status: string;
-  jours_bloque: number;
-  client: string;
-  relais: string;
+  jours: number;
+  destinataire?: string;
+  relais_nom?: string;
+  heures_en_attente?: number;
 }
 
-// === FINANCE Dashboard ===
-export interface FinanceData {
-  period: { start: string; end: string; days: number };
-  revenue: {
-    ca_kmf: number;
-    ca_eur: number;
-    taux_eur_kmf: number;
-    nb_commandes: number;
-    panier_moyen_kmf: number;
-    vs_previous: { ca_pct: number; nb_pct: number };
-  };
-  payments: {
-    cash_relais: PaymentMethod;
-    stripe_eur: PaymentMethod;
-    pending: { count: number; total_kmf: number };
-    confirmed: { count: number; total_kmf: number };
-  };
-  margins: {
-    avg_estimated_pct: number;
-    avg_real_pct: number;
-    gap_pct: number;
-    orders_costed: number;
-    orders_not_costed: number;
-    total_margin_kmf: number;
-    transport_kmf: number;
-    douane_kmf: number;
-    alerts: MarginAlert[];
-  };
-  monthly_trend: MonthlyTrend[];
-}
-
-export interface PaymentMethod {
+export interface LogistiqueStep {
   count: number;
-  total_kmf: number;
-  pct: number;
+  items: LogistiqueItem[];
+  label: string;
 }
 
-export interface MarginAlert {
+export interface Order {
+  id: string;
   reference: string;
-  margin_real_pct: number;
-  reason: string;
+  status: string;
+  total_kmf: number;
+  payment_mode: string;
+  payment_status: string;
+  created_at: string;
+  client_name: string;
+  recipient_name: string;
+  relais_name: string;
+  product_name: string;
+  items_count: number;
+  age_jours: number;
+  inactif_jours: number;
 }
 
-export interface MonthlyTrend {
-  mois: string;
-  ca_kmf: number;
-  nb: number;
-  marge_pct: number;
-}
-
-// === PILOTAGE Dashboard ===
-export interface PilotageData {
-  kpi: {
-    clients_actifs_30j: number;
-    clients_nouveaux_30j: number;
-    taux_reachat_pct: number;
-    taux_livraison_pct: number;
-    taux_annulation_pct: number;
-    delai_moyen_jours: number;
-    nps_score: number | null;
-  };
-  top_products: TopProduct[];
-  top_categories: TopCategory[];
-  clients: {
-    total: number;
-    actifs_30j: number;
-    actifs_90j: number;
-    top_clients: TopClient[];
-  };
-  pipeline_health: {
-    score: number;
-    issues: string[];
-  };
-  forecast_30j: {
-    ca_estime_kmf: number;
-    methode: string;
-  };
-}
-
-export interface TopProduct {
-  name: string;
-  category: string;
+export interface RelaisInfo {
+  relais: string;
+  ile: string;
   nb_commandes: number;
   ca_kmf: number;
+  livrees: number;
 }
 
-export interface TopCategory {
-  category: string;
-  nb_commandes: number;
-  ca_kmf: number;
-  pct_ca: number;
-}
-
-export interface TopClient {
+export interface ClientInfo {
   name: string;
+  phone: string;
   nb_commandes: number;
   ca_kmf: number;
   derniere_commande: string;
 }
 
-// === ALERTS ===
-export interface Alert {
-  type: 'marge_negative' | 'commande_bloquee' | 'anomalie_douane' | 'sourcing_bloque' | 'paiement_attente';
-  severity: 'critical' | 'warning' | 'info';
-  message: string;
-  reference?: string;
-  details?: string;
+export interface TopProduit {
+  nom: string;
+  name?: string;
+  categorie: string;
+  qty: number;
+  ca_kmf: number;
+  nb_commandes?: number;
 }
 
-// === Tabs ===
-export type TabId = 'ops' | 'finance' | 'pilotage' | 'alerts';
+export interface CategoryInfo {
+  categorie: string;
+  nb_commandes: number;
+  nb_articles?: number;
+  ca_kmf: number;
+  pct_ca?: number;
+  marge_kmf?: number;
+  taux_marge?: number;
+}
+
+export interface EvolutionMonth {
+  mois: string;
+  nb_commandes: number;
+  nb_clients: number;
+  ca_kmf: number;
+}
+
+export interface HistoryMonth {
+  mois: string;
+  total_commandes: number;
+  livrees: number;
+  ca_kmf: number;
+  ca_eur: number;
+}
+
+export interface RetardClient {
+  reference: string;
+  status: string;
+  client_nom: string;
+  client_phone: string;
+  client_email: string;
+  jours_retard: number;
+  compensation: string;
+  sms_suggere: string;
+}
+
+// ── Endpoint data shapes ────────────────────────────────────────────
+
+export interface OpsData {
+  activite: {
+    commandes_aujourd_hui: number;
+    commandes_en_cours: number;
+    commandes_bloquees: number;
+    livrees_aujourd_hui: number;
+    livrees_30j: number;
+  };
+  sla: {
+    on_time: number;
+    warning: number;
+    late: number;
+    blocked: number;
+    details: {
+      late: { reference: string; status: string; jours: number }[];
+    };
+  };
+  logistique: {
+    dubai_reception: LogistiqueStep;
+    dubai_expedition: LogistiqueStep;
+    transitaire: LogistiqueStep;
+    bateau: LogistiqueStep;
+    anjouan: LogistiqueStep;
+  };
+  delais: {
+    avg_preparation_jours: number;
+    avg_livraison_totale_jours: number;
+  };
+  alertes: {
+    cash_pending: number;
+    anomalies: number;
+    low_stock: number;
+  };
+}
+
+export interface FinanceData {
+  period: number;
+  taux: { eur_kmf: number; aed_kmf: number };
+  kpi: {
+    ca_kmf: number;
+    ca_eur: number;
+    nb_commandes: number;
+    nb_livrees: number;
+    nb_annulees: number;
+    panier_moyen_kmf: number;
+    evolution: { ca_pct: number; cmd_pct: number };
+  };
+  paiements: {
+    cash: { count: number; total_kmf: number };
+    stripe: { count: number; total_eur: number };
+  };
+  marges: {
+    marge_reelle_kmf: number;
+    cout_logistique_kmf: number;
+    taux_marge_pct: number;
+    nb_avec_cost: number;
+    nb_sans_cost: number;
+    alertes_perte: { count: number; refs: string[] };
+  };
+  par_categorie: CategoryInfo[];
+  top_produits: TopProduit[];
+}
+
+export interface PilotageData {
+  periode: string;
+  taux: { eur_kmf: number; aed_kmf: number };
+  taux_history: { eur_kmf: number; aed_kmf: number; valid_from: string }[];
+  volume: {
+    total: number;
+    livrees: number;
+    annulees: number;
+    en_cours: number;
+  };
+  ca: {
+    total_kmf: number;
+    total_eur: number;
+    cash_kmf: number;
+    stripe_kmf: number;
+  };
+  categories: CategoryInfo[];
+  couts: {
+    taux_terrain_pct: number;
+    source_taux: string;
+    hub_fixe_mensuel_kmf: number;
+  };
+  pipeline: { statut: string; nb: number }[];
+}
+
+export interface PipelineData {
+  total: number;
+  active: number;
+  pipeline: {
+    confirmed: { count: number; orders: Order[] };
+    ordered: { count: number; orders: Order[] };
+    preparation: { count: number; orders: Order[] };
+    shipped: { count: number; orders: Order[] };
+    in_transit: { count: number; orders: Order[] };
+    available: { count: number; orders: Order[] };
+    collected: { count: number; orders: Order[] };
+    cancelled: { count: number; orders: Order[] };
+    refunded: { count: number; orders: Order[] };
+  };
+}
+
+export interface RetardsData {
+  total: number;
+  par_niveau: {
+    remboursement_possible: { count: number; label: string };
+    remise_10pct_prochaine_cmd: { count: number; label: string };
+    avoir_5pct: { count: number; label: string };
+    contact_preventif: { count: number; label: string };
+  };
+  clients: RetardClient[];
+}
+
+export interface ForecastData {
+  target_date: string;
+  days_remaining: number;
+  realise_kmf: number;
+  modele: {
+    ref_period_jours: number;
+    avg_ca_jour: number;
+    stddev: number;
+  };
+  projection: {
+    pessimiste: number;
+    attendu: number;
+    optimiste: number;
+  };
+}
+
+export interface ClientsData {
+  periode: { debut: string; fin: string };
+  kpi: {
+    nb_clients: number;
+    commandes_valides: number;
+    ca_total_kmf: number;
+    panier_moyen_kmf: number;
+    clients_recurrents: number;
+    taux_recurrence_pct: number;
+  };
+  top_clients: ClientInfo[];
+  top_produits: TopProduit[];
+  par_relais: RelaisInfo[];
+  evolution: EvolutionMonth[];
+}
+
+export interface HistoryData {
+  nb_mois: number;
+  taux: { eur_kmf: number; aed_kmf: number };
+  history: HistoryMonth[];
+}
