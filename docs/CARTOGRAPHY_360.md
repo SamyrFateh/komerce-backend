@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.5 — 06/04/2026 (v15.4 + sync SHA drift: ROADMAP v15 23.3KB, loyalty.js, GOVERNANCE_BOOTSTRAP, DASHBOARD_REDESIGN)
+> **Version** : 15.6 — 06/04/2026 (v15.5 + sync drift: dashboard.js SHA+size 43.1KB, Komerce_Dashboard.html ajouté public/)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
+> **Dernière vérification** : 06/04/2026 — governance auto-sync (dashboard.js drift + Komerce_Dashboard.html)
 > 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -39,14 +39,14 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| **Fichiers totaux** | ~104 |
+| **Fichiers totaux** | ~105 |
 | **Dossiers** | 14 |
 | **Routes API** | 18 fichiers |
 | **Middlewares** | 4 |
 | **Utilitaires** | 5 |
 | **Validators** | 1 |
 | **Fichiers DB** | 4 + 3 migrations |
-| **Frontend (public/)** | 15 HTML + 3 JS + 2 images |
+| **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
 | **Docs** | 12 + 11 audit + _pending/ |
@@ -74,7 +74,7 @@ komerce-backend/
 │   ├── admin.js                          (24.3 KB) [6bb443fe]
 │   ├── auth.js                           (18.5 KB) [cef6b0d4]
 │   ├── baskets.js                        (11.7 KB) [6f41e7a1]
-│   ├── dashboard.js                      (37.7 KB) [c89e311d]
+│   ├── dashboard.js                      (43.1 KB) [d6cd15c0]
 │   ├── finance.js                        (13.7 KB) [a919836e]
 │   ├── health.js                         (1.4 KB)  [e29fabcb]
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
@@ -115,12 +115,13 @@ komerce-backend/
 │       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
 │       └── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
 │
-├── public/                               (15 HTML + 3 JS + 2 images)
+├── public/                               (16 HTML + 3 JS + 2 images)
 │   ├── index.html                        (143.9 KB)[c925b4b8]
 │   ├── Komerce_Admin.html                (121.4 KB)[d8e57998]
 │   ├── Komerce_Admin_Users.html          (32.2 KB) [90591618]
 │   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
 │   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
+│   ├── Komerce_Dashboard.html            (75.8 KB) [4d455c1a]
 │   ├── Komerce_Hub.html                  (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_Mobile.html               (53.9 KB) [d0348e70]
 │   ├── Komerce_Pilotage_v2.html          (~1 KB)   [redirect→dashboard-app]
@@ -903,6 +904,7 @@ PWA Service Worker :
 | `Komerce_Admin_Users.html` | 32.2 KB | 90591618 | 👥 Gestion utilisateurs | Admin |
 | `Komerce_Backend.html` | 512.6 KB | f02590ab | ⚙️ **Backend admin complet** (512 KB !) | Admin |
 | `Komerce_Backoffice_Admin_v2.html` | 68.2 KB | 3eafa998 | 🏢 Backoffice admin v2 | Admin |
+| `Komerce_Dashboard.html` | 75.8 KB | 4d455c1a | 📊 Dashboard admin | Admin |
 | `Komerce_Hub.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
 | `Komerce_Mobile.html` | 53.9 KB | d0348e70 | 📱 Version mobile PWA | Public |
 | `Komerce_Pilotage_v2.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
@@ -1281,14 +1283,14 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 19:17:57 UTC
+> Mise à jour : 2026-04-06 19:26:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
 | Routes | 18 fichiers |
 | Middlewares | 4 fichiers |
 | Utilitaires | 5 fichiers |
-| Frontend (public/) | 21 fichiers |
+| Frontend (public/) | 22 fichiers |
 | Dashboard App | 20 fichiers |
 | Score de risque | 100/100 |
 
