@@ -1055,37 +1055,69 @@ function getRelaisName(order) {
   }
 })();
 
-/* ─── QR Print ─── */
+/* ─── QR Print — v2 bulletproof (3 fallback strategies) ─── */
 function printQR(reference, client, products, relais) {
-  // Fix: Generate QR in parent window where library is already loaded
-  // This avoids the race condition where the CDN script hasn't loaded yet in the popup
-  QRCode.toDataURL(reference, { width: 200, margin: 2 }, function(err, url) {
-    if (err) { console.error(err); toast('Erreur génération QR', 'error'); return; }
-    const w = window.open('', '_blank', 'width=400,height=500');
-    w.document.write(`<!DOCTYPE html><html><head><title>QR ${reference}</title>
-    <style>
-      body { font-family: 'DM Sans', sans-serif; text-align: center; padding: 20px; }
-      .qr-label { border: 2px dashed #ccc; border-radius: 12px; padding: 24px; display: inline-block; margin: 20px auto; }
-      .qr-label h2 { font-size: 18px; margin: 0 0 4px; color: #1a1a2e; }
-      .qr-label .ref { font-family: monospace; font-size: 22px; font-weight: 700; color: #2563eb; margin: 8px 0; }
-      .qr-label .info { font-size: 12px; color: #666; margin: 4px 0; }
-      .qr-label img { margin: 12px auto; display: block; }
-      .qr-label .logo { font-size: 28px; margin-bottom: 8px; }
-      @media print { .no-print { display: none; } body { padding: 0; } }
-    </style>
-    </head><body>
-      <div class="qr-label">
-        <div class="logo">🏷️ KOMERCE</div>
-        <div class="ref">${reference}</div>
-        <img src="${url}" width="200" height="200" alt="QR ${reference}" />
-        <div class="info"><strong>Client :</strong> ${client}</div>
-        <div class="info"><strong>Produits :</strong> ${products}</div>
-        <div class="info"><strong>Relais :</strong> ${relais}</div>
-      </div>
-      <br><button class="no-print" onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;border-radius:8px;border:none;background:#2563eb;color:#fff;">🖨️ Imprimer</button>
-    </body></html>`);
+  var apiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(reference);
+
+  function openPrint(qrSrc) {
+    var w = window.open('', '_blank', 'width=400,height=500');
+    if (!w) { toast('Popup bloquée — autorisez les popups', 'error'); return; }
+    w.document.write('<!DOCTYPE html><html><head><title>QR ' + reference + '</title>' +
+    '<style>' +
+    'body { font-family: "DM Sans", sans-serif; text-align: center; padding: 20px; }' +
+    '.qr-label { border: 2px dashed #ccc; border-radius: 12px; padding: 24px; display: inline-block; margin: 20px auto; }' +
+    '.qr-label .ref { font-family: monospace; font-size: 22px; font-weight: 700; color: #2563eb; margin: 8px 0; }' +
+    '.qr-label .info { font-size: 12px; color: #666; margin: 4px 0; }' +
+    '.qr-label img { margin: 12px auto; display: block; }' +
+    '.qr-label .logo { font-size: 28px; margin-bottom: 8px; }' +
+    '@media print { .no-print { display: none; } body { padding: 0; } }' +
+    '</style></head><body>' +
+    '<div class="qr-label">' +
+    '<div class="logo">\u{1F3F7}\uFE0F KOMERCE</div>' +
+    '<div class="ref">' + reference + '</div>' +
+    '<img src="' + qrSrc + '" width="200" height="200" alt="QR ' + reference + '" />' +
+    '<div class="info"><strong>Client :</strong> ' + client + '</div>' +
+    '<div class="info"><strong>Produits :</strong> ' + products + '</div>' +
+    '<div class="info"><strong>Relais :</strong> ' + relais + '</div>' +
+    '</div><br>' +
+    '<button class="no-print" onclick="window.print()" style="padding:10px 30px;font-size:16px;cursor:pointer;border-radius:8px;border:none;background:#2563eb;color:#fff;">\u{1F5A8}\uFE0F Imprimer</button>' +
+    '</body></html>');
     w.document.close();
-  });
+  }
+
+  // Strategy 1: Use QRCode lib if already loaded (best quality, offline)
+  if (typeof QRCode !== 'undefined' && typeof QRCode.toDataURL === 'function') {
+    QRCode.toDataURL(reference, { width: 200, margin: 2 }, function(err, url) {
+      openPrint(err ? apiUrl : url);
+    });
+    return;
+  }
+
+  // Strategy 2: Dynamic script load (CDN might be slow but works)
+  var script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+  var loaded = false;
+  script.onload = function() {
+    if (loaded) return; loaded = true;
+    if (typeof QRCode !== 'undefined' && typeof QRCode.toDataURL === 'function') {
+      QRCode.toDataURL(reference, { width: 200, margin: 2 }, function(err, url) {
+        openPrint(err ? apiUrl : url);
+      });
+    } else {
+      openPrint(apiUrl);
+    }
+  };
+  script.onerror = function() {
+    if (loaded) return; loaded = true;
+    // Strategy 3: QR Server API (works even if all CDNs are blocked)
+    openPrint(apiUrl);
+  };
+  // Timeout: if CDN takes > 3s, fall back to API
+  setTimeout(function() {
+    if (loaded) return; loaded = true;
+    openPrint(apiUrl);
+  }, 3000);
+  document.head.appendChild(script);
 }
 </script>
 </body>
