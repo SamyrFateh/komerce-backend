@@ -17,9 +17,10 @@ CREATE TYPE order_status AS ENUM (
   'confirmed',    -- commande confirmée, en attente paiement
   'ordered',      -- commande passée (migration 004)
   'preparation',  -- [SCAN 1] article préparé au hub
-  'shipped',      -- [SCAN 2] expédié (chargé et parti)
-  'available',    -- [SCAN 3] reçu au relais → SMS envoyé au destinataire
-  'collected',    -- [SCAN 4] récupéré par le destinataire
+  'shipped',      -- [SCAN 2] remis au transitaire à Dubai
+  'in_transit',   -- [SCAN 3] 🚢 embarqué — confirmation transitaire
+  'available',    -- [SCAN 4] reçu au relais → SMS envoyé au destinataire
+  'collected',    -- [SCAN 5] récupéré par le destinataire
   'cancelled',
   'refunded'
 );
@@ -28,12 +29,13 @@ CREATE TYPE payment_mode   AS ENUM ('stripe_eur', 'cash_relais');
 CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded');
 CREATE TYPE basket_type    AS ENUM ('personal', 'shared', 'gift');
 
--- Étapes de scan sur la chaîne logistique (4 étapes MVP)
+-- Étapes de scan sur la chaîne logistique (5 étapes MVP v9.0)
 CREATE TYPE scan_step AS ENUM (
   'preparation',      -- 1. Article acheté, vérifié, emballé au hub
-  'shipped',          -- 2. Expédition maritime confirmée (départ)
-  'relais_received',  -- 3. Reçu au point relais → déclenche SMS destinataire
-  'collected'         -- 4. Récupéré par le destinataire
+  'shipped',          -- 2. Remis au transitaire à Dubai
+  'in_transit',       -- 3. 🚢 Embarqué sur bateau — confirmation transitaire
+  'relais_received',  -- 4. Reçu au point relais → déclenche SMS destinataire
+  'collected'         -- 5. Récupéré par le destinataire
 );
 
 -- ============================================================
@@ -184,6 +186,7 @@ CREATE TABLE orders (
   status              order_status  NOT NULL DEFAULT 'confirmed',
   pickup_code         TEXT,                            -- code retrait destinataire
   shipped_at          TIMESTAMPTZ,
+  in_transit_at       TIMESTAMPTZ,
   available_at        TIMESTAMPTZ,
   collected_at        TIMESTAMPTZ,
   ordered_at          TIMESTAMPTZ,
@@ -355,10 +358,11 @@ BEGIN
     SELECT order_id INTO v_order_id FROM order_items WHERE id = NEW.order_item_id;
   END IF;
 
-  -- Correspondance étape scan → statut commande (4 étapes MVP)
+  -- Correspondance étape scan → statut commande (5 étapes MVP v9.0)
   v_new_status := CASE NEW.step
     WHEN 'preparation'    THEN 'preparation'::order_status
     WHEN 'shipped'        THEN 'shipped'::order_status
+    WHEN 'in_transit'     THEN 'in_transit'::order_status
     WHEN 'relais_received'THEN 'available'::order_status
     WHEN 'collected'      THEN 'collected'::order_status
     ELSE NULL
@@ -367,10 +371,11 @@ BEGIN
   -- Mettre à jour la commande si statut défini
   IF v_new_status IS NOT NULL AND v_order_id IS NOT NULL THEN
     UPDATE orders SET
-      status       = v_new_status,
-      shipped_at   = CASE WHEN NEW.step = 'shipped'         THEN NOW() ELSE shipped_at   END,
-      available_at = CASE WHEN NEW.step = 'relais_received' THEN NOW() ELSE available_at END,
-      collected_at = CASE WHEN NEW.step = 'collected'       THEN NOW() ELSE collected_at END
+      status        = v_new_status,
+      shipped_at    = CASE WHEN NEW.step = 'shipped'         THEN NOW() ELSE shipped_at    END,
+      in_transit_at = CASE WHEN NEW.step = 'in_transit'      THEN NOW() ELSE in_transit_at  END,
+      available_at  = CASE WHEN NEW.step = 'relais_received' THEN NOW() ELSE available_at   END,
+      collected_at  = CASE WHEN NEW.step = 'collected'       THEN NOW() ELSE collected_at   END
     WHERE id = v_order_id;
 
     -- Insérer dans l'historique
