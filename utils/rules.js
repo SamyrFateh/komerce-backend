@@ -48,6 +48,25 @@ async function getRule(key, defaultValue) {
   }
 }
 
+
+// ── getRuleNumber(key, defaultValue) ─────────────────────────────────────────
+// Safe wrapper — always returns a Number. Prevents SQL injection if value
+// is ever interpolated into a query string (cast guarantees no SQL payload).
+
+async function getRuleNumber(key, defaultValue) {
+  const val = await getRule(key, defaultValue);
+  const num = Number(val);
+  return Number.isFinite(num) ? num : defaultValue;
+}
+
+// ── getRuleString(key, defaultValue) ─────────────────────────────────────────
+// Safe wrapper — always returns a String.
+
+async function getRuleString(key, defaultValue) {
+  const val = await getRule(key, defaultValue);
+  return typeof val === 'string' ? val : String(defaultValue);
+}
+
 // ── getAllRules() ─────────────────────────────────────────────────────────────
 // Retourne toutes les règles groupées par catégorie (pour l'API admin).
 
@@ -218,6 +237,8 @@ function getCategoryLabel(category) {
 
 module.exports = {
   getRule,
+  getRuleNumber,
+  getRuleString,
   getAllRules,
   getRuleByKey,
   updateRule,
