@@ -35,7 +35,7 @@
 | Sécurité audit initial | ✅ ~58 problèmes corrigés | — |
 | Sécurité audit deep | ⬜ 14 issues ouvertes | 6 critiques + 8 majeures |
 | Dashboard unifié v11 | ✅ Mergé | Remplacé par Dashboard Pilotage |
-| **Dashboard Pilotage Unifié** | 🟡 En cours | **PRIORITÉ 1** |
+| **Dashboard Pilotage Unifié** | ✅ 11/11 | **TERMINÉ 🎉** |
 | **Catalogue Pièces Auto/Moto** | ⬜ Nouveau | **PRIORITÉ 2** |
 | **Règles Opérationnelles Commandes** | ⬜ Nouveau | **PRIORITÉ 6** |
 | Cartographie 360° v12 | ✅ Poussée | — |
@@ -78,8 +78,8 @@
 | 2.7 | Vue Tendances (graphiques + projections) | ✅ |
 | 2.8 | Vue Retards (liste + actions SMS) | ✅ |
 | 2.9 | Branchement API réelle (remplacer mock data) | ✅ |
-| 2.10 | Tests & validation | ⬜ |
-| 2.11 | Dépréciation des anciens dashboards | ⬜ |
+| 2.10 | Tests & validation | ✅ |
+| 2.11 | Dépréciation des anciens dashboards | ✅ |
 
 ---
 
@@ -388,6 +388,9 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
 | 11 | Vue Retards validée + API connectée | PR #97 | ✅ |
 | 12 | Branchement API réelle (8 endpoints, auto-refresh 15s) | PR #97 | ✅ |
 | 13 | Ajout Priorité 6 — Règles Opérationnelles Commandes (8 tâches) | — | ✅ |
+| 14 | Tests & validation dashboard (46 checks passés) | PR #97 | ✅ |
+| 15 | Dépréciation 4 anciens dashboards (redirects) | PR #98 | ✅ |
+| 16 | **PRIORITÉ 1 TERMINÉE** — Dashboard Pilotage Unifié 11/11 | — | 🎉 |
 
 ### Boutique Live (5 étapes — toutes ✅)
 - ✅ Portail + Auth Guards (`f40b41b`)
@@ -436,7 +439,7 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
       ├── ✅ Analyse Coffre-Fort
       ├── ✅ Scaffolding 4 vues (Ops, Finance, Pilotage, Alertes)
       ├── ✅ Tendances, Retards, branchement API (PR #97)
-      └── ⬜ Tests & validation, dépréciation anciens dashboards
+      └── ✅ Tests & validation, dépréciation anciens dashboards → **PRIORITÉ 1 TERMINÉE 🎉**
 
 🟠 ENSUITE :
   └── Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai

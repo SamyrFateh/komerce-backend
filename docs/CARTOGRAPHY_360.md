@@ -1,6 +1,6 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.3 — 06/04/2026 (v15.2 + delta dashboard API connect — 3 fichiers ajoutés dashboard-app/)
+> **Version** : 15.4 — 06/04/2026 (v15.3 + delta dépréciation anciens dashboards — 4 fichiers → redirects ~1KB)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
 > **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
@@ -51,7 +51,7 @@
 | **Scripts** | 4 |
 | **Docs** | 12 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
-| **Taille totale estimée** | ~3.5 MB (hors package-lock.json) |
+| **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
 ---
 
@@ -121,12 +121,12 @@ komerce-backend/
 │   ├── Komerce_Admin_Users.html          (32.2 KB) [90591618]
 │   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
 │   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
-│   ├── Komerce_Hub.html                  (42.8 KB) [763e9794]
+│   ├── Komerce_Hub.html                  (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_Mobile.html               (53.9 KB) [d0348e70]
-│   ├── Komerce_Pilotage_v2.html          (109.6 KB)[667718df]
-│   ├── Komerce_Pipeline.html             (32.7 KB) [64b87f00]
+│   ├── Komerce_Pilotage_v2.html          (~1 KB)   [redirect→dashboard-app]
+│   ├── Komerce_Pipeline.html             (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_QR_Print.html             (9.4 KB)  [e9a09169]
-│   ├── Komerce_Relais.html               (99.6 KB) [756a114e]
+│   ├── Komerce_Relais.html               (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_Simulateur.html           (106.1 KB)[1f74411d]
 │   ├── Komerce_Tests.html                (147.0 KB)[f053cfc0]
 │   ├── Komerce_Web.html                  (81.1 KB) [caa83c27]
@@ -903,12 +903,12 @@ PWA Service Worker :
 | `Komerce_Admin_Users.html` | 32.2 KB | 90591618 | 👥 Gestion utilisateurs | Admin |
 | `Komerce_Backend.html` | 512.6 KB | f02590ab | ⚙️ **Backend admin complet** (512 KB !) | Admin |
 | `Komerce_Backoffice_Admin_v2.html` | 68.2 KB | 3eafa998 | 🏢 Backoffice admin v2 | Admin |
-| `Komerce_Hub.html` | 42.8 KB | 763e9794 | 🔗 Hub central / portail | Multi-rôle |
+| `Komerce_Hub.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
 | `Komerce_Mobile.html` | 53.9 KB | d0348e70 | 📱 Version mobile PWA | Public |
-| `Komerce_Pilotage_v2.html` | 109.6 KB | 667718df | 📊 Dashboard pilotage v2 | Admin |
-| `Komerce_Pipeline.html` | 32.7 KB | 64b87f00 | 🔄 Pipeline commandes | Vendeur |
+| `Komerce_Pilotage_v2.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
+| `Komerce_Pipeline.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Vendeur |
 | `Komerce_QR_Print.html` | 9.4 KB | e9a09169 | 🏷️ Impression QR codes | Vendeur/Relais |
-| `Komerce_Relais.html` | 99.6 KB | 756a114e | 📦 Interface points relais | Relais |
+| `Komerce_Relais.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Relais |
 | `Komerce_Simulateur.html` | 106.1 KB | 1f74411d | 🧮 Simulateur tarifs/livraison | Public |
 | `Komerce_Tests.html` | 147.0 KB | f053cfc0 | 🧪 Page de tests | Dev |
 | `Komerce_Web.html` | 81.1 KB | caa83c27 | 🌐 Version web classique | Public |
@@ -1271,7 +1271,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.3 — 6 avril 2026*
+> 📝 *Cartographie 360° — Version v15.4 — 6 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
