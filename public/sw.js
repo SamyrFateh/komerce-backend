@@ -1,19 +1,27 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//   KOMERCE — Service Worker v3.1
+//   KOMERCE — Service Worker v3.2
 //   Stratégie : Cache-First pour assets statiques, Network-First pour l'API
 //   Optimisé pour réseau instable (Comores)
-//   v3.1 : bump version pour forcer ré-installation + CSP fix
+//   v3.2 : fix CDN caching (qrcode lib + fonts) — les CDN sont maintenant
+//          cachés en Stale-While-Revalidate au lieu d'être ignorés
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'komerce-v3.1';
-const CACHE_STATIC = 'komerce-static-v3.1';
-const CACHE_API    = 'komerce-api-v3.1';
+const CACHE_NAME = 'komerce-v3.2';
+const CACHE_STATIC = 'komerce-static-v3.2';
+const CACHE_API    = 'komerce-api-v3.2';
+const CACHE_CDN    = 'komerce-cdn-v3.2';
 
 // Assets à mettre en cache immédiatement à l'installation
 const STATIC_ASSETS = [
   '/',
   '/Komerce_Boutique.html',
   '/manifest.json',
+];
+
+// CDN critiques à pré-cacher à l'installation
+const CDN_PRECACHE = [
+  'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
 ];
 
 // Routes API — Network-First avec fallback cache
@@ -25,23 +33,31 @@ const API_ROUTES = [
 
 // ─── Install ──────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('[SW] Install v3.1');
+  console.log('[SW] Install v3.2');
   event.waitUntil(
-    caches.open(CACHE_STATIC).then((cache) => {
-      return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' })))
-        .catch(err => console.warn('[SW] Certains assets non mis en cache:', err));
-    }).then(() => self.skipWaiting())
+    Promise.all([
+      caches.open(CACHE_STATIC).then((cache) => {
+        return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' })))
+          .catch(err => console.warn('[SW] Certains assets non mis en cache:', err));
+      }),
+      // Pré-cacher les CDN critiques pour fonctionnement offline
+      caches.open(CACHE_CDN).then((cache) => {
+        return cache.addAll(CDN_PRECACHE.map(url => new Request(url, { mode: 'cors' })))
+          .catch(err => console.warn('[SW] CDN non pré-cachés (pas grave, fallback API QR):', err));
+      }),
+    ]).then(() => self.skipWaiting())
   );
 });
 
 // ─── Activate ─────────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activate v3.1');
+  console.log('[SW] Activate v3.2');
+  const KEEP = [CACHE_STATIC, CACHE_API, CACHE_CDN];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter(name => name !== CACHE_STATIC && name !== CACHE_API)
+          .filter(name => !KEEP.includes(name))
           .map(name => {
             console.log('[SW] Suppression ancien cache:', name);
             return caches.delete(name);
@@ -59,21 +75,20 @@ self.addEventListener('fetch', (event) => {
   // Ignorer les requêtes non-GET
   if (request.method !== 'GET') return;
 
-  // Ignorer les requêtes vers des domaines tiers non critiques
+  // Ignorer analytics & tracking
   if (url.hostname === 'ipapi.co') return;
   if (url.hostname === 'www.googletagmanager.com') return;
   if (url.hostname === 'www.google-analytics.com') return;
 
-  // Laisser passer les CDN externes sans interception SW
-  // (évite les erreurs CSP — les CDN sont déjà autorisés par Helmet)
+  // CDN scripts & fonts → Stale-While-Revalidate (disponible offline!)
   if (
-    url.hostname === 'fonts.googleapis.com' ||
-    url.hostname === 'fonts.gstatic.com' ||
     url.hostname === 'cdn.jsdelivr.net' ||
     url.hostname === 'unpkg.com' ||
-    url.hostname === 'cdnjs.cloudflare.com'
+    url.hostname === 'cdnjs.cloudflare.com' ||
+    url.hostname === 'fonts.googleapis.com' ||
+    url.hostname === 'fonts.gstatic.com'
   ) {
-    // Ne pas intercepter — laisser le navigateur gérer directement
+    event.respondWith(staleWhileRevalidate(request, CACHE_CDN));
     return;
   }
 
@@ -83,7 +98,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell (index.html, manifest) → Cache-First avec revalidation en arrière-plan
+  // App shell (index.html, manifest) → Stale-While-Revalidate
   if (url.hostname === self.location.hostname) {
     event.respondWith(staleWhileRevalidate(request, CACHE_STATIC));
     return;
