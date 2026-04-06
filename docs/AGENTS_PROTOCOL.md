@@ -1,6 +1,6 @@
 # 🔒 AGENTS_PROTOCOL.md — Protocole de Gouvernance Komerce
 
-> **Version** : 1.3 — 06/04/2026
+> **Version** : 1.4 — 06/04/2026
 > **Statut** : OBLIGATOIRE pour tout agent (IA ou humain)
 > **Repo** : `SamyrFateh/komerce-backend`
 
@@ -263,8 +263,43 @@ Roadmap actuelle :
 6. **TOUJOURS commiter le travail en cours toutes les 10 minutes maximum** — zéro perte tolérée
 7. **TOUJOURS présenter le statut roadmap après lecture du README** — le propriétaire doit voir l'état du projet immédiatement
 8. **TOUJOURS suivre l'ordre de priorité de la roadmap** — sauf demande explicite contraire du propriétaire
+9. **TOUJOURS mettre à jour la CARTOGRAPHY_360.md** dans le même commit que le code modifié — approche DELTA (ne changer que les lignes impactées)
 
 ---
+
+
+## 🗺️ Règle #9 — Mise à Jour Cartographie Obligatoire
+
+> **🔴 RÈGLE ABSOLUE : Tout commit modifiant du code DOIT inclure la mise à jour correspondante de la CARTOGRAPHY_360.md.**
+
+### Ce qui déclenche une mise à jour de la carto :
+
+| Modification | Mise à jour carto requise |
+|-------------|--------------------------|
+| Ajout/suppression de fichier | ✅ Arbre + section concernée |
+| Modification d'un fichier (contenu changé) | ✅ SHA dans l'arbre |
+| Ajout/modification d'un endpoint API | ✅ Section routes |
+| Modification table/vue BDD | ✅ Section BDD |
+| Ajout/modification middleware | ✅ Section middleware |
+| Modification frontend (HTML/JS/CSS) | ✅ Section frontend |
+| Modification docs uniquement | ❌ Pas nécessaire (sauf si doc ajouté/supprimé) |
+
+### Approche DELTA (pas de régénération complète) :
+
+```
+❌ INTERDIT : Régénérer toute la cartographie à chaque commit
+✅ OBLIGATOIRE : Ne modifier que les lignes impactées par le changement
+
+Exemple — ajout d'un endpoint dans routes/orders.js :
+1. Mettre à jour le SHA de orders.js dans l'arbre
+2. Ajouter la ligne de l'endpoint dans la section routes/orders.js
+3. C'est tout.
+```
+
+### Responsabilité :
+- **Agents IA** : mettre à jour la carto dans le MÊME commit que le code
+- **Humains** : le workflow `carto-guard.yml` rappellera de mettre à jour si oublié
+- **Auto-cartography** : le workflow ajoute les métriques automatiquement (en complément, pas en remplacement)
 
 ## 📡 Synchronisation Automatique
 
@@ -295,4 +330,5 @@ Roadmap actuelle :
 > _"Pas de commit régulier → pas de filet de sécurité."_
 > _"Pas de statut roadmap → pas de visibilité."_
 > _"Pas de demande contraire → on suit la roadmap, point."_
-> — Protocole Komerce v1.3
+> _"Pas de mise à jour carto → pas de commit accepté."_
+> — Protocole Komerce v1.4
