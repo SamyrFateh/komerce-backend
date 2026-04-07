@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.9 — 07/04/2026 (v15.8 + PR #105-108 sync: Phase 3 cancel/credits, Phase 4 partial shipping, railway.toml, SHA updates)
+> **Version** : 15.10 — 07/04/2026 (v15.9 + drift sync: +AUDIT_CONFORMITE_GOUVERNANCE.md, AUDIT_REPORT SHA update, ROADMAP SHA update)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 — governance auto-sync (PR #105-108: +5 files, 8 SHA updates, +7 endpoints, +4 tables)
+> **Dernière vérification** : 07/04/2026 — governance auto-sync (drift: +1 doc, 2 SHA updates)
 > 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -49,7 +49,7 @@
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 13 + 11 audit + _pending/ |
+| **Docs** | 14 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
@@ -178,9 +178,10 @@ komerce-backend/
 │   ├── setup-hooks.sh                    (4.5 KB)  [1d4ba37f]
 │   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
 │
-├── docs/                                 (13 fichiers + audit/ + _pending/)
+├── docs/                                 (14 fichiers + audit/ + _pending/)
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
-│   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
+│   ├── AUDIT_CONFORMITE_GOUVERNANCE.md   (6.8 KB)  [20e8b386]
+│   ├── AUDIT_REPORT.md                   (8.3 KB)  [68fbc756]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
 │   ├── CHANGES_PHASE2_MIGRATION.md       (9.0 KB)  [29e6f652]
 │   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
@@ -189,7 +190,7 @@ komerce-backend/
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (21.5 KB) [31e9c403]
+│   ├── ROADMAP_KOMERCE.md                (22.3 KB) [81d66b08]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
 │   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
@@ -1068,7 +1069,8 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
 | `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
-| `AUDIT_REPORT.md` | 8.0 KB | 6b4fc1c7 | 📋 Rapport d'audit principal |
+| `AUDIT_CONFORMITE_GOUVERNANCE.md` | 6.8 KB | 20e8b386 | 📋 Audit de conformité gouvernance |
+| `AUDIT_REPORT.md` | 8.3 KB | 68fbc756 | 📋 Rapport d'audit principal |
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
 | `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
 | `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
@@ -1076,7 +1078,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
 | `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
-| `ROADMAP_KOMERCE.md` | 23.3 KB | 0ea267c0 | 📋 Roadmap v15 — source de vérité |
+| `ROADMAP_KOMERCE.md` | 22.3 KB | 81d66b08 | 📋 Roadmap v15.5 — source de vérité |
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
 
@@ -1301,7 +1303,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.9 — 7 avril 2026*
+> 📝 *Cartographie 360° — Version v15.10 — 7 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
