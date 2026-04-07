@@ -78,31 +78,38 @@ const STATUS_WEIGHT = Object.freeze({
 /**
  * Calcule le statut agrégé d'une commande à partir de ses colis.
  *
+ * ⚠️  FIX-001 (7 avril 2026) — Toutes les valeurs retournées sont maintenant
+ *     des valeurs valides de l'ENUM order_status :
+ *     confirmed, ordered, preparation, shipped, in_transit, available,
+ *     collected, cancelled, refunded.
+ *
  * Règles :
- *   1. Si aucun colis actif → 'pending' (commande pas encore traitée)
- *   2. Si TOUS collected    → 'delivered'
+ *   1. Si aucun colis actif → 'confirmed' (commande pas encore traitée)
+ *   2. Si TOUS collected    → 'collected'
  *   3. Si TOUS cancelled    → 'cancelled'
- *   4. Si AU MOINS UN available et aucun en transit → 'available'
+ *   4. Si AU MOINS UN available et aucun en mouvement → 'available'
  *   5. Sinon → statut du colis LE MOINS AVANCÉ (hors cancelled)
  *      → Garantit que le client voit le "pire cas" de sa commande
  *
  * @param {Array<{status: string, type: string}>} parcels - Les colis de la commande
- * @returns {string} Statut agrégé compatible avec orders.status
+ * @returns {string} Statut agrégé compatible avec orders.status (ENUM order_status)
  */
 function computeOrderStatus(parcels) {
-  if (!parcels || parcels.length === 0) return 'pending';
+  // FIX-001: 'pending' n'existe pas dans order_status → 'confirmed'
+  if (!parcels || parcels.length === 0) return 'confirmed';
 
   const active = parcels.filter(p => p.status !== PARCEL_STATUSES.CANCELLED);
 
   // Tous annulés → commande annulée
   if (active.length === 0) return 'cancelled';
 
-  // Tous collectés → commande livrée
-  if (active.every(p => p.status === PARCEL_STATUSES.COLLECTED)) return 'delivered';
+  // FIX-001: 'delivered' n'existe pas dans order_status → 'collected'
+  if (active.every(p => p.status === PARCEL_STATUSES.COLLECTED)) return 'collected';
 
   // Au moins un disponible, aucun en mouvement → commande dispo
+  // FIX-001: inclure ARRIVED dans le check "en mouvement" (arrivé au port ≠ dispo au relais)
   const inMovement = active.some(p =>
-    [PARCEL_STATUSES.SHIPPED, PARCEL_STATUSES.IN_TRANSIT].includes(p.status)
+    [PARCEL_STATUSES.SHIPPED, PARCEL_STATUSES.IN_TRANSIT, PARCEL_STATUSES.ARRIVED].includes(p.status)
   );
   const someAvailable = active.some(p => p.status === PARCEL_STATUSES.AVAILABLE);
   if (someAvailable && !inMovement) return 'available';
@@ -114,18 +121,20 @@ function computeOrderStatus(parcels) {
     return w < lw ? p.status : lowest;
   }, active[0].status);
 
-  // Mapping parcel_status → order status (les noms sont compatibles sauf draft)
+  // FIX-001: Mapping parcel_status → order_status
+  // Toutes les valeurs retournées sont des ENUM order_status valides.
   const PARCEL_TO_ORDER = {
-    [PARCEL_STATUSES.DRAFT]:       'processing',
-    [PARCEL_STATUSES.PREPARATION]: 'processing',
+    [PARCEL_STATUSES.DRAFT]:       'preparation',  // draft → pas d'équivalent order, on met preparation
+    [PARCEL_STATUSES.PREPARATION]: 'preparation',
     [PARCEL_STATUSES.SHIPPED]:     'shipped',
     [PARCEL_STATUSES.IN_TRANSIT]:  'in_transit',
-    [PARCEL_STATUSES.ARRIVED]:     'arrived',
+    [PARCEL_STATUSES.ARRIVED]:     'in_transit',   // arrived au port ≠ available au relais
     [PARCEL_STATUSES.AVAILABLE]:   'available',
-    [PARCEL_STATUSES.COLLECTED]:   'delivered',
+    [PARCEL_STATUSES.COLLECTED]:   'collected',
   };
 
-  return PARCEL_TO_ORDER[lowestStatus] || 'processing';
+  // FIX-001: fallback 'processing' → 'preparation'
+  return PARCEL_TO_ORDER[lowestStatus] || 'preparation';
 }
 
 
