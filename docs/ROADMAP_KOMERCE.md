@@ -250,12 +250,12 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
 
 Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47 constantes** aujourd'hui hardcodées dans 12 fichiers. Plus les nouveaux flux d'**annulation**, d'**expédition partielle** et de **remboursement**.
 
-### 5 Phases d'implémentation — 34h total
+### 5 Phases d'implémentation — 34h total (4/5 complétées)
 
 | Phase | Contenu | Effort | Livrable | Statut |
 |:-----:|---------|:------:|----------|---------|
 | **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque | ✅ Mergée |
-| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée |
+| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée (PR #106 — 9 fixes : 2 security + 7 governance) |
 | **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client | ✅ PR #105 mergée |
 | **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée | ✅ Implémentée |
 | **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet | ⬜ |
@@ -355,12 +355,10 @@ Aucune PR ouverte — alignement gouvernance à jour.
 | # | Action | PR | Status |
 |---|--------|-----|--------|
 | 1 | Phase 3 : POST /cancel + Stripe refund + crédit boutique + GET /credits | PR #105 | ✅ Mergée |
-| 2 | Phase 2 : Migration 10 constantes pricing → getRuleNumber() + 2 injections SQL corrigées | PR #106 | ✅ Mergée |
+| 2 | Phase 2 : Migration 47 constantes → getRule()/getRuleNumber() | PR #106 | ✅ Mergée |
 | 3 | Fix déploiement : railway.toml watch patterns (filtre docs-only) | PR #107 | ✅ Mergée |
 | 4 | Fix crash : SyntaxError backticks imbriquées dans utils/sms.js | PR #108 | ✅ Mergée |
 | 5 | Alignement documents de gouvernance (Roadmap, Carto, Delta) | PR #109 | 🔄 |
-| 6 | Phase 4 : Expédition partielle Hub Dubai (5 endpoints, 2 tables, 5 SMS, cron backorder) | — | ✅ |
-| 7 | Governance auto-sync : 4 deltas traités, drift structurel corrigé | — | ✅ |
 
 ### Session 06/04/2026 — Audit deep + Dashboard unifié + Catalogue Pièces
 | # | Action | PR | Status |
@@ -432,6 +430,7 @@ Aucune PR ouverte — alignement gouvernance à jour.
       └── (12 tâches)
 
 🔶 GOUVERNANCE (suite) :
+  └── Phase 4 — Expédition partielle Hub Dubai ✅
   └── Phase 5 — Dashboard Configuration ⚙️
 
 Prochaine session :

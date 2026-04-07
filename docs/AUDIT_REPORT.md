@@ -9,7 +9,7 @@
 
 | Métrique | Carto actuelle | Code réel | Écart |
 |----------|---------------|-----------|-------|
-| **Endpoints** | 112 | **120** (119 routes + 1 server.js) | ❌ +8 manquants |
+| **Endpoints** | 112 | **~127** (119 base + 7 nouveaux Phase 3-4 + 1 server.js) | ❌ Header à mettre à jour |
 | **Tables créées** (CREATE TABLE dans repo) | 24 | **19** | ❌ Confusion tables/vues/Supabase |
 | **Tables Supabase-only** (pas de CREATE dans repo) | incluses dans 24 | **7** | ⚠️ Non distinguées |
 | **Vues** | "2 vues" (header) / "3 vues" (footer) | **3** (1 dans repo + 2 Supabase) | ❌ Incohérent |
@@ -217,25 +217,22 @@ trg_users_updated, trg_products_updated, trg_orders_updated, trg_shipments_updat
 
 ---
 
-## 📝 Mises à jour 07/04/2026
+## 🛡️ Corrections appliquées (PR #106, #108)
 
-- **PR #106** : 2 injections SQL corrigées dans `routes/orders.js` (endpoints `/problems` et `pickup_code`) — requêtes paramétrées via `getRuleNumber()` qui force cast Number
-- **PR #108** : Fix backticks imbriquées dans `utils/sms.js` → requêtes paramétrées `$1`, `$2`
-- **Phase 4** : Expédition partielle implémentée — 5 nouveaux endpoints, 2 nouvelles tables (`sub_orders`, `sub_order_items`), cron backorder checker 6h
+| Date | PR | Correction |
+|------|-----|------------|
+| 07/04/2026 | #106 | 2 injections SQL corrigées dans `orders.js` (`/problems`, `pickup_code`) — requêtes paramétrées |
+| 07/04/2026 | #106 | Toutes les interpolations `business_rules` passent par `getRuleNumber()` qui force le cast Number (anti-injection) |
+| 07/04/2026 | #108 | `utils/sms.js` — backticks imbriquées remplacées par requêtes paramétrées `$1`, `$2` |
+
+---
 
 ## 🎯 Actions recommandées
 
-1. **Corriger le header** : 112 → ~127 endpoints (mise à jour carto v15.9)
+1. **Corriger le header** : 112 → 120 endpoints
 2. **Corriger les providers** : Orange → Africa's Talking, Mailjet → Nodemailer
 3. **Ajouter les 5 tables manquantes** dans le schéma et la matrice
 4. **Distinguer tables repo vs Supabase-only**
 5. **Corriger validate middleware** pour products.js
 6. **Supprimer le footer fabricé**
 7. **Harmoniser le comptage vues** : 3 vues (1 repo + 2 Supabase)
-
-
-## Corrections appliquées (auto-sync 07/04/2026)
-
-| Issue | Correction | PR |
-|-------|------------|-----|
-| #71 (Injection SQL) | 2 injections corrigées dans `routes/orders.js` | PR #106 |
