@@ -232,3 +232,10 @@ trg_users_updated, trg_products_updated, trg_orders_updated, trg_shipments_updat
 5. **Corriger validate middleware** pour products.js
 6. **Supprimer le footer fabricé**
 7. **Harmoniser le comptage vues** : 3 vues (1 repo + 2 Supabase)
+
+
+## Corrections appliquées (auto-sync 07/04/2026)
+
+| Issue | Correction | PR |
+|-------|------------|-----|
+| #71 (Injection SQL) | 2 injections corrigées dans `routes/orders.js` | PR #106 |
