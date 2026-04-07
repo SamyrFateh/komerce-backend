@@ -15,7 +15,8 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 
 ## Migrations appliquées
 010 → 017 toutes appliquées sur Railway.
-**018 prête** — voir branche `fix/etape1-schema-reconciliation`.
+**018 prête** — voir branche `fix/etape1-schema-reconciliation` (PR #124).
+**019 prête** — voir branche `fix/etape2-code-fixes`.
 
 ## Règles absolues
 - **R1** : statut commande = agrégé via `parcelSync.js`, jamais écrit directement
@@ -25,7 +26,7 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 
 ## CHANTIER TERMINÉ : Refonte Dashboards ✅
 
-Tous les 7 écrans terminés et pushés sur main. Voir `REFONTE_DASHBOARDS.md` pour détails.
+Tous les 7 écrans terminés et pushés sur main.
 
 ---
 
@@ -33,22 +34,25 @@ Tous les 7 écrans terminés et pushés sur main. Voir `REFONTE_DASHBOARDS.md` p
 
 > **Date** : 7 avril 2026
 
-### Fichiers d'audit ajoutés
-- `.tasklet/CARTOGRAPHY_360.md` — Cartographie complète (tables, routes, utils, middleware)
-- `.tasklet/AUDIT_FIXES.md` — Tracker des 12 fixes identifiés avec priorités
+### Fichiers d'audit
+- `.tasklet/CARTOGRAPHY_360.md` — Cartographie complète
+- `.tasklet/AUDIT_FIXES.md` — Tracker des 12 fixes (9/12 ✅)
 
-### Étape 1 : Migration 018 + FIX-001 ✅
-- `migrations/018_schema_reconciliation.sql` créée
-  - FIX-002 : CREATE TYPE/TABLE IF NOT EXISTS (parcels, parcel_items, customs_history)
-  - FIX-003 : DISABLE TRIGGER trg_scan_sync_status
-  - FIX-006 : ADD COLUMN scans.parcel_id
-  - FIX-008 : ADD COLUMNS products.price_eur, products.badge
-- `utils/parcels.js` — FIX-001 : computeOrderStatus() aligné sur ENUM order_status
-- **Branche** : `fix/etape1-schema-reconciliation`
-- **Score** : 5/12 fixes terminés
+### ✅ Étape 1 : Migration 018 + FIX-001 (FAIT)
+- FIX-001, 002, 003, 006, 008
+- Branche : `fix/etape1-schema-reconciliation` (PR #124)
 
-### Prochaine étape : Étape 2 (FIX-004, 005, 007, 009)
-→ Restructurer hub.js transactions, corriger finance.js, fix STATUS_TO_STEP, fix unit_price_kmf
+### ✅ Étape 2 : Fix code (FAIT)
+- **FIX-004** : `parcelSync.js` v2.1 — paramètre `dbClient` pour mode transactionnel. `hub.js` restructuré : sync DANS la transaction.
+- **FIX-005** : Migration 019 — 4 colonnes finance ajoutées à orders.
+- **FIX-007** : `parcels.js` STATUS_TO_STEP `preparing` → `preparation`.
+- **FIX-009** : `parcels.js` `unit_price_kmf` → `price_kmf`.
+- Branche : `fix/etape2-code-fixes`
+
+### Prochaine étape : Étape 3 (FIX-010, 011, 012)
+→ Clean-up : supprimer pilotage.js, dé-dupliquer finance.js, extraire seeds
+
+### Score : 9/12 fixes terminés (tous P0/P1/P2 ✅, reste 3 P3)
 
 ---
 
@@ -65,29 +69,28 @@ Tous les 7 écrans terminés et pushés sur main. Voir `REFONTE_DASHBOARDS.md` p
 - `.tasklet/DESIGN_SYSTEM.md` — design system documenté
 - `.tasklet/codegen-instructions.md` — instructions backend
 - `.tasklet/CARTOGRAPHY_360.md` — cartographie architecture 360°
-- `.tasklet/AUDIT_FIXES.md` — tracker des fixes (5/12 terminés)
+- `.tasklet/AUDIT_FIXES.md` — tracker des fixes (9/12 terminés)
 
 ## Structure public/ (7 écrans)
 ```
 public/
-├── Komerce_Hub.html          ← Hub Opérateur
-├── Komerce_Dashboard.html     ← Dashboard Pilotage (9 onglets)
-├── Komerce_Admin.html         ← Admin complet
-├── Komerce_Relais.html        ← Relais
-├── Komerce_Pipeline.html      ← Pipeline
-├── Komerce_Pilotage_v2.html   ← Redirect → Dashboard
-├── portal.html                ← Portail d'entrée
-├── komerce-ui.css             ← Design system CSS
-├── komerce-api.js             ← Couche API JS
-├── chart.umd.min.js           ← Chart.js
-├── sw.js                      ← Service Worker
-├── images/                    ← Assets images
-└── archive/                   ← Anciens fichiers (référence)
+├── Komerce_Hub.html
+├── Komerce_Dashboard.html
+├── Komerce_Admin.html
+├── Komerce_Relais.html
+├── Komerce_Pipeline.html
+├── Komerce_Pilotage_v2.html
+├── portal.html
+├── komerce-ui.css
+├── komerce-api.js
+├── chart.umd.min.js
+├── sw.js
+├── images/
+└── archive/
 ```
 
 ## Pour reprendre
 1. Lire ce fichier
-2. Lire `.tasklet/AUDIT_FIXES.md` pour voir les fixes en cours
-3. Lire `.tasklet/CARTOGRAPHY_360.md` pour la carte du projet
-4. Respecter les 3 verrous
-5. Prochain chantier = Étape 2 (FIX-004, 005, 007, 009)
+2. Lire `.tasklet/AUDIT_FIXES.md` pour voir les fixes
+3. Respecter les 3 verrous
+4. Prochain chantier = Étape 3 (FIX-010, 011, 012) — P3 clean-up

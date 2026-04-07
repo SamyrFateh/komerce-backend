@@ -10,6 +10,9 @@
  * Safety Fixes:
  *   A. Catch 23505 sur POST /:id/items (unique_order_item_per_parcel)
  *   C. Catch 23505 sur POST / (one_draft_per_order)
+ *
+ * FIX-007 (7 avril 2026): STATUS_TO_STEP clé 'preparing' → 'preparation'
+ * FIX-009 (7 avril 2026): oi.unit_price_kmf → oi.price_kmf
  */
 
 const express = require('express');
@@ -26,12 +29,13 @@ const adminAgent = [authenticate, requireRole(['admin', 'agent_hub'])];
 const adminAgentRelais = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
 
 // Status → step mapping for parcelSync (R1)
+// FIX-007: 'preparing' → 'preparation' (aligne sur l'ENUM parcel_status)
 const STATUS_TO_STEP = {
-  preparing:  'preparation',
-  shipped:    'shipped',
-  in_transit: 'in_transit',
-  available:  'relais_received',
-  collected:  'collected',
+  preparation: 'preparation',
+  shipped:     'shipped',
+  in_transit:  'in_transit',
+  available:   'relais_received',
+  collected:   'collected',
 };
 
 // GET /api/parcels — List parcels with filters & pagination
@@ -113,8 +117,9 @@ router.get('/:ref', ...adminAgentRelais, async (req, res) => {
     const parcel = rows[0];
 
     // Fetch parcel items with product details
+    // FIX-009: oi.unit_price_kmf → oi.price_kmf (nom réel de la colonne)
     const items = await db.query(`
-      SELECT pi.*, oi.quantity AS order_qty, oi.unit_price_kmf,
+      SELECT pi.*, oi.quantity AS order_qty, oi.price_kmf,
              pr.name AS product_name, pr.image_url AS product_image
       FROM parcel_items pi
       LEFT JOIN order_items oi ON oi.id = pi.order_item_id
