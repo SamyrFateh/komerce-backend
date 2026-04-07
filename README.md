@@ -4,7 +4,22 @@
 
 ---
 
-## 🤖 Agents IA — [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md) obligatoire avant toute action
+## 🤖 Agent IA — Lis ceci en premier
+
+1. **Lis [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md)** — règles, piliers, workflow
+2. **Ouvre ta session** → commit `docs/_work/SESSION.md` (⏳ EN COURS)
+3. **Travaille** selon la ROADMAP (ordre de priorité)
+4. **Clôture ta session** → archive dans `docs/_logs/`, supprime `SESSION.md`
+
+> ⚠️ **Zéro fichier local.** Tout vit dans ce repo. Ton dossier de travail c'est Git.
+
+### Dossiers agents
+
+| Dossier | Rôle |
+|---------|------|
+| `docs/_work/` | Ta session active (`SESSION.md` = tu bosses) |
+| `docs/_pending/` | Dépose tes deltas ici après chaque session |
+| `docs/_logs/` | Historique des sessions terminées |
 
 ---
 
@@ -28,6 +43,6 @@ npm start              # Lancer le serveur
 | [`docs/AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | 🔒 Rapport d'audit sécurité |
 | [`docs/IMPACT_SYSTEM.md`](./docs/IMPACT_SYSTEM.md) | 🛡️ Système coffre-fort de production |
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | 🚀 Guide de déploiement Railway |
-| [`docs/VALIDATION_GUIDE.md`](./docs/VALIDATION_GUIDE.md) | ✅ Guide de validation Joi |
+| [`docs/GOVERNANCE_BOOTSTRAP.md`](./docs/GOVERNANCE_BOOTSTRAP.md) | 🔧 Auto-config agent Tasklet |
 
 > 📋 La [Roadmap](./docs/ROADMAP_KOMERCE.md) fait foi pour toutes les décisions du projet.
