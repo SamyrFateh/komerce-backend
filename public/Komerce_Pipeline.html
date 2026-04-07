@@ -1,1 +1,893 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=/Komerce_Dashboard.html#pipeline"><title>Redirection…</title></head><body><p>Redirection vers <a href="/Komerce_Dashboard.html#pipeline">Pipeline</a>…</p></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOMERCE // PIPELINE LOGISTIQUE</title>
+  <link rel="stylesheet" href="komerce-ui.css">
+  <style>
+    /* ── PIPELINE-SPECIFIC STYLES ── */
+    body { background: var(--bg); }
+
+    /* Login screen */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 52px);
+    }
+    .login-card {
+      width: 100%; max-width: 400px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 1.4rem;
+      letter-spacing: 4px; color: var(--gold); text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      text-align: center; letter-spacing: 2px; margin-bottom: 28px;
+    }
+    .login-err {
+      background: var(--red-bg); border: 1px solid var(--red);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.875rem; font-weight: 600;
+      margin-bottom: 14px; display: none;
+    }
+
+    /* Operator info in header */
+    .operator-info {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text2);
+    }
+    .operator-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold); color: #000; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+    }
+    .btn-logout {
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 0.82rem; font-family: var(--mono);
+      padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+    }
+    .btn-logout:hover { color: var(--red); background: var(--red-bg); }
+
+    /* Pipeline workspace */
+    .pipeline-wrap {
+      padding: 20px 24px;
+      max-width: 100%;
+    }
+
+    /* KPI row */
+    .kpi-row { margin-bottom: 20px; }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+    }
+    .filter-bar select,
+    .filter-bar input[type="text"] {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: 7px 12px; font-family: var(--mono); font-size: 0.875rem;
+      transition: border-color 0.2s;
+    }
+    .filter-bar select:focus,
+    .filter-bar input:focus { outline: none; border-color: var(--gold); }
+    .filter-bar select { min-width: 140px; cursor: pointer; }
+    .filter-bar input[type="text"] { min-width: 180px; }
+    .filter-label {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text3);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 3px; }
+    .filter-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    /* Kanban overrides */
+    .kanban { min-height: calc(100vh - 260px); align-items: flex-start; }
+    .kanban-col {
+      min-width: 230px; max-width: 260px;
+      background: var(--bg3); border-radius: var(--radius);
+      padding: 0 8px 12px;
+    }
+    .kanban-col-hdr {
+      position: sticky; top: 0;
+      background: var(--bg3); z-index: 2;
+      padding: 10px 8px 8px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .kanban-cards { max-height: calc(100vh - 330px); overflow-y: auto; padding: 2px; }
+    .kanban-cards::-webkit-scrollbar { width: 3px; }
+    .kanban-cards::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* Status color indicators */
+    .kanban-col[data-status="draft"] .kanban-col-hdr { border-bottom-color: var(--text3); }
+    .kanban-col[data-status="preparation"] .kanban-col-hdr { border-bottom-color: #b97fff; }
+    .kanban-col[data-status="shipped"] .kanban-col-hdr { border-bottom-color: var(--teal); }
+    .kanban-col[data-status="in_transit"] .kanban-col-hdr { border-bottom-color: var(--blue); }
+    .kanban-col[data-status="arrived"] .kanban-col-hdr { border-bottom-color: var(--gold); }
+    .kanban-col[data-status="available"] .kanban-col-hdr { border-bottom-color: var(--green); }
+    .kanban-col[data-status="collected"] .kanban-col-hdr { border-bottom-color: var(--green2); }
+    .kanban-col[data-status="cancelled"] .kanban-col-hdr { border-bottom-color: var(--red); }
+
+    /* Detail modal extras */
+    .detail-section {
+      margin-bottom: 18px;
+    }
+    .detail-section-title {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .detail-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; font-size: 0.94rem;
+    }
+    .detail-label { color: var(--text3); font-weight: 600; font-size: 0.875rem; }
+    .detail-value { color: var(--text); font-weight: 600; font-family: var(--mono); font-size: 0.875rem; }
+
+    .item-row-detail {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      font-size: 0.875rem;
+    }
+    .item-row-detail:last-child { border-bottom: none; }
+
+    /* Empty column */
+    .kanban-empty {
+      text-align: center; padding: 20px 10px; color: var(--text3);
+      font-size: 0.82rem; font-family: var(--mono);
+    }
+    .kanban-empty-icon { font-size: 1.4rem; margin-bottom: 6px; }
+
+    /* Refresh indicator */
+    .refresh-indicator {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text3);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px; color: var(--text3); gap: 10px;
+      font-family: var(--mono); font-size: 0.94rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .pipeline-wrap { padding: 12px 8px; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-bar select, .filter-bar input[type="text"] { min-width: 100%; }
+      .filter-actions { margin-left: 0; justify-content: stretch; }
+      .filter-actions .btn { flex: 1; justify-content: center; }
+      .g4 { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .kpi-v { font-size: 1.5rem; }
+      .login-card { padding: 28px 20px; margin: 0 12px; }
+    }
+    @media (max-width: 380px) {
+      .g4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="hdr">
+    <div class="logo">KOMERCE <em>// PIPELINE</em></div>
+    <div class="hdr-right">
+      <div class="refresh-indicator" id="refreshInfo" style="display:none;">
+        <span class="spin" id="refreshSpin" style="display:none;">⟳</span>
+        <span id="refreshLabel">—</span>
+      </div>
+      <div id="connPill" class="conn-pill">
+        <span class="conn-dot"></span>
+        <span id="connLabel">Déconnecté</span>
+      </div>
+      <div id="operatorInfo" class="operator-info" style="display:none;">
+        <div id="operatorAvatar" class="operator-avatar">—</div>
+        <span id="operatorName">Opérateur</span>
+        <button id="btnLogout" class="btn-logout" title="Déconnexion">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">KOMERCE</div>
+      <div class="login-sub">PIPELINE — CONNEXION</div>
+
+      <div id="loginError" class="login-err"></div>
+
+      <div class="form-group">
+        <div class="inp-label">URL API</div>
+        <input id="inpApiUrl" class="inp" type="url" placeholder="https://api.komerce.app" autocomplete="url">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Email</div>
+        <input id="inpEmail" class="inp" type="email" placeholder="logistique@komerce.app" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Mot de passe</div>
+        <input id="inpPassword" class="inp" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button id="btnLogin" class="btn btn-gold btn-full btn-lg" style="margin-top:8px;">
+        Connexion
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ WORKSPACE ═══ -->
+  <div id="workspace" style="display:none;">
+    <div class="pipeline-wrap">
+
+      <!-- ── KPI ROW ── -->
+      <div class="kpi-row">
+        <div class="g4">
+          <div class="card kpi-card">
+            <div class="kpi-v" id="kpiTotal" style="color:var(--blue);">—</div>
+            <div class="kpi-l">Colis actifs</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-v" id="kpiTransit" style="color:var(--teal);">—</div>
+            <div class="kpi-l">En transit</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-v" id="kpiSla" style="color:var(--red);">—</div>
+            <div class="kpi-l">Retard SLA</div>
+            <div class="kpi-s" id="kpiSlaDetail">≥ 7 jours</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-v" id="kpiAvailable" style="color:var(--green);">—</div>
+            <div class="kpi-l">Disponibles relais</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FILTER BAR ── -->
+      <div class="filter-bar" id="filterBar">
+        <div class="filter-group">
+          <span class="filter-label">Type</span>
+          <select id="filterType">
+            <option value="">Tous types</option>
+            <option value="standard">Standard</option>
+            <option value="partial">Partiel</option>
+            <option value="backorder">Backorder</option>
+            <option value="awaiting_stock">En attente stock</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Transporteur</span>
+          <select id="filterCarrier">
+            <option value="">Tous transporteurs</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Relais</span>
+          <select id="filterRelais">
+            <option value="">Tous relais</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Ancienneté</span>
+          <select id="filterAge">
+            <option value="">Tous</option>
+            <option value="today">Aujourd'hui</option>
+            <option value="1-3">1 — 3 jours</option>
+            <option value="3-7">3 — 7 jours</option>
+            <option value="7+">7 jours +</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Recherche</span>
+          <input type="text" id="filterSearch" placeholder="Réf. colis…" autocomplete="off">
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-gold btn-sm" id="btnApplyFilters">Filtrer</button>
+          <button class="btn btn-ghost btn-sm" id="btnResetFilters">Reset</button>
+        </div>
+      </div>
+
+      <!-- ── KANBAN BOARD ── -->
+      <div id="kanbanLoading" class="loading-overlay">
+        <span class="spin">⟳</span> Chargement du pipeline…
+      </div>
+      <div class="kanban" id="kanbanBoard" style="display:none;">
+        <!-- Columns built dynamically -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ DETAIL MODAL ═══ -->
+  <div class="action-screen" id="detailModal">
+    <div class="action-panel" style="width:580px;">
+      <div class="action-panel-hdr">
+        <div class="action-type" id="modalType">COLIS</div>
+        <div class="action-title" id="modalTitle">—</div>
+        <div class="action-desc" id="modalDesc">—</div>
+      </div>
+      <div class="action-body" id="modalBody">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="action-footer">
+        <button class="btn btn-ghost" onclick="Pipeline.closeDetail()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="k-toast" class="toast"></div>
+
+  <!-- ═══ API ═══ -->
+  <script src="komerce-api.js"></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── CONSTANTS ─────────────────────────────────────────────
+    const COLUMNS = ['draft','preparation','shipped','in_transit','arrived','available','collected','cancelled'];
+    const COLUMN_LABELS = {
+      draft: 'Brouillon', preparation: 'Préparation', shipped: 'Expédié',
+      in_transit: 'En transit', arrived: 'Arrivé', available: 'Disponible',
+      collected: 'Remis', cancelled: 'Annulé'
+    };
+    const COLUMN_ICONS = {
+      draft: '📝', preparation: '🔧', shipped: '📦', in_transit: '🚚',
+      arrived: '📍', available: '✅', collected: '🤝', cancelled: '❌'
+    };
+    const SLA_WARN_DAYS = 7;
+    const SLA_DANGER_DAYS = 14;
+    const REFRESH_INTERVAL = 45000;
+
+    // ── STATE ─────────────────────────────────────────────────
+    const state = {
+      allParcels: [],
+      filteredParcels: [],
+      carriers: [],
+      user: null,
+      refreshTimer: null,
+      lastRefresh: null,
+    };
+
+    // ── DOM REFS ──────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+      loginScreen:    $('loginScreen'),
+      workspace:      $('workspace'),
+      loginError:     $('loginError'),
+      inpApiUrl:      $('inpApiUrl'),
+      inpEmail:       $('inpEmail'),
+      inpPassword:    $('inpPassword'),
+      btnLogin:       $('btnLogin'),
+      btnLogout:      $('btnLogout'),
+      connPill:       $('connPill'),
+      connLabel:      $('connLabel'),
+      operatorInfo:   $('operatorInfo'),
+      operatorAvatar: $('operatorAvatar'),
+      operatorName:   $('operatorName'),
+      kpiTotal:       $('kpiTotal'),
+      kpiTransit:     $('kpiTransit'),
+      kpiSla:         $('kpiSla'),
+      kpiAvailable:   $('kpiAvailable'),
+      filterType:     $('filterType'),
+      filterCarrier:  $('filterCarrier'),
+      filterRelais:   $('filterRelais'),
+      filterAge:      $('filterAge'),
+      filterSearch:   $('filterSearch'),
+      btnApplyFilters:$('btnApplyFilters'),
+      btnResetFilters:$('btnResetFilters'),
+      kanbanBoard:    $('kanbanBoard'),
+      kanbanLoading:  $('kanbanLoading'),
+      detailModal:    $('detailModal'),
+      modalType:      $('modalType'),
+      modalTitle:     $('modalTitle'),
+      modalDesc:      $('modalDesc'),
+      modalBody:      $('modalBody'),
+      refreshInfo:    $('refreshInfo'),
+      refreshLabel:   $('refreshLabel'),
+      refreshSpin:    $('refreshSpin'),
+    };
+
+    // ── HELPERS ───────────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function showLoginError(msg) {
+      dom.loginError.textContent = msg;
+      dom.loginError.style.display = 'block';
+    }
+
+    function hideLoginError() {
+      dom.loginError.style.display = 'none';
+    }
+
+    function ageDays(dateStr) {
+      if (!dateStr) return 0;
+      return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    }
+
+    function ageClass(days) {
+      if (days >= SLA_DANGER_DAYS) return 'danger';
+      if (days >= SLA_WARN_DAYS) return 'warn';
+      return '';
+    }
+
+    // ── INIT ──────────────────────────────────────────────────
+    function init() {
+      const storedUrl = localStorage.getItem('komerce_api_url') || '';
+      if (storedUrl) dom.inpApiUrl.value = storedUrl;
+
+      dom.btnLogin.addEventListener('click', handleLogin);
+      dom.btnLogout.addEventListener('click', handleLogout);
+      dom.inpPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+      dom.btnApplyFilters.addEventListener('click', applyFilters);
+      dom.btnResetFilters.addEventListener('click', resetFilters);
+      dom.filterSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilters(); });
+
+      // Close modal on backdrop click
+      dom.detailModal.addEventListener('click', (e) => {
+        if (e.target === dom.detailModal) closeDetail();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dom.detailModal.classList.contains('open')) closeDetail();
+      });
+
+      if (K.auth.isConnected()) {
+        autoConnect();
+      }
+    }
+
+    // ── AUTH ───────────────────────────────────────────────────
+    async function handleLogin() {
+      const url = dom.inpApiUrl.value.trim();
+      const email = dom.inpEmail.value.trim();
+      const pass = dom.inpPassword.value;
+
+      if (!url || !email || !pass) {
+        showLoginError('Veuillez remplir tous les champs');
+        return;
+      }
+
+      dom.btnLogin.disabled = true;
+      dom.btnLogin.innerHTML = '<span class="spin">⟳</span> Connexion…';
+      hideLoginError();
+
+      try {
+        const result = await K.auth.login(email, pass, url);
+        state.user = result.user;
+        enterWorkspace();
+      } catch (err) {
+        showLoginError(err.message || 'Échec de la connexion');
+      } finally {
+        dom.btnLogin.disabled = false;
+        dom.btnLogin.textContent = 'Connexion';
+      }
+    }
+
+    async function autoConnect() {
+      try {
+        state.user = K.auth.getUser();
+        enterWorkspace();
+      } catch (err) {
+        K.auth.logout();
+        K.ui.toast('Session expirée — reconnectez-vous', 'warn');
+      }
+    }
+
+    function handleLogout() {
+      K.auth.logout();
+      if (state.refreshTimer) clearInterval(state.refreshTimer);
+      state.allParcels = [];
+      state.filteredParcels = [];
+
+      dom.workspace.style.display = 'none';
+      dom.loginScreen.style.display = 'flex';
+      dom.operatorInfo.style.display = 'none';
+      dom.connPill.classList.remove('ok');
+      dom.connLabel.textContent = 'Déconnecté';
+      dom.refreshInfo.style.display = 'none';
+
+      K.ui.toast('Déconnecté', 'warn');
+    }
+
+    function enterWorkspace() {
+      dom.loginScreen.style.display = 'none';
+      dom.workspace.style.display = 'block';
+
+      // Connection pill
+      dom.connPill.classList.add('ok');
+      dom.connLabel.textContent = 'Connecté';
+      dom.connPill.querySelector('.conn-dot').classList.add('pulse');
+
+      // Operator info
+      const user = state.user;
+      if (user) {
+        const initials = (user.name || user.email || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        dom.operatorAvatar.textContent = initials;
+        dom.operatorName.textContent = user.name || user.email || 'Opérateur';
+      } else {
+        dom.operatorAvatar.textContent = 'OP';
+        dom.operatorName.textContent = 'Opérateur';
+      }
+      dom.operatorInfo.style.display = 'flex';
+      dom.refreshInfo.style.display = 'flex';
+
+      // Build kanban structure
+      buildKanbanColumns();
+
+      // Load data
+      loadAllData();
+
+      // Auto-refresh
+      state.refreshTimer = setInterval(() => loadAllData(true), REFRESH_INTERVAL);
+    }
+
+    // ── BUILD KANBAN ──────────────────────────────────────────
+    function buildKanbanColumns() {
+      let html = '';
+      COLUMNS.forEach(status => {
+        html += `
+          <div class="kanban-col" data-status="${status}">
+            <div class="kanban-col-hdr">
+              <span>${COLUMN_ICONS[status]} ${escHtml(COLUMN_LABELS[status])}</span>
+              <span class="kanban-col-count" id="colCount-${status}">0</span>
+            </div>
+            <div class="kanban-cards" id="colCards-${status}"></div>
+          </div>`;
+      });
+      dom.kanbanBoard.innerHTML = html;
+    }
+
+    // ── LOAD DATA ─────────────────────────────────────────────
+    async function loadAllData(silent) {
+      if (!silent) {
+        dom.kanbanLoading.style.display = 'flex';
+        dom.kanbanBoard.style.display = 'none';
+      }
+      dom.refreshSpin.style.display = 'inline-block';
+
+      try {
+        // Fetch all parcels + carriers in parallel
+        const [parcelsRes, carriersRes] = await Promise.all([
+          K.parcels.list(),
+          K.carriers.list().catch(() => ({ data: [] }))
+        ]);
+
+        const parcels = parcelsRes.data || parcelsRes || [];
+        state.allParcels = Array.isArray(parcels) ? parcels : [];
+
+        const carriers = carriersRes.data || carriersRes || [];
+        state.carriers = Array.isArray(carriers) ? carriers : [];
+
+        // Populate carrier filter
+        populateCarrierFilter();
+        populateRelaisFilter();
+
+        // Apply filters and render
+        applyFilters();
+        updateKpis();
+
+        state.lastRefresh = new Date();
+        dom.refreshLabel.textContent = 'MAJ ' + K.ui.ts();
+
+        if (!silent) {
+          dom.kanbanLoading.style.display = 'none';
+          dom.kanbanBoard.style.display = 'flex';
+        }
+      } catch (err) {
+        K.ui.toast('Erreur chargement : ' + (err.message || 'Inconnu'), 'err');
+        if (!silent) {
+          dom.kanbanLoading.innerHTML = '<span style="color:var(--red);">❌ Erreur de chargement</span>';
+        }
+      } finally {
+        dom.refreshSpin.style.display = 'none';
+      }
+    }
+
+    // ── FILTERS ───────────────────────────────────────────────
+    function populateCarrierFilter() {
+      const uniqueCarriers = new Set();
+      state.allParcels.forEach(p => {
+        const c = p.carrier_name || p.carrier || '';
+        if (c) uniqueCarriers.add(c);
+      });
+      state.carriers.forEach(c => {
+        const name = c.name || c.carrier_name || '';
+        if (name) uniqueCarriers.add(name);
+      });
+
+      let opts = '<option value="">Tous transporteurs</option>';
+      [...uniqueCarriers].sort().forEach(c => {
+        opts += `<option value="${escHtml(c)}">${escHtml(c)}</option>`;
+      });
+      dom.filterCarrier.innerHTML = opts;
+    }
+
+    function populateRelaisFilter() {
+      const uniqueRelais = new Set();
+      state.allParcels.forEach(p => {
+        const r = p.relay_name || p.relay_point || p.relais || p.destination_relay || '';
+        if (r) uniqueRelais.add(r);
+      });
+
+      let opts = '<option value="">Tous relais</option>';
+      [...uniqueRelais].sort().forEach(r => {
+        opts += `<option value="${escHtml(r)}">${escHtml(r)}</option>`;
+      });
+      dom.filterRelais.innerHTML = opts;
+    }
+
+    function applyFilters() {
+      const typeVal = dom.filterType.value;
+      const carrierVal = dom.filterCarrier.value;
+      const relaisVal = dom.filterRelais.value;
+      const ageVal = dom.filterAge.value;
+      const searchVal = dom.filterSearch.value.trim().toLowerCase();
+
+      state.filteredParcels = state.allParcels.filter(p => {
+        // Type filter
+        if (typeVal && (p.type || p.parcel_type || 'standard') !== typeVal) return false;
+
+        // Carrier filter
+        const pCarrier = p.carrier_name || p.carrier || '';
+        if (carrierVal && pCarrier !== carrierVal) return false;
+
+        // Relais filter
+        const pRelais = p.relay_name || p.relay_point || p.relais || p.destination_relay || '';
+        if (relaisVal && pRelais !== relaisVal) return false;
+
+        // Age filter
+        if (ageVal) {
+          const days = ageDays(p.created_at);
+          if (ageVal === 'today' && days > 0) return false;
+          if (ageVal === '1-3' && (days < 1 || days > 3)) return false;
+          if (ageVal === '3-7' && (days < 3 || days > 7)) return false;
+          if (ageVal === '7+' && days < 7) return false;
+        }
+
+        // Search filter
+        if (searchVal) {
+          const ref = (p.reference || p.ref || p.id || '').toString().toLowerCase();
+          const orderRef = (p.order_reference || p.order_ref || '').toString().toLowerCase();
+          if (!ref.includes(searchVal) && !orderRef.includes(searchVal)) return false;
+        }
+
+        return true;
+      });
+
+      renderKanban();
+    }
+
+    function resetFilters() {
+      dom.filterType.value = '';
+      dom.filterCarrier.value = '';
+      dom.filterRelais.value = '';
+      dom.filterAge.value = '';
+      dom.filterSearch.value = '';
+      applyFilters();
+    }
+
+    // ── RENDER KANBAN ─────────────────────────────────────────
+    function renderKanban() {
+      // Group by status
+      const groups = {};
+      COLUMNS.forEach(s => groups[s] = []);
+
+      state.filteredParcels.forEach(p => {
+        const status = p.status || 'draft';
+        if (groups[status]) {
+          groups[status].push(p);
+        }
+      });
+
+      // Render each column
+      COLUMNS.forEach(status => {
+        const parcels = groups[status];
+        const countEl = $('colCount-' + status);
+        const cardsEl = $('colCards-' + status);
+
+        if (countEl) countEl.textContent = parcels.length;
+
+        if (!cardsEl) return;
+
+        if (parcels.length === 0) {
+          cardsEl.innerHTML = `
+            <div class="kanban-empty">
+              <div class="kanban-empty-icon">📭</div>
+              Aucun colis
+            </div>`;
+          return;
+        }
+
+        // Sort by created_at descending (newest first)
+        parcels.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+        let html = '';
+        parcels.forEach(p => {
+          const ref = p.reference || p.ref || p.id || '—';
+          const type = p.type || p.parcel_type || 'standard';
+          const orderRef = p.order_reference || p.order_ref || '';
+          const carrier = p.carrier_name || p.carrier || '';
+          const relais = p.relay_name || p.relay_point || p.relais || p.destination_relay || '';
+          const itemsCount = p.items_count || (p.items ? p.items.length : 0) || 0;
+          const days = ageDays(p.created_at);
+          const ageText = K.ui.fmtAge(p.created_at);
+          const ageCls = ageClass(days);
+
+          // Type badge
+          const typeBadgeMap = {
+            standard: 'b-blue', partial: 'b-orange',
+            backorder: 'b-purple', awaiting_stock: 'b-gold'
+          };
+          const typeBadge = typeBadgeMap[type] || 'b-gray';
+          const typeLabel = { standard: 'Standard', partial: 'Partiel', backorder: 'Backorder', awaiting_stock: 'Att. stock' }[type] || type;
+
+          const pid = p.id || p.parcel_id || ref;
+
+          html += `
+            <div class="kanban-card" onclick="Pipeline.openDetail('${escHtml(String(pid))}')">
+              <div class="kanban-card-ref">${escHtml(ref)}</div>
+              <span class="kanban-card-type badge ${typeBadge}">${escHtml(typeLabel)}</span>
+              ${orderRef ? `<div class="kanban-card-order">#${escHtml(orderRef)}</div>` : ''}
+              <div class="kanban-card-meta">
+                ${carrier ? `<span>🚚 ${escHtml(carrier)}</span>` : ''}
+                ${relais ? `<span>📍 ${escHtml(relais)}</span>` : ''}
+                ${itemsCount ? `<span>📋 ${itemsCount} art.</span>` : ''}
+                <span class="kanban-card-age ${ageCls}">${escHtml(ageText)}</span>
+              </div>
+            </div>`;
+        });
+
+        cardsEl.innerHTML = html;
+      });
+    }
+
+    // ── KPIs ──────────────────────────────────────────────────
+    function updateKpis() {
+      const all = state.allParcels;
+      const active = all.filter(p => !['collected','cancelled'].includes(p.status));
+      const transit = all.filter(p => p.status === 'in_transit');
+      const available = all.filter(p => p.status === 'available');
+      const sla = active.filter(p => ageDays(p.created_at) >= SLA_WARN_DAYS);
+
+      dom.kpiTotal.textContent = active.length;
+      dom.kpiTransit.textContent = transit.length;
+      dom.kpiSla.textContent = sla.length;
+      dom.kpiAvailable.textContent = available.length;
+    }
+
+    // ── DETAIL MODAL ──────────────────────────────────────────
+    async function openDetail(parcelId) {
+      dom.modalType.textContent = 'DÉTAIL COLIS';
+      dom.modalTitle.textContent = 'Chargement…';
+      dom.modalDesc.textContent = '';
+      dom.modalBody.innerHTML = '<div style="text-align:center;padding:20px;"><span class="spin">⟳</span> Chargement…</div>';
+      dom.detailModal.classList.add('open');
+
+      try {
+        const res = await K.parcels.get(parcelId);
+        const p = res.data || res;
+
+        const ref = p.reference || p.ref || p.id || '—';
+        const type = p.type || p.parcel_type || 'standard';
+        const status = p.status || 'draft';
+        const carrier = p.carrier_name || p.carrier || '—';
+        const shipment = p.shipment_reference || p.shipment_ref || p.tracking_number || '—';
+        const relais = p.relay_name || p.relay_point || p.relais || p.destination_relay || '—';
+        const orderRef = p.order_reference || p.order_ref || '—';
+        const created = K.ui.fmtDate(p.created_at);
+        const updated = K.ui.fmtDate(p.updated_at);
+        const items = p.items || [];
+        const timeline = p.timeline || p.status_history || p.history || [];
+
+        dom.modalTitle.textContent = ref;
+        dom.modalDesc.innerHTML = K.ui.badge(status);
+
+        // Build body
+        let html = '';
+
+        // Info section
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">Informations</div>
+            <div class="detail-row"><span class="detail-label">Référence</span><span class="detail-value">${escHtml(ref)}</span></div>
+            <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">${escHtml(type)}</span></div>
+            <div class="detail-row"><span class="detail-label">Statut</span><span class="detail-value">${K.ui.badge(status)}</span></div>
+            <div class="detail-row"><span class="detail-label">Transporteur</span><span class="detail-value">${escHtml(carrier)}</span></div>
+            <div class="detail-row"><span class="detail-label">Expédition</span><span class="detail-value">${escHtml(shipment)}</span></div>
+            <div class="detail-row"><span class="detail-label">Relais destination</span><span class="detail-value">${escHtml(relais)}</span></div>
+            <div class="detail-row"><span class="detail-label">Commande liée</span><span class="detail-value" style="color:var(--text3);">#${escHtml(orderRef)}</span></div>
+            <div class="detail-row"><span class="detail-label">Créé</span><span class="detail-value">${escHtml(created)}</span></div>
+            <div class="detail-row"><span class="detail-label">Dernière MAJ</span><span class="detail-value">${escHtml(updated)}</span></div>
+          </div>`;
+
+        // Items section
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">Articles (${items.length})</div>`;
+        if (items.length === 0) {
+          html += '<div style="padding:12px;color:var(--text3);font-size:0.875rem;text-align:center;">Aucun article</div>';
+        } else {
+          items.forEach(item => {
+            const iName = item.name || item.product_name || item.label || '—';
+            const iQty = item.quantity || item.qty || 1;
+            const iSku = item.sku || item.barcode || '';
+            html += `
+              <div class="item-row-detail">
+                <span style="color:var(--green);font-weight:700;flex-shrink:0;">📦</span>
+                <span style="flex:1;font-weight:600;color:var(--text);">${escHtml(iName)}</span>
+                ${iSku ? `<span class="mono" style="color:var(--text3);font-size:0.82rem;">${escHtml(iSku)}</span>` : ''}
+                <span class="badge b-blue">×${iQty}</span>
+              </div>`;
+          });
+        }
+        html += '</div>';
+
+        // Timeline section
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">Historique</div>`;
+        if (timeline.length === 0) {
+          html += '<div style="padding:12px;color:var(--text3);font-size:0.875rem;text-align:center;">Aucun historique disponible</div>';
+        } else {
+          html += '<div class="tl">';
+          timeline.forEach((t, i) => {
+            const tStatus = t.status || t.label || '—';
+            const tNote = t.note || t.message || t.description || '';
+            const tDate = K.ui.fmtDate(t.created_at || t.date || t.timestamp);
+            const dotClass = i === 0 ? 'active' : 'ok';
+            html += `
+              <div class="tl-item">
+                <div class="tl-dot ${dotClass}">${i + 1}</div>
+                <div>
+                  <div class="tl-status">${escHtml(tStatus)}</div>
+                  ${tNote ? `<div class="tl-note">${escHtml(tNote)}</div>` : ''}
+                  <div class="tl-date">${escHtml(tDate)}</div>
+                </div>
+              </div>`;
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+
+        dom.modalBody.innerHTML = html;
+
+      } catch (err) {
+        dom.modalTitle.textContent = 'Erreur';
+        dom.modalBody.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">❌ ${escHtml(err.message || 'Impossible de charger le colis')}</div>`;
+      }
+    }
+
+    function closeDetail() {
+      dom.detailModal.classList.remove('open');
+    }
+
+    // ── EXPOSE PUBLIC API ─────────────────────────────────────
+    window.Pipeline = {
+      openDetail,
+      closeDetail,
+    };
+
+    // ── BOOT ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+
+</body>
+</html>

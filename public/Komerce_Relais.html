@@ -1,1 +1,879 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=/Komerce_Dashboard.html#relais"><title>Redirection…</title></head><body><p>Redirection vers <a href="/Komerce_Dashboard.html#relais">Relais</a>…</p></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KOMERCE // RELAIS</title>
+  <link rel="stylesheet" href="komerce-ui.css">
+  <style>
+    /* ── RELAIS-SPECIFIC STYLES ── */
+    body { background: var(--bg); }
+    .relais-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Login screen */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 52px);
+    }
+    .login-card {
+      width: 100%; max-width: 400px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 1.4rem;
+      letter-spacing: 4px; color: var(--gold); text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      text-align: center; letter-spacing: 2px; margin-bottom: 28px;
+    }
+    .login-err {
+      background: var(--red-bg); border: 1px solid var(--red);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.875rem; font-weight: 600;
+      margin-bottom: 14px; display: none;
+    }
+
+    /* Operator info */
+    .operator-info {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text2);
+    }
+    .operator-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold); color: #000; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+    }
+    .btn-logout {
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 0.82rem; font-family: var(--mono);
+      padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+    }
+    .btn-logout:hover { color: var(--red); background: var(--red-bg); }
+
+    /* Section header */
+    .section-hdr {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    /* Scan zone */
+    .scan-zone {
+      background: var(--bg2); border: 2px dashed var(--gold);
+      border-radius: var(--radius); padding: 28px 22px;
+      margin-bottom: 20px; text-align: center;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .scan-zone:focus-within {
+      border-color: var(--gold2);
+      box-shadow: 0 0 0 4px rgba(217,119,6,0.12);
+    }
+    .scan-zone .scan-label {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .scan-zone .scan-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .scan-input {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text); padding: 16px 18px;
+      font-family: var(--mono); font-size: 1.2rem; width: 100%;
+      text-align: center; letter-spacing: 1px;
+      transition: border-color 0.2s;
+    }
+    .scan-input:focus { outline: none; border-color: var(--gold); }
+    .scan-input::placeholder { color: var(--text3); font-size: 1rem; letter-spacing: 0; }
+    .scan-hint {
+      font-size: 0.82rem; color: var(--text3); margin-top: 10px;
+      font-family: var(--mono);
+    }
+
+    /* Pickup code — BIG and prominent */
+    .pickup-code {
+      font-family: var(--mono); font-weight: 700; font-size: 2rem;
+      letter-spacing: 4px; padding: 6px 16px;
+      background: var(--amber-bg); color: var(--gold);
+      border: 2px solid var(--gold); border-radius: 8px;
+      display: inline-block; line-height: 1.3;
+    }
+
+    /* Parcel list item */
+    .parcel-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      transition: background 0.15s; flex-wrap: wrap; gap: 8px;
+    }
+    .parcel-item:last-child { border-bottom: none; }
+    .parcel-item:active { background: var(--bg3); }
+    .parcel-item-left { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+    .parcel-item-ref {
+      font-family: var(--mono); font-size: 0.94rem; font-weight: 700;
+      color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .parcel-item-client {
+      font-size: 0.875rem; color: var(--text2); font-weight: 600;
+    }
+    .parcel-item-age {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+    }
+    .parcel-item-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    }
+
+    /* Confirmation modal extras */
+    .confirm-body {
+      text-align: center; padding: 10px 0;
+    }
+    .confirm-ref {
+      font-family: var(--mono); font-size: 1.2rem; font-weight: 700;
+      color: var(--text); margin-bottom: 10px;
+    }
+    .confirm-client {
+      font-size: 1rem; color: var(--text2); margin-bottom: 16px;
+    }
+    .confirm-code-label {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+    }
+
+    /* Collapsible */
+    .collapse-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none; padding: 10px 0;
+    }
+    .collapse-toggle:hover .section-hdr { color: var(--text2); }
+    .collapse-chevron {
+      font-size: 0.82rem; color: var(--text3); transition: transform 0.2s;
+    }
+    .collapse-toggle.open .collapse-chevron { transform: rotate(180deg); }
+    .collapse-body { display: none; }
+    .collapse-toggle.open + .collapse-body { display: block; }
+
+    /* History item */
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      flex-wrap: wrap; gap: 6px;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-left { display: flex; align-items: center; gap: 10px; }
+    .history-ref {
+      font-family: var(--mono); font-size: 0.875rem; font-weight: 700;
+      color: var(--text);
+    }
+    .history-info {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 28px 16px; color: var(--text3);
+      font-size: 0.94rem;
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* Loading */
+    .loading-inline {
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; color: var(--text3); gap: 8px;
+      font-family: var(--mono); font-size: 0.875rem;
+    }
+
+    /* Mobile overrides */
+    @media (max-width: 600px) {
+      .relais-wrap { padding: 16px 12px; }
+      .scan-input { font-size: 1.1rem; padding: 14px 16px; }
+      .pickup-code { font-size: 1.6rem; letter-spacing: 3px; padding: 5px 12px; }
+      .g3 { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .g4 { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .kpi-v { font-size: 1.5rem; }
+      .login-card { padding: 28px 20px; margin: 0 12px; }
+      .parcel-item { padding: 12px; }
+    }
+    @media (max-width: 380px) {
+      .g3, .g4 { grid-template-columns: 1fr; }
+      .pickup-code { font-size: 1.3rem; letter-spacing: 2px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="hdr">
+    <div class="logo">KOMERCE <em>// RELAIS</em></div>
+    <div class="hdr-right">
+      <div id="connPill" class="conn-pill">
+        <span class="conn-dot"></span>
+        <span id="connLabel">Déconnecté</span>
+      </div>
+      <div id="operatorInfo" class="operator-info" style="display:none;">
+        <div id="operatorAvatar" class="operator-avatar">—</div>
+        <span id="operatorName">Agent</span>
+        <button id="btnLogout" class="btn-logout" title="Déconnexion">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">KOMERCE</div>
+      <div class="login-sub">RELAIS — CONNEXION</div>
+
+      <div id="loginError" class="login-err"></div>
+
+      <div class="form-group">
+        <div class="inp-label">URL API</div>
+        <input id="inpApiUrl" class="inp" type="url" placeholder="https://api.komerce.app" autocomplete="url">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Email</div>
+        <input id="inpEmail" class="inp" type="email" placeholder="agent@relais-anjouan.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Mot de passe</div>
+        <input id="inpPassword" class="inp" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button id="btnLogin" class="btn btn-gold btn-full btn-lg" style="margin-top:8px;">
+        Connexion
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ WORKSPACE ═══ -->
+  <div id="workspace" style="display:none;">
+    <div class="relais-wrap">
+
+      <!-- ── STATS ROW ── -->
+      <div class="section-hdr">Tableau de bord</div>
+      <div class="g3" style="margin-bottom:24px;">
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiAvailable" style="color:var(--green);">—</div>
+          <div class="kpi-l">Disponibles</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiCollectedToday" style="color:var(--blue);">—</div>
+          <div class="kpi-l">Remis aujourd'hui</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiArrived" style="color:var(--gold);">—</div>
+          <div class="kpi-l">En attente réception</div>
+        </div>
+      </div>
+
+      <!-- ── SCAN RÉCEPTION ── -->
+      <div class="section-hdr">📦 Réception colis</div>
+      <div class="scan-zone" id="receptionZone">
+        <div class="scan-icon">📷</div>
+        <div class="scan-label">Scanner colis arrivé</div>
+        <input
+          id="receptionInput"
+          class="scan-input"
+          type="text"
+          placeholder="PCL-2026-XXXX"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+        >
+        <div class="scan-hint">Scannez le code-barres du colis ou saisissez la référence</div>
+      </div>
+
+      <!-- ── COLIS DISPONIBLES ── -->
+      <div id="availableSection">
+        <div class="section-hdr">✅ Colis disponibles <span id="availableCount" class="badge b-green" style="margin-left:6px;">0</span></div>
+        <div class="card" id="availableList">
+          <div class="loading-inline"><span class="spin">⟳</span> Chargement…</div>
+        </div>
+      </div>
+
+      <!-- ── REMISE CLIENT ── -->
+      <div style="margin-top:20px;">
+        <div class="section-hdr">🤝 Remise client</div>
+        <div class="scan-zone" id="pickupZone">
+          <div class="scan-icon">🔑</div>
+          <div class="scan-label">Scanner code de retrait</div>
+          <input
+            id="pickupInput"
+            class="scan-input"
+            type="text"
+            placeholder="Code retrait ou réf. colis"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+          >
+          <div class="scan-hint">Saisissez le code de retrait communiqué au client</div>
+        </div>
+      </div>
+
+      <!-- ── HISTORIQUE (collapsible) ── -->
+      <div style="margin-top:8px;">
+        <div class="collapse-toggle" id="historyToggle" onclick="Relais.toggleHistory()">
+          <div class="section-hdr" style="margin-bottom:0;">Historique du jour <span id="historyCount" class="badge b-green" style="margin-left:6px;">0</span></div>
+          <span class="collapse-chevron">▼</span>
+        </div>
+        <div class="collapse-body" id="historyBody">
+          <div class="card" id="historyList">
+            <div class="empty-state">
+              <div class="empty-icon">📦</div>
+              Aucune remise aujourd'hui
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ CONFIRMATION MODAL ═══ -->
+  <div class="action-screen" id="confirmModal">
+    <div class="action-panel" style="width:440px;">
+      <div class="action-panel-hdr">
+        <div class="action-type">REMISE CLIENT</div>
+        <div class="action-title" id="confirmTitle">Confirmer la remise</div>
+        <div class="action-desc" id="confirmDesc">Vérifiez l'identité du client avant de remettre le colis.</div>
+      </div>
+      <div class="action-body" id="confirmBody">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="action-footer">
+        <button class="btn btn-ghost" onclick="Relais.cancelPickup()">Annuler</button>
+        <button class="btn btn-green btn-lg" id="btnConfirmPickup" onclick="Relais.confirmPickup()">
+          🤝 Confirmer la remise
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="k-toast" class="toast"></div>
+
+  <!-- ═══ API ═══ -->
+  <script src="komerce-api.js"></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── CONSTANTS ─────────────────────────────────────────────
+    const REFRESH_INTERVAL = 30000;
+
+    // ── STATE ─────────────────────────────────────────────────
+    const state = {
+      user: null,
+      availableParcels: [],
+      arrivedParcels: [],
+      collectedToday: [],
+      sessionHistory: [],
+      pendingPickupParcel: null,
+      refreshTimer: null,
+    };
+
+    // ── DOM REFS ──────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+      loginScreen:     $('loginScreen'),
+      workspace:       $('workspace'),
+      loginError:      $('loginError'),
+      inpApiUrl:       $('inpApiUrl'),
+      inpEmail:        $('inpEmail'),
+      inpPassword:     $('inpPassword'),
+      btnLogin:        $('btnLogin'),
+      btnLogout:       $('btnLogout'),
+      connPill:        $('connPill'),
+      connLabel:       $('connLabel'),
+      operatorInfo:    $('operatorInfo'),
+      operatorAvatar:  $('operatorAvatar'),
+      operatorName:    $('operatorName'),
+      kpiAvailable:    $('kpiAvailable'),
+      kpiCollectedToday:$('kpiCollectedToday'),
+      kpiArrived:      $('kpiArrived'),
+      receptionInput:  $('receptionInput'),
+      pickupInput:     $('pickupInput'),
+      availableCount:  $('availableCount'),
+      availableList:   $('availableList'),
+      confirmModal:    $('confirmModal'),
+      confirmTitle:    $('confirmTitle'),
+      confirmBody:     $('confirmBody'),
+      btnConfirmPickup:$('btnConfirmPickup'),
+      historyToggle:   $('historyToggle'),
+      historyBody:     $('historyBody'),
+      historyList:     $('historyList'),
+      historyCount:    $('historyCount'),
+    };
+
+    // ── HELPERS ───────────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function showLoginError(msg) {
+      dom.loginError.textContent = msg;
+      dom.loginError.style.display = 'block';
+    }
+
+    function hideLoginError() {
+      dom.loginError.style.display = 'none';
+    }
+
+    function isToday(dateStr) {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() &&
+             d.getMonth() === now.getMonth() &&
+             d.getDate() === now.getDate();
+    }
+
+    // ── INIT ──────────────────────────────────────────────────
+    function init() {
+      const storedUrl = localStorage.getItem('komerce_api_url') || '';
+      if (storedUrl) dom.inpApiUrl.value = storedUrl;
+
+      dom.btnLogin.addEventListener('click', handleLogin);
+      dom.btnLogout.addEventListener('click', handleLogout);
+      dom.inpPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+      dom.receptionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleReceptionScan(); });
+      dom.pickupInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handlePickupScan(); });
+
+      // Close modal on backdrop click
+      dom.confirmModal.addEventListener('click', (e) => {
+        if (e.target === dom.confirmModal) cancelPickup();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dom.confirmModal.classList.contains('open')) cancelPickup();
+      });
+
+      if (K.auth.isConnected()) {
+        autoConnect();
+      }
+    }
+
+    // ── AUTH ───────────────────────────────────────────────────
+    async function handleLogin() {
+      const url = dom.inpApiUrl.value.trim();
+      const email = dom.inpEmail.value.trim();
+      const pass = dom.inpPassword.value;
+
+      if (!url || !email || !pass) {
+        showLoginError('Veuillez remplir tous les champs');
+        return;
+      }
+
+      dom.btnLogin.disabled = true;
+      dom.btnLogin.innerHTML = '<span class="spin">⟳</span> Connexion…';
+      hideLoginError();
+
+      try {
+        const result = await K.auth.login(email, pass, url);
+        state.user = result.user;
+        enterWorkspace();
+      } catch (err) {
+        showLoginError(err.message || 'Échec de la connexion');
+      } finally {
+        dom.btnLogin.disabled = false;
+        dom.btnLogin.textContent = 'Connexion';
+      }
+    }
+
+    async function autoConnect() {
+      try {
+        state.user = K.auth.getUser();
+        enterWorkspace();
+      } catch (err) {
+        K.auth.logout();
+        K.ui.toast('Session expirée — reconnectez-vous', 'warn');
+      }
+    }
+
+    function handleLogout() {
+      K.auth.logout();
+      if (state.refreshTimer) clearInterval(state.refreshTimer);
+      state.availableParcels = [];
+      state.arrivedParcels = [];
+      state.collectedToday = [];
+      state.sessionHistory = [];
+
+      dom.workspace.style.display = 'none';
+      dom.loginScreen.style.display = 'flex';
+      dom.operatorInfo.style.display = 'none';
+      dom.connPill.classList.remove('ok');
+      dom.connLabel.textContent = 'Déconnecté';
+
+      K.ui.toast('Déconnecté', 'warn');
+    }
+
+    function enterWorkspace() {
+      dom.loginScreen.style.display = 'none';
+      dom.workspace.style.display = 'block';
+
+      // Connection pill
+      dom.connPill.classList.add('ok');
+      dom.connLabel.textContent = 'Connecté';
+      dom.connPill.querySelector('.conn-dot').classList.add('pulse');
+
+      // Agent info
+      const user = state.user;
+      if (user) {
+        const initials = (user.name || user.email || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        dom.operatorAvatar.textContent = initials;
+        dom.operatorName.textContent = user.name || user.email || 'Agent';
+      } else {
+        dom.operatorAvatar.textContent = 'AG';
+        dom.operatorName.textContent = 'Agent';
+      }
+      dom.operatorInfo.style.display = 'flex';
+
+      // Load data
+      loadAllData();
+
+      // Focus scan input
+      setTimeout(() => dom.receptionInput.focus(), 200);
+
+      // Auto-refresh
+      state.refreshTimer = setInterval(() => loadAllData(true), REFRESH_INTERVAL);
+    }
+
+    // ── LOAD DATA ─────────────────────────────────────────────
+    async function loadAllData(silent) {
+      try {
+        const [availRes, arrivedRes, collectedRes] = await Promise.all([
+          K.parcels.list({ status: 'available' }),
+          K.parcels.list({ status: 'arrived' }),
+          K.parcels.list({ status: 'collected' }).catch(() => ({ data: [] }))
+        ]);
+
+        state.availableParcels = extractParcels(availRes);
+        state.arrivedParcels = extractParcels(arrivedRes);
+
+        const allCollected = extractParcels(collectedRes);
+        state.collectedToday = allCollected.filter(p =>
+          isToday(p.collected_at || p.updated_at)
+        );
+
+        updateKpis();
+        renderAvailableList();
+        renderHistory();
+
+      } catch (err) {
+        if (!silent) {
+          K.ui.toast('Erreur chargement : ' + (err.message || 'Inconnu'), 'err');
+        }
+      }
+    }
+
+    function extractParcels(res) {
+      const data = res.data || res || [];
+      return Array.isArray(data) ? data : [];
+    }
+
+    // ── KPIs ──────────────────────────────────────────────────
+    function updateKpis() {
+      dom.kpiAvailable.textContent = state.availableParcels.length;
+      dom.kpiCollectedToday.textContent = state.collectedToday.length + state.sessionHistory.length;
+      dom.kpiArrived.textContent = state.arrivedParcels.length;
+    }
+
+    // ── AVAILABLE LIST ────────────────────────────────────────
+    function renderAvailableList() {
+      dom.availableCount.textContent = state.availableParcels.length;
+
+      if (state.availableParcels.length === 0) {
+        dom.availableList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            Aucun colis disponible au retrait
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      state.availableParcels.forEach(p => {
+        const ref = p.reference || p.ref || p.id || '—';
+        const pickupCode = p.pickup_code || p.code_retrait || p.withdrawal_code || ref.slice(-6).toUpperCase();
+        const clientName = p.client_name || p.customer_name || p.recipient_name || '—';
+        const age = K.ui.fmtAge(p.created_at);
+
+        html += `
+          <div class="parcel-item">
+            <div class="parcel-item-left">
+              <div class="parcel-item-ref">${escHtml(ref)}</div>
+              <div class="parcel-item-client">👤 ${escHtml(clientName)}</div>
+              <div class="parcel-item-age">⏱ ${escHtml(age)}</div>
+            </div>
+            <div class="parcel-item-right">
+              <div class="pickup-code">${escHtml(pickupCode)}</div>
+            </div>
+          </div>`;
+      });
+
+      dom.availableList.innerHTML = html;
+    }
+
+    // ── RECEPTION SCAN ────────────────────────────────────────
+    async function handleReceptionScan() {
+      const ref = dom.receptionInput.value.trim();
+      if (!ref) return;
+
+      dom.receptionInput.disabled = true;
+
+      try {
+        // Find the parcel by reference among arrived parcels, or fetch it
+        let parcel = state.arrivedParcels.find(p =>
+          (p.reference || p.ref || '') === ref || String(p.id) === ref
+        );
+
+        let parcelId;
+
+        if (parcel) {
+          parcelId = parcel.id || parcel.parcel_id;
+        } else {
+          // Try to look up by scanning / fetching
+          const res = await K.parcels.list({ reference: ref });
+          const parcels = extractParcels(res);
+          parcel = parcels[0];
+          if (!parcel) {
+            // Try direct get
+            const direct = await K.parcels.get(ref).catch(() => null);
+            if (direct) {
+              parcel = direct.data || direct;
+            }
+          }
+          if (!parcel) throw new Error('Colis introuvable : ' + ref);
+          parcelId = parcel.id || parcel.parcel_id;
+        }
+
+        // Log reception scan
+        try {
+          await K.scans.create({
+            parcel_ref: ref,
+            scan_type: 'relay_reception',
+            scanned_by: state.user ? (state.user.name || state.user.email) : 'agent',
+          });
+        } catch (e) {
+          // Non-blocking — scan log is optional
+          console.warn('Scan log failed:', e.message);
+        }
+
+        // Mark as arrived first (if not already)
+        const currentStatus = parcel.status || '';
+        if (currentStatus !== 'arrived' && currentStatus !== 'available') {
+          await K.request('/api/parcels/' + parcelId, 'PATCH', { status: 'arrived' });
+        }
+
+        // Then mark as available
+        await K.request('/api/parcels/' + parcelId, 'PATCH', { status: 'available' });
+
+        K.ui.flash();
+        K.ui.toast('✅ Colis reçu et disponible — ' + ref, 'ok');
+
+        dom.receptionInput.value = '';
+
+        // Refresh data
+        await loadAllData(true);
+
+      } catch (err) {
+        K.ui.toast('❌ Erreur réception : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        dom.receptionInput.disabled = false;
+        dom.receptionInput.focus();
+      }
+    }
+
+    // ── PICKUP SCAN ───────────────────────────────────────────
+    async function handlePickupScan() {
+      const code = dom.pickupInput.value.trim();
+      if (!code) return;
+
+      dom.pickupInput.disabled = true;
+
+      try {
+        // Find parcel by pickup code or reference
+        const parcel = state.availableParcels.find(p => {
+          const pCode = p.pickup_code || p.code_retrait || p.withdrawal_code || '';
+          const pRef = p.reference || p.ref || '';
+          const pId = String(p.id || '');
+          return pCode === code || pRef === code || pId === code ||
+                 (pRef && pRef.slice(-6).toUpperCase() === code.toUpperCase());
+        });
+
+        if (!parcel) {
+          K.ui.toast('⚠️ Aucun colis disponible avec ce code', 'warn');
+          dom.pickupInput.disabled = false;
+          dom.pickupInput.select();
+          return;
+        }
+
+        // Store pending and show confirmation modal
+        state.pendingPickupParcel = parcel;
+        showPickupConfirmation(parcel);
+
+      } catch (err) {
+        K.ui.toast('❌ Erreur : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        dom.pickupInput.disabled = false;
+      }
+    }
+
+    // ── PICKUP CONFIRMATION ───────────────────────────────────
+    function showPickupConfirmation(parcel) {
+      const ref = parcel.reference || parcel.ref || parcel.id || '—';
+      const pickupCode = parcel.pickup_code || parcel.code_retrait || parcel.withdrawal_code || ref.slice(-6).toUpperCase();
+      const clientName = parcel.client_name || parcel.customer_name || parcel.recipient_name || '—';
+
+      dom.confirmBody.innerHTML = `
+        <div class="confirm-body">
+          <div class="confirm-ref">${escHtml(ref)}</div>
+          <div class="confirm-client">👤 ${escHtml(clientName)}</div>
+          <div class="confirm-code-label">Code de retrait</div>
+          <div class="pickup-code">${escHtml(pickupCode)}</div>
+          <div style="margin-top:16px;padding:12px;background:var(--amber-bg);border-radius:8px;border:1px solid rgba(217,119,6,0.2);">
+            <div style="font-size:0.94rem;color:var(--gold);font-weight:700;">⚠️ Vérifiez l'identité du client</div>
+            <div style="font-size:0.82rem;color:var(--text3);margin-top:4px;">
+              Demandez une pièce d'identité et vérifiez le code de retrait avant de remettre le colis.
+            </div>
+          </div>
+        </div>`;
+
+      dom.confirmModal.classList.add('open');
+    }
+
+    async function confirmPickup() {
+      const parcel = state.pendingPickupParcel;
+      if (!parcel) return;
+
+      const btn = dom.btnConfirmPickup;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin">⟳</span> Remise en cours…';
+
+      try {
+        const parcelId = parcel.id || parcel.parcel_id;
+        await K.request('/api/parcels/' + parcelId, 'PATCH', { status: 'collected' });
+
+        // Log scan
+        try {
+          await K.scans.create({
+            parcel_ref: parcel.reference || parcel.ref || '',
+            scan_type: 'relay_pickup',
+            scanned_by: state.user ? (state.user.name || state.user.email) : 'agent',
+          });
+        } catch (e) {
+          console.warn('Scan log failed:', e.message);
+        }
+
+        // Success
+        K.ui.flash();
+        K.ui.toast('✅ Colis remis — ' + (parcel.reference || parcel.ref || parcel.id), 'ok');
+
+        // Add to session history
+        state.sessionHistory.unshift({
+          ref: parcel.reference || parcel.ref || parcel.id || '—',
+          client: parcel.client_name || parcel.customer_name || parcel.recipient_name || '—',
+          time: K.ui.ts(),
+        });
+
+        // Close modal and reset
+        state.pendingPickupParcel = null;
+        dom.confirmModal.classList.remove('open');
+        dom.pickupInput.value = '';
+
+        // Refresh data
+        await loadAllData(true);
+        renderHistory();
+
+      } catch (err) {
+        K.ui.toast('❌ Erreur remise : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🤝 Confirmer la remise';
+        dom.pickupInput.focus();
+      }
+    }
+
+    function cancelPickup() {
+      state.pendingPickupParcel = null;
+      dom.confirmModal.classList.remove('open');
+      dom.pickupInput.focus();
+    }
+
+    // ── HISTORY ───────────────────────────────────────────────
+    function renderHistory() {
+      // Combine API collected today + session history
+      const allHistory = [];
+
+      state.sessionHistory.forEach(h => {
+        allHistory.push({ ref: h.ref, client: h.client, time: h.time, source: 'session' });
+      });
+
+      state.collectedToday.forEach(p => {
+        const ref = p.reference || p.ref || p.id || '—';
+        // Avoid duplicates from session
+        if (!state.sessionHistory.some(s => s.ref === ref)) {
+          allHistory.push({
+            ref,
+            client: p.client_name || p.customer_name || p.recipient_name || '—',
+            time: K.ui.fmtDate(p.collected_at || p.updated_at),
+            source: 'api',
+          });
+        }
+      });
+
+      dom.historyCount.textContent = allHistory.length;
+
+      if (allHistory.length === 0) {
+        dom.historyList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            Aucune remise aujourd'hui
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      allHistory.forEach(h => {
+        html += `
+          <div class="history-item">
+            <div class="history-left">
+              <span class="badge b-green">✓</span>
+              <span class="history-ref">${escHtml(h.ref)}</span>
+            </div>
+            <div class="history-info">
+              👤 ${escHtml(h.client)} · ${escHtml(h.time)}
+            </div>
+          </div>`;
+      });
+      dom.historyList.innerHTML = html;
+
+      // Auto-open history on first collection
+      if (allHistory.length > 0 && !dom.historyToggle.classList.contains('open')) {
+        dom.historyToggle.classList.add('open');
+      }
+    }
+
+    // ── COLLAPSE HISTORY ──────────────────────────────────────
+    function toggleHistory() {
+      dom.historyToggle.classList.toggle('open');
+    }
+
+    // ── EXPOSE PUBLIC API ─────────────────────────────────────
+    window.Relais = {
+      confirmPickup,
+      cancelPickup,
+      toggleHistory,
+    };
+
+    // ── BOOT ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+
+</body>
+</html>
