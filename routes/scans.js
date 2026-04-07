@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Routes scan logistique — v8.4 PARCEL DUAL-WRITE
+ * KOMERCE — Routes scan logistique — v8.5 PARCEL SOURCE OF TRUTH
  *
  * POST /api/scans             → enregistrer un scan (agent hub ou relais)
  * POST /api/scans/collect     → scan de retrait destinataire (code à 6 chiffres)
@@ -13,12 +13,16 @@
  *   [S2] verify-qr : order_id optionnel, recherche par token seul
  *        → corrige le bug frontend qui n'envoyait pas order_id
  *
- * PHASE 2 PARCEL-CENTRIC v8.4 :
+ * PHASE 3 PARCEL-CENTRIC v8.5 :
+ *   [P3-1] safeSyncScanToParcels() est maintenant awaité (plus fire-and-forget)
+ *   [P3-2] Le trigger legacy trg_scan_sync_status est DÉSACTIVÉ
+ *          → parcelSync.js est la SOURCE DE VÉRITÉ pour orders.status
+ *   [P3-3] Passage de scanned_by/notes à parcelSync pour order_status_history
+ *   [P3-4] verify-qr : skipHistory=true (historique géré dans la transaction)
+ *
+ * PHASE 2 (conservé) :
  *   [P2-1] Import safeSyncScanToParcels() depuis utils/parcelSync.js
- *   [P2-2] Appel non bloquant après chaque INSERT scan dans les 4 endpoints :
- *          POST /api/scans, /collect, /verify-qr, triggerScan3()
- *   [P2-3] Le trigger legacy trg_scan_sync_status reste actif → zéro régression
- *   [P2-4] En cas d'erreur parcel, le scan legacy est déjà enregistré
+ *   [P2-2] Appel dans les 4 endpoints (POST /api/scans, /collect, /verify-qr, triggerScan3)
  *
  * BUGS CORRIGÉS v8.2 :
  *   [B1] po.quantity → po.qty         (vraie colonne purchase_orders)
@@ -31,8 +35,7 @@
  *   [B12] scanned_by → paramètre optionnel ajouté
  *   [B13] Commentaires -- SQL → // JS
  *
- * Le trigger PostgreSQL sync_order_status_from_scan() se charge
- * de mettre à jour le statut de la commande automatiquement après chaque scan.
+ * [P3-2] Le trigger PostgreSQL est DÉSACTIVÉ. parcelSync.js gère tout.
  */
 
 const express = require('express');
@@ -43,7 +46,7 @@ const { sendSMS } = require('../utils/sms');
 const { validate } = require('../middleware/validate');
 const { scans } = require('../validators');
 
-// [P2-1] Double écriture parcels — non bloquant
+// [P2-1] Parcel sync — [P3-2] maintenant SOURCE DE VÉRITÉ (trigger désactivé)
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 
 // Alias middleware (le fichier original utilisait requireAuth dans certains endroits)
@@ -60,10 +63,11 @@ const STEP_ROLES = {
 };
 
 // ──────────────────────────────────────────────────────────────
-// triggerScan3 — v8.4
+// triggerScan3 — v8.5
 // Appelé depuis purchasing.js après vérification de complétude.
 // Le statut 'preparation' est déjà positionné avant l'appel.
-// [P2-2] Ajout safeSyncScanToParcels() après INSERT scan
+// [P3-1] await safeSyncScanToParcels() — source de vérité
+// [P3-3] Passage scanned_by + notes pour order_status_history
 // ──────────────────────────────────────────────────────────────
 
 async function triggerScan3(order_id, scanned_by = null) {
@@ -110,9 +114,16 @@ async function triggerScan3(order_id, scanned_by = null) {
     console.warn(`[SCAN3] Log non enregistré:`, logErr.message);
   }
 
-  // [P2-2] Double écriture parcels — non bloquant
+  // [P3-1] Parcel sync — awaité, source de vérité
+  // [P3-3] Passage scanned_by + notes pour order_status_history
   if (scan_id) {
-    safeSyncScanToParcels({ order_id, step: 'preparation', scan_id });
+    await safeSyncScanToParcels({
+      order_id,
+      step: 'preparation',
+      scan_id,
+      scanned_by,
+      notes: 'Auto-déclenché après complétude réception hub',
+    });
   }
 
   console.log(`[SCAN3] ✅ Commande ${order.reference} en préparation — SMS client envoyé`);
@@ -180,7 +191,8 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
       order_id = rows[0].id;
     }
 
-    // Insérer le scan — le trigger prend le relais pour le statut
+    // Insérer le scan
+    // [P3-2] Le trigger est désactivé — parcelSync gère le statut
     const { rows: [scan] } = await db.query(
       `INSERT INTO scans
          (order_id, order_item_id, step, scanned_by, location,
@@ -192,15 +204,18 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
        scan_code, notes, is_anomaly]
     );
 
-    // [P2-2] Double écriture parcels — non bloquant
-    safeSyncScanToParcels({
+    // [P3-1] Parcel sync — awaité, source de vérité pour orders.status
+    // [P3-3] Passage scanned_by + notes pour order_status_history
+    await safeSyncScanToParcels({
       order_id,
       step,
       scan_id: scan.id,
       order_item_id,
+      scanned_by: req.user.id,
+      notes,
     });
 
-    // Récupérer le nouveau statut (mis à jour par le trigger)
+    // [P3-2] Récupérer le statut — maintenant mis à jour par parcelSync (plus par le trigger)
     const { rows: [order] } = await db.query(
       'SELECT status, reference FROM orders WHERE id = $1',
       [order_id]
@@ -296,7 +311,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
 // ── POST /api/scans/collect ───────────────────────────────────────────────────
 // Retrait par le destinataire : l'agent relais saisit le code à 6 chiffres.
 // Body : { pickup_code }
-// [P2-2] Ajout safeSyncScanToParcels() après INSERT scan
+// [P3-1] await safeSyncScanToParcels — source de vérité
 router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res) => {
   try {
     const { pickup_code } = req.body;
@@ -327,11 +342,14 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
       [order.id, req.user.id, order.relais_name || '', pickup_code, 'Retrait destinataire — code valide']
     );
 
-    // [P2-2] Double écriture parcels — non bloquant
-    safeSyncScanToParcels({
+    // [P3-1] Parcel sync — awaité, source de vérité
+    // [P3-3] Passage scanned_by + notes pour order_status_history
+    await safeSyncScanToParcels({
       order_id: order.id,
       step: 'collected',
       scan_id: scanRow?.id,
+      scanned_by: req.user.id,
+      notes: 'Retrait destinataire — code valide',
     });
 
     // SMS confirmation au commanditaire
@@ -448,7 +466,8 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
 // IMPORTANT : doit rester EN DERNIER (route générique /:order_id)
 
 // ─── POST /api/scans/verify-qr ─────────────────────────────────────────────
-// [P2-2] Ajout safeSyncScanToParcels() après INSERT scan
+// [P3-1] await safeSyncScanToParcels APRÈS le commit
+// [P3-4] skipHistory=true — verify-qr gère l'historique dans sa transaction
 router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.verifyQr), async (req, res) => {
   const client = await db.getClient();
   try {
@@ -526,6 +545,8 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
     }
 
     // ✅ Token valide — marquer comme collecté et invalider le token
+    // [P3-2] On garde le UPDATE direct ici pour l'atomicité de la transaction QR.
+    // parcelSync recalculera après le COMMIT (résultat identique ou agrégé multi-parcel).
     await client.query(
       `UPDATE orders
        SET status       = 'collected',
@@ -537,7 +558,7 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
       [order.id]
     );
 
-    // Historiser le changement de statut
+    // Historiser le changement de statut (dans la transaction)
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
        VALUES ($1, 'collected', 'Remise client via QR Code', $2)`,
@@ -560,11 +581,15 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
     await client.query('COMMIT');
 
-    // [P2-2] Double écriture parcels — APRÈS le commit (non bloquant, hors transaction)
-    safeSyncScanToParcels({
+    // [P3-1] Parcel sync — APRÈS le commit (met à jour les parcels)
+    // [P3-4] skipHistory=true — l'historique est déjà inséré dans la transaction ci-dessus
+    await safeSyncScanToParcels({
       order_id: order.id,
       step: 'collected',
       scan_id: scanRow?.id,
+      scanned_by: req.user.id,
+      notes: 'Retrait client via QR Code — token validé',
+      skipHistory: true,
     });
 
     console.log(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
