@@ -1,6 +1,6 @@
 # 🔄 REPRISE DE SESSION — Komerce Backend
 
-> **Dernière mise à jour** : 2026-04-07 12:45 (Europe/Paris)
+> **Dernière mise à jour** : 2026-04-07 13:10 (Europe/Paris)
 > **Auteur** : Agent Tasklet
 
 ---
@@ -42,15 +42,14 @@
 
 ## 📦 Dernière action réalisée
 
-**Phase 2 Parcel-Centric — Double Écriture** (07/04 12:40)
+**Governance auto-sync — ROADMAP ↔ REPRISE sync** (07/04 13:10)
 
-Fichiers créés/modifiés :
-- `db/migrations/011_parcels_dual_write.sql` — index optimisés
-- `utils/parcelSync.js` — `syncScanToParcels()` + `safeSyncScanToParcels()`
-- `routes/scans.js` v8.4 — 4 points d'intégration
-- `docs/GOVERNANCE.md` v2.2 — règle commit immédiat des analyses
+Synchronisation automatique :
+- Ajout section "Refonte Parcel-Centric" dans `ROADMAP_KOMERCE.md` (dérive corrigée)
+- Phases 1-2 ✅, Phase 3 🟡, Phases 4-5 ⬜
+- Mise à jour table Progression + Ordre de travail
 
-Logs détaillés : `docs/_logs/2026-04-07_phase2_parcels.md`
+Action précédente : Phase 2 Parcel-Centric — Double Écriture (07/04 12:40)
 
 ---
 

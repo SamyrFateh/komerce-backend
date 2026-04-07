@@ -19,12 +19,27 @@
 | Catalogue Pièces Auto/Moto | ⬜ Nouveau |
 | Cartographie 360° v12 | ✅ |
 | Coffre-fort (Vault) | ✅ 6/6 |
+| Refonte Parcel-Centric | 🔄 2/5 phases |
 
 ---
 
 ## P1 ✅ Dashboard Pilotage Unifié — TERMINÉ
 
 Cockpit unique React TSX + DaisyUI + Recharts. 5 vues (Ops, Finance, Pilotage, Tendances, Retards) connectées aux 8 endpoints dashboard unifié v11. **11/11 tâches ✅**.
+
+---
+
+## 🔄 Refonte Parcel-Centric — 2/5 phases
+
+> Migration architecture order-centric → parcel-centric. Double écriture, migration trigger, nettoyage.
+
+| Phase | Contenu | Statut |
+|:-----:|---------|:------:|
+| 1 | Fondations (tables `parcels`/`parcel_events`, utils, migration `010_parcels.sql`) | ✅ |
+| 2 | Double écriture (`parcelSync.js` + `scans.js` v8.4, 4 points d'intégration) | ✅ |
+| 3 | Migration trigger — désactiver `trg_scan_sync_status`, `computed_status` → `status` | 🟡 |
+| 4 | Nettoyage colonnes legacy | ⬜ |
+| 5 | API CRUD parcels | ⬜ |
 
 ---
 
@@ -159,6 +174,9 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 ```
 ✅ Dashboard Pilotage 11/11
 ✅ Gouvernance Phases 1-4
+✅ Parcel-Centric Phases 1-2 (Fondations + Double écriture)
+🟡 Parcel-Centric Phase 3 — Migration trigger
+⬜ Parcel-Centric Phases 4-5 (Nettoyage + API CRUD)
 ⬜ Catalogue Pièces Auto/Moto (12 tâches)
 ⬜ Gouvernance Phase 5 — Dashboard Config
 ⬜ Fix 6 CRITIQUES #71→#76

@@ -1,6 +1,6 @@
 # 🧠 État de l'agent Tasklet
 
-> Dernière mise à jour : 2026-04-07 13:07 (Europe/Paris)
+> Dernière mise à jour : 2026-04-07 13:10 (Europe/Paris)
 
 ---
 
@@ -10,7 +10,7 @@
 |-----|--------|
 | **Session** | Bootstrap + reprise |
 | **Phase en cours** | Phase 3 — Migration trigger Parcel-Centric |
-| **Dernière action** | Phase 2 Parcel-Centric terminée (07/04 12:40) |
+| **Dernière action** | Governance auto-sync — ROADMAP drift corrigé (07/04 13:10) |
 | **Prochaine action** | Phase 3 — Désactiver trigger legacy `trg_scan_sync_status` |
 | **Connexion GitHub** | ✅ Active (7/7 outils) |
 | **Trigger auto-commit** | ✅ Actif (*/10 min, Europe/Paris) |
@@ -38,7 +38,7 @@
 | Variable | Valeur |
 |----------|--------|
 | `connectionId` | À renseigner au bootstrap |
-| `last_commit` | `8e10939` (Phase 2 dual-write) |
+| `last_commit` | `pending` (governance auto-sync) |
 | `roadmap_version` | P2 en attente |
 | `issues_ouvertes` | 15 |
 
