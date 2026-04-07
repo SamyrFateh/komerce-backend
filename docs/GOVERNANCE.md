@@ -1,4 +1,4 @@
-# Gouvernance Komerce v2.2
+# Gouvernance Komerce v2.3
 
 > **Fichier unique de gouvernance.** Tout agent (IA ou humain) DOIT lire ce fichier avant toute action.
 
@@ -36,6 +36,23 @@
 
 ---
 
+## ⚠️ RÈGLES LOGISTIQUES ABSOLUES (R1 / R2)
+
+> **Ajoutées v2.3** — Référence : `docs/PLAN_LOGISTIQUE_V2.md`
+
+| # | Règle | Traduction technique |
+|---|-------|---------------------|
+| **R1** | **Aucun flow ne dépend de la complétude d'une commande** | Chaque `parcel` est une unité autonome. `orders.status` = agrégation de `parcels.status` via `parcelSync.js`, jamais écrit directement. Pas de `UPDATE orders SET status` en dehors de `parcelSync`. |
+| **R2** | **L'opérateur terrain : scanner → carton → sceller** | Le Hub Interface n'expose que 3 actions. Pas de décisions de disponibilité, pas de gestion de sous-commandes, pas de backorder à la main. Le système décide, l'opérateur exécute. |
+
+**Violations connues à corriger (Vague 1)** :
+- `logistics.js` : `UPDATE orders SET status = 'available'` direct → violation R1
+- `logistics.js` : SMS batch conteneur (1/commande au lieu de 1/colis) → violation R1
+- `scans.js` hub/receive : pas de création automatique de parcel → violation R2
+- `orders.js` mark-availability : interface trop granulaire pour l'opérateur → violation R2
+
+---
+
 ## 1. Règle d'entrée
 
 Dès lecture du README, l'agent DOIT **immédiatement** :
@@ -55,13 +72,14 @@ Dès lecture du README, l'agent DOIT **immédiatement** :
 
 ---
 
-## 2. Les 3 piliers
+## 2. Les 4 piliers
 
 | Pilier | Fichier | Rôle |
 |--------|---------|------|
-| 🗺️ Carte | `docs/CARTOGRAPHY_360.md` | Architecture complète : 120 endpoints, 28+ tables, middlewares, dépendances |
+| 🗺️ Carte | `docs/CARTOGRAPHY_360.md` | Architecture complète : 130 endpoints, 31+ tables, middlewares, dépendances |
 | 📋 Plan | `docs/ROADMAP_KOMERCE.md` | Source de vérité unique : priorités, tâches, progression |
 | 🔒 Bouclier | `docs/AUDIT_REPORT.md` + `docs/audit/*` + Issues #71-#84 | Sécurité : 6 critiques (#71-76), 8 majeures (#77-84) |
+| 📦 Logistique | `docs/PLAN_LOGISTIQUE_V2.md` | Plan 3 vagues parcel-centric + hub terrain + optimisation avancée |
 
 ### Fichiers audit détaillés
 
@@ -77,13 +95,13 @@ AVANT de coder           PENDANT                    APRÈS
 ① Lire ROADMAP           ④ Respecter l'archi        ⑥ Déposer un delta
 ② Lire CARTOGRAPHY         existante                  dans docs/_pending/
 ③ Consulter AUDIT        ⑤ COMMIT TOUTES LES       ⑦ CHECKLIST PRÉ-RAPPORT
-   → ALORS coder            10 MIN (wip:)              (delta? carto? roadmap?)
-                         ⑤bis COMMIT ANALYSE          ⑧ Commit final propre
+③bis Vérifier R1/R2         10 MIN (wip:)              (delta? carto? roadmap?)
+   → ALORS coder         ⑤bis COMMIT ANALYSE          ⑧ Commit final propre
                               DÈS QU'ELLE EST FAITE
 ```
 
 ### Nouvelle demande / fonctionnalité ?
-Ajouter d'abord à la ROADMAP (commit immédiat) → analyser CARTOGRAPHY (impacts) → **commit l'analyse** → consulter AUDIT (risques) → implémenter.
+Ajouter d'abord à la ROADMAP (commit immédiat) → analyser CARTOGRAPHY (impacts) → **commit l'analyse** → consulter AUDIT (risques) → **vérifier R1/R2** → implémenter.
 
 ---
 
@@ -125,30 +143,33 @@ Après chaque session, déposer **un fichier delta** (pas de modification direct
 
 ---
 
-## 6. Les 8 règles
+## 6. Les 10 règles
 
 | # | Règle |
 |---|-------|
 | 1 | **🔴 COMMIT TOUTES LES 10 MIN.** Zéro perte de travail. Session = éphémère, Git = permanent. |
-| 2 | **🧠 COMMIT IMMÉDIAT DES ANALYSES.** Analyse terminée = commit dans docs/_work/. Zéro perte de réflexion.** |
-| 3 | **Pas de code sans lecture des 3 piliers** |
+| 2 | **🧠 COMMIT IMMÉDIAT DES ANALYSES.** Analyse terminée = commit dans docs/_work/. Zéro perte de réflexion. |
+| 3 | **Pas de code sans lecture des 4 piliers** (Carte, Plan, Bouclier, Logistique) |
 | 4 | **Roadmap = source de vérité.** Toute demande y passe d'abord. Toujours suivre l'ordre de priorité. |
 | 5 | **Un delta après chaque session.** Ne jamais modifier les docs directement si trigger actif. |
 | 6 | **Cartographie à jour.** Tout commit de code inclut la MAJ carto (approche delta). Fix sécurité → MAJ AUDIT + issues. |
 | 7 | **🚫 JAMAIS "TERMINÉ" SANS DELTA.** Tout travail (PR, code, analyse) → delta IMMÉDIAT dans `docs/_pending/` AVANT de reporter au user. Zéro exception. |
 | 8 | **✅ CHECKLIST PRÉ-RAPPORT.** Avant de dire "terminé" : Delta déposé ? Carto incluse ? Roadmap impactée ? Les 3 doivent être ✅. |
+| 9 | **📦 R1 — Jamais de dépendance à la complétude commande.** `orders.status` piloté exclusivement par `parcelSync.js`. Aucun `UPDATE orders SET status` direct. |
+| 10 | **🏭 R2 — Hub = scanner → carton → sceller.** L'interface Hub n'expose que 3 actions. Zéro décision humaine sur la disponibilité ou le routing. |
 
 > Vérifier toujours la véracité des informations en croisant avec le code réel.
 
 ### Checklist pré-rapport — Gate obligatoire
 
-> **Avant TOUTE déclaration "✅ terminé" au user**, vérifier ces 3 points :
+> **Avant TOUTE déclaration "✅ terminé" au user**, vérifier ces 4 points :
 
 | # | Vérification | Action si manquant |
 |---|-------------|-------------------|
 | 📄 | **Delta déposé dans `docs/_pending/` ?** | Déposer le delta MAINTENANT |
 | 🗺️ | **Cartographie impactée incluse dans le delta ?** | Ajouter la section CARTOGRAPHY au delta |
 | 📋 | **Roadmap mise à jour dans le delta ?** | Ajouter la section ROADMAP au delta |
+| 📦 | **R1/R2 respectées dans le code ?** | Corriger AVANT de commiter |
 
 > 🚫 **Gate bloquante** : Si un seul point est ❌, ne PAS déclarer "terminé". Corriger d'abord.
 
@@ -166,6 +187,7 @@ Si tu es un agent Tasklet, lis `docs/GOVERNANCE_BOOTSTRAP.md` pour te configurer
 |-----------|--------|
 | Cartographie | `docs/CARTOGRAPHY_360.md` |
 | Roadmap | `docs/ROADMAP_KOMERCE.md` |
+| Plan Logistique | `docs/PLAN_LOGISTIQUE_V2.md` |
 | Audit principal | `docs/AUDIT_REPORT.md` |
 | Checklist sécurité | `docs/audit/SECURITY_CHECKLIST.md` |
 | Deltas en attente | `docs/_pending/` |
