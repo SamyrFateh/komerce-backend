@@ -485,6 +485,48 @@ const config = {
   },
 };
 
+// ── Parcels validators ──────────────────────────────────────────────────────────
+const parcels = {
+  list: Joi.object({
+    status: Joi.string().optional(),
+    shipment_id: Joi.string().uuid().optional(),
+    order_id: Joi.string().uuid().optional(),
+    search: Joi.string().max(100).optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+  }),
+  create: Joi.object({
+    order_id: Joi.string().uuid().required(),
+    type: Joi.string().valid('standard', 'fragile', 'volumineux', 'sur_mesure').default('standard'),
+    notes: Joi.string().max(500).optional(),
+  }),
+  updateStatus: Joi.object({
+    status: Joi.string().valid('preparing', 'shipped', 'in_transit', 'available', 'collected').required(),
+    notes: Joi.string().max(500).optional(),
+  }),
+  addItem: Joi.object({
+    order_item_id: Joi.string().uuid().required(),
+    quantity: Joi.number().integer().min(1).required(),
+  }),
+};
+
+// ── Hub validators ──────────────────────────────────────────────────────────────
+const hub = {
+  scan: Joi.object({
+    parcel_ref: Joi.string().required(),
+    notes: Joi.string().max(500).optional(),
+  }),
+  pack: Joi.object({
+    parcel_id: Joi.string().uuid().required(),
+    box_label: Joi.string().max(50).optional(),
+    notes: Joi.string().max(500).optional(),
+  }),
+  seal: Joi.object({
+    parcel_id: Joi.string().uuid().required(),
+    notes: Joi.string().max(500).optional(),
+  }),
+};
+
 // ── Export ───────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -498,4 +540,6 @@ module.exports = {
   modules,
   logistics,
   config,
+  parcels,
+  hub,
 };
