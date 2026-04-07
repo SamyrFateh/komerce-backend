@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.0 (dashboards unifiés)
+ * KOMERCE — Serveur API v10.1 (Vague 1 — parcel-centric)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -175,6 +175,7 @@ const loyaltyRouter    = require('./routes/loyalty');
 const unsoldRouter     = require('./routes/unsold');
 const healthRouter     = require('./routes/health');
 const configRouter     = require('./routes/config');
+const parcelsRouter    = require('./routes/parcels');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -193,6 +194,7 @@ app.use('/api/modules',    modulesRouter);
 // app.use('/api/pilotage',   pilotageRouter);  // ← absorbé dans /api/dashboard/pilotage
 app.use('/api/baskets',    basketsRouter);
 app.use('/api/logistics',  logisticsRouter);
+app.use('/api/parcels',    parcelsRouter);
 app.use('/api/payments',   paymentsRouter);
 app.use('/api/scans',      scansRouter);
 app.use('/api/finance',    financeRouter);
