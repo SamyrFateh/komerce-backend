@@ -1,5 +1,6 @@
-# ZONE_IMPACT.md — Toile d'Araignée Komerce
-> Source : CARTOGRAPHY_360.md v15.15 — 07/04/2026
+# ZONE_IMPACT.md v2.0 — Toile d’Araignée Komerce
+
+> Source : CARTOGRAPHY_360.md v15.15 + Code source vérifié — 08/04/2026
 > **PROTOCOLE : Lire ce fichier AVANT toute modification de code.**
 
 ---
@@ -10,154 +11,307 @@
 
 | ID | Règle | Fichier source |
 |----|-------|----------------|
-| **R1** | `orders.status` ne se modifie **QUE** via `parcelSync.js → computeOrderStatus()` | `utils/parcelSync.js` |
-| **R2** | Hub = 3 actions seulement. Le système décide du statut, l'opérateur exécute | `utils/parcelSync.js` |
-| **R3** | Transitions `order_status` uniquement via `VALID_TRANSITIONS` + `TRANSITION_ROLES` | `routes/orders.js` |
-| **R4** | Jamais `UPDATE orders SET status = ...` direct — même en migration | Toutes les routes |
+| **R1** | `orders.status` se modifie **uniquement** via : ① `parcelSync.js` (scan events) ② `PATCH /:id/status` avec `VALID_TRANSITIONS` (actions manuelles) ③ `POST /:id/cancel` (annulation). **Jamais de `UPDATE orders SET status` ailleurs.** | `utils/parcelSync.js`, `routes/orders.js` |
+| **R2** | Hub = 3 actions seulement. Le système décide du statut, l’opérateur exécute | `utils/parcelSync.js` |
+| **R3** | Transitions `order_status` uniquement via `VALID_TRANSITIONS` + `TRANSITION_ROLES` — voir §2 | `routes/orders.js` |
+| **R4** | Jamais `UPDATE orders SET status = ...` direct — même en migration. Exception : cancel + collected (voir R1) | Toutes les routes |
 | **R5** | Création de commande = `SELECT ... FOR UPDATE` dans une transaction (race condition stock) | `routes/orders.js:270` |
 | **R6** | `parcel_status` suit sa propre machine à états — ne jamais synchroniser manuellement | `utils/parcels.js` |
+| **R7** | Aucune `assisted_request` ne bascule en `order` sans une action humaine **explicite** (`status = validated`). Jamais automatiquement. | `docs/_work/PARTS_MODULE_ANALYSIS.md` |
 
 ---
 
-## 🔄 MACHINES À ÉTATS
+## 🔒 FICHIERS SANCTUARISÉS
+
+> Modification **interdite** sans analyse dans `_work/` + validation propriétaire.
+
+| Fichier | Raison | Blast radius |
+|---------|--------|--------------|
+| `db.js` | Pool PostgreSQL — TOUS les fichiers en dépendent | 🔴 GLOBAL |
+| `server.js` | Montage de toutes les routes | 🔴 GLOBAL |
+| `middleware/auth.js` | Protège 17/19 routes | 🔴 GLOBAL |
+| `utils/parcelSync.js` | Gardien R1 — toutes les commandes actives | 🔴 CRITIQUE |
+| `middleware/validate.js` | Validation d’entrée pour toutes les routes | 🔴 GLOBAL |
+| `validators/index.js` | Schémas de validation — 11/19 routes | 🔴 GLOBAL |
+
+---
+
+## 🔄 MACHINES À ÉTATS — COMPLÈTES
+
+### order_status
 
 ```
-order_status :
-  confirmed → ordered → preparation → shipped → in_transit → available → collected
-                                                                  ↓
-                                     cancelled (admin, tout statut) → refunded
-
-parcel_status :
-  draft → preparation → shipped → in_transit → arrived → available → collected → cancelled
+confirmed → ordered → preparation → shipped → in_transit → available → collected
+                                                                         (terminal)
+    ↓ (admin, depuis tout statut sauf collected/cancelled/refunded)
+cancelled → refunded
+              (terminal)
 ```
+
+**Transitions autorisées :**
+
+| De → | Vers | Rôles autorisés |
+|------|------|-----------------|
+| `confirmed` | `ordered` | admin, agent_relais (cash uniquement) |
+| `confirmed` | `cancelled` | admin |
+| `ordered` | `preparation` | admin, agent_hub |
+| `ordered` | `cancelled` | admin |
+| `preparation` | `shipped` | admin, agent_hub |
+| `preparation` | `cancelled` | admin |
+| `shipped` | `in_transit` | admin |
+| `shipped` | `cancelled` | admin |
+| `in_transit` | `available` | admin, agent_relais |
+| `in_transit` | `cancelled` | admin |
+| `available` | `collected` | admin, agent_relais |
+| `available` | `cancelled` | admin |
+| `cancelled` | `refunded` | admin |
+
+**États terminaux :** `collected`, `refunded`
+
+**Transitions INTERDITES (hard-codées) :**
+- `collected → *` (aucune)
+- `refunded → *` (aucune)
+- Tout saut d’étape (ex: `confirmed → shipped`)
+- `cancelled → confirmed` (pas de réactivation)
+- `agent_relais → preparation` (pas son rôle)
+- `agent_hub → ordered` (pas son rôle)
+- `agent_relais → ordered` si `payment_mode ≠ cash_relais`
+
+### parcel_status
+
+```
+draft → preparation → shipped → in_transit → arrived → available → collected
+                                                                    (terminal)
+    ↓ (depuis tout statut sauf collected/cancelled)
+cancelled (terminal)
+```
+
+**Transitions autorisées :**
+
+| De → | Vers |
+|------|------|
+| `draft` | `preparation`, `cancelled` |
+| `preparation` | `shipped`, `cancelled` |
+| `shipped` | `in_transit`, `cancelled` |
+| `in_transit` | `arrived`, `available`, `cancelled` |
+| `arrived` | `available`, `cancelled` |
+| `available` | `collected`, `cancelled` |
+
+**Règle spéciale :** quand TOUS les colis d’une commande sont `collected` ou `cancelled` → la commande parent passe à `collected` automatiquement (dans `orders.js` PATCH parcels status).
 
 ---
 
 ## 🕸️ MATRICE COMPOSANTS × TABLES
 
-| Composant | Tables **W** (écriture) | Tables **R** (lecture seule) | Appelle | Appelé par | 🎯 Risque |
-|-----------|------------------------|------------------------------|---------|------------|-----------|
-| `routes/orders.js` | orders, order_items, order_status_history, recipients, store_credits, refunds | parcels, parcel_items, scans, exchange_rates, users, loyalty_tiers, relais, products | `loyalty.js` getLoyaltyDiscount / recalculateLoyalty | `payments.js` | 🔴 **84** |
-| `utils/parcelSync.js` | **orders.status**, order_status_history, parcels | parcel_items, scans | — | `scans.js`, `logistics.js`⚠️R1 | 🔴 **CRITIQUE** |
-| `routes/admin.js` | users, partners, orders | orders, order_items, relais, customs_history, loyalty_tiers, products | — | — | 🔴 **53** |
-| `routes/purchasing.js` | purchase_orders, orders | suppliers, product_suppliers, order_items | — | `payments.js` triggerPurchasing, `scans.js` triggerScan3 | 🔴 **53** |
-| `routes/scans.js` | scans, order_status_history | orders, parcels, parcel_items | `parcelSync.js` safeSyncScanToParcels, `purchasing.js` triggerScan3, `loyalty.js` recalculateLoyalty | — | 🔴 **52** |
+**Score de risque** = nombre de connexions entrantes × poids W (écriture=3, lecture=1) + dépendances transitives. Source : `scripts/impact-config.json`.
+
+| Composant | Tables **W** (écriture) | Tables **R** (lecture) | Appelle | Appelé par | 🎯 Risque |
+|-----------|------------------------|------------------------|---------|------------|-----------|
+| `routes/orders.js` | orders, order_items, order_status_history, recipients, store_credits, refunds, parcels, parcel_items | parcels, scans, exchange_rates, users, loyalty_tiers, relais, products, business_rules | `loyalty.js`, `parcelSync.js` (via safeSyncScanToParcels indirect), `sms.js`, `rules.js`, `rates.js`, `email.js`, `reference.js` | `payments.js` | 🔴 **84** |
+| `utils/parcelSync.js` | **orders.status**, order_status_history, parcels | parcel_items, scans | — | `scans.js`, `logistics.js` | 🔴 **CRITIQUE** |
+| `routes/admin.js` | users, partners, products (reset), orders (DELETE) | orders, order_items, relais, customs_history, loyalty_tiers, products | — | — | 🔴 **53** |
+| `routes/purchasing.js` | purchase_orders, orders | suppliers, product_suppliers, order_items | — | `payments.js`, `scans.js` | 🔴 **53** |
+| `routes/scans.js` | scans, order_status_history | orders, parcels, parcel_items | `parcelSync.js`, `purchasing.js`, `loyalty.js` | — | 🔴 **52** |
 | `routes/dashboard.js` | — *(lecture seule)* | orders, order_items, products, users, scans, exchange_rates, parcels, parcel_items, shipments, relais | — | — | 🟠 **42** |
-| `routes/payments.js` | orders, order_status_history | — | `purchasing.js` triggerPurchasing | — | 🟠 **35** |
-| `routes/logistics.js` | shipments, orders⚠️**R1**, parcels | — | `utils/sms.js` | — | 🟠 **30** |
-| `routes/products.js` | products | — | — | `routes/orders.js`, `routes/baskets.js`, `routes/modules.js` | 🟠 **28** |
+| `routes/payments.js` | orders, order_status_history | — | `purchasing.js` | — | 🟠 **35** |
+| `routes/logistics.js` | shipments, parcels (via parcelSync) | orders, parcels, users, relais | `parcelSync.js` ✅, `sms.js` | — | 🟠 **30** |
+| `routes/products.js` | products | — | — | `orders.js`, `baskets.js`, `modules.js` | 🟠 **28** |
 | `routes/auth.js` | users | — | — | — | 🟠 **25** |
-| `routes/config.js` | business_rules | — | — | `utils/rules.js`, `utils/pricing.js` | 🟡 **20** |
-| `routes/loyalty.js` | users (loyalty_tier_id) | loyalty_tiers | — | `routes/orders.js`, `routes/scans.js` | 🟡 **20** |
+| `utils/pricing.js` | — *(lecture seule)* | business_rules (via rules.js) | `rules.js` | `orders.js`, `config.js` | 🟡 **20** |
+| `routes/config.js` | business_rules | — | — | `rules.js`, `pricing.js` | 🟡 **20** |
+| `routes/loyalty.js` | users (loyalty_tier_id) | loyalty_tiers | — | `orders.js`, `scans.js` | 🟡 **20** |
+| `validators/index.js` | — *(validation seule)* | — | — | 11/19 routes via `middleware/validate.js` | 🟡 **TRANSVERSAL** |
 | `routes/finance.js` | — *(lecture + PDF)* | orders, order_items, exchange_rates | — | — | 🟡 **15** |
-| `routes/pricing.js` | exchange_rates | business_rules | — | `routes/orders.js` | 🟡 **15** |
+| `routes/pricing.js` | exchange_rates | business_rules | — | `orders.js` | 🟡 **15** |
 | `routes/baskets.js` | baskets, basket_items | products | — | — | 🟢 **10** |
 | `routes/modules.js` | fabrics, garment_models | products | — | — | 🟢 **10** |
-| `routes/unsold.js` | unsold_items | — | `utils/sms.js` | — | 🟢 **10** |
+| `routes/unsold.js` | unsold_items | — | `sms.js` | — | 🟢 **10** |
 | `routes/relais.js` | — *(lecture seule)* | relais | — | — | 🟢 **5** |
 | `routes/health.js` | — | — | — | — | 🟢 **1** |
+| `middleware/auth.js` | — | users | — | 17/19 routes | 🔴 **GLOBAL** |
+| `middleware/validate.js` | — | — | `validators/index.js` | 11/19 routes | 🔴 **GLOBAL** |
+| `middleware/rate-limit.js` | — | — | — | `server.js` | 🟠 **GLOBAL** |
+| `utils/rules.js` | — | business_rules | — | `pricing.js`, `config.js`, `orders.js` | 🟠 **TRANSVERSAL** |
+| `utils/sms.js` | sms_log | — | Africa’s Talking API | `orders.js`, `scans.js`, `logistics.js`, `unsold.js`, `purchasing.js` | 🟠 **TRANSVERSAL** |
+| `utils/email.js` | — | — | Resend / SMTP | `orders.js` | 🟡 **TRANSVERSAL** |
+| `utils/rates.js` | — | exchange_rates | — | `orders.js`, `pricing.js` | 🟡 **TRANSVERSAL** |
+| `utils/reference.js` | — | orders, parcels (COUNT) | — | `orders.js`, `logistics.js` | 🟢 **TRANSVERSAL** |
+| `utils/refunds.js` | refunds, store_credits | orders | — | `orders.js` | 🟠 **20** |
+| `utils/store-credits.js` | store_credits | — | — | `orders.js` | 🟡 **15** |
 | `server.js` | — | — | TOUTES les routes montées | — | 🔴 **GLOBAL** |
 | `db.js` | — | — | Pool PostgreSQL | TOUS les fichiers | 🔴 **GLOBAL** |
-| `middleware/auth.js` | — | users | — | 17/19 routes | 🔴 **GLOBAL** |
-| `utils/rules.js` | — | business_rules | — | `pricing.js`, `config.js`, `orders.js` | 🟠 **TRANSVERSAL** |
-| `utils/sms.js` | sms_log | — | Africa's Talking | `orders.js`, `scans.js`, `logistics.js`, `unsold.js`, `purchasing.js` | 🟠 **TRANSVERSAL** |
+
+---
+
+## 🌐 DÉPENDANCES EXTERNES
+
+| Service | Utilisé par | Impact si down/changé |
+|---------|-------------|----------------------|
+| **Supabase PostgreSQL** | `db.js` → tout | 🔴 Tout KO |
+| **Stripe** | `payments.js`, `orders.js` (refund) | 🔴 Paiements + annulations KO |
+| **Africa’s Talking** | `utils/sms.js` → 5 modules | 🟠 SMS KO — commandes continuent mais notifications silencieuses |
+| **Resend / SMTP** | `utils/email.js` → `orders.js` | 🟡 Emails de confirmation KO |
 
 ---
 
 ## 💥 BLAST RADIUS PAR FICHIER
 
-> "Si je touche X → quoi d'autre explose ?"
+> "Si je touche X → quoi d’autre explose ?"
 
 | Fichier modifié | Impact direct | Impact indirect |
 |-----------------|---------------|-----------------|
 | `utils/parcelSync.js` | orders.status (toutes commandes actives) | Dashboard KPIs, SMS notifications, SLA calcul |
-| `routes/orders.js` | Création/annulation commandes, crédits boutique | loyalty, payments webhook, parcels |
-| `routes/scans.js` | Statut parcels + orders (via parcelSync) | loyalty recalcul, purchasing trigger, dashboard |
-| `server.js` | Rate limiters, CORS, routes montées | TOUT le backend |
-| `db.js` | Pool connexions PostgreSQL | TOUS les modules |
-| `middleware/auth.js` | Authentification + rôles | 17/19 routes |
-| `routes/products.js` | Catalogue + stock | orders (création), baskets, modules |
-| `routes/payments.js` | Déclenchement du flux achat post-paiement | purchasing → scans → parcelSync → orders.status |
-| `routes/logistics.js` | ⚠️ Modifie orders.status directement (violation R1 connue) | SMS batch, disponibilité commandes |
-| `utils/rules.js` | Règles métier dynamiques | pricing, config, orders (marges, fret) |
-| `utils/sms.js` | Notifications clients | orders, scans, logistics, purchasing, unsold |
-| `validators/index.js` | Tous les schémas de validation | 11/19 routes |
+| `routes/orders.js` | Création/annulation commandes, crédits boutique, colis | loyalty, payments webhook, parcels, refunds |
+| `routes/scans.js` | Statut parcels, historique | parcelSync → orders.status → dashboard |
+| `routes/payments.js` | Déclenchement post-paiement | purchasing → preparation → tout le pipeline |
+| `routes/purchasing.js` | Bons de commande | scans attend les produits |
+| `routes/logistics.js` | Shipments + arrivée conteneur | parcelSync → orders.status, SMS clients |
+| `validators/index.js` | Validation d’entrée 11/19 routes | Si cassé → données invalides partout |
+| `utils/pricing.js` | Calcul prix final | orders.js (total_kmf), dashboard (marges) |
+| `utils/rules.js` | Paramètres métier | pricing, orders, scans — tout ce qui lit business_rules |
+| `utils/sms.js` | Notifications client | orders, scans, logistics, unsold, purchasing |
+| `middleware/auth.js` | Authentification | 17/19 routes inaccessibles si cassé |
+| `middleware/validate.js` | Validation requêtes | Données invalides si cassé |
+| `db.js` | Connexion PostgreSQL | TOUT |
+| `server.js` | Montage routes | TOUT |
 
 ---
 
-## 🔗 CHAÎNE CRITIQUE (couplage linéaire — panne = blocage total)
+## 🔗 CHAÎNES CRITIQUES
 
+### Chaîne 1 — Happy Path (achat → collecte)
 ```
-Paiement confirmé
-    │
-    ▼
-payments.js ──triggerPurchasing()──▶ purchasing.js ──triggerScan3()──▶ scans.js
-                                                                           │
-                                              safeSyncScanToParcels() ◄───┤
-                                                       │                  │
-                                                       ▼                  └──▶ loyalty.js
-                                              parcelSync.js                    recalculateLoyalty()
-                                                       │
-                                                       ▼
-                                              orders.status (SOURCE DE VÉRITÉ)
-                                                       │
-                                                       ▼
-                                              dashboard.js (lecture KPIs)
+POST /orders (confirmed)
+  → payments.js webhook (ordered)
+    → purchasing.js (bon de commande)
+      → scans.js SCAN Hub (preparation)
+        → logistics.js shipment (shipped → in_transit)
+          → scans.js SCAN Relais (available) → SMS client
+            → orders.js SCAN QR (collected) → loyalty recalc
 ```
+**Si un maillon casse :** la commande reste bloquée au statut précédent. Dashboard `/problems` la détecte.
+
+### Chaîne 2 — Annulation + Remboursement
+```
+POST /orders/:id/cancel
+  → Vérifie fenêtre (CANCEL_FREE_WINDOW_HOURS)
+    → Stripe refund OU store_credit
+      → INSERT refunds
+        → UPDATE orders SET status=’cancelled’
+          → Restaure stock (products)
+            → SMS client
+```
+**Si Stripe fail :** ROLLBACK complet, commande reste active. Pas de demi-état.
+
+### Chaîne 3 — Expédition partielle
+```
+POST /orders/:id/partial-ship
+  → Crée parcel ‘partial’ (preparation)
+  → Crée parcel ‘backorder’ (draft)
+  → Si cancel backorder → refund partiel + stock restauré
+  → Quand tous parcels collected → parent = collected
+```
+**Si crash mid-transaction :** ROLLBACK. Aucun colis créé.
+
+### Chaîne 4 — Cash Relais
+```
+POST /orders (confirmed, cash_ref_code généré)
+  → Client va au relais, dicte code 6 chiffres
+    → Agent relais PATCH /:id/status → ordered + payment_status=’paid’
+      → Suite = Chaîne 1 depuis purchasing
+```
+**Si agent valide le mauvais code :** pas de guard côté backend (TODO: valider cash_ref_code dans PATCH).
 
 ---
 
-## ✅ CHECKLIST PRÉ-CODE OBLIGATOIRE
+## ✅ CHECKLIST PRÉ-CODE — OBLIGATOIRE
 
-> Compléter AVANT d'écrire la première ligne. Committer les réponses dans `docs/_work/` si 🔴/🟠.
+> Un agent DOIT répondre à ces 8 questions **avant** d’écrire une ligne de code.
+> Les réponses doivent être consignées dans un fichier `docs/_work/[NOM]_ANALYSIS.md`.
 
-```
-[ ] 1. Fichier(s) concerné(s) :        ___________________________
-[ ] 2. Score de risque (matrice) :     🔴 / 🟠 / 🟡 / 🟢
-[ ] 3. Tables W (écriture) :           ___________________________
-       → Un invariant R1/R2/R3/R4/R5/R6 est-il concerné ? OUI / NON
-[ ] 4. Modules qui appellent ce fichier (blast radius) : ___________
-[ ] 5. Modules appelés par ce fichier : ___________________________
-[ ] 6. Analyse commitée dans docs/_work/ avant code ? OUI / NON (obligatoire si 🔴)
-```
+| # | Question | Réponse exigée |
+|---|----------|----------------|
+| 1 | Quelles zones je touche ? | Fichiers + scores de risque (voir matrice) |
+| 2 | Quelles tables j’écris ? | Liste INSERT/UPDATE/DELETE par table |
+| 3 | Quel invariant pourrait casser ? | R1–R7 concernés — si aucun, justifier |
+| 4 | Quel est le blast radius ? | Modules impactés en cascade (voir §5) |
+| 5 | Est-ce que je touche un fichier sanctuarisé ? | Si oui → validation propriétaire obligatoire |
+| 6 | Mon analyse est dans `_work/` ? | Chemin du fichier |
+| 7 | Le propriétaire a validé ? | **Oui / Non** |
+| 8 | Quels tests dois-je vérifier/écrire ? | Liste des cas de test |
 
-**Règle de commit par score :**
-- 🔴 → Analyse commitée dans `docs/_work/` AVANT tout code. Commit `wip:` toutes les 10 min.
-- 🟠 → Commit `wip:` toutes les 10 min.
-- 🟡 → Commit avant de passer à autre chose.
-- 🟢 → Commit à la fin de la tâche.
+> ⚠️ **Si la réponse 7 est Non → STOP. Ne pas coder.**
 
 ---
 
 ## 🔙 PROTOCOLE DE ROLLBACK
 
-```sql
--- 1. Identifier les commandes modifiées dans la dernière heure
-SELECT id, status, updated_at FROM orders WHERE updated_at > NOW() - INTERVAL '1h' ORDER BY updated_at DESC;
-
--- 2. Identifier les parcels incohérents
-SELECT p.id, p.status, o.status as order_status
-FROM parcels p JOIN orders o ON p.order_id = o.id
-WHERE p.updated_at > NOW() - INTERVAL '1h';
-```
+### Niveau 1 — Code (git)
 
 ```bash
-# 3. Sauvegarder le travail en cours
-git stash
-
-# 4. Voir les derniers commits
-git log --oneline -10
-
-# 5. Annuler le dernier commit (conserve les fichiers)
+# Dernier commit
 git revert HEAD --no-edit
 
-# 6. Documenter dans docs/_pending/
-echo "ROLLBACK $(date): [description]" >> docs/_pending/rollback_log.md
-git add docs/_pending/ && git commit -m "wip: rollback documenté"
+# Plusieurs commits (remplacer N)
+git revert HEAD~N..HEAD --no-edit
+
+# Revenir à un commit spécifique (destructif)
+git reset --hard <sha> && git push --force
+```
+
+### Niveau 2 — Données (par zone)
+
+```sql
+-- Orders : remettre un statut
+-- ⚠️ UNIQUEMENT en urgence — contourne R1
+UPDATE orders SET status = 'confirmed', updated_at = NOW()
+WHERE id = '<uuid>';
+INSERT INTO order_status_history (order_id, status, note, changed_by)
+VALUES ('<uuid>', 'confirmed', 'ROLLBACK MANUEL — [raison]', '<admin_uuid>');
+
+-- Parcels : annuler un colis
+UPDATE parcels SET status = 'cancelled', cancelled_at = NOW(),
+  cancel_reason = 'ROLLBACK — [raison]'
+WHERE id = '<uuid>';
+
+-- Stock : restaurer après erreur
+UPDATE products SET stock = stock + <qty> WHERE id = '<uuid>';
+
+-- Store credits : supprimer un crédit erroné
+DELETE FROM store_credits WHERE id = '<uuid>' AND remaining_kmf = amount_kmf;
+
+-- Users : restaurer un soft-delete
+UPDATE users SET email = '<original_email>', full_name = '<name>',
+  phone = '<phone>', updated_at = NOW()
+WHERE id = '<uuid>';
+```
+
+### Niveau 3 — Supabase
+
+```
+1. Dashboard Supabase → Backups → Point-in-time recovery
+2. Ou : pg_dump avant toute migration, pg_restore si échec
 ```
 
 ---
 
-> 🕸️ *ZONE_IMPACT.md v1.0 — Distillé depuis CARTOGRAPHY_360.md v15.15*
-> *Mise à jour : appliquer le même DELTA que CARTOGRAPHY_360 à chaque changement architectural.*
-> *Criticité calculée depuis sections 7, 8, 20 de la cartographie + violations V-01/V-04.*
+## 📡 NOTES SUPABASE
+
+- **RLS** : vérifier les policies Supabase avant d’ajouter une table. Les policies peuvent bloquer silencieusement les INSERT/UPDATE depuis le backend.
+- **Triggers SQL** : le trigger `compute_real_margin` recalcule `margin_real_pct` et `margin_alert` quand `cost_real_kmf` change dans `orders`.
+- **Enums DB** : `user_role` = ('client', 'admin', 'agent_relais', 'agent_hub'). `parcel_status` est un enum PostgreSQL — toute modification nécessite `ALTER TYPE`.
+- **Connexion** : le backend utilise un pool `pg` standard (pas le client Supabase JS). Les policies RLS ne s’appliquent que si la connexion utilise le rôle `anon` ou `authenticated`.
+
+---
+
+## 🔄 PROTOCOLE DE MISE À JOUR
+
+> Ce document DOIT rester synchronisé avec le code.
+
+| Quand | Action |
+|-------|--------|
+| PR qui modifie un fichier de la matrice | Mettre à jour ZONE_IMPACT.md **dans le même commit** |
+| Nouvel invariant découvert | Ajouter immédiatement (R8, R9...) |
+| Nouveau module (ex: pièces détachées) | Ajouter dans la matrice + blast radius + checklist |
+| Score de risque obsolète | Re-générer via `node scripts/impact-check.js` |
+| Incohérence code ↔ document | Le code fait foi — corriger le document |
