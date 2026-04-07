@@ -1,4 +1,4 @@
-# Gouvernance Komerce v2.1
+# Gouvernance Komerce v2.2
 
 > **Fichier unique de gouvernance.** Tout agent (IA ou humain) DOIT lire ce fichier avant toute action.
 
@@ -17,6 +17,22 @@
 - Ne jamais accumuler du travail — **commit petit, commit souvent**
 - En début de session : vérifier que le dernier commit reflète l'état réel
 - **Zéro fichier local.** Ton dossier de travail c'est Git. Rien ne vit en dehors du repo.
+
+---
+
+## ⚠️ RÈGLE ABSOLUE — Commit immédiat des analyses
+
+> **Toute analyse, étude d'impact, ou travail préparatoire terminé DOIT être commité immédiatement** dans `docs/_work/` ou `docs/_logs/` AVANT de passer au code.
+
+```
+🧠 Analyse terminée → Commit IMMÉDIAT. Pas d'exception.
+```
+
+- **Pourquoi ?** Si la session coupe entre l'analyse et le code, l'analyse est perdue → on recommence tout à zéro.
+- **Où ?** `docs/_work/YYYY-MM-DD_nom-analyse.md` pour les analyses en cours, `docs/_logs/` pour les résultats finaux.
+- **Format commit** : `docs(analysis): [description courte]`
+- **Contenu minimum** : contexte, fichiers impactés, décisions prises, plan d'action.
+- L'analyse commitée sert de **brief** pour la session suivante si coupure → zéro perte de réflexion.
 
 ---
 
@@ -62,10 +78,12 @@ AVANT de coder           PENDANT                    APRÈS
 ② Lire CARTOGRAPHY         existante                  dans docs/_pending/
 ③ Consulter AUDIT        ⑤ COMMIT TOUTES LES       ⑦ Commit final propre
    → ALORS coder            10 MIN (wip:)
+                         ⑤bis COMMIT ANALYSE
+                              DÈS QU'ELLE EST FAITE
 ```
 
 ### Nouvelle demande / fonctionnalité ?
-Ajouter d'abord à la ROADMAP (commit immédiat) → analyser CARTOGRAPHY (impacts) → consulter AUDIT (risques) → implémenter.
+Ajouter d'abord à la ROADMAP (commit immédiat) → analyser CARTOGRAPHY (impacts) → **commit l'analyse** → consulter AUDIT (risques) → implémenter.
 
 ---
 
@@ -107,15 +125,16 @@ Après chaque session, déposer **un fichier delta** (pas de modification direct
 
 ---
 
-## 6. Les 5 règles
+## 6. Les 6 règles
 
 | # | Règle |
 |---|-------|
 | 1 | **🔴 COMMIT TOUTES LES 10 MIN.** Zéro perte de travail. Session = éphémère, Git = permanent. |
-| 2 | **Pas de code sans lecture des 3 piliers** |
-| 3 | **Roadmap = source de vérité.** Toute demande y passe d'abord. Toujours suivre l'ordre de priorité. |
-| 4 | **Un delta après chaque session.** Ne jamais modifier les docs directement si trigger actif. |
-| 5 | **Cartographie à jour.** Tout commit de code inclut la MAJ carto (approche delta). Fix sécurité → MAJ AUDIT + issues. |
+| 2 | **🧠 COMMIT IMMÉDIAT DES ANALYSES.** Analyse terminée = commit dans docs/_work/. Zéro perte de réflexion.** |
+| 3 | **Pas de code sans lecture des 3 piliers** |
+| 4 | **Roadmap = source de vérité.** Toute demande y passe d'abord. Toujours suivre l'ordre de priorité. |
+| 5 | **Un delta après chaque session.** Ne jamais modifier les docs directement si trigger actif. |
+| 6 | **Cartographie à jour.** Tout commit de code inclut la MAJ carto (approche delta). Fix sécurité → MAJ AUDIT + issues. |
 
 > Vérifier toujours la véracité des informations en croisant avec le code réel.
 
