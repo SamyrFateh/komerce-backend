@@ -22,7 +22,7 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 
 ---
 
-## CHANTIER EN COURS : Refonte Dashboards
+## CHANTIER : Refonte Dashboards
 
 ### 3 Verrous posés
 | # | Verrou | Fichier |
@@ -35,22 +35,39 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 - `.tasklet/REFONTE_DASHBOARDS.md` — spec complète de la refonte
 - `.tasklet/RESTRUCTURATION.md` — principes de restructuration
 - `.tasklet/DESIGN_SYSTEM.md` — design system documenté
+- `.tasklet/codegen-instructions.md` — instructions backend
 
 ### Fondation (pushée sur main)
 | Fichier | Statut | Description |
 |---------|--------|-------------|
-| `public/komerce-ui.css` | ✅ Pushé | CSS Design System partagé (IBM Plex, amber/gold, cartes, badges, KPIs, kanban, etc.) |
+| `public/komerce-ui.css` | ✅ Pushé | CSS Design System partagé (DM Sans, amber/gold, cartes, badges, KPIs, kanban, etc.) |
 | `public/komerce-api.js` | ✅ Pushé | Couche API unifiée JS (K.request, K.auth, K.hub, K.parcels, K.orders, K.ui) |
+| `public/chart.umd.min.js` | ✅ Pushé | Chart.js UMD bundle |
 
-### Écrans à construire
-| # | Écran | Fichier | Statut | Notes |
-|---|-------|---------|--------|-------|
-| 1 | Hub Opérateur | `public/Komerce_Hub.html` | ✅ Pushé | Autonome, mobile-first, ⛔V1 respecté |
-| 2 | Pipeline Kanban | `public/Komerce_Pipeline.html` | 🔄 **EN COURS** | Kanban parcel-centric, ⛔V2 |
-| 3 | Relais | `public/Komerce_Relais.html` | ⬜ À faire | Réception → dispo → remise |
-| 4 | Dashboard Pilotage | `public/Komerce_Dashboard.html` | ⬜ À faire | KPIs + alertes uniquement |
-| 5 | Admin | `public/Komerce_Admin.html` | ⬜ À faire | Commandes + users + config |
-| 6 | Portal | `public/portal.html` | ⬜ À faire | Tuiles par rôle |
+### Écrans — État au 07/04/2026
+| # | Écran | Fichier | Taille | Statut | Notes |
+|---|-------|---------|--------|--------|-------|
+| 1 | Hub Opérateur | `Komerce_Hub.html` | 29 KB | ✅ **Terminé** | Mobile-first, scan→pack→seal, ⛔V1 respecté |
+| 2 | Dashboard Pilotage | `Komerce_Dashboard.html` | 86 KB | ✅ **Terminé** | 9 onglets (Vue d'ensemble, Pipeline, Hub, Relais, Finance, Clients, Catalogue, Retards, Tendances), Chart.js, auto-refresh 30s |
+| 3 | Admin | `Komerce_Admin.html` | 121 KB | ✅ **Terminé** | Sidebar complète, login, commandes, logistique, litiges, finance, pricing, catalogue, relais, paramètres |
+| 4 | Portal | `portal.html` | 16 KB | ✅ **Terminé** | Login, tuiles par rôle, liens vers tous les dashboards |
+| 5 | Pipeline | `Komerce_Pipeline.html` | 263 B | 🔀 Redirect | → `Dashboard.html#pipeline` (onglet intégré dans le Dashboard) |
+| 6 | Relais | `Komerce_Relais.html` | 257 B | 🔀 Redirect | → `Dashboard.html#relais` (onglet intégré dans le Dashboard) |
+| 7 | Pilotage v2 | `Komerce_Pilotage_v2.html` | 255 B | 🔀 Redirect | → `Dashboard.html` (alias) |
+
+### Autres fichiers dans public/
+| Fichier | Taille | Note |
+|---------|--------|------|
+| `Komerce_Backend.html` | 512 KB | Ancien monolithe (référence, ne plus modifier) |
+| `Komerce_Backoffice_Admin_v2.html` | 68 KB | Ancienne version admin |
+| `Komerce_Admin_Users.html` | 32 KB | Gestion users (ancienne) |
+| `Komerce_Config.html` | 34 KB | Configuration |
+| `Komerce_Mobile.html` | 54 KB | Version mobile |
+| `Komerce_Web.html` | 81 KB | Version web |
+| `Komerce_Simulateur.html` | 106 KB | Simulateur |
+| `Komerce_Tests.html` | 147 KB | Tests |
+| `Komerce_QR_Print.html` | 9 KB | Impression QR |
+| `index.html` | 144 KB | Page d'accueil |
 
 ### API Hub (endpoints réels)
 ```
@@ -71,15 +88,15 @@ DELETE /api/parcels/:id       → supprimer
 ```
 
 ### Design System — Résumé rapide
-- **Fonts** : IBM Plex Sans (text), IBM Plex Mono (data)
-- **Accent** : amber/gold `#d97706`
-- **Fond** : `#faf6f0` (crème), cartes `#fff`
-- **CSS classes** : `.card`, `.btn`, `.btn-outline`, `.badge`, `.badge-green/amber/red/blue/purple`, `.inp`, `.kpi-card`, `.kpi-val`, `.g2/.g3/.g4`, `.toast`, `.kanban-board`, `.kanban-col`, `.kanban-card`
+- **Fonts** : DM Sans (text), JetBrains Mono (data)
+- **Accent** : amber/gold `#F5A623` / `#d97706`
+- **Fond** : `#f8f9fa`, cartes `#ffffff`
+- **CSS classes** : `.card`, `.btn`, `.btn-primary`, `.badge`, `.badge-success/warning/error/info`, `.table`, `.stats`, `.sc`, `.pipe`, `.ps`, `.g2/.g3`
 - **Mobile-first**, breakpoint 768px
 
 ### Pour reprendre
 1. Lire ce fichier
-2. Lire `.tasklet/REFONTE_DASHBOARDS.md` pour la spec complète
-3. Continuer à l'écran marqué 🔄 ou ⬜
+2. Lire `.tasklet/REFONTE_DASHBOARDS.md` si besoin de specs détaillées
+3. Tous les écrans principaux sont ✅ terminés
 4. Respecter les 3 verrous
 5. Utiliser le design system partagé (komerce-ui.css + komerce-api.js)
