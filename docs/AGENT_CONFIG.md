@@ -84,17 +84,38 @@
 
 ---
 
+## 🤖 Espace de travail agent — `docs/_agent/`
+
+> **C'est l'espace persistant de l'agent Tasklet sur le repo.**
+> Il remplace tout stockage local (`/agent/home/` ne doit contenir AUCUN état projet).
+
+| Fichier / Dossier | Rôle |
+|-------------------|------|
+| `docs/_agent/state.md` | **État courant** — contexte actif, tâches en cours, variables |
+| `docs/_agent/session_history/` | **Historique** — 1 fichier par session (append-only) |
+| `docs/_agent/workspace/` | **Brouillons** — analyses, fichiers temporaires (nettoyés en fin de session) |
+
+### Cycle de vie
+
+1. **Bootstrap** : lire `docs/_agent/state.md` + `docs/REPRISE_SESSION.md`
+2. **Pendant la session** : utiliser `docs/_agent/workspace/` pour les brouillons
+3. **Fin de session** : mettre à jour `state.md`, archiver dans `session_history/`
+4. **Trigger auto-commit** : synchronise `state.md` ↔ `REPRISE_SESSION.md` ↔ `ROADMAP`
+
+---
+
 ## 🚀 Procédure de Bootstrap (si agent réinitialisé)
 
 ### Étape 1 — Connexion GitHub
 1. Créer/retrouver connexion `static:github`
 2. Activer les 7 outils requis
 
-### Étape 2 — Lire la config
+### Étape 2 — Lire la config + restaurer l'état
 1. Lire `docs/AGENT_CONFIG.md` (ce fichier)
-2. Lire `docs/AGENT_SUBAGENTS.md` (instructions sous-agents)
-3. Lire `README.md` et `.cursorrules`
-4. Lire `docs/GOVERNANCE.md` et `docs/ROADMAP_KOMERCE.md`
+2. Lire `docs/REPRISE_SESSION.md` (point de reprise)
+3. Lire `docs/_agent/state.md` (état agent)
+4. Lire `docs/AGENT_SUBAGENTS.md` (instructions sous-agents)
+5. Lire `docs/GOVERNANCE.md` et `docs/ROADMAP_KOMERCE.md`
 
 ### Étape 3 — Créer le sous-agent (lanceur minimal)
 1. Créer `/agent/subagents/governance-autocommit.md`
@@ -134,10 +155,16 @@
 | Code + docs | ✅ GitHub repo | ✅ Oui |
 | Config agent | ✅ `docs/AGENT_CONFIG.md` | ✅ Oui |
 | Instructions sous-agents | ✅ `docs/AGENT_SUBAGENTS.md` | ✅ Oui |
+| **État agent** | ✅ `docs/_agent/state.md` | ✅ **Oui** |
+| **Historique sessions** | ✅ `docs/_agent/session_history/` | ✅ **Oui** |
+| **Brouillons agent** | ✅ `docs/_agent/workspace/` | ✅ **Oui** |
+| Point de reprise | ✅ `docs/REPRISE_SESSION.md` | ✅ Oui |
+| Roadmap | ✅ `docs/ROADMAP_KOMERCE.md` | ✅ Oui |
 | Lanceur local sous-agent | ⚠️ `/agent/subagents/` | ❌ Mais recréé au bootstrap |
 | Trigger config | ⚠️ Plateforme Tasklet | ❌ Mais recréé au bootstrap |
 
 > **Principe** : Tout ce qui est critique vit sur le repo. Les éléments locaux sont recréables automatiquement à partir du repo.
+> **`/agent/home/` ne doit contenir AUCUN état projet.**
 
 ---
 
