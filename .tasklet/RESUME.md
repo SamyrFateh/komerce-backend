@@ -1,98 +1,85 @@
-# Komerce Backend — Tasklet Resume
+# KOMERCE BACKEND — RESUME POINT
 
-## Projet
-Komerce — Backend e-commerce **parcel-centric** (Node.js / Express / PostgreSQL).
-Repo: `SamyrFateh/komerce-backend` branche `main`.
+## Contexte rapide
+Backend Node/Express + PostgreSQL (Railway).
+Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes.
 
-## Architecture clé
-- **R1**: orders.status = agrégation via `parcelSync.js`, jamais écrit directement
-- **R2**: Hub opérateur : scan → pack → seal (3 actions)
-- Parcel = source de vérité, pas les commandes
+## Vagues précédentes (toutes mergées)
+| Vague | Statut |
+|-------|--------|
+| V1 — Socle Parcel-Centric | ✅ Mergé |
+| V2 — Hub Terrain | ✅ Mergé (PR #119) |
+| V3 — Optimisation | ✅ Mergé (PR #119) |
+| Hotfix — SyntaxError L619 | ✅ Mergé (PR #120) |
+| Safety — Hub Safety Fixes | ✅ PR #121 — DB appliquée (migrations 010→017) |
 
-## ⛔ VERROUS ABSOLUS (7 avril 2026)
+## Migrations appliquées
+010 → 017 toutes appliquées sur Railway.
 
-### 🔴 VERROU 1 — HUB = IDIOT-PROOF
+## Règles absolues
+- **R1** : statut commande = agrégé via `parcelSync.js`, jamais écrit directement
+- **R2** : hub = scan → pack → seal avec transactions `FOR UPDATE`
 
-L'opérateur hub ne doit **JAMAIS** voir :
-- ❌ La commande complète
-- ❌ Le nombre total d'articles attendus
-- ❌ Une notion de "reste à scanner"
-- ❌ Une progression "3/5 articles"
-- ❌ Le statut de la commande
+---
 
-**Pourquoi :** Ça casse le modèle asynchrone/partiel. L'opérateur essaie de "compléter" → erreur terrain.
+## CHANTIER EN COURS : Refonte Dashboards
 
-**L'opérateur voit uniquement :** article scanné ✓, liste articles déjà scannés, ref colis draft, bouton SCELLER, stats session.
+### 3 Verrous posés
+| # | Verrou | Fichier |
+|---|--------|---------|
+| ⛔1 | Hub = Idiot-proof (zéro contexte commande pour opérateur) | `.tasklet/REFONTE_DASHBOARDS.md` |
+| ⛔2 | Pipeline = Zéro logique commande (100% parcels.status) | `.tasklet/REFONTE_DASHBOARDS.md` |
+| ⛔3 | Restructurer l'existant, pas recréer de zéro | `.tasklet/RESTRUCTURATION.md` |
 
-### 🔴 VERROU 2 — PIPELINE = ZÉRO LOGIQUE COMMANDE
+### Fichiers de spec
+- `.tasklet/REFONTE_DASHBOARDS.md` — spec complète de la refonte
+- `.tasklet/RESTRUCTURATION.md` — principes de restructuration
+- `.tasklet/DESIGN_SYSTEM.md` — design system documenté
 
-Une carte pipeline ne doit **JAMAIS** dépendre du statut de la commande.
-- ❌ "Commande en attente" / "Commande incomplète"
-- ❌ Toute colonne basée sur `orders.status`
-- ❌ Couleur/badge/tri basé sur le statut commande
+### Fondation (pushée sur main)
+| Fichier | Statut | Description |
+|---------|--------|-------------|
+| `public/komerce-ui.css` | ✅ Pushé | CSS Design System partagé (IBM Plex, amber/gold, cartes, badges, KPIs, kanban, etc.) |
+| `public/komerce-api.js` | ✅ Pushé | Couche API unifiée JS (K.request, K.auth, K.hub, K.parcels, K.orders, K.ui) |
 
-**Pipeline = 100% driven par `parcels.status` :**
-`draft → preparation → shipped → in_transit → arrived → available → collected → cancelled`
+### Écrans à construire
+| # | Écran | Fichier | Statut | Notes |
+|---|-------|---------|--------|-------|
+| 1 | Hub Opérateur | `public/Komerce_Hub.html` | ✅ Pushé | Autonome, mobile-first, ⛔V1 respecté |
+| 2 | Pipeline Kanban | `public/Komerce_Pipeline.html` | 🔄 **EN COURS** | Kanban parcel-centric, ⛔V2 |
+| 3 | Relais | `public/Komerce_Relais.html` | ⬜ À faire | Réception → dispo → remise |
+| 4 | Dashboard Pilotage | `public/Komerce_Dashboard.html` | ⬜ À faire | KPIs + alertes uniquement |
+| 5 | Admin | `public/Komerce_Admin.html` | ⬜ À faire | Commandes + users + config |
+| 6 | Portal | `public/portal.html` | ⬜ À faire | Tuiles par rôle |
 
-La commande liée = contexte secondaire (petit, gris, `#CMD-1234`), jamais conditionnelle.
+### API Hub (endpoints réels)
+```
+POST /api/hub/scan     { parcel_ref, notes }
+POST /api/hub/pack     { parcel_id, box_label, notes }
+POST /api/hub/seal     { parcel_id, notes }
+GET  /api/hub/pending   → { data: [...], count }
+GET  /api/hub/today     → { scanned_today, packed_today, sealed_today, pending_total }
+```
 
-### 🔴 VERROU 3 — RESTRUCTURER, PAS RECRÉER
+### API Parcels (endpoints réels)
+```
+GET    /api/parcels           → liste avec filtres
+GET    /api/parcels/:ref      → détail avec items
+POST   /api/parcels           → créer
+PATCH  /api/parcels/:id       → modifier
+DELETE /api/parcels/:id       → supprimer
+```
 
-On ne repart **PAS** de zéro. La matière fonctionnelle existe déjà :
-- Hub (scan, préparation, flux terrain) → encapsulé dans le dashboard global
-- Relais (réception, disponibilité, remise) → pas encore isolé
-- Pipeline (suivi logistique) → encore trop order-centric
-- Dashboard (pilotage) → mélange trop de missions
-- Admin (commandes, users, config) → back-office réel
+### Design System — Résumé rapide
+- **Fonts** : IBM Plex Sans (text), IBM Plex Mono (data)
+- **Accent** : amber/gold `#d97706`
+- **Fond** : `#faf6f0` (crème), cartes `#fff`
+- **CSS classes** : `.card`, `.btn`, `.btn-outline`, `.badge`, `.badge-green/amber/red/blue/purple`, `.inp`, `.kpi-card`, `.kpi-val`, `.g2/.g3/.g4`, `.toast`, `.kanban-board`, `.kanban-col`, `.kanban-card`
+- **Mobile-first**, breakpoint 768px
 
-**Le chantier consiste à :**
-1. Garder la logique utile existante
-2. Isoler chaque mission dans son propre écran
-3. Supprimer les doublons
-4. Réaligner toute l'UI sur la philosophie parcel-centric
-
-**En une phrase :** On restructure proprement l'existant pour en faire de vraies applications dédiées par rôle.
-
-## État d'avancement
-
-| Vague | Commits | Statut |
-|-------|---------|--------|
-| **Vague 1** — Socle Parcel-Centric | C1 (Security), C2 (Logistics R1), C3 (Parcels API), C3-bis (validators+migration) | ✅ Mergé |
-| **Vague 2** — Hub Terrain | C4 (routes/hub.js), C5 (server.js câblage) | ✅ Mergé (PR #119) |
-| **Vague 3** — Optimisation | C6 (migration customs), C7 (migration carriers), C8 (routes/carriers.js) | ✅ Mergé (PR #119) |
-| **Hotfix** — SyntaxError L619 | Fix string escape Samsung seed | ✅ Mergé (PR #120) |
-| **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | ✅ PR #121 — DB appliquée (migrations 010→017) |
-| **Refonte Dashboards** — UI Parcel-Centric | 3 verrous posés, spec complète | ⬜ À exécuter |
-
-## ⬜ Prochaine action : Refonte Dashboards UI
-
-Doc complet : `.tasklet/REFONTE_DASHBOARDS.md`
-
-### Ordre d'exécution
-1. `komerce-api.js` — couche API unifiée
-2. `Komerce_Hub.html` — isoler l'existant hub en écran autonome ⛔ V1
-3. `Komerce_Pipeline.html` — isoler le pipeline en kanban parcel-centric ⛔ V2
-4. `Komerce_Relais.html` — isoler le relais en écran autonome
-5. `Komerce_Dashboard.html` — recentrer sur pilotage seul
-6. `Komerce_Admin.html` — refonte admin + absorption Users
-7. `portal.html` — adaptation tuiles et rôles
-8. Suppression fichiers obsolètes
-
-### Méthode (Verrou 3)
-Pour chaque écran : extraire la logique existante des monolithes → isoler dans un fichier dédié → nettoyer → réaligner parcel-centric.
-
-## Fichiers clés du repo
-
-| Fichier | Rôle |
-|---------|------|
-| `server.js` | Point d'entrée, routes, seeds, CORS |
-| `routes/hub.js` | Hub terrain (scan/pack/seal) |
-| `routes/parcels.js` | CRUD parcels |
-| `routes/carriers.js` | CRUD transporteurs + customs |
-| `routes/scans.js` | Scan logistique |
-| `routes/logistics.js` | Shipments + conteneurs |
-| `utils/parcelSync.js` | SOURCE DE VÉRITÉ statut parcels/orders |
-| `utils/parcels.js` | PARCEL_TYPES, STATUS_WEIGHT, helpers |
-| `validators/index.js` | Schémas Joi |
-| `middleware/auth.js` | JWT authenticate + requireRole |
-| `middleware/validate.js` | Validation middleware |
+### Pour reprendre
+1. Lire ce fichier
+2. Lire `.tasklet/REFONTE_DASHBOARDS.md` pour la spec complète
+3. Continuer à l'écran marqué 🔄 ou ⬜
+4. Respecter les 3 verrous
+5. Utiliser le design system partagé (komerce-ui.css + komerce-api.js)
