@@ -30,13 +30,14 @@ Tous les 7 écrans terminés et pushés sur main.
 
 ---
 
-## CHANTIER EN COURS : Audit Architecture & Alignement DB
+## CHANTIER TERMINÉ : Audit Architecture & Alignement DB ✅
 
 > **Date** : 7 avril 2026
+> **Score final** : 12/12 fixes appliqués
 
 ### Fichiers d'audit
 - `.tasklet/CARTOGRAPHY_360.md` — Cartographie complète
-- `.tasklet/AUDIT_FIXES.md` — Tracker des 12 fixes (9/12 ✅)
+- `.tasklet/AUDIT_FIXES.md` — Tracker des 12 fixes (12/12 ✅)
 
 ### ✅ Étape 1 : Migration 018 + FIX-001 (FAIT)
 - FIX-001, 002, 003, 006, 008
@@ -49,10 +50,11 @@ Tous les 7 écrans terminés et pushés sur main.
 - **FIX-009** : `parcels.js` `unit_price_kmf` → `price_kmf`.
 - Branche : `fix/etape2-code-fixes`
 
-### Prochaine étape : Étape 3 (FIX-010, 011, 012)
-→ Clean-up : supprimer pilotage.js, dé-dupliquer finance.js, extraire seeds
-
-### Score : 9/12 fixes terminés (tous P0/P1/P2 ✅, reste 3 P3)
+### ✅ Étape 3 : Clean-up (FAIT)
+- **FIX-010** : Suppression `routes/pilotage.js` (code mort)
+- **FIX-011** : Finance monté 1× sous `/api/admin/finance` + redirect 301
+- **FIX-012** : Seeds/migrations extraits → `scripts/fix-schema.js` + `scripts/seed.js`
+- Branche : `fix/etape3-cleanup`
 
 ---
 
@@ -69,7 +71,7 @@ Tous les 7 écrans terminés et pushés sur main.
 - `.tasklet/DESIGN_SYSTEM.md` — design system documenté
 - `.tasklet/codegen-instructions.md` — instructions backend
 - `.tasklet/CARTOGRAPHY_360.md` — cartographie architecture 360°
-- `.tasklet/AUDIT_FIXES.md` — tracker des fixes (9/12 terminés)
+- `.tasklet/AUDIT_FIXES.md` — tracker des fixes (12/12 terminés)
 
 ## Structure public/ (7 écrans)
 ```
@@ -89,8 +91,15 @@ public/
 └── archive/
 ```
 
+## Structure scripts/ (nouveau — Étape 3)
+```
+scripts/
+├── fix-schema.js    ← fixAdminHash() + fixMissingSchema()
+└── seed.js          ← seedProducts() + seedRelais() + fixProductEncoding() + fixProductCategories() + fixProductImages()
+```
+
 ## Pour reprendre
 1. Lire ce fichier
-2. Lire `.tasklet/AUDIT_FIXES.md` pour voir les fixes
+2. Lire `.tasklet/AUDIT_FIXES.md` — audit 100% complet
 3. Respecter les 3 verrous
-4. Prochain chantier = Étape 3 (FIX-010, 011, 012) — P3 clean-up
+4. Tous les chantiers en cours sont terminés — prêt pour de nouvelles fonctionnalités !

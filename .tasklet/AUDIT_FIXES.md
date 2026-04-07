@@ -81,19 +81,23 @@
 ## P3 — MINEURS (dette technique)
 
 ### FIX-010 : pilotage.js orphelin (code mort)
-- **Statut** : ❌ À FAIRE (Étape 3)
+- **Statut** : ✅ FAIT (Étape 3)
 - **Fichier** : `routes/pilotage.js`
-- **Fix** : Supprimer le fichier.
+- **Fix appliqué** : Fichier supprimé. Était déjà commenté dans server.js, absorbé dans dashboard.js v11.
 
 ### FIX-011 : finance.js monté 2 fois
-- **Statut** : ❌ À FAIRE (Étape 3)
+- **Statut** : ✅ FAIT (Étape 3)
 - **Fichier** : `server.js`
-- **Fix** : Garder un seul montage (`/api/admin/finance` avec adminLimiter).
+- **Fix appliqué** : Un seul montage conservé (`/api/admin/finance` avec adminLimiter). Ancien `/api/finance` redirigé avec 301 JSON.
 
 ### FIX-012 : Seed data et fixMissingSchema dans server.js
-- **Statut** : ❌ À FAIRE (Étape 3)
-- **Fichier** : `server.js` (~700 lignes de seeds/migration)
-- **Fix** : Extraire dans `scripts/seed.js` et `scripts/fix-schema.js`.
+- **Statut** : ✅ FAIT (Étape 3)
+- **Fichiers** : `server.js` → `scripts/fix-schema.js` + `scripts/seed.js`
+- **Fix appliqué** :
+  - `fixAdminHash()` + `fixMissingSchema()` extraits dans `scripts/fix-schema.js`
+  - `seedProducts()` + `seedRelais()` + `fixProductEncoding()` + `fixProductCategories()` + `fixProductImages()` extraits dans `scripts/seed.js`
+  - `server.js` importe et appelle les deux modules au démarrage — même séquence, même comportement.
+  - server.js passe de ~1100 lignes à ~260 lignes.
 
 ---
 
@@ -104,12 +108,14 @@
 | 🔴 P0 | 5 | 5 | 0 |
 | 🟡 P1 | 2 | 2 | 0 |
 | 🟠 P2 | 2 | 2 | 0 |
-| ⚪ P3 | 3 | 0 | 3 |
-| **Total** | **12** | **9** | **3** |
+| ⚪ P3 | 3 | 3 | 0 |
+| **Total** | **12** | **12** | **0** |
+
+✅ **AUDIT COMPLET — 12/12 fixes appliqués**
 
 ---
 
-## STRATÉGIE DE FIX RECOMMANDÉE
+## STRATÉGIE DE FIX — HISTORIQUE
 
 ### ✅ Étape 1 : Migration 018 + FIX-001 (FAIT)
 Migration 018_schema_reconciliation.sql + correction computeOrderStatus().
@@ -122,10 +128,11 @@ Branche : `fix/etape1-schema-reconciliation`
 - Fix unit_price_kmf (FIX-009)
 Branche : `fix/etape2-code-fixes`
 
-### Étape 3 : Clean-up (FIX-010 + FIX-011 + FIX-012)
-- Supprimer pilotage.js
-- Dé-dupliquer finance.js
-- Extraire seeds de server.js
+### ✅ Étape 3 : Clean-up (FIX-010 + FIX-011 + FIX-012) (FAIT)
+- Supprimé pilotage.js (FIX-010)
+- Dé-dupliqué finance.js (FIX-011)
+- Extrait seeds + migrations de server.js (FIX-012)
+Branche : `fix/etape3-cleanup`
 
 ---
 
