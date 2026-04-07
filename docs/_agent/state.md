@@ -1,6 +1,6 @@
 # 🧠 État de l'agent Tasklet
 
-> Dernière mise à jour : 2026-04-07 13:10 (Europe/Paris)
+> Dernière mise à jour : 2026-04-07 13:36 (Europe/Paris)
 
 ---
 
@@ -8,11 +8,11 @@
 
 | Clé | Valeur |
 |-----|--------|
-| **Session** | Bootstrap + reprise |
-| **Phase en cours** | Phase 3 — Migration trigger Parcel-Centric |
-| **Dernière action** | Governance auto-sync — ROADMAP drift corrigé (07/04 13:10) |
-| **Prochaine action** | Phase 3 — Désactiver trigger legacy `trg_scan_sync_status` |
-| **Connexion GitHub** | ✅ Active (7/7 outils) |
+| **Session** | Phase 3 — Migration trigger |
+| **Phase en cours** | Phase 3 — PR #113 ouverte |
+| **Dernière action** | Création PR #113 Phase 3 Parcel-Centric |
+| **Prochaine action** | Review + merge PR #113, puis Phase 4 |
+| **Connexion GitHub** | ✅ Active (12/14 outils) |
 | **Trigger auto-commit** | ✅ Actif (*/10 min, Europe/Paris) |
 
 ---
@@ -20,10 +20,12 @@
 ## 🎯 Tâches en cours
 
 ### Priorité immédiate
-1. **Phase 3 — Migration trigger Parcel-Centric**
-   - [ ] Désactiver le trigger legacy `trg_scan_sync_status`
-   - [ ] Faire de `orders.computed_status` → `orders.status`
-   - [ ] Valider la cohérence legacy vs computed
+1. **Phase 3 — Migration trigger Parcel-Centric** — PR #113
+   - [x] Désactiver le trigger legacy `trg_scan_sync_status`
+   - [x] `parcelSync.js` v2 → orders.status + timestamps + history
+   - [x] `scans.js` v8.5 → await sync, passage scanned_by/notes
+   - [x] Migration 012 — DISABLE trigger + réconciliation
+   - [ ] Review + merge PR #113
 
 ### File d'attente
 - Phase 4-5 : Nettoyage + API CRUD parcels
@@ -37,10 +39,11 @@
 
 | Variable | Valeur |
 |----------|--------|
-| `connectionId` | À renseigner au bootstrap |
-| `last_commit` | `pending` (governance auto-sync) |
-| `roadmap_version` | P2 en attente |
+| `connectionId` | conn_5dmn5n7s4x82zswg1arf |
+| `last_commit` | d00589c (Phase 3) |
+| `roadmap_version` | v16.1 — Phase 3 en PR |
 | `issues_ouvertes` | 15 |
+| `prs_ouvertes` | 1 (#113) |
 
 ---
 
