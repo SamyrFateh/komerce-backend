@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 16.0 — 07/04/2026 (v15.8 + 4 deltas processed + structural drift corrected)
+> **Version** : 15.9 — 07/04/2026 (v15.8 + deltas: PR #105-108, Phase 4 shipping, +railway.toml, +008_pricing_rules.sql, +store_credits, +refunds, +sub_orders, orders.js 17 endpoints)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 — governance auto-sync (4 deltas: PR#105-108 + Phase 4 partial shipping)
+> **Dernière vérification** : 07/04/2026 — governance auto-sync (4 deltas applied: PR #105-108 + Phase 4 partial shipping)
 > 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -43,13 +43,13 @@
 | **Dossiers** | 14 |
 | **Routes API** | 19 fichiers |
 | **Middlewares** | 4 |
-| **Utilitaires** | 8 |
+| **Utilitaires** | 6 |
 | **Validators** | 1 |
-| **Fichiers DB** | 3 + 6 migrations |
+| **Fichiers DB** | 4 + 5 migrations |
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 14 + 11 audit + _pending/ |
+| **Docs** | 13 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
@@ -69,7 +69,7 @@ komerce-backend/
 ├── package.json                          (923 B)   [f7944e67]
 ├── package-lock.json                     (113.9 KB)[3bb09e87]
 ├── railway.toml                          (644 B)   [fa81b056]
-├── server.js                             (44.7 KB) [58742e77]
+├── server.js                             (41.6 KB) [f87414ae]
 │
 ├── routes/                               (19 fichiers)
 │   ├── admin.js                          (24.3 KB) [6bb443fe]
@@ -82,7 +82,7 @@ komerce-backend/
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
 │   ├── loyalty.js                        (5.6 KB)  [c454e300]
 │   ├── modules.js                        (20.6 KB) [3ea6fa01]
-│   ├── orders.js                         (98.6 KB) [70a2272d]
+│   ├── orders.js                         (71.3 KB) [e041bbfc]
 │   ├── payments.js                       (12.0 KB) [1ba52974]
 │   ├── pilotage.js                       (1.2 KB)  [9af27985]
 │   ├── pricing.js                        (3.5 KB)  [a3b26f39]
@@ -98,20 +98,18 @@ komerce-backend/
 │   ├── upload.js                         (1.5 KB)  [5ea7f1af]
 │   └── validate.js                       (5.6 KB)  [4c671ec0]
 │
-├── utils/                                (8 fichiers)
+├── utils/                                (6 fichiers)
 │   ├── email.js                          (6.7 KB)  [daf607c3]
-│   ├── pricing.js                        (5.1 KB)  [ff3e82e2]
-│   ├── rates.js                          (1.1 KB)  [5fdacfb4]
+│   ├── pricing.js                        (3.7 KB)  [6f505ed0]
+│   ├── rates.js                          (719 B)   [933ed3c4]
 │   ├── reference.js                      (2.5 KB)  [253751b9]
-│   ├── refunds.js                        (4.0 KB)  [25a80509]
-│   ├── rules.js                          (8.8 KB)  [6a679773]
-│   ├── sms.js                            (11.8 KB) [1d17abd6]
-│   └── store-credits.js                  (3.3 KB)  [58e8b8e4]
+│   ├── rules.js                          (7.9 KB)  [2905ee4b]
+│   └── sms.js                            (7.4 KB)  [995ee53f]
 │
 ├── validators/                           (1 fichier)
-│   └── index.js                          (15.0 KB) [f04565ef]
+│   └── index.js                          (13.7 KB) [d8ed1ee6]
 │
-├── db/                                   (4 + 4 migrations)
+├── db/                                   (4 + 5 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
 │   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
 │   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
@@ -120,8 +118,7 @@ komerce-backend/
 │       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
 │       ├── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
 │       ├── 007_business_rules.sql         (10.9 KB) [0971318d]
-│       ├── 008_pricing_rules.sql         (2.2 KB)  [6de70417]
-│       └── 009_partial_shipping.sql      (4.6 KB)  [113d16d4]
+│       └── 008_pricing_rules.sql         (~2 KB)   [new]
 │
 ├── public/                               (16 HTML + 3 JS + 2 images)
 │   ├── index.html                        (143.9 KB)[c925b4b8]
@@ -182,17 +179,17 @@ komerce-backend/
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
 │   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
-│   ├── CHANGES_PHASE2_MIGRATION.md       (9.0 KB)  [29e6f652]
 │   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
 │   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
 │   ├── GOVERNANCE_BOOTSTRAP.md            (3.0 KB)  [6f68fb3b]
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (21.5 KB) [31e9c403]
+│   ├── ROADMAP_KOMERCE.md                (21.3 KB) [5cb5a44f]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
 │   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
+│   ├── CHANGES_PHASE2_MIGRATION.md       (~3 KB)   [new]
 │   ├── _pending/                          (dossier delta governance)
 │   │   └── README.md                     (2.3 KB)  [8f1a2e46]
 │   └── audit/                            (11 fichiers)
@@ -343,7 +340,10 @@ komerce-backend/
 > **Pipeline** : 9 statuts — `confirmed → ordered → preparation → shipped → in_transit → available → collected` + `cancelled` / `refunded`.  
 > **Transitions** : Matrice `VALID_TRANSITIONS` + `TRANSITION_ROLES` — seuls les rôles autorisés peuvent effectuer chaque transition.  
 > **Référence** : Format `K` + 6 chars alphanumériques crypto-safe (randomBytes, rejet biais modulo).  
-> **Code cash** : 6 chiffres numériques (ex: `482917`) — dictable oralement.
+> **Code cash** : 6 chiffres numériques (ex: `482917`) — dictable oralement.  
+> **Stripe** : `const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)` — refund lors de `POST /cancel`.  
+> **Helper** : `getAvailableCredits(dbClient, userId)` — crédits boutique FIFO.  
+> **Sous-commandes** : Support expédition partielle via tables `sub_orders` / `sub_order_items` (Phase 4).
 
 ### 📁 products.js — `/api/products` (8 endpoints)
 
@@ -600,12 +600,10 @@ komerce-backend/
 | 24 | `ceremony_fabrics` | schema_extension.sql | — | Tissus cérémonie (legacy) |
 | 25 | `ceremony_models` | schema_extension.sql | — | Modèles cérémonie (legacy) |
 | 26 | `ceremony_order_items` | schema_extension.sql | — | Articles cérémonie (legacy) |
-| 27 | `business_rules` | 007_business_rules.sql / server.js | — | Règles métier configurables (moteur Point 6) |
-| 28 | `business_rules_history` | 007_business_rules.sql / server.js | — | Historique modifications règles |
-| 29 | `store_credits` | server.js (auto-migration) | — | Crédits boutique (remboursement annulation cash) |
-| 30 | `refunds` | server.js (auto-migration) | — | Historique remboursements (Stripe + crédits) |
-| 31 | `sub_orders` | migration 009 | — | Sous-commandes (expédition partielle / backorder) |
-| 32 | `sub_order_items` | migration 009 | — | Articles des sous-commandes |
+| 27 | `store_credits` | migration 007 | — | Crédits boutique (remboursement annulation cash) |
+| 28 | `refunds` | migration 007 | — | Historique des remboursements (Stripe + crédits) |
+| 29 | `sub_orders` | migration Phase 4 | — | Sous-commandes (expédition partielle / backorder) |
+| 30 | `sub_order_items` | migration Phase 4 | — | Articles des sous-commandes |
 
 ### Vues (3)
 
@@ -702,7 +700,7 @@ scans                   │     2     │ ██░░░░░░░░░░�
 | Route | authenticate | requireRole | validate | upload | rate-limit |
 |-------|:-----------:|:-----------:|:--------:|:------:|:----------:|
 | auth.js | ✅ (partiel) | — | ✅ | — | ✅ authLimiter |
-| orders.js | ✅ | ✅ | ✅ | — | ✅ orderCreateLimiter (POST) |
+| orders.js | ✅ | ✅ | ✅ (7 schémas) | — | ✅ orderCreateLimiter (POST) |
 | products.js | ✅ (partiel) | ✅ (admin) | ✅ | ✅ | — |
 | payments.js | ✅ (partiel) | ✅ | ✅ | — | ✅ cashConfirmLimiter |
 | admin.js | ✅ | ✅ (admin) | ✅ | — | — |
@@ -753,11 +751,11 @@ scans                   │     2     │ ██░░░░░░░░░░�
 | Route source | Route cible | Fonction | Direction |
 |---|---|---|---|
 | `orders.js` | `loyalty.js` | `getLoyaltyDiscount()` | orders → loyalty |
-| `orders.js` | stripe | `stripe.refunds.create()` | orders → stripe (refund on cancel) |
 | `orders.js` | `loyalty.js` | `recalculateLoyalty()` | orders → loyalty |
 | `payments.js` | `purchasing.js` | `triggerPurchasing()` | payments → purchasing |
 | `purchasing.js` | `scans.js` | `triggerScan3()` | purchasing → scans |
 | `scans.js` | `loyalty.js` | `recalculateLoyalty()` | scans → loyalty |
+| `orders.js` | stripe | `stripe.refunds.create()` | orders → stripe (refund) |
 
 ### Graphe de dépendances
 
@@ -837,7 +835,7 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 | # | Service | Type | Dépendance npm | Routes | Usage |
 |---|---------|------|---------------|--------|-------|
-| 1 | **Stripe** | 💳 Paiement | `stripe` | payments, finance, admin | PaymentIntents, webhooks, preuves |
+| 1 | **Stripe** | 💳 Paiement | `stripe` | payments, finance, admin, **orders** | PaymentIntents, webhooks, preuves, **refunds (cancel)** |
 | 2 | **Africa's Talking** | 📱 SMS | `africastalking` | orders, payments, scans, logistics, purchasing, baskets, dashboard | Notifications transactionnelles |
 | 3 | **Nodemailer** | 📧 Email | `nodemailer` | orders | Confirmation commande |
 | 4 | **WhatsApp** | 💬 Messagerie | — | baskets, orders, purchasing, unsold | Notifications paniers, achats, invendus |
@@ -853,19 +851,18 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 | Fichier | Rôle |
 |---------|------|
-| `utils/sms.js` | Envoi SMS via Africa's Talking + `processCashRelaisReminders()` (cron dynamique) + `processBackorderReminders()` (cron 6h) + templates partial_ship |
+| `utils/sms.js` | Envoi SMS via Africa's Talking + `processCashRelaisReminders()` (cron 1h) + templates partial_ship/backorder + `processBackorderReminders()` (cron 6h) |
 | `utils/email.js` | Emails transactionnels via Nodemailer (confirmation commande) |
-| `utils/rates.js` | Taux de change EUR/KMF, AED/KMF (table `exchange_rates`) |
-| `utils/pricing.js` | Moteur de calcul prix v6.5 async, 10 params configurables via `getRuleNumber()` (marge, fret, douane) |
+| `utils/rates.js` | Taux de change EUR/KMF, AED/KMF (table `exchange_rates`) — fallback via `getRuleNumber('RATE_EUR_KMF_DEFAULT')` |
+| `utils/pricing.js` | Moteur v6.5 async — 10 paramètres configurables via `getRuleNumber()` (marge, fret, douane estimée) |
 | `utils/reference.js` | Génération de références expédition (`generateShipmentRef()`) |
-| `utils/refunds.js` | Logique de remboursement (Stripe refund + crédit boutique fallback) |
-| `utils/store-credits.js` | Gestion crédits boutique FIFO (création, consommation, solde) |
-| `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, config, etc. |
+| `utils/rules.js` | Moteur de règles métier — `getRuleNumber()`, `getRuleString()` (cache TTL + fallback, table `business_rules`) |
+| `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, etc. |
 
 ### Cron intégré
 
-- **Cash relais reminders** : `setInterval` intervalle dynamique via `getRuleNumber('CASH_REMINDER_INTERVAL_MIN')`, avec verrou anti-concurrence (`cronRunning`).
-- **Backorder checker** : `setInterval` toutes les 6 heures — détecte backorders expirés, envoie SMS de proposition d'annulation au client.
+- **Cash relais reminders** : `setInterval` toutes les heures, avec verrou anti-concurrence (`cronRunning`).
+- **Backorder checker** : `setInterval` toutes les 6 heures — détecte les backorders expirés, envoie SMS de proposition d'annulation au client.
 
 ### Auto-migrations au démarrage (`server.js`)
 
@@ -880,12 +877,13 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 ## 11. ✅ Validators (1 fichier)
 
-### `validators/index.js` (15.0 KB) [f04565ef]
+### `validators/index.js` (13.6 KB) [dcc266a7]
 **Schémas Joi centralisés**
 - Validation utilisateur (register, login)
 - Validation produit
 - Validation commande
 - Validation paiement
+- Validation expédition partielle (markAvailability, partialShip, subOrderStatus, cancelBackorder)
 - Export de tous les schémas
 
 ---
@@ -1069,8 +1067,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 |---------|--------|-----|------|
 | `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
 | `AUDIT_REPORT.md` | 8.0 KB | 6b4fc1c7 | 📋 Rapport d'audit principal |
-| `CARTOGRAPHY_360.md` | - | (v16.0) | 🗺️ CE fichier |
-| `CHANGES_PHASE2_MIGRATION.md` | 9.0 KB | 29e6f652 | 📝 Changelog détaillé Phase 2 migration constantes |
+| `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
 | `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
 | `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
 | `GOVERNANCE_BOOTSTRAP.md` | 3.0 KB | 6f68fb3b | 🤖 Bootstrap gouvernance automatique |
@@ -1080,6 +1077,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `ROADMAP_KOMERCE.md` | 23.3 KB | 0ea267c0 | 📋 Roadmap v15 — source de vérité |
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
+| `CHANGES_PHASE2_MIGRATION.md` | ~3 KB | new | 📝 Changelog détaillé Phase 2 migration constantes |
 
 ### Audit (`docs/audit/`) — 11 fichiers
 
@@ -1135,9 +1133,9 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `.cursorrules` | 1.4 KB | 3dd2643a | Règles pour l'éditeur Cursor |
 | `.env.example` | 1.9 KB | 6568d664 | Template variables d'environnement |
 | `.gitignore` | 258 B | 61e13d23 | Fichiers exclus de Git |
-| `railway.toml` | 644 B | fa81b056 | Configuration Railway — watch patterns (filtre déploiements docs-only) |
 | `AGENT_RULES.md` | ~3 KB | (v mise à jour) | Règles obligatoires agents IA |
 | `CONTRIBUTING.md` | 3.2 KB | a18b8868 | Guide de contribution |
+| `railway.toml` | 644 B | fa81b056 | Config Railway — watch patterns (filtre déploiements docs-only) |
 | `README.md` | 3.9 KB | 1c05bc68 | README principal |
 
 ---
@@ -1148,7 +1146,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | # | Issue | Sévérité | Description | Fichier |
 |---|-------|----------|-------------|---------|
-| #71 | Injection SQL potentielle | 🔴 Critique | Vérifier toutes les requêtes dynamiques avec interpolation de string | Plusieurs routes |
+| #71 | Injection SQL potentielle | 🔴 Critique | ⚠️ Partiellement corrigé (PR #106/#108 : orders.js + sms.js). Reste : admin.js, dashboard.js, products.js, logistics.js | Plusieurs routes |
 | #72 | JWT secret faible en dev | 🔴 Critique | Fallback `komerce_secret_dev_UNSAFE` si JWT_SECRET manquant | `auth.js:26` |
 | #73 | Admin password reset non sécurisé | 🔴 Critique | Pas de vérification ancien MDP pour `/api/admin/users/:id/password` | `admin.js` |
 | #74 | CORS trop permissif | 🔴 Critique | `*.up.railway.app` autorise tous les sous-domaines Railway | `server.js:66` |
@@ -1236,7 +1234,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Route | Endpoints | Tables | Appels croisés | Services ext. | Score |
 |-------|-----------|--------|---------------|---------------|-------|
-| `orders.js` | 17 | 10 | 3 | 5 | **95** |
+| `orders.js` | 17 | 8 | 2 | 5 | **84** |
 | `admin.js` | 14 | 9 | 0 | 2 | **53** |
 | `purchasing.js` | 10 | 8 | 1 | 2 | **53** |
 | `scans.js` | 6 | 7 | 1 | 1 | **52** |
@@ -1280,7 +1278,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Tables critiques (5+ routes) | **7** |
 | Issues sécurité critiques | **6** (OPEN) |
 | Issues sécurité majeures | **8** (OPEN) |
-| Route la plus complexe | `orders.js` (17 endpoints, ~99 Ko) |
+| Route la plus complexe | `orders.js` (17 endpoints, ~71 Ko) |
 | Dépendances production | **17** |
 
 ---
@@ -1312,7 +1310,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-07 00:00:00 UTC
+> Mise à jour : 2026-04-07 00:01:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
