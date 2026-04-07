@@ -1145,12 +1145,17 @@ router.get('/:ref', async (req, res) => {
     const isAdmin       = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
     const isRelaisAdmin = req.user && ['admin', 'agent_relais'].includes(req.user.role);
 
-    // If not authenticated, return minimal public data only
+    // If not authenticated, return minimal public data + parcel tracking
     if (!req.user) {
+      const { rows: trackParcels } = await db.query(
+        `SELECT reference, status FROM parcels WHERE order_id = $1 ORDER BY created_at ASC`,
+        [order.id]
+      );
       return res.json({
         reference: order.reference,
         status: order.status,
         created_at: order.created_at,
+        parcels: trackParcels.map(p => ({ reference: p.reference, status: p.status })),
       });
     }
 

@@ -306,6 +306,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .card-price { font-weight: 800; color: var(--primary); font-size: 0.92rem; margin-bottom: 2px; }
 .card-price-conv { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
 .card-actions { display: flex; gap: 8px; }
+.avail-badge { display:inline-block; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:6px; margin-top:4px; }
+.avail-badge.disponible { background:#dcfce7; color:#166534; }
+.avail-badge.sourcing { background:#fef3c7; color:#92400e; }
+.avail-badge.surcommande { background:#dbeafe; color:#1e40af; }
 .btn-add-cart {
   flex: 1; background: var(--primary); color: var(--white);
   padding: 7px 10px; border-radius: var(--radius); font-weight: 700;
@@ -2138,6 +2142,14 @@ function fmtBoth(kmf) {
 
 function productEmoji(p) { return p.emoji || '📦'; }
 
+function availabilityInfo(p) {
+  if (p.is_available !== false && (p.stock === null || p.stock === undefined || p.stock > 0))
+    return { label: 'Disponible', cls: 'disponible', icon: '✅' };
+  if (p.is_available === false && p.sourcing_source)
+    return { label: 'En sourcing', cls: 'sourcing', icon: '🔄' };
+  return { label: 'Sur commande', cls: 'surcommande', icon: '📋' };
+}
+
 function categoryLabel(cat) {
   var labels = {
     'electronics': 'Électronique',
@@ -2456,6 +2468,12 @@ function renderProducts(list) {
     }
 
     var actions = document.createElement('div');
+    var avail = availabilityInfo(p);
+    var availBadge = document.createElement('div');
+    availBadge.className = 'avail-badge ' + avail.cls;
+    availBadge.textContent = avail.icon + ' ' + avail.label;
+    body.appendChild(availBadge);
+
     actions.className = 'card-actions';
 
     var addBtn = document.createElement('button');
@@ -2659,6 +2677,13 @@ function openProductModal(p) {
     convEl.textContent = '≈ ' + fmt(p.price_kmf || 0, 'EUR');
     info.appendChild(convEl);
   }
+
+  var avail = availabilityInfo(p);
+  var availTag = document.createElement('div');
+  availTag.className = 'avail-badge ' + avail.cls;
+  availTag.style.cssText = 'margin-top:6px;';
+  availTag.textContent = avail.icon + ' ' + avail.label;
+  info.appendChild(availTag);
 
   top.appendChild(info);
   body.appendChild(top);
@@ -3607,11 +3632,10 @@ function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
    ────────────────────────────────────── */
 var TRACKING_STEPS = [
   { key: 'confirmed', label: 'Commande confirmée', icon: '📋' },
-  { key: 'paid', label: 'Paiement reçu', icon: '💳' },
-  { key: 'purchasing', label: 'Achat en cours', icon: '🛒' },
+  { key: 'ordered', label: 'Paiement validé', icon: '💳' },
   { key: 'preparation', label: 'Préparation', icon: '📦' },
   { key: 'shipped', label: 'Expédié', icon: '✈️' },
-  { key: 'transit_comores', label: 'Arrivé aux Comores', icon: '🚚' },
+  { key: 'in_transit', label: 'En transit', icon: '🚢' },
   { key: 'available', label: 'Disponible au relais', icon: '🏪' },
   { key: 'collected', label: 'Remis au client', icon: '✅' }
 ];
@@ -3630,11 +3654,33 @@ async function searchTracking() {
     var data = await apiGet('/api/orders/' + encodeURIComponent(ref));
     result.innerHTML = '';
     var order = data.order || data;
-    var currentStatus = (order.status || 'ordered').toLowerCase();
+
+    /* Determine effective status — prefer parcel-based if available */
+    var parcels = order.parcels || [];
+    var effectiveStatus = (order.status || 'confirmed').toLowerCase();
+    if (parcels.length > 0) {
+      var statusOrder = TRACKING_STEPS.map(function(s) { return s.key; });
+      var minIdx = statusOrder.length;
+      parcels.forEach(function(p) {
+        var idx = statusOrder.indexOf((p.status || '').toLowerCase());
+        if (idx >= 0 && idx < minIdx) minIdx = idx;
+      });
+      if (minIdx < statusOrder.length) effectiveStatus = statusOrder[minIdx];
+    }
+
     var refDiv = document.createElement('div');
     refDiv.style.cssText = 'font-weight:700;margin-bottom:16px;font-size:1rem;';
     refDiv.textContent = 'Commande : ' + sanitize(order.reference || ref);
     result.appendChild(refDiv);
+
+    /* Parcel count hint */
+    if (parcels.length > 1) {
+      var hint = document.createElement('div');
+      hint.style.cssText = 'font-size:0.8rem;color:var(--muted);margin-bottom:12px;';
+      hint.textContent = '📦 ' + parcels.length + ' colis pour cette commande';
+      result.appendChild(hint);
+    }
+
     var timeline = document.createElement('div');
     timeline.className = 'timeline';
     var reachedCurrent = false;
@@ -3642,7 +3688,7 @@ async function searchTracking() {
       var stepDiv = document.createElement('div');
       stepDiv.className = 'timeline-step';
       if (!reachedCurrent) {
-        if (step.key === currentStatus) { stepDiv.classList.add('current'); reachedCurrent = true; }
+        if (step.key === effectiveStatus) { stepDiv.classList.add('current'); reachedCurrent = true; }
         else { stepDiv.classList.add('done'); }
       }
       var dot = document.createElement('div');
