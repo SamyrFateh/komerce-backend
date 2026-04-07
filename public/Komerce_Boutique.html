@@ -2146,7 +2146,7 @@ function availabilityInfo(p) {
   if (p.is_available !== false && (p.stock === null || p.stock === undefined || p.stock > 0))
     return { label: 'Disponible', cls: 'disponible', icon: '✅' };
   if (p.is_available === false && p.sourcing_source)
-    return { label: 'En sourcing', cls: 'sourcing', icon: '🔄' };
+    return { label: 'Bientôt disponible', cls: 'sourcing', icon: '🔄' };
   return { label: 'Sur commande', cls: 'surcommande', icon: '📋' };
 }
 
