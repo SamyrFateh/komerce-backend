@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Routes scan logistique — v8.3 SECURE COLLECT
+ * KOMERCE — Routes scan logistique — v8.4 PARCEL DUAL-WRITE
  *
  * POST /api/scans             → enregistrer un scan (agent hub ou relais)
  * POST /api/scans/collect     → scan de retrait destinataire (code à 6 chiffres)
@@ -12,6 +12,13 @@
  *        → retrait DOIT passer par /scans/collect ou /scans/verify-qr
  *   [S2] verify-qr : order_id optionnel, recherche par token seul
  *        → corrige le bug frontend qui n'envoyait pas order_id
+ *
+ * PHASE 2 PARCEL-CENTRIC v8.4 :
+ *   [P2-1] Import safeSyncScanToParcels() depuis utils/parcelSync.js
+ *   [P2-2] Appel non bloquant après chaque INSERT scan dans les 4 endpoints :
+ *          POST /api/scans, /collect, /verify-qr, triggerScan3()
+ *   [P2-3] Le trigger legacy trg_scan_sync_status reste actif → zéro régression
+ *   [P2-4] En cas d'erreur parcel, le scan legacy est déjà enregistré
  *
  * BUGS CORRIGÉS v8.2 :
  *   [B1] po.quantity → po.qty         (vraie colonne purchase_orders)
@@ -36,6 +43,9 @@ const { sendSMS } = require('../utils/sms');
 const { validate } = require('../middleware/validate');
 const { scans } = require('../validators');
 
+// [P2-1] Double écriture parcels — non bloquant
+const { safeSyncScanToParcels } = require('../utils/parcelSync');
+
 // Alias middleware (le fichier original utilisait requireAuth dans certains endroits)
 const requireAuth = authenticate;
 
@@ -50,9 +60,10 @@ const STEP_ROLES = {
 };
 
 // ──────────────────────────────────────────────────────────────
-// triggerScan3 — v8.2
+// triggerScan3 — v8.4
 // Appelé depuis purchasing.js après vérification de complétude.
 // Le statut 'preparation' est déjà positionné avant l'appel.
+// [P2-2] Ajout safeSyncScanToParcels() après INSERT scan
 // ──────────────────────────────────────────────────────────────
 
 async function triggerScan3(order_id, scanned_by = null) {
@@ -86,14 +97,22 @@ async function triggerScan3(order_id, scanned_by = null) {
   }
 
   // [B9] scans (pas scan_logs) | [B10] created_at auto | [B11] scan_code NOT NULL | [B12] scanned_by optionnel
+  let scan_id = null;
   try {
-    await db.query(
+    const { rows: [scanRow] } = await db.query(
       `INSERT INTO scans (order_id, step, scan_code, scanned_by, notes)
-       VALUES ($1, 'preparation', 'AUTO-HUB-' || $1, $2, 'Auto-déclenché après complétude réception hub')`,
+       VALUES ($1, 'preparation', 'AUTO-HUB-' || $1, $2, 'Auto-déclenché après complétude réception hub')
+       RETURNING id`,
       [order_id, scanned_by]
     );
+    scan_id = scanRow?.id;
   } catch (logErr) {
     console.warn(`[SCAN3] Log non enregistré:`, logErr.message);
+  }
+
+  // [P2-2] Double écriture parcels — non bloquant
+  if (scan_id) {
+    safeSyncScanToParcels({ order_id, step: 'preparation', scan_id });
   }
 
   console.log(`[SCAN3] ✅ Commande ${order.reference} en préparation — SMS client envoyé`);
@@ -172,6 +191,14 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
        req.headers['x-device-id'] || null, latitude || null, longitude || null,
        scan_code, notes, is_anomaly]
     );
+
+    // [P2-2] Double écriture parcels — non bloquant
+    safeSyncScanToParcels({
+      order_id,
+      step,
+      scan_id: scan.id,
+      order_item_id,
+    });
 
     // Récupérer le nouveau statut (mis à jour par le trigger)
     const { rows: [order] } = await db.query(
@@ -269,6 +296,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
 // ── POST /api/scans/collect ───────────────────────────────────────────────────
 // Retrait par le destinataire : l'agent relais saisit le code à 6 chiffres.
 // Body : { pickup_code }
+// [P2-2] Ajout safeSyncScanToParcels() après INSERT scan
 router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res) => {
   try {
     const { pickup_code } = req.body;
@@ -291,12 +319,20 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
     const order = rows[0];
 
     // [B9] scans (pas scan_logs) | [B10] created_at auto | [B11] scan_code NOT NULL
-    await db.query(
+    const { rows: [scanRow] } = await db.query(
       `INSERT INTO scans
          (order_id, step, scanned_by, location, scan_code, notes)
-       VALUES ($1,'collected',$2,$3,$4,$5)`,
+       VALUES ($1,'collected',$2,$3,$4,$5)
+       RETURNING id`,
       [order.id, req.user.id, order.relais_name || '', pickup_code, 'Retrait destinataire — code valide']
     );
+
+    // [P2-2] Double écriture parcels — non bloquant
+    safeSyncScanToParcels({
+      order_id: order.id,
+      step: 'collected',
+      scan_id: scanRow?.id,
+    });
 
     // SMS confirmation au commanditaire
     const { rows: [fullOrder] } = await db.query(
@@ -412,6 +448,7 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
 // IMPORTANT : doit rester EN DERNIER (route générique /:order_id)
 
 // ─── POST /api/scans/verify-qr ─────────────────────────────────────────────
+// [P2-2] Ajout safeSyncScanToParcels() après INSERT scan
 router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.verifyQr), async (req, res) => {
   const client = await db.getClient();
   try {
@@ -508,10 +545,11 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
     );
 
     // Enregistrer le scan
-    await client.query(
+    const { rows: [scanRow] } = await client.query(
       `INSERT INTO scans
          (order_id, step, scanned_by, location, scan_code, notes)
-       VALUES ($1, 'collected', $2, $3, $4, 'Retrait client via QR Code — token validé')`,
+       VALUES ($1, 'collected', $2, $3, $4, 'Retrait client via QR Code — token validé')
+       RETURNING id`,
       [
         order.id,
         req.user.id,
@@ -521,6 +559,13 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
     );
 
     await client.query('COMMIT');
+
+    // [P2-2] Double écriture parcels — APRÈS le commit (non bloquant, hors transaction)
+    safeSyncScanToParcels({
+      order_id: order.id,
+      step: 'collected',
+      scan_id: scanRow?.id,
+    });
 
     console.log(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
 
