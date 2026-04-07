@@ -8,10 +8,14 @@
  *   - generatePickupCode()  → crypto.randomInt (non prévisible)
  *   - generateBasketCode()  → crypto.randomBytes (non prévisible)
  *
+ * v9.0 — Phase 1 Refonte Parcel-Centric :
+ *   - generateParcelRef()   → séquence DB parcel_ref_seq (KOM-P-YYYY-NNNNNN)
+ *
  * PRÉREQUIS :
  *   Exécuter migration-round2.sql pour créer les séquences :
  *   CREATE SEQUENCE order_ref_seq START WITH 1 INCREMENT BY 1;
  *   CREATE SEQUENCE shipment_ref_seq START WITH 1 INCREMENT BY 1;
+ *   CREATE SEQUENCE parcel_ref_seq START WITH 1 INCREMENT BY 1;  -- migration 010
  */
 
 const crypto = require('crypto');
@@ -72,10 +76,32 @@ async function generateShipmentRef(db) {
   return `EXP-${year}-${String(rows[0].seq).padStart(4, '0')}`;
 }
 
+/**
+ * Génère une référence colis unique : KOM-P-2026-000001
+ * Utilise une séquence PostgreSQL pour garantir l'unicité.
+ *
+ * Format : KOM-P-YYYY-NNNNNN
+ *   KOM = préfixe Komerce
+ *   P   = Parcel
+ *   YYYY = année courante
+ *   NNNNNN = numéro séquentiel sur 6 chiffres
+ *
+ * Prérequis : CREATE SEQUENCE parcel_ref_seq (migration 010)
+ *
+ * @param {object} db - Instance pg pool/client
+ * @returns {Promise<string>} Référence unique
+ */
+async function generateParcelRef(db) {
+  const { rows } = await db.query(`SELECT nextval('parcel_ref_seq') AS seq`);
+  const year = new Date().getFullYear();
+  return `KOM-P-${year}-${String(rows[0].seq).padStart(6, '0')}`;
+}
+
 module.exports = {
   generateOrderRef,
   generateCashCode,
   generatePickupCode,
   generateBasketCode,
   generateShipmentRef,
+  generateParcelRef,
 };
