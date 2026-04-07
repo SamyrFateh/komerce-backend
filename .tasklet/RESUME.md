@@ -22,47 +22,70 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 
 ---
 
-## CHANTIER : Refonte Dashboards — ✅ TERMINÉ
+## CHANTIER TERMINÉ : Refonte Dashboards ✅
 
-### 3 Verrous posés
+Tous les 7 écrans terminés et pushés sur main. Voir `REFONTE_DASHBOARDS.md` pour détails.
+
+---
+
+## CHANTIER EN COURS : Audit Architecture & Alignement DB
+
+> **Date** : 7 avril 2026
+
+### Fichiers d'audit ajoutés
+- `.tasklet/CARTOGRAPHY_360.md` — Cartographie complète (tables, routes, utils, middleware)
+- `.tasklet/AUDIT_FIXES.md` — Tracker des 12 fixes identifiés avec priorités
+
+### Résultat de l'audit : 🔴 5 critiques détectés
+
+| # | Fix ID | Sévérité | Problème |
+|---|--------|----------|----------|
+| 1 | FIX-001 | 🔴 P0 | `computeOrderStatus()` retourne `pending/delivered/processing/arrived` → invalides pour ENUM `order_status`. **R1 cassée.** |
+| 2 | FIX-002 | 🔴 P0 | CREATE TABLE `parcels`, `parcel_items`, TYPE `parcel_status` **absents** du repo. DB non-recréable. |
+| 3 | FIX-003 | 🔴 P0 | Trigger `trg_scan_sync_status` toujours actif vs parcelSync Phase 3. **Double écriture.** |
+| 4 | FIX-004 | 🔴 P0 | FOR UPDATE relâché avant `safeSyncScanToParcels()`. **Race condition hub.** |
+| 5 | FIX-005 | 🔴 P0 | `finance.js` référence 4 colonnes inexistantes. **Export cassé.** |
+| 6 | FIX-006 | 🟡 P1 | `scans.parcel_id` absent du schéma |
+| 7 | FIX-007 | 🟡 P1 | `STATUS_TO_STEP` : `preparing` ≠ `preparation` |
+| 8 | FIX-008 | 🟠 P2 | `products.price_eur/badge` non définis |
+| 9 | FIX-009 | 🟠 P2 | `order_items.unit_price_kmf` → devrait être `price_kmf` |
+| 10 | FIX-010 | ⚪ P3 | `pilotage.js` code mort |
+| 11 | FIX-011 | ⚪ P3 | `finance.js` monté 2 fois |
+| 12 | FIX-012 | ⚪ P3 | Seed data dans server.js (700 lignes) |
+
+### Stratégie de fix (3 étapes)
+1. **Migration 018** → Réconcilier le schéma (FIX-002, 003, 006, 008)
+2. **Fix code** → Aligner computeOrderStatus, hub.js transactions, finance.js, parcels.js (FIX-001, 004, 005, 007, 009)
+3. **Clean-up** → Supprimer code mort, extraire seeds (FIX-010, 011, 012)
+
+### Prochaine étape
+→ Attaquer **Étape 1 : migration 018** + **FIX-001** (les 2 P0 les plus urgents)
+
+---
+
+## 3 Verrous toujours actifs
 | # | Verrou | Fichier |
 |---|--------|---------|
-| ⛔1 | Hub = Idiot-proof (zéro contexte commande pour opérateur) | `.tasklet/REFONTE_DASHBOARDS.md` |
-| ⛔2 | Pipeline = Zéro logique commande (100% parcels.status) | `.tasklet/REFONTE_DASHBOARDS.md` |
-| ⛔3 | Restructurer l'existant, pas recréer de zéro | `.tasklet/RESTRUCTURATION.md` |
+| ⛔1 | Hub = Idiot-proof (zéro contexte commande pour opérateur) | `REFONTE_DASHBOARDS.md` |
+| ⛔2 | Pipeline = Zéro logique commande (100% parcels.status) | `REFONTE_DASHBOARDS.md` |
+| ⛔3 | Restructurer l'existant, pas recréer de zéro | `RESTRUCTURATION.md` |
 
-### Fichiers de spec
-- `.tasklet/REFONTE_DASHBOARDS.md` — spec complète de la refonte
+## Fichiers de spec
+- `.tasklet/REFONTE_DASHBOARDS.md` — spec complète de la refonte dashboards
 - `.tasklet/RESTRUCTURATION.md` — principes de restructuration
 - `.tasklet/DESIGN_SYSTEM.md` — design system documenté
 - `.tasklet/codegen-instructions.md` — instructions backend
+- `.tasklet/CARTOGRAPHY_360.md` — **NEW** cartographie architecture 360°
+- `.tasklet/AUDIT_FIXES.md` — **NEW** tracker des fixes
 
-### Fondation (pushée sur main)
-| Fichier | Statut | Description |
-|---------|--------|-------------|
-| `public/komerce-ui.css` | ✅ Pushé | CSS Design System partagé (DM Sans, amber/gold, cartes, badges, KPIs, kanban, etc.) |
-| `public/komerce-api.js` | ✅ Pushé | Couche API unifiée JS (K.request, K.auth, K.hub, K.parcels, K.orders, K.ui) |
-| `public/chart.umd.min.js` | ✅ Pushé | Chart.js UMD bundle |
-
-### Écrans — État au 07/04/2026 — ✅ TOUS TERMINÉS
-| # | Écran | Fichier | Taille | Statut | Notes |
-|---|-------|---------|--------|--------|-------|
-| 1 | Hub Opérateur | `Komerce_Hub.html` | 29 KB | ✅ **Terminé** | Mobile-first, scan→pack→seal, ⛔V1 respecté |
-| 2 | Dashboard Pilotage | `Komerce_Dashboard.html` | 42 KB | ✅ **Terminé** | 9 onglets, Chart.js, auto-refresh 30s |
-| 3 | Admin | `Komerce_Admin.html` | 121 KB | ✅ **Terminé** | Sidebar complète, login, commandes, logistique, litiges, finance, pricing, catalogue, relais, paramètres |
-| 4 | Portal | `portal.html` | 16 KB | ✅ **Terminé** | Login, tuiles par rôle, liens vers tous les dashboards |
-| 5 | Relais | `Komerce_Relais.html` | 31 KB | ✅ **Terminé** | Dashboard complet relais : login, scan pickup, gestion colis |
-| 6 | Pipeline | `Komerce_Pipeline.html` | 34 KB | ✅ **Terminé** | Dashboard pipeline logistique : kanban, statuts, parcel-centric |
-| 7 | Pilotage v2 | `Komerce_Pilotage_v2.html` | 255 B | 🔀 Redirect | → `Dashboard.html` (alias) |
-
-### Structure public/ (nettoyée)
+## Structure public/ (7 écrans)
 ```
 public/
 ├── Komerce_Hub.html          ← Hub Opérateur
 ├── Komerce_Dashboard.html     ← Dashboard Pilotage (9 onglets)
 ├── Komerce_Admin.html         ← Admin complet
-├── Komerce_Relais.html        ← Relais (complet)
-├── Komerce_Pipeline.html      ← Pipeline (complet)
+├── Komerce_Relais.html        ← Relais
+├── Komerce_Pipeline.html      ← Pipeline
 ├── Komerce_Pilotage_v2.html   ← Redirect → Dashboard
 ├── portal.html                ← Portail d'entrée
 ├── komerce-ui.css             ← Design system CSS
@@ -71,47 +94,11 @@ public/
 ├── sw.js                      ← Service Worker
 ├── images/                    ← Assets images
 └── archive/                   ← Anciens fichiers (référence)
-    ├── Komerce_Backend.html       (512 KB — ancien monolithe)
-    ├── Komerce_Backoffice_Admin_v2.html (68 KB)
-    ├── Komerce_Admin_Users.html   (32 KB)
-    ├── Komerce_Config.html        (34 KB)
-    ├── Komerce_Mobile.html        (54 KB)
-    ├── Komerce_Web.html           (81 KB)
-    ├── Komerce_Simulateur.html    (106 KB)
-    ├── Komerce_Tests.html         (147 KB)
-    ├── Komerce_QR_Print.html      (9 KB)
-    └── index.html                 (144 KB — ancienne page d'accueil)
 ```
 
-### API Hub (endpoints réels)
-```
-POST /api/hub/scan     { parcel_ref, notes }
-POST /api/hub/pack     { parcel_id, box_label, notes }
-POST /api/hub/seal     { parcel_id, notes }
-GET  /api/hub/pending   → { data: [...], count }
-GET  /api/hub/today     → { scanned_today, packed_today, sealed_today, pending_total }
-```
-
-### API Parcels (endpoints réels)
-```
-GET    /api/parcels           → liste avec filtres
-GET    /api/parcels/:ref      → détail avec items
-POST   /api/parcels           → créer
-PATCH  /api/parcels/:id       → modifier
-DELETE /api/parcels/:id       → supprimer
-```
-
-### Design System — Résumé rapide
-- **Fonts** : DM Sans (text), JetBrains Mono (data)
-- **Accent** : amber/gold `#F5A623` / `#d97706`
-- **Fond** : `#f8f9fa`, cartes `#ffffff`
-- **CSS classes** : `.card`, `.btn`, `.btn-primary`, `.badge`, `.badge-success/warning/error/info`, `.table`, `.stats`, `.sc`, `.pipe`, `.ps`, `.g2/.g3`
-- **Mobile-first**, breakpoint 768px
-
-### Pour reprendre
+## Pour reprendre
 1. Lire ce fichier
-2. Lire `.tasklet/REFONTE_DASHBOARDS.md` si besoin de specs détaillées
-3. ✅ Tous les écrans sont terminés
+2. Lire `.tasklet/AUDIT_FIXES.md` pour voir les fixes en cours
+3. Lire `.tasklet/CARTOGRAPHY_360.md` pour la carte du projet
 4. Respecter les 3 verrous
-5. Utiliser le design system partagé (komerce-ui.css + komerce-api.js)
-6. Les anciens fichiers sont dans `public/archive/` (référence uniquement, ne pas modifier)
+5. Prochain chantier = Étape 1 (migration 018 + FIX-001)
