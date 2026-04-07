@@ -1,7 +1,22 @@
-# Gouvernance Komerce v2.0
+# Gouvernance Komerce v2.1
 
-> **Fichier unique de gouvernance.** Remplace AGENT_RULES.md et AGENTS_PROTOCOL.md.
-> Tout agent (IA ou humain) DOIT lire ce fichier avant toute action sur le projet.
+> **Fichier unique de gouvernance.** Tout agent (IA ou humain) DOIT lire ce fichier avant toute action.
+
+---
+
+## ⚠️ RÈGLE ABSOLUE — Commit toutes les 10 min
+
+> **Ta session peut s'arrêter à tout moment** (crédit épuisé, timeout, crash). Tout code non commité est **perdu**.
+
+```
+⏱️ 10 min max entre chaque commit. Pas de négociation.
+```
+
+- **Format WIP** : `wip: [ce qui a été fait]`
+- **Commit propre** quand une tâche est terminée : `feat/fix/refactor: [description]`
+- Ne jamais accumuler du travail — **commit petit, commit souvent**
+- En début de session : vérifier que le dernier commit reflète l'état réel
+- **Zéro fichier local.** Ton dossier de travail c'est Git. Rien ne vit en dehors du repo.
 
 ---
 
@@ -10,7 +25,7 @@
 Dès lecture du README, l'agent DOIT **immédiatement** :
 
 1. Lire `docs/ROADMAP_KOMERCE.md`
-2. Afficher le statut projet dans ce format :
+2. Afficher le statut projet :
 ```
 📊 STATUT KOMERCE
 ✅ Fait : [domaines complétés]
@@ -18,7 +33,7 @@ Dès lecture du README, l'agent DOIT **immédiatement** :
 ⬜ À venir : [prochaines priorités]
 🔴 Bloquants : [issues critiques]
 ```
-3. Enchaîner sur la **première tâche ⬜** de la priorité la plus haute (ordre numérique)
+3. Enchaîner sur la **première tâche ⬜** de la priorité la plus haute
 
 > Seule une demande **explicite** du propriétaire peut déroger à cet ordre.
 
@@ -30,7 +45,7 @@ Dès lecture du README, l'agent DOIT **immédiatement** :
 |--------|---------|------|
 | 🗺️ Carte | `docs/CARTOGRAPHY_360.md` | Architecture complète : 120 endpoints, 28+ tables, middlewares, dépendances |
 | 📋 Plan | `docs/ROADMAP_KOMERCE.md` | Source de vérité unique : priorités, tâches, progression |
-| 🔒 Bouclier | `docs/AUDIT_REPORT.md` + `docs/audit/*` + Issues #71-#84 | Sécurité : 6 vulnérabilités critiques (#71-76), 8 majeures (#77-84) |
+| 🔒 Bouclier | `docs/AUDIT_REPORT.md` + `docs/audit/*` + Issues #71-#84 | Sécurité : 6 critiques (#71-76), 8 majeures (#77-84) |
 
 ### Fichiers audit détaillés
 
@@ -44,13 +59,13 @@ Dès lecture du README, l'agent DOIT **immédiatement** :
 AVANT de coder           PENDANT                    APRÈS
 ─────────────────        ──────────────────         ─────────────────────────
 ① Lire ROADMAP           ④ Respecter l'archi        ⑥ Déposer un delta
-② Lire CARTOGRAPHY         existante et les           dans docs/_pending/
-③ Consulter AUDIT          middlewares               ⑦ Commit avec message clair
-   → ALORS coder         ⑤ Commit toutes les 10 min
+② Lire CARTOGRAPHY         existante                  dans docs/_pending/
+③ Consulter AUDIT        ⑤ COMMIT TOUTES LES       ⑦ Commit final propre
+   → ALORS coder            10 MIN (wip:)
 ```
 
 ### Nouvelle demande / fonctionnalité ?
-Ajouter d'abord à la ROADMAP (commit immédiat) → analyser la CARTOGRAPHY (impacts) → consulter l'AUDIT (risques) → implémenter.
+Ajouter d'abord à la ROADMAP (commit immédiat) → analyser CARTOGRAPHY (impacts) → consulter AUDIT (risques) → implémenter.
 
 ---
 
@@ -73,7 +88,7 @@ Après chaque session, déposer **un fichier delta** (pas de modification direct
 - [Changement sécurité]
 ```
 
-**Cycle** : Agent dépose delta → Trigger Tasklet (toutes les 10 min) lit + applique + commit + supprime les deltas traités.
+**Cycle** : Agent dépose delta → Trigger Tasklet (10 min) lit + applique + commit + supprime.
 
 ---
 
@@ -88,38 +103,27 @@ Après chaque session, déposer **un fichier delta** (pas de modification direct
 | Modification frontend (HTML/JS/CSS) | ✅ section frontend |
 | Modification docs uniquement | ❌ |
 
-> **Approche DELTA obligatoire** : ne modifier que les lignes impactées, jamais régénérer toute la carto.
+> **Approche DELTA obligatoire** : ne modifier que les lignes impactées.
 
 ---
 
-## 6. Sauvegarde continue
-
-- Commit toutes les **10 min max** (auto-commit via trigger Tasklet)
-- Format WIP : `wip: auto-save progress – [description]`
-- Ne pas attendre l'auto-commit pour les changements critiques → commit manuel
-- En début de session : vérifier que le dernier commit reflète l'état réel
-- Le commit manuel prime sur l'auto-commit en cas de conflit
-- Architecture **stateless** : tout vit dans le repo, aucun état agent requis
-
----
-
-## 7. Les 5 règles
+## 6. Les 5 règles
 
 | # | Règle |
 |---|-------|
-| 1 | **Pas de code sans lecture des 3 piliers** |
-| 2 | **Roadmap = source de vérité.** Toute demande y passe d'abord. Toujours suivre l'ordre de priorité. |
-| 3 | **Un delta après chaque session.** Ne jamais modifier les docs directement si trigger actif. |
-| 4 | **Commit toutes les 10 min.** Zéro perte de travail. |
-| 5 | **Cartographie à jour.** Tout commit de code inclut la MAJ carto (approche delta). Fix sécurité → MAJ AUDIT_REPORT + issues. |
+| 1 | **🔴 COMMIT TOUTES LES 10 MIN.** Zéro perte de travail. Session = éphémère, Git = permanent. |
+| 2 | **Pas de code sans lecture des 3 piliers** |
+| 3 | **Roadmap = source de vérité.** Toute demande y passe d'abord. Toujours suivre l'ordre de priorité. |
+| 4 | **Un delta après chaque session.** Ne jamais modifier les docs directement si trigger actif. |
+| 5 | **Cartographie à jour.** Tout commit de code inclut la MAJ carto (approche delta). Fix sécurité → MAJ AUDIT + issues. |
 
 > Vérifier toujours la véracité des informations en croisant avec le code réel.
 
 ---
 
-## 8. Agent Tasklet
+## 7. Agent Tasklet
 
-Si tu es un agent Tasklet, lis `docs/GOVERNANCE_BOOTSTRAP.md` pour te configurer comme gardien de la gouvernance. Le système est **zéro état agent** — tout vit dans le repo.
+Si tu es un agent Tasklet, lis `docs/GOVERNANCE_BOOTSTRAP.md` pour te configurer comme gardien de la gouvernance.
 
 ---
 

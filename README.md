@@ -6,10 +6,17 @@
 
 ## 🤖 Agent IA — Lis ceci en premier
 
+### 🔴 RÈGLE #1 : Commit toutes les 10 min
+
+> Ta session peut mourir à tout moment. **Tout code non commité est perdu.**
+> Format : `wip: [ce que tu as fait]`
+
+### Démarrage
+
 1. **Lis [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md)** — règles, piliers, workflow
-2. **Ouvre ta session** → commit `docs/_work/SESSION.md` (⏳ EN COURS)
-3. **Travaille** selon la ROADMAP (ordre de priorité)
-4. **Clôture ta session** → archive dans `docs/_logs/`, supprime `SESSION.md`
+2. **Travaille** selon la ROADMAP (ordre de priorité)
+3. **Commit toutes les 10 min** — même si c'est du WIP
+4. **Dépose un delta** dans `docs/_pending/` en fin de session
 
 > ⚠️ **Zéro fichier local.** Tout vit dans ce repo. Ton dossier de travail c'est Git.
 
