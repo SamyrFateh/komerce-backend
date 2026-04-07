@@ -8,7 +8,7 @@
 ## governance-autocommit
 
 ### Mission
-Sous-agent stateless qui surveille `docs/_pending/` et applique automatiquement les fichiers delta aux documents de gouvernance.
+Sous-agent stateless qui surveille `docs/_pending/` et applique automatiquement les fichiers delta aux documents de gouvernance. **Vérifie aussi les PRs ouvertes sans delta associé (filet de sécurité).**
 
 ### Contexte
 
@@ -28,6 +28,7 @@ Les outils sont préfixés par le `connectionId` actif (ex: `conn_XXX__github_`)
 | `github_push_to_branch` | Pusher des commits |
 | `github_list_issues` | Lister les issues |
 | `github_search_issues` | Rechercher issues/PRs |
+| `github_list_pull_requests` | Détecter PRs sans delta (filet de sécurité) |
 
 ### Workflow complet
 
@@ -38,6 +39,18 @@ Les outils sont préfixés par le `connectionId` actif (ex: `conn_XXX__github_`)
 Lister le contenu de `docs/_pending/` dans le repo.
 - Si le dossier est vide ou ne contient que `README.md` → Rapporter "No pending deltas found" et **STOP**.
 - Ne rien committer s'il n'y a rien à faire (idempotent).
+
+#### Step 1bis — Filet de sécurité : PRs ouvertes sans delta
+
+Lister les PRs ouvertes du repo avec `github_list_pull_requests` (state: open).
+Pour chaque PR ouverte :
+- Chercher dans `docs/_pending/` un fichier delta dont le nom ou le contenu mentionne la PR (numéro ou branche)
+- Si une PR n'a PAS de delta associé → ajouter un **avertissement** au rapport final
+- Format : `⚠️ PR #XX ([titre]) — pas de delta associé dans docs/_pending/`
+- Le sous-agent **ne bloque PAS** l'exécution, mais signale le problème pour que l'agent parent ou le user puisse agir
+- Si aucune PR ouverte → passer directement à Step 2
+
+> Ce step est un **filet de sécurité** : il détecte les oublis de delta après création de PR.
 
 #### Step 2 — Lire chaque fichier delta
 Pour chaque `.md` trouvé dans `docs/_pending/` (sauf `README.md`), lire son contenu et identifier :
@@ -72,6 +85,7 @@ Retourner un résumé :
 - Nombre de deltas traités
 - Documents mis à jour
 - Description brève des changements
+- ⚠️ PRs ouvertes sans delta (si détectées en Step 1bis)
 - Erreurs éventuelles (pour que l'agent parent puisse agir)
 
 ### Règles
@@ -97,5 +111,5 @@ Pour ajouter un nouveau sous-agent :
 
 ---
 
-_Dernière mise à jour : 2026-04-07_
+_Dernière mise à jour : 2026-04-07 — v2 (hardened governance)_
 _Source de vérité pour tous les sous-agents Komerce_

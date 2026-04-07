@@ -76,9 +76,9 @@ AVANT de coder           PENDANT                    APRÈS
 ─────────────────        ──────────────────         ─────────────────────────
 ① Lire ROADMAP           ④ Respecter l'archi        ⑥ Déposer un delta
 ② Lire CARTOGRAPHY         existante                  dans docs/_pending/
-③ Consulter AUDIT        ⑤ COMMIT TOUTES LES       ⑦ Commit final propre
-   → ALORS coder            10 MIN (wip:)
-                         ⑤bis COMMIT ANALYSE
+③ Consulter AUDIT        ⑤ COMMIT TOUTES LES       ⑦ CHECKLIST PRÉ-RAPPORT
+   → ALORS coder            10 MIN (wip:)              (delta? carto? roadmap?)
+                         ⑤bis COMMIT ANALYSE          ⑧ Commit final propre
                               DÈS QU'ELLE EST FAITE
 ```
 
@@ -125,7 +125,7 @@ Après chaque session, déposer **un fichier delta** (pas de modification direct
 
 ---
 
-## 6. Les 6 règles
+## 6. Les 8 règles
 
 | # | Règle |
 |---|-------|
@@ -135,8 +135,22 @@ Après chaque session, déposer **un fichier delta** (pas de modification direct
 | 4 | **Roadmap = source de vérité.** Toute demande y passe d'abord. Toujours suivre l'ordre de priorité. |
 | 5 | **Un delta après chaque session.** Ne jamais modifier les docs directement si trigger actif. |
 | 6 | **Cartographie à jour.** Tout commit de code inclut la MAJ carto (approche delta). Fix sécurité → MAJ AUDIT + issues. |
+| 7 | **🚫 JAMAIS "TERMINÉ" SANS DELTA.** Tout travail (PR, code, analyse) → delta IMMÉDIAT dans `docs/_pending/` AVANT de reporter au user. Zéro exception. |
+| 8 | **✅ CHECKLIST PRÉ-RAPPORT.** Avant de dire "terminé" : Delta déposé ? Carto incluse ? Roadmap impactée ? Les 3 doivent être ✅. |
 
 > Vérifier toujours la véracité des informations en croisant avec le code réel.
+
+### Checklist pré-rapport — Gate obligatoire
+
+> **Avant TOUTE déclaration "✅ terminé" au user**, vérifier ces 3 points :
+
+| # | Vérification | Action si manquant |
+|---|-------------|-------------------|
+| 📄 | **Delta déposé dans `docs/_pending/` ?** | Déposer le delta MAINTENANT |
+| 🗺️ | **Cartographie impactée incluse dans le delta ?** | Ajouter la section CARTOGRAPHY au delta |
+| 📋 | **Roadmap mise à jour dans le delta ?** | Ajouter la section ROADMAP au delta |
+
+> 🚫 **Gate bloquante** : Si un seul point est ❌, ne PAS déclarer "terminé". Corriger d'abord.
 
 ---
 
