@@ -16,6 +16,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { generateShipmentRef } = require('../utils/reference');
 const PDFDocument = require('pdfkit');
 const { sendSMS }   = require('../utils/sms');
+const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const QRCode = require('qrcode');
 const { validate } = require('../middleware/validate');
 const { logistics } = require('../validators');
@@ -63,31 +64,40 @@ router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment),
     );
     if (!rows.length) return res.status(404).json({ error: 'Expédition introuvable' });
 
-    // Si arrivée confirmée — mettre commandes en available + SMS clients
+    // ── R1 COMPLIANCE: Use parcelSync instead of direct UPDATE ──
     if (arrived_at && customs_cleared_at) {
-      await db.query(
-        "UPDATE orders SET status='available', available_at=NOW() WHERE shipment_id=$1 AND status='shipped'",
-        [req.params.id]
-      );
-      const clients = await db.query(`
-        SELECT o.reference, o.pickup_code, u.phone, rc.full_name AS dest_name, r.name AS relais_name, r.address AS relais_addr
-        FROM orders o
-        JOIN users u ON u.id=o.user_id
-        LEFT JOIN recipients rc ON rc.id=o.recipient_id
-        LEFT JOIN relais r ON r.id=o.relais_id
-        WHERE o.shipment_id=$1 AND o.status='available'
+      // 1. Get all parcels for orders in this shipment
+      const { rows: shipmentParcels } = await db.query(`
+        SELECT p.id AS parcel_id, p.order_id, p.reference AS parcel_ref,
+               o.reference AS order_ref, u.phone, u.full_name,
+               r.name AS relais_name, r.address AS relais_addr
+        FROM parcels p
+        JOIN orders o ON o.id = p.order_id
+        JOIN users u ON u.id = o.user_id
+        LEFT JOIN relais r ON r.id = o.relais_id
+        WHERE o.shipment_id = $1 AND p.status != 'cancelled'
       `, [req.params.id]);
 
-      // Envoi en parallèle — ne bloque pas la réponse HTTP
+      // 2. Update each parcel via parcelSync (R1 compliant)
+      for (const sp of shipmentParcels) {
+        await safeSyncScanToParcels({
+          order_id: sp.order_id,
+          step: 'relais_received',
+          scan_id: null,
+          scanned_by: req.user.id,
+          notes: `Arrivée conteneur ${rows[0].container_ref || req.params.id}`,
+        });
+      }
+
+      // 3. SMS per parcel (R1: 1 SMS per available parcel, not per order)
+      const smsTargets = shipmentParcels.filter(sp => sp.phone);
       Promise.all(
-        clients.rows
-          .filter(c => c.phone)
-          .map(c => sendSMS(
-            c.phone,
-            `Komerce · Votre commande ${c.reference} est disponible au ${c.relais_name} (${c.relais_addr}). Code de retrait : ${c.pickup_code}`,
-            'available', null
-          ))
-      ).catch(err => console.error('SMS batch logistics error:', err.message));
+        smsTargets.map(sp => sendSMS(
+          sp.phone,
+          `Komerce · Colis ${sp.parcel_ref || sp.order_ref} disponible au ${sp.relais_name} (${sp.relais_addr}).`,
+          'available', null
+        ))
+      ).catch(err => console.error('SMS parcel batch error:', err.message));
     }
 
     res.json(rows[0]);
