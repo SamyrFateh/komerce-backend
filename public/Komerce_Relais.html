@@ -1,1 +1,1111 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=/Komerce_Dashboard.html#relais"><title>Redirection…</title></head><body><p>Redirection vers <a href="/Komerce_Dashboard.html#relais">Relais</a>…</p></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KOMERCE // RELAIS</title>
+  <link rel="stylesheet" href="komerce-ui.css">
+  <style>
+    /* ── RELAIS-SPECIFIC STYLES ── */
+    body { background: var(--bg); }
+    .relais-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Login screen — same pattern as Hub */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 52px);
+    }
+    .login-card {
+      width: 100%; max-width: 400px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 36px 28px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 1.4rem;
+      letter-spacing: 4px; color: var(--gold); text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      text-align: center; letter-spacing: 2px; margin-bottom: 28px;
+    }
+    .login-err {
+      background: var(--red-bg); border: 1px solid var(--red);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.875rem; font-weight: 600;
+      margin-bottom: 14px; display: none;
+    }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex; gap: 0; margin-bottom: 20px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .tab-btn {
+      flex: 1; padding: 14px 16px; text-align: center;
+      font-family: var(--mono); font-size: 0.94rem; font-weight: 700;
+      color: var(--text3); cursor: pointer; border: none;
+      background: transparent; transition: all 0.2s;
+      letter-spacing: 1px; position: relative;
+    }
+    .tab-btn:not(:last-child) { border-right: 1px solid var(--border); }
+    .tab-btn.active { background: var(--gold); color: #000; }
+    .tab-btn:not(.active):hover { background: var(--bg3); color: var(--text); }
+    .tab-icon { display: block; font-size: 1.3rem; margin-bottom: 4px; }
+    .tab-panel { display: none; animation: fadeSlide 0.35s ease; }
+    .tab-panel.active { display: block; }
+
+    /* Scan zone */
+    .scan-zone {
+      background: var(--bg2); border: 2px dashed var(--gold);
+      border-radius: var(--radius); padding: 28px 22px;
+      margin-bottom: 20px; text-align: center;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .scan-zone.reception { border-color: var(--teal); }
+    .scan-zone.reception:focus-within {
+      box-shadow: 0 0 0 4px rgba(13,148,136,0.12);
+    }
+    .scan-zone.remise { border-color: var(--green); }
+    .scan-zone.remise:focus-within {
+      box-shadow: 0 0 0 4px rgba(22,163,74,0.12);
+    }
+    .scan-zone .scan-label {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .scan-zone .scan-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .scan-input {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text); padding: 16px 18px;
+      font-family: var(--mono); font-size: 1.2rem; width: 100%;
+      text-align: center; letter-spacing: 1px; transition: border-color 0.2s;
+    }
+    .scan-input:focus { outline: none; border-color: var(--gold); }
+    .scan-input::placeholder { color: var(--text3); font-size: 1rem; letter-spacing: 0; }
+    .scan-hint {
+      font-size: 0.82rem; color: var(--text3); margin-top: 10px;
+      font-family: var(--mono);
+    }
+
+    /* Confirmation card (after scan) */
+    .confirm-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+      animation: fadeSlide 0.35s ease;
+    }
+    .confirm-card.success { border-left: 4px solid var(--green); }
+    .confirm-card.pending { border-left: 4px solid var(--gold); }
+
+    /* Available parcels list */
+    .avail-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      cursor: pointer; transition: background 0.15s; gap: 12px;
+    }
+    .avail-item:hover { background: var(--bg3); }
+    .avail-item:last-child { border-bottom: none; }
+    .avail-ref {
+      font-family: var(--mono); font-size: 0.875rem; font-weight: 700;
+      color: var(--text);
+    }
+    .avail-client {
+      font-size: 0.875rem; color: var(--text2); margin-top: 2px;
+    }
+    .avail-age {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+    }
+    .pickup-code {
+      font-family: var(--mono); font-size: 1.3rem; font-weight: 800;
+      color: var(--gold); letter-spacing: 3px;
+      background: var(--amber-bg); padding: 6px 14px;
+      border-radius: var(--radius-sm); border: 1px solid rgba(217,119,6,0.2);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* Remise confirmation modal */
+    .remise-confirm {
+      background: var(--bg2); border: 2px solid var(--green);
+      border-radius: var(--radius); padding: 24px; text-align: center;
+      margin-bottom: 20px; animation: fadeSlide 0.35s ease;
+    }
+    .remise-confirm .pickup-code-big {
+      font-family: var(--mono); font-size: 2rem; font-weight: 800;
+      color: var(--gold); letter-spacing: 5px; margin: 12px 0;
+    }
+    .remise-confirm .parcel-info {
+      font-family: var(--mono); font-size: 0.94rem; color: var(--text2);
+      margin-bottom: 6px;
+    }
+
+    /* Section header */
+    .section-hdr {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    /* Collapsible */
+    .collapse-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none; padding: 10px 0;
+    }
+    .collapse-toggle:hover .section-hdr { color: var(--text2); }
+    .collapse-chevron {
+      font-size: 0.82rem; color: var(--text3); transition: transform 0.2s;
+    }
+    .collapse-toggle.open .collapse-chevron { transform: rotate(180deg); }
+    .collapse-body { display: none; }
+    .collapse-toggle.open + .collapse-body { display: block; }
+
+    /* History items */
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      flex-wrap: wrap; gap: 6px;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-left { display: flex; align-items: center; gap: 10px; }
+    .history-ref {
+      font-family: var(--mono); font-size: 0.875rem; font-weight: 700;
+      color: var(--text);
+    }
+    .history-info {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 28px 16px; color: var(--text3);
+      font-size: 0.94rem;
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* Operator info */
+    .operator-info {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text2);
+    }
+    .operator-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold); color: #000; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+    }
+    .btn-logout {
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 0.82rem; font-family: var(--mono);
+      padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+    }
+    .btn-logout:hover { color: var(--red); background: var(--red-bg); }
+
+    /* Search filter for available parcels */
+    .search-bar {
+      margin-bottom: 12px;
+    }
+    .search-bar .inp {
+      font-size: 0.94rem; padding: 10px 14px;
+    }
+
+    /* Arrived section */
+    .arrived-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 4px;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 600;
+      background: rgba(37,99,235,0.12); color: var(--blue);
+      border: 1px solid rgba(37,99,235,0.2);
+    }
+
+    /* Mobile overrides */
+    @media (max-width: 600px) {
+      .relais-wrap { padding: 16px 12px; }
+      .scan-input { font-size: 1.1rem; padding: 14px 16px; }
+      .pickup-code { font-size: 1.1rem; padding: 5px 10px; }
+      .login-card { padding: 28px 20px; margin: 0 12px; }
+      .tab-btn { font-size: 0.82rem; padding: 12px 10px; }
+      .g2 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 380px) {
+      .g2 { grid-template-columns: 1fr; }
+      .pickup-code { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="hdr">
+    <div class="logo">KOMERCE <em>// RELAIS</em></div>
+    <div class="hdr-right">
+      <div id="connPill" class="conn-pill">
+        <span class="conn-dot"></span>
+        <span id="connLabel">Déconnecté</span>
+      </div>
+      <div id="operatorInfo" class="operator-info" style="display:none;">
+        <div id="operatorAvatar" class="operator-avatar">—</div>
+        <span id="operatorName">Agent</span>
+        <button id="btnLogout" class="btn-logout" title="Déconnexion">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">KOMERCE</div>
+      <div class="login-sub">RELAIS — CONNEXION</div>
+
+      <div id="loginError" class="login-err"></div>
+
+      <div class="form-group">
+        <div class="inp-label">URL API</div>
+        <input id="inpApiUrl" class="inp" type="url" placeholder="https://api.komerce.app" autocomplete="url">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Email</div>
+        <input id="inpEmail" class="inp" type="email" placeholder="agent@komerce.app" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Mot de passe</div>
+        <input id="inpPassword" class="inp" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button id="btnLogin" class="btn btn-gold btn-full btn-lg" style="margin-top:8px;">
+        Connexion
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ WORKSPACE ═══ -->
+  <div id="workspace" style="display:none;">
+    <div class="relais-wrap">
+
+      <!-- ── RELAY NAME + STATS ── -->
+      <div id="relayHeader" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          <div>
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--text3);letter-spacing:2px;text-transform:uppercase;">Point relais</div>
+            <div id="relayName" style="font-size:1.2rem;font-weight:800;color:var(--text);">—</div>
+          </div>
+          <div id="relayLocation" class="badge b-blue" style="display:none;"></div>
+        </div>
+        <div class="g2">
+          <div class="card kpi-card">
+            <div class="kpi-v" id="kpiAvailable" style="color:var(--gold);">—</div>
+            <div class="kpi-l">Disponibles</div>
+          </div>
+          <div class="card kpi-card">
+            <div class="kpi-v" id="kpiCollected" style="color:var(--green);">—</div>
+            <div class="kpi-l">Remis aujourd'hui</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB BAR ── -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="reception" onclick="Relais.switchTab('reception')">
+          <span class="tab-icon">📥</span>
+          Réception
+        </button>
+        <button class="tab-btn" data-tab="remise" onclick="Relais.switchTab('remise')">
+          <span class="tab-icon">🤝</span>
+          Remise
+        </button>
+      </div>
+
+      <!-- ═══ TAB: RÉCEPTION ═══ -->
+      <div id="tabReception" class="tab-panel active">
+        <!-- Scan zone -->
+        <div class="scan-zone reception">
+          <div class="scan-icon">📦</div>
+          <div class="scan-label">Scanner colis arrivé</div>
+          <input
+            id="scanReception"
+            class="scan-input"
+            type="text"
+            placeholder="PCL-2026-XXXX"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+          >
+          <div class="scan-hint">Scannez le QR du colis ou saisissez la référence</div>
+        </div>
+
+        <!-- Last reception confirmation -->
+        <div id="receptionConfirm" style="display:none;"></div>
+
+        <!-- Arrived parcels waiting to be received -->
+        <div id="arrivedSection" style="display:none;">
+          <div class="section-hdr">Colis en attente de réception <span id="arrivedCount" class="badge b-blue" style="margin-left:6px;">0</span></div>
+          <div class="card" id="arrivedList"></div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: REMISE ═══ -->
+      <div id="tabRemise" class="tab-panel">
+        <!-- Scan pickup code -->
+        <div class="scan-zone remise">
+          <div class="scan-icon">🎫</div>
+          <div class="scan-label">Code de retrait client</div>
+          <input
+            id="scanPickup"
+            class="scan-input"
+            type="text"
+            placeholder="ABC-1234"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+          >
+          <div class="scan-hint">Entrez le code de retrait fourni au client</div>
+        </div>
+
+        <!-- Remise confirmation -->
+        <div id="remiseConfirm" style="display:none;"></div>
+      </div>
+
+      <!-- ═══ AVAILABLE PARCELS (visible in both tabs) ═══ -->
+      <div id="availableSection" style="margin-top:8px;">
+        <div class="section-hdr">Colis disponibles au retrait <span id="availableCount" class="badge b-gold" style="margin-left:6px;">0</span></div>
+        <div class="search-bar">
+          <input id="searchAvailable" class="inp" type="text" placeholder="🔍 Rechercher par réf, client, code retrait…">
+        </div>
+        <div class="card" id="availableList">
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            Aucun colis disponible
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ HISTORY (collapsible) ═══ -->
+      <div style="margin-top:8px;">
+        <div class="collapse-toggle" id="historyToggle" onclick="Relais.toggleHistory()">
+          <div class="section-hdr" style="margin-bottom:0;">Remises aujourd'hui <span id="historyCount" class="badge b-green" style="margin-left:6px;">0</span></div>
+          <span class="collapse-chevron">▼</span>
+        </div>
+        <div class="collapse-body" id="historyBody">
+          <div class="card" id="historyList">
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              Aucune remise aujourd'hui
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="k-toast" class="toast"></div>
+
+  <!-- ═══ CONFIRM MODAL ═══ -->
+  <div id="confirmModal" class="action-screen">
+    <div class="action-panel" style="max-width:420px;">
+      <div class="action-panel-hdr">
+        <div class="action-type" id="modalType">Confirmation</div>
+        <div class="action-title" id="modalTitle">—</div>
+        <div class="action-desc" id="modalDesc">—</div>
+      </div>
+      <div class="action-body" id="modalBody"></div>
+      <div class="action-footer">
+        <button class="btn btn-ghost" onclick="Relais.closeModal()">Annuler</button>
+        <button class="btn btn-green btn-lg" id="modalConfirmBtn" onclick="Relais.confirmAction()">
+          ✓ Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ API ═══ -->
+  <script src="komerce-api.js"></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── STATE ──────────────────────────────────────────────────
+    const state = {
+      user: null,
+      relayName: '',
+      relayId: null,
+      availableParcels: [],     // parcels with status=available at this relay
+      arrivedParcels: [],       // parcels with status=arrived at this relay
+      sessionCollections: [],   // collected this session [{ref, client, pickup, collectedAt}]
+      pendingAction: null,      // {type:'receive'|'collect', parcel, ...}
+      refreshInterval: null,
+      searchFilter: '',
+    };
+
+    // ── DOM REFS ──────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+      loginScreen:     $('loginScreen'),
+      workspace:       $('workspace'),
+      loginError:      $('loginError'),
+      inpApiUrl:       $('inpApiUrl'),
+      inpEmail:        $('inpEmail'),
+      inpPassword:     $('inpPassword'),
+      btnLogin:        $('btnLogin'),
+      btnLogout:       $('btnLogout'),
+      connPill:        $('connPill'),
+      connLabel:       $('connLabel'),
+      operatorInfo:    $('operatorInfo'),
+      operatorAvatar:  $('operatorAvatar'),
+      operatorName:    $('operatorName'),
+      relayName:       $('relayName'),
+      relayLocation:   $('relayLocation'),
+      kpiAvailable:    $('kpiAvailable'),
+      kpiCollected:    $('kpiCollected'),
+      scanReception:   $('scanReception'),
+      scanPickup:      $('scanPickup'),
+      receptionConfirm:$('receptionConfirm'),
+      remiseConfirm:   $('remiseConfirm'),
+      arrivedSection:  $('arrivedSection'),
+      arrivedCount:    $('arrivedCount'),
+      arrivedList:     $('arrivedList'),
+      availableSection:$('availableSection'),
+      availableCount:  $('availableCount'),
+      availableList:   $('availableList'),
+      searchAvailable: $('searchAvailable'),
+      historyToggle:   $('historyToggle'),
+      historyBody:     $('historyBody'),
+      historyList:     $('historyList'),
+      historyCount:    $('historyCount'),
+      confirmModal:    $('confirmModal'),
+      modalType:       $('modalType'),
+      modalTitle:      $('modalTitle'),
+      modalDesc:       $('modalDesc'),
+      modalBody:       $('modalBody'),
+      modalConfirmBtn: $('modalConfirmBtn'),
+    };
+
+    // ── INIT ──────────────────────────────────────────────────
+    function init() {
+      const storedUrl = localStorage.getItem('komerce_api_url') || '';
+      if (storedUrl) dom.inpApiUrl.value = storedUrl;
+
+      dom.btnLogin.addEventListener('click', handleLogin);
+      dom.btnLogout.addEventListener('click', handleLogout);
+      dom.inpPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+      dom.scanReception.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleReceptionScan(); });
+      dom.scanPickup.addEventListener('keydown', (e) => { if (e.key === 'Enter') handlePickupScan(); });
+      dom.searchAvailable.addEventListener('input', (e) => {
+        state.searchFilter = e.target.value.trim().toLowerCase();
+        renderAvailable();
+      });
+
+      if (K.auth.isConnected()) {
+        autoConnect();
+      }
+    }
+
+    // ── AUTH ───────────────────────────────────────────────────
+    async function handleLogin() {
+      const url = dom.inpApiUrl.value.trim();
+      const email = dom.inpEmail.value.trim();
+      const pass = dom.inpPassword.value;
+
+      if (!url || !email || !pass) {
+        showLoginError('Veuillez remplir tous les champs');
+        return;
+      }
+
+      dom.btnLogin.disabled = true;
+      dom.btnLogin.innerHTML = '<span class="spin">⟳</span> Connexion...';
+      hideLoginError();
+
+      try {
+        const result = await K.auth.login(email, pass, url);
+        state.user = result.user;
+        enterWorkspace();
+      } catch (err) {
+        showLoginError(err.message || 'Échec de la connexion');
+      } finally {
+        dom.btnLogin.disabled = false;
+        dom.btnLogin.textContent = 'Connexion';
+      }
+    }
+
+    async function autoConnect() {
+      try {
+        const info = await K.request('/api/relay/info');
+        state.user = K.auth.getUser();
+        enterWorkspace(info);
+      } catch (err) {
+        K.auth.logout();
+        K.ui.toast('Session expirée — reconnectez-vous', 'warn');
+      }
+    }
+
+    function handleLogout() {
+      K.auth.logout();
+      clearInterval(state.refreshInterval);
+      state.availableParcels = [];
+      state.arrivedParcels = [];
+      state.sessionCollections = [];
+
+      dom.workspace.style.display = 'none';
+      dom.loginScreen.style.display = 'flex';
+      dom.operatorInfo.style.display = 'none';
+      dom.connPill.classList.remove('ok');
+      dom.connLabel.textContent = 'Déconnecté';
+      K.ui.toast('Déconnecté', 'warn');
+    }
+
+    function enterWorkspace(preloadedInfo) {
+      dom.loginScreen.style.display = 'none';
+      dom.workspace.style.display = 'block';
+
+      // Connection pill
+      dom.connPill.classList.add('ok');
+      dom.connLabel.textContent = 'Connecté';
+      dom.connPill.querySelector('.conn-dot').classList.add('pulse');
+
+      // Operator info
+      const user = state.user;
+      if (user) {
+        const initials = (user.name || user.email || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        dom.operatorAvatar.textContent = initials;
+        dom.operatorName.textContent = user.name || user.email || 'Agent';
+      } else {
+        dom.operatorAvatar.textContent = 'AG';
+        dom.operatorName.textContent = 'Agent';
+      }
+      dom.operatorInfo.style.display = 'flex';
+
+      // Relay info
+      if (preloadedInfo) {
+        const info = preloadedInfo.data || preloadedInfo;
+        state.relayName = info.name || info.relay_name || 'Relais';
+        state.relayId = info.id || info.relay_id || null;
+        dom.relayName.textContent = state.relayName;
+        if (info.location || info.city) {
+          dom.relayLocation.textContent = '📍 ' + (info.location || info.city);
+          dom.relayLocation.style.display = 'inline-flex';
+        }
+      } else {
+        loadRelayInfo();
+      }
+
+      // Load data
+      loadStats();
+      loadAvailable();
+      loadArrived();
+      loadHistory();
+
+      // Focus scan
+      setTimeout(() => dom.scanReception.focus(), 200);
+
+      // Auto-refresh every 30s
+      state.refreshInterval = setInterval(() => {
+        loadStats();
+        loadAvailable();
+        loadArrived();
+        loadHistory();
+      }, 30000);
+    }
+
+    // ── RELAY INFO ────────────────────────────────────────────
+    async function loadRelayInfo() {
+      try {
+        const info = await K.request('/api/relay/info');
+        const d = info.data || info;
+        state.relayName = d.name || d.relay_name || 'Relais';
+        state.relayId = d.id || d.relay_id || null;
+        dom.relayName.textContent = state.relayName;
+        if (d.location || d.city) {
+          dom.relayLocation.textContent = '📍 ' + (d.location || d.city);
+          dom.relayLocation.style.display = 'inline-flex';
+        }
+      } catch (err) {
+        dom.relayName.textContent = 'Relais';
+      }
+    }
+
+    // ── STATS ─────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const data = await K.request('/api/relay/today');
+        const d = data.data || data;
+        dom.kpiAvailable.textContent = d.available_count ?? d.available ?? '—';
+        dom.kpiCollected.textContent = d.collected_today ?? d.collected ?? '—';
+      } catch (err) {
+        // Fallback: count from loaded data
+        dom.kpiAvailable.textContent = state.availableParcels.length || '—';
+        dom.kpiCollected.textContent = state.sessionCollections.length || '—';
+      }
+    }
+
+    // ── AVAILABLE PARCELS ─────────────────────────────────────
+    async function loadAvailable() {
+      try {
+        const res = await K.request('/api/relay/available');
+        const parcels = res.data || res || [];
+        state.availableParcels = Array.isArray(parcels) ? parcels : [];
+        renderAvailable();
+      } catch (err) {
+        // Fallback: use parcels API
+        try {
+          const res = await K.parcels.list({ status: 'available' });
+          const parcels = res.data || res || [];
+          state.availableParcels = Array.isArray(parcels) ? parcels : [];
+          renderAvailable();
+        } catch (e) {
+          console.warn('Available load failed:', e.message);
+        }
+      }
+    }
+
+    function renderAvailable() {
+      let parcels = state.availableParcels;
+      const count = parcels.length;
+
+      dom.availableCount.textContent = count;
+
+      // Apply search filter
+      if (state.searchFilter) {
+        const q = state.searchFilter;
+        parcels = parcels.filter(p => {
+          const ref = (p.reference || p.ref || '').toLowerCase();
+          const client = (p.client_name || p.customer_name || p.client || '').toLowerCase();
+          const pickup = (p.pickup_code || '').toLowerCase();
+          return ref.includes(q) || client.includes(q) || pickup.includes(q);
+        });
+      }
+
+      if (parcels.length === 0) {
+        dom.availableList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            ${state.searchFilter ? 'Aucun résultat pour "' + escHtml(state.searchFilter) + '"' : 'Aucun colis disponible'}
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      parcels.forEach(p => {
+        const ref = p.reference || p.ref || p.id || '—';
+        const client = p.client_name || p.customer_name || p.client || '—';
+        const pickup = p.pickup_code || '—';
+        const age = K.ui.fmtAge(p.available_at || p.arrived_at || p.updated_at || p.created_at);
+        const ageClass = getDaysOld(p.available_at || p.arrived_at || p.updated_at || p.created_at) > 5 ? 'style="color:var(--red);"' : '';
+
+        html += `
+          <div class="avail-item" onclick="Relais.startCollect('${escAttr(ref)}', '${escAttr(pickup)}')">
+            <div style="flex:1;min-width:0;">
+              <div class="avail-ref">${escHtml(ref)}</div>
+              <div class="avail-client">👤 ${escHtml(client)}</div>
+              <div class="avail-age" ${ageClass}>⏱ ${age}</div>
+            </div>
+            <div class="pickup-code">${escHtml(pickup)}</div>
+          </div>`;
+      });
+      dom.availableList.innerHTML = html;
+    }
+
+    // ── ARRIVED PARCELS (waiting reception) ───────────────────
+    async function loadArrived() {
+      try {
+        const res = await K.request('/api/relay/arrived');
+        const parcels = res.data || res || [];
+        state.arrivedParcels = Array.isArray(parcels) ? parcels : [];
+        renderArrived();
+      } catch (err) {
+        // Fallback
+        try {
+          const res = await K.parcels.list({ status: 'arrived' });
+          const parcels = res.data || res || [];
+          state.arrivedParcels = Array.isArray(parcels) ? parcels : [];
+          renderArrived();
+        } catch (e) {
+          console.warn('Arrived load failed:', e.message);
+        }
+      }
+    }
+
+    function renderArrived() {
+      const count = state.arrivedParcels.length;
+
+      if (count === 0) {
+        dom.arrivedSection.style.display = 'none';
+        return;
+      }
+
+      dom.arrivedSection.style.display = 'block';
+      dom.arrivedCount.textContent = count;
+
+      let html = '';
+      state.arrivedParcels.forEach(p => {
+        const ref = p.reference || p.ref || p.id || '—';
+        const shipment = p.shipment_ref || p.shipment || '';
+        const age = K.ui.fmtAge(p.arrived_at || p.updated_at || p.created_at);
+
+        html += `
+          <div class="avail-item" onclick="Relais.quickReceive('${escAttr(ref)}')">
+            <div style="flex:1;min-width:0;">
+              <div class="avail-ref">${escHtml(ref)}</div>
+              ${shipment ? '<div style="font-size:0.82rem;color:var(--text3);margin-top:2px;">🚢 ' + escHtml(shipment) + '</div>' : ''}
+              <div class="avail-age">⏱ Arrivé ${age}</div>
+            </div>
+            <div class="arrived-badge">📥 Réceptionner</div>
+          </div>`;
+      });
+      dom.arrivedList.innerHTML = html;
+    }
+
+    // ── RECEPTION SCAN ────────────────────────────────────────
+    async function handleReceptionScan() {
+      const ref = dom.scanReception.value.trim();
+      if (!ref) return;
+
+      dom.scanReception.disabled = true;
+
+      try {
+        const result = await K.request('/api/relay/receive', 'POST', { parcel_ref: ref });
+        const parcel = result.parcel || result.data || result;
+        const parcelRef = parcel.reference || parcel.ref || ref;
+        const pickupCode = parcel.pickup_code || parcel.code || '—';
+
+        // Show confirmation
+        dom.receptionConfirm.style.display = 'block';
+        dom.receptionConfirm.innerHTML = `
+          <div class="confirm-card success">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <span class="badge b-green">✓ Réceptionné</span>
+              <span style="font-family:var(--mono);font-size:0.94rem;font-weight:700;">${escHtml(parcelRef)}</span>
+            </div>
+            <div style="font-size:0.875rem;color:var(--text2);margin-bottom:8px;">
+              Le colis est maintenant <strong>disponible au retrait</strong>.
+            </div>
+            ${pickupCode !== '—' ? '<div style="font-size:0.875rem;color:var(--text3);">Code retrait : <span class="pickup-code" style="font-size:1rem;">' + escHtml(pickupCode) + '</span></div>' : ''}
+          </div>`;
+
+        dom.scanReception.value = '';
+        K.ui.flash();
+        K.ui.toast('✓ Colis réceptionné — ' + parcelRef, 'ok');
+
+        // Refresh lists
+        loadStats();
+        loadAvailable();
+        loadArrived();
+
+        // Auto-hide confirmation after 8s
+        setTimeout(() => {
+          if (dom.receptionConfirm.style.display === 'block') {
+            dom.receptionConfirm.style.display = 'none';
+          }
+        }, 8000);
+
+      } catch (err) {
+        K.ui.toast('Erreur réception : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        dom.scanReception.disabled = false;
+        dom.scanReception.focus();
+      }
+    }
+
+    // ── QUICK RECEIVE (from arrived list) ─────────────────────
+    function quickReceive(ref) {
+      dom.scanReception.value = ref;
+      handleReceptionScan();
+    }
+
+    // ── PICKUP SCAN ───────────────────────────────────────────
+    async function handlePickupScan() {
+      const code = dom.scanPickup.value.trim();
+      if (!code) return;
+
+      dom.scanPickup.disabled = true;
+
+      try {
+        // Look up parcel by pickup code
+        const result = await K.request('/api/relay/lookup', 'POST', { pickup_code: code });
+        const parcel = result.parcel || result.data || result;
+        const parcelRef = parcel.reference || parcel.ref || '—';
+        const client = parcel.client_name || parcel.customer_name || parcel.client || '—';
+        const items = parcel.items_count || parcel.items?.length || '?';
+
+        // Show confirmation modal
+        state.pendingAction = {
+          type: 'collect',
+          parcelId: parcel.id || parcel.parcel_id,
+          parcelRef: parcelRef,
+          pickupCode: code,
+          client: client,
+        };
+
+        openModal(
+          'REMISE CLIENT',
+          'Confirmer la remise du colis',
+          'Vérifiez l\'identité du client avant de confirmer.',
+          `<div style="text-align:center;padding:8px 0;">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--text3);margin-bottom:4px;">CODE RETRAIT</div>
+            <div style="font-family:var(--mono);font-size:2rem;font-weight:800;color:var(--gold);letter-spacing:5px;margin-bottom:16px;">${escHtml(code)}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left;">
+              <div>
+                <div style="font-size:0.82rem;color:var(--text3);font-family:var(--mono);">COLIS</div>
+                <div style="font-size:1rem;font-weight:700;">${escHtml(parcelRef)}</div>
+              </div>
+              <div>
+                <div style="font-size:0.82rem;color:var(--text3);font-family:var(--mono);">CLIENT</div>
+                <div style="font-size:1rem;font-weight:700;">${escHtml(client)}</div>
+              </div>
+            </div>
+          </div>`
+        );
+
+        dom.scanPickup.value = '';
+
+      } catch (err) {
+        K.ui.toast('Code invalide : ' + (err.message || 'Colis non trouvé'), 'err');
+      } finally {
+        dom.scanPickup.disabled = false;
+        dom.scanPickup.focus();
+      }
+    }
+
+    // ── START COLLECT (from available list) ────────────────────
+    function startCollect(ref, pickupCode) {
+      // Switch to remise tab
+      switchTab('remise');
+      // Pre-fill pickup code and trigger lookup
+      dom.scanPickup.value = pickupCode !== '—' ? pickupCode : ref;
+      setTimeout(() => handlePickupScan(), 100);
+    }
+
+    // ── CONFIRM ACTION ────────────────────────────────────────
+    async function confirmAction() {
+      if (!state.pendingAction) return;
+
+      const action = state.pendingAction;
+      const btn = dom.modalConfirmBtn;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin">⟳</span> Traitement...';
+
+      try {
+        if (action.type === 'collect') {
+          await K.request('/api/relay/collect', 'POST', {
+            parcel_id: action.parcelId,
+            pickup_code: action.pickupCode,
+          });
+
+          // Success
+          K.ui.flash();
+          K.ui.toast('✓ Colis remis — ' + action.parcelRef, 'ok');
+
+          // Add to session history
+          state.sessionCollections.unshift({
+            ref: action.parcelRef,
+            client: action.client,
+            pickup: action.pickupCode,
+            collectedAt: K.ui.ts(),
+          });
+
+          // Show confirmation in remise tab
+          dom.remiseConfirm.style.display = 'block';
+          dom.remiseConfirm.innerHTML = `
+            <div class="confirm-card success">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span class="badge b-green">✓ Remis</span>
+                <span style="font-family:var(--mono);font-size:0.94rem;font-weight:700;">${escHtml(action.parcelRef)}</span>
+              </div>
+              <div style="font-size:0.875rem;color:var(--text2);">
+                Remis à <strong>${escHtml(action.client)}</strong> · ${K.ui.ts()}
+              </div>
+            </div>`;
+
+          // Auto-hide after 8s
+          setTimeout(() => {
+            if (dom.remiseConfirm.style.display === 'block') {
+              dom.remiseConfirm.style.display = 'none';
+            }
+          }, 8000);
+
+          // Refresh
+          loadStats();
+          loadAvailable();
+          loadHistory();
+          renderSessionHistory();
+        }
+
+        closeModal();
+
+      } catch (err) {
+        K.ui.toast('Erreur remise : ' + (err.message || 'Inconnu'), 'err');
+        btn.disabled = false;
+        btn.innerHTML = '✓ Confirmer';
+      }
+    }
+
+    // ── HISTORY (today's collections from server) ─────────────
+    async function loadHistory() {
+      try {
+        const res = await K.request('/api/relay/history?period=today');
+        const collections = res.data || res || [];
+        renderServerHistory(Array.isArray(collections) ? collections : []);
+      } catch (err) {
+        // Fall back to session-only history
+        renderSessionHistory();
+      }
+    }
+
+    function renderServerHistory(collections) {
+      const count = collections.length + state.sessionCollections.length;
+      // Deduplicate: server data takes priority, add session-only items
+      const serverRefs = new Set(collections.map(c => c.reference || c.ref || c.parcel_ref || ''));
+      const sessionOnly = state.sessionCollections.filter(s => !serverRefs.has(s.ref));
+      const allCollections = [...sessionOnly, ...collections];
+
+      dom.historyCount.textContent = allCollections.length;
+
+      if (allCollections.length === 0) {
+        dom.historyList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            Aucune remise aujourd'hui
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      allCollections.forEach(h => {
+        const ref = h.ref || h.reference || h.parcel_ref || '—';
+        const client = h.client || h.client_name || h.customer_name || '—';
+        const time = h.collectedAt || K.ui.fmtDate(h.collected_at || h.updated_at) || '—';
+
+        html += `
+          <div class="history-item">
+            <div class="history-left">
+              <span class="badge b-green">✓</span>
+              <span class="history-ref">${escHtml(ref)}</span>
+            </div>
+            <div class="history-info">
+              👤 ${escHtml(client)} · ${time}
+            </div>
+          </div>`;
+      });
+      dom.historyList.innerHTML = html;
+
+      // Auto-open on first collection
+      if (allCollections.length > 0 && !dom.historyToggle.classList.contains('open')) {
+        dom.historyToggle.classList.add('open');
+      }
+    }
+
+    function renderSessionHistory() {
+      dom.historyCount.textContent = state.sessionCollections.length;
+
+      if (state.sessionCollections.length === 0) {
+        dom.historyList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            Aucune remise cette session
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      state.sessionCollections.forEach(h => {
+        html += `
+          <div class="history-item">
+            <div class="history-left">
+              <span class="badge b-green">✓</span>
+              <span class="history-ref">${escHtml(h.ref)}</span>
+            </div>
+            <div class="history-info">
+              👤 ${escHtml(h.client)} · ${h.collectedAt}
+            </div>
+          </div>`;
+      });
+      dom.historyList.innerHTML = html;
+
+      if (state.sessionCollections.length === 1 && !dom.historyToggle.classList.contains('open')) {
+        dom.historyToggle.classList.add('open');
+      }
+    }
+
+    // ── TAB SWITCHING ─────────────────────────────────────────
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+      document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
+      const panel = $(tabName === 'reception' ? 'tabReception' : 'tabRemise');
+      panel.classList.add('active');
+
+      // Focus correct input
+      setTimeout(() => {
+        if (tabName === 'reception') dom.scanReception.focus();
+        else dom.scanPickup.focus();
+      }, 100);
+    }
+
+    // ── MODAL ─────────────────────────────────────────────────
+    function openModal(type, title, desc, bodyHtml) {
+      dom.modalType.textContent = type;
+      dom.modalTitle.textContent = title;
+      dom.modalDesc.textContent = desc;
+      dom.modalBody.innerHTML = bodyHtml;
+      dom.confirmModal.classList.add('open');
+      dom.modalConfirmBtn.disabled = false;
+      dom.modalConfirmBtn.innerHTML = '✓ Confirmer la remise';
+    }
+
+    function closeModal() {
+      dom.confirmModal.classList.remove('open');
+      state.pendingAction = null;
+      dom.modalConfirmBtn.disabled = false;
+      dom.modalConfirmBtn.innerHTML = '✓ Confirmer';
+    }
+
+    // ── COLLAPSE HISTORY ──────────────────────────────────────
+    function toggleHistory() {
+      dom.historyToggle.classList.toggle('open');
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function escAttr(str) {
+      if (!str) return '';
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function getDaysOld(dateStr) {
+      if (!dateStr) return 0;
+      return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    }
+
+    function showLoginError(msg) {
+      dom.loginError.textContent = msg;
+      dom.loginError.style.display = 'block';
+    }
+
+    function hideLoginError() {
+      dom.loginError.style.display = 'none';
+    }
+
+    // ── EXPOSE PUBLIC API ─────────────────────────────────────
+    window.Relais = {
+      switchTab,
+      quickReceive,
+      startCollect,
+      confirmAction,
+      closeModal,
+      toggleHistory,
+    };
+
+    // ── BOOT ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+
+</body>
+</html>
