@@ -1,73 +1,82 @@
-# 🔄 KOMERCE — Plan de reprise Vague 1/2/3
+# Komerce Backend — Tasklet Resume
 
-> Dernière mise à jour : 7 avril 2026 — 20h30
-> Ce dossier contient les instructions de codage + fichiers générés pour reprendre après coupure.
+## Projet
+Komerce — Backend e-commerce **parcel-centric** (Node.js / Express / PostgreSQL).
+Repo: `SamyrFateh/komerce-backend` branche `main`.
 
-## 📋 PLAN DE MICRO-COMMITS
+## Architecture clé
+- **R1**: orders.status = agrégation via `parcelSync.js`, jamais écrit directement
+- **R2**: Hub opérateur : scan → pack → seal (3 actions)
+- Parcel = source de vérité, pas les commandes
 
-### ✅ VAGUE 1 — Socle Parcel-Centric (~22h estimé)
+## État d'avancement
 
-| # | Commit | Fichiers | Statut |
-|---|--------|----------|--------|
-| C1 | 🔐 Fix CORS whitelist (#74) + adminLimiter (#75) + gate reset (#76) | `server.js`, `middleware/rate-limit.js`, `routes/admin.js` | ✅ PUSHÉ `a9371eb` |
-| C2 | 🛠️ Fix logistics.js R1 violations | `routes/logistics.js` | ✅ PUSHÉ `a930baf` |
-| C3 | 📦 Parcels CRUD API + validators + migration 014 | `routes/parcels.js`, `validators/index.js`, `migrations/014_parcels_final_cleanup.sql` | ✅ PUSHÉ `05af183` |
-| C3-bis | 🔌 Wire /api/parcels in server.js | `server.js` | ✅ PUSHÉ `6e5bf0f` |
+| Vague | Commits | Statut |
+|-------|---------|--------|
+| **Vague 1** — Socle Parcel-Centric | C1 (Security), C2 (Logistics R1), C3 (Parcels API), C3-bis (validators+migration) | ✅ Mergé |
+| **Vague 2** — Hub Terrain | C4 (routes/hub.js), C5 (server.js câblage) | ✅ Mergé (PR #119) |
+| **Vague 3** — Optimisation | C6 (migration customs), C7 (migration carriers), C8 (routes/carriers.js) | ✅ Mergé (PR #119) |
+| **Hotfix** — SyntaxError L619 | Fix string escape Samsung seed | ✅ Mergé (PR #120) |
+| **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | ⬜ **À FAIRE** |
+| **C9** — Dashboard logistics costs | Pas encore spécifié | ⬜ À définir |
 
-### ✅ VAGUE 2 — Hub Terrain
+## ⬜ Prochaine action : Hub Safety Fixes (A/B/C)
 
-| # | Commit | Fichiers | Statut |
-|---|--------|----------|--------|
-| C4 | 🏭 Create routes/hub.js | `routes/hub.js` (new) | ✅ PR Vague 2+3 |
-| C5 | 🔌 Register hub + carriers in server.js | `server.js` | ✅ PR Vague 2+3 |
+Créer une **PR** avec :
 
-### ✅ VAGUE 3 — Optimisation Avancée
+### 🔴 A. Contrainte UNIQUE sur parcel_items.order_item_id
+Empêcher qu'un même article soit ajouté 2 fois dans un colis.
 
-| # | Commit | Fichiers | Statut |
-|---|--------|----------|--------|
-| C6 | 🗃️ Migration 015 customs enrichment | `migrations/015_customs_enrichment.sql` (new) | ✅ PR Vague 2+3 |
-| C7 | 🗃️ Migration 016 carriers table | `migrations/016_carriers.sql` (new) | ✅ PR Vague 2+3 |
-| C8 | 🚚 Carrier CRUD + customs endpoints | `routes/carriers.js` (new) | ✅ PR Vague 2+3 |
-| C9 | 📊 Dashboard logistics costs | `routes/dashboard.js` modif | ⬜ À SPÉCIFIER |
-
-## 🏗️ Architecture & Règles Clés
-
-### R1 — Parcel-Centric
-- Aucun flux ne dépend de la complétude commande
-- Chaque colis est autonome
-- `orders.status` = agrégation via `parcelSync`, JAMAIS écrit directement
-
-### R2 — Hub Opérateur
-- Scan → Box → Seal : 3 actions seulement
-- Auth: `agent_hub` ou `admin`
-
-### Tech Stack
-- Node.js + Express + PostgreSQL
-- JWT auth: `middleware/auth.js` → `authenticate`, `requireRole`
-- Validation: `middleware/validate.js` + `validators/index.js` (Joi)
-- Parcel sync: `utils/parcelSync.js` → `safeSyncScanToParcels`
-- Parcel utils: `utils/parcels.js` → `PARCEL_TYPES`, `PARCEL_STATUSES`, `computeOrderStatus`, `splitOrderIntoParcels`
-- References: `utils/reference.js` → `generateParcelRef`, `generateShipmentRef`
-- SMS: `utils/sms.js` → `sendSMS`
-- Rate limiting: `middleware/rate-limit.js`
-
-## 📂 Structure des fichiers générés
-
-```
-.tasklet/
-├── RESUME.md                          ← ce fichier
-├── codegen-instructions.md            ← instructions complètes du codegen agent
-├── c1-security/                       ✅ PUSHÉ
-├── c2-logistics-r1/                   ✅ PUSHÉ
-├── c3-parcels-api/                    ✅ PUSHÉ
-├── c4-hub/                            ✅ PR Vague 2+3
-└── c5-v3-optim/                       ✅ PR Vague 2+3
+**Migration `017_hub_safety_constraints.sql`** :
+```sql
+ALTER TABLE parcel_items
+  ADD CONSTRAINT unique_order_item_per_parcel UNIQUE (order_item_id);
 ```
 
-## 🔑 Pour reprendre
+**Code** : dans `routes/parcels.js` POST `/:id/items`, catch l'erreur `23505` (unique violation) et retourner 409.
 
-1. Relire ce RESUME.md pour le contexte
-2. Vague 1 (C1-C3) ✅ — Pushé sur main
-3. Vague 2 (C4-C5) ✅ — PR créé
-4. Vague 3 (C6-C8) ✅ — PR créé
-5. Restant : C9 (Dashboard logistics costs) — specs à définir
+### 🔴 B. SELECT … FOR UPDATE dans hub.js (race condition)
+Empêcher 2 opérateurs de scanner le même colis en même temps.
+
+**Code** : dans `routes/hub.js`, les 3 endpoints (scan/pack/seal) doivent :
+1. `const client = await db.getClient()`
+2. `BEGIN`
+3. `SELECT ... FROM parcels WHERE ... FOR UPDATE`
+4. Vérifier statut
+5. `COMMIT` ou `ROLLBACK`
+6. Appeler `safeSyncScanToParcels` après commit
+
+Voir le fichier `hub.js` déjà préparé dans `/agent/home/komerce-output/routes/hub.js`.
+
+### 🟠 C. Un seul draft par commande
+
+**Migration `017_hub_safety_constraints.sql`** (même fichier) :
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS one_draft_per_order
+  ON parcels (order_id)
+  WHERE status = 'draft';
+```
+
+**Code** : dans `routes/parcels.js` POST `/`, catch l'erreur `23505` et retourner 409 "Un colis draft existe déjà pour cette commande".
+
+## Fichiers déjà préparés localement
+
+- `/agent/home/komerce-output/routes/hub.js` — hub.js avec FOR UPDATE (B) ✅
+- `/agent/home/komerce-output/migrations/017_hub_safety_constraints.sql` — migration A+C ✅
+- `routes/parcels.js` — doit être modifié pour catch 23505 (A+C)
+
+## Fichiers clés du repo
+
+| Fichier | Rôle |
+|---------|------|
+| `server.js` | Point d'entrée, routes, seeds, CORS |
+| `routes/hub.js` | Hub terrain (scan/pack/seal) |
+| `routes/parcels.js` | CRUD parcels |
+| `routes/carriers.js` | CRUD transporteurs + customs |
+| `routes/scans.js` | Scan logistique |
+| `routes/logistics.js` | Shipments + conteneurs |
+| `utils/parcelSync.js` | SOURCE DE VÉRITÉ statut parcels/orders |
+| `utils/parcels.js` | PARCEL_TYPES, STATUS_WEIGHT, helpers |
+| `validators/index.js` | Schémas Joi |
+| `middleware/auth.js` | JWT authenticate + requireRole |
+| `middleware/validate.js` | Validation middleware |
