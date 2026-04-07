@@ -22,7 +22,7 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 
 ---
 
-## CHANTIER : Refonte Dashboards
+## CHANTIER : Refonte Dashboards — ✅ TERMINÉ
 
 ### 3 Verrous posés
 | # | Verrou | Fichier |
@@ -44,30 +44,44 @@ Philosophie **parcel-centric** : tout tourne autour des colis, pas des commandes
 | `public/komerce-api.js` | ✅ Pushé | Couche API unifiée JS (K.request, K.auth, K.hub, K.parcels, K.orders, K.ui) |
 | `public/chart.umd.min.js` | ✅ Pushé | Chart.js UMD bundle |
 
-### Écrans — État au 07/04/2026
+### Écrans — État au 07/04/2026 — ✅ TOUS TERMINÉS
 | # | Écran | Fichier | Taille | Statut | Notes |
 |---|-------|---------|--------|--------|-------|
 | 1 | Hub Opérateur | `Komerce_Hub.html` | 29 KB | ✅ **Terminé** | Mobile-first, scan→pack→seal, ⛔V1 respecté |
-| 2 | Dashboard Pilotage | `Komerce_Dashboard.html` | 86 KB | ✅ **Terminé** | 9 onglets (Vue d'ensemble, Pipeline, Hub, Relais, Finance, Clients, Catalogue, Retards, Tendances), Chart.js, auto-refresh 30s |
+| 2 | Dashboard Pilotage | `Komerce_Dashboard.html` | 42 KB | ✅ **Terminé** | 9 onglets, Chart.js, auto-refresh 30s |
 | 3 | Admin | `Komerce_Admin.html` | 121 KB | ✅ **Terminé** | Sidebar complète, login, commandes, logistique, litiges, finance, pricing, catalogue, relais, paramètres |
 | 4 | Portal | `portal.html` | 16 KB | ✅ **Terminé** | Login, tuiles par rôle, liens vers tous les dashboards |
-| 5 | Pipeline | `Komerce_Pipeline.html` | 263 B | 🔀 Redirect | → `Dashboard.html#pipeline` (onglet intégré dans le Dashboard) |
-| 6 | Relais | `Komerce_Relais.html` | 257 B | 🔀 Redirect | → `Dashboard.html#relais` (onglet intégré dans le Dashboard) |
+| 5 | Relais | `Komerce_Relais.html` | 31 KB | ✅ **Terminé** | Dashboard complet relais : login, scan pickup, gestion colis |
+| 6 | Pipeline | `Komerce_Pipeline.html` | 34 KB | ✅ **Terminé** | Dashboard pipeline logistique : kanban, statuts, parcel-centric |
 | 7 | Pilotage v2 | `Komerce_Pilotage_v2.html` | 255 B | 🔀 Redirect | → `Dashboard.html` (alias) |
 
-### Autres fichiers dans public/
-| Fichier | Taille | Note |
-|---------|--------|------|
-| `Komerce_Backend.html` | 512 KB | Ancien monolithe (référence, ne plus modifier) |
-| `Komerce_Backoffice_Admin_v2.html` | 68 KB | Ancienne version admin |
-| `Komerce_Admin_Users.html` | 32 KB | Gestion users (ancienne) |
-| `Komerce_Config.html` | 34 KB | Configuration |
-| `Komerce_Mobile.html` | 54 KB | Version mobile |
-| `Komerce_Web.html` | 81 KB | Version web |
-| `Komerce_Simulateur.html` | 106 KB | Simulateur |
-| `Komerce_Tests.html` | 147 KB | Tests |
-| `Komerce_QR_Print.html` | 9 KB | Impression QR |
-| `index.html` | 144 KB | Page d'accueil |
+### Structure public/ (nettoyée)
+```
+public/
+├── Komerce_Hub.html          ← Hub Opérateur
+├── Komerce_Dashboard.html     ← Dashboard Pilotage (9 onglets)
+├── Komerce_Admin.html         ← Admin complet
+├── Komerce_Relais.html        ← Relais (complet)
+├── Komerce_Pipeline.html      ← Pipeline (complet)
+├── Komerce_Pilotage_v2.html   ← Redirect → Dashboard
+├── portal.html                ← Portail d'entrée
+├── komerce-ui.css             ← Design system CSS
+├── komerce-api.js             ← Couche API JS
+├── chart.umd.min.js           ← Chart.js
+├── sw.js                      ← Service Worker
+├── images/                    ← Assets images
+└── archive/                   ← Anciens fichiers (référence)
+    ├── Komerce_Backend.html       (512 KB — ancien monolithe)
+    ├── Komerce_Backoffice_Admin_v2.html (68 KB)
+    ├── Komerce_Admin_Users.html   (32 KB)
+    ├── Komerce_Config.html        (34 KB)
+    ├── Komerce_Mobile.html        (54 KB)
+    ├── Komerce_Web.html           (81 KB)
+    ├── Komerce_Simulateur.html    (106 KB)
+    ├── Komerce_Tests.html         (147 KB)
+    ├── Komerce_QR_Print.html      (9 KB)
+    └── index.html                 (144 KB — ancienne page d'accueil)
+```
 
 ### API Hub (endpoints réels)
 ```
@@ -97,6 +111,7 @@ DELETE /api/parcels/:id       → supprimer
 ### Pour reprendre
 1. Lire ce fichier
 2. Lire `.tasklet/REFONTE_DASHBOARDS.md` si besoin de specs détaillées
-3. Tous les écrans principaux sont ✅ terminés
+3. ✅ Tous les écrans sont terminés
 4. Respecter les 3 verrous
 5. Utiliser le design system partagé (komerce-ui.css + komerce-api.js)
+6. Les anciens fichiers sont dans `public/archive/` (référence uniquement, ne pas modifier)
