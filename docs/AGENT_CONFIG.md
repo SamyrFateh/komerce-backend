@@ -2,6 +2,7 @@
 
 > **Ce fichier permet à l'agent Tasklet de se reconfigurer automatiquement sans perte.**
 > Si l'agent est réinitialisé, il doit lire ce fichier et suivre les étapes de bootstrap.
+> **RIEN n'est stocké en local — le repo est l'unique source de vérité.**
 
 ---
 
@@ -54,83 +55,16 @@
 
 ---
 
-## 🤖 Sous-agent — governance-autocommit
+## 🤖 Sous-agents
 
-**Fichier** : `/agent/subagents/governance-autocommit.md`
+**Source de vérité** : `docs/AGENT_SUBAGENTS.md` (sur le repo)
 
-### Mission
-Surveille `docs/_pending/` et applique automatiquement les fichiers delta aux documents de gouvernance.
+| Sous-agent | Mission | Fichier local (lanceur) |
+|------------|---------|------------------------|
+| `governance-autocommit` | Surveille `docs/_pending/` et applique les deltas | `/agent/subagents/governance-autocommit.md` |
 
-### Workflow
-1. **Check** `docs/_pending/` pour des fichiers `.md`
-2. **Lire** chaque delta et identifier les changements (ROADMAP, CARTOGRAPHY, AUDIT)
-3. **Lire** les documents cibles actuels
-4. **Appliquer** les deltas (approche delta-only, jamais de régénération complète)
-5. **Commit** toutes les modifications en un seul commit atomique
-6. **Supprimer** les fichiers delta traités dans le même commit
-
-### Règles
-- **Idempotent** — Si aucun delta, ne rien faire
-- **Delta-only** — Ne jamais régénérer un document entier
-- **Single commit** — Toutes les modifications en un seul commit
-- **Clean up** — Toujours supprimer les deltas traités
-- **Stateless** — Aucun état en base de données
-
-### Format du commit
-```
-docs(governance): auto-sync — [description brève]
-```
-
-### Contenu complet du sous-agent
-
-```markdown
-# Governance Auto-Commit — Komerce
-
-Sous-agent stateless qui surveille et applique les deltas de gouvernance du repo Komerce.
-
-## Context
-
-- **Owner**: SamyrFateh
-- **Repo**: komerce-backend
-- **Branch**: main
-- **GitHub Connection ID**: [à remplacer par le connectionId actif]
-
-The GitHub tools are prefixed with `[connectionId]__github_`. Available tools:
-- `[connectionId]__github_get_file_content` — Read files/directories
-- `[connectionId]__github_push_to_branch` — Push commits
-- `[connectionId]__github_list_issues` — List issues
-- `[connectionId]__github_search_issues` — Search issues
-
-## Instructions
-
-Execute the following steps in order. Be completely autonomous — do not ask questions.
-
-### Step 1 — Check for pending deltas
-List the contents of `docs/_pending/` in the repo.
-If the directory is empty or contains no `.md` files, report "No pending deltas found" and STOP.
-
-### Step 2 — Read each delta file
-For each `.md` file found, read its content and parse to identify:
-- ROADMAP changes
-- CARTOGRAPHY changes
-- AUDIT changes
-
-### Step 3 — Read current docs
-Read the documents that need updating:
-- `docs/ROADMAP_KOMERCE.md` — if ROADMAP changes
-- `docs/CARTOGRAPHY_360.md` — if CARTOGRAPHY changes (large file, only if needed)
-- `docs/AUDIT_REPORT.md` — if AUDIT changes
-
-### Step 4 — Apply deltas
-Apply changes using delta-only approach. Never regenerate entire documents.
-
-### Step 5 — Commit changes
-Push all changes in a SINGLE commit. Delete processed delta files with `delete: true`.
-Commit message: `docs(governance): auto-sync — [brief description]`
-
-### Step 6 — Report
-Return summary: deltas processed, documents updated, changes applied.
-```
+> ⚠️ Le fichier local est un **lanceur minimal** qui lit ses instructions complètes depuis `docs/AGENT_SUBAGENTS.md` du repo.
+> Les instructions complètes vivent UNIQUEMENT sur le repo.
 
 ---
 
@@ -144,6 +78,7 @@ Return summary: deltas processed, documents updated, changes applied.
 | Bootstrap | `docs/GOVERNANCE_BOOTSTRAP.md` | Procédure de bootstrap agent |
 | Roadmap | `docs/ROADMAP_KOMERCE.md` | Roadmap complète avec statuts |
 | Config Agent | `docs/AGENT_CONFIG.md` | **Ce fichier** — config Tasklet |
+| Sous-agents | `docs/AGENT_SUBAGENTS.md` | Instructions complètes des sous-agents |
 | Point 6 | `docs/komerce-point6-gouvernance-operationnelle.md` | Détail gouvernance opérationnelle |
 | Pending deltas | `docs/_pending/*.md` | Fichiers delta à traiter |
 
@@ -157,12 +92,14 @@ Return summary: deltas processed, documents updated, changes applied.
 
 ### Étape 2 — Lire la config
 1. Lire `docs/AGENT_CONFIG.md` (ce fichier)
-2. Lire `README.md` et `.cursorrules`
-3. Lire `docs/GOVERNANCE.md` et `docs/ROADMAP_KOMERCE.md`
+2. Lire `docs/AGENT_SUBAGENTS.md` (instructions sous-agents)
+3. Lire `README.md` et `.cursorrules`
+4. Lire `docs/GOVERNANCE.md` et `docs/ROADMAP_KOMERCE.md`
 
-### Étape 3 — Créer le sous-agent
-1. Créer `/agent/subagents/governance-autocommit.md` avec le contenu ci-dessus
-2. Remplacer `[connectionId]` par le connectionId réel
+### Étape 3 — Créer le sous-agent (lanceur minimal)
+1. Créer `/agent/subagents/governance-autocommit.md`
+2. Contenu : un lanceur qui lit `docs/AGENT_SUBAGENTS.md` du repo et exécute les instructions
+3. Remplacer `[connectionId]` par le connectionId réel
 
 ### Étape 4 — Configurer le trigger
 1. Créer un trigger `cronScheduler` avec expression `*/10 * * * *`
@@ -190,5 +127,19 @@ Return summary: deltas processed, documents updated, changes applied.
 
 ---
 
-_Dernière mise à jour : 2026-04-07T10:49+02:00_
+## 🏗️ Architecture du stockage
+
+| Donnée | Emplacement | Survit si reset ? |
+|--------|-------------|-------------------|
+| Code + docs | ✅ GitHub repo | ✅ Oui |
+| Config agent | ✅ `docs/AGENT_CONFIG.md` | ✅ Oui |
+| Instructions sous-agents | ✅ `docs/AGENT_SUBAGENTS.md` | ✅ Oui |
+| Lanceur local sous-agent | ⚠️ `/agent/subagents/` | ❌ Mais recréé au bootstrap |
+| Trigger config | ⚠️ Plateforme Tasklet | ❌ Mais recréé au bootstrap |
+
+> **Principe** : Tout ce qui est critique vit sur le repo. Les éléments locaux sont recréables automatiquement à partir du repo.
+
+---
+
+_Dernière mise à jour : 2026-04-07_
 _Généré par Tasklet AI — Gardien de la gouvernance Komerce_
