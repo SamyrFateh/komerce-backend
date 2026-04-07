@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Parcel Sync Engine (utils/parcelSync.js) — v2.0 PHASE 3
+ * KOMERCE — Parcel Sync Engine (utils/parcelSync.js) — v2.1 PHASE 3
  *
  * Phase 3 : SOURCE DE VÉRITÉ UNIQUE pour orders.status.
  * Le trigger legacy trg_scan_sync_status est désactivé.
@@ -12,6 +12,12 @@
  *   [P3-3] Insert dans order_status_history (reprise du rôle du trigger)
  *   [P3-4] safeSyncScanToParcels() est maintenant awaité dans scans.js
  *
+ * v2.1 — FIX-004 (7 avril 2026) :
+ *   Ajout paramètre optionnel `dbClient` à syncScanToParcels et
+ *   safeSyncScanToParcels. Quand fourni, toutes les queries passent par
+ *   le client de transaction au lieu du pool → le verrou FOR UPDATE
+ *   est maintenu pendant tout le sync dans hub.js.
+ *
  * PRINCIPES (inchangés) :
  *   1. SAFE — erreur loggée via safeSyncScanToParcels, jamais de 500
  *   2. IDEMPOTENT — appeler 2x avec le même step ne fait rien
@@ -20,6 +26,7 @@
  *
  * UTILISÉ PAR :
  *   routes/scans.js — POST /api/scans, /collect, /verify-qr, triggerScan3()
+ *   routes/hub.js   — POST /api/hub/scan, /seal (avec dbClient = transaction)
  *
  * DÉPENDANCES :
  *   utils/parcels.js — computeOrderStatus(), STATUS_WEIGHT, PARCEL_STATUSES
@@ -57,7 +64,7 @@ const STEP_TO_ORDER_STATUS = Object.freeze({
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// syncScanToParcels() — v2.0 Phase 3
+// syncScanToParcels() — v2.1 Phase 3
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -74,10 +81,16 @@ const STEP_TO_ORDER_STATUS = Object.freeze({
  * @param {string|null} opts.scanned_by    — [P3-3] UUID de l'utilisateur qui a scanné
  * @param {string|null} opts.notes         — [P3-3] Notes du scan (pour l'historique)
  * @param {boolean}     opts.skipHistory   — [P3-3] Si true, ne pas insérer dans order_status_history
- *                                            (utilisé par verify-qr qui gère l'historique dans sa transaction)
+ * @param {object|null} dbClient           — [FIX-004] Client pg de transaction (optionnel).
+ *                                            Si fourni, toutes les queries passent par ce client
+ *                                            au lieu du pool. Permet de maintenir le verrou
+ *                                            FOR UPDATE de hub.js pendant tout le sync.
  * @returns {Promise<{synced: boolean, parcelsUpdated: number, orderStatus: string|null}>}
  */
-async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null, scanned_by = null, notes = null, skipHistory = false }) {
+async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null, scanned_by = null, notes = null, skipHistory = false }, dbClient = null) {
+  // FIX-004: utiliser le client de transaction si fourni, sinon le pool
+  const q = dbClient || db;
+
   const mapping = STEP_TO_PARCEL[step];
   if (!mapping) {
     // Step inconnu — rien à faire
@@ -92,7 +105,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
 
   if (order_item_id) {
     // Scan article spécifique → trouver le parcel de cet article
-    const { rows } = await db.query(
+    const { rows } = await q.query(
       `SELECT p.id, p.status
        FROM parcels p
        JOIN parcel_items pi ON pi.parcel_id = p.id
@@ -104,7 +117,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
     parcels = rows;
   } else {
     // Scan commande entière → tous les parcels actifs
-    const { rows } = await db.query(
+    const { rows } = await q.query(
       `SELECT id, status
        FROM parcels
        WHERE order_id = $1 AND status != 'cancelled'`,
@@ -128,7 +141,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
     // Forward only : ne pas reculer
     if (newWeight <= currentWeight) continue;
 
-    await db.query(
+    await q.query(
       `UPDATE parcels
        SET status = $1::parcel_status,
            ${tsCol} = NOW(),
@@ -141,22 +154,14 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
 
   // ── 3. Lier le scan au parcel ─────────────────────────────────────────────
   if (scan_id && firstParcelId) {
-    await db.query(
+    await q.query(
       `UPDATE scans SET parcel_id = $1 WHERE id = $2`,
       [firstParcelId, scan_id]
     );
   }
 
   // ── 4. [P3-1] Recompute orders.status (SOURCE DE VÉRITÉ) ─────────────────
-  // Exclure les parcels cancelled pour un calcul correct
-  const { rows: activeParcels } = await db.query(
-    `SELECT status, type FROM parcels
-     WHERE order_id = $1 AND status != 'cancelled'`,
-    [order_id]
-  );
-
-  // Inclure aussi les cancelled pour computeOrderStatus (il les gère en interne)
-  const { rows: allParcels } = await db.query(
+  const { rows: allParcels } = await q.query(
     `SELECT status, type FROM parcels WHERE order_id = $1`,
     [order_id]
   );
@@ -174,7 +179,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
 
   const tsClause = tsParts.length > 0 ? `, ${tsParts.join(', ')}` : '';
 
-  await db.query(
+  await q.query(
     `UPDATE orders
      SET status = $1::order_status${tsClause}, updated_at = NOW()
      WHERE id = $2`,
@@ -187,7 +192,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
   const stepOrderStatus = STEP_TO_ORDER_STATUS[step];
   if (stepOrderStatus && scan_id && !skipHistory) {
     try {
-      await db.query(
+      await q.query(
         `INSERT INTO order_status_history (order_id, status, scan_id, changed_by, note)
          VALUES ($1, $2::order_status, $3, $4, $5)`,
         [order_id, stepOrderStatus, scan_id, scanned_by, notes]
@@ -218,12 +223,15 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
  * [P3-4] En Phase 3, ce wrapper est awaité dans scans.js (plus fire-and-forget).
  * Le catch garantit toujours qu'aucune erreur ne remonte au client.
  *
+ * [FIX-004] Accepte un dbClient optionnel pour le mode transactionnel.
+ *
  * @param {object} opts - Mêmes paramètres que syncScanToParcels()
+ * @param {object|null} dbClient - Client pg de transaction (optionnel)
  * @returns {Promise<{synced: boolean, parcelsUpdated: number, orderStatus: string|null}>}
  */
-async function safeSyncScanToParcels(opts) {
+async function safeSyncScanToParcels(opts, dbClient = null) {
   try {
-    return await syncScanToParcels(opts);
+    return await syncScanToParcels(opts, dbClient);
   } catch (err) {
     console.error(`[PARCEL-SYNC] ❌ Erreur (order=${opts.order_id}, step=${opts.step}):`, err.message);
     // [P3-4] Le trigger legacy est désactivé — on log mais on ne crashe pas.

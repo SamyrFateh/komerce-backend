@@ -12,6 +12,12 @@
  * GET  /api/hub/today    — Stats du jour
  *
  * Safety Fix B: SELECT … FOR UPDATE sur scan/pack/seal (anti race-condition)
+ *
+ * FIX-004 (7 avril 2026):
+ *   safeSyncScanToParcels() est maintenant exécuté DANS la transaction
+ *   (avant COMMIT) pour que le verrou FOR UPDATE reste actif pendant
+ *   toute la durée du sync. Le client de transaction est passé en
+ *   second argument à safeSyncScanToParcels().
  */
 
 'use strict';
@@ -51,18 +57,19 @@ router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res) 
 
     const parcel = rows[0];
 
-    await client.query('COMMIT');
-
-    // R1: Use parcelSync for status change → preparation (après commit)
+    // FIX-004: safeSyncScanToParcels DANS la transaction.
+    // Le verrou FOR UPDATE est maintenu → aucune race condition possible.
     const syncResult = await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'hub_preparation',
       scan_id: null,
       scanned_by: req.user.id,
       notes: notes || `Hub scan: ${parcel.reference}`,
-    });
+    }, client);
 
-    // Fetch updated parcel
+    await client.query('COMMIT');
+
+    // Fetch updated parcel (après commit, utilise le pool)
     const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel.id]);
 
     res.json({
@@ -174,17 +181,19 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res) 
       });
     }
 
-    await client.query('COMMIT');
-
-    // R1: Use parcelSync to advance to 'shipped' (après commit)
+    // FIX-004: safeSyncScanToParcels DANS la transaction.
+    // Le verrou FOR UPDATE est maintenu → aucune race condition possible.
     const syncResult = await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'shipped',
       scan_id: null,
       scanned_by: req.user.id,
       notes: notes || `Hub seal: ${parcel.reference}`,
-    });
+    }, client);
 
+    await client.query('COMMIT');
+
+    // Fetch updated parcel (après commit, utilise le pool)
     const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel_id]);
 
     res.json({

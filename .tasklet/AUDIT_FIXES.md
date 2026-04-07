@@ -18,43 +18,35 @@
 ### FIX-001 : computeOrderStatus() retourne des valeurs ENUM invalides
 - **Statut** : ✅ FAIT (Étape 1)
 - **Fichier** : `utils/parcels.js`
-- **Fix appliqué** : Alignement du mapping sur l'ENUM `order_status` :
-  - `pending` → `confirmed`
-  - `delivered` → `collected`
-  - `processing` → `preparation`
-  - `arrived` → `in_transit`
-  - Ajout de `ARRIVED` dans le check `inMovement`
+- **Fix appliqué** : Alignement du mapping sur l'ENUM `order_status`
 
 ### FIX-002 : CREATE TABLE parcels / parcel_items / parcel_status ABSENTS du repo
 - **Statut** : ✅ FAIT (Étape 1)
 - **Fichier** : `migrations/018_schema_reconciliation.sql`
-- **Fix appliqué** : CREATE TYPE/TABLE IF NOT EXISTS pour `parcel_status`, `parcels`, `parcel_items`, `customs_history`
+- **Fix appliqué** : CREATE TYPE/TABLE IF NOT EXISTS
 
 ### FIX-003 : Trigger trg_scan_sync_status en conflit avec parcelSync
 - **Statut** : ✅ FAIT (Étape 1)
 - **Fichier** : `migrations/018_schema_reconciliation.sql`
-- **Fix appliqué** : `ALTER TABLE scans DISABLE TRIGGER trg_scan_sync_status;`
+- **Fix appliqué** : `DISABLE TRIGGER`
 
 ### FIX-004 : FOR UPDATE inefficace dans hub.js (race condition)
-- **Statut** : ❌ À FAIRE (Étape 2)
-- **Fichier** : `routes/hub.js` (scan, pack, seal)
-- **Problème** : Le COMMIT est fait AVANT l'appel à `safeSyncScanToParcels()`. Le verrou FOR UPDATE est relâché trop tôt.
-- **Impact** : Race condition entre opérateurs hub (R2 partiellement cassée).
-- **Fix** : Restructurer pour que `safeSyncScanToParcels()` s'exécute DANS la transaction :
-  ```
-  BEGIN → SELECT FOR UPDATE → UPDATE parcel → safeSyncScanToParcels(client) → COMMIT
-  ```
-  Passer le `client` de transaction à `safeSyncScanToParcels()` au lieu de `pool`.
+- **Statut** : ✅ FAIT (Étape 2)
+- **Fichiers** : `routes/hub.js`, `utils/parcelSync.js`
+- **Fix appliqué** :
+  - `parcelSync.js` v2.1 : ajout paramètre optionnel `dbClient` à `syncScanToParcels()` et `safeSyncScanToParcels()`. Toutes les queries internes passent par `dbClient || db`.
+  - `hub.js` : POST /scan et POST /seal exécutent `safeSyncScanToParcels(opts, client)` AVANT le COMMIT. Le verrou FOR UPDATE est maintenu pendant tout le sync.
+  - Séquence corrigée : `BEGIN → SELECT FOR UPDATE → safeSyncScanToParcels(opts, client) → COMMIT`
 
 ### FIX-005 : finance.js référence 4 colonnes inexistantes
-- **Statut** : ❌ À FAIRE (Étape 2)
-- **Fichier** : `routes/finance.js` (GET /export, GET /report)
-- **Colonnes** : `orders.cost_real_kmf`, `orders.cost_estimated_kmf`, `orders.margin_real_pct`, `orders.order_occasion`
-- **Impact** : Export CSV et rapport PDF cassés (erreur PostgreSQL).
-- **Fix** : Deux options :
-  - A) Ajouter les colonnes à `orders` dans une migration
-  - B) Retirer les références du code finance.js
-  → Décider selon le besoin métier.
+- **Statut** : ✅ FAIT (Étape 2)
+- **Fichier** : `migrations/019_finance_columns.sql`
+- **Fix appliqué** : `ALTER TABLE orders ADD COLUMN IF NOT EXISTS` pour :
+  - `cost_real_kmf` NUMERIC(12,2)
+  - `cost_estimated_kmf` NUMERIC(12,2)
+  - `margin_real_pct` NUMERIC(5,2)
+  - `order_occasion` TEXT
+- **Note** : Colonnes ajoutées avec valeurs NULL. Le code finance.js reste inchangé.
 
 ---
 
@@ -63,13 +55,12 @@
 ### FIX-006 : scans.parcel_id absent du schéma
 - **Statut** : ✅ FAIT (Étape 1)
 - **Fichier** : `migrations/018_schema_reconciliation.sql`
-- **Fix appliqué** : `ALTER TABLE scans ADD COLUMN IF NOT EXISTS parcel_id UUID REFERENCES parcels(id);` + index
+- **Fix appliqué** : `ADD COLUMN + INDEX`
 
 ### FIX-007 : STATUS_TO_STEP utilise "preparing" au lieu de "preparation"
-- **Statut** : ❌ À FAIRE (Étape 2)
-- **Fichier** : `routes/parcels.js` (~ligne 27)
-- **Problème** : La clé `preparing` ne correspond à aucune valeur de `parcel_status`.
-- **Fix** : Changer `preparing` → `preparation` dans le mapping.
+- **Statut** : ✅ FAIT (Étape 2)
+- **Fichier** : `routes/parcels.js`
+- **Fix appliqué** : Clé `preparing` → `preparation` dans le mapping STATUS_TO_STEP.
 
 ---
 
@@ -78,13 +69,12 @@
 ### FIX-008 : products.price_eur et products.badge non définis
 - **Statut** : ✅ FAIT (Étape 1)
 - **Fichier** : `migrations/018_schema_reconciliation.sql`
-- **Fix appliqué** : `ALTER TABLE products ADD COLUMN IF NOT EXISTS price_eur/badge;`
+- **Fix appliqué** : `ADD COLUMN IF NOT EXISTS`
 
 ### FIX-009 : order_items.unit_price_kmf n'existe pas
-- **Statut** : ❌ À FAIRE (Étape 2)
-- **Fichier** : `routes/parcels.js` GET /:ref
-- **Problème** : Code référence `oi.unit_price_kmf` mais la colonne s'appelle `oi.price_kmf`.
-- **Fix** : Remplacer `oi.unit_price_kmf` par `oi.price_kmf`.
+- **Statut** : ✅ FAIT (Étape 2)
+- **Fichier** : `routes/parcels.js`
+- **Fix appliqué** : `oi.unit_price_kmf` → `oi.price_kmf` dans GET /parcels/:ref.
 
 ---
 
@@ -93,14 +83,12 @@
 ### FIX-010 : pilotage.js orphelin (code mort)
 - **Statut** : ❌ À FAIRE (Étape 3)
 - **Fichier** : `routes/pilotage.js`
-- **Problème** : Fichier existant mais commenté dans server.js (non monté).
 - **Fix** : Supprimer le fichier.
 
 ### FIX-011 : finance.js monté 2 fois
 - **Statut** : ❌ À FAIRE (Étape 3)
 - **Fichier** : `server.js`
-- **Problème** : Monté sur `/api/admin/finance` (adminLimiter) ET `/api/finance` (globalLimiter).
-- **Fix** : Garder un seul montage (probablement `/api/admin/finance` avec adminLimiter).
+- **Fix** : Garder un seul montage (`/api/admin/finance` avec adminLimiter).
 
 ### FIX-012 : Seed data et fixMissingSchema dans server.js
 - **Statut** : ❌ À FAIRE (Étape 3)
@@ -113,11 +101,11 @@
 
 | Priorité | Total | Terminés | Restants |
 |----------|-------|---------|----------|
-| 🔴 P0 | 5 | 3 | 2 |
-| 🟡 P1 | 2 | 1 | 1 |
-| 🟠 P2 | 2 | 1 | 1 |
+| 🔴 P0 | 5 | 5 | 0 |
+| 🟡 P1 | 2 | 2 | 0 |
+| 🟠 P2 | 2 | 2 | 0 |
 | ⚪ P3 | 3 | 0 | 3 |
-| **Total** | **12** | **5** | **7** |
+| **Total** | **12** | **9** | **3** |
 
 ---
 
@@ -127,11 +115,12 @@
 Migration 018_schema_reconciliation.sql + correction computeOrderStatus().
 Branche : `fix/etape1-schema-reconciliation`
 
-### Étape 2 : Fix code (FIX-004 + FIX-005 + FIX-007 + FIX-009)
-- Restructurer hub.js transactions (FIX-004)
-- Corriger finance.js (FIX-005)
+### ✅ Étape 2 : Fix code (FIX-004 + FIX-005 + FIX-007 + FIX-009) (FAIT)
+- Restructuré hub.js transactions (FIX-004)
+- Migration 019 pour colonnes finance (FIX-005)
 - Fix STATUS_TO_STEP (FIX-007)
 - Fix unit_price_kmf (FIX-009)
+Branche : `fix/etape2-code-fixes`
 
 ### Étape 3 : Clean-up (FIX-010 + FIX-011 + FIX-012)
 - Supprimer pilotage.js
