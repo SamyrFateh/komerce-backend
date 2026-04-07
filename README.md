@@ -2,71 +2,9 @@
 
 > Plateforme e-commerce multi-vendeurs pour les Comores — Node.js / Express / Supabase
 
-> 📋 **Avant toute chose, consultez la [Roadmap Komerce](./docs/ROADMAP_KOMERCE.md)** — c'est le document de référence unique du projet.
-
 ---
 
-## 🤖 Agents IA — LIRE EN PREMIER
-
-> **⚠️ OBLIGATOIRE** — Avant de toucher au code :
-
-### 1. [`AGENT_RULES.md`](./AGENT_RULES.md) → Règles d'entrée
-### 2. [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) → Protocole de gouvernance
-
-Ce protocole lie les **3 piliers** du projet que tout agent doit lire :
-
-| Pilier | Document | Rôle |
-|--------|----------|------|
-| 🗺️ **La Carte** | [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Vue 360° du système |
-| 📋 **Le Plan** | [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | **Roadmap unique de référence** |
-| 🔒 **Le Bouclier** | [`docs/AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | Audit de sécurité |
-
-**Sans cette lecture, aucun code ne doit être écrit.**
-
-> 👉 En cas de doute sur les priorités ou l'ordre des tâches, la [Roadmap](./docs/ROADMAP_KOMERCE.md) fait foi.
-
----
-
-## ➕ Nouvelle demande ou fonctionnalité ?
-
-> **Toute nouvelle demande DOIT suivre ce workflow avant toute implémentation :**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  ① 📋 Ajouter la demande à la ROADMAP                  │
-│     → docs/ROADMAP_KOMERCE.md                         │
-│     → Commit immédiat de la mise à jour                │
-│                                                       │
-│  ② 🗺️  Analyser la CARTOGRAPHIE 360°                    │
-│     → docs/CARTOGRAPHY_360.md                         │
-│     → Quels fichiers / tables / routes sont impactés ? │
-│                                                       │
-│  ③ 🔒 Consulter le COFFRE-FORT SÉCURITÉ                 │
-│     → docs/AUDIT_REPORT.md + docs/audit/              │
-│     → Y a-t-il une vulnérabilité liée ?               │
-│     → Le changement introduit-il un risque ?           │
-│                                                       │
-│  ④ ✅ SEULEMENT ALORS → Implémenter                    │
-└─────────────────────────────────────────────────────┘
-```
-
-> ⚠️ **Aucun développement ne doit démarrer en dehors de la roadmap.**
-> Elle centralise tout : demandes en cours, priorités, et état d'avancement.
-
----
-
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [`AGENT_RULES.md`](./AGENT_RULES.md) | ⚠️ Point d'entrée obligatoire pour tout agent IA |
-| [`docs/AGENTS_PROTOCOL.md`](./docs/AGENTS_PROTOCOL.md) | 🔗 Protocole de gouvernance (lie les 3 piliers) |
-| [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | 🗺️ Cartographie 360° — source de vérité |
-| [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | 📋 **Roadmap unique de référence** |
-| [`docs/AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | 🔒 Rapport d'audit sécurité |
-| [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | 🚀 Guide de déploiement Railway |
-| [`docs/VALIDATION_GUIDE.md`](./docs/VALIDATION_GUIDE.md) | ✅ Guide de validation Joi |
-| [`docs/IMPACT_SYSTEM.md`](./docs/IMPACT_SYSTEM.md) | 🛡️ Système coffre-fort |
+## 🤖 Agents IA — [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md) obligatoire avant toute action
 
 ---
 
@@ -78,8 +16,18 @@ cp .env.example .env   # Configurer les variables
 npm start              # Lancer le serveur
 ```
 
-Pour plus de détails → [`docs/README.md`](./docs/README.md)
-
 ---
 
-> 📋 **Rappel** — La [Roadmap Komerce](./docs/ROADMAP_KOMERCE.md) est la source de vérité pour toutes les décisions du projet. Toute nouvelle demande doit y être ajoutée.
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md) | ⚠️ **Gouvernance unique** — règles, piliers, workflow |
+| [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | 📋 Roadmap — source de vérité du projet |
+| [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | 🗺️ Cartographie 360° du système |
+| [`docs/AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | 🔒 Rapport d'audit sécurité |
+| [`docs/IMPACT_SYSTEM.md`](./docs/IMPACT_SYSTEM.md) | 🛡️ Système coffre-fort de production |
+| [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | 🚀 Guide de déploiement Railway |
+| [`docs/VALIDATION_GUIDE.md`](./docs/VALIDATION_GUIDE.md) | ✅ Guide de validation Joi |
+
+> 📋 La [Roadmap](./docs/ROADMAP_KOMERCE.md) fait foi pour toutes les décisions du projet.
