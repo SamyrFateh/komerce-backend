@@ -17,24 +17,33 @@ Repo: `SamyrFateh/komerce-backend` branche `main`.
 | **Vague 2** — Hub Terrain | C4 (routes/hub.js), C5 (server.js câblage) | ✅ Mergé (PR #119) |
 | **Vague 3** — Optimisation | C6 (migration customs), C7 (migration carriers), C8 (routes/carriers.js) | ✅ Mergé (PR #119) |
 | **Hotfix** — SyntaxError L619 | Fix string escape Samsung seed | ✅ Mergé (PR #120) |
-| **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | 🟡 PR #121 ouverte |
+| **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | ✅ PR #121 — DB appliquée (migrations 010→017) |
 | **C9** — Dashboard logistics costs | Pas encore spécifié | ⬜ À définir |
 
-## 🟡 En cours : Hub Safety Fixes (PR #121)
+## ✅ Terminé : Hub Safety Fixes (PR #121)
 
-### 🔴 A. Contrainte UNIQUE sur parcel_items.order_item_id
+### 🔴 A. Contrainte UNIQUE sur parcel_items.order_item_id ✅
 - Migration `017_hub_safety_constraints.sql` : `ADD CONSTRAINT unique_order_item_per_parcel UNIQUE (order_item_id)`
 - Code : `routes/parcels.js` POST `/:id/items` catch 23505 → 409
+- **DB Railway : appliquée**
 
-### 🔴 B. SELECT … FOR UPDATE dans hub.js (race condition)
+### 🔴 B. SELECT … FOR UPDATE dans hub.js (race condition) ✅
 - `routes/hub.js` : scan/pack/seal utilisent `db.getClient()` + `BEGIN` + `FOR UPDATE` + `COMMIT/ROLLBACK` + `client.release()`
 - `safeSyncScanToParcels` appelé **après** commit
 
-### 🟠 C. Un seul draft par commande
+### 🟠 C. Un seul draft par commande ✅
 - Migration `017_hub_safety_constraints.sql` : `CREATE UNIQUE INDEX one_draft_per_order ON parcels(order_id) WHERE status = 'draft'`
 - Code : `routes/parcels.js` POST `/` catch 23505 → 409
+- **DB Railway : appliquée**
 
-## ⬜ Prochaine action après merge : C9 — Dashboard logistics costs
+### Migrations appliquées sur Railway (7 avril 2026)
+- ✅ 010_parcels_foundation.sql
+- ✅ 011_parcels_dual_write.sql
+- ✅ 012_parcels_trigger_migration.sql (index uniquement, trigger déjà drop par 013)
+- ✅ 013_legacy_cleanup.sql
+- ✅ 017_hub_safety_constraints.sql
+
+## ⬜ Prochaine action : C9 — Dashboard logistics costs
 
 Pas encore spécifié.
 
