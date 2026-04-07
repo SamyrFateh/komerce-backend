@@ -250,12 +250,12 @@ Komerce devient une plateforme multi-verticale : au-delà du commerce général,
 
 Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47 constantes** aujourd'hui hardcodées dans 12 fichiers. Plus les nouveaux flux d'**annulation**, d'**expédition partielle** et de **remboursement**.
 
-### 5 Phases d'implémentation — 34h total (4/5 complétées)
+### 5 Phases d'implémentation — 34h total
 
 | Phase | Contenu | Effort | Livrable | Statut |
 |:-----:|---------|:------:|----------|---------|
 | **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque | ✅ Mergée |
-| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée (PR #106 — 9 fixes : 2 security + 7 governance) |
+| **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée |
 | **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client | ✅ PR #105 mergée |
 | **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée | ✅ Implémentée |
 | **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet | ⬜ |
@@ -359,6 +359,7 @@ Aucune PR ouverte — alignement gouvernance à jour.
 | 3 | Fix déploiement : railway.toml watch patterns (filtre docs-only) | PR #107 | ✅ Mergée |
 | 4 | Fix crash : SyntaxError backticks imbriquées dans utils/sms.js | PR #108 | ✅ Mergée |
 | 5 | Alignement documents de gouvernance (Roadmap, Carto, Delta) | PR #109 | 🔄 |
+| 6 | Phase 4 : Expédition partielle Hub Dubai (5 endpoints, 2 tables, cron backorder) | — | ✅ Implémentée |
 
 ### Session 06/04/2026 — Audit deep + Dashboard unifié + Catalogue Pièces
 | # | Action | PR | Status |
@@ -430,7 +431,6 @@ Aucune PR ouverte — alignement gouvernance à jour.
       └── (12 tâches)
 
 🔶 GOUVERNANCE (suite) :
-  └── Phase 4 — Expédition partielle Hub Dubai ✅
   └── Phase 5 — Dashboard Configuration ⚙️
 
 Prochaine session :
