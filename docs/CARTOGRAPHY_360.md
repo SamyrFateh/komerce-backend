@@ -8,6 +8,9 @@
 
 ---
 
+> 🔄 **v15.13** — Mise à jour post-audit code-vs-truth (7 avril 2026)
+> Corrections : refonte parcel-centric documentée, 8 endpoints ajoutés, SHA mis à jour, section dépendances corrigée.
+
 ## 📑 Table des matières
 
 1. [Métriques Globales](#1--métriques-globales)
@@ -62,34 +65,33 @@ komerce-backend/
 ├── .cursorrules                          (2.3 KB)  [5638f005]
 ├── .env.example                          (1.9 KB)  [6568d664]
 ├── .gitignore                            (258 B)   [61e13d23]
-├── AGENT_RULES.md                        (3.0 KB)  [965976d8]
 ├── CONTRIBUTING.md                       (3.1 KB)  [a18b88a6]
 ├── README.md                             (3.9 KB)  [1c05bc68]
 ├── db.js                                 (770 B)   [08d9e6c6]
 ├── package.json                          (923 B)   [f7944e67]
 ├── package-lock.json                     (113.9 KB)[3bb09e87]
 ├── railway.toml                          (644 B)   [fa81b056]
-├── server.js                             (45.7 KB) [58742e77]
+├── server.js                             (43.7 KB) [654521a0]
 │
 ├── routes/                               (19 fichiers)
 │   ├── admin.js                          (24.3 KB) [6bb443fe]
 │   ├── auth.js                           (18.5 KB) [cef6b0d4]
 │   ├── baskets.js                        (11.7 KB) [6f41e7a1]
 │   ├── config.js                         (7.3 KB)  [1b3f634f]
-│   ├── dashboard.js                      (43.8 KB) [cc16c326]
+│   ├── dashboard.js                      (53.3 KB) [cd349fa3]
 │   ├── finance.js                        (13.7 KB) [a919836e]
 │   ├── health.js                         (1.4 KB)  [e29fabcb]
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
 │   ├── loyalty.js                        (5.6 KB)  [c454e300]
 │   ├── modules.js                        (20.6 KB) [3ea6fa01]
-│   ├── orders.js                         (100.9 KB) [70a2272d]
+│   ├── orders.js                         (100.9 KB) [5bfeaf26]
 │   ├── payments.js                       (12.0 KB) [1ba52974]
 │   ├── pilotage.js                       (1.2 KB)  [9af27985]
 │   ├── pricing.js                        (3.5 KB)  [a3b26f39]
 │   ├── products.js                       (12.0 KB) [11f09636]
 │   ├── purchasing.js                     (32.6 KB) [a17bb100]
 │   ├── relais.js                         (1.7 KB)  [d6e93c3c]
-│   ├── scans.js                          (23.0 KB) [c667d95e]
+│   ├── scans.js                          (23.0 KB) [c5ba1e1e]
 │   └── unsold.js                         (6.7 KB)  [215dd595]
 │
 ├── middleware/                            (4 fichiers)
@@ -102,14 +104,14 @@ komerce-backend/
 │   ├── email.js                          (6.7 KB)  [daf607c3]
 │   ├── pricing.js                        (5.2 KB)  [ff3e82e2]
 │   ├── rates.js                          (1.1 KB)  [5fdacfb4]
-│   ├── reference.js                      (2.5 KB)  [253751b9]
+│   ├── reference.js                      (2.5 KB)  [d8e0cb5e]
 │   ├── refunds.js                        (4.1 KB)  [25a80509]
 │   ├── rules.js                          (9.0 KB)  [6a679773]
 │   ├── sms.js                            (12.1 KB) [1d17abd6]
 │   └── store-credits.js                  (3.4 KB)  [58e8b8e4]
 │
 ├── validators/                           (1 fichier)
-│   └── index.js                          (15.4 KB) [f04565ef]
+│   └── index.js                          (15.4 KB) [5dd674f3]
 │
 ├── db/                                   (3 + 6 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
@@ -136,6 +138,7 @@ komerce-backend/
 │   ├── Komerce_Pipeline.html             (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_QR_Print.html             (9.4 KB)  [e9a09169]
 │   ├── Komerce_Relais.html               (~1 KB)   [redirect→dashboard-app]
+│   ├── Komerce_Config.html             (33.9 KB) [NEW — Admin business_rules]
 │   ├── Komerce_Simulateur.html           (106.1 KB)[1f74411d]
 │   ├── Komerce_Tests.html                (147.0 KB)[f053cfc0]
 │   ├── Komerce_Web.html                  (81.1 KB) [caa83c27]
@@ -179,7 +182,6 @@ komerce-backend/
 │   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
 │
 ├── docs/                                 (13 fichiers + audit/ + _pending/)
-│   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
 │   ├── AUDIT_REPORT.md                   (8.5 KB)  [c13adc79]
 │   ├── AUDIT_CONFORMITE_GOUVERNANCE.md   (6.8 KB)  [20e8b386]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
@@ -347,7 +349,7 @@ komerce-backend/
 > **Code cash** : 6 chiffres numériques (ex: `482917`) — dictable oralement.  
 > **Stripe** : `const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)` — refund lors de `POST /cancel`.  
 > **Helper** : `getAvailableCredits(dbClient, userId)` — crédits boutique FIFO.  
-> **Sous-commandes** : Support expédition partielle via tables `sub_orders` / `sub_order_items` (Phase 4).
+> **Colis (Parcel-Centric)** : Support expédition partielle via tables `parcels` / `parcel_items` (Refonte Parcel-Centric v2.0). Source de vérité : `utils/parcelSync.js` → `computeOrderStatus()`.
 
 ### 📁 products.js — `/api/products` (8 endpoints)
 
@@ -400,7 +402,7 @@ komerce-backend/
 > **Rôles DB** : `user_role` enum = `('client', 'admin', 'agent_relais', 'agent_hub')`.  
 > ⚠️ Endpoints dashboard déplacés vers `/api/dashboard/*` (v11.0) : `/dashboard`, `/margins`, `/alerts`.
 
-### 📁 dashboard.js — `/api/dashboard` (8 endpoints) — Dashboard unifié v11
+### 📁 dashboard.js — `/api/dashboard` (11 endpoints) — Dashboard unifié v11
 
 | # | Méthode | Chemin | Auth | Rôles | Description |
 |---|---------|--------|:----:|-------|-------------|
@@ -412,6 +414,9 @@ komerce-backend/
 | 6 | `GET` | `/api/dashboard/forecast` | ✅ | admin | Projections CA/marge |
 | 7 | `GET` | `/api/dashboard/clients` | ✅ | admin | Analyse comportement clients |
 | 8 | `GET` | `/api/dashboard/history` | ✅ | admin | Historique mensuel (données graphiques) |
+| 9 | `GET` | `/api/dashboard/hub-dubai` | ✅ | admin | Vue opérationnelle Hub Dubai (réceptions, expéditions, stocks) |
+| 10 | `GET` | `/api/dashboard/relais` | ✅ | admin | Analyse performance réseau relais |
+| 11 | `GET` | `/api/dashboard/annulations-parcels` | ✅ | admin | Suivi annulations et raisons par colis |
 
 > **Cache** : Mémoire TTL 30s (`_cache` Map, max 100 entrées).  
 > **Taux** : EUR/KMF dynamiques via `getRates()`, jamais hardcodé.  
@@ -543,6 +548,20 @@ komerce-backend/
 
 > ⚠️ Aucune authentification requise — routes publiques intentionnelles.
 
+
+### 📁 config.js — `/api/config` (5 endpoints) — Administration business rules
+
+> 🔑 Toutes les routes requièrent `authenticate` + rôle `admin`.
+> Dépendances : `utils/rules.js`, `validators/index.js` (configSchemas)
+
+| # | Méthode | Chemin | Auth | Rôles | Description |
+|---|---------|--------|:----:|-------|-------------|
+| 1 | `GET` | `/api/config/rules` | ✅ | admin | Liste toutes les règles groupées par catégorie |
+| 2 | `GET` | `/api/config/rules/:key` | ✅ | admin | Détail d'une règle + historique récent |
+| 3 | `PUT` | `/api/config/rules/:key` | ✅ | admin | Modifier une règle (+ raison optionnelle) |
+| 4 | `POST` | `/api/config/rules/:key/reset` | ✅ | admin | Reset à la valeur par défaut |
+| 5 | `GET` | `/api/config/rules/:key/history` | ✅ | admin | Historique des modifications |
+
 ### 📁 health.js — `/health` (2 endpoints)
 
 | # | Méthode | Chemin | Auth | Rôles | Description |
@@ -606,8 +625,8 @@ komerce-backend/
 | 26 | `ceremony_order_items` | schema_extension.sql | — | Articles cérémonie (legacy) |
 | 27 | `store_credits` | migration 007 | — | Crédits boutique (remboursement annulation cash) |
 | 28 | `refunds` | migration 007 | — | Historique des remboursements (Stripe + crédits) |
-| 29 | `sub_orders` | migration Phase 4 | — | Sous-commandes (expédition partielle / backorder) |
-| 30 | `sub_order_items` | migration Phase 4 | — | Articles des sous-commandes |
+| 29 | `parcels` | migration 010 | order_id→orders, shipment_id→shipments, relais_id→relais | **Unité logistique principale** — remplace sub_orders (refonte parcel-centric) |
+| 30 | `parcel_items` | migration 010 | parcel_id→parcels, order_item_id→order_items, product_id→products | Mapping articles → colis (remplace sub_order_items) |
 
 ### Vues (3)
 
@@ -617,7 +636,7 @@ komerce-backend/
 | 2 | `v_unsold_pipeline` | Supabase | Pipeline invendus |
 | 3 | `customs_taux_mensuel` | server.js | Taux douaniers mensuels (AVG customs_delta_pct) |
 
-### Enums PostgreSQL (6)
+### Enums PostgreSQL (7)
 
 | Enum | Valeurs |
 |------|---------|
@@ -627,13 +646,14 @@ komerce-backend/
 | `payment_status` | `pending`, `paid`, `partial`, `refunded` |
 | `basket_type` | `standard`, `gift`, `shared` |
 | `scan_step` | `preparation`, `shipped`, `in_transit`, `relais_received`, `collected` |
+| `parcel_status` | draft, preparation, shipped, in_transit, arrived, available, collected, cancelled |
 
-### Fonctions PostgreSQL (2)
+### Fonctions PostgreSQL (1)
 
 | Fonction | Description |
 |----------|-------------|
 | `set_updated_at()` | Met à jour `updated_at` automatiquement via triggers |
-| `sync_order_status_from_scan()` | Synchronise le statut de commande depuis les scans |
+| ~~`sync_order_status_from_scan()`~~ | ❌ **SUPPRIMÉE** — Remplacée par `utils/parcelSync.js` → `computeOrderStatus()` |
 
 ### Triggers (6)
 
@@ -643,7 +663,8 @@ komerce-backend/
 | `trg_products_updated` | `products` | BEFORE UPDATE | `set_updated_at()` |
 | `trg_orders_updated` | `orders` | BEFORE UPDATE | `set_updated_at()` |
 | `trg_shipments_updated` | `shipments` | BEFORE UPDATE | `set_updated_at()` |
-| `trg_scan_sync_status` | `scans` | AFTER INSERT | `sync_order_status_from_scan()` |
+| ~~`trg_scan_sync_status`~~ | ~~`scans`~~ | ~~AFTER INSERT~~ | ❌ **SUPPRIMÉ** — Remplacé par `parcelSync.js` |
+| `trg_parcels_updated` | `parcels` | BEFORE UPDATE | `set_updated_at()` — Auto-update timestamp |
 | `trg_disputes_updated` | `disputes` | BEFORE UPDATE | `set_updated_at()` |
 
 ### Criticité des tables
@@ -752,14 +773,17 @@ scans                   │     2     │ ██░░░░░░░░░░�
 
 ### Appels croisés
 
-| Route source | Route cible | Fonction | Direction |
-|---|---|---|---|
-| `orders.js` | `loyalty.js` | `getLoyaltyDiscount()` | orders → loyalty |
-| `orders.js` | `loyalty.js` | `recalculateLoyalty()` | orders → loyalty |
-| `payments.js` | `purchasing.js` | `triggerPurchasing()` | payments → purchasing |
-| `purchasing.js` | `scans.js` | `triggerScan3()` | purchasing → scans |
-| `scans.js` | `loyalty.js` | `recalculateLoyalty()` | scans → loyalty |
-| `orders.js` | stripe | `stripe.refunds.create()` | orders → stripe (refund) |
+> ⚠️ **MISE À JOUR v2.0 — Refonte Parcel-Centric** : Le trigger DB `trg_scan_sync_status` est **SUPPRIMÉ**. La source de vérité pour `orders.status` est désormais `utils/parcelSync.js` → `computeOrderStatus()`.
+
+| Source | Cible | Via | Description |
+|--------|-------|-----|-------------|
+| `orders.js` | `loyalty.js` | `getLoyaltyDiscount()` | Calcul remise fidélité |
+| `orders.js` | `loyalty.js` | `recalculateLoyalty()` | Recalcul points |
+| `scans.js` | `parcelSync.js` | `safeSyncScanToParcels()` | 🆕 **SOURCE DE VÉRITÉ** — sync statut parcels → orders |
+| `scans.js` | `purchasing.js` | `triggerScan3()` | Déclenchement scan étape 3 |
+| `payments.js` | `purchasing.js` | `triggerPurchasing()` | Déclenchement achat post-paiement |
+| `parcelSync.js` | `parcels.js` | `computeOrderStatus()` | Agrégation statuts colis → statut commande |
+| `loyalty.js` | `scans.js` | `recalculateLoyalty()` | Recalcul après scan |
 
 ### Graphe de dépendances
 
@@ -773,18 +797,27 @@ scans                   │     2     │ ██░░░░░░░░░░�
               ▼                       ▼
         ┌────────────┐         ┌─────────────┐
         │ loyalty.js │◄────────│  scans.js   │
-        └────────────┘         └──────▲──────┘
-                                      │ triggerScan3()
-                               ┌──────┴──────┐
-                               │purchasing.js│
-                               └──────▲──────┘
-                                      │ triggerPurchasing()
-                               ┌──────┴──────┐
-                               │payments.js  │
-                               └─────────────┘
+        └────────────┘         └──────┬──────┘
+                                      │
+                           ┌──────────┤ safeSyncScanToParcels()
+                           ▼          │ triggerScan3()
+                    ┌──────────────┐  │
+                    │parcelSync.js │  │
+                    └──────┬───────┘  │
+                           │          │
+                           ▼          ▼
+                    ┌──────────────┐  ┌──────────────┐
+                    │ parcels.js   │  │purchasing.js │
+                    └──────────────┘  └──────▲───────┘
+                                             │ triggerPurchasing()
+                                      ┌──────┴───────┐
+                                      │ payments.js  │
+                                      └──────────────┘
 ```
 
 ### Flux complet
+
+
 
 ```
 orders.js ──payment──▶ payments.js ──trigger──▶ purchasing.js ──trigger──▶ scans.js ──recalc──▶ loyalty.js
@@ -795,6 +828,7 @@ orders.js ──payment──▶ payments.js ──trigger──▶ purchasing.j
 > ⚠️ **Couplage fort** : La chaîne `payments → purchasing → scans → loyalty` est une dépendance linéaire critique. Une panne sur un maillon bloque le flux entier.
 
 ---
+
 
 ## 8. 🔄 Chaîne de traitement des commandes
 
@@ -860,10 +894,33 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 | `utils/rates.js` | Taux de change EUR/KMF, AED/KMF (table `exchange_rates`) — fallback via `getRuleNumber('RATE_EUR_KMF_DEFAULT')` |
 | `utils/pricing.js` | Moteur v6.5 async — 10 paramètres configurables via `getRuleNumber()` (marge, fret, douane estimée) |
 | `utils/reference.js` | Génération de références expédition (`generateShipmentRef()`) |
+│   ├── parcels.js                       (13.4 KB) [NEW — Moteur parcel-centric]
+│   ├── parcelSync.js                    (11.2 KB) [NEW — Sync engine SOURCE DE VÉRITÉ]
 | `utils/refunds.js` | Gestion des remboursements (Stripe refund + crédits boutique) |
 | `utils/rules.js` | Moteur de règles métier — `getRuleNumber()`, `getRuleString()` (cache TTL + fallback, table `business_rules`) |
 | `utils/store-credits.js` | Gestion des crédits boutique (FIFO, consultation, attribution) |
 | `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, etc. |
+
+### `utils/parcels.js` (13.4 KB) [NEW — Refonte Parcel-Centric]
+
+> 🆕 **Moteur Parcel-Centric** — Gestion complète des colis
+
+| Fonction | Description |
+|----------|-------------|
+| `splitOrderIntoParcels()` | Découpage commande en colis selon les STRATEGIES |
+| `computeOrderStatus()` | Agrégation statuts parcels → statut commande |
+| `generateParcelRef()` | Génération référence KOM-P-YYYY-NNNNNN |
+| Registre `STRATEGIES` | Stratégies de split configurables via business_rules |
+
+### `utils/parcelSync.js` (11.2 KB) [NEW — SOURCE DE VÉRITÉ]
+
+> 🚨 **SOURCE DE VÉRITÉ pour `orders.status`** — Remplace le trigger DB `trg_scan_sync_status`
+
+| Fonction | Description |
+|----------|-------------|
+| `safeSyncScanToParcels()` | Sync scan → parcels → orders.status (atomique) |
+| Gestion `order_status_history` | Enregistre scanned_by/notes dans l'historique |
+| Réconciliation multi-parcels | Gère les commandes avec plusieurs colis |
 
 ### Cron intégré
 
@@ -883,7 +940,7 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 ## 11. ✅ Validators (1 fichier)
 
-### `validators/index.js` (15.4 KB) [f04565ef]
+### `validators/index.js` (15.4 KB) [5dd674f3]
 **Schémas Joi centralisés**
 - Validation utilisateur (register, login)
 - Validation produit
@@ -946,6 +1003,12 @@ PWA Service Worker :
 | `Komerce_Tests.html` | 147.0 KB | f053cfc0 | 🧪 Page de tests | Dev |
 | `Komerce_Web.html` | 81.1 KB | caa83c27 | 🌐 Version web classique | Public |
 | `portal.html` | 15.8 KB | 8a511d9e | 🚪 Portail d'entrée | Public |
+
+### 🆕 `Komerce_Config.html` (33.9 KB) — Admin Business Rules
+
+> Page d'administration pour gérer les `business_rules` via l'API `/api/config/rules`.
+> Permet la modification, le reset et la consultation de l'historique des règles métier.
+> Dépend de `routes/config.js` et `utils/rules.js`.
 
 ### Images :
 
@@ -1085,6 +1148,19 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
 | `CHANGES_PHASE2_MIGRATION.md` | 9.2 KB | 29e6f652 | 📝 Changelog détaillé Phase 2 migration constantes |
+
+### Gouvernance & Agent (`docs/`)
+
+| Fichier | Taille | Description |
+|---------|--------|-------------|
+| `AGENT_CONFIG.md` | 8.9 KB | Configuration agent IA — bootstrap, outils, connexions |
+| `AGENT_SUBAGENTS.md` | 4.6 KB | Instructions sous-agents (governance-autocommit) |
+| `GOVERNANCE.md` | 7.1 KB | Gouvernance opérationnelle v2.3 (8 règles) |
+| `GOVERNANCE_BOOTSTRAP.md` | 3.1 KB | Processus de bootstrap agent |
+| `_agent/` | dir | Fichiers internes agent |
+| `_logs/` | dir | Logs d'exécution |
+| `_work/` | dir | Travaux en cours |
+| `_pending/` | dir | Deltas gouvernance en attente |
 
 ### Audit (`docs/audit/`) — 11 fichiers
 
