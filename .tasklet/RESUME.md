@@ -36,6 +36,23 @@ Une carte pipeline ne doit **JAMAIS** dépendre du statut de la commande.
 
 La commande liée = contexte secondaire (petit, gris, `#CMD-1234`), jamais conditionnelle.
 
+### 🔴 VERROU 3 — RESTRUCTURER, PAS RECRÉER
+
+On ne repart **PAS** de zéro. La matière fonctionnelle existe déjà :
+- Hub (scan, préparation, flux terrain) → encapsulé dans le dashboard global
+- Relais (réception, disponibilité, remise) → pas encore isolé
+- Pipeline (suivi logistique) → encore trop order-centric
+- Dashboard (pilotage) → mélange trop de missions
+- Admin (commandes, users, config) → back-office réel
+
+**Le chantier consiste à :**
+1. Garder la logique utile existante
+2. Isoler chaque mission dans son propre écran
+3. Supprimer les doublons
+4. Réaligner toute l'UI sur la philosophie parcel-centric
+
+**En une phrase :** On restructure proprement l'existant pour en faire de vraies applications dédiées par rôle.
+
 ## État d'avancement
 
 | Vague | Commits | Statut |
@@ -45,7 +62,7 @@ La commande liée = contexte secondaire (petit, gris, `#CMD-1234`), jamais condi
 | **Vague 3** — Optimisation | C6 (migration customs), C7 (migration carriers), C8 (routes/carriers.js) | ✅ Mergé (PR #119) |
 | **Hotfix** — SyntaxError L619 | Fix string escape Samsung seed | ✅ Mergé (PR #120) |
 | **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | ✅ PR #121 — DB appliquée (migrations 010→017) |
-| **Refonte Dashboards** — UI Parcel-Centric | Verrous posés, spec complète | ⬜ À exécuter |
+| **Refonte Dashboards** — UI Parcel-Centric | 3 verrous posés, spec complète | ⬜ À exécuter |
 
 ## ⬜ Prochaine action : Refonte Dashboards UI
 
@@ -53,13 +70,16 @@ Doc complet : `.tasklet/REFONTE_DASHBOARDS.md`
 
 ### Ordre d'exécution
 1. `komerce-api.js` — couche API unifiée
-2. `Komerce_Hub.html` — écran terrain ⛔ VERROU 1
-3. `Komerce_Pipeline.html` — kanban parcel-centric ⛔ VERROU 2
-4. `Komerce_Relais.html` — écran agent relais
-5. `Komerce_Dashboard.html` — refonte pilotage
+2. `Komerce_Hub.html` — isoler l'existant hub en écran autonome ⛔ V1
+3. `Komerce_Pipeline.html` — isoler le pipeline en kanban parcel-centric ⛔ V2
+4. `Komerce_Relais.html` — isoler le relais en écran autonome
+5. `Komerce_Dashboard.html` — recentrer sur pilotage seul
 6. `Komerce_Admin.html` — refonte admin + absorption Users
 7. `portal.html` — adaptation tuiles et rôles
 8. Suppression fichiers obsolètes
+
+### Méthode (Verrou 3)
+Pour chaque écran : extraire la logique existante des monolithes → isoler dans un fichier dédié → nettoyer → réaligner parcel-centric.
 
 ## Fichiers clés du repo
 
