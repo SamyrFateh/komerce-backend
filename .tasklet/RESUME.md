@@ -1,6 +1,6 @@
 # 🔄 KOMERCE — Plan de reprise Vague 1/2/3
 
-> Dernière mise à jour : 7 avril 2026 — 18h30
+> Dernière mise à jour : 7 avril 2026 — 20h30
 > Ce dossier contient les instructions de codage + fichiers générés pour reprendre après coupure.
 
 ## 📋 PLAN DE MICRO-COMMITS
@@ -14,21 +14,21 @@
 | C3 | 📦 Parcels CRUD API + validators + migration 014 | `routes/parcels.js`, `validators/index.js`, `migrations/014_parcels_final_cleanup.sql` | ✅ PUSHÉ `05af183` |
 | C3-bis | 🔌 Wire /api/parcels in server.js | `server.js` | ✅ PUSHÉ `6e5bf0f` |
 
-### ⬜ VAGUE 2 — Hub Terrain
+### ✅ VAGUE 2 — Hub Terrain
 
 | # | Commit | Fichiers | Statut |
 |---|--------|----------|--------|
-| C4 | 🏭 Create routes/hub.js | `routes/hub.js` (new) | ⬜ À CODER |
-| C5 | 🔌 Register hub in server.js | `server.js` | ⬜ À CODER |
+| C4 | 🏭 Create routes/hub.js | `routes/hub.js` (new) | ✅ PR Vague 2+3 |
+| C5 | 🔌 Register hub + carriers in server.js | `server.js` | ✅ PR Vague 2+3 |
 
-### ⬜ VAGUE 3 — Optimisation Avancée
+### ✅ VAGUE 3 — Optimisation Avancée
 
 | # | Commit | Fichiers | Statut |
 |---|--------|----------|--------|
-| C6 | 🗃️ Migration 015 customs enrichment | `migrations/015_customs_enrichment.sql` (new) | ⬜ À CODER |
-| C7 | 🗃️ Migration 016 carriers table | `migrations/016_carriers.sql` (new) | ⬜ À CODER |
-| C8 | 🚚 Carrier CRUD + customs endpoints | `routes/carriers.js` (new) | ⬜ À CODER |
-| C9 | 📊 Dashboard logistics costs | `routes/dashboard.js` modif | ⬜ À CODER |
+| C6 | 🗃️ Migration 015 customs enrichment | `migrations/015_customs_enrichment.sql` (new) | ✅ PR Vague 2+3 |
+| C7 | 🗃️ Migration 016 carriers table | `migrations/016_carriers.sql` (new) | ✅ PR Vague 2+3 |
+| C8 | 🚚 Carrier CRUD + customs endpoints | `routes/carriers.js` (new) | ✅ PR Vague 2+3 |
+| C9 | 📊 Dashboard logistics costs | `routes/dashboard.js` modif | ⬜ À SPÉCIFIER |
 
 ## 🏗️ Architecture & Règles Clés
 
@@ -57,20 +57,17 @@
 .tasklet/
 ├── RESUME.md                          ← ce fichier
 ├── codegen-instructions.md            ← instructions complètes du codegen agent
-├── c1-security/
-│   ├── server.js                      ✅ PUSHÉ
-│   ├── middleware/rate-limit.js        ✅ PUSHÉ
-│   └── routes/admin.js                ✅ PUSHÉ
-├── c2-logistics-r1/                   ✅ PUSHÉ (via Tasklet)
-├── c3-parcels-api/                    ✅ PUSHÉ (via Tasklet)
-├── c4-hub/                            ⬜ À générer
-└── c5-v3-optim/                       ⬜ À générer
+├── c1-security/                       ✅ PUSHÉ
+├── c2-logistics-r1/                   ✅ PUSHÉ
+├── c3-parcels-api/                    ✅ PUSHÉ
+├── c4-hub/                            ✅ PR Vague 2+3
+└── c5-v3-optim/                       ✅ PR Vague 2+3
 ```
 
 ## 🔑 Pour reprendre
 
 1. Relire ce RESUME.md pour le contexte
-2. Relire `codegen-instructions.md` pour les specs détaillées de chaque commit
-3. Les fichiers source originaux sont sur la branche `main`
-4. Vague 1 (C1-C3) ✅ — continuer avec Vague 2 (C4 hub.js)
-5. Continuer C4 → C9 en suivant les specs du codegen
+2. Vague 1 (C1-C3) ✅ — Pushé sur main
+3. Vague 2 (C4-C5) ✅ — PR créé
+4. Vague 3 (C6-C8) ✅ — PR créé
+5. Restant : C9 (Dashboard logistics costs) — specs à définir
