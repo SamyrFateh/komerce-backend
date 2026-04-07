@@ -17,53 +17,26 @@ Repo: `SamyrFateh/komerce-backend` branche `main`.
 | **Vague 2** — Hub Terrain | C4 (routes/hub.js), C5 (server.js câblage) | ✅ Mergé (PR #119) |
 | **Vague 3** — Optimisation | C6 (migration customs), C7 (migration carriers), C8 (routes/carriers.js) | ✅ Mergé (PR #119) |
 | **Hotfix** — SyntaxError L619 | Fix string escape Samsung seed | ✅ Mergé (PR #120) |
-| **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | ⬜ **À FAIRE** |
+| **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | 🟡 PR #121 ouverte |
 | **C9** — Dashboard logistics costs | Pas encore spécifié | ⬜ À définir |
 
-## ⬜ Prochaine action : Hub Safety Fixes (A/B/C)
-
-Créer une **PR** avec :
+## 🟡 En cours : Hub Safety Fixes (PR #121)
 
 ### 🔴 A. Contrainte UNIQUE sur parcel_items.order_item_id
-Empêcher qu'un même article soit ajouté 2 fois dans un colis.
-
-**Migration `017_hub_safety_constraints.sql`** :
-```sql
-ALTER TABLE parcel_items
-  ADD CONSTRAINT unique_order_item_per_parcel UNIQUE (order_item_id);
-```
-
-**Code** : dans `routes/parcels.js` POST `/:id/items`, catch l'erreur `23505` (unique violation) et retourner 409.
+- Migration `017_hub_safety_constraints.sql` : `ADD CONSTRAINT unique_order_item_per_parcel UNIQUE (order_item_id)`
+- Code : `routes/parcels.js` POST `/:id/items` catch 23505 → 409
 
 ### 🔴 B. SELECT … FOR UPDATE dans hub.js (race condition)
-Empêcher 2 opérateurs de scanner le même colis en même temps.
-
-**Code** : dans `routes/hub.js`, les 3 endpoints (scan/pack/seal) doivent :
-1. `const client = await db.getClient()`
-2. `BEGIN`
-3. `SELECT ... FROM parcels WHERE ... FOR UPDATE`
-4. Vérifier statut
-5. `COMMIT` ou `ROLLBACK`
-6. Appeler `safeSyncScanToParcels` après commit
-
-Voir le fichier `hub.js` déjà préparé dans `/agent/home/komerce-output/routes/hub.js`.
+- `routes/hub.js` : scan/pack/seal utilisent `db.getClient()` + `BEGIN` + `FOR UPDATE` + `COMMIT/ROLLBACK` + `client.release()`
+- `safeSyncScanToParcels` appelé **après** commit
 
 ### 🟠 C. Un seul draft par commande
+- Migration `017_hub_safety_constraints.sql` : `CREATE UNIQUE INDEX one_draft_per_order ON parcels(order_id) WHERE status = 'draft'`
+- Code : `routes/parcels.js` POST `/` catch 23505 → 409
 
-**Migration `017_hub_safety_constraints.sql`** (même fichier) :
-```sql
-CREATE UNIQUE INDEX IF NOT EXISTS one_draft_per_order
-  ON parcels (order_id)
-  WHERE status = 'draft';
-```
+## ⬜ Prochaine action après merge : C9 — Dashboard logistics costs
 
-**Code** : dans `routes/parcels.js` POST `/`, catch l'erreur `23505` et retourner 409 "Un colis draft existe déjà pour cette commande".
-
-## Fichiers déjà préparés localement
-
-- `/agent/home/komerce-output/routes/hub.js` — hub.js avec FOR UPDATE (B) ✅
-- `/agent/home/komerce-output/migrations/017_hub_safety_constraints.sql` — migration A+C ✅
-- `routes/parcels.js` — doit être modifié pour catch 23505 (A+C)
+Pas encore spécifié.
 
 ## Fichiers clés du repo
 

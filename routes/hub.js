@@ -10,6 +10,8 @@
  * POST /api/hub/seal     — Sceller colis, prêt à expédier
  * GET  /api/hub/pending  — Colis en attente de traitement
  * GET  /api/hub/today    — Stats du jour
+ *
+ * Safety Fix B: SELECT … FOR UPDATE sur scan/pack/seal (anti race-condition)
  */
 
 'use strict';
@@ -27,24 +29,31 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 // ── POST /scan — Scan parcel QR code (hub receives item) ────────────────────
 
 router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res) => {
+  const client = await db.getClient();
   try {
     const { parcel_ref, notes } = req.body;
 
-    // Find parcel by reference
-    const { rows } = await db.query(
+    await client.query('BEGIN');
+
+    // FOR UPDATE: verrouille la ligne pour empêcher 2 opérateurs simultanés
+    const { rows } = await client.query(
       `SELECT p.id, p.order_id, p.status, p.reference
        FROM parcels p
-       WHERE p.reference = $1 AND p.status != 'cancelled'`,
+       WHERE p.reference = $1 AND p.status != 'cancelled'
+       FOR UPDATE`,
       [parcel_ref]
     );
 
     if (!rows.length) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: `Colis ${parcel_ref} introuvable` });
     }
 
     const parcel = rows[0];
 
-    // R1: Use parcelSync for status change → preparation
+    await client.query('COMMIT');
+
+    // R1: Use parcelSync for status change → preparation (après commit)
     const syncResult = await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'hub_preparation',
@@ -62,31 +71,40 @@ router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res) 
       sync: syncResult,
     });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Hub scan error:', err.message);
     res.status(500).json({ error: 'Erreur scan hub' });
+  } finally {
+    client.release();
   }
 });
 
 // ── POST /pack — Mark parcel as packed ───────────────────────────────────────
 
 router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) => {
+  const client = await db.getClient();
   try {
     const { parcel_id, box_label, notes } = req.body;
 
-    // Validate parcel exists and is in preparation
-    const { rows } = await db.query(
+    await client.query('BEGIN');
+
+    // FOR UPDATE: verrouille la ligne
+    const { rows } = await client.query(
       `SELECT id, order_id, status, reference
-       FROM parcels WHERE id = $1 AND status != 'cancelled'`,
+       FROM parcels WHERE id = $1 AND status != 'cancelled'
+       FOR UPDATE`,
       [parcel_id]
     );
 
     if (!rows.length) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Colis introuvable' });
     }
 
     const parcel = rows[0];
 
     if (parcel.status !== 'preparation') {
+      await client.query('ROLLBACK');
       return res.status(400).json({
         error: `Colis ${parcel.reference} n'est pas en préparation (statut: ${parcel.status})`,
       });
@@ -97,7 +115,7 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) 
       (box_label ? ` | Box: ${box_label}` : '') +
       (notes ? ` | ${notes}` : '');
 
-    await db.query(
+    await client.query(
       `UPDATE parcels
        SET notes = CASE
              WHEN notes IS NULL THEN $1
@@ -108,6 +126,8 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) 
       [packNote, parcel_id]
     );
 
+    await client.query('COMMIT');
+
     const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel_id]);
 
     res.json({
@@ -115,36 +135,48 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) 
       parcel: updated.rows[0],
     });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Hub pack error:', err.message);
     res.status(500).json({ error: 'Erreur emballage hub' });
+  } finally {
+    client.release();
   }
 });
 
 // ── POST /seal — Seal parcel, ready to ship ──────────────────────────────────
 
 router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res) => {
+  const client = await db.getClient();
   try {
     const { parcel_id, notes } = req.body;
 
-    const { rows } = await db.query(
+    await client.query('BEGIN');
+
+    // FOR UPDATE: verrouille la ligne
+    const { rows } = await client.query(
       `SELECT id, order_id, status, reference
-       FROM parcels WHERE id = $1 AND status != 'cancelled'`,
+       FROM parcels WHERE id = $1 AND status != 'cancelled'
+       FOR UPDATE`,
       [parcel_id]
     );
 
     if (!rows.length) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Colis introuvable' });
     }
 
     const parcel = rows[0];
 
     if (parcel.status !== 'preparation') {
+      await client.query('ROLLBACK');
       return res.status(400).json({
         error: `Colis ${parcel.reference} doit être en préparation pour être scellé (statut: ${parcel.status})`,
       });
     }
 
-    // R1: Use parcelSync to advance to 'shipped'
+    await client.query('COMMIT');
+
+    // R1: Use parcelSync to advance to 'shipped' (après commit)
     const syncResult = await safeSyncScanToParcels({
       order_id: parcel.order_id,
       step: 'shipped',
@@ -161,8 +193,11 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res) 
       sync: syncResult,
     });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Hub seal error:', err.message);
     res.status(500).json({ error: 'Erreur scellage hub' });
+  } finally {
+    client.release();
   }
 });
 
