@@ -233,11 +233,11 @@ const orders = {
     }),
   },
 
-  subOrderStatus: {
-    params: Joi.object({ subId: uuid.required() }),
+  parcelStatus: {
+    params: Joi.object({ parcelId: uuid.required() }),
     body: Joi.object({
       status: Joi.string().valid(
-        'preparation', 'shipped', 'in_transit', 'available', 'collected', 'cancelled'
+        'draft', 'preparation', 'shipped', 'in_transit', 'arrived', 'available', 'collected', 'cancelled'
       ).required(),
       note: safeStr(500),
       tracking_ref: safeStr(100),
@@ -247,9 +247,9 @@ const orders = {
   cancelBackorder: {
     params: Joi.object({ id: uuid.required() }),
     body: Joi.object({
-      sub_order_id: uuid.required(),
+      parcel_id: uuid.optional(), sub_order_id: uuid.optional(), // backward compat
       reason: safeStr(500),
-    }),
+    }).or('parcel_id', 'sub_order_id'),
   },
 };
 

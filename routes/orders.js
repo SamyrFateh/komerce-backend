@@ -39,6 +39,7 @@ const { getLoyaltyDiscount, recalculateLoyalty } = require('./loyalty');
 const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 const { getRule, getRuleNumber } = require('../utils/rules');
+const { generateParcelRef } = require('../utils/reference');
 const { sendOrderConfirmation } = require('../utils/email');
 const { validate } = require('../middleware/validate');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -1693,39 +1694,44 @@ async function getAvailableCredits(dbClient, userId) {
 }
 
 
+
+
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// Phase 4 — Expédition Partielle (Hub Dubai)
+// SECTION 7 — EXPÉDITION PARTIELLE & COLIS (Parcel-Centric v2.0 — Phase 4)
 //
 // POST   /api/orders/:id/mark-availability   → marquer la disponibilité des articles
-// POST   /api/orders/:id/partial-ship        → créer une expédition partielle
-// GET    /api/orders/:id/sub-orders          → liste des sous-commandes
-// PATCH  /api/orders/sub-orders/:subId/status → changer statut sous-commande
-// POST   /api/orders/:id/cancel-backorder    → annuler un backorder
+// POST   /api/orders/:id/partial-ship        → créer une expédition partielle (parcels)
+// GET    /api/orders/:id/parcels             → liste des colis d'une commande
+// PATCH  /api/orders/parcels/:parcelId/status → changer statut d'un colis
+// POST   /api/orders/:id/cancel-backorder    → annuler un colis backorder
 // ═══════════════════════════════════════════════════════════════════════════════
 
 
-// ─── Constantes — sous-commandes ─────────────────────────────────────────────
+// ─── Constantes — colis (parcel-centric) ────────────────────────────────────
 
-const SUB_ORDER_STATUSES = [
-  'preparation', 'shipped', 'in_transit', 'available', 'collected', 'cancelled',
+const PARCEL_VALID_STATUSES = [
+  'draft', 'preparation', 'shipped', 'in_transit', 'arrived', 'available', 'collected', 'cancelled',
 ];
 
-const SUB_ORDER_TRANSITIONS = {
+const PARCEL_TRANSITIONS = {
+  draft:       ['preparation', 'cancelled'],
   preparation: ['shipped', 'cancelled'],
   shipped:     ['in_transit', 'cancelled'],
-  in_transit:  ['available', 'cancelled'],
+  in_transit:  ['arrived', 'available', 'cancelled'],
+  arrived:     ['available', 'cancelled'],
   available:   ['collected', 'cancelled'],
   collected:   [],
   cancelled:   [],
 };
 
-const SUB_ORDER_SMS = {
-  shipped:   (ref, tracking) =>
-    `Komerce : Sous-commande ${ref} expediee.${tracking ? ` Suivi : ${tracking}` : ''} Vous serez notifie a l'arrivee.`,
+const PARCEL_SMS = {
+  shipped:   (ref) =>
+    `Komerce : Colis ${ref} expedie. Vous serez notifie a l'arrivee.`,
   available: (ref, relais) =>
-    `Komerce : Sous-commande ${ref} disponible au relais ${relais || ''}. Venez la recuperer !`,
+    `Komerce : Colis ${ref} disponible au relais ${relais || ''}. Venez le recuperer !`,
   collected: (ref) =>
-    `Komerce : Sous-commande ${ref} remise. Merci ! 🎉`,
+    `Komerce : Colis ${ref} remis. Merci ! 🎉`,
 };
 
 // ─── POST /api/orders/:id/mark-availability ──────────────────────────────────
@@ -1820,7 +1826,7 @@ router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent
 });
 
 // ─── POST /api/orders/:id/partial-ship ───────────────────────────────────────
-// Créer une expédition partielle : sous-commande « partial_ship » + sous-commande « backorder ».
+// Créer une expédition partielle : colis « partial » + colis « backorder ».
 // Corps : { available_items: [{ order_item_id, quantity }], notes? }
 
 router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.partialShip), async (req, res) => {
@@ -1915,36 +1921,30 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
       });
     }
 
-    // ── 6. Déterminer le numéro séquentiel ──────────────────────────────────
-    const { rows: existingSubs } = await client.query(
-      `SELECT id FROM sub_orders WHERE parent_order_id = $1`,
-      [id]
-    );
-    const seqNum = existingSubs.length + 1;
-
-    // ── 7a. Créer la sous-commande « partial_ship » ─────────────────────────
-    const psRef = `PS-${order.reference}-${seqNum}`;
+    // ── 6. Générer les références colis ─────────────────────────────────────
+    const psRef = await generateParcelRef(db);
     const psId  = uuidv4();
 
+    // ── 7a. Créer le colis « partial » ─────────────────────────────────────
     await client.query(
-      `INSERT INTO sub_orders (
-         id, parent_order_id, type, status, tracking_ref, created_by, notes
-       ) VALUES ($1, $2, 'partial_ship', 'preparation', $3, $4, $5)`,
-      [psId, id, psRef, req.user.id, notes || null]
+      `INSERT INTO parcels (
+         id, order_id, type, status, reference, label, relais_id, created_by, notes
+       ) VALUES ($1, $2, 'partial', 'preparation', $3, 'Envoi partiel', $4, $5, $6)`,
+      [psId, id, psRef, order.relais_id, req.user.id, notes || null]
     );
 
-    // Insérer les articles de la sous-commande partial_ship
+    // Insérer les articles du colis partial
     const psItems = [];
     for (const ai of available_items) {
       const original = allItems.find(oi => oi.id === ai.order_item_id);
-      const soiId = uuidv4();
+      const piId = uuidv4();
       await client.query(
-        `INSERT INTO sub_order_items (id, sub_order_id, order_item_id, product_id, quantity, price_kmf)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [soiId, psId, ai.order_item_id, original.product_id, ai.quantity, original.price_kmf]
+        `INSERT INTO parcel_items (id, parcel_id, order_item_id, product_id, quantity)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [piId, psId, ai.order_item_id, original.product_id, ai.quantity]
       );
       psItems.push({
-        id: soiId,
+        id: piId,
         order_item_id: ai.order_item_id,
         product_name: original.product_name,
         quantity: ai.quantity,
@@ -1959,7 +1959,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
       );
     }
 
-    // ── 7b. Créer la sous-commande « backorder » pour les articles restants ─
+    // ── 7b. Créer le colis « backorder » pour les articles restants ────────
     const backorderItems = allItems.filter(oi => !availItemIds.has(oi.id));
     // Also handle partial quantities (items where only part of qty is shipped)
     const partialBackorders = available_items
@@ -1979,26 +1979,26 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
     const boItems = [];
 
     if (allBackorderItems.length > 0) {
-      boRef = `BO-${order.reference}-${seqNum + 1}`;
+      boRef = await generateParcelRef(db);
       boId  = uuidv4();
 
       await client.query(
-        `INSERT INTO sub_orders (
-           id, parent_order_id, type, status, tracking_ref, created_by,
+        `INSERT INTO parcels (
+           id, order_id, type, status, reference, label, relais_id, created_by,
            estimated_date
-         ) VALUES ($1, $2, 'backorder', 'preparation', $3, $4, NOW() + INTERVAL '1 day' * $5)`,
-        [boId, id, boRef, req.user.id, backorderMaxDays]
+         ) VALUES ($1, $2, 'backorder', 'draft', $3, 'Reliquat en attente', $4, $5, NOW() + INTERVAL '1 day' * $6)`,
+        [boId, id, boRef, order.relais_id, req.user.id, backorderMaxDays]
       );
 
       for (const boi of allBackorderItems) {
-        const soiId = uuidv4();
+        const piId = uuidv4();
         await client.query(
-          `INSERT INTO sub_order_items (id, sub_order_id, order_item_id, product_id, quantity, price_kmf)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [soiId, boId, boi.id, boi.product_id, boi.quantity, boi.price_kmf]
+          `INSERT INTO parcel_items (id, parcel_id, order_item_id, product_id, quantity)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [piId, boId, boi.id, boi.product_id, boi.quantity]
         );
         boItems.push({
-          id: soiId,
+          id: piId,
           order_item_id: boi.id,
           product_name: boi.product_name,
           quantity: boi.quantity,
@@ -2023,7 +2023,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
       [
         id,
         order.status,
-        `Expédition partielle créée — ${availableQty} articles expédiés, ${allBackorderItems.reduce((s, i) => s + i.quantity, 0)} en backorder`,
+        `Expédition partielle créée — ${availableQty} articles expédiés (${psRef}), ${allBackorderItems.reduce((s, i) => s + i.quantity, 0)} en backorder${boRef ? ` (${boRef})` : ''}`,
         req.user.id,
       ]
     );
@@ -2033,7 +2033,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
     // ── 9. SMS notification (non bloquant) ──────────────────────────────────
     if (autoNotify && order.user_phone) {
       const boCount = allBackorderItems.reduce((s, i) => s + i.quantity, 0);
-      const smsText = `Komerce : Commande ${order.reference} — expedition partielle : ${availableQty} article(s) expedie(s), ${boCount} en attente (backorder). Ref suivi : ${psRef}`;
+      const smsText = `Komerce : Commande ${order.reference} — expedition partielle : ${availableQty} article(s) expedie(s), ${boCount} en attente (backorder). Ref colis : ${psRef}`;
       sendSMS(order.user_phone, smsText, 'partial_ship', id).catch(console.error);
     }
 
@@ -2043,16 +2043,16 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
       reference: order.reference,
       partial_ship: {
         id: psId,
-        tracking_ref: psRef,
-        type: 'partial_ship',
+        reference: psRef,
+        type: 'partial',
         status: 'preparation',
         items: psItems,
       },
       backorder: boId ? {
         id: boId,
-        tracking_ref: boRef,
+        reference: boRef,
         type: 'backorder',
-        status: 'preparation',
+        status: 'draft',
         items: boItems,
         estimated_date: new Date(Date.now() + backorderMaxDays * 24 * 60 * 60 * 1000).toISOString(),
       } : null,
@@ -2072,11 +2072,17 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
   }
 });
 
-// ─── GET /api/orders/:id/sub-orders ──────────────────────────────────────────
-// Liste les sous-commandes d'une commande avec leurs articles.
+// ─── GET /api/orders/:id/parcels ─────────────────────────────────────────────
+// Liste les colis d'une commande avec leurs articles.
 // Auth : admin, agent_hub, agent_relais, ou propriétaire de la commande.
+// Backward compat : /sub-orders redirige vers /parcels
 
-router.get('/:id/sub-orders', authenticate, async (req, res) => {
+router.get('/:id/sub-orders', authenticate, (req, res) => {
+  // Backward compat redirect
+  res.redirect(307, `/api/orders/${req.params.id}/parcels`);
+});
+
+router.get('/:id/parcels', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -2092,34 +2098,38 @@ router.get('/:id/sub-orders', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Accès refusé' });
     }
 
-    // Charger les sous-commandes
-    const { rows: subOrders } = await db.query(
+    // Charger les colis
+    const { rows: parcelRows } = await db.query(
       `SELECT
-         so.id, so.type, so.status, so.tracking_ref,
-         so.estimated_date, so.shipped_at, so.notes,
-         so.created_at, so.updated_at
-       FROM sub_orders so
-       WHERE so.parent_order_id = $1
-       ORDER BY so.created_at ASC`,
+         p.id, p.type, p.status, p.reference,
+         p.label, p.estimated_date, p.shipped_at,
+         p.available_at, p.collected_at, p.cancelled_at,
+         p.cancel_reason, p.notes,
+         p.created_at, p.updated_at
+       FROM parcels p
+       WHERE p.order_id = $1 AND p.status != 'cancelled'
+       ORDER BY p.created_at ASC`,
       [id]
     );
 
-    // Charger les articles pour chaque sous-commande
+    // Charger les articles pour chaque colis
     const enriched = [];
-    for (const so of subOrders) {
+    for (const parcel of parcelRows) {
       const { rows: items } = await db.query(
         `SELECT
-           soi.id, soi.order_item_id, soi.quantity, soi.price_kmf,
+           pi.id, pi.order_item_id, pi.quantity,
+           oi.price_kmf,
            p.name AS product_name, p.image_url AS product_image
-         FROM sub_order_items soi
-         JOIN products p ON p.id = soi.product_id
-         WHERE soi.sub_order_id = $1
-         ORDER BY soi.created_at ASC`,
-        [so.id]
+         FROM parcel_items pi
+         JOIN products p ON p.id = pi.product_id
+         JOIN order_items oi ON oi.id = pi.order_item_id
+         WHERE pi.parcel_id = $1
+         ORDER BY pi.created_at ASC`,
+        [parcel.id]
       );
 
       enriched.push({
-        ...so,
+        ...parcel,
         items,
         total_kmf: items.reduce((sum, i) => sum + (Number(i.price_kmf) * i.quantity), 0),
       });
@@ -2128,82 +2138,88 @@ router.get('/:id/sub-orders', authenticate, async (req, res) => {
     res.json({
       order_reference: order.reference,
       order_status: order.status,
-      sub_orders: enriched,
+      parcels: enriched,
     });
 
   } catch (err) {
-    console.error('[sub-orders] Error:', err.message);
-    res.status(500).json({ error: 'Erreur récupération sous-commandes' });
+    console.error('[parcels] Error:', err.message);
+    res.status(500).json({ error: 'Erreur récupération colis' });
   }
 });
 
-// ─── PATCH /api/orders/sub-orders/:subId/status ──────────────────────────────
-// Changer le statut d'une sous-commande.
+// ─── PATCH /api/orders/parcels/:parcelId/status ─────────────────────────────
+// Changer le statut d'un colis.
 // Corps : { status, note?, tracking_ref? }
 //
-// IMPORTANT : cette route utilise un préfixe « sub-orders » fixe (pas de :id parent)
+// IMPORTANT : cette route utilise un préfixe « parcels » fixe (pas de :id parent)
 // → insérer AVANT les routes /:id/* pour éviter collision Express
 
-router.patch('/sub-orders/:subId/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.subOrderStatus), async (req, res) => {
+router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.parcelStatus), async (req, res) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
-    const { subId } = req.params;
+    const { parcelId } = req.params;
     const { status, note, tracking_ref } = req.body;
 
     // Valider le statut
-    if (!SUB_ORDER_STATUSES.includes(status)) {
+    if (!PARCEL_VALID_STATUSES.includes(status)) {
       await client.query('ROLLBACK');
       return res.status(400).json({
-        error: `Statut invalide. Valeurs : ${SUB_ORDER_STATUSES.join(', ')}`,
+        error: `Statut invalide. Valeurs : ${PARCEL_VALID_STATUSES.join(', ')}`,
       });
     }
 
-    // Charger la sous-commande + commande parent
-    const { rows: [subOrder] } = await client.query(
-      `SELECT so.*, o.reference AS parent_reference, o.id AS parent_id,
+    // Charger le colis + commande parent
+    const { rows: [parcel] } = await client.query(
+      `SELECT p.*, o.reference AS parent_reference, o.id AS parent_id,
               o.user_id, o.relais_id, o.status AS parent_status,
               u.phone AS user_phone, r.name AS relais_name
-       FROM sub_orders so
-       JOIN orders o ON o.id = so.parent_order_id
+       FROM parcels p
+       JOIN orders o ON o.id = p.order_id
        LEFT JOIN users u ON u.id = o.user_id
        LEFT JOIN relais r ON r.id = o.relais_id
-       WHERE so.id = $1`,
-      [subId]
+       WHERE p.id = $1`,
+      [parcelId]
     );
 
-    if (!subOrder) {
+    if (!parcel) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Sous-commande introuvable' });
+      return res.status(404).json({ error: 'Colis introuvable' });
     }
 
     // Valider la transition
-    const allowedNext = SUB_ORDER_TRANSITIONS[subOrder.status] || [];
+    const allowedNext = PARCEL_TRANSITIONS[parcel.status] || [];
     if (!allowedNext.includes(status)) {
       await client.query('ROLLBACK');
       return res.status(422).json({
-        error: `Transition invalide : ${subOrder.status} → ${status}. Transitions autorisées : ${allowedNext.join(', ') || 'aucune (état terminal)'}`,
-        current_status: subOrder.status,
+        error: `Transition invalide : ${parcel.status} → ${status}. Transitions autorisées : ${allowedNext.join(', ') || 'aucune (état terminal)'}`,
+        current_status: parcel.status,
       });
     }
 
-    // Mettre à jour le statut
-    const updates = ['status = $1', 'updated_at = NOW()'];
+    // Mettre à jour le statut du colis
+    const updates = ['status = $1::parcel_status', 'updated_at = NOW()'];
     const params  = [status];
     let pi = 2;
 
-    if (status === 'shipped') {
-      updates.push(`shipped_at = NOW()`);
-    }
+    // Timestamps automatiques
+    if (status === 'preparation') updates.push('prepared_at = COALESCE(prepared_at, NOW())');
+    if (status === 'shipped')     updates.push('shipped_at = COALESCE(shipped_at, NOW())');
+    if (status === 'in_transit')  updates.push('in_transit_at = COALESCE(in_transit_at, NOW())');
+    if (status === 'arrived')     updates.push('arrived_at = COALESCE(arrived_at, NOW())');
+    if (status === 'available')   updates.push('available_at = COALESCE(available_at, NOW())');
+    if (status === 'collected')   updates.push('collected_at = COALESCE(collected_at, NOW())');
+    if (status === 'cancelled')   updates.push('cancelled_at = COALESCE(cancelled_at, NOW())');
+
     if (tracking_ref) {
-      updates.push(`tracking_ref = $${pi++}`);
+      updates.push(`reference = $${pi++}`);
       params.push(tracking_ref);
     }
-    params.push(subId);
+    params.push(parcelId);
 
     await client.query(
-      `UPDATE sub_orders SET ${updates.join(', ')} WHERE id = $${pi}`,
+      `UPDATE parcels SET ${updates.join(', ')} WHERE id = $${pi}`,
       params
     );
 
@@ -2212,35 +2228,35 @@ router.patch('/sub-orders/:subId/status', authenticate, requireRole(['admin', 'a
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
        VALUES ($1, $2, $3, $4)`,
       [
-        subOrder.parent_id,
-        subOrder.parent_status,
-        `Sous-commande ${subOrder.tracking_ref} → ${status}${note ? ` — ${note}` : ''}`,
+        parcel.parent_id,
+        parcel.parent_status,
+        `Colis ${parcel.reference} → ${status}${note ? ` — ${note}` : ''}`,
         req.user.id,
       ]
     );
 
-    // Vérifier si TOUTES les sous-commandes sont « collected » → parent aussi
+    // Vérifier si TOUS les colis sont « collected » → parent aussi
     if (status === 'collected') {
-      const { rows: allSubs } = await client.query(
-        `SELECT id, status FROM sub_orders WHERE parent_order_id = $1`,
-        [subOrder.parent_id]
+      const { rows: allParcels } = await client.query(
+        `SELECT id, status FROM parcels WHERE order_id = $1`,
+        [parcel.parent_id]
       );
 
-      // Prendre en compte le statut mis à jour de la sous-commande courante
-      const allCollected = allSubs.every(s =>
-        s.id === subId ? true : (s.status === 'collected' || s.status === 'cancelled')
+      // Prendre en compte le statut mis à jour du colis courant
+      const allCollected = allParcels.every(p =>
+        p.id === parcelId ? true : (p.status === 'collected' || p.status === 'cancelled')
       );
 
       if (allCollected) {
         await client.query(
           `UPDATE orders SET status = 'collected', collected_at = NOW(), updated_at = NOW()
            WHERE id = $1`,
-          [subOrder.parent_id]
+          [parcel.parent_id]
         );
         await client.query(
           `INSERT INTO order_status_history (order_id, status, note, changed_by)
-           VALUES ($1, 'collected', 'Toutes les sous-commandes collectées — commande terminée', $2)`,
-          [subOrder.parent_id, req.user.id]
+           VALUES ($1, 'collected', 'Tous les colis collectés — commande terminée', $2)`,
+          [parcel.parent_id, req.user.id]
         );
       }
     }
@@ -2248,30 +2264,37 @@ router.patch('/sub-orders/:subId/status', authenticate, requireRole(['admin', 'a
     await client.query('COMMIT');
 
     // SMS client (non bloquant) — sur shipped / available / collected
-    if (subOrder.user_phone && SUB_ORDER_SMS[status]) {
-      const smsText = SUB_ORDER_SMS[status](subOrder.tracking_ref, subOrder.relais_name);
-      sendSMS(subOrder.user_phone, smsText, `sub_${status}`, subOrder.parent_id).catch(console.error);
+    if (parcel.user_phone && PARCEL_SMS[status]) {
+      const smsText = PARCEL_SMS[status](parcel.reference, parcel.relais_name);
+      sendSMS(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(console.error);
     }
 
     res.json({
       success: true,
-      sub_order_id: subId,
+      parcel_id: parcelId,
       status,
-      tracking_ref: tracking_ref || subOrder.tracking_ref,
+      reference: tracking_ref || parcel.reference,
     });
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[sub-order/status] Error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour statut sous-commande' });
+    console.error('[parcel/status] Error:', err.message);
+    res.status(500).json({ error: 'Erreur mise à jour statut colis' });
   } finally {
     client.release();
   }
 });
 
+// Backward compat: old sub-orders status endpoint
+router.patch('/sub-orders/:subId/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), (req, res, next) => {
+  req.params.parcelId = req.params.subId;
+  req.url = `/parcels/${req.params.subId}/status`;
+  next();
+});
+
 // ─── POST /api/orders/:id/cancel-backorder ───────────────────────────────────
-// Annuler une sous-commande backorder : restauration stock + crédit boutique ou refund Stripe.
-// Corps : { sub_order_id, reason? }
+// Annuler un colis backorder : restauration stock + crédit boutique ou refund Stripe.
+// Corps : { parcel_id, reason? }
 
 router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackorder), async (req, res) => {
   const client = await db.getClient();
@@ -2279,7 +2302,8 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
     await client.query('BEGIN');
 
     const { id } = req.params;
-    const { sub_order_id, reason } = req.body;
+    const parcelId = req.body.parcel_id || req.body.sub_order_id; // backward compat
+    const { reason } = req.body;
 
     // Charger la commande parent
     const { rows: [order] } = await client.query(
@@ -2301,37 +2325,38 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
       return res.status(403).json({ error: 'Accès refusé' });
     }
 
-    // Charger la sous-commande backorder
-    const { rows: [subOrder] } = await client.query(
-      `SELECT * FROM sub_orders
-       WHERE id = $1 AND parent_order_id = $2 AND type = 'backorder'`,
-      [sub_order_id, id]
+    // Charger le colis backorder
+    const { rows: [parcel] } = await client.query(
+      `SELECT * FROM parcels
+       WHERE id = $1 AND order_id = $2 AND type = 'backorder'`,
+      [parcelId, id]
     );
-    if (!subOrder) {
+    if (!parcel) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Sous-commande backorder introuvable pour cette commande' });
+      return res.status(404).json({ error: 'Colis backorder introuvable pour cette commande' });
     }
 
-    if (subOrder.status === 'cancelled') {
+    if (parcel.status === 'cancelled') {
       await client.query('ROLLBACK');
       return res.status(422).json({ error: 'Backorder déjà annulé' });
     }
 
-    if (['shipped', 'in_transit', 'available', 'collected'].includes(subOrder.status)) {
+    if (['shipped', 'in_transit', 'arrived', 'available', 'collected'].includes(parcel.status)) {
       await client.query('ROLLBACK');
       return res.status(422).json({
-        error: `Annulation impossible — la sous-commande est en statut "${subOrder.status}"`,
-        current_status: subOrder.status,
+        error: `Annulation impossible — le colis est en statut "${parcel.status}"`,
+        current_status: parcel.status,
       });
     }
 
     // Charger les articles du backorder
     const { rows: boItems } = await client.query(
-      `SELECT soi.*, p.name AS product_name
-       FROM sub_order_items soi
-       JOIN products p ON p.id = soi.product_id
-       WHERE soi.sub_order_id = $1`,
-      [sub_order_id]
+      `SELECT pi.*, oi.price_kmf, p.name AS product_name
+       FROM parcel_items pi
+       JOIN products p ON p.id = pi.product_id
+       JOIN order_items oi ON oi.id = pi.order_item_id
+       WHERE pi.parcel_id = $1`,
+      [parcelId]
     );
 
     // Calculer la valeur totale du backorder
@@ -2339,12 +2364,13 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
       (sum, i) => sum + (Number(i.price_kmf) * i.quantity), 0
     );
 
-    // Annuler la sous-commande
+    // Annuler le colis
     await client.query(
-      `UPDATE sub_orders
-       SET status = 'cancelled', cancel_reason = $1, updated_at = NOW()
+      `UPDATE parcels
+       SET status = 'cancelled'::parcel_status, cancel_reason = $1,
+           cancelled_at = NOW(), updated_at = NOW()
        WHERE id = $2`,
-      [reason || 'Annulation backorder client', sub_order_id]
+      [reason || 'Annulation backorder client', parcelId]
     );
 
     // Restaurer le stock
@@ -2378,7 +2404,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
             metadata: {
               order_reference: order.reference,
               refund_type: 'backorder_cancellation',
-              sub_order_id,
+              parcel_id: parcelId,
               komerce: 'true',
             },
           });
@@ -2408,7 +2434,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
         `INSERT INTO refunds
            (order_id, amount_kmf, amount_eur, refund_type, refund_method,
             stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
-         VALUES ($1,$2,$3,'partial','$4',$5,$6,$7,$8,'completed',NOW())`,
+         VALUES ($1,$2,$3,'partial',$4,$5,$6,$7,$8,'completed',NOW())`,
         [
           id, backorderValueKmf, refundAmountEur,
           refundMethod,
@@ -2425,7 +2451,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
       [
         id,
         order.status,
-        `Backorder ${subOrder.tracking_ref} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${refundMethod === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)'}`,
+        `Backorder ${parcel.reference} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${refundMethod === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)'}`,
         req.user.id,
       ]
     );
@@ -2437,14 +2463,14 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
       const creditStr = refundMethod === 'stripe'
         ? `${refundAmountEur.toFixed(2)}EUR rembourse via Stripe`
         : `${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF credite sur votre compte`;
-      const smsText = `Komerce : Backorder ${subOrder.tracking_ref} annule. ${creditStr}. Merci de votre comprehension.`;
+      const smsText = `Komerce : Backorder ${parcel.reference} annule. ${creditStr}. Merci de votre comprehension.`;
       sendSMS(order.user_phone, smsText, 'backorder_cancelled', id).catch(console.error);
     }
 
     res.json({
       success: true,
       reference: order.reference,
-      sub_order_ref: subOrder.tracking_ref,
+      parcel_ref: parcel.reference,
       cancelled_items: boItems.map(i => ({
         product_name: i.product_name,
         quantity: i.quantity,

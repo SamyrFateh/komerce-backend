@@ -486,32 +486,7 @@ async function fixMissingSchema() {
     )
   `);
 
-  await run('sub_orders table', `
-    CREATE TABLE IF NOT EXISTS sub_orders (
-      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      parent_order_id  UUID NOT NULL REFERENCES orders(id),
-      type             TEXT NOT NULL,
-      status           TEXT NOT NULL DEFAULT 'preparation',
-      tracking_ref     TEXT,
-      estimated_date   TIMESTAMPTZ,
-      shipped_at       TIMESTAMPTZ,
-      notes            TEXT,
-      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  await run('sub_order_items table', `
-    CREATE TABLE IF NOT EXISTS sub_order_items (
-      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      sub_order_id     UUID NOT NULL REFERENCES sub_orders(id),
-      order_item_id    UUID NOT NULL REFERENCES order_items(id),
-      quantity         INTEGER NOT NULL,
-      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  await run('order_items.availability_status',
+      await run('order_items.availability_status',
     `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS availability_status TEXT DEFAULT 'pending'`);
   await run('order_items.estimated_available_at',
     `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS estimated_available_at TIMESTAMPTZ`);
