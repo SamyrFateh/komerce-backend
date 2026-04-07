@@ -1,10 +1,10 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.5 — 06/04/2026 (v15.4 + sync SHA drift: ROADMAP v15 23.3KB, loyalty.js, GOVERNANCE_BOOTSTRAP, DASHBOARD_REDESIGN)
+> **Version** : 15.9 — 07/04/2026 (v15.8 + PR #105-108 sync: Phase 3 cancel/credits, Phase 4 partial shipping, railway.toml, SHA updates)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 06/04/2026 — scan exhaustif fichier par fichier, SHA par SHA
-> 📊 **18 fichiers route** · **~120 endpoints** · **27+ tables** · **3 vues** · **9 services externes**
+> **Dernière vérification** : 07/04/2026 — governance auto-sync (PR #105-108: +5 files, 8 SHA updates, +7 endpoints, +4 tables)
+> 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
 
@@ -39,17 +39,17 @@
 
 | Métrique | Valeur |
 |----------|--------|
-| **Fichiers totaux** | ~104 |
+| **Fichiers totaux** | ~105 |
 | **Dossiers** | 14 |
-| **Routes API** | 18 fichiers |
+| **Routes API** | 19 fichiers |
 | **Middlewares** | 4 |
-| **Utilitaires** | 5 |
+| **Utilitaires** | 8 |
 | **Validators** | 1 |
-| **Fichiers DB** | 4 + 3 migrations |
-| **Frontend (public/)** | 15 HTML + 3 JS + 2 images |
+| **Fichiers DB** | 4 + 6 migrations |
+| **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 12 + 11 audit + _pending/ |
+| **Docs** | 13 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
@@ -63,24 +63,26 @@ komerce-backend/
 ├── .env.example                          (1.9 KB)  [6568d664]
 ├── .gitignore                            (258 B)   [61e13d23]
 ├── AGENT_RULES.md                        (3.0 KB)  [965976d8]
-├── CONTRIBUTING.md                       (3.2 KB)  [a18b88a6]
+├── CONTRIBUTING.md                       (3.1 KB)  [a18b88a6]
 ├── README.md                             (3.9 KB)  [1c05bc68]
 ├── db.js                                 (770 B)   [08d9e6c6]
 ├── package.json                          (923 B)   [f7944e67]
 ├── package-lock.json                     (113.9 KB)[3bb09e87]
-├── server.js                             (33.9 KB) [5b9d8eac]
+├── railway.toml                          (644 B)   [fa81b056]
+├── server.js                             (44.7 KB) [58742e77]
 │
-├── routes/                               (18 fichiers)
+├── routes/                               (19 fichiers)
 │   ├── admin.js                          (24.3 KB) [6bb443fe]
 │   ├── auth.js                           (18.5 KB) [cef6b0d4]
 │   ├── baskets.js                        (11.7 KB) [6f41e7a1]
-│   ├── dashboard.js                      (44.1 KB) [d6cd15c0]
+│   ├── config.js                         (7.3 KB)  [1b3f634f]
+│   ├── dashboard.js                      (43.8 KB) [cc16c326]
 │   ├── finance.js                        (13.7 KB) [a919836e]
 │   ├── health.js                         (1.4 KB)  [e29fabcb]
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
 │   ├── loyalty.js                        (5.6 KB)  [c454e300]
 │   ├── modules.js                        (20.6 KB) [3ea6fa01]
-│   ├── orders.js                         (55.4 KB) [bd3501e2]
+│   ├── orders.js                         (98.6 KB) [70a2272d]
 │   ├── payments.js                       (12.0 KB) [1ba52974]
 │   ├── pilotage.js                       (1.2 KB)  [9af27985]
 │   ├── pricing.js                        (3.5 KB)  [a3b26f39]
@@ -96,31 +98,38 @@ komerce-backend/
 │   ├── upload.js                         (1.5 KB)  [5ea7f1af]
 │   └── validate.js                       (5.6 KB)  [4c671ec0]
 │
-├── utils/                                (5 fichiers)
+├── utils/                                (8 fichiers)
 │   ├── email.js                          (6.7 KB)  [daf607c3]
-│   ├── pricing.js                        (3.7 KB)  [6f505ed0]
-│   ├── rates.js                          (719 B)   [933ed3c4]
+│   ├── pricing.js                        (5.1 KB)  [ff3e82e2]
+│   ├── rates.js                          (1.1 KB)  [5fdacfb4]
 │   ├── reference.js                      (2.5 KB)  [253751b9]
-│   └── sms.js                            (7.4 KB)  [af6ae916]
+│   ├── refunds.js                        (4.0 KB)  [25a80509]
+│   ├── rules.js                          (8.8 KB)  [6a679773]
+│   ├── sms.js                            (11.8 KB) [1d17abd6]
+│   └── store-credits.js                  (3.3 KB)  [58e8b8e4]
 │
 ├── validators/                           (1 fichier)
-│   └── index.js                          (13.6 KB) [dcc266a7]
+│   └── index.js                          (15.0 KB) [f04565ef]
 │
-├── db/                                   (4 + 3 migrations)
+├── db/                                   (4 + 4 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
 │   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
 │   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
 │   └── migrations/
 │       ├── 004_fix_order_status_enum.sql  (3.9 KB)  [c4cdffa2]
 │       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
-│       └── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
+│       ├── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
+│       ├── 007_business_rules.sql         (10.9 KB) [0971318d]
+│       ├── 008_pricing_rules.sql         (2.2 KB)  [6de70417]
+│       └── 009_partial_shipping.sql      (4.6 KB)  [113d16d4]
 │
-├── public/                               (15 HTML + 3 JS + 2 images)
+├── public/                               (16 HTML + 3 JS + 2 images)
 │   ├── index.html                        (143.9 KB)[c925b4b8]
 │   ├── Komerce_Admin.html                (121.4 KB)[d8e57998]
-│   ├── Komerce_Admin_Users.html          (32.2 KB) [9059161a]
+│   ├── Komerce_Admin_Users.html          (31.5 KB) [9059161a]
 │   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
 │   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
+│   ├── Komerce_Dashboard.html            (75.8 KB) [4d455c1a]
 │   ├── Komerce_Hub.html                  (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_Mobile.html               (53.9 KB) [d0348e70]
 │   ├── Komerce_Pilotage_v2.html          (~1 KB)   [redirect→dashboard-app]
@@ -148,11 +157,11 @@ komerce-backend/
 │   │   ├── CatalogueView.tsx             (8.9 KB)  [c47e8c75]
 │   │   ├── ClientsView.tsx               (8.5 KB)  [6383d2a2]
 │   │   ├── FinanceView.tsx               (11.2 KB) [df4382a6]
-│   │   ├── HubDubaiView.tsx              (10.8 KB) [fbe66418]
+│   │   ├── HubDubaiView.tsx              (10.5 KB) [fbe66418]
 │   │   ├── LoadingError.tsx              (1.7 KB)  [5108f6d1]
 │   │   ├── OverviewView.tsx              (10.3 KB) [be16d0ef]
 │   │   ├── PipelineView.tsx              (4.5 KB)  [5b346aa9]
-│   │   ├── RelaisView.tsx                (12.9 KB) [672b1e71]
+│   │   ├── RelaisView.tsx                (12.6 KB) [672b1e71]
 │   │   ├── RetardsView.tsx               (7.4 KB)  [bc6b115a]
 │   │   ├── StatCard.tsx                  (889 B)   [8dcabbaf]
 │   │   └── TendancesView.tsx             (10.5 KB) [9b16b6a5]
@@ -169,19 +178,21 @@ komerce-backend/
 │   ├── setup-hooks.sh                    (4.5 KB)  [1d4ba37f]
 │   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
 │
-├── docs/                                 (12 fichiers + audit/ + _pending/)
+├── docs/                                 (13 fichiers + audit/ + _pending/)
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
 │   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
+│   ├── CHANGES_PHASE2_MIGRATION.md       (9.0 KB)  [29e6f652]
 │   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
 │   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
 │   ├── GOVERNANCE_BOOTSTRAP.md            (3.0 KB)  [6f68fb3b]
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (23.3 KB) [0ea267c0]
+│   ├── ROADMAP_KOMERCE.md                (21.5 KB) [31e9c403]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
+│   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
 │   ├── _pending/                          (dossier delta governance)
 │   │   └── README.md                     (2.3 KB)  [8f1a2e46]
 │   └── audit/                            (11 fichiers)
@@ -307,7 +318,7 @@ komerce-backend/
 
 > **Sécurité** : Cookie httpOnly (`kmrc_jwt`), `sameSite: Strict`, `secure: true` en production. Validation Joi sur register/login. Rate-limité par `authLimiter` (5 req/15min).
 
-### 📁 orders.js — `/api/orders` (10 endpoints)
+### 📁 orders.js — `/api/orders` (17 endpoints)
 
 | # | Méthode | Chemin | Auth | Rôles | Description |
 |---|---------|--------|:----:|-------|-------------|
@@ -321,6 +332,13 @@ komerce-backend/
 | 8 | `PATCH` | `/api/orders/:id/status` | ✅ | admin, agent_relais, agent_hub | Changement statut (matrice transitions valides) |
 | 9 | `PATCH` | `/api/orders/:id/cost` | ✅ | admin | Saisie coût réel (supplier_name, invoice_url) |
 | 10 | `GET` | `/api/orders/:id/history` | ✅ | — | Historique statuts de la commande |
+| 11 | `POST` | `/api/orders/:id/cancel` | ✅ | client / admin | Annuler une commande avec remboursement (Stripe refund ou crédit boutique) |
+| 12 | `GET` | `/api/orders/credits` | ✅ | client / admin | Consulter crédits boutique disponibles |
+| 13 | `POST` | `/api/orders/:id/mark-availability` | ✅ | admin, agent_hub | Marquer la disponibilité des articles (available / delayed / backorder) |
+| 14 | `POST` | `/api/orders/:id/partial-ship` | ✅ | admin, agent_hub | Créer une expédition partielle + backorder |
+| 15 | `GET` | `/api/orders/:id/sub-orders` | ✅ | admin, agent_hub, agent_relais, owner | Lister les sous-commandes d'une commande |
+| 16 | `PATCH` | `/api/orders/sub-orders/:subId/status` | ✅ | admin, agent_hub, agent_relais | Changer le statut d'une sous-commande |
+| 17 | `POST` | `/api/orders/:id/cancel-backorder` | ✅ | admin, agent_hub, owner | Annuler un backorder (remboursement/crédit) |
 
 > **Pipeline** : 9 statuts — `confirmed → ordered → preparation → shipped → in_transit → available → collected` + `cancelled` / `refunded`.  
 > **Transitions** : Matrice `VALID_TRANSITIONS` + `TRANSITION_ROLES` — seuls les rôles autorisés peuvent effectuer chaque transition.  
@@ -552,7 +570,7 @@ komerce-backend/
 
 ## 5. 🗄️ Schéma de base de données
 
-### Tables principales (27+)
+### Tables principales (31+)
 
 | # | Table | Source | Trigger | Description |
 |---|-------|--------|---------|-------------|
@@ -582,6 +600,12 @@ komerce-backend/
 | 24 | `ceremony_fabrics` | schema_extension.sql | — | Tissus cérémonie (legacy) |
 | 25 | `ceremony_models` | schema_extension.sql | — | Modèles cérémonie (legacy) |
 | 26 | `ceremony_order_items` | schema_extension.sql | — | Articles cérémonie (legacy) |
+| 27 | `business_rules` | 007_business_rules.sql / server.js | — | Règles métier configurables (moteur Point 6) |
+| 28 | `business_rules_history` | 007_business_rules.sql / server.js | — | Historique modifications règles |
+| 29 | `refunds` | server.js (auto-migration) | — | Historique remboursements (Stripe + crédits) |
+| 30 | `store_credits` | server.js (auto-migration) | — | Crédits boutique (remboursement annulation cash) |
+| 31 | `sub_orders` | server.js (auto-migration) | — | Sous-commandes (expédition partielle / backorder) |
+| 32 | `sub_order_items` | server.js (auto-migration) | — | Articles des sous-commandes |
 
 ### Vues (3)
 
@@ -729,6 +753,7 @@ scans                   │     2     │ ██░░░░░░░░░░�
 | Route source | Route cible | Fonction | Direction |
 |---|---|---|---|
 | `orders.js` | `loyalty.js` | `getLoyaltyDiscount()` | orders → loyalty |
+| `orders.js` | stripe | `stripe.refunds.create()` | orders → stripe (refund on cancel) |
 | `orders.js` | `loyalty.js` | `recalculateLoyalty()` | orders → loyalty |
 | `payments.js` | `purchasing.js` | `triggerPurchasing()` | payments → purchasing |
 | `purchasing.js` | `scans.js` | `triggerScan3()` | purchasing → scans |
@@ -828,16 +853,19 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 | Fichier | Rôle |
 |---------|------|
-| `utils/sms.js` | Envoi SMS via Africa's Talking + `processCashRelaisReminders()` (cron 1h) |
+| `utils/sms.js` | Envoi SMS via Africa's Talking + `processCashRelaisReminders()` (cron dynamique) + `processBackorderReminders()` (cron 6h) + templates partial_ship |
 | `utils/email.js` | Emails transactionnels via Nodemailer (confirmation commande) |
 | `utils/rates.js` | Taux de change EUR/KMF, AED/KMF (table `exchange_rates`) |
-| `utils/pricing.js` | Moteur de calcul prix (marge, fret, douane estimée) |
+| `utils/pricing.js` | Moteur de calcul prix v6.5 async, 10 params configurables via `getRuleNumber()` (marge, fret, douane) |
 | `utils/reference.js` | Génération de références expédition (`generateShipmentRef()`) |
-| `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, etc. |
+| `utils/refunds.js` | Logique de remboursement (Stripe refund + crédit boutique fallback) |
+| `utils/store-credits.js` | Gestion crédits boutique FIFO (création, consommation, solde) |
+| `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, config, etc. |
 
 ### Cron intégré
 
-- **Cash relais reminders** : `setInterval` toutes les heures, avec verrou anti-concurrence (`cronRunning`).
+- **Cash relais reminders** : `setInterval` intervalle dynamique via `getRuleNumber('CASH_REMINDER_INTERVAL_MIN')`, avec verrou anti-concurrence (`cronRunning`).
+- **Backorder checker** : `setInterval` toutes les 6 heures — détecte backorders expirés, envoie SMS de proposition d'annulation au client.
 
 ### Auto-migrations au démarrage (`server.js`)
 
@@ -900,9 +928,10 @@ PWA Service Worker :
 |---------|--------|-----|------|-------|
 | `index.html` | 143.9 KB | c925b4b8 | 🏪 **Boutique principale** (route `/`) | Public |
 | `Komerce_Admin.html` | 121.4 KB | d8e57998 | 👑 Panel admin principal | Admin |
-| `Komerce_Admin_Users.html` | 32.2 KB | 9059161a | 👥 Gestion utilisateurs | Admin |
+| `Komerce_Admin_Users.html` | 32.2 KB | 90591618 | 👥 Gestion utilisateurs | Admin |
 | `Komerce_Backend.html` | 512.6 KB | f02590ab | ⚙️ **Backend admin complet** (512 KB !) | Admin |
 | `Komerce_Backoffice_Admin_v2.html` | 68.2 KB | 3eafa998 | 🏢 Backoffice admin v2 | Admin |
+| `Komerce_Dashboard.html` | 75.8 KB | 4d455c1a | 📊 Dashboard admin | Admin |
 | `Komerce_Hub.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
 | `Komerce_Mobile.html` | 53.9 KB | d0348e70 | 📱 Version mobile PWA | Public |
 | `Komerce_Pilotage_v2.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
@@ -982,11 +1011,11 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `CatalogueView.tsx` | 8.9 KB | c47e8c75 | Vue catalogue — navigation produits (3 useApi hooks) |
 | `ClientsView.tsx` | 8.5 KB | 6383d2a2 | Vue clients — comportement, fidélité (1 useApi hook) |
 | `FinanceView.tsx` | 11.2 KB | df4382a6 | Vue finance — CA, marges, devises (1 useApi hook) |
-| `HubDubaiView.tsx` | 10.8 KB | fbe66418 | Vue hub Dubai — opérations hub |
+| `HubDubaiView.tsx` | 10.5 KB | fbe66418 | Vue hub Dubai — opérations hub |
 | `LoadingError.tsx` | 1.7 KB | 5108f6d1 | Composant UI loading/erreur réutilisable |
 | `OverviewView.tsx` | 10.3 KB | be16d0ef | Vue d'ensemble — KPIs principaux (3 useApi hooks) |
 | `PipelineView.tsx` | 4.5 KB | 5b346aa9 | Vue pipeline — kanban commandes (1 useApi hook) |
-| `RelaisView.tsx` | 12.9 KB | 672b1e71 | Vue relais — réseau de points relais |
+| `RelaisView.tsx` | 12.6 KB | 672b1e71 | Vue relais — réseau de points relais |
 | `RetardsView.tsx` | 7.4 KB | bc6b115a | Vue retards — SLA, compensations (1 useApi hook) |
 | `StatCard.tsx` | 889 B | 8dcabbaf | Composant carte statistique réutilisable |
 | `TendancesView.tsx` | 10.5 KB | 9b16b6a5 | Vue tendances — graphiques, projections (2 useApi hooks) |
@@ -1106,8 +1135,9 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `.env.example` | 1.9 KB | 6568d664 | Template variables d'environnement |
 | `.gitignore` | 258 B | 61e13d23 | Fichiers exclus de Git |
 | `AGENT_RULES.md` | ~3 KB | (v mise à jour) | Règles obligatoires agents IA |
-| `CONTRIBUTING.md` | 3.2 KB | a18b88a6 | Guide de contribution |
+| `CONTRIBUTING.md` | 3.2 KB | a18b8868 | Guide de contribution |
 | `README.md` | 3.9 KB | 1c05bc68 | README principal |
+| `railway.toml` | 644 B | fa81b056 | Configuration Railway — watch patterns (filtre déploiements docs-only) |
 
 ---
 
@@ -1205,7 +1235,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Route | Endpoints | Tables | Appels croisés | Services ext. | Score |
 |-------|-----------|--------|---------------|---------------|-------|
-| `orders.js` | 10 | 8 | 2 | 5 | **77** |
+| `orders.js` | 17 | 10 | 3 | 5 | **95** |
 | `admin.js` | 14 | 9 | 0 | 2 | **53** |
 | `purchasing.js` | 10 | 8 | 1 | 2 | **53** |
 | `scans.js` | 6 | 7 | 1 | 1 | **52** |
@@ -1236,8 +1266,8 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Métrique | Valeur |
 |----------|--------|
 | Fichiers route | **18** |
-| Endpoints totaux | **~120** |
-| Tables PostgreSQL | **27+** |
+| Endpoints totaux | **~127** |
+| Tables PostgreSQL | **31+** |
 | Vues | **3** |
 | Fonctions DB | **2** |
 | Triggers DB | **6** |
@@ -1249,7 +1279,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Tables critiques (5+ routes) | **7** |
 | Issues sécurité critiques | **6** (OPEN) |
 | Issues sécurité majeures | **8** (OPEN) |
-| Route la plus complexe | `orders.js` (10 endpoints, ~54 Ko) |
+| Route la plus complexe | `orders.js` (17 endpoints, ~99 Ko) |
 | Dépendances production | **17** |
 
 ---
@@ -1271,7 +1301,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.5 — 6 avril 2026*
+> 📝 *Cartographie 360° — Version v15.9 — 7 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
@@ -1281,14 +1311,14 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-06 17:55:30 UTC
+> Mise à jour : 2026-04-07 00:00:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
-| Routes | 18 fichiers |
+| Routes | 19 fichiers |
 | Middlewares | 4 fichiers |
-| Utilitaires | 5 fichiers |
-| Frontend (public/) | 20 fichiers |
+| Utilitaires | 8 fichiers |
+| Frontend (public/) | 21 fichiers |
 | Dashboard App | 20 fichiers |
 | Score de risque | 100/100 |
 

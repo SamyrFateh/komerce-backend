@@ -1,9 +1,9 @@
 # 🗺️ ROADMAP KOMERCE — Référence Unique
 
 > 📅 **Mise à jour** : 7 avril 2026  
-> 🏷️ **Version** : v15.4  
+> 🏷️ **Version** : v15.5  
 > 🔗 **Repo** : `SamyrFateh/komerce-backend` · branche `main`  
-> 📊 **18 fichiers route** · **~122 endpoints** · **29+ tables**
+> 📊 **18 fichiers route** · **~127 endpoints** · **31+ tables**
 
 ---
 
@@ -37,7 +37,7 @@
 | Dashboard unifié v11 | ✅ Mergé | Remplacé par Dashboard Pilotage |
 | **Dashboard Pilotage Unifié** | ✅ 11/11 | **TERMINÉ 🎉** |
 | **Catalogue Pièces Auto/Moto** | ⬜ Nouveau | **PRIORITÉ 2** |
-| **Gouvernance Opérationnelle** | 🔄 3/5 phases — [Plan détaillé](./komerce-point6-gouvernance-operationnelle.md) | **PRIORITÉ 6 · Phase 4 suivante** |
+| **Gouvernance Opérationnelle** | 🔄 4/5 phases — [Plan détaillé](./komerce-point6-gouvernance-operationnelle.md) | **PRIORITÉ 6 · Phase 5 suivante** |
 | Cartographie 360° v12 | ✅ Poussée | — |
 | Coffre-fort (Vault) | ✅ 6/6 fichiers | — |
 
@@ -257,7 +257,7 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 | **1** | Fondations (migration DB + moteur rules.js + API config) | 6h | Infrastructure zéro risque | ✅ Mergée |
 | **2** | Migration des 47 constantes → `getRule()` | 8h | Tout variabilisable, même comportement | ✅ Mergée |
 | **3** | Annulation + Remboursement (Stripe/crédit boutique) | 8h | Nouveau flux client | ✅ PR #105 mergée |
-| **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée | ⬜ |
+| **4** | Expédition partielle Hub Dubai (sous-commandes) | 6h | Logistique avancée | ✅ Implémentée |
 | **5** | Dashboard Configuration (vue admin ⚙️) | 6h | Cockpit complet | ⬜ |
 
 ### Tâches
@@ -270,7 +270,7 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 | 7.4 | Migration 47 constantes → `getRule()` dans 9 fichiers | 2 | ✅ |
 | 7.5 | `POST /api/orders/:id/cancel` + logique remboursement | 3 | ✅ PR #105 |
 | 7.6 | Système crédit boutique (`store_credits`) | 3 | ✅ PR #105 |
-| 7.7 | Logique sous-commandes + expédition partielle | 4 | ⬜ |
+| 7.7 | Logique sous-commandes + expédition partielle | 4 | ✅ |
 | 7.8 | Vue ⚙️ Configuration dashboard + indicateurs | 5 | ⬜ |
 
 ### Nouveaux endpoints Phase 3 (PR #105) ✅
@@ -279,6 +279,16 @@ Un **moteur de règles centralisé** (`business_rules`) qui variabilise les **47
 |----------|------|-------------|
 | `POST /api/orders/:id/cancel` | client / admin | Annuler une commande avec remboursement automatique |
 | `GET /api/orders/credits` | client / admin | Consulter crédits boutique disponibles |
+
+### Nouveaux endpoints Phase 4 — Expédition partielle ✅
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `POST /api/orders/:id/mark-availability` | admin, agent_hub | Marquer la disponibilité des articles |
+| `POST /api/orders/:id/partial-ship` | admin, agent_hub | Créer une expédition partielle + backorder |
+| `GET /api/orders/:id/sub-orders` | admin, agent_hub, agent_relais, owner | Lister les sous-commandes |
+| `PATCH /api/orders/sub-orders/:subId/status` | admin, agent_hub, agent_relais | Changer le statut d'une sous-commande |
+| `POST /api/orders/:id/cancel-backorder` | admin, agent_hub, owner | Annuler un backorder (remboursement/crédit) |
 
 ---
 ## 8. 🟢 Priorité 7 — Améliorations futures
@@ -349,6 +359,7 @@ Aucune PR ouverte — alignement gouvernance à jour.
 | 3 | Fix déploiement : railway.toml watch patterns (filtre docs-only) | PR #107 | ✅ Mergée |
 | 4 | Fix crash : SyntaxError backticks imbriquées dans utils/sms.js | PR #108 | ✅ Mergée |
 | 5 | Alignement documents de gouvernance (Roadmap, Carto, Delta) | PR #109 | 🔄 |
+| 6 | Phase 4 : Expédition partielle Hub Dubai (5 endpoints, 2 tables, cron backorder) | — | ✅ Implémentée |
 
 ### Session 06/04/2026 — Audit deep + Dashboard unifié + Catalogue Pièces
 | # | Action | PR | Status |
@@ -420,7 +431,6 @@ Aucune PR ouverte — alignement gouvernance à jour.
       └── (12 tâches)
 
 🔶 GOUVERNANCE (suite) :
-  └── Phase 4 — Expédition partielle Hub Dubai
   └── Phase 5 — Dashboard Configuration ⚙️
 
 Prochaine session :

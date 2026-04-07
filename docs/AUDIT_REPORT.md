@@ -217,9 +217,15 @@ trg_users_updated, trg_products_updated, trg_orders_updated, trg_shipments_updat
 
 ---
 
+## 📝 Mises à jour 07/04/2026
+
+- **PR #106** : 2 injections SQL corrigées dans `routes/orders.js` (endpoints `/problems` et `pickup_code`) — requêtes paramétrées via `getRuleNumber()` qui force cast Number
+- **PR #108** : Fix backticks imbriquées dans `utils/sms.js` → requêtes paramétrées `$1`, `$2`
+- **Phase 4** : Expédition partielle implémentée — 5 nouveaux endpoints, 2 nouvelles tables (`sub_orders`, `sub_order_items`), cron backorder checker 6h
+
 ## 🎯 Actions recommandées
 
-1. **Corriger le header** : 112 → 120 endpoints
+1. **Corriger le header** : 112 → ~127 endpoints (mise à jour carto v15.9)
 2. **Corriger les providers** : Orange → Africa's Talking, Mailjet → Nodemailer
 3. **Ajouter les 5 tables manquantes** dans le schéma et la matrice
 4. **Distinguer tables repo vs Supabase-only**
