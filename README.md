@@ -6,6 +6,12 @@
 
 ## 🤖 Agent IA — Lis ceci en premier
 
+### 🔴 RÈGLE #0 : Le repo est ta mémoire
+
+> **Tout vit dans ce repo.** Aucun état local, aucun fichier temporaire.
+> Tes instructions complètes sont dans [`docs/AGENT_CONFIG.md`](./docs/AGENT_CONFIG.md).
+> **Lis-le AVANT toute action.**
+
 ### 🔴 RÈGLE #1 : Commit toutes les 10 min
 
 > Ta session peut mourir à tout moment. **Tout code non commité est perdu.**
@@ -13,10 +19,11 @@
 
 ### Démarrage
 
-1. **Lis [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md)** — règles, piliers, workflow
-2. **Travaille** selon la ROADMAP (ordre de priorité)
-3. **Commit toutes les 10 min** — même si c'est du WIP
-4. **Dépose un delta** dans `docs/_pending/` en fin de session
+1. **Lis [`docs/AGENT_CONFIG.md`](./docs/AGENT_CONFIG.md)** — config complète agent (outils, trigger, sous-agent, bootstrap)
+2. **Lis [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md)** — règles, piliers, workflow
+3. **Travaille** selon la ROADMAP (ordre de priorité)
+4. **Commit toutes les 10 min** — même si c'est du WIP
+5. **Dépose un delta** dans `docs/_pending/` en fin de session
 
 > ⚠️ **Zéro fichier local.** Tout vit dans ce repo. Ton dossier de travail c'est Git.
 
@@ -44,6 +51,7 @@ npm start              # Lancer le serveur
 
 | Document | Description |
 |----------|-------------|
+| [`docs/AGENT_CONFIG.md`](./docs/AGENT_CONFIG.md) | 🤖 **Config agent** — source de vérité pour tous les agents (Tasklet, Cursor, etc.) |
 | [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md) | ⚠️ **Gouvernance unique** — règles, piliers, workflow |
 | [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | 📋 Roadmap — source de vérité du projet |
 | [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | 🗺️ Cartographie 360° du système |
@@ -53,3 +61,4 @@ npm start              # Lancer le serveur
 | [`docs/GOVERNANCE_BOOTSTRAP.md`](./docs/GOVERNANCE_BOOTSTRAP.md) | 🔧 Auto-config agent Tasklet |
 
 > 📋 La [Roadmap](./docs/ROADMAP_KOMERCE.md) fait foi pour toutes les décisions du projet.
+> 🤖 L'[AGENT_CONFIG](./docs/AGENT_CONFIG.md) fait foi pour la configuration de tout agent IA.
