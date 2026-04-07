@@ -4,6 +4,50 @@
 
 ---
 
+## ⛔ VERROUS ABSOLUS — À respecter AVANT et PENDANT toute exécution
+
+### 🔴 VERROU 1 — HUB = IDIOT-PROOF (zéro contexte commande)
+
+L'opérateur hub ne doit **JAMAIS** voir :
+
+| Interdit | Pourquoi |
+|----------|----------|
+| ❌ La commande complète | L'opérateur n'a pas besoin de savoir ce que le client a commandé |
+| ❌ Le nombre total d'articles attendus | Ça pousse l'opérateur à "compléter" → erreur terrain |
+| ❌ Une notion de "reste à scanner" | Ça casse le modèle asynchrone / partiel |
+| ❌ Une progression de type "3/5 articles" | Idem — implique qu'il y a un total à atteindre |
+| ❌ Le statut de la commande | Le hub ne gère pas les commandes |
+
+**Ce que l'opérateur voit :**
+- L'article qu'il vient de scanner ✓
+- La liste des articles **déjà scannés** dans le colis courant
+- La référence du colis draft
+- Le bouton SCELLER (quand il a fini)
+- Ses stats session (articles scannés, colis scellés)
+
+**Philosophie :** L'opérateur scanne ce qui est devant lui. Point. Il ne sait pas combien il en reste, il ne sait pas si la commande est "complète". Le système s'en occupe via `parcelSync.js`.
+
+### 🔴 VERROU 2 — PIPELINE = ZÉRO LOGIQUE COMMANDE
+
+Une carte pipeline ne doit **JAMAIS** dépendre du statut de la commande.
+
+| Interdit | Pourquoi |
+|----------|----------|
+| ❌ "Commande en attente" | C'est un statut commande, pas colis |
+| ❌ "Commande incomplète" | Idem |
+| ❌ "En attente de paiement" | Le colis ne sait pas si on l'a payé |
+| ❌ Toute colonne basée sur `orders.status` | Le pipeline est logistique, pas commercial |
+| ❌ Couleur/badge basé sur le statut commande | Pollution visuelle hors périmètre |
+
+**Le pipeline est 100% driven par `parcels.status` :**
+```
+draft → preparation → shipped → in_transit → arrived → available → collected → cancelled
+```
+
+**La commande liée** peut apparaître comme contexte secondaire (petit, en gris, `#CMD-1234`) mais ne doit **jamais conditionner** l'affichage, le tri, le filtrage ou le positionnement d'une carte.
+
+---
+
 ## PARTIE 1 — Diagnostic des écrans actuels
 
 ### 1.1 Inventaire
@@ -106,32 +150,6 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
 
 ---
 
-### A. `Komerce_Dashboard.html` — PILOTAGE
-
-**Mission unique :** Vue dirigeant / supervision globale. Pas d'action opérationnelle.
-
-**Persona :** CEO / COO / Directeur logistique
-
-**Device :** Desktop (tablette OK)
-
-| Section | Contenu |
-|---------|---------|
-| **KPIs Header** | Commandes aujourd'hui, Revenue jour/semaine, Cash pending, Parcels en mouvement |
-| **Vue Parcels** | Répartition par statut (draft / preparation / shipped / in_transit / arrived / available / collected) — barres ou donuts |
-| **Commandes agrégées** | Commandes partiellement servies, commandes complètes, taux de complétion |
-| **SLA & Alertes** | Colis retardés (> X jours), colis bloqués, incidents scan, anomalies |
-| **Finance** | CA jour/semaine/mois (KMF + EUR), marge, fret en cours, taux de change |
-| **Tendances** | Courbe volumes commandes/parcels sur 30j |
-
-**Ce qui disparaît :** Onglets Hub, Pipeline, Relais, Catalogue, Clients (déplacés vers leurs propres écrans)
-
-**Données clés :**
-- `GET /api/parcels/stats` → répartition par statut
-- `GET /api/orders/stats` → KPIs commandes agrégées
-- `GET /api/pilotage` → SLA, alertes, tendances
-
----
-
 ### B. `Komerce_Hub.html` — HUB DUBAI
 
 **Mission unique :** Écran opérateur terrain. Scan → Pack → Seal. Rien d'autre.
@@ -147,8 +165,7 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
      ↓
 [COLIS EN COURS]
   - Référence colis
-  - Liste articles scannés (avec check ✓)
-  - Nombre articles / total attendu
+  - Liste articles DÉJÀ scannés (avec check ✓)
      ↓
 [SCELLER LE COLIS] → gros bouton
      ↓
@@ -159,17 +176,21 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
 |---------|---------|
 | **Header** | Logo + Opérateur connecté + Session stats (articles scannés, colis scellés aujourd'hui) |
 | **Zone scan** | Input auto-focus + caméra QR. Gros. Central. |
-| **Colis courant** | Carte principale : ref colis, type, articles dedans, progression |
-| **Articles scannés** | Liste simple : nom article, commande liée (petit), heure scan |
+| **Colis courant** | Carte principale : ref colis, type, articles dedans |
+| **Articles scannés** | Liste simple : nom article, heure scan ✓ |
 | **Action** | Bouton SCELLER (désactivé si 0 articles). Confirmation modale. |
 | **Historique session** | Bas de page : colis scellés cette session (collapsible) |
 
-**Ce qui NE doit PAS être là :**
+**⛔ VERROU 1 appliqué — Ce qui NE doit PAS être là :**
 - ❌ KPIs finance
 - ❌ Pipeline commande
 - ❌ Statut commande
 - ❌ Décision de split/backorder
 - ❌ Choix du transporteur
+- ❌ **Nombre total d'articles attendus**
+- ❌ **Notion de "reste à scanner"**
+- ❌ **Progression de type "3/5 articles"**
+- ❌ **Contenu de la commande complète**
 
 **API :**
 - `POST /api/scans/hub/scan-item` → scan article
@@ -193,14 +214,14 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
 | draft | preparation | shipped | in_transit | arrived | available | collected | cancelled |
 ```
 
-**Chaque carte = 1 parcel :**
+**⛔ VERROU 2 appliqué — Chaque carte = 1 parcel, driven par `parcels.status` uniquement :**
 
 | Info | Exemple |
 |------|---------|
 | Référence colis | `PCL-2026-0042` |
 | Type | `standard` / `partial` / `backorder` / `awaiting_stock` |
-| Commande liée | `#CMD-1234` (contexte secondaire, petit) |
-| Nb articles | `3/5 articles` |
+| Commande liée | `#CMD-1234` *(contexte secondaire, petit, gris)* |
+| Nb articles dans le colis | `3 articles` *(PAS "3/5")* |
 | Transporteur | `Emirates Post` |
 | Shipment | `SHP-0012` |
 | Relais destination | `Relais Mutsamudu` |
@@ -211,10 +232,34 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
 
 **Actions :** Clic → détail colis (modale avec historique scans, timeline)
 
-**Ce qui NE doit PAS être là :**
+**⛔ VERROU 2 appliqué — Ce qui NE doit PAS être là :**
 - ❌ Colonnes de statuts commande (Att. paiement, A acheter...)
 - ❌ Détail paiement
 - ❌ Info client
+- ❌ **Toute donnée conditionnée par `orders.status`**
+- ❌ **Couleur/badge/tri basé sur le statut commande**
+- ❌ **Libellés "commande en attente", "commande incomplète"**
+
+---
+
+### A. `Komerce_Dashboard.html` — PILOTAGE
+
+**Mission unique :** Vue dirigeant / supervision globale. Pas d'action opérationnelle.
+
+**Persona :** CEO / COO / Directeur logistique
+
+**Device :** Desktop (tablette OK)
+
+| Section | Contenu |
+|---------|---------|
+| **KPIs Header** | Commandes aujourd'hui, Revenue jour/semaine, Cash pending, Parcels en mouvement |
+| **Vue Parcels** | Répartition par statut (draft / preparation / shipped / in_transit / arrived / available / collected) — barres ou donuts |
+| **Commandes agrégées** | Commandes partiellement servies, commandes complètes, taux de complétion |
+| **SLA & Alertes** | Colis retardés (> X jours), colis bloqués, incidents scan, anomalies |
+| **Finance** | CA jour/semaine/mois (KMF + EUR), marge, fret en cours, taux de change |
+| **Tendances** | Courbe volumes commandes/parcels sur 30j |
+
+**Ce qui disparaît :** Onglets Hub, Pipeline, Relais, Catalogue, Clients (déplacés vers leurs propres écrans)
 
 ---
 
@@ -230,17 +275,9 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
 |---------|---------|
 | **Header** | Nom relais + Agent connecté + Stats (colis disponibles, remis aujourd'hui) |
 | **Scan réception** | Input/QR : scanner colis arrivé → marquer `available` |
-| **Colis disponibles** | Liste : ref colis, pickup code, client, nb colis liés commande, ancienneté |
+| **Colis disponibles** | Liste : ref colis, pickup code (gros), client, nb colis liés commande, ancienneté |
 | **Remise client** | Scan pickup code → confirmation → marquer `collected` |
 | **Historique** | Colis remis aujourd'hui (collapsible) |
-
-**Info affichée par colis :**
-- Référence colis
-- Pickup code (gros, lisible)
-- Client / destinataire
-- Nombre de colis total pour cette commande (ex: "Colis 2/3")
-- Ancienneté au relais (badge rouge si > 7j)
-- Bouton REMETTRE
 
 ---
 
@@ -270,37 +307,11 @@ L'opérateur hub, le gestionnaire relais, le dirigeant et l'admin accèdent tous
 
 ---
 
-### F. `Komerce_Config.html` — CONFIGURATION
+### F–H. Fichiers à conserver tels quels
 
-**Mission unique :** Paramétrage des règles métier.
-
-**Aucun changement majeur.** Fichier unique, bien structuré.
-
-Ajouts possibles :
-- Seuils SLA (jours max par statut parcel)
-- Règles de draft auto (quand créer un nouveau colis vs ajouter à l'existant)
-- Configuration types de colis
-
----
-
-### G. `Komerce_Tests.html` — TESTS / QA
-
-**Mission unique :** Tests E2E, seed données, monitoring debug.
-
-**Aucun changement majeur.** Isolé par nature.
-
-Ajouts possibles :
-- Tests du workflow parcel (scan → pack → seal)
-- Tests des contraintes safety (unique item, one draft per order)
-- Simulation race conditions
-
----
-
-### H. `Komerce_Simulateur.html` — SIMULATEUR TARIFICATION
-
-**Mission unique :** Calcul de coûts supply chain Dubai → Comores.
-
-**Aucun changement majeur.** Bien isolé, standalone.
+- `Komerce_Config.html` — Paramétrage règles métier (ajouts : seuils SLA, config types colis)
+- `Komerce_Tests.html` — Tests E2E (ajouts : tests workflow parcel, tests safety)
+- `Komerce_Simulateur.html` — Simulateur tarification (aucun changement)
 
 ---
 
@@ -319,186 +330,33 @@ portal.html (login + rôle)
   └── shop     → index.html
 ```
 
-Chaque rôle voit uniquement ses tuiles dans le portail.
-
 ---
 
 ## PARTIE 3 — Recommandation fichier par fichier
 
 | Fichier | Action | Raison |
 |---------|--------|--------|
-| `Komerce_Dashboard.html` | **REFONDRE** | Supprimer onglets Hub/Pipeline/Relais/Catalogue/Clients. Garder uniquement pilotage KPIs. Remplacer pipeline commande par répartition parcels par statut. |
-| `Komerce_Hub.html` | **RECRÉER** | Actuellement = redirect. Créer un vrai écran mobile-first scan→pack→seal. |
-| `Komerce_Pipeline.html` | **RECRÉER** | Actuellement = redirect. Créer un vrai kanban parcel-centric (8 colonnes de statuts). |
-| `Komerce_Relais.html` | **RECRÉER** | Actuellement = redirect. Créer un vrai écran mobile-first réception/remise. |
-| `Komerce_Admin.html` | **REFONDRE** | Garder la structure sidebar. Absorber Admin_Users. Ajouter vue parcels dans Logistique. Retirer tout ce qui est opérationnel terrain. |
-| `Komerce_Admin_Users.html` | **ABSORBER** | Fusionner dans Komerce_Admin.html comme section "Utilisateurs". |
+| `Komerce_Dashboard.html` | **REFONDRE** | Supprimer onglets Hub/Pipeline/Relais/Catalogue/Clients. Garder uniquement pilotage KPIs. |
+| `Komerce_Hub.html` | **RECRÉER** | Vrai écran mobile-first scan→pack→seal. ⛔ VERROU 1 |
+| `Komerce_Pipeline.html` | **RECRÉER** | Vrai kanban parcel-centric. ⛔ VERROU 2 |
+| `Komerce_Relais.html` | **RECRÉER** | Vrai écran mobile-first réception/remise. |
+| `Komerce_Admin.html` | **REFONDRE** | Garder sidebar. Absorber Admin_Users. Ajouter vue parcels. |
+| `Komerce_Admin_Users.html` | **ABSORBER** | Fusionner dans Komerce_Admin.html. |
 | `Komerce_Config.html` | **GARDER** | Ajouter seuils SLA et config types colis. |
 | `Komerce_Tests.html` | **GARDER** | Ajouter tests workflow parcel. |
-| `Komerce_Simulateur.html` | **GARDER** | Aucun changement nécessaire. |
-| `Komerce_Backend.html` | **SUPPRIMER** | Monolithe 512KB. Son contenu est redistribué dans les écrans dédiés. |
-| `Komerce_Backoffice_Admin_v2.html` | **SUPPRIMER** | Sous-ensemble de Admin.html. Doublon. |
-| `Komerce_Web.html` | **SUPPRIMER** | Fork ancienne de index.html. Doublon. |
-| `Komerce_Pilotage_v2.html` | **SUPPRIMER** | Redirect inutile. |
-| `index.html` | **GARDER** | Storefront client. Pas impacté par la refonte back-office. |
-| `Komerce_Mobile.html` | **GARDER** | PWA Anjouan client. Pas impacté. |
-| `portal.html` | **ADAPTER** | Mettre à jour les tuiles pour pointer vers les nouveaux écrans. Filtrer par rôle. |
-| `Komerce_QR_Print.html` | **GARDER** | Utilitaire impression QR. |
-| `komerce-api.js` | **REFONDRE** | Créer une couche API unifiée utilisée par tous les écrans. Un seul helper, un seul pattern. |
-
-### Résumé des actions
-
-| Action | Nombre | Fichiers |
-|--------|--------|----------|
-| ✅ Garder tel quel | 5 | Config, Tests, Simulateur, index, Mobile, QR_Print |
-| 🟠 Refondre | 3 | Dashboard, Admin, komerce-api.js |
-| 🆕 Recréer | 3 | Hub, Pipeline, Relais |
-| 🔀 Absorber | 1 | Admin_Users → Admin |
-| 🔄 Adapter | 1 | portal.html |
-| 🔴 Supprimer | 4 | Backend, Backoffice_v2, Web, Pilotage_v2 |
+| `Komerce_Simulateur.html` | **GARDER** | Aucun changement. |
+| `Komerce_Backend.html` | **SUPPRIMER** | Monolithe 512KB redistribué. |
+| `Komerce_Backoffice_Admin_v2.html` | **SUPPRIMER** | Doublon de Admin. |
+| `Komerce_Web.html` | **SUPPRIMER** | Doublon de index.html. |
+| `Komerce_Pilotage_v2.html` | **SUPPRIMER** | Redirect obsolète. |
+| `index.html` | **GARDER** | Storefront client. |
+| `Komerce_Mobile.html` | **GARDER** | PWA Anjouan. |
+| `portal.html` | **ADAPTER** | Tuiles + filtrage par rôle. |
+| `komerce-api.js` | **CRÉER** | Couche API unifiée pour tous les écrans. |
 
 ---
 
-## PARTIE 4 — Prompt de refonte exécutable
-
-### Prompt à donner à un agent code/UI
-
----
-
-```
-# PROMPT — Construction des dashboards Komerce Parcel-Centric
-
-## Contexte
-
-Tu travailles sur le repo `SamyrFateh/komerce-backend`.
-Le backend est Node.js / Express / PostgreSQL, déployé sur Railway.
-Les fichiers frontend sont dans `public/`.
-
-Le système Komerce est parcel-centric :
-- `order` = vue commerciale (paiement, client)
-- `parcel` = unité logistique réelle (le colis physique)
-- `scan` = événement terrain (preuve)
-- `shipment` = transport de parcels
-- `orders.status` = calculé par `utils/parcelSync.js`, jamais écrit directement
-
-## Règle d'or
-
-> La commande vend. Le colis voyage. Le scan prouve. Le système calcule.
-
-## API existantes
-
-Backend routes :
-- `routes/hub.js` → POST scan-item, pack, seal (avec FOR UPDATE + transactions)
-- `routes/parcels.js` → CRUD parcels + parcel_items
-- `routes/scans.js` → Scan logistique
-- `routes/logistics.js` → Shipments, conteneurs
-- `routes/carriers.js` → Transporteurs
-- `middleware/auth.js` → JWT authenticate + requireRole
-- `utils/parcelSync.js` → Synchronisation statuts parcels → orders
-
-Tables clés :
-- `parcels` (id, order_id, status, type, sealed_at, tracking_number, relay_id, pickup_code, ...)
-- `parcel_items` (id, parcel_id, order_item_id, quantity, scanned_at, scanned_by)
-- `scans` (id, parcel_id, type, scanned_by, ...)
-- `orders` (id, status, ...)
-- `shipments`, `carriers`, `relay_points`
-
-Statuts parcel : draft, preparation, shipped, in_transit, arrived, available, collected, cancelled
-Types parcel : standard, partial, backorder, awaiting_stock
-
-## Fichiers à créer / refondre
-
-### 1. `Komerce_Hub.html` — ÉCRAN HUB OPÉRATEUR
-
-Remplacer le redirect actuel par un vrai écran autonome.
-
-Spécifications :
-- Mobile-first, tactile, gros boutons, peu de texte
-- Login opérateur (JWT)
-- Zone scan principale : input auto-focus + bouton caméra QR
-- Appel `POST /api/scans/hub/scan-item` avec { barcode, scanned_by }
-- Affichage du colis draft en cours (ref, articles dedans, progression)
-- Liste articles scannés dans le colis courant
-- Bouton SCELLER (appel POST /api/scans/hub/seal)
-- Stats session : articles scannés, colis scellés
-- PAS de KPIs finance, PAS de pipeline commande, PAS de choix transporteur
-- Couleurs : ambré/doré Komerce
-- Responsive : fonctionne sur mobile ET grand écran entrepôt
-
-### 2. `Komerce_Pipeline.html` — PIPELINE LOGISTIQUE PARCEL-CENTRIC
-
-Remplacer le redirect actuel par un vrai kanban.
-
-Spécifications :
-- Desktop-first, grand écran
-- 8 colonnes : draft | preparation | shipped | in_transit | arrived | available | collected | cancelled
-- Chaque carte = 1 parcel avec : ref colis, type (badge), commande liée (petit), nb articles, carrier, shipment, relais destination, âge (badge rouge si retard), ETA
-- Données : `GET /api/parcels` (tous les parcels avec filtres)
-- Filtres : par type, carrier, relais, shipment, âge
-- Clic carte → modale détail : timeline scans, articles, historique statuts
-- Scroll horizontal smooth entre colonnes
-- Compteur par colonne
-- Auto-refresh toutes les 30s
-- PAS de colonnes de statuts commande
-
-### 3. `Komerce_Relais.html` — ÉCRAN RELAIS
-
-Remplacer le redirect actuel par un vrai écran opérationnel.
-
-Spécifications :
-- Mobile-first, tactile
-- Login agent relais (JWT)
-- Zone scan réception : scanner colis arrivé → marquer `available`
-- Liste colis disponibles : ref, pickup code (gros), client, nb colis commande, ancienneté
-- Zone remise : scan/saisie pickup code → confirmation → marquer `collected`
-- Badge rouge si ancienneté > 7 jours
-- Stats : colis disponibles, remis aujourd'hui
-- PAS de gestion commande, PAS de finance
-
-### 4. `Komerce_Dashboard.html` — PILOTAGE (REFONTE)
-
-Garder le fichier, supprimer les onglets Hub/Pipeline/Relais/Catalogue/Clients.
-
-Spécifications :
-- Desktop, vue dirigeant
-- KPIs header : commandes jour, revenue, cash pending, parcels en mouvement
-- Répartition parcels par statut (barres horizontales ou donut)
-- Commandes agrégées : partiellement servies, complètes, taux complétion
-- Alertes : colis retardés, bloqués, incidents scan
-- Finance : CA, marge, fret, taux de change
-- Tendances : courbe 30j commandes + parcels
-- Auto-refresh 60s
-- PAS d'onglets opérationnels (Hub, Pipeline, Relais)
-
-### 5. `Komerce_Admin.html` — ADMIN (REFONTE)
-
-Garder la structure sidebar, intégrer Admin_Users.
-
-Spécifications :
-- Sidebar sections : Tableau de bord, Commandes, Logistique (avec sous-section Parcels), Litiges, Produits, Utilisateurs (absorbe Admin_Users), Agents, Comptabilité, Pricing, Relais, Paramètres
-- Section Logistique : ajouter tableau des parcels avec filtres par statut/type
-- Section Commandes : garder vue commerciale (c'est légitime ici)
-- Retirer tout workflow opérationnel terrain
-- Absorber le CRUD utilisateurs de Admin_Users.html
-
-### 6. `portal.html` — PORTAIL (ADAPTATION)
-
-Mettre à jour les tuiles de navigation :
-- Pilotage → /Komerce_Dashboard.html (rôle: ceo, admin)
-- Hub Dubai → /Komerce_Hub.html (rôle: hub_operator, admin)
-- Pipeline → /Komerce_Pipeline.html (rôle: logistics, admin)
-- Relais → /Komerce_Relais.html (rôle: relay_agent, admin)
-- Administration → /Komerce_Admin.html (rôle: admin)
-- Configuration → /Komerce_Config.html (rôle: admin)
-- Simulateur → /Komerce_Simulateur.html (rôle: admin, pricing)
-- Tests → /Komerce_Tests.html (rôle: admin, dev)
-- Boutique → /index.html (public)
-
-Filtrer les tuiles visibles selon le rôle de l'utilisateur connecté.
-
-### 7. `komerce-api.js` — COUCHE API UNIFIÉE (REFONTE)
-
-Créer un module API partagé importé par tous les écrans.
+## PARTIE 4 — Couche API unifiée
 
 ```js
 // komerce-api.js — API unifiée
@@ -527,49 +385,34 @@ const API = {
     list(filters) { return API.get('/api/orders?' + new URLSearchParams(filters)); },
     stats() { return API.get('/api/orders/stats'); },
   },
-  // etc.
 };
 ```
 
-## Fichiers à supprimer
+---
 
-- `Komerce_Backend.html` → remplacé par les écrans dédiés
-- `Komerce_Backoffice_Admin_v2.html` → doublon de Admin
-- `Komerce_Web.html` → doublon de index.html
-- `Komerce_Pilotage_v2.html` → redirect obsolète
-- `Komerce_Admin_Users.html` → absorbé dans Admin
+## PARTIE 5 — Ordre d'exécution
+
+1. `komerce-api.js` — couche API unifiée (base pour tout)
+2. `Komerce_Hub.html` — écran terrain prioritaire ⛔ VERROU 1
+3. `Komerce_Pipeline.html` — suivi logistique ⛔ VERROU 2
+4. `Komerce_Relais.html` — écran agent relais
+5. `Komerce_Dashboard.html` — refonte pilotage
+6. `Komerce_Admin.html` — refonte admin + absorption Users
+7. `portal.html` — adaptation tuiles et rôles
+8. Suppression des fichiers obsolètes
+
+---
 
 ## Principes UX
 
 - Un écran = une mission
 - Mobile-first pour Hub et Relais
 - Desktop propre pour Pilotage et Admin
-- Moins de jargon technique, plus de visuel opérationnel
-- Pas de surcharge en badges inutiles
 - Le parcel est l'unité logistique partout
 - La commande n'apparaît que comme contexte secondaire dans les écrans logistiques
 - Couleurs Komerce : ambré/doré (#d97706), fond clair, typographie DM Sans
-
-## Stack technique
-
-- Vanilla JS (pas de framework)
-- Chart.js pour les graphiques
-- html5-qrcode pour le scan QR
-- DM Sans + DM Serif Display (Google Fonts)
-- CSS custom properties (design tokens déjà en place dans portal.html)
-
-## Ordre d'exécution recommandé
-
-1. `komerce-api.js` — couche API unifiée (base pour tout)
-2. `Komerce_Hub.html` — écran terrain prioritaire
-3. `Komerce_Pipeline.html` — suivi logistique
-4. `Komerce_Relais.html` — écran agent relais
-5. `Komerce_Dashboard.html` — refonte pilotage
-6. `Komerce_Admin.html` — refonte admin + absorption Users
-7. `portal.html` — adaptation tuiles et rôles
-8. Suppression des fichiers obsolètes
-```
+- Stack : Vanilla JS, Chart.js, html5-qrcode, DM Sans + DM Serif Display
 
 ---
 
-*Document généré par Tasklet — 7 avril 2026*
+*Document mis à jour le 7 avril 2026 — Verrous 1 & 2 intégrés*

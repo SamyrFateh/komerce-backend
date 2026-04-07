@@ -9,6 +9,33 @@ Repo: `SamyrFateh/komerce-backend` branche `main`.
 - **R2**: Hub opérateur : scan → pack → seal (3 actions)
 - Parcel = source de vérité, pas les commandes
 
+## ⛔ VERROUS ABSOLUS (7 avril 2026)
+
+### 🔴 VERROU 1 — HUB = IDIOT-PROOF
+
+L'opérateur hub ne doit **JAMAIS** voir :
+- ❌ La commande complète
+- ❌ Le nombre total d'articles attendus
+- ❌ Une notion de "reste à scanner"
+- ❌ Une progression "3/5 articles"
+- ❌ Le statut de la commande
+
+**Pourquoi :** Ça casse le modèle asynchrone/partiel. L'opérateur essaie de "compléter" → erreur terrain.
+
+**L'opérateur voit uniquement :** article scanné ✓, liste articles déjà scannés, ref colis draft, bouton SCELLER, stats session.
+
+### 🔴 VERROU 2 — PIPELINE = ZÉRO LOGIQUE COMMANDE
+
+Une carte pipeline ne doit **JAMAIS** dépendre du statut de la commande.
+- ❌ "Commande en attente" / "Commande incomplète"
+- ❌ Toute colonne basée sur `orders.status`
+- ❌ Couleur/badge/tri basé sur le statut commande
+
+**Pipeline = 100% driven par `parcels.status` :**
+`draft → preparation → shipped → in_transit → arrived → available → collected → cancelled`
+
+La commande liée = contexte secondaire (petit, gris, `#CMD-1234`), jamais conditionnelle.
+
 ## État d'avancement
 
 | Vague | Commits | Statut |
@@ -18,34 +45,21 @@ Repo: `SamyrFateh/komerce-backend` branche `main`.
 | **Vague 3** — Optimisation | C6 (migration customs), C7 (migration carriers), C8 (routes/carriers.js) | ✅ Mergé (PR #119) |
 | **Hotfix** — SyntaxError L619 | Fix string escape Samsung seed | ✅ Mergé (PR #120) |
 | **Safety** — Hub Safety Fixes | A (unique item), B (FOR UPDATE), C (one draft) | ✅ PR #121 — DB appliquée (migrations 010→017) |
-| **C9** — Dashboard logistics costs | Pas encore spécifié | ⬜ À définir |
+| **Refonte Dashboards** — UI Parcel-Centric | Verrous posés, spec complète | ⬜ À exécuter |
 
-## ✅ Terminé : Hub Safety Fixes (PR #121)
+## ⬜ Prochaine action : Refonte Dashboards UI
 
-### 🔴 A. Contrainte UNIQUE sur parcel_items.order_item_id ✅
-- Migration `017_hub_safety_constraints.sql` : `ADD CONSTRAINT unique_order_item_per_parcel UNIQUE (order_item_id)`
-- Code : `routes/parcels.js` POST `/:id/items` catch 23505 → 409
-- **DB Railway : appliquée**
+Doc complet : `.tasklet/REFONTE_DASHBOARDS.md`
 
-### 🔴 B. SELECT … FOR UPDATE dans hub.js (race condition) ✅
-- `routes/hub.js` : scan/pack/seal utilisent `db.getClient()` + `BEGIN` + `FOR UPDATE` + `COMMIT/ROLLBACK` + `client.release()`
-- `safeSyncScanToParcels` appelé **après** commit
-
-### 🟠 C. Un seul draft par commande ✅
-- Migration `017_hub_safety_constraints.sql` : `CREATE UNIQUE INDEX one_draft_per_order ON parcels(order_id) WHERE status = 'draft'`
-- Code : `routes/parcels.js` POST `/` catch 23505 → 409
-- **DB Railway : appliquée**
-
-### Migrations appliquées sur Railway (7 avril 2026)
-- ✅ 010_parcels_foundation.sql
-- ✅ 011_parcels_dual_write.sql
-- ✅ 012_parcels_trigger_migration.sql (index uniquement, trigger déjà drop par 013)
-- ✅ 013_legacy_cleanup.sql
-- ✅ 017_hub_safety_constraints.sql
-
-## ⬜ Prochaine action : C9 — Dashboard logistics costs
-
-Pas encore spécifié.
+### Ordre d'exécution
+1. `komerce-api.js` — couche API unifiée
+2. `Komerce_Hub.html` — écran terrain ⛔ VERROU 1
+3. `Komerce_Pipeline.html` — kanban parcel-centric ⛔ VERROU 2
+4. `Komerce_Relais.html` — écran agent relais
+5. `Komerce_Dashboard.html` — refonte pilotage
+6. `Komerce_Admin.html` — refonte admin + absorption Users
+7. `portal.html` — adaptation tuiles et rôles
+8. Suppression fichiers obsolètes
 
 ## Fichiers clés du repo
 
