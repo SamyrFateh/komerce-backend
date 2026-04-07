@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.11 — 07/04/2026 (v15.10 + drift-fix: +2 utils, +1 migration, 10 SHA updates)
+> **Version** : 15.12 — 07/04/2026 (v15.11 + drift-fix: ROADMAP SHA update)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 02:12 UTC — governance auto-sync (drift-fix: +2 files, +1 migration, 10 SHA updates)
+> **Dernière vérification** : 07/04/2026 07:05 UTC — governance auto-sync (drift-fix: ROADMAP SHA update)
 > 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -189,7 +189,7 @@ komerce-backend/
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (22.8 KB) [56f97d09]
+│   ├── ROADMAP_KOMERCE.md                (22.8 KB) [81d66b08]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
 │   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
@@ -1081,7 +1081,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
 | `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
-| `ROADMAP_KOMERCE.md` | 22.8 KB | 56f97d09 | 📋 Roadmap v15 — source de vérité |
+| `ROADMAP_KOMERCE.md` | 22.8 KB | 81d66b08 | 📋 Roadmap v15 — source de vérité |
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
 | `CHANGES_PHASE2_MIGRATION.md` | 9.2 KB | 29e6f652 | 📝 Changelog détaillé Phase 2 migration constantes |
@@ -1307,7 +1307,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.11 — 7 avril 2026*
+> 📝 *Cartographie 360° — Version v15.12 — 7 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
