@@ -6,6 +6,10 @@
  * PATCH  /api/parcels/:id/status    → Changer statut via parcelSync (R1)
  * POST   /api/parcels/:id/items     → Ajouter article au colis
  * DELETE /api/parcels/:id/items/:item_id → Retirer article du colis
+ *
+ * Safety Fixes:
+ *   A. Catch 23505 sur POST /:id/items (unique_order_item_per_parcel)
+ *   C. Catch 23505 sur POST / (one_draft_per_order)
  */
 
 const express = require('express');
@@ -126,6 +130,7 @@ router.get('/:ref', ...adminAgentRelais, async (req, res) => {
 });
 
 // POST /api/parcels — Create parcel manually
+// Safety Fix C: catch 23505 → un seul colis draft par commande
 router.post('/', ...adminAgent, validate(parcels.create), async (req, res) => {
   try {
     const { order_id, type = 'standard', notes } = req.body;
@@ -143,7 +148,14 @@ router.post('/', ...adminAgent, validate(parcels.create), async (req, res) => {
     `, [reference, order_id, type, notes || null]);
 
     res.status(201).json(rows[0]);
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur création colis' }); }
+  } catch(e) {
+    // Safety Fix C: unique violation → un colis draft existe déjà pour cette commande
+    if (e.code === '23505' && e.constraint === 'one_draft_per_order') {
+      return res.status(409).json({ error: 'Un colis draft existe déjà pour cette commande' });
+    }
+    console.error(e);
+    res.status(500).json({ error: 'Erreur création colis' });
+  }
 });
 
 // PATCH /api/parcels/:id/status — Change status via parcelSync (R1 compliant)
@@ -177,6 +189,7 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
 });
 
 // POST /api/parcels/:id/items — Add item to parcel
+// Safety Fix A: catch 23505 → article déjà assigné à un colis
 router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, res) => {
   try {
     const { order_item_id, quantity } = req.body;
@@ -196,7 +209,14 @@ router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, 
     `, [req.params.id, order_item_id, quantity]);
 
     res.status(201).json(rows[0]);
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur ajout article au colis' }); }
+  } catch(e) {
+    // Safety Fix A: unique violation → article déjà dans un colis
+    if (e.code === '23505' && e.constraint === 'unique_order_item_per_parcel') {
+      return res.status(409).json({ error: 'Cet article est déjà assigné à un colis' });
+    }
+    console.error(e);
+    res.status(500).json({ error: 'Erreur ajout article au colis' });
+  }
 });
 
 // DELETE /api/parcels/:id/items/:item_id — Remove item from parcel
