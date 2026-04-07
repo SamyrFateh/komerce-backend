@@ -7,6 +7,9 @@
  *   - globalLimiter 100→500/15min (pages dashboard internes font 5-8 appels/chargement)
  *   - authLimiter 5→20/15min (évite lockouts pendant tests)
  *   - SECURITY FIX: Bearer skip removed — rate limiting applies to all users
+ *
+ * Changelog v3 (Vague 1):
+ *   - adminLimiter 30 req/min — strict limiter for destructive admin operations
  */
 
 const rateLimit = require('express-rate-limit');
@@ -79,6 +82,16 @@ const dashboardLimiter = rateLimit({
   // ⚠️ SECURITY FIX: Rate limiting now applies to ALL users including authenticated ones
 });
 
+// ─── Admin limiter: 30 per minute per IP ───
+// Strict limiter for destructive admin operations (reset, delete, etc.)
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes admin, réessayez dans 1 minute' },
+});
+
 module.exports = {
   globalLimiter,
   authLimiter,
@@ -86,4 +99,5 @@ module.exports = {
   scanCollectLimiter,
   orderCreateLimiter,
   dashboardLimiter,
+  adminLimiter,
 };

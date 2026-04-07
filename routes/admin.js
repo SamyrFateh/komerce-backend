@@ -240,6 +240,9 @@ router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req,
 // ─── POST /api/admin/reset ───────────────────────────────────────────────────
 
 router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
+  // ── Vague 1: Production guard — disable reset in production ──
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'POST /admin/reset désactivé en production. Contactez le DevOps.' });
+
   const mode = req.body.mode || 'orders';
   const validModes = ['orders', 'users', 'factory'];
   if (!validModes.includes(mode)) return res.status(400).json({ error: `Mode invalide. Utilisez: ${validModes.join(', ')}` });
