@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.10 — 07/04/2026 (v15.9 + drift-fix: +AUDIT_CONFORMITE_GOUVERNANCE.md, SHA updates AUDIT_REPORT + ROADMAP)
+> **Version** : 15.11 — 07/04/2026 (v15.10 + drift-fix: +2 utils, +1 migration, 10 SHA updates)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 — governance auto-sync (drift-fix: +1 doc, 2 SHA updates)
+> **Dernière vérification** : 07/04/2026 02:12 UTC — governance auto-sync (drift-fix: +2 files, +1 migration, 10 SHA updates)
 > 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -43,9 +43,9 @@
 | **Dossiers** | 14 |
 | **Routes API** | 19 fichiers |
 | **Middlewares** | 4 |
-| **Utilitaires** | 6 |
+| **Utilitaires** | 8 |
 | **Validators** | 1 |
-| **Fichiers DB** | 4 + 5 migrations |
+| **Fichiers DB** | 3 + 6 migrations |
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
@@ -69,7 +69,7 @@ komerce-backend/
 ├── package.json                          (923 B)   [f7944e67]
 ├── package-lock.json                     (113.9 KB)[3bb09e87]
 ├── railway.toml                          (644 B)   [fa81b056]
-├── server.js                             (41.6 KB) [f87414ae]
+├── server.js                             (45.7 KB) [58742e77]
 │
 ├── routes/                               (19 fichiers)
 │   ├── admin.js                          (24.3 KB) [6bb443fe]
@@ -82,7 +82,7 @@ komerce-backend/
 │   ├── logistics.js                      (9.7 KB)  [f78d7537]
 │   ├── loyalty.js                        (5.6 KB)  [c454e300]
 │   ├── modules.js                        (20.6 KB) [3ea6fa01]
-│   ├── orders.js                         (71.3 KB) [e041bbfc]
+│   ├── orders.js                         (100.9 KB) [70a2272d]
 │   ├── payments.js                       (12.0 KB) [1ba52974]
 │   ├── pilotage.js                       (1.2 KB)  [9af27985]
 │   ├── pricing.js                        (3.5 KB)  [a3b26f39]
@@ -98,16 +98,18 @@ komerce-backend/
 │   ├── upload.js                         (1.5 KB)  [5ea7f1af]
 │   └── validate.js                       (5.6 KB)  [4c671ec0]
 │
-├── utils/                                (6 fichiers)
+├── utils/                                (8 fichiers)
 │   ├── email.js                          (6.7 KB)  [daf607c3]
-│   ├── pricing.js                        (3.7 KB)  [6f505ed0]
-│   ├── rates.js                          (719 B)   [933ed3c4]
+│   ├── pricing.js                        (5.2 KB)  [ff3e82e2]
+│   ├── rates.js                          (1.1 KB)  [5fdacfb4]
 │   ├── reference.js                      (2.5 KB)  [253751b9]
-│   ├── rules.js                          (7.9 KB)  [2905ee4b]
-│   └── sms.js                            (7.4 KB)  [995ee53f]
+│   ├── refunds.js                        (4.1 KB)  [25a80509]
+│   ├── rules.js                          (9.0 KB)  [6a679773]
+│   ├── sms.js                            (12.1 KB) [1d17abd6]
+│   └── store-credits.js                  (3.4 KB)  [58e8b8e4]
 │
 ├── validators/                           (1 fichier)
-│   └── index.js                          (13.7 KB) [d8ed1ee6]
+│   └── index.js                          (15.4 KB) [f04565ef]
 │
 ├── db/                                   (3 + 6 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
@@ -118,7 +120,8 @@ komerce-backend/
 │       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
 │       ├── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
 │       ├── 007_business_rules.sql         (10.9 KB) [0971318d]
-│       └── 008_pricing_rules.sql         (~2 KB)   [new]
+│       ├── 008_pricing_rules.sql          (2.3 KB)  [6de70417]
+│       └── 009_partial_shipping.sql       (4.7 KB)  [113d16d4]
 │
 ├── public/                               (16 HTML + 3 JS + 2 images)
 │   ├── index.html                        (143.9 KB)[c925b4b8]
@@ -177,7 +180,7 @@ komerce-backend/
 │
 ├── docs/                                 (13 fichiers + audit/ + _pending/)
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
-│   ├── AUDIT_REPORT.md                   (8.3 KB)  [68fbc756]
+│   ├── AUDIT_REPORT.md                   (8.5 KB)  [c13adc79]
 │   ├── AUDIT_CONFORMITE_GOUVERNANCE.md   (6.8 KB)  [20e8b386]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
 │   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
@@ -186,13 +189,13 @@ komerce-backend/
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (22.3 KB) [81d66b08]
+│   ├── ROADMAP_KOMERCE.md                (22.8 KB) [56f97d09]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
 │   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
-│   ├── CHANGES_PHASE2_MIGRATION.md       (~3 KB)   [new]
+│   ├── CHANGES_PHASE2_MIGRATION.md       (9.2 KB)  [29e6f652]
 │   ├── _pending/                          (dossier delta governance)
-│   │   └── README.md                     (2.3 KB)  [8f1a2e46]
+│   │   └── README.md                     (85 B)    [0d3bffec]
 │   └── audit/                            (11 fichiers)
 │       ├── AUDIT_BUGS.md                 (7.9 KB)  [92fa541a]
 │       ├── AUDIT_CODE_INTEGRITY.md       (10.9 KB) [2ce96aec]
@@ -857,7 +860,9 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 | `utils/rates.js` | Taux de change EUR/KMF, AED/KMF (table `exchange_rates`) — fallback via `getRuleNumber('RATE_EUR_KMF_DEFAULT')` |
 | `utils/pricing.js` | Moteur v6.5 async — 10 paramètres configurables via `getRuleNumber()` (marge, fret, douane estimée) |
 | `utils/reference.js` | Génération de références expédition (`generateShipmentRef()`) |
+| `utils/refunds.js` | Gestion des remboursements (Stripe refund + crédits boutique) |
 | `utils/rules.js` | Moteur de règles métier — `getRuleNumber()`, `getRuleString()` (cache TTL + fallback, table `business_rules`) |
+| `utils/store-credits.js` | Gestion des crédits boutique (FIFO, consultation, attribution) |
 | `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, etc. |
 
 ### Cron intégré
@@ -878,7 +883,7 @@ confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in
 
 ## 11. ✅ Validators (1 fichier)
 
-### `validators/index.js` (13.6 KB) [dcc266a7]
+### `validators/index.js` (15.4 KB) [f04565ef]
 **Schémas Joi centralisés**
 - Validation utilisateur (register, login)
 - Validation produit
@@ -1067,7 +1072,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
 | `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
-| `AUDIT_REPORT.md` | 8.3 KB | 68fbc756 | 📋 Rapport d'audit principal |
+| `AUDIT_REPORT.md` | 8.5 KB | c13adc79 | 📋 Rapport d'audit principal |
 | `AUDIT_CONFORMITE_GOUVERNANCE.md` | 6.8 KB | 20e8b386 | 📋 Audit de conformité gouvernance |
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
 | `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
@@ -1076,10 +1081,10 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
 | `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
-| `ROADMAP_KOMERCE.md` | 22.3 KB | 81d66b08 | 📋 Roadmap v15 — source de vérité |
+| `ROADMAP_KOMERCE.md` | 22.8 KB | 56f97d09 | 📋 Roadmap v15 — source de vérité |
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
-| `CHANGES_PHASE2_MIGRATION.md` | ~3 KB | new | 📝 Changelog détaillé Phase 2 migration constantes |
+| `CHANGES_PHASE2_MIGRATION.md` | 9.2 KB | 29e6f652 | 📝 Changelog détaillé Phase 2 migration constantes |
 
 ### Audit (`docs/audit/`) — 11 fichiers
 
@@ -1136,7 +1141,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `.env.example` | 1.9 KB | 6568d664 | Template variables d'environnement |
 | `.gitignore` | 258 B | 61e13d23 | Fichiers exclus de Git |
 | `AGENT_RULES.md` | ~3 KB | (v mise à jour) | Règles obligatoires agents IA |
-| `CONTRIBUTING.md` | 3.2 KB | a18b8868 | Guide de contribution |
+| `CONTRIBUTING.md` | 3.2 KB | a18b88a6 | Guide de contribution |
 | `railway.toml` | 644 B | fa81b056 | Config Railway — watch patterns (filtre déploiements docs-only) |
 | `README.md` | 3.9 KB | 1c05bc68 | README principal |
 
@@ -1266,7 +1271,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Métrique | Valeur |
 |----------|--------|
-| Fichiers route | **18** |
+| Fichiers route | **19** |
 | Endpoints totaux | **~127** |
 | Tables PostgreSQL | **31+** |
 | Vues | **3** |
@@ -1302,7 +1307,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.10 — 7 avril 2026*
+> 📝 *Cartographie 360° — Version v15.11 — 7 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
@@ -1312,7 +1317,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-07 00:01:00 UTC
+> Mise à jour : 2026-04-07 00:12:00 UTC
 
 | Métrique | Valeur |
 |----------|--------|
