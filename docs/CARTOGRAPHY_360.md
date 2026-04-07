@@ -1,9 +1,9 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.9 — 07/04/2026 (v15.8 + deltas: PR #105-108, Phase 4 shipping, +railway.toml, +008_pricing_rules.sql, +store_credits, +refunds, +sub_orders, orders.js 17 endpoints)
+> **Version** : 15.10 — 07/04/2026 (v15.9 + drift-fix: +AUDIT_CONFORMITE_GOUVERNANCE.md, SHA updates AUDIT_REPORT + ROADMAP)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 — governance auto-sync (4 deltas applied: PR #105-108 + Phase 4 partial shipping)
+> **Dernière vérification** : 07/04/2026 — governance auto-sync (drift-fix: +1 doc, 2 SHA updates)
 > 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
@@ -49,7 +49,7 @@
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 13 + 11 audit + _pending/ |
+| **Docs** | 14 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
@@ -109,7 +109,7 @@ komerce-backend/
 ├── validators/                           (1 fichier)
 │   └── index.js                          (13.7 KB) [d8ed1ee6]
 │
-├── db/                                   (4 + 5 migrations)
+├── db/                                   (3 + 6 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
 │   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
 │   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
@@ -177,7 +177,8 @@ komerce-backend/
 │
 ├── docs/                                 (13 fichiers + audit/ + _pending/)
 │   ├── AGENTS_PROTOCOL.md                (14.3 KB) [2ace95c4]
-│   ├── AUDIT_REPORT.md                   (8.0 KB)  [6b4fc1c7]
+│   ├── AUDIT_REPORT.md                   (8.3 KB)  [68fbc756]
+│   ├── AUDIT_CONFORMITE_GOUVERNANCE.md   (6.8 KB)  [20e8b386]
 │   ├── CARTOGRAPHY_360.md                (CE FICHIER)
 │   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
 │   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
@@ -185,7 +186,7 @@ komerce-backend/
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (21.3 KB) [5cb5a44f]
+│   ├── ROADMAP_KOMERCE.md                (22.3 KB) [81d66b08]
 │   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
 │   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
 │   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
@@ -1066,7 +1067,8 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
 | `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
-| `AUDIT_REPORT.md` | 8.0 KB | 6b4fc1c7 | 📋 Rapport d'audit principal |
+| `AUDIT_REPORT.md` | 8.3 KB | 68fbc756 | 📋 Rapport d'audit principal |
+| `AUDIT_CONFORMITE_GOUVERNANCE.md` | 6.8 KB | 20e8b386 | 📋 Audit de conformité gouvernance |
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
 | `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
 | `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
@@ -1074,7 +1076,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
 | `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
-| `ROADMAP_KOMERCE.md` | 23.3 KB | 0ea267c0 | 📋 Roadmap v15 — source de vérité |
+| `ROADMAP_KOMERCE.md` | 22.3 KB | 81d66b08 | 📋 Roadmap v15 — source de vérité |
 | `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
 | `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
 | `CHANGES_PHASE2_MIGRATION.md` | ~3 KB | new | 📝 Changelog détaillé Phase 2 migration constantes |
@@ -1300,7 +1302,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.9 — 7 avril 2026*
+> 📝 *Cartographie 360° — Version v15.10 — 7 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
