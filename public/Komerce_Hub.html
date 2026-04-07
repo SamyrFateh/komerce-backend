@@ -1,1 +1,797 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=/Komerce_Dashboard.html#hub"><title>Redirection…</title></head><body><p>Redirection vers <a href="/Komerce_Dashboard.html#hub">Hub Dubai</a>…</p></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KOMERCE // HUB DUBAI</title>
+  <link rel="stylesheet" href="komerce-ui.css">
+  <style>
+    /* ── HUB-SPECIFIC STYLES ── */
+    body { background: var(--bg); }
+    .hub-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Login screen */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 52px);
+    }
+    .login-card {
+      width: 100%; max-width: 400px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 1.4rem;
+      letter-spacing: 4px; color: var(--gold); text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      text-align: center; letter-spacing: 2px; margin-bottom: 28px;
+    }
+    .login-err {
+      background: var(--red-bg); border: 1px solid var(--red);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.875rem; font-weight: 600;
+      margin-bottom: 14px; display: none;
+    }
+
+    /* Scan zone */
+    .scan-zone {
+      background: var(--bg2); border: 2px dashed var(--gold);
+      border-radius: var(--radius); padding: 28px 22px;
+      margin-bottom: 20px; text-align: center;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .scan-zone:focus-within {
+      border-color: var(--gold2);
+      box-shadow: 0 0 0 4px rgba(217,119,6,0.12);
+    }
+    .scan-zone .scan-label {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .scan-zone .scan-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .scan-input {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text); padding: 16px 18px;
+      font-family: var(--mono); font-size: 1.2rem; width: 100%;
+      text-align: center; letter-spacing: 1px;
+      transition: border-color 0.2s;
+    }
+    .scan-input:focus { outline: none; border-color: var(--gold); }
+    .scan-input::placeholder { color: var(--text3); font-size: 1rem; letter-spacing: 0; }
+    .scan-hint {
+      font-size: 0.82rem; color: var(--text3); margin-top: 10px;
+      font-family: var(--mono);
+    }
+
+    /* Parcel card */
+    .parcel-card { animation: fadeSlide 0.35s ease; }
+    .parcel-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+    }
+    .parcel-ref {
+      font-family: var(--mono); font-size: 1.1rem; font-weight: 700;
+      color: var(--text); letter-spacing: 1px;
+    }
+    .parcel-meta {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      margin-bottom: 14px;
+    }
+    .items-list { margin-bottom: 18px; }
+    .items-list-title {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .item-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      font-size: 0.94rem; animation: fadeSlide 0.3s ease;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-check { color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .item-name { color: var(--text); font-weight: 600; flex: 1; }
+    .item-time { font-family: var(--mono); font-size: 0.82rem; color: var(--text3); }
+    .parcel-actions {
+      display: flex; gap: 10px; flex-wrap: wrap; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Section header */
+    .section-hdr {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    /* Pending list */
+    .pending-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .pending-item:hover { background: var(--bg3); }
+    .pending-item:last-child { border-bottom: none; }
+    .pending-ref {
+      font-family: var(--mono); font-size: 0.875rem; font-weight: 700;
+      color: var(--text);
+    }
+    .pending-age { font-family: var(--mono); font-size: 0.82rem; color: var(--text3); }
+
+    /* Collapsible */
+    .collapse-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none; padding: 10px 0;
+    }
+    .collapse-toggle:hover .section-hdr { color: var(--text2); }
+    .collapse-chevron {
+      font-size: 0.82rem; color: var(--text3); transition: transform 0.2s;
+    }
+    .collapse-toggle.open .collapse-chevron { transform: rotate(180deg); }
+    .collapse-body { display: none; }
+    .collapse-toggle.open + .collapse-body { display: block; }
+
+    /* History items */
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid rgba(26,40,64,0.06);
+      flex-wrap: wrap; gap: 6px;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-left { display: flex; align-items: center; gap: 10px; }
+    .history-ref {
+      font-family: var(--mono); font-size: 0.875rem; font-weight: 700;
+      color: var(--text);
+    }
+    .history-info {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 28px 16px; color: var(--text3);
+      font-size: 0.94rem;
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* Loading spinner inline */
+    .loading-inline {
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; color: var(--text3); gap: 8px;
+      font-family: var(--mono); font-size: 0.875rem;
+    }
+
+    /* Operator info in header */
+    .operator-info {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text2);
+    }
+    .operator-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold); color: #000; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+    }
+    .btn-logout {
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 0.82rem; font-family: var(--mono);
+      padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+    }
+    .btn-logout:hover { color: var(--red); background: var(--red-bg); }
+
+    /* Mobile overrides */
+    @media (max-width: 600px) {
+      .hub-wrap { padding: 16px 12px; }
+      .scan-input { font-size: 1.1rem; padding: 14px 16px; }
+      .parcel-actions .btn { flex: 1; justify-content: center; }
+      .g4 { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .kpi-v { font-size: 1.5rem; }
+      .login-card { padding: 28px 20px; margin: 0 12px; }
+    }
+    @media (max-width: 380px) {
+      .g4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="hdr">
+    <div class="logo">KOMERCE <em>// HUB DUBAI</em></div>
+    <div class="hdr-right">
+      <div id="connPill" class="conn-pill">
+        <span class="conn-dot"></span>
+        <span id="connLabel">Déconnecté</span>
+      </div>
+      <div id="operatorInfo" class="operator-info" style="display:none;">
+        <div id="operatorAvatar" class="operator-avatar">—</div>
+        <span id="operatorName">Opérateur</span>
+        <button id="btnLogout" class="btn-logout" title="Déconnexion">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">KOMERCE</div>
+      <div class="login-sub">HUB DUBAI — CONNEXION</div>
+
+      <div id="loginError" class="login-err"></div>
+
+      <div class="form-group">
+        <div class="inp-label">URL API</div>
+        <input id="inpApiUrl" class="inp" type="url" placeholder="https://api.komerce.app" autocomplete="url">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Email</div>
+        <input id="inpEmail" class="inp" type="email" placeholder="operateur@komerce.app" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Mot de passe</div>
+        <input id="inpPassword" class="inp" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button id="btnLogin" class="btn btn-gold btn-full btn-lg" style="margin-top:8px;">
+        Connexion
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ WORKSPACE (hidden until connected) ═══ -->
+  <div id="workspace" style="display:none;">
+    <div class="hub-wrap">
+
+      <!-- ── SESSION STATS ── -->
+      <div class="section-hdr">Statistiques du jour</div>
+      <div class="g4" style="margin-bottom:24px;">
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiScanned" style="color:var(--blue);">—</div>
+          <div class="kpi-l">Scannés</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiPacked" style="color:var(--purple);">—</div>
+          <div class="kpi-l">Emballés</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiSealed" style="color:var(--green);">—</div>
+          <div class="kpi-l">Scellés</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-v" id="kpiPending" style="color:var(--gold);">—</div>
+          <div class="kpi-l">En attente</div>
+        </div>
+      </div>
+
+      <!-- ── SCAN ZONE ── -->
+      <div class="scan-zone" id="scanZone">
+        <div class="scan-icon">📷</div>
+        <div class="scan-label">Scanner ou saisir référence</div>
+        <input
+          id="scanInput"
+          class="scan-input"
+          type="text"
+          placeholder="PCL-2026-XXXX"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+        >
+        <div class="scan-hint">Appuyez sur Entrée ou scannez un code-barres</div>
+      </div>
+
+      <!-- ── COLIS EN COURS ── -->
+      <div id="currentParcelSection" style="display:none;">
+        <div class="section-hdr">Colis en cours</div>
+        <div class="card parcel-card" id="currentParcelCard">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+
+      <!-- ── PENDING PARCELS ── -->
+      <div id="pendingSection" style="display:none;">
+        <div class="section-hdr">Colis en attente <span id="pendingCount" class="badge b-gold" style="margin-left:6px;">0</span></div>
+        <div class="card" id="pendingList">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+
+      <!-- ── SESSION HISTORY (collapsible) ── -->
+      <div style="margin-top:8px;">
+        <div class="collapse-toggle" id="historyToggle" onclick="toggleHistory()">
+          <div class="section-hdr" style="margin-bottom:0;">Historique session <span id="historyCount" class="badge b-green" style="margin-left:6px;">0</span></div>
+          <span class="collapse-chevron">▼</span>
+        </div>
+        <div class="collapse-body" id="historyBody">
+          <div class="card" id="historyList">
+            <div class="empty-state">
+              <div class="empty-icon">📦</div>
+              Aucun colis scellé cette session
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="k-toast" class="toast"></div>
+
+  <!-- ═══ API ═══ -->
+  <script src="komerce-api.js"></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── STATE ──────────────────────────────────────────────────
+    const state = {
+      currentParcel: null,        // Currently active parcel object
+      scannedItems: [],           // Items scanned for current parcel [{name, time}]
+      sessionHistory: [],         // Sealed parcels this session [{ref, type, itemsCount, sealedAt}]
+      refreshInterval: null,
+      user: null,
+    };
+
+    // ── DOM REFS ──────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+      loginScreen:   $('loginScreen'),
+      workspace:     $('workspace'),
+      loginError:    $('loginError'),
+      inpApiUrl:     $('inpApiUrl'),
+      inpEmail:      $('inpEmail'),
+      inpPassword:   $('inpPassword'),
+      btnLogin:      $('btnLogin'),
+      btnLogout:     $('btnLogout'),
+      connPill:      $('connPill'),
+      connLabel:     $('connLabel'),
+      operatorInfo:  $('operatorInfo'),
+      operatorAvatar:$('operatorAvatar'),
+      operatorName:  $('operatorName'),
+      scanInput:     $('scanInput'),
+      scanZone:      $('scanZone'),
+      currentSection:$('currentParcelSection'),
+      currentCard:   $('currentParcelCard'),
+      pendingSection:$('pendingSection'),
+      pendingCount:  $('pendingCount'),
+      pendingList:   $('pendingList'),
+      historyToggle: $('historyToggle'),
+      historyBody:   $('historyBody'),
+      historyList:   $('historyList'),
+      historyCount:  $('historyCount'),
+      kpiScanned:    $('kpiScanned'),
+      kpiPacked:     $('kpiPacked'),
+      kpiSealed:     $('kpiSealed'),
+      kpiPending:    $('kpiPending'),
+    };
+
+    // ── INIT ──────────────────────────────────────────────────
+    function init() {
+      // Pre-fill stored API URL
+      const storedUrl = localStorage.getItem('komerce_api_url') || '';
+      if (storedUrl) dom.inpApiUrl.value = storedUrl;
+
+      // Bind events
+      dom.btnLogin.addEventListener('click', handleLogin);
+      dom.btnLogout.addEventListener('click', handleLogout);
+      dom.inpPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+      dom.scanInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleScan(); });
+
+      // Auto-connect if token exists
+      if (K.auth.isConnected()) {
+        autoConnect();
+      }
+    }
+
+    // ── AUTH ───────────────────────────────────────────────────
+    async function handleLogin() {
+      const url = dom.inpApiUrl.value.trim();
+      const email = dom.inpEmail.value.trim();
+      const pass = dom.inpPassword.value;
+
+      if (!url || !email || !pass) {
+        showLoginError('Veuillez remplir tous les champs');
+        return;
+      }
+
+      dom.btnLogin.disabled = true;
+      dom.btnLogin.innerHTML = '<span class="spin">⟳</span> Connexion...';
+      hideLoginError();
+
+      try {
+        const result = await K.auth.login(email, pass, url);
+        state.user = result.user;
+        enterWorkspace();
+      } catch (err) {
+        showLoginError(err.message || 'Échec de la connexion');
+      } finally {
+        dom.btnLogin.disabled = false;
+        dom.btnLogin.textContent = 'Connexion';
+      }
+    }
+
+    async function autoConnect() {
+      try {
+        // Validate token with a simple call
+        const stats = await K.request('/api/hub/today');
+        state.user = K.auth.getUser();
+        enterWorkspace(stats);
+      } catch (err) {
+        // Token expired — show login
+        K.auth.logout();
+        K.ui.toast('Session expirée — reconnectez-vous', 'warn');
+      }
+    }
+
+    function handleLogout() {
+      K.auth.logout();
+      clearInterval(state.refreshInterval);
+      state.currentParcel = null;
+      state.scannedItems = [];
+      state.sessionHistory = [];
+
+      // Reset UI
+      dom.workspace.style.display = 'none';
+      dom.loginScreen.style.display = 'flex';
+      dom.operatorInfo.style.display = 'none';
+      dom.connPill.classList.remove('ok');
+      dom.connLabel.textContent = 'Déconnecté';
+      dom.currentSection.style.display = 'none';
+      dom.pendingSection.style.display = 'none';
+
+      K.ui.toast('Déconnecté', 'warn');
+    }
+
+    function enterWorkspace(preloadedStats) {
+      dom.loginScreen.style.display = 'none';
+      dom.workspace.style.display = 'block';
+
+      // Connection pill
+      dom.connPill.classList.add('ok');
+      dom.connLabel.textContent = 'Connecté';
+      dom.connPill.querySelector('.conn-dot').classList.add('pulse');
+
+      // Operator info
+      const user = state.user;
+      if (user) {
+        const initials = (user.name || user.email || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        dom.operatorAvatar.textContent = initials;
+        dom.operatorName.textContent = user.name || user.email || 'Opérateur';
+      } else {
+        dom.operatorAvatar.textContent = 'OP';
+        dom.operatorName.textContent = 'Opérateur';
+      }
+      dom.operatorInfo.style.display = 'flex';
+
+      // Load data
+      if (preloadedStats) {
+        renderStats(preloadedStats);
+      } else {
+        loadStats();
+      }
+      loadPending();
+
+      // Focus scan input
+      setTimeout(() => dom.scanInput.focus(), 200);
+
+      // Auto-refresh stats every 30s
+      state.refreshInterval = setInterval(() => {
+        loadStats();
+        loadPending();
+      }, 30000);
+    }
+
+    // ── STATS ─────────────────────────────────────────────────
+    async function loadStats() {
+      try {
+        const data = await K.request('/api/hub/today');
+        renderStats(data);
+      } catch (err) {
+        console.warn('Stats load failed:', err.message);
+      }
+    }
+
+    function renderStats(data) {
+      // The API may return data directly or nested in a `data` key
+      const d = data.data || data;
+      dom.kpiScanned.textContent = d.scanned_today ?? '—';
+      dom.kpiPacked.textContent = d.packed_today ?? '—';
+      dom.kpiSealed.textContent = d.sealed_today ?? '—';
+      dom.kpiPending.textContent = d.pending_total ?? '—';
+    }
+
+    // ── PENDING ───────────────────────────────────────────────
+    async function loadPending() {
+      try {
+        const res = await K.request('/api/hub/pending');
+        const parcels = res.data || res || [];
+        const count = res.count ?? parcels.length ?? 0;
+
+        if (count > 0) {
+          dom.pendingSection.style.display = 'block';
+          dom.pendingCount.textContent = count;
+
+          let html = '';
+          (Array.isArray(parcels) ? parcels : []).forEach(p => {
+            const ref = p.reference || p.ref || p.id || '—';
+            const age = K.ui.fmtAge(p.created_at);
+            html += `
+              <div class="pending-item" onclick="Hub.selectPending('${ref}')">
+                <div>
+                  <div class="pending-ref">${ref}</div>
+                  <div style="font-size:0.82rem;color:var(--text3);margin-top:2px;">
+                    ${p.type || 'standard'}
+                  </div>
+                </div>
+                <span class="pending-age">${age}</span>
+              </div>`;
+          });
+          dom.pendingList.innerHTML = html;
+        } else {
+          dom.pendingSection.style.display = 'none';
+        }
+      } catch (err) {
+        console.warn('Pending load failed:', err.message);
+      }
+    }
+
+    // ── SCAN ──────────────────────────────────────────────────
+    async function handleScan() {
+      const ref = dom.scanInput.value.trim();
+      if (!ref) return;
+
+      dom.scanInput.disabled = true;
+
+      try {
+        // Call hub scan endpoint
+        const scanResult = await K.request('/api/hub/scan', 'POST', { parcel_ref: ref });
+
+        // Determine parcel info from scan result
+        const parcel = scanResult.parcel || scanResult.data || scanResult;
+        const parcelId = parcel.id || parcel.parcel_id || null;
+        const parcelRef = parcel.reference || parcel.ref || ref;
+
+        // If this is a new parcel (different from current), reset
+        if (!state.currentParcel || state.currentParcel.id !== parcelId) {
+          state.currentParcel = {
+            id: parcelId,
+            ref: parcelRef,
+            type: parcel.type || parcel.parcel_type || 'standard',
+            status: parcel.status || 'scanned',
+            raw: parcel,
+          };
+          state.scannedItems = [];
+        }
+
+        // Add scanned item to the list
+        const itemInfo = scanResult.item || scanResult.scanned_item || null;
+        state.scannedItems.push({
+          name: itemInfo ? (itemInfo.name || itemInfo.label || itemInfo.barcode || ref) : ref,
+          time: K.ui.ts(),
+        });
+
+        // Render current parcel
+        renderCurrentParcel();
+        dom.scanInput.value = '';
+        K.ui.toast('✓ Scan enregistré — ' + ref, 'ok');
+
+        // Refresh stats
+        loadStats();
+
+      } catch (err) {
+        K.ui.toast('Erreur scan : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        dom.scanInput.disabled = false;
+        dom.scanInput.focus();
+      }
+    }
+
+    // ── SELECT PENDING PARCEL ─────────────────────────────────
+    async function selectPending(ref) {
+      dom.scanInput.value = ref;
+      await handleScan();
+    }
+
+    // ── RENDER CURRENT PARCEL ─────────────────────────────────
+    function renderCurrentParcel() {
+      if (!state.currentParcel) {
+        dom.currentSection.style.display = 'none';
+        return;
+      }
+
+      dom.currentSection.style.display = 'block';
+
+      const p = state.currentParcel;
+      const statusBadge = K.ui.badge(p.status);
+
+      let itemsHtml = '';
+      if (state.scannedItems.length === 0) {
+        itemsHtml = '<div class="empty-state" style="padding:14px;"><div class="empty-icon">📋</div>Aucun article scanné</div>';
+      } else {
+        state.scannedItems.forEach((item, i) => {
+          itemsHtml += `
+            <div class="item-row">
+              <span class="item-check">✓</span>
+              <span class="item-name">${escHtml(item.name)}</span>
+              <span class="item-time">${item.time}</span>
+            </div>`;
+        });
+      }
+
+      dom.currentCard.innerHTML = `
+        <div class="parcel-hdr">
+          <span class="parcel-ref">${escHtml(p.ref)}</span>
+          ${statusBadge}
+        </div>
+        <div class="parcel-meta">Type : ${escHtml(p.type)}</div>
+        <div class="items-list">
+          <div class="items-list-title">Articles scannés (${state.scannedItems.length})</div>
+          ${itemsHtml}
+        </div>
+        <div class="parcel-actions">
+          <button class="btn btn-blue" onclick="Hub.packParcel()" id="btnPack">
+            📦 Emballer
+          </button>
+          <button class="btn btn-green btn-lg" onclick="Hub.sealParcel()" id="btnSeal" style="flex:1;">
+            🔒 Sceller le colis
+          </button>
+        </div>`;
+
+      // Scroll to parcel card
+      dom.currentSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ── PACK ──────────────────────────────────────────────────
+    async function packParcel() {
+      if (!state.currentParcel) return;
+
+      const btn = $('btnPack');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin">⟳</span> Emballage...';
+
+      try {
+        await K.request('/api/hub/pack', 'POST', {
+          parcel_id: state.currentParcel.id,
+          box_label: state.currentParcel.type || 'standard',
+          notes: 'Emballé depuis Hub Dubai',
+        });
+
+        state.currentParcel.status = 'packed';
+        K.ui.toast('✓ Colis emballé — ' + state.currentParcel.ref, 'ok');
+        renderCurrentParcel();
+        loadStats();
+
+      } catch (err) {
+        K.ui.toast('Erreur emballage : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '📦 Emballer';
+        }
+      }
+    }
+
+    // ── SEAL ──────────────────────────────────────────────────
+    async function sealParcel() {
+      if (!state.currentParcel) return;
+
+      const btn = $('btnSeal');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin">⟳</span> Scellement...';
+
+      try {
+        await K.request('/api/hub/seal', 'POST', {
+          parcel_id: state.currentParcel.id,
+          notes: 'Scellé depuis Hub Dubai',
+        });
+
+        // Success flash
+        K.ui.flash();
+        K.ui.toast('✓ Colis scellé — ' + state.currentParcel.ref, 'ok');
+
+        // Move to session history
+        state.sessionHistory.unshift({
+          ref: state.currentParcel.ref,
+          type: state.currentParcel.type,
+          itemsCount: state.scannedItems.length,
+          sealedAt: K.ui.ts(),
+        });
+
+        // Clear current parcel
+        state.currentParcel = null;
+        state.scannedItems = [];
+        dom.currentSection.style.display = 'none';
+
+        // Refresh
+        renderHistory();
+        loadStats();
+        loadPending();
+
+        // Re-focus scan
+        dom.scanInput.focus();
+
+      } catch (err) {
+        K.ui.toast('Erreur scellement : ' + (err.message || 'Inconnu'), 'err');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '🔒 Sceller le colis';
+        }
+      }
+    }
+
+    // ── HISTORY ───────────────────────────────────────────────
+    function renderHistory() {
+      dom.historyCount.textContent = state.sessionHistory.length;
+
+      if (state.sessionHistory.length === 0) {
+        dom.historyList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            Aucun colis scellé cette session
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      state.sessionHistory.forEach(h => {
+        html += `
+          <div class="history-item">
+            <div class="history-left">
+              <span class="badge b-green">✓</span>
+              <span class="history-ref">${escHtml(h.ref)}</span>
+            </div>
+            <div class="history-info">
+              ${escHtml(h.type)} · ${h.itemsCount} art. · ${h.sealedAt}
+            </div>
+          </div>`;
+      });
+      dom.historyList.innerHTML = html;
+
+      // Auto-open history on first seal
+      if (state.sessionHistory.length === 1 && !dom.historyToggle.classList.contains('open')) {
+        dom.historyToggle.classList.add('open');
+      }
+    }
+
+    // ── COLLAPSE HISTORY ──────────────────────────────────────
+    window.toggleHistory = function() {
+      dom.historyToggle.classList.toggle('open');
+    };
+
+    // ── HELPERS ───────────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function showLoginError(msg) {
+      dom.loginError.textContent = msg;
+      dom.loginError.style.display = 'block';
+    }
+
+    function hideLoginError() {
+      dom.loginError.style.display = 'none';
+    }
+
+    // ── EXPOSE PUBLIC API ─────────────────────────────────────
+    window.Hub = {
+      packParcel,
+      sealParcel,
+      selectPending,
+    };
+
+    // ── BOOT ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+
+</body>
+</html>
