@@ -224,6 +224,7 @@ trg_users_updated, trg_products_updated, trg_orders_updated, trg_shipments_updat
 | 07/04/2026 | #106 | 2 injections SQL corrigées dans `orders.js` (`/problems`, `pickup_code`) — requêtes paramétrées |
 | 07/04/2026 | #106 | Toutes les interpolations `business_rules` passent par `getRuleNumber()` qui force le cast Number (anti-injection) |
 | 07/04/2026 | #108 | `utils/sms.js` — backticks imbriquées remplacées par requêtes paramétrées `$1`, `$2` |
+| 07/04/2026 | #115 | Phase 5.2 — `GET /api/dashboard/annulations-parcels` : endpoint protégé par `authMiddleware`, requêtes SQL paramétrées, fallback gracieux frontend |
 
 ---
 

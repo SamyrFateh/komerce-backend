@@ -1,10 +1,10 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.12 — 07/04/2026 (v15.11 + drift-fix: ROADMAP SHA update)
+> **Version** : 15.14 — 07/04/2026 (v15.13 + auto-sync: Phase 5.2 + audit phantoms cleanup + migrations 010-013)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 07:05 UTC — governance auto-sync (drift-fix: ROADMAP SHA update)
-> 📊 **19 fichiers route** · **~127 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
+> **Dernière vérification** : 07/04/2026 13:46 UTC — governance auto-sync (3 deltas applied)
+> 📊 **19 fichiers route** · **~130 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
 
@@ -48,7 +48,7 @@
 | **Middlewares** | 4 |
 | **Utilitaires** | 8 |
 | **Validators** | 1 |
-| **Fichiers DB** | 3 + 6 migrations |
+| **Fichiers DB** | 3 + 10 migrations |
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
@@ -113,7 +113,7 @@ komerce-backend/
 ├── validators/                           (1 fichier)
 │   └── index.js                          (15.4 KB) [5dd674f3]
 │
-├── db/                                   (3 + 6 migrations)
+├── db/                                   (3 + 10 migrations)
 │   ├── schema.sql                        (19.2 KB) [31333f3c]
 │   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
 │   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
@@ -123,7 +123,11 @@ komerce-backend/
 │       ├── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
 │       ├── 007_business_rules.sql         (10.9 KB) [0971318d]
 │       ├── 008_pricing_rules.sql          (2.3 KB)  [6de70417]
-│       └── 009_partial_shipping.sql       (4.7 KB)  [113d16d4]
+│       ├── 009_partial_shipping.sql       (4.7 KB)  [113d16d4]
+│       ├── 010_parcels_foundation.sql    (10.4 KB) [9b04a127]
+│       ├── 011_parcels_dual_write.sql    (1.7 KB)  [405e6756]
+│       ├── 012_parcels_trigger_migration.sql (5.2 KB) [35c58302]
+│       └── 013_legacy_cleanup.sql        (2.4 KB)  [43071e8a]
 │
 ├── public/                               (16 HTML + 3 JS + 2 images)
 │   ├── index.html                        (143.9 KB)[c925b4b8]
@@ -131,7 +135,7 @@ komerce-backend/
 │   ├── Komerce_Admin_Users.html          (31.5 KB) [9059161a]
 │   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
 │   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
-│   ├── Komerce_Dashboard.html            (75.8 KB) [4d455c1a]
+│   ├── Komerce_Dashboard.html            (75.8 KB) [4d455c1a]  # +Phase5.2: annulations KPI, parcels KPI
 │   ├── Komerce_Hub.html                  (~1 KB)   [redirect→dashboard-app]
 │   ├── Komerce_Mobile.html               (53.9 KB) [d0348e70]
 │   ├── Komerce_Pilotage_v2.html          (~1 KB)   [redirect→dashboard-app]
@@ -402,7 +406,7 @@ komerce-backend/
 > **Rôles DB** : `user_role` enum = `('client', 'admin', 'agent_relais', 'agent_hub')`.  
 > ⚠️ Endpoints dashboard déplacés vers `/api/dashboard/*` (v11.0) : `/dashboard`, `/margins`, `/alerts`.
 
-### 📁 dashboard.js — `/api/dashboard` (11 endpoints) — Dashboard unifié v11
+### 📁 dashboard.js — `/api/dashboard` (14 endpoints) — Dashboard unifié v11
 
 | # | Méthode | Chemin | Auth | Rôles | Description |
 |---|---------|--------|:----:|-------|-------------|
@@ -417,6 +421,9 @@ komerce-backend/
 | 9 | `GET` | `/api/dashboard/hub-dubai` | ✅ | admin | Vue opérationnelle Hub Dubai (réceptions, expéditions, stocks) |
 | 10 | `GET` | `/api/dashboard/relais` | ✅ | admin | Analyse performance réseau relais |
 | 11 | `GET` | `/api/dashboard/annulations-parcels` | ✅ | admin | Suivi annulations et raisons par colis |
+| 11a | `GET` | `/api/dashboard/annulations-parcels/kpi` | ✅ | admin | KPIs annulations, remboursements Stripe/crédits |
+| 11b | `GET` | `/api/dashboard/annulations-parcels/recentes` | ✅ | admin | Annulations récentes détaillées |
+| 11c | `GET` | `/api/dashboard/annulations-parcels/parcels-actifs` | ✅ | admin | Expéditions partielles et backorders actifs |
 
 > **Cache** : Mémoire TTL 30s (`_cache` Map, max 100 entrées).  
 > **Taux** : EUR/KMF dynamiques via `getRates()`, jamais hardcodé.  
@@ -1134,7 +1141,6 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 | Fichier | Taille | SHA | Rôle |
 |---------|--------|-----|------|
-| `AGENTS_PROTOCOL.md` | 14.3 KB | 2ace95c4 | 🔒 Protocole de gouvernance |
 | `AUDIT_REPORT.md` | 8.5 KB | c13adc79 | 📋 Rapport d'audit principal |
 | `AUDIT_CONFORMITE_GOUVERNANCE.md` | 6.8 KB | 20e8b386 | 📋 Audit de conformité gouvernance |
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
@@ -1216,7 +1222,6 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `.cursorrules` | 1.4 KB | 3dd2643a | Règles pour l'éditeur Cursor |
 | `.env.example` | 1.9 KB | 6568d664 | Template variables d'environnement |
 | `.gitignore` | 258 B | 61e13d23 | Fichiers exclus de Git |
-| `AGENT_RULES.md` | ~3 KB | (v mise à jour) | Règles obligatoires agents IA |
 | `CONTRIBUTING.md` | 3.2 KB | a18b88a6 | Guide de contribution |
 | `railway.toml` | 644 B | fa81b056 | Config Railway — watch patterns (filtre déploiements docs-only) |
 | `README.md` | 3.9 KB | 1c05bc68 | README principal |

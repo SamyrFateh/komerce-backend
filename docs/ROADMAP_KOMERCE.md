@@ -9,7 +9,7 @@
 | Domaine | Statut |
 |---------|--------|
 | Dashboard Pilotage Unifié | ✅ 11/11 |
-| Gouvernance Opérationnelle | 🔄 4/5 phases |
+| Gouvernance Opérationnelle | ✅ 5/5 phases |
 | Boutique Live | ✅ 5/5 |
 | Sprint UX A→D | ✅ 4/4 |
 | Bugs Phase 7 | ✅ 14/14 |
@@ -133,7 +133,7 @@ Nouvelle verticale : catalogue structuré véhicule→marque→modèle→pièce 
 
 ---
 
-## P6 🔄 Gouvernance Opérationnelle — 4/5 phases
+## P6 ✅ Gouvernance Opérationnelle — 5/5 phases
 
 > [Plan détaillé](./komerce-point6-gouvernance-operationnelle.md) · Moteur `business_rules` variabilisant 47 constantes hardcodées
 
@@ -143,7 +143,7 @@ Nouvelle verticale : catalogue structuré véhicule→marque→modèle→pièce 
 | 2 | Migration 47 constantes → `getRule()` | ✅ |
 | 3 | Annulation + Remboursement (Stripe/crédit) — PR #105 | ✅ |
 | 4 | Expédition partielle Hub Dubai (sous-commandes) | ✅ |
-| 5 | Dashboard Configuration ⚙️ | ⬜ |
+| 5 | Dashboard Configuration ⚙️ (5.1 Config ✅, 5.2 Indicateurs annulations/parcels 🔄 PR #115) | 🔄 |
 
 **Endpoints ajoutés** : `POST /cancel` · `GET /credits` · `POST /mark-availability` · `POST /partial-ship` · `GET /sub-orders` · `PATCH /sub-orders/:subId/status` · `POST /cancel-backorder`
 
@@ -165,7 +165,7 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 
 #71-#76 🔴 CRITIQUES (sécurité) · #77-#84 🟠 MAJEURES · #48 💰 BLOQUANT (coûts réels)
 
-**PRs ouvertes** : 0
+**PRs ouvertes** : 1 (PR #115 Phase 5.2 annulations-parcels)
 
 ---
 
@@ -178,7 +178,7 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 🟡 Parcel-Centric Phase 4 — Nettoyage colonnes legacy
 ⬜ Parcel-Centric Phase 5 — API CRUD parcels
 ⬜ Catalogue Pièces Auto/Moto (12 tâches)
-⬜ Gouvernance Phase 5 — Dashboard Config
+🔄 Gouvernance Phase 5 — Dashboard Config (5.1 ✅, 5.2 🔄 PR #115)
 ⬜ Fix 6 CRITIQUES #71→#76
 ⬜ Fix 8 MAJEURES #77→#84 + coûts réels #48
 ⬜ Go-Live (audit, reset, checklist)
