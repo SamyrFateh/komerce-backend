@@ -1,64 +1,76 @@
-# 🔄 Reprise de Session — Komerce Backend
+# 🔄 REPRISE DE SESSION — Komerce Backend
 
-## État au 07/04/2026 12:37
-
-### ✅ Terminé (sessions précédentes)
-1. **README** — Renvois systématiques vers Roadmap + workflow nouvelle demande
-2. **Gouvernance** — Phases 1–4/5, règle commit auto 10 min, AGENTS_PROTOCOL
-3. **Roadmap v14** — Dashboard Pilotage P1, Catalogue Pièces Auto/Moto P2
-4. **Analyse d'impact** — Carte + Coffre OK pour Dashboard (feux verts)
-5. **Specs** — DASHBOARD_REDESIGN.md commitée
-6. **Instant App scaffoldée** — 4 vues (OPS, Finance, Pilotage, Alertes) avec données mock
-7. **Backend testé** — 7/8 endpoints OK, /ops en erreur 500
-8. **Coffre-fort (Vault)** — 6/6
-9. **Sécurité audit initial** — ~58 corrigés
-10. **Sprint UX A→D** — 4/4
-11. **Bugs Phase 7** — 14/14
-12. **Cartographie 360° v12** — ✅
-
-### ✅ Terminé (session 07/04 — aujourd'hui)
-13. **Phase 1 — Refonte Parcel-Centric : Fondations** (branche `feat/parcels-phase1`)
-    - Migration SQL `010_parcels_foundation.sql` — tables `parcels` + `parcel_items`, ENUM `parcel_status`, colonnes `scans.parcel_id` + `orders.computed_status`, séquence `parcel_ref_seq`
-    - `utils/parcels.js` — `computeOrderStatus()`, `splitOrderIntoParcels()`, registre de stratégies extensible
-    - `utils/reference.js` — `generateParcelRef()` (KOM-P-YYYY-NNNNNN)
-    - Zéro impact sur le code existant
-
-### 🔜 Prochaine étape : Phase 2 — Double écriture Parcels
-- Les scans doivent écrire dans `parcels` EN PLUS de `orders.status`
-- Le trigger legacy `trg_scan_sync_status` reste actif
-- Objectif : coexistence ancien/nouveau système pendant la transition
-
-### 📡 Endpoints backend disponibles
-| Endpoint | Status | URL |
-|----------|--------|-----|
-| `/api/dashboard/finance` | ✅ | GET |
-| `/api/dashboard/pilotage` | ✅ | GET |
-| `/api/dashboard/pipeline` | ✅ | GET |
-| `/api/dashboard/retards` | ✅ | GET |
-| `/api/dashboard/clients` | ✅ | GET |
-| `/api/dashboard/history` | ✅ | GET |
-| `/api/dashboard/forecast?target_date=YYYY-MM-DD` | ✅ | GET |
-| `/api/dashboard/ops` | ❌ 500 | Bug connu |
-
-### 🔐 Infos connexion
-- Backend: `https://komerce-backend-production.up.railway.app`
-- Auth: admin@komerce.km / token JWT Bearer
-- Connection ID GitHub (Tasklet): `conn_mfjp7f8fs3afp5dfqh96`
-
-### 📂 Fichiers app (Instant App Tasklet)
-- `/agent/home/apps/komerce-dashboard/` — App Dashboard (mock data, à brancher sur API live)
-
-### ⚠️ Issues ouvertes critiques
-- 6 critiques sécurité (#71-#76) : injection SQL, secrets, validation
-- 1 bloquant finance (#48) : coûts réels
-- 8 majeures (#77-#84)
-
-### 🔧 Agent Tasklet — Config active
-- GitHub connecté (14 outils)
-- Sous-agent `governance-autocommit` configuré
-- Trigger auto-commit toutes les 10 min (Europe/Paris)
-- Logs de session → `docs/_logs/`
-- Deltas en attente → `docs/_pending/`
+> **Dernière mise à jour** : 2026-04-07 12:45 (Europe/Paris)
+> **Auteur** : Agent Tasklet
 
 ---
-_Mis à jour automatiquement par l'agent Tasklet à chaque session_
+
+## 🎯 État actuel du projet
+
+### ✅ Complété
+- Dashboard Pilotage Unifié (11/11 tâches)
+- Gouvernance Opérationnelle (Phases 1–4 / 5)
+- Boutique Live (5/5)
+- Sprint UX A→D (4/4)
+- Bugs Phase 7 (14/14)
+- Sécurité audit initial (~58 corrigés)
+- Cartographie 360° v12
+- Coffre-fort Vault (6/6)
+- **Refonte Parcel-Centric Phase 1** — Fondations (tables, utils, migration)
+- **Refonte Parcel-Centric Phase 2** — Double écriture (parcelSync.js + scans.js v8.4)
+
+### 🟡 En cours
+- **Refonte Parcel-Centric Phase 3** — Migration du trigger (à faire)
+  - Désactiver `trg_scan_sync_status`
+  - `orders.computed_status` → `orders.status`
+  - Valider la cohérence legacy vs computed
+
+### ⬜ À venir (par priorité)
+1. Refonte Parcel-Centric Phases 4-5 (Nettoyage, API CRUD parcels)
+2. P2 — Catalogue Pièces Auto/Moto (0/12)
+3. Gouvernance Phase 5 — Dashboard Config
+4. Fix 6 CRITIQUES #71→#76 (injection SQL, secrets, validation)
+5. Fix 8 MAJEURES #77→#84 + coûts réels #48
+6. Go-Live (audit, reset, checklist)
+7. UX E1→E5
+
+### 🔴 Bloquants
+- 15 issues ouvertes dont 6 critiques sécurité (#71-#76)
+- 1 bloquant finance (#48)
+
+---
+
+## 📦 Dernière action réalisée
+
+**Phase 2 Parcel-Centric — Double Écriture** (07/04 12:40)
+
+Fichiers créés/modifiés :
+- `db/migrations/011_parcels_dual_write.sql` — index optimisés
+- `utils/parcelSync.js` — `syncScanToParcels()` + `safeSyncScanToParcels()`
+- `routes/scans.js` v8.4 — 4 points d'intégration
+- `docs/GOVERNANCE.md` v2.2 — règle commit immédiat des analyses
+
+Logs détaillés : `docs/_logs/2026-04-07_phase2_parcels.md`
+
+---
+
+## 🛠️ Configuration agent
+
+- **GitHub** : connecté (14 outils activés)
+- **Trigger** : governance auto-commit toutes les 10 min (Europe/Paris)
+- **Sous-agent** : governance-autocommit (lit REPRISE_SESSION en premier)
+- **Gouvernance** : v2.2 (règle commit analyses ajoutée)
+
+---
+
+## 📚 Documents de référence
+
+| Document | Rôle |
+|----------|------|
+| `docs/GOVERNANCE.md` | Règles absolues |
+| `docs/ROADMAP_KOMERCE.md` | Priorités et tâches |
+| `docs/CARTOGRAPHY_360.md` | Architecture technique |
+| `docs/AGENT_CONFIG.md` | Config agent IA |
+| `docs/_logs/` | Logs de session |
+| `docs/_pending/` | Deltas en attente |
+| `docs/_work/` | Analyses en cours |
