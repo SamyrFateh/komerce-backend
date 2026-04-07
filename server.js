@@ -616,7 +616,7 @@ async function fixProductEncoding() {
 
 async function seedProducts() {
   const products = [
-    { name: 'Samsung Galaxy A35 (128Go)', price_kmf: 99000, price_eur: 200, category: 'telephones', stock: 15, emoji: '📱', badge: 'Populaire', description: 'Écran AMOLED 6.6\"', 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.' },
+    { name: 'Samsung Galaxy A35 (128Go)', price_kmf: 99000, price_eur: 200, category: 'telephones', stock: 15, emoji: '📱', badge: 'Populaire', description: 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.' },
     { name: 'Écouteurs Samsung Galaxy Buds2', price_kmf: 39600, price_eur: 80, category: 'audio', stock: 20, emoji: '🎧', badge: null, description: 'Réduction de bruit active, 5h autonomie + 15h boîtier. Compatible Android & iOS.' },
     { name: 'Pack coques + accessoires (5 pièces)', price_kmf: 14850, price_eur: 30, category: 'accessoires-tel', stock: 30, emoji: '📱', badge: 'Nouveau', description: 'Coque renforcée + verre trempé + chargeur rapide 25W + câble USB-C + support voiture.' },
     { name: 'Chargeur rapide 65W GaN (multi-ports)', price_kmf: 19800, price_eur: 40, category: 'accessoires-tel', stock: 25, emoji: '🔌', badge: null, description: '3 ports (2 USB-C + 1 USB-A), compact. Charge téléphone + tablette + PC simultanément.' },
