@@ -1,1 +1,950 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=/Komerce_Dashboard.html#pipeline"><title>Redirection…</title></head><body><p>Redirection vers <a href="/Komerce_Dashboard.html#pipeline">Pipeline</a>…</p></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOMERCE // PIPELINE LOGISTIQUE</title>
+  <link rel="stylesheet" href="komerce-ui.css">
+  <style>
+    /* ── PIPELINE-SPECIFIC STYLES ── */
+    body { background: var(--bg); }
+
+    /* Login screen */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 52px);
+    }
+    .login-card {
+      width: 100%; max-width: 400px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 1.4rem;
+      letter-spacing: 4px; color: var(--gold); text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      text-align: center; letter-spacing: 2px; margin-bottom: 28px;
+    }
+    .login-err {
+      background: var(--red-bg); border: 1px solid var(--red);
+      color: var(--red); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.875rem; font-weight: 600;
+      margin-bottom: 14px; display: none;
+    }
+
+    /* Operator info in header */
+    .operator-info {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text2);
+    }
+    .operator-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold); color: #000; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+    }
+    .btn-logout {
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 0.82rem; font-family: var(--mono);
+      padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+    }
+    .btn-logout:hover { color: var(--red); background: var(--red-bg); }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .toolbar-group {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toolbar-label {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text3);
+      letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap;
+    }
+    .toolbar select.inp {
+      width: auto; min-width: 130px; padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+    .toolbar .inp-search {
+      width: auto; min-width: 200px; padding: 6px 12px;
+      font-size: 0.82rem;
+    }
+    .toolbar-spacer { flex: 1; }
+    .toolbar-stats {
+      display: flex; gap: 14px; font-family: var(--mono);
+      font-size: 0.82rem; color: var(--text2);
+    }
+    .toolbar-stat-val { font-weight: 700; color: var(--text); }
+    .btn-refresh {
+      background: none; border: 1px solid var(--border2);
+      border-radius: var(--radius-sm); padding: 5px 10px;
+      cursor: pointer; font-size: 0.94rem; color: var(--text2);
+      transition: all 0.15s;
+    }
+    .btn-refresh:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-refresh.spin-active { animation: spinning 0.8s linear infinite; }
+
+    /* ── KANBAN ENHANCEMENTS ── */
+    .pipeline-wrap {
+      padding: 20px 28px;
+      height: calc(100vh - 52px - 56px);
+      overflow: hidden;
+    }
+    .kanban {
+      height: 100%;
+      align-items: stretch;
+    }
+    .kanban-col {
+      min-width: 220px;
+      max-width: 260px;
+      display: flex;
+      flex-direction: column;
+    }
+    .kanban-col-body {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+    .kanban-col-body::-webkit-scrollbar { width: 4px; }
+    .kanban-col-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .kanban-col-hdr {
+      position: sticky; top: 0; background: var(--bg);
+      z-index: 2; padding-bottom: 8px;
+    }
+    .kanban-col-color {
+      height: 3px; border-radius: 2px; margin-bottom: 10px;
+    }
+
+    /* Card details */
+    .kanban-card-items {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text2);
+      margin-top: 4px;
+    }
+    .kanban-card-carrier {
+      font-size: 0.78rem; color: var(--text3); margin-top: 4px;
+    }
+    .kanban-card-relay {
+      font-size: 0.78rem; color: var(--text3);
+    }
+    .kanban-card-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border);
+    }
+    .kanban-card-eta {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text3);
+    }
+
+    /* Column-specific top border colors */
+    .col-draft       .kanban-col-color { background: var(--text3); }
+    .col-preparation .kanban-col-color { background: var(--purple); }
+    .col-shipped     .kanban-col-color { background: var(--teal); }
+    .col-in_transit  .kanban-col-color { background: var(--blue); }
+    .col-arrived     .kanban-col-color { background: var(--gold); }
+    .col-available   .kanban-col-color { background: var(--green); }
+    .col-collected   .kanban-col-color { background: #16a34a; }
+    .col-cancelled   .kanban-col-color { background: var(--red); }
+
+    /* ── DETAIL MODAL ── */
+    .detail-overlay {
+      position: fixed; inset: 0;
+      background: rgba(4,8,16,0.88);
+      z-index: 500; display: none;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .detail-overlay.open { display: flex; animation: fadeIn 0.25s ease; }
+
+    .detail-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      width: 580px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: panelUp 0.3s ease;
+    }
+    .detail-hdr {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .detail-hdr-left { flex: 1; }
+    .detail-ref {
+      font-family: var(--mono); font-size: 1.2rem; font-weight: 700;
+      color: var(--text); letter-spacing: 1px;
+    }
+    .detail-order {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text3);
+      margin-top: 4px;
+    }
+    .detail-close {
+      background: none; border: none; font-size: 1.2rem;
+      color: var(--text3); cursor: pointer; padding: 4px 8px;
+      border-radius: 4px; transition: all 0.15s;
+    }
+    .detail-close:hover { color: var(--red); background: var(--red-bg); }
+    .detail-body { padding: 24px; }
+    .detail-section {
+      margin-bottom: 20px;
+    }
+    .detail-section-title {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text3);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .detail-field-label {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;
+    }
+    .detail-field-value {
+      font-size: 0.94rem; font-weight: 600; color: var(--text);
+    }
+    .detail-items-list { margin-top: 8px; }
+    .detail-item-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid rgba(26,40,64,0.06);
+      font-size: 0.875rem;
+    }
+    .detail-item-row:last-child { border-bottom: none; }
+
+    /* ── EMPTY / LOADING ── */
+    .empty-col {
+      text-align: center; padding: 20px 12px; color: var(--text3);
+      font-size: 0.82rem; font-family: var(--mono);
+    }
+    .loading-overlay {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; color: var(--text3); font-family: var(--mono);
+      font-size: 0.94rem; gap: 8px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .kanban-col { min-width: 200px; max-width: 240px; }
+    }
+    @media (max-width: 750px) {
+      .toolbar { padding: 10px 16px; }
+      .pipeline-wrap { padding: 12px 16px; height: auto; }
+      .kanban { flex-direction: column; overflow-x: visible; min-height: auto; }
+      .kanban-col { max-width: 100%; min-width: 100%; margin-bottom: 16px; }
+      .kanban-col-body { max-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="hdr">
+    <div class="logo">KOMERCE <em>// PIPELINE</em></div>
+    <div class="hdr-right">
+      <div id="connPill" class="conn-pill">
+        <span class="conn-dot"></span>
+        <span id="connLabel">Déconnecté</span>
+      </div>
+      <div id="operatorInfo" class="operator-info" style="display:none;">
+        <div id="operatorAvatar" class="operator-avatar">—</div>
+        <span id="operatorName">Utilisateur</span>
+        <button id="btnLogout" class="btn-logout" title="Déconnexion">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="loginScreen" class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">KOMERCE</div>
+      <div class="login-sub">PIPELINE — CONNEXION</div>
+
+      <div id="loginError" class="login-err"></div>
+
+      <div class="form-group">
+        <div class="inp-label">URL API</div>
+        <input id="inpApiUrl" class="inp" type="url" placeholder="https://api.komerce.app" autocomplete="url">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Email</div>
+        <input id="inpEmail" class="inp" type="email" placeholder="logistique@komerce.app" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <div class="inp-label">Mot de passe</div>
+        <input id="inpPassword" class="inp" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button id="btnLogin" class="btn btn-gold btn-full btn-lg" style="margin-top:8px;">
+        Connexion
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ WORKSPACE ═══ -->
+  <div id="workspace" style="display:none;">
+
+    <!-- ── TOOLBAR ── -->
+    <div class="toolbar" id="toolbar">
+      <div class="toolbar-group">
+        <span class="toolbar-label">Type</span>
+        <select id="filterType" class="inp" onchange="Pipeline.applyFilters()">
+          <option value="">Tous</option>
+          <option value="standard">Standard</option>
+          <option value="partial">Partiel</option>
+          <option value="backorder">Backorder</option>
+          <option value="awaiting_stock">Att. stock</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <span class="toolbar-label">Transporteur</span>
+        <select id="filterCarrier" class="inp" onchange="Pipeline.applyFilters()">
+          <option value="">Tous</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <span class="toolbar-label">Relais</span>
+        <select id="filterRelay" class="inp" onchange="Pipeline.applyFilters()">
+          <option value="">Tous</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <span class="toolbar-label">Shipment</span>
+        <select id="filterShipment" class="inp" onchange="Pipeline.applyFilters()">
+          <option value="">Tous</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <input id="filterSearch" class="inp inp-search" type="text" placeholder="🔍 Rechercher réf. colis…" oninput="Pipeline.applyFilters()">
+      </div>
+
+      <div class="toolbar-spacer"></div>
+
+      <div class="toolbar-stats">
+        <span>Total : <span class="toolbar-stat-val" id="statTotal">—</span></span>
+        <span>En mouvement : <span class="toolbar-stat-val" id="statMoving" style="color:var(--blue);">—</span></span>
+      </div>
+      <button class="btn-refresh" id="btnRefresh" onclick="Pipeline.refresh()" title="Rafraîchir">⟳</button>
+    </div>
+
+    <!-- ── KANBAN BOARD ── -->
+    <div class="pipeline-wrap">
+      <div class="kanban" id="kanbanBoard">
+        <!-- Columns injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DETAIL MODAL ═══ -->
+  <div class="detail-overlay" id="detailOverlay" onclick="Pipeline.closeDetail(event)">
+    <div class="detail-panel" id="detailPanel" onclick="event.stopPropagation()">
+      <div class="detail-hdr">
+        <div class="detail-hdr-left">
+          <div class="detail-ref" id="detailRef">—</div>
+          <div class="detail-order" id="detailOrder"></div>
+        </div>
+        <button class="detail-close" onclick="Pipeline.closeDetail()">&times;</button>
+      </div>
+      <div class="detail-body" id="detailBody">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="k-toast" class="toast"></div>
+
+  <!-- ═══ API ═══ -->
+  <script src="komerce-api.js"></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── CONSTANTS ───────────────────────────────────────────
+    // Pipeline statuses — ⛔ VERROU 2 : 100% parcels.status, zéro logique commande
+    const COLUMNS = [
+      { key: 'draft',       label: 'Brouillon',   icon: '📝' },
+      { key: 'preparation', label: 'Préparation',  icon: '📦' },
+      { key: 'shipped',     label: 'Expédié',      icon: '🚢' },
+      { key: 'in_transit',  label: 'En transit',   icon: '✈️' },
+      { key: 'arrived',     label: 'Arrivé',       icon: '📍' },
+      { key: 'available',   label: 'Disponible',   icon: '✅' },
+      { key: 'collected',   label: 'Remis',        icon: '🤝' },
+      { key: 'cancelled',   label: 'Annulé',       icon: '❌' },
+    ];
+
+    // SLA thresholds (days) per status
+    const SLA = {
+      draft: 2,
+      preparation: 3,
+      shipped: 5,
+      in_transit: 14,
+      arrived: 2,
+      available: 7,
+    };
+
+    // ── STATE ──────────────────────────────────────────────
+    const state = {
+      parcels: [],          // All parcels from API
+      filtered: [],         // After filter application
+      carriers: new Set(),
+      relays: new Set(),
+      shipments: new Set(),
+      refreshInterval: null,
+      user: null,
+    };
+
+    // ── DOM REFS ──────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+      loginScreen:   $('loginScreen'),
+      workspace:     $('workspace'),
+      loginError:    $('loginError'),
+      inpApiUrl:     $('inpApiUrl'),
+      inpEmail:      $('inpEmail'),
+      inpPassword:   $('inpPassword'),
+      btnLogin:      $('btnLogin'),
+      btnLogout:     $('btnLogout'),
+      connPill:      $('connPill'),
+      connLabel:     $('connLabel'),
+      operatorInfo:  $('operatorInfo'),
+      operatorAvatar:$('operatorAvatar'),
+      operatorName:  $('operatorName'),
+      kanbanBoard:   $('kanbanBoard'),
+      filterType:    $('filterType'),
+      filterCarrier: $('filterCarrier'),
+      filterRelay:   $('filterRelay'),
+      filterShipment:$('filterShipment'),
+      filterSearch:  $('filterSearch'),
+      statTotal:     $('statTotal'),
+      statMoving:    $('statMoving'),
+      btnRefresh:    $('btnRefresh'),
+      detailOverlay: $('detailOverlay'),
+      detailPanel:   $('detailPanel'),
+      detailRef:     $('detailRef'),
+      detailOrder:   $('detailOrder'),
+      detailBody:    $('detailBody'),
+    };
+
+    // ── INIT ──────────────────────────────────────────────
+    function init() {
+      const storedUrl = localStorage.getItem('komerce_api_url') || '';
+      if (storedUrl) dom.inpApiUrl.value = storedUrl;
+
+      dom.btnLogin.addEventListener('click', handleLogin);
+      dom.btnLogout.addEventListener('click', handleLogout);
+      dom.inpPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+      // Build kanban skeleton
+      buildKanbanSkeleton();
+
+      // ESC to close modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDetail();
+      });
+
+      if (K.auth.isConnected()) {
+        autoConnect();
+      }
+    }
+
+    // ── AUTH ───────────────────────────────────────────────
+    async function handleLogin() {
+      const url = dom.inpApiUrl.value.trim();
+      const email = dom.inpEmail.value.trim();
+      const pass = dom.inpPassword.value;
+
+      if (!url || !email || !pass) {
+        showLoginError('Veuillez remplir tous les champs');
+        return;
+      }
+
+      dom.btnLogin.disabled = true;
+      dom.btnLogin.innerHTML = '<span class="spin">⟳</span> Connexion...';
+      hideLoginError();
+
+      try {
+        const result = await K.auth.login(email, pass, url);
+        state.user = result.user;
+        enterWorkspace();
+      } catch (err) {
+        showLoginError(err.message || 'Échec de la connexion');
+      } finally {
+        dom.btnLogin.disabled = false;
+        dom.btnLogin.textContent = 'Connexion';
+      }
+    }
+
+    async function autoConnect() {
+      try {
+        await K.request('/api/health');
+        state.user = K.auth.getUser();
+        enterWorkspace();
+      } catch (err) {
+        K.auth.logout();
+        K.ui.toast('Session expirée — reconnectez-vous', 'warn');
+      }
+    }
+
+    function handleLogout() {
+      K.auth.logout();
+      clearInterval(state.refreshInterval);
+      state.parcels = [];
+      state.filtered = [];
+
+      dom.workspace.style.display = 'none';
+      dom.loginScreen.style.display = 'flex';
+      dom.operatorInfo.style.display = 'none';
+      dom.connPill.classList.remove('ok');
+      dom.connLabel.textContent = 'Déconnecté';
+
+      K.ui.toast('Déconnecté', 'warn');
+    }
+
+    function enterWorkspace() {
+      dom.loginScreen.style.display = 'none';
+      dom.workspace.style.display = 'block';
+
+      dom.connPill.classList.add('ok');
+      dom.connLabel.textContent = 'Connecté';
+      dom.connPill.querySelector('.conn-dot').classList.add('pulse');
+
+      const user = state.user;
+      if (user) {
+        const initials = (user.name || user.email || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        dom.operatorAvatar.textContent = initials;
+        dom.operatorName.textContent = user.name || user.email || 'Utilisateur';
+      } else {
+        dom.operatorAvatar.textContent = 'US';
+        dom.operatorName.textContent = 'Utilisateur';
+      }
+      dom.operatorInfo.style.display = 'flex';
+
+      loadParcels();
+
+      // Auto-refresh every 45s
+      state.refreshInterval = setInterval(loadParcels, 45000);
+    }
+
+    // ── DATA ──────────────────────────────────────────────
+    async function loadParcels() {
+      try {
+        dom.btnRefresh.classList.add('spin-active');
+
+        const res = await K.parcels.list();
+        const parcels = res.data || res || [];
+        state.parcels = Array.isArray(parcels) ? parcels : [];
+
+        // Extract unique filter options
+        state.carriers.clear();
+        state.relays.clear();
+        state.shipments.clear();
+
+        state.parcels.forEach(p => {
+          const carrier = p.carrier || p.carrier_name || '';
+          const relay = p.relay || p.relay_name || p.destination_relay || '';
+          const shipment = p.shipment_reference || p.shipment_ref || p.shipment || '';
+          if (carrier) state.carriers.add(carrier);
+          if (relay) state.relays.add(relay);
+          if (shipment) state.shipments.add(shipment);
+        });
+
+        populateFilterOptions();
+        applyFilters();
+
+      } catch (err) {
+        K.ui.toast('Erreur chargement : ' + (err.message || 'Inconnu'), 'err');
+      } finally {
+        dom.btnRefresh.classList.remove('spin-active');
+      }
+    }
+
+    function populateFilterOptions() {
+      fillSelect(dom.filterCarrier, state.carriers, 'Tous');
+      fillSelect(dom.filterRelay, state.relays, 'Tous');
+      fillSelect(dom.filterShipment, state.shipments, 'Tous');
+    }
+
+    function fillSelect(el, values, allLabel) {
+      const current = el.value;
+      const opts = [`<option value="">${allLabel}</option>`];
+      [...values].sort().forEach(v => {
+        opts.push(`<option value="${escHtml(v)}"${v === current ? ' selected' : ''}>${escHtml(v)}</option>`);
+      });
+      el.innerHTML = opts.join('');
+    }
+
+    // ── FILTERS ───────────────────────────────────────────
+    function applyFilters() {
+      const typeF = dom.filterType.value;
+      const carrierF = dom.filterCarrier.value;
+      const relayF = dom.filterRelay.value;
+      const shipmentF = dom.filterShipment.value;
+      const searchF = dom.filterSearch.value.trim().toLowerCase();
+
+      state.filtered = state.parcels.filter(p => {
+        if (typeF && (p.type || p.parcel_type || 'standard') !== typeF) return false;
+        if (carrierF && (p.carrier || p.carrier_name || '') !== carrierF) return false;
+        if (relayF && (p.relay || p.relay_name || p.destination_relay || '') !== relayF) return false;
+        if (shipmentF && (p.shipment_reference || p.shipment_ref || p.shipment || '') !== shipmentF) return false;
+        if (searchF) {
+          const ref = (p.reference || p.ref || '').toLowerCase();
+          const order = (p.order_reference || p.order_ref || '').toLowerCase();
+          if (!ref.includes(searchF) && !order.includes(searchF)) return false;
+        }
+        return true;
+      });
+
+      renderKanban();
+      updateStats();
+    }
+
+    // ── STATS ─────────────────────────────────────────────
+    function updateStats() {
+      dom.statTotal.textContent = state.filtered.length;
+      const movingStatuses = ['shipped', 'in_transit'];
+      const moving = state.filtered.filter(p => movingStatuses.includes(p.status)).length;
+      dom.statMoving.textContent = moving;
+    }
+
+    // ── KANBAN ────────────────────────────────────────────
+    function buildKanbanSkeleton() {
+      let html = '';
+      COLUMNS.forEach(col => {
+        html += `
+          <div class="kanban-col col-${col.key}" id="col-${col.key}">
+            <div class="kanban-col-color"></div>
+            <div class="kanban-col-hdr">
+              <span>${col.icon} ${col.label}</span>
+              <span class="kanban-col-count" id="count-${col.key}">0</span>
+            </div>
+            <div class="kanban-col-body" id="body-${col.key}">
+              <div class="empty-col">Aucun colis</div>
+            </div>
+          </div>`;
+      });
+      dom.kanbanBoard.innerHTML = html;
+    }
+
+    function renderKanban() {
+      // Group parcels by status
+      const groups = {};
+      COLUMNS.forEach(col => { groups[col.key] = []; });
+
+      state.filtered.forEach(p => {
+        const status = p.status || 'draft';
+        if (groups[status]) {
+          groups[status].push(p);
+        } else {
+          groups.draft.push(p); // fallback
+        }
+      });
+
+      // Sort each group: oldest first (by created_at)
+      Object.keys(groups).forEach(key => {
+        groups[key].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      });
+
+      // Render each column
+      COLUMNS.forEach(col => {
+        const countEl = $(`count-${col.key}`);
+        const bodyEl = $(`body-${col.key}`);
+        const parcels = groups[col.key];
+
+        countEl.textContent = parcels.length;
+
+        if (parcels.length === 0) {
+          bodyEl.innerHTML = '<div class="empty-col">Aucun colis</div>';
+          return;
+        }
+
+        let html = '';
+        parcels.forEach(p => {
+          html += renderCard(p, col.key);
+        });
+        bodyEl.innerHTML = html;
+      });
+    }
+
+    function renderCard(p, colKey) {
+      const ref = p.reference || p.ref || p.id || '—';
+      const type = p.type || p.parcel_type || 'standard';
+      const orderRef = p.order_reference || p.order_ref || '';
+      const itemsCount = p.items_count ?? p.item_count ?? (p.items ? p.items.length : '?');
+      const carrier = p.carrier || p.carrier_name || '';
+      const shipment = p.shipment_reference || p.shipment_ref || p.shipment || '';
+      const relay = p.relay || p.relay_name || p.destination_relay || '';
+      const eta = p.eta || p.estimated_arrival || '';
+
+      // Age calculation
+      const age = getAge(p.created_at);
+      const ageDays = getAgeDays(p.created_at);
+      const slaThreshold = SLA[colKey] || 999;
+      let ageClass = '';
+      if (ageDays > slaThreshold * 2) ageClass = 'danger';
+      else if (ageDays > slaThreshold) ageClass = 'warn';
+
+      // Type badge
+      const typeBadge = getTypeBadge(type);
+
+      // Parcel ID for detail click
+      const pid = p.id || p.reference || p.ref || '';
+
+      return `
+        <div class="kanban-card" onclick="Pipeline.openDetail('${escAttr(String(pid))}')">
+          <div class="kanban-card-ref">${escHtml(ref)}</div>
+          <div class="kanban-card-type">${typeBadge}</div>
+          ${orderRef ? `<div class="kanban-card-order">${escHtml(orderRef)}</div>` : ''}
+          <div class="kanban-card-items">📋 ${itemsCount} article${itemsCount !== 1 ? 's' : ''}</div>
+          ${carrier ? `<div class="kanban-card-carrier">🚚 ${escHtml(carrier)}</div>` : ''}
+          ${relay ? `<div class="kanban-card-relay">📍 ${escHtml(relay)}</div>` : ''}
+          ${shipment ? `<div class="kanban-card-carrier" style="color:var(--teal);">📦 ${escHtml(shipment)}</div>` : ''}
+          <div class="kanban-card-bottom">
+            ${ageClass ? `<span class="kanban-card-age ${ageClass}">${age}</span>` : `<span class="kanban-card-age">${age}</span>`}
+            ${eta ? `<span class="kanban-card-eta">ETA ${formatEta(eta)}</span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // ── DETAIL MODAL ─────────────────────────────────────
+    async function openDetail(parcelId) {
+      dom.detailOverlay.classList.add('open');
+      dom.detailRef.textContent = 'Chargement…';
+      dom.detailOrder.textContent = '';
+      dom.detailBody.innerHTML = '<div class="loading-overlay"><span class="spin">⟳</span> Chargement…</div>';
+
+      try {
+        const res = await K.parcels.get(parcelId);
+        const p = res.data || res;
+
+        const ref = p.reference || p.ref || p.id || '—';
+        const orderRef = p.order_reference || p.order_ref || '';
+        const type = p.type || p.parcel_type || 'standard';
+        const status = p.status || 'draft';
+        const carrier = p.carrier || p.carrier_name || '';
+        const shipment = p.shipment_reference || p.shipment_ref || p.shipment || '';
+        const relay = p.relay || p.relay_name || p.destination_relay || '';
+        const eta = p.eta || p.estimated_arrival || '';
+        const createdAt = p.created_at || '';
+        const updatedAt = p.updated_at || '';
+        const notes = p.notes || '';
+        const items = p.items || [];
+
+        dom.detailRef.textContent = ref;
+        dom.detailOrder.textContent = orderRef ? `Commande : ${orderRef}` : '';
+
+        let html = '';
+
+        // ── Info section
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">Informations colis</div>
+            <div class="detail-grid">
+              <div>
+                <div class="detail-field-label">Statut</div>
+                <div class="detail-field-value">${K.ui.badge(status)}</div>
+              </div>
+              <div>
+                <div class="detail-field-label">Type</div>
+                <div class="detail-field-value">${getTypeBadge(type)}</div>
+              </div>
+              <div>
+                <div class="detail-field-label">Créé le</div>
+                <div class="detail-field-value">${K.ui.fmtDate(createdAt)}</div>
+              </div>
+              <div>
+                <div class="detail-field-label">Mis à jour</div>
+                <div class="detail-field-value">${K.ui.fmtDate(updatedAt)}</div>
+              </div>
+              <div>
+                <div class="detail-field-label">Âge</div>
+                <div class="detail-field-value">${getAge(createdAt)}</div>
+              </div>
+              ${eta ? `<div>
+                <div class="detail-field-label">ETA</div>
+                <div class="detail-field-value">${formatEta(eta)}</div>
+              </div>` : ''}
+            </div>
+          </div>`;
+
+        // ── Logistics section
+        if (carrier || shipment || relay) {
+          html += `
+            <div class="detail-section">
+              <div class="detail-section-title">Logistique</div>
+              <div class="detail-grid">
+                ${carrier ? `<div>
+                  <div class="detail-field-label">Transporteur</div>
+                  <div class="detail-field-value">${escHtml(carrier)}</div>
+                </div>` : ''}
+                ${shipment ? `<div>
+                  <div class="detail-field-label">Shipment</div>
+                  <div class="detail-field-value" style="font-family:var(--mono);">${escHtml(shipment)}</div>
+                </div>` : ''}
+                ${relay ? `<div>
+                  <div class="detail-field-label">Relais destination</div>
+                  <div class="detail-field-value">${escHtml(relay)}</div>
+                </div>` : ''}
+              </div>
+            </div>`;
+        }
+
+        // ── Items section
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">Articles (${items.length})</div>
+            <div class="detail-items-list">`;
+
+        if (items.length === 0) {
+          html += '<div style="color:var(--text3);font-size:0.875rem;padding:8px 0;">Aucun article enregistré</div>';
+        } else {
+          items.forEach(item => {
+            const name = item.name || item.label || item.product_name || item.barcode || '—';
+            const qty = item.quantity || item.qty || 1;
+            html += `
+              <div class="detail-item-row">
+                <span style="color:var(--green);font-weight:700;">✓</span>
+                <span style="flex:1;font-weight:600;">${escHtml(name)}</span>
+                <span class="mono" style="color:var(--text3);">×${qty}</span>
+              </div>`;
+          });
+        }
+
+        html += '</div></div>';
+
+        // ── Notes
+        if (notes) {
+          html += `
+            <div class="detail-section">
+              <div class="detail-section-title">Notes</div>
+              <div style="font-size:0.875rem;color:var(--text2);white-space:pre-wrap;">${escHtml(notes)}</div>
+            </div>`;
+        }
+
+        // ── Timeline (if available)
+        const history = p.history || p.status_history || p.timeline || [];
+        if (history.length > 0) {
+          html += `
+            <div class="detail-section">
+              <div class="detail-section-title">Historique</div>
+              <div class="tl">`;
+
+          history.forEach((h, i) => {
+            const hStatus = h.status || h.event || '—';
+            const hDate = h.date || h.created_at || h.timestamp || '';
+            const hNote = h.note || h.notes || h.description || '';
+            const dotClass = i === 0 ? 'active' : 'ok';
+            html += `
+              <div class="tl-item">
+                <div class="tl-dot ${dotClass}">${i + 1}</div>
+                <div>
+                  <div class="tl-status">${K.ui.badge(hStatus)}</div>
+                  ${hNote ? `<div class="tl-note">${escHtml(hNote)}</div>` : ''}
+                  <div class="tl-date">${K.ui.fmtDate(hDate)}</div>
+                </div>
+              </div>`;
+          });
+
+          html += '</div></div>';
+        }
+
+        dom.detailBody.innerHTML = html;
+
+      } catch (err) {
+        dom.detailBody.innerHTML = `
+          <div style="text-align:center;padding:32px;color:var(--red);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">⚠️</div>
+            Erreur : ${escHtml(err.message || 'Impossible de charger les détails')}
+          </div>`;
+      }
+    }
+
+    function closeDetail(event) {
+      if (event && event.target !== dom.detailOverlay) return;
+      dom.detailOverlay.classList.remove('open');
+    }
+
+    // ── HELPERS ───────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function escAttr(str) {
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function getAge(dateStr) {
+      if (!dateStr) return '—';
+      const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+      if (days === 0) return "Aujourd'hui";
+      if (days === 1) return '1j';
+      return days + 'j';
+    }
+
+    function getAgeDays(dateStr) {
+      if (!dateStr) return 0;
+      return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    }
+
+    function getTypeBadge(type) {
+      const map = {
+        standard:       { badge: 'b-gray',   label: 'Standard' },
+        partial:        { badge: 'b-gold',   label: 'Partiel' },
+        backorder:      { badge: 'b-purple', label: 'Backorder' },
+        awaiting_stock: { badge: 'b-orange', label: 'Att. stock' },
+      };
+      const m = map[type] || { badge: 'b-gray', label: type || 'Standard' };
+      return `<span class="badge ${m.badge}">${m.label}</span>`;
+    }
+
+    function formatEta(eta) {
+      if (!eta) return '—';
+      try {
+        return new Date(eta).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      } catch {
+        return eta;
+      }
+    }
+
+    function showLoginError(msg) {
+      dom.loginError.textContent = msg;
+      dom.loginError.style.display = 'block';
+    }
+
+    function hideLoginError() {
+      dom.loginError.style.display = 'none';
+    }
+
+    // ── PUBLIC API ────────────────────────────────────────
+    window.Pipeline = {
+      applyFilters,
+      refresh: loadParcels,
+      openDetail,
+      closeDetail() { dom.detailOverlay.classList.remove('open'); },
+    };
+
+    // ── BOOT ──────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+
+</body>
+</html>
