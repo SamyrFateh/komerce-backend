@@ -1,10 +1,10 @@
 # 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
 
-> **Version** : 15.14 — 07/04/2026 (v15.13 + auto-sync: Phase 5.2 + audit phantoms cleanup + migrations 010-013)
+> **Version** : 15.15 — 07/04/2026 (v15.14 + Plan Logistique V2.0: 3 vagues, règles R1/R2, violations identifiées)
 > **Statut** : Source de vérité architecture — MIROIR EXACT du repo
 > **Repo** : `SamyrFateh/komerce-backend`
 > **Dernière vérification** : 07/04/2026 13:46 UTC — governance auto-sync (3 deltas applied)
-> 📊 **19 fichiers route** · **~130 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
+> 📊 **19 fichiers route** (+2 planifiés) · **~130 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
 
 ---
 
@@ -52,7 +52,7 @@
 | **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
 | **Dashboard App** | 20 fichiers (React/TSX) |
 | **Scripts** | 4 |
-| **Docs** | 14 + 11 audit + _pending/ |
+| **Docs** | 15 + 11 audit + _pending/ |
 | **CI/CD Workflows** | 3 |
 | **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
 
@@ -193,6 +193,7 @@ komerce-backend/
 │   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
 │   ├── GOVERNANCE_BOOTSTRAP.md            (3.0 KB)  [6f68fb3b]
 │   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
+│   ├── PLAN_LOGISTIQUE_V2.md             (~20 KB)  [NEW — Plan 3 vagues parcel-centric]
 │   ├── README.md                         (8.6 KB)  [914fef23]
 │   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
 │   ├── ROADMAP_KOMERCE.md                (22.8 KB) [81d66b08]
@@ -312,6 +313,10 @@ komerce-backend/
 ---
 
 ## 4. 🗂️ Carte des routes (endpoints)
+
+### ⬜ Planned — `routes/parcels.js` (Vague 1) + `routes/hub.js` (Vague 2)
+
+> Voir `docs/PLAN_LOGISTIQUE_V2.md` pour le détail des 7 endpoints parcels et 6 endpoints hub.
 
 ### 📁 auth.js — `/api/auth` (5 endpoints)
 
@@ -456,6 +461,7 @@ komerce-backend/
 | 7 | `GET` | `/api/logistics/manifest/:shipment_id` | ✅ | admin | Manifeste PDF expédition (tableau commandes) |
 
 > **Automatisation** : Quand `arrived_at + customs_cleared_at` sont renseignés, les commandes passent automatiquement en `available` et un SMS batch est envoyé.
+> ⚠️ **VIOLATION R1** : `PATCH /:id` fait `UPDATE orders SET status` directement — à corriger Vague 1 (1.3). SMS batch couplé au conteneur, pas au colis.
 
 ### 📁 scans.js — `/api/scans` (6 endpoints)
 
@@ -469,6 +475,7 @@ komerce-backend/
 | 6 | `GET` | `/api/scans/:order_id` | ✅ | — | Historique scans d'une commande |
 
 > **Sécurité v8.3** : Le statut `collected` a été retiré du `POST /api/scans` générique → uniquement via `/collect` ou `/verify-qr`.
+> ⚠️ **VIOLATION R2** : `POST /hub/receive` ne crée pas automatiquement de parcel — à corriger Vague 2 (2.1).
 
 ### 📁 purchasing.js — `/api/purchasing` (10 endpoints)
 
@@ -1146,6 +1153,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 | `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
 | `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
 | `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
+| `GOVERNANCE.md` | ~7.5 KB | [v2.3] | ⚖️ Gouvernance v2.3 — 10 règles + R1/R2 logistique |
 | `GOVERNANCE_BOOTSTRAP.md` | 3.0 KB | 6f68fb3b | 🤖 Bootstrap gouvernance automatique |
 | `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
 | `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
@@ -1388,7 +1396,7 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ---
 
-> 📝 *Cartographie 360° — Version v15.12 — 7 avril 2026*
+> 📝 *Cartographie 360° — Version v15.15 — 7 avril 2026*
 > *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
 > *Source de vérité architecture : consulter avant toute modification de code.*
 > *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*

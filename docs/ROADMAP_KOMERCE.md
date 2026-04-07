@@ -1,6 +1,7 @@
-# ROADMAP KOMERCE v16.1
+# ROADMAP KOMERCE v16.2
 
-> 📅 7 avril 2026 · 18 routes · ~127 endpoints · 31+ tables
+> 📅 7 avril 2026 · 18 routes · ~127 endpoints · 31+ tables  
+> 📌 **Plan logistique 3 vagues** : voir `docs/PLAN_LOGISTIQUE_V2.md`
 
 ---
 
@@ -16,8 +17,8 @@
 | Tests E2E | ✅ Phases 1-3+7 · ⬜ Phases 4-6 |
 | Sécurité audit initial | ✅ ~58 corrigés |
 | Sécurité audit deep | ⬜ 14 issues ouvertes |
-| Catalogue Pièces Auto/Moto | ⬜ Nouveau |
-| Cartographie 360° v12 | ✅ |
+| Catalogue Pièces Auto/Moto | ⬜ Backlog post-Vague 3 |
+| Cartographie 360° v15 | ✅ |
 | Coffre-fort (Vault) | ✅ 6/6 |
 | Refonte Parcel-Centric | 🔄 3/5 phases |
 
@@ -26,6 +27,30 @@
 ## P1 ✅ Dashboard Pilotage Unifié — TERMINÉ
 
 Cockpit unique React TSX + DaisyUI + Recharts. 5 vues (Ops, Finance, Pilotage, Tendances, Retards) connectées aux 8 endpoints dashboard unifié v11. **11/11 tâches ✅**.
+
+---
+
+## 🌊 Plan Logistique — 3 Vagues
+
+> **Règles absolues** :  
+> **R1** — Aucun flow ne dépend de la complétude d'une commande. `orders.status` = agrégation de `parcels.status` via `parcelSync.js`, jamais écrit directement.  
+> **R2** — L'opérateur terrain : scanner → carton → sceller. Hub Interface = 3 actions, pas de décisions.  
+> Voir `docs/PLAN_LOGISTIQUE_V2.md` pour le plan complet.
+
+| Vague | Contenu | Durée | Statut |
+|:-----:|---------|:-----:|:------:|
+| **1** | Socle Parcel-Centric (API CRUD parcels, fix logistics.js, migration 014) + Sécurité #71-#76 | ~22h | 🟠 À démarrer |
+| **2** | Hub Terrain Simplifié (routes/hub.js, auto-split, interface opérateur) | ~20h | ⬜ |
+| **3** | Optimisation avancée (douane, poids/volume, multi-transporteurs, dashboard coûts) | ~54h | ⬜ |
+
+### Violations actives à corriger — Vague 1
+
+| ID | Fichier | Violation | Règle |
+|----|---------|-----------|-------|
+| V-01 | `logistics.js` | `UPDATE orders SET status` direct → bypass parcelSync | R1 |
+| V-02 | `logistics.js` | SMS batch conteneur (1 SMS/commande au lieu de 1 SMS/colis) | R1 |
+| V-03 | `scans.js` hub/receive | Pas de création automatique de parcel à la réception | R2 |
+| V-04 | `orders.js` mark-availability | Interface trop granulaire pour l'opérateur | R2 |
 
 ---
 
@@ -38,12 +63,14 @@ Cockpit unique React TSX + DaisyUI + Recharts. 5 vues (Ops, Finance, Pilotage, T
 | 1 | Fondations (tables `parcels`/`parcel_events`, utils, migration `010_parcels.sql`) | ✅ |
 | 2 | Double écriture (`parcelSync.js` + `scans.js` v8.4, 4 points d'intégration) | ✅ |
 | 3 | Migration trigger — désactiver `trg_scan_sync_status`, `computed_status` → `status` | ✅ |
-| 4 | Nettoyage colonnes legacy | 🟡 |
-| 5 | API CRUD parcels | ⬜ |
+| 4 | Nettoyage colonnes legacy (migration 014) → **Vague 1 tâche 1.4** | 🟡 |
+| 5 | API CRUD parcels (`routes/parcels.js`) → **Vague 1 tâche 1.2** | ⬜ |
 
 ---
 
 ## P2 ⬜ Catalogue Pièces Auto/Moto & Marque Exclusive SAV Dubai
+
+> **Backlog post-Vague 3** (~13h)
 
 Nouvelle verticale : catalogue structuré véhicule→marque→modèle→pièce + marque exclusive Komerce + SAV Dubai.
 
@@ -73,16 +100,16 @@ Nouvelle verticale : catalogue structuré véhicule→marque→modèle→pièce 
 
 ## P3 ⬜ Sécurité — 14 issues ouvertes
 
-### 🔴 6 CRITIQUES
+### 🔴 6 CRITIQUES — intégrées en **Vague 1 tâche 1.5**
 
 | Issue | Vulnérabilité | Fichier(s) | Fix |
 |:-----:|---------------|------------|-----|
-| #71 | Injection SQL | orders/admin/dashboard/products/logistics.js | Requêtes paramétrées `$1,$2` |
-| #72 | Secrets en dur | server.js (JWT fallback) | Crash si manquant |
-| #73 | Validation absente | payments/orders/admin.js | Middleware `validate(Joi)` |
-| #74 | Mots de passe faibles | auth.js | bcrypt 12+, min 8 chars |
-| #75 | Données sensibles exposées | auth/admin.js | `sanitizeUser()`, pas de `SELECT *` |
-| #76 | Webhook Stripe non vérifié | payments.js | `stripe.webhooks.constructEvent()` |
+| #71 | Injection SQL | admin.js/dashboard.js/products.js/logistics.js | `buildWhereClause()` sécurisé |
+| #72 | JWT secret faible | `auth.js:26` | Crash au démarrage si JWT_SECRET absent |
+| #73 | Admin password reset | `admin.js` | Exiger `current_password` ou token 2FA |
+| #74 | CORS trop permissif | `server.js:66` | Whitelist explicite via `business_rules.ALLOWED_ORIGINS` |
+| #75 | Rate limiting admin | `server.js` | `adminLimiter` (20 req/min) sur `/api/admin/*` |
+| #76 | POST /admin/reset en prod | `admin.js` | Gate `NODE_ENV !== 'production'` → 403 immédiat |
 
 ### 🟠 8 MAJEURES
 
@@ -143,7 +170,7 @@ Nouvelle verticale : catalogue structuré véhicule→marque→modèle→pièce 
 | 2 | Migration 47 constantes → `getRule()` | ✅ |
 | 3 | Annulation + Remboursement (Stripe/crédit) — PR #105 | ✅ |
 | 4 | Expédition partielle Hub Dubai (sous-commandes) | ✅ |
-| 5 | Dashboard Configuration ⚙️ (5.1 Config ✅, 5.2 Indicateurs annulations/parcels 🔄 PR #115) | 🔄 |
+| 5 | Dashboard Configuration ⚙️ (5.1 Config ✅, 5.2 Indicateurs annulations/parcels ✅ PR #115) | ✅ |
 
 **Endpoints ajoutés** : `POST /cancel` · `GET /credits` · `POST /mark-availability` · `POST /partial-ship` · `GET /sub-orders` · `PATCH /sub-orders/:subId/status` · `POST /cancel-backorder`
 
@@ -165,7 +192,7 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 
 #71-#76 🔴 CRITIQUES (sécurité) · #77-#84 🟠 MAJEURES · #48 💰 BLOQUANT (coûts réels)
 
-**PRs ouvertes** : 1 (PR #115 Phase 5.2 annulations-parcels)
+**PRs ouvertes** : 1 (PR #116 docs synthèse architecture logistique)
 
 ---
 
@@ -173,13 +200,24 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 
 ```
 ✅ Dashboard Pilotage 11/11
-✅ Gouvernance Phases 1-4
+✅ Gouvernance Phases 1-5
 ✅ Parcel-Centric Phases 1-3 (Fondations + Double écriture + Migration trigger)
-🟡 Parcel-Centric Phase 4 — Nettoyage colonnes legacy
-⬜ Parcel-Centric Phase 5 — API CRUD parcels
-⬜ Catalogue Pièces Auto/Moto (12 tâches)
-🔄 Gouvernance Phase 5 — Dashboard Config (5.1 ✅, 5.2 🔄 PR #115)
-⬜ Fix 6 CRITIQUES #71→#76
+
+🟠 VAGUE 1 (~22h) — À démarrer :
+  ① Clore PR #116 + numérotation migrations
+  ② routes/parcels.js (API CRUD)
+  ③ Fix logistics.js (violation R1)
+  ④ migration 014 (cleanup legacy + index)
+  ⑤ Sécurité #71-#76 (6 critiques)
+  ⑥ Validators parcels
+
+⬜ VAGUE 2 (~20h) :
+  routes/hub.js + auto-split + interface terrain Hub V2
+
+⬜ VAGUE 3 (~54h) :
+  Douane + poids/volume + multi-transporteurs + dashboard coûts + SLA parcel-level
+
+⬜ BACKLOG : Catalogue Auto/Moto (12 tâches ~13h)
 ⬜ Fix 8 MAJEURES #77→#84 + coûts réels #48
 ⬜ Go-Live (audit, reset, checklist)
 ⬜ UX E1→E5
@@ -191,7 +229,7 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 <details><summary>📜 Historique complété</summary>
 
 ### 07/04/2026
-PR #113 Phase 3 Migration trigger ✅ mergée · PR #105 cancel+remboursement ✅ · PR #106 migration 47 constantes ✅ · PR #107 fix railway.toml ✅ · PR #108 fix sms.js ✅ · PR #109 alignement docs 🔄 · Phase 4 expédition partielle ✅
+Plan Logistique V2.0 fusionné ✅ · 10 incohérences levées ✅ · PR #116 ouverte (docs archi logistique) · PR #113 Phase 3 Migration trigger ✅ mergée · PR #105 cancel+remboursement ✅ · PR #106 migration 47 constantes ✅ · PR #107 fix railway.toml ✅ · PR #108 fix sms.js ✅ · PR #109 alignement docs 🔄 · Phase 4 expédition partielle ✅
 
 ### 06/04/2026
 Connexion GitHub ✅ · Audit deep carto ✅ · Carto v12 PR #90 ✅ · Dashboard Unifié v11 PR #91 ✅ · Doc archi PR #92 ✅ · Audit report PR #90 ✅ · Dashboard Pilotage Instant App ✅ · Tendances+Retards PR #97 ✅ · API réelle PR #97 ✅ · Tests 46 checks PR #97 ✅ · Dépréciation 4 dashboards PR #98 ✅ · **P1 TERMINÉE 🎉**
