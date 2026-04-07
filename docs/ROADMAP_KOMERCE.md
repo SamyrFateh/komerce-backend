@@ -1,4 +1,4 @@
-# ROADMAP KOMERCE v16.1
+# ROADMAP KOMERCE v16.2
 
 > 📅 7 avril 2026 · 18 routes · ~127 endpoints · 31+ tables
 
@@ -20,6 +20,7 @@
 | Cartographie 360° v12 | ✅ |
 | Coffre-fort (Vault) | ✅ 6/6 |
 | Refonte Parcel-Centric | 🔄 3/5 phases |
+| **Architecture Logistique Avancée** | ⬜ 0/6 phases |
 
 ---
 
@@ -40,6 +41,39 @@ Cockpit unique React TSX + DaisyUI + Recharts. 5 vues (Ops, Finance, Pilotage, T
 | 3 | Migration trigger — désactiver `trg_scan_sync_status`, `computed_status` → `status` | ✅ |
 | 4 | Nettoyage colonnes legacy | 🟡 |
 | 5 | API CRUD parcels | ⬜ |
+
+---
+
+## 🧠 Architecture Logistique Avancée — 0/6 phases
+
+> Intégration de la vision logistique terrain : hub simplifié, multi-transporteurs,
+> optimisation douanière, résilience à l'incertitude.
+>
+> **Pré-requis** : Phases 4-5 Parcel-Centric terminées + Fix sécurité CRITIQUES.
+> **Référence** : [Analyse complète](./_work/CHALLENGE_SYNTHESE_ARCHITECTURE.md)
+
+| Phase | Contenu | Effort | Statut |
+|:-----:|---------|:------:|:------:|
+| A | **Hub terrain** — `routes/hub.js`, endpoints `scan-item`, `seal-parcel`, `open-parcels`, workflow opérateur simplifié (scanner article → carton → avancer) | 20h | ⬜ |
+| B | **Multi-transporteurs** — ETA par colis, assignment transporteur par parcel, enrichissement endpoints shipments | 10h | ⬜ |
+| C | **Moteur d'optimisation colis** — `utils/parcelOptimizer.js`, bin-packing valeur/poids/volume, colonnes `weight_g`/`volume_cm3` sur products | 19h | ⬜ |
+| D | **Stratégie douanière** — stratégie `optimize_customs` dans registre `STRATEGIES{}`, business_rules `PARCEL_MAX_VALUE_KMF`/`PARCEL_MAX_WEIGHT_KG`, colis homogènes/équilibrés | 10h | ⬜ |
+| E | **Résilience terrain** — SLA par colis, `customs_cleared_at` sur parcels, taxation variable par colis, alertes incertitude | 6h | ⬜ |
+| F | **Frontend hub mobile** — interface opérateur simplifiée (scan → carton → avancer), dashboard colis temps réel | 20h | ⬜ |
+
+### Principes directeurs (issus de la synthèse)
+
+- **Commande = intention commerciale** · **Colis = réalité logistique** · **Scan = action terrain**
+- Le hub ne prépare pas des commandes, il prépare des colis à partir du disponible
+- INTERDICTION de `UPDATE orders.status` direct → toujours via `computeOrderStatus()`
+- Le hub ne doit jamais attendre : prendre ce qui est disponible → remplir → expédier
+- Système résilient à l'incertitude (bateaux, douane, délais)
+
+### ⚠️ Actions de dépréciation (pendant Vague 2)
+
+- [ ] Ajouter guard + log d'alerte sur `PATCH /api/orders/:id/status` (admin-only)
+- [ ] Migrer tous les appels clients vers des actions sur parcels
+- [ ] Supprimer endpoint après confirmation zéro usage
 
 ---
 
@@ -177,11 +211,17 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 ✅ Parcel-Centric Phases 1-3 (Fondations + Double écriture + Migration trigger)
 🟡 Parcel-Centric Phase 4 — Nettoyage colonnes legacy
 ⬜ Parcel-Centric Phase 5 — API CRUD parcels
-⬜ Catalogue Pièces Auto/Moto (12 tâches)
-🔄 Gouvernance Phase 5 — Dashboard Config (5.1 ✅, 5.2 🔄 PR #115)
 ⬜ Fix 6 CRITIQUES #71→#76
 ⬜ Fix 8 MAJEURES #77→#84 + coûts réels #48
+⬜ Architecture Logistique Phase A — Hub terrain simplifié
+⬜ Architecture Logistique Phase B — Multi-transporteurs
+⬜ Architecture Logistique Phase C — Moteur optimisation colis
+⬜ Architecture Logistique Phase D — Stratégie douanière
+⬜ Architecture Logistique Phase E — Résilience terrain
+⬜ Catalogue Pièces Auto/Moto (12 tâches)
+🔄 Gouvernance Phase 5 — Dashboard Config (5.1 ✅, 5.2 🔄 PR #115)
 ⬜ Go-Live (audit, reset, checklist)
+⬜ Architecture Logistique Phase F — Frontend hub mobile
 ⬜ UX E1→E5
 ⬜ Améliorations long terme
 ```
@@ -191,7 +231,7 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 <details><summary>📜 Historique complété</summary>
 
 ### 07/04/2026
-PR #113 Phase 3 Migration trigger ✅ mergée · PR #105 cancel+remboursement ✅ · PR #106 migration 47 constantes ✅ · PR #107 fix railway.toml ✅ · PR #108 fix sms.js ✅ · PR #109 alignement docs 🔄 · Phase 4 expédition partielle ✅
+PR #116 Analyse synthèse architecture logistique + ROADMAP v16.2 · PR #113 Phase 3 Migration trigger ✅ mergée · PR #105 cancel+remboursement ✅ · PR #106 migration 47 constantes ✅ · PR #107 fix railway.toml ✅ · PR #108 fix sms.js ✅ · PR #109 alignement docs 🔄 · Phase 4 expédition partielle ✅
 
 ### 06/04/2026
 Connexion GitHub ✅ · Audit deep carto ✅ · Carto v12 PR #90 ✅ · Dashboard Unifié v11 PR #91 ✅ · Doc archi PR #92 ✅ · Audit report PR #90 ✅ · Dashboard Pilotage Instant App ✅ · Tendances+Retards PR #97 ✅ · API réelle PR #97 ✅ · Tests 46 checks PR #97 ✅ · Dépréciation 4 dashboards PR #98 ✅ · **P1 TERMINÉE 🎉**
