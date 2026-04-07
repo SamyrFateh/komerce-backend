@@ -1,4 +1,4 @@
-# ROADMAP KOMERCE v16.0
+# ROADMAP KOMERCE v16.1
 
 > 📅 7 avril 2026 · 18 routes · ~127 endpoints · 31+ tables
 
@@ -19,7 +19,7 @@
 | Catalogue Pièces Auto/Moto | ⬜ Nouveau |
 | Cartographie 360° v12 | ✅ |
 | Coffre-fort (Vault) | ✅ 6/6 |
-| Refonte Parcel-Centric | 🔄 2/5 phases |
+| Refonte Parcel-Centric | 🔄 3/5 phases |
 
 ---
 
@@ -29,7 +29,7 @@ Cockpit unique React TSX + DaisyUI + Recharts. 5 vues (Ops, Finance, Pilotage, T
 
 ---
 
-## 🔄 Refonte Parcel-Centric — 2/5 phases
+## 🔄 Refonte Parcel-Centric — 3/5 phases
 
 > Migration architecture order-centric → parcel-centric. Double écriture, migration trigger, nettoyage.
 
@@ -37,8 +37,8 @@ Cockpit unique React TSX + DaisyUI + Recharts. 5 vues (Ops, Finance, Pilotage, T
 |:-----:|---------|:------:|
 | 1 | Fondations (tables `parcels`/`parcel_events`, utils, migration `010_parcels.sql`) | ✅ |
 | 2 | Double écriture (`parcelSync.js` + `scans.js` v8.4, 4 points d'intégration) | ✅ |
-| 3 | Migration trigger — désactiver `trg_scan_sync_status`, `computed_status` → `status` | 🟡 |
-| 4 | Nettoyage colonnes legacy | ⬜ |
+| 3 | Migration trigger — désactiver `trg_scan_sync_status`, `computed_status` → `status` | ✅ |
+| 4 | Nettoyage colonnes legacy | 🟡 |
 | 5 | API CRUD parcels | ⬜ |
 
 ---
@@ -174,9 +174,9 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 ```
 ✅ Dashboard Pilotage 11/11
 ✅ Gouvernance Phases 1-4
-✅ Parcel-Centric Phases 1-2 (Fondations + Double écriture)
-🟡 Parcel-Centric Phase 3 — Migration trigger
-⬜ Parcel-Centric Phases 4-5 (Nettoyage + API CRUD)
+✅ Parcel-Centric Phases 1-3 (Fondations + Double écriture + Migration trigger)
+🟡 Parcel-Centric Phase 4 — Nettoyage colonnes legacy
+⬜ Parcel-Centric Phase 5 — API CRUD parcels
 ⬜ Catalogue Pièces Auto/Moto (12 tâches)
 ⬜ Gouvernance Phase 5 — Dashboard Config
 ⬜ Fix 6 CRITIQUES #71→#76
@@ -191,7 +191,7 @@ Avis produits (6h) · Wishlist (2h) · Partage produit (1h) · Mode sombre (2h) 
 <details><summary>📜 Historique complété</summary>
 
 ### 07/04/2026
-PR #105 cancel+remboursement ✅ · PR #106 migration 47 constantes ✅ · PR #107 fix railway.toml ✅ · PR #108 fix sms.js ✅ · PR #109 alignement docs 🔄 · Phase 4 expédition partielle ✅
+PR #113 Phase 3 Migration trigger ✅ mergée · PR #105 cancel+remboursement ✅ · PR #106 migration 47 constantes ✅ · PR #107 fix railway.toml ✅ · PR #108 fix sms.js ✅ · PR #109 alignement docs 🔄 · Phase 4 expédition partielle ✅
 
 ### 06/04/2026
 Connexion GitHub ✅ · Audit deep carto ✅ · Carto v12 PR #90 ✅ · Dashboard Unifié v11 PR #91 ✅ · Doc archi PR #92 ✅ · Audit report PR #90 ✅ · Dashboard Pilotage Instant App ✅ · Tendances+Retards PR #97 ✅ · API réelle PR #97 ✅ · Tests 46 checks PR #97 ✅ · Dépréciation 4 dashboards PR #98 ✅ · **P1 TERMINÉE 🎉**

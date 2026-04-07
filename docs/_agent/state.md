@@ -1,6 +1,6 @@
 # 🧠 État de l'agent Tasklet
 
-> Dernière mise à jour : 2026-04-07 13:36 (Europe/Paris)
+> Dernière mise à jour : 2026-04-07 13:55 (Europe/Paris)
 
 ---
 
@@ -8,11 +8,11 @@
 
 | Clé | Valeur |
 |-----|--------|
-| **Session** | Phase 3 — Migration trigger |
-| **Phase en cours** | Phase 3 — PR #113 ouverte |
-| **Dernière action** | Création PR #113 Phase 3 Parcel-Centric |
-| **Prochaine action** | Review + merge PR #113, puis Phase 4 |
-| **Connexion GitHub** | ✅ Active (12/14 outils) |
+| **Session** | Post-merge Phase 3 |
+| **Phase en cours** | Phase 4 — Nettoyage colonnes legacy |
+| **Dernière action** | Merge PR #113 Phase 3 Migration trigger |
+| **Prochaine action** | Phase 4 — Nettoyage colonnes legacy |
+| **Connexion GitHub** | ✅ Active (14/14 outils) |
 | **Trigger auto-commit** | ✅ Actif (*/10 min, Europe/Paris) |
 
 ---
@@ -20,15 +20,14 @@
 ## 🎯 Tâches en cours
 
 ### Priorité immédiate
-1. **Phase 3 — Migration trigger Parcel-Centric** — PR #113
-   - [x] Désactiver le trigger legacy `trg_scan_sync_status`
-   - [x] `parcelSync.js` v2 → orders.status + timestamps + history
-   - [x] `scans.js` v8.5 → await sync, passage scanned_by/notes
-   - [x] Migration 012 — DISABLE trigger + réconciliation
-   - [ ] Review + merge PR #113
+1. **Phase 4 — Nettoyage colonnes legacy**
+   - [ ] Identifier colonnes legacy à supprimer
+   - [ ] Migration SQL DROP COLUMN
+   - [ ] Nettoyage code JS références legacy
+   - [ ] Tests de non-régression
 
 ### File d'attente
-- Phase 4-5 : Nettoyage + API CRUD parcels
+- Phase 5 : API CRUD parcels
 - P2 — Catalogue Pièces Auto/Moto (0/12)
 - Fix 6 critiques sécurité (#71→#76)
 - Fix 8 majeures (#77→#84)
@@ -39,11 +38,11 @@
 
 | Variable | Valeur |
 |----------|--------|
-| `connectionId` | conn_5dmn5n7s4x82zswg1arf |
-| `last_commit` | d00589c (Phase 3) |
-| `roadmap_version` | v16.1 — Phase 3 en PR |
+| `connectionId` | conn_cpdtc2hr0tjw2k9w9d69 |
+| `last_commit` | Merge PR #113 (Phase 3) |
+| `roadmap_version` | v16.1 — Phase 3 ✅ |
 | `issues_ouvertes` | 15 |
-| `prs_ouvertes` | 1 (#113) |
+| `prs_ouvertes` | 0 |
 
 ---
 
