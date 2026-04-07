@@ -1,6 +1,6 @@
 # 🔄 KOMERCE — Plan de reprise Vague 1/2/3
 
-> Dernière mise à jour : 7 avril 2026
+> Dernière mise à jour : 7 avril 2026 — 18h30
 > Ce dossier contient les instructions de codage + fichiers générés pour reprendre après coupure.
 
 ## 📋 PLAN DE MICRO-COMMITS
@@ -9,29 +9,26 @@
 
 | # | Commit | Fichiers | Statut |
 |---|--------|----------|--------|
-| C1 | 🔐 Fix CORS whitelist (#74) | `server.js` | ✅ GÉNÉRÉ |
-| C2 | 🔐 Add admin rate limiter (#75) | `middleware/rate-limit.js` | ✅ GÉNÉRÉ |
-| C3 | 🔐 Gate admin reset in prod (#76) | `routes/admin.js` | ✅ GÉNÉRÉ |
-| C4 | 🛠️ Fix logistics.js R1 violations | `routes/logistics.js` | ⬜ À CODER |
-| C5 | 📦 Create routes/parcels.js CRUD | `routes/parcels.js` (new) | ⬜ À CODER |
-| C6 | ✅ Add parcels + hub validators | `validators/index.js` | ⬜ À CODER |
-| C7 | 🗃️ Migration 014 cleanup + indexes | `migrations/014_parcels_final_cleanup.sql` (new) | ⬜ À CODER |
+| C1 | 🔐 Fix CORS whitelist (#74) + adminLimiter (#75) + gate reset (#76) | `server.js`, `middleware/rate-limit.js`, `routes/admin.js` | ✅ PUSHÉ `a9371eb` |
+| C2 | 🛠️ Fix logistics.js R1 violations | `routes/logistics.js` | ✅ PUSHÉ `a930baf` |
+| C3 | 📦 Parcels CRUD API + validators + migration 014 | `routes/parcels.js`, `validators/index.js`, `migrations/014_parcels_final_cleanup.sql` | ✅ PUSHÉ `05af183` |
+| C3-bis | 🔌 Wire /api/parcels in server.js | `server.js` | ✅ PUSHÉ `6e5bf0f` |
 
 ### ⬜ VAGUE 2 — Hub Terrain
 
 | # | Commit | Fichiers | Statut |
 |---|--------|----------|--------|
-| C8 | 🏭 Create routes/hub.js | `routes/hub.js` (new) | ⬜ À CODER |
-| C9 | 🔌 Register parcels + hub in server.js | `server.js` | ⬜ À CODER |
+| C4 | 🏭 Create routes/hub.js | `routes/hub.js` (new) | ⬜ À CODER |
+| C5 | 🔌 Register hub in server.js | `server.js` | ⬜ À CODER |
 
 ### ⬜ VAGUE 3 — Optimisation Avancée
 
 | # | Commit | Fichiers | Statut |
 |---|--------|----------|--------|
-| C10 | 🗃️ Migration 015 customs enrichment | `migrations/015_customs_enrichment.sql` (new) | ⬜ À CODER |
-| C11 | 🗃️ Migration 016 carriers table | `migrations/016_carriers.sql` (new) | ⬜ À CODER |
-| C12 | 🚚 Carrier CRUD + customs endpoints | `routes/carriers.js` (new) | ⬜ À CODER |
-| C13 | 📊 Dashboard logistics costs | `routes/dashboard.js` modif | ⬜ À CODER |
+| C6 | 🗃️ Migration 015 customs enrichment | `migrations/015_customs_enrichment.sql` (new) | ⬜ À CODER |
+| C7 | 🗃️ Migration 016 carriers table | `migrations/016_carriers.sql` (new) | ⬜ À CODER |
+| C8 | 🚚 Carrier CRUD + customs endpoints | `routes/carriers.js` (new) | ⬜ À CODER |
+| C9 | 📊 Dashboard logistics costs | `routes/dashboard.js` modif | ⬜ À CODER |
 
 ## 🏗️ Architecture & Règles Clés
 
@@ -61,11 +58,11 @@
 ├── RESUME.md                          ← ce fichier
 ├── codegen-instructions.md            ← instructions complètes du codegen agent
 ├── c1-security/
-│   ├── server.js                      ✅ CORS whitelist strict + adminLimiter
-│   ├── middleware/rate-limit.js        ✅ adminLimiter ajouté
-│   └── routes/admin.js                ✅ Guard production sur /reset
-├── c2-logistics-r1/                   ⬜ À générer
-├── c3-parcels-api/                    ⬜ À générer
+│   ├── server.js                      ✅ PUSHÉ
+│   ├── middleware/rate-limit.js        ✅ PUSHÉ
+│   └── routes/admin.js                ✅ PUSHÉ
+├── c2-logistics-r1/                   ✅ PUSHÉ (via Tasklet)
+├── c3-parcels-api/                    ✅ PUSHÉ (via Tasklet)
 ├── c4-hub/                            ⬜ À générer
 └── c5-v3-optim/                       ⬜ À générer
 ```
@@ -75,5 +72,5 @@
 1. Relire ce RESUME.md pour le contexte
 2. Relire `codegen-instructions.md` pour les specs détaillées de chaque commit
 3. Les fichiers source originaux sont sur la branche `main`
-4. Les fichiers C1 sont prêts à être review/commit
-5. Continuer C4 → C13 en suivant les specs du codegen
+4. Vague 1 (C1-C3) ✅ — continuer avec Vague 2 (C4 hub.js)
+5. Continuer C4 → C9 en suivant les specs du codegen
