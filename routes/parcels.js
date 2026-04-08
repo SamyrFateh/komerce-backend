@@ -3,7 +3,7 @@
  * GET    /api/parcels               → Liste colis (filtres, pagination)
  * GET    /api/parcels/:ref          → Détail colis par référence
  * POST   /api/parcels               → Créer colis manuellement
- * PATCH  /api/parcels/:id/status    → Changer statut via parcelSync (R1)
+ * PATCH  /api/parcels/:id/status    → Changer statut via parcelSync (R1) + évalue link rules
  * POST   /api/parcels/:id/items     → Ajouter article au colis
  * DELETE /api/parcels/:id/items/:item_id → Retirer article du colis
  * POST   /api/parcels/optimize      → Optimiser la répartition des items en colis
@@ -20,6 +20,7 @@ const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { PARCEL_STATUSES } = require('../utils/parcels');
 const { DEFAULT_CONFIG: DEFAULT_OPTIM_CONFIG } = require('../services/parcelOptimizationService');
+const { evaluateOrderParcelLinkRules } = require('../utils/orderParcelLinkRules');
 
 const adminAgent = [authenticate, requireRole(['admin', 'agent_hub'])];
 const adminAgentRelais = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
@@ -124,6 +125,7 @@ router.post('/', ...adminAgent, validate(parcels.create), async (req, res) => {
 });
 
 // PATCH /api/parcels/:id/status
+// Après chaque changement de statut logistique, évalue les link rules order ↔ parcel
 router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async (req, res) => {
   try {
     const { status, notes } = req.body;
@@ -134,10 +136,22 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
     const step = STATUS_TO_STEP[status];
     if (!step) return res.status(400).json({ error: `Statut invalide : ${status}` });
 
-    await safeSyncScanToParcels({ order_id: parcel.order_id, step, scan_id: null, scanned_by: req.user.id, notes: notes || `Status → ${status}` });
+    await safeSyncScanToParcels({
+      order_id:    parcel.order_id,
+      step,
+      scan_id:     null,
+      scanned_by:  req.user.id,
+      notes:       notes || `Status → ${status}`,
+    });
+
+    // Évaluer les règles de liaison order ↔ parcel (R1/R2/R3)
+    const triggeredRule = await evaluateOrderParcelLinkRules(parcel.order_id, db);
+    if (triggeredRule) {
+      console.info(`[LINK-RULE] ${triggeredRule} déclenché pour order ${parcel.order_id}`);
+    }
 
     const { rows } = await db.query('SELECT * FROM parcels WHERE id = $1', [req.params.id]);
-    res.json(rows[0]);
+    res.json({ ...rows[0], link_rule_triggered: triggeredRule });
   } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur mise à jour statut colis' }); }
 });
 
@@ -258,28 +272,28 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
       updatedParcels.push(up);
     }
 
+    // computed_status = vue logistique (lecture seule, ne pilote pas orders.status)
     const { computeOrderStatus } = require('../utils/parcels');
     const { rows: allParcels } = await db.query(
       'SELECT status, type FROM parcels WHERE order_id = $1',
       [order_id]
     );
-    const newStatus = computeOrderStatus(allParcels);
+    const logisticView = computeOrderStatus(allParcels);
     await db.query(
       'UPDATE orders SET computed_status = $1, updated_at = NOW() WHERE id = $2',
-      [newStatus, order_id]
+      [logisticView, order_id]
     );
 
     res.json({
       order_id,
-      computed_status: newStatus,
+      computed_status: logisticView,
       createdParcels,
       updatedParcels,
       unassignedItems: result.unassignedItems,
     });
   } catch(e) {
     console.error('[OPTIMIZE ERROR]', e);
-    // DEBUG TEMP: exposer l'erreur exacte
-    res.status(500).json({ error: 'Erreur optimisation colis', detail: e.message, code: e.code });
+    res.status(500).json({ error: 'Erreur optimisation colis' });
   }
 });
 
@@ -315,8 +329,7 @@ router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
     });
   } catch(e) {
     console.error('[BOOTSTRAP ERROR]', e);
-    // DEBUG TEMP: exposer l'erreur exacte
-    res.status(500).json({ error: 'Erreur bootstrap colis', detail: e.message, code: e.code });
+    res.status(500).json({ error: 'Erreur bootstrap colis' });
   }
 });
 
