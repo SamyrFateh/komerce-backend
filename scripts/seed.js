@@ -1,8 +1,5 @@
 /**
  * KOMERCE — Seeds & fix data
- *
- * Extrait de server.js (FIX-012) — Étape 3 clean-up
- * Exécuté au démarrage après les migrations schéma.
  */
 
 'use strict';
@@ -11,29 +8,42 @@ const db = require('../db');
 const bcrypt = require('bcryptjs');
 
 // ── SEED : Admin par défaut ──────────────────────────────────────────────────
-// Garantit qu'un compte admin existe toujours au démarrage avec
-// le bon password. Si ADMIN_PASSWORD est défini, on l'utilise.
-// Sinon, on force 'admin123' (pratique dev/test).
 async function seedAdmin() {
   try {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    console.log('[seedAdmin] Hashing password...');
     const hash = await bcrypt.hash(adminPassword, 10);
-    
-    await db.query(
-      `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
-       VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
-       ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
-      [hash]
+    console.log('[seedAdmin] Hash done. Checking existing admin...');
+
+    const { rows } = await db.query(
+      "SELECT id, email FROM users WHERE email = 'admin@komerce.km' LIMIT 1"
     );
-    console.log('🔒 Seed admin: admin@komerce.km upserté (password: ' + (process.env.ADMIN_PASSWORD ? '***' : 'admin123') + ')');
+    console.log('[seedAdmin] Query done. rows:', rows.length);
+
+    if (rows.length === 0) {
+      console.log('[seedAdmin] No admin found — inserting...');
+      await db.query(
+        `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
+         VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)`,
+        [hash]
+      );
+      console.log('🔒 Seed admin: admin@komerce.km créé avec succès');
+    } else {
+      console.log('[seedAdmin] Admin found — updating password...');
+      await db.query(
+        "UPDATE users SET password_hash = $1, role = 'admin' WHERE email = 'admin@komerce.km'",
+        [hash]
+      );
+      console.log('🔒 Seed admin: mot de passe forcé sur admin@komerce.km');
+    }
   } catch (err) {
-    console.error('Seed admin error (non-fatal):', err.message);
+    console.error('[seedAdmin] ERREUR:', err.message);
+    console.error('[seedAdmin] Stack:', err.stack);
   }
 }
 
-// ── Fix encoding: correct broken UTF-8 product data in DB ───────────────────
+// ── Fix encoding ───────────────────────────────────────────────────────────
 async function fixProductEncoding() {
-  console.log('🔤 Fixing product encoding...');
   const fixes = [
     { price_kmf: 99000, category: 'telephones', name: 'Samsung Galaxy A35 (128Go)', description: 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.', emoji: '📱' },
     { price_kmf: 39600, category: 'audio', name: 'Écouteurs Samsung Galaxy Buds2', description: 'Réduction de bruit active, 5h autonomie + 15h boîtier. Compatible Android & iOS.', emoji: '🎧' },
@@ -56,45 +66,38 @@ async function fixProductEncoding() {
     { price_kmf: 17325, category: 'cheveux', name: 'Huile argan pure Maroc (100ml)', description: 'Argan bio certifié, pressée à froid. Soin cheveux + peau + ongles.', emoji: '🧴' },
     { price_kmf: 44550, category: 'soins', name: 'Coffret soins corps luxe (5 pièces)', description: 'Gommage + lait corps + huile + beurre de karité + savon noir.', emoji: '🧴' },
   ];
-
   for (const fix of fixes) {
     try {
-      await db.query(
-        `UPDATE products SET name = $1, description = $2, emoji = $3
-         WHERE price_kmf = $4 AND category = $5`,
-        [fix.name, fix.description, fix.emoji, fix.price_kmf, fix.category]
-      );
+      await db.query(`UPDATE products SET name=$1, description=$2, emoji=$3 WHERE price_kmf=$4 AND category=$5`,
+        [fix.name, fix.description, fix.emoji, fix.price_kmf, fix.category]);
     } catch(e) { console.warn('Fix encoding skip:', fix.name, e.message); }
   }
-  console.log('🔤 Product encoding fixed.');
 }
 
-
-// ── SEED : Produits (20 articles — match DEMO_PRODUCTS Boutique) ─────────────
+// ── SEED : Produits ──────────────────────────────────────────────────────────
 async function seedProducts() {
   const products = [
-    { name: 'Samsung Galaxy A35 (128Go)', price_kmf: 99000, price_eur: 200, category: 'telephones', stock: 15, emoji: '📱', badge: 'Populaire', description: 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh. Réseau 4G stable aux Comores.' },
-    { name: 'Écouteurs Samsung Galaxy Buds2', price_kmf: 39600, price_eur: 80, category: 'audio', stock: 20, emoji: '🎧', badge: null, description: 'Réduction de bruit active, 5h autonomie + 15h boîtier. Compatible Android & iOS.' },
-    { name: 'Pack coques + accessoires (5 pièces)', price_kmf: 14850, price_eur: 30, category: 'accessoires-tel', stock: 30, emoji: '📱', badge: 'Nouveau', description: 'Coque renforcée + verre trempé + chargeur rapide 25W + câble USB-C + support voiture.' },
-    { name: 'Chargeur rapide 65W GaN (multi-ports)', price_kmf: 19800, price_eur: 40, category: 'accessoires-tel', stock: 25, emoji: '🔌', badge: null, description: '3 ports (2 USB-C + 1 USB-A), compact. Charge téléphone + tablette + PC simultanément.' },
-    { name: 'Ventilateur sur pied 16"', price_kmf: 24750, price_eur: 50, category: 'equipement', stock: 25, emoji: '🌀', badge: 'Best-seller', description: 'Oscillant 3 vitesses, silencieux, télécommande. Indispensable aux Comores toute année.' },
-    { name: 'Fer à repasser vapeur 2400W', price_kmf: 17325, price_eur: 35, category: 'equipement', stock: 18, emoji: '🔥', badge: null, description: 'Semelle céramique anti-adhésive, réservoir 300ml, départ rapide 30s.' },
-    { name: 'Multiprise 6 prises + 2 USB', price_kmf: 9900, price_eur: 20, category: 'equipement', stock: 35, emoji: '🔌', badge: null, description: 'Câble 2m, disjoncteur sécurité, 2 ports USB-A. Indispensable pour les foyers connectés.' },
-    { name: 'Bouilloire électrique 1.7L inox', price_kmf: 12375, price_eur: 25, category: 'cuisine', stock: 22, emoji: '☕', badge: null, description: 'Arrêt automatique, protection anti-surchauffe, ébullition en 3 min.' },
-    { name: 'Montre homme acier brossé', price_kmf: 99000, price_eur: 200, category: 'accessoires', stock: 8, emoji: '⌚', badge: 'Exclusif', description: 'Boîtier 42mm, bracelet acier, étanchéité 50m, verre saphir.' },
-    { name: 'Collier or 18K (8g)', price_kmf: 277200, price_eur: 560, category: 'accessoires', stock: 5, emoji: '💎', badge: 'Premium', description: 'Or 18 carats certifié Dubai, chaîne maille forçat 45cm. Certificat authenticité inclus.' },
-    { name: 'Parfum Oud Al Shuyukh 100ml', price_kmf: 59400, price_eur: 120, category: 'parfums', stock: 12, emoji: '🌹', badge: null, description: 'Parfum de luxe Dubai, notes de oud, ambre et rose. Longue tenue 12h+.' },
-    { name: 'Coffret cadeau mariage (4 pièces)', price_kmf: 49500, price_eur: 100, category: 'mariage-custom', stock: 15, emoji: '🎁', badge: 'Populaire', description: 'Parfum + crème corps + savon artisanal + bracelet fantaisie.' },
-    { name: 'Djellaba homme brodée (L/XL/XXL)', price_kmf: 34650, price_eur: 70, category: 'vetements', stock: 20, emoji: '🧥', badge: 'Best-seller', description: 'Tissu Bazin premium, broderie traditionnelle dorée.' },
-    { name: 'Abaya femme dentelle Dubai (M/L/XL)', price_kmf: 39600, price_eur: 80, category: 'vetements', stock: 15, emoji: '👗', badge: 'Populaire', description: 'Tissu crêpe fluide, broderie dentelle sur les manches.' },
-    { name: 'Boubou enfant 3-12 ans', price_kmf: 19800, price_eur: 40, category: 'vetements', stock: 18, emoji: '👕', badge: null, description: 'Tissu wax africain, coupe ample confortable.' },
-    { name: 'Caftan femme soirée (S/M/L/XL)', price_kmf: 54450, price_eur: 110, category: 'vetements', stock: 10, emoji: '🥻', badge: 'Nouveau', description: 'Tissu satiné Dubai, encolure brodée de perles.' },
-    { name: 'Crème visage éclat au safran', price_kmf: 24750, price_eur: 50, category: 'soins', stock: 20, emoji: '✨', badge: null, description: 'Soin hydratant au safran de Perse + vitamine C. 50ml.' },
-    { name: 'Parfum Oud Rose (50ml)', price_kmf: 34650, price_eur: 70, category: 'parfums', stock: 18, emoji: '🌸', badge: 'Best-seller', description: 'Eau de parfum Dubai, concentrée 20%, notes de rose et oud boisé.' },
-    { name: 'Huile argan pure Maroc (100ml)', price_kmf: 17325, price_eur: 35, category: 'cheveux', stock: 25, emoji: '🧴', badge: null, description: 'Argan bio certifié, pressée à froid. Soin cheveux + peau + ongles.' },
-    { name: 'Coffret soins corps luxe (5 pièces)', price_kmf: 44550, price_eur: 90, category: 'soins', stock: 12, emoji: '🧴', badge: 'Nouveau', description: 'Gommage + lait corps + huile + beurre de karité + savon noir.' },
+    { name: 'Samsung Galaxy A35 (128Go)', price_kmf: 99000, price_eur: 200, category: 'telephones', stock: 15, emoji: '📱', badge: 'Populaire', description: 'Écran AMOLED 6.6", 50MP, double SIM, batterie 5000mAh.' },
+    { name: 'Écouteurs Samsung Galaxy Buds2', price_kmf: 39600, price_eur: 80, category: 'audio', stock: 20, emoji: '🎧', badge: null, description: 'Réduction de bruit active, 5h autonomie.' },
+    { name: 'Pack coques + accessoires (5 pièces)', price_kmf: 14850, price_eur: 30, category: 'accessoires-tel', stock: 30, emoji: '📱', badge: 'Nouveau', description: 'Coque + verre trempé + chargeur 25W + câble USB-C + support.' },
+    { name: 'Chargeur rapide 65W GaN (multi-ports)', price_kmf: 19800, price_eur: 40, category: 'accessoires-tel', stock: 25, emoji: '🔌', badge: null, description: '3 ports, compact, charge simultannée.' },
+    { name: 'Ventilateur sur pied 16"', price_kmf: 24750, price_eur: 50, category: 'equipement', stock: 25, emoji: '🌀', badge: 'Best-seller', description: 'Oscillant 3 vitesses, télécommande.' },
+    { name: 'Fer à repasser vapeur 2400W', price_kmf: 17325, price_eur: 35, category: 'equipement', stock: 18, emoji: '🔥', badge: null, description: 'Semelle céramique, départ rapide 30s.' },
+    { name: 'Multiprise 6 prises + 2 USB', price_kmf: 9900, price_eur: 20, category: 'equipement', stock: 35, emoji: '🔌', badge: null, description: 'Câble 2m, disjoncteur sécurité.' },
+    { name: 'Bouilloire électrique 1.7L inox', price_kmf: 12375, price_eur: 25, category: 'cuisine', stock: 22, emoji: '☕', badge: null, description: 'Arrêt automatique, ébullition en 3 min.' },
+    { name: 'Montre homme acier brossé', price_kmf: 99000, price_eur: 200, category: 'accessoires', stock: 8, emoji: '⌚', badge: 'Exclusif', description: 'Boîtier 42mm, verre saphir.' },
+    { name: 'Collier or 18K (8g)', price_kmf: 277200, price_eur: 560, category: 'accessoires', stock: 5, emoji: '💎', badge: 'Premium', description: 'Or 18 carats certifié Dubai.' },
+    { name: 'Parfum Oud Al Shuyukh 100ml', price_kmf: 59400, price_eur: 120, category: 'parfums', stock: 12, emoji: '🌹', badge: null, description: 'Notes de oud, ambre et rose. Tenue 12h+.' },
+    { name: 'Coffret cadeau mariage (4 pièces)', price_kmf: 49500, price_eur: 100, category: 'mariage-custom', stock: 15, emoji: '🎁', badge: 'Populaire', description: 'Parfum + crème + savon + bracelet.' },
+    { name: 'Djellaba homme brodée (L/XL/XXL)', price_kmf: 34650, price_eur: 70, category: 'vetements', stock: 20, emoji: '🧥', badge: 'Best-seller', description: 'Tissu Bazin premium, broderie dorée.' },
+    { name: 'Abaya femme dentelle Dubai (M/L/XL)', price_kmf: 39600, price_eur: 80, category: 'vetements', stock: 15, emoji: '👗', badge: 'Populaire', description: 'Tissu crêpe fluide, broderie dentelle.' },
+    { name: 'Boubou enfant 3-12 ans', price_kmf: 19800, price_eur: 40, category: 'vetements', stock: 18, emoji: '👕', badge: null, description: 'Tissu wax africain.' },
+    { name: 'Caftan femme soirée (S/M/L/XL)', price_kmf: 54450, price_eur: 110, category: 'vetements', stock: 10, emoji: '🥻', badge: 'Nouveau', description: 'Tissu satiné, encolure brodée de perles.' },
+    { name: 'Crème visage éclat au safran', price_kmf: 24750, price_eur: 50, category: 'soins', stock: 20, emoji: '✨', badge: null, description: 'Safran de Perse + vitamine C. 50ml.' },
+    { name: 'Parfum Oud Rose (50ml)', price_kmf: 34650, price_eur: 70, category: 'parfums', stock: 18, emoji: '🌸', badge: 'Best-seller', description: 'Concentrée 20%, notes de rose et oud.' },
+    { name: 'Huile argan pure Maroc (100ml)', price_kmf: 17325, price_eur: 35, category: 'cheveux', stock: 25, emoji: '🧴', badge: null, description: 'Argan bio certifié, pressée à froid.' },
+    { name: 'Coffret soins corps luxe (5 pièces)', price_kmf: 44550, price_eur: 90, category: 'soins', stock: 12, emoji: '🧴', badge: 'Nouveau', description: 'Gommage + lait + huile + beurre karité + savon.' },
   ];
-
   for (const p of products) {
     try {
       const exists = await db.query('SELECT id FROM products WHERE name = $1', [p.name]);
@@ -110,75 +113,61 @@ async function seedProducts() {
   console.log('🌱 Seed produits OK');
 }
 
-
-// ── Auto-migration : update product categories for bloom nav subcategories ──
+// ── Fix categories ─────────────────────────────────────────────────────────────
 async function fixProductCategories() {
-  console.log('🏷️  Migrating product categories for bloom nav...');
   const migrations = [
-    { oldCat: 'electronics', namePattern: '%Galaxy A%',      newCat: 'telephones' },
-    { oldCat: 'electronics', namePattern: '%Buds%',          newCat: 'audio' },
-    { oldCat: 'electronics', namePattern: '%coques%',        newCat: 'accessoires-tel' },
-    { oldCat: 'electronics', namePattern: '%Chargeur%',      newCat: 'accessoires-tel' },
-    { oldCat: 'home', namePattern: '%Ventilateur%',          newCat: 'equipement' },
-    { oldCat: 'home', namePattern: '%repasser%',             newCat: 'equipement' },
-    { oldCat: 'home', namePattern: '%Multiprise%',           newCat: 'equipement' },
-    { oldCat: 'home', namePattern: '%Bouilloire%',           newCat: 'cuisine' },
-    { oldCat: 'wedding', namePattern: '%Montre%',            newCat: 'accessoires' },
-    { oldCat: 'wedding', namePattern: '%Collier%',           newCat: 'accessoires' },
-    { oldCat: 'wedding', namePattern: '%Parfum%Oud%Shuyukh%',newCat: 'parfums' },
-    { oldCat: 'wedding', namePattern: '%Coffret%mariage%',   newCat: 'mariage-custom' },
-    { oldCat: 'fashion', namePattern: '%Djellaba%',          newCat: 'vetements' },
-    { oldCat: 'fashion', namePattern: '%Abaya%',             newCat: 'vetements' },
-    { oldCat: 'fashion', namePattern: '%Boubou%',            newCat: 'vetements' },
-    { oldCat: 'fashion', namePattern: '%Caftan%',            newCat: 'vetements' },
-    { oldCat: 'services', namePattern: '%Crème%visage%',     newCat: 'soins' },
-    { oldCat: 'services', namePattern: '%Parfum%Oud%Rose%',  newCat: 'parfums' },
-    { oldCat: 'services', namePattern: '%argan%',            newCat: 'cheveux' },
-    { oldCat: 'services', namePattern: '%Coffret%soins%',    newCat: 'soins' },
+    { oldCat: 'electronics', namePattern: '%Galaxy A%',       newCat: 'telephones' },
+    { oldCat: 'electronics', namePattern: '%Buds%',           newCat: 'audio' },
+    { oldCat: 'electronics', namePattern: '%coques%',         newCat: 'accessoires-tel' },
+    { oldCat: 'electronics', namePattern: '%Chargeur%',       newCat: 'accessoires-tel' },
+    { oldCat: 'home',        namePattern: '%Ventilateur%',    newCat: 'equipement' },
+    { oldCat: 'home',        namePattern: '%repasser%',       newCat: 'equipement' },
+    { oldCat: 'home',        namePattern: '%Multiprise%',     newCat: 'equipement' },
+    { oldCat: 'home',        namePattern: '%Bouilloire%',     newCat: 'cuisine' },
+    { oldCat: 'wedding',     namePattern: '%Montre%',         newCat: 'accessoires' },
+    { oldCat: 'wedding',     namePattern: '%Collier%',        newCat: 'accessoires' },
+    { oldCat: 'wedding',     namePattern: '%Parfum%Oud%',     newCat: 'parfums' },
+    { oldCat: 'wedding',     namePattern: '%Coffret%mariage%',newCat: 'mariage-custom' },
+    { oldCat: 'fashion',     namePattern: '%Djellaba%',       newCat: 'vetements' },
+    { oldCat: 'fashion',     namePattern: '%Abaya%',          newCat: 'vetements' },
+    { oldCat: 'fashion',     namePattern: '%Boubou%',         newCat: 'vetements' },
+    { oldCat: 'fashion',     namePattern: '%Caftan%',         newCat: 'vetements' },
+    { oldCat: 'services',    namePattern: '%Crème%visage%',   newCat: 'soins' },
+    { oldCat: 'services',    namePattern: '%Parfum%Rose%',    newCat: 'parfums' },
+    { oldCat: 'services',    namePattern: '%argan%',          newCat: 'cheveux' },
+    { oldCat: 'services',    namePattern: '%Coffret%soins%',  newCat: 'soins' },
   ];
-
-  let totalUpdated = 0;
   for (const m of migrations) {
     try {
-      const result = await db.query(
-        `UPDATE products SET category = $1 WHERE category = $2 AND name ILIKE $3`,
-        [m.newCat, m.oldCat, m.namePattern]
-      );
-      totalUpdated += result.rowCount;
-    } catch(e) { console.warn('Category migration skip:', m.namePattern, e.message); }
+      await db.query(`UPDATE products SET category=$1 WHERE category=$2 AND name ILIKE $3`,
+        [m.newCat, m.oldCat, m.namePattern]);
+    } catch(e) { /* skip */ }
   }
-  console.log(`🏷️  Product categories migrated: ${totalUpdated} products updated.`);
 }
 
-
-// ── SEED : Points relais (5 relais Comores) ─────────────────────────────────
+// ── SEED : Relais ──────────────────────────────────────────────────────────────
 async function seedRelais() {
   const relais = [
-    { name: 'Relais Moroni Centre', address: 'Avenue de la République, Moroni', zone: 'Moroni centre', island: 'Grande Comore', phone: '0321001001' },
-    { name: 'Relais Mutsamudu Centre', address: 'Rue du Port, Mutsamudu', zone: 'Mutsamudu centre', island: 'Anjouan', phone: '0321002002' },
-    { name: 'Relais Fomboni', address: 'Place du Marché, Fomboni', zone: 'Fomboni centre', island: 'Mohéli', phone: '0321003003' },
-    { name: 'Relais Domoni', address: 'Centre-ville, Domoni', zone: 'Domoni', island: 'Anjouan', phone: '0321004004' },
-    { name: 'Relais Sima', address: 'Route principale, Sima', zone: 'Sima', island: 'Anjouan', phone: '0321005005' },
+    { name: 'Relais Moroni Centre',    address: 'Avenue de la République, Moroni',  zone: 'Moroni centre',    island: 'Grande Comore', phone: '0321001001' },
+    { name: 'Relais Mutsamudu Centre', address: 'Rue du Port, Mutsamudu',            zone: 'Mutsamudu centre', island: 'Anjouan',        phone: '0321002002' },
+    { name: 'Relais Fomboni',          address: 'Place du Marché, Fomboni',          zone: 'Fomboni centre',   island: 'Mohéli',         phone: '0321003003' },
+    { name: 'Relais Domoni',           address: 'Centre-ville, Domoni',              zone: 'Domoni',           island: 'Anjouan',        phone: '0321004004' },
+    { name: 'Relais Sima',             address: 'Route principale, Sima',            zone: 'Sima',             island: 'Anjouan',        phone: '0321005005' },
   ];
-
   for (const r of relais) {
     try {
       const exists = await db.query('SELECT id FROM relais WHERE name = $1', [r.name]);
       if (exists.rows.length === 0) {
-        await db.query(
-          'INSERT INTO relais (name, address, zone, island, phone, is_active) VALUES ($1,$2,$3,$4,$5,TRUE)',
-          [r.name, r.address, r.zone, r.island, r.phone]
-        );
+        await db.query('INSERT INTO relais (name, address, zone, island, phone, is_active) VALUES ($1,$2,$3,$4,$5,TRUE)',
+          [r.name, r.address, r.zone, r.island, r.phone]);
       }
     } catch(e) { console.warn('Seed relais skip:', r.name, e.message); }
   }
   console.log('🌱 Seed relais OK');
 }
 
-
-// ── Fix product images ─────────────────────────────────────────────────────────
+// ── Fix images ───────────────────────────────────────────────────────────────
 async function fixProductImages() {
-  console.log('🖼️  Fixing product images...');
   const imageMap = {
     'Samsung Galaxy A35 (128Go)': 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400&h=400&fit=crop',
     'Écouteurs Samsung Galaxy Buds2': 'https://images.unsplash.com/photo-1590658268037-6bf12f032f55?w=400&h=400&fit=crop',
@@ -201,25 +190,15 @@ async function fixProductImages() {
     'Huile argan pure Maroc (100ml)': 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&h=400&fit=crop',
     'Coffret soins corps luxe (5 pièces)': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop',
   };
-
   for (const [name, url] of Object.entries(imageMap)) {
     try {
-      await db.query(
-        `UPDATE products SET image_url = $1 WHERE name = $2 AND (image_url IS NULL OR image_url = '')`,
-        [url, name]
-      );
-    } catch(e) { console.warn('Fix image skip:', name, e.message); }
+      await db.query(`UPDATE products SET image_url=$1 WHERE name=$2 AND (image_url IS NULL OR image_url='')`, [url, name]);
+    } catch(e) { /* skip */ }
   }
-  console.log('🖼️  Product images fixed.');
 }
 
-
-/**
- * Exécute toutes les seeds dans l'ordre.
- * Appelé par server.js au démarrage.
- */
 async function runAllSeeds() {
-  await seedAdmin();          // ← en premier : garantit l'accès admin
+  await seedAdmin();           // ← en premier
   await fixProductEncoding();
   await seedProducts();
   await fixProductCategories();
