@@ -8,13 +8,6 @@
  * DELETE /api/parcels/:id/items/:item_id → Retirer article du colis
  * POST   /api/parcels/optimize      → Optimiser la répartition des items en colis
  * POST   /api/parcels/bootstrap/:orderId → Migrer une commande legacy
- *
- * Safety Fixes:
- *   A. Catch 23505 sur POST /:id/items (unique_order_item_per_parcel)
- *   C. Catch 23505 sur POST / (one_draft_per_order)
- *
- * FIX-007 (7 avril 2026): STATUS_TO_STEP clé 'preparing' → 'preparation'
- * FIX-009 (7 avril 2026): oi.unit_price_kmf → oi.price_kmf
  */
 
 const express = require('express');
@@ -31,7 +24,6 @@ const { DEFAULT_CONFIG: DEFAULT_OPTIM_CONFIG } = require('../services/parcelOpti
 const adminAgent = [authenticate, requireRole(['admin', 'agent_hub'])];
 const adminAgentRelais = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
 
-// Status → step mapping for parcelSync (R1)
 const STATUS_TO_STEP = {
   preparation: 'preparation',
   shipped:     'shipped',
@@ -187,18 +179,15 @@ router.delete('/:id/items/:item_id', ...adminAgent, async (req, res) => {
   } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur suppression article du colis' }); }
 });
 
-// POST /api/parcels/optimize — Optimiser la répartition des items en colis
-// Fonctionne en cold start (0 colis) ET en mode enrichissement
+// POST /api/parcels/optimize
 router.post('/optimize', ...adminAgent, async (req, res) => {
   try {
     const { order_id, config: userConfig } = req.body;
     if (!order_id) return res.status(400).json({ error: 'order_id requis' });
 
-    // Vérifier que la commande existe
     const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [order_id]);
     if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Charger les order_items avec attributs produits
     const { rows: items } = await db.query(`
       SELECT
         oi.id                AS order_item_id,
@@ -216,7 +205,6 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
       WHERE oi.order_id = $1
     `, [order_id]);
 
-    // Charger les colis ouverts existants (draft ou preparation)
     const { rows: existingParcels } = await db.query(`
       SELECT id,
              COALESCE(weight_kg, 0)::float  AS current_weight,
@@ -230,14 +218,11 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
         AND status IN ('draft', 'preparation')
     `, [order_id, DEFAULT_OPTIM_CONFIG.maxParcelWeightKg, DEFAULT_OPTIM_CONFIG.maxParcelVolumeCm3]);
 
-    // Lancer l'optimisation
     const { buildParcelsFromAvailableItems } = require('../services/parcelOptimizationService');
     const cfg = userConfig ? { ...DEFAULT_OPTIM_CONFIG, ...userConfig } : DEFAULT_OPTIM_CONFIG;
 
     const result = buildParcelsFromAvailableItems({ items, existingParcels, config: cfg });
 
-    // Persister les nouveaux colis
-    const { generateParcelRef } = require('../utils/reference');
     const createdParcels = [];
 
     for (const cp of result.createdParcels) {
@@ -261,7 +246,6 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
       createdParcels.push({ ...parcel, items: cp.items, warnings: cp.warnings });
     }
 
-    // Mettre à jour les colis existants
     const updatedParcels = [];
     for (const up of result.updatedParcels) {
       for (const item of up.addedItems) {
@@ -274,7 +258,6 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
       updatedParcels.push(up);
     }
 
-    // Recalculer computed_status
     const { computeOrderStatus } = require('../utils/parcels');
     const { rows: allParcels } = await db.query(
       'SELECT status, type FROM parcels WHERE order_id = $1',
@@ -293,20 +276,21 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
       updatedParcels,
       unassignedItems: result.unassignedItems,
     });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur optimisation colis' }); }
+  } catch(e) {
+    console.error('[OPTIMIZE ERROR]', e);
+    // DEBUG TEMP: exposer l'erreur exacte
+    res.status(500).json({ error: 'Erreur optimisation colis', detail: e.message, code: e.code });
+  }
 });
 
-// POST /api/parcels/bootstrap/:orderId — Migrer une commande legacy
-// Refuse si des parcels non-cancelled existent déjà (garde-fou 409)
+// POST /api/parcels/bootstrap/:orderId
 router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    // Vérifier que la commande existe
     const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [orderId]);
     if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Garde-fou : refuser si des parcels non-cancelled existent
     const existingCheck = await db.query(
       `SELECT COUNT(*) FROM parcels WHERE order_id = $1 AND status != 'cancelled'`,
       [orderId]
@@ -329,7 +313,11 @@ router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
       parcels: result.createdParcels,
       unassigned: result.unassignedItems,
     });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur bootstrap colis' }); }
+  } catch(e) {
+    console.error('[BOOTSTRAP ERROR]', e);
+    // DEBUG TEMP: exposer l'erreur exacte
+    res.status(500).json({ error: 'Erreur bootstrap colis', detail: e.message, code: e.code });
+  }
 });
 
 module.exports = router;
