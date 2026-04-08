@@ -259,7 +259,6 @@ async function fixMissingSchema() {
   }
 
   // ── Migration 020 : colonnes optimisation colis ──────────────────────────
-  // (idempotentes — IF NOT EXISTS)
   await run('parcels.label',                'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS label               TEXT');
   await run('parcels.relais_id',            'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS relais_id           UUID REFERENCES relais(id)');
   await run('parcels.pickup_code',          'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS pickup_code         TEXT');
@@ -281,6 +280,15 @@ async function fixMissingSchema() {
   // ── Migration 021 : products.weight_kg ──────────────────────────────────
   await run('products.weight_kg',           'ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_kg NUMERIC(6,2)');
   await run('idx_products_weight_kg',       'CREATE INDEX IF NOT EXISTS idx_products_weight_kg ON products(weight_kg)');
+
+  // ── Migration 022 : orders.computed_status ──────────────────────────────
+  // Colonne utilisée par le moteur optimisation pour tracker le statut calculé
+  await run('orders.computed_status',       'ALTER TABLE orders ADD COLUMN IF NOT EXISTS computed_status TEXT');
+
+  // ── Migration 023 : drop one_draft_per_order (contrainte trop restrictive) ───
+  // La contrainte bloque la création de plusieurs colis draft pour une même
+  // commande via /optimize. La logique métier gère l'unicité via le service.
+  await run('drop one_draft_per_order',     'ALTER TABLE parcels DROP CONSTRAINT IF EXISTS one_draft_per_order');
 
   console.log('🔧 Schema migrations complete.');
 }
