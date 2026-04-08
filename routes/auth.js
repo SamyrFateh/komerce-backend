@@ -27,18 +27,13 @@ const _JWT_SECRET = JWT_SECRET || 'komerce_secret_dev_UNSAFE';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 // ─── Cookie settings (BUG-014 fix) ─────────────────────────────────────────
-// httpOnly=true empêche JavaScript d'accéder au JWT (protection XSS)
-// sameSite='Strict' bloque les requêtes cross-site (protection CSRF)
-// secure=true en production force HTTPS uniquement
-
 const COOKIE_NAME = 'kmrc_jwt';
 
 function cookieOptions() {
   const isProd = process.env.NODE_ENV === 'production';
-  // Parse JWT_EXPIRES to get maxAge in ms (default 30d)
   const expiresStr = process.env.JWT_EXPIRES || '30d';
   const match = expiresStr.match(/(\d+)(d|h|m)/);
-  let maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days default
+  let maxAge = 30 * 24 * 60 * 60 * 1000;
   if (match) {
     const val = parseInt(match[1]);
     if (match[2] === 'd') maxAge = val * 24 * 60 * 60 * 1000;
@@ -78,6 +73,52 @@ function userResponse(user) {
   return safe;
 }
 
+// ─── GET /api/auth/debug-verify (TEMPORAIRE — à supprimer après debug) ────────
+// Teste jwt.verify directement et retourne l'erreur exacte
+
+router.get('/debug-verify', (req, res) => {
+  const token = (req.headers.authorization || '').replace('Bearer ', '') ||
+                (req.cookies && req.cookies.kmrc_jwt) || '';
+
+  if (!token) return res.json({ error: 'no token provided' });
+
+  const secretLen = _JWT_SECRET ? _JWT_SECRET.length : 0;
+  const secretPrefix = _JWT_SECRET ? _JWT_SECRET.substring(0, 4) : 'N/A';
+
+  // Test 1 : verify simple sans options
+  let test1;
+  try {
+    const d = jwt.verify(token, _JWT_SECRET);
+    test1 = { ok: true, id: d.id, role: d.role, iat: d.iat };
+  } catch (e) {
+    test1 = { ok: false, error: e.message, name: e.name };
+  }
+
+  // Test 2 : verify avec algorithms seulement
+  let test2;
+  try {
+    const d = jwt.verify(token, _JWT_SECRET, { algorithms: ['HS256'] });
+    test2 = { ok: true, id: d.id };
+  } catch (e) {
+    test2 = { ok: false, error: e.message, name: e.name };
+  }
+
+  // Test 3 : decode sans vérification (pour voir le payload)
+  const decoded_raw = jwt.decode(token, { complete: true });
+
+  res.json({
+    secret_len: secretLen,
+    secret_prefix: secretPrefix,
+    jwt_expires: JWT_EXPIRES,
+    token_len: token.length,
+    token_prefix: token.substring(0, 30),
+    decoded_header: decoded_raw && decoded_raw.header,
+    decoded_payload: decoded_raw && decoded_raw.payload,
+    test1_simple: test1,
+    test2_with_alg: test2,
+  });
+});
+
 // ─── POST /api/auth/register ─────────────────────────────────────────────────
 
 router.post('/register', validate(auth.register), async (req, res) => {
@@ -91,7 +132,6 @@ router.post('/register', validate(auth.register), async (req, res) => {
       currency_pref = 'KMF',
     } = req.body;
 
-    // Validation minimale
     if (!phone) {
       return res.status(400).json({ error: 'Le téléphone est obligatoire' });
     }
@@ -99,7 +139,6 @@ router.post('/register', validate(auth.register), async (req, res) => {
       return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
     }
 
-    // Vérifier doublon email
     if (email) {
       const { rows: existing } = await db.query(
         'SELECT id FROM users WHERE email = $1',
@@ -110,7 +149,6 @@ router.post('/register', validate(auth.register), async (req, res) => {
       }
     }
 
-    // Vérifier doublon téléphone
     const { rows: existingPhone } = await db.query(
       'SELECT id FROM users WHERE phone = $1',
       [phone]
@@ -159,7 +197,6 @@ router.post('/login', validate(auth.login), async (req, res) => {
       return res.status(400).json({ error: 'Email ou téléphone obligatoire' });
     }
 
-    // Chercher par email ou téléphone — deux requêtes explicites, pas d'interpolation de colonne
     let rows;
     if (email) {
       ({ rows } = await db.query(
@@ -242,87 +279,53 @@ router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) =
   }
 });
 
-// ─── POST /api/auth/guest-checkout (public — frontend checkout) ──────────────
-// Crée ou retrouve un utilisateur par téléphone pour le checkout invité.
-// Pas de clé interne requise, mais rate-limité par IP (5 req / 15 min).
+// ─── POST /api/auth/guest-checkout ──────────────────────────────────────────
 
-const _guestCheckoutAttempts = new Map(); // IP → { count, resetAt }
+const _guestCheckoutAttempts = new Map();
 
 function guestCheckoutRateLimit(req, res, next) {
   const ip  = req.ip || req.headers['x-forwarded-for'] || 'unknown';
   const now = Date.now();
-  const WIN = 15 * 60 * 1000; // 15 min
+  const WIN = 15 * 60 * 1000;
   const MAX = 5;
-
   let entry = _guestCheckoutAttempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    entry = { count: 0, resetAt: now + WIN };
-  }
-
+  if (!entry || now > entry.resetAt) entry = { count: 0, resetAt: now + WIN };
   entry.count++;
   _guestCheckoutAttempts.set(ip, entry);
-
-  if (entry.count > MAX) {
-    return res.status(429).json({
-      error: 'Trop de tentatives. Réessayez dans 15 minutes.',
-    });
-  }
+  if (entry.count > MAX) return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
   next();
 }
 
 router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestCheckout), async (req, res) => {
   try {
-    const {
-      full_name,
-      phone,
-      email,
-      country = 'KM',
-    } = req.body;
+    const { full_name, phone, email, country = 'KM' } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
 
-    if (!phone) {
-      return res.status(400).json({ error: 'Téléphone obligatoire' });
-    }
-
-    // Chercher un utilisateur existant par téléphone
-    const { rows: existing } = await db.query(
-      'SELECT * FROM users WHERE phone = $1 LIMIT 1',
-      [phone]
-    );
-
+    const { rows: existing } = await db.query('SELECT * FROM users WHERE phone = $1 LIMIT 1', [phone]);
     if (existing.length) {
-      // Utilisateur existant : générer JWT + cookie
       const user = existing[0];
       const token = generateToken(user);
       setAuthCookie(res, token);
       return res.json({ user: userResponse(user), created: false });
     }
 
-    // Créer un nouveau compte client — mot de passe aléatoire (inutilisable directement)
     const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
     const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
-
     const { rows: [user] } = await db.query(
-      `INSERT INTO users
-         (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF')
-       RETURNING *`,
+      `INSERT INTO users (full_name, email, phone, password_hash, role, country, currency_pref)
+       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF') RETURNING *`,
       [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
     );
-
     const token = generateToken(user);
     setAuthCookie(res, token);
     res.status(201).json({ user: userResponse(user), created: true });
-
   } catch (err) {
     console.error('Guest-checkout error:', err.message);
     res.status(500).json({ error: 'Erreur création automatique de compte' });
   }
 });
 
-// ─── POST /api/auth/auto-register (usage interne uniquement) ─────────────────
-// Crée silencieusement un compte avec email généré depuis le téléphone
-// si l'utilisateur n'a pas encore de compte.
-// Protégé par clé API interne (header X-Internal-Key) — ne jamais exposer au frontend.
+// ─── POST /api/auth/auto-register ────────────────────────────────────────────
 
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
@@ -340,52 +343,31 @@ function requireInternalKey(req, res, next) {
 
 router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), async (req, res) => {
   try {
-    const {
-      full_name,
-      phone,
-      email,           // optionnel — sinon généré depuis phone
-      country = 'KM',
-    } = req.body;
+    const { full_name, phone, email, country = 'KM' } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
 
-    if (!phone) {
-      return res.status(400).json({ error: 'Téléphone obligatoire' });
-    }
-
-    const resolvedEmail = email ||
-      (phone.replace(/\D/g, '') + '@komerce.km');
-
-    // Vérifier si déjà existant (email OU téléphone)
+    const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
     const { rows: existing } = await db.query(
       `SELECT id FROM users WHERE email = $1 OR phone = $2 LIMIT 1`,
       [resolvedEmail, phone]
     );
 
     if (existing.length) {
-      // Utilisateur existant : retourner token via login silencieux
-      const { rows: [user] } = await db.query(
-        `SELECT * FROM users WHERE id = $1`, [existing[0].id]
-      );
+      const { rows: [user] } = await db.query(`SELECT * FROM users WHERE id = $1`, [existing[0].id]);
       const token = generateToken(user);
       setAuthCookie(res, token);
       return res.json({ user: userResponse(user), created: false });
     }
 
-    // Créer le compte — mot de passe aléatoire, inutilisable directement
-    // (le compte auto-créé n'est accessible que via token JWT)
     const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
-
     const { rows: [user] } = await db.query(
-      `INSERT INTO users
-         (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF')
-       RETURNING *`,
+      `INSERT INTO users (full_name, email, phone, password_hash, role, country, currency_pref)
+       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF') RETURNING *`,
       [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
     );
-
     const token = generateToken(user);
     setAuthCookie(res, token);
     res.status(201).json({ user: userResponse(user), created: true });
-
   } catch (err) {
     console.error('Auto-register error:', err.message);
     res.status(500).json({ error: 'Erreur création automatique de compte' });
@@ -393,111 +375,67 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
 });
 
 // ─── POST /api/auth/orders-by-phone ──────────────────────────────────────────
-// Permet au client de consulter ses commandes en donnant son numéro de téléphone.
-// Ne crée JAMAIS de compte. Retourne un token court (2h) limité en lecture.
-//
-// Protections :
-//   - Si le numéro n'existe pas → réponse identique à "aucune commande" (pas d'énumération)
-//   - Token JWT distinct avec claim `scope: 'orders_read'` — exploitable uniquement
-//     pour GET /api/orders (vérification à ajouter dans orders.js si granularité requise)
-//   - Rate-limit applicatif : max 5 tentatives / 15 min par IP (géré ici en mémoire,
-//     à remplacer par Redis en production)
 
-const _phoneLookupAttempts = new Map(); // IP → { count, resetAt }
+const _phoneLookupAttempts = new Map();
 
 function checkPhoneLookupRateLimit(req, res, next) {
   const ip  = req.ip || req.headers['x-forwarded-for'] || 'unknown';
   const now = Date.now();
-  const WIN = 15 * 60 * 1000; // 15 min
+  const WIN = 15 * 60 * 1000;
   const MAX = 5;
-
   let entry = _phoneLookupAttempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    entry = { count: 0, resetAt: now + WIN };
-  }
-
+  if (!entry || now > entry.resetAt) entry = { count: 0, resetAt: now + WIN };
   entry.count++;
   _phoneLookupAttempts.set(ip, entry);
-
-  if (entry.count > MAX) {
-    return res.status(429).json({
-      error: 'Trop de tentatives. Réessayez dans 15 minutes.',
-    });
-  }
+  if (entry.count > MAX) return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
   next();
 }
 
 router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersByPhone), async (req, res) => {
   try {
     const { phone } = req.body;
-
     if (!phone || typeof phone !== 'string' || phone.trim().length < 6) {
       return res.status(400).json({ error: 'Numéro de téléphone invalide' });
     }
 
     const cleanPhone = phone.trim();
-
-    // Chercher l'utilisateur — on ne révèle PAS s'il existe ou non
     const { rows } = await db.query(
       `SELECT id, full_name, phone FROM users WHERE phone = $1 LIMIT 1`,
       [cleanPhone]
     );
 
-    if (!rows.length) {
-      // Réponse identique à "compte trouvé, aucune commande" — pas d'énumération possible
-      return res.json({ orders: [], name: null });
-    }
+    if (!rows.length) return res.json({ orders: [], name: null });
 
     const user = rows[0];
-
-    // Token court (2h), scope restreint — ne donne accès qu'aux commandes en lecture
     const token = jwt.sign(
       { id: user.id, role: user.role, scope: 'orders_read' },
       _JWT_SECRET,
       { expiresIn: '2h' }
     );
-
-    res.json({
-      token,
-      name: user.full_name,
-      // Pas d'objet user complet — pas d'email, pas de hash, pas de données sensibles
-    });
-
+    res.json({ token, name: user.full_name });
   } catch (err) {
     console.error('Orders-by-phone error:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
-
-// ─── POST /api/auth/logout (BUG-014) ────────────────────────────────────────
-// Supprime le cookie httpOnly JWT côté serveur.
+// ─── POST /api/auth/logout ────────────────────────────────────────────────────
 
 router.post('/logout', (req, res) => {
   clearAuthCookie(res);
   res.json({ message: 'Déconnexion réussie' });
 });
 
-
 // ─── POST /api/auth/admin-reset ─────────────────────────────────────────────
-// Reset admin password securely. Requires ADMIN_RESET_KEY env var.
-// Usage: POST /api/auth/admin-reset { "key": "<ADMIN_RESET_KEY>", "new_password": "..." }
-// After use, remove ADMIN_RESET_KEY from Railway env vars for security.
 
 router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
   try {
     const resetKey = process.env.ADMIN_RESET_KEY;
-    if (!resetKey) {
-      return res.status(404).json({ error: 'Reset non disponible — définir ADMIN_RESET_KEY dans les variables Railway' });
-    }
+    if (!resetKey) return res.status(404).json({ error: 'Reset non disponible — définir ADMIN_RESET_KEY dans les variables Railway' });
 
     const { key, new_password } = req.body;
-    if (!key || key !== resetKey) {
-      return res.status(403).json({ error: 'Clé de reset invalide' });
-    }
-    if (!new_password || new_password.length < 6) {
-      return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
-    }
+    if (!key || key !== resetKey) return res.status(403).json({ error: 'Clé de reset invalide' });
+    if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
 
     const hash = await bcrypt.hash(new_password, 10);
     const { rowCount } = await db.query(
@@ -506,7 +444,6 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
     );
 
     if (rowCount === 0) {
-      // Create admin if doesn't exist
       await db.query(
         `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
          VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
