@@ -290,6 +290,12 @@ async function fixMissingSchema() {
   // commande via /optimize. La logique métier gère l'unicité via le service.
   await run('drop one_draft_per_order',     'ALTER TABLE parcels DROP CONSTRAINT IF EXISTS one_draft_per_order');
 
+  // ── Migration 024 : ajouter in_transit à l'enum order_status ────────────
+  // in_transit = commande embarquée (bateau/avion) entre Dubai et Comores
+  // PostgreSQL ALTER TYPE ADD VALUE est idempotent depuis PG 12 avec IF NOT EXISTS
+  await run('order_status enum in_transit',
+    `ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'in_transit' AFTER 'shipped'`);
+
   console.log('🔧 Schema migrations complete.');
 }
 

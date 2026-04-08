@@ -42,12 +42,14 @@ const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 // Ordre critique : FK parcel_items.order_item_id → order_items.id
 async function deleteOrderCascade(client_or_db, id) {
   // 1. parcel_items → dépend de order_items (FK) ET de parcels (FK)
-  await client_or_db.query(
-    `DELETE FROM parcel_items WHERE order_item_id IN (
-       SELECT id FROM order_items WHERE order_id = $1
-     )`,
-    [id]
-  );
+  try {
+    await client_or_db.query(
+      `DELETE FROM parcel_items WHERE order_item_id IN (
+         SELECT id FROM order_items WHERE order_id = $1
+       )`,
+      [id]
+    );
+  } catch (_) {}
   try { await client_or_db.query(`DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)`, [id]); } catch (_) {}
   // 2. parcels
   try { await client_or_db.query('DELETE FROM parcels WHERE order_id = $1', [id]); } catch (_) {}
@@ -136,7 +138,7 @@ router.delete('/orders/:id', ...guard, async (req, res) => {
 
     await deleteOrderCascade(db, id);
 
-    console.log(`\uD83D\uDDD1\uFE0F Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
+    console.log(`🗑️ Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
     res.json({
       success: true,
       message: `Commande ${order.reference} supprimée`,
@@ -291,7 +293,7 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
       const restocked = await db.query('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
       if (restocked.rowCount > 0) report.restocked = restocked.rowCount;
     }
-    console.log(`\uD83E\uDDF9 Admin reset "${mode}" effectué par ${req.user.email}`);
+    console.log(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
     res.json({ success: true, message: `Reset "${mode}" effectué avec succès ✅`, ...report });
   } catch (err) {
     console.error('Reset error:', err.message);
@@ -321,7 +323,7 @@ router.get('/counts', ...guard, async (req, res) => {
 });
 
 // ─── POST /api/admin/seed-test ───────────────────────────────────────────────
-// Crée 8 commandes couvrant tous les statuts du pipeline (confirmed → collected + cancelled)
+// Crée des commandes couvrant tous les statuts du pipeline
 // Réutilisable : supprime les précédentes commandes KT-* avant de recréer
 
 router.post('/seed-test', ...guard, async (req, res) => {
@@ -368,6 +370,12 @@ router.post('/seed-test', ...guard, async (req, res) => {
     const relais  = relaisList[0];
     const adminId = req.user.id;
 
+    // Vérifier quels statuts sont disponibles dans l'enum DB
+    const { rows: enumVals } = await client.query(
+      `SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'order_status'`
+    );
+    const availableStatuses = new Set(enumVals.map(r => r.enumlabel));
+
     // Supprimer les commandes test précédentes (reference LIKE 'KT-%')
     const { rows: prevOrders } = await client.query(
       "SELECT id FROM orders WHERE reference LIKE 'KT-%'"
@@ -378,11 +386,11 @@ router.post('/seed-test', ...guard, async (req, res) => {
       deletedCount++;
     }
 
-    // Pipeline de statuts à créer
     const now     = new Date();
     const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
 
-    const testScenarios = [
+    // Tous les scénarios — filtrés selon l'enum DB réel
+    const allScenarios = [
       {
         status: 'confirmed',   ref: 'KT-CONFIRMED',
         payment_mode: 'cash_relais', payment_status: 'pending',
@@ -433,6 +441,10 @@ router.post('/seed-test', ...guard, async (req, res) => {
       },
     ];
 
+    // Filtrer les scénarios selon les statuts présents dans l'enum DB
+    const testScenarios = allScenarios.filter(t => availableStatuses.has(t.status));
+    const skippedStatuses = allScenarios.filter(t => !availableStatuses.has(t.status)).map(t => t.status);
+
     const created = [];
     for (const t of testScenarios) {
       const id = uuidv4();
@@ -452,7 +464,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
           id, t.ref, adminId, relais.id,
           5000, 10.16, t.payment_mode, t.payment_status,
           t.payment_mode === 'cash_relais' ? '999001' : null,
-          genPickup(),       // pickup_code unique par commande
+          genPickup(),
           t.status,
           t.ordered_at, t.preparation_at, t.shipped_at,
           t.available_at, t.collected_at, t.cancelled_at,
@@ -471,13 +483,14 @@ router.post('/seed-test', ...guard, async (req, res) => {
 
     await client.query('COMMIT');
 
-    console.log(`\uD83C\uDF31 Seed-test: ${created.length} commandes créées par ${req.user.email} (${deletedCount} anciennes supprimées)`);
+    console.log(`🌱 Seed-test: ${created.length} commandes créées par ${req.user.email} (${deletedCount} anciennes supprimées)`);
     res.json({
       success:          true,
-      message:          `${created.length} commandes test créées — tous statuts couverts`,
+      message:          `${created.length} commandes test créées — statuts couverts`,
       deleted_previous: deletedCount,
       product_used:     product.name,
       relais_used:      relais.name || relais.id,
+      skipped_statuses: skippedStatuses,
       orders:           created,
     });
 
@@ -562,7 +575,7 @@ router.post('/users', ...guard, async (req, res) => {
        RETURNING id, full_name, email, phone, role, currency_pref, created_at`,
       [full_name, email.toLowerCase().trim(), phone || null, role, currency_pref, password_hash]
     );
-    console.log(`\uD83D\uDC64 Admin created user ${user.email} (${role}) by ${req.user.email}`);
+    console.log(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
     res.status(201).json(user);
   } catch (err) {
     console.error('Admin create user error:', err.message);
@@ -583,7 +596,7 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
       [role, id]
     );
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    console.log(`\uD83D\uDD11 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
+    console.log(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
     res.json({ success: true, user });
   } catch (err) {
     console.error('Admin change role error:', err.message);
@@ -603,7 +616,7 @@ router.put('/users/:id/password', ...guard, async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
     const password_hash = await bcrypt.hash(password, 10);
     await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [password_hash, id]);
-    console.log(`\uD83D\uDD12 Admin reset password for ${existing.email} by ${req.user.email}`);
+    console.log(`🔒 Admin reset password for ${existing.email} by ${req.user.email}`);
     res.json({ success: true, message: `Mot de passe réinitialisé pour ${existing.full_name}` });
   } catch (err) {
     console.error('Admin reset password error:', err.message);
@@ -625,11 +638,11 @@ router.delete('/users/:id', ...guard, async (req, res) => {
         `UPDATE users SET email = 'deleted_' || id || '@komerce.deleted', full_name = '[Compte supprimé]',
            phone = NULL, password_hash = '', updated_at = NOW() WHERE id = $1`, [id]
       );
-      console.log(`\uD83D\uDDD1\uFE0F Admin soft-deleted user ${user.email} by ${req.user.email}`);
+      console.log(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`, type: 'soft_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     } else {
       await db.query('DELETE FROM users WHERE id = $1', [id]);
-      console.log(`\uD83D\uDDD1\uFE0F Admin hard-deleted user ${user.email} by ${req.user.email}`);
+      console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     }
   } catch (err) {
