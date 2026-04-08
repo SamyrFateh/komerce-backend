@@ -11,35 +11,21 @@ const db = require('../db');
 const bcrypt = require('bcryptjs');
 
 // ── SEED : Admin par défaut ──────────────────────────────────────────────────
-// Garantit qu'un compte admin existe toujours au démarrage.
-// Si ADMIN_PASSWORD est défini, le hash est toujours mis à jour.
-// Sinon, crée avec 'admin123' uniquement si aucun admin n'existe.
+// Garantit qu'un compte admin existe toujours au démarrage avec
+// le bon password. Si ADMIN_PASSWORD est défini, on l'utilise.
+// Sinon, on force 'admin123' (pratique dev/test).
 async function seedAdmin() {
   try {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const { rows } = await db.query("SELECT id FROM users WHERE email = 'admin@komerce.km' LIMIT 1");
+    const hash = await bcrypt.hash(adminPassword, 10);
     
-    if (rows.length === 0) {
-      // Aucun admin : on crée
-      const hash = await bcrypt.hash(adminPassword, 10);
-      await db.query(
-        `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
-         VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
-         ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
-        [hash]
-      );
-      console.log('🌱 Seed admin: admin@komerce.km créé (password: ' + (process.env.ADMIN_PASSWORD ? '***' : 'admin123') + ')');
-    } else if (process.env.ADMIN_PASSWORD) {
-      // Admin existe + ADMIN_PASSWORD défini : on force la mise à jour du hash
-      const hash = await bcrypt.hash(adminPassword, 10);
-      await db.query(
-        "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
-        [hash]
-      );
-      console.log('🔒 Seed admin: hash forcé depuis ADMIN_PASSWORD');
-    } else {
-      console.log('✅ Seed admin: admin@komerce.km déjà présent, aucune action');
-    }
+    await db.query(
+      `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
+       VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
+       ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
+      [hash]
+    );
+    console.log('🔒 Seed admin: admin@komerce.km upserté (password: ' + (process.env.ADMIN_PASSWORD ? '***' : 'admin123') + ')');
   } catch (err) {
     console.error('Seed admin error (non-fatal):', err.message);
   }
@@ -129,27 +115,22 @@ async function seedProducts() {
 async function fixProductCategories() {
   console.log('🏷️  Migrating product categories for bloom nav...');
   const migrations = [
-    // electronics → tech subcategories
     { oldCat: 'electronics', namePattern: '%Galaxy A%',      newCat: 'telephones' },
     { oldCat: 'electronics', namePattern: '%Buds%',          newCat: 'audio' },
     { oldCat: 'electronics', namePattern: '%coques%',        newCat: 'accessoires-tel' },
     { oldCat: 'electronics', namePattern: '%Chargeur%',      newCat: 'accessoires-tel' },
-    // home → maison subcategories
     { oldCat: 'home', namePattern: '%Ventilateur%',          newCat: 'equipement' },
     { oldCat: 'home', namePattern: '%repasser%',             newCat: 'equipement' },
     { oldCat: 'home', namePattern: '%Multiprise%',           newCat: 'equipement' },
     { oldCat: 'home', namePattern: '%Bouilloire%',           newCat: 'cuisine' },
-    // wedding → surmesure subcategories
     { oldCat: 'wedding', namePattern: '%Montre%',            newCat: 'accessoires' },
     { oldCat: 'wedding', namePattern: '%Collier%',           newCat: 'accessoires' },
     { oldCat: 'wedding', namePattern: '%Parfum%Oud%Shuyukh%',newCat: 'parfums' },
     { oldCat: 'wedding', namePattern: '%Coffret%mariage%',   newCat: 'mariage-custom' },
-    // fashion → mode subcategories
     { oldCat: 'fashion', namePattern: '%Djellaba%',          newCat: 'vetements' },
     { oldCat: 'fashion', namePattern: '%Abaya%',             newCat: 'vetements' },
     { oldCat: 'fashion', namePattern: '%Boubou%',            newCat: 'vetements' },
     { oldCat: 'fashion', namePattern: '%Caftan%',            newCat: 'vetements' },
-    // services → beaute subcategories
     { oldCat: 'services', namePattern: '%Crème%visage%',     newCat: 'soins' },
     { oldCat: 'services', namePattern: '%Parfum%Oud%Rose%',  newCat: 'parfums' },
     { oldCat: 'services', namePattern: '%argan%',            newCat: 'cheveux' },
@@ -195,7 +176,7 @@ async function seedRelais() {
 }
 
 
-// ── Fix product images: add Unsplash URLs to all products ───────────────────
+// ── Fix product images ─────────────────────────────────────────────────────────
 async function fixProductImages() {
   console.log('🖼️  Fixing product images...');
   const imageMap = {
