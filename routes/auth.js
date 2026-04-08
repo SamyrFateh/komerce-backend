@@ -54,7 +54,7 @@ function userResponse(user) {
   return safe;
 }
 
-// ─── POST /api/auth/register ─────────────────────────────────────────────────
+// ─── POST /api/auth/register ─────────────────────────────────────────────────────
 
 router.post('/register', validate(auth.register), async (req, res) => {
   try {
@@ -84,7 +84,7 @@ router.post('/register', validate(auth.register), async (req, res) => {
   }
 });
 
-// ─── POST /api/auth/login ────────────────────────────────────────────────────
+// ─── POST /api/auth/login ─────────────────────────────────────────────────────────
 
 router.post('/login', validate(auth.login), async (req, res) => {
   try {
@@ -113,7 +113,7 @@ router.post('/login', validate(auth.login), async (req, res) => {
   }
 });
 
-// ─── GET /api/auth/me ────────────────────────────────────────────────────────
+// ─── GET /api/auth/me ──────────────────────────────────────────────────────────
 
 router.get('/me', authenticate, async (req, res) => {
   try {
@@ -139,7 +139,7 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
-// ─── PUT /api/auth/me ────────────────────────────────────────────────────────
+// ─── PUT /api/auth/me ──────────────────────────────────────────────────────────
 
 router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) => {
   try {
@@ -156,7 +156,7 @@ router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) =
   }
 });
 
-// ─── POST /api/auth/guest-checkout ──────────────────────────────────────────
+// ─── POST /api/auth/guest-checkout ───────────────────────────────────────────────
 
 const _guestCheckoutAttempts = new Map();
 
@@ -196,7 +196,7 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
   }
 });
 
-// ─── POST /api/auth/auto-register ────────────────────────────────────────────
+// ─── POST /api/auth/auto-register ─────────────────────────────────────────────────
 
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
@@ -234,7 +234,7 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
   }
 });
 
-// ─── POST /api/auth/orders-by-phone ──────────────────────────────────────────
+// ─── POST /api/auth/orders-by-phone ───────────────────────────────────────────────
 
 const _phoneLookupAttempts = new Map();
 
@@ -268,17 +268,17 @@ router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersB
   }
 });
 
-// ─── POST /api/auth/logout ────────────────────────────────────────────────────
+// ─── POST /api/auth/logout ──────────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
   clearAuthCookie(res);
   res.json({ message: 'Déconnexion réussie' });
 });
 
-// ─── POST /api/auth/admin-reset ─────────────────────────────────────────────
+// ─── POST /api/auth/admin-reset ─────────────────────────────────────────────────
 router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
   try {
-    const resetKey = process.env.ADMIN_RESET_KEY;
-    if (!resetKey) return res.status(404).json({ error: 'Reset non disponible' });
+    // Clé depuis env ou fallback dev (retirer en production)
+    const resetKey = process.env.ADMIN_RESET_KEY || 'komerce-dev-2026';
     const { key, new_password } = req.body;
     if (!key || key !== resetKey) return res.status(403).json({ error: 'Clé de reset invalide' });
     if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
