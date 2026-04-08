@@ -1,7 +1,7 @@
 {
   "name": "komerce-backend",
   "version": "2.4.0",
-  "description": "Komerce \u2014 Backend API v10.4 \u00b7 Marketplace Comores (Vague 4 \u2014 Parcel Optimization)",
+  "description": "Komerce — Backend API v10.4 · Marketplace Comores (Vague 4 — Parcel Optimization)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,7 +11,7 @@
     "pretest": "npm audit --production --audit-level=high"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "africastalking": "^0.7.2",
