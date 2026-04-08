@@ -138,7 +138,7 @@ router.post('/register', validate(auth.register), async (req, res) => {
 
     const token = generateToken(user);
     setAuthCookie(res, token);
-    res.status(201).json({ token, user: userResponse(user) });
+    res.status(201).json({ user: userResponse(user) });
 
   } catch (err) {
     console.error('Register error:', err.message);
@@ -185,7 +185,7 @@ router.post('/login', validate(auth.login), async (req, res) => {
 
     const token = generateToken(user);
     setAuthCookie(res, token);
-    res.json({ token, user: userResponse(user) });
+    res.json({ user: userResponse(user) });
 
   } catch (err) {
     console.error('Login error:', err.message);
@@ -294,7 +294,7 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
       const user = existing[0];
       const token = generateToken(user);
       setAuthCookie(res, token);
-      return res.json({ token, user: userResponse(user), created: false });
+      return res.json({ user: userResponse(user), created: false });
     }
 
     // Créer un nouveau compte client — mot de passe aléatoire (inutilisable directement)
@@ -311,7 +311,7 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
 
     const token = generateToken(user);
     setAuthCookie(res, token);
-    res.status(201).json({ token, user: userResponse(user), created: true });
+    res.status(201).json({ user: userResponse(user), created: true });
 
   } catch (err) {
     console.error('Guest-checkout error:', err.message);
@@ -367,7 +367,7 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
       );
       const token = generateToken(user);
       setAuthCookie(res, token);
-      return res.json({ token, user: userResponse(user), created: false });
+      return res.json({ user: userResponse(user), created: false });
     }
 
     // Créer le compte — mot de passe aléatoire, inutilisable directement
@@ -384,7 +384,7 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
 
     const token = generateToken(user);
     setAuthCookie(res, token);
-    res.status(201).json({ token, user: userResponse(user), created: true });
+    res.status(201).json({ user: userResponse(user), created: true });
 
   } catch (err) {
     console.error('Auto-register error:', err.message);
