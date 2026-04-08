@@ -10,13 +10,8 @@
 const db = require('../db');
 const bcryptMigrate = require('bcryptjs');
 
-// ── Auto-migration : fix admin bcrypt hash (one-time) ──────────────────────
-// Le seed original stockait un hash SHA-256 incompatible avec bcrypt.compare().
-// Cette migration corrige automatiquement au premier démarrage.
-
 async function fixAdminHash() {
   try {
-    // D3 : Si ADMIN_PASSWORD est défini dans l'env, utiliser ce mot de passe au lieu du défaut
     const adminPassword = process.env.ADMIN_PASSWORD;
     if (!adminPassword) {
       console.warn('⚠️  ADMIN_PASSWORD non défini — migration admin hash ignorée');
@@ -29,8 +24,6 @@ async function fixAdminHash() {
       [newAdminHash]
     );
     console.log(`✅ Migration: admin hash forcé — ${adminResult.rowCount} row(s) updated`);
-
-    // If admin doesn't exist at all, create it
     if (adminResult.rowCount === 0) {
       await db.query(
         `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
@@ -40,8 +33,6 @@ async function fixAdminHash() {
       );
       console.log('✅ Migration: admin user créé/upserted');
     }
-
-    // Also fix demo clients
     const newClientHash = await bcryptMigrate.hash('client123', 10);
     const clientResult = await db.query(
       "UPDATE users SET password_hash = $1 WHERE role = 'client' AND password_hash NOT LIKE '$2b$%'",
@@ -55,8 +46,6 @@ async function fixAdminHash() {
   }
 }
 
-// ── Auto-migration : tables/colonnes manquantes ─────────────────────────────
-
 async function fixMissingSchema() {
   const run = async (label, sql) => {
     try {
@@ -69,7 +58,7 @@ async function fixMissingSchema() {
 
   console.log('🔧 Running schema migrations...');
 
-  // 1. customs_history — colonnes manquantes pour admin/customs
+  // 1. customs_history
   await run('customs_history.customs_estimated_kmf',
     `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_estimated_kmf INTEGER DEFAULT 0`);
   await run('customs_history.notes',
@@ -77,7 +66,7 @@ async function fixMissingSchema() {
   await run('customs_history.customs_agent_id',
     `ALTER TABLE customs_history ADD COLUMN IF NOT EXISTS customs_agent_id UUID`);
 
-  // 2. partners — table manquante pour admin/partners
+  // 2. partners
   await run('partners table', `
     CREATE TABLE IF NOT EXISTS partners (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -97,7 +86,7 @@ async function fixMissingSchema() {
     )
   `);
 
-  // 3. loyalty_tiers — table nécessaire pour pilotage/clients
+  // 3. loyalty_tiers
   await run('loyalty_tiers table', `
     CREATE TABLE IF NOT EXISTS loyalty_tiers (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -109,11 +98,11 @@ async function fixMissingSchema() {
     )
   `);
 
-  // 4. users.loyalty_tier_id — colonne FK pour pilotage/clients
+  // 4. users.loyalty_tier_id
   await run('users.loyalty_tier_id',
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS loyalty_tier_id UUID`);
 
-  // 5. customs_taux_mensuel — vue pour pilotage.js
+  // 5. customs_taux_mensuel view
   await run('customs_taux_mensuel view', `
     CREATE OR REPLACE VIEW customs_taux_mensuel AS
     SELECT
@@ -124,7 +113,7 @@ async function fixMissingSchema() {
     GROUP BY TO_CHAR(created_at, 'YYYY-MM')
   `);
 
-  // 6. Seed default loyalty tiers si vide
+  // 6. Seed default loyalty tiers
   try {
     const { rows } = await db.query('SELECT COUNT(*)::int AS c FROM loyalty_tiers');
     if (rows[0].c === 0) {
@@ -141,7 +130,7 @@ async function fixMissingSchema() {
     console.error(`  ⚠️ loyalty seed: ${err.message}`);
   }
 
-  // 7. business_rules — moteur de règles opérationnelles (Point 6)
+  // 7. business_rules
   await run('business_rules table', `
     CREATE TABLE IF NOT EXISTS business_rules (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -209,7 +198,7 @@ async function fixMissingSchema() {
   await run('order_items.backorder_reason',
     `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS backorder_reason TEXT`);
 
-  // Seed business_rules (46 règles par défaut — 36 originales + 10 pricing) — ON CONFLICT DO NOTHING
+  // 8. business_rules seed
   try {
     const { rows } = await db.query('SELECT COUNT(*)::int AS c FROM business_rules');
     if (rows[0].c === 0) {
@@ -268,6 +257,30 @@ async function fixMissingSchema() {
   } catch (err) {
     console.error(`  ⚠️ business_rules seed: ${err.message}`);
   }
+
+  // ── Migration 020 : colonnes optimisation colis ──────────────────────────
+  // (idempotentes — IF NOT EXISTS)
+  await run('parcels.label',                'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS label               TEXT');
+  await run('parcels.relais_id',            'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS relais_id           UUID REFERENCES relais(id)');
+  await run('parcels.pickup_code',          'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS pickup_code         TEXT');
+  await run('parcels.weight_kg',            'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS weight_kg           NUMERIC(6,2)');
+  await run('parcels.volume_cm3',           'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS volume_cm3          NUMERIC(10,2)');
+  await run('parcels.shipping_session_id',  'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS shipping_session_id UUID');
+  await run('parcels.arrived_at',           'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS arrived_at          TIMESTAMPTZ');
+  await run('parcels.cancelled_at',         'ALTER TABLE parcels ADD COLUMN IF NOT EXISTS cancelled_at        TIMESTAMPTZ');
+  await run('parcel_items.product_id',      'ALTER TABLE parcel_items ADD COLUMN IF NOT EXISTS product_id UUID REFERENCES products(id)');
+  await run('products.volume_cm3',          'ALTER TABLE products ADD COLUMN IF NOT EXISTS volume_cm3          NUMERIC(10,2)');
+  await run('products.category',            'ALTER TABLE products ADD COLUMN IF NOT EXISTS category            TEXT');
+  await run('products.is_fragile',          'ALTER TABLE products ADD COLUMN IF NOT EXISTS is_fragile          BOOLEAN NOT NULL DEFAULT false');
+  await run('products.is_bulky',            'ALTER TABLE products ADD COLUMN IF NOT EXISTS is_bulky            BOOLEAN NOT NULL DEFAULT false');
+  await run('products.compatibility_group', 'ALTER TABLE products ADD COLUMN IF NOT EXISTS compatibility_group TEXT');
+  await run('idx_parcels_relais_id',        'CREATE INDEX IF NOT EXISTS idx_parcels_relais_id ON parcels(relais_id)');
+  await run('idx_products_category',        'CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)');
+  await run('idx_products_fragile_bulky',   'CREATE INDEX IF NOT EXISTS idx_products_fragile_bulky ON products(is_fragile, is_bulky)');
+
+  // ── Migration 021 : products.weight_kg ──────────────────────────────────
+  await run('products.weight_kg',           'ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_kg NUMERIC(6,2)');
+  await run('idx_products_weight_kg',       'CREATE INDEX IF NOT EXISTS idx_products_weight_kg ON products(weight_kg)');
 
   console.log('🔧 Schema migrations complete.');
 }
