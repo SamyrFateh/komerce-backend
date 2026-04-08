@@ -63,7 +63,7 @@ async function deleteOrderCascade(client_or_db, id) {
 }
 
 
-// ─── GET /api/admin/orders ───────────────────────────────────────────────────
+// ─── GET /api/admin/orders ───────────────────────────────────────────────────────────────
 
 router.get('/orders', ...guard, async (req, res) => {
   try {
@@ -128,7 +128,7 @@ router.get('/orders', ...guard, async (req, res) => {
   }
 });
 
-// ─── DELETE /api/admin/orders/:id ────────────────────────────────────────────
+// ─── DELETE /api/admin/orders/:id ───────────────────────────────────────────────────────────────
 
 router.delete('/orders/:id', ...guard, async (req, res) => {
   const { id } = req.params;
@@ -151,7 +151,7 @@ router.delete('/orders/:id', ...guard, async (req, res) => {
 });
 
 
-// ─── GET /api/admin/customs ───────────────────────────────────────────────────
+// ─── GET /api/admin/customs ───────────────────────────────────────────────────────────────
 
 router.get('/customs', ...guard, async (req, res) => {
   try {
@@ -201,7 +201,7 @@ router.get('/customs', ...guard, async (req, res) => {
 });
 
 
-// ─── GET /api/admin/partners ─────────────────────────────────────────────────
+// ─── GET /api/admin/partners ───────────────────────────────────────────────────────────────
 
 router.get('/partners', ...guard, async (req, res) => {
   try {
@@ -220,7 +220,7 @@ router.get('/partners', ...guard, async (req, res) => {
   }
 });
 
-// ─── POST /api/admin/partners ────────────────────────────────────────────────
+// ─── POST /api/admin/partners ────────────────────────────────────────────────────────────────
 
 router.post('/partners', ...guard, validate(admin.createPartner), async (req, res) => {
   try {
@@ -240,7 +240,7 @@ router.post('/partners', ...guard, validate(admin.createPartner), async (req, re
   }
 });
 
-// ─── PUT /api/admin/partners/:id ─────────────────────────────────────────────
+// ─── PUT /api/admin/partners/:id ────────────────────────────────────────────────────────────────
 
 router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req, res) => {
   try {
@@ -262,7 +262,7 @@ router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req,
   }
 });
 
-// ─── POST /api/admin/reset ───────────────────────────────────────────────────
+// ─── POST /api/admin/reset ──────────────────────────────────────────────────────────────────
 
 router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
   // ── Vague 1: Production guard — disable reset in production ──
@@ -301,7 +301,7 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
   }
 });
 
-// ─── GET /api/admin/counts ───────────────────────────────────────────────────
+// ─── GET /api/admin/counts ──────────────────────────────────────────────────────────────────
 
 router.get('/counts', ...guard, async (req, res) => {
   try {
@@ -322,7 +322,7 @@ router.get('/counts', ...guard, async (req, res) => {
   }
 });
 
-// ─── POST /api/admin/seed-test ───────────────────────────────────────────────
+// ─── POST /api/admin/seed-test ───────────────────────────────────────────────────────────────
 // Crée des commandes couvrant tous les statuts du pipeline
 // Réutilisable : supprime les précédentes commandes KT-* avant de recréer
 
@@ -340,6 +340,11 @@ router.post('/seed-test', ...guard, async (req, res) => {
       return CHARS[b % 36];
     }).join('');
   };
+
+  // Génère un cash_ref_code unique basé sur timestamp
+  const ts = Date.now();
+  let cashRefIdx = 0;
+  const genCashRef = () => String(ts + (cashRefIdx++)).slice(-8); // 8 derniers chiffres du ts
 
   try {
     const { confirm } = req.body;
@@ -389,7 +394,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
     const now     = new Date();
     const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
 
-    // Tous les scénarios — filtrés selon l'enum DB réel
+    // Tous les scénarios — cash_ref_code UNIQUE par commande
     const allScenarios = [
       {
         status: 'confirmed',   ref: 'KT-CONFIRMED',
@@ -448,6 +453,9 @@ router.post('/seed-test', ...guard, async (req, res) => {
     const created = [];
     for (const t of testScenarios) {
       const id = uuidv4();
+      // cash_ref_code unique par commande cash_relais
+      const cashRef = t.payment_mode === 'cash_relais' ? genCashRef() : null;
+
       await client.query(
         `INSERT INTO orders (
            id, reference, user_id, relais_id,
@@ -463,7 +471,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
         [
           id, t.ref, adminId, relais.id,
           5000, 10.16, t.payment_mode, t.payment_status,
-          t.payment_mode === 'cash_relais' ? '999001' : null,
+          cashRef,
           genPickup(),
           t.status,
           t.ordered_at, t.preparation_at, t.shipped_at,
@@ -503,7 +511,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
   }
 });
 
-// ─── GET /api/admin/users — Liste tous les utilisateurs ──────────────────────
+// ─── GET /api/admin/users — Liste tous les utilisateurs ────────────────────────────────────
 // NOTE: user_role enum = ('client', 'admin', 'agent_relais', 'agent_hub')
 
 router.get('/users', ...guard, async (req, res) => {
@@ -558,7 +566,7 @@ router.get('/users', ...guard, async (req, res) => {
   }
 });
 
-// ─── POST /api/admin/users — Créer un utilisateur ────────────────────────────
+// ─── POST /api/admin/users — Créer un utilisateur ──────────────────────────────────────────
 
 router.post('/users', ...guard, async (req, res) => {
   const bcrypt = require('bcryptjs');
@@ -583,7 +591,7 @@ router.post('/users', ...guard, async (req, res) => {
   }
 });
 
-// ─── PUT /api/admin/users/:id/role ───────────────────────────────────────────
+// ─── PUT /api/admin/users/:id/role ────────────────────────────────────────────────────────────────
 
 router.put('/users/:id/role', ...guard, async (req, res) => {
   try {
@@ -604,7 +612,7 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
   }
 });
 
-// ─── PUT /api/admin/users/:id/password ───────────────────────────────────────
+// ─── PUT /api/admin/users/:id/password ────────────────────────────────────────────────────────────
 
 router.put('/users/:id/password', ...guard, async (req, res) => {
   const bcrypt = require('bcryptjs');
@@ -624,7 +632,7 @@ router.put('/users/:id/password', ...guard, async (req, res) => {
   }
 });
 
-// ─── DELETE /api/admin/users/:id ─────────────────────────────────────────────
+// ─── DELETE /api/admin/users/:id ────────────────────────────────────────────────────────────────
 
 router.delete('/users/:id', ...guard, async (req, res) => {
   try {
@@ -652,7 +660,7 @@ router.delete('/users/:id', ...guard, async (req, res) => {
 });
 
 
-// ── Redirections rétro-compatibles (dashboard endpoints déplacés) ────────────
+// ── Redirections rétro-compatibles (dashboard endpoints déplacés) ────────────────────
 // Ces endpoints sont désormais dans /api/dashboard/*
 // Gardés temporairement pour ne pas casser les clients existants
 
