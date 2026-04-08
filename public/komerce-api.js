@@ -1,11 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — API Unifiée v1.0
+   KOMERCE — API Unifiée v1.1
    Couche unique pour tous les écrans (Hub, Pipeline, Relais, Dashboard, Admin)
-   
-   Usage :
-     <script src="komerce-api.js"></script>
-     await K.auth.login('email', 'password');
-     const parcels = await K.parcels.list({ status: 'draft' });
+
+   Changelog v1.1 :
+   - Auth par cookie httpOnly (credentials: 'include') — plus de Bearer token en JS
+   - _state.api défaut = window.location.origin (fonctionne en same-origin Railway)
+   - auth.login lit data.user au lieu de data.token
+   - auth.logout appelle POST /api/auth/logout + efface flag localStorage
+   - auth.restore() → GET /api/auth/me pour retrouver la session depuis le cookie
+   - K.parcels.optimize(orderId) → POST /api/parcels/optimize
+   - K.parcels.bootstrap(orderId) → POST /api/parcels/bootstrap/:orderId
    ═══════════════════════════════════════════════════════════════ */
 
 const K = (() => {
@@ -13,8 +17,9 @@ const K = (() => {
 
   // ── STATE ──────────────────────────────────────────────────
   const _state = {
-    api: localStorage.getItem('komerce_api_url') || '',
-    token: localStorage.getItem('komerce_token') || '',
+    // Défaut : même origine (Railway ou localhost)
+    // Si l'utilisateur a défini une URL custom, on l'utilise.
+    api: localStorage.getItem('komerce_api_url') || (typeof window !== 'undefined' ? window.location.origin : ''),
     user: null,
   };
 
@@ -52,9 +57,9 @@ const K = (() => {
   async function _doFetch(path, method, body, maxRetries) {
     const opts = {
       method,
+      credentials: 'include',           // Envoie le cookie httpOnly kmrc_jwt
       headers: {
         'Content-Type': 'application/json',
-        ...(_state.token ? { Authorization: `Bearer ${_state.token}` } : {}),
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     };
@@ -89,9 +94,6 @@ const K = (() => {
 
   // ── CORE REQUEST ───────────────────────────────────────────
   function request(path, method = 'GET', body = null, retries = 2) {
-    if (!_state.api && path !== '/api/health') {
-      return Promise.reject(new Error('API non configurée — connectez-vous d\'abord'));
-    }
     return new Promise((resolve, reject) => {
       _rl.queue.push({ path, method, body, retries, resolve, reject });
       _drainQueue();
@@ -107,21 +109,36 @@ const K = (() => {
       }
       const health = await request('/api/health');
       const data = await request('/api/auth/login', 'POST', { email, password });
-      _state.token = data.token;
+      // Le backend répond { user: {...} } + pose un cookie httpOnly kmrc_jwt
       _state.user = data.user;
-      localStorage.setItem('komerce_token', data.token);
+      localStorage.setItem('komerce_session', '1');
       return { user: data.user, health };
     },
 
-    logout() {
-      _state.token = '';
+    async logout() {
+      try {
+        await request('/api/auth/logout', 'POST');
+      } catch (_) { /* ignore */ }
       _state.user = null;
-      localStorage.removeItem('komerce_token');
+      localStorage.removeItem('komerce_session');
+    },
+
+    // Restaure la session depuis le cookie httpOnly (à appeler au chargement de page)
+    async restore() {
+      try {
+        const user = await request('/api/auth/me');
+        _state.user = user;
+        localStorage.setItem('komerce_session', '1');
+        return user;
+      } catch (_) {
+        _state.user = null;
+        localStorage.removeItem('komerce_session');
+        return null;
+      }
     },
 
     getUser() { return _state.user; },
-    getToken() { return _state.token; },
-    isConnected() { return !!_state.token; },
+    isConnected() { return !!_state.user || !!localStorage.getItem('komerce_session'); },
 
     setUrl(url) {
       _state.api = url.replace(/\/$/, '');
@@ -140,6 +157,14 @@ const K = (() => {
     update(id, data) { return request(`/api/parcels/${id}`, 'PUT', data); },
     addItem(parcelId, data) { return request(`/api/parcels/${parcelId}/items`, 'POST', data); },
     stats() { return request('/api/parcels/stats'); },
+
+    // ── Moteur d'optimisation (Vague 4) ──
+    optimize(orderId, config = {}) {
+      return request('/api/parcels/optimize', 'POST', { order_id: orderId, config });
+    },
+    bootstrap(orderId) {
+      return request(`/api/parcels/bootstrap/${orderId}`, 'POST');
+    },
   };
 
   // ── HUB ────────────────────────────────────────────────────
