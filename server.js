@@ -1,9 +1,11 @@
 /**
- * KOMERCE — Serveur API v10.3 (Étape 3 — clean-up FIX-010/011/012)
+ * KOMERCE — Serveur API v10.4 (Vague 3 — migrations hors boot, error handler centralisé)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v10.4 : Vague 3 — migrations non-bloquantes (démarrage immédiat),
+ *                   gestion centralisée des erreurs (middleware/error-handler.js)
  * Changelog v10.3 : Étape 3 clean-up — pilotage.js supprimé, finance dé-dupliqué,
  *                   seeds + migrations extraits dans scripts/
  * Changelog v10.0 : Dashboards unifiés v11 — pilotage.js absorbé, 0 overlap, auth blindée
@@ -37,12 +39,12 @@ for (const key of RECOMMENDED_ENV) {
   }
 }
 
-const express    = require('express');
-const cors       = require('cors');
-const helmet     = require('helmet');
+const express      = require('express');
+const cors         = require('cors');
+const helmet       = require('helmet');
 const cookieParser = require('cookie-parser');
-const path       = require('path');
-const db         = require('./db');
+const path         = require('path');
+const db           = require('./db');
 
 const {
   globalLimiter,
@@ -54,9 +56,14 @@ const {
   adminLimiter,
 } = require('./middleware/rate-limit');
 
-// ── Scripts extraits (FIX-012) ──────────────────────────────────────────────
+// ── Migrations extraites (FIX-012 + Vague 3) ───────────────────────────────
+// Les migrations NE BLOQUENT PLUS le démarrage — elles tournent en background
+// après que le serveur est prêt à recevoir des requêtes.
 const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
-const { runAllSeeds } = require('./scripts/seed');
+const { runAllSeeds }                     = require('./scripts/seed');
+
+// ── Gestion centralisée des erreurs (Vague 3) ───────────────────────────────
+const { errorHandler } = require('./middleware/error-handler');
 
 const app = express();
 
@@ -67,13 +74,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || '';
 // ── CORS — politique stricte (Vague 1 security hardening) ──────────────────
 
 function isAllowedOrigin(origin) {
-  // Pas d'origin = requête same-origin ou mobile app → OK
   if (!origin) return true;
-  // Dev: localhost uniquement
   if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
-  // Prod: FRONTEND_URL explicite
   if (FRONTEND_URL && origin === FRONTEND_URL) return true;
-  // Prod: origines supplémentaires via ALLOWED_ORIGINS (comma-separated)
   const extra = process.env.ALLOWED_ORIGINS;
   if (extra) {
     const allowed = extra.split(',').map(s => s.trim()).filter(Boolean);
@@ -95,11 +98,6 @@ const corsOptions = {
 };
 
 // ── Security headers ─────────────────────────────────────────────────────────
-// CSP configuré pour autoriser :
-//   - scripts inline (tous les HTML utilisent <script> inline)
-//   - Google Fonts (CSS + polices)
-//   - images HTTPS (produits, avatars, banners)
-//   - connect-src self (fetch API)
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -133,21 +131,19 @@ app.use(cookieParser());
 
 // ── Rate limiting (middleware/rate-limit.js) ─────────────────────────────────
 
-app.use('/api/', globalLimiter);                            // 100 req/15min global
-app.use('/api/auth/login', authLimiter);                    // 5 req/15min brute-force
-app.use('/api/auth/register', authLimiter);                 // 5 req/15min anti-spam
-app.use('/api/payments/cash/confirm', cashConfirmLimiter);  // 3 req/min cash code
-app.use('/api/scans/collect', scanCollectLimiter);          // 5 req/min QR brute-force
-// orderCreateLimiter appliqué UNIQUEMENT au POST /api/orders (créer une commande)
-// Ne pas appliquer sur GET /api/orders/relais, /api/orders/:ref, etc.
+app.use('/api/', globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/payments/cash/confirm', cashConfirmLimiter);
+app.use('/api/scans/collect', scanCollectLimiter);
 app.use('/api/orders', (req, res, next) => {
   if (req.method === 'POST' && req.path === '/') {
     return orderCreateLimiter(req, res, next);
   }
   next();
-});                                                        // 10 req/min spam commandes (POST only)
-app.use('/api/dashboard', dashboardLimiter);                // 30 req/min anti-DoS queries
-app.use('/api/admin/', adminLimiter);                       // 30 req/min admin destructive ops
+});
+app.use('/api/dashboard', dashboardLimiter);
+app.use('/api/admin/', adminLimiter);
 
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
@@ -188,12 +184,9 @@ app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
 app.use('/api/orders',     ordersRouter);
 app.use('/api/relais',     relaisRouter);
-// ── Route aliases — rétro-compatibilité dashboards HTML ─────────────────────
-// FIX-011 : finance monté UNE seule fois sous /api/admin/finance (avec adminLimiter)
 app.use('/api/admin/finance',  financeRouter);
-app.use('/api/admin/pilotage', dashboardRouter);  // redirige vers dashboard unifié
-app.use('/api/admin/stats',    dashboardRouter);  // redirige vers dashboard unifié
-
+app.use('/api/admin/pilotage', dashboardRouter);
+app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/pricing',    pricingRouter);
@@ -205,19 +198,18 @@ app.use('/api/hub',        hubRouter);
 app.use('/api/carriers',   carriersRouter);
 app.use('/api/payments',   paymentsRouter);
 app.use('/api/scans',      scansRouter);
-// FIX-011 : ancien /api/finance redirigé → /api/admin/finance
 app.use('/api/finance', (req, res) => {
   res.status(301).json({
-    error: 'Endpoint déplacé',
+    error:    'Endpoint déplacé',
     redirect: `/api/admin/finance${req.path}`,
-    message: 'Utilisez /api/admin/finance à la place',
+    message:  'Utilisez /api/admin/finance à la place',
   });
 });
 app.use('/api/purchasing', purchasingRouter);
 app.use('/api/loyalty',    loyaltyRouter);
 app.use('/api/unsold',     unsoldRouter);
-app.use('/api/config',  configRouter);                                   // Règles métier admin (Point 6)
-app.use('/health',         healthRouter);    // Railway readiness probe
+app.use('/api/config',     configRouter);
+app.use('/health',         healthRouter);
 
 // ── Healthcheck (avec test DB) ───────────────────────────────────────────────
 
@@ -227,7 +219,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.3',
+      version:       '10.4',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -247,16 +239,10 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Komerce_Boutique.html'));
 });
 
-// ── Erreurs globales ──────────────────────────────────────────────────────────
+// ── Gestion centralisée des erreurs (Vague 3) ────────────────────────────────
+// Doit être monté APRÈS toutes les routes.
 
-app.use((err, req, res, next) => {
-  if (err.message && err.message.startsWith('Not allowed by CORS')) {
-    console.warn('CORS blocked:', err.message);
-    return res.status(403).json({ error: 'Origine non autorisee' });
-  }
-  console.error('Unhandled error:', err.message);
-  res.status(500).json({ error: 'Erreur serveur interne' });
-});
+app.use(errorHandler);
 
 // ── Cron cash relais (avec verrou anti-concurrence) ──────────────────────────
 
@@ -265,15 +251,14 @@ const { getRuleNumber: _getRuleNum } = require('./utils/rules');
 
 let cronRunning = false;
 
-// Start cron after reading interval from business_rules
 (async () => {
   let intervalMin = 60;
   try {
     intervalMin = await _getRuleNum('CASH_REMINDER_INTERVAL_MIN', 60);
   } catch (_) { /* fallback 60min */ }
-  
+
   console.log(`⏰ Cash reminder cron: every ${intervalMin}min`);
-  
+
   setInterval(async () => {
     if (cronRunning) return;
     cronRunning = true;
@@ -287,11 +272,9 @@ let cronRunning = false;
   }, intervalMin * 60 * 1000);
 })();
 
-// ── Phase 4 — Backorder checker cron (toutes les 6 heures) ───────────────
-// Détecte les backorders dont la date estimée est dépassée
-// et propose l'annulation au client par SMS (sans annuler automatiquement).
+// ── Phase 4 — Backorder checker cron ─────────────────────────────────────────
 
-const BACKORDER_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 heures
+const BACKORDER_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 let backorderCronRunning = false;
 
 setInterval(async () => {
@@ -309,31 +292,41 @@ setInterval(async () => {
   }
 }, BACKORDER_CHECK_INTERVAL_MS);
 
-// Run once at startup (délai 30s pour laisser le serveur démarrer)
 setTimeout(() => {
   processBackorderReminders()
     .then(result => { if (result.processed > 0) console.log(`[CRON] Initial backorder check: ${result.processed} traités`); })
     .catch(err => console.error('[CRON] Initial backorder check error:', err.message));
 }, 30 * 1000);
 
-// ── Démarrage + Graceful Shutdown ────────────────────────────────────────────
-// FIX-012 : seeds et migrations extraits dans scripts/fix-schema.js + scripts/seed.js
+// ── Démarrage + Graceful Shutdown ─────────────────────────────────────────────
+// Vague 3 : le serveur démarre IMMÉDIATEMENT.
+// Les migrations tournent en background après listen() — elles ne bloquent plus Railway.
 
 const PORT = process.env.PORT || 3000;
 
-fixAdminHash().then(() => fixMissingSchema()).then(() => runAllSeeds()).then(() => {
-  const server = app.listen(PORT, () => {
-    console.log(`KOMERCE API v10.3 — port ${PORT} — dashboards unified — helmet OK — rate-limit OK — CORS hardened — CSP fixed — migrations OK`);
-  });
+const server = app.listen(PORT, () => {
+  console.log(`KOMERCE API v10.4 — port ${PORT} — démarrage immédiat — migrations en background`);
 
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM reçu — fermeture gracieuse...');
-    server.close(() => {
-      console.log('Serveur fermé proprement.');
-      process.exit(0);
-    });
-    setTimeout(() => process.exit(1), 10_000);
+  // ── Migrations & seeds non-bloquantes ──────────────────────────────────────
+  setImmediate(async () => {
+    try {
+      await fixAdminHash();
+      await fixMissingSchema();
+      await runAllSeeds();
+      console.log('✅ Migrations et seeds terminées');
+    } catch (err) {
+      console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
+    }
   });
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM reçu — fermeture gracieuse...');
+  server.close(() => {
+    console.log('Serveur fermé proprement.');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10_000);
 });
 
 module.exports = app;
