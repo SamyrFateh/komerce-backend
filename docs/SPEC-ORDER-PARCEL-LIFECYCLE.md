@@ -1,6 +1,6 @@
 # SPEC — Cycle de vie commande & colis (Komerce)
 
-> Version 1.0 — Avril 2026
+> Version 1.3 — Avril 2026
 
 ---
 
@@ -22,19 +22,28 @@ Seules les **Link Rules** définissent les franchissements autorisés.
 ## Cycle commande — `orders.status`
 
 ```
-confirmed → ordered → preparation → in_transit → available → collected
-                                                            ↘ cancelled
+confirmed → ordered → preparation → shipped → in_transit → available → collected
+                                                                      ↘ cancelled → refunded
 ```
 
 | Statut | Signification business |
 |--------|----------------------|
 | `confirmed` | Commande créée / enregistrée dans le système |
 | `ordered` | Paiement confirmé — commande lancée côté opérations |
-| `preparation` | En cours de préparation physique |
-| `in_transit` | Au moins un colis expédié vers le relais |
+| `preparation` | En cours de préparation physique au hub |
+| `shipped` | Remise au transitaire à Dubaï — jalon physique clé |
+| `in_transit` | Réellement en route vers le relais |
 | `available` | Disponible au retrait au relais |
 | `collected` | Retiré par le client — fin de cycle |
-| `cancelled` | Annulée (avant expédition) |
+| `cancelled` | Annulée (avant ou pendant expédition) |
+| `refunded` | Remboursée après annulation — statut terminal |
+
+> 💡 **Pourquoi conserver `shipped` ?** Les trois jalons `preparation → shipped → in_transit` ne racontent pas la même chose :
+> - `preparation` = emballé au hub
+> - `shipped` = remis au transitaire à Dubaï
+> - `in_transit` = effectivement en route
+>
+> Cette distinction est utile pour l'équipe opérationnelle, le support client, les litiges et les KPI délais.
 
 > 💡 **Piste future :** renommer `confirmed → created` et `ordered → paid_confirmed` pour coller encore plus au vocabulaire métier. À faire lors d'une migration dédiée.
 
@@ -96,6 +105,30 @@ Condition : au moins un colis actif est en statut shipped | in_transit | availab
 Action    : orders.status = 'in_transit'
 ```
 Logique : dès qu'un premier colis part physiquement, la commande entre logiquement en phase de transit côté business.
+
+> ⚠️ **Note importante :** si `orders.status = 'shipped'`, R3 **ne s'applique pas**.  
+> La commande est déjà au-delà du seuil de départ physique — elle a été remise au transitaire par une action humaine explicite.  
+> Le passage `shipped → in_transit` reste une transition manuelle (opérateur ou scan).
+
+---
+
+## Statuts front simplifiés (client)
+
+Les statuts internes sont détaillés pour les opérations. Le front client peut les mapper en messages simplifiés :
+
+| `orders.status` interne | Libellé client suggéré |
+|------------------------|----------------------|
+| `confirmed` | Commande enregistrée |
+| `ordered` | Commande lancée |
+| `preparation` | En préparation |
+| `shipped` | En route vers Comores |
+| `in_transit` | En transit |
+| `available` | Disponible au retrait |
+| `collected` | Retirée — merci ! |
+| `cancelled` | Annulée |
+| `refunded` | Remboursée |
+
+> Ce mapping est indicatif. Il n'est pas stocké en base — c'est une couche de présentation uniquement.
 
 ---
 
