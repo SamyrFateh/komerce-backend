@@ -26,7 +26,6 @@ if (!JWT_SECRET) {
 const _JWT_SECRET = JWT_SECRET || 'komerce_secret_dev_UNSAFE';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
-// ─── Cookie settings (BUG-014 fix) ─────────────────────────────────────────
 const COOKIE_NAME = 'kmrc_jwt';
 
 function cookieOptions() {
@@ -40,32 +39,14 @@ function cookieOptions() {
     if (match[2] === 'h') maxAge = val * 60 * 60 * 1000;
     if (match[2] === 'm') maxAge = val * 60 * 1000;
   }
-  return {
-    httpOnly: true,
-    secure:   isProd,
-    sameSite: 'Strict',
-    maxAge,
-    path:     '/',
-  };
+  return { httpOnly: true, secure: isProd, sameSite: 'Strict', maxAge, path: '/' };
 }
 
-function setAuthCookie(res, token) {
-  res.cookie(COOKIE_NAME, token, cookieOptions());
-}
-
-function clearAuthCookie(res) {
-  res.clearCookie(COOKIE_NAME, { httpOnly: true, path: '/' });
-}
-
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
+function setAuthCookie(res, token) { res.cookie(COOKIE_NAME, token, cookieOptions()); }
+function clearAuthCookie(res) { res.clearCookie(COOKIE_NAME, { httpOnly: true, path: '/' }); }
 
 function generateToken(user) {
-  return jwt.sign(
-    { id: user.id, role: user.role },
-    _JWT_SECRET,
-    { expiresIn: JWT_EXPIRES }
-  );
+  return jwt.sign({ id: user.id, role: user.role }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
 function userResponse(user) {
@@ -73,111 +54,30 @@ function userResponse(user) {
   return safe;
 }
 
-// ─── GET /api/auth/debug-verify (TEMPORAIRE — à supprimer après debug) ────────
-// Teste jwt.verify directement et retourne l'erreur exacte
-
-router.get('/debug-verify', (req, res) => {
-  const token = (req.headers.authorization || '').replace('Bearer ', '') ||
-                (req.cookies && req.cookies.kmrc_jwt) || '';
-
-  if (!token) return res.json({ error: 'no token provided' });
-
-  const secretLen = _JWT_SECRET ? _JWT_SECRET.length : 0;
-  const secretPrefix = _JWT_SECRET ? _JWT_SECRET.substring(0, 4) : 'N/A';
-
-  // Test 1 : verify simple sans options
-  let test1;
-  try {
-    const d = jwt.verify(token, _JWT_SECRET);
-    test1 = { ok: true, id: d.id, role: d.role, iat: d.iat };
-  } catch (e) {
-    test1 = { ok: false, error: e.message, name: e.name };
-  }
-
-  // Test 2 : verify avec algorithms seulement
-  let test2;
-  try {
-    const d = jwt.verify(token, _JWT_SECRET, { algorithms: ['HS256'] });
-    test2 = { ok: true, id: d.id };
-  } catch (e) {
-    test2 = { ok: false, error: e.message, name: e.name };
-  }
-
-  // Test 3 : decode sans vérification (pour voir le payload)
-  const decoded_raw = jwt.decode(token, { complete: true });
-
-  res.json({
-    secret_len: secretLen,
-    secret_prefix: secretPrefix,
-    jwt_expires: JWT_EXPIRES,
-    token_len: token.length,
-    token_prefix: token.substring(0, 30),
-    decoded_header: decoded_raw && decoded_raw.header,
-    decoded_payload: decoded_raw && decoded_raw.payload,
-    test1_simple: test1,
-    test2_with_alg: test2,
-  });
-});
-
 // ─── POST /api/auth/register ─────────────────────────────────────────────────
 
 router.post('/register', validate(auth.register), async (req, res) => {
   try {
-    const {
-      full_name,
-      email,
-      phone,
-      password,
-      country = 'KM',
-      currency_pref = 'KMF',
-    } = req.body;
-
-    if (!phone) {
-      return res.status(400).json({ error: 'Le téléphone est obligatoire' });
-    }
-    if (!password || password.length < 6) {
-      return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
-    }
+    const { full_name, email, phone, password, country = 'KM', currency_pref = 'KMF' } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Le téléphone est obligatoire' });
+    if (!password || password.length < 6) return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
 
     if (email) {
-      const { rows: existing } = await db.query(
-        'SELECT id FROM users WHERE email = $1',
-        [email.toLowerCase()]
-      );
-      if (existing.length) {
-        return res.status(409).json({ error: 'Cet email est déjà utilisé' });
-      }
+      const { rows: existing } = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+      if (existing.length) return res.status(409).json({ error: 'Cet email est déjà utilisé' });
     }
-
-    const { rows: existingPhone } = await db.query(
-      'SELECT id FROM users WHERE phone = $1',
-      [phone]
-    );
-    if (existingPhone.length) {
-      return res.status(409).json({ error: 'Ce numéro de téléphone est déjà utilisé' });
-    }
+    const { rows: existingPhone } = await db.query('SELECT id FROM users WHERE phone = $1', [phone]);
+    if (existingPhone.length) return res.status(409).json({ error: 'Ce numéro de téléphone est déjà utilisé' });
 
     const password_hash = await bcrypt.hash(password, 10);
-
     const { rows: [user] } = await db.query(
-      `INSERT INTO users
-         (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'client', $5, $6)
-       RETURNING *`,
-      [
-        full_name || null,
-        email ? email.toLowerCase() : null,
-        phone,
-        password_hash,
-        country,
-        currency_pref,
-      ]
+      `INSERT INTO users (full_name, email, phone, password_hash, role, country, currency_pref)
+       VALUES ($1, $2, $3, $4, 'client', $5, $6) RETURNING *`,
+      [full_name || null, email ? email.toLowerCase() : null, phone, password_hash, country, currency_pref]
     );
-
     const token = generateToken(user);
     setAuthCookie(res, token);
     res.status(201).json({ user: userResponse(user) });
-
   } catch (err) {
     console.error('Register error:', err.message);
     res.status(500).json({ error: 'Erreur lors de la création du compte' });
@@ -189,41 +89,24 @@ router.post('/register', validate(auth.register), async (req, res) => {
 router.post('/login', validate(auth.login), async (req, res) => {
   try {
     const { email, phone, password } = req.body;
-
-    if (!password) {
-      return res.status(400).json({ error: 'Mot de passe obligatoire' });
-    }
-    if (!email && !phone) {
-      return res.status(400).json({ error: 'Email ou téléphone obligatoire' });
-    }
+    if (!password) return res.status(400).json({ error: 'Mot de passe obligatoire' });
+    if (!email && !phone) return res.status(400).json({ error: 'Email ou téléphone obligatoire' });
 
     let rows;
     if (email) {
-      ({ rows } = await db.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email.toLowerCase()]
-      ));
+      ({ rows } = await db.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]));
     } else {
-      ({ rows } = await db.query(
-        'SELECT * FROM users WHERE phone = $1',
-        [phone]
-      ));
+      ({ rows } = await db.query('SELECT * FROM users WHERE phone = $1', [phone]));
     }
 
-    if (!rows.length) {
-      return res.status(401).json({ error: 'Identifiants incorrects' });
-    }
-
+    if (!rows.length) return res.status(401).json({ error: 'Identifiants incorrects' });
     const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      return res.status(401).json({ error: 'Identifiants incorrects' });
-    }
+    if (!valid) return res.status(401).json({ error: 'Identifiants incorrects' });
 
     const token = generateToken(user);
     setAuthCookie(res, token);
     res.json({ user: userResponse(user) });
-
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).json({ error: 'Erreur lors de la connexion' });
@@ -261,18 +144,12 @@ router.get('/me', authenticate, async (req, res) => {
 router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) => {
   try {
     const { full_name, phone, currency_pref } = req.body;
-
     const { rows: [user] } = await db.query(
-      `UPDATE users
-       SET full_name     = COALESCE($1, full_name),
-           phone         = COALESCE($2, phone),
-           currency_pref = COALESCE($3, currency_pref),
-           updated_at    = NOW()
-       WHERE id = $4
-       RETURNING id, full_name, email, phone, role, country, currency_pref`,
+      `UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone),
+       currency_pref = COALESCE($3, currency_pref), updated_at = NOW()
+       WHERE id = $4 RETURNING id, full_name, email, phone, role, country, currency_pref`,
       [full_name, phone, currency_pref, req.user.id]
     );
-
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: 'Erreur mise à jour profil' });
@@ -284,14 +161,12 @@ router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) =
 const _guestCheckoutAttempts = new Map();
 
 function guestCheckoutRateLimit(req, res, next) {
-  const ip  = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
   const now = Date.now();
-  const WIN = 15 * 60 * 1000;
-  const MAX = 5;
+  const WIN = 15 * 60 * 1000; const MAX = 5;
   let entry = _guestCheckoutAttempts.get(ip);
   if (!entry || now > entry.resetAt) entry = { count: 0, resetAt: now + WIN };
-  entry.count++;
-  _guestCheckoutAttempts.set(ip, entry);
+  entry.count++; _guestCheckoutAttempts.set(ip, entry);
   if (entry.count > MAX) return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
   next();
 }
@@ -300,15 +175,12 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
   try {
     const { full_name, phone, email, country = 'KM' } = req.body;
     if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
-
     const { rows: existing } = await db.query('SELECT * FROM users WHERE phone = $1 LIMIT 1', [phone]);
     if (existing.length) {
       const user = existing[0];
-      const token = generateToken(user);
-      setAuthCookie(res, token);
+      setAuthCookie(res, generateToken(user));
       return res.json({ user: userResponse(user), created: false });
     }
-
     const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
     const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
     const { rows: [user] } = await db.query(
@@ -316,8 +188,7 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
        VALUES ($1, $2, $3, $4, 'client', $5, 'KMF') RETURNING *`,
       [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
     );
-    const token = generateToken(user);
-    setAuthCookie(res, token);
+    setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
   } catch (err) {
     console.error('Guest-checkout error:', err.message);
@@ -330,14 +201,9 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
 function requireInternalKey(req, res, next) {
-  if (!INTERNAL_API_KEY) {
-    console.error('FATAL: INTERNAL_API_KEY non définie — auto-register désactivé');
-    return res.status(503).json({ error: 'Endpoint désactivé (configuration manquante)' });
-  }
+  if (!INTERNAL_API_KEY) return res.status(503).json({ error: 'Endpoint désactivé' });
   const provided = req.headers['x-internal-key'];
-  if (!provided || provided !== INTERNAL_API_KEY) {
-    return res.status(401).json({ error: 'Clé interne invalide ou absente' });
-  }
+  if (!provided || provided !== INTERNAL_API_KEY) return res.status(401).json({ error: 'Clé interne invalide ou absente' });
   next();
 }
 
@@ -345,28 +211,22 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
   try {
     const { full_name, phone, email, country = 'KM' } = req.body;
     if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
-
     const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
     const { rows: existing } = await db.query(
-      `SELECT id FROM users WHERE email = $1 OR phone = $2 LIMIT 1`,
-      [resolvedEmail, phone]
+      `SELECT id FROM users WHERE email = $1 OR phone = $2 LIMIT 1`, [resolvedEmail, phone]
     );
-
     if (existing.length) {
       const { rows: [user] } = await db.query(`SELECT * FROM users WHERE id = $1`, [existing[0].id]);
-      const token = generateToken(user);
-      setAuthCookie(res, token);
+      setAuthCookie(res, generateToken(user));
       return res.json({ user: userResponse(user), created: false });
     }
-
     const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
     const { rows: [user] } = await db.query(
       `INSERT INTO users (full_name, email, phone, password_hash, role, country, currency_pref)
        VALUES ($1, $2, $3, $4, 'client', $5, 'KMF') RETURNING *`,
       [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
     );
-    const token = generateToken(user);
-    setAuthCookie(res, token);
+    setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
   } catch (err) {
     console.error('Auto-register error:', err.message);
@@ -379,14 +239,12 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
 const _phoneLookupAttempts = new Map();
 
 function checkPhoneLookupRateLimit(req, res, next) {
-  const ip  = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
   const now = Date.now();
-  const WIN = 15 * 60 * 1000;
-  const MAX = 5;
+  const WIN = 15 * 60 * 1000; const MAX = 5;
   let entry = _phoneLookupAttempts.get(ip);
   if (!entry || now > entry.resetAt) entry = { count: 0, resetAt: now + WIN };
-  entry.count++;
-  _phoneLookupAttempts.set(ip, entry);
+  entry.count++; _phoneLookupAttempts.set(ip, entry);
   if (entry.count > MAX) return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
   next();
 }
@@ -394,24 +252,15 @@ function checkPhoneLookupRateLimit(req, res, next) {
 router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersByPhone), async (req, res) => {
   try {
     const { phone } = req.body;
-    if (!phone || typeof phone !== 'string' || phone.trim().length < 6) {
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 6)
       return res.status(400).json({ error: 'Numéro de téléphone invalide' });
-    }
-
     const cleanPhone = phone.trim();
     const { rows } = await db.query(
-      `SELECT id, full_name, phone FROM users WHERE phone = $1 LIMIT 1`,
-      [cleanPhone]
+      `SELECT id, full_name, phone FROM users WHERE phone = $1 LIMIT 1`, [cleanPhone]
     );
-
     if (!rows.length) return res.json({ orders: [], name: null });
-
     const user = rows[0];
-    const token = jwt.sign(
-      { id: user.id, role: user.role, scope: 'orders_read' },
-      _JWT_SECRET,
-      { expiresIn: '2h' }
-    );
+    const token = jwt.sign({ id: user.id, role: user.role, scope: 'orders_read' }, _JWT_SECRET, { expiresIn: '2h' });
     res.json({ token, name: user.full_name });
   } catch (err) {
     console.error('Orders-by-phone error:', err.message);
@@ -420,39 +269,28 @@ router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersB
 });
 
 // ─── POST /api/auth/logout ────────────────────────────────────────────────────
-
 router.post('/logout', (req, res) => {
   clearAuthCookie(res);
   res.json({ message: 'Déconnexion réussie' });
 });
 
 // ─── POST /api/auth/admin-reset ─────────────────────────────────────────────
-
 router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
   try {
     const resetKey = process.env.ADMIN_RESET_KEY;
-    if (!resetKey) return res.status(404).json({ error: 'Reset non disponible — définir ADMIN_RESET_KEY dans les variables Railway' });
-
+    if (!resetKey) return res.status(404).json({ error: 'Reset non disponible' });
     const { key, new_password } = req.body;
     if (!key || key !== resetKey) return res.status(403).json({ error: 'Clé de reset invalide' });
     if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
-
     const hash = await bcrypt.hash(new_password, 10);
-    const { rowCount } = await db.query(
-      "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
-      [hash]
-    );
-
+    const { rowCount } = await db.query("UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'", [hash]);
     if (rowCount === 0) {
       await db.query(
         `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
          VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
-         ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
-        [hash]
+         ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`, [hash]
       );
     }
-
-    console.log('🔑 Admin password reset via /admin-reset endpoint');
     res.json({ success: true, message: 'Mot de passe admin réinitialisé avec succès' });
   } catch (err) {
     console.error('Admin reset error:', err.message);
