@@ -8,6 +8,42 @@
 'use strict';
 
 const db = require('../db');
+const bcrypt = require('bcryptjs');
+
+// ── SEED : Admin par défaut ──────────────────────────────────────────────────
+// Garantit qu'un compte admin existe toujours au démarrage.
+// Si ADMIN_PASSWORD est défini, le hash est toujours mis à jour.
+// Sinon, crée avec 'admin123' uniquement si aucun admin n'existe.
+async function seedAdmin() {
+  try {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const { rows } = await db.query("SELECT id FROM users WHERE email = 'admin@komerce.km' LIMIT 1");
+    
+    if (rows.length === 0) {
+      // Aucun admin : on crée
+      const hash = await bcrypt.hash(adminPassword, 10);
+      await db.query(
+        `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
+         VALUES ('Admin Komerce', 'admin@komerce.km', '+269000000', 'admin', 'KMF', 'KM', $1)
+         ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`,
+        [hash]
+      );
+      console.log('🌱 Seed admin: admin@komerce.km créé (password: ' + (process.env.ADMIN_PASSWORD ? '***' : 'admin123') + ')');
+    } else if (process.env.ADMIN_PASSWORD) {
+      // Admin existe + ADMIN_PASSWORD défini : on force la mise à jour du hash
+      const hash = await bcrypt.hash(adminPassword, 10);
+      await db.query(
+        "UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'",
+        [hash]
+      );
+      console.log('🔒 Seed admin: hash forcé depuis ADMIN_PASSWORD');
+    } else {
+      console.log('✅ Seed admin: admin@komerce.km déjà présent, aucune action');
+    }
+  } catch (err) {
+    console.error('Seed admin error (non-fatal):', err.message);
+  }
+}
 
 // ── Fix encoding: correct broken UTF-8 product data in DB ───────────────────
 async function fixProductEncoding() {
@@ -167,7 +203,7 @@ async function fixProductImages() {
     'Écouteurs Samsung Galaxy Buds2': 'https://images.unsplash.com/photo-1590658268037-6bf12f032f55?w=400&h=400&fit=crop',
     'Pack coques + accessoires (5 pièces)': 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&h=400&fit=crop',
     'Chargeur rapide 65W GaN (multi-ports)': 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400&h=400&fit=crop',
-    'Ventilateur sur pied 16\\"': 'https://images.unsplash.com/photo-1617375407361-9815c98f64c7?w=400&h=400&fit=crop',
+    'Ventilateur sur pied 16\"': 'https://images.unsplash.com/photo-1617375407361-9815c98f64c7?w=400&h=400&fit=crop',
     'Fer à repasser vapeur 2400W': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=400&fit=crop',
     'Multiprise 6 prises + 2 USB': 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=400&fit=crop',
     'Bouilloire électrique 1.7L inox': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop',
@@ -202,6 +238,7 @@ async function fixProductImages() {
  * Appelé par server.js au démarrage.
  */
 async function runAllSeeds() {
+  await seedAdmin();          // ← en premier : garantit l'accès admin
   await fixProductEncoding();
   await seedProducts();
   await fixProductCategories();
