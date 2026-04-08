@@ -40,25 +40,37 @@ const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 
 // Helper : supprime tous les enregistrements liés à une commande
 // Ordre critique : FK parcel_items.order_item_id → order_items.id
+//
+// ⚠️  FIX : pas de try/catch internes — dans une transaction PostgreSQL,
+// un catch JS ne rollback pas la transaction PG. La connexion resterait
+// en état "aborted" et toutes les requêtes suivantes échoueraient avec
+// "current transaction is aborted". Les DELETEs avec 0 résultats ne
+// lèvent pas d'erreur, donc pas besoin de try/catch ici.
 async function deleteOrderCascade(client_or_db, id) {
-  // 1. parcel_items → dépend de order_items (FK) ET de parcels (FK)
-  try {
-    await client_or_db.query(
-      `DELETE FROM parcel_items WHERE order_item_id IN (
-         SELECT id FROM order_items WHERE order_id = $1
-       )`,
-      [id]
-    );
-  } catch (_) {}
-  try { await client_or_db.query(`DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)`, [id]); } catch (_) {}
-  // 2. parcels
-  try { await client_or_db.query('DELETE FROM parcels WHERE order_id = $1', [id]); } catch (_) {}
-  // 3. order_items (plus rien ne les référence)
+  // 1. parcel_items liés aux order_items de cette commande
+  await client_or_db.query(
+    `DELETE FROM parcel_items
+     WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)`,
+    [id]
+  );
+  // 2. parcel_items liés aux parcels de cette commande (FK parcel_id)
+  await client_or_db.query(
+    `DELETE FROM parcel_items
+     WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)`,
+    [id]
+  );
+  // 3. parcels de cette commande
+  await client_or_db.query('DELETE FROM parcels WHERE order_id = $1', [id]);
+  // 4. order_items (plus rien ne les référence)
   await client_or_db.query('DELETE FROM order_items WHERE order_id = $1', [id]);
-  // 4. autres tables liées
-  try { await client_or_db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]); } catch (_) {}
-  try { await client_or_db.query('DELETE FROM customs_history WHERE order_id = $1::text', [id]); } catch (_) {}
-  // 5. commande elle-même
+  // 5. historiques
+  await client_or_db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]);
+  // customs_history.order_id est TEXT (pas UUID) — cast explicite côté SQL
+  await client_or_db.query(
+    `DELETE FROM customs_history WHERE order_id = $1::text`,
+    [id]
+  );
+  // 6. commande elle-même
   await client_or_db.query('DELETE FROM orders WHERE id = $1', [id]);
 }
 

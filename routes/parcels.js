@@ -126,6 +126,7 @@ router.post('/', ...adminAgent, validate(parcels.create), async (req, res) => {
 
 // PATCH /api/parcels/:id/status
 // Après chaque changement de statut logistique, évalue les link rules order ↔ parcel
+// Retourne le colis mis à jour + l'ordre mis à jour (pour vérification link rules)
 router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async (req, res) => {
   try {
     const { status, notes } = req.body;
@@ -150,8 +151,21 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
       console.info(`[LINK-RULE] ${triggeredRule} déclenché pour order ${parcel.order_id}`);
     }
 
-    const { rows } = await db.query('SELECT * FROM parcels WHERE id = $1', [req.params.id]);
-    res.json({ ...rows[0], link_rule_triggered: triggeredRule });
+    // Récupérer le colis ET l'ordre mis à jour (pour vérification du statut)
+    const [parcelResult, orderResult] = await Promise.all([
+      db.query('SELECT * FROM parcels WHERE id = $1', [req.params.id]),
+      db.query('SELECT id, status, computed_status FROM orders WHERE id = $1', [parcel.order_id]),
+    ]);
+
+    const updatedOrder = orderResult.rows[0];
+
+    res.json({
+      ...parcelResult.rows[0],
+      link_rule_triggered: triggeredRule,
+      order: updatedOrder
+        ? { id: updatedOrder.id, status: updatedOrder.status, computed_status: updatedOrder.computed_status }
+        : null,
+    });
   } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur mise à jour statut colis' }); }
 });
 
@@ -202,17 +216,18 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
     const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [order_id]);
     if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
+    // COALESCE sur les colonnes nullables (produits sans weight_kg/volume_cm3 renseignés)
     const { rows: items } = await db.query(`
       SELECT
-        oi.id                AS order_item_id,
+        oi.id                               AS order_item_id,
         oi.product_id,
-        oi.quantity          AS quantity_available,
-        oi.price_kmf         AS unit_value,
-        p.weight_kg          AS unit_weight,
-        p.volume_cm3         AS unit_volume,
+        oi.quantity                         AS quantity_available,
+        oi.price_kmf                        AS unit_value,
+        COALESCE(p.weight_kg, 0)            AS unit_weight,
+        COALESCE(p.volume_cm3, 0)           AS unit_volume,
         p.category,
-        COALESCE(p.is_fragile, false) AS is_fragile,
-        COALESCE(p.is_bulky, false)   AS is_bulky,
+        COALESCE(p.is_fragile, false)       AS is_fragile,
+        COALESCE(p.is_bulky, false)         AS is_bulky,
         p.compatibility_group
       FROM order_items oi
       LEFT JOIN products p ON p.id = oi.product_id
@@ -293,7 +308,7 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
     });
   } catch(e) {
     console.error('[OPTIMIZE ERROR]', e);
-    res.status(500).json({ error: 'Erreur optimisation colis' });
+    res.status(500).json({ error: 'Erreur optimisation colis', detail: e.message });
   }
 });
 
@@ -329,7 +344,7 @@ router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
     });
   } catch(e) {
     console.error('[BOOTSTRAP ERROR]', e);
-    res.status(500).json({ error: 'Erreur bootstrap colis' });
+    res.status(500).json({ error: 'Erreur bootstrap colis', detail: e.message });
   }
 });
 
