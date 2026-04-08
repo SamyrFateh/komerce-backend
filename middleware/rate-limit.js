@@ -1,96 +1,133 @@
 /**
- * Rate Limiting Middleware — Komerce Backend
- * ============================================
- * P0 FIX: Zero rate limiting was identified as a critical vulnerability.
+ * Rate Limiting Middleware — Komerce Backend (Vague 3)
+ * =====================================================
+ * Vague 3 : store Redis conditionnel pour le multi-instance.
+ *   - Si REDIS_URL est défini → RedisStore (partagé entre instances)
+ *   - Sinon → store mémoire par défaut (dev / instance unique)
  *
- * Changelog v2:
- *   - globalLimiter 100→500/15min (pages dashboard internes font 5-8 appels/chargement)
- *   - authLimiter 5→20/15min (évite lockouts pendant tests)
- *   - SECURITY FIX: Bearer skip removed — rate limiting applies to all users
+ * Changelog v4 (Vague 3):
+ *   - RedisStore conditionnel via rate-limit-redis + redis client
+ *   - Chaque limiter a son propre préfixe de clé Redis
  *
  * Changelog v3 (Vague 1):
  *   - adminLimiter 30 req/min — strict limiter for destructive admin operations
+ *
+ * Changelog v2:
+ *   - globalLimiter 100→500/15min
+ *   - authLimiter 5→20/15min
+ *   - SECURITY FIX: Bearer skip removed
  */
+
+'use strict';
 
 const rateLimit = require('express-rate-limit');
 
-// ─── Global limiter: 500 requests per 15 minutes per IP ───
-// Augmenté car les pages dashboard (Relais, Hub, Admin) font 5-8 appels API
-// par chargement + auto-refresh toutes les 15-30s = ~20 req/min légitimes
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
+// ── Store Redis conditionnel (Vague 3) ──────────────────────────────────────────
+// Si REDIS_URL est défini, utilise un store Redis partagé entre instances.
+// Sinon, repli silencieux sur le store mémoire (compatible dev et mono-instance).
+
+let makeStore;
+
+if (process.env.REDIS_URL) {
+  try {
+    const { createClient }  = require('redis');
+    const { RedisStore }    = require('rate-limit-redis');
+
+    const redisClient = createClient({ url: process.env.REDIS_URL });
+
+    redisClient.on('error', err =>
+      console.error('[RateLimit] Redis client error:', err.message));
+
+    // Connexion non-bloquante — le serveur démarre même si Redis est indisponible
+    redisClient.connect().catch(err =>
+      console.error('[RateLimit] Redis connect failed (fallback to memory):', err.message));
+
+    makeStore = (prefix) => new RedisStore({
+      sendCommand: (...args) => redisClient.sendCommand(args),
+      prefix: `rl:${prefix}:`,
+    });
+
+    console.log('[RateLimit] ✅ Redis store activé');
+  } catch (err) {
+    console.warn('[RateLimit] ⚠️ Redis store non disponible (module manquant?), repli sur mémoire:', err.message);
+    makeStore = null;
+  }
+} else {
+  console.log('[RateLimit] ℹ️  REDIS_URL absent — store mémoire (mono-instance)');
+  makeStore = null;
+}
+
+// ── Helper pour créer un limiter avec ou sans Redis ───────────────────────────────
+function createLimiter(options, redisPrefix) {
+  if (makeStore) {
+    options.store = makeStore(redisPrefix);
+  }
+  return rateLimit(options);
+}
+
+// ── Global limiter: 500 requests per 15 minutes per IP ──────────────────────────
+const globalLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes, réessayez plus tard' },
-  skip: (req) => {
-    // Skip pour health checks only
-    if (req.path === '/health' || req.path === '/ready') return true;
-    // ⚠️ SECURITY FIX: Bearer skip removed — rate limiting now applies to ALL users
-    return false;
-  },
-});
+  skip: (req) => req.path === '/health' || req.path === '/ready',
+}, 'global');
 
-// ─── Auth limiter: 20 attempts per 15 minutes per IP ───
-// Protège contre le brute-force login, mais évite les lockouts en dev/test
-const authLimiter = rateLimit({
+// ── Auth limiter: 20 attempts per 15 minutes per IP ────────────────────────────
+const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de tentatives de connexion, réessayez dans 15 minutes' },
-});
+}, 'auth');
 
-// ─── Cash confirm limiter: 3 attempts per minute per IP ───
-// CRITICAL: cash_ref_code a un espace limité, doit empêcher le brute-force
-const cashConfirmLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
+// ── Cash confirm limiter: 3 attempts per minute per IP ──────────────────────────
+const cashConfirmLimiter = createLimiter({
+  windowMs: 60 * 1000,
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de tentatives de confirmation, réessayez dans 1 minute' },
-});
+}, 'cash');
 
-// ─── Scan collect limiter: 5 attempts per minute per IP ───
-// Protège contre le brute-forcing des QR codes
-const scanCollectLimiter = rateLimit({
+// ── Scan collect limiter: 5 attempts per minute per IP ──────────────────────────
+const scanCollectLimiter = createLimiter({
   windowMs: 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de tentatives de scan, réessayez dans 1 minute' },
-});
+}, 'scan');
 
-// ─── Order creation limiter: 10 per minute per IP ───
-// Empêche le spam de création de commandes (appliqué POST only dans server.js)
-const orderCreateLimiter = rateLimit({
+// ── Order creation limiter: 10 per minute per IP ───────────────────────────────
+const orderCreateLimiter = createLimiter({
   windowMs: 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de commandes créées, réessayez dans 1 minute' },
-});
+}, 'order-create');
 
-// ─── Dashboard limiter: 60 per minute per IP ───
-// Anti-DoS sur les requêtes lourdes, augmenté pour auto-refresh légitimes
-const dashboardLimiter = rateLimit({
+// ── Dashboard limiter: 60 per minute per IP ─────────────────────────────────────
+const dashboardLimiter = createLimiter({
   windowMs: 60 * 1000,
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes dashboard, réessayez dans 1 minute' },
-  // ⚠️ SECURITY FIX: Rate limiting now applies to ALL users including authenticated ones
-});
+}, 'dashboard');
 
-// ─── Admin limiter: 30 per minute per IP ───
-// Strict limiter for destructive admin operations (reset, delete, etc.)
-const adminLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
+// ── Admin limiter: 30 per minute per IP ──────────────────────────────────────────
+const adminLimiter = createLimiter({
+  windowMs: 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes admin, réessayez dans 1 minute' },
-});
+}, 'admin');
 
 module.exports = {
   globalLimiter,
