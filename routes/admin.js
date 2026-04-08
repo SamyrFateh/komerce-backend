@@ -38,6 +38,28 @@ const guard = [authenticate, requireRole(['admin'])];
 // Valeurs valides du enum user_role en DB
 const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 
+// Helper : supprime tous les enregistrements liés à une commande
+// Ordre critique : FK parcel_items.order_item_id → order_items.id
+async function deleteOrderCascade(client_or_db, id) {
+  // 1. parcel_items → dépend de order_items (FK) ET de parcels (FK)
+  await client_or_db.query(
+    `DELETE FROM parcel_items WHERE order_item_id IN (
+       SELECT id FROM order_items WHERE order_id = $1
+     )`,
+    [id]
+  );
+  try { await client_or_db.query(`DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)`, [id]); } catch (_) {}
+  // 2. parcels
+  try { await client_or_db.query('DELETE FROM parcels WHERE order_id = $1', [id]); } catch (_) {}
+  // 3. order_items (plus rien ne les référence)
+  await client_or_db.query('DELETE FROM order_items WHERE order_id = $1', [id]);
+  // 4. autres tables liées
+  try { await client_or_db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]); } catch (_) {}
+  try { await client_or_db.query('DELETE FROM customs_history WHERE order_id = $1::text', [id]); } catch (_) {}
+  // 5. commande elle-même
+  await client_or_db.query('DELETE FROM orders WHERE id = $1', [id]);
+}
+
 
 // ─── GET /api/admin/orders ───────────────────────────────────────────────────
 
@@ -112,18 +134,16 @@ router.delete('/orders/:id', ...guard, async (req, res) => {
     const { rows: [order] } = await db.query('SELECT id, reference, status FROM orders WHERE id = $1', [id]);
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Supprimer les dépendances dans l'ordre (FK cascade manuel)
-    await db.query('DELETE FROM order_items WHERE order_id = $1', [id]);
-    try { await db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]); } catch (_) {}
-    try { await db.query('DELETE FROM customs_history WHERE order_id = $1::text', [id]); } catch (_) {}
-    try { await db.query('DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)', [id]); } catch (_) {}
-    try { await db.query('DELETE FROM parcels WHERE order_id = $1', [id]); } catch (_) {}
-    await db.query('DELETE FROM orders WHERE id = $1', [id]);
+    await deleteOrderCascade(db, id);
 
     console.log(`\uD83D\uDDD1\uFE0F Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
-    res.json({ success: true, message: `Commande ${order.reference} supprimée`, deleted: { id, reference: order.reference, status: order.status } });
+    res.json({
+      success: true,
+      message: `Commande ${order.reference} supprimée`,
+      deleted: { id, reference: order.reference, status: order.status },
+    });
   } catch (err) {
-    console.error('Delete order error:', err.message);
+    console.error('Delete order error:', err.message, err.detail);
     res.status(500).json({ error: 'Erreur suppression commande', detail: err.message });
   }
 });
@@ -306,7 +326,19 @@ router.get('/counts', ...guard, async (req, res) => {
 
 router.post('/seed-test', ...guard, async (req, res) => {
   const { v4: uuidv4 } = require('uuid');
+  const { randomBytes } = require('crypto');
   const client = await db.getClient();
+
+  // Génère un pickup_code unique (6 chars alphanumeric)
+  const genPickup = () => {
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return Array.from({ length: 6 }, () => {
+      let b;
+      do { b = randomBytes(1)[0]; } while (b >= 216);
+      return CHARS[b % 36];
+    }).join('');
+  };
+
   try {
     const { confirm } = req.body;
     if (!confirm) {
@@ -332,9 +364,9 @@ router.post('/seed-test', ...guard, async (req, res) => {
       return res.status(400).json({ error: 'Aucun relais actif — impossible de seeder' });
     }
 
-    const product    = products[0];
-    const relais     = relaisList[0];
-    const adminId    = req.user.id;
+    const product = products[0];
+    const relais  = relaisList[0];
+    const adminId = req.user.id;
 
     // Supprimer les commandes test précédentes (reference LIKE 'KT-%')
     const { rows: prevOrders } = await client.query(
@@ -342,51 +374,62 @@ router.post('/seed-test', ...guard, async (req, res) => {
     );
     let deletedCount = 0;
     for (const po of prevOrders) {
-      await client.query('DELETE FROM order_items WHERE order_id = $1', [po.id]);
-      try { await client.query('DELETE FROM order_status_history WHERE order_id = $1', [po.id]); } catch (_) {}
-      try { await client.query('DELETE FROM customs_history WHERE order_id = $1::text', [po.id]); } catch (_) {}
-      try { await client.query('DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)', [po.id]); } catch (_) {}
-      try { await client.query('DELETE FROM parcels WHERE order_id = $1', [po.id]); } catch (_) {}
-      await client.query('DELETE FROM orders WHERE id = $1', [po.id]);
+      await deleteOrderCascade(client, po.id);
       deletedCount++;
     }
 
     // Pipeline de statuts à créer
-    const now       = new Date();
-    const daysAgo   = (d) => new Date(now.getTime() - d * 86400000).toISOString();
+    const now     = new Date();
+    const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
 
     const testScenarios = [
       {
-        status: 'confirmed', ref: 'KT-CONFIRMED', payment_mode: 'cash_relais', payment_status: 'pending',
-        ordered_at: null, preparation_at: null, shipped_at: null, available_at: null, collected_at: null, cancelled_at: null,
+        status: 'confirmed',   ref: 'KT-CONFIRMED',
+        payment_mode: 'cash_relais', payment_status: 'pending',
+        ordered_at: null, preparation_at: null, shipped_at: null,
+        available_at: null, collected_at: null, cancelled_at: null,
       },
       {
-        status: 'ordered', ref: 'KT-ORDERED', payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(7), preparation_at: null, shipped_at: null, available_at: null, collected_at: null, cancelled_at: null,
+        status: 'ordered',     ref: 'KT-ORDERED',
+        payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(7), preparation_at: null, shipped_at: null,
+        available_at: null, collected_at: null, cancelled_at: null,
       },
       {
-        status: 'preparation', ref: 'KT-PREPARATION', payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(8), preparation_at: daysAgo(6), shipped_at: null, available_at: null, collected_at: null, cancelled_at: null,
+        status: 'preparation', ref: 'KT-PREPARATION',
+        payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(8), preparation_at: daysAgo(6), shipped_at: null,
+        available_at: null, collected_at: null, cancelled_at: null,
       },
       {
-        status: 'shipped', ref: 'KT-SHIPPED', payment_mode: 'stripe_eur', payment_status: 'paid',
-        ordered_at: daysAgo(14), preparation_at: daysAgo(12), shipped_at: daysAgo(10), available_at: null, collected_at: null, cancelled_at: null,
+        status: 'shipped',     ref: 'KT-SHIPPED',
+        payment_mode: 'stripe_eur', payment_status: 'paid',
+        ordered_at: daysAgo(14), preparation_at: daysAgo(12), shipped_at: daysAgo(10),
+        available_at: null, collected_at: null, cancelled_at: null,
       },
       {
-        status: 'in_transit', ref: 'KT-INTRANSIT', payment_mode: 'stripe_eur', payment_status: 'paid',
-        ordered_at: daysAgo(20), preparation_at: daysAgo(18), shipped_at: daysAgo(15), available_at: null, collected_at: null, cancelled_at: null,
+        status: 'in_transit',  ref: 'KT-INTRANSIT',
+        payment_mode: 'stripe_eur', payment_status: 'paid',
+        ordered_at: daysAgo(20), preparation_at: daysAgo(18), shipped_at: daysAgo(15),
+        available_at: null, collected_at: null, cancelled_at: null,
       },
       {
-        status: 'available', ref: 'KT-AVAILABLE', payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(30), preparation_at: daysAgo(28), shipped_at: daysAgo(25), available_at: daysAgo(2), collected_at: null, cancelled_at: null,
+        status: 'available',   ref: 'KT-AVAILABLE',
+        payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(30), preparation_at: daysAgo(28), shipped_at: daysAgo(25),
+        available_at: daysAgo(2), collected_at: null, cancelled_at: null,
       },
       {
-        status: 'collected', ref: 'KT-COLLECTED', payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(35), preparation_at: daysAgo(33), shipped_at: daysAgo(30), available_at: daysAgo(5), collected_at: daysAgo(1), cancelled_at: null,
+        status: 'collected',   ref: 'KT-COLLECTED',
+        payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(35), preparation_at: daysAgo(33), shipped_at: daysAgo(30),
+        available_at: daysAgo(5), collected_at: daysAgo(1), cancelled_at: null,
       },
       {
-        status: 'cancelled', ref: 'KT-CANCELLED', payment_mode: 'cash_relais', payment_status: 'pending',
-        ordered_at: null, preparation_at: null, shipped_at: null, available_at: null, collected_at: null, cancelled_at: daysAgo(3),
+        status: 'cancelled',   ref: 'KT-CANCELLED',
+        payment_mode: 'cash_relais', payment_status: 'pending',
+        ordered_at: null, preparation_at: null, shipped_at: null,
+        available_at: null, collected_at: null, cancelled_at: daysAgo(3),
       },
     ];
 
@@ -409,7 +452,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
           id, t.ref, adminId, relais.id,
           5000, 10.16, t.payment_mode, t.payment_status,
           t.payment_mode === 'cash_relais' ? '999001' : null,
-          'TESTPC',
+          genPickup(),       // pickup_code unique par commande
           t.status,
           t.ordered_at, t.preparation_at, t.shipped_at,
           t.available_at, t.collected_at, t.cancelled_at,
@@ -430,12 +473,12 @@ router.post('/seed-test', ...guard, async (req, res) => {
 
     console.log(`\uD83C\uDF31 Seed-test: ${created.length} commandes créées par ${req.user.email} (${deletedCount} anciennes supprimées)`);
     res.json({
-      success:         true,
-      message:         `${created.length} commandes test créées — tous statuts couverts`,
+      success:          true,
+      message:          `${created.length} commandes test créées — tous statuts couverts`,
       deleted_previous: deletedCount,
-      product_used:    product.name,
-      relais_used:     relais.name || relais.id,
-      orders:          created,
+      product_used:     product.name,
+      relais_used:      relais.name || relais.id,
+      orders:           created,
     });
 
   } catch (err) {
