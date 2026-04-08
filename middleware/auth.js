@@ -9,16 +9,27 @@
  *   router.get('/admin', authenticate, requireAdmin, handler)
  *   router.get('/hub',   authenticate, requireRole(['admin','agent_hub']), handler)
  *
- * Corrections v9.2 :
+ * Corrections v9.3 :
+ *   - BUG-015 : JWT_SECRET fallback aligné sur routes/auth.js
+ *     → login signait avec 'komerce_secret_dev_UNSAFE' si JWT_SECRET absent,
+ *       mais verify utilisait process.env.JWT_SECRET (undefined) → Token invalide systématique
  *   - BUG-014 : JWT lu depuis cookie httpOnly en priorité (plus sûr que localStorage)
  *   - Fallback Bearer header conservé pour compatibilité API externe / mobile
  *   - JWT algorithm verrouillé à HS256 (empêche alg:none / RS256 confusion)
- *   - maxAge 24h en double protection
  *   - Cache mémoire user (TTL 5min) pour réduire les requêtes DB
  */
 
 const jwt = require('jsonwebtoken');
 const db  = require('../db');
+
+// ── Secret JWT — aligné sur routes/auth.js ──────────────────────────────────
+// BUG-015 : utiliser le même fallback que routes/auth.js pour éviter
+// l'asymétrie sign/verify quand JWT_SECRET n'est pas défini dans Railway.
+const _JWT_SECRET = process.env.JWT_SECRET || 'komerce_secret_dev_UNSAFE';
+
+if (!process.env.JWT_SECRET) {
+  console.warn('[auth middleware] ⚠️  JWT_SECRET non défini — fallback dev utilisé. Définir JWT_SECRET dans Railway.');
+}
 
 // ── Cache mémoire simple (TTL 5 min) ────────────────────────────────────────
 // Réduit les SELECT sur users à chaque requête auth.
@@ -82,7 +93,7 @@ async function authenticate(req, res, next) {
 
     // Aligné sur JWT_EXPIRES pour cohérence signature/vérification
     const jwtExpires = process.env.JWT_EXPIRES || '30d';
-    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+    const decoded = jwt.verify(token, _JWT_SECRET, {
       algorithms: ['HS256'],  // Empêche alg:none et RS256 confusion
       maxAge:     jwtExpires, // Aligné sur JWT_EXPIRES (cohérence avec la signature)
     });
