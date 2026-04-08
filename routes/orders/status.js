@@ -108,18 +108,6 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       });
     }
 
-    // Timestamp correspondant au statut — aligné spec v7.5 §9.1
-    const tsField = {
-      ordered:     'ordered_at',
-      preparation: 'preparation_at',
-      shipped:     'shipped_at',
-      available:   'available_at',
-      collected:   'collected_at',
-      cancelled:   'cancelled_at',
-    }[status];
-
-    const tsUpdate = tsField ? `, ${tsField} = NOW()` : '';
-
     // Si passage à available et pickup_code manquant → en générer un
     let pickupCodeValue = null;
     if (status === 'available' && !order.pickup_code) {
@@ -133,17 +121,22 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       console.log(`[ORDERS] pickup_code auto-généré pour ${order.reference}: ${newCode}`);
     }
 
-    if (pickupCodeValue) {
-      await client.query(
-        `UPDATE orders SET status = $1${tsUpdate}, pickup_code = $2, updated_at = NOW() WHERE id = $3`,
-        [status, pickupCodeValue, order.id]
-      );
-    } else {
-      await client.query(
-        `UPDATE orders SET status = $1${tsUpdate}, updated_at = NOW() WHERE id = $2`,
-        [status, order.id]
-      );
-    }
+    // Timestamps paramétrés via CASE WHEN — aucune interpolation dans la query (coffre-fort v1.0)
+    // Tous les noms de colonnes sont statiques, aucune valeur utilisateur n'entre dans la query string.
+    await client.query(
+      `UPDATE orders SET
+         status         = $1,
+         ordered_at     = CASE WHEN $1 = 'ordered'     AND ordered_at IS NULL     THEN NOW() ELSE ordered_at END,
+         preparation_at = CASE WHEN $1 = 'preparation' AND preparation_at IS NULL THEN NOW() ELSE preparation_at END,
+         shipped_at     = CASE WHEN $1 = 'shipped'     AND shipped_at IS NULL     THEN NOW() ELSE shipped_at END,
+         available_at   = CASE WHEN $1 = 'available'   AND available_at IS NULL   THEN NOW() ELSE available_at END,
+         collected_at   = CASE WHEN $1 = 'collected'   AND collected_at IS NULL   THEN NOW() ELSE collected_at END,
+         cancelled_at   = CASE WHEN $1 = 'cancelled'   AND cancelled_at IS NULL   THEN NOW() ELSE cancelled_at END,
+         pickup_code    = COALESCE($2, pickup_code),
+         updated_at     = NOW()
+       WHERE id = $3`,
+      [status, pickupCodeValue, order.id]
+    );
 
     // Mettre à jour payment_status pour les commandes cash_relais passées à 'ordered'
     if (status === 'ordered' && order.payment_mode === 'cash_relais') {

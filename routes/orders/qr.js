@@ -196,7 +196,11 @@ router.get('/retrait/:token', async (req, res) => {
         correctLevel: QRCode.CorrectLevel.H
       });
     } catch(e) {
-      container.innerHTML = '<p style="color:#ef4444;font-size:0.8rem">Erreur QR</p>';
+      // Pas d'innerHTML avec des données utilisateur — contenu statique via createElement (coffre-fort v1.0)
+      const errP = document.createElement('p');
+      errP.style.cssText = 'color:#ef4444;font-size:0.8rem';
+      errP.textContent   = 'Erreur QR';
+      container.appendChild(errP);
     }
 
     // Téléchargement via canvas
