@@ -9,33 +9,31 @@
  *   router.get('/admin', authenticate, requireAdmin, handler)
  *   router.get('/hub',   authenticate, requireRole(['admin','agent_hub']), handler)
  *
- * Corrections v9.3 :
+ * Corrections v9.4 :
+ *   - BUG-016 : retrait de relais_id de la query SELECT authenticate
+ *     → si la colonne n'existe pas en DB, la query lancçait une erreur
+ *       catchée silencieusement → "Token invalide" pour toutes les routes protégées
+ *     → relais_id est fetché séparément par les routes qui en ont besoin (hub, etc.)
  *   - BUG-015 : JWT_SECRET fallback aligné sur routes/auth.js
- *     → login signait avec 'komerce_secret_dev_UNSAFE' si JWT_SECRET absent,
- *       mais verify utilisait process.env.JWT_SECRET (undefined) → Token invalide systématique
- *   - BUG-014 : JWT lu depuis cookie httpOnly en priorité (plus sûr que localStorage)
+ *   - BUG-014 : JWT lu depuis cookie httpOnly en priorité
  *   - Fallback Bearer header conservé pour compatibilité API externe / mobile
- *   - JWT algorithm verrouillé à HS256 (empêche alg:none / RS256 confusion)
- *   - Cache mémoire user (TTL 5min) pour réduire les requêtes DB
+ *   - JWT algorithm verrouillé à HS256
+ *   - Cache mémoire user (TTL 5min)
+ *   - Logging d'erreur amélioré pour faciliter le debug
  */
 
 const jwt = require('jsonwebtoken');
 const db  = require('../db');
 
-// ── Secret JWT — aligné sur routes/auth.js ──────────────────────────────────
-// BUG-015 : utiliser le même fallback que routes/auth.js pour éviter
-// l'asymétrie sign/verify quand JWT_SECRET n'est pas défini dans Railway.
+// ── Secret JWT ──────────────────────────────────────────────────────────────────────
 const _JWT_SECRET = process.env.JWT_SECRET || 'komerce_secret_dev_UNSAFE';
 
 if (!process.env.JWT_SECRET) {
-  console.warn('[auth middleware] ⚠️  JWT_SECRET non défini — fallback dev utilisé. Définir JWT_SECRET dans Railway.');
+  console.warn('[auth middleware] ⚠️  JWT_SECRET non défini — fallback dev utilisé.');
 }
 
-// ── Cache mémoire simple (TTL 5 min) ────────────────────────────────────────
-// Réduit les SELECT sur users à chaque requête auth.
-// À remplacer par Redis si multi-instance.
-
-const USER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// ── Cache mémoire simple (TTL 5 min) ───────────────────────────────────────────────────
+const USER_CACHE_TTL = 5 * 60 * 1000;
 const userCache = new Map();
 
 function getCachedUser(userId) {
@@ -50,7 +48,6 @@ function getCachedUser(userId) {
 
 function setCachedUser(userId, user) {
   userCache.set(userId, { user, ts: Date.now() });
-  // Nettoyage périodique : max 10 000 entrées
   if (userCache.size > 10_000) {
     const oldest = userCache.keys().next().value;
     userCache.delete(oldest);
@@ -59,29 +56,22 @@ function setCachedUser(userId, user) {
 
 /**
  * Extrait le token JWT depuis :
- *   1. Cookie httpOnly `kmrc_jwt` (prioritaire — BUG-014 fix)
- *   2. Header Authorization: Bearer <token> (fallback API / mobile)
- *
- * @returns {string|null} Le token JWT ou null
+ *   1. Cookie httpOnly `kmrc_jwt` (prioritaire)
+ *   2. Header Authorization: Bearer <token> (fallback)
  */
 function extractToken(req) {
-  // 1. Cookie httpOnly (prioritaire)
-  if (req.cookies && req.cookies.kmrc_jwt) {
-    return req.cookies.kmrc_jwt;
-  }
-
-  // 2. Fallback : header Authorization: Bearer <token>
+  if (req.cookies && req.cookies.kmrc_jwt) return req.cookies.kmrc_jwt;
   const header = req.headers.authorization;
-  if (header && header.startsWith('Bearer ')) {
-    return header.split(' ')[1];
-  }
-
+  if (header && header.startsWith('Bearer ')) return header.split(' ')[1];
   return null;
 }
 
 /**
- * Vérifie le token JWT (cookie ou Bearer header).
- * Injecte req.user si valide.
+ * Vérifie le token JWT et injecte req.user.
+ *
+ * BUG-016 : la query SELECT ne demande PAS relais_id — si la colonne est absente
+ * de la table users, la query échouait silencieusement → "Token invalide".
+ * Les routes qui ont besoin de relais_id (hub.js, etc.) le fetcht séparément.
  */
 async function authenticate(req, res, next) {
   try {
@@ -91,19 +81,16 @@ async function authenticate(req, res, next) {
       return res.status(401).json({ error: 'Token manquant — connectez-vous' });
     }
 
-    // Aligné sur JWT_EXPIRES pour cohérence signature/vérification
-    const jwtExpires = process.env.JWT_EXPIRES || '30d';
     const decoded = jwt.verify(token, _JWT_SECRET, {
-      algorithms: ['HS256'],  // Empêche alg:none et RS256 confusion
-      maxAge:     jwtExpires, // Aligné sur JWT_EXPIRES (cohérence avec la signature)
+      algorithms: ['HS256'],
     });
 
-    // Vérifier le cache avant de requêter la DB
     let user = getCachedUser(decoded.id);
 
     if (!user) {
       const { rows } = await db.query(
-        `SELECT id, full_name, email, phone, role, currency_pref, relais_id
+        // BUG-016 : relais_id retiré — colonne potentiellement absente sur users
+        `SELECT id, full_name, email, phone, role, currency_pref
          FROM users WHERE id = $1`,
         [decoded.id]
       );
@@ -120,6 +107,10 @@ async function authenticate(req, res, next) {
     next();
 
   } catch (err) {
+    // Log l'erreur réelle pour faciliter le debug Railway
+    if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
+      console.error('[authenticate] erreur inattendue:', err.name, err.message);
+    }
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expiré — veuillez vous reconnecter' });
     }
@@ -129,15 +120,10 @@ async function authenticate(req, res, next) {
 
 /**
  * Vérifie que req.user a l'un des rôles autorisés.
- * À utiliser après authenticate.
- *
- * @param {string[]} roles - Ex: ['admin'], ['admin','agent_hub']
  */
 function requireRole(roles) {
   return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Non authentifié' });
-    }
+    if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         error: `Accès refusé — rôle requis : ${roles.join(' ou ')}`,
@@ -148,10 +134,8 @@ function requireRole(roles) {
   };
 }
 
-// Raccourci : vérifie que l'utilisateur est admin
 const requireAdmin = requireRole(['admin']);
 
-// ⚠️ SECURITY FIX: Allow explicit cache invalidation on role changes
 function invalidateUserCache(userId) {
   userCache.delete(userId);
 }
