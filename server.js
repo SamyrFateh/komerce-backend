@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.4 (Vague 3 — migrations hors boot, error handler centralisé)
+ * KOMERCE — Serveur API v10.5 (seedAdmin garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v10.5 : seedAdmin() ajouté — admin@komerce.km garanti au démarrage
  * Changelog v10.4 : Vague 3 — migrations non-bloquantes (démarrage immédiat),
  *                   gestion centralisée des erreurs (middleware/error-handler.js)
  * Changelog v10.3 : Étape 3 clean-up — pilotage.js supprimé, finance dé-dupliqué,
@@ -23,7 +24,7 @@
 
 require('dotenv').config();
 
-// ── Validation des variables d'environnement critiques ──────────────────────
+// ── Validation des variables d'environnement critiques ───────────────────────
 const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET'];
 const RECOMMENDED_ENV = ['ADMIN_PASSWORD', 'STRIPE_SECRET_KEY'];
 
@@ -56,13 +57,13 @@ const {
   adminLimiter,
 } = require('./middleware/rate-limit');
 
-// ── Migrations extraites (FIX-012 + Vague 3) ───────────────────────────────
+// ── Migrations extraites (FIX-012 + Vague 3) ──────────────────────────────
 // Les migrations NE BLOQUENT PLUS le démarrage — elles tournent en background
 // après que le serveur est prêt à recevoir des requêtes.
 const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
 const { runAllSeeds }                     = require('./scripts/seed');
 
-// ── Gestion centralisée des erreurs (Vague 3) ───────────────────────────────
+// ── Gestion centralisée des erreurs (Vague 3) ───────────────────────────
 const { errorHandler } = require('./middleware/error-handler');
 
 const app = express();
@@ -71,7 +72,7 @@ app.set('trust proxy', 1);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
-// ── CORS — politique stricte (Vague 1 security hardening) ──────────────────
+// ── CORS — politique stricte (Vague 1 security hardening) ──────────────────────
 
 function isAllowedOrigin(origin) {
   if (!origin) return true;
@@ -97,7 +98,7 @@ const corsOptions = {
   credentials: true,
 };
 
-// ── Security headers ─────────────────────────────────────────────────────────
+// ── Security headers ────────────────────────────────────────────────────
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -120,7 +121,7 @@ app.use(helmet({
 
 app.use(cors(corsOptions));
 
-// ── Body parsing ─────────────────────────────────────────────────────────────
+// ── Body parsing ─────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -129,7 +130,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use(cookieParser());
 
-// ── Rate limiting (middleware/rate-limit.js) ─────────────────────────────────
+// ── Rate limiting (middleware/rate-limit.js) ────────────────────────────────
 
 app.use('/api/', globalLimiter);
 app.use('/api/auth/login', authLimiter);
@@ -156,7 +157,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// ── Routes API ────────────────────────────────────────────────────────────────
+// ── Routes API ────────────────────────────────────────────────────────────
 
 const authRouter       = require('./routes/auth');
 const productsRouter   = require('./routes/products');
@@ -211,7 +212,7 @@ app.use('/api/unsold',     unsoldRouter);
 app.use('/api/config',     configRouter);
 app.use('/health',         healthRouter);
 
-// ── Healthcheck (avec test DB) ───────────────────────────────────────────────
+// ── Healthcheck (avec test DB) ─────────────────────────────────────────────
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -219,7 +220,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.4',
+      version:       '10.5',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -229,7 +230,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// ── SPA fallback ──────────────────────────────────────────────────────────────
+// ── SPA fallback ────────────────────────────────────────────────────────────
 
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
@@ -239,12 +240,12 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Komerce_Boutique.html'));
 });
 
-// ── Gestion centralisée des erreurs (Vague 3) ────────────────────────────────
+// ── Gestion centralisée des erreurs (Vague 3) ────────────────────────────
 // Doit être monté APRÈS toutes les routes.
 
 app.use(errorHandler);
 
-// ── Cron cash relais (avec verrou anti-concurrence) ──────────────────────────
+// ── Cron cash relais (avec verrou anti-concurrence) ───────────────────────────
 
 const { processCashRelaisReminders, processBackorderReminders } = require('./utils/sms');
 const { getRuleNumber: _getRuleNum } = require('./utils/rules');
@@ -298,16 +299,16 @@ setTimeout(() => {
     .catch(err => console.error('[CRON] Initial backorder check error:', err.message));
 }, 30 * 1000);
 
-// ── Démarrage + Graceful Shutdown ─────────────────────────────────────────────
-// Vague 3 : le serveur démarre IMMÉDIATEMENT.
+// ── Démarrage + Graceful Shutdown ──────────────────────────────────────────────────
+// Vague 3 : le serveur démarre IMMEDÉDIATEMENT.
 // Les migrations tournent en background après listen() — elles ne bloquent plus Railway.
 
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.4 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.5 — port ${PORT} — démarrage immédiat — migrations en background`);
 
-  // ── Migrations & seeds non-bloquantes ──────────────────────────────────────
+  // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {
     try {
       await fixAdminHash();
