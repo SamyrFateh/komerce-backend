@@ -21,7 +21,7 @@
  * DELETE /api/admin/users/:id         → supprimer (soft/hard selon dépendances)
  * GET    /api/admin/counts            → compteurs globaux
  * POST   /api/admin/reset             → reset base (dangereux)
- * POST   /api/admin/seed-test         → seed données test
+ * POST   /api/admin/seed-test         → seed données test (tous statuts)
  *
  * NOTE: user_role enum DB = ('client', 'admin', 'agent_relais', 'agent_hub')
  */
@@ -112,16 +112,19 @@ router.delete('/orders/:id', ...guard, async (req, res) => {
     const { rows: [order] } = await db.query('SELECT id, reference, status FROM orders WHERE id = $1', [id]);
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
+    // Supprimer les dépendances dans l'ordre (FK cascade manuel)
     await db.query('DELETE FROM order_items WHERE order_id = $1', [id]);
     try { await db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]); } catch (_) {}
     try { await db.query('DELETE FROM customs_history WHERE order_id = $1::text', [id]); } catch (_) {}
+    try { await db.query('DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)', [id]); } catch (_) {}
+    try { await db.query('DELETE FROM parcels WHERE order_id = $1', [id]); } catch (_) {}
     await db.query('DELETE FROM orders WHERE id = $1', [id]);
 
-    console.log(`🗑️ Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
+    console.log(`\uD83D\uDDD1\uFE0F Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
     res.json({ success: true, message: `Commande ${order.reference} supprimée`, deleted: { id, reference: order.reference, status: order.status } });
   } catch (err) {
     console.error('Delete order error:', err.message);
-    res.status(500).json({ error: 'Erreur suppression commande' });
+    res.status(500).json({ error: 'Erreur suppression commande', detail: err.message });
   }
 });
 
@@ -268,7 +271,7 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
       const restocked = await db.query('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
       if (restocked.rowCount > 0) report.restocked = restocked.rowCount;
     }
-    console.log(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
+    console.log(`\uD83E\uDDF9 Admin reset "${mode}" effectué par ${req.user.email}`);
     res.json({ success: true, message: `Reset "${mode}" effectué avec succès ✅`, ...report });
   } catch (err) {
     console.error('Reset error:', err.message);
@@ -298,20 +301,149 @@ router.get('/counts', ...guard, async (req, res) => {
 });
 
 // ─── POST /api/admin/seed-test ───────────────────────────────────────────────
+// Crée 8 commandes couvrant tous les statuts du pipeline (confirmed → collected + cancelled)
+// Réutilisable : supprime les précédentes commandes KT-* avant de recréer
 
-router.post('/seed-test', ...guard, validate(admin.seedTest), async (req, res) => {
-  const bcrypt = require('bcryptjs');
+router.post('/seed-test', ...guard, async (req, res) => {
   const { v4: uuidv4 } = require('uuid');
+  const client = await db.getClient();
   try {
-    const { confirm, months = 3 } = req.body;
-    if (!confirm) return res.status(400).json({ error: 'Envoyez { "confirm": true } pour confirmer le seed' });
-    const { rows: products } = await db.query('SELECT id, name, price_kmf, cost_kmf FROM products WHERE is_active = TRUE ORDER BY name LIMIT 4');
-    const { rows: relaisList } = await db.query('SELECT id FROM relais WHERE is_active = TRUE LIMIT 5');
-    if (!products.length || !relaisList.length) return res.status(400).json({ error: 'Aucun produit ou relais' });
-    res.json({ success: true, message: 'Seed-test simplifié — utilisez le seed complet si besoin', products: products.length, relais: relaisList.length });
+    const { confirm } = req.body;
+    if (!confirm) {
+      return res.status(400).json({ error: 'Envoyez { "confirm": true } pour confirmer le seed' });
+    }
+
+    await client.query('BEGIN');
+
+    // Récupérer un produit et un relais actifs
+    const { rows: products } = await client.query(
+      'SELECT id, name, price_kmf FROM products WHERE is_active = TRUE ORDER BY name LIMIT 1'
+    );
+    const { rows: relaisList } = await client.query(
+      'SELECT id, name FROM relais WHERE is_active = TRUE LIMIT 1'
+    );
+
+    if (!products.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Aucun produit actif — impossible de seeder' });
+    }
+    if (!relaisList.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Aucun relais actif — impossible de seeder' });
+    }
+
+    const product    = products[0];
+    const relais     = relaisList[0];
+    const adminId    = req.user.id;
+
+    // Supprimer les commandes test précédentes (reference LIKE 'KT-%')
+    const { rows: prevOrders } = await client.query(
+      "SELECT id FROM orders WHERE reference LIKE 'KT-%'"
+    );
+    let deletedCount = 0;
+    for (const po of prevOrders) {
+      await client.query('DELETE FROM order_items WHERE order_id = $1', [po.id]);
+      try { await client.query('DELETE FROM order_status_history WHERE order_id = $1', [po.id]); } catch (_) {}
+      try { await client.query('DELETE FROM customs_history WHERE order_id = $1::text', [po.id]); } catch (_) {}
+      try { await client.query('DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)', [po.id]); } catch (_) {}
+      try { await client.query('DELETE FROM parcels WHERE order_id = $1', [po.id]); } catch (_) {}
+      await client.query('DELETE FROM orders WHERE id = $1', [po.id]);
+      deletedCount++;
+    }
+
+    // Pipeline de statuts à créer
+    const now       = new Date();
+    const daysAgo   = (d) => new Date(now.getTime() - d * 86400000).toISOString();
+
+    const testScenarios = [
+      {
+        status: 'confirmed', ref: 'KT-CONFIRMED', payment_mode: 'cash_relais', payment_status: 'pending',
+        ordered_at: null, preparation_at: null, shipped_at: null, available_at: null, collected_at: null, cancelled_at: null,
+      },
+      {
+        status: 'ordered', ref: 'KT-ORDERED', payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(7), preparation_at: null, shipped_at: null, available_at: null, collected_at: null, cancelled_at: null,
+      },
+      {
+        status: 'preparation', ref: 'KT-PREPARATION', payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(8), preparation_at: daysAgo(6), shipped_at: null, available_at: null, collected_at: null, cancelled_at: null,
+      },
+      {
+        status: 'shipped', ref: 'KT-SHIPPED', payment_mode: 'stripe_eur', payment_status: 'paid',
+        ordered_at: daysAgo(14), preparation_at: daysAgo(12), shipped_at: daysAgo(10), available_at: null, collected_at: null, cancelled_at: null,
+      },
+      {
+        status: 'in_transit', ref: 'KT-INTRANSIT', payment_mode: 'stripe_eur', payment_status: 'paid',
+        ordered_at: daysAgo(20), preparation_at: daysAgo(18), shipped_at: daysAgo(15), available_at: null, collected_at: null, cancelled_at: null,
+      },
+      {
+        status: 'available', ref: 'KT-AVAILABLE', payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(30), preparation_at: daysAgo(28), shipped_at: daysAgo(25), available_at: daysAgo(2), collected_at: null, cancelled_at: null,
+      },
+      {
+        status: 'collected', ref: 'KT-COLLECTED', payment_mode: 'cash_relais', payment_status: 'paid',
+        ordered_at: daysAgo(35), preparation_at: daysAgo(33), shipped_at: daysAgo(30), available_at: daysAgo(5), collected_at: daysAgo(1), cancelled_at: null,
+      },
+      {
+        status: 'cancelled', ref: 'KT-CANCELLED', payment_mode: 'cash_relais', payment_status: 'pending',
+        ordered_at: null, preparation_at: null, shipped_at: null, available_at: null, collected_at: null, cancelled_at: daysAgo(3),
+      },
+    ];
+
+    const created = [];
+    for (const t of testScenarios) {
+      const id = uuidv4();
+      await client.query(
+        `INSERT INTO orders (
+           id, reference, user_id, relais_id,
+           total_kmf, total_eur, payment_mode, payment_status,
+           cash_ref_code, pickup_code, status, confection_type,
+           ordered_at, preparation_at, shipped_at, available_at, collected_at, cancelled_at
+         ) VALUES (
+           $1,$2,$3,$4,
+           $5,$6,$7,$8,
+           $9,$10,$11,'aucun',
+           $12,$13,$14,$15,$16,$17
+         )`,
+        [
+          id, t.ref, adminId, relais.id,
+          5000, 10.16, t.payment_mode, t.payment_status,
+          t.payment_mode === 'cash_relais' ? '999001' : null,
+          'TESTPC',
+          t.status,
+          t.ordered_at, t.preparation_at, t.shipped_at,
+          t.available_at, t.collected_at, t.cancelled_at,
+        ]
+      );
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf) VALUES ($1,$2,$3,$4)`,
+        [id, product.id, 1, product.price_kmf]
+      );
+      await client.query(
+        `INSERT INTO order_status_history (order_id, status, note, changed_by) VALUES ($1,$2,$3,$4)`,
+        [id, t.status, 'Seed test data', adminId]
+      );
+      created.push({ id, reference: t.ref, status: t.status });
+    }
+
+    await client.query('COMMIT');
+
+    console.log(`\uD83C\uDF31 Seed-test: ${created.length} commandes créées par ${req.user.email} (${deletedCount} anciennes supprimées)`);
+    res.json({
+      success:         true,
+      message:         `${created.length} commandes test créées — tous statuts couverts`,
+      deleted_previous: deletedCount,
+      product_used:    product.name,
+      relais_used:     relais.name || relais.id,
+      orders:          created,
+    });
+
   } catch (err) {
-    console.error('Seed-test error:', err.message);
-    res.status(500).json({ error: 'Erreur seed-test : ' + err.message });
+    await client.query('ROLLBACK');
+    console.error('Seed-test error:', err.message, err.detail);
+    res.status(500).json({ error: 'Erreur seed-test : ' + err.message, detail: err.detail || null });
+  } finally {
+    client.release();
   }
 });
 
@@ -387,7 +519,7 @@ router.post('/users', ...guard, async (req, res) => {
        RETURNING id, full_name, email, phone, role, currency_pref, created_at`,
       [full_name, email.toLowerCase().trim(), phone || null, role, currency_pref, password_hash]
     );
-    console.log(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
+    console.log(`\uD83D\uDC64 Admin created user ${user.email} (${role}) by ${req.user.email}`);
     res.status(201).json(user);
   } catch (err) {
     console.error('Admin create user error:', err.message);
@@ -408,7 +540,7 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
       [role, id]
     );
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    console.log(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
+    console.log(`\uD83D\uDD11 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
     res.json({ success: true, user });
   } catch (err) {
     console.error('Admin change role error:', err.message);
@@ -428,7 +560,7 @@ router.put('/users/:id/password', ...guard, async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
     const password_hash = await bcrypt.hash(password, 10);
     await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [password_hash, id]);
-    console.log(`🔒 Admin reset password for ${existing.email} by ${req.user.email}`);
+    console.log(`\uD83D\uDD12 Admin reset password for ${existing.email} by ${req.user.email}`);
     res.json({ success: true, message: `Mot de passe réinitialisé pour ${existing.full_name}` });
   } catch (err) {
     console.error('Admin reset password error:', err.message);
@@ -450,11 +582,11 @@ router.delete('/users/:id', ...guard, async (req, res) => {
         `UPDATE users SET email = 'deleted_' || id || '@komerce.deleted', full_name = '[Compte supprimé]',
            phone = NULL, password_hash = '', updated_at = NOW() WHERE id = $1`, [id]
       );
-      console.log(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
+      console.log(`\uD83D\uDDD1\uFE0F Admin soft-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`, type: 'soft_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     } else {
       await db.query('DELETE FROM users WHERE id = $1', [id]);
-      console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
+      console.log(`\uD83D\uDDD1\uFE0F Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     }
   } catch (err) {
