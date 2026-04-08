@@ -1406,12 +1406,12 @@ L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alim
 
 ## 🤖 Dernière analyse automatique
 
-> Mise à jour : 2026-04-08 14:56:52 UTC
+> Mise à jour : 2026-04-08 15:04:41 UTC
 
 | Métrique | Valeur |
 |----------|--------|
 | Routes | 28 fichiers |
-| Middlewares | 4 fichiers |
+| Middlewares | 5 fichiers |
 | Utilitaires | 10 fichiers |
 | Frontend (public/) | 24 fichiers |
 | Dashboard App | 20 fichiers |
