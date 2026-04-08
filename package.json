@@ -1,12 +1,13 @@
 {
   "name": "komerce-backend",
-  "version": "2.3.0",
-  "description": "Komerce \u2014 Backend API v10.4 \u00b7 Marketplace Comores (Vague 3 \u2014 prod-ready)",
+  "version": "2.4.0",
+  "description": "Komerce \u2014 Backend API v10.4 \u00b7 Marketplace Comores (Vague 4 \u2014 Parcel Optimization)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "migrate": "node scripts/migrate.js",
+    "test": "node --test tests/parcelOptimization.test.js",
     "pretest": "npm audit --production --audit-level=high"
   },
   "engines": {
