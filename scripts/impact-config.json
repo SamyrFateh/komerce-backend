@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "_comment": "Komerce Backend — Configuration du système coffre-fort d'analyse d'impact",
-  "_version": "1.0.0",
+  "_version": "1.1.0",
+  "_changelog": "1.1.0 — orderParcelLinkRules.js, parcels/parcel_items sensitive, orders sub-routes, parcel_chain, fix-schema.js",
   "thresholds": {
     "safe": {
       "min": 0,
@@ -90,9 +91,24 @@
         "middleware": ["auth"]
       },
       "orders.js": {
+        "_note": "Routeur principal — délègue aux sous-fichiers routes/orders/",
         "tables": ["orders", "order_items", "products", "baskets", "basket_items", "users", "recipients", "relais", "scans", "sms_log", "order_status_history", "shipments"],
         "services": ["stripe", "sms", "email"],
         "middleware": ["auth", "rate-limit"],
+        "critical": true
+      },
+      "orders/create.js": {
+        "_note": "Création commande — status initial = confirmed",
+        "tables": ["orders", "order_items", "products", "baskets", "basket_items", "users", "recipients", "relais"],
+        "services": ["sms", "email"],
+        "middleware": ["auth"],
+        "critical": true
+      },
+      "orders/status.js": {
+        "_note": "Transitions de statut commande — VALID_TRANSITIONS enforced",
+        "tables": ["orders", "order_status_history", "sms_log"],
+        "services": ["sms"],
+        "middleware": ["auth"],
         "critical": true
       },
       "payments.js": {
@@ -139,10 +155,11 @@
         "middleware": ["auth"]
       },
       "parcels.js": {
+        "_note": "CRUD colis + bootstrap + optimize — applique les link rules order↔parcel",
         "tables": ["parcels", "parcel_items", "orders", "order_items", "products"],
         "services": [],
         "middleware": ["auth"],
-        "critical": false
+        "critical": true
       }
     },
     "middleware": {
@@ -185,6 +202,13 @@
         "services": [],
         "usedBy": ["parcels"],
         "critical": false
+      },
+      "orderParcelLinkRules.js": {
+        "_note": "Moteur de link rules order↔parcel (Option C). Modifie orders.status directement via R1/R2/R3.",
+        "services": [],
+        "usedBy": ["parcels"],
+        "tables": ["orders", "parcels"],
+        "critical": true
       }
     },
     "db": {
@@ -203,6 +227,11 @@
       "seed.sql": {
         "critical": false,
         "affects": "dev_only"
+      },
+      "fix-schema.js": {
+        "_note": "Auto-migration au démarrage (migrations 001→021, computed_status, in_transit enum, drop one_draft_per_order)",
+        "critical": true,
+        "affects": "all"
       }
     },
     "core": {
@@ -222,7 +251,7 @@
   },
   "tables": {
     "critical": ["users", "orders", "order_items", "scans", "payments", "order_status_history"],
-    "sensitive": ["sms_log", "exchange_rates", "disputes", "shipments", "recipients"],
+    "sensitive": ["sms_log", "exchange_rates", "disputes", "shipments", "recipients", "parcels", "parcel_items"],
     "standard": ["products", "baskets", "basket_items", "relais", "fabrics", "garment_models", "ceremony_fabrics", "ceremony_models", "ceremony_order_items"]
   },
   "externalServices": {
@@ -338,7 +367,8 @@
       "orders_full": ["orders.js", "payments.js", "purchasing.js", "scans.js", "loyalty.js"],
       "scan_chain": ["scans.js", "orders.js", "sms.js", "order_status_history"],
       "auth_chain": ["auth.js", "middleware/auth.js", "all_authenticated_routes"],
-      "payment_flow": ["payments.js", "orders.js", "sms.js", "email.js", "stripe"]
+      "payment_flow": ["payments.js", "orders.js", "sms.js", "email.js", "stripe"],
+      "parcel_chain": ["parcels.js", "orderParcelLinkRules.js", "orders.js", "sms.js"]
     }
   }
 }
