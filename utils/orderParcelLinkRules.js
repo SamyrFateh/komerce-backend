@@ -2,7 +2,7 @@
  * KOMERCE — Order ↔ Parcel Link Rules
  *
  * Les deux cycles sont INDÉPENDANTS :
- *   order.status  = cycle business   (ordered → confirmed → preparation → in_transit → available → collected | cancelled)
+ *   order.status  = cycle business   (confirmed → ordered → preparation → in_transit → available → collected | cancelled)
  *   parcel.status = cycle logistique (draft → preparation → shipped → in_transit → available → collected | cancelled)
  *
  * Seuls les événements définis ici peuvent provoquer une transition sur orders.status.
@@ -16,7 +16,7 @@
  *        → orders.computed_status = 'parcels_all_cancelled' (signal, pas de changement du status business)
  *
  *   R3 — Premier colis expédié (shipped | in_transit | available | collected)
- *        → orders.status = 'in_transit', uniquement si l'ordre est encore en ['confirmed', 'preparation']
+ *        → orders.status = 'in_transit', uniquement si l'ordre est encore en ['confirmed', 'ordered', 'preparation']
  *
  * @param {string} order_id
  * @param {object} db - instance pg pool
@@ -66,7 +66,7 @@ async function evaluateOrderParcelLinkRules(order_id, db) {
   // ── R3 — Premier colis expédié / en transit ────────────────────────────
   const SHIPPED_OR_BEYOND = ['shipped', 'in_transit', 'available', 'collected'];
   const hasShippedParcel = activeParcels.some(p => SHIPPED_OR_BEYOND.includes(p.status));
-  const orderInEarlyStage = ['confirmed', 'preparation'].includes(order.status);
+  const orderInEarlyStage = ['confirmed', 'ordered', 'preparation'].includes(order.status);
 
   if (hasShippedParcel && orderInEarlyStage) {
     await db.query(
