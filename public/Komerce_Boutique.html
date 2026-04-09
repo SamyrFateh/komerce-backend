@@ -2667,15 +2667,7 @@ function openProductModal(p) {
   body.appendChild(controls);
 
   /* ── Bouton Look complet (Mode & Sur-mesure) ── */
-  if (p.category === 'Mode' || p.category === 'Sur-mesure') {
-    var lookBtn = document.createElement('button');
-    lookBtn.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:var(--bg);border:2px dashed var(--primary);border-radius:var(--radius);color:var(--primary);font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.2s;';
-    lookBtn.textContent = 'Voir le look complet';
-    lookBtn.addEventListener('mouseenter', function() { lookBtn.style.background='var(--primary-light)'; });
-    lookBtn.addEventListener('mouseleave', function() { lookBtn.style.background='var(--bg)'; });
-    lookBtn.addEventListener('click', function() { openLookModal(p); });
-    body.appendChild(lookBtn);
-  }
+  buildLookBoard(p, body);
 
   /* ── Fonction swipe carousel natif pour la modale ── */
   function makeSwipeSection(items, label, borderColor) {
@@ -2756,18 +2748,192 @@ function openProductModal(p) {
     .slice(0, 8);
   if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Dans le même esprit 🌿', '#e8f4e8'));
 
-  // Complémentaires : règles métier
-  var _compCats = _compRules[_pCat] || [];
-  var _compProds = KState.products
-    .filter(function(x) { return x.id !== p.id && _compCats.indexOf((x.category||'').toLowerCase()) >= 0; })
-    .sort(function() { return 0.5 - Math.random(); })
-    .slice(0, 8);
-  if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Va bien avec ✨', '#fff3e8'));
+  // Complémentaires : règles métier (skippé pour Mode/Sur-mesure — le look board s'en charge)
+  if (_pCat !== 'mode' && _pCat !== 'sur-mesure') {
+    var _compCats = _compRules[_pCat] || [];
+    var _compProds = KState.products
+      .filter(function(x) { return x.id !== p.id && _compCats.indexOf((x.category||'').toLowerCase()) >= 0; })
+      .sort(function() { return 0.5 - Math.random(); })
+      .slice(0, 8);
+    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Va bien avec ✨', '#fff3e8'));
+  }
 
   $('product-modal').classList.add('open');
 }
 
 var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
+
+
+// ════════════════════════════════════════════════════════════════
+// LOOK BOARD — Mannequin preview (Mode & Sur-mesure uniquement)
+// ════════════════════════════════════════════════════════════════
+function buildLookBoard(p, body) {
+  var pCat = (p.category || '').toLowerCase();
+  if (pCat !== 'mode' && pCat !== 'sur-mesure') return;
+
+  // ── Sélectionner les accessoires ────────────────────────────
+  var allP = KState.products;
+  var shoes = allP.filter(function(x) {
+    return x.id !== p.id && (x.category||'').toLowerCase() === 'mode' &&
+      /chaussure|sandale|botte|sneaker|mocassin|babouche|escarpin/i.test(x.name);
+  });
+  var beauty = allP.filter(function(x) {
+    return ['beauté','beaute'].indexOf((x.category||'').toLowerCase()) >= 0;
+  });
+  var access = allP.filter(function(x) {
+    return x.id !== p.id && (x.category||'').toLowerCase() === 'mode' &&
+      /sac|bijou|collier|bracelet|montre|bague|foulard|ceinture/i.test(x.name);
+  });
+
+  var rnd = function(arr, max) { return arr.length ? arr[Math.floor(Math.random() * Math.min(arr.length, max))] : null; };
+  var shoe  = rnd(shoes, 6);
+  var beau  = rnd(beauty, 10);
+  var acc   = rnd(access, 6);
+  var accs  = [shoe, beau, acc].filter(Boolean);
+  if (!accs.length) return;
+
+  // ── Container principal ──────────────────────────────────────
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:24px;padding-top:20px;border-top:1px dashed #ddd;';
+
+  // ── Titre section ────────────────────────────────────────────
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'text-align:center;margin-bottom:18px;';
+  hdr.innerHTML = '<div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:4px;">✦ Le look complet ✦</div>'
+                + '<div style="font-size:0.8rem;color:#666;">Composé pour toi</div>';
+  wrap.appendChild(hdr);
+
+  // ── Stage : mannequin + produit ──────────────────────────────
+  var stage = document.createElement('div');
+  stage.style.cssText = 'display:flex;flex-direction:column;align-items:center;margin-bottom:16px;';
+
+  // SVG mannequin avec clipPath unique (éviter collision id)
+  var uid = 'lk' + Date.now();
+  var imgTag = p.image_url
+    ? '<image href="' + sanitize(p.image_url) + '" x="14" y="44" width="72" height="122" clip-path="url(#' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
+    : '<text x="50" y="112" text-anchor="middle" font-size="32" dy="0">' + productEmoji(p) + '</text>';
+
+  var svgEl = document.createElement('div');
+  svgEl.style.cssText = 'width:148px;height:260px;flex-shrink:0;';
+  safeHTML(svgEl,
+    '<svg viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">'
+    + '<defs>'
+    +   '<clipPath id="' + uid + '">'
+    +     '<path d="M28 52 Q20 56 14 72 Q10 90 12 112 L16 68 L17 155 Q33 163 50 163 Q67 163 83 155 L84 68 L88 112 Q90 90 86 72 Q80 56 72 52 Q65 44 50 44 Q35 44 28 52 Z"/>'
+    +   '</clipPath>'
+    + '</defs>'
+    // Cheveux
+    + '<ellipse cx="50" cy="8"  rx="17" ry="12" fill="#5C3D2E"/>'
+    + '<path d="M33 10 Q26 25 29 44" stroke="#5C3D2E" stroke-width="8" fill="none" stroke-linecap="round"/>'
+    + '<path d="M67 10 Q74 25 71 44" stroke="#5C3D2E" stroke-width="8" fill="none" stroke-linecap="round"/>'
+    // Tête
+    + '<ellipse cx="50" cy="21" rx="14" ry="17" fill="#F5E0CC"/>'
+    // Visage (subtil)
+    + '<circle cx="44" cy="22" r="1.4" fill="#C89878" opacity="0.7"/>'
+    + '<circle cx="56" cy="22" r="1.4" fill="#C89878" opacity="0.7"/>'
+    + '<path d="M45 29 Q50 32.5 55 29" stroke="#C89878" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/>'
+    // Cou
+    + '<rect x="45" y="36" width="10" height="10" fill="#F5E0CC" rx="2"/>'
+    // Corps silhouette (fond)
+    + '<path d="M28 52 Q20 56 14 72 Q10 90 12 112 L16 68 L17 155 Q33 163 50 163 Q67 163 83 155 L84 68 L88 112 Q90 90 86 72 Q80 56 72 52 Q65 44 50 44 Q35 44 28 52 Z" fill="#EDD5BC"/>'
+    // Image produit clippée sur le corps
+    + imgTag
+    // Contour corps (subtil)
+    + '<path d="M28 52 Q20 56 14 72 Q10 90 12 112 L16 68 L17 155 Q33 163 50 163 Q67 163 83 155 L84 68 L88 112 Q90 90 86 72 Q80 56 72 52 Q65 44 50 44 Q35 44 28 52 Z" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>'
+    // Jambes
+    + '<path d="M17 152 Q26 158 35 160 L32 253 Q29 256 25 253 L24 162 Q20 158 17 152 Z" fill="#F5E0CC"/>'
+    + '<path d="M83 152 Q74 158 65 160 L68 253 Q71 256 75 253 L76 162 Q80 158 83 152 Z" fill="#F5E0CC"/>'
+    + '</svg>'
+  );
+  stage.appendChild(svgEl);
+
+  // Nom + prix du produit principal
+  var mainInfo = document.createElement('div');
+  mainInfo.style.cssText = 'text-align:center;margin-top:6px;';
+  mainInfo.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:#333;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sanitize(p.name) + '</div>'
+                     + '<div style="font-size:0.78rem;font-weight:800;color:var(--primary);margin-top:2px;">' + fmt(p.price_kmf||0,'KMF') + '</div>';
+  stage.appendChild(mainInfo);
+  wrap.appendChild(stage);
+
+  // ── Séparateur + titre accessoires ──────────────────────────
+  var sep = document.createElement('div');
+  sep.style.cssText = 'font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;text-align:center;margin-bottom:10px;';
+  sep.textContent = '— Accessoires suggérés —';
+  wrap.appendChild(sep);
+
+  // ── Row accessoires ──────────────────────────────────────────
+  var labels = ['👠 Chaussures','💄 Beauté','👜 Accessoire'];
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;';
+
+  accs.forEach(function(ac, i) {
+    var card = document.createElement('div');
+    card.style.cssText = 'flex:0 0 116px;border-radius:10px;overflow:hidden;border:1px solid #eee;background:#fff;cursor:pointer;scroll-snap-align:start;transition:transform 0.15s,box-shadow 0.15s;';
+    card.addEventListener('click', function() { openProductModal(ac); });
+    card.addEventListener('mouseenter', function() { card.style.transform='translateY(-2px)'; card.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'; });
+    card.addEventListener('mouseleave', function() { card.style.transform=''; card.style.boxShadow=''; });
+
+    // Badge label
+    var badge = document.createElement('div');
+    badge.style.cssText = 'background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;text-align:center;letter-spacing:0.5px;';
+    badge.textContent = labels[i] || ac.category;
+    card.appendChild(badge);
+
+    // Image
+    var imgW = document.createElement('div');
+    imgW.style.cssText = 'height:88px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;overflow:hidden;';
+    if (ac.image_url) {
+      var img = document.createElement('img');
+      img.src = ac.image_url;
+      img.alt = sanitize(ac.name);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      imgW.appendChild(img);
+    } else {
+      imgW.style.fontSize = '2.2rem';
+      imgW.textContent = productEmoji(ac);
+    }
+    card.appendChild(imgW);
+
+    // Infos
+    var inf = document.createElement('div');
+    inf.style.cssText = 'padding:6px 8px;';
+    var iN = document.createElement('div');
+    iN.style.cssText = 'font-size:0.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;';
+    iN.textContent = ac.name;
+    var iP = document.createElement('div');
+    iP.style.cssText = 'font-size:0.72rem;font-weight:800;color:var(--primary);margin-top:2px;';
+    iP.textContent = fmt(ac.price_kmf||0,'KMF');
+    inf.appendChild(iN);
+    inf.appendChild(iP);
+    card.appendChild(inf);
+    row.appendChild(card);
+  });
+  wrap.appendChild(row);
+
+  // ── Total + Actions ──────────────────────────────────────────
+  var allItems = [p].concat(accs);
+  var total = allItems.reduce(function(s,x){ return s+(x.price_kmf||0); }, 0);
+
+  var totRow = document.createElement('div');
+  totRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--primary-light);border-radius:8px;margin:8px 0;';
+  totRow.innerHTML = '<span style="font-size:0.77rem;color:#666;font-weight:600;">Total look (' + allItems.length + ' pièces)</span>'
+                   + '<span style="font-size:0.92rem;font-weight:800;color:var(--primary);">' + fmt(total,'KMF') + '</span>';
+  wrap.appendChild(totRow);
+
+  var addAll = document.createElement('button');
+  addAll.style.cssText = 'width:100%;padding:11px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer;margin-bottom:6px;transition:opacity 0.2s;';
+  addAll.textContent = '🛍️ Ajouter tout le look';
+  addAll.addEventListener('click', function() { allItems.forEach(function(x){ addToCart(x,1,null); }); toast('Look complet ajouté !','success'); });
+  wrap.appendChild(addAll);
+
+  var refresh = document.createElement('button');
+  refresh.style.cssText = 'width:100%;padding:8px;background:#fff;color:var(--primary);border:2px solid var(--primary);border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;transition:background 0.2s;';
+  refresh.textContent = '↻ Autre look';
+  refresh.addEventListener('click', function() { wrap.remove(); buildLookBoard(p, body); });
+  wrap.appendChild(refresh);
+
+  body.appendChild(wrap);
+}
 
 function openLookModal(mainProduct) {
   var body = $('look-modal-body');
