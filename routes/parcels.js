@@ -35,7 +35,7 @@ const STATUS_TO_STEP = {
 };
 
 // GET /api/parcels
-router.get('/', ...adminAgent, validate(parcels.list, 'query'), async (req, res, next) => {
+router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req, res, next) => {
   try {
     const { status, shipment_id, order_id, search, page = 1, limit = 50 } = req.query;
     const safeLimit = Math.min(parseInt(limit) || 50, 100);
@@ -50,6 +50,12 @@ router.get('/', ...adminAgent, validate(parcels.list, 'query'), async (req, res,
     if (shipment_id) { conditions.push(`p.shipment_id = $${idx++}`); params.push(shipment_id); }
     if (order_id) { conditions.push(`p.order_id = $${idx++}`); params.push(order_id); }
     if (search) { conditions.push(`p.reference ILIKE $${idx++}`); params.push(`%${search}%`); }
+
+    // Agent relais: only see parcels for their relay point's orders
+    if (req.user.role === 'agent_relais') {
+      conditions.push(`EXISTS (SELECT 1 FROM relay_points rp WHERE rp.id = o.relais_id AND rp.manager_id = $${idx++})`);
+      params.push(req.user.id);
+    }
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
