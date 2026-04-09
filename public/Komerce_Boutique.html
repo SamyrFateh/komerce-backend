@@ -32,6 +32,110 @@
   --shadow: 0 4px 20px rgba(45,159,111,0.08);
 }
 
+/* ── Nav nouvelle version ── */
+#main-nav { padding: 0; }
+#main-nav .nav-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px;
+  height: 58px; padding: 0 16px;
+}
+.nav-search-wrap {
+  flex: 1; max-width: 480px; position: relative;
+  display: flex; align-items: center;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 24px; overflow: hidden; margin: 0 8px;
+}
+.nav-search-wrap input {
+  flex: 1; border: none; background: transparent;
+  padding: 8px 12px; font-size: 0.88rem; outline: none;
+}
+.nav-search-wrap button {
+  background: none; border: none; padding: 8px 14px;
+  font-size: 1rem; cursor: pointer; color: var(--muted);
+}
+.nav-search-wrap:focus-within {
+  border-color: var(--primary);
+}
+/* Pills catégories */
+.cat-pills-wrap {
+  background: var(--white); border-top: 1px solid var(--border);
+  padding: 0 16px; overflow-x: auto; scrollbar-width: none;
+}
+.cat-pills-wrap::-webkit-scrollbar { display: none; }
+.cat-pills {
+  display: flex; gap: 6px; padding: 8px 0;
+  max-width: 1200px; margin: 0 auto;
+  white-space: nowrap;
+}
+.cat-pill {
+  display: inline-block; padding: 6px 16px;
+  border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--white);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+  flex-shrink: 0;
+}
+.cat-pill:hover { border-color: var(--primary); color: var(--primary); }
+.cat-pill.active {
+  background: var(--primary); color: var(--white);
+  border-color: var(--primary);
+}
+
+/* ── Hero minimaliste ── */
+#hero { background: var(--white); padding: 20px 16px 16px; text-align: center; border-bottom: 1px solid var(--border); }
+.hero-minimal { max-width: 700px; margin: 0 auto; }
+#hero .hero-title {
+  font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800;
+  color: var(--dark); margin-bottom: 6px; line-height: 1.2;
+}
+.hero-sub {
+  font-size: 0.88rem; color: var(--muted); line-height: 1.5;
+}
+
+/* ── Filtre rapide ── */
+.filter-bar {
+  display: flex; gap: 8px; padding: 14px 0 10px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-btn {
+  padding: 5px 14px; border-radius: 20px; font-size: 0.82rem;
+  font-weight: 600; border: 1.5px solid var(--border);
+  background: var(--white); color: var(--muted);
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+.filter-btn.active {
+  background: var(--primary-light); color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── Grille 2 colonnes ── */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px; padding-bottom: 32px;
+}
+@media (min-width: 600px) { .product-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .product-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1100px) { .product-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.product-grid .product-card { flex: none; width: 100%; }
+.product-grid .skeleton-card { flex: none; width: 100%; height: 260px; border-radius: var(--radius); background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+
+/* Badge promo sur card */
+.card-badge {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 0.68rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px;
+  background: #ef4444; color: white;
+  z-index: 2;
+}
+.card-badge.new { background: var(--primary); }
+.card-price-original {
+  font-size: 0.72rem; color: var(--muted);
+  text-decoration: line-through; margin-bottom: 2px;
+}
+
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -1552,12 +1656,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
      1. PROMO TOP BAR
      ======================================== -->
 <div id="promo-bar" role="marquee" aria-label="Promotions">
-  <div class="promo-msg active">🎁 Livraison offerte dès 5 000 KMF</div>
-  <div class="promo-msg">✨ Code <strong>BIENVENUE</strong> : −10 % sur votre 1ʳᵉ commande</div>
-  <div class="promo-msg">🌍 Envoyez un cadeau aux Comores depuis la France</div>
-  <div class="promo-msg">⚡ Nouveaux produits ajoutés chaque semaine</div>
-  <div class="promo-msg">📱 Paiement MVola bientôt disponible</div>
-  <div class="promo-msg proverb-msg" id="promo-proverb"></div>
+  <div class="promo-msg active">🇰🇲 Choisissez, on vous l'envoie · Livraison aux Comores partout dans le monde</div>
 </div>
 
 <!-- ========================================
@@ -1566,13 +1665,25 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <nav id="main-nav" aria-label="Navigation principale">
   <div class="nav-inner">
     <a href="#" class="nav-logo" aria-label="Komerce accueil"><span class="ko">Ko</span><span class="merce">merce</span></a>
-    <div class="nav-links">
-      <a href="#how-it-works">🌟 Situations</a>
-      <a href="#catalogue">📦 Catalogue</a>
-      <button class="cart-btn" id="nav-cart-btn" aria-label="Ouvrir le panier">
-        <img src="/images/avatar_panier.png" class="cart-avatar" width="42" height="42" alt="Panier">
-        <span id="cart-count" class="hidden">0</span>
-      </button>
+    <div class="nav-search-wrap">
+      <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
+      <button type="button" id="hero-search-btn">🔍</button>
+      <div class="search-dropdown" id="search-dropdown"></div>
+    </div>
+    <button class="cart-btn" id="nav-cart-btn" aria-label="Ouvrir le panier">
+      <img src="/images/avatar_panier.png" class="cart-avatar" width="42" height="42" alt="Panier">
+      <span id="cart-count" class="hidden">0</span>
+    </button>
+  </div>
+  <!-- Pills catégories -->
+  <div class="cat-pills-wrap">
+    <div class="cat-pills" id="cat-pills">
+      <button class="cat-pill active" data-cat="">Tout</button>
+      <button class="cat-pill" data-cat="Mode">👗 Mode</button>
+      <button class="cat-pill" data-cat="Sur-mesure">✂️ Sur-mesure</button>
+      <button class="cat-pill" data-cat="Beauté">💄 Beauté</button>
+      <button class="cat-pill" data-cat="Tech">📱 Tech</button>
+      <button class="cat-pill" data-cat="Enfant">👶 Enfant</button>
     </div>
   </div>
 </nav>
@@ -1583,108 +1694,36 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 
 <section id="hero">
-  <div class="hero-left">
-    <div class="hero-badge">🇰🇲 E-commerce des Comores</div>
-    <h1 class="hero-title">Tout ce que vous voulez,<br><span class="hero-accent">livré aux Comores</span></h1>
-    <a href="#catalogue" class="hero-cta">Découvrir le catalogue →</a>
-  </div>
-  <div class="hero-right">
-    <img src="/images/hero_banner.jpg" alt="Livraison aux Comores">
+  <div class="hero-minimal">
+    <h1 class="hero-title">Choisissez, <span class="hero-accent">on vous l'envoie</span></h1>
+    <p class="hero-sub">Le meilleur du monde · Livré aux Comores · Récupéré au relais près de chez vous</p>
   </div>
 </section>
 
 <!-- ========================================
      4. ADVANTAGE STRIP
      ======================================== -->
-<section id="advantages" aria-label="Nos avantages">
-  <div class="adv-grid">
-    <div class="adv-item">📦 Livraison rapide <small>· 7-14 jours</small></div>
-    <div class="adv-item">🔒 Paiement sécurisé <small>· Carte ou relais</small></div>
-    <div class="adv-item">🇰🇲 100% Comores <small>· Moroni &amp; Anjouan</small></div>
-  </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════════
-     BLOOM CATEGORY NAVIGATION — Injected
-     ═══════════════════════════════════════════════════ -->
-<section id="bloom-nav" style="padding-top: 0.8rem; padding-bottom: 0;">
-  <div class="container">
-    <div class="cat-nav-wrapper">
-      <div class="cat-row" id="cat-row">
-        <div class="cat-item active" data-cat="">
-          <div class="cat-orb orb-all"><span>🛒</span></div>
-          <div class="cat-orb-label">Tout</div>
-        </div>
-        <div class="cat-item" data-cat="mode">
-          <div class="cat-orb orb-mode"><span>👗</span></div>
-          <div class="cat-orb-label">Mode</div>
-        </div>
-        <div class="cat-item" data-cat="maison">
-          <div class="cat-orb orb-maison"><span>🏠</span></div>
-          <div class="cat-orb-label">Maison</div>
-        </div>
-        <div class="cat-item" data-cat="tech">
-          <div class="cat-orb orb-tech"><span>📱</span></div>
-          <div class="cat-orb-label">Électronique</div>
-        </div>
-        <div class="cat-item" data-cat="beaute">
-          <div class="cat-orb orb-beaute"><span>💄</span></div>
-          <div class="cat-orb-label">Beauté</div>
-        </div>
-        <div class="cat-item" data-cat="enfants">
-          <div class="cat-orb orb-enfants"><span>🧸</span></div>
-          <div class="cat-orb-label">Enfants</div>
-        </div>
-        <div class="cat-item" data-cat="surmesure">
-          <div class="cat-orb orb-surmesure"><span>✨</span></div>
-          <div class="cat-orb-label">Sur Mesure</div>
-        </div>
-      </div>
-
-      <div class="bloom-panel" id="bloom-panel">
-        <div class="bloom-pointer" id="bloom-pointer"></div>
-        <div class="bloom-header" id="bloom-header">
-          <span class="bloom-header-icon"></span>
-          <span class="bloom-header-text"></span>
-        </div>
-        <div class="bloom-grid" id="bloom-grid"></div>
-      </div>
-
-      <div class="cat-path" id="cat-path"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ========================================
-     BARRE DE RECHERCHE
-     ======================================== -->
-<section id="search-section" style="padding: 0.5rem 0 0.3rem; background: var(--bg);">
-  <div class="container">
-    <div class="search-container" style="max-width: 600px; margin: 0 auto;">
-      <div class="hero-search">
-        <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
-        <button type="button" id="hero-search-btn">🔍</button>
-      </div>
-      <div class="search-dropdown" id="search-dropdown"></div>
-    </div>
-  </div>
-</section>
-
 <!-- ========================================
      5. PRODUCT CATALOGUE
      ======================================== -->
 <section id="catalogue">
   <div class="container">
-    <div class="carousel-wrapper">
-      <button class="carousel-btn prev" id="carousel-prev-btn" aria-label="Précédent">‹</button>
-      <div class="carousel-track" id="product-track">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-      </div>
-      <button class="carousel-btn next" id="carousel-next-btn" aria-label="Suivant">›</button>
+    <!-- Barre filtre rapide -->
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-btn active" data-sort="">Nouveautés</button>
+      <button class="filter-btn" data-sort="promo">Promos</button>
+      <button class="filter-btn" data-sort="price-asc">Prix ↑</button>
+      <button class="filter-btn" data-sort="price-desc">Prix ↓</button>
+      <button class="filter-btn" data-sort="stock">Disponible</button>
+    </div>
+    <!-- Grille produits -->
+    <div class="product-grid" id="product-track">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
     </div>
   </div>
 </section>
@@ -1782,7 +1821,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
         <!-- Contact -->
         <div class="footer-col">
           <h4>Contact</h4>
-          <a href="mailto:contact@komerce.km">📧 contact@komerce.km</a>
+          <a href="/cdn-cgi/l/email-protection#680b07061c090b1c280307050d1a0b0d460305">📧 <span class="__cf_email__" data-cfemail="f695999882979582b69d999b93849593d89d9b">[email&#160;protected]</span></a>
           <a href="tel:+2693210000">📞 +269 321 00 00</a>
           <a href="https://wa.me/33699272526">💬 WhatsApp</a>
         </div>
@@ -1862,7 +1901,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <!-- ========================================
      JAVASCRIPT (XSS-hardened with DOMPurify — Sprint 4b)
      ======================================== -->
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── DOMPurify safe innerHTML wrapper (Sprint 4b — S6 XSS fix) ──
 var _dpConfig = { ADD_ATTR: ['style'], ADD_TAGS: ['img'], ALLOW_DATA_ATTR: true };
 function safeHTML(el, h) { el.innerHTML = (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
@@ -2400,7 +2439,7 @@ function renderProducts(list) {
   track.innerHTML = '';
   if (!list || list.length === 0) {
     var empty = document.createElement('p');
-    empty.style.cssText = 'text-align:center;color:var(--muted);padding:40px;width:100%;';
+    empty.style.cssText = 'text-align:center;color:var(--muted);padding:40px;grid-column:1/-1;';
     empty.textContent = 'Aucun produit trouvé.';
     track.appendChild(empty);
     return;
@@ -2416,6 +2455,7 @@ function renderProducts(list) {
 
     var imgDiv = document.createElement('div');
     imgDiv.className = 'card-img';
+    imgDiv.style.position = 'relative';
     if (p.image_url) {
       var img = document.createElement('img');
       img.src = p.image_url;
@@ -2425,6 +2465,15 @@ function renderProducts(list) {
     } else {
       imgDiv.textContent = productEmoji(p);
     }
+
+    /* Badge promo */
+    if (p.is_promo && p.promo_pct) {
+      var badge = document.createElement('div');
+      badge.className = 'card-badge';
+      badge.textContent = '-' + p.promo_pct + '%';
+      imgDiv.appendChild(badge);
+    }
+
     card.appendChild(imgDiv);
 
     /* Badge quantité panier */
@@ -2455,6 +2504,15 @@ function renderProducts(list) {
     name.title = p.name || '';
     body.appendChild(name);
 
+    /* Prix barré si promo */
+    if (p.is_promo && p.promo_pct && p.cost_kmf) {
+      var origPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
+      var orig = document.createElement('div');
+      orig.className = 'card-price-original';
+      orig.textContent = fmt(origPrice, 'KMF');
+      body.appendChild(orig);
+    }
+
     var price = document.createElement('div');
     price.className = 'card-price';
     price.textContent = fmt(p.price_kmf || 0, 'KMF');
@@ -2467,13 +2525,13 @@ function renderProducts(list) {
       body.appendChild(conv);
     }
 
-    var actions = document.createElement('div');
     var avail = availabilityInfo(p);
     var availBadge = document.createElement('div');
     availBadge.className = 'avail-badge ' + avail.cls;
     availBadge.textContent = avail.icon + ' ' + avail.label;
     body.appendChild(availBadge);
 
+    var actions = document.createElement('div');
     actions.className = 'card-actions';
 
     var addBtn = document.createElement('button');
@@ -3757,6 +3815,45 @@ document.addEventListener('DOMContentLoaded', function() {
   initPromoBar();
   initHeroSearch();
 
+  /* ── Pills catégories ── */
+  var pills = document.querySelectorAll('.cat-pill');
+  pills.forEach(function(pill) {
+    pill.addEventListener('click', function() {
+      pills.forEach(function(p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+      var cat = pill.dataset.cat;
+      var filtered = cat ? _products.filter(function(p) {
+        return (p.category || '').toLowerCase() === cat.toLowerCase();
+      }) : _products;
+      _currentSort = '';
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelector('.filter-btn[data-sort=""]').classList.add('active');
+      renderProducts(filtered);
+      document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  /* ── Filtre tri rapide ── */
+  var filterBtns = document.querySelectorAll('.filter-btn');
+  filterBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      filterBtns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var sort = btn.dataset.sort;
+      var activeCat = document.querySelector('.cat-pill.active');
+      var cat = activeCat ? activeCat.dataset.cat : '';
+      var base = cat ? _products.filter(function(p) {
+        return (p.category || '').toLowerCase() === cat.toLowerCase();
+      }) : _products.slice();
+      var sorted = base.slice();
+      if (sort === 'promo') sorted = sorted.filter(function(p) { return p.is_promo; });
+      else if (sort === 'price-asc') sorted.sort(function(a,b) { return a.price_kmf - b.price_kmf; });
+      else if (sort === 'price-desc') sorted.sort(function(a,b) { return b.price_kmf - a.price_kmf; });
+      else if (sort === 'stock') sorted = sorted.filter(function(p) { return p.stock > 0; });
+      renderProducts(sorted);
+    });
+  });
+
   /* Wire footer buttons via addEventListener (CSP-safe, no inline onclick) */
   var omClose = document.getElementById('order-modal-close');
   if (omClose) omClose.addEventListener('click', function() { closeOrderModal(); });
@@ -3801,15 +3898,4 @@ document.addEventListener('DOMContentLoaded', function() {
   // ─── Service Worker Registration ──────────────────────────────
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').then(function(reg) {
-      console.log('[App] SW registered, scope:', reg.scope);
-      // Force la vérification de mise à jour à chaque visite
-      reg.update();
-    }).catch(function(err) {
-      console.warn('[App] SW registration failed:', err);
-    });
-  }
-});
-</script>
-
-</body>
-</html>
+      console.log('[App] SW registered, scope:'
