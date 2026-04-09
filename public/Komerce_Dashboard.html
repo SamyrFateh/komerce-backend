@@ -212,7 +212,7 @@ function clearCache(){Object.keys(cache).forEach(k=>delete cache[k]);}
 
 // ── LOGIN / LOGOUT ────────────────────────────────────────────
 function prefill(){
-  const url=localStorage.getItem('komerce_api_url')||'';
+  const url=window.location.origin;
   if(url)document.getElementById('inpApi').value=url;
 }
 

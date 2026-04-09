@@ -227,10 +227,7 @@
 
       <div id="loginError" class="login-err"></div>
 
-      <div class="form-group">
-        <div class="inp-label">URL API</div>
-        <input id="inpApiUrl" class="inp" type="url" placeholder="https://api.komerce.app" autocomplete="url">
-      </div>
+      
       <div class="form-group">
         <div class="inp-label">Email</div>
         <input id="inpEmail" class="inp" type="email" placeholder="agent@relais-anjouan.com" autocomplete="email">
@@ -435,8 +432,8 @@
 
     // ── INIT ──────────────────────────────────────────────────
     function init() {
-      const storedUrl = localStorage.getItem('komerce_api_url') || '';
-      if (storedUrl) dom.inpApiUrl.value = storedUrl;
+      // API URL auto-detected from current origin
+      
 
       dom.btnLogin.addEventListener('click', handleLogin);
       dom.btnLogout.addEventListener('click', handleLogout);
@@ -459,11 +456,11 @@
 
     // ── AUTH ───────────────────────────────────────────────────
     async function handleLogin() {
-      const url = dom.inpApiUrl.value.trim();
+      const url = window.location.origin;
       const email = dom.inpEmail.value.trim();
       const pass = dom.inpPassword.value;
 
-      if (!url || !email || !pass) {
+      if (!email || !pass) {
         showLoginError('Veuillez remplir tous les champs');
         return;
       }
