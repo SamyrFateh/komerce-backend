@@ -845,30 +845,31 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    ──────────────────────────────────────── */
 .pd-top { display: flex; gap: 20px; margin-bottom: 20px; }
 .pd-emoji {
-  width: 100px; height: 100px; border-radius: 12px;
+  width: 220px; height: 220px; border-radius: 14px;
   background: var(--primary-light); display: flex;
   align-items: center; justify-content: center;
   font-size: 3rem; flex-shrink: 0; overflow: hidden;
+  position: relative;
 }
-.pd-emoji img { width: 100%; height: 100%; object-fit: cover; }
-.pd-info { flex: 1; }
+.pd-emoji img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+.pd-info { flex: 1; min-width: 0; }
 .pd-name { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.2rem; }
 .pd-cat { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
 .pd-price { font-weight: 800; color: var(--primary); font-size: 1.3rem; }
 .pd-price-conv { font-size: 0.82rem; color: var(--muted); }
 .pd-desc { color: var(--muted); font-size: 0.92rem; margin-bottom: 20px; line-height: 1.6; }
-.pd-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.pd-controls { display: flex; gap: 14px; align-items: center; margin-top: 16px; }
 .pd-qty-wrap { display: flex; align-items: center; gap: 8px; }
-.pd-qty-wrap .qty-btn { width: 36px; height: 36px; font-size: 1.1rem; }
+.pd-qty-wrap .qty-btn { width: 32px; height: 32px; font-size: 1rem; border-radius: 8px; border: 1px solid var(--border); background: white; cursor: pointer; }
 .pd-qty-wrap .qty-val { font-size: 1.1rem; min-width: 28px; }
 .pd-add-btn {
-  flex: 1; padding: 12px 20px; border-radius: var(--radius);
-  background: var(--primary); color: var(--white);
-  font-weight: 700; font-size: 1rem; transition: background 0.2s, transform 0.15s;
-  min-width: 160px; text-align: center;
+  padding: 10px 20px; border-radius: 8px;
+  background: var(--accent); color: var(--dark);
+  font-weight: 600; font-size: 0.9rem; transition: all 0.2s;
+  text-align: center; letter-spacing: 0.2px;
 }
-.pd-add-btn:hover:not(:disabled) { background: var(--primary-dark); }
-.pd-add-btn.added { background: var(--green); transform: scale(1.04); }
+.pd-add-btn:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(245,158,11,0.25); }
+.pd-add-btn.added { background: #22c55e; color: white; transform: scale(1.02); }
 .pd-add-btn:disabled { cursor: default; }
 
 /* ────────────────────────────────────────
@@ -996,7 +997,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
   .product-card { flex: 0 0 180px; }
-  .pd-top { flex-direction: column; align-items: center; text-align: center; }
+  .pd-top { flex-direction: row; align-items: flex-start; text-align: left; }
 }
 @media (max-width: 480px) {
   .hero-left { padding: 14px 14px; }
@@ -2724,7 +2725,7 @@ function openProductModal(p) {
 
   var addBtn = document.createElement('button');
   addBtn.className = 'pd-add-btn';
-  addBtn.style.cssText = 'background:linear-gradient(135deg, var(--accent), var(--accent-dark));color:var(--dark);font-weight:800;font-size:1rem;padding:12px 24px;border-radius:50px;box-shadow:0 4px 14px rgba(245,158,11,0.35);letter-spacing:0.3px;';
+  /* inline style removed — uses .pd-add-btn CSS */
   addBtn.textContent = 'Ajouter au panier';
   addBtn.addEventListener('click', function() {
     addToCart(p, _pdQty, addBtn);
