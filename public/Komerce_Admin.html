@@ -347,13 +347,9 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
             <div class="card">
               <div class="ch"><span class="ch-t">Commandes recentes</span><span class="ch-a" onclick="go('orders',null)">Voir tout</span></div>
               <table class="tbl">
-                <thead><tr><th>N&#176;</th><th>Client</th><th>Statut</th><th>Total KMF</th><th>Paiement</th></tr></thead>
-                <tbody>
-                  <tr><td class="mono">KOM-00358</td><td class="bold">Fatima A.</td><td><span class="b bg">&#10003; Au relais</span></td><td class="mono">47 500</td><td><span class="b bk">Especes</span></td></tr>
-                  <tr><td class="mono">KOM-00357</td><td class="bold">Hassan M.</td><td><span class="b bb">&#128674; En mer</span></td><td class="mono">91 200</td><td><span class="b bp">Stripe 186&#8364;</span></td></tr>
-                  <tr><td class="mono">KOM-00356</td><td class="bold">Aicha B.</td><td><span class="b br">&#9888; Litige</span></td><td class="mono">203 400</td><td><span class="b bk">Especes</span></td></tr>
-                  <tr><td class="mono">KOM-00355</td><td class="bold">Said O.</td><td><span class="b ba">&#9881; Colisage</span></td><td class="mono">61 458</td><td><span class="b bk">Especes</span></td></tr>
-                  <tr><td class="mono">KOM-00354</td><td class="bold">Mariama C.</td><td><span class="b ba">&#128230; A acheter</span></td><td class="mono">33 858</td><td><span class="b bp">PayPal 68&#8364;</span></td></tr>
+                <thead><tr><th>N°</th><th>Client</th><th>Statut</th><th>Total KMF</th><th>Paiement</th></tr></thead>
+                <tbody id="dash-recent-orders">
+                  <tr><td colspan="5" style="text-align:center;color:var(--ink4);padding:16px;font-size:12px">Chargement...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -404,23 +400,31 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <!-- COMMANDES -->
       <div class="scr" id="scr-orders">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div><div style="font-size:18px;font-weight:600">Commandes</div><div style="font-size:12px;color:var(--ink4);margin-top:2px">23 ce mois · 7 en attente d action</div></div>
+          <div><div style="font-size:18px;font-weight:600">Commandes</div><div id="orders-subtitle" style="font-size:12px;color:var(--ink4);margin-top:2px">Chargement...</div></div>
           <div style="display:flex;gap:8px">
-            <select class="inp" style="width:auto"><option>Tous statuts</option><option>A acheter</option><option>En mer</option><option>Au relais</option></select>
-            <select class="inp" style="width:auto"><option>Tous paiements</option><option>Especes</option><option>Stripe</option><option>PayPal</option></select>
+            <select id="filter-status" class="inp" style="width:auto" onchange="applyOrderFilters()">
+              <option value="">Tous statuts</option>
+              <option value="confirmed">Confirmé</option>
+              <option value="ordered">Commandé</option>
+              <option value="preparation">Préparation</option>
+              <option value="shipped">Expédié</option>
+              <option value="in_transit">En transit</option>
+              <option value="available">Au relais</option>
+              <option value="collected">Retiré</option>
+              <option value="cancelled">Annulé</option>
+              <option value="refunded">Remboursé</option>
+            </select>
+            <select id="filter-payment" class="inp" style="width:auto" onchange="applyOrderFilters()">
+              <option value="">Tous paiements</option>
+              <option value="cash_relais">Espèces</option>
+              <option value="stripe_eur">Stripe</option>
+            </select>
           </div>
         </div>
         <div class="card">
           <table class="tbl">
-            <thead><tr><th>N&#176; commande</th><th>Client</th><th>Tel</th><th>Articles</th><th>KMF</th><th>EUR</th><th>Paiement</th><th>Statut</th><th>Date</th><th>Action</th></tr></thead>
+            <thead><tr><th>N° commande</th><th>Client</th><th>Articles</th><th>KMF</th><th>Paiement</th><th>Statut</th><th>Relais</th><th>Date</th><th style="width:120px">Actions</th></tr></thead>
             <tbody>
-              <tr><td class="mono">KOM-00358</td><td class="bold">Fatima A.</td><td class="mono">+269 321 ...</td><td>Samsung A55</td><td class="mono">47 500</td><td class="mono">—</td><td><span class="b bk">Especes</span></td><td><span class="b bg">&#10003; Au relais</span></td><td class="mono">23/03</td><td><button class="btn2" onclick="showT('Detail KOM-358')">Voir</button></td></tr>
-              <tr><td class="mono">KOM-00357</td><td class="bold">Hassan M.</td><td class="mono">+33 6 ...</td><td>3 produits</td><td class="mono">91 200</td><td class="mono">186&#8364;</td><td><span class="b bp">Stripe</span></td><td><span class="b bb">&#128674; En mer</span></td><td class="mono">20/03</td><td><button class="btn2" onclick="showT('Detail KOM-357')">Voir</button></td></tr>
-              <tr><td class="mono">KOM-00356</td><td class="bold">Aicha B.</td><td class="mono">+269 332 ...</td><td>12 tenues</td><td class="mono">203 400</td><td class="mono">—</td><td><span class="b bk">Especes</span></td><td><span class="b br">&#9888; Litige</span></td><td class="mono">18/03</td><td><button class="btn2" onclick="go('litiges',null)">Litige</button></td></tr>
-              <tr><td class="mono">KOM-00355</td><td class="bold">Said O.</td><td class="mono">+269 345 ...</td><td>Ventilateur + fer</td><td class="mono">61 458</td><td class="mono">—</td><td><span class="b bk">Especes</span></td><td><span class="b ba">&#9881; Colisage</span></td><td class="mono">16/03</td><td><button class="btn2" onclick="showT('Colisage KOM-355')">Voir</button></td></tr>
-              <tr><td class="mono">KOM-00354</td><td class="bold">Mariama C.</td><td class="mono">+33 7 ...</td><td>Parfum Oud</td><td class="mono">33 858</td><td class="mono">68&#8364;</td><td><span class="b bp">PayPal</span></td><td><span class="b ba">&#128230; A acheter</span></td><td class="mono">15/03</td><td><button class="btn1" style="font-size:11px;padding:6px 12px" onclick="showT('Bon Dubai genere - WhatsApp envoye')">Bon Dubai</button></td></tr>
-              <tr><td class="mono">KOM-00353</td><td class="bold">Ibrahim Y.</td><td class="mono">+269 321 ...</td><td>Djellaba + abaya</td><td class="mono">42 858</td><td class="mono">—</td><td><span class="b bk">Especes</span></td><td><span class="b ba">&#128230; A acheter</span></td><td class="mono">14/03</td><td><button class="btn1" style="font-size:11px;padding:6px 12px" onclick="showT('Bon Dubai genere - WhatsApp envoye')">Bon Dubai</button></td></tr>
-              <tr><td class="mono">KOM-00352</td><td class="bold">Zainab M.</td><td class="mono">+33 6 ...</td><td>Montre + collier</td><td class="mono">118 271</td><td class="mono">240&#8364;</td><td><span class="b bp">Stripe</span></td><td><span class="b bb">&#128674; En mer</span></td><td class="mono">12/03</td><td><button class="btn2" onclick="showT('Suivi KOM-352')">Voir</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -775,13 +779,14 @@ function fmtDate(d) { return d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 // ── STATUS BADGES ─────────────────────────────────────────────────────────────
 const STATUS_CLASS = {
   collected:'bg', available:'bg', paid:'bp', shipped:'bb',
-  preparation:'ba', confirmed:'ba', cancelled:'red', disputed:'br',
-  refunded:'red', pending_payment:'amb',
+  preparation:'ba', confirmed:'ba', ordered:'bb', in_transit:'bt',
+  cancelled:'red', disputed:'br', refunded:'red', pending_payment:'amb',
 };
 const STATUS_LABEL = {
-  collected:'✓ Retire', available:'Au relais', paid:'Paye',
-  shipped:'🚢 En mer', preparation:'Colisage', confirmed:'Confirme',
-  cancelled:'Annule', disputed:'⚠ Litige', refunded:'Rembourse',
+  collected:'✓ Retiré', available:'Au relais', paid:'Payé',
+  shipped:'🚢 Expédié', preparation:'⚙ Préparation', confirmed:'Confirmé',
+  ordered:'📋 Commandé', in_transit:'🚚 En transit',
+  cancelled:'Annulé', disputed:'⚠ Litige', refunded:'Remboursé',
   pending_payment:'Att. paiement',
 };
 function badge(status) {
@@ -868,30 +873,39 @@ async function loadDashboard() {
 }
 
 // ── COMMANDES ─────────────────────────────────────────────────────────────────
+var _ordersCache = [];
+function applyOrderFilters() {
+  const s = document.getElementById('filter-status')?.value || '';
+  const p = document.getElementById('filter-payment')?.value || '';
+  loadOrders(s, p);
+}
 async function loadOrders(status, paymentMode) {
   try {
     const qs = new URLSearchParams();
     if (status) qs.set('status', status);
     if (paymentMode) qs.set('payment_mode', paymentMode);
     const data = await api('GET', '/orders' + (qs.toString() ? '?'+qs : ''));
-    const orders = data.rows || data || [];
+    const orders = Array.isArray(data) ? data : (data.rows || data.orders || []);
+    _ordersCache = orders;
+    const sub = document.getElementById('orders-subtitle');
+    if (sub) sub.textContent = orders.length + ' commande(s)' + (status ? ' — filtre: '+STATUS_LABEL[status] : '');
     const tbody = document.querySelector('#scr-orders .tbl tbody');
     if (!tbody) return;
     tbody.innerHTML = orders.length ? orders.map(o => `
       <tr>
-        <td class="mono">${o.reference}</td>
-        <td class="bold">${o.full_name||o.first_name||'—'}</td>
-        <td class="mono">${o.phone||'—'}</td>
-        <td>—</td>
+        <td class="mono" style="font-weight:600">${o.reference}</td>
+        <td class="bold">${o.product_name||'—'} ${parseInt(o.items_count)>1?'<span style="color:var(--ink4);font-size:11px">+'+((parseInt(o.items_count)||1)-1)+'</span>':''}</td>
         <td class="mono">${fmt(o.total_kmf)}</td>
-        <td class="mono">${o.total_eur ? o.total_eur+'€' : '—'}</td>
-        <td><span class="b ${o.payment_mode==='stripe_eur'?'bp':'bk'}">${o.payment_mode==='stripe_eur'?'Stripe':'Especes'}</span></td>
+        <td><span class="b ${o.payment_mode==='stripe_eur'?'bp':'bk'}">${o.payment_mode==='stripe_eur'?'Stripe':'Espèces'}</span></td>
         <td>${badge(o.status)}</td>
-        <td class="mono">${fmtDate(o.created_at)}</td>
-        <td><button class="btn2" onclick="showT('${o.reference}')">Voir</button></td>
+        <td style="font-size:11px;color:var(--ink4)">${o.relais_name||'—'}</td>
+        <td class="mono" style="font-size:11px">${fmtDate(o.created_at)}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn1" style="font-size:11px;padding:5px 10px" onclick="showOrderModal('${o.id}')">⚡ Gérer</button>
+          ${NEXT_STATUS[o.status]?.length ? '<button class="btn2" style="font-size:10px;padding:4px 8px" onclick="quickNextStatus(\''+o.id+'\',\''+o.status+'\')">→ '+STATUS_LABEL[NEXT_STATUS[o.status][0]]+'</button>' : ''}
+        </td>
       </tr>`).join('') :
-      '<tr><td colspan="10" style="text-align:center;color:var(--ink4);padding:20px">Aucune commande</td></tr>';
-    document.querySelector('#scr-orders div div:last-child')?.querySelector('div')?.setAttribute('data-count', orders.length);
+      '<tr><td colspan="9" style="text-align:center;color:var(--ink4);padding:24px">Aucune commande — créez-en via la Boutique !</td></tr>';
   } catch(e) { console.error('Orders error:', e.message); showT('Erreur chargement commandes'); }
 }
 
@@ -1875,6 +1889,245 @@ initForecastForm();
   console.log('[Komerce Admin] Auto-refresh activé (15s)');
 })();
 
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ORDER MANAGEMENT — Centre de commande Admin
+// ═══════════════════════════════════════════════════════════════════
+
+const NEXT_STATUS = {
+  confirmed:   ['ordered','cancelled'],
+  ordered:     ['preparation','cancelled'],
+  preparation: ['shipped','cancelled'],
+  shipped:     ['in_transit','cancelled'],
+  in_transit:  ['available'],
+  available:   ['collected'],
+  collected:   ['refunded'],
+  cancelled:   ['refunded'],
+  refunded:    [],
+};
+
+const STATUS_ICON = {
+  confirmed:'📋', ordered:'💳', preparation:'⚙️', shipped:'🚢',
+  in_transit:'🚚', available:'📍', collected:'✅', cancelled:'❌', refunded:'💰',
+};
+
+const PARCEL_ACTIONS = {
+  draft:       [{action:'scan', label:'📷 Scanner', color:'var(--blu)'}],
+  hub_received:[{action:'pack', label:'📦 Emballer', color:'var(--amb)'}],
+  packed:      [{action:'seal', label:'🔒 Sceller', color:'var(--grn)'}],
+  sealed:      [{action:'parcel_status', label:'🚢 Expédier', status:'shipped', color:'var(--ter2)'}],
+  shipped:     [{action:'parcel_status', label:'🚚 En transit', status:'in_transit', color:'var(--blu)'}],
+  in_transit:  [{action:'parcel_status', label:'📍 Arrivé relais', status:'available', color:'var(--grn)'}],
+  available:   [{action:'parcel_status', label:'✅ Collecté', status:'collected', color:'var(--grn)'}],
+};
+
+async function quickNextStatus(orderId, currentStatus) {
+  const next = NEXT_STATUS[currentStatus];
+  if (!next?.length) return showT('Pas de transition disponible');
+  if (!confirm('Passer à : ' + STATUS_LABEL[next[0]] + ' ?')) return;
+  try {
+    await api('PATCH', '/orders/' + orderId + '/status', { status: next[0] });
+    showT('✓ Statut → ' + STATUS_LABEL[next[0]]);
+    loadOrders(document.getElementById('filter-status')?.value, document.getElementById('filter-payment')?.value);
+  } catch(e) { showT('Erreur: ' + e.message); }
+}
+
+async function showOrderModal(orderId) {
+  const o = _ordersCache.find(x => x.id === orderId);
+  if (!o) return showT('Commande introuvable');
+
+  // Fetch detail + parcels
+  let detail, parcels = [];
+  try {
+    [detail, parcels] = await Promise.all([
+      api('GET', '/orders/' + orderId),
+      api('GET', '/orders/' + orderId + '/parcels').catch(() => []),
+    ]);
+    if (!Array.isArray(parcels)) parcels = parcels.parcels || [];
+  } catch(e) { detail = o; }
+
+  const modal = document.getElementById('order-modal');
+  const content = document.getElementById('order-modal-content');
+
+  // Status timeline
+  const flow = ['confirmed','ordered','preparation','shipped','in_transit','available','collected'];
+  const currentIdx = flow.indexOf(o.status);
+  const isCancelled = o.status === 'cancelled' || o.status === 'refunded';
+
+  const timeline = flow.map((s, i) => {
+    const done = i <= currentIdx && !isCancelled;
+    const current = s === o.status;
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;opacity:${done?1:0.35}">
+      <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;
+        background:${current?'var(--pri)':done?'var(--grn)':'var(--bg3)'};color:${current||done?'white':'var(--ink4)'}">${STATUS_ICON[s]||'○'}</div>
+      <div style="font-size:9px;margin-top:3px;font-weight:${current?700:400};color:${current?'var(--pri)':'var(--ink4)'}">${STATUS_LABEL[s]||s}</div>
+    </div>`;
+  }).join('<div style="flex:1;height:2px;background:var(--ln);margin-top:14px;min-width:8px"></div>');
+
+  // Next status buttons
+  const nextStatuses = NEXT_STATUS[o.status] || [];
+  const statusBtns = nextStatuses.map(s =>
+    `<button onclick="doChangeStatus('${orderId}','${s}')" style="padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;
+      background:${s==='cancelled'?'var(--red)':'var(--pri)'};color:white">
+      ${STATUS_ICON[s]||''} → ${STATUS_LABEL[s]||s}
+    </button>`
+  ).join('');
+
+  // Bootstrap button (only if no parcels and status allows it)
+  const canBootstrap = ['ordered','preparation','confirmed'].includes(o.status) && parcels.length === 0;
+  const bootstrapBtn = canBootstrap ?
+    `<button onclick="doBootstrap('${orderId}')" style="padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;background:var(--amb);color:white">
+      📦 Créer les colis
+    </button>` : '';
+
+  // Parcels section
+  const parcelsHtml = parcels.length ? parcels.map(p => {
+    const actions = PARCEL_ACTIONS[p.status] || [];
+    const actionBtns = actions.map(a => {
+      if (a.action === 'scan') return `<button onclick="doHubAction('scan','${p.id}','${p.reference}')" style="padding:5px 12px;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;background:${a.color};color:white">${a.label}</button>`;
+      if (a.action === 'pack') return `<button onclick="doHubAction('pack','${p.id}','${p.reference}')" style="padding:5px 12px;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;background:${a.color};color:white">${a.label}</button>`;
+      if (a.action === 'seal') return `<button onclick="doHubAction('seal','${p.id}','${p.reference}')" style="padding:5px 12px;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;background:${a.color};color:white">${a.label}</button>`;
+      if (a.action === 'parcel_status') return `<button onclick="doParcelStatus('${p.id}','${a.status}')" style="padding:5px 12px;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;background:${a.color};color:white">${a.label}</button>`;
+      return '';
+    }).join(' ');
+
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg2);border-radius:8px;margin-bottom:6px">
+      <div>
+        <span style="font-weight:600;font-size:13px">${p.reference}</span>
+        <span style="margin-left:8px">${badge(p.status)}</span>
+        ${p.weight_kg ? '<span style="font-size:11px;color:var(--ink4);margin-left:8px">'+p.weight_kg+'kg</span>' : ''}
+      </div>
+      <div style="display:flex;gap:4px">${actionBtns}</div>
+    </div>`;
+  }).join('') : '<div style="color:var(--ink4);text-align:center;padding:16px;font-size:13px">Aucun colis — utilisez le bouton ci-dessus pour créer les colis</div>';
+
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px">
+      <div>
+        <div style="font-size:20px;font-weight:700">${o.reference}</div>
+        <div style="font-size:12px;color:var(--ink4);margin-top:2px">${fmtDate(o.created_at)} · ${o.payment_mode==='stripe_eur'?'Stripe EUR':'Espèces KMF'}</div>
+      </div>
+      <button onclick="closeOrderModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink4)">✕</button>
+    </div>
+
+    <!-- Timeline -->
+    <div style="display:flex;align-items:flex-start;margin-bottom:24px;padding:16px;background:var(--bg2);border-radius:10px">
+      ${isCancelled ? '<div style="text-align:center;width:100%;padding:8px"><span style="font-size:18px">'+STATUS_ICON[o.status]+'</span> <span style="font-weight:700;color:var(--red)">'+STATUS_LABEL[o.status]+'</span></div>' : timeline}
+    </div>
+
+    <!-- Info cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="padding:12px;background:var(--bg2);border-radius:8px;text-align:center">
+        <div style="font-size:11px;color:var(--ink4)">Total</div>
+        <div style="font-size:18px;font-weight:700;color:var(--grn)">${fmt(o.total_kmf)} KMF</div>
+      </div>
+      <div style="padding:12px;background:var(--bg2);border-radius:8px;text-align:center">
+        <div style="font-size:11px;color:var(--ink4)">Articles</div>
+        <div style="font-size:18px;font-weight:700">${o.items_count||'—'}</div>
+        <div style="font-size:11px;color:var(--ink4)">${o.product_name||''}</div>
+      </div>
+      <div style="padding:12px;background:var(--bg2);border-radius:8px;text-align:center">
+        <div style="font-size:11px;color:var(--ink4)">Relais</div>
+        <div style="font-size:14px;font-weight:600">${o.relais_name||'—'}</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">⚡ Actions</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${statusBtns}
+        ${bootstrapBtn}
+        <button onclick="doDeleteOrder('${orderId}')" style="padding:8px 16px;border:1px solid var(--red);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;background:transparent;color:var(--red)">
+          🗑 Supprimer
+        </button>
+      </div>
+    </div>
+
+    <!-- Parcels -->
+    <div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">📦 Colis (${parcels.length})</div>
+      ${parcelsHtml}
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+function closeOrderModal() {
+  document.getElementById('order-modal').style.display = 'none';
+}
+
+async function doChangeStatus(orderId, newStatus) {
+  try {
+    await api('PATCH', '/orders/' + orderId + '/status', { status: newStatus });
+    showT('✓ Statut → ' + STATUS_LABEL[newStatus]);
+    closeOrderModal();
+    loadOrders(document.getElementById('filter-status')?.value, document.getElementById('filter-payment')?.value);
+  } catch(e) { showT('Erreur: ' + e.message); }
+}
+
+async function doBootstrap(orderId) {
+  try {
+    const data = await api('POST', '/parcels/bootstrap/' + orderId);
+    const n = data.parcels?.length || 0;
+    showT('✓ ' + n + ' colis créé(s)');
+    showOrderModal(orderId); // Refresh modal
+  } catch(e) { showT('Erreur: ' + e.message); }
+}
+
+async function doHubAction(action, parcelId, parcelRef) {
+  try {
+    if (action === 'scan') {
+      await api('POST', '/hub/scan', { parcel_ref: parcelRef });
+    } else if (action === 'pack') {
+      await api('POST', '/hub/pack', { parcel_id: parcelId });
+    } else if (action === 'seal') {
+      await api('POST', '/hub/seal', { parcel_id: parcelId });
+    }
+    showT('✓ ' + action.toUpperCase() + ' OK — ' + parcelRef);
+    // Refresh modal
+    const oid = _ordersCache.find(o => true)?.id; // Will be refreshed via current modal
+    // Re-fetch orders to get updated status
+    await loadOrders(document.getElementById('filter-status')?.value, document.getElementById('filter-payment')?.value);
+    // Find the order that has this parcel
+    for (const o of _ordersCache) {
+      try {
+        const ps = await api('GET', '/orders/' + o.id + '/parcels').catch(() => []);
+        const arr = Array.isArray(ps) ? ps : (ps.parcels || []);
+        if (arr.find(p => p.id === parcelId)) { showOrderModal(o.id); return; }
+      } catch(e) {}
+    }
+  } catch(e) { showT('Erreur: ' + e.message); }
+}
+
+async function doParcelStatus(parcelId, newStatus) {
+  try {
+    await api('PATCH', '/parcels/' + parcelId + '/status', { status: newStatus });
+    showT('✓ Colis → ' + STATUS_LABEL[newStatus]);
+    await loadOrders(document.getElementById('filter-status')?.value, document.getElementById('filter-payment')?.value);
+    // Re-open modal for the order
+    for (const o of _ordersCache) {
+      try {
+        const ps = await api('GET', '/orders/' + o.id + '/parcels').catch(() => []);
+        const arr = Array.isArray(ps) ? ps : (ps.parcels || []);
+        if (arr.find(p => p.id === parcelId)) { showOrderModal(o.id); return; }
+      } catch(e) {}
+    }
+  } catch(e) { showT('Erreur: ' + e.message); }
+}
+
+async function doDeleteOrder(orderId) {
+  if (!confirm('Supprimer cette commande ? Cette action est irréversible.')) return;
+  try {
+    await api('DELETE', '/admin/orders/' + orderId);
+    showT('✓ Commande supprimée');
+    closeOrderModal();
+    loadOrders(document.getElementById('filter-status')?.value, document.getElementById('filter-payment')?.value);
+  } catch(e) { showT('Erreur: ' + e.message); }
+}
+
 </script>
 
 <!-- ══ SCREENS DASHBOARD (fusionnés depuis admin_v2) ════════════════════════ -->
@@ -1992,6 +2245,18 @@ initForecastForm();
   </div>
   <div id="reset-result" style="margin-top:1.2rem;display:none;padding:1rem;border-radius:8px;font-size:.82rem;font-weight:600;"></div>
 </div>
+
+
+<!-- ORDER MANAGEMENT MODAL -->
+<div id="order-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div id="order-modal-content" style="background:white;border-radius:14px;padding:28px;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative">
+  </div>
+</div>
+<style>
+#order-modal-content::-webkit-scrollbar{width:6px}
+#order-modal-content::-webkit-scrollbar-track{background:transparent}
+#order-modal-content::-webkit-scrollbar-thumb{background:var(--ln);border-radius:3px}
+</style>
 
 </body>
 </html>
