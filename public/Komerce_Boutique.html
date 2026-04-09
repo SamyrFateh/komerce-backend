@@ -1063,7 +1063,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
   .product-card { flex: 0 0 180px; }
-  .pd-top { flex-direction: row; align-items: flex-start; text-align: left; }
+  .pd-top { flex-direction: column; align-items: center; text-align: center; }
 }
 @media (max-width: 480px) {
   .hero-left { padding: 14px 14px; }
@@ -1531,11 +1531,19 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .hero-title { font-size: 1.1rem !important; }
   .hero-sub { font-size: 0.78rem; }
   .hero-proverbe { font-size: 0.7rem; }
+  /* Modal produit — empilé sur mobile */
+  .pd-top { flex-direction: column !important; align-items: center !important; text-align: center; gap: 12px !important; }
+  .pd-emoji { width: 180px !important; height: 180px !important; margin: 0 auto; }
+  .pd-info { text-align: center; width: 100%; }
+  .pd-name { font-size: 1rem !important; }
+  .pd-qty-row { justify-content: center; }
+  .pd-cart-btn { width: 100%; }
 }
 @media (max-width: 380px) {
   .product-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 0 6px 24px; }
   .card-img { height: 130px; }
   .cat-circle-img { width: 44px; height: 44px; }
+  .pd-emoji { width: 150px !important; height: 150px !important; }
 }
 
 /* Anchor scroll offset */
@@ -2824,6 +2832,9 @@ function openProductModal(p, fromSuggestion) {
     var img = document.createElement('img');
     img.src = p.image_url;
     img.alt = sanitize(p.name);
+    img.crossOrigin = 'anonymous';
+    img.loading = 'eager';
+    img.onerror = function() { emojiBox.textContent = productEmoji(p); };
     emojiBox.appendChild(img);
   } else {
     emojiBox.textContent = productEmoji(p);
