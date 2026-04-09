@@ -1507,6 +1507,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 /* ── Back button pulse ── */
 @keyframes backPulse { 0%,100% { transform: scale(1); box-shadow: 0 2px 8px rgba(180,83,9,0.2); } 50% { transform: scale(1.12); box-shadow: 0 4px 16px rgba(180,83,9,0.45); } }
+
+/* Anchor scroll offset */
+#catalogue, #how-it-works, #tracking, #situations { scroll-margin-top: 160px; }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
@@ -4251,6 +4254,12 @@ function updateViewToggle() {
 
 
 document.addEventListener('DOMContentLoaded', function() {
+
+  // Force scroll to top on load — prevent # anchor jump hiding hero/categories
+  if (!location.hash || location.hash === '#') {
+    window.scrollTo(0, 0);
+    if (history.replaceState) history.replaceState(null, '', location.pathname);
+  }
 
   loadProducts();
   loadRelais();
