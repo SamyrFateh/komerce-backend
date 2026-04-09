@@ -1742,6 +1742,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <button class="tab-btn active" data-tab="boutique">Boutique</button>
     <button class="tab-btn" data-tab="suivi">Suivi commande</button>
     <button class="tab-btn" data-tab="info">Infos</button>
+    <button class="tab-btn" data-tab="favoris" id="tab-btn-favoris">Favoris <span id="fav-count-badge" style="display:none;background:var(--accent);color:#1e2a38;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></button>
   </div>
 </nav>
 
@@ -1885,6 +1886,17 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   </div>
 </section>
 </div>
+
+<!-- PANNEAU FAVORIS -->
+<div class="tab-panel" id="tab-favoris">
+  <div class="container" style="padding-top:24px;padding-bottom:40px;">
+    <h2 class="section-title" style="text-align:left;margin-bottom:16px;">Mes coups de cœur</h2>
+    <div class="product-grid" id="favs-grid">
+      <p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0;">Aucun favori — cliquez sur ♡ sur un produit pour l'ajouter.</p>
+    </div>
+  </div>
+</div>
+
 <footer id="footer">
   <div class="footer-accent"></div>
   <div class="footer-main">
@@ -2837,6 +2849,7 @@ function openProductModal(p) {
     favBtn.textContent = isFav(p.id) ? '♥' : '♡';
     favBtn.style.color = isFav(p.id) ? '#ef4444' : '#ccc';
     toast(isFav(p.id) ? 'Ajouté aux favoris' : 'Retiré des favoris', 'info');
+    updateFavBadge();
   });
   emojiBox.appendChild(favBtn);
   top.appendChild(emojiBox);
@@ -4003,6 +4016,97 @@ document.addEventListener('DOMContentLoaded', function() {
   initPromoBar();
   initHeroSearch();
 
+/* ── Mise à jour badge favoris ── */
+function updateFavBadge() {
+  var count = Object.keys(_favs).length;
+  var badge = document.getElementById('fav-count-badge');
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline' : 'none';
+  }
+}
+
+/* ── Rendu grille favoris ── */
+function renderFavs() {
+  var grid = document.getElementById('favs-grid');
+  if (!grid) return;
+  var favIds = Object.keys(_favs);
+  if (!favIds.length) {
+    grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0;">Aucun favori — cliquez sur ♡ sur un produit pour l\'ajouter.</p>';
+    return;
+  }
+  var favProducts = _products.filter(function(p) { return _favs[p.id]; });
+  grid.innerHTML = '';
+  favProducts.forEach(function(p) {
+    var card = document.createElement('div');
+    card.className = 'product-card';
+    card.setAttribute('data-id', p.id);
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.btn-add-cart') || e.target.closest('.btn-fav')) return;
+      openProductModal(p);
+    });
+
+    var imgDiv = document.createElement('div');
+    imgDiv.className = 'card-img';
+    imgDiv.style.position = 'relative';
+    if (p.image_url) {
+      var img = document.createElement('img');
+      img.src = p.image_url;
+      img.alt = sanitize(p.name);
+      imgDiv.appendChild(img);
+    } else {
+      imgDiv.textContent = productEmoji(p);
+    }
+    card.appendChild(imgDiv);
+
+    var body = document.createElement('div');
+    body.className = 'card-body';
+
+    var cat = document.createElement('div');
+    cat.className = 'card-category';
+    cat.textContent = categoryLabel(p.category);
+    body.appendChild(cat);
+
+    var name = document.createElement('div');
+    name.className = 'card-name';
+    name.textContent = p.name;
+    body.appendChild(name);
+
+    var price = document.createElement('div');
+    price.className = 'card-price';
+    price.textContent = fmt(p.price_kmf || 0, 'KMF');
+    body.appendChild(price);
+
+    var actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    var addBtn = document.createElement('button');
+    addBtn.className = 'btn-add-cart';
+    addBtn.textContent = 'Ajouter';
+    addBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      addToCart(p, 1, addBtn);
+    });
+    actions.appendChild(addBtn);
+
+    var favBtn = document.createElement('button');
+    favBtn.className = 'btn-fav';
+    favBtn.textContent = '♥';
+    favBtn.style.color = '#ef4444';
+    favBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleFav(p.id);
+      updateFavBadge();
+      renderFavs();
+    });
+    actions.appendChild(favBtn);
+
+    body.appendChild(actions);
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+}
+
   /* ── Onglets navigation ── */
   var tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(function(btn) {
@@ -4011,8 +4115,10 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'favoris') renderFavs();
     });
   });
+  updateFavBadge();
 
   /* ── Cercles catégories ── */
   var pills = document.querySelectorAll('.cat-circle');
