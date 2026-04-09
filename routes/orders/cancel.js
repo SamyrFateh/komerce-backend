@@ -181,7 +181,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       method:           refundResult.method,
       in_free_window:   inFreeWindow,
       stripe_refund_id: refundResult.stripeRefundId,
-      store_credit_id:  refundResult.storeCreditId,
+      wallet_tx_id:     refundResult.walletTxId,
     } : null;
 
     let message;
@@ -190,7 +190,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     } else if (refundResult?.method === 'stripe') {
       message = `Remboursement de ${refundAmountEur.toFixed(2)}€ initié via Stripe (2–5 jours ouvrés)`;
     } else {
-      message = `Crédit boutique de ${Number(refundAmountKmf).toLocaleString('fr-FR')} KMF crédité sur votre compte`;
+      message = `Avoir de ${Number(refundAmountKmf).toLocaleString('fr-FR')} KMF crédité sur votre wallet`;
     }
 
     res.json({

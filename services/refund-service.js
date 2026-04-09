@@ -1,37 +1,25 @@
 /**
- * KOMERCE — Refund Service
+ * KOMERCE — Refund Service v2.0
  *
- * Wrapper sur utils/refunds.js et utils/store-credits.js.
- * Centralise la logique Stripe + crédit boutique pour les annulations.
+ * Wrapper Stripe + Wallet pour les remboursements/annulations.
+ * v2.0 : remplace store_credits par wallet-service.
  */
 
 'use strict';
 
-const stripe             = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { createStoreCredit } = require('../utils/store-credits');
+const stripe        = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const walletService = require('./wallet-service');
 
 /**
- * Traite un remboursement (Stripe ou crédit boutique).
+ * Traite un remboursement (Stripe ou wallet).
  * Doit être appelé dans une transaction DB existante.
- *
- * Lève une erreur si Stripe échoue (le caller doit ROLLBACK).
- * Pour un fallback silencieux vers store_credit, utiliser processRefundWithFallback.
- *
- * @param {Object} dbClient    - DB transaction client (BEGIN déjà appelé)
- * @param {Object} order       - Commande (id, reference, user_id, payment_mode, stripe_payment_id, total_kmf, total_eur)
- * @param {number} amountKmf   - Montant à rembourser en KMF
- * @param {number} amountEur   - Montant à rembourser en EUR
- * @param {string} refundType  - 'full' | 'partial'
- * @param {string} reason      - Raison du remboursement
- * @param {string} initiatedBy - UUID de l'utilisateur qui initie
- * @returns {{ method, stripeRefundId, storeCreditId, amountEur, amountKmf }}
  */
 async function processRefund(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy) {
-  let refundMethod, stripeRefundId = null, storeCreditId = null;
+  let refundMethod, stripeRefundId = null, walletTxId = null;
 
   if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
-    // Remboursement Stripe
-    refundMethod = 'stripe';
+    // ── Remboursement Stripe ──────────────────────────────────────────────
+    refundMethod    = 'stripe';
     const amountCents  = Math.round(amountEur * 100);
     const stripeRefund = await stripe.refunds.create({
       payment_intent: order.stripe_payment_id,
@@ -46,15 +34,18 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
     stripeRefundId = stripeRefund.id;
     console.log(`[CANCEL] Stripe refund OK: ${stripeRefundId} — ${amountEur}€ pour ${order.reference}`);
   } else {
-    // Cash relais → crédit boutique
-    refundMethod = 'store_credit';
-    const credit = await createStoreCredit(dbClient, {
-      userId:        order.user_id,
+    // ── Cash relais → crédit wallet ───────────────────────────────────────
+    refundMethod = 'wallet_credit';
+    const result = await walletService.credit(dbClient, {
+      userId:         order.user_id,
       amountKmf,
-      reason:        'cancellation_refund',
-      sourceOrderId: order.id,
+      reason:         'order_cancel',
+      referenceId:    order.id,
+      idempotencyKey: `refund_${order.id}_${refundType}`,
+      note:           `Remboursement ${refundType} — commande ${order.reference}`,
+      createdBy:      initiatedBy,
     });
-    storeCreditId = credit.id;
+    walletTxId = result.transaction.id;
   }
 
   // Enregistrer dans la table refunds
@@ -66,30 +57,19 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
     [
       order.id, amountKmf, amountEur,
       refundType, refundMethod,
-      stripeRefundId, storeCreditId,
+      stripeRefundId, walletTxId,
       reason || 'Annulation client', initiatedBy,
     ]
   );
 
-  return { method: refundMethod, stripeRefundId, storeCreditId, amountEur, amountKmf };
+  return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf };
 }
 
 /**
- * Variante avec fallback : si Stripe échoue, bascule automatiquement sur crédit boutique.
- * Utilisée pour cancel-backorder (ne bloque pas la transaction en cas d'erreur Stripe).
- *
- * @param {Object} dbClient    - DB transaction client
- * @param {Object} order       - Commande complète
- * @param {number} amountKmf   - Montant en KMF
- * @param {number} amountEur   - Montant en EUR
- * @param {string} refundType  - 'full' | 'partial'
- * @param {string} reason      - Raison
- * @param {string} initiatedBy - UUID utilisateur
- * @param {string} [parcelId]  - UUID colis (pour métadonnées Stripe)
- * @returns {{ method, stripeRefundId, storeCreditId, amountEur, amountKmf }}
+ * Variante avec fallback : si Stripe échoue, bascule sur wallet.
  */
 async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId) {
-  let refundMethod, stripeRefundId = null, storeCreditId = null;
+  let refundMethod, stripeRefundId = null, walletTxId = null;
 
   if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
     const amountCents = Math.round(amountEur * 100);
@@ -108,24 +88,25 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
       stripeRefundId = stripeRefund.id;
       refundMethod   = 'stripe';
     } catch (stripeErr) {
-      // Fallback vers crédit boutique si Stripe échoue
-      console.error('[refund-service] Stripe refund failed, using store credit:', stripeErr.message);
-      refundMethod = 'store_credit';
+      console.error('[refund-service] Stripe failed, using wallet:', stripeErr.message);
+      refundMethod = 'wallet_credit';
     }
   }
 
-  if (!refundMethod || refundMethod === 'store_credit') {
-    refundMethod = 'store_credit';
-    const credit = await createStoreCredit(dbClient, {
-      userId:        order.user_id,
+  if (!refundMethod || refundMethod === 'wallet_credit') {
+    refundMethod = 'wallet_credit';
+    const result = await walletService.credit(dbClient, {
+      userId:         order.user_id,
       amountKmf,
-      reason:        'cancellation_refund',
-      sourceOrderId: order.id,
+      reason:         'order_cancel',
+      referenceId:    order.id,
+      idempotencyKey: `refund_fb_${order.id}_${Date.now()}`,
+      note:           `Remboursement fallback — ${order.reference}`,
+      createdBy:      initiatedBy,
     });
-    storeCreditId = credit.id;
+    walletTxId = result.transaction.id;
   }
 
-  // Enregistrer dans la table refunds
   await dbClient.query(
     `INSERT INTO refunds
        (order_id, amount_kmf, amount_eur, refund_type, refund_method,
@@ -134,12 +115,12 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
     [
       order.id, amountKmf, amountEur,
       refundType, refundMethod,
-      stripeRefundId, storeCreditId,
+      stripeRefundId, walletTxId,
       reason || 'Annulation', initiatedBy,
     ]
   );
 
-  return { method: refundMethod, stripeRefundId, storeCreditId, amountEur, amountKmf };
+  return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf };
 }
 
 module.exports = { processRefund, processRefundWithFallback };
