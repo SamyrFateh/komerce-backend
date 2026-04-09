@@ -3808,6 +3808,45 @@ function renderCheckout() {
   stripeInfo.appendChild(stripeL);
   stripeOpt.appendChild(stripeInfo);
   body.appendChild(stripeOpt);
+  /* Check wallet balance on modal open */
+  checkWalletBalance();
+
+
+  /* ── Wallet / Crédit boutique ── */
+  var walletSection = document.createElement('div');
+  walletSection.id = 'wallet-section';
+  walletSection.style.cssText = 'margin-top:12px;padding:12px 14px;border:2px dashed var(--primary);border-radius:var(--radius);background:linear-gradient(135deg,#fffbf0,#fef3e2);display:none;';
+  var walletToggle = document.createElement('label');
+  walletToggle.style.cssText = 'display:flex;align-items:center;gap:10px;cursor:pointer;';
+  var walletCb = document.createElement('input');
+  walletCb.type = 'checkbox';
+  walletCb.id = 'cb-use-wallet';
+  walletCb.style.cssText = 'width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;';
+  walletCb.addEventListener('change', function() {
+    _orderData.use_wallet = this.checked;
+    updateWalletDisplay();
+  });
+  walletToggle.appendChild(walletCb);
+  var walletInfo = document.createElement('div');
+  walletInfo.style.cssText = 'flex:1;';
+  var walletTitle = document.createElement('div');
+  walletTitle.style.cssText = 'font-weight:700;font-size:0.88rem;color:var(--primary-dark);';
+  walletTitle.textContent = '\u{1F4B0} Utiliser mon cr\u00e9dit boutique';
+  walletInfo.appendChild(walletTitle);
+  var walletBal = document.createElement('div');
+  walletBal.id = 'wallet-balance-text';
+  walletBal.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:2px;';
+  walletBal.textContent = 'Chargement du solde\u2026';
+  walletInfo.appendChild(walletBal);
+  walletToggle.appendChild(walletInfo);
+  walletSection.appendChild(walletToggle);
+
+  var walletDeduction = document.createElement('div');
+  walletDeduction.id = 'wallet-deduction';
+  walletDeduction.style.cssText = 'margin-top:8px;padding:8px 10px;background:white;border-radius:8px;font-size:0.82rem;display:none;';
+  walletSection.appendChild(walletDeduction);
+  body.appendChild(walletSection);
+
 
   /* ── Confirm Button ── */
   var confirmBtn = document.createElement('button');
@@ -3823,6 +3862,42 @@ function renderCheckout() {
   hint.style.cssText = 'text-align:center;font-size:0.75rem;color:var(--muted);margin-top:8px;';
   hint.textContent = 'Code + QR envoy\u00e9s par SMS pour le retrait';
   body.appendChild(hint);
+}
+
+
+/* ── Wallet helpers ── */
+var _walletBalance = 0;
+
+async function checkWalletBalance() {
+  try {
+    var res = await fetch('/api/wallet', { credentials: 'same-origin' });
+    if (res.ok) {
+      var data = await res.json();
+      _walletBalance = data.balance_kmf || 0;
+      var section = document.getElementById('wallet-section');
+      if (section && _walletBalance > 0) {
+        section.style.display = 'block';
+        var balText = document.getElementById('wallet-balance-text');
+        if (balText) balText.textContent = 'Solde disponible : ' + fmt(_walletBalance, 'KMF');
+      }
+    }
+  } catch(e) { console.log('wallet check:', e); }
+}
+
+function updateWalletDisplay() {
+  var ded = document.getElementById('wallet-deduction');
+  if (!ded) return;
+  var cb = document.getElementById('cb-use-wallet');
+  if (cb && cb.checked && _walletBalance > 0) {
+    var total = cartTotal();
+    var applied = Math.min(_walletBalance, total);
+    var remaining = total - applied;
+    ded.style.display = 'block';
+    ded.innerHTML = '<div style="display:flex;justify-content:space-between;"><span>\u{1F4B0} Cr\u00e9dit appliqu\u00e9</span><span style=\"font-weight:700;color:var(--primary)\">-' + fmt(applied, 'KMF') + '</span></div>'
+      + (remaining > 0 ? '<div style="display:flex;justify-content:space-between;margin-top:4px;"><span>Reste \u00e0 payer</span><span style=\"font-weight:700\">' + fmt(remaining, 'KMF') + '</span></div>' : '<div style="margin-top:4px;text-align:center;font-weight:700;color:#16a34a;">\u2705 Enti\u00e8rement couvert par votre cr\u00e9dit !</div>');
+  } else {
+    ded.style.display = 'none';
+  }
 }
 
 async function submitOrder(btn) {
@@ -3872,7 +3947,8 @@ async function submitOrder(btn) {
       relais_id: relaisId,
       recipient_name: recipName,
       recipient_phone: fullRecipPhone,
-      payment_mode: _orderData.payment_mode
+      payment_mode: _orderData.payment_mode,
+      use_wallet: _orderData.use_wallet || false
     });
 
     /* API retourne { order: {...}, discount_pct, discount_kmf, loyalty_label } */
@@ -3948,6 +4024,15 @@ function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
     discDiv.textContent = '\u{1F381} Fid\u00e9lit\u00e9 ' + (fullResult.loyalty_label || '') + ' : -' + fullResult.discount_pct + '% (-' + fmt(fullResult.discount_kmf, 'KMF') + ')';
     wrap.appendChild(discDiv);
   }
+
+  /* Wallet deduction display */
+  if (fullResult && fullResult.credit_applied_kmf > 0) {
+    var walDiv = document.createElement('div');
+    walDiv.style.cssText = 'margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#fffbf0,#fef3e2);border-radius:8px;font-size:0.85rem;text-align:center;';
+    walDiv.innerHTML = '\u{1F4B0} Cr\u00e9dit boutique appliqu\u00e9 : <strong style="color:var(--primary)">-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong>';
+    wrap.appendChild(walDiv);
+  }
+
 
   /* Info block */
   var info = document.createElement('div');
