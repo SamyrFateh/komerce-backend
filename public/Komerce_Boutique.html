@@ -116,13 +116,14 @@
 
 .cat-circles-wrap {
   background: var(--white);
-  padding: 6px 40px 4px;
+  padding: 10px 50px 8px;
   overflow-x: auto; scrollbar-width: none;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1.5px solid var(--border);
   position: sticky;
   top: 118px;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 0;
 }
 .cat-scroll-btn {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -139,7 +140,7 @@
 .cat-scroll-right { right: 2px; }
 .cat-circles-wrap::-webkit-scrollbar { display: none; }
 .cat-circles {
-  display: flex; gap: 10px; padding: 2px 0;
+  display: flex; gap: 28px; padding: 2px 20px;
   max-width: 1200px; margin: 0 auto;
   white-space: nowrap;
 }
@@ -150,13 +151,13 @@
 }
 .cat-circle:hover { transform: translateY(-2px); }
 .cat-circle-img {
-  width: 56px; height: 56px; border-radius: 50%;
+  width: 68px; height: 68px; border-radius: 50%;
   overflow: hidden; border: 2.5px solid var(--border);
   transition: border-color 0.15s;
 }
 .cat-circle-img img { width: 100%; height: 100%; object-fit: cover; }
 .cat-circle span {
-  font-size: 0.78rem; font-weight: 600; color: var(--text);
+  font-size: 0.75rem; font-weight: 600; color: var(--text);
   text-align: center; max-width: 60px; white-space: normal; line-height: 1.2;
 }
 .cat-circle.active .cat-circle-img { border-color: var(--primary); border-width: 3px; box-shadow: 0 0 0 3px rgba(180,83,9,0.15); }
@@ -4175,7 +4176,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* ── Auto-scroll doux : défile tout seul, pause au hover/touch ── */
     var _autoDir = 1;
-    var _autoSpeed = 0.4;
+    var _autoSpeed = 0.5;
     var _autoPaused = false;
     var _autoTimer = null;
 
