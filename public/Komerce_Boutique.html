@@ -116,14 +116,13 @@
 
 .cat-circles-wrap {
   background: var(--white);
-  padding: 10px 40px 8px;
+  padding: 6px 40px 4px;
   overflow-x: auto; scrollbar-width: none;
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 118px;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  position: relative;
 }
 .cat-scroll-btn {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -140,12 +139,12 @@
 .cat-scroll-right { right: 2px; }
 .cat-circles-wrap::-webkit-scrollbar { display: none; }
 .cat-circles {
-  display: flex; gap: 16px; padding: 4px 0;
+  display: flex; gap: 10px; padding: 2px 0;
   max-width: 1200px; margin: 0 auto;
   white-space: nowrap;
 }
 .cat-circle {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
   background: none; border: none; cursor: pointer;
   flex-shrink: 0; padding: 0; transition: transform 0.15s;
 }
@@ -166,22 +165,22 @@
 /* ── Hero minimaliste avec vague ── */
 
 .hero-proverbe {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--muted);
   font-style: italic;
-  margin-top: 10px;
-  opacity: 0.7;
+  margin-top: 4px;
+  opacity: 0.65;
   cursor: pointer;
   transition: opacity 0.4s ease;
-  line-height: 1.4;
-  max-width: 480px;
+  line-height: 1.3;
+  max-width: 420px;
   margin-left: auto;
   margin-right: auto;
 }
 .hero-proverbe:hover { opacity: 1; }
 #hero {
   background: linear-gradient(160deg, #fdf8f0 0%, #faf6ee 50%, #fafaf8 100%);
-  padding: 32px 16px 64px;
+  padding: 12px 16px 20px;
   text-align: center;
   border-bottom: none;
   position: relative;
@@ -191,11 +190,11 @@
   content: '';
   position: absolute;
   bottom: -1px; left: 0; right: 0;
-  height: 48px;
+  height: 16px;
   background: var(--bg);
   clip-path: ellipse(55% 100% at 50% 100%);
 }
-.hero-minimal { max-width: 700px; margin: 0 auto; position: relative; z-index: 1; text-align: center; padding: 20px 16px; }
+.hero-minimal { max-width: 700px; margin: 0 auto; position: relative; z-index: 1; text-align: center; padding: 8px 16px 4px; }
 #hero .hero-title {
   font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800;
   color: var(--dark); margin-bottom: 6px; line-height: 1.2;
@@ -466,11 +465,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ────────────────────────────────────────
    5. PRODUCT CATALOGUE
    ──────────────────────────────────────── */
-#catalogue { padding: 24px 0 40px; }
+#catalogue { padding: 10px 0 30px; }
 .carousel-wrapper { position: relative; }
 .carousel-track {
-  display: flex; gap: 20px; overflow-x: auto; scroll-behavior: smooth;
-  padding: 10px 0 20px;
+  display: flex; gap: 14px; overflow-x: auto; scroll-behavior: smooth;
+  padding: 8px 0 16px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 .carousel-track::-webkit-scrollbar { display: none; }
@@ -487,15 +486,16 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .carousel-btn.prev { left: -16px; }
 .carousel-btn.next { right: -16px; }
 .product-card {
-  flex: 0 0 230px; background: var(--white);
-  border-radius: var(--radius); overflow: hidden;
-  box-shadow: var(--shadow); transition: transform 0.25s, box-shadow 0.25s;
+  flex: 0 0 220px; background: var(--white);
+  border-radius: 12px; overflow: hidden;
+  border: 1px solid #f0ebe4;
+  box-shadow: 0 2px 12px rgba(180,160,130,0.08); transition: transform 0.25s, box-shadow 0.25s;
   cursor: pointer; position: relative;
 }
-.product-card:hover { transform: translateY(-6px); box-shadow: 0 8px 32px rgba(74,85,104,0.18); }
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 6px 24px rgba(180,160,130,0.16); }
 .product-card .card-img {
-  height: 200px; display: flex; align-items: center; justify-content: center;
-  background: var(--primary-light); font-size: 2.5rem;
+  height: 190px; display: flex; align-items: center; justify-content: center;
+  background: #faf8f5; font-size: 2.5rem;
   overflow: hidden;
 }
 .product-card .card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
@@ -1525,8 +1525,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       <span>Mode</span>
     </button>
     <button class="cat-circle" data-cat="Sur-mesure">
-      <div class="cat-circle-img">
-        <img src="https://images.unsplash.com/photo-1583391733956-6c78276477e3?w=120&h=120&fit=crop&auto=format&q=80" alt="Sur-mesure">
+      <div class="cat-circle-img" style="background: linear-gradient(135deg, #fef3c7, #fde68a); display:flex; align-items:center; justify-content:center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5L17.5 17.5"/><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12L17.5 17.5"/><circle cx="18" cy="18" r="3"/><path d="M17.5 6.5l-5 5"/><path d="M6.5 17.5l5-5"/></svg>
       </div>
       <span>Sur-mesure</span>
     </button>
@@ -1569,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <section id="catalogue">
   <div class="container">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px;">
       <div class="filter-bar" id="filter-bar" style="padding:0;flex:1;">
         <button class="filter-btn active" data-sort="">Nouveautés</button>
         <button class="filter-btn" data-sort="promo">Soldes</button>
