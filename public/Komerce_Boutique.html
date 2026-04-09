@@ -1063,7 +1063,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
   .product-card { flex: 0 0 180px; }
-  .pd-top { flex-direction: column; align-items: center; text-align: center; }
+  /* removed — moved to media query */
 }
 @media (max-width: 480px) {
   .hero-left { padding: 14px 14px; }
@@ -1532,8 +1532,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .hero-sub { font-size: 0.78rem; }
   .hero-proverbe { font-size: 0.7rem; }
   /* Modal produit — empilé sur mobile */
-  .pd-top { flex-direction: column !important; align-items: center !important; text-align: center; gap: 12px !important; }
-  .pd-emoji { width: 180px !important; height: 180px !important; margin: 0 auto; }
+  /* removed — moved to media query */
+  /* removed — moved to media query */
   .pd-info { text-align: center; width: 100%; }
   .pd-name { font-size: 1rem !important; }
   .pd-qty-row { justify-content: center; }
@@ -1548,7 +1548,29 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 /* Anchor scroll offset */
 #catalogue, #how-it-works, #tracking, #situations { scroll-margin-top: 160px; }
-</style>
+
+    /* ── Mobile Product Modal ── */
+    @media (max-width: 768px) {
+      .pd-top { flex-direction: column !important; align-items: center !important; text-align: center; gap: 12px !important; }
+      .pd-emoji { width: 100% !important; max-width: 280px !important; height: 200px !important; margin: 0 auto !important; }
+      .pd-emoji img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+      .modal-box { max-height: 95vh !important; }
+      .modal-overlay { padding: 8px !important; }
+      .pd-info { padding: 0 8px !important; }
+      .pd-actions { flex-direction: column; gap: 8px; }
+      .pd-actions button { width: 100%; }
+    }
+    @media (max-width: 480px) {
+      .pd-emoji { max-width: 220px !important; height: 180px !important; }
+      .product-card { font-size: 0.85rem; }
+      .card-img { height: 140px !important; }
+    }
+    @media (max-width: 380px) {
+      .pd-emoji { max-width: 180px !important; height: 150px !important; }
+      .card-img { height: 120px !important; }
+    }
+
+  </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
 </head>
@@ -2475,8 +2497,9 @@ function renderProducts(list) {
       var img = document.createElement('img');
       img.src = p.image_url;
       img.alt = sanitize(p.name);
-      img.loading = 'lazy';
+      img.loading = 'eager';
       img.decoding = 'async';
+      img.onerror = function() { this.style.display='none'; this.parentElement.textContent = productEmoji(p); };
       imgDiv.appendChild(img);
     } else {
       imgDiv.textContent = productEmoji(p);
@@ -2832,7 +2855,7 @@ function openProductModal(p, fromSuggestion) {
     var img = document.createElement('img');
     img.src = p.image_url;
     img.alt = sanitize(p.name);
-    img.crossOrigin = 'anonymous';
+    // crossOrigin removed — was blocking on some Android
     img.loading = 'eager';
     img.onerror = function() { emojiBox.textContent = productEmoji(p); };
     emojiBox.appendChild(img);
@@ -4121,8 +4144,9 @@ function renderFavs() {
       var img = document.createElement('img');
       img.src = p.image_url;
       img.alt = sanitize(p.name);
-      img.loading = 'lazy';
+      img.loading = 'eager';
       img.decoding = 'async';
+      img.onerror = function() { this.style.display='none'; this.parentElement.textContent = productEmoji(p); };
       imgDiv.appendChild(img);
     } else {
       imgDiv.textContent = productEmoji(p);
@@ -4513,8 +4537,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── Service Worker Registration ──────────────────────────────
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(reg) {
-      // SW registered silently
+    // Nuclear: unregister ALL old SWs first, clear all caches, then re-register fresh
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      return Promise.all(regs.map(function(r) { return r.unregister(); }));
+    }).then(function() {
+      return caches.keys();
+    }).then(function(keys) {
+      return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+    }).then(function() {
+      console.log('[App] Old SW + caches cleared, re-registering...');
+      return navigator.serviceWorker.register('/sw.js?v=3', { updateViaCache: 'none' });
+    }).then(function(reg) {
+      console.log('[App] Fresh SW v3 registered');
     }).catch(function(err) {
       console.warn('[App] SW error:', err);
     });
