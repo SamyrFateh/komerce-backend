@@ -294,7 +294,7 @@ async function aliexpressOrder(ps, item) {
 
 // ─── GET /api/purchasing — pipeline sourcing en cours ────────────────────────
 
-router.get('/', ...guard, async (req, res) => {
+router.get('/', ...guard, async (req, res, next) => {
   try {
     const { status } = req.query;
     const conditions = ['1=1'];
@@ -319,10 +319,7 @@ router.get('/', ...guard, async (req, res) => {
     `, params);
 
     res.json({ purchase_orders: rows, total: rows.length });
-  } catch (err) {
-    console.error('Purchasing list error:', err.message);
-    res.status(500).json({ error: 'Erreur pipeline sourcing' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -331,7 +328,7 @@ router.get('/', ...guard, async (req, res) => {
 
 // ─── GET /api/purchasing/suppliers ───────────────────────────────────────────
 
-router.get('/suppliers', ...guard, async (req, res) => {
+router.get('/suppliers', ...guard, async (req, res, next) => {
   try {
     const { platform, active } = req.query;
     const conditions = ['1=1'];
@@ -360,14 +357,12 @@ router.get('/suppliers', ...guard, async (req, res) => {
     }));
 
     res.json(safe);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur liste fournisseurs' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
 
-router.post('/suppliers', ...guard, async (req, res) => {
+router.post('/suppliers', ...guard, async (req, res, next) => {
   try {
     const {
       name, platform, contact_name, contact_phone, contact_email,
@@ -391,15 +386,12 @@ router.post('/suppliers', ...guard, async (req, res) => {
         auto_order, lead_time_days, notes]);
 
     res.status(201).json(supplier);
-  } catch (err) {
-    console.error('Create supplier error:', err.message);
-    res.status(500).json({ error: 'Erreur création fournisseur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/purchasing/suppliers/:id/map — mapper produit → fournisseur ───
 
-router.post('/suppliers/:id/map', ...guard, async (req, res) => {
+router.post('/suppliers/:id/map', ...guard, async (req, res, next) => {
   try {
     const {
       product_id,
@@ -434,15 +426,12 @@ router.post('/suppliers/:id/map', ...guard, async (req, res) => {
         supplier_price_aed, min_order_qty, priority, notes]);
 
     res.status(201).json(mapping);
-  } catch (err) {
-    console.error('Map supplier error:', err.message);
-    res.status(500).json({ error: 'Erreur mapping fournisseur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── DELETE /api/purchasing/suppliers/:id — supprimer un fournisseur ──────────
 
-router.delete('/suppliers/:id', ...guard, async (req, res) => {
+router.delete('/suppliers/:id', ...guard, async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -489,8 +478,7 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Delete supplier error:', err.message);
-    res.status(500).json({ error: 'Erreur suppression fournisseur' });
+    next(e);
   } finally {
     client.release();
   }
@@ -499,7 +487,7 @@ router.delete('/suppliers/:id', ...guard, async (req, res) => {
 // ─── GET /api/purchasing/order/:order_id/completeness [v8.2] ─────────────────
 // État de réception d'une commande — combien de POs reçues vs total
 
-router.get('/order/:order_id/completeness', ...guard, async (req, res) => {
+router.get('/order/:order_id/completeness', ...guard, async (req, res, next) => {
   const { order_id } = req.params;
   try {
     // [B1] po.qty (pas po.quantity)
@@ -542,10 +530,7 @@ router.get('/order/:order_id/completeness', ...guard, async (req, res) => {
       items
     });
 
-  } catch (err) {
-    console.error('Purchasing error:', err.message);
-    res.status(500).json({ error: 'Erreur interne' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -554,7 +539,7 @@ router.get('/order/:order_id/completeness', ...guard, async (req, res) => {
 
 // ─── GET /api/purchasing/:order_id — achats d'une commande ───────────────────
 
-router.get('/:order_id', ...guard, async (req, res) => {
+router.get('/:order_id', ...guard, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT po.*, s.name AS supplier_name, s.platform, s.contact_phone, s.auto_order
@@ -565,14 +550,12 @@ router.get('/:order_id', ...guard, async (req, res) => {
     `, [req.params.order_id]);
 
     res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur achats commande' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/purchasing/:order_id/confirm ───────────────────────────────────
 
-router.post('/:order_id/confirm', ...guard, async (req, res) => {
+router.post('/:order_id/confirm', ...guard, async (req, res, next) => {
   try {
     const {
       purchase_order_id,
@@ -614,10 +597,7 @@ router.post('/:order_id/confirm', ...guard, async (req, res) => {
     }
 
     res.json({ success: true, purchase_order: po });
-  } catch (err) {
-    console.error('Confirm purchase error:', err.message);
-    res.status(500).json({ error: 'Erreur confirmation achat' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/purchasing/:id/receive [v8.2] ─────────────────────────────────
@@ -627,7 +607,7 @@ router.post('/:order_id/confirm', ...guard, async (req, res) => {
 // Body : { qty_recue?: number }
 // Si qty_recue absent → reçoit tout le reste commandé
 
-router.post('/:id/receive', ...guard, async (req, res) => {
+router.post('/:id/receive', ...guard, async (req, res, next) => {
   const { id } = req.params;
   // qty_recue : quantité reçue maintenant. Défaut = totalité commandée.
   const qty_recue = req.body.qty_recue !== undefined && req.body.qty_recue !== null && req.body.qty_recue !== ''
@@ -744,15 +724,12 @@ router.post('/:id/receive', ...guard, async (req, res) => {
         : `📦 Réception partielle — ${recus}/${total} articles — ${items_missing} manquant(s)`
     });
 
-  } catch (err) {
-    console.error('Purchasing error:', err.message);
-    res.status(500).json({ error: 'Erreur interne' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── DELETE /api/purchasing/po/:po_id — annuler une purchase order ────────────
 
-router.delete('/po/:po_id', ...guard, async (req, res) => {
+router.delete('/po/:po_id', ...guard, async (req, res, next) => {
   try {
     const { po_id } = req.params;
     const forceDelete = req.headers['x-force-delete'] === 'true';
@@ -776,10 +753,7 @@ router.delete('/po/:po_id', ...guard, async (req, res) => {
     console.log(`[PURCHASING] PO annulée : ${po_id} (était: ${po.status})`);
     res.json({ cancelled: true, po_id, previous_status: po.status });
 
-  } catch (err) {
-    console.error('Cancel PO error:', err.message);
-    res.status(500).json({ error: 'Erreur annulation purchase order' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

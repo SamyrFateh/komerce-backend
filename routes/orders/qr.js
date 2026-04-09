@@ -21,7 +21,7 @@ const { getRule }                   = require('../../utils/rules');
 //
 // INSÉRER AVANT router.get('/:ref', ...) — mais après router.get('/relais') et router.get('/problems')
 
-router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
+router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -86,10 +86,7 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
       qr_payload, // le frontend encode ce JSON en QR
     });
 
-  } catch (err) {
-    console.error('[orders/qr-token] Erreur:', err.message);
-    res.status(500).json({ error: 'Erreur génération token QR' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── GET /api/orders/retrait/:token — Page HTML retrait client (publique) ──────
@@ -97,7 +94,7 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
 // Lien envoyé via WhatsApp / email / n'importe quel canal.
 // Token validé (non expiré) mais PAS invalidé — l'invalidation se fait au scan (verify-qr).
 
-router.get('/retrait/:token', async (req, res) => {
+router.get('/retrait/:token', async (req, res, next) => {
   try {
     const { token } = req.params;
     const { rows: [order] } = await db.query(

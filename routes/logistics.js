@@ -24,7 +24,7 @@ const { logistics } = require('../validators');
 const adminOnly = [authenticate, requireRole(['admin'])];
 
 // POST /api/logistics/shipments
-router.post('/shipments', ...adminOnly, validate(logistics.createShipment), async (req, res) => {
+router.post('/shipments', ...adminOnly, validate(logistics.createShipment), async (req, res, next) => {
   try {
     const { carrier, container_ref, departed_at, eta, notes } = req.body;
     const reference = await generateShipmentRef(db);
@@ -34,11 +34,11 @@ router.post('/shipments', ...adminOnly, validate(logistics.createShipment), asyn
       [reference, carrier, container_ref, departed_at, eta, notes]
     );
     res.status(201).json(rows[0]);
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur création expédition' }); }
+  } catch(e) { next(e); }
 });
 
 // GET /api/logistics/shipments
-router.get('/shipments', ...adminOnly, async (req, res) => {
+router.get('/shipments', ...adminOnly, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT s.*, COUNT(o.id) AS nb_commandes
@@ -46,11 +46,11 @@ router.get('/shipments', ...adminOnly, async (req, res) => {
       GROUP BY s.id ORDER BY s.created_at DESC LIMIT 20
     `);
     res.json(rows);
-  } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) { next(e); }
 });
 
 // PATCH /api/logistics/shipments/:id
-router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment), async (req, res) => {
+router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment), async (req, res, next) => {
   try {
     const { carrier, container_ref, departed_at, eta, arrived_at, customs_cleared_at, notes } = req.body;
     const { rows } = await db.query(
@@ -101,11 +101,11 @@ router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment),
     }
 
     res.json(rows[0]);
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur mise à jour expédition' }); }
+  } catch(e) { next(e); }
 });
 
 // GET /api/logistics/labels/:shipment_id — Étiquettes PDF A6
-router.get('/labels/:shipment_id', ...adminOnly, async (req, res) => {
+router.get('/labels/:shipment_id', ...adminOnly, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT o.reference, o.pickup_code, u.full_name, u.phone,
@@ -162,11 +162,11 @@ router.get('/labels/:shipment_id', ...adminOnly, async (req, res) => {
     }
 
     doc.end();
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur génération étiquettes' }); }
+  } catch(e) { next(e); }
 });
 
 // GET /api/logistics/manifest/:shipment_id — Manifeste PDF
-router.get('/manifest/:shipment_id', ...adminOnly, async (req, res) => {
+router.get('/manifest/:shipment_id', ...adminOnly, async (req, res, next) => {
   try {
     const ship = await db.query('SELECT * FROM shipments WHERE id=$1', [req.params.shipment_id]);
     if (!ship.rows.length) return res.status(404).json({ error: 'Expédition introuvable' });
@@ -222,7 +222,7 @@ router.get('/manifest/:shipment_id', ...adminOnly, async (req, res) => {
     doc.moveDown(2).fontSize(7).font('Helvetica').text(`Généré le ${new Date().toLocaleDateString('fr-FR')} · Komerce`);
 
     doc.end();
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur génération manifeste' }); }
+  } catch(e) { next(e); }
 });
 
 module.exports = router;

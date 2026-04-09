@@ -26,7 +26,7 @@ const { payments } = require('../validators');
 // Crée un Stripe PaymentIntent pour une commande.
 // Le client utilise le client_secret retourné pour finaliser le paiement côté front.
 // Body : { order_reference }
-router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), async (req, res) => {
+router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), async (req, res, next) => {
   try {
     const { order_reference } = req.body;
     if (!order_reference) return res.status(400).json({ error: 'order_reference requis' });
@@ -73,10 +73,7 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
       order_reference: order.reference,
     });
 
-  } catch (err) {
-    console.error('Payment error:', err.message);
-    res.status(500).json({ error: 'Erreur interne' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── POST /api/payments/stripe/webhook ────────────────────────────────────────
@@ -85,7 +82,7 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
 // Ce endpoint reçoit le body brut (raw) — configuré dans server.js
 router.post('/stripe/webhook',
   express.raw({ type: 'application/json' }),
-  async (req, res) => {
+  async (req, res, next) => {
     const sig = req.headers['stripe-signature'];
     let event;
 
@@ -187,7 +184,7 @@ router.post('/stripe/webhook',
 // L'agent relais confirme la réception des espèces.
 // C'est ICI que la commande est vraiment validée et le stock décrémenté.
 // Body : { cash_ref_code }
-router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), validate(payments.cashConfirm), async (req, res) => {
+router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), validate(payments.cashConfirm), async (req, res, next) => {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -283,8 +280,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Payment error:', err.message);
-    res.status(500).json({ error: 'Erreur interne' });
+    next(e);
   } finally {
     client.release();
   }
@@ -292,16 +288,14 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
 // ── GET /api/payments/rates ───────────────────────────────────────────────────
 // Retourne les taux de change actuels (utilisés par le front pour la conversion)
-router.get('/rates', async (req, res) => {
+router.get('/rates', async (req, res, next) => {
   try {
     const rates = await getRates();
     const { rows } = await db.query(
       'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
     );
     res.json(rows[0] || rates);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/payments/config ──────────────────────────────────────────────────

@@ -19,7 +19,7 @@ const adminOnly = [authenticate, requireRole(['admin'])];
 
 // ── GET / — List active carriers ─────────────────────────────────────────────
 
-router.get('/', ...adminOnly, async (req, res) => {
+router.get('/', ...adminOnly, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT * FROM carriers
@@ -28,15 +28,12 @@ router.get('/', ...adminOnly, async (req, res) => {
     `);
 
     res.json({ data: rows, count: rows.length });
-  } catch (err) {
-    console.error('Carriers list error:', err.message);
-    res.status(500).json({ error: 'Erreur liste transporteurs' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── POST / — Create carrier ─────────────────────────────────────────────────
 
-router.post('/', ...adminOnly, async (req, res) => {
+router.post('/', ...adminOnly, async (req, res, next) => {
   try {
     const {
       name, type = 'maritime', contact_name, contact_phone,
@@ -59,15 +56,12 @@ router.post('/', ...adminOnly, async (req, res) => {
     ]);
 
     res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error('Carrier create error:', err.message);
-    res.status(500).json({ error: 'Erreur création transporteur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── PATCH /:id — Update carrier ──────────────────────────────────────────────
 
-router.patch('/:id', ...adminOnly, async (req, res) => {
+router.patch('/:id', ...adminOnly, async (req, res, next) => {
   try {
     const allowedFields = [
       'name', 'type', 'contact_name', 'contact_phone', 'contact_email',
@@ -102,15 +96,12 @@ router.patch('/:id', ...adminOnly, async (req, res) => {
     }
 
     res.json(rows[0]);
-  } catch (err) {
-    console.error('Carrier update error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour transporteur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── DELETE /:id — Soft-delete carrier ────────────────────────────────────────
 
-router.delete('/:id', ...adminOnly, async (req, res) => {
+router.delete('/:id', ...adminOnly, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `UPDATE carriers SET is_active = FALSE, updated_at = NOW()
@@ -123,15 +114,12 @@ router.delete('/:id', ...adminOnly, async (req, res) => {
     }
 
     res.json({ message: `Transporteur ${rows[0].name} désactivé`, carrier: rows[0] });
-  } catch (err) {
-    console.error('Carrier delete error:', err.message);
-    res.status(500).json({ error: 'Erreur suppression transporteur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── PATCH /customs/:parcel_id — Update customs info on parcel ────────────────
 
-router.patch('/customs/:parcel_id', ...adminOnly, async (req, res) => {
+router.patch('/customs/:parcel_id', ...adminOnly, async (req, res, next) => {
   try {
     const { customs_value_kmf, customs_weight_kg, customs_hs_code,
             customs_cleared_at, customs_notes } = req.body;
@@ -168,10 +156,7 @@ router.patch('/customs/:parcel_id', ...adminOnly, async (req, res) => {
       message: `Douane mise à jour pour colis ${check.rows[0].reference}`,
       parcel: rows[0],
     });
-  } catch (err) {
-    console.error('Customs update error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour douane colis' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

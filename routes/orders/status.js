@@ -58,7 +58,7 @@ const TRANSITION_ROLES = {
 
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 
-router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.updateStatus), async (req, res) => {
+router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.updateStatus), async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -168,8 +168,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}
-    console.error('Update status error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour statut' });
+    next(e);
   } finally {
     client.release();
   }
@@ -177,7 +176,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
 // ─── PATCH /api/orders/:id/cost ──────────────────────────────────────────────
 
-router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.updateCost), async (req, res) => {
+router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.updateCost), async (req, res, next) => {
   try {
     const {
       cost_real_kmf,
@@ -242,10 +241,7 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.
 
     res.json({ success: true, order: updated });
 
-  } catch (err) {
-    console.error('Update cost error:', err.message);
-    res.status(500).json({ error: 'Erreur saisie coût réel' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

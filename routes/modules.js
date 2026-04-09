@@ -111,7 +111,7 @@ router.get('/', (req, res) => {
 // Catalogue tissus pour le module couture
 // Filtres optionnels : ?fabric_type=Wax&available=true
 
-router.get('/fabrics', async (req, res) => {
+router.get('/fabrics', async (req, res, next) => {
   try {
     const { fabric_type } = req.query;
     const conditions = [];
@@ -153,16 +153,13 @@ router.get('/fabrics', async (req, res) => {
     );
 
     res.json(rows);
-  } catch (e) {
-    console.error('GET /modules/fabrics error:', e.message);
-    res.status(500).json({ error: 'Erreur catalogue tissus' });
-  }
+  } catch(e) { next(e); }
 });
 
 // ─── GET /api/modules/models ──────────────────────────────────────────────────
 // Catalogue modèles tenues pour le module couture
 
-router.get('/models', async (req, res) => {
+router.get('/models', async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT
@@ -173,10 +170,7 @@ router.get('/models', async (req, res) => {
        ORDER BY name ASC`
     );
     res.json(rows);
-  } catch (e) {
-    console.error('GET /modules/models error:', e.message);
-    res.status(500).json({ error: 'Erreur catalogue modèles' });
-  }
+  } catch(e) { next(e); }
 });
 
 // ─── GET /api/modules/:type ───────────────────────────────────────────────────
@@ -217,7 +211,7 @@ router.get('/:type', (req, res) => {
 //   module_instructions → description besoin / dimensions
 //   Prix = devis — retourne estimation indicative
 
-router.post('/price', validate(modules.calculatePrice), async (req, res) => {
+router.post('/price', validate(modules.calculatePrice), async (req, res, next) => {
   try {
     const {
       module_type,
@@ -405,16 +399,13 @@ router.post('/price', validate(modules.calculatePrice), async (req, res) => {
       delai_sup_jours: moduleDef.delai_sup_jours,
     });
 
-  } catch (e) {
-    console.error('POST /modules/price error:', e.message);
-    res.status(500).json({ error: 'Erreur calcul prix module' });
-  }
+  } catch(e) { next(e); }
 });
 
 // ─── POST /api/modules/fabrics (admin) ───────────────────────────────────────
 // Ajouter un tissu au catalogue couture
 
-router.post('/fabrics', authenticate, requireRole(['admin']), validate(modules.createFabric), async (req, res) => {
+router.post('/fabrics', authenticate, requireRole(['admin']), validate(modules.createFabric), async (req, res, next) => {
   try {
     const {
       name,
@@ -460,16 +451,13 @@ router.post('/fabrics', authenticate, requireRole(['admin']), validate(modules.c
     );
 
     res.status(201).json(fabric);
-  } catch (e) {
-    console.error('POST /modules/fabrics error:', e.message);
-    res.status(500).json({ error: 'Erreur création tissu' });
-  }
+  } catch(e) { next(e); }
 });
 
 // ─── POST /api/modules/models (admin) ────────────────────────────────────────
 // Ajouter un modèle de tenue au catalogue couture
 
-router.post('/models', authenticate, requireRole(['admin']), validate(modules.createModel), async (req, res) => {
+router.post('/models', authenticate, requireRole(['admin']), validate(modules.createModel), async (req, res, next) => {
   try {
     const {
       name,
@@ -493,10 +481,7 @@ router.post('/models', authenticate, requireRole(['admin']), validate(modules.cr
     );
 
     res.status(201).json(model);
-  } catch (e) {
-    console.error('POST /modules/models error:', e.message);
-    res.status(500).json({ error: 'Erreur création modèle' });
-  }
+  } catch(e) { next(e); }
 });
 
 module.exports = router;

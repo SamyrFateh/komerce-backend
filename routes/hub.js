@@ -34,7 +34,7 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
 // ── POST /scan — Scan parcel QR code (hub receives item) ────────────────────
 
-router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res) => {
+router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res, next) => {
   const client = await db.getClient();
   try {
     const { parcel_ref, notes } = req.body;
@@ -79,8 +79,7 @@ router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res) 
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Hub scan error:', err.message);
-    res.status(500).json({ error: 'Erreur scan hub' });
+    next(e);
   } finally {
     client.release();
   }
@@ -88,7 +87,7 @@ router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res) 
 
 // ── POST /pack — Mark parcel as packed ───────────────────────────────────────
 
-router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) => {
+router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res, next) => {
   const client = await db.getClient();
   try {
     const { parcel_id, box_label, notes } = req.body;
@@ -143,8 +142,7 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) 
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Hub pack error:', err.message);
-    res.status(500).json({ error: 'Erreur emballage hub' });
+    next(e);
   } finally {
     client.release();
   }
@@ -152,7 +150,7 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res) 
 
 // ── POST /seal — Seal parcel, ready to ship ──────────────────────────────────
 
-router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res) => {
+router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, next) => {
   const client = await db.getClient();
   try {
     const { parcel_id, notes } = req.body;
@@ -203,8 +201,7 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res) 
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Hub seal error:', err.message);
-    res.status(500).json({ error: 'Erreur scellage hub' });
+    next(e);
   } finally {
     client.release();
   }
@@ -212,7 +209,7 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res) 
 
 // ── GET /pending — Parcels awaiting processing ──────────────────────────────
 
-router.get('/pending', ...hubAuth, async (req, res) => {
+router.get('/pending', ...hubAuth, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT p.id, p.reference, p.status, p.type, p.order_id, p.notes,
@@ -228,15 +225,12 @@ router.get('/pending', ...hubAuth, async (req, res) => {
     `);
 
     res.json({ data: rows, count: rows.length });
-  } catch (err) {
-    console.error('Hub pending error:', err.message);
-    res.status(500).json({ error: 'Erreur liste colis en attente' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /today — Today's hub stats ──────────────────────────────────────────
 
-router.get('/today', ...hubAuth, async (req, res) => {
+router.get('/today', ...hubAuth, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -251,10 +245,7 @@ router.get('/today', ...hubAuth, async (req, res) => {
     `);
 
     res.json(rows[0]);
-  } catch (err) {
-    console.error('Hub today stats error:', err.message);
-    res.status(500).json({ error: 'Erreur stats hub' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

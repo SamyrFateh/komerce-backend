@@ -33,7 +33,7 @@ const {
 // Marquer la disponibilité de chaque article au hub Dubai.
 // Corps : { items: [{ order_item_id, status, reason?, estimated_available_at? }] }
 
-router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.markAvailability), async (req, res) => {
+router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.markAvailability), async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -113,8 +113,7 @@ router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[mark-availability] Error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour disponibilité' });
+    next(e);
   } finally {
     client.release();
   }
@@ -124,7 +123,7 @@ router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent
 // Créer une expédition partielle : colis « partial » + colis « backorder ».
 // Corps : { available_items: [{ order_item_id, quantity }], notes? }
 
-router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.partialShip), async (req, res) => {
+router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub']), validate(orders.partialShip), async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -360,8 +359,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[partial-ship] Error:', err.message);
-    res.status(500).json({ error: 'Erreur création expédition partielle' });
+    next(e);
   } finally {
     client.release();
   }
@@ -377,7 +375,7 @@ router.get('/:id/sub-orders', authenticate, (req, res) => {
 // Liste les colis d'une commande avec leurs articles.
 // Auth : admin, agent_hub, agent_relais, ou propriétaire de la commande.
 
-router.get('/:id/parcels', authenticate, async (req, res) => {
+router.get('/:id/parcels', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -436,10 +434,7 @@ router.get('/:id/parcels', authenticate, async (req, res) => {
       parcels:         enriched,
     });
 
-  } catch (err) {
-    console.error('[parcels] Error:', err.message);
-    res.status(500).json({ error: 'Erreur récupération colis' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── PATCH /api/orders/parcels/:parcelId/status ─────────────────────────────
@@ -449,7 +444,7 @@ router.get('/:id/parcels', authenticate, async (req, res) => {
 // IMPORTANT : cette route utilise un préfixe « parcels » fixe (pas de :id parent)
 // → insérer AVANT les routes /:id/* pour éviter collision Express
 
-router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.parcelStatus), async (req, res) => {
+router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']), validate(orders.parcelStatus), async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -573,8 +568,7 @@ router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'a
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[parcel/status] Error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour statut colis' });
+    next(e);
   } finally {
     client.release();
   }
@@ -591,7 +585,7 @@ router.patch('/sub-orders/:subId/status', authenticate, requireRole(['admin', 'a
 // Annuler un colis backorder : restauration stock + crédit boutique ou refund Stripe.
 // Corps : { parcel_id, reason? }
 
-router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackorder), async (req, res) => {
+router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackorder), async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -739,8 +733,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[cancel-backorder] Error:', err.message);
-    res.status(500).json({ error: 'Erreur annulation backorder' });
+    next(e);
   } finally {
     client.release();
   }

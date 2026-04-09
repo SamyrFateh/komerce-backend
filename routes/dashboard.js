@@ -75,7 +75,7 @@ async function loadDashConfig() {
 // 1. GET /ops — Vue opérationnelle quotidienne
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/ops', async (req, res) => {
+router.get('/ops', async (req, res, next) => {
   try {
     const hit = cached('ops');
     if (hit) return res.json(hit);
@@ -187,10 +187,7 @@ router.get('/ops', async (req, res) => {
     };
     setCache('ops', result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard ops error:', err.message);
-    res.status(500).json({ error: 'Erreur pilotage opérationnel' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -198,7 +195,7 @@ router.get('/ops', async (req, res) => {
 //    Fusionne : ancien dashboard/sales + finance/summary + admin/margins
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/finance', async (req, res) => {
+router.get('/finance', async (req, res, next) => {
   try {
     const period = Math.max(1, Math.min(365, parseInt(req.query.period) || 30));
     const rates  = await getEurKmf();
@@ -320,17 +317,14 @@ router.get('/finance', async (req, res) => {
         ca_kmf:    Math.round(Number(p.revenue_kmf)),
       })),
     });
-  } catch (err) {
-    console.error('Dashboard finance error:', err.message);
-    res.status(500).json({ error: 'Erreur KPIs financiers' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 3. GET /pilotage — Vue stratégique coûts & marges (ex-pilotage.js)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/pilotage', async (req, res) => {
+router.get('/pilotage', async (req, res, next) => {
   try {
     const mois = req.query.mois || new Date().toISOString().slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(mois)) {
@@ -419,17 +413,14 @@ router.get('/pilotage', async (req, res) => {
     };
     setCache(cacheKey, result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard pilotage error:', err.message);
-    res.status(500).json({ error: 'Erreur pilotage stratégique' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 4. GET /pipeline — Kanban commandes
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/pipeline', async (req, res) => {
+router.get('/pipeline', async (req, res, next) => {
   try {
     const hit = cached('pipeline');
     if (hit) return res.json(hit);
@@ -471,17 +462,14 @@ router.get('/pipeline', async (req, res) => {
     const result = { total: rows.length, active, pipeline };
     setCache('pipeline', result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard pipeline error:', err.message);
-    res.status(500).json({ error: 'Erreur pipeline' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 5. GET /retards — Clients en retard + compensations
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/retards', async (req, res) => {
+router.get('/retards', async (req, res, next) => {
   try {
     const { niveau } = req.query;
     const cfg = await loadDashConfig();
@@ -531,17 +519,14 @@ router.get('/retards', async (req, res) => {
     }).filter(o => !niveau || o._niv === niveau).map(({ _niv, ...rest }) => rest);
 
     res.json({ total: clients.length, par_niveau: parNiveau, clients });
-  } catch (err) {
-    console.error('Dashboard retards error:', err.message);
-    res.status(500).json({ error: 'Erreur retards' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 6. GET /forecast — Projections CA/marge
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/forecast', async (req, res) => {
+router.get('/forecast', async (req, res, next) => {
   try {
     const { target_date, ref_period = 30 } = req.query;
     if (!target_date) return res.status(400).json({ error: 'target_date obligatoire (YYYY-MM-DD)' });
@@ -582,17 +567,14 @@ router.get('/forecast', async (req, res) => {
         optimiste:  Math.round(caRealise + daysRemaining * (avgCA + stddev)),
       },
     });
-  } catch (err) {
-    console.error('Dashboard forecast error:', err.message);
-    res.status(500).json({ error: 'Erreur prévisions' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 7. GET /clients — Analyse comportement clients (ex-pilotage/clients)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/clients', async (req, res) => {
+router.get('/clients', async (req, res, next) => {
   try {
     const top   = Math.min(50, Math.max(1, parseInt(req.query.top) || 20));
     const debut = req.query.debut || '2024-01-01';
@@ -686,17 +668,14 @@ router.get('/clients', async (req, res) => {
     };
     setCache(cacheKey, result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard clients error:', err.message);
-    res.status(500).json({ error: 'Erreur analyse clients' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 8. GET /history — Historique mensuel (graphiques)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/history', async (req, res) => {
+router.get('/history', async (req, res, next) => {
   try {
     const nbMois = Math.min(24, Math.max(1, parseInt(req.query.mois) || 6));
     const rates  = await getEurKmf();
@@ -721,10 +700,7 @@ router.get('/history', async (req, res) => {
         ca_eur: Math.round(parseFloat(r.ca_eur)),
       })),
     });
-  } catch (err) {
-    console.error('Dashboard history error:', err.message);
-    res.status(500).json({ error: 'Erreur historique' });
-  }
+  } catch(err) { next(err); }
 });
 
 
@@ -732,7 +708,7 @@ router.get('/history', async (req, res) => {
 // 9. GET /hub-dubai — Operations Hub Dubai (reception, emballage, expedition)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/hub-dubai', async (req, res) => {
+router.get('/hub-dubai', async (req, res, next) => {
   try {
     const hit = cached('hub-dubai');
     if (hit) return res.json(hit);
@@ -798,10 +774,7 @@ router.get('/hub-dubai', async (req, res) => {
 
     setCache('hub-dubai', result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard hub-dubai error:', err.message);
-    res.status(500).json({ error: 'Erreur hub Dubai' });
-  }
+  } catch(err) { next(err); }
 });
 
 
@@ -809,7 +782,7 @@ router.get('/hub-dubai', async (req, res) => {
 // 10. GET /relais — Operations Relais (validation, remise colis)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/relais', async (req, res) => {
+router.get('/relais', async (req, res, next) => {
   try {
     const hit = cached('relais');
     if (hit) return res.json(hit);
@@ -876,10 +849,7 @@ router.get('/relais', async (req, res) => {
 
     setCache('relais', result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard relais error:', err.message);
-    res.status(500).json({ error: 'Erreur relais' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -887,7 +857,7 @@ router.get('/relais', async (req, res) => {
 //     Phase 5.2 — Indicateurs annulations/partielles dans vues Ops/Finance
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/annulations-parcels', async (req, res) => {
+router.get('/annulations-parcels', async (req, res, next) => {
   try {
     const hit = cached('annulations-parcels');
     if (hit) return res.json(hit);
@@ -1066,10 +1036,7 @@ router.get('/annulations-parcels', async (req, res) => {
 
     setCache('annulations-parcels', result);
     res.json(result);
-  } catch (err) {
-    console.error('Dashboard annulations-parcels error:', err.message);
-    res.status(500).json({ error: 'Erreur KPIs annulations & colis' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

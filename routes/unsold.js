@@ -6,18 +6,15 @@ const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ── GET /api/unsold — liste des invendus disponibles ──────────────────────────
-router.get('/', authenticate, requireAdmin, async (req, res) => {
+router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query('SELECT * FROM v_unsold_pipeline');
     res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── POST /api/unsold/scan — déclencher le scan d'invendus manuellement ─────────
-router.post('/scan', authenticate, requireAdmin, async (req, res) => {
+router.post('/scan', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query('SELECT auto_unsold() AS count');
     const count = rows[0].count;
@@ -45,14 +42,11 @@ router.post('/scan', authenticate, requireAdmin, async (req, res) => {
     }
 
     res.json({ scanned: parseInt(count), items_created: newUnsold.length });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/unsold/stats — statistiques invendus ─────────────────────────────
-router.get('/stats/summary', authenticate, requireAdmin, async (req, res) => {
+router.get('/stats/summary', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -66,28 +60,22 @@ router.get('/stats/summary', authenticate, requireAdmin, async (req, res) => {
       FROM v_unsold_pipeline
     `);
     res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/unsold/:id — détail d'un invendu ─────────────────────────────────
-router.get('/:id', authenticate, requireAdmin, async (req, res) => {
+router.get('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       'SELECT * FROM v_unsold_pipeline WHERE id = $1', [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── PATCH /api/unsold/:id — mettre à jour prix ou canal ───────────────────────
-router.patch('/:id', authenticate, requireAdmin, async (req, res) => {
+router.patch('/:id', authenticate, requireAdmin, async (req, res, next) => {
   const { unsold_price_kmf, channel, notes } = req.body;
   try {
     const { rows } = await db.query(
@@ -100,14 +88,11 @@ router.patch('/:id', authenticate, requireAdmin, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── POST /api/unsold/:id/resolve — marquer comme vendu/donné/détruit ──────────
-router.post('/:id/resolve', authenticate, requireAdmin, async (req, res) => {
+router.post('/:id/resolve', authenticate, requireAdmin, async (req, res, next) => {
   const { status, resolved_price_kmf, reseller_id, notes } = req.body;
   const VALID = ['sold_whatsapp', 'sold_reseller', 'donated', 'destroyed'];
   if (!VALID.includes(status)) return res.status(400).json({ error: 'Statut invalide' });
@@ -125,14 +110,11 @@ router.post('/:id/resolve', authenticate, requireAdmin, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/unsold/:id/whatsapp — générer le message WA de liquidation ────────
-router.get('/:id/whatsapp', authenticate, requireAdmin, async (req, res) => {
+router.get('/:id/whatsapp', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       'SELECT * FROM v_unsold_pipeline WHERE id = $1', [req.params.id]
@@ -157,10 +139,7 @@ router.get('/:id/whatsapp', authenticate, requireAdmin, async (req, res) => {
     ].join('\n');
 
     res.json({ message, item });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 

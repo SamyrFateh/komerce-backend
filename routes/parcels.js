@@ -1,13 +1,13 @@
 /**
- * KOMERCE — Parcels CRUD API (R1 compliant)
- * GET    /api/parcels               → Liste colis (filtres, pagination)
- * GET    /api/parcels/:ref          → Détail colis par référence
- * POST   /api/parcels               → Créer colis manuellement
- * PATCH  /api/parcels/:id/status    → Changer statut via parcelSync (R1) + évalue link rules
- * POST   /api/parcels/:id/items     → Ajouter article au colis
- * DELETE /api/parcels/:id/items/:item_id → Retirer article du colis
- * POST   /api/parcels/optimize      → Optimiser la répartition des items en colis
- * POST   /api/parcels/bootstrap/:orderId → Migrer une commande legacy
+ * KOMERCE â Parcels CRUD API (R1 compliant)
+ * GET    /api/parcels               â Liste colis (filtres, pagination)
+ * GET    /api/parcels/:ref          â DÃ©tail colis par rÃ©fÃ©rence
+ * POST   /api/parcels               â CrÃ©er colis manuellement
+ * PATCH  /api/parcels/:id/status    â Changer statut via parcelSync (R1) + Ã©value link rules
+ * POST   /api/parcels/:id/items     â Ajouter article au colis
+ * DELETE /api/parcels/:id/items/:item_id â Retirer article du colis
+ * POST   /api/parcels/optimize      â Optimiser la rÃ©partition des items en colis
+ * POST   /api/parcels/bootstrap/:orderId â Migrer une commande legacy
  */
 
 const express = require('express');
@@ -34,7 +34,7 @@ const STATUS_TO_STEP = {
 };
 
 // GET /api/parcels
-router.get('/', ...adminAgent, validate(parcels.list, 'query'), async (req, res) => {
+router.get('/', ...adminAgent, validate(parcels.list, 'query'), async (req, res, next) => {
   try {
     const { status, shipment_id, order_id, search, page = 1, limit = 50 } = req.query;
     const safeLimit = Math.min(parseInt(limit) || 50, 100);
@@ -67,11 +67,11 @@ router.get('/', ...adminAgent, validate(parcels.list, 'query'), async (req, res)
     `, [...params, safeLimit, offset]);
 
     res.json({ data: rows, pagination: { page: safePage, limit: safeLimit, total, pages: Math.ceil(total / safeLimit) } });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur liste colis' }); }
+  } catch(e) { next(e); }
 });
 
 // GET /api/parcels/:ref
-router.get('/:ref', ...adminAgentRelais, async (req, res) => {
+router.get('/:ref', ...adminAgentRelais, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT p.*, o.reference AS order_reference, o.status AS order_status, o.user_id, o.relais_id
@@ -95,11 +95,11 @@ router.get('/:ref', ...adminAgentRelais, async (req, res) => {
 
     parcel.items = items.rows;
     res.json(parcel);
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur détail colis' }); }
+  } catch(e) { next(e); }
 });
 
 // POST /api/parcels
-router.post('/', ...adminAgent, validate(parcels.create), async (req, res) => {
+router.post('/', ...adminAgent, validate(parcels.create), async (req, res, next) => {
   try {
     const { order_id, type = 'standard', notes } = req.body;
 
@@ -117,17 +117,16 @@ router.post('/', ...adminAgent, validate(parcels.create), async (req, res) => {
     res.status(201).json(rows[0]);
   } catch(e) {
     if (e.code === '23505' && e.constraint === 'one_draft_per_order') {
-      return res.status(409).json({ error: 'Un colis draft existe déjà pour cette commande' });
+      return res.status(409).json({ error: 'Un colis draft existe dÃ©jÃ  pour cette commande' });
     }
-    console.error(e);
-    res.status(500).json({ error: 'Erreur création colis' });
+    next(e);
   }
 });
 
 // PATCH /api/parcels/:id/status
-// Après chaque changement de statut logistique, évalue les link rules order ↔ parcel
-// Retourne le colis mis à jour + l'ordre mis à jour (pour vérification link rules)
-router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async (req, res) => {
+// AprÃ¨s chaque changement de statut logistique, Ã©value les link rules order â parcel
+// Retourne le colis mis Ã  jour + l'ordre mis Ã  jour (pour vÃ©rification link rules)
+router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async (req, res, next) => {
   try {
     const { status, notes } = req.body;
     const parcelCheck = await db.query('SELECT id, order_id, status FROM parcels WHERE id = $1', [req.params.id]);
@@ -142,16 +141,16 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
       step,
       scan_id:     null,
       scanned_by:  req.user.id,
-      notes:       notes || `Status → ${status}`,
+      notes:       notes || `Status â ${status}`,
     });
 
-    // Évaluer les règles de liaison order ↔ parcel (R1/R2/R3)
+    // Ãvaluer les rÃ¨gles de liaison order â parcel (R1/R2/R3)
     const triggeredRule = await evaluateOrderParcelLinkRules(parcel.order_id, db);
     if (triggeredRule) {
-      console.info(`[LINK-RULE] ${triggeredRule} déclenché pour order ${parcel.order_id}`);
+      console.info(`[LINK-RULE] ${triggeredRule} dÃ©clenchÃ© pour order ${parcel.order_id}`);
     }
 
-    // Récupérer le colis ET l'ordre mis à jour (pour vérification du statut)
+    // RÃ©cupÃ©rer le colis ET l'ordre mis Ã  jour (pour vÃ©rification du statut)
     const [parcelResult, orderResult] = await Promise.all([
       db.query('SELECT * FROM parcels WHERE id = $1', [req.params.id]),
       db.query('SELECT id, status, computed_status FROM orders WHERE id = $1', [parcel.order_id]),
@@ -166,11 +165,11 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
         ? { id: updatedOrder.id, status: updatedOrder.status, computed_status: updatedOrder.computed_status }
         : null,
     });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur mise à jour statut colis' }); }
+  } catch(e) { next(e); }
 });
 
 // POST /api/parcels/:id/items
-router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, res) => {
+router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, res, next) => {
   try {
     const { order_item_id, quantity } = req.body;
     const parcelCheck = await db.query('SELECT id, order_id FROM parcels WHERE id = $1', [req.params.id]);
@@ -188,27 +187,26 @@ router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, 
     res.status(201).json(rows[0]);
   } catch(e) {
     if (e.code === '23505' && e.constraint === 'unique_order_item_per_parcel') {
-      return res.status(409).json({ error: 'Cet article est déjà assigné à un colis' });
+      return res.status(409).json({ error: 'Cet article est dÃ©jÃ  assignÃ© Ã  un colis' });
     }
-    console.error(e);
-    res.status(500).json({ error: 'Erreur ajout article au colis' });
+    next(e);
   }
 });
 
 // DELETE /api/parcels/:id/items/:item_id
-router.delete('/:id/items/:item_id', ...adminAgent, async (req, res) => {
+router.delete('/:id/items/:item_id', ...adminAgent, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       'DELETE FROM parcel_items WHERE parcel_id = $1 AND id = $2 RETURNING *',
       [req.params.id, req.params.item_id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Article de colis introuvable' });
-    res.json({ message: 'Article retiré du colis', deleted: rows[0] });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur suppression article du colis' }); }
+    res.json({ message: 'Article retirÃ© du colis', deleted: rows[0] });
+  } catch(e) { next(e); }
 });
 
 // POST /api/parcels/optimize
-router.post('/optimize', ...adminAgent, async (req, res) => {
+router.post('/optimize', ...adminAgent, async (req, res, next) => {
   try {
     const { order_id, config: userConfig } = req.body;
     if (!order_id) return res.status(400).json({ error: 'order_id requis' });
@@ -216,7 +214,7 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
     const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [order_id]);
     if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // COALESCE sur les colonnes nullables (produits sans weight_kg/volume_cm3 renseignés)
+    // COALESCE sur les colonnes nullables (produits sans weight_kg/volume_cm3 renseignÃ©s)
     const { rows: items } = await db.query(`
       SELECT
         oi.id                               AS order_item_id,
@@ -306,14 +304,11 @@ router.post('/optimize', ...adminAgent, async (req, res) => {
       updatedParcels,
       unassignedItems: result.unassignedItems,
     });
-  } catch(e) {
-    console.error('[OPTIMIZE ERROR]', e);
-    res.status(500).json({ error: 'Erreur optimisation colis', detail: e.message });
-  }
+  } catch(e) { next(e); }
 });
 
 // POST /api/parcels/bootstrap/:orderId
-router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
+router.post('/bootstrap/:orderId', ...adminAgent, async (req, res, next) => {
   try {
     const { orderId } = req.params;
 
@@ -326,7 +321,7 @@ router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
     );
     if (parseInt(existingCheck.rows[0].count) > 0) {
       return res.status(409).json({
-        error: 'La commande a déjà des colis actifs. Utilisez /optimize pour enrichir.',
+        error: 'La commande a dÃ©jÃ  des colis actifs. Utilisez /optimize pour enrichir.',
         hint: 'Annulez les colis existants avant de bootstrapper.',
       });
     }
@@ -342,10 +337,7 @@ router.post('/bootstrap/:orderId', ...adminAgent, async (req, res) => {
       parcels: result.createdParcels,
       unassigned: result.unassignedItems,
     });
-  } catch(e) {
-    console.error('[BOOTSTRAP ERROR]', e);
-    res.status(500).json({ error: 'Erreur bootstrap colis', detail: e.message });
-  }
+  } catch(e) { next(e); }
 });
 
 module.exports = router;

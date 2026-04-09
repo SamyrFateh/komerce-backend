@@ -56,7 +56,7 @@ function userResponse(user) {
 
 // ─── POST /api/auth/register ─────────────────────────────────────────────────────
 
-router.post('/register', validate(auth.register), async (req, res) => {
+router.post('/register', validate(auth.register), async (req, res, next) => {
   try {
     const { full_name, email, phone, password, country = 'KM', currency_pref = 'KMF' } = req.body;
     if (!phone) return res.status(400).json({ error: 'Le téléphone est obligatoire' });
@@ -78,15 +78,12 @@ router.post('/register', validate(auth.register), async (req, res) => {
     const token = generateToken(user);
     setAuthCookie(res, token);
     res.status(201).json({ user: userResponse(user) });
-  } catch (err) {
-    console.error('Register error:', err.message);
-    res.status(500).json({ error: 'Erreur lors de la création du compte' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────────
 
-router.post('/login', validate(auth.login), async (req, res) => {
+router.post('/login', validate(auth.login), async (req, res, next) => {
   try {
     const { email, phone, password } = req.body;
     if (!password) return res.status(400).json({ error: 'Mot de passe obligatoire' });
@@ -107,15 +104,12 @@ router.post('/login', validate(auth.login), async (req, res) => {
     const token = generateToken(user);
     setAuthCookie(res, token);
     res.json({ user: userResponse(user) });
-  } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ error: 'Erreur lors de la connexion' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── GET /api/auth/me ──────────────────────────────────────────────────────────
 
-router.get('/me', authenticate, async (req, res) => {
+router.get('/me', authenticate, async (req, res, next) => {
   try {
     const { rows: [user] } = await db.query(
       `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.country,
@@ -135,13 +129,13 @@ router.get('/me', authenticate, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
 // ─── PUT /api/auth/me ──────────────────────────────────────────────────────────
 
-router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) => {
+router.put('/me', authenticate, validate(auth.updateProfile), async (req, res, next) => {
   try {
     const { full_name, phone, currency_pref } = req.body;
     const { rows: [user] } = await db.query(
@@ -152,7 +146,7 @@ router.put('/me', authenticate, validate(auth.updateProfile), async (req, res) =
     );
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour profil' });
+    next(err);
   }
 });
 
@@ -171,7 +165,7 @@ function guestCheckoutRateLimit(req, res, next) {
   next();
 }
 
-router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestCheckout), async (req, res) => {
+router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestCheckout), async (req, res, next) => {
   try {
     const { full_name, phone, email, country = 'KM' } = req.body;
     if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
@@ -190,10 +184,7 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
     );
     setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
-  } catch (err) {
-    console.error('Guest-checkout error:', err.message);
-    res.status(500).json({ error: 'Erreur création automatique de compte' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/auth/auto-register ─────────────────────────────────────────────────
@@ -207,7 +198,7 @@ function requireInternalKey(req, res, next) {
   next();
 }
 
-router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), async (req, res) => {
+router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), async (req, res, next) => {
   try {
     const { full_name, phone, email, country = 'KM' } = req.body;
     if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
@@ -228,10 +219,7 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
     );
     setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
-  } catch (err) {
-    console.error('Auto-register error:', err.message);
-    res.status(500).json({ error: 'Erreur création automatique de compte' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/auth/orders-by-phone ───────────────────────────────────────────────
@@ -249,7 +237,7 @@ function checkPhoneLookupRateLimit(req, res, next) {
   next();
 }
 
-router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersByPhone), async (req, res) => {
+router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersByPhone), async (req, res, next) => {
   try {
     const { phone } = req.body;
     if (!phone || typeof phone !== 'string' || phone.trim().length < 6)
@@ -262,10 +250,7 @@ router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersB
     const user = rows[0];
     const token = jwt.sign({ id: user.id, role: user.role, scope: 'orders_read' }, _JWT_SECRET, { expiresIn: '2h' });
     res.json({ token, name: user.full_name });
-  } catch (err) {
-    console.error('Orders-by-phone error:', err.message);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/auth/logout ──────────────────────────────────────────────────────────
@@ -275,7 +260,7 @@ router.post('/logout', (req, res) => {
 });
 
 // ─── POST /api/auth/admin-reset ─────────────────────────────────────────────────
-router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
+router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) => {
   try {
     // Clé depuis env ou fallback dev (retirer en production)
     const resetKey = process.env.ADMIN_RESET_KEY || 'komerce-dev-2026';
@@ -292,10 +277,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res) => {
       );
     }
     res.json({ success: true, message: 'Mot de passe admin réinitialisé avec succès' });
-  } catch (err) {
-    console.error('Admin reset error:', err.message);
-    res.status(500).json({ error: 'Erreur lors de la réinitialisation' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

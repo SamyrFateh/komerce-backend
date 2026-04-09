@@ -20,7 +20,7 @@ const { validate } = require('../middleware/validate');
 const { baskets } = require('../validators');
 
 // GET /api/baskets — lister les paniers (admin: tous, client: les siens)
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const isAdmin = req.user.role === 'admin';
     const baseQuery = `
@@ -39,14 +39,11 @@ router.get('/', authenticate, async (req, res) => {
       ? await db.query(baseQuery)
       : await db.query(baseQuery, [req.user.id]);
     res.json(rows);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Erreur liste paniers' });
-  }
+  } catch(e) { next(e); }
 });
 
 // POST /api/baskets/share
-router.post('/share', validate(baskets.share), async (req, res) => {
+router.post('/share', validate(baskets.share), async (req, res, next) => {
   try {
     const { items, creator_name } = req.body;
     if (!items?.length) return res.status(400).json({ error: 'Panier vide' });
@@ -91,11 +88,11 @@ router.post('/share', validate(baskets.share), async (req, res) => {
       whatsapp_message: msg,
       whatsapp_url: `https://wa.me/?text=${encodeURIComponent(msg)}`,
     });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur panier partagé' }); }
+  } catch(e) { next(e); }
 });
 
 // GET /api/baskets/:code
-router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res) => {
+router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res, next) => {
   try {
     const { rows: [basket] } = await db.query(
       'SELECT * FROM baskets WHERE code=$1 AND expires_at>NOW() AND is_locked=FALSE',
@@ -112,12 +109,12 @@ router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res) => {
     const rates     = await getRates();
 
     res.json({ basket, items, total_kmf, total_eur: Math.round(total_kmf/rates.eur_kmf) });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) { next(e); }
 });
 
 // PATCH /api/baskets/:code
 // ⚠️ SECURITY FIX: Wrapped in transaction for atomicity
-router.patch('/:code', authenticate, validate(baskets.updateBasket), async (req, res) => {
+router.patch('/:code', authenticate, validate(baskets.updateBasket), async (req, res, next) => {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -157,15 +154,14 @@ router.patch('/:code', authenticate, validate(baskets.updateBasket), async (req,
     res.json({ code: req.params.code, items, total_kmf: items.reduce((s,i)=>s+i.price_kmf*i.quantity,0) });
   } catch(e) {
     await client.query('ROLLBACK');
-    console.error(e);
-    res.status(500).json({ error: 'Erreur modification panier' });
+    next(e);
   } finally {
     client.release();
   }
 });
 
 // POST /api/baskets/:code/pay — Amina paie
-router.post('/:code/pay', authenticate, async (req, res) => {
+router.post('/:code/pay', authenticate, async (req, res, next) => {
   try {
     const { rows: [basket] } = await db.query(
       'SELECT * FROM baskets WHERE code=$1 AND expires_at>NOW() AND is_locked=FALSE', [req.params.code]
@@ -193,11 +189,11 @@ router.post('/:code/pay', authenticate, async (req, res) => {
 
     res.json({ basket_id: basket.id, code: basket.code, items,
       message: 'Panier verrouillé — créer commande via POST /api/orders avec ces items' });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur paiement panier' }); }
+  } catch(e) { next(e); }
 });
 
 // POST /api/baskets/gift — Ali offre un panier
-router.post('/gift', authenticate, validate(baskets.gift), async (req, res) => {
+router.post('/gift', authenticate, validate(baskets.gift), async (req, res, next) => {
   try {
     const { items, recipient_phone, recipient_name } = req.body;
     if (!items?.length || !recipient_phone) return res.status(400).json({ error: 'items et recipient_phone requis' });
@@ -240,11 +236,11 @@ router.post('/gift', authenticate, validate(baskets.gift), async (req, res) => {
 
     res.status(201).json({ basket_id: basket.id, code, expires_at, total_kmf, recipient_phone, recipient_name,
       message: 'Cadeau créé — payer via /api/payments puis confirmer via POST /api/baskets/gift/'+code+'/confirm' });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur cadeau' }); }
+  } catch(e) { next(e); }
 });
 
 // POST /api/baskets/gift/:code/confirm — SMS destinataire
-router.post('/gift/:code/confirm', authenticate, validate(baskets.giftConfirm), async (req, res) => {
+router.post('/gift/:code/confirm', authenticate, validate(baskets.giftConfirm), async (req, res, next) => {
   try {
     const { recipient_phone, recipient_name, relais_name, order_reference } = req.body;
     if (!recipient_phone) return res.status(400).json({ error: 'recipient_phone requis' });
@@ -263,7 +259,7 @@ router.post('/gift/:code/confirm', authenticate, validate(baskets.giftConfirm), 
     );
 
     res.json({ message: 'SMS envoyé au destinataire', recipient_phone, code_retrait: codeRetrait });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur confirmation cadeau' }); }
+  } catch(e) { next(e); }
 });
 
 module.exports = router;

@@ -17,7 +17,7 @@ const adminOnly = [authenticate, requireRole(['admin'])];
 const { getRates } = require('../utils/rates');
 
 // POST /api/pricing/calculate
-router.post('/calculate', async (req, res) => {
+router.post('/calculate', async (req, res, next) => {
   try {
     const { product_id, qty=1, is_diaspora=false, relais_type='standard' } = req.body;
     if (!product_id) return res.status(400).json({ error: 'product_id requis' });
@@ -39,11 +39,11 @@ router.post('/calculate', async (req, res) => {
     });
 
     res.json(result);
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur calcul prix' }); }
+  } catch(e) { next(e); }
 });
 
 // POST /api/pricing/couture
-router.post('/couture', async (req, res) => {
+router.post('/couture', async (req, res, next) => {
   try {
     const { fabric_id, model_id, qty=1, is_diaspora=false } = req.body;
     if (!fabric_id || !model_id) return res.status(400).json({ error: 'fabric_id et model_id requis' });
@@ -65,19 +65,19 @@ router.post('/couture', async (req, res) => {
     });
 
     res.json({ ...result, fabric: f.rows[0].name, model: m.rows[0].name });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'Erreur calcul prix couture' }); }
+  } catch(e) { next(e); }
 });
 
 // GET /api/pricing/rates
-router.get('/rates', async (req, res) => {
+router.get('/rates', async (req, res, next) => {
   try {
     const { rows } = await db.query('SELECT * FROM exchange_rates ORDER BY valid_from DESC LIMIT 5');
     res.json({ current: rows[0] || { eur_kmf:495, aed_kmf:139 }, history: rows });
-  } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
+  } catch(e) { next(e); }
 });
 
 // PUT /api/pricing/rates — admin
-router.put('/rates', ...adminOnly, async (req, res) => {
+router.put('/rates', ...adminOnly, async (req, res, next) => {
   try {
     const { eur_kmf, aed_kmf } = req.body;
     if (!eur_kmf || !aed_kmf) return res.status(400).json({ error: 'eur_kmf et aed_kmf requis' });
@@ -86,7 +86,7 @@ router.put('/rates', ...adminOnly, async (req, res) => {
       [eur_kmf, aed_kmf]
     );
     res.json({ message: 'Taux mis à jour', rate: rows[0] });
-  } catch(e) { res.status(500).json({ error: 'Erreur mise à jour taux' }); }
+  } catch(e) { next(e); }
 });
 
 module.exports = router;

@@ -14,7 +14,7 @@ const { authenticate } = require('../../middleware/auth');
 
 // ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
 
-router.get('/:ref', async (req, res) => {
+router.get('/:ref', async (req, res, next) => {
   try {
     const isUuid = /^[0-9a-f-]{36}$/.test(req.params.ref);
 
@@ -119,15 +119,12 @@ router.get('/:ref', async (req, res) => {
       history,
     });
 
-  } catch (err) {
-    console.error('Get order error:', err.message);
-    res.status(500).json({ error: 'Erreur récupération commande' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── GET /api/orders/:id/history ─────────────────────────────────────────────
 
-router.get('/:id/history', authenticate, async (req, res) => {
+router.get('/:id/history', authenticate, async (req, res, next) => {
   try {
     // Vérifier que la commande appartient à l'utilisateur (sauf admin/agents)
     const isPrivileged = ['admin', 'agent_hub', 'agent_relais'].includes(req.user.role);
@@ -149,9 +146,7 @@ router.get('/:id/history', authenticate, async (req, res) => {
       [req.params.id]
     );
     res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur historique' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

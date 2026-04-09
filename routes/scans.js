@@ -137,7 +137,7 @@ async function triggerScan3(order_id, scanned_by = null) {
 // scan_code peut être :
 //   - un code article  : KOM-ITEM-XXXX  (order_item)
 //   - une référence    : KOM-2026-XXXX  (order entière)
-router.post('/', authenticate, validate(scans.create), async (req, res) => {
+router.post('/', authenticate, validate(scans.create), async (req, res, next) => {
   try {
     const {
       scan_code,
@@ -302,17 +302,14 @@ router.post('/', authenticate, validate(scans.create), async (req, res) => {
       is_anomaly,
     });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur lors du scan' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── POST /api/scans/collect ───────────────────────────────────────────────────
 // Retrait par le destinataire : l'agent relais saisit le code à 6 chiffres.
 // Body : { pickup_code }
 // [P3-1] await safeSyncScanToParcels — source de vérité
-router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res) => {
+router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res, next) => {
   try {
     const { pickup_code } = req.body;
     if (!pickup_code) return res.status(400).json({ error: 'pickup_code requis' });
@@ -374,17 +371,14 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
       collected_at: new Date().toISOString(),
     });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur lors du retrait' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── POST /api/scans/hub/receive ───────────────────────────────────────────────
 // Réception hub via QR — délègue à POST /api/purchasing/:id/receive
 // Body : { qr_code?, po_id? }
 // [B7] receiveItem() n'existe pas → 501 explicite avec po_id résolu
-router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), validate(scans.hubReceive), async (req, res) => {
+router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), validate(scans.hubReceive), async (req, res, next) => {
   const { qr_code, po_id } = req.body;
 
   try {
@@ -412,17 +406,14 @@ router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), va
       po_id: purchase_order_id
     });
 
-  } catch (err) {
-    console.error('Scan error:', err.message);
-    res.status(500).json({ error: 'Erreur interne' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/scans/hub/pending ────────────────────────────────────────────────
 // Commandes en attente de réception hub
 // [B1] po.qty (pas po.quantity) | [B4] JOIN via product_suppliers
 // IMPORTANT : doit être AVANT /:order_id pour ne pas être capturé
-router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res) => {
+router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
   try {
     const result = await db.query(
       `SELECT
@@ -455,10 +446,7 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
       orders: result.rows
     });
 
-  } catch (err) {
-    console.error('Scan error:', err.message);
-    res.status(500).json({ error: 'Erreur interne' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/scans/:order_id ──────────────────────────────────────────────────
@@ -468,7 +456,7 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
 // ─── POST /api/scans/verify-qr ─────────────────────────────────────────────
 // [P3-1] await safeSyncScanToParcels APRÈS le commit
 // [P3-4] skipHistory=true — verify-qr gère l'historique dans sa transaction
-router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.verifyQr), async (req, res) => {
+router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.verifyQr), async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -622,14 +610,13 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[VERIFY-QR] Erreur:', err.message);
-    res.status(500).json({ error: 'Erreur validation QR code' });
+    next(e);
   } finally {
     client.release();
   }
 });
 
-router.get('/:order_id', authenticate, requireRole(['admin']), async (req, res) => {
+router.get('/:order_id', authenticate, requireRole(['admin']), async (req, res, next) => {
   try {
     // Valider le format UUID pour éviter un crash PostgreSQL
     // si le paramètre est un mot (ex: "prepare", "collect")
@@ -647,10 +634,7 @@ router.get('/:order_id', authenticate, requireRole(['admin']), async (req, res) 
       [req.params.order_id]
     );
     res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+  } catch(err) { next(err); }
 });
 
 // Export router + triggerScan3 (utilisé par purchasing.js)

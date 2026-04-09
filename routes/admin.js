@@ -69,7 +69,7 @@ async function deleteOrderCascade(client_or_db, id) {
 
 // ─── GET /api/admin/orders ───────────────────────────────────────────────────────────────
 
-router.get('/orders', ...guard, async (req, res) => {
+router.get('/orders', ...guard, async (req, res, next) => {
   try {
     const {
       status, payment_mode, confection_type, from_date, to_date,
@@ -126,15 +126,12 @@ router.get('/orders', ...guard, async (req, res) => {
 
     res.json({ orders: rows, total: Number(count) });
 
-  } catch (err) {
-    console.error('Admin orders error:', err.message);
-    res.status(500).json({ error: 'Erreur liste commandes' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── DELETE /api/admin/orders/:id ───────────────────────────────────────────────────────────────
 
-router.delete('/orders/:id', ...guard, async (req, res) => {
+router.delete('/orders/:id', ...guard, async (req, res, next) => {
   const { id } = req.params;
   try {
     const { rows: [order] } = await db.query('SELECT id, reference, status FROM orders WHERE id = $1::uuid', [id]);
@@ -148,16 +145,13 @@ router.delete('/orders/:id', ...guard, async (req, res) => {
       message: `Commande ${order.reference} supprimée`,
       deleted: { id, reference: order.reference, status: order.status },
     });
-  } catch (err) {
-    console.error('Delete order error:', err.message, err.detail);
-    res.status(500).json({ error: 'Erreur suppression commande', detail: err.message });
-  }
+  } catch(err) { next(err); }
 });
 
 
 // ─── GET /api/admin/customs ───────────────────────────────────────────────────────────────
 
-router.get('/customs', ...guard, async (req, res) => {
+router.get('/customs', ...guard, async (req, res, next) => {
   try {
     const { category, anomaly_only } = req.query;
     const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 90));
@@ -198,16 +192,13 @@ router.get('/customs', ...guard, async (req, res) => {
         ORDER BY ch.customs_delta_pct DESC LIMIT 20`, [days]),
     ]);
     res.json({ history, by_category: byCategory, anomalies, period_days: Number(days) });
-  } catch (err) {
-    console.error('Customs history error:', err.message);
-    res.status(500).json({ error: 'Erreur historique douane' });
-  }
+  } catch(err) { next(err); }
 });
 
 
 // ─── GET /api/admin/partners ───────────────────────────────────────────────────────────────
 
-router.get('/partners', ...guard, async (req, res) => {
+router.get('/partners', ...guard, async (req, res, next) => {
   try {
     const { type, island } = req.query;
     const conditions = ['1=1'];
@@ -220,13 +211,13 @@ router.get('/partners', ...guard, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur partenaires' });
+    next(err);
   }
 });
 
 // ─── POST /api/admin/partners ────────────────────────────────────────────────────────────────
 
-router.post('/partners', ...guard, validate(admin.createPartner), async (req, res) => {
+router.post('/partners', ...guard, validate(admin.createPartner), async (req, res, next) => {
   try {
     const { name, partner_type, contact_name, contact_phone, contact_email,
       address, island, zone, commission_kmf, notes, is_active = true } = req.body;
@@ -238,15 +229,12 @@ router.post('/partners', ...guard, validate(admin.createPartner), async (req, re
       [name, partner_type, contact_name, contact_phone, contact_email, address, island, zone, commission_kmf, notes, is_active]
     );
     res.status(201).json(partner);
-  } catch (err) {
-    console.error('Create partner error:', err.message);
-    res.status(500).json({ error: 'Erreur création partenaire' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── PUT /api/admin/partners/:id ────────────────────────────────────────────────────────────────
 
-router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req, res) => {
+router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req, res, next) => {
   try {
     const fields = ['name','partner_type','contact_name','contact_phone','contact_email','address','island','zone','commission_kmf','notes','is_active'];
     const updates = [], values = [];
@@ -262,13 +250,13 @@ router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req,
     if (!partner) return res.status(404).json({ error: 'Partenaire introuvable' });
     res.json(partner);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour partenaire' });
+    next(err);
   }
 });
 
 // ─── POST /api/admin/reset ──────────────────────────────────────────────────────────────────
 
-router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
+router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) => {
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'POST /admin/reset désactivé en production. Contactez le DevOps.' });
 
   const mode = req.body.mode || 'orders';
@@ -298,15 +286,12 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
     }
     console.log(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
     res.json({ success: true, message: `Reset "${mode}" effectué avec succès ✅`, ...report });
-  } catch (err) {
-    console.error('Reset error:', err.message);
-    res.status(500).json({ error: 'Erreur reset : ' + err.message });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── GET /api/admin/counts ──────────────────────────────────────────────────────────────────
 
-router.get('/counts', ...guard, async (req, res) => {
+router.get('/counts', ...guard, async (req, res, next) => {
   try {
     const [orders, items, products, relais, users] = await Promise.all([
       db.query('SELECT COUNT(*)::int AS c FROM orders'),
@@ -321,13 +306,13 @@ router.get('/counts', ...guard, async (req, res) => {
       users_non_admin: users.rows[0].c,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur counts' });
+    next(err);
   }
 });
 
 // ─── POST /api/admin/seed-test ───────────────────────────────────────────────────────────────
 
-router.post('/seed-test', ...guard, async (req, res) => {
+router.post('/seed-test', ...guard, async (req, res, next) => {
   const { v4: uuidv4 } = require('uuid');
   const { randomBytes } = require('crypto');
   const client = await db.getClient();
@@ -460,8 +445,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Seed-test error:', err.message, err.detail);
-    res.status(500).json({ error: 'Erreur seed-test : ' + err.message, detail: err.detail || null });
+    next(l);
   } finally {
     client.release();
   }
@@ -469,7 +453,7 @@ router.post('/seed-test', ...guard, async (req, res) => {
 
 // ─── GET /api/admin/users ────────────────────────────────────────────────────────────────────
 
-router.get('/users', ...guard, async (req, res) => {
+router.get('/users', ...guard, async (req, res, next) => {
   try {
     const { role, search, limit = 100, offset = 0 } = req.query;
     const conditions = ['1=1'];
@@ -494,15 +478,12 @@ router.get('/users', ...guard, async (req, res) => {
       `SELECT COUNT(*) AS count FROM users u WHERE ${where}`, params
     );
     res.json({ users: rows, total: Number(countRow.count) });
-  } catch (err) {
-    console.error('Admin users list error:', err.message);
-    res.status(500).json({ error: 'Erreur liste utilisateurs : ' + err.message });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── POST /api/admin/users ───────────────────────────────────────────────────────────────────
 
-router.post('/users', ...guard, async (req, res) => {
+router.post('/users', ...guard, async (req, res, next) => {
   const bcrypt = require('bcryptjs');
   try {
     const { full_name, email, phone, password, role = 'client', currency_pref = 'KMF' } = req.body;
@@ -519,15 +500,12 @@ router.post('/users', ...guard, async (req, res) => {
     );
     console.log(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
     res.status(201).json(user);
-  } catch (err) {
-    console.error('Admin create user error:', err.message);
-    res.status(500).json({ error: 'Erreur création utilisateur : ' + err.message });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── PUT /api/admin/users/:id/role ────────────────────────────────────────────────────────────────
 
-router.put('/users/:id/role', ...guard, async (req, res) => {
+router.put('/users/:id/role', ...guard, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
@@ -540,15 +518,12 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     console.log(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
     res.json({ success: true, user });
-  } catch (err) {
-    console.error('Admin change role error:', err.message);
-    res.status(500).json({ error: 'Erreur changement de rôle : ' + err.message });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── PUT /api/admin/users/:id/password ────────────────────────────────────────────────────────────
 
-router.put('/users/:id/password', ...guard, async (req, res) => {
+router.put('/users/:id/password', ...guard, async (req, res, next) => {
   const bcrypt = require('bcryptjs');
   try {
     const { id } = req.params;
@@ -560,15 +535,12 @@ router.put('/users/:id/password', ...guard, async (req, res) => {
     await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid', [password_hash, id]);
     console.log(`🔒 Admin reset password for ${existing.email} by ${req.user.email}`);
     res.json({ success: true, message: `Mot de passe réinitialisé pour ${existing.full_name}` });
-  } catch (err) {
-    console.error('Admin reset password error:', err.message);
-    res.status(500).json({ error: 'Erreur réinitialisation mot de passe' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ─── DELETE /api/admin/users/:id ────────────────────────────────────────────────────────────────
 
-router.delete('/users/:id', ...guard, async (req, res) => {
+router.delete('/users/:id', ...guard, async (req, res, next) => {
   try {
     const { id } = req.params;
     if (id === req.user.id) return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
@@ -587,10 +559,7 @@ router.delete('/users/:id', ...guard, async (req, res) => {
       console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     }
-  } catch (err) {
-    console.error('Admin delete user error:', err.message);
-    res.status(500).json({ error: 'Erreur suppression utilisateur' });
-  }
+  } catch(err) { next(err); }
 });
 
 

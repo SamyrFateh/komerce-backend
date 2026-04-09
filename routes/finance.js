@@ -34,7 +34,7 @@ function sanitizePeriod(month, year) {
 }
 
 function csvEscape(val) {
-  const s = String(val ?? '').replace(/"/g, '""');
+  const s = String(val ?? '').replace(/\"/g, '""');
   return /[,"\n]/.test(s) ? `"${s}"` : s;
 }
 
@@ -56,7 +56,7 @@ router.get('/summary', ...adminOnly, (req, res) => {
 // Export CSV de toutes les transactions du mois avec taux de change figés.
 // Query params : ?month=3&year=2026
 
-router.get('/export', ...adminOnly, async (req, res) => {
+router.get('/export', ...adminOnly, async (req, res, next) => {
   try {
     const { m, y, debut, fin, label } = sanitizePeriod(req.query.month, req.query.year);
 
@@ -132,10 +132,7 @@ router.get('/export', ...adminOnly, async (req, res) => {
 
     res.end();
 
-  } catch (err) {
-    console.error('Finance export error:', err.message);
-    res.status(500).json({ error: 'Erreur export CSV' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/finance/stripe-proofs ───────────────────────────────────────────
@@ -143,7 +140,7 @@ router.get('/export', ...adminOnly, async (req, res) => {
 // Inclut le rapprochement avec la commande Komerce correspondante.
 // Query params : ?month=3&year=2026
 
-router.get('/stripe-proofs', ...adminOnly, async (req, res) => {
+router.get('/stripe-proofs', ...adminOnly, async (req, res, next) => {
   try {
     const { m, y, debut, fin } = sanitizePeriod(req.query.month, req.query.year);
 
@@ -217,17 +214,14 @@ router.get('/stripe-proofs', ...adminOnly, async (req, res) => {
       transactions,
     });
 
-  } catch (err) {
-    console.error('Stripe proofs error:', err.message);
-    res.status(500).json({ error: 'Erreur récupération preuves Stripe' });
-  }
+  } catch(err) { next(err); }
 });
 
 // ── GET /api/finance/report ───────────────────────────────────────────────────
 // Rapport PDF mensuel : synthèse CA, marges, flux devises.
 // Query params : ?month=3&year=2026
 
-router.get('/report', ...adminOnly, async (req, res) => {
+router.get('/report', ...adminOnly, async (req, res, next) => {
   try {
     const { m, y, debut, fin, label } = sanitizePeriod(req.query.month, req.query.year);
     const rates = await getRates();
@@ -332,10 +326,7 @@ router.get('/report', ...adminOnly, async (req, res) => {
 
     doc.end();
 
-  } catch (err) {
-    console.error('Finance report error:', err.message);
-    res.status(500).json({ error: 'Erreur génération rapport' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;

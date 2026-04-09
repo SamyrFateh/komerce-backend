@@ -1,10 +1,10 @@
 /**
- * KOMERCE — GET /api/orders (liste, relais, problems, credits)
+ * KOMERCE â GET /api/orders (liste, relais, problems, credits)
  *
- * GET /              → liste des commandes du client connecté
- * GET /relais        → commandes au relais de l'agent
- * GET /problems      → commandes problématiques
- * GET /credits       → crédits boutique disponibles
+ * GET /              â liste des commandes du client connectÃ©
+ * GET /relais        â commandes au relais de l'agent
+ * GET /problems      â commandes problÃ©matiques
+ * GET /credits       â crÃ©dits boutique disponibles
  */
 
 'use strict';
@@ -15,9 +15,9 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { getRule, getRuleNumber }    = require('../../utils/rules');
 
-// ─── GET /api/orders — liste client ──────────────────────────────────────────
+// âââ GET /api/orders â liste client ââââââââââââââââââââââââââââââââââââââââââ
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const { status, limit = 20, offset = 0 } = req.query;
 
@@ -32,7 +32,7 @@ router.get('/', authenticate, async (req, res) => {
 
     const where = conditions.join(' AND ');
 
-    // Jointure via order_items pour récupérer le premier article
+    // Jointure via order_items pour rÃ©cupÃ©rer le premier article
     const { rows } = await db.query(
       `SELECT
          o.id, o.reference, o.status, o.total_kmf,
@@ -63,23 +63,20 @@ router.get('/', authenticate, async (req, res) => {
     );
 
     res.json(rows);
-  } catch (err) {
-    console.error('List orders error:', err.message);
-    res.status(500).json({ error: 'Erreur liste commandes' });
-  }
+  } catch(err) { next(err); }
 });
 
-// ─── GET /api/orders/relais ───────────────────────────────────────────────────
-// Liste les commandes disponibles (status = 'available') au relais de l'agent connecté.
+// âââ GET /api/orders/relais âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// Liste les commandes disponibles (status = 'available') au relais de l'agent connectÃ©.
 // Inclut aussi les commandes en transit vers ce relais (statut shipped / transit_comores).
 // Inclut les commandes cash en attente de paiement (status='confirmed', payment_mode='cash_relais').
-// Rôles : admin, agent_relais
+// RÃ´les : admin, agent_relais
 
-router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
+router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
     const relais_id = req.user.relais_id;
     if (!relais_id && req.user.role !== 'admin') {
-      return res.status(400).json({ error: 'Aucun relais associé à cet agent' });
+      return res.status(400).json({ error: 'Aucun relais associÃ© Ã  cet agent' });
     }
 
     const conditions = relais_id
@@ -135,7 +132,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
       params
     );
 
-    // Calculer alertes (colis disponibles non retirés — seuil configurable)
+    // Calculer alertes (colis disponibles non retirÃ©s â seuil configurable)
     const alertHours = await getRule('ORDER_ALERT_48H_AVAILABLE', 48);
     const now        = Date.now();
     const enriched   = rows.map(o => ({
@@ -156,22 +153,19 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
     };
 
     res.json({ summary, orders: enriched });
-  } catch (err) {
-    console.error('[orders/relais] Erreur:', err.message);
-    res.status(500).json({ error: 'Erreur récupération commandes relais' });
-  }
+  } catch(err) { next(err); }
 });
 
-// ─── GET /api/orders/problems ─────────────────────────────────────────────────
-// Détecte les commandes problématiques du relais courant (ou tous si admin).
-// 10 règles de détection alignées sur la spec v8.2.
-// Rôles : admin, agent_relais, agent_hub
+// âââ GET /api/orders/problems âââââââââââââââââââââââââââââââââââââââââââââââââ
+// DÃ©tecte les commandes problÃ©matiques du relais courant (ou tous si admin).
+// 10 rÃ¨gles de dÃ©tection alignÃ©es sur la spec v8.2.
+// RÃ´les : admin, agent_relais, agent_hub
 
-router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'agent_hub']), async (req, res) => {
+router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'agent_hub']), async (req, res, next) => {
   try {
     const relais_id = req.user.relais_id;
 
-    // Build relais filter safely — parameterized to prevent SQL injection
+    // Build relais filter safely â parameterized to prevent SQL injection
     const params = [];
     let relaisFilter = '';
     if (relais_id && req.user.role !== 'admin') {
@@ -179,8 +173,8 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
       relaisFilter = `AND o.relais_id = $${params.length}`;
     }
 
-    // Seuils problèmes — configurables via business_rules (safe cast via getRuleNumber)
-    // Chargés en parallèle pour optimiser les performances (Tâche 6)
+    // Seuils problÃ¨mes â configurables via business_rules (safe cast via getRuleNumber)
+    // ChargÃ©s en parallÃ¨le pour optimiser les performances (TÃ¢che 6)
     const [prepDays, transitDays, waitDays, noNotifHours, stalledDays] = await Promise.all([
       getRuleNumber('PROBLEM_PREP_BLOCKED_DAYS', 4),
       getRuleNumber('PROBLEM_TRANSIT_MAX_DAYS', 12),
@@ -201,7 +195,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
     const stalledDaysIdx  = params.length + 1;
     params.push(stalledDays);
 
-    // 10 règles de détection — chaque règle retourne des commandes avec problem_type
+    // 10 rÃ¨gles de dÃ©tection â chaque rÃ¨gle retourne des commandes avec problem_type
     const { rows } = await db.query(
       `SELECT DISTINCT ON (o.id)
          o.id,
@@ -219,45 +213,45 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
          rc.phone     AS recipient_phone,
          r.name       AS relais_name,
          CASE
-           -- Règle 1 : paiement confirmé mais pas de BC (bon de commande)
+           -- RÃ¨gle 1 : paiement confirmÃ© mais pas de BC (bon de commande)
            WHEN o.payment_status = 'paid'
             AND o.status IN ('confirmed', 'ordered')
             AND o.purchasing_at IS NULL
             THEN 'payment_no_bc'
 
-           -- Règle 2 : double paiement suspect (vérifier en DB via stripe)
-           -- (nécessite table payments — à implémenter si besoin)
+           -- RÃ¨gle 2 : double paiement suspect (vÃ©rifier en DB via stripe)
+           -- (nÃ©cessite table payments â Ã  implÃ©menter si besoin)
 
-           -- Règle 3 : préparation bloquée >4 jours
+           -- RÃ¨gle 3 : prÃ©paration bloquÃ©e >4 jours
            WHEN o.status = 'preparation'
             AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDaysIdx}
             THEN 'preparation_too_long'
 
-           -- Règle 4 : transit >12 jours
+           -- RÃ¨gle 4 : transit >12 jours
            WHEN o.status = 'shipped'
             AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDaysIdx}
             THEN 'transit_too_long'
 
-           -- Règle 5 : disponible depuis >7 jours (non retiré)
+           -- RÃ¨gle 5 : disponible depuis >7 jours (non retirÃ©)
            WHEN o.status = 'available'
             AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDaysIdx}
             THEN 'waiting_too_long'
 
-           -- Règle 6 : disponible sans notification (qr_token NULL après 1h)
+           -- RÃ¨gle 6 : disponible sans notification (qr_token NULL aprÃ¨s 1h)
            WHEN o.status = 'available'
             AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHoursIdx}
             AND o.qr_token IS NULL
             THEN 'no_notification'
 
-           -- Règle 7 : commande active depuis >30 jours sans avancement
+           -- RÃ¨gle 7 : commande active depuis >30 jours sans avancement
            WHEN o.status = 'ordered'
             AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDaysIdx}
             THEN 'stalled'
 
-           -- Règle 8 : paiement cash non soldé après collecte (si possible à détecter)
-           -- (nécessite table cash_settlements — Phase 2)
+           -- RÃ¨gle 8 : paiement cash non soldÃ© aprÃ¨s collecte (si possible Ã  dÃ©tecter)
+           -- (nÃ©cessite table cash_settlements â Phase 2)
 
-           -- Règle 9 : commande active sans relais assigné
+           -- RÃ¨gle 9 : commande active sans relais assignÃ©
            WHEN o.relais_id IS NULL
             AND o.status NOT IN ('confirmed', 'cancelled', 'refunded')
             THEN 'no_relais'
@@ -265,7 +259,7 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
            ELSE 'other'
          END AS problem_type,
 
-         -- Ancienneté en heures pour triage
+         -- AnciennetÃ© en heures pour triage
          EXTRACT(EPOCH FROM (NOW() - GREATEST(
            o.available_at, o.shipped_at, o.preparation_at, o.purchasing_at, o.created_at
          ))) / 3600 AS hours_since_last_event
@@ -276,30 +270,30 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
        WHERE o.status NOT IN ('collected', 'cancelled', 'refunded')
          ${relaisFilter}
          AND (
-           -- Règle 1
+           -- RÃ¨gle 1
            (o.payment_status = 'paid' AND o.status IN ('confirmed', 'ordered') AND o.purchasing_at IS NULL)
-           -- Règle 3
+           -- RÃ¨gle 3
            OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDaysIdx})
-           -- Règle 4
+           -- RÃ¨gle 4
            OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDaysIdx})
-           -- Règle 5
+           -- RÃ¨gle 5
            OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDaysIdx})
-           -- Règle 6
+           -- RÃ¨gle 6
            OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHoursIdx} AND o.qr_token IS NULL)
-           -- Règle 7
+           -- RÃ¨gle 7
            OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDaysIdx})
-           -- Règle 9
+           -- RÃ¨gle 9
            OR (o.relais_id IS NULL AND o.status NOT IN ('confirmed', 'cancelled', 'refunded'))
          )
        ORDER BY o.id, hours_since_last_event DESC`,
       params
     );
 
-    // Score santé global (0-100)
-    // Formule : 100 - (nb_problèmes * 5), min 0
+    // Score santÃ© global (0-100)
+    // Formule : 100 - (nb_problÃ¨mes * 5), min 0
     const health_score = Math.max(0, 100 - rows.length * 5);
 
-    // Regrouper par catégorie
+    // Regrouper par catÃ©gorie
     const by_category = {
       finance:    rows.filter(r => ['payment_no_bc'].includes(r.problem_type)).length,
       logistique: rows.filter(r => ['transit_too_long', 'preparation_too_long', 'no_relais'].includes(r.problem_type)).length,
@@ -314,17 +308,14 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
       problems: rows,
     });
 
-  } catch (err) {
-    console.error('[orders/problems] Erreur:', err.message);
-    res.status(500).json({ error: 'Erreur récupération problèmes' });
-  }
+  } catch(err) { next(err); }
 });
 
-// ─── GET /api/orders/credits — crédits boutique disponibles ──────────────────
-// Retourne la somme des crédits boutique disponibles pour le client connecté.
-// Rôles : client (ses propres crédits) ou admin (tous les crédits d'un user)
+// âââ GET /api/orders/credits â crÃ©dits boutique disponibles ââââââââââââââââââ
+// Retourne la somme des crÃ©dits boutique disponibles pour le client connectÃ©.
+// RÃ´les : client (ses propres crÃ©dits) ou admin (tous les crÃ©dits d'un user)
 
-router.get('/credits', authenticate, async (req, res) => {
+router.get('/credits', authenticate, async (req, res, next) => {
   try {
     const userId = req.query.user_id && req.user.role === 'admin'
       ? req.query.user_id
@@ -356,10 +347,7 @@ router.get('/credits', authenticate, async (req, res) => {
         created_at:      c.created_at,
       })),
     });
-  } catch (err) {
-    console.error('[CREDITS] Error:', err.message);
-    res.status(500).json({ error: 'Erreur récupération crédits boutique' });
-  }
+  } catch(err) { next(err); }
 });
 
 module.exports = router;
