@@ -1,12 +1,7 @@
 /**
- * KOMERCE — Back-office Admin v8.0 (nettoyé)
+ * KOMERCE — Back-office Admin v8.1 (uuid cast fix)
  *
  * Toutes les routes sont protégées : authenticate + requireRole(['admin'])
- *
- * ⚠️  Endpoints dashboard déplacés vers /api/dashboard/* (v11.0) :
- *   - GET /dashboard  → /api/dashboard/ops
- *   - GET /margins    → /api/dashboard/finance
- *   - GET /alerts     → /api/dashboard/ops (section alertes)
  *
  * GET    /api/admin/orders            → toutes les commandes + filtres
  * DELETE /api/admin/orders/:id        → supprimer une commande par ID
@@ -26,6 +21,8 @@
  * NOTE: user_role enum DB = ('client', 'admin', 'agent_relais', 'agent_hub')
  */
 
+'use strict';
+
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
@@ -39,39 +36,34 @@ const guard = [authenticate, requireRole(['admin'])];
 const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 
 // Helper : supprime tous les enregistrements liés à une commande
-// Ordre critique : FK parcel_items.order_item_id → order_items.id
-//
-// ⚠️  FIX : pas de try/catch internes — dans une transaction PostgreSQL,
-// un catch JS ne rollback pas la transaction PG. La connexion resterait
-// en état "aborted" et toutes les requêtes suivantes échoueraient avec
-// "current transaction is aborted". Les DELETEs avec 0 résultats ne
-// lèvent pas d'erreur, donc pas besoin de try/catch ici.
+// ⚠️  Tous les $1 sont castés ::uuid — node-postgres passe les UUID comme text,
+// PostgreSQL strict refuse uuid = text sans cast explicite.
 async function deleteOrderCascade(client_or_db, id) {
   // 1. parcel_items liés aux order_items de cette commande
   await client_or_db.query(
     `DELETE FROM parcel_items
-     WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)`,
+     WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1::uuid)`,
     [id]
   );
   // 2. parcel_items liés aux parcels de cette commande (FK parcel_id)
   await client_or_db.query(
     `DELETE FROM parcel_items
-     WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1)`,
+     WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id = $1::uuid)`,
     [id]
   );
   // 3. parcels de cette commande
-  await client_or_db.query('DELETE FROM parcels WHERE order_id = $1', [id]);
+  await client_or_db.query('DELETE FROM parcels WHERE order_id = $1::uuid', [id]);
   // 4. order_items (plus rien ne les référence)
-  await client_or_db.query('DELETE FROM order_items WHERE order_id = $1', [id]);
+  await client_or_db.query('DELETE FROM order_items WHERE order_id = $1::uuid', [id]);
   // 5. historiques
-  await client_or_db.query('DELETE FROM order_status_history WHERE order_id = $1', [id]);
-  // customs_history.order_id est TEXT (pas UUID) — cast explicite côté SQL
+  await client_or_db.query('DELETE FROM order_status_history WHERE order_id = $1::uuid', [id]);
+  // customs_history.order_id est TEXT (pas UUID) — cast ::text
   await client_or_db.query(
     `DELETE FROM customs_history WHERE order_id = $1::text`,
     [id]
   );
   // 6. commande elle-même
-  await client_or_db.query('DELETE FROM orders WHERE id = $1', [id]);
+  await client_or_db.query('DELETE FROM orders WHERE id = $1::uuid', [id]);
 }
 
 
@@ -145,7 +137,7 @@ router.get('/orders', ...guard, async (req, res) => {
 router.delete('/orders/:id', ...guard, async (req, res) => {
   const { id } = req.params;
   try {
-    const { rows: [order] } = await db.query('SELECT id, reference, status FROM orders WHERE id = $1', [id]);
+    const { rows: [order] } = await db.query('SELECT id, reference, status FROM orders WHERE id = $1::uuid', [id]);
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
     await deleteOrderCascade(db, id);
@@ -277,7 +269,6 @@ router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req,
 // ─── POST /api/admin/reset ──────────────────────────────────────────────────────────────────
 
 router.post('/reset', ...guard, validate(admin.reset), async (req, res) => {
-  // ── Vague 1: Production guard — disable reset in production ──
   if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'POST /admin/reset désactivé en production. Contactez le DevOps.' });
 
   const mode = req.body.mode || 'orders';
@@ -335,15 +326,12 @@ router.get('/counts', ...guard, async (req, res) => {
 });
 
 // ─── POST /api/admin/seed-test ───────────────────────────────────────────────────────────────
-// Crée des commandes couvrant tous les statuts du pipeline
-// Réutilisable : supprime les précédentes commandes KT-* avant de recréer
 
 router.post('/seed-test', ...guard, async (req, res) => {
   const { v4: uuidv4 } = require('uuid');
   const { randomBytes } = require('crypto');
   const client = await db.getClient();
 
-  // Génère un pickup_code unique (6 chars alphanumeric)
   const genPickup = () => {
     const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     return Array.from({ length: 6 }, () => {
@@ -353,10 +341,9 @@ router.post('/seed-test', ...guard, async (req, res) => {
     }).join('');
   };
 
-  // Génère un cash_ref_code unique basé sur timestamp
   const ts = Date.now();
   let cashRefIdx = 0;
-  const genCashRef = () => String(ts + (cashRefIdx++)).slice(-8); // 8 derniers chiffres du ts
+  const genCashRef = () => String(ts + (cashRefIdx++)).slice(-8);
 
   try {
     const { confirm } = req.body;
@@ -366,7 +353,6 @@ router.post('/seed-test', ...guard, async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Récupérer un produit et un relais actifs
     const { rows: products } = await client.query(
       'SELECT id, name, price_kmf FROM products WHERE is_active = TRUE ORDER BY name LIMIT 1'
     );
@@ -387,13 +373,12 @@ router.post('/seed-test', ...guard, async (req, res) => {
     const relais  = relaisList[0];
     const adminId = req.user.id;
 
-    // Vérifier quels statuts sont disponibles dans l'enum DB
     const { rows: enumVals } = await client.query(
       `SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'order_status'`
     );
     const availableStatuses = new Set(enumVals.map(r => r.enumlabel));
 
-    // Supprimer les commandes test précédentes (reference LIKE 'KT-%')
+    // Supprimer les commandes test précédentes
     const { rows: prevOrders } = await client.query(
       "SELECT id FROM orders WHERE reference LIKE 'KT-%'"
     );
@@ -406,66 +391,23 @@ router.post('/seed-test', ...guard, async (req, res) => {
     const now     = new Date();
     const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
 
-    // Tous les scénarios — cash_ref_code UNIQUE par commande
     const allScenarios = [
-      {
-        status: 'confirmed',   ref: 'KT-CONFIRMED',
-        payment_mode: 'cash_relais', payment_status: 'pending',
-        ordered_at: null, preparation_at: null, shipped_at: null,
-        available_at: null, collected_at: null, cancelled_at: null,
-      },
-      {
-        status: 'ordered',     ref: 'KT-ORDERED',
-        payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(7), preparation_at: null, shipped_at: null,
-        available_at: null, collected_at: null, cancelled_at: null,
-      },
-      {
-        status: 'preparation', ref: 'KT-PREPARATION',
-        payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(8), preparation_at: daysAgo(6), shipped_at: null,
-        available_at: null, collected_at: null, cancelled_at: null,
-      },
-      {
-        status: 'shipped',     ref: 'KT-SHIPPED',
-        payment_mode: 'stripe_eur', payment_status: 'paid',
-        ordered_at: daysAgo(14), preparation_at: daysAgo(12), shipped_at: daysAgo(10),
-        available_at: null, collected_at: null, cancelled_at: null,
-      },
-      {
-        status: 'in_transit',  ref: 'KT-INTRANSIT',
-        payment_mode: 'stripe_eur', payment_status: 'paid',
-        ordered_at: daysAgo(20), preparation_at: daysAgo(18), shipped_at: daysAgo(15),
-        available_at: null, collected_at: null, cancelled_at: null,
-      },
-      {
-        status: 'available',   ref: 'KT-AVAILABLE',
-        payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(30), preparation_at: daysAgo(28), shipped_at: daysAgo(25),
-        available_at: daysAgo(2), collected_at: null, cancelled_at: null,
-      },
-      {
-        status: 'collected',   ref: 'KT-COLLECTED',
-        payment_mode: 'cash_relais', payment_status: 'paid',
-        ordered_at: daysAgo(35), preparation_at: daysAgo(33), shipped_at: daysAgo(30),
-        available_at: daysAgo(5), collected_at: daysAgo(1), cancelled_at: null,
-      },
-      {
-        status: 'cancelled',   ref: 'KT-CANCELLED',
-        payment_mode: 'cash_relais', payment_status: 'pending',
-        ordered_at: null, preparation_at: null, shipped_at: null,
-        available_at: null, collected_at: null, cancelled_at: daysAgo(3),
-      },
+      { status: 'confirmed',   ref: 'KT-CONFIRMED',   payment_mode: 'cash_relais', payment_status: 'pending',  ordered_at: null,        preparation_at: null,        shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: null },
+      { status: 'ordered',     ref: 'KT-ORDERED',     payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(7),  preparation_at: null,        shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: null },
+      { status: 'preparation', ref: 'KT-PREPARATION', payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(8),  preparation_at: daysAgo(6),  shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: null },
+      { status: 'shipped',     ref: 'KT-SHIPPED',     payment_mode: 'stripe_eur',  payment_status: 'paid',     ordered_at: daysAgo(14), preparation_at: daysAgo(12), shipped_at: daysAgo(10), available_at: null,       collected_at: null,       cancelled_at: null },
+      { status: 'in_transit',  ref: 'KT-INTRANSIT',   payment_mode: 'stripe_eur',  payment_status: 'paid',     ordered_at: daysAgo(20), preparation_at: daysAgo(18), shipped_at: daysAgo(15), available_at: null,       collected_at: null,       cancelled_at: null },
+      { status: 'available',   ref: 'KT-AVAILABLE',   payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(30), preparation_at: daysAgo(28), shipped_at: daysAgo(25), available_at: daysAgo(2), collected_at: null,       cancelled_at: null },
+      { status: 'collected',   ref: 'KT-COLLECTED',   payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(35), preparation_at: daysAgo(33), shipped_at: daysAgo(30), available_at: daysAgo(5), collected_at: daysAgo(1), cancelled_at: null },
+      { status: 'cancelled',   ref: 'KT-CANCELLED',   payment_mode: 'cash_relais', payment_status: 'pending',  ordered_at: null,        preparation_at: null,        shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: daysAgo(3) },
     ];
 
-    // Filtrer les scénarios selon les statuts présents dans l'enum DB
     const testScenarios = allScenarios.filter(t => availableStatuses.has(t.status));
     const skippedStatuses = allScenarios.filter(t => !availableStatuses.has(t.status)).map(t => t.status);
 
     const created = [];
     for (const t of testScenarios) {
       const id = uuidv4();
-      // cash_ref_code unique par commande cash_relais
       const cashRef = t.payment_mode === 'cash_relais' ? genCashRef() : null;
 
       await client.query(
@@ -475,10 +417,10 @@ router.post('/seed-test', ...guard, async (req, res) => {
            cash_ref_code, pickup_code, status, confection_type,
            ordered_at, preparation_at, shipped_at, available_at, collected_at, cancelled_at
          ) VALUES (
-           $1,$2,$3,$4,
-           $5,$6,$7,$8,
-           $9,$10,$11,'aucun',
-           $12,$13,$14,$15,$16,$17
+           $1::uuid, $2, $3::uuid, $4::uuid,
+           $5, $6, $7, $8,
+           $9, $10, $11, 'aucun',
+           $12, $13, $14, $15, $16, $17
          )`,
         [
           id, t.ref, adminId, relais.id,
@@ -491,11 +433,13 @@ router.post('/seed-test', ...guard, async (req, res) => {
         ]
       );
       await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf) VALUES ($1,$2,$3,$4)`,
+        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
+         VALUES ($1::uuid, $2::uuid, $3, $4)`,
         [id, product.id, 1, product.price_kmf]
       );
       await client.query(
-        `INSERT INTO order_status_history (order_id, status, note, changed_by) VALUES ($1,$2,$3,$4)`,
+        `INSERT INTO order_status_history (order_id, status, note, changed_by)
+         VALUES ($1::uuid, $2, $3, $4::uuid)`,
         [id, t.status, 'Seed test data', adminId]
       );
       created.push({ id, reference: t.ref, status: t.status });
@@ -523,62 +467,40 @@ router.post('/seed-test', ...guard, async (req, res) => {
   }
 });
 
-// ─── GET /api/admin/users — Liste tous les utilisateurs ────────────────────────────────────
-// NOTE: user_role enum = ('client', 'admin', 'agent_relais', 'agent_hub')
+// ─── GET /api/admin/users ────────────────────────────────────────────────────────────────────
 
 router.get('/users', ...guard, async (req, res) => {
   try {
     const { role, search, limit = 100, offset = 0 } = req.query;
-
     const conditions = ['1=1'];
     const params     = [];
     let   pi         = 1;
-
-    if (role && VALID_ROLES.includes(role)) {
-      conditions.push(`u.role = $${pi++}`);
-      params.push(role);
-    }
+    if (role && VALID_ROLES.includes(role)) { conditions.push(`u.role = $${pi++}`); params.push(role); }
     if (search) {
       conditions.push(`(u.full_name ILIKE $${pi} OR u.email ILIKE $${pi} OR u.phone ILIKE $${pi})`);
       params.push(`%${search}%`);
       pi++;
     }
-
     const where = conditions.join(' AND ');
-
     const { rows } = await db.query(
-      `SELECT
-         u.id,
-         u.full_name,
-         u.email,
-         u.phone,
-         u.role,
-         u.created_at,
-         u.updated_at,
-         u.last_login_at,
-         COALESCE(u.currency_pref, 'KMF')  AS currency_pref,
-         COALESCE(u.country, 'KM')          AS country
-       FROM users u
-       WHERE ${where}
-       ORDER BY u.created_at DESC
+      `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.created_at, u.updated_at, u.last_login_at,
+         COALESCE(u.currency_pref, 'KMF') AS currency_pref,
+         COALESCE(u.country, 'KM') AS country
+       FROM users u WHERE ${where} ORDER BY u.created_at DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, Number(limit), Number(offset)]
     );
-
     const { rows: [countRow] } = await db.query(
-      `SELECT COUNT(*) AS count FROM users u WHERE ${where}`,
-      params
+      `SELECT COUNT(*) AS count FROM users u WHERE ${where}`, params
     );
-
     res.json({ users: rows, total: Number(countRow.count) });
-
   } catch (err) {
-    console.error('Admin users list error:', err.message, err.stack);
+    console.error('Admin users list error:', err.message);
     res.status(500).json({ error: 'Erreur liste utilisateurs : ' + err.message });
   }
 });
 
-// ─── POST /api/admin/users — Créer un utilisateur ──────────────────────────────────────────
+// ─── POST /api/admin/users ───────────────────────────────────────────────────────────────────
 
 router.post('/users', ...guard, async (req, res) => {
   const bcrypt = require('bcryptjs');
@@ -612,7 +534,7 @@ router.put('/users/:id/role', ...guard, async (req, res) => {
     if (!role || !VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
     if (id === req.user.id && role !== 'admin') return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle' });
     const { rows: [user] } = await db.query(
-      `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, full_name, email, role`,
+      `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2::uuid RETURNING id, full_name, email, role`,
       [role, id]
     );
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
@@ -632,10 +554,10 @@ router.put('/users/:id/password', ...guard, async (req, res) => {
     const { id } = req.params;
     const { password } = req.body;
     if (!password || password.length < 6) return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
-    const { rows: [existing] } = await db.query('SELECT id, full_name, email FROM users WHERE id = $1', [id]);
+    const { rows: [existing] } = await db.query('SELECT id, full_name, email FROM users WHERE id = $1::uuid', [id]);
     if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
     const password_hash = await bcrypt.hash(password, 10);
-    await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [password_hash, id]);
+    await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid', [password_hash, id]);
     console.log(`🔒 Admin reset password for ${existing.email} by ${req.user.email}`);
     res.json({ success: true, message: `Mot de passe réinitialisé pour ${existing.full_name}` });
   } catch (err) {
@@ -650,18 +572,18 @@ router.delete('/users/:id', ...guard, async (req, res) => {
   try {
     const { id } = req.params;
     if (id === req.user.id) return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
-    const { rows: [user] } = await db.query('SELECT id, full_name, email, role FROM users WHERE id = $1', [id]);
+    const { rows: [user] } = await db.query('SELECT id, full_name, email, role FROM users WHERE id = $1::uuid', [id]);
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    const { rows: [{ count: orderCount }] } = await db.query('SELECT COUNT(*) FROM orders WHERE user_id = $1', [id]);
+    const { rows: [{ count: orderCount }] } = await db.query('SELECT COUNT(*) FROM orders WHERE user_id = $1::uuid', [id]);
     if (Number(orderCount) > 0) {
       await db.query(
         `UPDATE users SET email = 'deleted_' || id || '@komerce.deleted', full_name = '[Compte supprimé]',
-           phone = NULL, password_hash = '', updated_at = NOW() WHERE id = $1`, [id]
+           phone = NULL, password_hash = '', updated_at = NOW() WHERE id = $1::uuid`, [id]
       );
       console.log(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`, type: 'soft_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     } else {
-      await db.query('DELETE FROM users WHERE id = $1', [id]);
+      await db.query('DELETE FROM users WHERE id = $1::uuid', [id]);
       console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     }
@@ -672,32 +594,15 @@ router.delete('/users/:id', ...guard, async (req, res) => {
 });
 
 
-// ── Redirections rétro-compatibles (dashboard endpoints déplacés) ────────────────────
-// Ces endpoints sont désormais dans /api/dashboard/*
-// Gardés temporairement pour ne pas casser les clients existants
-
+// ── Redirections rétro-compatibles ────────────────────
 router.get('/dashboard', ...guard, (req, res) => {
-  res.status(301).json({
-    error: 'Endpoint déplacé',
-    redirect: '/api/dashboard/ops',
-    message: 'Utilisez GET /api/dashboard/ops à la place',
-  });
+  res.status(301).json({ error: 'Endpoint déplacé', redirect: '/api/dashboard/ops', message: 'Utilisez GET /api/dashboard/ops à la place' });
 });
-
 router.get('/margins', ...guard, (req, res) => {
-  res.status(301).json({
-    error: 'Endpoint déplacé',
-    redirect: '/api/dashboard/finance',
-    message: 'Utilisez GET /api/dashboard/finance à la place',
-  });
+  res.status(301).json({ error: 'Endpoint déplacé', redirect: '/api/dashboard/finance', message: 'Utilisez GET /api/dashboard/finance à la place' });
 });
-
 router.get('/alerts', ...guard, (req, res) => {
-  res.status(301).json({
-    error: 'Endpoint déplacé',
-    redirect: '/api/dashboard/ops',
-    message: 'Les alertes sont maintenant dans GET /api/dashboard/ops (section alertes)',
-  });
+  res.status(301).json({ error: 'Endpoint déplacé', redirect: '/api/dashboard/ops', message: 'Les alertes sont maintenant dans GET /api/dashboard/ops (section alertes)' });
 });
 
 module.exports = router;

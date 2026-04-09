@@ -167,6 +167,8 @@ async function seedRelais() {
 }
 
 // ── Fix images ───────────────────────────────────────────────────────────────
+// Remplace les chemins locaux /uploads/ (perdus après redéploi Railway)
+// ET les lignes vides — images Unsplash persistantes
 async function fixProductImages() {
   const imageMap = {
     'Samsung Galaxy A35 (128Go)': 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400&h=400&fit=crop',
@@ -192,7 +194,11 @@ async function fixProductImages() {
   };
   for (const [name, url] of Object.entries(imageMap)) {
     try {
-      await db.query(`UPDATE products SET image_url=$1 WHERE name=$2 AND (image_url IS NULL OR image_url='')`, [url, name]);
+      // Remplace si : pas d'image, image vide, OU chemin local /uploads/ (éphémère sur Railway)
+      await db.query(
+        `UPDATE products SET image_url=$1 WHERE name=$2 AND (image_url IS NULL OR image_url='' OR image_url LIKE '/uploads/%')`,
+        [url, name]
+      );
     } catch(e) { /* skip */ }
   }
 }
