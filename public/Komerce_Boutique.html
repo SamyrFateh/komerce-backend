@@ -2940,6 +2940,7 @@ function openProductModal(p) {
   }
 
   $('product-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 // [removed _lookLabels — replaced by V2 picker]
@@ -3514,14 +3515,17 @@ function openLookModal(mainProduct) {
   body.appendChild(refreshBtn);
 
   $('look-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeLookModal() {
   $('look-modal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function closeProductModal() {
   $('product-modal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 /* ──────────────────────────────────────
@@ -3838,10 +3842,12 @@ function checkoutCart() {
   _orderData = { is_self_pickup: true, payment_mode: 'cash_relais' };
   renderCheckout();
   $('order-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeOrderModal() {
   $('order-modal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function renderCheckout() {
@@ -4783,7 +4789,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ─── Service Worker Registration ──────────────────────────────
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').then(function(reg) {
-      console.log('[App] SW registered, scope:', reg.scope);
+      // SW registered silently
     }).catch(function(err) {
       console.warn('[App] SW error:', err);
     });
