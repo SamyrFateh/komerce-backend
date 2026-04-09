@@ -53,13 +53,13 @@ router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req
 
     // Agent relais: only see parcels for their relay point's orders
     if (req.user.role === 'agent_relais') {
-      conditions.push(`EXISTS (SELECT 1 FROM relay_points rp WHERE rp.id = o.relais_id AND rp.manager_id = $${idx++})`);
+      conditions.push(`o.relais_id IN (SELECT r.id FROM relais r WHERE r.phone = (SELECT u.phone FROM users u WHERE u.id = $${idx++}))`);
       params.push(req.user.id);
     }
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p ${where}`, params);
+    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params);
     const total = parseInt(countResult.rows[0].count);
 
     const { rows } = await db.query(`
