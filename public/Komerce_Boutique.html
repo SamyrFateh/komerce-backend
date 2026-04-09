@@ -1472,40 +1472,37 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 /* ── Bouton retour produit (modale) ── */
 .modal-scroll-top {
-  position: sticky;
-  bottom: 16px;
-  float: right;
-  margin-right: 8px;
-  width: 36px;
-  height: 36px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--accent, #b45309);
   color: #fff;
-  border: none;
+  border: 2px solid #fff;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 36px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(180,83,9,0.3);
+  box-shadow: 0 3px 12px rgba(180,83,9,0.35);
   opacity: 0;
-  transform: translateY(10px);
+  transform: scale(0.8);
   transition: opacity 0.3s, transform 0.3s;
-  z-index: 20;
+  z-index: 200;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .modal-scroll-top.visible {
-  opacity: 0.9;
-  transform: translateY(0);
+  opacity: 1;
+  transform: scale(1);
   pointer-events: auto;
 }
 .modal-scroll-top:hover {
-  opacity: 1;
-  transform: translateY(-2px) scale(1.1);
-}
-
-/* ── Auto-scroll suggestion tracks ── */
-.sug-track {
-  scroll-behavior: smooth;
+  transform: scale(1.15);
+  box-shadow: 0 4px 16px rgba(180,83,9,0.45);
 }
 </style>
 
@@ -3018,52 +3015,55 @@ function openProductModal(p) {
   }
 
   
-  // ── Bouton retour produit ──
+  // ── Bouton retour produit (positionné sur le modal-dialog) ──
   (function() {
     var modalBody = $('product-modal-body');
-    // Create or reuse the button
-    var btnId = 'modal-scroll-top-btn';
-    var btn = document.getElementById(btnId);
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.id = btnId;
-      btn.className = 'modal-scroll-top';
-      btn.innerHTML = '&#8593;';
-      btn.title = 'Retour au produit';
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        modalBody.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
-    modalBody.appendChild(btn);
+    var modalDialog = modalBody.closest('.modal-dialog') || modalBody.parentElement;
+    
+    // Ensure modal-dialog has position:relative for absolute child
+    modalDialog.style.position = 'relative';
+    
+    // Remove old button if exists
+    var old = document.getElementById('modal-scroll-top-btn');
+    if (old) old.remove();
+    
+    var btn = document.createElement('button');
+    btn.id = 'modal-scroll-top-btn';
+    btn.className = 'modal-scroll-top';
+    btn.innerHTML = '&#8593;';
+    btn.title = 'Retour au produit';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      modalBody.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    modalDialog.appendChild(btn);
 
     // Show/hide based on scroll position
-    modalBody.addEventListener('scroll', function() {
-      if (modalBody.scrollTop > 200) {
-        btn.classList.add('visible');
-      } else {
-        btn.classList.remove('visible');
-      }
-    }, { passive: true });
+    modalBody.onscroll = function() {
+      btn.classList.toggle('visible', modalBody.scrollTop > 150);
+    };
   })();
 
   // ── Auto-scroll suggestions carrousels ──
   (function() {
-    var tracks = document.querySelectorAll('#product-modal-body .sug-track');
+    var tracks = document.querySelectorAll('#product-modal-body .modal-swipe-track');
+    if (!tracks.length) return;
     tracks.forEach(function(track) {
-      var speed = 0.4;
-      var direction = 1;
+      var speed = 0.5;
+      var dir = 1;
       var paused = false;
-      var autoId = null;
+      var rafId = null;
 
-      function autoScroll() {
-        if (paused) return;
-        var maxScroll = track.scrollWidth - track.clientWidth;
-        if (maxScroll <= 0) return;
-        track.scrollLeft += speed * direction;
-        if (track.scrollLeft >= maxScroll - 1) direction = -1;
-        if (track.scrollLeft <= 1) direction = 1;
-        autoId = requestAnimationFrame(autoScroll);
+      function tick() {
+        if (!paused) {
+          var max = track.scrollWidth - track.clientWidth;
+          if (max > 0) {
+            track.scrollLeft += speed * dir;
+            if (track.scrollLeft >= max - 2) dir = -1;
+            if (track.scrollLeft <= 2) dir = 1;
+          }
+        }
+        rafId = requestAnimationFrame(tick);
       }
 
       track.addEventListener('mouseenter', function() { paused = true; });
@@ -3073,17 +3073,17 @@ function openProductModal(p) {
         setTimeout(function() { paused = false; }, 3000);
       }, { passive: true });
 
-      // Start after a short delay
-      setTimeout(function() { autoId = requestAnimationFrame(autoScroll); }, 1500);
+      // Start after delay
+      setTimeout(function() { rafId = requestAnimationFrame(tick); }, 1200);
 
       // Cleanup when modal closes
-      var observer = new MutationObserver(function() {
+      var obs = new MutationObserver(function() {
         if (!$('product-modal').classList.contains('open')) {
-          cancelAnimationFrame(autoId);
-          observer.disconnect();
+          cancelAnimationFrame(rafId);
+          obs.disconnect();
         }
       });
-      observer.observe($('product-modal'), { attributes: true, attributeFilter: ['class'] });
+      obs.observe($('product-modal'), { attributes: true, attributeFilter: ['class'] });
     });
   })();
 
