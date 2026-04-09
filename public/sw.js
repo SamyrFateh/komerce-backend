@@ -1,23 +1,20 @@
-const CACHE_NAME = 'komerce-v1';
+const CACHE_NAME = 'komerce-v2';
 const STATIC_ASSETS = [
-  '/',
   '/Komerce_Boutique.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
-// Install — pre-cache essential assets
+// Install — pre-cache + force activate
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
 
-// Activate — clean old caches
+// Activate — delete ALL old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -27,17 +24,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch strategy:
-// - API calls → network-first (always fresh data)
-// - Static assets → stale-while-revalidate (fast + fresh)
+// Fetch strategy
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // API calls — network first, fallback to cache
+  // API calls → network only (always fresh)
   if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Cloudinary images → network first, cache for offline
+  if (url.hostname.includes('cloudinary') || url.hostname.includes('unsplash')) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -50,16 +49,28 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Static assets — stale-while-revalidate
-  event.respondWith(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.match(event.request).then(cached => {
-        const fetchPromise = fetch(event.request).then(response => {
-          cache.put(event.request, response.clone());
+  // HTML pages → network first (always get latest)
+  if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           return response;
-        }).catch(() => cached);
-        return cached || fetchPromise;
-      })
-    )
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Other static assets → cache first, update in background
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      const fetchPromise = fetch(event.request).then(response => {
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+        return response;
+      }).catch(() => cached);
+      return cached || fetchPromise;
+    })
   );
 });

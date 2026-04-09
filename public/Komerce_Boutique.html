@@ -1516,6 +1516,28 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ── Back button pulse ── */
 @keyframes backPulse { 0%,100% { transform: scale(1); box-shadow: 0 2px 8px rgba(180,83,9,0.2); } 50% { transform: scale(1.12); box-shadow: 0 4px 16px rgba(180,83,9,0.45); } }
 
+
+/* Mobile responsive polish */
+@media (max-width: 600px) {
+  .product-grid { gap: 8px; padding: 0 8px 32px; }
+  .card-img { height: 150px; }
+  .card-body { padding: 8px 10px; }
+  .card-name { font-size: 0.78rem; }
+  .card-price { font-size: 0.85rem; }
+  .cat-circles-wrap { padding: 10px 12px 8px; }
+  .cat-circle-img { width: 52px; height: 52px; }
+  .cat-circle span { font-size: 0.65rem; }
+  #hero { padding: 12px 12px 6px; }
+  .hero-title { font-size: 1.1rem !important; }
+  .hero-sub { font-size: 0.78rem; }
+  .hero-proverbe { font-size: 0.7rem; }
+}
+@media (max-width: 380px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 0 6px 24px; }
+  .card-img { height: 130px; }
+  .cat-circle-img { width: 44px; height: 44px; }
+}
+
 /* Anchor scroll offset */
 #catalogue, #how-it-works, #tracking, #situations { scroll-margin-top: 160px; }
 </style>
@@ -2445,6 +2467,8 @@ function renderProducts(list) {
       var img = document.createElement('img');
       img.src = p.image_url;
       img.alt = sanitize(p.name);
+      img.loading = 'lazy';
+      img.decoding = 'async';
       imgDiv.appendChild(img);
     } else {
       imgDiv.textContent = productEmoji(p);
@@ -4086,6 +4110,8 @@ function renderFavs() {
       var img = document.createElement('img');
       img.src = p.image_url;
       img.alt = sanitize(p.name);
+      img.loading = 'lazy';
+      img.decoding = 'async';
       imgDiv.appendChild(img);
     } else {
       imgDiv.textContent = productEmoji(p);
@@ -4476,7 +4502,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── Service Worker Registration ──────────────────────────────
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(reg) {
       // SW registered silently
     }).catch(function(err) {
       console.warn('[App] SW error:', err);
