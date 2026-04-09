@@ -445,7 +445,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(l);
+    next(err);
   } finally {
     client.release();
   }

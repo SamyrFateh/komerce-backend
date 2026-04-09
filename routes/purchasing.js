@@ -174,15 +174,11 @@ async function triggerPurchasing(orderId) {
     }
   }
 
-  // [FIX v8.4.1] Avancer le statut de la commande vers 'purchasing'
-  // Après création des POs, la commande passe de 'ordered' → 'purchasing'
+  // Phase 5.1: purchasing state tracked in purchase_orders, not orders.status
+  // Order stays 'ordered' until full reception → 'preparation'
   const createdPOs = results.filter(r => r.purchase_order_id != null);
   if (createdPOs.length > 0) {
-    await db.query(
-      `UPDATE orders SET status = 'purchasing', updated_at = NOW() WHERE id = $1 AND status = 'ordered'`,
-      [orderId]
-    );
-    console.log(`[PURCHASING] Commande ${orderId} → status 'purchasing' (${createdPOs.length} POs créés)`);
+    console.log(`[PURCHASING] Commande ${orderId} — ${createdPOs.length} POs créés (order stays 'ordered')`);
   }
 
   return { purchase_orders: results };
@@ -478,7 +474,7 @@ router.delete('/suppliers/:id', ...guard, async (req, res, next) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
@@ -697,12 +693,8 @@ router.post('/:id/receive', ...guard, async (req, res, next) => {
       }
 
     } else {
-      // Réception partielle → pas de SMS, mise en attente
-      await db.query(
-        `UPDATE orders SET status = 'partially_received'
-         WHERE id = $1 AND status NOT IN ('preparation', 'shipped', 'available', 'collected', 'cancelled')`,
-        [po.order_id]
-      );
+      // Phase 5.1: partial reception tracked in purchase_orders, order stays 'ordered'
+      console.log(`[PURCHASING] Réception partielle commande ${po.order_id} — ${recus}/${total} articles`);
     }
 
     // 5. Construire la réponse opérateur
@@ -712,7 +704,7 @@ router.post('/:id/receive', ...guard, async (req, res, next) => {
       success:          true,
       po_status:        updatedPo.rows[0].status,
       order_id:         po.order_id,
-      order_status:     order_complete ? 'preparation' : 'partially_received',
+      order_status:     order_complete ? 'preparation' : 'ordered',
       ready_to_prepare: order_complete,
       items_received:   parseInt(recus),
       items_total:      parseInt(total),

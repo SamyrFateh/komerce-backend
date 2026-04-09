@@ -434,8 +434,8 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
        JOIN purchase_orders po ON po.order_id = o.id
        JOIN product_suppliers ps ON ps.id = po.product_supplier_id
        JOIN products p ON p.id = ps.product_id
-       -- [FIX v8.4.1] Ajout 'ordered' : après cash/confirm le statut est 'ordered', pas 'purchasing'
-      WHERE o.status IN ('ordered', 'paid', 'confirmed', 'purchasing', 'partially_received')
+       -- [Phase 5.1] Simplified: orders stay 'ordered'/'confirmed' until preparation
+      WHERE o.status IN ('ordered', 'confirmed')
          AND po.status != 'cancelled'
        GROUP BY o.id, o.reference, o.status, o.created_at
        ORDER BY o.created_at ASC`
@@ -610,7 +610,7 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
