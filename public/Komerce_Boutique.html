@@ -2826,257 +2826,188 @@ function buildLookBoard(p, body) {
   var pCat = (p.category || '').toLowerCase();
   if (pCat !== 'sur-mesure') return;
 
-  // ── Sélectionner les accessoires par slot ──────────────────
-  var allP = _products;
-  var slots = {
-    shoes: allP.filter(function(x) {
-      return x.id !== p.id && /chaussure|sandale|botte|sneaker|mocassin|babouche|escarpin|talon/i.test(x.name);
-    }),
-    jewelry: allP.filter(function(x) {
-      return x.id !== p.id && /bijou|collier|bracelet|montre|bague|chaîne|perle|pendentif|boucle/i.test(x.name);
-    }),
-    beauty: allP.filter(function(x) {
-      return x.id !== p.id && ['beauté','beaute'].indexOf((x.category||'').toLowerCase()) >= 0;
-    }),
-    accessory: allP.filter(function(x) {
-      return x.id !== p.id && /sac|pochette|foulard|ceinture|écharpe|lunette|chapeau|turban/i.test(x.name);
-    })
-  };
+  var allProds = typeof _products !== 'undefined' ? _products : [];
+  if (!allProds.length) return;
 
-  var slotMeta = [
-    { key: 'shoes',     emoji: '👠', label: 'Chaussures',  pos: 'feet' },
-    { key: 'jewelry',   emoji: '💍', label: 'Bijoux',      pos: 'neck' },
-    { key: 'beauty',    emoji: '💄', label: 'Beauté',      pos: 'face' },
-    { key: 'accessory', emoji: '👜', label: 'Accessoire',  pos: 'hand' }
+  // ── Sélection accessoires par slot ──
+  var slots = [
+    { label: 'Chaussures', emoji: '👠', filter: function(x) { return /chaussur|sandal|botte|escarpin|basket|mocassin/i.test(x.name); } },
+    { label: 'Bijoux',     emoji: '💍', filter: function(x) { return /bijou|bague|collier|bracelet|boucle|montre|chaîne/i.test(x.name); } },
+    { label: 'Beauté',     emoji: '💄', filter: function(x) { return (x.category||'').toLowerCase() === 'beauté' || (x.category||'').toLowerCase() === 'beaute'; } },
+    { label: 'Accessoire', emoji: '👜', filter: function(x) { return /sac|pochette|ceintur|lunette|écharpe|foulard|chapeau|casquette/i.test(x.name); } }
   ];
 
-  // Tirage aléatoire initial
-  var picked = {};
-  var active = {}; // slots activés visuellement
-  slotMeta.forEach(function(s) {
-    var arr = slots[s.key];
-    picked[s.key] = arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
-    active[s.key] = false;
+  var picks = [];
+  slots.forEach(function(s) {
+    var pool = allProds.filter(function(x) { return x.id !== p.id && s.filter(x); });
+    if (!pool.length) {
+      // Fallback : même catégorie, pas le produit courant
+      pool = allProds.filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === pCat; });
+    }
+    if (pool.length) {
+      var pick = pool[Math.floor(Math.random() * pool.length)];
+      picks.push({ slot: s, product: pick, selected: true });
+    }
   });
 
-  // ── Container principal ──────────────────────────────────────
-  var wrap = document.createElement('div');
-  wrap.style.cssText = 'margin-top:24px;padding-top:20px;border-top:1px dashed #ddd;';
+  if (!picks.length) return;
 
-  // ── Titre ────────────────────────────────────────────────────
+  // ── Container principal ──
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin:24px 0 16px;padding:20px 16px;background:linear-gradient(135deg,#faf9f6,#f5f0eb);border-radius:20px;';
+
+  // ── Header ──
   var hdr = document.createElement('div');
-  hdr.style.cssText = 'text-align:center;margin-bottom:18px;';
-  hdr.innerHTML = '<div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:4px;">✦ Aperçu de votre confection ✦</div>'
-                + '<div style="font-size:0.8rem;color:#666;">Sélectionnez les accessoires pour composer votre look</div>';
+  hdr.style.cssText = 'text-align:center;margin-bottom:20px;';
+  safeHTML(hdr, '<div style="font-size:13px;letter-spacing:3px;color:#bba;font-weight:600;">✦ VOTRE CONFECTION ✦</div>'
+    + '<div style="font-size:12px;color:#998;margin-top:4px;">Composez votre look sur-mesure</div>');
   wrap.appendChild(hdr);
 
-  // ── Scene : mannequin + accessoires flottants ────────────────
-  var scene = document.createElement('div');
-  scene.style.cssText = 'position:relative;width:100%;max-width:320px;margin:0 auto 16px;min-height:380px;';
-
-  // Mannequin SVG réaliste
-  var uid = 'mn' + Date.now();
-  var imgClip = p.image_url
-    ? '<image href="' + sanitize(p.image_url) + '" x="25" y="62" width="50" height="100" clip-path="url(#' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
-    : '<text x="50" y="120" text-anchor="middle" font-size="28">' + productEmoji(p) + '</text>';
-
-  var mannequinDiv = document.createElement('div');
-  mannequinDiv.style.cssText = 'width:180px;margin:0 auto;';
-  safeHTML(mannequinDiv,
-    '<svg viewBox="0 0 100 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">'
-    // Fond aura
-    + '<defs>'
-    +   '<radialGradient id="' + uid + 'g"><stop offset="0%" stop-color="rgba(139,195,74,0.08)"/><stop offset="100%" stop-color="transparent"/></radialGradient>'
-    +   '<clipPath id="' + uid + '"><path d="M30 68 Q22 74 18 90 Q15 108 17 130 L20 88 L21 170 Q35 178 50 178 Q65 178 79 170 L80 88 L83 130 Q85 108 82 90 Q78 74 70 68 Q63 60 50 60 Q37 60 30 68 Z"/></clipPath>'
-    + '</defs>'
-    + '<ellipse cx="50" cy="140" rx="48" ry="130" fill="url(#' + uid + 'g)"/>'
-    // Cheveux détaillés
-    + '<ellipse cx="50" cy="14" rx="18" ry="13" fill="#4A3728"/>'
-    + '<path d="M32 16 Q24 32 28 54" stroke="#4A3728" stroke-width="9" fill="none" stroke-linecap="round"/>'
-    + '<path d="M68 16 Q76 32 72 54" stroke="#4A3728" stroke-width="9" fill="none" stroke-linecap="round"/>'
-    + '<path d="M36 10 Q50 2 64 10" stroke="#5C4033" stroke-width="3" fill="none"/>'
-    // Tête réaliste
-    + '<ellipse cx="50" cy="30" rx="15" ry="18" fill="#E8C9A8"/>'
-    // Oreilles
-    + '<ellipse cx="35" cy="30" rx="3" ry="5" fill="#DEB896"/>'
-    + '<ellipse cx="65" cy="30" rx="3" ry="5" fill="#DEB896"/>'
-    // Visage
-    + '<ellipse cx="44" cy="26" rx="2.5" ry="1.5" fill="#F5E6D3"/>'  // paupière G
-    + '<ellipse cx="56" cy="26" rx="2.5" ry="1.5" fill="#F5E6D3"/>'  // paupière D
-    + '<circle cx="44" cy="27" r="1.6" fill="#5C3D2E"/>'  // oeil G
-    + '<circle cx="56" cy="27" r="1.6" fill="#5C3D2E"/>'  // oeil D
-    + '<circle cx="44.5" cy="26.5" r="0.5" fill="#fff"/>'  // reflet
-    + '<circle cx="56.5" cy="26.5" r="0.5" fill="#fff"/>'
-    + '<path d="M44 24 Q44 22 46 23" stroke="#4A3728" stroke-width="0.8" fill="none"/>'  // sourcil G
-    + '<path d="M56 24 Q56 22 54 23" stroke="#4A3728" stroke-width="0.8" fill="none"/>'  // sourcil D
-    + '<path d="M48 32 Q50 33 52 32" stroke="#C4907C" stroke-width="0.6" fill="none"/>'  // nez
-    + '<path d="M45 36 Q50 39 55 36" stroke="#C98A7A" stroke-width="1.4" fill="none" stroke-linecap="round"/>'  // sourire
-    + '<ellipse cx="42" cy="33" rx="3" ry="1.5" fill="#E8A090" opacity="0.3"/>'  // blush G
-    + '<ellipse cx="58" cy="33" rx="3" ry="1.5" fill="#E8A090" opacity="0.3"/>'  // blush D
-    // Cou élégant
-    + '<path d="M44 46 L44 56 Q47 58 50 58 Q53 58 56 56 L56 46" fill="#E8C9A8"/>'
-    // Corps silhouette (fond peau)
-    + '<path d="M30 68 Q22 74 18 90 Q15 108 17 130 L20 88 L21 170 Q35 178 50 178 Q65 178 79 170 L80 88 L83 130 Q85 108 82 90 Q78 74 70 68 Q63 60 50 60 Q37 60 30 68 Z" fill="#E8C9A8"/>'
-    // Vêtement (image clippée ou emoji)
-    + imgClip
-    // Contour subtil
-    + '<path d="M30 68 Q22 74 18 90 Q15 108 17 130 L20 88 L21 170 Q35 178 50 178 Q65 178 79 170 L80 88 L83 130 Q85 108 82 90 Q78 74 70 68 Q63 60 50 60 Q37 60 30 68 Z" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="0.8"/>'
-    // Bras
-    + '<path d="M18 90 Q10 110 8 135 Q7 140 10 142" stroke="#E8C9A8" stroke-width="7" fill="none" stroke-linecap="round"/>'
-    + '<path d="M82 90 Q90 110 92 135 Q93 140 90 142" stroke="#E8C9A8" stroke-width="7" fill="none" stroke-linecap="round"/>'
-    // Mains
-    + '<ellipse cx="10" cy="144" rx="4" ry="5" fill="#E8C9A8"/>'
-    + '<ellipse cx="90" cy="144" rx="4" ry="5" fill="#E8C9A8"/>'
-    // Jambes
-    + '<path d="M21 168 Q30 175 38 178 L35 260 Q32 264 28 260 L27 180 Q23 175 21 168 Z" fill="#E8C9A8"/>'
-    + '<path d="M79 168 Q70 175 62 178 L65 260 Q68 264 72 260 L73 180 Q77 175 79 168 Z" fill="#E8C9A8"/>'
-    // Pieds
-    + '<ellipse cx="31" cy="262" rx="7" ry="3" fill="#DEB896"/>'
-    + '<ellipse cx="69" cy="262" rx="7" ry="3" fill="#DEB896"/>'
-    // Slots visuels pour accessoires (invisibles par défaut)
-    + '<g id="' + uid + '-slot-feet" opacity="0"><rect x="15" y="252" width="70" height="18" rx="6" fill="rgba(139,195,74,0.15)" stroke="var(--primary)" stroke-width="0.5" stroke-dasharray="2"/></g>'
-    + '<g id="' + uid + '-slot-neck" opacity="0"><ellipse cx="50" cy="56" rx="14" ry="5" fill="rgba(255,193,7,0.15)" stroke="#FFC107" stroke-width="0.5" stroke-dasharray="2"/></g>'
-    + '<g id="' + uid + '-slot-hand" opacity="0"><rect x="78" y="130" width="20" height="22" rx="4" fill="rgba(156,39,176,0.12)" stroke="#9C27B0" stroke-width="0.5" stroke-dasharray="2"/></g>'
-    + '</svg>'
+  // ── Pièce principale (produit sélectionné) ──
+  var mainCard = document.createElement('div');
+  mainCard.style.cssText = 'background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-bottom:20px;cursor:pointer;';
+  
+  var mainImgUrl = (p.image_url && p.image_url.indexOf('http') === 0) ? p.image_url : 'https://placehold.co/400x400/f5f0eb/998?text=' + encodeURIComponent(p.name.substring(0,15));
+  var priceStr = Number(p.price||0).toLocaleString('fr-FR') + ' KMF';
+  
+  safeHTML(mainCard,
+    '<div style="position:relative;">'
+    + '<img src="' + mainImgUrl + '" style="width:100%;height:240px;object-fit:cover;" onerror="this.src=\'https://placehold.co/400x240/f5f0eb/998?text=Confection\'">'
+    + '<div style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,0.95);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;color:#6b8f71;">✦ PIÈCE MAÎTRESSE</div>'
+    + '</div>'
+    + '<div style="padding:14px 16px;">'
+    + '<div style="font-weight:700;font-size:15px;color:#2d3436;">' + p.name + '</div>'
+    + '<div style="font-size:14px;color:#6b8f71;font-weight:600;margin-top:4px;">' + priceStr + '</div>'
+    + '</div>'
   );
-  scene.appendChild(mannequinDiv);
+  wrap.appendChild(mainCard);
 
-  // Nom + prix du produit principal
-  var mainInfo = document.createElement('div');
-  mainInfo.style.cssText = 'text-align:center;margin-top:8px;';
-  mainInfo.innerHTML = '<div style="font-size:0.85rem;font-weight:700;color:#333;max-width:200px;margin:0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sanitize(p.name) + '</div>'
-                     + '<div style="font-size:0.82rem;font-weight:800;color:var(--primary);margin-top:3px;">' + fmt(p.price_kmf||0,'KMF') + '</div>';
-  scene.appendChild(mainInfo);
-  wrap.appendChild(scene);
+  // ── Titre section accessoires ──
+  var accTitle = document.createElement('div');
+  accTitle.style.cssText = 'text-align:center;margin:16px 0 12px;';
+  safeHTML(accTitle, '<span style="font-size:12px;letter-spacing:2px;color:#998;font-weight:600;">COMPLÉTEZ VOTRE LOOK</span>');
+  wrap.appendChild(accTitle);
 
-  // ── Titre accessoires ──────────────────────────────────────
-  var sep = document.createElement('div');
-  sep.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;text-align:center;margin:16px 0 10px;';
-  sep.textContent = '— Touchez pour assembler le look —';
-  wrap.appendChild(sep);
-
-  // ── Grille accessoires interactifs ──────────────────────────
+  // ── Grille accessoires 2x2 ──
   var grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 4px;';
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;';
 
-  var totalEl = null; // référence au total pour mise à jour
+  var totalRef = { val: Number(p.price || 0), count: 1 };
+  var selectedPicks = {};
 
-  function updateTotal() {
-    var items = [p];
-    slotMeta.forEach(function(s) { if (active[s.key] && picked[s.key]) items.push(picked[s.key]); });
-    var total = items.reduce(function(sum, x) { return sum + (x.price_kmf || 0); }, 0);
-    if (totalEl) {
-      totalEl.querySelector('.look-total-count').textContent = 'Total look (' + items.length + ' pièces)';
-      totalEl.querySelector('.look-total-price').textContent = fmt(total, 'KMF');
-    }
-  }
-
-  slotMeta.forEach(function(s) {
-    var item = picked[s.key];
-    if (!item) return;
+  picks.forEach(function(pk, idx) {
+    var prod = pk.product;
+    var imgUrl = (prod.image_url && prod.image_url.indexOf('http') === 0) ? prod.image_url : 'https://placehold.co/200x200/f5f0eb/998?text=' + encodeURIComponent(pk.slot.emoji);
+    var price = Number(prod.price || 0);
+    selectedPicks[idx] = true;
+    totalRef.val += price;
+    totalRef.count++;
 
     var card = document.createElement('div');
-    card.style.cssText = 'border-radius:12px;overflow:hidden;border:2px solid #eee;background:#fff;cursor:pointer;transition:all 0.25s;';
-    card.setAttribute('data-slot', s.key);
+    card.style.cssText = 'background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);position:relative;transition:all 0.3s ease;border:2px solid #6b8f71;';
+    card.setAttribute('data-idx', idx);
 
-    // Header avec emoji + label
-    var head = document.createElement('div');
-    head.style.cssText = 'background:#f8f8f8;padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:0.72rem;font-weight:700;color:#666;';
-    head.innerHTML = '<span style="font-size:1.1rem;">' + s.emoji + '</span> ' + s.label;
-    // Toggle indicator
-    var toggle = document.createElement('span');
-    toggle.style.cssText = 'margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all 0.2s;';
-    toggle.className = 'slot-toggle';
-    head.appendChild(toggle);
-    card.appendChild(head);
+    safeHTML(card,
+      '<div style="position:relative;">'
+      + '<img src="' + imgUrl + '" style="width:100%;height:120px;object-fit:cover;transition:filter 0.3s;" onerror="this.src=\'https://placehold.co/200x120/f5f0eb/998?text=' + encodeURIComponent(pk.slot.emoji) + '\'">'
+      + '<div style="position:absolute;top:6px;left:6px;background:rgba(255,255,255,0.95);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;">' + pk.slot.emoji + '</div>'
+      + '<div class="check-badge" style="position:absolute;top:6px;right:6px;background:#6b8f71;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all 0.3s;">✓</div>'
+      + '</div>'
+      + '<div style="padding:8px 10px;">'
+      + '<div style="font-size:12px;font-weight:600;color:#2d3436;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + prod.name + '</div>'
+      + '<div style="font-size:11px;color:#6b8f71;font-weight:600;margin-top:2px;">' + price.toLocaleString('fr-FR') + ' KMF</div>'
+      + '</div>'
+    );
 
-    // Image
-    var imgW = document.createElement('div');
-    imgW.style.cssText = 'height:80px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;overflow:hidden;';
-    if (item.image_url) {
-      var img = document.createElement('img');
-      img.src = item.image_url;
-      img.alt = sanitize(item.name);
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;transition:transform 0.3s;';
-      imgW.appendChild(img);
-    } else {
-      imgW.style.fontSize = '2rem';
-      imgW.textContent = productEmoji(item);
-    }
-    card.appendChild(imgW);
-
-    // Info
-    var inf = document.createElement('div');
-    inf.style.cssText = 'padding:6px 8px;';
-    inf.innerHTML = '<div style="font-size:0.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;">' + sanitize(item.name) + '</div>'
-                  + '<div style="font-size:0.72rem;font-weight:800;color:var(--primary);margin-top:2px;">' + fmt(item.price_kmf||0,'KMF') + '</div>';
-    card.appendChild(inf);
-
-    // Click toggle : activer/désactiver le slot
+    // Toggle sélection au clic
     card.addEventListener('click', function(e) {
-      e.stopPropagation();
-      active[s.key] = !active[s.key];
-
-      if (active[s.key]) {
-        card.style.border = '2px solid var(--primary)';
-        card.style.boxShadow = '0 4px 16px rgba(139,195,74,0.25)';
-        toggle.style.border = '2px solid var(--primary)';
-        toggle.style.background = 'var(--primary)';
-        toggle.style.color = '#fff';
-        toggle.textContent = '✓';
-        // Glow slot sur mannequin
-        var slotEl = document.getElementById(uid + '-slot-' + s.pos);
-        if (slotEl) slotEl.setAttribute('opacity', '1');
+      var isSelected = selectedPicks[idx];
+      if (isSelected) {
+        // Déselectionner
+        selectedPicks[idx] = false;
+        card.style.border = '2px solid transparent';
+        card.style.opacity = '0.5';
+        card.querySelector('.check-badge').style.background = '#ccc';
+        card.querySelector('.check-badge').textContent = '+';
+        card.querySelector('img').style.filter = 'grayscale(60%)';
+        totalRef.val -= price;
+        totalRef.count--;
       } else {
-        card.style.border = '2px solid #eee';
-        card.style.boxShadow = '';
-        toggle.style.border = '2px solid #ccc';
-        toggle.style.background = '';
-        toggle.style.color = '';
-        toggle.textContent = '';
-        var slotEl2 = document.getElementById(uid + '-slot-' + s.pos);
-        if (slotEl2) slotEl2.setAttribute('opacity', '0');
+        // Sélectionner
+        selectedPicks[idx] = true;
+        card.style.border = '2px solid #6b8f71';
+        card.style.opacity = '1';
+        card.querySelector('.check-badge').style.background = '#6b8f71';
+        card.querySelector('.check-badge').textContent = '✓';
+        card.querySelector('img').style.filter = 'none';
+        totalRef.val += price;
+        totalRef.count++;
       }
       updateTotal();
     });
 
-    // Long press → voir le produit
-    card.addEventListener('dblclick', function() { openProductModal(item); });
+    // Double-tap → ouvrir produit
+    var lastTap = 0;
+    card.addEventListener('touchend', function(e) {
+      var now = Date.now();
+      if (now - lastTap < 300) {
+        e.preventDefault();
+        openProductModal(prod);
+      }
+      lastTap = now;
+    });
 
     grid.appendChild(card);
   });
+
   wrap.appendChild(grid);
 
-  // ── Hint double-tap ──────────────────────────────────────────
-  var hint = document.createElement('div');
-  hint.style.cssText = 'text-align:center;font-size:0.65rem;color:#bbb;margin-top:6px;';
-  hint.textContent = 'Touchez pour ajouter au look • Double-touchez pour voir le détail';
-  wrap.appendChild(hint);
+  // ── Total + boutons ──
+  var totalBar = document.createElement('div');
+  totalBar.style.cssText = 'background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);text-align:center;';
 
-  // ── Total + Actions ──────────────────────────────────────────
-  totalEl = document.createElement('div');
-  totalEl.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--primary-light);border-radius:8px;margin:14px 0 8px;';
-  totalEl.innerHTML = '<span class="look-total-count" style="font-size:0.77rem;color:#666;font-weight:600;">Total look (1 pièce)</span>'
-                    + '<span class="look-total-price" style="font-size:0.92rem;font-weight:800;color:var(--primary);">' + fmt(p.price_kmf||0,'KMF') + '</span>';
-  wrap.appendChild(totalEl);
+  function updateTotal() {
+    safeHTML(totalBar,
+      '<div style="font-size:12px;color:#998;margin-bottom:6px;">Total look (' + totalRef.count + ' pièce' + (totalRef.count > 1 ? 's' : '') + ')</div>'
+      + '<div style="font-size:22px;font-weight:800;color:#2d3436;">' + totalRef.val.toLocaleString('fr-FR') + ' KMF</div>'
+    );
+  }
+  updateTotal();
+  wrap.appendChild(totalBar);
+
+  // Boutons action
+  var actions = document.createElement('div');
+  actions.style.cssText = 'display:flex;gap:10px;margin-top:12px;';
 
   var addAll = document.createElement('button');
-  addAll.style.cssText = 'width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer;margin-bottom:6px;transition:opacity 0.2s;';
-  addAll.textContent = '🛍️ Ajouter le look au panier';
+  addAll.style.cssText = 'flex:1;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#6b8f71,#5a7d60);color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:transform 0.2s;';
+  addAll.textContent = '🛍️ Ajouter tout le look';
   addAll.addEventListener('click', function() {
-    var items = [p];
-    slotMeta.forEach(function(s) { if (active[s.key] && picked[s.key]) items.push(picked[s.key]); });
-    items.forEach(function(x) { addToCart(x, 1, null); });
-    toast('Look ' + (items.length > 1 ? '(' + items.length + ' pièces) ' : '') + 'ajouté !', 'success');
+    if (typeof addToCart === 'function') addToCart(p.id);
+    picks.forEach(function(pk, idx) {
+      if (selectedPicks[idx] && typeof addToCart === 'function') addToCart(pk.product.id);
+    });
+    addAll.textContent = '✓ Ajouté !';
+    addAll.style.background = '#2d3436';
+    setTimeout(function() {
+      addAll.textContent = '🛍️ Ajouter tout le look';
+      addAll.style.background = 'linear-gradient(135deg,#6b8f71,#5a7d60)';
+    }, 1500);
   });
-  wrap.appendChild(addAll);
+  actions.appendChild(addAll);
 
   var refresh = document.createElement('button');
-  refresh.style.cssText = 'width:100%;padding:8px;background:#fff;color:var(--primary);border:2px solid var(--primary);border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;transition:background 0.2s;';
-  refresh.textContent = '↻ Proposer un autre look';
-  refresh.addEventListener('click', function() { wrap.remove(); buildLookBoard(p, body); });
-  wrap.appendChild(refresh);
+  refresh.style.cssText = 'width:50px;padding:14px;border:2px solid #e0ddd5;border-radius:14px;background:#fff;font-size:18px;cursor:pointer;transition:transform 0.3s;';
+  refresh.textContent = '↻';
+  refresh.addEventListener('click', function() {
+    refresh.style.transform = 'rotate(360deg)';
+    setTimeout(function() { refresh.style.transform = 'none'; }, 400);
+    wrap.remove();
+    buildLookBoard(p, body);
+  });
+  actions.appendChild(refresh);
 
+  wrap.appendChild(actions);
   body.appendChild(wrap);
 }
 
