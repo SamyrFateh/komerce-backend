@@ -180,7 +180,6 @@ const healthRouter     = require('./routes/health');
 const parcelsRouter    = require('./routes/parcels');
 const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
-const creditsRouter    = require('./routes/credits');
 const walletRouter     = require('./routes/wallet');
 const walletService    = require('./services/wallet-service');
 
@@ -200,7 +199,6 @@ app.use('/api/logistics',  logisticsRouter);
 app.use('/api/parcels',    parcelsRouter);
 app.use('/api/hub',        hubRouter);
 app.use('/api/carriers',   carriersRouter);
-app.use('/api/credits',    creditsRouter);
 app.use('/api/wallet',     walletRouter);
 app.use('/api/payments',   paymentsRouter);
 app.use('/api/scans',      scansRouter);
