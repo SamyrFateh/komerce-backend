@@ -1569,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<section id="catalogue">
+<section id="catalogue" style="scroll-margin-top: 180px;">
   <div class="container">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px;">
       <div class="filter-bar" id="filter-bar" style="padding:0;flex:1;">
@@ -4282,7 +4282,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
       document.querySelector('.filter-btn[data-sort=""]').classList.add('active');
       renderProducts(filtered);
-      document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
+      // No scroll — filter in place, categories stay visible
     });
   });
 
