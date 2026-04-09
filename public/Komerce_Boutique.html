@@ -2675,8 +2675,10 @@ function openProductModal(p) {
   controls.appendChild(addBtn);
   body.appendChild(controls);
 
-  /* ── Look Board (Sur-mesure uniquement) ── */
-  if ((p.category||'').toLowerCase() === 'sur-mesure') buildLookBoard(p, body);
+  /* ── Look Board / Suggestions — piloté par SUGGESTION_MAP ── */
+  var _pCat = (p.category || '').toLowerCase();
+  var _mapEntry = SUGGESTION_MAP[_pCat] || { similaires: true, complementaires: false, mannequin: false, compCategories: [] };
+  if (_mapEntry.mannequin) buildLookBoard(p, body);
 
   /* ── Fonction swipe carousel natif pour la modale ── */
   function makeSwipeSection(items, label, borderColor) {
@@ -2785,29 +2787,28 @@ function openProductModal(p) {
     return section;
   }
 
-  // ── Suggestions produits ─────────────────────────────────────
-  var _compRules = {
-    'mode':       ['beauté','beaute','sur-mesure'],
-    'sur-mesure': ['mode','beauté','beaute'],
-    'beauté':     ['mode','sur-mesure'],
-    'beaute':     ['mode','sur-mesure'],
-    'tech':       ['tech'],
-    'enfant':     ['enfant','mode']
-  };
-  var _pCat = (p.category || '').toLowerCase();
+  // ── Suggestions produits — piloté par SUGGESTION_MAP ────────
+  // _pCat et _mapEntry déjà définis plus haut
 
   // Similaires : même catégorie, prix proche
-  var _similar = _products
-    .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat; })
-    .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
-    .slice(0, 8);
-  if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Dans le même esprit 🌿', '#e8f4e8'));
+  if (_mapEntry.similaires) {
+    var _similar = _products
+      .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat; })
+      .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
+      .slice(0, 8);
+    if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Dans le même esprit 🌿', '#e8f4e8'));
+  }
 
-  // Complémentaires : règles métier (skippé pour Sur-mesure — le look board s'en charge)
-  if (_pCat !== 'sur-mesure') {
-    var _compCats = _compRules[_pCat] || [];
+  // Complémentaires : catégories croisées définies dans compCategories
+  if (_mapEntry.complementaires && _mapEntry.compCategories.length) {
     var _compProds = _products
-      .filter(function(x) { return x.id !== p.id && _compCats.indexOf((x.category||'').toLowerCase()) >= 0; })
+      .filter(function(x) {
+        if (x.id === p.id) return false;
+        var xCat = (x.category||'').toLowerCase();
+        // Exclure les produits de la même catégorie (déjà dans similaires)
+        if (xCat === _pCat) return false;
+        return _mapEntry.compCategories.indexOf(xCat) >= 0;
+      })
       .sort(function() { return 0.5 - Math.random(); })
       .slice(0, 8);
     if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Ceci pourrait aller avec 💡', '#fff3e8'));
@@ -2817,6 +2818,22 @@ function openProductModal(p) {
 }
 
 var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
+
+  /* ══ Table de mappage suggestions par catégorie ══
+   *  similaires       → "Dans le même esprit" (même catégorie, prix proche)
+   *  complementaires  → "Ceci pourrait aller avec" (catégories compCategories)
+   *  mannequin        → Look board interactif (Sur-mesure uniquement)
+   *  compCategories   → catégories dans lesquelles piocher les complémentaires
+   *  Pour ajouter une catégorie : une ligne suffit.
+   */
+  var SUGGESTION_MAP = {
+    'mode':       { similaires: true,  complementaires: true,  mannequin: false, compCategories: ['mode','beaute','beauté','enfant'] },
+    'sur-mesure': { similaires: false, complementaires: false, mannequin: true,  compCategories: [] },
+    'beaute':     { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
+    'beauté':     { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
+    'tech':       { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
+    'enfant':     { similaires: true,  complementaires: true,  mannequin: false, compCategories: ['enfant','mode'] }
+  };
 
 
 // ════════════════════════════════════════════════════════════════
