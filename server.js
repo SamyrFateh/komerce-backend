@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.6 (seedAdmin garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.7 (avoirs/credits garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -180,6 +180,7 @@ const healthRouter     = require('./routes/health');
 const parcelsRouter    = require('./routes/parcels');
 const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
+const creditsRouter    = require('./routes/credits');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -197,6 +198,7 @@ app.use('/api/logistics',  logisticsRouter);
 app.use('/api/parcels',    parcelsRouter);
 app.use('/api/hub',        hubRouter);
 app.use('/api/carriers',   carriersRouter);
+app.use('/api/credits',    creditsRouter);
 app.use('/api/payments',   paymentsRouter);
 app.use('/api/scans',      scansRouter);
 app.use('/api/finance', (req, res) => {
@@ -220,7 +222,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.6',
+      version:       '10.7',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -306,7 +308,7 @@ setTimeout(() => {
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.6 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.7 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {
