@@ -15,15 +15,15 @@
 <style>
 /* ── CSS Variables ── */
 :root {
-  --primary: #64748b;
-  --primary-dark: #475569;
-  --primary-light: #f1f5f9;
-  --accent: #f59e0b;
-  --accent-dark: #d97706;
-  --accent-light: #fffbeb;
-  --green: #64748b;
+  --primary: #b45309;
+  --primary-dark: #92400e;
+  --primary-light: #fef3c7;
+  --accent: #ea580c;
+  --accent-dark: #c2410c;
+  --accent-light: #fff7ed;
+  --green: #b45309;
   --red: #ef4444;
-  --bg: #fdfdfe;
+  --bg: #fffaf5;
   --text: #2c2c2a;
   --muted: #94a3b8;
   --border: #e5e7eb;
@@ -116,14 +116,28 @@
 
 .cat-circles-wrap {
   background: var(--white);
-  padding: 12px 16px 10px;
+  padding: 10px 40px 8px;
   overflow-x: auto; scrollbar-width: none;
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 118px;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: relative;
 }
+.cat-scroll-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,0.95); border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; color: var(--dark); z-index: 102;
+  transition: opacity 0.3s; user-select: none; -webkit-user-select: none;
+}
+.cat-scroll-btn:hover { background: var(--primary-light); }
+.cat-scroll-btn.hidden { opacity: 0; pointer-events: none; }
+.cat-scroll-left { left: 4px; }
+.cat-scroll-right { right: 4px; }
 .cat-circles-wrap::-webkit-scrollbar { display: none; }
 .cat-circles {
   display: flex; gap: 16px; padding: 4px 0;
@@ -137,16 +151,16 @@
 }
 .cat-circle:hover { transform: translateY(-2px); }
 .cat-circle-img {
-  width: 72px; height: 72px; border-radius: 50%;
+  width: 56px; height: 56px; border-radius: 50%;
   overflow: hidden; border: 2.5px solid var(--border);
   transition: border-color 0.15s;
 }
 .cat-circle-img img { width: 100%; height: 100%; object-fit: cover; }
 .cat-circle span {
   font-size: 0.78rem; font-weight: 600; color: var(--text);
-  text-align: center; max-width: 72px; white-space: normal; line-height: 1.2;
+  text-align: center; max-width: 60px; white-space: normal; line-height: 1.2;
 }
-.cat-circle.active .cat-circle-img { border-color: var(--primary); border-width: 3px; box-shadow: 0 0 0 3px rgba(91,196,154,0.2); }
+.cat-circle.active .cat-circle-img { border-color: var(--primary); border-width: 3px; box-shadow: 0 0 0 3px rgba(180,83,9,0.15); }
 .cat-circle.active span { color: var(--primary); font-weight: 700; }
 
 /* ── Hero minimaliste avec vague ── */
@@ -1457,7 +1471,6 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 </head>
 <body>
 
@@ -1500,8 +1513,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <div class="cat-circles-wrap">
   <div class="cat-circles" id="cat-pills">
     <button class="cat-circle active" data-cat="">
-      <div class="cat-circle-img" style="background: linear-gradient(135deg, #e8f5ee, #d4ede0); display:flex; align-items:center; justify-content:center;">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2d9f6f" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <div class="cat-circle-img" style="background: linear-gradient(135deg, #fef3c7, #fde68a); display:flex; align-items:center; justify-content:center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </div>
       <span>Tout</span>
     </button>
@@ -1759,16 +1772,7 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- LOOK MODAL -->
-<div class="modal-overlay" id="look-modal">
-  <div class="modal-box" style="max-width:600px;">
-    <div class="modal-header" style="background:var(--primary);color:white;">
-      <span id="look-modal-title">Le look complet</span>
-      <button class="modal-close" id="look-modal-close" style="background:rgba(255,255,255,0.2);color:white;" aria-label="Fermer">✕</button>
-    </div>
-    <div class="modal-body" id="look-modal-body"></div>
-  </div>
-</div>
+<!-- LOOK MODAL removed -->
 
 <!-- ORDER FORM MODAL -->
 <div class="modal-overlay" id="order-modal">
@@ -2824,12 +2828,21 @@ function openProductModal(p) {
     setTimeout(function() { closeProductModal(); }, 500);
   });
   controls.appendChild(addBtn);
+  /* ── Déjà dans le panier? ── */
+  var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
+  if (_inCart) {
+    var cartBadge = document.createElement('div');
+    cartBadge.style.cssText = 'background:var(--primary-light);color:var(--primary-dark);padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;';
+    cartBadge.innerHTML = '✓ Déjà dans le panier <span style="background:var(--primary);color:white;border-radius:12px;padding:1px 8px;font-size:0.72rem;">×' + _inCart.qty + '</span>';
+    controls.insertBefore(cartBadge, controls.firstChild);
+    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/><path d="M6.5 12.5c1.5 1 3.5 1.5 5.5 1.5s4-.5 5.5-1.5" opacity="0.5"/><path d="M5.5 15c2 1.2 4 1.8 6.5 1.8s4.5-.6 6.5-1.8" opacity="0.4"/></svg>En ajouter';
+  }
   body.appendChild(controls);
 
   /* ── Look Board / Suggestions — piloté par SUGGESTION_MAP ── */
   var _pCat = (p.category || '').toLowerCase();
   var _mapEntry = SUGGESTION_MAP[_pCat] || { similaires: true, complementaires: false, mannequin: false, compCategories: [] };
-  if (_mapEntry.mannequin) buildLookBoard(p, body);
+  // Overlay dismantled — mannequin désactivé
 
   /* ── Fonction swipe carousel natif pour la modale ── */
   function makeSwipeSection(items, label, borderColor) {
@@ -2947,7 +2960,7 @@ function openProductModal(p) {
       .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat; })
       .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
       .slice(0, 8);
-    if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Dans le même esprit 🌿', '#e8f4e8'));
+    if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Vous aimerez aussi ✨', '#fef3c7'));
   }
 
   // Complémentaires : catégories croisées définies dans compCategories
@@ -2962,7 +2975,7 @@ function openProductModal(p) {
       })
       .sort(function() { return 0.5 - Math.random(); })
       .slice(0, 8);
-    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Ceci pourrait aller avec 💡', '#fff3e8'));
+    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Complétez votre style 🌸', '#fff1ec'));
   }
 
   $('product-modal').classList.add('open');
@@ -2980,7 +2993,7 @@ function openProductModal(p) {
    */
   var SUGGESTION_MAP = {
     'mode':       { similaires: true,  complementaires: true,  mannequin: false, compCategories: ['mode','beaute','beauté','enfant'] },
-    'sur-mesure': { similaires: false, complementaires: false, mannequin: true,  compCategories: [] },
+    'sur-mesure': { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
     'beaute':     { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
     'beauté':     { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
     'tech':       { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
@@ -2989,565 +3002,7 @@ function openProductModal(p) {
 
 
 // ════════════════════════════════════════════════════════════════
-// LOOK BOARD V2 — Smart Overlay (Fabric.js Canvas)
-// Mannequin + produits détourés positionnés sur le corps
-// Drag / resize / rotate + taille S/M/L
-// ════════════════════════════════════════════════════════════════
-
-/* ── Product type classifier ── */
-function classifyWearable(name) {
-  name = (name || '').toLowerCase();
-  if (/robe|caftan|caftane|abaya|djellaba|boubou|salouva|sari|gandoura|pyjama|uniforme/.test(name)) return 'full';
-  if (/tenue|ensemble|costume/.test(name)) return 'full';
-  if (/blouse|chemise|veste|haut/.test(name)) return 'top';
-  if (/pantalon|jean|jupe/.test(name)) return 'bottom';
-  if (/sac|pochette|trousse/.test(name)) return 'bag';
-  if (/chaussur|sandal|botte|escarpin|talon|basket|babouche/.test(name)) return 'shoes';
-  if (/ceintur/.test(name)) return 'belt';
-  if (/collier|bracelet|bague|boucle|bijou|chaîne|montre|parure/.test(name)) return 'jewelry';
-  if (/foulard|écharpe|voile|chiromani|pagne/.test(name)) return 'scarf';
-  if (/kofia|chapeau|casquette/.test(name)) return 'hat';
-  if (/nappe|rideau|housse|coussin|tapis|couverture|tablier/.test(name)) return 'home';
-  return 'other';
-}
-
-/* ── Overlay positions (canvas 340×460) ── */
-var OVERLAY_POS = {
-  'full':    { x: 170, y: 240, w: 180, h: 280 },
-  'top':     { x: 170, y: 160, w: 140, h: 140 },
-  'bottom':  { x: 170, y: 340, w: 140, h: 140 },
-  'bag':     { x: 280, y: 280, w: 80,  h: 90  },
-  'shoes':   { x: 170, y: 420, w: 100, h: 55  },
-  'belt':    { x: 170, y: 245, w: 120, h: 35  },
-  'jewelry': { x: 170, y: 90,  w: 60,  h: 60  },
-  'scarf':   { x: 170, y: 130, w: 120, h: 90  },
-  'hat':     { x: 170, y: 30,  w: 80,  h: 60  },
-  'home':    { x: 170, y: 230, w: 130, h: 130 },
-  'other':   { x: 170, y: 230, w: 110, h: 110 }
-};
-
-var SIZE_FACTORS = { S: 0.75, M: 1.0, L: 1.25 };
-
-/* ── Cloudinary bg-removed URL ── */
-function bgRemovedUrl(imageUrl) {
-  if (!imageUrl || imageUrl.indexOf('cloudinary') === -1) return imageUrl;
-  return imageUrl.replace('/upload/', '/upload/e_background_removal/f_png/');
-}
-
-/* ── Mannequin photos ── */
-var MANNEQUIN_PHOTOS = [
-  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_1.jpg',
-  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_2.jpg',
-  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_3.jpg',
-  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_4.jpg'
-];
-
-/* ── Complementary product ordering by type ── */
-var COMPLEMENT_ORDER = {
-  'full':    ['bag','shoes','jewelry','scarf','hat','belt'],
-  'top':     ['bottom','bag','shoes','jewelry','scarf'],
-  'bottom':  ['top','shoes','bag','belt'],
-  'bag':     ['full','shoes','jewelry','top'],
-  'shoes':   ['full','bag','jewelry'],
-  'jewelry': ['full','bag','scarf','top'],
-  'scarf':   ['full','jewelry','bag','shoes'],
-  'hat':     ['full','scarf','jewelry'],
-  'belt':    ['full','bag','shoes'],
-  'home':    ['home','other'],
-  'other':   ['full','bag','shoes','jewelry']
-};
-
-function buildLookBoard(p, body) {
-  var pCat = (p.category || '').toLowerCase();
-  if (pCat !== 'sur-mesure') return;
-
-  var allProds = typeof _products !== 'undefined' ? _products : [];
-  if (!allProds.length) return;
-
-  var mainType = classifyWearable(p.name);
-
-  /* ── Sélectionner les accessoires complémentaires ── */
-  var surMesure = allProds.filter(function(x) {
-    return x.id !== p.id && (x.category||'').toLowerCase() === 'sur-mesure';
-  });
-
-  var accessories = [];
-  var order = COMPLEMENT_ORDER[mainType] || COMPLEMENT_ORDER['other'];
-  order.forEach(function(type) {
-    var pool = surMesure.filter(function(x) { return classifyWearable(x.name) === type; });
-    if (pool.length) {
-      var pick = pool[Math.floor(Math.random() * pool.length)];
-      accessories.push(pick);
-    }
-  });
-
-  /* ── Charger Fabric.js si nécessaire ── */
-  if (!window.fabric) {
-    var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js';
-    s.onload = function() { renderSmartOverlay(p, body, accessories, mainType); };
-    document.head.appendChild(s);
-  } else {
-    renderSmartOverlay(p, body, accessories, mainType);
-  }
-}
-
-
-function renderSmartOverlay(p, body, accessories, mainType) {
-  var CW = 340, CH = 460;
-  var currentSize = 'M';
-  var overlayObjects = []; // track fabric objects for size changes
-
-  /* ── Styles ── */
-  if (!document.getElementById('lookboard-v2-styles')) {
-    var st = document.createElement('style');
-    st.id = 'lookboard-v2-styles';
-    st.textContent = [
-      '.lb2-wrap { margin:24px 0 16px; background:linear-gradient(180deg,#faf9f6 0%,#f0ece4 100%); border-radius:20px; overflow:hidden; }',
-      '.lb2-header { text-align:center; padding:20px 16px 12px; }',
-      '.lb2-header h3 { font-size:11px; letter-spacing:4px; color:#bba; font-weight:600; margin:0; }',
-      '.lb2-header p  { font-size:13px; color:#776; margin:4px 0 0; }',
-      '.lb2-canvas-wrap { display:flex; justify-content:center; position:relative; }',
-      '.lb2-canvas-wrap canvas { border-radius:16px; touch-action:none; }',
-      '.lb2-loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#998; font-size:13px; }',
-      '.lb2-controls { display:flex; justify-content:center; gap:8px; padding:12px 16px; flex-wrap:wrap; }',
-      '.lb2-size-btn { padding:6px 18px; border:2px solid #ccc; border-radius:20px; background:white; font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s; }',
-      '.lb2-size-btn.active { border-color:var(--accent,#f59e0b); background:var(--accent,#f59e0b); color:white; }',
-      '.lb2-reset-btn { padding:6px 14px; border:1px solid #ddd; border-radius:20px; background:white; font-size:12px; cursor:pointer; color:#998; }',
-      '.lb2-picker { padding:8px 16px 16px; overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch; }',
-      '.lb2-picker-title { font-size:11px; font-weight:700; color:#998; letter-spacing:1px; margin-bottom:8px; padding-left:4px; }',
-      '.lb2-pick-item { display:inline-block; width:70px; margin-right:10px; text-align:center; cursor:pointer; vertical-align:top; opacity:0.7; transition:all 0.2s; }',
-      '.lb2-pick-item:hover, .lb2-pick-item.on-canvas { opacity:1; }',
-      '.lb2-pick-item.on-canvas { outline:2px solid var(--accent,#f59e0b); border-radius:12px; }',
-      '.lb2-pick-img { width:60px; height:60px; border-radius:10px; object-fit:cover; background:#eee; }',
-      '.lb2-pick-name { font-size:9px; color:#776; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70px; }',
-      '.lb2-total { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-top:1px solid rgba(0,0,0,0.06); }',
-      '.lb2-total-label { font-size:12px; color:#998; }',
-      '.lb2-total-price { font-size:22px; font-weight:800; color:#2d3436; }',
-      '.lb2-hint { text-align:center; font-size:11px; color:#bba; padding:0 16px 4px; }',
-      '@keyframes lb2Spin { to { transform:rotate(360deg); } }',
-      '.lb2-spinner { display:inline-block; width:20px; height:20px; border:2px solid #ccc; border-top-color:var(--accent,#f59e0b); border-radius:50%; animation:lb2Spin 0.8s linear infinite; }'
-    ].join('\n');
-    document.head.appendChild(st);
-  }
-
-  /* ── Container ── */
-  var wrap = document.createElement('div');
-  wrap.className = 'lb2-wrap';
-
-  /* ── Header ── */
-  var hdr = document.createElement('div');
-  hdr.className = 'lb2-header';
-  safeHTML(hdr,
-    '<h3>✦ ESSAYAGE VIRTUEL ✦</h3>' +
-    '<p>Déplacez et redimensionnez les pièces sur la mannequin</p>'
-  );
-  wrap.appendChild(hdr);
-
-  /* ── Canvas container ── */
-  var canvasWrap = document.createElement('div');
-  canvasWrap.className = 'lb2-canvas-wrap';
-
-  var canvasEl = document.createElement('canvas');
-  canvasEl.id = 'lb2-canvas-' + Date.now();
-  canvasEl.width = CW;
-  canvasEl.height = CH;
-  canvasWrap.appendChild(canvasEl);
-
-  var loadingEl = document.createElement('div');
-  loadingEl.className = 'lb2-loading';
-  safeHTML(loadingEl, '<span class="lb2-spinner"></span> Chargement...');
-  canvasWrap.appendChild(loadingEl);
-
-  wrap.appendChild(canvasWrap);
-
-  /* ── Hint ── */
-  var hint = document.createElement('div');
-  hint.className = 'lb2-hint';
-  hint.textContent = '☝️ Touchez un produit pour le placer • Glissez pour déplacer • Coins pour redimensionner';
-  wrap.appendChild(hint);
-
-  /* ── Size controls ── */
-  var controls = document.createElement('div');
-  controls.className = 'lb2-controls';
-
-  var sizeButtons = {};
-  ['S','M','L'].forEach(function(size) {
-    var btn = document.createElement('button');
-    btn.className = 'lb2-size-btn' + (size === 'M' ? ' active' : '');
-    btn.textContent = size;
-    btn.addEventListener('click', function() {
-      currentSize = size;
-      Object.keys(sizeButtons).forEach(function(k) {
-        sizeButtons[k].className = 'lb2-size-btn' + (k === size ? ' active' : '');
-      });
-      applySize(size);
-    });
-    sizeButtons[size] = btn;
-    controls.appendChild(btn);
-  });
-
-  var resetBtn = document.createElement('button');
-  resetBtn.className = 'lb2-reset-btn';
-  resetBtn.textContent = '↺ Reset';
-  resetBtn.addEventListener('click', function() {
-    resetCanvas();
-  });
-  controls.appendChild(resetBtn);
-
-  var shuffleBtn = document.createElement('button');
-  shuffleBtn.className = 'lb2-reset-btn';
-  shuffleBtn.textContent = '🔀 Autre mannequin';
-  shuffleBtn.addEventListener('click', function() {
-    changeMannequin();
-  });
-  controls.appendChild(shuffleBtn);
-
-  wrap.appendChild(controls);
-
-  /* ── Product picker ── */
-  var pickerWrap = document.createElement('div');
-  pickerWrap.className = 'lb2-picker';
-
-  var pickerTitle = document.createElement('div');
-  pickerTitle.className = 'lb2-picker-title';
-  pickerTitle.textContent = 'ACCESSOIRISEZ CE LOOK';
-  pickerWrap.appendChild(pickerTitle);
-
-  var pickerItems = {};
-  accessories.forEach(function(acc) {
-    var item = document.createElement('div');
-    item.className = 'lb2-pick-item';
-    item.setAttribute('data-id', acc.id);
-
-    var img = document.createElement('img');
-    img.className = 'lb2-pick-img';
-    img.src = acc.image_url || '';
-    img.alt = acc.name;
-    img.onerror = function() { this.src = 'https://placehold.co/60x60/f5f0eb/998?text=' + encodeURIComponent(classifyWearable(acc.name).charAt(0).toUpperCase()); };
-    item.appendChild(img);
-
-    var name = document.createElement('div');
-    name.className = 'lb2-pick-name';
-    name.textContent = acc.name;
-    item.appendChild(name);
-
-    var price = document.createElement('div');
-    price.className = 'lb2-pick-name';
-    price.style.fontWeight = '700';
-    price.style.color = '#555';
-    price.textContent = Number(acc.price_kmf||0).toLocaleString('fr-FR') + ' F';
-    item.appendChild(price);
-
-    item.addEventListener('click', function() {
-      toggleAccessory(acc, item);
-    });
-
-    pickerItems[acc.id] = item;
-    pickerWrap.appendChild(item);
-  });
-
-  wrap.appendChild(pickerWrap);
-
-  /* ── Total ── */
-  var totalWrap = document.createElement('div');
-  totalWrap.className = 'lb2-total';
-  var totalLabel = document.createElement('div');
-  totalLabel.className = 'lb2-total-label';
-  totalLabel.textContent = 'Total du look (1 pièce)';
-  var totalPrice = document.createElement('div');
-  totalPrice.className = 'lb2-total-price';
-  totalPrice.textContent = Number(p.price_kmf||0).toLocaleString('fr-FR') + ' KMF';
-  totalWrap.appendChild(totalLabel);
-  totalWrap.appendChild(totalPrice);
-  wrap.appendChild(totalWrap);
-
-  /* ── Insert into modal body ── */
-  body.appendChild(wrap);
-
-  /* ══════════════════════════════════════
-     Fabric.js Canvas Logic
-     ══════════════════════════════════════ */
-  var canvas = new fabric.Canvas(canvasEl.id, {
-    selection: true,
-    backgroundColor: '#f5f0eb',
-    allowTouchScrolling: false
-  });
-
-  var mannequinUrl = MANNEQUIN_PHOTOS[Math.floor(Math.random() * MANNEQUIN_PHOTOS.length)];
-  var accessoryMap = {}; // id → fabric object
-
-  /* Load mannequin background */
-  fabric.Image.fromURL(mannequinUrl, function(img) {
-    img.scaleToWidth(CW);
-    img.scaleToHeight(CH);
-    canvas.setBackgroundImage(img, function() {
-      canvas.renderAll();
-      loadingEl.style.display = 'none';
-      /* Load main product on top */
-      addOverlay(p, mainType, true);
-    });
-  }, { crossOrigin: 'anonymous' });
-
-  /* ── Add overlay to canvas ── */
-  function addOverlay(product, type, isMain) {
-    var pos = OVERLAY_POS[type] || OVERLAY_POS['other'];
-    var url = bgRemovedUrl(product.image_url);
-    var factor = SIZE_FACTORS[currentSize];
-
-    fabric.Image.fromURL(url, function(img) {
-      if (!img) return;
-      
-      var targetW = pos.w * factor;
-      var targetH = pos.h * factor;
-      var scaleX = targetW / (img.width || 1);
-      var scaleY = targetH / (img.height || 1);
-      var scale = Math.min(scaleX, scaleY);
-
-      img.set({
-        left: pos.x - (img.width * scale) / 2,
-        top: pos.y - (img.height * scale) / 2,
-        scaleX: scale,
-        scaleY: scale,
-        hasControls: true,
-        hasBorders: true,
-        borderColor: 'rgba(245,158,11,0.8)',
-        cornerColor: '#f59e0b',
-        cornerSize: 10,
-        cornerStyle: 'circle',
-        transparentCorners: false,
-        lockRotation: false,
-        centeredRotation: true,
-        opacity: isMain ? 0.92 : 0.88,
-        _productId: product.id,
-        _productType: type,
-        _isMain: isMain,
-        _baseScale: scale
-      });
-
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.renderAll();
-
-      overlayObjects.push(img);
-      if (!isMain) {
-        accessoryMap[product.id] = img;
-      }
-    }, { crossOrigin: 'anonymous' });
-  }
-
-  /* ── Remove overlay ── */
-  function removeOverlay(productId) {
-    var obj = accessoryMap[productId];
-    if (obj) {
-      canvas.remove(obj);
-      overlayObjects = overlayObjects.filter(function(o) { return o !== obj; });
-      delete accessoryMap[productId];
-      canvas.renderAll();
-    }
-  }
-
-  /* ── Toggle accessory ── */
-  function toggleAccessory(acc, itemEl) {
-    if (accessoryMap[acc.id]) {
-      // Remove
-      removeOverlay(acc.id);
-      itemEl.classList.remove('on-canvas');
-    } else {
-      // Add
-      var type = classifyWearable(acc.name);
-      addOverlay(acc, type, false);
-      itemEl.classList.add('on-canvas');
-    }
-    updateTotal();
-  }
-
-  /* ── Apply size ── */
-  function applySize(size) {
-    var factor = SIZE_FACTORS[size];
-    overlayObjects.forEach(function(obj) {
-      if (obj._baseScale) {
-        var newScale = obj._baseScale * factor;
-        obj.set({ scaleX: newScale, scaleY: newScale });
-        obj.setCoords();
-      }
-    });
-    canvas.renderAll();
-  }
-
-  /* ── Reset canvas ── */
-  function resetCanvas() {
-    // Remove all overlays
-    overlayObjects.forEach(function(obj) { canvas.remove(obj); });
-    overlayObjects = [];
-    accessoryMap = {};
-    // Reset picker UI
-    Object.keys(pickerItems).forEach(function(id) {
-      pickerItems[id].classList.remove('on-canvas');
-    });
-    // Reset size to M
-    currentSize = 'M';
-    Object.keys(sizeButtons).forEach(function(k) {
-      sizeButtons[k].className = 'lb2-size-btn' + (k === 'M' ? ' active' : '');
-    });
-    // Re-add main product
-    addOverlay(p, mainType, true);
-    updateTotal();
-  }
-
-  /* ── Change mannequin ── */
-  function changeMannequin() {
-    mannequinUrl = MANNEQUIN_PHOTOS[Math.floor(Math.random() * MANNEQUIN_PHOTOS.length)];
-    fabric.Image.fromURL(mannequinUrl, function(img) {
-      img.scaleToWidth(CW);
-      img.scaleToHeight(CH);
-      canvas.setBackgroundImage(img, function() { canvas.renderAll(); });
-    }, { crossOrigin: 'anonymous' });
-  }
-
-  /* ── Update total ── */
-  function updateTotal() {
-    var total = Number(p.price_kmf || 0);
-    var count = 1;
-    Object.keys(accessoryMap).forEach(function(id) {
-      var acc = accessories.find(function(a) { return String(a.id) === String(id); });
-      if (acc) {
-        total += Number(acc.price_kmf || 0);
-        count++;
-      }
-    });
-    totalLabel.textContent = 'Total du look (' + count + ' pièce' + (count > 1 ? 's' : '') + ')';
-    totalPrice.textContent = total.toLocaleString('fr-FR') + ' KMF';
-  }
-}
-
-
-
-function openLookModal(mainProduct) {
-  var body = $('look-modal-body');
-  body.innerHTML = '';
-  body.scrollTop = 0;
-
-  /* Sélectionner les pièces du look */
-  var lookItems = [mainProduct];
-
-  /* Chaussures depuis Mode */
-  var shoes = _products.filter(function(p) {
-    return p.id !== mainProduct.id && p.category === 'Mode' &&
-      (p.name.toLowerCase().includes('chaussure') ||
-       p.name.toLowerCase().includes('sandale') ||
-       p.name.toLowerCase().includes('botte') ||
-       p.name.toLowerCase().includes('mocassin') ||
-       p.name.toLowerCase().includes('sneaker') ||
-       p.name.toLowerCase().includes('babouche'));
-  });
-  if (shoes.length) lookItems.push(shoes[Math.floor(Math.random() * Math.min(shoes.length, 5))]);
-
-  /* Beauté */
-  var beauty = _products.filter(function(p) { return p.category === 'Beauté'; });
-  if (beauty.length) lookItems.push(beauty[Math.floor(Math.random() * Math.min(beauty.length, 10))]);
-
-  /* Accessoire (bijoux, sac) */
-  var access = _products.filter(function(p) {
-    return p.id !== mainProduct.id && p.category === 'Mode' &&
-      (p.name.toLowerCase().includes('sac') ||
-       p.name.toLowerCase().includes('bijou') ||
-       p.name.toLowerCase().includes('collier') ||
-       p.name.toLowerCase().includes('bracelet') ||
-       p.name.toLowerCase().includes('montre'));
-  });
-  if (access.length) lookItems.push(access[Math.floor(Math.random() * Math.min(access.length, 5))]);
-
-  /* ── Layout lookbook ── */
-  var lookGrid = document.createElement('div');
-  lookGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;';
-
-  lookItems.forEach(function(item, idx) {
-    var card = document.createElement('div');
-    var isMain = idx === 0;
-    card.style.cssText = isMain
-      ? 'grid-column:1/-1;border-radius:12px;overflow:hidden;border:' + (isMain ? '2px solid var(--primary)' : '1px solid var(--border)') + ';background:white;cursor:pointer;position:relative;'
-      : 'border-radius:12px;overflow:hidden;border:1px solid var(--border);background:white;cursor:pointer;position:relative;';
-
-    card.addEventListener('click', function() { openProductModal(item); });
-
-    /* Badge pièce */
-    var pieceLabel = document.createElement('div');
-    pieceLabel.style.cssText = 'position:absolute;top:8px;left:8px;background:' + (isMain ? 'var(--primary)' : 'rgba(0,0,0,0.5)') + ';color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;z-index:2;';
-    pieceLabel.textContent = _lookLabels[idx] || item.category;
-    card.appendChild(pieceLabel);
-
-    /* Image */
-    var imgDiv = document.createElement('div');
-    imgDiv.style.cssText = 'height:' + (isMain ? '200px' : '130px') + ';overflow:hidden;background:var(--primary-light);';
-    if (item.image_url) {
-      var img = document.createElement('img');
-      img.src = item.image_url;
-      img.alt = sanitize(item.name);
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-      imgDiv.appendChild(img);
-    } else {
-      imgDiv.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:' + (isMain ? '4rem' : '2.5rem') + ';';
-      imgDiv.textContent = productEmoji(item);
-    }
-    card.appendChild(imgDiv);
-
-    var cardBody = document.createElement('div');
-    cardBody.style.cssText = 'padding:8px 10px;';
-    var cardName = document.createElement('div');
-    cardName.style.cssText = 'font-size:' + (isMain ? '0.88rem' : '0.78rem') + ';font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;';
-    cardName.textContent = item.name;
-    cardBody.appendChild(cardName);
-    var cardPrice = document.createElement('div');
-    cardPrice.style.cssText = 'font-size:0.82rem;font-weight:800;color:var(--primary);';
-    cardPrice.textContent = fmt(item.price_kmf || 0, 'KMF');
-    cardBody.appendChild(cardPrice);
-    card.appendChild(cardBody);
-    lookGrid.appendChild(card);
-  });
-
-  body.appendChild(lookGrid);
-
-  /* ── Total du look ── */
-  var total = lookItems.reduce(function(sum, item) { return sum + (item.price_kmf || 0); }, 0);
-  var totalDiv = document.createElement('div');
-  totalDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--primary-light);border-radius:var(--radius);margin-bottom:12px;';
-  var totalLabel = document.createElement('div');
-  totalLabel.style.cssText = 'font-size:0.85rem;color:var(--muted);font-weight:600;';
-  totalLabel.textContent = 'Total du look (' + lookItems.length + ' pièces)';
-  var totalPrice = document.createElement('div');
-  totalPrice.style.cssText = 'font-size:1.1rem;font-weight:800;color:var(--primary);';
-  totalPrice.textContent = fmt(total, 'KMF');
-  totalDiv.appendChild(totalLabel);
-  totalDiv.appendChild(totalPrice);
-  body.appendChild(totalDiv);
-
-  /* ── Bouton tout ajouter ── */
-  var addAllBtn = document.createElement('button');
-  addAllBtn.style.cssText = 'width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:var(--radius);font-weight:700;font-size:1rem;cursor:pointer;transition:background 0.2s;margin-bottom:8px;';
-  addAllBtn.textContent = 'Ajouter tout le look au panier';
-  addAllBtn.addEventListener('click', function() {
-    lookItems.forEach(function(item) { addToCart(item, 1, null); });
-    toast('Look complet ajouté au panier !', 'success');
-    closeLookModal();
-  });
-  body.appendChild(addAllBtn);
-
-  /* ── Bouton rafraîchir le look ── */
-  var refreshBtn = document.createElement('button');
-  refreshBtn.style.cssText = 'width:100%;padding:10px;background:white;color:var(--primary);border:2px solid var(--primary);border-radius:var(--radius);font-weight:700;font-size:0.88rem;cursor:pointer;';
-  refreshBtn.textContent = 'Proposer un autre look';
-  refreshBtn.addEventListener('click', function() { openLookModal(mainProduct); });
-  body.appendChild(refreshBtn);
-
-  $('look-modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeLookModal() {
-  $('look-modal').classList.remove('open');
-  document.body.style.overflow = '';
-}
+/* [OVERLAY CODE REMOVED — 559 lines] */
 
 function closeProductModal() {
   $('product-modal').classList.remove('open');
@@ -4694,6 +4149,59 @@ document.addEventListener('DOMContentLoaded', function() {
   refreshCartBadge();
   initPromoBar();
   initHeroSearch();
+  /* ── Category pills auto-scroll arrows ── */
+  (function initCatScroll() {
+    var wrap = document.querySelector('.cat-circles-wrap');
+    var track = document.getElementById('cat-pills');
+    if (!wrap || !track) return;
+
+    var arrowL = document.createElement('button');
+    arrowL.className = 'cat-scroll-btn cat-scroll-left hidden';
+    arrowL.innerHTML = '&#8249;';
+    arrowL.setAttribute('aria-label', 'Défiler gauche');
+
+    var arrowR = document.createElement('button');
+    arrowR.className = 'cat-scroll-btn cat-scroll-right';
+    arrowR.innerHTML = '&#8250;';
+    arrowR.setAttribute('aria-label', 'Défiler droite');
+
+    wrap.appendChild(arrowL);
+    wrap.appendChild(arrowR);
+
+    function updateCatArrows() {
+      arrowL.classList.toggle('hidden', wrap.scrollLeft <= 8);
+      arrowR.classList.toggle('hidden', wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 8);
+    }
+
+    var _catScrollTimer = null;
+    var _catScrollSpeed = 2;
+
+    function startScroll(dir) {
+      stopScroll();
+      _catScrollSpeed = 2;
+      _catScrollTimer = setInterval(function() {
+        wrap.scrollLeft += dir * _catScrollSpeed;
+        if (_catScrollSpeed < 6) _catScrollSpeed += 0.15;
+        updateCatArrows();
+      }, 16);
+    }
+    function stopScroll() {
+      if (_catScrollTimer) { clearInterval(_catScrollTimer); _catScrollTimer = null; }
+      _catScrollSpeed = 2;
+    }
+
+    arrowL.addEventListener('mousedown', function(e) { e.preventDefault(); startScroll(-1); });
+    arrowR.addEventListener('mousedown', function(e) { e.preventDefault(); startScroll(1); });
+    arrowL.addEventListener('touchstart', function(e) { e.preventDefault(); startScroll(-1); }, {passive:false});
+    arrowR.addEventListener('touchstart', function(e) { e.preventDefault(); startScroll(1); }, {passive:false});
+    document.addEventListener('mouseup', stopScroll);
+    document.addEventListener('touchend', stopScroll);
+    arrowL.addEventListener('mouseleave', stopScroll);
+    arrowR.addEventListener('mouseleave', stopScroll);
+
+    wrap.addEventListener('scroll', updateCatArrows, {passive: true});
+    setTimeout(updateCatArrows, 500);
+  })();
 
 
   /* ── Toggle vue grille / rangées ── */
@@ -4772,10 +4280,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (omClose) omClose.addEventListener('click', function() { closeOrderModal(); });
   var pmClose = document.getElementById('product-modal-close');
   if (pmClose) pmClose.addEventListener('click', function() { closeProductModal(); });
-  var lmClose = document.getElementById('look-modal-close');
-  if (lmClose) lmClose.addEventListener('click', function() { closeLookModal(); });
-  var lookModal = document.getElementById('look-modal');
-  if (lookModal) lookModal.addEventListener('click', function(e) { if (e.target === lookModal) closeLookModal(); });
+  // Look modal listeners removed
   var cartCloseBtn = document.getElementById('cart-close-btn');
   if (cartCloseBtn) cartCloseBtn.addEventListener('click', function() { closeCart(); });
   var cartOverlay = document.getElementById('cart-overlay');
