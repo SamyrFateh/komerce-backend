@@ -123,20 +123,21 @@
   top: 118px;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: relative;
 }
 .cat-scroll-btn {
   position: absolute; top: 50%; transform: translateY(-50%);
-  width: 30px; height: 30px; border-radius: 50%;
-  background: rgba(255,255,255,0.95); border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--white); border: 1.5px solid var(--accent);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; color: var(--dark); z-index: 102;
-  transition: opacity 0.3s; user-select: none; -webkit-user-select: none;
+  font-size: 1.3rem; font-weight: 700; color: var(--primary); z-index: 120;
+  transition: all 0.25s; user-select: none; -webkit-user-select: none;
 }
-.cat-scroll-btn:hover { background: var(--primary-light); }
+.cat-scroll-btn:hover { background: var(--accent); color: var(--white); transform: translateY(-50%) scale(1.1); }
 .cat-scroll-btn.hidden { opacity: 0; pointer-events: none; }
-.cat-scroll-left { left: 4px; }
-.cat-scroll-right { right: 4px; }
+.cat-scroll-left { left: 2px; }
+.cat-scroll-right { right: 2px; }
 .cat-circles-wrap::-webkit-scrollbar { display: none; }
 .cat-circles {
   display: flex; gap: 16px; padding: 4px 0;
@@ -1566,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<section id="catalogue" style="scroll-margin-top:200px;">
+<section id="catalogue">
   <div class="container">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 4px;">
       <div class="filter-bar" id="filter-bar" style="padding:0;flex:1;">
@@ -2529,7 +2530,7 @@ function heroSearch() {
                (p.description || '').toLowerCase().indexOf(q) !== -1;
       });
       renderProducts(filtered);
-      // (scroll removed — filter in place)
+      document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
     });
 }
 
@@ -4148,7 +4149,7 @@ document.addEventListener('DOMContentLoaded', function() {
   refreshCartBadge();
   initPromoBar();
   initHeroSearch();
-  /* ── Category pills auto-scroll arrows ── */
+  /* ── Category pills auto-scroll + arrows ── */
   (function initCatScroll() {
     var wrap = document.querySelector('.cat-circles-wrap');
     var track = document.getElementById('cat-pills');
@@ -4172,31 +4173,61 @@ document.addEventListener('DOMContentLoaded', function() {
       arrowR.classList.toggle('hidden', wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 8);
     }
 
-    var _catScrollTimer = null;
-    var _catScrollSpeed = 2;
+    /* ── Auto-scroll doux : défile tout seul, pause au hover/touch ── */
+    var _autoDir = 1;
+    var _autoSpeed = 0.4;
+    var _autoPaused = false;
+    var _autoTimer = null;
 
-    function startScroll(dir) {
-      stopScroll();
-      _catScrollSpeed = 2;
-      _catScrollTimer = setInterval(function() {
-        wrap.scrollLeft += dir * _catScrollSpeed;
-        if (_catScrollSpeed < 6) _catScrollSpeed += 0.15;
+    function autoScrollTick() {
+      if (_autoPaused) return;
+      var maxScroll = wrap.scrollWidth - wrap.clientWidth;
+      if (maxScroll <= 0) return;
+      wrap.scrollLeft += _autoDir * _autoSpeed;
+      if (wrap.scrollLeft >= maxScroll - 2) { _autoDir = -1; }
+      if (wrap.scrollLeft <= 2) { _autoDir = 1; }
+      updateCatArrows();
+    }
+
+    // Démarre l'auto-scroll après 2s
+    setTimeout(function() {
+      _autoTimer = setInterval(autoScrollTick, 20);
+    }, 2000);
+
+    // Pause on hover/touch
+    wrap.addEventListener('mouseenter', function() { _autoPaused = true; });
+    wrap.addEventListener('mouseleave', function() { _autoPaused = false; });
+    wrap.addEventListener('touchstart', function() { _autoPaused = true; }, {passive:true});
+    wrap.addEventListener('touchend', function() { setTimeout(function(){ _autoPaused = false; }, 3000); });
+
+    /* ── Manual arrows: click to scroll by chunk ── */
+    var _manualTimer = null;
+    var _manualSpeed = 2;
+
+    function startManualScroll(dir) {
+      stopManualScroll();
+      _autoPaused = true;
+      _manualSpeed = 2;
+      _manualTimer = setInterval(function() {
+        wrap.scrollLeft += dir * _manualSpeed;
+        if (_manualSpeed < 6) _manualSpeed += 0.15;
         updateCatArrows();
       }, 16);
     }
-    function stopScroll() {
-      if (_catScrollTimer) { clearInterval(_catScrollTimer); _catScrollTimer = null; }
-      _catScrollSpeed = 2;
+    function stopManualScroll() {
+      if (_manualTimer) { clearInterval(_manualTimer); _manualTimer = null; }
+      _manualSpeed = 2;
+      setTimeout(function(){ _autoPaused = false; }, 2000);
     }
 
-    arrowL.addEventListener('mousedown', function(e) { e.preventDefault(); startScroll(-1); });
-    arrowR.addEventListener('mousedown', function(e) { e.preventDefault(); startScroll(1); });
-    arrowL.addEventListener('touchstart', function(e) { e.preventDefault(); startScroll(-1); }, {passive:false});
-    arrowR.addEventListener('touchstart', function(e) { e.preventDefault(); startScroll(1); }, {passive:false});
-    document.addEventListener('mouseup', stopScroll);
-    document.addEventListener('touchend', stopScroll);
-    arrowL.addEventListener('mouseleave', stopScroll);
-    arrowR.addEventListener('mouseleave', stopScroll);
+    arrowL.addEventListener('mousedown', function(e) { e.preventDefault(); startManualScroll(-1); });
+    arrowR.addEventListener('mousedown', function(e) { e.preventDefault(); startManualScroll(1); });
+    arrowL.addEventListener('touchstart', function(e) { e.preventDefault(); startManualScroll(-1); }, {passive:false});
+    arrowR.addEventListener('touchstart', function(e) { e.preventDefault(); startManualScroll(1); }, {passive:false});
+    document.addEventListener('mouseup', stopManualScroll);
+    document.addEventListener('touchend', stopManualScroll);
+    arrowL.addEventListener('mouseleave', stopManualScroll);
+    arrowR.addEventListener('mouseleave', stopManualScroll);
 
     wrap.addEventListener('scroll', updateCatArrows, {passive: true});
     setTimeout(updateCatArrows, 500);
@@ -4249,6 +4280,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
       document.querySelector('.filter-btn[data-sort=""]').classList.add('active');
       renderProducts(filtered);
+      document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
     });
   });
 
