@@ -1855,12 +1855,14 @@ function openBloom(catKey) {
   var sit = _situations[catKey];
   if (!sit) return;
   var panel = document.getElementById('bloom-panel');
+  if (!panel) return; /* bloom nav non présente dans cette vue */
   var pointer = document.getElementById('bloom-pointer');
   var header = document.getElementById('bloom-header');
   var grid = document.getElementById('bloom-grid');
 
   // Position pointer
   var row = document.getElementById('cat-row');
+  if (!row) return;
   var target = row.querySelector('[data-cat="' + catKey + '"]');
   if (target && row) {
     var rr = row.getBoundingClientRect();
@@ -2735,6 +2737,7 @@ function openProductModal(p) {
     section.appendChild(track);
     return section;
   }
+  $('product-modal').classList.add('open');
 }
 
 var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
