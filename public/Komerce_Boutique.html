@@ -3057,6 +3057,7 @@ function openProductModal(p, fromSuggestion) {
     tracks.forEach(function(track) {
       if (track.dataset.autoScroll) return; // already running
       track.dataset.autoScroll = '1';
+      track.style.scrollSnapType = 'none'; // disable snap for smooth auto-scroll
       var dir = 1;
       var paused = false;
       track.addEventListener('mouseenter', function() { paused = true; });
@@ -3069,7 +3070,7 @@ function openProductModal(p, fromSuggestion) {
         if (paused) return;
         var max = track.scrollWidth - track.clientWidth;
         if (max <= 5) return;
-        track.scrollLeft += dir * 1;
+        track.scrollLeft += dir * 1.5;
         if (track.scrollLeft >= max - 2) dir = -1;
         if (track.scrollLeft <= 1) dir = 1;
       }, 25);
