@@ -116,13 +116,12 @@
 
 .cat-circles-wrap {
   background: var(--white);
-  padding: 12px 24px 10px;
+  padding: 14px 24px 12px;
   overflow: hidden;
   border-bottom: 1.5px solid var(--border);
-  position: sticky;
-  top: 118px;
-  z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   margin-bottom: 0;
 }
 .cat-scroll-btn {
@@ -182,7 +181,7 @@
 .hero-proverbe:hover { opacity: 1; }
 #hero {
   background: linear-gradient(160deg, #fdf8f0 0%, #faf6ee 50%, #fafaf8 100%);
-  padding: 12px 16px 20px;
+  padding: 18px 16px 10px;
   text-align: center;
   border-bottom: none;
   position: relative;
@@ -1569,7 +1568,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-<section id="catalogue" style="scroll-margin-top: 180px;">
+<section id="catalogue" style="scroll-margin-top: 140px; padding-top: 8px;">
   <div class="container">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px;">
       <div class="filter-bar" id="filter-bar" style="padding:0;flex:1;">
