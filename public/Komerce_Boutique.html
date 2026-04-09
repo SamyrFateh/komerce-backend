@@ -2742,7 +2742,7 @@ function openProductModal(p) {
   var _pCat = (p.category || '').toLowerCase();
 
   // Similaires : même catégorie, prix proche
-  var _similar = KState.products
+  var _similar = _products
     .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat; })
     .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
     .slice(0, 8);
@@ -2751,7 +2751,7 @@ function openProductModal(p) {
   // Complémentaires : règles métier (skippé pour Mode/Sur-mesure — le look board s'en charge)
   if (_pCat !== 'mode' && _pCat !== 'sur-mesure') {
     var _compCats = _compRules[_pCat] || [];
-    var _compProds = KState.products
+    var _compProds = _products
       .filter(function(x) { return x.id !== p.id && _compCats.indexOf((x.category||'').toLowerCase()) >= 0; })
       .sort(function() { return 0.5 - Math.random(); })
       .slice(0, 8);
@@ -2772,7 +2772,7 @@ function buildLookBoard(p, body) {
   if (pCat !== 'mode' && pCat !== 'sur-mesure') return;
 
   // ── Sélectionner les accessoires ────────────────────────────
-  var allP = KState.products;
+  var allP = _products;
   var shoes = allP.filter(function(x) {
     return x.id !== p.id && (x.category||'').toLowerCase() === 'mode' &&
       /chaussure|sandale|botte|sneaker|mocassin|babouche|escarpin/i.test(x.name);
