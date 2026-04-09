@@ -310,10 +310,10 @@ setTimeout(() => {
 
 const PORT = process.env.PORT || 3000;
 
-const server = // Init wallet tables at startup
+// Init wallet tables at startup
 walletService.ensureWalletTables().catch(e => console.error('Wallet init error:', e.message));
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`KOMERCE API v10.8 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
