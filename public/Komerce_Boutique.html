@@ -1504,6 +1504,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   transform: scale(1.15);
   box-shadow: 0 4px 16px rgba(180,83,9,0.45);
 }
+
+/* ── Back button pulse ── */
+@keyframes backPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
@@ -2760,22 +2763,19 @@ function openProductModal(p, fromSuggestion) {
   var body = $('product-modal-body');
   body.innerHTML = '';
   body.scrollTop = 0;
+  body.style.position = 'relative';
 
   /* ── Bouton retour produit précédent ── */
   if (window._productHistory.length > 0) {
     var prevProd = window._productHistory[window._productHistory.length - 1];
-    var backBar = document.createElement('div');
-    backBar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:4px;cursor:pointer;color:var(--accent,#b45309);font-size:0.85rem;font-weight:600;border-radius:8px;transition:background 0.2s;';
-    backBar.innerHTML = '<span style="font-size:1.1rem">←</span> Retour à <em style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">' + (prevProd.name || 'produit précédent') + '</em>';
-    backBar.addEventListener('mouseenter', function() { backBar.style.background = '#fef3c7'; });
-    backBar.addEventListener('mouseleave', function() { backBar.style.background = 'transparent'; });
-    backBar.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var goBack = window._productHistory.pop();
-      window._goingBack = true;
-      openProductModal(goBack, false);
-    });
-    body.appendChild(backBar);
+    var backBtn = document.createElement('button');
+      backBtn.style.cssText = 'position:absolute;top:12px;left:12px;z-index:10;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--primary);background:rgba(255,251,240,0.92);color:var(--primary);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;animation:backPulse 2s ease-in-out infinite;transition:transform 0.15s;box-shadow:0 2px 8px rgba(180,83,9,0.15);';
+      backBtn.innerHTML = '←';
+      backBtn.title = 'Retour au produit précédent';
+      backBtn.addEventListener('mouseenter', function() { backBtn.style.transform = 'scale(1.15)'; });
+      backBtn.addEventListener('mouseleave', function() { backBtn.style.transform = ''; });
+      backBtn.addEventListener('click', function(e) { e.stopPropagation(); openProductModal(_modalHistory.pop()); });
+      body.appendChild(backBtn);
   }
 
   /* ── Image + infos ── */
@@ -2923,7 +2923,7 @@ function openProductModal(p, fromSuggestion) {
 
     items.forEach(function(sp) {
       var card = document.createElement('div');
-      card.style.cssText = 'flex:0 0 140px;background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;scroll-snap-align:start;transition:transform 0.15s;';
+      card.style.cssText = 'flex:0 0 155px;min-width:155px;background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;scroll-snap-align:start;transition:transform 0.15s;';
       card.addEventListener('click', function() { openProductModal(sp, true); });
       card.addEventListener('touchstart', function() { card.style.transform='scale(0.97)'; }, {passive:true});
       card.addEventListener('touchend', function() { card.style.transform=''; }, {passive:true});
@@ -3046,27 +3046,17 @@ function openProductModal(p, fromSuggestion) {
   // (bouton retour intégré dans la barre ← en haut)
 
   // ── Auto-scroll suggestions carrousels ──
-  // Delay to ensure modal is visible and tracks have real dimensions
+  // Store interval IDs for cleanup
+  if (window._sugScrollTimers) {
+    window._sugScrollTimers.forEach(function(id) { clearInterval(id); });
+  }
+  window._sugScrollTimers = [];
+
   setTimeout(function() {
     var tracks = document.querySelectorAll('#product-modal-body .modal-swipe-track');
-    console.log('[Komerce] Auto-scroll: found', tracks.length, 'tracks');
-    tracks.forEach(function(track, idx) {
-      var speed = 0.4;
+    tracks.forEach(function(track) {
       var dir = 1;
       var paused = false;
-      var rafId = null;
-
-      function tick() {
-        if (!paused) {
-          var max = track.scrollWidth - track.clientWidth;
-          if (max > 2) {
-            track.scrollLeft += speed * dir;
-            if (track.scrollLeft >= max - 2) dir = -1;
-            if (track.scrollLeft <= 1) dir = 1;
-          }
-        }
-        rafId = requestAnimationFrame(tick);
-      }
 
       track.addEventListener('mouseenter', function() { paused = true; });
       track.addEventListener('mouseleave', function() { paused = false; });
@@ -3075,19 +3065,18 @@ function openProductModal(p, fromSuggestion) {
         setTimeout(function() { paused = false; }, 3000);
       }, { passive: true });
 
-      rafId = requestAnimationFrame(tick);
-      console.log('[Komerce] Auto-scroll started for track', idx, 'scrollWidth:', track.scrollWidth, 'clientWidth:', track.clientWidth);
+      var timer = setInterval(function() {
+        if (paused) return;
+        var max = track.scrollWidth - track.clientWidth;
+        if (max <= 0) return;
+        track.scrollLeft += dir * 0.6;
+        if (track.scrollLeft >= max - 1) dir = -1;
+        if (track.scrollLeft <= 1) dir = 1;
+      }, 20);
 
-      // Cleanup when modal closes
-      var obs = new MutationObserver(function() {
-        if (!$('product-modal').classList.contains('open')) {
-          cancelAnimationFrame(rafId);
-          obs.disconnect();
-        }
-      });
-      obs.observe($('product-modal'), { attributes: true, attributeFilter: ['class'] });
+      window._sugScrollTimers.push(timer);
     });
-  }, 800);
+  }, 1500);
 
   $('product-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
