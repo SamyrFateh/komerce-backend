@@ -20,7 +20,7 @@ const db = require('../db');
 
 // ── Schema Migration ────────────────────────────────────────────────────────
 async function ensureWalletTables() {
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS wallets (
@@ -425,3 +425,4 @@ module.exports = {
   listWallets,
   getWalletDetail,
 };
+

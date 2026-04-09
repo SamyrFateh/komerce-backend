@@ -60,7 +60,7 @@ router.get('/transactions', async (req, res, next) => {
 
 // POST /api/wallet/apply — appliquer wallet à une commande
 router.post('/apply', async (req, res, next) => {
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const { order_id, amount_kmf } = req.body;
@@ -87,7 +87,7 @@ router.post('/apply', async (req, res, next) => {
 
 // POST /api/wallet/remove — retirer wallet d'une commande
 router.post('/remove', async (req, res, next) => {
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const { order_id } = req.body;
@@ -133,7 +133,7 @@ router.get('/admin/:userId', requireAdmin, async (req, res, next) => {
 
 // POST /api/wallet/admin/credit — crédit manuel admin
 router.post('/admin/credit', requireAdmin, async (req, res, next) => {
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
     const { user_id, amount_kmf, reason, note, expires_days } = req.body;
@@ -179,7 +179,7 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
 
 // POST /api/wallet/admin/order-credit/:orderId — avoir depuis commande annulée
 router.post('/admin/order-credit/:orderId', requireAdmin, async (req, res, next) => {
-  const client = await db.connect();
+  const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
@@ -202,3 +202,4 @@ router.post('/admin/order-credit/:orderId', requireAdmin, async (req, res, next)
 });
 
 module.exports = router;
+
