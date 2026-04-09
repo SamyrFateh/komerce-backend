@@ -265,9 +265,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    ──────────────────────────────────────── */
 
 #hero {
-  display: flex;
-  min-height: 240px;
-  overflow: hidden;
+  display: block;
+  min-height: auto;
+  overflow: visible;
 }
 .hero-left {
   flex: 1 1 55%;
@@ -1983,6 +1983,7 @@ var _situations = {
 
 var _activeMainCat = null;
 var _activeSubCat = null;
+var _currentSort = '';
 var _bloomTimeout = null;
 var _bloomLocked = false;
 
