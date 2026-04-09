@@ -1419,6 +1419,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 </head>
 <body>
 
@@ -2817,7 +2818,7 @@ function openProductModal(p) {
   $('product-modal').classList.add('open');
 }
 
-var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
+// [removed _lookLabels — replaced by V2 picker]
 
   /* ══ Table de mappage suggestions par catégorie ══
    *  similaires       → "Dans le même esprit" (même catégorie, prix proche)
@@ -2837,8 +2838,74 @@ var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
 
 
 // ════════════════════════════════════════════════════════════════
-// LOOK BOARD — Mannequin preview (Mode & Sur-mesure uniquement)
+// LOOK BOARD V2 — Smart Overlay (Fabric.js Canvas)
+// Mannequin + produits détourés positionnés sur le corps
+// Drag / resize / rotate + taille S/M/L
 // ════════════════════════════════════════════════════════════════
+
+/* ── Product type classifier ── */
+function classifyWearable(name) {
+  name = (name || '').toLowerCase();
+  if (/robe|caftan|caftane|abaya|djellaba|boubou|salouva|sari|gandoura|pyjama|uniforme/.test(name)) return 'full';
+  if (/tenue|ensemble|costume/.test(name)) return 'full';
+  if (/blouse|chemise|veste|haut/.test(name)) return 'top';
+  if (/pantalon|jean|jupe/.test(name)) return 'bottom';
+  if (/sac|pochette|trousse/.test(name)) return 'bag';
+  if (/chaussur|sandal|botte|escarpin|talon|basket|babouche/.test(name)) return 'shoes';
+  if (/ceintur/.test(name)) return 'belt';
+  if (/collier|bracelet|bague|boucle|bijou|chaîne|montre|parure/.test(name)) return 'jewelry';
+  if (/foulard|écharpe|voile|chiromani|pagne/.test(name)) return 'scarf';
+  if (/kofia|chapeau|casquette/.test(name)) return 'hat';
+  if (/nappe|rideau|housse|coussin|tapis|couverture|tablier/.test(name)) return 'home';
+  return 'other';
+}
+
+/* ── Overlay positions (canvas 340×460) ── */
+var OVERLAY_POS = {
+  'full':    { x: 170, y: 240, w: 180, h: 280 },
+  'top':     { x: 170, y: 160, w: 140, h: 140 },
+  'bottom':  { x: 170, y: 340, w: 140, h: 140 },
+  'bag':     { x: 280, y: 280, w: 80,  h: 90  },
+  'shoes':   { x: 170, y: 420, w: 100, h: 55  },
+  'belt':    { x: 170, y: 245, w: 120, h: 35  },
+  'jewelry': { x: 170, y: 90,  w: 60,  h: 60  },
+  'scarf':   { x: 170, y: 130, w: 120, h: 90  },
+  'hat':     { x: 170, y: 30,  w: 80,  h: 60  },
+  'home':    { x: 170, y: 230, w: 130, h: 130 },
+  'other':   { x: 170, y: 230, w: 110, h: 110 }
+};
+
+var SIZE_FACTORS = { S: 0.75, M: 1.0, L: 1.25 };
+
+/* ── Cloudinary bg-removed URL ── */
+function bgRemovedUrl(imageUrl) {
+  if (!imageUrl || imageUrl.indexOf('cloudinary') === -1) return imageUrl;
+  return imageUrl.replace('/upload/', '/upload/e_background_removal/f_png/');
+}
+
+/* ── Mannequin photos ── */
+var MANNEQUIN_PHOTOS = [
+  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_1.jpg',
+  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_2.jpg',
+  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_3.jpg',
+  'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_340,h_460,g_north/komerce/mannequins/mannequin_4.jpg'
+];
+
+/* ── Complementary product ordering by type ── */
+var COMPLEMENT_ORDER = {
+  'full':    ['bag','shoes','jewelry','scarf','hat','belt'],
+  'top':     ['bottom','bag','shoes','jewelry','scarf'],
+  'bottom':  ['top','shoes','bag','belt'],
+  'bag':     ['full','shoes','jewelry','top'],
+  'shoes':   ['full','bag','jewelry'],
+  'jewelry': ['full','bag','scarf','top'],
+  'scarf':   ['full','jewelry','bag','shoes'],
+  'hat':     ['full','scarf','jewelry'],
+  'belt':    ['full','bag','shoes'],
+  'home':    ['home','other'],
+  'other':   ['full','bag','shoes','jewelry']
+};
+
 function buildLookBoard(p, body) {
   var pCat = (p.category || '').toLowerCase();
   if (pCat !== 'sur-mesure') return;
@@ -2846,245 +2913,363 @@ function buildLookBoard(p, body) {
   var allProds = typeof _products !== 'undefined' ? _products : [];
   if (!allProds.length) return;
 
-  // ── Photos mannequin réels (Unsplash) ──
-  var mannequinPhotos = [
-    'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_320,h_480,g_north/komerce/mannequins/mannequin_1.jpg',
-    'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_320,h_480,g_north/komerce/mannequins/mannequin_2.jpg',
-    'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_320,h_480,g_north/komerce/mannequins/mannequin_3.jpg',
-    'https://res.cloudinary.com/dloffvvdz/image/upload/c_fill,w_320,h_480,g_north/komerce/mannequins/mannequin_4.jpg'
-  ];
-  var mannequinUrl = mannequinPhotos[Math.floor(Math.random() * mannequinPhotos.length)];
+  var mainType = classifyWearable(p.name);
 
-  // ── Sélection accessoires par slot avec position sur le corps ──
-  var slots = [
-    { label: 'Chaussures', emoji: '👠', pos: 'bottom',      top: '82%', left: '70%',  filter: function(x) { return /chaussur|sandal|botte|escarpin|basket|mocassin/i.test(x.name); } },
-    { label: 'Bijoux',     emoji: '💍', pos: 'top-right',   top: '15%', left: '75%',  filter: function(x) { return /bijou|bague|collier|bracelet|boucle|montre|chaîne/i.test(x.name); } },
-    { label: 'Beauté',     emoji: '💄', pos: 'top-left',    top: '10%', left: '-5%',  filter: function(x) { return (x.category||'').toLowerCase() === 'beauté' || (x.category||'').toLowerCase() === 'beaute'; } },
-    { label: 'Accessoire', emoji: '👜', pos: 'mid-left',    top: '55%', left: '-5%',  filter: function(x) { return /sac|pochette|ceintur|lunette|écharpe|foulard|chapeau|casquette/i.test(x.name); } }
-  ];
+  /* ── Sélectionner les accessoires complémentaires ── */
+  var surMesure = allProds.filter(function(x) {
+    return x.id !== p.id && (x.category||'').toLowerCase() === 'sur-mesure';
+  });
 
-  var picks = [];
-  slots.forEach(function(s) {
-    var pool = allProds.filter(function(x) { return x.id !== p.id && s.filter(x); });
-    if (!pool.length) pool = allProds.filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() !== pCat; });
+  var accessories = [];
+  var order = COMPLEMENT_ORDER[mainType] || COMPLEMENT_ORDER['other'];
+  order.forEach(function(type) {
+    var pool = surMesure.filter(function(x) { return classifyWearable(x.name) === type; });
     if (pool.length) {
       var pick = pool[Math.floor(Math.random() * pool.length)];
-      picks.push({ slot: s, product: pick, selected: false });
+      accessories.push(pick);
     }
   });
-  if (!picks.length) return;
 
-  // ── CSS animations (ajout unique) ──
-  if (!document.getElementById('lookboard-styles')) {
-    var styleEl = document.createElement('style');
-    styleEl.id = 'lookboard-styles';
-    styleEl.textContent = [
-      '@keyframes hotspotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(107,143,113,0.4); } 50% { box-shadow: 0 0 0 12px rgba(107,143,113,0); } }',
-      '@keyframes hotspotAppear { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }',
-      '@keyframes lineGrow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }',
-      '.hotspot-bubble { animation: hotspotPulse 2s ease-in-out infinite, hotspotAppear 0.5s ease-out; cursor:pointer; transition: all 0.3s ease; }',
-      '.hotspot-bubble:hover, .hotspot-bubble:active { transform: scale(1.15) !important; }',
-      '.hotspot-bubble.active { animation: none; box-shadow: 0 4px 20px rgba(107,143,113,0.5); border-color: #6b8f71 !important; }',
-      '.hotspot-line { stroke-dasharray: 6 4; animation: lineGrow 1s ease-out forwards; }',
+  /* ── Charger Fabric.js si nécessaire ── */
+  if (!window.fabric) {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js';
+    s.onload = function() { renderSmartOverlay(p, body, accessories, mainType); };
+    document.head.appendChild(s);
+  } else {
+    renderSmartOverlay(p, body, accessories, mainType);
+  }
+}
+
+
+function renderSmartOverlay(p, body, accessories, mainType) {
+  var CW = 340, CH = 460;
+  var currentSize = 'M';
+  var overlayObjects = []; // track fabric objects for size changes
+
+  /* ── Styles ── */
+  if (!document.getElementById('lookboard-v2-styles')) {
+    var st = document.createElement('style');
+    st.id = 'lookboard-v2-styles';
+    st.textContent = [
+      '.lb2-wrap { margin:24px 0 16px; background:linear-gradient(180deg,#faf9f6 0%,#f0ece4 100%); border-radius:20px; overflow:hidden; }',
+      '.lb2-header { text-align:center; padding:20px 16px 12px; }',
+      '.lb2-header h3 { font-size:11px; letter-spacing:4px; color:#bba; font-weight:600; margin:0; }',
+      '.lb2-header p  { font-size:13px; color:#776; margin:4px 0 0; }',
+      '.lb2-canvas-wrap { display:flex; justify-content:center; position:relative; }',
+      '.lb2-canvas-wrap canvas { border-radius:16px; touch-action:none; }',
+      '.lb2-loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#998; font-size:13px; }',
+      '.lb2-controls { display:flex; justify-content:center; gap:8px; padding:12px 16px; flex-wrap:wrap; }',
+      '.lb2-size-btn { padding:6px 18px; border:2px solid #ccc; border-radius:20px; background:white; font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s; }',
+      '.lb2-size-btn.active { border-color:var(--accent,#f59e0b); background:var(--accent,#f59e0b); color:white; }',
+      '.lb2-reset-btn { padding:6px 14px; border:1px solid #ddd; border-radius:20px; background:white; font-size:12px; cursor:pointer; color:#998; }',
+      '.lb2-picker { padding:8px 16px 16px; overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch; }',
+      '.lb2-picker-title { font-size:11px; font-weight:700; color:#998; letter-spacing:1px; margin-bottom:8px; padding-left:4px; }',
+      '.lb2-pick-item { display:inline-block; width:70px; margin-right:10px; text-align:center; cursor:pointer; vertical-align:top; opacity:0.7; transition:all 0.2s; }',
+      '.lb2-pick-item:hover, .lb2-pick-item.on-canvas { opacity:1; }',
+      '.lb2-pick-item.on-canvas { outline:2px solid var(--accent,#f59e0b); border-radius:12px; }',
+      '.lb2-pick-img { width:60px; height:60px; border-radius:10px; object-fit:cover; background:#eee; }',
+      '.lb2-pick-name { font-size:9px; color:#776; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70px; }',
+      '.lb2-total { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-top:1px solid rgba(0,0,0,0.06); }',
+      '.lb2-total-label { font-size:12px; color:#998; }',
+      '.lb2-total-price { font-size:22px; font-weight:800; color:#2d3436; }',
+      '.lb2-hint { text-align:center; font-size:11px; color:#bba; padding:0 16px 4px; }',
+      '@keyframes lb2Spin { to { transform:rotate(360deg); } }',
+      '.lb2-spinner { display:inline-block; width:20px; height:20px; border:2px solid #ccc; border-top-color:var(--accent,#f59e0b); border-radius:50%; animation:lb2Spin 0.8s linear infinite; }'
     ].join('\n');
-    document.head.appendChild(styleEl);
+    document.head.appendChild(st);
   }
 
-  // ── Container principal ──
+  /* ── Container ── */
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'margin:24px 0 16px; padding:0; background: linear-gradient(180deg, #faf9f6 0%, #f0ece4 100%); border-radius:20px; overflow:hidden;';
+  wrap.className = 'lb2-wrap';
 
-  // ── Header ──
+  /* ── Header ── */
   var hdr = document.createElement('div');
-  hdr.style.cssText = 'text-align:center; padding:20px 16px 12px;';
+  hdr.className = 'lb2-header';
   safeHTML(hdr,
-    '<div style="font-size:11px; letter-spacing:4px; color:#bba; font-weight:600;">✦ APERÇU CONFECTION ✦</div>' +
-    '<div style="font-size:13px; color:#776; margin-top:4px;">Touchez les accessoires pour composer votre look</div>'
+    '<h3>✦ ESSAYAGE VIRTUEL ✦</h3>' +
+    '<p>Déplacez et redimensionnez les pièces sur la mannequin</p>'
   );
   wrap.appendChild(hdr);
 
-  // ── Scène mannequin + hotspots ──
-  var scene = document.createElement('div');
-  scene.style.cssText = 'position:relative; width:100%; max-width:360px; margin:0 auto; height:440px;';
+  /* ── Canvas container ── */
+  var canvasWrap = document.createElement('div');
+  canvasWrap.className = 'lb2-canvas-wrap';
 
-  // Photo mannequin centrale
-  var mannDiv = document.createElement('div');
-  mannDiv.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:380px; border-radius:20px; overflow:hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.15);';
-  safeHTML(mannDiv,
-    '<img src="' + mannequinUrl + '" style="width:100%; height:100%; object-fit:cover;" onerror="this.src=\'https://placehold.co/200x380/8B6914/fff?text=✦+Komerce\'">' +
-    '<div style="position:absolute; bottom:0; left:0; right:0; padding:10px; background:linear-gradient(transparent, rgba(0,0,0,0.6));">' +
-      '<div style="color:#fff; font-size:12px; font-weight:700; text-shadow:0 1px 3px rgba(0,0,0,0.5);">' + p.name + '</div>' +
-      '<div style="color:#d4e6d7; font-size:11px; font-weight:600;">' + Number(p.price||0).toLocaleString('fr-FR') + ' KMF</div>' +
-    '</div>'
-  );
-  scene.appendChild(mannDiv);
+  var canvasEl = document.createElement('canvas');
+  canvasEl.id = 'lb2-canvas-' + Date.now();
+  canvasEl.width = CW;
+  canvasEl.height = CH;
+  canvasWrap.appendChild(canvasEl);
 
-  // SVG pour les lignes de connexion
-  var svgNS = 'http://www.w3.org/2000/svg';
-  var svgEl = document.createElementNS(svgNS, 'svg');
-  svgEl.setAttribute('viewBox', '0 0 360 440');
-  svgEl.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1;';
-  scene.appendChild(svgEl);
+  var loadingEl = document.createElement('div');
+  loadingEl.className = 'lb2-loading';
+  safeHTML(loadingEl, '<span class="lb2-spinner"></span> Chargement...');
+  canvasWrap.appendChild(loadingEl);
 
-  // Positions du centre du mannequin (pour les lignes)
-  var mannCenter = { x: 180, y: 220 };
-  var bodyAnchors = {
-    'bottom':     { x: 180, y: 400 },
-    'top-right':  { x: 230, y: 100 },
-    'top-left':   { x: 130, y: 80  },
-    'mid-left':   { x: 110, y: 280 }
-  };
+  wrap.appendChild(canvasWrap);
 
-  var totalRef = { val: Number(p.price||0), count: 1 };
-  var selectedState = {};
+  /* ── Hint ── */
+  var hint = document.createElement('div');
+  hint.className = 'lb2-hint';
+  hint.textContent = '☝️ Touchez un produit pour le placer • Glissez pour déplacer • Coins pour redimensionner';
+  wrap.appendChild(hint);
 
-  // ── Hotspot bubbles ──
-  picks.forEach(function(pk, idx) {
-    var prod = pk.product;
-    var s = pk.slot;
-    var price = Number(prod.price||0);
-    var imgUrl = (prod.image_url && prod.image_url.indexOf('http') === 0) ? prod.image_url : 'https://placehold.co/80x80/f5f0eb/998?text=' + encodeURIComponent(s.emoji);
+  /* ── Size controls ── */
+  var controls = document.createElement('div');
+  controls.className = 'lb2-controls';
 
-    selectedState[idx] = false;
-
-    // Ligne SVG
-    var hotspotCenter = {
-      x: parseFloat(s.left) / 100 * 360 + 35,
-      y: parseFloat(s.top) / 100 * 440 + 35
-    };
-    var anchor = bodyAnchors[s.pos];
-    var line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', hotspotCenter.x);
-    line.setAttribute('y1', hotspotCenter.y);
-    line.setAttribute('x2', anchor.x);
-    line.setAttribute('y2', anchor.y);
-    line.setAttribute('stroke', '#6b8f71');
-    line.setAttribute('stroke-width', '1.5');
-    line.setAttribute('opacity', '0.4');
-    line.setAttribute('class', 'hotspot-line');
-    line.id = 'line-' + idx;
-    svgEl.appendChild(line);
-
-    // Hotspot bubble
-    var bubble = document.createElement('div');
-    bubble.className = 'hotspot-bubble';
-    bubble.style.cssText = 'position:absolute; top:' + s.top + '; left:' + s.left + ';'
-      + 'width:70px; height:70px; border-radius:50%; overflow:hidden; z-index:2;'
-      + 'border:3px solid rgba(107,143,113,0.4); background:#fff;'
-      + 'display:flex; flex-direction:column; align-items:center; justify-content:center;'
-      + 'animation-delay:' + (idx * 0.15) + 's;';
-
-    // Contenu initial = emoji + label
-    var innerDefault = '<div style="font-size:22px; line-height:1;">' + s.emoji + '</div>'
-      + '<div style="font-size:8px; font-weight:700; color:#998; margin-top:2px; letter-spacing:0.5px;">' + s.label.toUpperCase() + '</div>';
-    var innerActive = '<img src="' + imgUrl + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.parentNode.innerHTML=\'' + s.emoji + '\';">';
-
-    safeHTML(bubble, innerDefault);
-
-    // Click toggle
-    bubble.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var isActive = selectedState[idx];
-      if (!isActive) {
-        // Activer
-        selectedState[idx] = true;
-        bubble.classList.add('active');
-        bubble.style.border = '3px solid #6b8f71';
-        bubble.style.width = '76px';
-        bubble.style.height = '76px';
-        safeHTML(bubble, innerActive);
-        document.getElementById('line-' + idx).setAttribute('opacity', '0.9');
-        document.getElementById('line-' + idx).setAttribute('stroke-width', '2.5');
-        totalRef.val += price;
-        totalRef.count++;
-      } else {
-        // Désactiver
-        selectedState[idx] = false;
-        bubble.classList.remove('active');
-        bubble.style.border = '3px solid rgba(107,143,113,0.4)';
-        bubble.style.width = '70px';
-        bubble.style.height = '70px';
-        safeHTML(bubble, innerDefault);
-        document.getElementById('line-' + idx).setAttribute('opacity', '0.4');
-        document.getElementById('line-' + idx).setAttribute('stroke-width', '1.5');
-        totalRef.val -= price;
-        totalRef.count--;
-      }
-      updateTotal();
-    });
-
-    // Double-tap → ouvrir modale produit
-    var lastTap = 0;
-    bubble.addEventListener('touchend', function(e) {
-      var now = Date.now();
-      if (now - lastTap < 300) { e.preventDefault(); openProductModal(prod); }
-      lastTap = now;
-    });
-
-    scene.appendChild(bubble);
-  });
-
-  wrap.appendChild(scene);
-
-  // ── Info accessoires sélectionnés ──
-  var infoBar = document.createElement('div');
-  infoBar.style.cssText = 'padding:16px 20px; text-align:center;';
-  wrap.appendChild(infoBar);
-
-  function updateTotal() {
-    var selectedItems = [];
-    picks.forEach(function(pk, idx) {
-      if (selectedState[idx]) selectedItems.push(pk);
-    });
-    var html = '<div style="font-size:12px; color:#998; margin-bottom:4px;">Look (' + totalRef.count + ' pièce' + (totalRef.count > 1 ? 's' : '') + ')</div>'
-      + '<div style="font-size:24px; font-weight:800; color:#2d3436;">' + totalRef.val.toLocaleString('fr-FR') + ' KMF</div>';
-    if (selectedItems.length) {
-      html += '<div style="margin-top:8px; font-size:11px; color:#776;">';
-      selectedItems.forEach(function(pk) {
-        html += '<span style="display:inline-block; background:#fff; padding:3px 10px; border-radius:20px; margin:2px 3px; box-shadow:0 1px 4px rgba(0,0,0,0.08);">'
-          + pk.slot.emoji + ' ' + pk.product.name.substring(0, 18) + '</span>';
+  var sizeButtons = {};
+  ['S','M','L'].forEach(function(size) {
+    var btn = document.createElement('button');
+    btn.className = 'lb2-size-btn' + (size === 'M' ? ' active' : '');
+    btn.textContent = size;
+    btn.addEventListener('click', function() {
+      currentSize = size;
+      Object.keys(sizeButtons).forEach(function(k) {
+        sizeButtons[k].className = 'lb2-size-btn' + (k === size ? ' active' : '');
       });
-      html += '</div>';
-    }
-    safeHTML(infoBar, html);
-  }
-  updateTotal();
-
-  // ── Boutons ──
-  var actions = document.createElement('div');
-  actions.style.cssText = 'display:flex; gap:10px; padding:0 20px 20px;';
-
-  var addAll = document.createElement('button');
-  addAll.style.cssText = 'flex:1; padding:14px; border:none; border-radius:14px; background:linear-gradient(135deg,#6b8f71,#5a7d60); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:all 0.2s;';
-  addAll.textContent = '🛍️ Ajouter le look';
-  addAll.addEventListener('click', function() {
-    if (typeof addToCart === 'function') addToCart(p.id);
-    picks.forEach(function(pk, idx) {
-      if (selectedState[idx] && typeof addToCart === 'function') addToCart(pk.product.id);
+      applySize(size);
     });
-    addAll.textContent = '✓ Ajouté !';
-    addAll.style.background = '#2d3436';
-    setTimeout(function() {
-      addAll.textContent = '🛍️ Ajouter le look';
-      addAll.style.background = 'linear-gradient(135deg,#6b8f71,#5a7d60)';
-    }, 1500);
+    sizeButtons[size] = btn;
+    controls.appendChild(btn);
   });
-  actions.appendChild(addAll);
 
-  var refresh = document.createElement('button');
-  refresh.style.cssText = 'width:50px; padding:14px; border:2px solid #e0ddd5; border-radius:14px; background:#fff; font-size:18px; cursor:pointer; transition:transform 0.3s;';
-  refresh.textContent = '↻';
-  refresh.addEventListener('click', function() {
-    refresh.style.transform = 'rotate(360deg)';
-    setTimeout(function() { refresh.style.transform = 'none'; }, 400);
-    wrap.remove();
-    buildLookBoard(p, body);
+  var resetBtn = document.createElement('button');
+  resetBtn.className = 'lb2-reset-btn';
+  resetBtn.textContent = '↺ Reset';
+  resetBtn.addEventListener('click', function() {
+    resetCanvas();
   });
-  actions.appendChild(refresh);
+  controls.appendChild(resetBtn);
 
-  wrap.appendChild(actions);
+  var shuffleBtn = document.createElement('button');
+  shuffleBtn.className = 'lb2-reset-btn';
+  shuffleBtn.textContent = '🔀 Autre mannequin';
+  shuffleBtn.addEventListener('click', function() {
+    changeMannequin();
+  });
+  controls.appendChild(shuffleBtn);
+
+  wrap.appendChild(controls);
+
+  /* ── Product picker ── */
+  var pickerWrap = document.createElement('div');
+  pickerWrap.className = 'lb2-picker';
+
+  var pickerTitle = document.createElement('div');
+  pickerTitle.className = 'lb2-picker-title';
+  pickerTitle.textContent = 'ACCESSOIRISEZ CE LOOK';
+  pickerWrap.appendChild(pickerTitle);
+
+  var pickerItems = {};
+  accessories.forEach(function(acc) {
+    var item = document.createElement('div');
+    item.className = 'lb2-pick-item';
+    item.setAttribute('data-id', acc.id);
+
+    var img = document.createElement('img');
+    img.className = 'lb2-pick-img';
+    img.src = acc.image_url || '';
+    img.alt = acc.name;
+    img.onerror = function() { this.src = 'https://placehold.co/60x60/f5f0eb/998?text=' + encodeURIComponent(classifyWearable(acc.name).charAt(0).toUpperCase()); };
+    item.appendChild(img);
+
+    var name = document.createElement('div');
+    name.className = 'lb2-pick-name';
+    name.textContent = acc.name;
+    item.appendChild(name);
+
+    var price = document.createElement('div');
+    price.className = 'lb2-pick-name';
+    price.style.fontWeight = '700';
+    price.style.color = '#555';
+    price.textContent = Number(acc.price_kmf||0).toLocaleString('fr-FR') + ' F';
+    item.appendChild(price);
+
+    item.addEventListener('click', function() {
+      toggleAccessory(acc, item);
+    });
+
+    pickerItems[acc.id] = item;
+    pickerWrap.appendChild(item);
+  });
+
+  wrap.appendChild(pickerWrap);
+
+  /* ── Total ── */
+  var totalWrap = document.createElement('div');
+  totalWrap.className = 'lb2-total';
+  var totalLabel = document.createElement('div');
+  totalLabel.className = 'lb2-total-label';
+  totalLabel.textContent = 'Total du look (1 pièce)';
+  var totalPrice = document.createElement('div');
+  totalPrice.className = 'lb2-total-price';
+  totalPrice.textContent = Number(p.price_kmf||0).toLocaleString('fr-FR') + ' KMF';
+  totalWrap.appendChild(totalLabel);
+  totalWrap.appendChild(totalPrice);
+  wrap.appendChild(totalWrap);
+
+  /* ── Insert into modal body ── */
   body.appendChild(wrap);
+
+  /* ══════════════════════════════════════
+     Fabric.js Canvas Logic
+     ══════════════════════════════════════ */
+  var canvas = new fabric.Canvas(canvasEl.id, {
+    selection: true,
+    backgroundColor: '#f5f0eb',
+    allowTouchScrolling: false
+  });
+
+  var mannequinUrl = MANNEQUIN_PHOTOS[Math.floor(Math.random() * MANNEQUIN_PHOTOS.length)];
+  var accessoryMap = {}; // id → fabric object
+
+  /* Load mannequin background */
+  fabric.Image.fromURL(mannequinUrl, function(img) {
+    img.scaleToWidth(CW);
+    img.scaleToHeight(CH);
+    canvas.setBackgroundImage(img, function() {
+      canvas.renderAll();
+      loadingEl.style.display = 'none';
+      /* Load main product on top */
+      addOverlay(p, mainType, true);
+    });
+  }, { crossOrigin: 'anonymous' });
+
+  /* ── Add overlay to canvas ── */
+  function addOverlay(product, type, isMain) {
+    var pos = OVERLAY_POS[type] || OVERLAY_POS['other'];
+    var url = bgRemovedUrl(product.image_url);
+    var factor = SIZE_FACTORS[currentSize];
+
+    fabric.Image.fromURL(url, function(img) {
+      if (!img) return;
+      
+      var targetW = pos.w * factor;
+      var targetH = pos.h * factor;
+      var scaleX = targetW / (img.width || 1);
+      var scaleY = targetH / (img.height || 1);
+      var scale = Math.min(scaleX, scaleY);
+
+      img.set({
+        left: pos.x - (img.width * scale) / 2,
+        top: pos.y - (img.height * scale) / 2,
+        scaleX: scale,
+        scaleY: scale,
+        hasControls: true,
+        hasBorders: true,
+        borderColor: 'rgba(245,158,11,0.8)',
+        cornerColor: '#f59e0b',
+        cornerSize: 10,
+        cornerStyle: 'circle',
+        transparentCorners: false,
+        lockRotation: false,
+        centeredRotation: true,
+        opacity: isMain ? 0.92 : 0.88,
+        _productId: product.id,
+        _productType: type,
+        _isMain: isMain,
+        _baseScale: scale
+      });
+
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+
+      overlayObjects.push(img);
+      if (!isMain) {
+        accessoryMap[product.id] = img;
+      }
+    }, { crossOrigin: 'anonymous' });
+  }
+
+  /* ── Remove overlay ── */
+  function removeOverlay(productId) {
+    var obj = accessoryMap[productId];
+    if (obj) {
+      canvas.remove(obj);
+      overlayObjects = overlayObjects.filter(function(o) { return o !== obj; });
+      delete accessoryMap[productId];
+      canvas.renderAll();
+    }
+  }
+
+  /* ── Toggle accessory ── */
+  function toggleAccessory(acc, itemEl) {
+    if (accessoryMap[acc.id]) {
+      // Remove
+      removeOverlay(acc.id);
+      itemEl.classList.remove('on-canvas');
+    } else {
+      // Add
+      var type = classifyWearable(acc.name);
+      addOverlay(acc, type, false);
+      itemEl.classList.add('on-canvas');
+    }
+    updateTotal();
+  }
+
+  /* ── Apply size ── */
+  function applySize(size) {
+    var factor = SIZE_FACTORS[size];
+    overlayObjects.forEach(function(obj) {
+      if (obj._baseScale) {
+        var newScale = obj._baseScale * factor;
+        obj.set({ scaleX: newScale, scaleY: newScale });
+        obj.setCoords();
+      }
+    });
+    canvas.renderAll();
+  }
+
+  /* ── Reset canvas ── */
+  function resetCanvas() {
+    // Remove all overlays
+    overlayObjects.forEach(function(obj) { canvas.remove(obj); });
+    overlayObjects = [];
+    accessoryMap = {};
+    // Reset picker UI
+    Object.keys(pickerItems).forEach(function(id) {
+      pickerItems[id].classList.remove('on-canvas');
+    });
+    // Reset size to M
+    currentSize = 'M';
+    Object.keys(sizeButtons).forEach(function(k) {
+      sizeButtons[k].className = 'lb2-size-btn' + (k === 'M' ? ' active' : '');
+    });
+    // Re-add main product
+    addOverlay(p, mainType, true);
+    updateTotal();
+  }
+
+  /* ── Change mannequin ── */
+  function changeMannequin() {
+    mannequinUrl = MANNEQUIN_PHOTOS[Math.floor(Math.random() * MANNEQUIN_PHOTOS.length)];
+    fabric.Image.fromURL(mannequinUrl, function(img) {
+      img.scaleToWidth(CW);
+      img.scaleToHeight(CH);
+      canvas.setBackgroundImage(img, function() { canvas.renderAll(); });
+    }, { crossOrigin: 'anonymous' });
+  }
+
+  /* ── Update total ── */
+  function updateTotal() {
+    var total = Number(p.price_kmf || 0);
+    var count = 1;
+    Object.keys(accessoryMap).forEach(function(id) {
+      var acc = accessories.find(function(a) { return String(a.id) === String(id); });
+      if (acc) {
+        total += Number(acc.price_kmf || 0);
+        count++;
+      }
+    });
+    totalLabel.textContent = 'Total du look (' + count + ' pièce' + (count > 1 ? 's' : '') + ')';
+    totalPrice.textContent = total.toLocaleString('fr-FR') + ' KMF';
+  }
 }
+
 
 
 function openLookModal(mainProduct) {
