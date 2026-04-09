@@ -878,14 +878,18 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .pd-qty-wrap .qty-btn { width: 32px; height: 32px; font-size: 1rem; border-radius: 8px; border: 1px solid var(--border); background: white; cursor: pointer; }
 .pd-qty-wrap .qty-val { font-size: 1.1rem; min-width: 28px; }
 .pd-add-btn {
-  padding: 10px 20px; border-radius: 8px;
-  background: var(--accent); color: var(--dark);
-  font-weight: 600; font-size: 0.9rem; transition: all 0.2s;
-  text-align: center; letter-spacing: 0.2px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 20px;
+  background: transparent; color: var(--dark);
+  font-weight: 500; font-size: 0.8rem; transition: all 0.25s;
+  border: 1.5px solid var(--accent);
 }
-.pd-add-btn:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(245,158,11,0.25); }
-.pd-add-btn.added { background: #22c55e; color: white; transform: scale(1.02); }
-.pd-add-btn:disabled { cursor: default; }
+.pd-add-btn:hover:not(:disabled) { background: var(--accent); color: var(--dark); transform: translateY(-1px); }
+.pd-add-btn .basket-icon { width: 22px; height: 22px; transition: transform 0.3s; }
+.pd-add-btn:hover .basket-icon { transform: rotate(-8deg) scale(1.1); }
+.pd-add-btn.added { background: #22c55e; color: white; border-color: #22c55e; }
+.pd-add-btn.added .basket-icon { transform: scale(1.15); }
+.pd-add-btn:disabled { cursor: default; opacity: 0.6; }
 
 /* ────────────────────────────────────────
    ORDER FORM MODAL
@@ -2789,8 +2793,7 @@ function openProductModal(p) {
 
   var addBtn = document.createElement('button');
   addBtn.className = 'pd-add-btn';
-  /* inline style removed — uses .pd-add-btn CSS */
-  addBtn.textContent = 'Ajouter au panier';
+  addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="8" rx="9" ry="3"/><path d="M3 8c0 0 1 9 9 9s9-9 9-9"/><path d="M7.5 8v5.5M12 8v7M16.5 8v5.5"/><path d="M4.5 11h15M5.5 14h13"/></svg>Ajouter';
   addBtn.addEventListener('click', function() {
     addToCart(p, _pdQty, addBtn);
     setTimeout(function() { closeProductModal(); }, 500);
