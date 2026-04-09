@@ -8,7 +8,7 @@
  *
  * Règles (business_rules) :
  *   CANCEL_FREE_WINDOW_HOURS  — fenêtre remboursement 100% (défaut: 24h)
- *   CANCEL_PARTIAL_REFUND_PCT — % remboursé hors fenêtre  (défaut: 80%)\
+ *   CANCEL_PARTIAL_REFUND_PCT — % remboursé hors fenêtre  (défaut: 80%)
  *   CANCEL_CUTOFF_STATUS      — statut max pour annulation (défaut: shipped)
  */
 
@@ -23,6 +23,7 @@ const { orders }                   = require('../../validators');
 const { getRule }                  = require('../../utils/rules');
 const { processRefund }            = require('../../services/refund-service');
 const { notifyCancellation }       = require('../../services/notification-service');
+const walletService                = require('../../services/wallet-service');
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       });
     }
 
-    // ── 5. Calculer le remboursement ──────────────────────────────────────────
+    // ── 5. Calculer le remboursement (partie cash/stripe) ────────────────────
     const isPaid         = order.payment_status === 'paid';
     let refundAmountKmf  = 0;
     let refundAmountEur  = 0;
@@ -100,7 +101,6 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       const freeWindowHours  = await getRule('CANCEL_FREE_WINDOW_HOURS', 24);
       const partialRefundPct = await getRule('CANCEL_PARTIAL_REFUND_PCT', 80);
 
-      // Référence temporelle : ordered_at (moment du paiement réel)
       const paidAt         = order.ordered_at || order.created_at;
       const hoursSincePaid = (Date.now() - new Date(paidAt).getTime()) / (1000 * 60 * 60);
       inFreeWindow         = hoursSincePaid <= freeWindowHours;
@@ -108,7 +108,6 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       const refundPct   = inFreeWindow ? 100 : partialRefundPct;
       refundAmountKmf   = Math.round(Number(order.total_kmf) * refundPct / 100);
 
-      // Convertir en EUR (pro-rata basé sur total_eur/total_kmf)
       const eurKmfRate  = order.total_eur && order.total_kmf
         ? Number(order.total_kmf) / Number(order.total_eur)
         : 492;
@@ -120,7 +119,6 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     let refundResult = null;
 
     if (isPaid && refundAmountKmf > 0) {
-      // processRefund lève une erreur si Stripe échoue — on ROLLBACK
       try {
         refundResult = await processRefund(
           client, order,
@@ -134,6 +132,34 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
         console.error('[CANCEL] Refund error:', refundErr.message);
         return res.status(500).json({
           error: `Annulation impossible — erreur remboursement: ${refundErr.message}`,
+        });
+      }
+    }
+
+    // ── 6bis. Reverse wallet appliqué au checkout ────────────────────────────
+    //   Le wallet debit a lieu au checkout AVANT le paiement cash/stripe.
+    //   Il doit être reversé à l'annulation INDÉPENDAMMENT de isPaid.
+    const walletApplied = Number(order.wallet_applied_kmf || 0);
+    let walletReversalTx = null;
+
+    if (walletApplied > 0) {
+      try {
+        const walletReversal = await walletService.credit(client, {
+          userId:         order.user_id,
+          amountKmf:      walletApplied,
+          reason:         'order_cancel',
+          referenceId:    order.id,
+          idempotencyKey: `wallet_reversal_${order.id}`,
+          note:           `Avoir wallet — annulation commande ${order.reference} (${walletApplied.toLocaleString('fr-FR')} KMF)`,
+          createdBy:      req.user.id,
+        });
+        walletReversalTx = walletReversal.transaction;
+        console.log(`[CANCEL] Wallet reversal OK: ${walletApplied} KMF → user ${order.user_id} for ${order.reference}`);
+      } catch (walletErr) {
+        await client.query('ROLLBACK');
+        console.error('[CANCEL] Wallet reversal error:', walletErr.message);
+        return res.status(500).json({
+          error: `Annulation impossible — erreur remboursement wallet: ${walletErr.message}`,
         });
       }
     }
@@ -174,30 +200,53 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     notifyCancellation(order, smsRefundInfo);
 
     // ── Réponse ─────────────────────────────────────────────────────────────
-    const refundInfo = isPaid && refundAmountKmf > 0 && refundResult ? {
-      amount_kmf:       refundAmountKmf,
-      amount_eur:       refundAmountEur,
-      type:             refundType,
-      method:           refundResult.method,
-      in_free_window:   inFreeWindow,
-      stripe_refund_id: refundResult.stripeRefundId,
-      wallet_tx_id:     refundResult.walletTxId,
-    } : null;
+    const refundInfo = {};
 
+    // Partie cash/stripe
+    if (isPaid && refundAmountKmf > 0 && refundResult) {
+      refundInfo.cash_refund = {
+        amount_kmf:       refundAmountKmf,
+        amount_eur:       refundAmountEur,
+        type:             refundType,
+        method:           refundResult.method,
+        in_free_window:   inFreeWindow,
+        stripe_refund_id: refundResult.stripeRefundId || null,
+        wallet_tx_id:     refundResult.walletTxId || null,
+      };
+    }
+
+    // Partie wallet reversal
+    if (walletReversalTx) {
+      refundInfo.wallet_reversal = {
+        amount_kmf:  walletApplied,
+        wallet_tx_id: walletReversalTx.id,
+      };
+    }
+
+    // Message
     let message;
-    if (!isPaid) {
+    const parts = [];
+    if (!isPaid && walletApplied === 0) {
       message = 'Commande annulée — aucun prélèvement effectué';
-    } else if (refundResult?.method === 'stripe') {
-      message = `Remboursement de ${refundAmountEur.toFixed(2)}€ initié via Stripe (2–5 jours ouvrés)`;
     } else {
-      message = `Avoir de ${Number(refundAmountKmf).toLocaleString('fr-FR')} KMF crédité sur votre wallet`;
+      if (walletApplied > 0) {
+        parts.push(`${walletApplied.toLocaleString('fr-FR')} KMF reversés sur votre wallet`);
+      }
+      if (isPaid && refundResult) {
+        if (refundResult.method === 'stripe') {
+          parts.push(`${refundAmountEur.toFixed(2)}€ remboursés via Stripe (2–5 jours ouvrés)`);
+        } else {
+          parts.push(`${refundAmountKmf.toLocaleString('fr-FR')} KMF crédités en avoir`);
+        }
+      }
+      message = `Commande annulée — ${parts.join(' + ')}`;
     }
 
     res.json({
       success:   true,
       reference: order.reference,
       status:    'cancelled',
-      refund:    refundInfo,
+      refund:    Object.keys(refundInfo).length ? refundInfo : null,
       message,
     });
 
