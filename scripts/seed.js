@@ -5,7 +5,6 @@
 'use strict';
 
 const db = require('../db');
-const bcrypt = require('bcrypt');
 
 async function seedAdmin() {
   try {
@@ -14,15 +13,10 @@ async function seedAdmin() {
       console.log('[seed] Admin already exists, skipping');
       return;
     }
-    const hash = await bcrypt.hash('admin123', 10);
-    await db.query(
-      "INSERT INTO users (email, password, role) VALUES ('admin@komerce.km', $1, 'admin')",
-      [hash]
-    );
-    console.log('[seed] Admin created');
+    // Admin creation needs auth route — skip here
+    console.log('[seed] Admin not found — use /api/auth/register or admin-reset');
   } catch (err) {
-    if (err.code === '23505') console.log('[seed] Admin already exists');
-    else console.error('[seed] Admin error:', err.message);
+    console.error('[seed] Admin check error:', err.message);
   }
 }
 
