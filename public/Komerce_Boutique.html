@@ -61,10 +61,38 @@
 .nav-search-wrap:focus-within {
   border-color: var(--primary);
 }
-/* ── Cercles catégories style Shein ── */
+/* ── Onglets navigation ── */
+.tab-nav {
+  background: var(--white);
+  border-bottom: 2px solid var(--border);
+  padding: 0 16px;
+  display: flex;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid var(--border);
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn {
+  padding: 12px 20px;
+  font-size: 0.88rem; font-weight: 600;
+  color: var(--muted); background: none; border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+  white-space: nowrap; margin-bottom: -2px;
+  flex-shrink: 0;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--dark); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+
 .cat-circles-wrap {
-  background: var(--white); border-top: 1px solid var(--border);
-  padding: 12px 16px; overflow-x: auto; scrollbar-width: none;
+  background: var(--white);
+  padding: 20px 16px 16px;
+  overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
 }
 .cat-circles-wrap::-webkit-scrollbar { display: none; }
 .cat-circles {
@@ -430,8 +458,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 .card-name {
   font-family: 'Poppins', sans-serif; font-weight: 700;
-  font-size: 0.88rem; margin-bottom: 4px; color: var(--dark);
+  font-size: 0.85rem; margin-bottom: 4px; color: var(--dark);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
 }
 .card-price { font-weight: 800; color: var(--primary); font-size: 0.92rem; margin-bottom: 2px; }
 .card-price-conv { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
@@ -1704,53 +1733,58 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       <span id="cart-count" class="hidden">0</span>
     </button>
   </div>
-  <!-- Cercles catégories style Shein -->
-  <div class="cat-circles-wrap">
-    <div class="cat-circles" id="cat-pills">
-      <button class="cat-circle active" data-cat="">
-        <div class="cat-circle-img" style="background:#e8f5ee;">
-          <img src="https://images.unsplash.com/photo-1590156546946-ce55a12a6a3a?w=120&h=120&fit=crop&auto=format&q=80" alt="Tout">
-        </div>
-        <span>Tout</span>
-      </button>
-      <button class="cat-circle" data-cat="Mode">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1614786269829-d24616faf56d?w=120&h=120&fit=crop&auto=format&q=80" alt="Mode">
-        </div>
-        <span>Mode</span>
-      </button>
-      <button class="cat-circle" data-cat="Sur-mesure">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1583391733956-6c78276477e3?w=120&h=120&fit=crop&auto=format&q=80" alt="Sur-mesure">
-        </div>
-        <span>Sur-mesure</span>
-      </button>
-      <button class="cat-circle" data-cat="Beauté">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1541643600914-78b084683601?w=120&h=120&fit=crop&auto=format&q=80" alt="Beauté">
-        </div>
-        <span>Beauté</span>
-      </button>
-      <button class="cat-circle" data-cat="Tech">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=120&h=120&fit=crop&auto=format&q=80" alt="Tech">
-        </div>
-        <span>Tech</span>
-      </button>
-      <button class="cat-circle" data-cat="Enfant">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=120&h=120&fit=crop&auto=format&q=80" alt="Enfant">
-        </div>
-        <span>Enfant</span>
-      </button>
-    </div>
+  <!-- Onglets dans la nav -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="boutique">Boutique</button>
+    <button class="tab-btn" data-tab="suivi">Suivi commande</button>
+    <button class="tab-btn" data-tab="info">Infos</button>
   </div>
 </nav>
 
-<!-- ========================================
-     3. HERO SPLIT
-     ======================================== -->
+<!-- PANNEAU BOUTIQUE -->
+<div class="tab-panel active" id="tab-boutique">
 
+<!-- Cercles catégories -->
+<div class="cat-circles-wrap">
+  <div class="cat-circles" id="cat-pills">
+    <button class="cat-circle active" data-cat="">
+      <div class="cat-circle-img" style="background: linear-gradient(135deg, #e8f5ee, #d4ede0); display:flex; align-items:center; justify-content:center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2d9f6f" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span>Tout</span>
+    </button>
+    <button class="cat-circle" data-cat="Mode">
+      <div class="cat-circle-img">
+        <img src="https://images.unsplash.com/photo-1614786269829-d24616faf56d?w=120&h=120&fit=crop&auto=format&q=80" alt="Mode">
+      </div>
+      <span>Mode</span>
+    </button>
+    <button class="cat-circle" data-cat="Sur-mesure">
+      <div class="cat-circle-img">
+        <img src="https://images.unsplash.com/photo-1583391733956-6c78276477e3?w=120&h=120&fit=crop&auto=format&q=80" alt="Sur-mesure">
+      </div>
+      <span>Sur-mesure</span>
+    </button>
+    <button class="cat-circle" data-cat="Beauté">
+      <div class="cat-circle-img">
+        <img src="https://images.unsplash.com/photo-1541643600914-78b084683601?w=120&h=120&fit=crop&auto=format&q=80" alt="Beauté">
+      </div>
+      <span>Beauté</span>
+    </button>
+    <button class="cat-circle" data-cat="Tech">
+      <div class="cat-circle-img">
+        <img src="https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=120&h=120&fit=crop&auto=format&q=80" alt="Tech">
+      </div>
+      <span>Tech</span>
+    </button>
+    <button class="cat-circle" data-cat="Enfant">
+      <div class="cat-circle-img">
+        <img src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=120&h=120&fit=crop&auto=format&q=80" alt="Enfant">
+      </div>
+      <span>Enfant</span>
+    </button>
+  </div>
+</div>
 
 <section id="hero">
   <div class="hero-minimal">
@@ -1758,16 +1792,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     <p class="hero-sub">Le meilleur du monde · Livré aux Comores · Récupéré au relais près de chez vous</p>
   </div>
 </section>
-
-<!-- ========================================
-     4. ADVANTAGE STRIP
-     ======================================== -->
-<!-- ========================================
-     5. PRODUCT CATALOGUE
-     ======================================== -->
 <section id="catalogue">
   <div class="container">
-    <!-- Barre filtre rapide -->
     <div class="filter-bar" id="filter-bar">
       <button class="filter-btn active" data-sort="">Nouveautés</button>
       <button class="filter-btn" data-sort="promo">Promos</button>
@@ -1775,7 +1801,6 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       <button class="filter-btn" data-sort="price-desc">Prix ↓</button>
       <button class="filter-btn" data-sort="stock">Disponible</button>
     </div>
-    <!-- Grille produits -->
     <div class="product-grid" id="product-track">
       <div class="skeleton-card"></div>
       <div class="skeleton-card"></div>
@@ -1786,11 +1811,27 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     </div>
   </div>
 </section>
+</div>
 
-<!-- ========================================
-     6. HOW IT WORKS
-     ======================================== -->
-<section id="how-it-works">
+<!-- PANNEAU SUIVI -->
+<div class="tab-panel" id="tab-suivi">
+<section id="tracking" style="padding-top:32px;">
+  <div class="container">
+    <h2 class="section-title">Suivre ma commande</h2>
+    <div class="tracking-box">
+      <div class="tracking-form">
+        <input type="text" id="tracking-input" placeholder="Référence de commande (ex: KMR-XXXXXX)" aria-label="Référence de commande">
+        <button type="button" id="tracking-search-btn">Suivre</button>
+      </div>
+      <div id="tracking-result"></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- PANNEAU INFO -->
+<div class="tab-panel" id="tab-info">
+<section id="how-it-works" style="padding-top:32px;">
   <div class="container">
     <h2 class="section-title">Comment ça marche</h2>
     <div class="steps-grid">
@@ -1817,27 +1858,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     </div>
   </div>
 </section>
-
-<!-- ========================================
-     7. TRACKING
-     ======================================== -->
-<section id="tracking">
-  <div class="container">
-    <h2 class="section-title">Suivre ma commande</h2>
-    <div class="tracking-box">
-      <div class="tracking-form">
-        <input type="text" id="tracking-input" placeholder="Référence de commande (ex: KMR-XXXXXX)" aria-label="Référence de commande">
-        <button type="button" id="tracking-search-btn">Suivre</button>
-      </div>
-      <div id="tracking-result"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ========================================
-     8. TRUST SECTION
-     ======================================== -->
-<section id="trust" aria-label="Confiance">
+<section id="trust" aria-label="Confiance" style="padding:32px 0;">
   <div class="container">
     <div class="trust-grid">
       <div class="trust-item">
@@ -1859,10 +1880,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     </div>
   </div>
 </section>
-
-<!-- ========================================
-     9. FOOTER
-     ======================================== -->
+</div>
 <footer id="footer">
   <div class="footer-accent"></div>
   <div class="footer-main">
@@ -2534,7 +2552,6 @@ function renderProducts(list) {
       var img = document.createElement('img');
       img.src = p.image_url;
       img.alt = sanitize(p.name);
-      img.loading = 'lazy';
       imgDiv.appendChild(img);
     } else {
       imgDiv.textContent = productEmoji(p);
@@ -2765,10 +2782,245 @@ var PROVERBS = [
 /* ──────────────────────────────────────
    PRODUCT DETAIL MODAL
    ────────────────────────────────────── */
+/* ── Règles de complémentarité ── */
+var _complementRules = {
+  'Mode':       ['Beauté', 'Sur-mesure'],
+  'Sur-mesure': ['Mode', 'Beauté'],
+  'Beauté':     ['Mode', 'Sur-mesure'],
+  'Tech':       ['Tech'],
+  'Enfant':     ['Enfant', 'Mode']
+};
+
+/* ── Favoris (localStorage) ── */
+var _favs = {};
+try { _favs = JSON.parse(localStorage.getItem('komerce_favs') || '{}'); } catch(e) { _favs = {}; }
+function saveFavs() { try { localStorage.setItem('komerce_favs', JSON.stringify(_favs)); } catch(e) {} }
+function toggleFav(productId) {
+  if (_favs[productId]) { delete _favs[productId]; } else { _favs[productId] = true; }
+  saveFavs();
+}
+function isFav(productId) { return !!_favs[productId]; }
+
 function openProductModal(p) {
   _pdQty = 1;
   var body = $('product-modal-body');
   body.innerHTML = '';
+  body.scrollTop = 0;
+
+  /* ── Image + infos ── */
+  var top = document.createElement('div');
+  top.className = 'pd-top';
+
+  var emojiBox = document.createElement('div');
+  emojiBox.className = 'pd-emoji';
+  emojiBox.style.position = 'relative';
+  if (p.image_url) {
+    var img = document.createElement('img');
+    img.src = p.image_url;
+    img.alt = sanitize(p.name);
+    emojiBox.appendChild(img);
+  } else {
+    emojiBox.textContent = productEmoji(p);
+  }
+
+  /* Bouton favori sur l'image */
+  var favBtn = document.createElement('button');
+  favBtn.style.cssText = 'position:absolute;top:8px;right:8px;background:white;border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);font-size:1.1rem;transition:transform 0.2s;';
+  favBtn.textContent = isFav(p.id) ? '♥' : '♡';
+  favBtn.style.color = isFav(p.id) ? '#ef4444' : '#ccc';
+  favBtn.addEventListener('click', function() {
+    toggleFav(p.id);
+    favBtn.textContent = isFav(p.id) ? '♥' : '♡';
+    favBtn.style.color = isFav(p.id) ? '#ef4444' : '#ccc';
+    toast(isFav(p.id) ? 'Ajouté aux favoris' : 'Retiré des favoris', 'info');
+  });
+  emojiBox.appendChild(favBtn);
+  top.appendChild(emojiBox);
+
+  var info = document.createElement('div');
+  info.className = 'pd-info';
+
+  var catEl = document.createElement('div');
+  catEl.className = 'pd-cat';
+  catEl.textContent = categoryLabel(p.category);
+  info.appendChild(catEl);
+
+  var nameEl = document.createElement('div');
+  nameEl.className = 'pd-name';
+  nameEl.style.fontSize = '1.1rem';
+  nameEl.textContent = p.name || 'Produit';
+  info.appendChild(nameEl);
+
+  /* Prix avec promo */
+  if (p.is_promo && p.promo_pct) {
+    var origPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
+    var origEl = document.createElement('div');
+    origEl.style.cssText = 'font-size:0.82rem;color:var(--muted);text-decoration:line-through;';
+    origEl.textContent = fmt(origPrice, 'KMF');
+    info.appendChild(origEl);
+  }
+
+  var priceEl = document.createElement('div');
+  priceEl.className = 'pd-price';
+  priceEl.textContent = fmt(p.price_kmf || 0, 'KMF');
+  info.appendChild(priceEl);
+
+  if (_currency === 'EUR') {
+    var convEl = document.createElement('div');
+    convEl.className = 'pd-price-conv';
+    convEl.textContent = '≈ ' + fmt(p.price_kmf || 0, 'EUR');
+    info.appendChild(convEl);
+  }
+
+  var avail = availabilityInfo(p);
+  var availTag = document.createElement('div');
+  availTag.className = 'avail-badge ' + avail.cls;
+  availTag.style.cssText = 'margin-top:8px;';
+  availTag.textContent = avail.icon + ' ' + avail.label;
+  info.appendChild(availTag);
+
+  top.appendChild(info);
+  body.appendChild(top);
+
+  /* Description */
+  if (p.description) {
+    var desc = document.createElement('p');
+    desc.className = 'pd-desc';
+    desc.textContent = p.description;
+    body.appendChild(desc);
+  }
+
+  /* ── Contrôles qty + ajouter ── */
+  var controls = document.createElement('div');
+  controls.className = 'pd-controls';
+
+  var qtyWrap = document.createElement('div');
+  qtyWrap.className = 'pd-qty-wrap';
+  var minusBtn = document.createElement('button');
+  minusBtn.className = 'qty-btn';
+  minusBtn.textContent = '−';
+  var qtyVal = document.createElement('span');
+  qtyVal.className = 'qty-val';
+  qtyVal.textContent = '1';
+  var plusBtn = document.createElement('button');
+  plusBtn.className = 'qty-btn';
+  plusBtn.textContent = '+';
+  minusBtn.addEventListener('click', function() { if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; } });
+  plusBtn.addEventListener('click', function() { _pdQty++; qtyVal.textContent = _pdQty; });
+  qtyWrap.appendChild(minusBtn);
+  qtyWrap.appendChild(qtyVal);
+  qtyWrap.appendChild(plusBtn);
+  controls.appendChild(qtyWrap);
+
+  var addBtn = document.createElement('button');
+  addBtn.className = 'pd-add-btn';
+  addBtn.style.cssText = 'background:var(--accent);color:#1e2a38;font-weight:700;';
+  addBtn.textContent = 'Ajouter au panier';
+  addBtn.addEventListener('click', function() {
+    addToCart(p, _pdQty, addBtn);
+    setTimeout(function() { closeProductModal(); }, 500);
+  });
+  controls.appendChild(addBtn);
+  body.appendChild(controls);
+
+  /* ── Fonction mini card suggestion ── */
+  function makeSuggestionCard(sp, label) {
+    var mini = document.createElement('div');
+    mini.style.cssText = 'flex:0 0 130px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;';
+    mini.addEventListener('mouseenter', function() { mini.style.transform='translateY(-3px)'; mini.style.boxShadow='0 6px 16px rgba(0,0,0,0.1)'; });
+    mini.addEventListener('mouseleave', function() { mini.style.transform=''; mini.style.boxShadow=''; });
+    mini.addEventListener('click', function() { openProductModal(sp); });
+
+    /* Image */
+    var mImg = document.createElement('div');
+    mImg.style.cssText = 'height:90px;overflow:hidden;background:var(--primary-light);';
+    if (sp.image_url) {
+      var mi = document.createElement('img');
+      mi.src = sp.image_url;
+      mi.alt = sanitize(sp.name);
+      mi.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      mImg.appendChild(mi);
+    } else {
+      mImg.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2rem;';
+      mImg.textContent = productEmoji(sp);
+    }
+    mini.appendChild(mImg);
+
+    var mBody = document.createElement('div');
+    mBody.style.cssText = 'padding:7px 8px;';
+
+    var mName = document.createElement('div');
+    mName.style.cssText = 'font-size:0.75rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;';
+    mName.textContent = sp.name;
+    mBody.appendChild(mName);
+
+    var mPrice = document.createElement('div');
+    mPrice.style.cssText = 'font-size:0.78rem;color:var(--primary);font-weight:700;';
+    mPrice.textContent = fmt(sp.price_kmf || 0, 'KMF');
+    mBody.appendChild(mPrice);
+
+    /* Bouton panier rapide */
+    var mAdd = document.createElement('button');
+    mAdd.style.cssText = 'width:100%;margin-top:5px;padding:4px;background:var(--accent);color:#1e2a38;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;';
+    mAdd.textContent = '+ Panier';
+    mAdd.addEventListener('click', function(e) {
+      e.stopPropagation();
+      addToCart(sp, 1, mAdd);
+      toast(sp.name + ' ajouté', 'success');
+    });
+    mBody.appendChild(mAdd);
+    mini.appendChild(mBody);
+    return mini;
+  }
+
+  /* ── Dans le même esprit (similaires) ── */
+  var similar = _products.filter(function(sp) {
+    return sp.id !== p.id && sp.category === p.category;
+  }).sort(function(a, b) {
+    return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf);
+  }).slice(0, 6);
+
+  if (similar.length) {
+    var simSection = document.createElement('div');
+    simSection.style.cssText = 'margin-top:24px;';
+    var simTitle = document.createElement('div');
+    simTitle.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block;';
+    simTitle.textContent = 'Dans le même esprit';
+    simSection.appendChild(simTitle);
+    var simGrid = document.createElement('div');
+    simGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;';
+    similar.forEach(function(sp) { simGrid.appendChild(makeSuggestionCard(sp)); });
+    simSection.appendChild(simGrid);
+    body.appendChild(simSection);
+  }
+
+  /* ── Va bien avec (complémentaires) ── */
+  var compCats = (_complementRules[p.category] || []).filter(function(c) { return c !== p.category; });
+  var complements = [];
+  compCats.forEach(function(cat) {
+    var items = _products.filter(function(sp) {
+      return sp.id !== p.id && sp.category === cat;
+    }).slice(0, 3);
+    complements = complements.concat(items);
+  });
+  complements = complements.slice(0, 6);
+
+  if (complements.length) {
+    var compSection = document.createElement('div');
+    compSection.style.cssText = 'margin-top:20px;margin-bottom:8px;';
+    var compTitle = document.createElement('div');
+    compTitle.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary);display:inline-block;';
+    compTitle.textContent = 'Va bien avec';
+    compSection.appendChild(compTitle);
+    var compGrid = document.createElement('div');
+    compGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;';
+    complements.forEach(function(sp) { compGrid.appendChild(makeSuggestionCard(sp)); });
+    compSection.appendChild(compGrid);
+    body.appendChild(compSection);
+  }
+
+  $('product-modal').classList.add('open');
+}
 
   var top = document.createElement('div');
   top.className = 'pd-top';
@@ -2845,95 +3097,6 @@ function openProductModal(p) {
   }
 
   var controls = document.createElement('div');
-  controls.className = 'pd-controls';
-
-  var qtyWrap = document.createElement('div');
-  qtyWrap.className = 'pd-qty-wrap';
-
-  var minusBtn = document.createElement('button');
-  minusBtn.className = 'qty-btn';
-  minusBtn.textContent = '−';
-  var qtyVal = document.createElement('span');
-  qtyVal.className = 'qty-val';
-  qtyVal.textContent = '1';
-  var plusBtn = document.createElement('button');
-  plusBtn.className = 'qty-btn';
-  plusBtn.textContent = '+';
-
-  minusBtn.addEventListener('click', function() {
-    if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; }
-  });
-  plusBtn.addEventListener('click', function() {
-    _pdQty++; qtyVal.textContent = _pdQty;
-  });
-
-  qtyWrap.appendChild(minusBtn);
-  qtyWrap.appendChild(qtyVal);
-  qtyWrap.appendChild(plusBtn);
-  controls.appendChild(qtyWrap);
-
-  var addBtn = document.createElement('button');
-  addBtn.className = 'pd-add-btn';
-  addBtn.textContent = '🛒 Ajouter au panier';
-  addBtn.addEventListener('click', function() {
-    addToCart(p, _pdQty, addBtn);
-    /* Ferme le modal après le feedback visuel */
-    setTimeout(function() { closeProductModal(); }, 500);
-  });
-  controls.appendChild(addBtn);
-  body.appendChild(controls);
-
-  /* Produits similaires */
-  var similar = _products.filter(function(sp) {
-    return sp.id !== p.id && sp.category === p.category;
-  }).slice(0, 3);
-  if (similar.length) {
-    var simTitle = document.createElement('h4');
-    simTitle.style.cssText = 'margin-top:24px;margin-bottom:12px;font-family:Poppins,sans-serif;';
-    simTitle.textContent = 'Produits similaires';
-    body.appendChild(simTitle);
-
-    var simGrid = document.createElement('div');
-    simGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;';
-    similar.forEach(function(sp) {
-      var mini = document.createElement('div');
-      mini.style.cssText = 'flex:0 0 140px;background:var(--bg);border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:transform 0.2s;';
-      mini.addEventListener('mouseenter', function() { mini.style.transform = 'translateY(-3px)'; });
-      mini.addEventListener('mouseleave', function() { mini.style.transform = ''; });
-      mini.addEventListener('click', function() { openProductModal(sp); });
-
-      var mEmoji = document.createElement('div');
-      mEmoji.style.cssText = 'font-size:1.8rem;margin-bottom:6px;';
-      if (sp.image_url) {
-        var mImg = document.createElement('img');
-        mImg.src = sp.image_url;
-        mImg.alt = sanitize(sp.name);
-        mImg.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:6px;margin:0 auto;';
-        mEmoji.innerHTML = '';
-        mEmoji.appendChild(mImg);
-      } else {
-        mEmoji.textContent = productEmoji(sp);
-      }
-      mini.appendChild(mEmoji);
-
-      var mName = document.createElement('div');
-      mName.style.cssText = 'font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-      mName.textContent = sp.name;
-      mini.appendChild(mName);
-
-      var mPrice = document.createElement('div');
-      mPrice.style.cssText = 'font-size:0.78rem;color:var(--primary);font-weight:700;';
-      mPrice.textContent = fmt(sp.price_kmf || 0, 'KMF');
-      mini.appendChild(mPrice);
-
-      simGrid.appendChild(mini);
-    });
-    body.appendChild(simGrid);
-  }
-
-  $('product-modal').classList.add('open');
-}
-
 function closeProductModal() {
   $('product-modal').classList.remove('open');
 }
@@ -3888,6 +4051,17 @@ document.addEventListener('DOMContentLoaded', function() {
   refreshCartBadge();
   initPromoBar();
   initHeroSearch();
+
+  /* ── Onglets navigation ── */
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      tabBtns.forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
 
   /* ── Cercles catégories ── */
   var pills = document.querySelectorAll('.cat-circle');
