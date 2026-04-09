@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
       min_price,
       max_price,
       in_stock,
-      limit  = 50,
+      limit  = 300,
       offset = 0,
     } = req.query;
 
@@ -60,6 +60,7 @@ router.get('/', async (req, res) => {
     const { rows } = await db.query(
       `SELECT
          p.id,
+         p.sku,
          p.name,
          p.description,
          p.category,
