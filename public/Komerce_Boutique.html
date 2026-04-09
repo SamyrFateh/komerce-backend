@@ -2744,11 +2744,39 @@ function toggleFav(productId) {
 }
 function isFav(productId) { return !!_favs[productId]; }
 
-function openProductModal(p) {
+function openProductModal(p, fromSuggestion) {
+  // ── Historique navigation produit ──
+  if (!window._productHistory) window._productHistory = [];
+  if (fromSuggestion && window._currentModalProduct) {
+    window._productHistory.push(window._currentModalProduct);
+  }
+  if (!fromSuggestion && !window._goingBack) {
+    window._productHistory = []; // reset si ouverture directe (pas si retour)
+  }
+  window._goingBack = false;
+  window._currentModalProduct = p;
+
   _pdQty = 1;
   var body = $('product-modal-body');
   body.innerHTML = '';
   body.scrollTop = 0;
+
+  /* ── Bouton retour produit précédent ── */
+  if (window._productHistory.length > 0) {
+    var prevProd = window._productHistory[window._productHistory.length - 1];
+    var backBar = document.createElement('div');
+    backBar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:4px;cursor:pointer;color:var(--accent,#b45309);font-size:0.85rem;font-weight:600;border-radius:8px;transition:background 0.2s;';
+    backBar.innerHTML = '<span style="font-size:1.1rem">←</span> Retour à <em style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">' + (prevProd.name || 'produit précédent') + '</em>';
+    backBar.addEventListener('mouseenter', function() { backBar.style.background = '#fef3c7'; });
+    backBar.addEventListener('mouseleave', function() { backBar.style.background = 'transparent'; });
+    backBar.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var goBack = window._productHistory.pop();
+      window._goingBack = true;
+      openProductModal(goBack, false);
+    });
+    body.appendChild(backBar);
+  }
 
   /* ── Image + infos ── */
   var top = document.createElement('div');
@@ -2896,7 +2924,7 @@ function openProductModal(p) {
     items.forEach(function(sp) {
       var card = document.createElement('div');
       card.style.cssText = 'flex:0 0 140px;background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;scroll-snap-align:start;transition:transform 0.15s;';
-      card.addEventListener('click', function() { openProductModal(sp); });
+      card.addEventListener('click', function() { openProductModal(sp, true); });
       card.addEventListener('touchstart', function() { card.style.transform='scale(0.97)'; }, {passive:true});
       card.addEventListener('touchend', function() { card.style.transform=''; }, {passive:true});
 
@@ -3015,41 +3043,15 @@ function openProductModal(p) {
   }
 
   
-  // ── Bouton retour produit (positionné sur le modal-dialog) ──
-  (function() {
-    var modalBody = $('product-modal-body');
-    var modalDialog = modalBody.closest('.modal-dialog') || modalBody.parentElement;
-    
-    // Ensure modal-dialog has position:relative for absolute child
-    modalDialog.style.position = 'relative';
-    
-    // Remove old button if exists
-    var old = document.getElementById('modal-scroll-top-btn');
-    if (old) old.remove();
-    
-    var btn = document.createElement('button');
-    btn.id = 'modal-scroll-top-btn';
-    btn.className = 'modal-scroll-top';
-    btn.innerHTML = '&#8593;';
-    btn.title = 'Retour au produit';
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      modalBody.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    modalDialog.appendChild(btn);
-
-    // Show/hide based on scroll position
-    modalBody.onscroll = function() {
-      btn.classList.toggle('visible', modalBody.scrollTop > 150);
-    };
-  })();
+  // (bouton retour intégré dans la barre ← en haut)
 
   // ── Auto-scroll suggestions carrousels ──
-  (function() {
+  // Delay to ensure modal is visible and tracks have real dimensions
+  setTimeout(function() {
     var tracks = document.querySelectorAll('#product-modal-body .modal-swipe-track');
-    if (!tracks.length) return;
-    tracks.forEach(function(track) {
-      var speed = 0.5;
+    console.log('[Komerce] Auto-scroll: found', tracks.length, 'tracks');
+    tracks.forEach(function(track, idx) {
+      var speed = 0.4;
       var dir = 1;
       var paused = false;
       var rafId = null;
@@ -3057,10 +3059,10 @@ function openProductModal(p) {
       function tick() {
         if (!paused) {
           var max = track.scrollWidth - track.clientWidth;
-          if (max > 0) {
+          if (max > 2) {
             track.scrollLeft += speed * dir;
             if (track.scrollLeft >= max - 2) dir = -1;
-            if (track.scrollLeft <= 2) dir = 1;
+            if (track.scrollLeft <= 1) dir = 1;
           }
         }
         rafId = requestAnimationFrame(tick);
@@ -3073,8 +3075,8 @@ function openProductModal(p) {
         setTimeout(function() { paused = false; }, 3000);
       }, { passive: true });
 
-      // Start after delay
-      setTimeout(function() { rafId = requestAnimationFrame(tick); }, 1200);
+      rafId = requestAnimationFrame(tick);
+      console.log('[Komerce] Auto-scroll started for track', idx, 'scrollWidth:', track.scrollWidth, 'clientWidth:', track.clientWidth);
 
       // Cleanup when modal closes
       var obs = new MutationObserver(function() {
@@ -3085,7 +3087,7 @@ function openProductModal(p) {
       });
       obs.observe($('product-modal'), { attributes: true, attributeFilter: ['class'] });
     });
-  })();
+  }, 800);
 
   $('product-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
