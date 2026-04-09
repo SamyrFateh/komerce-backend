@@ -2675,8 +2675,8 @@ function openProductModal(p) {
   controls.appendChild(addBtn);
   body.appendChild(controls);
 
-  /* ── Bouton Look complet (Mode & Sur-mesure) ── */
-  buildLookBoard(p, body);
+  /* ── Look Board (Sur-mesure uniquement) ── */
+  if ((p.category||'').toLowerCase() === 'sur-mesure') buildLookBoard(p, body);
 
   /* ── Fonction swipe carousel natif pour la modale ── */
   function makeSwipeSection(items, label, borderColor) {
@@ -2803,14 +2803,14 @@ function openProductModal(p) {
     .slice(0, 8);
   if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Dans le même esprit 🌿', '#e8f4e8'));
 
-  // Complémentaires : règles métier (skippé pour Mode/Sur-mesure — le look board s'en charge)
-  if (_pCat !== 'mode' && _pCat !== 'sur-mesure') {
+  // Complémentaires : règles métier (skippé pour Sur-mesure — le look board s'en charge)
+  if (_pCat !== 'sur-mesure') {
     var _compCats = _compRules[_pCat] || [];
     var _compProds = _products
       .filter(function(x) { return x.id !== p.id && _compCats.indexOf((x.category||'').toLowerCase()) >= 0; })
       .sort(function() { return 0.5 - Math.random(); })
       .slice(0, 8);
-    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Va bien avec ✨', '#fff3e8'));
+    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Ceci pourrait aller avec 💡', '#fff3e8'));
   }
 
   $('product-modal').classList.add('open');
@@ -2824,171 +2824,262 @@ var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
 // ════════════════════════════════════════════════════════════════
 function buildLookBoard(p, body) {
   var pCat = (p.category || '').toLowerCase();
-  if (pCat !== 'mode' && pCat !== 'sur-mesure') return;
+  if (pCat !== 'sur-mesure') return;
 
-  // ── Sélectionner les accessoires ────────────────────────────
+  // ── Sélectionner les accessoires par slot ──────────────────
   var allP = _products;
-  var shoes = allP.filter(function(x) {
-    return x.id !== p.id && (x.category||'').toLowerCase() === 'mode' &&
-      /chaussure|sandale|botte|sneaker|mocassin|babouche|escarpin/i.test(x.name);
-  });
-  var beauty = allP.filter(function(x) {
-    return ['beauté','beaute'].indexOf((x.category||'').toLowerCase()) >= 0;
-  });
-  var access = allP.filter(function(x) {
-    return x.id !== p.id && (x.category||'').toLowerCase() === 'mode' &&
-      /sac|bijou|collier|bracelet|montre|bague|foulard|ceinture/i.test(x.name);
-  });
+  var slots = {
+    shoes: allP.filter(function(x) {
+      return x.id !== p.id && /chaussure|sandale|botte|sneaker|mocassin|babouche|escarpin|talon/i.test(x.name);
+    }),
+    jewelry: allP.filter(function(x) {
+      return x.id !== p.id && /bijou|collier|bracelet|montre|bague|chaîne|perle|pendentif|boucle/i.test(x.name);
+    }),
+    beauty: allP.filter(function(x) {
+      return x.id !== p.id && ['beauté','beaute'].indexOf((x.category||'').toLowerCase()) >= 0;
+    }),
+    accessory: allP.filter(function(x) {
+      return x.id !== p.id && /sac|pochette|foulard|ceinture|écharpe|lunette|chapeau|turban/i.test(x.name);
+    })
+  };
 
-  var rnd = function(arr, max) { return arr.length ? arr[Math.floor(Math.random() * Math.min(arr.length, max))] : null; };
-  var shoe  = rnd(shoes, 6);
-  var beau  = rnd(beauty, 10);
-  var acc   = rnd(access, 6);
-  var accs  = [shoe, beau, acc].filter(Boolean);
-  if (!accs.length) return;
+  var slotMeta = [
+    { key: 'shoes',     emoji: '👠', label: 'Chaussures',  pos: 'feet' },
+    { key: 'jewelry',   emoji: '💍', label: 'Bijoux',      pos: 'neck' },
+    { key: 'beauty',    emoji: '💄', label: 'Beauté',      pos: 'face' },
+    { key: 'accessory', emoji: '👜', label: 'Accessoire',  pos: 'hand' }
+  ];
+
+  // Tirage aléatoire initial
+  var picked = {};
+  var active = {}; // slots activés visuellement
+  slotMeta.forEach(function(s) {
+    var arr = slots[s.key];
+    picked[s.key] = arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+    active[s.key] = false;
+  });
 
   // ── Container principal ──────────────────────────────────────
   var wrap = document.createElement('div');
   wrap.style.cssText = 'margin-top:24px;padding-top:20px;border-top:1px dashed #ddd;';
 
-  // ── Titre section ────────────────────────────────────────────
+  // ── Titre ────────────────────────────────────────────────────
   var hdr = document.createElement('div');
   hdr.style.cssText = 'text-align:center;margin-bottom:18px;';
-  hdr.innerHTML = '<div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:4px;">✦ Le look complet ✦</div>'
-                + '<div style="font-size:0.8rem;color:#666;">Composé pour toi</div>';
+  hdr.innerHTML = '<div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:4px;">✦ Aperçu de votre confection ✦</div>'
+                + '<div style="font-size:0.8rem;color:#666;">Sélectionnez les accessoires pour composer votre look</div>';
   wrap.appendChild(hdr);
 
-  // ── Stage : mannequin + produit ──────────────────────────────
-  var stage = document.createElement('div');
-  stage.style.cssText = 'display:flex;flex-direction:column;align-items:center;margin-bottom:16px;';
+  // ── Scene : mannequin + accessoires flottants ────────────────
+  var scene = document.createElement('div');
+  scene.style.cssText = 'position:relative;width:100%;max-width:320px;margin:0 auto 16px;min-height:380px;';
 
-  // SVG mannequin avec clipPath unique (éviter collision id)
-  var uid = 'lk' + Date.now();
-  var imgTag = p.image_url
-    ? '<image href="' + sanitize(p.image_url) + '" x="14" y="44" width="72" height="122" clip-path="url(#' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
-    : '<text x="50" y="112" text-anchor="middle" font-size="32" dy="0">' + productEmoji(p) + '</text>';
+  // Mannequin SVG réaliste
+  var uid = 'mn' + Date.now();
+  var imgClip = p.image_url
+    ? '<image href="' + sanitize(p.image_url) + '" x="25" y="62" width="50" height="100" clip-path="url(#' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
+    : '<text x="50" y="120" text-anchor="middle" font-size="28">' + productEmoji(p) + '</text>';
 
-  var svgEl = document.createElement('div');
-  svgEl.style.cssText = 'width:148px;height:260px;flex-shrink:0;';
-  safeHTML(svgEl,
-    '<svg viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">'
+  var mannequinDiv = document.createElement('div');
+  mannequinDiv.style.cssText = 'width:180px;margin:0 auto;';
+  safeHTML(mannequinDiv,
+    '<svg viewBox="0 0 100 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">'
+    // Fond aura
     + '<defs>'
-    +   '<clipPath id="' + uid + '">'
-    +     '<path d="M28 52 Q20 56 14 72 Q10 90 12 112 L16 68 L17 155 Q33 163 50 163 Q67 163 83 155 L84 68 L88 112 Q90 90 86 72 Q80 56 72 52 Q65 44 50 44 Q35 44 28 52 Z"/>'
-    +   '</clipPath>'
+    +   '<radialGradient id="' + uid + 'g"><stop offset="0%" stop-color="rgba(139,195,74,0.08)"/><stop offset="100%" stop-color="transparent"/></radialGradient>'
+    +   '<clipPath id="' + uid + '"><path d="M30 68 Q22 74 18 90 Q15 108 17 130 L20 88 L21 170 Q35 178 50 178 Q65 178 79 170 L80 88 L83 130 Q85 108 82 90 Q78 74 70 68 Q63 60 50 60 Q37 60 30 68 Z"/></clipPath>'
     + '</defs>'
-    // Cheveux
-    + '<ellipse cx="50" cy="8"  rx="17" ry="12" fill="#5C3D2E"/>'
-    + '<path d="M33 10 Q26 25 29 44" stroke="#5C3D2E" stroke-width="8" fill="none" stroke-linecap="round"/>'
-    + '<path d="M67 10 Q74 25 71 44" stroke="#5C3D2E" stroke-width="8" fill="none" stroke-linecap="round"/>'
-    // Tête
-    + '<ellipse cx="50" cy="21" rx="14" ry="17" fill="#F5E0CC"/>'
-    // Visage (subtil)
-    + '<circle cx="44" cy="22" r="1.4" fill="#C89878" opacity="0.7"/>'
-    + '<circle cx="56" cy="22" r="1.4" fill="#C89878" opacity="0.7"/>'
-    + '<path d="M45 29 Q50 32.5 55 29" stroke="#C89878" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/>'
-    // Cou
-    + '<rect x="45" y="36" width="10" height="10" fill="#F5E0CC" rx="2"/>'
-    // Corps silhouette (fond)
-    + '<path d="M28 52 Q20 56 14 72 Q10 90 12 112 L16 68 L17 155 Q33 163 50 163 Q67 163 83 155 L84 68 L88 112 Q90 90 86 72 Q80 56 72 52 Q65 44 50 44 Q35 44 28 52 Z" fill="#EDD5BC"/>'
-    // Image produit clippée sur le corps
-    + imgTag
-    // Contour corps (subtil)
-    + '<path d="M28 52 Q20 56 14 72 Q10 90 12 112 L16 68 L17 155 Q33 163 50 163 Q67 163 83 155 L84 68 L88 112 Q90 90 86 72 Q80 56 72 52 Q65 44 50 44 Q35 44 28 52 Z" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>'
+    + '<ellipse cx="50" cy="140" rx="48" ry="130" fill="url(#' + uid + 'g)"/>'
+    // Cheveux détaillés
+    + '<ellipse cx="50" cy="14" rx="18" ry="13" fill="#4A3728"/>'
+    + '<path d="M32 16 Q24 32 28 54" stroke="#4A3728" stroke-width="9" fill="none" stroke-linecap="round"/>'
+    + '<path d="M68 16 Q76 32 72 54" stroke="#4A3728" stroke-width="9" fill="none" stroke-linecap="round"/>'
+    + '<path d="M36 10 Q50 2 64 10" stroke="#5C4033" stroke-width="3" fill="none"/>'
+    // Tête réaliste
+    + '<ellipse cx="50" cy="30" rx="15" ry="18" fill="#E8C9A8"/>'
+    // Oreilles
+    + '<ellipse cx="35" cy="30" rx="3" ry="5" fill="#DEB896"/>'
+    + '<ellipse cx="65" cy="30" rx="3" ry="5" fill="#DEB896"/>'
+    // Visage
+    + '<ellipse cx="44" cy="26" rx="2.5" ry="1.5" fill="#F5E6D3"/>'  // paupière G
+    + '<ellipse cx="56" cy="26" rx="2.5" ry="1.5" fill="#F5E6D3"/>'  // paupière D
+    + '<circle cx="44" cy="27" r="1.6" fill="#5C3D2E"/>'  // oeil G
+    + '<circle cx="56" cy="27" r="1.6" fill="#5C3D2E"/>'  // oeil D
+    + '<circle cx="44.5" cy="26.5" r="0.5" fill="#fff"/>'  // reflet
+    + '<circle cx="56.5" cy="26.5" r="0.5" fill="#fff"/>'
+    + '<path d="M44 24 Q44 22 46 23" stroke="#4A3728" stroke-width="0.8" fill="none"/>'  // sourcil G
+    + '<path d="M56 24 Q56 22 54 23" stroke="#4A3728" stroke-width="0.8" fill="none"/>'  // sourcil D
+    + '<path d="M48 32 Q50 33 52 32" stroke="#C4907C" stroke-width="0.6" fill="none"/>'  // nez
+    + '<path d="M45 36 Q50 39 55 36" stroke="#C98A7A" stroke-width="1.4" fill="none" stroke-linecap="round"/>'  // sourire
+    + '<ellipse cx="42" cy="33" rx="3" ry="1.5" fill="#E8A090" opacity="0.3"/>'  // blush G
+    + '<ellipse cx="58" cy="33" rx="3" ry="1.5" fill="#E8A090" opacity="0.3"/>'  // blush D
+    // Cou élégant
+    + '<path d="M44 46 L44 56 Q47 58 50 58 Q53 58 56 56 L56 46" fill="#E8C9A8"/>'
+    // Corps silhouette (fond peau)
+    + '<path d="M30 68 Q22 74 18 90 Q15 108 17 130 L20 88 L21 170 Q35 178 50 178 Q65 178 79 170 L80 88 L83 130 Q85 108 82 90 Q78 74 70 68 Q63 60 50 60 Q37 60 30 68 Z" fill="#E8C9A8"/>'
+    // Vêtement (image clippée ou emoji)
+    + imgClip
+    // Contour subtil
+    + '<path d="M30 68 Q22 74 18 90 Q15 108 17 130 L20 88 L21 170 Q35 178 50 178 Q65 178 79 170 L80 88 L83 130 Q85 108 82 90 Q78 74 70 68 Q63 60 50 60 Q37 60 30 68 Z" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="0.8"/>'
+    // Bras
+    + '<path d="M18 90 Q10 110 8 135 Q7 140 10 142" stroke="#E8C9A8" stroke-width="7" fill="none" stroke-linecap="round"/>'
+    + '<path d="M82 90 Q90 110 92 135 Q93 140 90 142" stroke="#E8C9A8" stroke-width="7" fill="none" stroke-linecap="round"/>'
+    // Mains
+    + '<ellipse cx="10" cy="144" rx="4" ry="5" fill="#E8C9A8"/>'
+    + '<ellipse cx="90" cy="144" rx="4" ry="5" fill="#E8C9A8"/>'
     // Jambes
-    + '<path d="M17 152 Q26 158 35 160 L32 253 Q29 256 25 253 L24 162 Q20 158 17 152 Z" fill="#F5E0CC"/>'
-    + '<path d="M83 152 Q74 158 65 160 L68 253 Q71 256 75 253 L76 162 Q80 158 83 152 Z" fill="#F5E0CC"/>'
+    + '<path d="M21 168 Q30 175 38 178 L35 260 Q32 264 28 260 L27 180 Q23 175 21 168 Z" fill="#E8C9A8"/>'
+    + '<path d="M79 168 Q70 175 62 178 L65 260 Q68 264 72 260 L73 180 Q77 175 79 168 Z" fill="#E8C9A8"/>'
+    // Pieds
+    + '<ellipse cx="31" cy="262" rx="7" ry="3" fill="#DEB896"/>'
+    + '<ellipse cx="69" cy="262" rx="7" ry="3" fill="#DEB896"/>'
+    // Slots visuels pour accessoires (invisibles par défaut)
+    + '<g id="' + uid + '-slot-feet" opacity="0"><rect x="15" y="252" width="70" height="18" rx="6" fill="rgba(139,195,74,0.15)" stroke="var(--primary)" stroke-width="0.5" stroke-dasharray="2"/></g>'
+    + '<g id="' + uid + '-slot-neck" opacity="0"><ellipse cx="50" cy="56" rx="14" ry="5" fill="rgba(255,193,7,0.15)" stroke="#FFC107" stroke-width="0.5" stroke-dasharray="2"/></g>'
+    + '<g id="' + uid + '-slot-hand" opacity="0"><rect x="78" y="130" width="20" height="22" rx="4" fill="rgba(156,39,176,0.12)" stroke="#9C27B0" stroke-width="0.5" stroke-dasharray="2"/></g>'
     + '</svg>'
   );
-  stage.appendChild(svgEl);
+  scene.appendChild(mannequinDiv);
 
   // Nom + prix du produit principal
   var mainInfo = document.createElement('div');
-  mainInfo.style.cssText = 'text-align:center;margin-top:6px;';
-  mainInfo.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:#333;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sanitize(p.name) + '</div>'
-                     + '<div style="font-size:0.78rem;font-weight:800;color:var(--primary);margin-top:2px;">' + fmt(p.price_kmf||0,'KMF') + '</div>';
-  stage.appendChild(mainInfo);
-  wrap.appendChild(stage);
+  mainInfo.style.cssText = 'text-align:center;margin-top:8px;';
+  mainInfo.innerHTML = '<div style="font-size:0.85rem;font-weight:700;color:#333;max-width:200px;margin:0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sanitize(p.name) + '</div>'
+                     + '<div style="font-size:0.82rem;font-weight:800;color:var(--primary);margin-top:3px;">' + fmt(p.price_kmf||0,'KMF') + '</div>';
+  scene.appendChild(mainInfo);
+  wrap.appendChild(scene);
 
-  // ── Séparateur + titre accessoires ──────────────────────────
+  // ── Titre accessoires ──────────────────────────────────────
   var sep = document.createElement('div');
-  sep.style.cssText = 'font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;text-align:center;margin-bottom:10px;';
-  sep.textContent = '— Accessoires suggérés —';
+  sep.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;text-align:center;margin:16px 0 10px;';
+  sep.textContent = '— Touchez pour assembler le look —';
   wrap.appendChild(sep);
 
-  // ── Row accessoires ──────────────────────────────────────────
-  var labels = ['👠 Chaussures','💄 Beauté','👜 Accessoire'];
-  var row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;';
+  // ── Grille accessoires interactifs ──────────────────────────
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 4px;';
 
-  accs.forEach(function(ac, i) {
+  var totalEl = null; // référence au total pour mise à jour
+
+  function updateTotal() {
+    var items = [p];
+    slotMeta.forEach(function(s) { if (active[s.key] && picked[s.key]) items.push(picked[s.key]); });
+    var total = items.reduce(function(sum, x) { return sum + (x.price_kmf || 0); }, 0);
+    if (totalEl) {
+      totalEl.querySelector('.look-total-count').textContent = 'Total look (' + items.length + ' pièces)';
+      totalEl.querySelector('.look-total-price').textContent = fmt(total, 'KMF');
+    }
+  }
+
+  slotMeta.forEach(function(s) {
+    var item = picked[s.key];
+    if (!item) return;
+
     var card = document.createElement('div');
-    card.style.cssText = 'flex:0 0 116px;border-radius:10px;overflow:hidden;border:1px solid #eee;background:#fff;cursor:pointer;scroll-snap-align:start;transition:transform 0.15s,box-shadow 0.15s;';
-    card.addEventListener('click', function() { openProductModal(ac); });
-    card.addEventListener('mouseenter', function() { card.style.transform='translateY(-2px)'; card.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'; });
-    card.addEventListener('mouseleave', function() { card.style.transform=''; card.style.boxShadow=''; });
+    card.style.cssText = 'border-radius:12px;overflow:hidden;border:2px solid #eee;background:#fff;cursor:pointer;transition:all 0.25s;';
+    card.setAttribute('data-slot', s.key);
 
-    // Badge label
-    var badge = document.createElement('div');
-    badge.style.cssText = 'background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;text-align:center;letter-spacing:0.5px;';
-    badge.textContent = labels[i] || ac.category;
-    card.appendChild(badge);
+    // Header avec emoji + label
+    var head = document.createElement('div');
+    head.style.cssText = 'background:#f8f8f8;padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:0.72rem;font-weight:700;color:#666;';
+    head.innerHTML = '<span style="font-size:1.1rem;">' + s.emoji + '</span> ' + s.label;
+    // Toggle indicator
+    var toggle = document.createElement('span');
+    toggle.style.cssText = 'margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all 0.2s;';
+    toggle.className = 'slot-toggle';
+    head.appendChild(toggle);
+    card.appendChild(head);
 
     // Image
     var imgW = document.createElement('div');
-    imgW.style.cssText = 'height:88px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;overflow:hidden;';
-    if (ac.image_url) {
+    imgW.style.cssText = 'height:80px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;overflow:hidden;';
+    if (item.image_url) {
       var img = document.createElement('img');
-      img.src = ac.image_url;
-      img.alt = sanitize(ac.name);
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      img.src = item.image_url;
+      img.alt = sanitize(item.name);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;transition:transform 0.3s;';
       imgW.appendChild(img);
     } else {
-      imgW.style.fontSize = '2.2rem';
-      imgW.textContent = productEmoji(ac);
+      imgW.style.fontSize = '2rem';
+      imgW.textContent = productEmoji(item);
     }
     card.appendChild(imgW);
 
-    // Infos
+    // Info
     var inf = document.createElement('div');
     inf.style.cssText = 'padding:6px 8px;';
-    var iN = document.createElement('div');
-    iN.style.cssText = 'font-size:0.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;';
-    iN.textContent = ac.name;
-    var iP = document.createElement('div');
-    iP.style.cssText = 'font-size:0.72rem;font-weight:800;color:var(--primary);margin-top:2px;';
-    iP.textContent = fmt(ac.price_kmf||0,'KMF');
-    inf.appendChild(iN);
-    inf.appendChild(iP);
+    inf.innerHTML = '<div style="font-size:0.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;">' + sanitize(item.name) + '</div>'
+                  + '<div style="font-size:0.72rem;font-weight:800;color:var(--primary);margin-top:2px;">' + fmt(item.price_kmf||0,'KMF') + '</div>';
     card.appendChild(inf);
-    row.appendChild(card);
+
+    // Click toggle : activer/désactiver le slot
+    card.addEventListener('click', function(e) {
+      e.stopPropagation();
+      active[s.key] = !active[s.key];
+
+      if (active[s.key]) {
+        card.style.border = '2px solid var(--primary)';
+        card.style.boxShadow = '0 4px 16px rgba(139,195,74,0.25)';
+        toggle.style.border = '2px solid var(--primary)';
+        toggle.style.background = 'var(--primary)';
+        toggle.style.color = '#fff';
+        toggle.textContent = '✓';
+        // Glow slot sur mannequin
+        var slotEl = document.getElementById(uid + '-slot-' + s.pos);
+        if (slotEl) slotEl.setAttribute('opacity', '1');
+      } else {
+        card.style.border = '2px solid #eee';
+        card.style.boxShadow = '';
+        toggle.style.border = '2px solid #ccc';
+        toggle.style.background = '';
+        toggle.style.color = '';
+        toggle.textContent = '';
+        var slotEl2 = document.getElementById(uid + '-slot-' + s.pos);
+        if (slotEl2) slotEl2.setAttribute('opacity', '0');
+      }
+      updateTotal();
+    });
+
+    // Long press → voir le produit
+    card.addEventListener('dblclick', function() { openProductModal(item); });
+
+    grid.appendChild(card);
   });
-  wrap.appendChild(row);
+  wrap.appendChild(grid);
+
+  // ── Hint double-tap ──────────────────────────────────────────
+  var hint = document.createElement('div');
+  hint.style.cssText = 'text-align:center;font-size:0.65rem;color:#bbb;margin-top:6px;';
+  hint.textContent = 'Touchez pour ajouter au look • Double-touchez pour voir le détail';
+  wrap.appendChild(hint);
 
   // ── Total + Actions ──────────────────────────────────────────
-  var allItems = [p].concat(accs);
-  var total = allItems.reduce(function(s,x){ return s+(x.price_kmf||0); }, 0);
-
-  var totRow = document.createElement('div');
-  totRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--primary-light);border-radius:8px;margin:8px 0;';
-  totRow.innerHTML = '<span style="font-size:0.77rem;color:#666;font-weight:600;">Total look (' + allItems.length + ' pièces)</span>'
-                   + '<span style="font-size:0.92rem;font-weight:800;color:var(--primary);">' + fmt(total,'KMF') + '</span>';
-  wrap.appendChild(totRow);
+  totalEl = document.createElement('div');
+  totalEl.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--primary-light);border-radius:8px;margin:14px 0 8px;';
+  totalEl.innerHTML = '<span class="look-total-count" style="font-size:0.77rem;color:#666;font-weight:600;">Total look (1 pièce)</span>'
+                    + '<span class="look-total-price" style="font-size:0.92rem;font-weight:800;color:var(--primary);">' + fmt(p.price_kmf||0,'KMF') + '</span>';
+  wrap.appendChild(totalEl);
 
   var addAll = document.createElement('button');
-  addAll.style.cssText = 'width:100%;padding:11px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer;margin-bottom:6px;transition:opacity 0.2s;';
-  addAll.textContent = '🛍️ Ajouter tout le look';
-  addAll.addEventListener('click', function() { allItems.forEach(function(x){ addToCart(x,1,null); }); toast('Look complet ajouté !','success'); });
+  addAll.style.cssText = 'width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer;margin-bottom:6px;transition:opacity 0.2s;';
+  addAll.textContent = '🛍️ Ajouter le look au panier';
+  addAll.addEventListener('click', function() {
+    var items = [p];
+    slotMeta.forEach(function(s) { if (active[s.key] && picked[s.key]) items.push(picked[s.key]); });
+    items.forEach(function(x) { addToCart(x, 1, null); });
+    toast('Look ' + (items.length > 1 ? '(' + items.length + ' pièces) ' : '') + 'ajouté !', 'success');
+  });
   wrap.appendChild(addAll);
 
   var refresh = document.createElement('button');
   refresh.style.cssText = 'width:100%;padding:8px;background:#fff;color:var(--primary);border:2px solid var(--primary);border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;transition:background 0.2s;';
-  refresh.textContent = '↻ Autre look';
+  refresh.textContent = '↻ Proposer un autre look';
   refresh.addEventListener('click', function() { wrap.remove(); buildLookBoard(p, body); });
   wrap.appendChild(refresh);
 
   body.appendChild(wrap);
 }
+
 
 function openLookModal(mainProduct) {
   var body = $('look-modal-body');
