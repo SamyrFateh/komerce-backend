@@ -178,6 +178,7 @@ const orders = {
       module_qty_meters:         posNum.max(1000),
       module_accessories:        Joi.array().items(safeStr(100)).max(10),
       order_occasion:            safeStr(50),
+      use_wallet:                Joi.boolean().default(false),
     }),
   },
 
