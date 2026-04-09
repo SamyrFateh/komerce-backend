@@ -800,7 +800,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .modal-overlay.open { display: flex; }
 .modal-box {
   background: var(--white); border-radius: 14px;
-  max-width: 420px; width: 100%; max-height: 90vh;
+  max-width: 560px; width: 100%; max-height: 90vh;
   overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
   animation: fadeInUp 0.35s;
   display: flex; flex-direction: column;
@@ -2930,7 +2930,7 @@ function openProductModal(p) {
   /* ── Fonction mini card suggestion ── */
   function makeSuggestionCard(sp, label) {
     var mini = document.createElement('div');
-    mini.style.cssText = 'flex:0 0 130px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;';
+    mini.style.cssText = 'flex:0 0 150px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;scroll-snap-align:start;';
     mini.addEventListener('mouseenter', function() { mini.style.transform='translateY(-3px)'; mini.style.boxShadow='0 6px 16px rgba(0,0,0,0.1)'; });
     mini.addEventListener('mouseleave', function() { mini.style.transform=''; mini.style.boxShadow=''; });
     mini.addEventListener('click', function() { openProductModal(sp); });
@@ -2992,7 +2992,7 @@ function openProductModal(p) {
     simTitle.textContent = 'Dans le même esprit';
     simSection.appendChild(simTitle);
     var simGrid = document.createElement('div');
-    simGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;';
+    simGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;padding-right:20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;';
     similar.forEach(function(sp) { simGrid.appendChild(makeSuggestionCard(sp)); });
     simSection.appendChild(simGrid);
     body.appendChild(simSection);
@@ -3017,7 +3017,7 @@ function openProductModal(p) {
     compTitle.textContent = 'Va bien avec';
     compSection.appendChild(compTitle);
     var compGrid = document.createElement('div');
-    compGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;';
+    compGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;padding-right:20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;';
     complements.forEach(function(sp) { compGrid.appendChild(makeSuggestionCard(sp)); });
     compSection.appendChild(compGrid);
     body.appendChild(compSection);
