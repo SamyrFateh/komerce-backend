@@ -2987,11 +2987,15 @@ function openProductModal(p, fromSuggestion) {
 
     arrowL.addEventListener('click', function(e) {
       e.stopPropagation();
+      track.dataset.arrowPause = '1';
       track.scrollBy({ left: -280, behavior: 'smooth' });
+      setTimeout(function() { delete track.dataset.arrowPause; }, 1500);
     });
     arrowR.addEventListener('click', function(e) {
       e.stopPropagation();
+      track.dataset.arrowPause = '1';
       track.scrollBy({ left: 280, behavior: 'smooth' });
+      setTimeout(function() { delete track.dataset.arrowPause; }, 1500);
     });
     track.addEventListener('scroll', updateArrows, { passive: true });
 
@@ -3067,7 +3071,7 @@ function openProductModal(p, fromSuggestion) {
         setTimeout(function() { paused = false; }, 3000);
       }, { passive: true });
       var timer = setInterval(function() {
-        if (paused) return;
+        if (paused || track.dataset.arrowPause) return;
         var max = track.scrollWidth - track.clientWidth;
         if (max <= 5) return;
         track.scrollLeft += dir * 1.5;
