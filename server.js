@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v11.0 (avoirs/credits garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.8 (avoirs/credits garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -180,6 +180,7 @@ const healthRouter     = require('./routes/health');
 const parcelsRouter    = require('./routes/parcels');
 const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
+const creditsRouter    = require('./routes/credits');
 const walletRouter     = require('./routes/wallet');
 const walletService    = require('./services/wallet-service');
 
@@ -199,6 +200,7 @@ app.use('/api/logistics',  logisticsRouter);
 app.use('/api/parcels',    parcelsRouter);
 app.use('/api/hub',        hubRouter);
 app.use('/api/carriers',   carriersRouter);
+app.use('/api/credits',    creditsRouter);
 app.use('/api/wallet',     walletRouter);
 app.use('/api/payments',   paymentsRouter);
 app.use('/api/scans',      scansRouter);
@@ -308,8 +310,11 @@ setTimeout(() => {
 
 const PORT = process.env.PORT || 3000;
 
-const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v11.0 — port ${PORT} — démarrage immédiat — migrations en background`);
+const server = // Init wallet tables at startup
+walletService.ensureWalletTables().catch(e => console.error('Wallet init error:', e.message));
+
+app.listen(PORT, () => {
+  console.log(`KOMERCE API v10.8 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {
@@ -317,8 +322,7 @@ const server = app.listen(PORT, () => {
       await fixAdminHash();
       await fixMissingSchema();
       await runAllSeeds();
-      await walletService.ensureWalletTables();
-      console.log('✅ Migrations, seeds et wallet prêts');
+      console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
     }
@@ -335,3 +339,4 @@ process.on('SIGTERM', () => {
 });
 
 module.exports = app;
+
