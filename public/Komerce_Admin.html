@@ -710,6 +710,123 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       </div>
 
 
+
+      <!-- PILOTAGE SECTIONS -->
+      <div class="scr" id="scr-dashboard">
+      <div class="pg-ttl">📊 Activité</div>
+      <div id="ops-content"><div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Chargement…</p></div></div>
+      </div>
+
+      <div class="scr" id="scr-ventes">
+      <div class="pg-ttl">💰 Ventes</div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
+      <span style="font-size:.78rem;font-weight:700;color:var(--ink3);">Période :</span>
+      <button onclick="loadSales(7)"  style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">7j</button>
+      <button onclick="loadSales(30)" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:700;background:var(--ter);color:white;">30j</button>
+      <button onclick="loadSales(90)" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">90j</button>
+      </div>
+      <div id="sales-content"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+
+      <div class="scr" id="scr-retards">
+      <div class="pg-ttl">⚠️ Retards</div>
+      <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;">
+      <button onclick="loadRetards(null)" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:700;background:var(--ter);color:white;">Tous</button>
+      <button onclick="loadRetards('remboursement_possible')" style="padding:.35rem .8rem;border:1px solid var(--red);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--red);">🚨 Remboursement</button>
+      <button onclick="loadRetards('remise_10pct_prochaine_cmd')" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--ter2);">−10%</button>
+      <button onclick="loadRetards('avoir_5pct')" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">Avoir 5%</button>
+      <button onclick="loadRetards('contact_préventif')" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">Préventif</button>
+      </div>
+      <div id="retards-content"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+
+      <div class="scr" id="scr-forecast">
+      <div class="pg-ttl">📈 Prévisions</div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.5rem;background:var(--bg2);padding:1rem;border-radius:10px;border:1px solid var(--ln);">
+      <div>
+      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">DATE CIBLE</label>
+      <input type="date" id="fc-target" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
+      </div>
+      <div>
+      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">PÉRIODE RÉFÉRENCE</label>
+      <select id="fc-period" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
+      <option value="7">7 derniers jours</option>
+      <option value="14">14 derniers jours</option>
+      <option value="30" selected>30 derniers jours</option>
+      </select>
+      </div>
+      <div>
+      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">DEPUIS (optionnel)</label>
+      <input type="date" id="fc-from" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
+      </div>
+      <button onclick="loadForecast()" style="padding:.45rem 1.2rem;background:var(--ter);color:white;border:none;border-radius:6px;font-weight:700;font-size:.82rem;cursor:pointer;">📈 Calculer</button>
+      </div>
+      <div id="forecast-content"></div>
+      </div>
+
+      <div class="scr" id="scr-reset">
+      <div class="pg-ttl">🧹 Reset données</div>
+
+      <div style="margin-bottom:1.5rem;padding:1.2rem;background:var(--bg2);border-radius:10px;border:1px solid var(--ln);">
+      <div style="font-weight:700;margin-bottom:.8rem;font-size:.85rem;color:var(--ink2);">📊 État actuel de la base</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem;">
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--ter);" id="cnt-orders">-</div>
+      <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Commandes</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--ter2);" id="cnt-items">-</div>
+      <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Items</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--sec);" id="cnt-users">-</div>
+      <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Utilisateurs</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--ink2);" id="cnt-products">-</div>
+      <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Produits</div>
+      </div>
+      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--ink2);" id="cnt-relais">-</div>
+      <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Relais</div>
+      </div>
+      </div>
+      <button onclick="loadCounts()" style="margin-top:.8rem;padding:.4rem 1rem;background:var(--ter);color:white;border:none;border-radius:6px;font-weight:600;font-size:.75rem;cursor:pointer;">🔄 Rafraîchir</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem;">
+      <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid var(--ln);">
+      <div style="font-size:1.2rem;margin-bottom:.3rem;">🧹</div>
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Supprimer les commandes</div>
+      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
+      Supprime commandes, items, douane, recipients.<br>
+      <strong style="color:var(--sec);">✅ Conserve :</strong> produits, relais, tous les users.
+      </div>
+      <button onclick="doReset('orders')" style="width:100%;padding:.6rem;background:var(--ter);color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">Nettoyer les commandes</button>
+      </div>
+      <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid #f59e0b;">
+      <div style="font-size:1.2rem;margin-bottom:.3rem;">👥</div>
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Commandes + Clients</div>
+      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
+      Supprime commandes <strong>ET</strong> clients (non-admin).<br>
+      <strong style="color:var(--sec);">✅ Conserve :</strong> produits, relais, comptes admin.
+      </div>
+      <button onclick="doReset('users')" style="width:100%;padding:.6rem;background:#f59e0b;color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">⚠️ Commandes + clients</button>
+      </div>
+      <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid var(--red);">
+      <div style="font-size:1.2rem;margin-bottom:.3rem;">🏭</div>
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Factory Reset</div>
+      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
+      Supprime <strong>TOUT</strong> → re-seed produits & relais.<br>
+      <strong style="color:var(--sec);">✅ Conserve :</strong> uniquement comptes admin.
+      </div>
+      <button onclick="doReset('factory')" style="width:100%;padding:.6rem;background:var(--red);color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">🚨 Factory Reset</button>
+      </div>
+      </div>
+      <div id="reset-result" style="margin-top:1.2rem;display:none;padding:1rem;border-radius:8px;font-size:.82rem;font-weight:600;"></div>
+      </div>
+
+
       <!-- WALLET ADMIN -->
       <div class="scr" id="scr-wallet">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2372,120 +2489,11 @@ document.getElementById('wallet-credit-modal')?.addEventListener('click', e => {
 </script>
 
 <!-- ══ SCREENS DASHBOARD (fusionnés depuis admin_v2) ════════════════════════ -->
-<div class="scr" id="scr-dashboard">
-  <div class="pg-ttl">📊 Activité</div>
-  <div id="ops-content"><div class="loading"><div class="spinner"></div><p style="margin-top:1rem;">Chargement…</p></div></div>
-</div>
 
-<div class="scr" id="scr-ventes">
-  <div class="pg-ttl">💰 Ventes</div>
-  <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
-    <span style="font-size:.78rem;font-weight:700;color:var(--ink3);">Période :</span>
-    <button onclick="loadSales(7)"  style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">7j</button>
-    <button onclick="loadSales(30)" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:700;background:var(--ter);color:white;">30j</button>
-    <button onclick="loadSales(90)" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">90j</button>
-  </div>
-  <div id="sales-content"><div class="loading"><div class="spinner"></div></div></div>
-</div>
 
-<div class="scr" id="scr-retards">
-  <div class="pg-ttl">⚠️ Retards</div>
-  <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;">
-    <button onclick="loadRetards(null)" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:700;background:var(--ter);color:white;">Tous</button>
-    <button onclick="loadRetards('remboursement_possible')" style="padding:.35rem .8rem;border:1px solid var(--red);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--red);">🚨 Remboursement</button>
-    <button onclick="loadRetards('remise_10pct_prochaine_cmd')" style="padding:.35rem .8rem;border:1px solid var(--ter);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--ter2);">−10%</button>
-    <button onclick="loadRetards('avoir_5pct')" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">Avoir 5%</button>
-    <button onclick="loadRetards('contact_préventif')" style="padding:.35rem .8rem;border:1px solid var(--ln);border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600;">Préventif</button>
-  </div>
-  <div id="retards-content"><div class="loading"><div class="spinner"></div></div></div>
-</div>
 
-<div class="scr" id="scr-forecast">
-  <div class="pg-ttl">📈 Prévisions</div>
-  <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.5rem;background:var(--bg2);padding:1rem;border-radius:10px;border:1px solid var(--ln);">
-    <div>
-      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">DATE CIBLE</label>
-      <input type="date" id="fc-target" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
-    </div>
-    <div>
-      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">PÉRIODE RÉFÉRENCE</label>
-      <select id="fc-period" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
-        <option value="7">7 derniers jours</option>
-        <option value="14">14 derniers jours</option>
-        <option value="30" selected>30 derniers jours</option>
-      </select>
-    </div>
-    <div>
-      <label style="display:block;font-size:.68rem;font-weight:700;color:var(--ink3);margin-bottom:.3rem;">DEPUIS (optionnel)</label>
-      <input type="date" id="fc-from" style="border:1px solid var(--ln);border-radius:6px;padding:.4rem .6rem;font-size:.82rem;">
-    </div>
-    <button onclick="loadForecast()" style="padding:.45rem 1.2rem;background:var(--ter);color:white;border:none;border-radius:6px;font-weight:700;font-size:.82rem;cursor:pointer;">📈 Calculer</button>
-  </div>
-  <div id="forecast-content"></div>
-</div>
 
 <!-- ═══ SCREEN RESET DONNÉES ═══════════════════════════════════════════ -->
-<div class="scr" id="scr-reset">
-  <div class="pg-ttl">🧹 Reset données</div>
-  
-  <div style="margin-bottom:1.5rem;padding:1.2rem;background:var(--bg2);border-radius:10px;border:1px solid var(--ln);">
-    <div style="font-weight:700;margin-bottom:.8rem;font-size:.85rem;color:var(--ink2);">📊 État actuel de la base</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem;">
-      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
-        <div style="font-size:1.5rem;font-weight:800;color:var(--ter);" id="cnt-orders">-</div>
-        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Commandes</div>
-      </div>
-      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
-        <div style="font-size:1.5rem;font-weight:800;color:var(--ter2);" id="cnt-items">-</div>
-        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Items</div>
-      </div>
-      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
-        <div style="font-size:1.5rem;font-weight:800;color:var(--sec);" id="cnt-users">-</div>
-        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Utilisateurs</div>
-      </div>
-      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
-        <div style="font-size:1.5rem;font-weight:800;color:var(--ink2);" id="cnt-products">-</div>
-        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Produits</div>
-      </div>
-      <div style="text-align:center;padding:.6rem;background:white;border-radius:8px;border:1px solid var(--ln);">
-        <div style="font-size:1.5rem;font-weight:800;color:var(--ink2);" id="cnt-relais">-</div>
-        <div style="font-size:.68rem;color:var(--ink3);font-weight:600;">Relais</div>
-      </div>
-    </div>
-    <button onclick="loadCounts()" style="margin-top:.8rem;padding:.4rem 1rem;background:var(--ter);color:white;border:none;border-radius:6px;font-weight:600;font-size:.75rem;cursor:pointer;">🔄 Rafraîchir</button>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem;">
-    <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid var(--ln);">
-      <div style="font-size:1.2rem;margin-bottom:.3rem;">🧹</div>
-      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Supprimer les commandes</div>
-      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
-        Supprime commandes, items, douane, recipients.<br>
-        <strong style="color:var(--sec);">✅ Conserve :</strong> produits, relais, tous les users.
-      </div>
-      <button onclick="doReset('orders')" style="width:100%;padding:.6rem;background:var(--ter);color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">Nettoyer les commandes</button>
-    </div>
-    <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid #f59e0b;">
-      <div style="font-size:1.2rem;margin-bottom:.3rem;">👥</div>
-      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Commandes + Clients</div>
-      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
-        Supprime commandes <strong>ET</strong> clients (non-admin).<br>
-        <strong style="color:var(--sec);">✅ Conserve :</strong> produits, relais, comptes admin.
-      </div>
-      <button onclick="doReset('users')" style="width:100%;padding:.6rem;background:#f59e0b;color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">⚠️ Commandes + clients</button>
-    </div>
-    <div style="padding:1.2rem;background:white;border-radius:10px;border:2px solid var(--red);">
-      <div style="font-size:1.2rem;margin-bottom:.3rem;">🏭</div>
-      <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Factory Reset</div>
-      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:1rem;line-height:1.4;">
-        Supprime <strong>TOUT</strong> → re-seed produits & relais.<br>
-        <strong style="color:var(--sec);">✅ Conserve :</strong> uniquement comptes admin.
-      </div>
-      <button onclick="doReset('factory')" style="width:100%;padding:.6rem;background:var(--red);color:white;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;">🚨 Factory Reset</button>
-    </div>
-  </div>
-  <div id="reset-result" style="margin-top:1.2rem;display:none;padding:1rem;border-radius:8px;font-size:.82rem;font-weight:600;"></div>
-</div>
 
 
 
