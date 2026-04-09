@@ -13,7 +13,6 @@ async function seedAdmin() {
       console.log('[seed] Admin already exists, skipping');
       return;
     }
-    // Admin creation needs auth route — skip here
     console.log('[seed] Admin not found — use /api/auth/register or admin-reset');
   } catch (err) {
     console.error('[seed] Admin check error:', err.message);
@@ -37,8 +36,14 @@ async function seedProducts() {
   }
 }
 
-async function fixProductImages() {
-  console.log('[seed] fixProductImages disabled — Cloudinary migration active');
+/**
+ * runAllSeeds — appelé par server.js au démarrage (background)
+ * Exécute toutes les vérifications seed dans l'ordre.
+ */
+async function runAllSeeds() {
+  await seedAdmin();
+  await seedProducts();
+  console.log('[seed] ✅ All seeds completed');
 }
 
-module.exports = { seedAdmin, seedProducts, fixProductImages };
+module.exports = { seedAdmin, seedProducts, runAllSeeds };

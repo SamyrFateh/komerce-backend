@@ -291,23 +291,7 @@ async function fixMissingSchema() {
   await run('order_status enum in_transit',
     `ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'in_transit' AFTER 'shipped'`);
 
-  // ── Migration 025 : remplacer images locales /uploads/ par placeholder ──
-  // Railway filesystem éphémère : chaque redéploiement vide public/uploads/
-  // On remplace tous les chemins locaux par une image placeholder stable.
-  // Idempotent : ne touche que les lignes avec chemin /uploads/...
-  try {
-    const { rowCount } = await db.query(
-      `UPDATE products
-       SET image_url = 'https://placehold.co/400x400/e2e8f0/64748b?text=Komerce'
-       WHERE image_url LIKE '/uploads/%'
-          OR image_url LIKE '%railway%/uploads/%'`
-    );
-    if (rowCount > 0) {
-      console.log(`  ✅ Migration 025: ${rowCount} image(s) locales remplacées par placeholder`);
-    }
-  } catch (err) {
-    console.error(`  ⚠️ Migration 025 images: ${err.message}`);
-  }
+  // Migration 025 removed — all images migrated to Cloudinary (P2-006)
 
   console.log('🔧 Schema migrations complete.');
 }

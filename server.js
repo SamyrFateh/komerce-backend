@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.5 (seedAdmin garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.6 (seedAdmin garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -176,7 +176,7 @@ const purchasingRouter = require('./routes/purchasing');
 const loyaltyRouter    = require('./routes/loyalty');
 const unsoldRouter     = require('./routes/unsold');
 const healthRouter     = require('./routes/health');
-const configRouter     = require('./routes/config');
+// P1-001 fix: configRouter removed (no config table in DB)
 const parcelsRouter    = require('./routes/parcels');
 const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
@@ -209,7 +209,7 @@ app.use('/api/finance', (req, res) => {
 app.use('/api/purchasing', purchasingRouter);
 app.use('/api/loyalty',    loyaltyRouter);
 app.use('/api/unsold',     unsoldRouter);
-app.use('/api/config',     configRouter);
+// P1-001 fix: /api/config route removed (dead route)
 app.use('/health',         healthRouter);
 
 // ── Healthcheck (avec test DB) ─────────────────────────────────────────────
@@ -220,7 +220,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.5',
+      version:       '10.6',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -306,7 +306,7 @@ setTimeout(() => {
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.5 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.6 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {

@@ -16,9 +16,19 @@ const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 
+// ─── UUID validation helper ──────────────────────────────────────────────────
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function requireUUID(req, res, next) {
+  if (!UUID_RE.test(req.params.id)) {
+    return res.status(400).json({ error: 'ID produit invalide' });
+  }
+  next();
+}
+
 // ─── GET /api/products ───────────────────────────────────────────────────────
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const {
       category,
@@ -103,14 +113,13 @@ router.get('/', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Products list error:', err.message);
-    res.status(500).json({ error: 'Erreur chargement catalogue' });
+    next(err);
   }
 });
 
 // ─── GET /api/products/categories ───────────────────────────────────────────
 
-router.get('/categories', async (req, res) => {
+router.get('/categories', async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT category, COUNT(*) AS count
@@ -121,13 +130,14 @@ router.get('/categories', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur catégories' });
+    next(err);
   }
 });
 
 // ─── GET /api/products/:id ───────────────────────────────────────────────────
+// P0-003 fix: UUID validation + next(err)
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireUUID, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT * FROM products WHERE id = $1 AND is_active = TRUE`,
@@ -136,13 +146,13 @@ router.get('/:id', async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Produit introuvable' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
 // ─── POST /api/products (admin) ──────────────────────────────────────────────
 
-router.post('/', authenticate, requireRole(['admin']), validate(products.create), async (req, res) => {
+router.post('/', authenticate, requireRole(['admin']), validate(products.create), async (req, res, next) => {
   try {
     const {
       name,
@@ -197,14 +207,13 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
 
     res.status(201).json(product);
   } catch (err) {
-    console.error('Create product error:', err.message);
-    res.status(500).json({ error: 'Erreur création produit' });
+    next(err);
   }
 });
 
 // ─── PUT /api/products/:id (admin) ───────────────────────────────────────────
 
-router.put('/:id', authenticate, requireRole(['admin']), validate(products.update), async (req, res) => {
+router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(products.update), async (req, res, next) => {
   try {
     const fields = [
       'name', 'description', 'category', 'price_aed', 'price_kmf', 'price_eur',
@@ -251,14 +260,13 @@ router.put('/:id', authenticate, requireRole(['admin']), validate(products.updat
     if (!product) return res.status(404).json({ error: 'Produit introuvable' });
     res.json(product);
   } catch (err) {
-    console.error('Update product error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour produit' });
+    next(err);
   }
 });
 
 // ─── DELETE /api/products/:id (admin) ────────────────────────────────────────
 
-router.delete('/:id', authenticate, requireRole(['admin']), validate(products.delete), async (req, res) => {
+router.delete('/:id', authenticate, requireRole(['admin']), requireUUID, validate(products.delete), async (req, res, next) => {
   try {
     await db.query(
       `UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1`,
@@ -266,15 +274,14 @@ router.delete('/:id', authenticate, requireRole(['admin']), validate(products.de
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression produit' });
+    next(err);
   }
 });
 
 // ─── POST /api/products/:id/image (admin) — D1/BUG-016 ──────────────────────
 // Upload une image produit (multipart/form-data, champ "image")
-// Stocke dans public/uploads/products/ et met à jour image_url en DB
 
-router.post('/:id/image', authenticate, requireRole(['admin']), upload.single('image'), async (req, res) => {
+router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "image" (multipart/form-data)' });
@@ -289,7 +296,6 @@ router.post('/:id/image', authenticate, requireRole(['admin']), upload.single('i
     );
 
     if (!product) {
-      // Nettoyer le fichier uploadé si produit introuvable
       const fs = require('fs');
       try { fs.unlinkSync(req.file.path); } catch (_) {}
       return res.status(404).json({ error: 'Produit introuvable' });
@@ -298,15 +304,14 @@ router.post('/:id/image', authenticate, requireRole(['admin']), upload.single('i
     console.log(`📷 Image uploadée pour "${product.name}" → ${imageUrl}`);
     res.json({ success: true, image_url: imageUrl, product });
   } catch (err) {
-    console.error('Upload image error:', err.message);
-    res.status(500).json({ error: 'Erreur upload image' });
+    next(err);
   }
 });
 
 // ─── POST /api/products/:id/images (admin) — Upload multiple ─────────────────
-// Upload jusqu'à 5 images supplémentaires pour un produit
+// P0-002 fix: SQL injection removed — uses parameterized query now
 
-router.post('/:id/images', authenticate, requireRole(['admin']), upload.array('images', 5), async (req, res) => {
+router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, upload.array('images', 5), async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "images" (max 5)' });
@@ -329,19 +334,24 @@ router.post('/:id/images', authenticate, requireRole(['admin']), upload.array('i
     const existing = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
     const merged = [...existing, ...imageUrls];
 
-    // Si pas d'image principale, utiliser la première uploadée
-    const setMain = existing.length === 0 ? `, image_url = '${imageUrls[0]}'` : '';
-
-    await db.query(
-      `UPDATE products SET images = $1${setMain}, updated_at = NOW() WHERE id = $2`,
-      [JSON.stringify(merged), req.params.id]
-    );
+    // P0-002 FIX: Parameterized query instead of string interpolation
+    if (existing.length === 0) {
+      // No existing images — also set main image_url
+      await db.query(
+        `UPDATE products SET images = $1, image_url = $2, updated_at = NOW() WHERE id = $3`,
+        [JSON.stringify(merged), imageUrls[0], req.params.id]
+      );
+    } else {
+      await db.query(
+        `UPDATE products SET images = $1, updated_at = NOW() WHERE id = $2`,
+        [JSON.stringify(merged), req.params.id]
+      );
+    }
 
     console.log(`📷 ${imageUrls.length} images uploadées pour "${product.name}"`);
     res.json({ success: true, images: merged, new_images: imageUrls });
   } catch (err) {
-    console.error('Upload images error:', err.message);
-    res.status(500).json({ error: 'Erreur upload images' });
+    next(err);
   }
 });
 
