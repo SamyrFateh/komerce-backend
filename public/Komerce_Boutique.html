@@ -116,8 +116,8 @@
 
 .cat-circles-wrap {
   background: var(--white);
-  padding: 10px 50px 8px;
-  overflow-x: auto; scrollbar-width: none;
+  padding: 10px 16px 8px;
+  overflow: hidden;
   border-bottom: 1.5px solid var(--border);
   position: sticky;
   top: 118px;
@@ -130,7 +130,7 @@
   width: 36px; height: 36px; border-radius: 50%;
   background: var(--white); border: 1.5px solid var(--accent);
   box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; display: none; align-items: center; justify-content: center;
   font-size: 1.3rem; font-weight: 700; color: var(--primary); z-index: 120;
   transition: all 0.25s; user-select: none; -webkit-user-select: none;
 }
@@ -138,9 +138,10 @@
 .cat-scroll-btn.hidden { opacity: 0; pointer-events: none; }
 .cat-scroll-left { left: 2px; }
 .cat-scroll-right { right: 2px; }
-.cat-circles-wrap::-webkit-scrollbar { display: none; }
+/* scrollbar hide removed — no scroll */
 .cat-circles {
-  display: flex; gap: 28px; padding: 2px 20px;
+  display: flex; justify-content: space-evenly; align-items: center;
+  gap: 0; padding: 2px 0;
   max-width: 1200px; margin: 0 auto;
   white-space: nowrap;
 }
@@ -4190,10 +4191,10 @@ document.addEventListener('DOMContentLoaded', function() {
       updateCatArrows();
     }
 
-    // Démarre l'auto-scroll après 2s
-    setTimeout(function() {
-      _autoTimer = setInterval(autoScrollTick, 20);
-    }, 2000);
+    // Auto-scroll disabled — categories spread evenly
+    // setTimeout(function() {
+    //   _autoTimer = setInterval(autoScrollTick, 20);
+    // }, 2000);
 
     // Pause on hover/touch
     wrap.addEventListener('mouseenter', function() { _autoPaused = true; });
