@@ -150,6 +150,21 @@
 .cat-circle.active span { color: var(--primary); font-weight: 700; }
 
 /* ── Hero minimaliste avec vague ── */
+
+.hero-proverbe {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 10px;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.4s ease;
+  line-height: 1.4;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-proverbe:hover { opacity: 1; }
 #hero {
   background: linear-gradient(160deg, #fdf8f0 0%, #faf6ee 50%, #fafaf8 100%);
   padding: 32px 16px 64px;
@@ -1498,8 +1513,18 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   <div class="hero-minimal">
     <h1 class="hero-title">Choisissez, <span class="hero-accent">on vous l'envoie</span></h1>
     <p class="hero-sub">Le meilleur du monde · Livré aux Comores · Récupéré au relais près de chez vous</p>
+    <p id="hero-proverbe" class="hero-proverbe" onclick="rotateProverbe()"></p>
   </div>
 </section>
+<script>
+// Init proverbe on load
+document.addEventListener('DOMContentLoaded', function() {
+  var el = document.getElementById('hero-proverbe');
+  if (el && typeof _proverbes !== 'undefined') {
+    el.textContent = '\u00ab ' + _proverbes[_proIdx] + ' \u00bb';
+  }
+});
+</script>
 <section id="catalogue">
   <div class="container">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 4px;">
@@ -1738,6 +1763,45 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 var _dpConfig = { ADD_ATTR: ['style'], ADD_TAGS: ['img'], ALLOW_DATA_ATTR: true };
 function safeHTML(el, h) { el.innerHTML = (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
 function sanitize(h) { return (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
+
+/* ── Proverbes africains ── */
+var _proverbes = [
+  "Seul on va vite, ensemble on va loin.",
+  "La patience est un arbre dont la racine est amère mais le fruit très doux.",
+  "Celui qui a été mordu par un serpent se méfie d'une corde.",
+  "L'eau chaude n'oublie pas qu'elle a été froide.",
+  "La lune brille mais ne chauffe pas.",
+  "Quand la musique change, la danse change aussi.",
+  "Un seul doigt ne peut pas ramasser un caillou.",
+  "Le singe ne voit pas sa propre nuque.",
+  "La parole est comme l'eau : une fois versée, on ne la ramasse plus.",
+  "Là où l'on s'aime, il ne fait jamais nuit.",
+  "Le feu qui te brûlera, c'est celui auquel tu te chauffes.",
+  "L'arbre ne tombe pas du premier coup de hache.",
+  "Ce n'est pas la force du courant qui fait tourner le moulin, c'est l'eau.",
+  "Quand tu ne sais pas où tu vas, regarde d'où tu viens.",
+  "La nuit a beau durer, le jour finit par arriver.",
+  "Un vieillard assis voit plus loin qu'un jeune debout.",
+  "Le monde est une marmite, chacun y remue sa cuillère.",
+  "Celui qui plante un arbre n'a pas vécu pour rien.",
+  "La terre n'est pas un héritage de nos parents, c'est un prêt de nos enfants.",
+  "Le caméléon change de couleur mais ne change pas de nature."
+];
+var _proIdx = Math.floor(Math.random() * _proverbes.length);
+function rotateProverbe() {
+  _proIdx = (_proIdx + 1) % _proverbes.length;
+  var el = document.getElementById('hero-proverbe');
+  if (el) {
+    el.style.opacity = '0';
+    setTimeout(function() {
+      el.textContent = '« ' + _proverbes[_proIdx] + ' »';
+      el.style.opacity = '1';
+    }, 400);
+  }
+}
+// Auto-rotate every 12s
+setInterval(rotateProverbe, 12000);
+
 
 
 
