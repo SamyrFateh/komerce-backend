@@ -296,6 +296,7 @@ button{font-family:"DM Sans",sans-serif;cursor:pointer;border:none}
       <div class="sb-sec">Finance</div>
       <div class="ni" onclick="go('finance',this)"><span class="ni-ic">&#9670;</span>Comptabilite</div>
       <div class="ni" onclick="go('pricing',this)"><span class="ni-ic">&#9671;</span>Moteur pricing</div>
+      <div class="ni" onclick="go('wallet',this)"><span class="ni-ic">&#9673;</span>Wallet clients</div>
       <div class="sb-sec">Config</div>
       <div class="ni" onclick="go('relais',this)"><span class="ni-ic">&#9650;</span>Point relais</div>
       <div class="ni" onclick="go('settings',this)"><span class="ni-ic">&#9711;</span>Parametres</div>
@@ -745,7 +746,8 @@ var TITLES = {
   ceremony:"Modules spécialisés",finance:"Comptabilite multi-devises",
   pricing:"Moteur de pricing",relais:"Point relais",settings:"Parametres systeme",
   dashboard:"Activité",ventes:"Ventes",retards:"Retards",forecast:"Prévisions",
-  reset:"🧹 Reset données"
+  reset:"🧹 Reset données",
+  wallet:"💰 Wallet clients"
 };
 function go(id, el) {
   document.querySelectorAll(".scr").forEach(s => s.classList.remove("on"));
@@ -763,6 +765,7 @@ function go(id, el) {
     dashboard: loadOps, ventes: () => loadSales(_salesPeriod),
     retards: () => loadRetards(null), forecast: initForecastForm,
     reset: loadCounts,
+    wallet: loadWalletAdmin,
   };
   if (loaders[id]) loaders[id]();
 }
@@ -2128,6 +2131,196 @@ async function doDeleteOrder(orderId) {
   } catch(e) { showT('Erreur: ' + e.message); }
 }
 
+
+// ══ WALLET ADMIN ══════════════════════════════════════════════════════════════
+var _walletUsers = [];
+
+async function loadWalletAdmin() {
+  try {
+    const data = await api('GET', '/wallet/admin');
+    const wallets = data.wallets || [];
+    
+    // KPIs
+    const totalBalance = wallets.reduce((s,w) => s + (parseInt(w.balance_kmf)||0), 0);
+    const totalCredited = wallets.reduce((s,w) => s + (parseInt(w.lifetime_credited_kmf)||0), 0);
+    const totalDebited = wallets.reduce((s,w) => s + (parseInt(w.lifetime_debited_kmf)||0), 0);
+    const active = wallets.filter(w => parseInt(w.balance_kmf) > 0).length;
+    
+    document.getElementById('w-kpi-count').textContent = wallets.length;
+    document.getElementById('w-kpi-total').textContent = fmt(totalBalance);
+    document.getElementById('w-kpi-credits').textContent = fmt(totalCredited);
+    document.getElementById('w-kpi-debits').textContent = fmt(totalDebited);
+    
+    document.getElementById('wallet-subtitle').textContent = 
+      wallets.length + ' wallet(s) · ' + active + ' actif(s) · ' + fmt(totalBalance) + ' KMF en circulation';
+    
+    const tbody = document.getElementById('wallet-list');
+    tbody.innerHTML = wallets.length ? wallets.map(w => `
+      <tr>
+        <td class="bold">${w.full_name || w.email || 'User #'+w.user_id.slice(0,8)}</td>
+        <td class="mono" style="font-weight:700;color:${parseInt(w.balance_kmf)>0?'var(--grn)':'var(--ink3)'}">${fmt(w.balance_kmf)} KMF</td>
+        <td class="mono" style="color:var(--blu)">${fmt(w.lifetime_credited_kmf)}</td>
+        <td class="mono" style="color:var(--amb)">${fmt(w.lifetime_debited_kmf)}</td>
+        <td class="mono">${w.tx_count || 0}</td>
+        <td>
+          <button class="btn2" style="font-size:11px;padding:4px 10px" onclick="viewWalletDetail('${w.user_id}','${(w.full_name||w.email||'').replace(/'/g,'\\&#39;')}')">📋 Détail</button>
+          <button class="btn1" style="font-size:11px;padding:4px 10px" onclick="quickCredit('${w.user_id}')">+ Crédit</button>
+        </td>
+      </tr>`).join('') : 
+      '<tr><td colspan="6" style="text-align:center;color:var(--ink4);padding:24px">Aucun wallet — les wallets sont créés automatiquement lors du premier crédit</td></tr>';
+    
+    // Load users list for credit modal
+    loadUsersForCredit();
+  } catch(e) {
+    console.error('Wallet error:', e.message);
+    showT('Erreur chargement wallets: ' + e.message);
+  }
+}
+
+async function viewWalletDetail(userId, name) {
+  try {
+    const data = await api('GET', '/wallet/admin/' + userId);
+    const w = data.wallet || {};
+    const txs = data.transactions || [];
+    const lots = data.lots || [];
+    
+    document.getElementById('wd-title').textContent = '📋 ' + (name || 'Utilisateur') + ' — ' + fmt(w.balance_kmf) + ' KMF';
+    
+    const txBody = document.getElementById('wallet-tx-list');
+    txBody.innerHTML = txs.length ? txs.map(tx => {
+      const isCredit = tx.type === 'credit' || tx.type === 'reversal';
+      return `
+      <tr>
+        <td class="mono" style="font-size:11px">${fmtDate(tx.created_at)}</td>
+        <td><span class="b ${isCredit?'bg':'ba'}">${tx.type}</span></td>
+        <td class="mono" style="color:${isCredit?'var(--grn)':'var(--red)'}; font-weight:600">${isCredit?'+':'−'}${fmt(tx.amount_kmf)}</td>
+        <td class="mono">${fmt(tx.balance_after_kmf)}</td>
+        <td style="font-size:11px;color:var(--ink3)">${tx.description || '—'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--ink4)">Aucune transaction</td></tr>';
+    
+    const lotBody = document.getElementById('wallet-lots-list');
+    lotBody.innerHTML = lots.length ? lots.map(lot => `
+      <tr>
+        <td style="font-size:11px">${lot.source_type || '—'}</td>
+        <td class="mono">${fmt(lot.original_kmf)}</td>
+        <td class="mono" style="color:${parseInt(lot.remaining_kmf)>0?'var(--grn)':'var(--ink4)'}; font-weight:600">${fmt(lot.remaining_kmf)}</td>
+        <td class="mono" style="font-size:11px">${lot.expires_at ? fmtDate(lot.expires_at) : '∞'}</td>
+      </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--ink4)">Aucun lot</td></tr>';
+    
+    document.getElementById('wallet-detail').style.display = 'block';
+    document.getElementById('wallet-detail').scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {
+    showT('Erreur: ' + e.message);
+  }
+}
+
+async function loadUsersForCredit() {
+  try {
+    // Use admin endpoint to get users (via orders or auth)
+    const data = await api('GET', '/wallet/admin');
+    const wallets = data.wallets || [];
+    _walletUsers = wallets;
+    
+    const sel = document.getElementById('wcm-user');
+    sel.innerHTML = '<option value="">— Sélectionner un client —</option>';
+    wallets.forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w.user_id;
+      opt.textContent = (w.full_name || w.email || 'User') + ' (' + fmt(w.balance_kmf) + ' KMF)';
+      sel.appendChild(opt);
+    });
+    // Add option for manual ID entry
+    const optManual = document.createElement('option');
+    optManual.value = '__manual__';
+    optManual.textContent = '⌨️ Saisir un User ID manuellement';
+    sel.appendChild(optManual);
+    
+    sel.onchange = function() {
+      if (this.value === '__manual__') {
+        const uid = prompt('User ID (UUID) :');
+        if (uid && uid.length > 10) {
+          const opt = document.createElement('option');
+          opt.value = uid;
+          opt.textContent = 'Manual: ' + uid.slice(0,8) + '...';
+          this.insertBefore(opt, this.lastChild);
+          this.value = uid;
+        } else {
+          this.value = '';
+        }
+      }
+    };
+  } catch(e) { console.error('Users load error:', e.message); }
+}
+
+function openCreditModal() {
+  document.getElementById('wallet-credit-modal').style.display = 'flex';
+  document.getElementById('wcm-error').style.display = 'none';
+  document.getElementById('wcm-amount').value = '';
+  document.getElementById('wcm-note').value = '';
+  loadUsersForCredit();
+}
+
+function closeCreditModal() {
+  document.getElementById('wallet-credit-modal').style.display = 'none';
+}
+
+function quickCredit(userId) {
+  openCreditModal();
+  setTimeout(() => {
+    document.getElementById('wcm-user').value = userId;
+  }, 300);
+}
+
+async function submitCredit() {
+  const userId = document.getElementById('wcm-user').value;
+  const amount = parseInt(document.getElementById('wcm-amount').value);
+  const reason = document.getElementById('wcm-reason').value;
+  const note = document.getElementById('wcm-note').value;
+  const errEl = document.getElementById('wcm-error');
+  
+  if (!userId || userId === '__manual__') {
+    errEl.textContent = 'Sélectionnez un client';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!amount || amount < 1) {
+    errEl.textContent = 'Montant invalide (min 1 KMF)';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  const btn = document.getElementById('wcm-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ En cours...';
+  errEl.style.display = 'none';
+  
+  try {
+    const body = { user_id: userId, amount_kmf: amount, reason: reason };
+    if (note) body.note = note;
+    
+    const res = await api('POST', '/wallet/admin/credit', body);
+    
+    closeCreditModal();
+    showT('✅ ' + fmt(amount) + ' KMF crédités !');
+    loadWalletAdmin(); // Refresh
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Créditer le wallet';
+  }
+}
+
+// Close wallet modals on escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCreditModal();
+});
+document.getElementById('wallet-credit-modal')?.addEventListener('click', e => {
+  if (e.target.id === 'wallet-credit-modal') closeCreditModal();
+});
+
 </script>
 
 <!-- ══ SCREENS DASHBOARD (fusionnés depuis admin_v2) ════════════════════════ -->
@@ -2246,6 +2439,94 @@ async function doDeleteOrder(orderId) {
   <div id="reset-result" style="margin-top:1.2rem;display:none;padding:1rem;border-radius:8px;font-size:.82rem;font-weight:600;"></div>
 </div>
 
+
+
+<!-- WALLET ADMIN -->
+<div class="scr" id="scr-wallet">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <div style="font-size:18px;font-weight:600">💰 Wallet clients</div>
+      <div id="wallet-subtitle" style="font-size:12px;color:var(--ink4);margin-top:2px">Avoirs, crédits & historique</div>
+    </div>
+    <button class="btn1" onclick="openCreditModal()">+ Crédit manuel</button>
+  </div>
+
+  <!-- KPIs Wallet -->
+  <div class="stats" id="wallet-kpis">
+    <div class="sc"><div class="sc-lbl">Total wallets actifs</div><div class="sc-val ter" id="w-kpi-count">—</div></div>
+    <div class="sc"><div class="sc-lbl">Solde total engagé</div><div class="sc-val grn" id="w-kpi-total">—</div><div class="sc-sub">KMF en circulation</div></div>
+    <div class="sc"><div class="sc-lbl">Crédits ce mois</div><div class="sc-val blu" id="w-kpi-credits">—</div><div class="sc-sub">KMF crédités</div></div>
+    <div class="sc"><div class="sc-lbl">Débits ce mois</div><div class="sc-val amb" id="w-kpi-debits">—</div><div class="sc-sub">KMF utilisés</div></div>
+  </div>
+
+  <!-- Liste wallets -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch"><span class="ch-t">Tous les wallets</span><span class="ch-a" onclick="loadWalletAdmin()">↻ Rafraîchir</span></div>
+    <table class="tbl">
+      <thead><tr><th>Client</th><th>Solde (KMF)</th><th>Total crédité</th><th>Total débité</th><th>Transactions</th><th>Actions</th></tr></thead>
+      <tbody id="wallet-list">
+        <tr><td colspan="6" style="text-align:center;color:var(--ink4);padding:20px">Chargement...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Détail wallet sélectionné -->
+  <div id="wallet-detail" style="display:none">
+    <div class="g2">
+      <div class="card">
+        <div class="ch"><span class="ch-t" id="wd-title">Historique transactions</span></div>
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Solde après</th><th>Description</th></tr></thead>
+          <tbody id="wallet-tx-list"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ch-t">Lots actifs (FIFO)</span></div>
+        <table class="tbl">
+          <thead><tr><th>Source</th><th>Original</th><th>Restant</th><th>Expire</th></tr></thead>
+          <tbody id="wallet-lots-list"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WALLET CREDIT MODAL -->
+<div id="wallet-credit-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10001;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div style="background:white;border-radius:14px;padding:28px;max-width:440px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700">💰 Crédit manuel</div>
+      <button onclick="closeCreditModal()" style="background:none;font-size:20px;color:var(--ink3);cursor:pointer">&times;</button>
+    </div>
+    <div class="form-row">
+      <label class="inp-lbl">Client (user ID)</label>
+      <select id="wcm-user" class="inp"><option value="">Chargement...</option></select>
+    </div>
+    <div class="form-row">
+      <label class="inp-lbl">Montant (KMF)</label>
+      <input id="wcm-amount" type="number" class="inp" placeholder="5000" min="1">
+    </div>
+    <div class="form-row">
+      <label class="inp-lbl">Raison</label>
+      <select id="wcm-reason" class="inp">
+        <option value="admin_gift">Geste commercial</option>
+        <option value="compensation">Compensation retard/litige</option>
+        <option value="promo">Promotion</option>
+        <option value="referral">Parrainage</option>
+        <option value="other">Autre</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="inp-lbl">Note (optionnel)</label>
+      <input id="wcm-note" class="inp" placeholder="Détail du crédit...">
+    </div>
+    <div id="wcm-error" style="display:none;color:var(--red);font-size:12px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn1" id="wcm-submit" onclick="submitCredit()" style="flex:1">Créditer le wallet</button>
+      <button class="btn2" onclick="closeCreditModal()">Annuler</button>
+    </div>
+  </div>
+</div>
 
 <!-- ORDER MANAGEMENT MODAL -->
 <div id="order-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
