@@ -199,7 +199,7 @@ function openProductModal(p) {
   }
 }
 
-var KState.lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
+KState.lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
 
 function openLookModal(mainProduct) {
   var body = $('look-modal-body');

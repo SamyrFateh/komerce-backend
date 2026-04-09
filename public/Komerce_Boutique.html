@@ -2737,6 +2737,33 @@ function openProductModal(p) {
     section.appendChild(track);
     return section;
   }
+
+  // ── Suggestions produits ─────────────────────────────────────
+  var _compRules = {
+    'mode':       ['beauté','beaute','sur-mesure'],
+    'sur-mesure': ['mode','beauté','beaute'],
+    'beauté':     ['mode','sur-mesure'],
+    'beaute':     ['mode','sur-mesure'],
+    'tech':       ['tech'],
+    'enfant':     ['enfant','mode']
+  };
+  var _pCat = (p.category || '').toLowerCase();
+
+  // Similaires : même catégorie, prix proche
+  var _similar = KState.products
+    .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat; })
+    .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
+    .slice(0, 8);
+  if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Dans le même esprit 🌿', '#e8f4e8'));
+
+  // Complémentaires : règles métier
+  var _compCats = _compRules[_pCat] || [];
+  var _compProds = KState.products
+    .filter(function(x) { return x.id !== p.id && _compCats.indexOf((x.category||'').toLowerCase()) >= 0; })
+    .sort(function() { return 0.5 - Math.random(); })
+    .slice(0, 8);
+  if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Va bien avec ✨', '#fff3e8'));
+
   $('product-modal').classList.add('open');
 }
 
