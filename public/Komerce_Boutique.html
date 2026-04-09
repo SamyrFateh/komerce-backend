@@ -2562,7 +2562,7 @@ function heroSearch() {
     .then(function(data) {
       var results = data.products || data || [];
       renderProducts(results);
-      document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
+      if (!_firstLoad) { document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' }); }
     })
     .catch(function() {
       // Fallback local
@@ -2572,7 +2572,7 @@ function heroSearch() {
                (p.description || '').toLowerCase().indexOf(q) !== -1;
       });
       renderProducts(filtered);
-      document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' });
+      if (!_firstLoad) { document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' }); }
     });
 }
 
@@ -4255,6 +4255,7 @@ function updateViewToggle() {
 
 document.addEventListener('DOMContentLoaded', function() {
 
+  var _firstLoad = true;
   // Force scroll to top on load — prevent # anchor jump hiding hero/categories
   if (!location.hash || location.hash === '#') {
     window.scrollTo(0, 0);
@@ -4262,6 +4263,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   loadProducts();
+  setTimeout(function(){ _firstLoad = false; }, 2000);
   loadRelais();
   refreshCartBadge();
   initPromoBar();
