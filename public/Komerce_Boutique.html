@@ -4064,7 +4064,7 @@ document.addEventListener('DOMContentLoaded', function() {
       filterBtns.forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       var sort = btn.dataset.sort;
-      var activeCat = document.querySelector('.cat-pill.active');
+      var activeCat = document.querySelector('.cat-circle.active');
       var cat = activeCat ? activeCat.dataset.cat : '';
       var base = cat ? _products.filter(function(p) {
         return (p.category || '').toLowerCase() === cat.toLowerCase();
