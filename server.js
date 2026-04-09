@@ -146,6 +146,22 @@ app.use('/api/orders', (req, res, next) => {
 app.use('/api/dashboard', dashboardLimiter);
 app.use('/api/admin/', adminLimiter);
 
+
+// ── Auth guard injection — auto-injects session checker into admin pages ────
+const _fs = require('fs');
+app.get('/*.html', (req, res, next) => {
+  // Skip boutique and portal — they handle their own auth
+  if (req.path.includes('Boutique') || req.path === '/portal.html') return next();
+  const filePath = path.join(__dirname, 'public', req.path);
+  _fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) return next(); // file not found — fall through
+    html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\n</body>');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(html);
+  });
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
