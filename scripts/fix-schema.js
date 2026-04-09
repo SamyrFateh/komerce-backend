@@ -282,19 +282,32 @@ async function fixMissingSchema() {
   await run('idx_products_weight_kg',       'CREATE INDEX IF NOT EXISTS idx_products_weight_kg ON products(weight_kg)');
 
   // ── Migration 022 : orders.computed_status ──────────────────────────────
-  // Colonne utilisée par le moteur optimisation pour tracker le statut calculé
   await run('orders.computed_status',       'ALTER TABLE orders ADD COLUMN IF NOT EXISTS computed_status TEXT');
 
-  // ── Migration 023 : drop one_draft_per_order (contrainte trop restrictive) ───
-  // La contrainte bloque la création de plusieurs colis draft pour une même
-  // commande via /optimize. La logique métier gère l'unicité via le service.
+  // ── Migration 023 : drop one_draft_per_order ────────────────────────────
   await run('drop one_draft_per_order',     'ALTER TABLE parcels DROP CONSTRAINT IF EXISTS one_draft_per_order');
 
   // ── Migration 024 : ajouter in_transit à l'enum order_status ────────────
-  // in_transit = commande embarquée (bateau/avion) entre Dubai et Comores
-  // PostgreSQL ALTER TYPE ADD VALUE est idempotent depuis PG 12 avec IF NOT EXISTS
   await run('order_status enum in_transit',
     `ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'in_transit' AFTER 'shipped'`);
+
+  // ── Migration 025 : remplacer images locales /uploads/ par placeholder ──
+  // Railway filesystem éphémère : chaque redéploiement vide public/uploads/
+  // On remplace tous les chemins locaux par une image placeholder stable.
+  // Idempotent : ne touche que les lignes avec chemin /uploads/...
+  try {
+    const { rowCount } = await db.query(
+      `UPDATE products
+       SET image_url = 'https://placehold.co/400x400/e2e8f0/64748b?text=Komerce'
+       WHERE image_url LIKE '/uploads/%'
+          OR image_url LIKE '%railway%/uploads/%'`
+    );
+    if (rowCount > 0) {
+      console.log(`  ✅ Migration 025: ${rowCount} image(s) locales remplacées par placeholder`);
+    }
+  } catch (err) {
+    console.error(`  ⚠️ Migration 025 images: ${err.message}`);
+  }
 
   console.log('🔧 Schema migrations complete.');
 }
