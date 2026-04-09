@@ -79,7 +79,7 @@ router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res, 
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
@@ -142,7 +142,7 @@ router.post('/pack', ...hubAuth, validate({ body: hub.pack }), async (req, res, 
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
@@ -201,7 +201,7 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, 
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    next(e);
+    next(err);
   } finally {
     client.release();
   }

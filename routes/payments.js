@@ -280,7 +280,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }

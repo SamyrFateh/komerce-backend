@@ -224,28 +224,28 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
 
            -- RÃ¨gle 3 : prÃ©paration bloquÃ©e >4 jours
            WHEN o.status = 'preparation'
-            AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDaysIdx}
+            AND o.preparation_at < NOW() - INTERVAL '1 day' * $${prepDaysIdx}
             THEN 'preparation_too_long'
 
            -- RÃ¨gle 4 : transit >12 jours
            WHEN o.status = 'shipped'
-            AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDaysIdx}
+            AND o.shipped_at < NOW() - INTERVAL '1 day' * $${transitDaysIdx}
             THEN 'transit_too_long'
 
            -- RÃ¨gle 5 : disponible depuis >7 jours (non retirÃ©)
            WHEN o.status = 'available'
-            AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDaysIdx}
+            AND o.available_at < NOW() - INTERVAL '1 day' * $${waitDaysIdx}
             THEN 'waiting_too_long'
 
            -- RÃ¨gle 6 : disponible sans notification (qr_token NULL aprÃ¨s 1h)
            WHEN o.status = 'available'
-            AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHoursIdx}
+            AND o.available_at < NOW() - INTERVAL '1 hour' * $${noNotifHoursIdx}
             AND o.qr_token IS NULL
             THEN 'no_notification'
 
            -- RÃ¨gle 7 : commande active depuis >30 jours sans avancement
            WHEN o.status = 'ordered'
-            AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDaysIdx}
+            AND o.created_at < NOW() - INTERVAL '1 day' * $${stalledDaysIdx}
             THEN 'stalled'
 
            -- RÃ¨gle 8 : paiement cash non soldÃ© aprÃ¨s collecte (si possible Ã  dÃ©tecter)
@@ -273,15 +273,15 @@ router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'age
            -- RÃ¨gle 1
            (o.payment_status = 'paid' AND o.status IN ('confirmed', 'ordered') AND o.purchasing_at IS NULL)
            -- RÃ¨gle 3
-           OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '1 day' * ${prepDaysIdx})
+           OR (o.status = 'preparation' AND o.preparation_at < NOW() - INTERVAL '1 day' * $${prepDaysIdx})
            -- RÃ¨gle 4
-           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '1 day' * ${transitDaysIdx})
+           OR (o.status = 'shipped' AND o.shipped_at < NOW() - INTERVAL '1 day' * $${transitDaysIdx})
            -- RÃ¨gle 5
-           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 day' * ${waitDaysIdx})
+           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 day' * $${waitDaysIdx})
            -- RÃ¨gle 6
-           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' * ${noNotifHoursIdx} AND o.qr_token IS NULL)
+           OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '1 hour' * $${noNotifHoursIdx} AND o.qr_token IS NULL)
            -- RÃ¨gle 7
-           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '1 day' * ${stalledDaysIdx})
+           OR (o.status = 'ordered' AND o.created_at < NOW() - INTERVAL '1 day' * $${stalledDaysIdx})
            -- RÃ¨gle 9
            OR (o.relais_id IS NULL AND o.status NOT IN ('confirmed', 'cancelled', 'refunded'))
          )

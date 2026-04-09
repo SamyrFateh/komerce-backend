@@ -170,7 +170,7 @@ const K = (() => {
   // ── HUB ────────────────────────────────────────────────────
   const hub = {
     scanItem(barcode, scannedBy) {
-      return request('/api/scans/hub/scan-item', 'POST', { barcode, scanned_by: scannedBy });
+      return request('/api/hub/scan', 'POST', { barcode, scanned_by: scannedBy });
     },
     pack(parcelId) {
       return request('/api/scans/hub/pack', 'POST', { parcel_id: parcelId });

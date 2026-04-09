@@ -666,11 +666,11 @@
         // Mark as arrived first (if not already)
         const currentStatus = parcel.status || '';
         if (currentStatus !== 'arrived' && currentStatus !== 'available') {
-          await K.request('/api/parcels/' + parcelId, 'PATCH', { status: 'arrived' });
+          await K.request('/api/parcels/' + parcelId + '/status', 'PATCH', { status: 'arrived' });
         }
 
         // Then mark as available
-        await K.request('/api/parcels/' + parcelId, 'PATCH', { status: 'available' });
+        await K.request('/api/parcels/' + parcelId + '/status', 'PATCH', { status: 'available' });
 
         K.ui.flash();
         K.ui.toast('✅ Colis reçu et disponible — ' + ref, 'ok');
@@ -756,7 +756,7 @@
 
       try {
         const parcelId = parcel.id || parcel.parcel_id;
-        await K.request('/api/parcels/' + parcelId, 'PATCH', { status: 'collected' });
+        await K.request('/api/parcels/' + parcelId + '/status', 'PATCH', { status: 'collected' });
 
         // Log scan
         try {
