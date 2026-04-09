@@ -2927,54 +2927,96 @@ function openProductModal(p) {
   controls.appendChild(addBtn);
   body.appendChild(controls);
 
-  /* ── Fonction mini card suggestion ── */
-  function makeSuggestionCard(sp, label) {
-    var mini = document.createElement('div');
-    mini.style.cssText = 'flex:0 0 150px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;scroll-snap-align:start;';
-    mini.addEventListener('mouseenter', function() { mini.style.transform='translateY(-3px)'; mini.style.boxShadow='0 6px 16px rgba(0,0,0,0.1)'; });
-    mini.addEventListener('mouseleave', function() { mini.style.transform=''; mini.style.boxShadow=''; });
-    mini.addEventListener('click', function() { openProductModal(sp); });
+  /* ── Fonction carousel de suggestions ── */
+  function makeCarousel(items, label, borderColor) {
+    var section = document.createElement('div');
+    section.style.cssText = 'margin-top:20px;';
 
-    /* Image */
-    var mImg = document.createElement('div');
-    mImg.style.cssText = 'height:90px;overflow:hidden;background:var(--primary-light);';
-    if (sp.image_url) {
-      var mi = document.createElement('img');
-      mi.src = sp.image_url;
-      mi.alt = sanitize(sp.name);
-      mi.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-      mImg.appendChild(mi);
-    } else {
-      mImg.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2rem;';
-      mImg.textContent = productEmoji(sp);
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ' + borderColor + ';display:inline-block;';
+    title.textContent = label;
+    section.appendChild(title);
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;';
+
+    var track = document.createElement('div');
+    track.style.cssText = 'display:flex;gap:10px;overflow:hidden;padding-bottom:4px;';
+
+    var visibleCount = 3;
+    var currentIdx = 0;
+
+    function renderCards() {
+      track.innerHTML = '';
+      var visible = items.slice(currentIdx, currentIdx + visibleCount);
+      visible.forEach(function(sp) {
+        var mini = document.createElement('div');
+        mini.style.cssText = 'flex:0 0 calc(33.33% - 7px);background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;';
+        mini.addEventListener('mouseenter', function() { mini.style.transform='translateY(-3px)'; mini.style.boxShadow='0 6px 16px rgba(0,0,0,0.1)'; });
+        mini.addEventListener('mouseleave', function() { mini.style.transform=''; mini.style.boxShadow=''; });
+        mini.addEventListener('click', function() { openProductModal(sp); });
+
+        var mImg = document.createElement('div');
+        mImg.style.cssText = 'height:90px;overflow:hidden;background:var(--primary-light);';
+        if (sp.image_url) {
+          var mi = document.createElement('img');
+          mi.src = sp.image_url;
+          mi.alt = sanitize(sp.name);
+          mi.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+          mImg.appendChild(mi);
+        } else {
+          mImg.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2rem;';
+          mImg.textContent = productEmoji(sp);
+        }
+        mini.appendChild(mImg);
+
+        var mBody = document.createElement('div');
+        mBody.style.cssText = 'padding:7px 8px;';
+        var mName = document.createElement('div');
+        mName.style.cssText = 'font-size:0.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;';
+        mName.textContent = sp.name;
+        mBody.appendChild(mName);
+        var mPrice = document.createElement('div');
+        mPrice.style.cssText = 'font-size:0.75rem;color:var(--primary);font-weight:700;';
+        mPrice.textContent = fmt(sp.price_kmf || 0, 'KMF');
+        mBody.appendChild(mPrice);
+        var mAdd = document.createElement('button');
+        mAdd.style.cssText = 'width:100%;margin-top:5px;padding:4px;background:var(--accent);color:#1e2a38;border:none;border-radius:6px;font-size:0.7rem;font-weight:700;cursor:pointer;';
+        mAdd.textContent = '+ Panier';
+        mAdd.addEventListener('click', function(e) {
+          e.stopPropagation();
+          addToCart(sp, 1, mAdd);
+          toast(sp.name + ' ajouté', 'success');
+        });
+        mBody.appendChild(mAdd);
+        mini.appendChild(mBody);
+        track.appendChild(mini);
+      });
+
+      prevBtn.style.opacity = currentIdx === 0 ? '0.3' : '1';
+      nextBtn.style.opacity = currentIdx + visibleCount >= items.length ? '0.3' : '1';
     }
-    mini.appendChild(mImg);
 
-    var mBody = document.createElement('div');
-    mBody.style.cssText = 'padding:7px 8px;';
-
-    var mName = document.createElement('div');
-    mName.style.cssText = 'font-size:0.75rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;';
-    mName.textContent = sp.name;
-    mBody.appendChild(mName);
-
-    var mPrice = document.createElement('div');
-    mPrice.style.cssText = 'font-size:0.78rem;color:var(--primary);font-weight:700;';
-    mPrice.textContent = fmt(sp.price_kmf || 0, 'KMF');
-    mBody.appendChild(mPrice);
-
-    /* Bouton panier rapide */
-    var mAdd = document.createElement('button');
-    mAdd.style.cssText = 'width:100%;margin-top:5px;padding:4px;background:var(--accent);color:#1e2a38;border:none;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;';
-    mAdd.textContent = '+ Panier';
-    mAdd.addEventListener('click', function(e) {
-      e.stopPropagation();
-      addToCart(sp, 1, mAdd);
-      toast(sp.name + ' ajouté', 'success');
+    var prevBtn = document.createElement('button');
+    prevBtn.textContent = '‹';
+    prevBtn.style.cssText = 'position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--white);border:1px solid var(--border);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,0.1);transition:opacity 0.2s;';
+    prevBtn.addEventListener('click', function() {
+      if (currentIdx > 0) { currentIdx--; renderCards(); }
     });
-    mBody.appendChild(mAdd);
-    mini.appendChild(mBody);
-    return mini;
+
+    var nextBtn = document.createElement('button');
+    nextBtn.textContent = '›';
+    nextBtn.style.cssText = 'position:absolute;right:-14px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--white);border:1px solid var(--border);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,0.1);transition:opacity 0.2s;';
+    nextBtn.addEventListener('click', function() {
+      if (currentIdx + visibleCount < items.length) { currentIdx++; renderCards(); }
+    });
+
+    wrapper.appendChild(prevBtn);
+    wrapper.appendChild(track);
+    wrapper.appendChild(nextBtn);
+    section.appendChild(wrapper);
+    renderCards();
+    return section;
   }
 
   /* ── Dans le même esprit (similaires) ── */
@@ -2982,20 +3024,10 @@ function openProductModal(p) {
     return sp.id !== p.id && sp.category === p.category;
   }).sort(function(a, b) {
     return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf);
-  }).slice(0, 6);
+  }).slice(0, 9);
 
   if (similar.length) {
-    var simSection = document.createElement('div');
-    simSection.style.cssText = 'margin-top:24px;';
-    var simTitle = document.createElement('div');
-    simTitle.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block;';
-    simTitle.textContent = 'Dans le même esprit';
-    simSection.appendChild(simTitle);
-    var simGrid = document.createElement('div');
-    simGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;padding-right:20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;';
-    similar.forEach(function(sp) { simGrid.appendChild(makeSuggestionCard(sp)); });
-    simSection.appendChild(simGrid);
-    body.appendChild(simSection);
+    body.appendChild(makeCarousel(similar, 'Dans le même esprit', 'var(--accent)'));
   }
 
   /* ── Va bien avec (complémentaires) ── */
@@ -3004,23 +3036,13 @@ function openProductModal(p) {
   compCats.forEach(function(cat) {
     var items = _products.filter(function(sp) {
       return sp.id !== p.id && sp.category === cat;
-    }).slice(0, 3);
+    }).slice(0, 4);
     complements = complements.concat(items);
   });
-  complements = complements.slice(0, 6);
+  complements = complements.slice(0, 9);
 
   if (complements.length) {
-    var compSection = document.createElement('div');
-    compSection.style.cssText = 'margin-top:20px;margin-bottom:8px;';
-    var compTitle = document.createElement('div');
-    compTitle.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary);display:inline-block;';
-    compTitle.textContent = 'Va bien avec';
-    compSection.appendChild(compTitle);
-    var compGrid = document.createElement('div');
-    compGrid.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;padding-right:20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;';
-    complements.forEach(function(sp) { compGrid.appendChild(makeSuggestionCard(sp)); });
-    compSection.appendChild(compGrid);
-    body.appendChild(compSection);
+    body.appendChild(makeCarousel(complements, 'Va bien avec', 'var(--primary)'));
   }
 
   $('product-modal').classList.add('open');
