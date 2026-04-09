@@ -71,6 +71,8 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       // Spec §11 : capturer dès MVP pour fidélisation Phase 2
       // Valeurs : mariage · cadeau · personnel · construction · rentree · ramadan · aid · autre
       order_occasion        = null,
+      // Wallet opt-in : le client choisit d'appliquer son wallet
+      use_wallet            = false,
     } = req.body;
 
     // ── Validation ──────────────────────────────────────────────────────────
@@ -190,9 +192,9 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       total_kmf     = total_kmf - discountKmf;
     }
 
-    // ── Wallet — appliquer si solde disponible ─────────────────────────────
+    // ── Wallet — appliquer si demandé et solde disponible ──────────────────
     let creditApplied = 0;
-    if (req.user?.id) {
+    if (use_wallet && req.user?.id) {
       const walletBalance = await walletService.getBalanceInTx(client, req.user.id);
       if (walletBalance > 0) {
         creditApplied = Math.min(walletBalance, total_kmf);
@@ -245,7 +247,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
         total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
         payment_mode,
-        'pending',
+        creditApplied > 0 && total_kmf === 0 ? 'paid' : 'pending',
         stripe_payment_intent || null,
         cash_ref_code,
         pickup_code,
