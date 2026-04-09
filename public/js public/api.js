@@ -1,5 +1,6 @@
 /* ============================================================
-   KOMERCE — Couche API
+   KOMERCE — Couche API (data uniquement, aucun appel UI)
+   v2.0 — API → KState uniquement, pub/sub pour déclencher le rendu
    ============================================================ */
 
 async function apiGet(path) {
@@ -24,22 +25,11 @@ async function loadProducts() {
   try {
     var data = await apiGet('/api/products?limit=250');
     KState.products = data.products || data || [];
-    /* Alias backward compat */
-    _products = KState.products;
     KState.lastList = KState.products;
-    _lastList = KState.lastList;
-    renderProducts(KState.products);
-    updateCartBadges();
+    KState.emit('products:loaded', KState.products);
   } catch(e) {
     console.error('loadProducts:', e);
-    var track = $('product-track');
-    if (track) {
-      track.innerHTML = '';
-      var err = document.createElement('p');
-      err.style.cssText = 'text-align:center;color:var(--muted);padding:40px;grid-column:1/-1;';
-      err.textContent = 'Impossible de charger le catalogue.';
-      track.appendChild(err);
-    }
+    KState.emit('products:error', e);
   }
 }
 

@@ -1,11 +1,20 @@
 /* ============================================================
-   KOMERCE — Bootstrap
-   Initialisation au chargement de la page
+   KOMERCE — Bootstrap (orchestrateur)
+   v2.0 — initUI / loadInitialData / renderInitialView
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
+  initApp();
+});
 
-  /* ── Initialisation navigation ── */
+async function initApp() {
+  initUI();
+  await loadInitialData();
+  renderInitialView();
+}
+
+/* ── Initialisation UI (synchrone, pas de données requises) ── */
+function initUI() {
   initTabs();
   initCatCircles();
   initFilters();
@@ -13,13 +22,25 @@ document.addEventListener('DOMContentLoaded', function() {
   initPromoBar();
   initHeroSearch();
   updateFavBadge();
+  wireButtons();
+  wireKeyboard();
+  registerServiceWorker();
+}
 
-  /* ── Chargement données ── */
-  loadProducts();
-  loadRelais();
+/* ── Chargement des données ── */
+async function loadInitialData() {
+  await Promise.all([loadProducts(), loadRelais()]);
+}
+
+/* ── Rendu initial après chargement des données ── */
+function renderInitialView() {
   refreshCartBadge();
+  renderProducts(KState.products);
+  updateCartBadges();
+}
 
-  /* ── Wiring boutons modales et panier ── */
+/* ── Wiring boutons et modales ── */
+function wireButtons() {
   var omClose = document.getElementById('order-modal-close');
   if (omClose) omClose.addEventListener('click', closeOrderModal);
 
@@ -58,7 +79,6 @@ document.addEventListener('DOMContentLoaded', function() {
   var fwaBtn = document.getElementById('footer-whatsapp-btn');
   if (fwaBtn) fwaBtn.addEventListener('click', shareCartWhatsApp);
 
-  /* ── Fermeture modales au clic overlay ── */
   var productModal = document.getElementById('product-modal');
   if (productModal) productModal.addEventListener('click', function(e) {
     if (e.target === productModal) closeProductModal();
@@ -68,8 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (orderModal) orderModal.addEventListener('click', function(e) {
     if (e.target === orderModal) closeOrderModal();
   });
+}
 
-  /* ── Clavier ── */
+/* ── Clavier global ── */
+function wireKeyboard() {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeProductModal();
@@ -83,12 +105,13 @@ document.addEventListener('DOMContentLoaded', function() {
   if (trackInput) trackInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') searchTracking();
   });
+}
 
-  /* ── Service Worker ── */
+/* ── Service Worker ── */
+function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then(function(reg) { console.log('[App] SW registered, scope:', reg.scope); })
       .catch(function(err) { console.warn('[App] SW error:', err); });
   }
-
-});
+}

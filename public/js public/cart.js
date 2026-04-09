@@ -1,5 +1,6 @@
 /* ============================================================
    KOMERCE — Panier
+   v2.0 — KState.cart uniquement (plus d'alias _cart)
    ============================================================ */
 
 function cartQty() {
@@ -42,8 +43,6 @@ function addToCart(product, qty, btn) {
     existing.qty += (qty || 1);
   } else {
     KState.cart.push({ product: product, qty: qty || 1 });
-    /* Alias */
-    _cart = KState.cart;
   }
   saveCart();
   refreshCartBadge();
@@ -55,7 +54,6 @@ function addToCart(product, qty, btn) {
 
 function removeFromCart(productId) {
   KState.cart = KState.cart.filter(function(i) { return i.product.id !== productId; });
-  _cart = KState.cart;
   saveCart();
   refreshCartBadge();
   updateCartBadges();
@@ -118,7 +116,6 @@ function renderCartBody(highlightId) {
   if (emptyEl) emptyEl.style.display = 'none';
   if (footer) footer.style.display = 'block';
 
-  /* Bouton continuer */
   var continueBtn = document.createElement('button');
   continueBtn.className = 'cart-continue-shop';
   continueBtn.textContent = '← Continuer mes achats';
@@ -194,7 +191,6 @@ function renderCartBody(highlightId) {
     body.appendChild(div);
   });
 
-  /* Totaux */
   var total = cartTotal();
   var totalEl = $('cart-total-kmf');
   var totalConv = $('cart-total-conv');
@@ -252,7 +248,6 @@ function shareCartWhatsApp() {
 
 function clearCart() {
   KState.cart = [];
-  _cart = KState.cart;
   saveCart();
   refreshCartBadge();
   updateCartBadges();

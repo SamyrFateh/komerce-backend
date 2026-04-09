@@ -1,6 +1,6 @@
 /* ============================================================
    KOMERCE — Navigation
-   Onglets, cercles catégories, filtres
+   v2.0 — KState uniquement, plus d'alias _currentSort/_viewMode/_favs
    ============================================================ */
 
 /* ── Onglets principaux ── */
@@ -34,7 +34,6 @@ function initCatCircles() {
         : KState.products;
 
       KState.currentSort = '';
-      _currentSort = '';
       document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
       var defaultBtn = document.querySelector('.filter-btn[data-sort=""]');
       if (defaultBtn) defaultBtn.classList.add('active');
@@ -61,7 +60,6 @@ function initFilters() {
 
       var sort = btn.dataset.sort;
       KState.currentSort = sort;
-      _currentSort = sort;
 
       var activeCat = document.querySelector('.cat-circle.active');
       var cat = activeCat ? activeCat.dataset.cat : '';
@@ -90,7 +88,6 @@ function initViewToggle() {
   if (gridBtn) {
     gridBtn.addEventListener('click', function() {
       KState.viewMode = 'grid';
-      _viewMode = 'grid';
       updateViewToggle();
       var track = $('product-track');
       if (track) track.className = 'product-grid';
@@ -101,7 +98,6 @@ function initViewToggle() {
   if (rowsBtn) {
     rowsBtn.addEventListener('click', function() {
       KState.viewMode = 'rows';
-      _viewMode = 'rows';
       updateViewToggle();
       renderRows(KState.lastList || KState.products);
     });
@@ -133,7 +129,6 @@ function toggleFav(productId) {
   } else {
     KState.favs[productId] = true;
   }
-  _favs = KState.favs;
   saveFavs();
 }
 

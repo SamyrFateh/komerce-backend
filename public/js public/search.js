@@ -1,5 +1,6 @@
 /* ============================================================
    KOMERCE — Recherche live
+   v2.0 — KState.searchIdx uniquement
    ============================================================ */
 
 function heroSearch() {
@@ -33,7 +34,6 @@ function liveSearch(q) {
   dd.innerHTML = '';
   dd.style.display = 'block';
   KState.searchIdx = -1;
-  _searchIdx = -1;
 
   results.forEach(function(p, i) {
     var item = document.createElement('div');
@@ -79,7 +79,6 @@ function closeSearchDropdown() {
   var dd = $('search-dropdown');
   if (dd) dd.style.display = 'none';
   KState.searchIdx = -1;
-  _searchIdx = -1;
 }
 
 function initHeroSearch() {
@@ -97,12 +96,10 @@ function initHeroSearch() {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       KState.searchIdx = Math.min(KState.searchIdx + 1, items.length - 1);
-      _searchIdx = KState.searchIdx;
       items.forEach(function(el, i) { el.classList.toggle('active', i === KState.searchIdx); });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       KState.searchIdx = Math.max(KState.searchIdx - 1, -1);
-      _searchIdx = KState.searchIdx;
       items.forEach(function(el, i) { el.classList.toggle('active', i === KState.searchIdx); });
     } else if (e.key === 'Enter') {
       if (KState.searchIdx >= 0 && items[KState.searchIdx]) {
@@ -115,7 +112,6 @@ function initHeroSearch() {
     }
   });
 
-  /* Fermer en cliquant en dehors */
   document.addEventListener('click', function(e) {
     var wrap = document.querySelector('.nav-search-wrap');
     if (wrap && !wrap.contains(e.target)) {

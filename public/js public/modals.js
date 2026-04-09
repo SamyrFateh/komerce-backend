@@ -1,9 +1,10 @@
 /* ============================================================
    KOMERCE — Modales (produit, look, commande)
+   v2.0 — KState uniquement, plus d'alias _xxx legacy
    ============================================================ */
 
 function openProductModal(p) {
-  _pdQty = 1;
+  KState.pdQty = 1;
   var body = $('product-modal-body');
   body.innerHTML = '';
   body.scrollTop = 0;
@@ -67,7 +68,7 @@ function openProductModal(p) {
   priceEl.textContent = fmt(p.price_kmf || 0, 'KMF');
   info.appendChild(priceEl);
 
-  if (_currency === 'EUR') {
+  if (KState.currency === 'EUR') {
     var convEl = document.createElement('div');
     convEl.className = 'pd-price-conv';
     convEl.textContent = '≈ ' + fmt(p.price_kmf || 0, 'EUR');
@@ -107,8 +108,8 @@ function openProductModal(p) {
   var plusBtn = document.createElement('button');
   plusBtn.className = 'qty-btn';
   plusBtn.textContent = '+';
-  minusBtn.addEventListener('click', function() { if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; } });
-  plusBtn.addEventListener('click', function() { _pdQty++; qtyVal.textContent = _pdQty; });
+  minusBtn.addEventListener('click', function() { if (KState.pdQty > 1) { KState.pdQty--; qtyVal.textContent = KState.pdQty; } });
+  plusBtn.addEventListener('click', function() { KState.pdQty++; qtyVal.textContent = KState.pdQty; });
   qtyWrap.appendChild(minusBtn);
   qtyWrap.appendChild(qtyVal);
   qtyWrap.appendChild(plusBtn);
@@ -119,7 +120,7 @@ function openProductModal(p) {
   addBtn.style.cssText = 'background:var(--primary);color:white;font-weight:700;';
   addBtn.textContent = 'Ajouter au panier';
   addBtn.addEventListener('click', function() {
-    addToCart(p, _pdQty, addBtn);
+    addToCart(p, KState.pdQty, addBtn);
     setTimeout(function() { closeProductModal(); }, 500);
   });
   controls.appendChild(addBtn);
@@ -198,7 +199,7 @@ function openProductModal(p) {
   }
 }
 
-var _lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
+var KState.lookLabels = ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'];
 
 function openLookModal(mainProduct) {
   var body = $('look-modal-body');
@@ -209,7 +210,7 @@ function openLookModal(mainProduct) {
   var lookItems = [mainProduct];
 
   /* Chaussures depuis Mode */
-  var shoes = _products.filter(function(p) {
+  var shoes = KState.products.filter(function(p) {
     return p.id !== mainProduct.id && p.category === 'Mode' &&
       (p.name.toLowerCase().includes('chaussure') ||
        p.name.toLowerCase().includes('sandale') ||
@@ -221,11 +222,11 @@ function openLookModal(mainProduct) {
   if (shoes.length) lookItems.push(shoes[Math.floor(Math.random() * Math.min(shoes.length, 5))]);
 
   /* Beauté */
-  var beauty = _products.filter(function(p) { return p.category === 'Beauté'; });
+  var beauty = KState.products.filter(function(p) { return p.category === 'Beauté'; });
   if (beauty.length) lookItems.push(beauty[Math.floor(Math.random() * Math.min(beauty.length, 10))]);
 
   /* Accessoire (bijoux, sac) */
-  var access = _products.filter(function(p) {
+  var access = KState.products.filter(function(p) {
     return p.id !== mainProduct.id && p.category === 'Mode' &&
       (p.name.toLowerCase().includes('sac') ||
        p.name.toLowerCase().includes('bijou') ||
@@ -251,7 +252,7 @@ function openLookModal(mainProduct) {
     /* Badge pièce */
     var pieceLabel = document.createElement('div');
     pieceLabel.style.cssText = 'position:absolute;top:8px;left:8px;background:' + (isMain ? 'var(--primary)' : 'rgba(0,0,0,0.5)') + ';color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;z-index:2;';
-    pieceLabel.textContent = _lookLabels[idx] || item.category;
+    pieceLabel.textContent = KState.lookLabels[idx] || item.category;
     card.appendChild(pieceLabel);
 
     /* Image */
@@ -332,9 +333,9 @@ function closeProductModal() {
 
 /* ── Commande ── */
 function checkoutCart() {
-  if (_cart.length === 0) { toast('Votre panier est vide.', 'error'); return; }
+  if (KState.cart.length === 0) { toast('Votre panier est vide.', 'error'); return; }
   closeCart();
-  _orderData = { is_self_pickup: true, payment_mode: 'cash_relais' };
+  KState.orderData = { is_self_pickup: true, payment_mode: 'cashKState.relais' };
   renderCheckout();
   $('order-modal').classList.add('open');
 }
@@ -372,12 +373,12 @@ function renderCheckout() {
 
   /* ── Toggle: C'est moi qui récupère ── */
   var toggleWrap = document.createElement('div');
-  toggleWrap.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:' + (_orderData.is_self_pickup ? 'var(--primary-light)' : '#f8fafc') + ';border-radius:var(--radius);margin-bottom:14px;cursor:pointer;border:2px solid ' + (_orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';transition:all 0.2s;user-select:none;';
+  toggleWrap.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:' + (KState.orderData.is_self_pickup ? 'var(--primary-light)' : '#f8fafc') + ';border-radius:var(--radius);margin-bottom:14px;cursor:pointer;border:2px solid ' + (KState.orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';transition:all 0.2s;user-select:none;';
 
   var toggleTrack = document.createElement('div');
-  toggleTrack.style.cssText = 'width:40px;height:22px;border-radius:11px;background:' + (_orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';position:relative;transition:background 0.3s;flex-shrink:0;';
+  toggleTrack.style.cssText = 'width:40px;height:22px;border-radius:11px;background:' + (KState.orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';position:relative;transition:background 0.3s;flex-shrink:0;';
   var toggleThumb = document.createElement('div');
-  toggleThumb.style.cssText = 'width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:2px;left:' + (_orderData.is_self_pickup ? '20px' : '2px') + ';transition:left 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.2);';
+  toggleThumb.style.cssText = 'width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:2px;left:' + (KState.orderData.is_self_pickup ? '20px' : '2px') + ';transition:left 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.2);';
   toggleTrack.appendChild(toggleThumb);
   toggleWrap.appendChild(toggleTrack);
 
@@ -387,12 +388,12 @@ function renderCheckout() {
   toggleWrap.appendChild(toggleLabel);
 
   toggleWrap.addEventListener('click', function() {
-    _orderData.is_self_pickup = !_orderData.is_self_pickup;
+    KState.orderData.is_self_pickup = !KState.orderData.is_self_pickup;
     renderCheckout();
   });
   body.appendChild(toggleWrap);
 
-  if (_orderData.is_self_pickup) {
+  if (KState.orderData.is_self_pickup) {
     /* ── MODE: Je récupère moi-même → 1 seul formulaire ── */
     var secTitle = document.createElement('div');
     secTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:10px;color:var(--text);';
@@ -409,8 +410,8 @@ function renderCheckout() {
     nameInput.type = 'text';
     nameInput.id = 'of-my-name';
     nameInput.placeholder = 'Votre nom';
-    nameInput.value = _orderData.my_name || '';
-    nameInput.addEventListener('input', function() { _orderData.my_name = this.value; });
+    nameInput.value = KState.orderData.my_name || '';
+    nameInput.addEventListener('input', function() { KState.orderData.my_name = this.value; });
     nameGroup.appendChild(nameInput);
     body.appendChild(nameGroup);
 
@@ -430,7 +431,7 @@ function renderCheckout() {
     phoneInput.type = 'tel';
     phoneInput.id = 'of-my-phone';
     phoneInput.placeholder = '321 12 34';
-    phoneInput.value = _orderData.my_phone || '';
+    phoneInput.value = KState.orderData.my_phone || '';
     phoneInput.style.cssText = 'flex:1;border-radius:0 var(--radius) var(--radius) 0;padding:9px 12px;border:2px solid var(--border);outline:none;font-size:inherit;transition:border-color 0.2s;';
     phoneInput.maxLength = 10;
     phoneInput.pattern = '[0-9 ]{7,10}';
@@ -442,7 +443,7 @@ function renderCheckout() {
       if (raw.length >= 4) raw = raw.substring(0,3) + ' ' + raw.substring(3);
       if (raw.length >= 7) raw = raw.substring(0,6) + ' ' + raw.substring(6);
       this.value = raw;
-      _orderData.my_phone = raw;
+      KState.orderData.my_phone = raw;
     });
     phoneWrap.appendChild(phoneInput);
     phoneGroup.appendChild(phoneWrap);
@@ -458,8 +459,8 @@ function renderCheckout() {
     emailInput.type = 'email';
     emailInput.id = 'of-my-email';
     emailInput.placeholder = 'votre@email.com';
-    emailInput.value = _orderData.my_email || '';
-    emailInput.addEventListener('input', function() { _orderData.my_email = this.value; });
+    emailInput.value = KState.orderData.my_email || '';
+    emailInput.addEventListener('input', function() { KState.orderData.my_email = this.value; });
     emailGroup.appendChild(emailInput);
     body.appendChild(emailGroup);
 
@@ -481,8 +482,8 @@ function renderCheckout() {
     pnInput.type = 'text';
     pnInput.id = 'of-pickup-name';
     pnInput.placeholder = 'Nom de la personne locale';
-    pnInput.value = _orderData.pickup_name || '';
-    pnInput.addEventListener('input', function() { _orderData.pickup_name = this.value; });
+    pnInput.value = KState.orderData.pickup_name || '';
+    pnInput.addEventListener('input', function() { KState.orderData.pickup_name = this.value; });
     pnGroup.appendChild(pnInput);
     body.appendChild(pnGroup);
 
@@ -501,7 +502,7 @@ function renderCheckout() {
     ppInput.type = 'tel';
     ppInput.id = 'of-pickup-phone';
     ppInput.placeholder = '321 12 34';
-    ppInput.value = _orderData.pickup_phone || '';
+    ppInput.value = KState.orderData.pickup_phone || '';
     ppInput.style.cssText = 'flex:1;border-radius:0 var(--radius) var(--radius) 0;padding:9px 12px;border:2px solid var(--border);outline:none;font-size:inherit;transition:border-color 0.2s;';
     ppInput.addEventListener('focus', function() { this.style.borderColor = 'var(--primary)'; });
     ppInput.addEventListener('blur', function() { this.style.borderColor = 'var(--border)'; });
@@ -513,7 +514,7 @@ function renderCheckout() {
       if (raw.length >= 4) raw = raw.substring(0,3) + ' ' + raw.substring(3);
       if (raw.length >= 7) raw = raw.substring(0,6) + ' ' + raw.substring(6);
       this.value = raw;
-      _orderData.pickup_phone = raw;
+      KState.orderData.pickup_phone = raw;
     });
     ppWrap.appendChild(ppInput);
     ppGroup.appendChild(ppWrap);
@@ -539,8 +540,8 @@ function renderCheckout() {
     cnInput.type = 'text';
     cnInput.id = 'of-client-name';
     cnInput.placeholder = 'Votre nom';
-    cnInput.value = _orderData.client_name || '';
-    cnInput.addEventListener('input', function() { _orderData.client_name = this.value; });
+    cnInput.value = KState.orderData.client_name || '';
+    cnInput.addEventListener('input', function() { KState.orderData.client_name = this.value; });
     cnGroup.appendChild(cnInput);
     body.appendChild(cnGroup);
 
@@ -556,8 +557,8 @@ function renderCheckout() {
     cpInput.type = 'tel';
     cpInput.id = 'of-client-phone';
     cpInput.placeholder = '+33 6 ...';
-    cpInput.value = _orderData.client_phone || '';
-    cpInput.addEventListener('input', function() { _orderData.client_phone = this.value; });
+    cpInput.value = KState.orderData.client_phone || '';
+    cpInput.addEventListener('input', function() { KState.orderData.client_phone = this.value; });
     cpGroup.appendChild(cpInput);
     rowClient.appendChild(cpGroup);
 
@@ -570,8 +571,8 @@ function renderCheckout() {
     ceInput.type = 'email';
     ceInput.id = 'of-client-email';
     ceInput.placeholder = 'votre@email.com';
-    ceInput.value = _orderData.client_email || '';
-    ceInput.addEventListener('input', function() { _orderData.client_email = this.value; });
+    ceInput.value = KState.orderData.client_email || '';
+    ceInput.addEventListener('input', function() { KState.orderData.client_email = this.value; });
     ceGroup.appendChild(ceInput);
     rowClient.appendChild(ceGroup);
 
@@ -589,7 +590,7 @@ function renderCheckout() {
   var cashRadio = document.createElement('input');
   cashRadio.type = 'radio';
   cashRadio.name = 'payment_mode';
-  cashRadio.value = 'cash_relais';
+  cashRadio.value = 'cashKState.relais';
   cashRadio.checked = true;
   cashRadio.style.cssText = 'width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;';
   cashOpt.appendChild(cashRadio);
@@ -663,7 +664,7 @@ function renderCheckout() {
 async function submitOrder(btn) {
   var recipName, recipPhone, clientName, clientPhone, clientEmail;
 
-  if (_orderData.is_self_pickup) {
+  if (KState.orderData.is_self_pickup) {
     recipName = (document.getElementById('of-my-name').value || '').trim();
     recipPhone = (document.getElementById('of-my-phone').value || '').trim();
     clientName = recipName;
@@ -696,25 +697,25 @@ async function submitOrder(btn) {
     });
 
     /* Step 2 : cr\u00e9er la commande */
-    var items = _cart.map(function(i) {
+    var items = KState.cart.map(function(i) {
       return { product_id: String(i.product.id), quantity: i.qty, confection_type: 'aucun' };
     });
 
-    var relaisId = _relais.length > 0 ? _relais[0].id : undefined;
+    var relaisId = KState.relais.length > 0 ? KState.relais[0].id : undefined;
 
     var apiResult = await apiPost('/api/orders', {
       items: items,
       relais_id: relaisId,
       recipient_name: recipName,
       recipient_phone: fullRecipPhone,
-      payment_mode: _orderData.payment_mode
+      payment_mode: KState.orderData.payment_mode
     });
 
     /* API retourne { order: {...}, discount_pct, discount_kmf, loyalty_label } */
     var orderData = apiResult.order || apiResult;
 
     /* Step 3 : vider le panier */
-    _cart = [];
+    KState.cart = [];
     saveCart();
     renderCartBody();
 
@@ -764,7 +765,7 @@ function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
   wrap.appendChild(refBox);
 
   /* Cash ref code — affich\u00e9 uniquement pour paiement cash */
-  if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
+  if (order.cash_ref_code && order.payment_mode === 'cashKState.relais') {
     var cashLabel = document.createElement('p');
     cashLabel.style.cssText = 'margin-top:10px;font-weight:700;color:var(--text);font-size:0.88rem;';
     cashLabel.textContent = '\u{1F3EA} Code de paiement au relais :';

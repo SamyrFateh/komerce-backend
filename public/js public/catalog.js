@@ -6,7 +6,6 @@
 /* ── Grille 2+ colonnes ── */
 function renderProducts(list) {
   KState.lastList = list || [];
-  _lastList = KState.lastList;
 
   var track = $('product-track');
   if (!track) return;
@@ -149,7 +148,6 @@ function makeProductCard(p) {
 /* ── Vue rangées swipeables par catégorie ── */
 function renderRows(list) {
   KState.lastList = list || [];
-  _lastList = KState.lastList;
 
   var track = $('product-track');
   if (!track) return;
@@ -186,7 +184,6 @@ function renderRows(list) {
       var pill = document.querySelector('.cat-circle[data-cat="' + cat + '"]');
       if (pill) pill.classList.add('active');
       KState.viewMode = 'grid';
-      _viewMode = 'grid';
       updateViewToggle();
       renderProducts(list.filter(function(p) { return p.category === cat; }));
     });

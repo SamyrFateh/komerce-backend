@@ -1,6 +1,6 @@
 /* ============================================================
-   KOMERCE — État central
-   Toutes les variables globales regroupées ici
+   KOMERCE — État central (source unique de vérité)
+   v2.0 — Single source of truth, plus d'alias legacy
    ============================================================ */
 
 var KState = {
@@ -50,6 +50,29 @@ var KState = {
 
   /* Look complet */
   lookLabels: ['La pièce', 'Chaussures', 'Beauté', 'Accessoire'],
+};
+
+/* ── Pub/Sub minimal ─────────────────────────────────────────
+   Usage :
+     KState.on('products:loaded', function(list) { render(list); });
+     KState.emit('products:loaded', KState.products);
+   ──────────────────────────────────────────────────────────── */
+KState._listeners = {};
+
+KState.on = function(event, fn) {
+  if (!KState._listeners[event]) KState._listeners[event] = [];
+  KState._listeners[event].push(fn);
+};
+
+KState.off = function(event, fn) {
+  if (!KState._listeners[event]) return;
+  KState._listeners[event] = KState._listeners[event].filter(function(f) { return f !== fn; });
+};
+
+KState.emit = function(event, data) {
+  (KState._listeners[event] || []).forEach(function(fn) {
+    try { fn(data); } catch(e) { console.error('[KState] listener error on ' + event, e); }
+  });
 };
 
 /* ── Bloom situations (navigation catégories) ── */
@@ -127,21 +150,3 @@ KState.situations = {
     if (saved) KState.favs = JSON.parse(saved);
   } catch(e) { KState.favs = {}; }
 })();
-
-/* ── Alias de compatibilité (backward compat avec l'ancien code global) ── */
-var _products = KState.products;
-var _cart = KState.cart;
-var _favs = KState.favs;
-var _activeMainCat = KState.activeMainCat;
-var _activeSubCat = KState.activeSubCat;
-var _bloomTimeout = KState.bloomTimeout;
-var _bloomLocked = KState.bloomLocked;
-var _currentSort = KState.currentSort;
-var _lastList = KState.lastList;
-var _searchIdx = KState.searchIdx;
-var _complementRules = KState.complementRules;
-var _lookLabels = KState.lookLabels;
-var _viewMode = KState.viewMode;
-var _CAT_ORDER = KState.catOrder;
-var _situations = KState.situations;
-var _orderData = KState.orderData;
