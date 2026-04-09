@@ -168,7 +168,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}
-    next(e);
+    next(err);
   } finally {
     client.release();
   }

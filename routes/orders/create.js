@@ -369,7 +369,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }

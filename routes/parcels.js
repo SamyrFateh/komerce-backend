@@ -31,6 +31,7 @@ const STATUS_TO_STEP = {
   in_transit:  'in_transit',
   available:   'relais_received',
   collected:   'collected',
+  cancelled:   'cancelled',
 };
 
 // GET /api/parcels
