@@ -2386,7 +2386,7 @@ function renderProducts(list) {
     cartBadge.className = 'card-cart-badge';
     cartBadge.setAttribute('data-badge-pid', p.id);
     var cartBadgeIcon = document.createElement('span');
-    cartBadgeIcon.textContent = '🛒';
+    cartBadgeIcon.textContent = '🧺';
     cartBadgeIcon.style.fontSize = '0.7rem';
     cartBadge.appendChild(cartBadgeIcon);
     var cartBadgeQty = document.createElement('span');
@@ -2442,7 +2442,7 @@ function renderProducts(list) {
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.textContent = '🛒 Ajouter';
+    addBtn.textContent = '🧺 Ajouter';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -3678,7 +3678,7 @@ function renderCartBody(highlightId) {
     empty.className = 'cart-empty';
     var icon = document.createElement('div');
     icon.className = 'empty-icon';
-    icon.textContent = '🛒';
+    icon.textContent = '🧺';
     empty.appendChild(icon);
     var msg = document.createElement('p');
     msg.textContent = 'Votre panier est vide';
@@ -3803,7 +3803,7 @@ function shareCartWhatsApp() {
   if (_cart.length === 0) { toast('Votre panier est vide.', 'error'); return; }
 
   var lines = [];
-  lines.push('🛒 *Mon panier Komerce*');
+  lines.push('🧺 *Mon panier Komerce*');
   lines.push('━━━━━━━━━━━━━━━━');
   lines.push('');
 
