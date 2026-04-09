@@ -1,0 +1,35 @@
+{
+  "name": "Komerce — E-commerce des Comores",
+  "short_name": "Komerce",
+  "description": "Le e-commerce qui rapproche la diaspora des Comores. Livraison rapide, paiement au relais.",
+  "start_url": "/Komerce_Boutique.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fffaf5",
+  "theme_color": "#b45309",
+  "lang": "fr",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Boutique",
+      "short_name": "Boutique",
+      "url": "/Komerce_Boutique.html",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
