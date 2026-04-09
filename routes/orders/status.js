@@ -122,15 +122,17 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     }
 
     // Timestamps paramétrés via CASE WHEN
+    // Cast $1::text pour éviter "inconsistent types deduced for parameter $1"
+    // ($1 est utilisé à la fois en SET order_status_enum et en comparaison text)
     await client.query(
       `UPDATE orders SET
-         status         = $1,
-         ordered_at     = CASE WHEN $1 = 'ordered'     AND ordered_at IS NULL     THEN NOW() ELSE ordered_at END,
-         preparation_at = CASE WHEN $1 = 'preparation' AND preparation_at IS NULL THEN NOW() ELSE preparation_at END,
-         shipped_at     = CASE WHEN $1 = 'shipped'     AND shipped_at IS NULL     THEN NOW() ELSE shipped_at END,
-         available_at   = CASE WHEN $1 = 'available'   AND available_at IS NULL   THEN NOW() ELSE available_at END,
-         collected_at   = CASE WHEN $1 = 'collected'   AND collected_at IS NULL   THEN NOW() ELSE collected_at END,
-         cancelled_at   = CASE WHEN $1 = 'cancelled'   AND cancelled_at IS NULL   THEN NOW() ELSE cancelled_at END,
+         status         = $1::order_status,
+         ordered_at     = CASE WHEN $1::text = 'ordered'     AND ordered_at IS NULL     THEN NOW() ELSE ordered_at END,
+         preparation_at = CASE WHEN $1::text = 'preparation' AND preparation_at IS NULL THEN NOW() ELSE preparation_at END,
+         shipped_at     = CASE WHEN $1::text = 'shipped'     AND shipped_at IS NULL     THEN NOW() ELSE shipped_at END,
+         available_at   = CASE WHEN $1::text = 'available'   AND available_at IS NULL   THEN NOW() ELSE available_at END,
+         collected_at   = CASE WHEN $1::text = 'collected'   AND collected_at IS NULL   THEN NOW() ELSE collected_at END,
+         cancelled_at   = CASE WHEN $1::text = 'cancelled'   AND cancelled_at IS NULL   THEN NOW() ELSE cancelled_at END,
          pickup_code    = COALESCE($2, pickup_code),
          updated_at     = NOW()
        WHERE id = $3`,
@@ -166,8 +168,8 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}
-    console.error('Update status error:', err.message, err.stack);
-    res.status(500).json({ error: 'Erreur mise à jour statut', debug_message: err.message, debug_stack: err.stack?.split('\n').slice(0, 5) });
+    console.error('Update status error:', err.message);
+    res.status(500).json({ error: 'Erreur mise à jour statut' });
   } finally {
     client.release();
   }
