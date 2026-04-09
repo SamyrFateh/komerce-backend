@@ -46,12 +46,12 @@ const VALID_TRANSITIONS = {
 
 // Rôles autorisés par transition — pipeline MVP 7 étapes (v9.0)
 const TRANSITION_ROLES = {
-  ordered:     ['admin', 'agent_relais'],  // cash validé par agent_relais, ou webhook Stripe
-  preparation: ['admin', 'agent_hub'],     // SCAN Hub
-  shipped:     ['admin', 'agent_hub'],     // remis au transitaire
-  in_transit:  ['admin'],                  // confirmation embarquement transitaire
-  available:   ['admin', 'agent_relais'],  // SCAN Relais — arrivée
-  collected:   ['admin', 'agent_relais'],  // SCAN QR
+  ordered:     ['admin', 'agent_relais'],
+  preparation: ['admin', 'agent_hub'],
+  shipped:     ['admin', 'agent_hub'],
+  in_transit:  ['admin'],
+  available:   ['admin', 'agent_relais'],
+  collected:   ['admin', 'agent_relais'],
   cancelled:   ['admin'],
   refunded:    ['admin'],
 };
@@ -121,8 +121,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       console.log(`[ORDERS] pickup_code auto-généré pour ${order.reference}: ${newCode}`);
     }
 
-    // Timestamps paramétrés via CASE WHEN — aucune interpolation dans la query (coffre-fort v1.0)
-    // Tous les noms de colonnes sont statiques, aucune valeur utilisateur n'entre dans la query string.
+    // Timestamps paramétrés via CASE WHEN
     await client.query(
       `UPDATE orders SET
          status         = $1,
@@ -166,9 +165,9 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     res.json({ success: true, status });
 
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Update status error:', err.message);
-    res.status(500).json({ error: 'Erreur mise à jour statut' });
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    console.error('Update status error:', err.message, err.stack);
+    res.status(500).json({ error: 'Erreur mise à jour statut', debug_message: err.message, debug_stack: err.stack?.split('\n').slice(0, 5) });
   } finally {
     client.release();
   }
@@ -184,9 +183,6 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.
       customs_agent_id,
       customs_notes,
       sh_category,
-      // ── Traçabilité fournisseur (v7.6) ────────────────────────────────────
-      // supplier_name        : enseigne / fournisseur (ex: "Noon Dubai", "Carrefour MoE")
-      // supplier_invoice_url : lien facture (Google Drive, S3, URL directe)
       supplier_name,
       supplier_invoice_url,
     } = req.body;
@@ -198,7 +194,6 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // Construire la mise à jour dynamiquement selon les champs fournis
     const updates = ['cost_real_kmf = $1', 'updated_at = NOW()'];
     const values  = [cost_real_kmf];
     let   pi      = 2;
@@ -213,13 +208,11 @@ router.patch('/:id/cost', authenticate, requireRole(['admin']), validate(orders.
     }
     values.push(order.id);
 
-    // Mise à jour coût réel (le trigger compute_real_margin recalcule margin_real_pct)
     await db.query(
       `UPDATE orders SET ${updates.join(', ')} WHERE id = $${pi}`,
       values
     );
 
-    // Customs history — sans customs_delta_pct ni customs_delta_kmf (GENERATED)
     if (customs_real_kmf && sh_category) {
       await db.query(
         `INSERT INTO customs_history
