@@ -1641,6 +1641,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     background: var(--white) !important;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
   }
+
+  #order-modal .of-group select {
+    padding: 7px 10px !important;
+    font-size: 0.88rem !important;
+  }
   #main-nav .nav-inner { height: 46px !important; padding: 0 8px !important; gap: 6px !important; }
   .nav-logo .ko, .nav-logo .merce { font-size: 0.92rem !important; }
   .nav-search-wrap { margin: 0 4px !important; height: 34px !important; border-radius: 18px !important; }
@@ -2427,6 +2432,26 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     transition: color 0.2s, border-color 0.2s !important;
   }
 
+
+  /* ── Checkout modal — compact, narrower ── */
+  #order-modal .modal-box {
+    max-width: 460px !important;
+  }
+  #order-modal .modal-body {
+    padding: 14px 18px !important;
+  }
+  #order-modal .of-group {
+    margin-bottom: 6px !important;
+  }
+  #order-modal .of-group label {
+    margin-bottom: 2px !important;
+    font-size: 0.82rem !important;
+  }
+  #order-modal .of-group input,
+  #order-modal .of-group select {
+    padding: 7px 10px !important;
+    font-size: 0.88rem !important;
+  }
 }
 
 /* ── Desktop large screens: 6 columns ── */
@@ -4222,7 +4247,7 @@ function renderCheckout() {
 
   /* ── Cart Summary ── */
   var summary = document.createElement('div');
-  summary.style.cssText = 'background:#f8fafc;border-radius:10px;padding:10px 14px;margin-bottom:14px;border:1px solid var(--border);';
+  summary.style.cssText = 'background:#f8fafc;border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid var(--border);';
 
   var countLine = document.createElement('div');
   countLine.style.cssText = 'font-size:0.82rem;color:var(--muted);';
@@ -4267,7 +4292,7 @@ function renderCheckout() {
   if (_orderData.is_self_pickup) {
     /* ── MODE: Je récupère moi-même → 1 seul formulaire ── */
     var secTitle = document.createElement('div');
-    secTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:10px;color:var(--text);';
+    secTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin-bottom:6px;color:var(--text);';
     secTitle.textContent = '\u{1F464} Vos coordonn\u00e9es';
     body.appendChild(secTitle);
 
