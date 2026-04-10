@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Wallet Service v1.1 (Phase 5: reverseLot with consumption guard)
+ * KOMERCE — Wallet Service v1.2 (F23 race fix) (Phase 5: reverseLot with consumption guard)
  *
  * Système de portefeuille client unifié.
  * Remplace l'ancien système store_credits.
@@ -92,9 +92,10 @@ async function ensureWalletTables() {
 }
 
 // ── Core : Get or Create Wallet ─────────────────────────────────────────────
-async function getOrCreateWallet(client, userId) {
+async function getOrCreateWallet(client, userId, { forUpdate = false } = {}) {
+  const lock = forUpdate ? ' FOR UPDATE' : '';
   const { rows } = await client.query(
-    'SELECT * FROM wallets WHERE user_id = $1', [userId]
+    `SELECT * FROM wallets WHERE user_id = $1${lock}`, [userId]
   );
   if (rows.length) return rows[0];
 
@@ -124,13 +125,14 @@ async function credit(client, opts) {
     if (dup.rows.length) return { transaction: dup.rows[0], duplicate: true };
   }
 
-  const wallet     = await getOrCreateWallet(client, userId);
-  const newBalance = wallet.balance_kmf + amountKmf;
+  const wallet = await getOrCreateWallet(client, userId, { forUpdate: true });
 
-  await client.query(
-    'UPDATE wallets SET balance_kmf = $1, updated_at = NOW() WHERE id = $2',
-    [newBalance, wallet.id]
+  // F23 fix: atomic update prevents race conditions
+  const { rows: [updatedW] } = await client.query(
+    'UPDATE wallets SET balance_kmf = balance_kmf + $1, updated_at = NOW() WHERE id = $2 RETURNING balance_kmf',
+    [amountKmf, wallet.id]
   );
+  const newBalance = updatedW.balance_kmf;
 
   const txRes = await client.query(`
     INSERT INTO wallet_transactions
@@ -174,19 +176,19 @@ async function debit(client, opts) {
     }
   }
 
-  const wallet = await getOrCreateWallet(client, userId);
+  const wallet = await getOrCreateWallet(client, userId, { forUpdate: true });
   if (wallet.balance_kmf < amountKmf) {
     throw new Error(
       `Solde insuffisant : ${wallet.balance_kmf} KMF dispo, ${amountKmf} KMF demandé`
     );
   }
 
-  const newBalance = wallet.balance_kmf - amountKmf;
-
-  await client.query(
-    'UPDATE wallets SET balance_kmf = $1, updated_at = NOW() WHERE id = $2',
-    [newBalance, wallet.id]
+  // F23 fix: atomic update prevents race conditions
+  const { rows: [updatedW] } = await client.query(
+    'UPDATE wallets SET balance_kmf = balance_kmf - $1, updated_at = NOW() WHERE id = $2 RETURNING balance_kmf',
+    [amountKmf, wallet.id]
   );
+  const newBalance = updatedW.balance_kmf;
 
   const txRes = await client.query(`
     INSERT INTO wallet_transactions

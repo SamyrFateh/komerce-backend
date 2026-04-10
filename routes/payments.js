@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Routes paiement v8.0 — F17/F18/F21
+ * KOMERCE — Routes paiement v8.1 (F24/F33) — F17/F18/F21
  *
  * POST /api/payments/stripe/intent    → créer un PaymentIntent Stripe (EUR)
  * POST /api/payments/stripe/webhook   → webhook Stripe (confirmation paiement)
@@ -143,7 +143,8 @@ router.post('/stripe/webhook',
         const { rows: stripeItems } = await client.query(
           `SELECT oi.product_id, oi.quantity FROM order_items oi
            JOIN products p ON p.id = oi.product_id
-           WHERE oi.order_id = $1 AND p.stock IS NOT NULL`,
+           WHERE oi.order_id = $1 AND p.stock IS NOT NULL
+           FOR UPDATE OF p`,
           [order_id]
         );
         for (const si of stripeItems) {
@@ -251,7 +252,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
     );
     for (const item of items) {
       const { rows: prod } = await client.query(
-        'SELECT stock, name FROM products WHERE id = $1',
+        'SELECT stock, name FROM products WHERE id = $1 FOR UPDATE',
         [item.product_id]
       );
       if (prod[0] && prod[0].stock < item.quantity) {

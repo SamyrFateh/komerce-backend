@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.11 (avoirs/credits garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.12 (F34 stock constraint garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -241,7 +241,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.11',
+      version:       '10.12',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -372,6 +372,16 @@ const server = app.listen(PORT, () => {
           END$$
         `);
       } catch(e) { console.warn('Phase1 scan_step migration (non-fatal):', e.message); }
+
+      // F34: prevent negative stock at DB level
+      try {
+        await db.query(`DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_stock_nonneg')
+          THEN ALTER TABLE products ADD CONSTRAINT chk_stock_nonneg CHECK (stock >= 0 OR stock IS NULL);
+               RAISE NOTICE 'F34: stock CHECK constraint added';
+          END IF;
+        END$$`);
+      } catch(e) { console.warn('F34 stock CHECK (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {

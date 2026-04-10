@@ -15,6 +15,21 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { getRule, getRuleNumber }    = require('../../utils/rules');
 
+// F25 fix: Load relais_id for agent (not in req.user since BUG-016)
+async function getAgentRelaisId(userId, userRole) {
+  if (userRole === 'admin') return null;
+  try {
+    const { rows: [u] } = await db.query('SELECT relais_id FROM users WHERE id = $1', [userId]);
+    if (u?.relais_id) return u.relais_id;
+  } catch (e) { /* column may not exist */ }
+  try {
+    const { rows: [match] } = await db.query(
+      `SELECT r.id FROM relais r JOIN users u ON u.phone = r.phone
+       WHERE u.id = $1 AND r.is_active = TRUE LIMIT 1`, [userId]);
+    return match?.id || null;
+  } catch (e) { return null; }
+}
+
 // âââ GET /api/orders â liste client ââââââââââââââââââââââââââââââââââââââââââ
 
 router.get('/', authenticate, async (req, res, next) => {
@@ -75,7 +90,7 @@ router.get('/', authenticate, async (req, res, next) => {
 
 router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
-    const relais_id = req.user.relais_id;
+    const relais_id = await getAgentRelaisId(req.user.id, req.user.role);
     if (!relais_id && req.user.role !== 'admin') {
       return res.status(400).json({ error: 'Aucun relais associÃ© Ã  cet agent' });
     }
@@ -167,7 +182,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
 
 router.get('/problems', authenticate, requireRole(['admin', 'agent_relais', 'agent_hub']), async (req, res, next) => {
   try {
-    const relais_id = req.user.relais_id;
+    const relais_id = await getAgentRelaisId(req.user.id, req.user.role);
 
     // Build relais filter safely â parameterized to prevent SQL injection
     const params = [];
@@ -325,31 +340,24 @@ router.get('/credits', authenticate, async (req, res, next) => {
       ? req.query.user_id
       : req.user.id;
 
-    const { rows } = await db.query(
-      `SELECT
-         id, amount_kmf, remaining_kmf, reason, source_order_id,
-         expires_at, created_at
-       FROM store_credits
-       WHERE user_id = $1
-         AND remaining_kmf > 0
-         AND (expires_at IS NULL OR expires_at > NOW())
-       ORDER BY created_at ASC`,
-      [userId]
-    );
-
-    const total_kmf = rows.reduce((sum, c) => sum + Number(c.remaining_kmf), 0);
+    // F30 fix: use wallet system instead of deprecated store_credits
+    const walletService = require('../../services/wallet-service');
+    const balance = await walletService.getBalance(userId);
+    const detail = await walletService.getWalletDetail(userId);
 
     res.json({
-      total_kmf,
-      credits: rows.map(c => ({
-        id:              c.id,
-        amount_kmf:      c.amount_kmf,
-        remaining_kmf:   c.remaining_kmf,
-        reason:          c.reason,
-        source_order_id: c.source_order_id,
-        expires_at:      c.expires_at,
-        created_at:      c.created_at,
-      })),
+      total_kmf: balance,
+      credits: (detail?.lots || [])
+        .filter(l => l.status === 'active' && l.remaining_kmf > 0)
+        .map(l => ({
+          id:              l.id,
+          amount_kmf:      l.original_amount_kmf,
+          remaining_kmf:   l.remaining_kmf,
+          reason:          l.reason,
+          source_order_id: l.source_order_id,
+          expires_at:      l.expires_at,
+          created_at:      l.created_at,
+        })),
     });
   } catch(err) { next(err); }
 });

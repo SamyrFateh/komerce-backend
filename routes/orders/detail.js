@@ -99,7 +99,7 @@ router.get('/:ref', async (req, res, next) => {
       module_retouche:       order.module_retouche,
       purchasing_at:         order.purchasing_at,
       shipped_at:            order.shipped_at,
-      transit_comores_at:    order.transit_comores_at,
+      in_transit_at:         order.in_transit_at,
       // Routing logistique
       destination_island:    order.destination_island   || null,
       routing_mode:          order.routing_mode         || null,

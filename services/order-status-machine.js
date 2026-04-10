@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.2 (F20 wallet fix)
+ * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.3 (F26+F28 robustesse)
  *
  * ╔══════════════════════════════════════════════════════════════════════╗
  * ║  SINGLE SOURCE OF TRUTH for all order status transitions.          ║
@@ -150,8 +150,10 @@ async function transitionOrderStatus({
   const q = dbClient || db;
 
   // ── 1. Load current order ────────────────────────────────────────────────
+  // F26 fix: FOR UPDATE prevents concurrent transition races
+  const forUpdate = dbClient ? ' FOR UPDATE' : '';
   const { rows: [order] } = await q.query(
-    `SELECT id, status, payment_mode, pickup_code FROM orders WHERE id = $1`,
+    `SELECT id, status, payment_mode, pickup_code FROM orders WHERE id = $1${forUpdate}`,
     [orderId]
   );
   if (!order) {
@@ -307,8 +309,9 @@ async function transitionOrderStatus({
       [orderId, newStatus, scanId, actor.id, historyNote]
     );
   } catch (histErr) {
-    // History must not block the flow, but log loudly
+    // F28 fix: D6 requires history — re-throw to guarantee audit trail
     console.error(`[STATUS-MACHINE] ⚠️ History insert failed (order=${orderId}):`, histErr.message);
+    throw histErr;
   }
 
   console.log(`[STATUS-MACHINE] ✅ order=${orderId} ${previousStatus} → ${newStatus} (source=${source})`);

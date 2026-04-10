@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Routes scan logistique — v8.5 PARCEL SOURCE OF TRUTH
+ * KOMERCE — Routes scan logistique — v8.6 F27 transactions
  *
  * POST /api/scans             → enregistrer un scan (agent hub ou relais)
  * POST /api/scans/collect     → scan de retrait destinataire (code à 6 chiffres)
@@ -139,7 +139,10 @@ async function triggerScan3(order_id, scanned_by = null) {
 //   - un code article  : KOM-ITEM-XXXX  (order_item)
 //   - une référence    : KOM-2026-XXXX  (order entière)
 router.post('/', authenticate, validate(scans.create), async (req, res, next) => {
+  // F27: transaction for atomic scan + parcelSync
+  const client = await db.pool.connect();
   try {
+    await client.query('BEGIN');
     const {
       scan_code,
       step,
@@ -175,7 +178,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
 
     if (scan_code.startsWith('KOM-ITEM-')) {
       // Code article individuel
-      const { rows } = await db.query(
+      const { rows } = await client.query(
         'SELECT id, order_id FROM order_items WHERE scan_code = $1',
         [scan_code]
       );
@@ -184,7 +187,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
       order_id      = rows[0].order_id;
     } else {
       // Référence commande complète (KOM-2026-XXXX)
-      const { rows } = await db.query(
+      const { rows } = await client.query(
         'SELECT id FROM orders WHERE reference = $1',
         [scan_code]
       );
@@ -194,7 +197,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
 
     // Insérer le scan
     // [P3-2] Le trigger est désactivé — parcelSync gère le statut
-    const { rows: [scan] } = await db.query(
+    const { rows: [scan] } = await client.query(
       `INSERT INTO scans
          (order_id, order_item_id, step, scanned_by, location,
           device_id, latitude, longitude, scan_code, notes, is_anomaly)
@@ -214,7 +217,9 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
       order_item_id,
       scanned_by: req.user.id,
       notes,
-    });
+    }, client);
+
+    await client.query('COMMIT');
 
     // [P3-2] Récupérer le statut — maintenant mis à jour par parcelSync (plus par le trigger)
     const { rows: [order] } = await db.query(
@@ -303,7 +308,12 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
       is_anomaly,
     });
 
-  } catch(err) { next(err); }
+  } catch(err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 // ── POST /api/scans/collect ───────────────────────────────────────────────────
@@ -311,12 +321,15 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
 // Body : { pickup_code }
 // [P3-1] await safeSyncScanToParcels — source de vérité
 router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res, next) => {
+  // F27: transaction for atomic scan + parcelSync
+  const client = await db.pool.connect();
   try {
+    await client.query('BEGIN');
     const { pickup_code } = req.body;
     if (!pickup_code) return res.status(400).json({ error: 'pickup_code requis' });
 
     // Retrouver la commande par pickup_code
-    const { rows } = await db.query(
+    const { rows } = await client.query(
       `SELECT o.*, r.name AS relais_name, rc.full_name AS recipient_name
        FROM orders o
        LEFT JOIN relais     r  ON r.id  = o.relais_id
@@ -332,7 +345,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
     const order = rows[0];
 
     // [B9] scans (pas scan_logs) | [B10] created_at auto | [B11] scan_code NOT NULL
-    const { rows: [scanRow] } = await db.query(
+    const { rows: [scanRow] } = await client.query(
       `INSERT INTO scans
          (order_id, step, scanned_by, location, scan_code, notes)
        VALUES ($1,'collected',$2,$3,$4,$5)
@@ -348,7 +361,9 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
       scan_id: scanRow?.id,
       scanned_by: req.user.id,
       notes: 'Retrait destinataire — code valide',
-    });
+    }, client);
+
+    await client.query('COMMIT');
 
     // SMS confirmation au commanditaire
     const { rows: [fullOrder] } = await db.query(
@@ -372,7 +387,12 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
       collected_at: new Date().toISOString(),
     });
 
-  } catch(err) { next(err); }
+  } catch(err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 // ── POST /api/scans/hub/receive ───────────────────────────────────────────────

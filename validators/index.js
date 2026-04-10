@@ -369,7 +369,7 @@ const scans = {
     body: Joi.object({
       scan_code:  safeStr(200).required(),
       step:       Joi.string().valid(
-        'preparation', 'shipped', 'relais_received', 'collected'
+        'preparation', 'shipped', 'in_transit', 'relais_received'
       ).required(),
       location:   safeStr(200),
       notes:      safeStr(500),
