@@ -14,7 +14,7 @@
  *     → si la colonne n'existe pas en DB, la query lancçait une erreur
  *       catchée silencieusement → "Token invalide" pour toutes les routes protégées
  *     → relais_id est fetché séparément par les routes qui en ont besoin (hub, etc.)
- *   - BUG-015 : JWT_SECRET fallback aligné sur routes/auth.js
+ *   - D7 : JWT_SECRET fallback supprimé — obligatoire en prod
  *   - BUG-014 : JWT lu depuis cookie httpOnly en priorité
  *   - Fallback Bearer header conservé pour compatibilité API externe / mobile
  *   - JWT algorithm verrouillé à HS256
@@ -26,11 +26,9 @@ const jwt = require('jsonwebtoken');
 const db  = require('../db');
 
 // ── Secret JWT ──────────────────────────────────────────────────────────────────────
-const _JWT_SECRET = process.env.JWT_SECRET || 'komerce_secret_dev_UNSAFE';
-
-if (!process.env.JWT_SECRET) {
-  console.warn('[auth middleware] ⚠️  JWT_SECRET non défini — fallback dev utilisé.');
-}
+// D7: JWT_SECRET is guaranteed to exist — server.js crashes at startup if missing.
+// No fallback permitted in production (architectural decision D7).
+const _JWT_SECRET = process.env.JWT_SECRET;
 
 // ── Cache mémoire simple (TTL 5 min) ───────────────────────────────────────────────────
 const USER_CACHE_TTL = 5 * 60 * 1000;

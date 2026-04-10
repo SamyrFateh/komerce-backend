@@ -130,6 +130,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
          ordered_at     = CASE WHEN $1::text = 'ordered'     AND ordered_at IS NULL     THEN NOW() ELSE ordered_at END,
          preparation_at = CASE WHEN $1::text = 'preparation' AND preparation_at IS NULL THEN NOW() ELSE preparation_at END,
          shipped_at     = CASE WHEN $1::text = 'shipped'     AND shipped_at IS NULL     THEN NOW() ELSE shipped_at END,
+         in_transit_at  = CASE WHEN $1::text = 'in_transit'  AND in_transit_at IS NULL  THEN NOW() ELSE in_transit_at END,
          available_at   = CASE WHEN $1::text = 'available'   AND available_at IS NULL   THEN NOW() ELSE available_at END,
          collected_at   = CASE WHEN $1::text = 'collected'   AND collected_at IS NULL   THEN NOW() ELSE collected_at END,
          cancelled_at   = CASE WHEN $1::text = 'cancelled'   AND cancelled_at IS NULL   THEN NOW() ELSE cancelled_at END,

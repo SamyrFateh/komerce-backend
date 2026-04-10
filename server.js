@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.9 (avoirs/credits garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.11 (avoirs/credits garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -241,7 +241,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.10',
+      version:       '10.11',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -336,7 +336,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.10 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.11 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {
@@ -344,6 +344,35 @@ const server = app.listen(PORT, () => {
       await fixAdminHash();
       await fixMissingSchema();
       await runAllSeeds();
+
+      // ── Phase 1 safety-net migrations (idempotent) ─────────────────
+      // D7: JWT_SECRET enforced at startup (REQUIRED_ENV)
+      // F1: Rename transit_comores_at → in_transit_at
+      try {
+        await db.query(`
+          DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'orders' AND column_name = 'transit_comores_at')
+            THEN ALTER TABLE orders RENAME COLUMN transit_comores_at TO in_transit_at;
+                 RAISE NOTICE 'Phase1: renamed transit_comores_at → in_transit_at';
+            END IF;
+          END$$
+        `);
+      } catch(e) { console.warn('Phase1 migration (non-fatal):', e.message); }
+
+      // Add in_transit to scan_step enum if missing
+      try {
+        await db.query(`
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid
+              WHERE t.typname = 'scan_step' AND e.enumlabel = 'in_transit')
+            THEN ALTER TYPE scan_step ADD VALUE 'in_transit' AFTER 'shipped';
+                 RAISE NOTICE 'Phase1: added in_transit to scan_step';
+            END IF;
+          END$$
+        `);
+      } catch(e) { console.warn('Phase1 scan_step migration (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
