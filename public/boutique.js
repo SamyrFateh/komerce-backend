@@ -951,7 +951,7 @@ function openProductModal(p, fromSuggestion) {
   var _similar = _products
     .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat && !!x.image_url; })
     .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
-    .slice(0, 3);
+    .slice(0, 6);
 
   if (_similar.length) {
     var sugSection = document.createElement('div');
