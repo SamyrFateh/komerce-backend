@@ -1570,14 +1570,37 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       .card-img { height: 120px !important; }
     }
 
-  </style>
+  
+/* ── Komerce Status Bar (connexion + logout) ── */
+.kmrc-status-bar {
+  display: none; /* hidden by default, shown when logged in */
+  align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 4px 16px; background: #fefce8; border-bottom: 1px solid #fde68a;
+  font-size: 0.75rem; font-family: 'Poppins', sans-serif;
+}
+.kmrc-status-bar.visible { display: flex; }
+.kmrc-conn-pill {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px; background: #ecfdf5; color: #065f46;
+  font-weight: 600; font-size: 0.7rem;
+}
+.kmrc-conn-pill.offline { background: #fef2f2; color: #991b1b; }
+.kmrc-conn-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+.kmrc-conn-pill.offline .kmrc-conn-dot { background: #ef4444; }
+.kmrc-user-label { color: #78716c; }
+.kmrc-role-badge {
+  background: #fef3c7; color: #92400e; padding: 1px 6px;
+  border-radius: 6px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase;
+}
+.kmrc-logout-btn {
+  background: none; border: 1px solid #fca5a5; color: #dc2626;
+  padding: 2px 10px; border-radius: 6px; font-size: 0.7rem;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.kmrc-logout-btn:hover { background: #fef2f2; border-color: #ef4444; }
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
-
-<style>
-.pwa-standalone #main-nav{padding-top:env(safe-area-inset-top,0px)}
-.pwa-standalone #promo-bar{padding-top:env(safe-area-inset-top,0px)}
-</style>
 </head>
 <body>
 
@@ -1586,6 +1609,17 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
      ======================================== -->
 <div id="promo-bar" role="marquee" aria-label="Promotions">
   <div class="promo-msg active">Choisissez, on vous l'envoie · Livraison aux Comores · Récupérez au relais</div>
+</div>
+
+<!-- Status bar (visible quand connecté) -->
+<div class="kmrc-status-bar" id="kmrc-status-bar">
+  <div class="kmrc-conn-pill" id="kmrc-conn-pill">
+    <span class="kmrc-conn-dot"></span>
+    <span id="kmrc-conn-text">En ligne</span>
+  </div>
+  <span class="kmrc-user-label" id="kmrc-user-email"></span>
+  <span class="kmrc-role-badge" id="kmrc-role-badge" style="display:none"></span>
+  <button class="kmrc-logout-btn" id="kmrc-logout-btn">Déconnexion</button>
 </div>
 
 <!-- ========================================
@@ -4626,32 +4660,61 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // ─── Service Worker Registration ──────────────────────────────
-  // Kill ALL service workers + caches — SW disabled for now
-  );
-      if (regs.length) console.log('[Komerce] Killed ' + regs.length + ' SWs');
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      console.log('[Komerce] SW registered, scope:', reg.scope);
+    }).catch(function(err) {
+      console.warn('[Komerce] SW registration failed:', err);
     });
-    if (window.caches) {
-      caches.keys().then(function(names) {
-        names.forEach(function(n) { caches.delete(n); });
-        if (names.length) console.log('[Komerce] Cleared ' + names.length + ' caches');
-      });
-    }
   }
 
+  // ─── Status Bar (connexion + logout) ──────────────────────────
+  (function initStatusBar() {
+    var bar = document.getElementById('kmrc-status-bar');
+    var pill = document.getElementById('kmrc-conn-pill');
+    var connText = document.getElementById('kmrc-conn-text');
+    var emailEl = document.getElementById('kmrc-user-email');
+    var roleEl = document.getElementById('kmrc-role-badge');
+    var logoutBtn = document.getElementById('kmrc-logout-btn');
+    if (!bar) return;
+
+    // Check auth status
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(user) {
+        if (user && user.email) {
+          bar.classList.add('visible');
+          emailEl.textContent = user.email;
+          if (user.role) {
+            roleEl.textContent = user.role.toUpperCase();
+            roleEl.style.display = 'inline';
+          }
+        }
+      })
+      .catch(function() { /* not logged in — bar stays hidden */ });
+
+    // Online/offline
+    function updateConn() {
+      var online = navigator.onLine;
+      pill.className = 'kmrc-conn-pill' + (online ? '' : ' offline');
+      connText.textContent = online ? 'En ligne' : 'Hors ligne';
+    }
+    window.addEventListener('online', updateConn);
+    window.addEventListener('offline', updateConn);
+    updateConn();
+
+    // Logout
+    logoutBtn.addEventListener('click', function() {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+        .finally(function() {
+          document.cookie = 'kmrc_jwt=; Max-Age=0; path=/';
+          bar.classList.remove('visible');
+          toast('Déconnecté', 'info');
+        });
+    });
+  })();
+
 });
-</script>
-<script>
-/* PWA: Service Worker + offline/online indicator */
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
-if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){document.body.classList.add('pwa-standalone');}
-function _pwaUpdateConn(online){
-  document.querySelectorAll('.conn-pill,[id$="-conn-status"]').forEach(function(p){
-    if(online){p.textContent='\u{1F7E2} En ligne';p.style.background='rgba(34,197,94,0.15)';p.style.color='#16a34a';}
-    else{p.textContent='\u{1F534} Hors ligne';p.style.background='rgba(239,68,68,0.15)';p.style.color='#dc2626';}
-  });
-}
-window.addEventListener('online',function(){_pwaUpdateConn(true);});
-window.addEventListener('offline',function(){_pwaUpdateConn(false);});
 </script>
 </body>
 </html>
