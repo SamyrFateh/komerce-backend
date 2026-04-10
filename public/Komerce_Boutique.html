@@ -1537,9 +1537,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   /* Modal produit — empilé sur mobile */
   /* removed — moved to media query */
   /* removed — moved to media query */
-  .pd-info { text-align: center; width: 100%; }
+  .pd-info { text-align: left !important; }
   .pd-name { font-size: 1rem !important; }
-  .pd-qty-row { justify-content: center; }
+  .pd-qty-row { justify-content: flex-start; }
   .pd-cart-btn { width: 100%; }
 }
 @media (max-width: 380px) {
@@ -1552,24 +1552,24 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* Anchor scroll offset */
 #catalogue, #how-it-works, #tracking, #situations { scroll-margin-top: 160px; }
 
-    /* ── Mobile Product Modal ── */
+    /* ── Mobile Product Modal — side-by-side like desktop ── */
     @media (max-width: 768px) {
-      .pd-top { flex-direction: column !important; align-items: center !important; text-align: center; gap: 12px !important; }
-      .pd-emoji { width: 100% !important; max-width: 280px !important; height: 200px !important; margin: 0 auto !important; }
-      .pd-emoji img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+      .pd-top { flex-direction: row !important; align-items: flex-start !important; text-align: left; gap: 12px !important; }
+      .pd-emoji { flex: 0 0 140px !important; width: 140px !important; height: 180px !important; border-radius: 10px !important; overflow: hidden !important; margin: 0 !important; background: #f8f5f1 !important; }
+      .pd-emoji img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+      .pd-info { flex: 1 !important; min-width: 0 !important; padding: 0 4px !important; text-align: left !important; }
       .modal-box { max-height: 95vh !important; }
       .modal-overlay { padding: 8px !important; }
-      .pd-info { padding: 0 8px !important; }
       .pd-actions { flex-direction: column; gap: 8px; }
       .pd-actions button { width: 100%; }
     }
     @media (max-width: 480px) {
-      .pd-emoji { max-width: 220px !important; height: 180px !important; }
+      .pd-emoji { flex: 0 0 120px !important; width: 120px !important; height: 160px !important; }
       .product-card { font-size: 0.85rem; }
       .card-img { height: 140px !important; }
     }
     @media (max-width: 380px) {
-      .pd-emoji { max-width: 180px !important; height: 150px !important; }
+      .pd-emoji { flex: 0 0 100px !important; width: 100px !important; height: 140px !important; }
       .card-img { height: 120px !important; }
     }
 
@@ -1872,31 +1872,35 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .modal-close { width: 32px !important; height: 32px !important; font-size: 1.1rem !important; }
   .modal-body {
     padding: 0 !important;
-    padding-bottom: 90px !important;
+    padding-bottom: 76px !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
   .pd-top {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 0 !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 12px 14px !important;
   }
   .pd-emoji {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 50vh !important;
-    border-radius: 0 !important;
+    flex: 0 0 140px !important;
+    width: 140px !important;
+    height: 180px !important;
+    border-radius: 10px !important;
     margin: 0 !important;
     background: #f8f5f1 !important;
-    min-height: 250px !important;
+    overflow: hidden !important;
+    min-height: auto !important;
   }
   .pd-emoji img {
     width: 100% !important; height: 100% !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
     background: #f8f5f1 !important;
   }
   .pd-info {
-    padding: 14px 16px 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
     text-align: left !important;
   }
   .pd-cat { font-size: 0.68rem !important; margin-bottom: 4px !important; }
@@ -1907,10 +1911,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   }
   .pd-price-conv { font-size: 0.78rem !important; }
   .pd-desc {
-    padding: 6px 16px 0 !important;
-    font-size: 0.8rem !important;
+    padding: 4px 0 0 !important;
+    font-size: 0.78rem !important;
     color: #666 !important;
-    line-height: 1.5 !important;
+    line-height: 1.4 !important;
+    margin-bottom: 4px !important;
   }
 
   /* ── Fixed CTA bar at bottom of modal ── */
@@ -2049,7 +2054,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .card-add-overlay { font-size: 1rem !important; }
   .cat-circle-img { width: 36px !important; height: 36px !important; }
   .cat-circle span { font-size: 0.5rem !important; }
-  .pd-emoji { height: 42vh !important; min-height: 200px !important; }
+  .pd-emoji { height: 160px !important; min-height: auto !important; }
   .filter-btn { padding: 3px 8px !important; font-size: 0.6rem !important; }
   #main-nav .nav-inner { height: 42px !important; }
 }
