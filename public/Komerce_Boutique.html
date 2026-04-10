@@ -900,7 +900,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 .modal-close:hover { background: var(--border); transform: scale(1.1); }
-.modal-body { padding: 16px 20px 8px; flex: 1; overflow-y: auto; }
+.modal-body { padding: 0; flex: 1; overflow-y: auto; }
 .modal-footer {
   flex-shrink: 0;
   padding: 10px 16px 14px;
@@ -942,7 +942,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .qty-pill .qty-val { font-size: 1rem; font-weight: 700; min-width: 22px; text-align: center; }
 /* ── Bundle "Complétez votre look" ── */
 .bundle-section {
-  margin-top: 24px; border: 1.5px solid var(--primary-light);
+  margin: 24px 20px 0; border: 1.5px solid var(--primary-light);
   border-radius: 12px; padding: 14px; background: var(--accent-light);
 }
 .bundle-title {
@@ -1002,7 +1002,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 /* ── Modal produit v3 : layout hero image ── */
 .pd-hero-img {
-  width: calc(100% + 40px); margin: -16px -20px 0;
+  width: 100%; margin: 0;
   aspect-ratio: 4/3; max-height: 280px;
   overflow: hidden; background: var(--primary-light);
   position: relative; flex-shrink: 0;
@@ -1031,7 +1031,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   backdrop-filter: blur(6px); z-index: 2;
 }
 .pd-hero-back:active { transform: scale(1.1) translateX(-2px); }
-.pd-info-section { padding: 14px 0 4px; }
+.pd-info-section { padding: 14px 20px 4px; }
 .pd-category-chip {
   display: inline-block; background: var(--primary-light); color: var(--primary);
   font-size: 0.68rem; font-weight: 700; border-radius: 20px;
@@ -1692,25 +1692,58 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* Anchor scroll offset */
 #catalogue, #how-it-works, #tracking, #situations { scroll-margin-top: 160px; }
 
-    /* ── Mobile Product Modal ── */
+    /* ── Mobile Product Modal — bottom-sheet ── */
     @media (max-width: 768px) {
-      .pd-top { flex-direction: column !important; align-items: center !important; text-align: center; gap: 12px !important; }
-      .pd-emoji { width: 100% !important; max-width: 280px !important; height: 200px !important; margin: 0 auto !important; }
-      .pd-emoji img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
-      .modal-box { max-height: 95vh !important; }
-      .modal-overlay { padding: 8px !important; }
+      #product-modal.modal-overlay {
+        padding: 0 !important;
+        align-items: flex-end !important;
+        background: rgba(0,0,0,0.55) !important;
+      }
+      #product-modal .modal-box {
+        max-width: 100% !important;
+        width: 100% !important;
+        max-height: 92vh !important;
+        border-radius: 18px 18px 0 0 !important;
+        animation: slideUpSheet 0.32s cubic-bezier(0.32,0.72,0,1) !important;
+      }
+      #product-modal .modal-header {
+        border-radius: 18px 18px 0 0 !important;
+        padding: 12px 16px !important;
+        font-size: 0.95rem !important;
+      }
+      #product-modal .modal-body {
+        padding: 0 0 8px !important;
+      }
+      .pd-hero-img {
+        width: 100% !important;
+        margin: 0 !important;
+        max-height: 240px !important;
+        border-radius: 0 !important;
+      }
+      .pd-info-section { padding: 12px 16px 4px !important; }
+      .pd-name-big { font-size: 1rem !important; }
+      .pd-price-big { font-size: 1.18rem !important; }
+      #product-modal .modal-footer { padding: 10px 14px 20px !important; }
+      .pd-controls-sticky { gap: 8px !important; }
+      .pd-add-btn-full { font-size: 0.95rem !important; padding: 11px 14px !important; }
+      /* sections suggestions */
+      [class*="bundle-section"], [class*="swipe-wrap"] { margin: 0 16px !important; }
       .pd-info { padding: 0 8px !important; }
       .pd-actions { flex-direction: column; gap: 8px; }
       .pd-actions button { width: 100%; }
     }
+    @keyframes slideUpSheet {
+      from { transform: translateY(100%); opacity: 0.7; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
     @media (max-width: 480px) {
-      .pd-emoji { max-width: 220px !important; height: 180px !important; }
       .product-card { font-size: 0.85rem; }
       .card-img { height: 140px !important; }
+      .pd-hero-img { max-height: 200px !important; }
     }
     @media (max-width: 380px) {
-      .pd-emoji { max-width: 180px !important; height: 150px !important; }
       .card-img { height: 120px !important; }
+      .pd-hero-img { max-height: 175px !important; }
     }
 
   </style>
@@ -3150,7 +3183,7 @@ function openProductModal(p, fromSuggestion) {
   /* ── Fonction swipe carousel natif pour la modale ── */
   function makeSwipeSection(items, label, borderColor) {
     var section = document.createElement('div');
-    section.style.cssText = 'margin-top:20px;margin-bottom:8px;';
+    section.style.cssText = 'margin:20px 20px 8px;';
 
     var title = document.createElement('div');
     title.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ' + borderColor + ';display:inline-block;';
@@ -3380,42 +3413,7 @@ function openProductModal(p, fromSuggestion) {
   
   // (bouton retour intégré dans la barre ← en haut)
 
-  // ── Auto-scroll suggestions carrousels ──
-  if (window._sugScrollTimers) {
-    window._sugScrollTimers.forEach(function(id) { clearInterval(id); });
-  }
-  window._sugScrollTimers = [];
-
-  function _startSugScroll() {
-    var tracks = document.querySelectorAll('#product-modal-body .modal-swipe-track');
-    if (!tracks.length) return;
-    tracks.forEach(function(track) {
-      if (track.dataset.autoScroll) return; // already running
-      track.dataset.autoScroll = '1';
-      track.style.scrollSnapType = 'none'; // disable snap for smooth auto-scroll
-      var dir = 1;
-      var paused = false;
-      track.addEventListener('mouseenter', function() { paused = true; });
-      track.addEventListener('mouseleave', function() { paused = false; });
-      track.addEventListener('touchstart', function() {
-        paused = true;
-        setTimeout(function() { paused = false; }, 3000);
-      }, { passive: true });
-      var timer = setInterval(function() {
-        if (paused || track.dataset.arrowPause) return;
-        var max = track.scrollWidth - track.clientWidth;
-        if (max <= 5) return;
-        track.scrollLeft += dir * 1.5;
-        if (track.scrollLeft >= max - 2) dir = -1;
-        if (track.scrollLeft <= 1) dir = 1;
-      }, 25);
-      window._sugScrollTimers.push(timer);
-    });
-  }
-  // Try multiple times to catch late-rendered tracks
-  setTimeout(_startSugScroll, 800);
-  setTimeout(_startSugScroll, 2000);
-  setTimeout(_startSugScroll, 4000);
+  // Auto-scroll désactivé — swipe manuel uniquement
 
   $('product-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -3430,28 +3428,30 @@ function openProductModal(p, fromSuggestion) {
    *  compCategories   → catégories dans lesquelles piocher les complémentaires
    *  Pour ajouter une catégorie : une ligne suffit.
    */
+  // SUGGESTION_MAP — complementaires uniquement entre catégories logiquement liées
+  // Mode/Vetements désactivés (trop larges → absurdités type bonnet+fond de teint)
   var SUGGESTION_MAP = {
-    'mode':           { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures','sacs','beaute','beauté'] },
-    'vetements':      { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures','sacs'] },
-    'fashion':        { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures','sacs'] },
-    'chaussures':     { similaires: true, complementaires: true,  compCategories: ['mode','accessoires','chaussettes','sacs'] },
-    'accessoires':    { similaires: true, complementaires: true,  compCategories: ['mode','vetements','bijoux','chaussures'] },
-    'bijoux':         { similaires: true, complementaires: true,  compCategories: ['mode','vetements','sacs','parfum'] },
-    'sacs':           { similaires: true, complementaires: true,  compCategories: ['mode','bijoux','chaussures','accessoires'] },
-    'sur-mesure':     { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures'] },
-    'beaute':         { similaires: true, complementaires: true,  compCategories: ['parfum','soins','beaute','cheveux'] },
-    'beauté':         { similaires: true, complementaires: true,  compCategories: ['parfum','soins','beaute','cheveux'] },
-    'parfum':         { similaires: true, complementaires: true,  compCategories: ['beaute','soins','mode'] },
-    'soins':          { similaires: true, complementaires: true,  compCategories: ['beaute','parfum','cheveux'] },
-    'tech':           { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','coques','chargeurs','audio','hightech'] },
+    'mode':           { similaires: true, complementaires: false, compCategories: [] },
+    'vetements':      { similaires: true, complementaires: false, compCategories: [] },
+    'fashion':        { similaires: true, complementaires: false, compCategories: [] },
+    'chaussures':     { similaires: true, complementaires: true,  compCategories: ['chaussettes','sacs'] },
+    'accessoires':    { similaires: true, complementaires: true,  compCategories: ['bijoux'] },
+    'bijoux':         { similaires: true, complementaires: true,  compCategories: ['accessoires','sacs','parfum'] },
+    'sacs':           { similaires: true, complementaires: true,  compCategories: ['bijoux','accessoires'] },
+    'sur-mesure':     { similaires: true, complementaires: false, compCategories: [] },
+    'beaute':         { similaires: true, complementaires: true,  compCategories: ['parfum','soins'] },
+    'beauté':         { similaires: true, complementaires: true,  compCategories: ['parfum','soins'] },
+    'parfum':         { similaires: true, complementaires: true,  compCategories: ['beaute','beauté','soins'] },
+    'soins':          { similaires: true, complementaires: true,  compCategories: ['beaute','beauté','parfum'] },
+    'tech':           { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','coques','chargeurs','audio'] },
     'telephones':     { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','coques','chargeurs','audio'] },
-    'electronique':   { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','audio','hightech'] },
+    'electronique':   { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','audio'] },
     'accessoires-tel':{ similaires: true, complementaires: true,  compCategories: ['telephones','electronique','audio'] },
     'audio':          { similaires: true, complementaires: true,  compCategories: ['telephones','electronique','accessoires-tel'] },
-    'enfant':         { similaires: true, complementaires: true,  compCategories: ['jouets','mode','chaussures','accessoires'] },
-    'jouets':         { similaires: true, complementaires: true,  compCategories: ['enfant','livres'] },
-    'maison':         { similaires: true, complementaires: true,  compCategories: ['deco','cuisine','linge'] },
-    'deco':           { similaires: true, complementaires: true,  compCategories: ['maison','linge','cuisine'] },
+    'enfant':         { similaires: true, complementaires: false, compCategories: [] },
+    'jouets':         { similaires: true, complementaires: false, compCategories: [] },
+    'maison':         { similaires: true, complementaires: true,  compCategories: ['deco'] },
+    'deco':           { similaires: true, complementaires: true,  compCategories: ['maison'] },
     'alimentaire':    { similaires: true, complementaires: false, compCategories: [] },
     'epicerie':       { similaires: true, complementaires: false, compCategories: [] }
   };
