@@ -2,18 +2,63 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Komerce — Relais</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#b45309">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Komerce">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<text y='.9em' font-size='90'>📍</text></svg>">
 <link rel="stylesheet" href="komerce-ui.css">
 <style>
+/* ═══ Relais-specific styles ═══ */
+
+/* KPI bar */
+.kpi-bar{display:flex;gap:10px;padding:12px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.kpi-bar::-webkit-scrollbar{display:none}
+.kpi-card{flex:0 0 auto;min-width:140px;padding:12px 16px;border-radius:12px;background:var(--bg2,#fff);border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.kpi-card:hover,.kpi-card.active{border-color:var(--gold);box-shadow:0 2px 12px rgba(180,83,9,.12)}
+.kpi-val{font-size:1.5rem;font-weight:800;color:var(--gold)}
+.kpi-label{font-size:0.75rem;color:var(--text3);margin-top:2px}
+.kpi-sub{font-size:0.7rem;color:var(--text3);opacity:.7}
+
+/* Cash cards */
+.cash-card{background:var(--bg2,#fff);border:1px solid var(--border);border-left:4px solid #f59e0b;border-radius:12px;padding:16px;margin-bottom:12px}
+.cash-card .cash-amount{font-size:1.3rem;font-weight:800;color:var(--gold)}
+.cash-card .cash-ref{font-family:'SF Mono',Monaco,monospace;font-size:0.95rem;background:var(--bg);padding:6px 12px;border-radius:8px;display:inline-block;letter-spacing:1px;font-weight:600;border:1px dashed var(--border)}
+.cash-card .client-info{font-size:0.85rem;color:var(--text2)}
+
+/* Approach cards */
+.approach-card{background:var(--bg2,#fff);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.eta-bar{height:6px;border-radius:3px;background:var(--border);margin:10px 0 6px;overflow:hidden}
+.eta-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.eta-green{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.eta-amber{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.eta-red{background:linear-gradient(90deg,#ef4444,#dc2626)}
+.eta-text{font-size:0.75rem;color:var(--text3)}
+
+/* Remettre cards */
+.remettre-card{background:var(--bg2,#fff);border:1px solid var(--border);border-left:4px solid #22c55e;border-radius:12px;padding:16px;margin-bottom:12px}
+.pickup-code{font-family:'SF Mono',Monaco,monospace;font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#fef3c7,#fde68a);padding:6px 14px;border-radius:8px;display:inline-block;letter-spacing:2px}
+.alert-48h{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#dc2626;display:inline-flex;align-items:center;gap:4px}
+
+/* Problem cards */
+.problem-card{background:var(--bg2,#fff);border:1px solid var(--border);border-left:4px solid #ef4444;border-radius:12px;padding:16px;margin-bottom:12px}
+.problem-badge{font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.5px}
+.pb-finance{background:#fef3c7;color:#92400e}
+.pb-logistique{background:#dbeafe;color:#1e40af}
+.pb-client{background:#fce7f3;color:#9d174d}
+.pb-donnees{background:#f3e8ff;color:#6b21a8}
+
+/* Health score */
+.health-score{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:700}
+.hs-green{background:#dcfce7;color:#166534}
+.hs-amber{background:#fef3c7;color:#92400e}
+.hs-red{background:#fef2f2;color:#991b1b}
+
+/* Scanner */
 .scanner-zone{max-width:480px;margin:0 auto;text-align:center}
 .scanner-zone .inp{font-size:1.25rem;padding:1rem;text-align:center;letter-spacing:0.08em;text-transform:uppercase}
 .scanner-zone .btn{width:100%;padding:1rem;font-size:1.125rem;margin-top:0.75rem}
@@ -21,52 +66,53 @@
 .scanner-result{margin-top:1.25rem;padding:1rem;border-radius:8px;display:none}
 .scanner-result.ok{display:block;background:color-mix(in srgb,var(--green) 12%,transparent);border:1px solid var(--green)}
 .scanner-result.err{display:block;background:color-mix(in srgb,var(--red) 12%,transparent);border:1px solid var(--red)}
-.search-box{max-width:560px}
-.search-box .inp{font-size:1.05rem}
-.order-tl{margin-top:0.75rem}
+
+/* Empty states */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state .empty-icon{font-size:3rem;margin-bottom:12px}
+.empty-state .empty-text{font-size:0.95rem}
+
+/* Utility */
+.flex-between{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.mono{font-family:'SF Mono',Monaco,Consolas,monospace}
+.text-right{text-align:right}
+.mt-1{margin-top:0.25rem}
+.mt-2{margin-top:0.5rem}
+.mt-3{margin-top:0.75rem}
+.text-sm{font-size:0.85rem}
+.text-xs{font-size:0.75rem}
+.text-muted{color:var(--text3)}
+.fw-600{font-weight:600}
+.fw-700{font-weight:700}
+.gap-1{gap:0.5rem}
+.d-flex{display:flex}
+.align-center{align-items:center}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+.filter-bar .inp{flex:1;max-width:360px}
+
+/* PWA Mobile bottom tabs */
 @media(max-width:750px){
-  .scanner-zone{max-width:100%}
-  .search-box{max-width:100%}
-}
-</style>
-<style>
-/* ═══ PWA MOBILE: sidebar → bottom tabs ═══ */
-@media(max-width:768px){
   .sidebar{display:none !important}
-  .layout,.main{flex-direction:column !important}
-  .content{margin-left:0 !important;padding:12px !important;padding-bottom:72px !important}
-  .hdr{flex-wrap:wrap;gap:6px;height:auto !important;min-height:48px;padding:8px 12px !important}
-  .hdr .logo{font-size:0.9rem}
-  .hdr-right{flex-wrap:wrap;gap:4px;font-size:0.75rem}
   .mobile-tabs{display:flex !important}
-  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{min-width:480px}
-  .stat-grid{grid-template-columns:repeat(2,1fr) !important;gap:8px !important}
-  .stat-card{padding:10px !important}
-  .stat-val{font-size:1.3rem !important}
-  .stat-label{font-size:0.65rem !important}
   .screen{padding:10px !important}
-  .scan-box{padding:16px !important}
-  .scan-input{font-size:1.1rem !important}
-}
-@media(max-width:400px){
-  .stat-grid{grid-template-columns:1fr !important}
-  .hdr .logo{font-size:0.8rem}
-  .content{padding:8px !important;padding-bottom:68px !important}
+  .scanner-zone{max-width:100%}
+  .kpi-bar{padding:8px 0}
+  .kpi-card{min-width:110px;padding:10px 12px}
+  .kpi-val{font-size:1.2rem}
 }
 .mobile-tabs{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;
-  background:var(--bg2);border-top:2px solid var(--border);
-  padding:2px 0 calc(2px + env(safe-area-inset-bottom,0px));
-  box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+  background:var(--bg2,#fff);border-top:1px solid var(--border);
+  padding:4px 0 2px;
 }
 .mobile-tabs-inner{display:flex;width:100%}
 .mtab{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
   padding:6px 2px 4px;font-size:0.58rem;letter-spacing:0.01em;
   color:var(--text3);background:none;border:none;cursor:pointer;
-  font-family:inherit;position:relative;transition:color 0.15s;
-  -webkit-tap-highlight-color:transparent;user-select:none;
+  transition:color .15s;position:relative;
 }
 .mtab:active{transform:scale(0.92)}
 .mtab.active{color:var(--gold);font-weight:600}
@@ -78,12 +124,13 @@
   display:flex;align-items:center;justify-content:center;padding:0 3px;
 }
 .mtab-badge:empty{display:none}
-/* PWA standalone safe areas */
 .pwa-standalone .hdr{padding-top:calc(8px + env(safe-area-inset-top,0px)) !important}
 .pwa-standalone .mobile-tabs{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
 </style>
 </head>
 <body>
+
+  <!-- Header -->
   <div class="hdr">
     <div class="logo">K<em>OMERCE</em> · RELAIS</div>
     <div class="hdr-right">
@@ -95,156 +142,244 @@
   </div>
 
   <div class="main">
+    <!-- Sidebar (desktop) -->
     <nav class="sidebar">
       <div class="sidebar-section">
-        <div class="sidebar-label">Opérations</div>
-        <div class="nav-item active" data-screen="scrAttente">
-          <span class="nav-icon">📦</span> En attente
-          <span class="nav-badge" id="badgeAttente" style="display:none">0</span>
+        <div class="sidebar-label">OPÉRATIONS</div>
+        <div class="nav-item active" data-screen="scrCash">
+          <span class="nav-icon">💰</span> Encaissement <span class="badge b-gold" id="badgeCash"></span>
+        </div>
+        <div class="nav-item" data-screen="scrApproche">
+          <span class="nav-icon">📦</span> En approche <span class="badge b-blue" id="badgeApproche"></span>
         </div>
         <div class="nav-item" data-screen="scrRemettre">
-          <span class="nav-icon">🤝</span> À remettre
-          <span class="nav-badge" id="badgeRemettre" style="display:none">0</span>
+          <span class="nav-icon">🤝</span> À remettre <span class="badge b-green" id="badgeRemettre"></span>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">SUIVI</div>
+        <div class="nav-item" data-screen="scrAlertes">
+          <span class="nav-icon">⚠️</span> Alertes <span class="badge b-red" id="badgeAlertes"></span>
         </div>
         <div class="nav-item" data-screen="scrScanner">
           <span class="nav-icon">📱</span> Scanner rapide
         </div>
       </div>
-      <div class="sidebar-section">
-        <div class="sidebar-label">Suivi</div>
-        <div class="nav-item" data-screen="scrHistorique">
-          <span class="nav-icon">📜</span> Historique
-        </div>
-        <div class="nav-item" data-screen="scrRecherche">
-          <span class="nav-icon">🔍</span> Recherche
-        </div>
-      </div>
     </nav>
 
+    <!-- Content -->
     <div class="content">
 
-      <!-- R1 — En attente de réception -->
-      <div class="screen active" id="scrAttente">
-        <div class="screen-hdr">
-          <div>
-            <div class="screen-title">En attente de réception</div>
-            <div class="screen-sub">Colis expédiés vers votre relais — à réceptionner</div>
-          </div>
+      <!-- KPI Bar -->
+      <div class="kpi-bar" id="kpiBar">
+        <div class="kpi-card active" data-screen="scrCash">
+          <div class="kpi-val" id="kpiCash">—</div>
+          <div class="kpi-label">💰 Cash à encaisser</div>
+          <div class="kpi-sub" id="kpiCashAmount"></div>
         </div>
-        <div class="inp-row" style="margin-bottom:1rem;max-width:360px">
-          <input type="text" class="inp" id="filterAttente" placeholder="Filtrer par référence…">
+        <div class="kpi-card" data-screen="scrApproche">
+          <div class="kpi-val" id="kpiApproche">—</div>
+          <div class="kpi-label">📦 En approche</div>
+          <div class="kpi-sub" id="kpiApprocheSub"></div>
         </div>
-        <div id="attenteList">
-          <p style="color:var(--text3)">Chargement…</p>
+        <div class="kpi-card" data-screen="scrRemettre">
+          <div class="kpi-val" id="kpiRemettre">—</div>
+          <div class="kpi-label">🤝 À remettre</div>
+          <div class="kpi-sub" id="kpiRemSub"></div>
+        </div>
+        <div class="kpi-card" data-screen="scrAlertes">
+          <div class="kpi-val" id="kpiAlertes">—</div>
+          <div class="kpi-label">⚠️ Alertes</div>
+          <div class="kpi-sub" id="kpiAlertSub"></div>
         </div>
       </div>
 
-      <!-- R2 — À remettre au client -->
+      <!-- S1: Encaissement Cash -->
+      <div class="screen active" id="scrCash">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">💰 Encaissement cash</div>
+            <div class="screen-sub">Commandes en attente de paiement espèces — encaissez pour valider</div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input type="text" class="inp" id="filterCash" placeholder="Filtrer par référence ou client…">
+        </div>
+        <div id="cashList"></div>
+      </div>
+
+      <!-- S2: En approche -->
+      <div class="screen" id="scrApproche">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">📦 Commandes en approche</div>
+            <div class="screen-sub">Colis expédiés vers votre relais — estimation d'arrivée</div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input type="text" class="inp" id="filterApproche" placeholder="Filtrer par référence…">
+        </div>
+        <div id="approcheList"></div>
+      </div>
+
+      <!-- S3: À remettre -->
       <div class="screen" id="scrRemettre">
         <div class="screen-hdr">
           <div>
-            <div class="screen-title">À remettre au client</div>
+            <div class="screen-title">🤝 À remettre au client</div>
             <div class="screen-sub">Colis disponibles — en attente de collecte par le client</div>
           </div>
         </div>
-        <div class="inp-row" style="margin-bottom:1rem;max-width:360px">
-          <input type="text" class="inp" id="filterRemettre" placeholder="Filtrer par référence…">
+        <div class="filter-bar">
+          <input type="text" class="inp" id="filterRemettre" placeholder="Filtrer par référence ou client…">
         </div>
-        <div id="remettreList">
-          <p style="color:var(--text3)">Chargement…</p>
-        </div>
+        <div id="remettreList"></div>
       </div>
 
-      <!-- R3 — Scanner rapide -->
+      <!-- S4: Alertes / Problèmes -->
+      <div class="screen" id="scrAlertes">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">⚠️ Commandes problématiques</div>
+            <div class="screen-sub">Commandes nécessitant une action — informez le client</div>
+          </div>
+          <div id="healthBadge"></div>
+        </div>
+        <div id="alertesList"></div>
+      </div>
+
+      <!-- S5: Scanner rapide -->
       <div class="screen" id="scrScanner">
         <div class="screen-hdr">
           <div>
-            <div class="screen-title">Scanner rapide</div>
+            <div class="screen-title">📱 Scanner rapide</div>
             <div class="screen-sub">Scannez ou saisissez la référence commande</div>
           </div>
         </div>
         <div class="scanner-zone">
-          <div class="card">
-            <input type="text" class="inp" id="scanRef" placeholder="REF-XXXXXXXX" autocomplete="off" autofocus>
+          <div class="card" style="padding:24px">
+            <input type="text" class="inp" id="scanRef" placeholder="REF-XXXXXXXX" autocomplete="off">
             <select class="inp" id="scanStep" style="margin-top:0.75rem">
-              <option value="relais_received">📦 Réception au relais</option>
-              <option value="collected">🤝 Remise au client</option>
+              <option value="relais_received">📦 Réceptionner (arrivée au relais)</option>
+              <option value="collected">🤝 Remettre au client</option>
             </select>
-            <input type="text" class="inp" id="scanNotes" placeholder="Notes (optionnel)" style="margin-top:0.75rem;font-size:0.95rem">
-            <button class="btn btn-gold" id="btnScan">SCANNER</button>
+            <textarea class="inp" id="scanNotes" placeholder="Notes (optionnel)" rows="2" style="margin-top:0.75rem;text-align:left;font-size:0.95rem;letter-spacing:normal;text-transform:none;resize:vertical"></textarea>
+            <button class="btn btn-gold" id="btnScan" style="margin-top:0.75rem">⚡ Valider le scan</button>
           </div>
           <div class="scanner-result" id="scanResult">
-            <span id="scanResultText"></span>
+            <div id="scanResultText"></div>
           </div>
         </div>
       </div>
 
-      <!-- R4 — Historique du jour -->
-      <div class="screen" id="scrHistorique">
-        <div class="screen-hdr">
-          <div>
-            <div class="screen-title">Historique du jour</div>
-            <div class="screen-sub">Scans effectués aujourd'hui à ce relais</div>
-          </div>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Heure</th>
-                <th>Référence</th>
-                <th>Étape</th>
-                <th>Résultat</th>
-              </tr>
-            </thead>
-            <tbody id="historiqueBody">
-              <tr><td colspan="4" style="color:var(--text3)">Chargement…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    </div><!-- /content -->
+  </div><!-- /main -->
 
-      <!-- R5 — Recherche -->
-      <div class="screen" id="scrRecherche">
-        <div class="screen-hdr">
-          <div>
-            <div class="screen-title">Recherche</div>
-            <div class="screen-sub">Rechercher par référence commande</div>
-          </div>
-        </div>
-        <div class="search-box">
-          <div class="inp-row" style="gap:0.5rem;display:flex">
-            <input type="text" class="inp" id="searchInput" placeholder="Référence commande…" style="flex:1">
-            <button class="btn btn-gold" id="btnSearch">Rechercher</button>
-          </div>
-        </div>
-        <div id="searchResults" style="margin-top:1.25rem"></div>
-      </div>
-
+  <!-- Mobile Bottom Tabs -->
+  <div class="mobile-tabs">
+    <div class="mobile-tabs-inner">
+      <button class="mtab active" data-screen="scrCash"><span class="mtab-icon">💰</span>Cash<span class="mtab-badge" id="mbCash"></span></button>
+      <button class="mtab" data-screen="scrApproche"><span class="mtab-icon">📦</span>Approche<span class="mtab-badge" id="mbApproche"></span></button>
+      <button class="mtab" data-screen="scrRemettre"><span class="mtab-icon">🤝</span>Remettre<span class="mtab-badge" id="mbRemettre"></span></button>
+      <button class="mtab" data-screen="scrAlertes"><span class="mtab-icon">⚠️</span>Alertes<span class="mtab-badge" id="mbAlertes"></span></button>
+      <button class="mtab" data-screen="scrScanner"><span class="mtab-icon">📱</span>Scanner<span class="mtab-badge"></span></button>
     </div>
   </div>
 
-  <div id="k-toast" class="toast"></div>
-
   <script src="komerce-api.js"></script>
   <script>
+  /* ═══════════════════════════════════════════════════════════════════════
+     KOMERCE RELAIS DASHBOARD — v2.0
+     Uses: /api/orders/relais + /api/orders/problems + /api/payments/cash/confirm
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  'use strict';
+
   /* ─── State ─── */
   let currentUser = null;
-  let ordersAttente = [];
-  let ordersRemettre = [];
+  let relaisData = { summary: {}, orders: [] };
+  let problemsData = { problems: [], health_score: 100 };
   let refreshTimer = null;
+
+  /* ─── Helpers ─── */
+  function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  function fmtKMF(n) {
+    return Number(n || 0).toLocaleString('fr-FR') + ' KMF';
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short' }) + ' ' +
+           d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function fmtAge(iso) {
+    if (!iso) return '';
+    const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+    if (h < 1) return 'il y a moins d\'1h';
+    if (h < 24) return 'il y a ' + h + 'h';
+    const d = Math.floor(h / 24);
+    return 'il y a ' + d + 'j';
+  }
+
+  /* ─── Estimation arrivée ─── */
+  function estimateArrival(order) {
+    // Estimate based on shipped_at or created_at
+    const shipped = order.shipped_at || order.created_at;
+    if (!shipped) return { days: null, pct: 0, label: 'Inconnu', cls: 'eta-amber' };
+
+    const TRANSIT_DAYS = 10; // Maritime France→Comores ~7-12 jours
+    const elapsed = (Date.now() - new Date(shipped).getTime()) / 86400000;
+    const remaining = Math.max(0, TRANSIT_DAYS - elapsed);
+    const pct = Math.min(100, Math.round((elapsed / TRANSIT_DAYS) * 100));
+
+    let cls = 'eta-green';
+    let label;
+    if (remaining <= 0) {
+      label = 'Arrivée imminente';
+      cls = 'eta-green';
+    } else if (remaining <= 3) {
+      label = '~' + Math.ceil(remaining) + ' jour(s) restant(s)';
+      cls = 'eta-green';
+    } else if (remaining <= 7) {
+      label = '~' + Math.ceil(remaining) + ' jours restants';
+      cls = 'eta-amber';
+    } else {
+      label = '~' + Math.ceil(remaining) + ' jours restants';
+      cls = 'eta-red';
+    }
+
+    const eta = new Date(new Date(shipped).getTime() + TRANSIT_DAYS * 86400000);
+    const etaStr = eta.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+
+    return { days: Math.ceil(remaining), pct, label, cls, etaStr, elapsed: Math.floor(elapsed) };
+  }
+
+  /* ─── Problem labels ─── */
+  const PROBLEM_LABELS = {
+    payment_no_bc: { icon: '💸', label: 'Payé sans bon de commande', cat: 'finance', cls: 'pb-finance' },
+    preparation_too_long: { icon: '⏳', label: 'Préparation trop longue', cat: 'logistique', cls: 'pb-logistique' },
+    transit_too_long: { icon: '🚢', label: 'Transit trop long', cat: 'logistique', cls: 'pb-logistique' },
+    waiting_too_long: { icon: '⏰', label: 'En attente depuis trop longtemps', cat: 'client', cls: 'pb-client' },
+    no_notification: { icon: '🔇', label: 'Client non notifié', cat: 'client', cls: 'pb-client' },
+    stalled: { icon: '🧊', label: 'Commande bloquée', cat: 'donnees', cls: 'pb-donnees' },
+    no_relais: { icon: '📍', label: 'Pas de relais assigné', cat: 'donnees', cls: 'pb-donnees' },
+    other: { icon: '❓', label: 'Autre problème', cat: 'donnees', cls: 'pb-donnees' },
+  };
 
   /* ─── Init ─── */
   (async function init() {
     try {
       const user = await K.auth.restore();
-      if (!user || user.role !== 'agent_relais') {
+      if (!user || !['agent_relais', 'admin'].includes(user.role)) {
         window.location.href = 'portal.html';
         return;
       }
       currentUser = user;
       document.getElementById('userInfo').textContent = user.email || user.name;
-      document.getElementById('userRole').textContent = user.role || 'agent';
+      document.getElementById('userRole').textContent = user.role === 'admin' ? 'ADMIN' : 'AGENT_RELAIS';
       await loadAll();
       startAutoRefresh();
     } catch (e) {
@@ -254,143 +389,349 @@
   })();
 
   /* ─── Navigation ─── */
-  document.querySelectorAll('.nav-item[data-screen]').forEach(el => {
-    el.addEventListener('click', () => {
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      el.classList.add('active');
-      document.getElementById(el.dataset.screen).classList.add('active');
-      // Focus scanner input when switching to scanner screen
-      if (el.dataset.screen === 'scrScanner') {
-        setTimeout(() => document.getElementById('scanRef').focus(), 100);
-      }
-    });
+  function switchScreen(screenId) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+
+    const el = document.getElementById(screenId);
+    if (el) el.classList.add('active');
+
+    // Sync sidebar
+    const nav = document.querySelector('.nav-item[data-screen="' + screenId + '"]');
+    if (nav) nav.classList.add('active');
+
+    // Sync KPI
+    const kpi = document.querySelector('.kpi-card[data-screen="' + screenId + '"]');
+    if (kpi) kpi.classList.add('active');
+
+    // Sync mobile tab
+    const mtab = document.querySelector('.mtab[data-screen="' + screenId + '"]');
+    if (mtab) mtab.classList.add('active');
+
+    // Focus scanner
+    if (screenId === 'scrScanner') {
+      setTimeout(function() { document.getElementById('scanRef').focus(); }, 100);
+    }
+  }
+
+  document.querySelectorAll('.nav-item[data-screen]').forEach(function(el) {
+    el.addEventListener('click', function() { switchScreen(el.dataset.screen); });
+  });
+  document.querySelectorAll('.kpi-card[data-screen]').forEach(function(el) {
+    el.addEventListener('click', function() { switchScreen(el.dataset.screen); });
+  });
+  document.querySelectorAll('.mtab[data-screen]').forEach(function(el) {
+    el.addEventListener('click', function() { switchScreen(el.dataset.screen); });
   });
 
-  /* ─── Load All Data ─── */
+  /* ─── Load All ─── */
   async function loadAll() {
-    await Promise.all([
-      loadAttente(),
-      loadRemettre(),
-      loadHistorique()
-    ]);
+    await Promise.all([loadRelais(), loadProblems()]);
   }
 
-  /* ─── R1: En attente de réception ─── */
-  async function loadAttente() {
+  /* ─── Data: /api/orders/relais ─── */
+  async function loadRelais() {
     try {
-      const orders = await K.orders.list({ status: 'in_transit' });
-      const shipped = await K.orders.list({ status: 'shipped' });
-      ordersAttente = [...orders, ...shipped];
-      renderAttente();
+      const data = await K.request('/api/orders/relais', 'GET');
+      relaisData = data || { summary: {}, orders: [] };
+      updateKPIs();
+      renderCash();
+      renderApproche();
+      renderRemettre();
     } catch (e) {
-      console.error('Load attente error:', e);
-      document.getElementById('attenteList').innerHTML = '<p style="color:var(--red)">Erreur de chargement</p>';
+      console.error('loadRelais error:', e);
+      K.ui.toast('Erreur chargement commandes', 'err');
     }
   }
 
-  function renderAttente(filter) {
-    const container = document.getElementById('attenteList');
-    let list = ordersAttente;
+  /* ─── Data: /api/orders/problems ─── */
+  async function loadProblems() {
+    try {
+      const data = await K.request('/api/orders/problems', 'GET');
+      problemsData = data || { problems: [], health_score: 100 };
+      renderAlertes();
+      updateKPIs();
+    } catch (e) {
+      console.error('loadProblems error:', e);
+    }
+  }
+
+  /* ─── KPIs ─── */
+  function updateKPIs() {
+    const s = relaisData.summary || {};
+    const cashOrders = (relaisData.orders || []).filter(function(o) {
+      return o.status === 'confirmed' && o.payment_mode === 'cash_relais';
+    });
+    const approchOrders = (relaisData.orders || []).filter(function(o) {
+      return o.status === 'shipped';
+    });
+    const remOrders = (relaisData.orders || []).filter(function(o) {
+      return o.status === 'available';
+    });
+    const alerts48 = remOrders.filter(function(o) { return o.alert_48h; });
+
+    // KPI values
+    document.getElementById('kpiCash').textContent = cashOrders.length;
+    document.getElementById('kpiCashAmount').textContent = cashOrders.length
+      ? fmtKMF(cashOrders.reduce(function(s, o) { return s + Number(o.total_kmf || 0); }, 0))
+      : 'Aucun paiement en attente';
+
+    document.getElementById('kpiApproche').textContent = approchOrders.length;
+    document.getElementById('kpiApprocheSub').textContent = approchOrders.length
+      ? approchOrders.length + ' colis en route'
+      : 'Aucun colis en route';
+
+    document.getElementById('kpiRemettre').textContent = remOrders.length;
+    document.getElementById('kpiRemSub').textContent = alerts48.length
+      ? '⚠️ ' + alerts48.length + ' depuis +48h'
+      : remOrders.length ? remOrders.length + ' colis disponibles' : 'Aucun colis à remettre';
+
+    const probCount = (problemsData.problems || []).length;
+    document.getElementById('kpiAlertes').textContent = probCount;
+    document.getElementById('kpiAlertSub').textContent = probCount
+      ? 'Santé: ' + (problemsData.health_score || 0) + '/100'
+      : 'Tout est normal ✓';
+
+    // Badges
+    updateBadge('badgeCash', cashOrders.length);
+    updateBadge('badgeApproche', approchOrders.length);
+    updateBadge('badgeRemettre', remOrders.length);
+    updateBadge('badgeAlertes', probCount);
+    // Mobile badges
+    setBadge('mbCash', cashOrders.length);
+    setBadge('mbApproche', approchOrders.length);
+    setBadge('mbRemettre', remOrders.length);
+    setBadge('mbAlertes', probCount);
+  }
+
+  function updateBadge(id, count) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = count > 0 ? count : '';
+  }
+  function setBadge(id, count) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = count > 0 ? count : '';
+  }
+
+  /* ═══ S1: Encaissement Cash ═══ */
+  function getCashOrders() {
+    return (relaisData.orders || []).filter(function(o) {
+      return o.status === 'confirmed' && o.payment_mode === 'cash_relais';
+    });
+  }
+
+  function renderCash(filter) {
+    var list = getCashOrders();
     if (filter) {
-      const q = filter.toLowerCase();
-      list = list.filter(o => (o.reference || '').toLowerCase().includes(q));
+      var q = filter.toLowerCase();
+      list = list.filter(function(o) {
+        return (o.reference || '').toLowerCase().includes(q) ||
+               (o.recipient_name || '').toLowerCase().includes(q);
+      });
     }
 
-    updateBadge('badgeAttente', ordersAttente.length);
+    var container = document.getElementById('cashList');
 
     if (!list.length) {
-      container.innerHTML = '<div class="card" style="text-align:center;color:var(--text3)">Aucun colis en attente de réception</div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Aucun paiement cash en attente</div></div>';
       return;
     }
 
-    container.innerHTML = list.map(o => `
-      <div class="card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
-        <div style="min-width:180px">
-          <div style="font-weight:600" class="mono">${esc(o.reference)}</div>
-          <div style="font-size:0.85rem;color:var(--text3);margin-top:0.25rem">
-            ${K.ui.badge(o.status)}
-            <span style="margin-left:0.5rem">${o.items ? o.items.length + ' article(s)' : ''}</span>
-          </div>
-          <div style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">
-            ${o.transit_hub ? 'Hub: ' + esc(o.transit_hub) : ''}
-            ${o.destination_island ? ' · ' + esc(o.destination_island) : ''}
-          </div>
-        </div>
-        <div style="text-align:right;min-width:120px">
-          <div style="font-size:0.8rem;color:var(--text3)">${K.ui.fmtAge(o.created_at)}</div>
-          <button class="btn btn-green btn-sm" onclick="actionReception('${o.id}','${esc(o.reference)}')" style="margin-top:0.5rem">
-            📦 Réceptionner
-          </button>
-        </div>
-      </div>
-    `).join('');
+    container.innerHTML = list.map(function(o) {
+      return '<div class="cash-card">' +
+        '<div class="flex-between">' +
+          '<div>' +
+            '<div class="mono fw-700">' + esc(o.reference) + '</div>' +
+            '<div class="client-info mt-1">' +
+              '👤 ' + esc(o.recipient_name || 'Client') +
+              (o.recipient_phone ? ' · 📞 <a href="tel:' + esc(o.recipient_phone) + '">' + esc(o.recipient_phone) + '</a>' : '') +
+            '</div>' +
+            '<div class="text-xs text-muted mt-1">' +
+              (o.product_name ? esc(o.product_name) : '') +
+              (o.items_count > 1 ? ' + ' + (o.items_count - 1) + ' autre(s)' : '') +
+              ' · ' + esc(o.destination_island || '') +
+            '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<div class="cash-amount">' + fmtKMF(o.total_kmf) + '</div>' +
+            '<div class="text-xs text-muted mt-1">' + fmtAge(o.created_at) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<div>Code: <span class="cash-ref">' + esc(o.cash_ref_code || '—') + '</span></div>' +
+          '<button class="btn btn-gold btn-sm" onclick="actionEncaisser(\'' + o.id + '\',\'' + esc(o.reference) + '\',\'' + esc(o.cash_ref_code || '') + '\')" style="margin-left:auto">' +
+            '💰 Encaisser' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
 
-  document.getElementById('filterAttente').addEventListener('input', function() {
-    renderAttente(this.value);
+  document.getElementById('filterCash').addEventListener('input', function() {
+    renderCash(this.value);
+  });
+
+  async function actionEncaisser(orderId, ref, cashRefCode) {
+    if (!cashRefCode) {
+      K.ui.toast('Pas de code cash pour cette commande', 'err');
+      return;
+    }
+    if (!confirm('Confirmer l\'encaissement cash pour ' + ref + ' ?\n\nCode: ' + cashRefCode)) return;
+
+    try {
+      var result = await K.request('/api/payments/cash/confirm', 'POST', { cash_ref_code: cashRefCode });
+      K.ui.toast('💰 ' + ref + ' encaissé — commande validée ✓', 'ok');
+      await loadAll();
+    } catch (e) {
+      console.error('Cash confirm error:', e);
+      K.ui.toast('Erreur: ' + (e.message || 'Échec de l\'encaissement'), 'err');
+    }
+  }
+
+  /* ═══ S2: En approche ═══ */
+  function getApprochOrders() {
+    return (relaisData.orders || []).filter(function(o) {
+      return o.status === 'shipped';
+    });
+  }
+
+  function renderApproche(filter) {
+    var list = getApprochOrders();
+    if (filter) {
+      var q = filter.toLowerCase();
+      list = list.filter(function(o) {
+        return (o.reference || '').toLowerCase().includes(q);
+      });
+    }
+
+    var container = document.getElementById('approcheList');
+
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">🏝️</div><div class="empty-text">Aucun colis en approche pour le moment</div></div>';
+      return;
+    }
+
+    container.innerHTML = list.map(function(o) {
+      var eta = estimateArrival(o);
+      return '<div class="approach-card">' +
+        '<div class="flex-between">' +
+          '<div>' +
+            '<div class="mono fw-700">' + esc(o.reference) + '</div>' +
+            '<div class="text-sm text-muted mt-1">' +
+              (o.transit_hub ? '🏭 Hub: ' + esc(o.transit_hub) + ' · ' : '') +
+              '🏝️ ' + esc(o.destination_island || 'Comores') +
+            '</div>' +
+            '<div class="text-xs text-muted mt-1">' +
+              '📅 Expédié: ' + fmtDate(o.shipped_at) +
+            '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<div class="fw-700" style="color:var(--gold)">' + fmtKMF(o.total_kmf) + '</div>' +
+            '<div class="text-xs text-muted mt-1">' +
+              (o.items_count ? o.items_count + ' article(s)' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="eta-bar"><div class="eta-bar-fill ' + eta.cls + '" style="width:' + eta.pct + '%"></div></div>' +
+        '<div class="flex-between">' +
+          '<div class="eta-text">' + eta.label + '</div>' +
+          '<div class="eta-text">ETA: ' + (eta.etaStr || '—') + '</div>' +
+        '</div>' +
+        '<div style="margin-top:10px">' +
+          '<button class="btn btn-blue btn-sm" onclick="actionReception(\'' + o.id + '\',\'' + esc(o.reference) + '\')">' +
+            '📦 Réceptionner' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  document.getElementById('filterApproche').addEventListener('input', function() {
+    renderApproche(this.value);
   });
 
   async function actionReception(orderId, ref) {
-    if (!confirm('Confirmer la réception de ' + ref + ' ?')) return;
+    if (!confirm('Confirmer la réception de ' + ref + ' au relais ?')) return;
     try {
       await K.scans.create({ order_id: orderId, step: 'relais_received', location: currentUser.relais_id || undefined });
-      K.ui.toast('Colis ' + ref + ' réceptionné ✓', 'ok');
-      await Promise.all([loadAttente(), loadRemettre(), loadHistorique()]);
+      K.ui.toast('📦 ' + ref + ' réceptionné ✓', 'ok');
+      await loadAll();
     } catch (e) {
       console.error('Reception error:', e);
       K.ui.toast('Erreur: ' + (e.message || 'Échec de la réception'), 'err');
     }
   }
 
-  /* ─── R2: À remettre au client ─── */
-  async function loadRemettre() {
-    try {
-      const orders = await K.orders.list({ status: 'available' });
-      ordersRemettre = orders;
-      renderRemettre();
-    } catch (e) {
-      console.error('Load remettre error:', e);
-      document.getElementById('remettreList').innerHTML = '<p style="color:var(--red)">Erreur de chargement</p>';
-    }
+  /* ═══ S3: À remettre ═══ */
+  function getRemettreOrders() {
+    return (relaisData.orders || []).filter(function(o) {
+      return o.status === 'available';
+    });
   }
 
   function renderRemettre(filter) {
-    const container = document.getElementById('remettreList');
-    let list = ordersRemettre;
+    var list = getRemettreOrders();
     if (filter) {
-      const q = filter.toLowerCase();
-      list = list.filter(o => (o.reference || '').toLowerCase().includes(q));
+      var q = filter.toLowerCase();
+      list = list.filter(function(o) {
+        return (o.reference || '').toLowerCase().includes(q) ||
+               (o.recipient_name || '').toLowerCase().includes(q);
+      });
     }
 
-    updateBadge('badgeRemettre', ordersRemettre.length);
+    var container = document.getElementById('remettreList');
 
     if (!list.length) {
-      container.innerHTML = '<div class="card" style="text-align:center;color:var(--text3)">Aucun colis à remettre</div>';
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Aucun colis à remettre</div></div>';
       return;
     }
 
-    container.innerHTML = list.map(o => `
-      <div class="card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;border-left:3px solid var(--gold)">
-        <div style="min-width:180px">
-          <div style="font-weight:600" class="mono">${esc(o.reference)}</div>
-          <div style="font-size:0.85rem;color:var(--text3);margin-top:0.25rem">
-            ${K.ui.badge(o.status)}
-            <span style="margin-left:0.5rem">${o.items ? o.items.length + ' article(s)' : ''}</span>
-          </div>
-          <div style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">
-            ${o.payment_method ? 'Paiement: ' + esc(o.payment_method) : ''}
-            ${o.total_amount ? ' · ' + Number(o.total_amount).toLocaleString('fr-FR') + ' KMF' : ''}
-          </div>
-        </div>
-        <div style="text-align:right;min-width:120px">
-          <div style="font-size:0.8rem;color:var(--text3)">${K.ui.fmtAge(o.created_at)}</div>
-          <button class="btn btn-gold btn-sm" onclick="actionRemise('${o.id}','${esc(o.reference)}')" style="margin-top:0.5rem">
-            🤝 Remettre au client
-          </button>
-        </div>
-      </div>
-    `).join('');
+    // Sort: alert_48h first, then by hours_waiting desc
+    list.sort(function(a, b) {
+      if (a.alert_48h && !b.alert_48h) return -1;
+      if (!a.alert_48h && b.alert_48h) return 1;
+      return (b.hours_waiting || 0) - (a.hours_waiting || 0);
+    });
+
+    container.innerHTML = list.map(function(o) {
+      var alertHtml = o.alert_48h
+        ? '<div class="alert-48h">⚠️ En attente depuis ' + (o.hours_waiting || '48+') + 'h — contacter le client</div>'
+        : '';
+
+      return '<div class="remettre-card">' +
+        alertHtml +
+        '<div class="flex-between" style="margin-top:' + (o.alert_48h ? '10px' : '0') + '">' +
+          '<div>' +
+            '<div class="mono fw-700">' + esc(o.reference) + '</div>' +
+            '<div class="client-info mt-1">' +
+              '👤 ' + esc(o.recipient_name || 'Client') +
+              (o.recipient_phone ? ' · 📞 <a href="tel:' + esc(o.recipient_phone) + '">' + esc(o.recipient_phone) + '</a>' : '') +
+            '</div>' +
+            '<div class="text-xs text-muted mt-1">' +
+              (o.product_name ? esc(o.product_name) : '') +
+              (o.items_count > 1 ? ' + ' + (o.items_count - 1) + ' autre(s)' : '') +
+            '</div>' +
+            '<div class="text-xs text-muted mt-1">Dispo depuis: ' + fmtDate(o.available_at) + '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<div class="fw-700" style="color:var(--gold)">' + fmtKMF(o.total_kmf) + '</div>' +
+            (o.pickup_code ? '<div class="mt-2"><span class="pickup-code">' + esc(o.pickup_code) + '</span></div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button class="btn btn-green btn-sm" onclick="actionRemise(\'' + o.id + '\',\'' + esc(o.reference) + '\')">' +
+            '🤝 Remettre au client' +
+          '</button>' +
+          (o.recipient_phone
+            ? '<a href="https://wa.me/' + esc(o.recipient_phone.replace(/[^0-9]/g,'')) + '?text=' + encodeURIComponent('Bonjour, votre colis ' + o.reference + ' est disponible au relais Komerce. Code: ' + (o.pickup_code || '')) + '" target="_blank" class="btn btn-ghost btn-sm" style="border:1px solid var(--border)">' +
+                '💬 WhatsApp' +
+              '</a>'
+            : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
 
   document.getElementById('filterRemettre').addEventListener('input', function() {
@@ -401,27 +742,78 @@
     if (!confirm('Confirmer la remise au client pour ' + ref + ' ?')) return;
     try {
       await K.scans.create({ order_id: orderId, step: 'collected', location: currentUser.relais_id || undefined });
-      K.ui.toast('Colis ' + ref + ' remis au client ✓', 'ok');
-      await Promise.all([loadAttente(), loadRemettre(), loadHistorique()]);
+      K.ui.toast('🤝 ' + ref + ' remis au client ✓', 'ok');
+      await loadAll();
     } catch (e) {
       console.error('Remise error:', e);
       K.ui.toast('Erreur: ' + (e.message || 'Échec de la remise'), 'err');
     }
   }
 
-  /* ─── R3: Scanner rapide ─── */
+  /* ═══ S4: Alertes ═══ */
+  function renderAlertes() {
+    var container = document.getElementById('alertesList');
+    var badge = document.getElementById('healthBadge');
+    var probs = problemsData.problems || [];
+    var score = problemsData.health_score || 100;
+
+    // Health badge
+    var hsCls = score >= 80 ? 'hs-green' : score >= 50 ? 'hs-amber' : 'hs-red';
+    badge.innerHTML = '<span class="health-score ' + hsCls + '">Santé: ' + score + '/100</span>';
+
+    if (!probs.length) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Aucune alerte — tout est normal</div></div>';
+      return;
+    }
+
+    container.innerHTML = probs.map(function(p) {
+      var info = PROBLEM_LABELS[p.problem_type] || PROBLEM_LABELS.other;
+      var hours = Math.floor(p.hours_since_last_event || 0);
+      var daysStr = hours >= 24 ? Math.floor(hours / 24) + 'j' : hours + 'h';
+
+      return '<div class="problem-card">' +
+        '<div class="flex-between">' +
+          '<div>' +
+            '<div class="d-flex align-center gap-1">' +
+              '<span>' + info.icon + '</span>' +
+              '<span class="mono fw-600">' + esc(p.reference) + '</span>' +
+              '<span class="problem-badge ' + info.cls + '">' + esc(info.label) + '</span>' +
+            '</div>' +
+            '<div class="client-info mt-1">' +
+              '👤 ' + esc(p.recipient_name || 'Client inconnu') +
+              (p.recipient_phone ? ' · 📞 <a href="tel:' + esc(p.recipient_phone) + '">' + esc(p.recipient_phone) + '</a>' : '') +
+            '</div>' +
+            '<div class="text-xs text-muted mt-1">' +
+              'Statut: ' + esc(p.status) + ' · Depuis: ' + daysStr +
+              (p.relais_name ? ' · Relais: ' + esc(p.relais_name) : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<div class="fw-600" style="color:var(--gold)">' + fmtKMF(p.total_kmf) + '</div>' +
+            (p.recipient_phone
+              ? '<a href="https://wa.me/' + esc(p.recipient_phone.replace(/[^0-9]/g,'')) + '?text=' + encodeURIComponent('Bonjour, un souci avec votre commande ' + p.reference + ' chez Komerce. Contactez-nous.') + '" target="_blank" class="btn btn-ghost btn-sm mt-2" style="border:1px solid var(--border);font-size:0.75rem">' +
+                '💬 Contacter' +
+              '</a>'
+              : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ═══ S5: Scanner ═══ */
   document.getElementById('btnScan').addEventListener('click', doScan);
-  document.getElementById('scanRef').addEventListener('keydown', e => {
+  document.getElementById('scanRef').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doScan();
   });
 
   async function doScan() {
-    const refInput = document.getElementById('scanRef');
-    const step = document.getElementById('scanStep').value;
-    const notes = document.getElementById('scanNotes').value.trim();
-    const ref = refInput.value.trim();
-    const resultEl = document.getElementById('scanResult');
-    const resultText = document.getElementById('scanResultText');
+    var refInput = document.getElementById('scanRef');
+    var step = document.getElementById('scanStep').value;
+    var notes = document.getElementById('scanNotes').value.trim();
+    var ref = refInput.value.trim();
+    var resultEl = document.getElementById('scanResult');
+    var resultText = document.getElementById('scanResultText');
 
     if (!ref) {
       K.ui.toast('Saisissez une référence', 'warn');
@@ -433,29 +825,25 @@
     resultEl.style.display = 'none';
 
     try {
-      // Look up order by reference
-      const order = await K.orders.get(ref);
-      if (!order || !order.id) {
-        throw new Error('Commande introuvable');
-      }
+      var order = await K.orders.get(ref);
+      if (!order || !order.id) throw new Error('Commande introuvable');
 
-      const payload = { order_id: order.id, step: step };
+      var payload = { order_id: order.id, step: step };
       if (notes) payload.notes = notes;
       if (currentUser.relais_id) payload.location = currentUser.relais_id;
 
       await K.scans.create(payload);
 
-      const stepLabel = step === 'relais_received' ? 'Réceptionné' : 'Remis au client';
+      var stepLabel = step === 'relais_received' ? 'Réceptionné' : 'Remis au client';
       resultEl.className = 'scanner-result ok';
-      resultText.innerHTML = '<strong>✓ ' + stepLabel + '</strong><br><span class="mono">' + esc(ref) + '</span> — ' + K.ui.ts();
+      resultText.innerHTML = '<strong>✓ ' + stepLabel + '</strong><br><span class="mono">' + esc(ref) + '</span> — ' + fmtDate(new Date().toISOString());
 
       K.ui.toast(stepLabel + ' ✓', 'ok');
       refInput.value = '';
       document.getElementById('scanNotes').value = '';
       refInput.focus();
 
-      // Refresh lists
-      await Promise.all([loadAttente(), loadRemettre(), loadHistorique()]);
+      await loadAll();
     } catch (e) {
       console.error('Scan error:', e);
       resultEl.className = 'scanner-result err';
@@ -465,254 +853,32 @@
     }
   }
 
-  /* ─── R4: Historique du jour ─── */
-  async function loadHistorique() {
-    const tbody = document.getElementById('historiqueBody');
-    try {
-      const scans = await K.scans.list({});
-      // Filter to today's scans
-      const today = new Date().toISOString().slice(0, 10);
-      const todayScans = scans.filter(s => {
-        const d = s.created_at || s.scanned_at || '';
-        return d.slice(0, 10) === today;
-      });
-
-      // Sort most recent first
-      todayScans.sort((a, b) => {
-        const da = a.created_at || a.scanned_at || '';
-        const db = b.created_at || b.scanned_at || '';
-        return db.localeCompare(da);
-      });
-
-      if (!todayScans.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text3)">Aucun scan aujourd\'hui</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = todayScans.map(s => {
-        const time = K.ui.fmtDate(s.created_at || s.scanned_at);
-        const ref = s.order_reference || s.reference || s.order_id || '—';
-        const stepLabel = formatStep(s.step);
-        const success = s.error ? '<span class="badge b-red">Erreur</span>' : '<span class="badge b-green">OK</span>';
-        return `<tr>
-          <td class="mono">${esc(time)}</td>
-          <td class="mono">${esc(ref)}</td>
-          <td>${stepLabel}</td>
-          <td>${success}</td>
-        </tr>`;
-      }).join('');
-    } catch (e) {
-      console.error('Load historique error:', e);
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--red)">Erreur de chargement</td></tr>';
-    }
-  }
-
-  function formatStep(step) {
-    const map = {
-      relais_received: '<span class="badge b-blue">📦 Réception</span>',
-      collected: '<span class="badge b-green">🤝 Remise</span>',
-      preparation: '<span class="badge b-gray">Préparation</span>',
-      shipped: '<span class="badge b-purple">Expédié</span>',
-      in_transit: '<span class="badge b-teal">En transit</span>'
-    };
-    return map[step] || '<span class="badge b-gray">' + esc(step || '—') + '</span>';
-  }
-
-  /* ─── R5: Recherche ─── */
-  document.getElementById('btnSearch').addEventListener('click', doSearch);
-  document.getElementById('searchInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doSearch();
-  });
-
-  async function doSearch() {
-    const query = document.getElementById('searchInput').value.trim();
-    const container = document.getElementById('searchResults');
-
-    if (!query) {
-      K.ui.toast('Saisissez une référence', 'warn');
-      return;
-    }
-
-    container.innerHTML = '<p style="color:var(--text3)">Recherche…</p>';
-
-    try {
-      // Try to get order directly by reference
-      let order = null;
-      try {
-        order = await K.orders.get(query);
-      } catch (_) {
-        // Not found by exact ref, try listing and filtering
-      }
-
-      if (order && order.id) {
-        // Load history for this order
-        let history = [];
-        try {
-          history = await K.request('/api/orders/' + order.id + '/history', 'GET');
-        } catch (_) {}
-
-        container.innerHTML = renderSearchResult(order, history);
-      } else {
-        // Search through all orders
-        const allOrders = await K.orders.list({});
-        const q = query.toLowerCase();
-        const matches = allOrders.filter(o =>
-          (o.reference || '').toLowerCase().includes(q)
-        );
-
-        if (!matches.length) {
-          container.innerHTML = '<div class="card" style="text-align:center;color:var(--text3)">Aucun résultat pour « ' + esc(query) + ' »</div>';
-          return;
-        }
-
-        container.innerHTML = matches.map(o => renderSearchResult(o)).join('');
-      }
-    } catch (e) {
-      console.error('Search error:', e);
-      container.innerHTML = '<div class="card" style="color:var(--red)">Erreur de recherche: ' + esc(e.message || '') + '</div>';
-    }
-  }
-
-  function renderSearchResult(order, history) {
-    const canReceive = order.status === 'in_transit' || order.status === 'shipped';
-    const canCollect = order.status === 'available';
-
-    let actions = '';
-    if (canReceive) {
-      actions = `<button class="btn btn-green btn-sm" onclick="actionReception('${order.id}','${esc(order.reference)}')">📦 Réceptionner</button>`;
-    } else if (canCollect) {
-      actions = `<button class="btn btn-gold btn-sm" onclick="actionRemise('${order.id}','${esc(order.reference)}')">🤝 Remettre au client</button>`;
-    }
-
-    let timelineHtml = '';
-    if (history && history.length) {
-      timelineHtml = '<div class="tl order-tl">' + history.map(h => `
-        <div class="tl-item">
-          <div class="tl-dot"></div>
-          <div>
-            <div style="font-size:0.85rem;font-weight:500">${formatStep(h.status || h.step)}</div>
-            <div style="font-size:0.75rem;color:var(--text3)">${K.ui.fmtDate(h.created_at || h.timestamp)}</div>
-            ${h.notes ? '<div style="font-size:0.75rem;color:var(--text3)">' + esc(h.notes) + '</div>' : ''}
-          </div>
-        </div>
-      `).join('') + '</div>';
-    }
-
-    return `
-      <div class="card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
-          <div>
-            <div style="font-weight:600" class="mono">${esc(order.reference)}</div>
-            <div style="margin-top:0.35rem">${K.ui.badge(order.status)}</div>
-            <div style="font-size:0.8rem;color:var(--text3);margin-top:0.35rem">
-              ${order.destination_island ? esc(order.destination_island) : ''}
-              ${order.total_amount ? ' · ' + Number(order.total_amount).toLocaleString('fr-FR') + ' KMF' : ''}
-              ${order.items ? ' · ' + order.items.length + ' article(s)' : ''}
-            </div>
-            <div style="font-size:0.8rem;color:var(--text3)">${K.ui.fmtAge(order.created_at)}</div>
-          </div>
-          <div>${actions}</div>
-        </div>
-        ${timelineHtml}
-      </div>
-    `;
-  }
-
-  /* ─── Helpers ─── */
-  function updateBadge(id, count) {
-    const el = document.getElementById(id);
-    if (count > 0) {
-      el.textContent = count;
-      el.style.display = '';
-    } else {
-      el.style.display = 'none';
-    }
-  }
-
-  function esc(str) {
-    if (!str) return '';
-    const d = document.createElement('div');
-    d.textContent = String(str);
-    return d.innerHTML;
-  }
-
-  /* ─── Auto-refresh (30s) ─── */
+  /* ═══ Auto-refresh ═══ */
   function startAutoRefresh() {
     if (refreshTimer) clearInterval(refreshTimer);
-    refreshTimer = setInterval(async () => {
-      try {
-        await loadAll();
-      } catch (e) {
-        console.error('Auto-refresh error:', e);
-        document.getElementById('connStatus').innerHTML = '<span class="conn-dot"></span> Hors ligne';
-        document.getElementById('connStatus').className = 'conn-pill err';
-      }
-    }, 30000);
+    refreshTimer = setInterval(loadAll, 30000); // 30s
   }
 
-  /* ─── Connection health check ─── */
-  setInterval(async () => {
-    try {
-      await K.request('/api/health', 'GET');
-      document.getElementById('connStatus').innerHTML = '<span class="conn-dot pulse"></span> En ligne';
-      document.getElementById('connStatus').className = 'conn-pill ok';
-    } catch (_) {
-      document.getElementById('connStatus').innerHTML = '<span class="conn-dot"></span> Hors ligne';
-      document.getElementById('connStatus').className = 'conn-pill err';
-    }
-  }, 60000);
+  /* ═══ PWA: Detect standalone mode ═══ */
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    document.body.classList.add('pwa-standalone');
+  }
+
+  /* ═══ Online/Offline ═══ */
+  window.addEventListener('online', function() {
+    document.getElementById('connStatus').className = 'conn-pill ok';
+    document.getElementById('connStatus').innerHTML = '<span class="conn-dot pulse"></span> En ligne';
+    loadAll();
+  });
+  window.addEventListener('offline', function() {
+    document.getElementById('connStatus').className = 'conn-pill err';
+    document.getElementById('connStatus').innerHTML = '<span class="conn-dot"></span> Hors ligne';
+  });
+
+  /* ═══ Service Worker ═══ */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function() {});
+  }
   </script>
-<div class="mobile-tabs"><div class="mobile-tabs-inner"><button class="mtab active" data-screen="scrAttente"><span class="mtab-icon">📦</span>Attente<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrRemettre"><span class="mtab-icon">🤝</span>Remettre<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrScanner"><span class="mtab-icon">📱</span>Scanner<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrHistorique"><span class="mtab-icon">📜</span>Historique<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrRecherche"><span class="mtab-icon">🔍</span>Recherche<span class="mtab-badge"></span></button></div></div>
-<script>
-/* PWA: Mobile bottom tabs navigation */
-(function(){
-  var tabs = document.querySelectorAll('.mtab[data-screen]');
-  tabs.forEach(function(el){
-    el.addEventListener('click',function(){
-      tabs.forEach(function(t){t.classList.remove('active');});
-      document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
-      document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-      el.classList.add('active');
-      var scr=document.getElementById(el.dataset.screen);
-      if(scr)scr.classList.add('active');
-      var sideItem=document.querySelector('.nav-item[data-screen="'+el.dataset.screen+'"]');
-      if(sideItem)sideItem.classList.add('active');
-      /* Auto-focus scanner input */
-      if(el.dataset.screen.indexOf('Scanner')!==-1||el.dataset.screen.indexOf('scanner')!==-1){
-        setTimeout(function(){var i=document.querySelector('#'+el.dataset.screen+' input[type="text"]');if(i)i.focus();},150);
-      }
-    });
-  });
-  /* Auto-sync sidebar badges → mobile badges */
-  function syncBadges(){
-    document.querySelectorAll('.nav-item[data-screen]').forEach(function(item){
-      var badge=item.querySelector('.nav-badge');
-      var screen=item.dataset.screen;
-      if(badge&&screen){
-        var mBadge=document.querySelector('.mtab[data-screen="'+screen+'"] .mtab-badge');
-        if(mBadge){var v=badge.textContent.trim();mBadge.textContent=(v&&v!=='0')?v:'';}
-      }
-    });
-  }
-  var sidebar=document.querySelector('.sidebar');
-  if(sidebar){
-    new MutationObserver(syncBadges).observe(sidebar,{childList:true,subtree:true,characterData:true});
-    setTimeout(syncBadges,2000);
-  }
-})();
-</script>
-<script>
-/* PWA: Service Worker + offline/online indicator */
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
-if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){document.body.classList.add('pwa-standalone');}
-function _pwaUpdateConn(online){
-  document.querySelectorAll('.conn-pill,[id$="-conn-status"]').forEach(function(p){
-    if(online){p.textContent='\u{1F7E2} En ligne';p.style.background='rgba(34,197,94,0.15)';p.style.color='#16a34a';}
-    else{p.textContent='\u{1F534} Hors ligne';p.style.background='rgba(239,68,68,0.15)';p.style.color='#dc2626';}
-  });
-}
-window.addEventListener('online',function(){_pwaUpdateConn(true);});
-window.addEventListener('offline',function(){_pwaUpdateConn(false);});
-</script>
 </body>
 </html>
