@@ -1019,6 +1019,23 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   opacity: 0.5;
 }
 
+/* Card actions row — below image */
+.card-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px 10px;
+  background: var(--card);
+}
+
+.card-actions-row .btn-add-cart {
+  width: 100%;
+  justify-content: center;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  border-radius: 10px;
+}
+
 /* Availability badges */
 .avail-badge {
   display: inline-block;
@@ -3063,45 +3080,310 @@ body.modal-open .mobile-tabs {
 
 
 /* ══════════════════════════════════════════
-   27. RESPONSIVE — Tablet (769px+)
+   27. RESPONSIVE — Mobile-first breakpoints
    ══════════════════════════════════════════ */
-@media (min-width: 481px) {
+
+/* ── Mobile default (≤767px) ── */
+@media (max-width: 767px) {
+  /* Nav compact */
+  #main-nav .nav-inner {
+    height: 50px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .nav-brand {
+    font-size: 1.2rem;
+  }
+  .nav-search-wrap {
+    margin: 0 4px;
+  }
+  .nav-search-wrap input {
+    font-size: 0.82rem;
+    padding: 7px 10px;
+  }
+
+  /* Stories compact & scrollable */
+  .stories-section {
+    padding: 0;
+  }
+  .stories-track {
+    gap: 10px;
+    padding: 8px 12px;
+  }
+  .story-ring {
+    width: 60px;
+    height: 60px;
+  }
+  .story-ring span {
+    width: 52px;
+    height: 52px;
+    font-size: 1.4rem;
+  }
+  .story-label {
+    font-size: 0.65rem;
+  }
+
+  /* Tab nav hidden on mobile (use bottom tabs) */
+  .tab-nav {
+    display: none;
+  }
+
+  /* Hero compact */
+  .hero-section {
+    padding: 14px 16px 12px;
+  }
+  .hero-title {
+    font-size: 1.25rem;
+  }
+  .hero-proverbe {
+    font-size: 0.78rem;
+  }
+
+  /* Filter bar: horizontal scroll */
+  .filter-bar {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .filter-btn {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* View controls */
+  .view-controls {
+    padding: 4px 12px 6px;
+  }
+
+  /* Product grid: 2 columns ALWAYS on mobile */
   .product-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    padding: 0 12px 32px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 0 8px 90px;
+  }
+
+  /* Cards: bigger touch area & readable text */
+  .product-card {
+    border-radius: 10px;
+  }
+  .product-card .card-img {
+    aspect-ratio: 4/5;
+  }
+  .card-overlay {
+    padding: 24px 8px 8px;
+  }
+  .card-overlay .card-price {
+    font-size: 0.88rem;
+    font-weight: 800;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .card-overlay .card-name {
+    font-size: 0.72rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  /* Heart button: bigger touch target */
+  .heart-btn, .btn-fav {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+
+  /* Add-to-cart row */
+  .card-actions-row {
+    padding: 6px 8px 8px;
+  }
+  .card-actions-row .btn-add-cart {
+    padding: 9px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  /* Badge promo */
+  .badge-fire, .card-badge {
+    font-size: 0.58rem;
+    padding: 2px 6px;
+  }
+
+  /* Cart drawer full width */
+  #cart-drawer {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+  }
+  .cart-header {
+    border-radius: 0;
+  }
+
+  /* Checkout fields stack */
+  .ck-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* WhatsApp FAB above bottom tabs */
+  .wa-fab {
+    bottom: 76px;
+    right: 14px;
+    width: 52px;
+    height: 52px;
+  }
+  .wa-fab svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Toast above bottom tabs */
+  #toast-container {
+    bottom: 72px;
+  }
+
+  /* Mobile tabs: shown */
+  .mobile-tabs {
+    display: flex;
   }
 }
 
-@media (min-width: 769px) {
+
+/* ── Small mobile (≤480px) ── */
+@media (max-width: 480px) {
+  .product-grid {
+    gap: 6px;
+    padding: 0 6px 88px;
+  }
+
+  .hero-section {
+    padding: 10px 12px 8px;
+  }
+  .hero-title {
+    font-size: 1.15rem;
+  }
+  .hero-proverbe {
+    font-size: 0.72rem;
+  }
+
+  .card-overlay .card-price {
+    font-size: 0.82rem;
+  }
+  .card-overlay .card-name {
+    font-size: 0.68rem;
+  }
+
+  .card-actions-row {
+    padding: 5px 6px 7px;
+  }
+  .card-actions-row .btn-add-cart {
+    padding: 7px 8px;
+    font-size: 0.72rem;
+  }
+
+  .pd-emoji {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 4/3;
+  }
+
+  /* Promo bar smaller */
+  .promo-bar {
+    height: 28px;
+  }
+  .promo-track span {
+    font-size: 0.6rem;
+  }
+}
+
+
+/* ── Tiny mobile (≤380px) — iPhone SE ── */
+@media (max-width: 380px) {
+  #main-nav .nav-inner {
+    height: 46px;
+    padding: 0 8px;
+  }
+  .nav-brand {
+    font-size: 1.05rem;
+  }
+  .nav-search-wrap input {
+    font-size: 0.78rem;
+    padding: 6px 8px;
+  }
+
+  .product-grid {
+    gap: 4px;
+    padding: 0 4px 84px;
+  }
+
+  .story-ring {
+    width: 50px;
+    height: 50px;
+  }
+  .story-ring span {
+    width: 42px;
+    height: 42px;
+    font-size: 1.15rem;
+  }
+  .story-item {
+    width: 56px;
+  }
+  .story-label {
+    font-size: 0.58rem;
+    max-width: 50px;
+  }
+
+  .hero-title {
+    font-size: 1rem;
+  }
+
+  .modal-header span {
+    font-size: 0.85rem;
+  }
+
+  .card-overlay .card-price {
+    font-size: 0.78rem;
+  }
+  .card-overlay .card-name {
+    font-size: 0.65rem;
+  }
+
+  .filter-btn {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+}
+
+
+/* ── Tablet (768px–1023px) ── */
+@media (min-width: 768px) {
   body {
-    font-size: 16px;
     padding-bottom: 0;
   }
 
-  /* Hide mobile tabs on desktop */
+  /* Hide mobile tabs on tablet+ */
   .mobile-tabs {
     display: none !important;
   }
 
-  /* Show tab nav on desktop */
+  /* Show tab nav on tablet+ */
   .tab-nav {
     display: flex;
   }
 
   .product-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     padding: 0 16px 32px;
   }
 
-  /* WAB fab higher */
+  .hero-title {
+    font-size: 1.6rem;
+  }
+
+  .filter-bar {
+    padding: 12px 16px;
+  }
+
   .wa-fab {
     bottom: 24px;
     right: 24px;
   }
 
-  /* Toast positioning */
   #toast-container {
     bottom: 24px;
     right: 24px;
@@ -3110,24 +3392,22 @@ body.modal-open .mobile-tabs {
     width: auto;
   }
 
-  /* Cart drawer capped */
   #cart-drawer {
     max-width: 400px;
   }
-
-  /* Hero bigger */
-  .hero-title {
-    font-size: 1.75rem;
-  }
-
-  /* Filter bar pad */
-  .filter-bar {
-    padding: 12px 16px;
-  }
 }
 
+
+/* ── Desktop (1024px+) ── */
 @media (min-width: 1024px) {
+  body {
+    font-size: 16px;
+  }
+
   .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding: 0 16px 32px;
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
@@ -3136,7 +3416,6 @@ body.modal-open .mobile-tabs {
   .hero-section {
     padding: 28px 24px 20px;
   }
-
   .hero-title {
     font-size: 2rem;
   }
@@ -3149,7 +3428,6 @@ body.modal-open .mobile-tabs {
     max-width: 1200px;
     margin: 0 auto;
   }
-
   .view-controls {
     max-width: 1200px;
     margin: 0 auto;
@@ -3158,104 +3436,7 @@ body.modal-open .mobile-tabs {
 
 
 /* ══════════════════════════════════════════
-   28. RESPONSIVE — Small Mobile (≤480px)
-   ══════════════════════════════════════════ */
-@media (max-width: 480px) {
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    padding: 0 6px 24px;
-  }
-
-  .hero-section {
-    padding: 12px 12px 10px;
-  }
-
-  .hero-title {
-    font-size: 1.2rem;
-  }
-
-  .hero-proverbe {
-    font-size: 0.75rem;
-  }
-
-  #cart-drawer {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 0;
-  }
-
-  .cart-header {
-    border-radius: 0;
-  }
-
-  .ck-field-row {
-    grid-template-columns: 1fr;
-  }
-
-  .pd-emoji {
-    max-width: 220px;
-    height: 180px;
-  }
-}
-
-
-/* ══════════════════════════════════════════
-   29. RESPONSIVE — Tiny Mobile (≤380px)
-   ══════════════════════════════════════════ */
-@media (max-width: 380px) {
-  .product-grid {
-    gap: 4px;
-    padding: 0 4px 20px;
-  }
-
-  .story-ring {
-    width: 52px;
-    height: 52px;
-  }
-
-  .story-ring span {
-    width: 44px;
-    height: 44px;
-    font-size: 1.2rem;
-  }
-
-  .story-item {
-    width: 60px;
-  }
-
-  .story-label {
-    font-size: 10px;
-    max-width: 52px;
-  }
-
-  .hero-title {
-    font-size: 1rem;
-  }
-
-  .modal-header span {
-    font-size: 0.88rem;
-  }
-}
-
-
-/* ══════════════════════════════════════════
-   30. MOBILE TAB NAV TOGGLE
-   ══════════════════════════════════════════ */
-@media (max-width: 768px) {
-  /* On mobile, use bottom tabs, hide top tab nav */
-  .tab-nav {
-    display: none;
-  }
-
-  .mobile-tabs {
-    display: flex;
-  }
-}
-
-
-/* ══════════════════════════════════════════
-   31. LEGACY COMPAT & JS-GENERATED ELEMENTS
+   30. LEGACY COMPAT & JS-GENERATED ELEMENTS
    ══════════════════════════════════════════ */
 
 /* Category circles (old class compat) */
