@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Tour de Contrôle</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="stylesheet" href="komerce-ui.css">
+<style>
+.alert-card{border-left:4px solid var(--red);background:var(--bg2)}
+.alert-card.ok{border-left-color:var(--green)}
+.alert-pulse{animation:apulse 2s infinite}
+@keyframes apulse{0%,100%{opacity:1}50%{opacity:.5}}
+.status-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:8px 0}
+.status-bar span{display:block;min-width:2px;transition:width .4s}
+.wallet-bal{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--gold)}
+.tl{padding-left:20px;border-left:2px solid var(--border)}
+.tl-item{position:relative;padding:8px 0 8px 16px;font-size:.85rem}
+.tl-dot{position:absolute;left:-27px;top:12px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid var(--bg)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.detail-grid{grid-template-columns:1fr}}
+.search-big{font-size:1.1rem;padding:14px 18px;width:100%;max-width:500px}
+.conn-pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;padding:4px 10px;border-radius:20px;background:var(--bg2)}
+.conn-pill.ok{color:var(--green)}.conn-pill.err{color:var(--red)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.conn-dot.pulse{animation:apulse 2s infinite}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.kpi-delta{font-size:.7rem;color:var(--text3)}
+.q-actions{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo">K<em>OMERCE</em> · TOUR DE CONTRÔLE</div>
+  <div class="hdr-right">
+    <span class="conn-pill ok" id="connStatus"><span class="conn-dot pulse"></span> En ligne</span>
+    <span id="userInfo" style="font-size:0.875rem;color:var(--text3)"></span>
+    <span id="userRole" style="font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(217,119,6,.12);color:var(--gold);text-transform:uppercase;letter-spacing:.5px"></span>
+    <button id="btnLogout" style="font-size:0.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text2);background:var(--bg2);font-family:var(--sans)" onclick="K.auth.logout().then(()=>location.href='portal.html')">Déconnexion</button>
+  </div>
+</div>
+
+<div class="main">
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <div class="nav-item active" data-screen="scrDashboard"><span class="nav-icon">🎯</span> Tableau de bord</div>
+      <div class="nav-item" data-screen="scrQueue"><span class="nav-icon">⚡</span> File d'attente <span class="nav-badge" id="queueBadge">0</span></div>
+      <div class="nav-item" data-screen="scrSearch"><span class="nav-icon">🔍</span> Recherche</div>
+      <div class="nav-item" data-screen="scrWallet"><span class="nav-icon">💰</span> Wallet</div>
+      <div class="nav-item" data-screen="scrOverview"><span class="nav-icon">📈</span> Vue d'ensemble</div>
+    </div>
+  </nav>
+
+  <div class="content">
+
+    <!-- ===== A1 — TABLEAU DE BORD ===== -->
+    <div class="screen active" id="scrDashboard">
+      <div class="screen-hdr">
+        <div class="screen-title">Tableau de bord</div>
+        <div class="screen-sub">Vue temps réel — rafraîchissement auto 60s</div>
+      </div>
+
+      <div class="g4" id="kpiRow">
+        <div class="kpi-card"><div class="kpi-l">Commandes aujourd'hui</div><div class="kpi-v" id="kpiToday">—</div></div>
+        <div class="kpi-card"><div class="kpi-l">En attente d'action</div><div class="kpi-v" id="kpiPending">—</div></div>
+        <div class="kpi-card"><div class="kpi-l">En transit</div><div class="kpi-v" id="kpiTransit">—</div></div>
+        <div class="kpi-card"><div class="kpi-l">CA aujourd'hui</div><div class="kpi-v" id="kpiRevenue">—</div></div>
+      </div>
+
+      <div class="card alert-card ok" id="alertCard">
+        <div class="card-label" id="alertTitle">⏳ ALERTES</div>
+        <div id="alertBody"><p style="color:var(--green)">✅ Aucune alerte</p></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Activité récente</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Référence</th><th>Statut</th><th>Quand</th></tr></thead>
+            <tbody id="activityBody"><tr><td colspan="3" style="color:var(--text3)">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== A2 — FILE D'ATTENTE ===== -->
+    <div class="screen" id="scrQueue">
+      <div class="screen-hdr">
+        <div class="screen-title">File d'attente</div>
+        <div class="screen-sub">Actions en attente de validation admin</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">💳 Paiements cash à confirmer</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Référence</th><th>Client</th><th>Relais</th><th>Montant</th><th>Créée</th><th>Action</th></tr></thead>
+            <tbody id="cashBody"><tr><td colspan="6" style="color:var(--text3)">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">📦 À lancer en préparation</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Référence</th><th>Montant</th><th>Île</th><th>Créée</th><th>Action</th></tr></thead>
+            <tbody id="prepBody"><tr><td colspan="5" style="color:var(--text3)">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== A3 — RECHERCHE ===== -->
+    <div class="screen" id="scrSearch">
+      <div class="screen-hdr">
+        <div class="screen-title">Recherche commande</div>
+        <div class="screen-sub">Trouvez et gérez n'importe quelle commande par référence</div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="inp search-big" id="searchInput" placeholder="Référence commande (ex: KOM-XXXX)" onkeydown="if(event.key==='Enter')searchOrder()">
+          <button class="btn btn-gold" onclick="searchOrder()">Rechercher</button>
+        </div>
+      </div>
+
+      <div id="searchResult" style="display:none">
+        <div class="card">
+          <div class="card-label">Détail commande</div>
+          <div class="detail-grid" id="orderDetail"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Articles</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Produit</th><th>Qté</th><th>Prix</th></tr></thead>
+              <tbody id="orderItems"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Historique des statuts</div>
+          <div class="tl" id="orderTimeline"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Actions</div>
+          <div class="q-actions" id="orderActions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== A4 — WALLET ===== -->
+    <div class="screen" id="scrWallet">
+      <div class="screen-hdr">
+        <div class="screen-title">Gestion Wallet</div>
+        <div class="screen-sub">Consulter et créditer les portefeuilles clients</div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="inp search-big" id="walletUserId" placeholder="User ID du client" onkeydown="if(event.key==='Enter')loadWallet()">
+          <button class="btn btn-gold" onclick="loadWallet()">Rechercher</button>
+        </div>
+      </div>
+
+      <div id="walletResult" style="display:none">
+        <div class="g2">
+          <div class="card">
+            <div class="card-label">Solde</div>
+            <div class="wallet-bal" id="walletBalance">—</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Créditer le wallet</div>
+            <div class="inp-row">
+              <label class="inp-label">Montant (KMF)</label>
+              <input class="inp" id="creditAmount" type="number" min="0" placeholder="Ex: 5000">
+            </div>
+            <div class="inp-row" style="margin-top:8px">
+              <label class="inp-label">Raison</label>
+              <input class="inp" id="creditReason" placeholder="Ex: Remboursement commande #123">
+            </div>
+            <button class="btn btn-green" style="margin-top:12px" onclick="creditWallet()">Créditer</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Transactions récentes</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Raison</th></tr></thead>
+              <tbody id="walletTxBody"><tr><td colspan="4" style="color:var(--text3)">—</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== A5 — VUE D'ENSEMBLE ===== -->
+    <div class="screen" id="scrOverview">
+      <div class="screen-hdr">
+        <div class="screen-title">Vue d'ensemble</div>
+        <div class="screen-sub">Répartition globale des commandes</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Répartition par statut</div>
+        <div class="status-bar" id="statusBar"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Statut</th><th>Nombre</th><th>%</th><th>Barre</th></tr></thead>
+            <tbody id="statusBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-label">Par île de destination</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Île</th><th>Nombre</th><th>%</th></tr></thead>
+              <tbody id="islandBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Par moyen de paiement</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Paiement</th><th>Nombre</th><th>%</th></tr></thead>
+              <tbody id="paymentBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="k-toast" class="toast"></div>
+
+<script src="komerce-api.js"></script>
+<script>
+/* ── State ── */
+let allOrders = [];
+let refreshTimer = null;
+let currentSearchOrder = null;
+let currentWalletUserId = null;
+
+const STATUSES = ['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
+const STATUS_COLORS = {
+  confirmed:'var(--gold)',ordered:'var(--blue)',preparation:'var(--purple, #9b59b6)',
+  shipped:'var(--teal, #1abc9c)',in_transit:'var(--blue)',available:'var(--green)',
+  collected:'var(--green)',cancelled:'var(--red)',refunded:'var(--text3)'
+};
+const STATUS_LABELS = {
+  confirmed:'Confirmée',ordered:'Commandée',preparation:'En préparation',
+  shipped:'Expédiée',in_transit:'En transit',available:'Disponible',
+  collected:'Récupérée',cancelled:'Annulée',refunded:'Remboursée'
+};
+
+/* ── Helpers ── */
+function safeAge(d){ try{ return K.ui.fmtAge(d); }catch(e){ return '—'; } }
+function safeDate(d){ try{ return K.ui.fmtDate(d); }catch(e){ return '—'; } }
+function fmt(n){ return new Intl.NumberFormat('fr-FR').format(n); }
+function fmtKMF(n){ return fmt(n)+' KMF'; }
+
+function isToday(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+}
+
+function hoursDiff(dateStr){
+  if(!dateStr) return 0;
+  return (Date.now() - new Date(dateStr).getTime()) / 3600000;
+}
+
+function safeBadge(status){
+  try{ return K.ui.badge(status); }catch(e){
+    const cls = {confirmed:'b-gold',ordered:'b-blue',preparation:'b-purple',shipped:'b-teal',
+      in_transit:'b-blue',available:'b-green',collected:'b-green',cancelled:'b-red',refunded:'b-gray'};
+    return '<span class="badge '+(cls[status]||'b-gray')+'">'+(STATUS_LABELS[status]||status)+'</span>';
+  }
+}
+
+/* ── Init ── */
+(async function init(){
+  try {
+    const user = await K.auth.restore();
+    if(!user || user.role !== 'admin'){
+      window.location.href = 'portal.html';
+      return;
+    }
+    document.getElementById('userInfo').textContent = user.email || user.name;
+    document.getElementById('userRole').textContent = user.role || 'admin';
+  } catch(e) {
+    window.location.href = 'portal.html';
+    return;
+  }
+  await loadAllData();
+  startAutoRefresh();
+  checkConnection();
+  setInterval(checkConnection, 30000);
+})();
+
+/* ── Navigation ── */
+document.querySelectorAll('.nav-item[data-screen]').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(el.dataset.screen).classList.add('active');
+    // Load screen-specific data
+    const scr = el.dataset.screen;
+    if(scr==='scrQueue') renderQueue();
+    if(scr==='scrOverview') renderOverview();
+  });
+});
+
+/* ── Connection check ── */
+async function checkConnection(){
+  const pill = document.getElementById('connStatus');
+  try{
+    await K.request('/api/health','GET');
+    pill.className='conn-pill ok';
+    pill.innerHTML='<span class="conn-dot pulse"></span> En ligne';
+  }catch(e){
+    pill.className='conn-pill err';
+    pill.innerHTML='<span class="conn-dot"></span> Hors ligne';
+  }
+}
+
+/* ── Data loading ── */
+async function loadAllData(){
+  try{
+    allOrders = await K.orders.list() || [];
+  }catch(e){
+    allOrders = [];
+    K.ui.toast('Erreur chargement commandes','err');
+  }
+  renderDashboard();
+  renderQueue();
+  updateQueueBadge();
+}
+
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async ()=>{
+    try{
+      allOrders = await K.orders.list() || [];
+      renderDashboard();
+      updateQueueBadge();
+    }catch(e){}
+  }, 60000);
+}
+
+/* ── A1: Dashboard ── */
+function renderDashboard(){
+  // KPIs
+  const todayOrders = allOrders.filter(o=>isToday(o.created_at));
+  const pendingOrders = allOrders.filter(o=>o.status==='confirmed'||o.status==='ordered');
+  const transitOrders = allOrders.filter(o=>o.status==='shipped'||o.status==='in_transit');
+  const todayRevenue = todayOrders.reduce((s,o)=>s+(Number(o.total_amount)||0),0);
+
+  document.getElementById('kpiToday').textContent = todayOrders.length;
+  document.getElementById('kpiPending').textContent = pendingOrders.length;
+  document.getElementById('kpiTransit').textContent = transitOrders.length;
+  document.getElementById('kpiRevenue').textContent = fmtKMF(todayRevenue);
+
+  // Highlight pending if > 0
+  const pendingCard = document.getElementById('kpiPending').closest('.kpi-card');
+  if(pendingOrders.length > 0){
+    pendingCard.style.borderColor = 'var(--gold)';
+    pendingCard.style.borderWidth = '2px';
+    pendingCard.style.borderStyle = 'solid';
+  } else {
+    pendingCard.style.border = '';
+  }
+
+  // Alerts — orders stuck > 48h
+  const stale = allOrders.filter(o=>{
+    const stuck = ['confirmed','ordered','preparation','shipped','in_transit','available'];
+    return stuck.includes(o.status) && hoursDiff(o.updated_at) > 48;
+  }).sort((a,b)=> new Date(a.updated_at) - new Date(b.updated_at));
+
+  const alertCard = document.getElementById('alertCard');
+  const alertTitle = document.getElementById('alertTitle');
+  const alertBody = document.getElementById('alertBody');
+
+  if(stale.length > 0){
+    alertCard.classList.remove('ok');
+    alertTitle.innerHTML = '🚨 ALERTES <span class="badge b-red alert-pulse">'+stale.length+'</span>';
+    alertBody.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>Référence</th><th>Statut</th><th>Bloquée depuis</th><th>Action</th></tr></thead><tbody>'
+      + stale.slice(0,15).map(o=>
+        '<tr><td class="mono">'+esc(o.reference)+'</td><td>'+safeBadge(o.status)+'</td><td style="color:var(--red);font-weight:600">'+safeAge(o.updated_at)+'</td>'
+        +'<td><button class="btn btn-sm btn-gold" onclick="jumpToOrder(\''+esc(o.reference)+'\')">Voir</button></td></tr>'
+      ).join('')
+      +'</tbody></table></div>';
+  } else {
+    alertCard.classList.add('ok');
+    alertTitle.textContent = '✅ ALERTES';
+    alertBody.innerHTML = '<p style="color:var(--green);padding:8px 0">✅ Aucune alerte — toutes les commandes progressent normalement</p>';
+  }
+
+  // Recent activity — last 10 by updated_at
+  const recent = [...allOrders].sort((a,b)=> new Date(b.updated_at) - new Date(a.updated_at)).slice(0,10);
+  const actBody = document.getElementById('activityBody');
+  if(recent.length === 0){
+    actBody.innerHTML = '<tr><td colspan="3" style="color:var(--text3)">Aucune activité</td></tr>';
+  } else {
+    actBody.innerHTML = recent.map(o=>
+      '<tr><td class="mono" style="cursor:pointer;color:var(--gold)" onclick="jumpToOrder(\''+esc(o.reference)+'\')">'+esc(o.reference)+'</td>'
+      +'<td>'+safeBadge(o.status)+'</td>'
+      +'<td style="color:var(--text3);font-size:.85rem">'+safeAge(o.updated_at)+'</td></tr>'
+    ).join('');
+  }
+}
+
+/* ── A2: Queue ── */
+function renderQueue(){
+  // Cash to confirm
+  const cashOrders = allOrders.filter(o=>o.status==='confirmed' && o.payment_method==='cash_relais');
+  const cashBody = document.getElementById('cashBody');
+  if(cashOrders.length === 0){
+    cashBody.innerHTML = '<tr><td colspan="6" style="color:var(--text3)">Aucun paiement en attente</td></tr>';
+  } else {
+    cashBody.innerHTML = cashOrders.map(o=>
+      '<tr><td class="mono">'+esc(o.reference)+'</td>'
+      +'<td>'+esc(o.user_id||'—')+'</td>'
+      +'<td>'+esc(o.relais_id||'—')+'</td>'
+      +'<td style="font-weight:600">'+fmtKMF(o.total_amount||0)+'</td>'
+      +'<td>'+safeAge(o.created_at)+'</td>'
+      +'<td><button class="btn btn-sm btn-green" onclick="confirmCash(\''+esc(o.id)+'\',this)">Confirmer paiement</button></td></tr>'
+    ).join('');
+  }
+
+  // To prepare
+  const orderedOrders = allOrders.filter(o=>o.status==='ordered');
+  const prepBody = document.getElementById('prepBody');
+  if(orderedOrders.length === 0){
+    prepBody.innerHTML = '<tr><td colspan="5" style="color:var(--text3)">Aucune commande à lancer</td></tr>';
+  } else {
+    prepBody.innerHTML = orderedOrders.map(o=>
+      '<tr><td class="mono">'+esc(o.reference)+'</td>'
+      +'<td style="font-weight:600">'+fmtKMF(o.total_amount||0)+'</td>'
+      +'<td>'+esc(o.destination_island||'—')+'</td>'
+      +'<td>'+safeAge(o.created_at)+'</td>'
+      +'<td><button class="btn btn-sm btn-gold" onclick="launchPrep(\''+esc(o.id)+'\',this)">Lancer préparation</button></td></tr>'
+    ).join('');
+  }
+}
+
+function updateQueueBadge(){
+  const count = allOrders.filter(o=>o.status==='confirmed'||o.status==='ordered').length;
+  const badge = document.getElementById('queueBadge');
+  badge.textContent = count;
+  badge.style.display = count > 0 ? '' : 'none';
+  badge.className = 'nav-badge' + (count > 5 ? ' err' : '');
+}
+
+async function confirmCash(orderId, btn){
+  btn.disabled = true;
+  btn.textContent = '…';
+  try{
+    await K.request('/api/payments/cash/confirm','POST',{order_id: orderId});
+    K.ui.toast('Paiement confirmé','ok');
+    await loadAllData();
+  }catch(e){
+    K.ui.toast('Erreur: '+(e.message||'échec confirmation'),'err');
+    btn.disabled = false;
+    btn.textContent = 'Confirmer paiement';
+  }
+}
+
+async function launchPrep(orderId, btn){
+  btn.disabled = true;
+  btn.textContent = '…';
+  try{
+    await K.request('/api/orders/'+orderId+'/status','PATCH',{status:'preparation',role:'admin'});
+    K.ui.toast('Préparation lancée','ok');
+    await loadAllData();
+  }catch(e){
+    K.ui.toast('Erreur: '+(e.message||'échec lancement'),'err');
+    btn.disabled = false;
+    btn.textContent = 'Lancer préparation';
+  }
+}
+
+/* ── A3: Search ── */
+async function searchOrder(){
+  const ref = document.getElementById('searchInput').value.trim();
+  if(!ref){ K.ui.toast('Entrez une référence','warn'); return; }
+  const resultDiv = document.getElementById('searchResult');
+  resultDiv.style.display = 'none';
+  try{
+    const order = await K.orders.get(ref);
+    if(!order){ K.ui.toast('Commande introuvable','err'); return; }
+    currentSearchOrder = order;
+    renderOrderDetail(order);
+    resultDiv.style.display = '';
+  }catch(e){
+    K.ui.toast('Commande introuvable','err');
+  }
+}
+
+function jumpToOrder(ref){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector('[data-screen="scrSearch"]').classList.add('active');
+  document.getElementById('scrSearch').classList.add('active');
+  document.getElementById('searchInput').value = ref;
+  searchOrder();
+}
+
+async function renderOrderDetail(order){
+  const detail = document.getElementById('orderDetail');
+  detail.innerHTML = ''
+    +'<div><span style="color:var(--text3);font-size:.8rem">Référence</span><br><strong class="mono">'+esc(order.reference)+'</strong></div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Statut</span><br>'+safeBadge(order.status)+'</div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Paiement</span><br>'+esc(order.payment_method||'—')+' · '+(order.payment_status==='paid'?'<span style="color:var(--green)">Payé</span>':'<span style="color:var(--gold)">'+(order.payment_status||'—')+'</span>')+'</div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Montant</span><br><strong>'+fmtKMF(order.total_amount||0)+'</strong></div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Île</span><br>'+esc(order.destination_island||'—')+'</div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Routage</span><br>'+esc(order.routing_mode||'—')+' · Hub: '+esc(order.transit_hub||'—')+'</div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Relais</span><br>'+esc(order.relais_id||'—')+'</div>'
+    +'<div><span style="color:var(--text3);font-size:.8rem">Créée</span><br>'+safeDate(order.created_at)+'</div>';
+
+  // Items
+  const items = order.items || [];
+  const itemsBody = document.getElementById('orderItems');
+  if(items.length === 0){
+    itemsBody.innerHTML = '<tr><td colspan="3" style="color:var(--text3)">Aucun article</td></tr>';
+  } else {
+    itemsBody.innerHTML = items.map(i=>
+      '<tr><td>'+esc(i.product_name||i.name||'Produit')+'</td><td>'+esc(i.quantity||1)+'</td><td>'+fmtKMF(i.price||0)+'</td></tr>'
+    ).join('');
+  }
+
+  // Timeline
+  const tl = document.getElementById('orderTimeline');
+  try{
+    const history = await K.request('/api/orders/'+order.id+'/history','GET');
+    if(history && history.length > 0){
+      tl.innerHTML = history.map(h=>
+        '<div class="tl-item"><div class="tl-dot"></div>'
+        +'<strong>'+esc(STATUS_LABELS[h.status]||h.status)+'</strong>'
+        +(h.previous_status?' <span style="color:var(--text3);font-size:.8rem">← '+esc(STATUS_LABELS[h.previous_status]||h.previous_status)+'</span>':'')
+        +'<br><span style="color:var(--text3);font-size:.8rem">'+safeDate(h.changed_at)+' · par '+esc(h.changed_by||'système')+'</span>'
+        +'</div>'
+      ).join('');
+    } else {
+      tl.innerHTML = '<div class="tl-item" style="color:var(--text3)">Aucun historique disponible</div>';
+    }
+  }catch(e){
+    tl.innerHTML = '<div class="tl-item" style="color:var(--text3)">Erreur chargement historique</div>';
+  }
+
+  // Actions
+  renderOrderActions(order);
+}
+
+function renderOrderActions(order){
+  const div = document.getElementById('orderActions');
+  const s = order.status;
+  let html = '';
+
+  const transitions = {
+    confirmed: [{label:'Confirmer paiement (cash)',action:'confirmCashFromDetail',cls:'btn-green',cond:order.payment_method==='cash_relais'}],
+    ordered: [{label:'Lancer préparation',action:'transitionFromDetail',cls:'btn-gold',next:'preparation'}],
+    preparation: [{label:'Marquer expédiée',action:'transitionFromDetail',cls:'btn-gold',next:'shipped'}],
+    shipped: [{label:'Marquer en transit',action:'transitionFromDetail',cls:'btn-blue',next:'in_transit'}],
+    in_transit: [{label:'Marquer disponible',action:'transitionFromDetail',cls:'btn-green',next:'available'}],
+    available: [{label:'Marquer récupérée',action:'transitionFromDetail',cls:'btn-green',next:'collected'}]
+  };
+
+  const possible = transitions[s] || [];
+  possible.forEach(t=>{
+    if(t.cond === false) return;
+    if(t.action === 'confirmCashFromDetail'){
+      html += '<button class="btn '+t.cls+'" onclick="confirmCashFromDetail(\''+esc(order.id)+'\')">'+t.label+'</button>';
+    } else {
+      html += '<button class="btn '+t.cls+'" onclick="transitionFromDetail(\''+esc(order.id)+'\',\''+t.next+'\')">'+t.label+'</button>';
+    }
+  });
+
+  // Cancel always available if not terminal
+  if(!['collected','cancelled','refunded'].includes(s)){
+    html += '<button class="btn btn-red" onclick="cancelFromDetail(\''+esc(order.id)+'\')">Annuler commande</button>';
+  }
+
+  div.innerHTML = html || '<span style="color:var(--text3)">Aucune action disponible</span>';
+}
+
+async function transitionFromDetail(orderId, nextStatus){
+  try{
+    await K.request('/api/orders/'+orderId+'/status','PATCH',{status:nextStatus,role:'admin'});
+    K.ui.toast('Statut mis à jour → '+STATUS_LABELS[nextStatus],'ok');
+    await loadAllData();
+    if(currentSearchOrder) searchOrder();
+  }catch(e){
+    K.ui.toast('Erreur transition: '+(e.message||'échec'),'err');
+  }
+}
+
+async function confirmCashFromDetail(orderId){
+  try{
+    await K.request('/api/payments/cash/confirm','POST',{order_id:orderId});
+    K.ui.toast('Paiement cash confirmé','ok');
+    await loadAllData();
+    if(currentSearchOrder) searchOrder();
+  }catch(e){
+    K.ui.toast('Erreur confirmation: '+(e.message||'échec'),'err');
+  }
+}
+
+async function cancelFromDetail(orderId){
+  if(!confirm('Annuler cette commande ?')) return;
+  try{
+    await K.request('/api/orders/'+orderId+'/cancel','POST');
+    K.ui.toast('Commande annulée','ok');
+    await loadAllData();
+    if(currentSearchOrder) searchOrder();
+  }catch(e){
+    K.ui.toast('Erreur annulation: '+(e.message||'échec'),'err');
+  }
+}
+
+/* ── A4: Wallet ── */
+async function loadWallet(){
+  const uid = document.getElementById('walletUserId').value.trim();
+  if(!uid){ K.ui.toast('Entrez un User ID','warn'); return; }
+  currentWalletUserId = uid;
+  const resultDiv = document.getElementById('walletResult');
+  try{
+    const bal = await K.request('/api/wallet/balance?user_id='+encodeURIComponent(uid),'GET');
+    document.getElementById('walletBalance').textContent = fmtKMF(bal.balance||0);
+  }catch(e){
+    document.getElementById('walletBalance').textContent = 'Erreur';
+    K.ui.toast('Erreur chargement solde','err');
+  }
+  try{
+    const txs = await K.request('/api/wallet/transactions?user_id='+encodeURIComponent(uid),'GET');
+    const body = document.getElementById('walletTxBody');
+    const list = Array.isArray(txs) ? txs : (txs.transactions||[]);
+    if(list.length === 0){
+      body.innerHTML = '<tr><td colspan="4" style="color:var(--text3)">Aucune transaction</td></tr>';
+    } else {
+      body.innerHTML = list.slice(0,20).map(t=>
+        '<tr><td>'+safeDate(t.created_at)+'</td>'
+        +'<td>'+esc(t.type||'—')+'</td>'
+        +'<td style="font-weight:600;color:'+(Number(t.amount)>=0?'var(--green)':'var(--red)')+'">'+fmtKMF(t.amount||0)+'</td>'
+        +'<td>'+esc(t.reason||t.description||'—')+'</td></tr>'
+      ).join('');
+    }
+  }catch(e){
+    document.getElementById('walletTxBody').innerHTML = '<tr><td colspan="4" style="color:var(--red)">Erreur chargement</td></tr>';
+  }
+  resultDiv.style.display = '';
+}
+
+async function creditWallet(){
+  if(!currentWalletUserId){ K.ui.toast('Recherchez un client d\'abord','warn'); return; }
+  const amount = Number(document.getElementById('creditAmount').value);
+  const reason = document.getElementById('creditReason').value.trim();
+  if(!amount || amount <= 0){ K.ui.toast('Montant invalide','warn'); return; }
+  if(!reason){ K.ui.toast('Raison obligatoire','warn'); return; }
+  try{
+    await K.request('/api/wallet/credit','POST',{user_id:currentWalletUserId,amount:amount,reason:reason});
+    K.ui.toast('Wallet crédité de '+fmtKMF(amount),'ok');
+    document.getElementById('creditAmount').value = '';
+    document.getElementById('creditReason').value = '';
+    loadWallet();
+  }catch(e){
+    K.ui.toast('Erreur crédit: '+(e.message||'échec'),'err');
+  }
+}
+
+/* ── A5: Overview ── */
+function renderOverview(){
+  const total = allOrders.length;
+  if(total === 0){
+    document.getElementById('statusBody').innerHTML = '<tr><td colspan="4" style="color:var(--text3)">Aucune commande</td></tr>';
+    document.getElementById('statusBar').innerHTML = '';
+    document.getElementById('islandBody').innerHTML = '<tr><td colspan="3" style="color:var(--text3)">—</td></tr>';
+    document.getElementById('paymentBody').innerHTML = '<tr><td colspan="3" style="color:var(--text3)">—</td></tr>';
+    return;
+  }
+
+  // Status breakdown
+  const statusCounts = {};
+  STATUSES.forEach(s=>{ statusCounts[s] = allOrders.filter(o=>o.status===s).length; });
+
+  let barHTML = '';
+  let tableHTML = '';
+  STATUSES.forEach(s=>{
+    const c = statusCounts[s];
+    const pct = total > 0 ? (c/total*100) : 0;
+    const color = STATUS_COLORS[s] || 'var(--text3)';
+    if(c > 0) barHTML += '<span style="width:'+pct+'%;background:'+color+'" title="'+esc(STATUS_LABELS[s])+': '+c+'"></span>';
+    tableHTML += '<tr><td>'+safeBadge(s)+'</td><td style="font-weight:600">'+c+'</td><td>'+pct.toFixed(1)+'%</td>'
+      +'<td><div style="background:var(--bg3);border-radius:4px;height:14px;width:100%;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:4px"></div></div></td></tr>';
+  });
+  document.getElementById('statusBar').innerHTML = barHTML;
+  document.getElementById('statusBody').innerHTML = tableHTML;
+
+  // Island breakdown
+  const islands = {};
+  allOrders.forEach(o=>{
+    const k = o.destination_island || 'Non définie';
+    islands[k] = (islands[k]||0)+1;
+  });
+  document.getElementById('islandBody').innerHTML = Object.entries(islands)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>'<tr><td>'+esc(k)+'</td><td style="font-weight:600">'+v+'</td><td>'+(v/total*100).toFixed(1)+'%</td></tr>').join('');
+
+  // Payment breakdown
+  const payments = {};
+  allOrders.forEach(o=>{
+    const k = o.payment_method || 'Non défini';
+    payments[k] = (payments[k]||0)+1;
+  });
+  document.getElementById('paymentBody').innerHTML = Object.entries(payments)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>'<tr><td>'+esc(k)+'</td><td style="font-weight:600">'+v+'</td><td>'+(v/total*100).toFixed(1)+'%</td></tr>').join('');
+}
+
+/* ── Util ── */
+function esc(s){ if(s===null||s===undefined) return ''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+</script>
+</body>
+</html>

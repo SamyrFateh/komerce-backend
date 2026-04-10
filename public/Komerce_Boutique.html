@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Boutique</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<link rel="stylesheet" href="komerce-ui.css">
+<style>
+/* ── Boutique-specific layout (e-commerce, NOT admin dashboard) ── */
+body { background: var(--bg); }
+
+/* Top header bar */
+.boutique-hdr {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; padding: 0 1.25rem;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.boutique-hdr .logo { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: 0.5px; }
+.boutique-hdr .logo em { color: var(--gold); font-style: normal; }
+
+/* Top nav links (desktop) */
+.top-nav { display: flex; gap: 0.25rem; }
+.top-nav-item {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.45rem 0.85rem; border-radius: 8px; cursor: pointer;
+  font-size: 0.85rem; color: var(--text2); transition: all 0.2s;
+  position: relative; white-space: nowrap; background: none; border: none;
+  font-family: inherit;
+}
+.top-nav-item:hover { background: var(--bg3); color: var(--text); }
+.top-nav-item.active { background: var(--bg3); color: var(--gold); font-weight: 600; }
+.top-nav-badge {
+  position: absolute; top: 2px; right: 2px;
+  background: var(--gold); color: #000; font-size: 0.65rem; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 99px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; line-height: 1;
+}
+.top-nav-badge:empty { display: none; }
+
+/* Header right */
+.hdr-right-b { display: flex; align-items: center; gap: 0.75rem; }
+.hdr-user { font-size: 0.8rem; color: var(--text3); }
+.hdr-logout { font-size: 0.75rem; cursor: pointer; color: var(--text3); background: none; border: none; font-family: inherit; }
+.hdr-logout:hover { color: var(--red); }
+
+/* Main content */
+.boutique-main { margin-top: 56px; padding-bottom: 80px; min-height: calc(100vh - 56px); }
+
+/* Screens */
+.bscreen { display: none; padding: 1.25rem; max-width: 1200px; margin: 0 auto; }
+.bscreen.active { display: block; }
+
+/* ── B1: Catalogue ── */
+.cat-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+  margin-bottom: 1.25rem; padding: 0.75rem; background: var(--bg2);
+  border-radius: 10px; border: 1px solid var(--border);
+}
+.cat-search {
+  flex: 1; min-width: 200px; padding: 0.5rem 0.75rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-size: 0.875rem; font-family: inherit;
+}
+.cat-search::placeholder { color: var(--text3); }
+.cat-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.cat-tag {
+  padding: 0.3rem 0.7rem; border-radius: 99px; font-size: 0.75rem;
+  cursor: pointer; border: 1px solid var(--border); background: var(--bg);
+  color: var(--text2); transition: all 0.2s; font-family: inherit;
+}
+.cat-tag:hover { border-color: var(--gold); color: var(--gold); }
+.cat-tag.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 600; }
+
+.product-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+}
+.product-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor: default;
+}
+.product-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+.product-card.out-of-stock { opacity: 0.55; pointer-events: none; }
+.product-img {
+  width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block;
+  background: var(--bg3);
+}
+.product-img-placeholder {
+  width: 100%; aspect-ratio: 1/1; display: flex; align-items: center;
+  justify-content: center; font-size: 3rem;
+  background: linear-gradient(135deg, var(--bg3), var(--bg2));
+}
+.product-body { padding: 0.75rem; }
+.product-name { font-weight: 600; font-size: 0.9rem; color: var(--text); margin-bottom: 0.3rem; line-height: 1.3; }
+.product-price { font-family: var(--mono); font-size: 1rem; font-weight: 700; color: var(--gold); margin-bottom: 0.4rem; }
+.product-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; flex-wrap: wrap; }
+.product-stock { font-size: 0.7rem; font-weight: 600; }
+.stock-ok { color: var(--green); }
+.stock-out { color: var(--red); }
+.product-cat { font-size: 0.65rem; }
+.product-actions { padding: 0 0.75rem 0.75rem; }
+.no-products { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 0.95rem; }
+
+/* ── B2: Panier ── */
+.cart-empty { text-align: center; padding: 3rem 1rem; color: var(--text3); }
+.cart-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+.cart-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+.cart-item {
+  display: flex; gap: 0.75rem; align-items: center;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.75rem;
+}
+.cart-item-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--bg3); }
+.cart-item-info { flex: 1; min-width: 0; }
+.cart-item-name { font-weight: 600; font-size: 0.85rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cart-item-price { font-family: var(--mono); font-size: 0.8rem; color: var(--text2); }
+.cart-qty { display: flex; align-items: center; gap: 0.35rem; }
+.cart-qty button {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.cart-qty button:hover { border-color: var(--gold); }
+.cart-qty span { font-family: var(--mono); font-size: 0.85rem; min-width: 24px; text-align: center; }
+.cart-item-total { font-family: var(--mono); font-weight: 700; font-size: 0.85rem; color: var(--gold); white-space: nowrap; margin-left: 0.5rem; }
+.cart-remove {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  font-size: 1.1rem; padding: 0.25rem; line-height: 1;
+}
+.cart-remove:hover { color: var(--red); }
+.cart-summary {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem; margin-bottom: 1rem;
+}
+.cart-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; }
+.cart-summary-total { font-weight: 700; font-size: 1.1rem; border-top: 1px solid var(--border); padding-top: 0.6rem; margin-top: 0.3rem; }
+.cart-summary-total .cart-total-v { color: var(--gold); font-family: var(--mono); }
+
+/* Relais dropdown */
+.relais-section { margin-bottom: 1rem; }
+.relais-section label { display: block; font-size: 0.8rem; color: var(--text2); margin-bottom: 0.4rem; font-weight: 600; }
+.relais-select {
+  width: 100%; padding: 0.55rem 0.75rem; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 0.875rem; font-family: inherit;
+}
+
+/* ── B3: Checkout ── */
+.checkout-section { margin-bottom: 1.25rem; }
+.checkout-section-title { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
+.checkout-item { display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.85rem; color: var(--text2); }
+.checkout-relais-info { padding: 0.6rem; background: var(--bg3); border-radius: 8px; font-size: 0.85rem; color: var(--text2); }
+.payment-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.payment-option {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.85rem; border: 2px solid var(--border); border-radius: 10px;
+  cursor: pointer; transition: all 0.2s; background: var(--bg2);
+}
+.payment-option:hover { border-color: var(--gold); }
+.payment-option.selected { border-color: var(--gold); background: rgba(255,193,7,0.06); }
+.payment-option input[type="radio"] { accent-color: var(--gold); }
+.payment-option-label { font-weight: 600; font-size: 0.9rem; }
+.payment-option-desc { font-size: 0.75rem; color: var(--text3); }
+.payment-disabled { opacity: 0.45; pointer-events: none; }
+
+/* Auth inline */
+.auth-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.25rem; margin-bottom: 1rem;
+}
+.auth-box h3 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--text); }
+.auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.auth-tab {
+  flex: 1; padding: 0.5rem; text-align: center; border-radius: 8px;
+  border: 1px solid var(--border); cursor: pointer; font-size: 0.85rem;
+  background: var(--bg); color: var(--text2); transition: all 0.2s;
+  font-family: inherit;
+}
+.auth-tab.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 600; }
+.auth-form { display: flex; flex-direction: column; gap: 0.6rem; }
+.auth-form .inp { width: 100%; box-sizing: border-box; }
+.auth-form .btn { margin-top: 0.3rem; }
+
+/* Confirmation */
+.confirmation-box {
+  text-align: center; padding: 2rem 1rem;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+}
+.confirmation-icon { font-size: 3.5rem; margin-bottom: 0.75rem; }
+.confirmation-ref { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; color: var(--gold); margin: 0.5rem 0; }
+
+/* ── B4: Mes commandes ── */
+.orders-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.order-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.85rem; cursor: pointer; transition: all 0.2s;
+}
+.order-card:hover { border-color: var(--gold); }
+.order-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.order-ref { font-family: var(--mono); font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.order-status-label { font-size: 0.8rem; }
+.order-card-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text3); }
+.order-amount { font-family: var(--mono); font-weight: 600; color: var(--gold); }
+.login-prompt { text-align: center; padding: 3rem 1rem; color: var(--text3); }
+.login-prompt-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+/* ── B5: Suivi ── */
+.tracking-input-box {
+  max-width: 480px; margin: 2rem auto; text-align: center;
+}
+.tracking-input-box h2 { font-size: 1.2rem; margin-bottom: 0.75rem; color: var(--text); }
+.tracking-input-row { display: flex; gap: 0.5rem; }
+.tracking-input-row .inp { flex: 1; }
+.tracking-result { max-width: 560px; margin: 1.5rem auto; }
+.tracking-header {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.25rem; text-align: center; margin-bottom: 1.25rem;
+}
+.tracking-ref { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; color: var(--text); }
+.tracking-date { font-size: 0.8rem; color: var(--text3); margin-top: 0.3rem; }
+
+/* Timeline */
+.tl { padding: 0 0 0 1.5rem; position: relative; }
+.tl::before { content: ''; position: absolute; left: 9px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+.tl-item { position: relative; padding: 0 0 1.5rem 1.25rem; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-dot {
+  position: absolute; left: -1.5rem; top: 4px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bg3); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem; z-index: 1;
+}
+.tl-dot.done { background: var(--green); border-color: var(--green); }
+.tl-dot.current { background: var(--gold); border-color: var(--gold); animation: pulse-dot 1.5s infinite; }
+.tl-dot.pending { background: var(--bg3); border-color: var(--border); }
+.tl-step-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.tl-step-label.pending-label { color: var(--text3); }
+.tl-step-date { font-size: 0.75rem; color: var(--text3); }
+
+@keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(255,193,7,0.4); } 50% { box-shadow: 0 0 0 6px rgba(255,193,7,0); } }
+
+/* ── Mobile bottom tab bar ── */
+.bottom-tabs {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  padding: 0.35rem 0 calc(0.35rem + env(safe-area-inset-bottom, 0px));
+}
+.bottom-tabs-inner { display: flex; }
+.btab {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 0.15rem; padding: 0.35rem 0; cursor: pointer; border: none;
+  background: none; color: var(--text3); font-size: 0.65rem; position: relative;
+  font-family: inherit; transition: color 0.2s;
+}
+.btab.active { color: var(--gold); }
+.btab-icon { font-size: 1.2rem; }
+.btab-badge {
+  position: absolute; top: 0; right: calc(50% - 18px);
+  background: var(--gold); color: #000; font-size: 0.55rem; font-weight: 700;
+  min-width: 14px; height: 14px; border-radius: 99px;
+  display: flex; align-items: center; justify-content: center; padding: 0 3px;
+}
+.btab-badge:empty { display: none; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 750px) {
+  .top-nav { display: none; }
+  .bottom-tabs { display: block; }
+  .boutique-main { padding-bottom: 72px; }
+  .product-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .bscreen { padding: 0.85rem; }
+  .product-body { padding: 0.6rem; }
+  .product-name { font-size: 0.8rem; }
+  .product-price { font-size: 0.85rem; }
+  .product-actions { padding: 0 0.6rem 0.6rem; }
+  .cart-item { padding: 0.6rem; }
+}
+@media (max-width: 420px) {
+  .product-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="boutique-hdr">
+  <div class="logo">K<em>OMERCE</em> · BOUTIQUE</div>
+  <nav class="top-nav">
+    <button class="top-nav-item active" data-tab="catalogue">🛍️ Catalogue</button>
+    <button class="top-nav-item" data-tab="panier">🛒 Panier <span class="top-nav-badge" id="cartBadgeTop"></span></button>
+    <button class="top-nav-item" data-tab="commandes">📋 Mes commandes</button>
+    <button class="top-nav-item" data-tab="suivi">📦 Suivi</button>
+  </nav>
+  <div class="hdr-right-b">
+    <span id="connStatus" style="display:inline-flex;align-items:center;gap:5px;font-size:0.7rem;padding:3px 8px;border-radius:20px;background:var(--bg2,#f5f5f5);color:#16a34a"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block"></span> En ligne</span>
+    <span class="hdr-user" id="userInfo"></span>
+    <button class="hdr-logout" id="logoutBtn" style="display:none;font-size:0.8rem;padding:5px 12px;border:1px solid #e2e6ec;border-radius:8px;cursor:pointer;color:#4a5568;background:#fff" onclick="doLogout()">Déconnexion</button>
+  </div>
+</div>
+
+<!-- ── Main ── -->
+<div class="boutique-main">
+
+  <!-- B1: Catalogue -->
+  <div class="bscreen active" id="scrCatalogue">
+    <div class="cat-filter-bar">
+      <input class="cat-search" id="catSearch" type="text" placeholder="🔍 Rechercher un produit…">
+      <div class="cat-tags" id="catTags"></div>
+    </div>
+    <div class="product-grid" id="productGrid"></div>
+    <div class="no-products" id="noProducts" style="display:none">Aucun produit trouvé.</div>
+  </div>
+
+  <!-- B2: Panier -->
+  <div class="bscreen" id="scrPanier">
+    <h2 style="font-size:1.15rem;margin-bottom:1rem;color:var(--text)">🛒 Mon Panier</h2>
+    <div id="cartContent"></div>
+  </div>
+
+  <!-- B3: Checkout -->
+  <div class="bscreen" id="scrCheckout">
+    <h2 style="font-size:1.15rem;margin-bottom:1rem;color:var(--text)">✨ Finaliser ma commande</h2>
+    <div id="checkoutContent"></div>
+  </div>
+
+  <!-- B4: Mes commandes -->
+  <div class="bscreen" id="scrCommandes">
+    <h2 style="font-size:1.15rem;margin-bottom:1rem;color:var(--text)">📋 Mes commandes</h2>
+    <div id="commandesContent"></div>
+  </div>
+
+  <!-- B5: Suivi -->
+  <div class="bscreen" id="scrSuivi">
+    <div class="tracking-input-box">
+      <h2>📦 Suivre ma commande</h2>
+      <p style="color:var(--text3);font-size:0.85rem;margin-bottom:1rem">Entrez votre référence pour suivre votre colis</p>
+      <div class="tracking-input-row">
+        <input class="inp" id="trackingRef" type="text" placeholder="Ex: KOM-XXXXXX">
+        <button class="btn btn-gold" onclick="trackOrder()">Suivre</button>
+      </div>
+    </div>
+    <div id="trackingResult"></div>
+  </div>
+</div>
+
+<!-- ── Mobile bottom tabs ── -->
+<div class="bottom-tabs">
+  <div class="bottom-tabs-inner">
+    <button class="btab active" data-tab="catalogue"><span class="btab-icon">🛍️</span>Catalogue</button>
+    <button class="btab" data-tab="panier"><span class="btab-icon">🛒</span>Panier<span class="btab-badge" id="cartBadgeBot"></span></button>
+    <button class="btab" data-tab="commandes"><span class="btab-icon">📋</span>Commandes</button>
+    <button class="btab" data-tab="suivi"><span class="btab-icon">📦</span>Suivi</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="k-toast" class="toast"></div>
+
+<script src="komerce-api.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════ */
+let currentUser = null;
+let allProducts = [];
+let allRelais = [];
+let activeCategory = null;
+let selectedRelais = null;
+let selectedPayment = null;
+
+const STATUS_MAP = {
+  confirmed:   { label: 'Commande reçue',        emoji: '📋' },
+  ordered:     { label: 'Paiement confirmé',      emoji: '✅' },
+  preparation: { label: 'En préparation',         emoji: '📦' },
+  shipped:     { label: 'Expédié',                emoji: '🚀' },
+  in_transit:  { label: 'En transit',             emoji: '✈️' },
+  available:   { label: 'Disponible au relais',   emoji: '📍' },
+  collected:   { label: 'Récupéré',               emoji: '🎉' },
+  cancelled:   { label: 'Annulée',                emoji: '❌' },
+  refunded:    { label: 'Remboursée',             emoji: '💰' }
+};
+
+const STATUS_ORDER = ['confirmed','ordered','preparation','shipped','in_transit','available','collected'];
+
+/* ═══════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════ */
+function fmtPrice(n) {
+  if (n == null) return '0 KMF';
+  return Number(n).toLocaleString('fr-FR').replace(/,/g, ' ') + ' KMF';
+}
+
+/* Cart helpers */
+function getCart() {
+  try { return JSON.parse(localStorage.getItem('komerce_cart') || '[]'); }
+  catch { return []; }
+}
+function saveCart(cart) {
+  localStorage.setItem('komerce_cart', JSON.stringify(cart));
+  updateCartBadges();
+}
+function updateCartBadges() {
+  const count = getCart().reduce((s, i) => s + i.quantity, 0);
+  const t = count > 0 ? String(count) : '';
+  document.getElementById('cartBadgeTop').textContent = t;
+  document.getElementById('cartBadgeBot').textContent = t;
+}
+function addToCart(product) {
+  const cart = getCart();
+  const existing = cart.find(i => i.product_id === product.id);
+  if (existing) { existing.quantity++; }
+  else { cart.push({ product_id: product.id, name: product.name, price: product.price, quantity: 1, image_url: product.image_url }); }
+  saveCart(cart);
+  K.ui.toast('Ajouté au panier !', 'ok');
+}
+
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════ */
+function switchTab(tabName) {
+  document.querySelectorAll('.bscreen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.top-nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.btab').forEach(n => n.classList.remove('active'));
+
+  const screenMap = { catalogue:'scrCatalogue', panier:'scrPanier', checkout:'scrCheckout', commandes:'scrCommandes', suivi:'scrSuivi' };
+  const scr = document.getElementById(screenMap[tabName]);
+  if (scr) scr.classList.add('active');
+
+  document.querySelectorAll(`.top-nav-item[data-tab="${tabName}"]`).forEach(n => n.classList.add('active'));
+  document.querySelectorAll(`.btab[data-tab="${tabName}"]`).forEach(n => n.classList.add('active'));
+
+  if (tabName === 'panier') renderCart();
+  if (tabName === 'commandes') renderCommandes();
+}
+
+document.querySelectorAll('.top-nav-item[data-tab]').forEach(el => {
+  el.addEventListener('click', () => switchTab(el.dataset.tab));
+});
+document.querySelectorAll('.btab[data-tab]').forEach(el => {
+  el.addEventListener('click', () => switchTab(el.dataset.tab));
+});
+
+/* ═══════════════════════════════════════════════════
+   B1: CATALOGUE
+   ═══════════════════════════════════════════════════ */
+async function loadProducts() {
+  try {
+    allProducts = await K.products.list() || [];
+  } catch (e) {
+    K.ui.toast('Erreur chargement produits', 'err');
+    allProducts = [];
+  }
+  buildCategoryTags();
+  renderProducts();
+}
+
+function buildCategoryTags() {
+  const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
+  const container = document.getElementById('catTags');
+  container.innerHTML = '<button class="cat-tag active" data-cat="">Tous</button>' +
+    cats.map(c => `<button class="cat-tag" data-cat="${c}">${c}</button>`).join('');
+  container.querySelectorAll('.cat-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      container.querySelectorAll('.cat-tag').forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      activeCategory = tag.dataset.cat || null;
+      renderProducts();
+    });
+  });
+}
+
+function renderProducts() {
+  const search = document.getElementById('catSearch').value.toLowerCase().trim();
+  let filtered = allProducts.filter(p => {
+    if (activeCategory && p.category !== activeCategory) return false;
+    if (search && !p.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('productGrid');
+  const noProds = document.getElementById('noProducts');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    noProds.style.display = 'block';
+    return;
+  }
+  noProds.style.display = 'none';
+
+  grid.innerHTML = filtered.map(p => {
+    const outOfStock = !p.is_active || (p.stock != null && p.stock <= 0);
+    const imgHtml = p.image_url
+      ? `<img class="product-img" src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.outerHTML='<div class=\\'product-img-placeholder\\'>📦</div>'">`
+      : `<div class="product-img-placeholder">📦</div>`;
+    const stockHtml = outOfStock
+      ? `<span class="product-stock stock-out">Rupture</span>`
+      : `<span class="product-stock stock-ok">En stock</span>`;
+    const catBadge = p.category ? `<span class="badge b-blue product-cat">${p.category}</span>` : '';
+    const btnHtml = outOfStock
+      ? `<button class="btn btn-sm" disabled style="width:100%;opacity:0.5">Rupture de stock</button>`
+      : `<button class="btn btn-gold btn-sm" style="width:100%" onclick='addToCart(${JSON.stringify({ id: p.id, name: p.name, price: p.price, image_url: p.image_url }).replace(/'/g, "&#39;")})'>Ajouter au panier</button>`;
+    return `<div class="product-card${outOfStock ? ' out-of-stock' : ''}">
+      ${imgHtml}
+      <div class="product-body">
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">${fmtPrice(p.price)}</div>
+        <div class="product-meta">${stockHtml}${catBadge}</div>
+      </div>
+      <div class="product-actions">${btnHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('catSearch').addEventListener('input', renderProducts);
+
+/* ═══════════════════════════════════════════════════
+   B2: PANIER
+   ═══════════════════════════════════════════════════ */
+async function loadRelais() {
+  try {
+    allRelais = await K.request('/api/relais') || [];
+  } catch { allRelais = []; }
+}
+
+function renderCart() {
+  const cart = getCart();
+  const container = document.getElementById('cartContent');
+
+  if (cart.length === 0) {
+    container.innerHTML = `<div class="cart-empty">
+      <div class="cart-empty-icon">🛒</div>
+      <p style="margin-bottom:1rem">Votre panier est vide</p>
+      <button class="btn btn-gold" onclick="switchTab('catalogue')">Voir le catalogue</button>
+    </div>`;
+    return;
+  }
+
+  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
+
+  const relaisOptions = buildRelaisOptions();
+
+  container.innerHTML = `
+    <div class="cart-list">
+      ${cart.map((item, idx) => {
+        const img = item.image_url
+          ? `<img class="cart-item-img" src="${item.image_url}" alt="" onerror="this.style.display='none'">`
+          : `<div class="cart-item-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">📦</div>`;
+        return `<div class="cart-item">
+          ${img}
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-price">${fmtPrice(item.price)} × ${item.quantity}</div>
+          </div>
+          <div class="cart-qty">
+            <button onclick="changeQty(${idx},-1)">−</button>
+            <span>${item.quantity}</span>
+            <button onclick="changeQty(${idx},1)">+</button>
+          </div>
+          <span class="cart-item-total">${fmtPrice(item.price * item.quantity)}</span>
+          <button class="cart-remove" onclick="removeItem(${idx})" title="Supprimer">✕</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="cart-summary">
+      <div class="cart-summary-row"><span>${itemCount} article${itemCount > 1 ? 's' : ''}</span></div>
+      <div class="cart-summary-row cart-summary-total"><span>Total</span><span class="cart-total-v">${fmtPrice(subtotal)}</span></div>
+    </div>
+    <div class="relais-section">
+      <label>📍 Choisir mon relais de retrait</label>
+      <select class="relais-select" id="relaisSelect" onchange="selectedRelais=this.value||null">
+        <option value="">-- Sélectionner un relais --</option>
+        ${relaisOptions}
+      </select>
+    </div>
+    <button class="btn btn-gold" style="width:100%;padding:0.75rem;font-size:1rem" onclick="goCheckout()">Commander →</button>
+  `;
+
+  if (selectedRelais) {
+    const sel = document.getElementById('relaisSelect');
+    if (sel) sel.value = selectedRelais;
+  }
+}
+
+function buildRelaisOptions() {
+  const byIsland = {};
+  allRelais.forEach(r => {
+    const island = r.island || 'Autre';
+    if (!byIsland[island]) byIsland[island] = [];
+    byIsland[island].push(r);
+  });
+  return Object.entries(byIsland).map(([island, list]) =>
+    `<optgroup label="${island}">${list.map(r => `<option value="${r.id}">${r.name} — ${r.city || ''}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+function changeQty(idx, delta) {
+  const cart = getCart();
+  if (!cart[idx]) return;
+  cart[idx].quantity += delta;
+  if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+  saveCart(cart);
+  renderCart();
+}
+
+function removeItem(idx) {
+  const cart = getCart();
+  cart.splice(idx, 1);
+  saveCart(cart);
+  renderCart();
+}
+
+/* ═══════════════════════════════════════════════════
+   B3: CHECKOUT
+   ═══════════════════════════════════════════════════ */
+function goCheckout() {
+  const cart = getCart();
+  if (cart.length === 0) { K.ui.toast('Panier vide', 'warn'); return; }
+  if (!selectedRelais) { K.ui.toast('Veuillez choisir un relais', 'warn'); return; }
+  switchTab('checkout');
+  renderCheckout();
+}
+
+async function renderCheckout() {
+  const cart = getCart();
+  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const relais = allRelais.find(r => String(r.id) === String(selectedRelais));
+  const container = document.getElementById('checkoutContent');
+
+  let walletBalance = 0;
+  let isLoggedIn = !!currentUser;
+
+  if (isLoggedIn) {
+    try {
+      const wb = await K.request('/api/wallet/balance');
+      walletBalance = wb && wb.balance ? Number(wb.balance) : 0;
+    } catch { walletBalance = 0; }
+  }
+
+  const canPayWallet = isLoggedIn && walletBalance >= subtotal;
+
+  const itemsHtml = cart.map(i =>
+    `<div class="checkout-item"><span>${i.name} × ${i.quantity}</span><span style="font-family:var(--mono)">${fmtPrice(i.price * i.quantity)}</span></div>`
+  ).join('');
+
+  const relaisHtml = relais
+    ? `<div class="checkout-relais-info">📍 ${relais.name} — ${relais.city || ''} (${relais.island || ''})</div>`
+    : `<div class="checkout-relais-info">Relais #${selectedRelais}</div>`;
+
+  const authHtml = isLoggedIn ? `
+    <div style="padding:0.6rem;background:var(--bg3);border-radius:8px;font-size:0.85rem;color:var(--text2)">
+      ✅ Connecté en tant que <strong>${currentUser.email}</strong>
+      ${walletBalance > 0 ? `<br>💰 Solde wallet : <strong style="color:var(--gold)">${fmtPrice(walletBalance)}</strong>` : ''}
+    </div>
+  ` : `
+    <div class="auth-box">
+      <h3>🔐 Connectez-vous ou créez un compte</h3>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="showAuthTab('login')">Connexion</button>
+        <button class="auth-tab" onclick="showAuthTab('register')">Inscription</button>
+      </div>
+      <div id="authLogin" class="auth-form">
+        <input class="inp" id="authEmail" type="email" placeholder="Email">
+        <input class="inp" id="authPass" type="password" placeholder="Mot de passe">
+        <button class="btn btn-gold" onclick="doCheckoutLogin()">Se connecter</button>
+      </div>
+      <div id="authRegister" class="auth-form" style="display:none">
+        <input class="inp" id="regName" type="text" placeholder="Nom complet">
+        <input class="inp" id="regEmail" type="email" placeholder="Email">
+        <input class="inp" id="regPhone" type="tel" placeholder="Téléphone">
+        <input class="inp" id="regPass" type="password" placeholder="Mot de passe">
+        <button class="btn btn-gold" onclick="doCheckoutRegister()">Créer mon compte</button>
+      </div>
+    </div>
+  `;
+
+  const walletOptionClass = canPayWallet ? '' : ' payment-disabled';
+
+  container.innerHTML = `
+    <div class="checkout-section">
+      <div class="checkout-section-title">📝 Récapitulatif</div>
+      ${itemsHtml}
+      <div class="checkout-item" style="font-weight:700;border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.3rem">
+        <span>Total</span><span style="font-family:var(--mono);color:var(--gold)">${fmtPrice(subtotal)}</span>
+      </div>
+    </div>
+    <div class="checkout-section">
+      <div class="checkout-section-title">📍 Relais de retrait</div>
+      ${relaisHtml}
+    </div>
+    <div class="checkout-section">
+      <div class="checkout-section-title">👤 Mon compte</div>
+      ${authHtml}
+    </div>
+    <div class="checkout-section" id="paymentSection" ${isLoggedIn ? '' : 'style="display:none"'}>
+      <div class="checkout-section-title">💳 Mode de paiement</div>
+      <div class="payment-options">
+        <label class="payment-option selected" onclick="selectPayment('cash_relais', this)">
+          <input type="radio" name="payment" value="cash_relais" checked>
+          <div>
+            <div class="payment-option-label">💵 Payer au relais (cash)</div>
+            <div class="payment-option-desc">Payez en espèces lors du retrait</div>
+          </div>
+        </label>
+        <label class="payment-option${walletOptionClass}" onclick="${canPayWallet ? "selectPayment('wallet', this)" : ''}">
+          <input type="radio" name="payment" value="wallet" ${canPayWallet ? '' : 'disabled'}>
+          <div>
+            <div class="payment-option-label">💰 Utiliser mon wallet</div>
+            <div class="payment-option-desc">${canPayWallet ? `Solde : ${fmtPrice(walletBalance)}` : (isLoggedIn ? `Solde insuffisant (${fmtPrice(walletBalance)})` : 'Connectez-vous pour utiliser votre wallet')}</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-gold" style="width:100%;padding:0.75rem;font-size:1rem;margin-top:0.5rem" id="confirmOrderBtn"
+      onclick="confirmOrder()" ${isLoggedIn ? '' : 'disabled style="width:100%;padding:0.75rem;font-size:1rem;margin-top:0.5rem;opacity:0.5"'}>
+      Confirmer la commande ✓
+    </button>
+  `;
+
+  selectedPayment = 'cash_relais';
+}
+
+function showAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('authLogin').style.display = tab === 'login' ? 'flex' : 'none';
+  document.getElementById('authRegister').style.display = tab === 'register' ? 'flex' : 'none';
+  event.target.classList.add('active');
+}
+
+function selectPayment(method, el) {
+  document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
+  selectedPayment = method;
+}
+
+async function doCheckoutLogin() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  if (!email || !pass) { K.ui.toast('Remplissez email et mot de passe', 'warn'); return; }
+  try {
+    const res = await K.auth.login(email, pass);
+    currentUser = res.user || K.auth.getUser();
+    K.ui.toast('Connexion réussie !', 'ok');
+    updateUserUI();
+    renderCheckout();
+  } catch (e) {
+    K.ui.toast('Erreur de connexion : ' + (e.message || e), 'err');
+  }
+}
+
+async function doCheckoutRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const password = document.getElementById('regPass').value;
+  if (!name || !email || !password) { K.ui.toast('Remplissez tous les champs obligatoires', 'warn'); return; }
+  try {
+    await K.request('/api/auth/register', 'POST', { name, email, phone, password });
+    const res = await K.auth.login(email, password);
+    currentUser = res.user || K.auth.getUser();
+    K.ui.toast('Compte créé et connecté !', 'ok');
+    updateUserUI();
+    renderCheckout();
+  } catch (e) {
+    K.ui.toast('Erreur inscription : ' + (e.message || e), 'err');
+  }
+}
+
+async function confirmOrder() {
+  const cart = getCart();
+  if (cart.length === 0) { K.ui.toast('Panier vide', 'warn'); return; }
+  if (!currentUser) { K.ui.toast('Veuillez vous connecter', 'warn'); return; }
+  if (!selectedRelais) { K.ui.toast('Choisissez un relais', 'warn'); return; }
+
+  const btn = document.getElementById('confirmOrderBtn');
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours…';
+
+  try {
+    const items = cart.map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+    const payload = {
+      items,
+      relais_id: Number(selectedRelais),
+      payment_method: selectedPayment || 'cash_relais',
+      use_wallet: selectedPayment === 'wallet'
+    };
+    const result = await K.request('/api/orders', 'POST', payload);
+    const ref = result.reference || result.order?.reference || result.id || '—';
+
+    saveCart([]);
+    selectedRelais = null;
+    selectedPayment = null;
+
+    document.getElementById('checkoutContent').innerHTML = `
+      <div class="confirmation-box">
+        <div class="confirmation-icon">🎉</div>
+        <h2 style="color:var(--text);margin-bottom:0.5rem">Commande confirmée !</h2>
+        <div class="confirmation-ref">${ref}</div>
+        <p style="color:var(--text3);font-size:0.85rem;margin:0.75rem 0">Conservez cette référence pour suivre votre commande</p>
+        <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem">
+          <button class="btn btn-gold" onclick="trackRef='${ref}';switchTab('suivi');document.getElementById('trackingRef').value='${ref}';trackOrder()">📦 Suivre ma commande</button>
+          <button class="btn btn-ghost" onclick="switchTab('catalogue')">🛍️ Continuer mes achats</button>
+        </div>
+      </div>
+    `;
+    K.ui.toast('Commande passée avec succès !', 'ok');
+  } catch (e) {
+    K.ui.toast('Erreur : ' + (e.message || e), 'err');
+    btn.disabled = false;
+    btn.textContent = 'Confirmer la commande ✓';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   B4: MES COMMANDES
+   ═══════════════════════════════════════════════════ */
+async function renderCommandes() {
+  const container = document.getElementById('commandesContent');
+
+  if (!currentUser) {
+    container.innerHTML = `<div class="login-prompt">
+      <div class="login-prompt-icon">🔒</div>
+      <p style="margin-bottom:1rem">Connectez-vous pour voir vos commandes</p>
+      <button class="btn btn-gold" onclick="showInlineLogin('commandes')">Se connecter</button>
+      <div id="inlineLoginCommandes" style="margin-top:1rem"></div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = '<p style="color:var(--text3);text-align:center;padding:2rem">Chargement…</p>';
+
+  try {
+    const orders = await K.orders.list() || [];
+    if (orders.length === 0) {
+      container.innerHTML = `<div class="login-prompt">
+        <div class="login-prompt-icon">📭</div>
+        <p style="margin-bottom:1rem">Vous n'avez pas encore de commandes</p>
+        <button class="btn btn-gold" onclick="switchTab('catalogue')">Découvrir nos produits</button>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="orders-list">
+      ${orders.map(o => {
+        const st = STATUS_MAP[o.status] || { label: o.status, emoji: '❓' };
+        const itemCount = o.items ? o.items.length : (o.parcels ? o.parcels.length : '');
+        const amount = o.total || o.amount || 0;
+        return `<div class="order-card" onclick="viewOrderTracking('${o.reference || o.id}')">
+          <div class="order-card-top">
+            <span class="order-ref">${o.reference || o.id}</span>
+            <span class="order-status-label">${st.emoji} ${st.label}</span>
+          </div>
+          <div class="order-card-bottom">
+            <span>${K.ui.fmtDate(o.created_at)}${itemCount ? ' · ' + itemCount + ' article' + (itemCount > 1 ? 's' : '') : ''}</span>
+            <span class="order-amount">${fmtPrice(amount)}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } catch (e) {
+    container.innerHTML = `<p style="color:var(--red);text-align:center;padding:2rem">Erreur : ${e.message || e}</p>`;
+  }
+}
+
+function viewOrderTracking(ref) {
+  document.getElementById('trackingRef').value = ref;
+  switchTab('suivi');
+  trackOrder();
+}
+
+function showInlineLogin(context) {
+  const target = document.getElementById('inlineLogin' + context.charAt(0).toUpperCase() + context.slice(1));
+  if (!target) return;
+  target.innerHTML = `<div class="auth-box" style="text-align:left;max-width:360px;margin:0 auto">
+    <div class="auth-form">
+      <input class="inp" id="inlineEmail_${context}" type="email" placeholder="Email">
+      <input class="inp" id="inlinePass_${context}" type="password" placeholder="Mot de passe">
+      <button class="btn btn-gold" onclick="doInlineLogin('${context}')">Se connecter</button>
+    </div>
+  </div>`;
+}
+
+async function doInlineLogin(context) {
+  const email = document.getElementById('inlineEmail_' + context).value.trim();
+  const pass = document.getElementById('inlinePass_' + context).value;
+  if (!email || !pass) { K.ui.toast('Remplissez email et mot de passe', 'warn'); return; }
+  try {
+    const res = await K.auth.login(email, pass);
+    currentUser = res.user || K.auth.getUser();
+    K.ui.toast('Connexion réussie !', 'ok');
+    updateUserUI();
+    if (context === 'commandes') renderCommandes();
+  } catch (e) {
+    K.ui.toast('Erreur : ' + (e.message || e), 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   B5: SUIVI
+   ═══════════════════════════════════════════════════ */
+async function trackOrder() {
+  const ref = document.getElementById('trackingRef').value.trim();
+  if (!ref) { K.ui.toast('Entrez une référence', 'warn'); return; }
+
+  const container = document.getElementById('trackingResult');
+  container.innerHTML = '<p style="text-align:center;color:var(--text3);padding:1rem">Recherche…</p>';
+
+  try {
+    const order = await K.orders.get(ref);
+    if (!order) { container.innerHTML = '<p style="text-align:center;color:var(--red);padding:1rem">Commande introuvable</p>'; return; }
+
+    const st = STATUS_MAP[order.status] || { label: order.status, emoji: '❓' };
+    const currentIdx = STATUS_ORDER.indexOf(order.status);
+    const isFinal = ['cancelled', 'refunded'].includes(order.status);
+
+    /* Try to get history */
+    let history = [];
+    try {
+      history = await K.request(`/api/orders/${order.id || ref}/history`) || [];
+    } catch { /* no history available */ }
+
+    /* Build timeline */
+    let timelineHtml = '';
+    if (isFinal) {
+      timelineHtml = `<div class="tl"><div class="tl-item">
+        <div class="tl-dot current"></div>
+        <div class="tl-step-label">${st.emoji} ${st.label}</div>
+        ${order.updated_at ? `<div class="tl-step-date">${K.ui.fmtDate(order.updated_at)}</div>` : ''}
+      </div></div>`;
+    } else {
+      timelineHtml = '<div class="tl">' + STATUS_ORDER.map((step, idx) => {
+        const stepInfo = STATUS_MAP[step];
+        let dotClass = 'pending';
+        let labelClass = 'pending-label';
+        let dateStr = '';
+
+        if (idx < currentIdx) { dotClass = 'done'; labelClass = ''; }
+        else if (idx === currentIdx) { dotClass = 'current'; labelClass = ''; }
+
+        /* Find date from history */
+        if (history.length > 0) {
+          const h = history.find(h => h.status === step);
+          if (h) dateStr = `<div class="tl-step-date">${K.ui.fmtDate(h.created_at || h.timestamp)}</div>`;
+        } else if (idx === 0 && order.created_at) {
+          dateStr = `<div class="tl-step-date">${K.ui.fmtDate(order.created_at)}</div>`;
+        }
+
+        return `<div class="tl-item">
+          <div class="tl-dot ${dotClass}"></div>
+          <div class="tl-step-label ${labelClass}">${stepInfo.emoji} ${stepInfo.label}</div>
+          ${dateStr}
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    /* Parcels info */
+    let parcelsHtml = '';
+    if (order.parcels && order.parcels.length > 0) {
+      parcelsHtml = `<div style="margin-top:1rem;padding:0.75rem;background:var(--bg3);border-radius:8px">
+        <div style="font-size:0.8rem;font-weight:600;margin-bottom:0.4rem">📦 ${order.parcels.length} colis</div>
+        ${order.parcels.map(p => `<div style="font-size:0.75rem;color:var(--text2)">${p.tracking_number || p.id || ''} ${p.weight ? '— ' + p.weight + ' kg' : ''}</div>`).join('')}
+      </div>`;
+    }
+
+    container.innerHTML = `<div class="tracking-result">
+      <div class="tracking-header">
+        <div class="tracking-ref">${order.reference || ref}</div>
+        <div style="margin:0.5rem 0">${st.emoji} <strong>${st.label}</strong></div>
+        <div class="tracking-date">Commandé le ${K.ui.fmtDate(order.created_at)}</div>
+      </div>
+      ${timelineHtml}
+      ${parcelsHtml}
+    </div>`;
+  } catch (e) {
+    container.innerHTML = `<p style="text-align:center;color:var(--red);padding:1rem">Erreur : ${e.message || e}</p>`;
+  }
+}
+
+/* Enter key on tracking input */
+document.getElementById('trackingRef').addEventListener('keydown', e => { if (e.key === 'Enter') trackOrder(); });
+
+/* ═══════════════════════════════════════════════════
+   AUTH & INIT
+   ═══════════════════════════════════════════════════ */
+function updateUserUI() {
+  const info = document.getElementById('userInfo');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (currentUser) {
+    info.textContent = currentUser.name || currentUser.email;
+    logoutBtn.style.display = 'inline';
+  } else {
+    info.textContent = '';
+    logoutBtn.style.display = 'none';
+  }
+}
+
+async function doLogout() {
+  try { await K.auth.logout(); } catch {}
+  currentUser = null;
+  updateUserUI();
+  K.ui.toast('Déconnecté', 'ok');
+  switchTab('catalogue');
+}
+
+(async function init() {
+  /* Restore session (client role NOT enforced — boutique is public + client) */
+  try {
+    const user = await K.auth.restore();
+    if (user) currentUser = user;
+  } catch { /* visitor mode */ }
+
+  updateUserUI();
+  updateCartBadges();
+
+  /* Load data in parallel */
+  await Promise.all([loadProducts(), loadRelais()]);
+
+  /* Check for tracking ref in URL hash */
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#track=')) {
+    const ref = decodeURIComponent(hash.slice(7));
+    document.getElementById('trackingRef').value = ref;
+    switchTab('suivi');
+    trackOrder();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Relais</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+<link rel="stylesheet" href="komerce-ui.css">
+<style>
+.scanner-zone{max-width:480px;margin:0 auto;text-align:center}
+.scanner-zone .inp{font-size:1.25rem;padding:1rem;text-align:center;letter-spacing:0.08em;text-transform:uppercase}
+.scanner-zone .btn{width:100%;padding:1rem;font-size:1.125rem;margin-top:0.75rem}
+.scanner-zone select.inp{font-size:1.05rem;padding:0.75rem}
+.scanner-result{margin-top:1.25rem;padding:1rem;border-radius:8px;display:none}
+.scanner-result.ok{display:block;background:color-mix(in srgb,var(--green) 12%,transparent);border:1px solid var(--green)}
+.scanner-result.err{display:block;background:color-mix(in srgb,var(--red) 12%,transparent);border:1px solid var(--red)}
+.search-box{max-width:560px}
+.search-box .inp{font-size:1.05rem}
+.order-tl{margin-top:0.75rem}
+@media(max-width:750px){
+  .scanner-zone{max-width:100%}
+  .search-box{max-width:100%}
+}
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div class="logo">K<em>OMERCE</em> · RELAIS</div>
+    <div class="hdr-right">
+      <span class="conn-pill ok" id="connStatus"><span class="conn-dot pulse"></span> En ligne</span>
+      <span id="userInfo" style="font-size:0.875rem;color:var(--text3)"></span>
+      <span id="userRole" style="font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(217,119,6,.12);color:var(--gold);text-transform:uppercase;letter-spacing:.5px"></span>
+      <button class="btn btn-ghost btn-sm" id="btnLogout" style="font-size:0.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text2);background:var(--bg2)" onclick="K.auth.logout().then(()=>location.href='portal.html')">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Opérations</div>
+        <div class="nav-item active" data-screen="scrAttente">
+          <span class="nav-icon">📦</span> En attente
+          <span class="nav-badge" id="badgeAttente" style="display:none">0</span>
+        </div>
+        <div class="nav-item" data-screen="scrRemettre">
+          <span class="nav-icon">🤝</span> À remettre
+          <span class="nav-badge" id="badgeRemettre" style="display:none">0</span>
+        </div>
+        <div class="nav-item" data-screen="scrScanner">
+          <span class="nav-icon">📱</span> Scanner rapide
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Suivi</div>
+        <div class="nav-item" data-screen="scrHistorique">
+          <span class="nav-icon">📜</span> Historique
+        </div>
+        <div class="nav-item" data-screen="scrRecherche">
+          <span class="nav-icon">🔍</span> Recherche
+        </div>
+      </div>
+    </nav>
+
+    <div class="content">
+
+      <!-- R1 — En attente de réception -->
+      <div class="screen active" id="scrAttente">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">En attente de réception</div>
+            <div class="screen-sub">Colis expédiés vers votre relais — à réceptionner</div>
+          </div>
+        </div>
+        <div class="inp-row" style="margin-bottom:1rem;max-width:360px">
+          <input type="text" class="inp" id="filterAttente" placeholder="Filtrer par référence…">
+        </div>
+        <div id="attenteList">
+          <p style="color:var(--text3)">Chargement…</p>
+        </div>
+      </div>
+
+      <!-- R2 — À remettre au client -->
+      <div class="screen" id="scrRemettre">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">À remettre au client</div>
+            <div class="screen-sub">Colis disponibles — en attente de collecte par le client</div>
+          </div>
+        </div>
+        <div class="inp-row" style="margin-bottom:1rem;max-width:360px">
+          <input type="text" class="inp" id="filterRemettre" placeholder="Filtrer par référence…">
+        </div>
+        <div id="remettreList">
+          <p style="color:var(--text3)">Chargement…</p>
+        </div>
+      </div>
+
+      <!-- R3 — Scanner rapide -->
+      <div class="screen" id="scrScanner">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">Scanner rapide</div>
+            <div class="screen-sub">Scannez ou saisissez la référence commande</div>
+          </div>
+        </div>
+        <div class="scanner-zone">
+          <div class="card">
+            <input type="text" class="inp" id="scanRef" placeholder="REF-XXXXXXXX" autocomplete="off" autofocus>
+            <select class="inp" id="scanStep" style="margin-top:0.75rem">
+              <option value="relais_received">📦 Réception au relais</option>
+              <option value="collected">🤝 Remise au client</option>
+            </select>
+            <input type="text" class="inp" id="scanNotes" placeholder="Notes (optionnel)" style="margin-top:0.75rem;font-size:0.95rem">
+            <button class="btn btn-gold" id="btnScan">SCANNER</button>
+          </div>
+          <div class="scanner-result" id="scanResult">
+            <span id="scanResultText"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- R4 — Historique du jour -->
+      <div class="screen" id="scrHistorique">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">Historique du jour</div>
+            <div class="screen-sub">Scans effectués aujourd'hui à ce relais</div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Heure</th>
+                <th>Référence</th>
+                <th>Étape</th>
+                <th>Résultat</th>
+              </tr>
+            </thead>
+            <tbody id="historiqueBody">
+              <tr><td colspan="4" style="color:var(--text3)">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- R5 — Recherche -->
+      <div class="screen" id="scrRecherche">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">Recherche</div>
+            <div class="screen-sub">Rechercher par référence commande</div>
+          </div>
+        </div>
+        <div class="search-box">
+          <div class="inp-row" style="gap:0.5rem;display:flex">
+            <input type="text" class="inp" id="searchInput" placeholder="Référence commande…" style="flex:1">
+            <button class="btn btn-gold" id="btnSearch">Rechercher</button>
+          </div>
+        </div>
+        <div id="searchResults" style="margin-top:1.25rem"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="k-toast" class="toast"></div>
+
+  <script src="komerce-api.js"></script>
+  <script>
+  /* ─── State ─── */
+  let currentUser = null;
+  let ordersAttente = [];
+  let ordersRemettre = [];
+  let refreshTimer = null;
+
+  /* ─── Init ─── */
+  (async function init() {
+    try {
+      const user = await K.auth.restore();
+      if (!user || user.role !== 'agent_relais') {
+        window.location.href = 'portal.html';
+        return;
+      }
+      currentUser = user;
+      document.getElementById('userInfo').textContent = user.email || user.name;
+      document.getElementById('userRole').textContent = user.role || 'agent';
+      await loadAll();
+      startAutoRefresh();
+    } catch (e) {
+      console.error('Init error:', e);
+      K.ui.toast('Erreur de connexion', 'err');
+    }
+  })();
+
+  /* ─── Navigation ─── */
+  document.querySelectorAll('.nav-item[data-screen]').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(el.dataset.screen).classList.add('active');
+      // Focus scanner input when switching to scanner screen
+      if (el.dataset.screen === 'scrScanner') {
+        setTimeout(() => document.getElementById('scanRef').focus(), 100);
+      }
+    });
+  });
+
+  /* ─── Load All Data ─── */
+  async function loadAll() {
+    await Promise.all([
+      loadAttente(),
+      loadRemettre(),
+      loadHistorique()
+    ]);
+  }
+
+  /* ─── R1: En attente de réception ─── */
+  async function loadAttente() {
+    try {
+      const orders = await K.orders.list({ status: 'in_transit' });
+      const shipped = await K.orders.list({ status: 'shipped' });
+      ordersAttente = [...orders, ...shipped];
+      renderAttente();
+    } catch (e) {
+      console.error('Load attente error:', e);
+      document.getElementById('attenteList').innerHTML = '<p style="color:var(--red)">Erreur de chargement</p>';
+    }
+  }
+
+  function renderAttente(filter) {
+    const container = document.getElementById('attenteList');
+    let list = ordersAttente;
+    if (filter) {
+      const q = filter.toLowerCase();
+      list = list.filter(o => (o.reference || '').toLowerCase().includes(q));
+    }
+
+    updateBadge('badgeAttente', ordersAttente.length);
+
+    if (!list.length) {
+      container.innerHTML = '<div class="card" style="text-align:center;color:var(--text3)">Aucun colis en attente de réception</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(o => `
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+        <div style="min-width:180px">
+          <div style="font-weight:600" class="mono">${esc(o.reference)}</div>
+          <div style="font-size:0.85rem;color:var(--text3);margin-top:0.25rem">
+            ${K.ui.badge(o.status)}
+            <span style="margin-left:0.5rem">${o.items ? o.items.length + ' article(s)' : ''}</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">
+            ${o.transit_hub ? 'Hub: ' + esc(o.transit_hub) : ''}
+            ${o.destination_island ? ' · ' + esc(o.destination_island) : ''}
+          </div>
+        </div>
+        <div style="text-align:right;min-width:120px">
+          <div style="font-size:0.8rem;color:var(--text3)">${K.ui.fmtAge(o.created_at)}</div>
+          <button class="btn btn-green btn-sm" onclick="actionReception('${o.id}','${esc(o.reference)}')" style="margin-top:0.5rem">
+            📦 Réceptionner
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('filterAttente').addEventListener('input', function() {
+    renderAttente(this.value);
+  });
+
+  async function actionReception(orderId, ref) {
+    if (!confirm('Confirmer la réception de ' + ref + ' ?')) return;
+    try {
+      await K.scans.create({ order_id: orderId, step: 'relais_received', location: currentUser.relais_id || undefined });
+      K.ui.toast('Colis ' + ref + ' réceptionné ✓', 'ok');
+      await Promise.all([loadAttente(), loadRemettre(), loadHistorique()]);
+    } catch (e) {
+      console.error('Reception error:', e);
+      K.ui.toast('Erreur: ' + (e.message || 'Échec de la réception'), 'err');
+    }
+  }
+
+  /* ─── R2: À remettre au client ─── */
+  async function loadRemettre() {
+    try {
+      const orders = await K.orders.list({ status: 'available' });
+      ordersRemettre = orders;
+      renderRemettre();
+    } catch (e) {
+      console.error('Load remettre error:', e);
+      document.getElementById('remettreList').innerHTML = '<p style="color:var(--red)">Erreur de chargement</p>';
+    }
+  }
+
+  function renderRemettre(filter) {
+    const container = document.getElementById('remettreList');
+    let list = ordersRemettre;
+    if (filter) {
+      const q = filter.toLowerCase();
+      list = list.filter(o => (o.reference || '').toLowerCase().includes(q));
+    }
+
+    updateBadge('badgeRemettre', ordersRemettre.length);
+
+    if (!list.length) {
+      container.innerHTML = '<div class="card" style="text-align:center;color:var(--text3)">Aucun colis à remettre</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(o => `
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;border-left:3px solid var(--gold)">
+        <div style="min-width:180px">
+          <div style="font-weight:600" class="mono">${esc(o.reference)}</div>
+          <div style="font-size:0.85rem;color:var(--text3);margin-top:0.25rem">
+            ${K.ui.badge(o.status)}
+            <span style="margin-left:0.5rem">${o.items ? o.items.length + ' article(s)' : ''}</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem">
+            ${o.payment_method ? 'Paiement: ' + esc(o.payment_method) : ''}
+            ${o.total_amount ? ' · ' + Number(o.total_amount).toLocaleString('fr-FR') + ' KMF' : ''}
+          </div>
+        </div>
+        <div style="text-align:right;min-width:120px">
+          <div style="font-size:0.8rem;color:var(--text3)">${K.ui.fmtAge(o.created_at)}</div>
+          <button class="btn btn-gold btn-sm" onclick="actionRemise('${o.id}','${esc(o.reference)}')" style="margin-top:0.5rem">
+            🤝 Remettre au client
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('filterRemettre').addEventListener('input', function() {
+    renderRemettre(this.value);
+  });
+
+  async function actionRemise(orderId, ref) {
+    if (!confirm('Confirmer la remise au client pour ' + ref + ' ?')) return;
+    try {
+      await K.scans.create({ order_id: orderId, step: 'collected', location: currentUser.relais_id || undefined });
+      K.ui.toast('Colis ' + ref + ' remis au client ✓', 'ok');
+      await Promise.all([loadAttente(), loadRemettre(), loadHistorique()]);
+    } catch (e) {
+      console.error('Remise error:', e);
+      K.ui.toast('Erreur: ' + (e.message || 'Échec de la remise'), 'err');
+    }
+  }
+
+  /* ─── R3: Scanner rapide ─── */
+  document.getElementById('btnScan').addEventListener('click', doScan);
+  document.getElementById('scanRef').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doScan();
+  });
+
+  async function doScan() {
+    const refInput = document.getElementById('scanRef');
+    const step = document.getElementById('scanStep').value;
+    const notes = document.getElementById('scanNotes').value.trim();
+    const ref = refInput.value.trim();
+    const resultEl = document.getElementById('scanResult');
+    const resultText = document.getElementById('scanResultText');
+
+    if (!ref) {
+      K.ui.toast('Saisissez une référence', 'warn');
+      refInput.focus();
+      return;
+    }
+
+    resultEl.className = 'scanner-result';
+    resultEl.style.display = 'none';
+
+    try {
+      // Look up order by reference
+      const order = await K.orders.get(ref);
+      if (!order || !order.id) {
+        throw new Error('Commande introuvable');
+      }
+
+      const payload = { order_id: order.id, step: step };
+      if (notes) payload.notes = notes;
+      if (currentUser.relais_id) payload.location = currentUser.relais_id;
+
+      await K.scans.create(payload);
+
+      const stepLabel = step === 'relais_received' ? 'Réceptionné' : 'Remis au client';
+      resultEl.className = 'scanner-result ok';
+      resultText.innerHTML = '<strong>✓ ' + stepLabel + '</strong><br><span class="mono">' + esc(ref) + '</span> — ' + K.ui.ts();
+
+      K.ui.toast(stepLabel + ' ✓', 'ok');
+      refInput.value = '';
+      document.getElementById('scanNotes').value = '';
+      refInput.focus();
+
+      // Refresh lists
+      await Promise.all([loadAttente(), loadRemettre(), loadHistorique()]);
+    } catch (e) {
+      console.error('Scan error:', e);
+      resultEl.className = 'scanner-result err';
+      resultText.innerHTML = '<strong>✗ Erreur</strong><br>' + esc(e.message || 'Échec du scan');
+      K.ui.toast('Erreur: ' + (e.message || 'Échec du scan'), 'err');
+      refInput.focus();
+    }
+  }
+
+  /* ─── R4: Historique du jour ─── */
+  async function loadHistorique() {
+    const tbody = document.getElementById('historiqueBody');
+    try {
+      const scans = await K.scans.list({});
+      // Filter to today's scans
+      const today = new Date().toISOString().slice(0, 10);
+      const todayScans = scans.filter(s => {
+        const d = s.created_at || s.scanned_at || '';
+        return d.slice(0, 10) === today;
+      });
+
+      // Sort most recent first
+      todayScans.sort((a, b) => {
+        const da = a.created_at || a.scanned_at || '';
+        const db = b.created_at || b.scanned_at || '';
+        return db.localeCompare(da);
+      });
+
+      if (!todayScans.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text3)">Aucun scan aujourd\'hui</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = todayScans.map(s => {
+        const time = K.ui.fmtDate(s.created_at || s.scanned_at);
+        const ref = s.order_reference || s.reference || s.order_id || '—';
+        const stepLabel = formatStep(s.step);
+        const success = s.error ? '<span class="badge b-red">Erreur</span>' : '<span class="badge b-green">OK</span>';
+        return `<tr>
+          <td class="mono">${esc(time)}</td>
+          <td class="mono">${esc(ref)}</td>
+          <td>${stepLabel}</td>
+          <td>${success}</td>
+        </tr>`;
+      }).join('');
+    } catch (e) {
+      console.error('Load historique error:', e);
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--red)">Erreur de chargement</td></tr>';
+    }
+  }
+
+  function formatStep(step) {
+    const map = {
+      relais_received: '<span class="badge b-blue">📦 Réception</span>',
+      collected: '<span class="badge b-green">🤝 Remise</span>',
+      preparation: '<span class="badge b-gray">Préparation</span>',
+      shipped: '<span class="badge b-purple">Expédié</span>',
+      in_transit: '<span class="badge b-teal">En transit</span>'
+    };
+    return map[step] || '<span class="badge b-gray">' + esc(step || '—') + '</span>';
+  }
+
+  /* ─── R5: Recherche ─── */
+  document.getElementById('btnSearch').addEventListener('click', doSearch);
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  async function doSearch() {
+    const query = document.getElementById('searchInput').value.trim();
+    const container = document.getElementById('searchResults');
+
+    if (!query) {
+      K.ui.toast('Saisissez une référence', 'warn');
+      return;
+    }
+
+    container.innerHTML = '<p style="color:var(--text3)">Recherche…</p>';
+
+    try {
+      // Try to get order directly by reference
+      let order = null;
+      try {
+        order = await K.orders.get(query);
+      } catch (_) {
+        // Not found by exact ref, try listing and filtering
+      }
+
+      if (order && order.id) {
+        // Load history for this order
+        let history = [];
+        try {
+          history = await K.request('/api/orders/' + order.id + '/history', 'GET');
+        } catch (_) {}
+
+        container.innerHTML = renderSearchResult(order, history);
+      } else {
+        // Search through all orders
+        const allOrders = await K.orders.list({});
+        const q = query.toLowerCase();
+        const matches = allOrders.filter(o =>
+          (o.reference || '').toLowerCase().includes(q)
+        );
+
+        if (!matches.length) {
+          container.innerHTML = '<div class="card" style="text-align:center;color:var(--text3)">Aucun résultat pour « ' + esc(query) + ' »</div>';
+          return;
+        }
+
+        container.innerHTML = matches.map(o => renderSearchResult(o)).join('');
+      }
+    } catch (e) {
+      console.error('Search error:', e);
+      container.innerHTML = '<div class="card" style="color:var(--red)">Erreur de recherche: ' + esc(e.message || '') + '</div>';
+    }
+  }
+
+  function renderSearchResult(order, history) {
+    const canReceive = order.status === 'in_transit' || order.status === 'shipped';
+    const canCollect = order.status === 'available';
+
+    let actions = '';
+    if (canReceive) {
+      actions = `<button class="btn btn-green btn-sm" onclick="actionReception('${order.id}','${esc(order.reference)}')">📦 Réceptionner</button>`;
+    } else if (canCollect) {
+      actions = `<button class="btn btn-gold btn-sm" onclick="actionRemise('${order.id}','${esc(order.reference)}')">🤝 Remettre au client</button>`;
+    }
+
+    let timelineHtml = '';
+    if (history && history.length) {
+      timelineHtml = '<div class="tl order-tl">' + history.map(h => `
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div>
+            <div style="font-size:0.85rem;font-weight:500">${formatStep(h.status || h.step)}</div>
+            <div style="font-size:0.75rem;color:var(--text3)">${K.ui.fmtDate(h.created_at || h.timestamp)}</div>
+            ${h.notes ? '<div style="font-size:0.75rem;color:var(--text3)">' + esc(h.notes) + '</div>' : ''}
+          </div>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    return `
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+          <div>
+            <div style="font-weight:600" class="mono">${esc(order.reference)}</div>
+            <div style="margin-top:0.35rem">${K.ui.badge(order.status)}</div>
+            <div style="font-size:0.8rem;color:var(--text3);margin-top:0.35rem">
+              ${order.destination_island ? esc(order.destination_island) : ''}
+              ${order.total_amount ? ' · ' + Number(order.total_amount).toLocaleString('fr-FR') + ' KMF' : ''}
+              ${order.items ? ' · ' + order.items.length + ' article(s)' : ''}
+            </div>
+            <div style="font-size:0.8rem;color:var(--text3)">${K.ui.fmtAge(order.created_at)}</div>
+          </div>
+          <div>${actions}</div>
+        </div>
+        ${timelineHtml}
+      </div>
+    `;
+  }
+
+  /* ─── Helpers ─── */
+  function updateBadge(id, count) {
+    const el = document.getElementById(id);
+    if (count > 0) {
+      el.textContent = count;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+  }
+
+  /* ─── Auto-refresh (30s) ─── */
+  function startAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(async () => {
+      try {
+        await loadAll();
+      } catch (e) {
+        console.error('Auto-refresh error:', e);
+        document.getElementById('connStatus').innerHTML = '<span class="conn-dot"></span> Hors ligne';
+        document.getElementById('connStatus').className = 'conn-pill err';
+      }
+    }, 30000);
+  }
+
+  /* ─── Connection health check ─── */
+  setInterval(async () => {
+    try {
+      await K.request('/api/health', 'GET');
+      document.getElementById('connStatus').innerHTML = '<span class="conn-dot pulse"></span> En ligne';
+      document.getElementById('connStatus').className = 'conn-pill ok';
+    } catch (_) {
+      document.getElementById('connStatus').innerHTML = '<span class="conn-dot"></span> Hors ligne';
+      document.getElementById('connStatus').className = 'conn-pill err';
+    }
+  }, 60000);
+  </script>
+</body>
+</html>

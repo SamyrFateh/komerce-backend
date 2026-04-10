@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Komerce — Hub Agent</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+<link rel="stylesheet" href="komerce-ui.css">
+<style>
+.mobile-scan-zone{display:flex;flex-direction:column;gap:1rem;max-width:480px;margin:0 auto}
+.mobile-scan-zone .inp{font-size:1.25rem;padding:1rem;text-align:center;letter-spacing:.05em;text-transform:uppercase}
+.mobile-scan-zone .btn{padding:1rem;font-size:1.125rem}
+.scan-result{margin-top:1rem;padding:1rem;border-radius:8px;text-align:center;font-weight:600;display:none}
+.scan-result.ok{display:block;background:rgba(16,185,129,.12);color:var(--green)}
+.scan-result.err{display:block;background:rgba(239,68,68,.12);color:var(--red)}
+.detail-panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-top:1rem;display:none}
+.detail-panel.open{display:block}
+.detail-panel h3{margin:0 0 .75rem;font-size:1rem}
+.detail-row{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border);font-size:.875rem}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--text3)}
+.tbl-action{white-space:nowrap}
+.quick-search{position:relative}
+.quick-search .inp{width:100%;padding-right:2.5rem}
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div class="logo">K<em>OMERCE</em> · HUB</div>
+    <div class="hdr-right">
+      <span class="conn-pill ok" id="connStatus"><span class="conn-dot pulse"></span> En ligne</span>
+      <span id="userInfo" style="font-size:0.875rem;color:var(--text3)"></span>
+      <span id="userRole" style="font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(217,119,6,.12);color:var(--gold);text-transform:uppercase;letter-spacing:.5px"></span>
+      <button class="btn btn-ghost btn-sm" id="btnLogout" style="font-size:0.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text2);background:var(--bg2)" onclick="K.auth.logout().then(()=>location.href='portal.html')">Déconnexion</button>
+    </div>
+  </div>
+  <div class="main">
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Opérations</div>
+        <div class="nav-item active" data-screen="scrPreparer">
+          <span class="nav-icon">📋</span> À préparer
+          <span class="nav-badge" id="badgePreparer">0</span>
+        </div>
+        <div class="nav-item" data-screen="scrExpedier">
+          <span class="nav-icon">🚀</span> À expédier
+          <span class="nav-badge" id="badgeExpedier">0</span>
+        </div>
+        <div class="nav-item" data-screen="scrScanner">
+          <span class="nav-icon">📱</span> Scanner rapide
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Suivi</div>
+        <div class="nav-item" data-screen="scrHistorique">
+          <span class="nav-icon">📜</span> Historique
+        </div>
+        <div class="nav-item" data-screen="scrRecherche">
+          <span class="nav-icon">🔍</span> Recherche
+        </div>
+      </div>
+    </nav>
+    <div class="content">
+
+      <!-- H1 — À préparer -->
+      <div class="screen active" id="scrPreparer">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">À préparer</div>
+            <div class="screen-sub">Commandes confirmées en attente de préparation (FIFO)</div>
+          </div>
+        </div>
+        <div class="quick-search" style="margin-bottom:1rem">
+          <input class="inp" id="filterPreparer" placeholder="Filtrer par référence…" oninput="renderPreparer()">
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Âge</th>
+                <th>Articles</th>
+                <th>Destination</th>
+                <th class="tbl-action">Action</th>
+              </tr>
+            </thead>
+            <tbody id="tblPreparer"></tbody>
+          </table>
+        </div>
+        <p id="emptyPreparer" style="display:none;color:var(--text3);text-align:center;padding:2rem 0">Aucune commande à préparer ✓</p>
+      </div>
+
+      <!-- H2 — À expédier -->
+      <div class="screen" id="scrExpedier">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">À expédier</div>
+            <div class="screen-sub">Colis préparés, prêts pour expédition</div>
+          </div>
+        </div>
+        <div class="quick-search" style="margin-bottom:1rem">
+          <input class="inp" id="filterExpedier" placeholder="Filtrer par référence…" oninput="renderExpedier()">
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Âge</th>
+                <th>Destination</th>
+                <th class="tbl-action">Action</th>
+              </tr>
+            </thead>
+            <tbody id="tblExpedier"></tbody>
+          </table>
+        </div>
+        <p id="emptyExpedier" style="display:none;color:var(--text3);text-align:center;padding:2rem 0">Aucun colis à expédier ✓</p>
+      </div>
+
+      <!-- H3 — Scanner rapide -->
+      <div class="screen" id="scrScanner">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">Scanner rapide</div>
+            <div class="screen-sub">Scannez un colis par sa référence</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="mobile-scan-zone">
+            <label class="inp-label" for="scanRef">Référence commande</label>
+            <input class="inp" id="scanRef" placeholder="KOM-XXXXXX" autocomplete="off" autofocus>
+            <label class="inp-label" for="scanStep">Étape</label>
+            <select class="inp" id="scanStep">
+              <option value="preparation">📋 Préparation</option>
+              <option value="shipped">🚀 Expédition</option>
+              <option value="in_transit">✈️ En transit</option>
+            </select>
+            <label class="inp-label" for="scanNotes">Notes (optionnel)</label>
+            <input class="inp" id="scanNotes" placeholder="Notes…">
+            <button class="btn btn-gold" id="btnScan" onclick="doQuickScan()">SCANNER</button>
+            <div class="scan-result" id="scanResult"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- H4 — Historique du jour -->
+      <div class="screen" id="scrHistorique">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">Historique du jour</div>
+            <div class="screen-sub">Scans effectués aujourd'hui — rafraîchissement auto 30s</div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Heure</th>
+                <th>Référence</th>
+                <th>Étape</th>
+                <th>Résultat</th>
+              </tr>
+            </thead>
+            <tbody id="tblHistorique"></tbody>
+          </table>
+        </div>
+        <p id="emptyHistorique" style="display:none;color:var(--text3);text-align:center;padding:2rem 0">Aucun scan aujourd'hui</p>
+      </div>
+
+      <!-- H5 — Recherche -->
+      <div class="screen" id="scrRecherche">
+        <div class="screen-hdr">
+          <div>
+            <div class="screen-title">Recherche</div>
+            <div class="screen-sub">Rechercher une commande par référence</div>
+          </div>
+        </div>
+        <div class="inp-row" style="margin-bottom:1rem">
+          <input class="inp" id="searchInput" placeholder="Tapez une référence…" onkeydown="if(event.key==='Enter')doSearch()">
+          <button class="btn btn-gold" onclick="doSearch()">Rechercher</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>Destination</th>
+              </tr>
+            </thead>
+            <tbody id="tblRecherche"></tbody>
+          </table>
+        </div>
+        <p id="emptyRecherche" style="display:none;color:var(--text3);text-align:center;padding:2rem 0">Aucun résultat</p>
+        <div class="detail-panel" id="detailPanel">
+          <h3 id="detailTitle">Détail commande</h3>
+          <div id="detailBody"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div id="k-toast" class="toast"></div>
+  <script src="komerce-api.js"></script>
+  <script>
+  /* ===== State ===== */
+  let ordersOrdered = [];
+  let ordersPreparation = [];
+  let allScans = [];
+  let searchResults = [];
+  let refreshTimer = null;
+
+  /* ===== Init ===== */
+  (async function init() {
+    try {
+      const user = await K.auth.restore();
+      if (!user || user.role !== 'agent_hub') {
+        window.location.href = 'portal.html';
+        return;
+      }
+      document.getElementById('userInfo').textContent = user.email || user.name;
+      document.getElementById('userRole').textContent = user.role || 'agent';
+      await loadAll();
+      startAutoRefresh();
+    } catch (e) {
+      console.error('Init error:', e);
+      K.ui.toast('Erreur de connexion', 'err');
+      setOffline();
+    }
+  })();
+
+  /* ===== Navigation ===== */
+  document.querySelectorAll('.nav-item[data-screen]').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(el.dataset.screen).classList.add('active');
+      /* Focus scan input if scanner screen */
+      if (el.dataset.screen === 'scrScanner') {
+        setTimeout(() => document.getElementById('scanRef').focus(), 100);
+      }
+    });
+  });
+
+  /* ===== Data Loading ===== */
+  async function loadAll() {
+    try {
+      await Promise.all([loadPreparer(), loadExpedier(), loadHistorique()]);
+      setOnline();
+    } catch (e) {
+      console.error('Load error:', e);
+      K.ui.toast('Erreur de chargement', 'err');
+      setOffline();
+    }
+  }
+
+  async function loadPreparer() {
+    try {
+      ordersOrdered = await K.orders.list({ status: 'ordered' });
+      if (!Array.isArray(ordersOrdered)) ordersOrdered = [];
+      ordersOrdered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      document.getElementById('badgePreparer').textContent = ordersOrdered.length;
+      renderPreparer();
+    } catch (e) {
+      console.error('loadPreparer error:', e);
+      ordersOrdered = [];
+      renderPreparer();
+    }
+  }
+
+  async function loadExpedier() {
+    try {
+      ordersPreparation = await K.orders.list({ status: 'preparation' });
+      if (!Array.isArray(ordersPreparation)) ordersPreparation = [];
+      ordersPreparation.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      document.getElementById('badgeExpedier').textContent = ordersPreparation.length;
+      renderExpedier();
+    } catch (e) {
+      console.error('loadExpedier error:', e);
+      ordersPreparation = [];
+      renderExpedier();
+    }
+  }
+
+  async function loadHistorique() {
+    try {
+      const scans = await K.scans.list();
+      if (!Array.isArray(scans)) { allScans = []; renderHistorique(); return; }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      allScans = scans.filter(s => new Date(s.created_at) >= today);
+      allScans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      renderHistorique();
+    } catch (e) {
+      console.error('loadHistorique error:', e);
+      allScans = [];
+      renderHistorique();
+    }
+  }
+
+  /* ===== Renderers ===== */
+  function renderPreparer() {
+    const filter = (document.getElementById('filterPreparer').value || '').trim().toLowerCase();
+    let list = ordersOrdered;
+    if (filter) list = list.filter(o => (o.reference || '').toLowerCase().includes(filter));
+    const tbody = document.getElementById('tblPreparer');
+    const empty = document.getElementById('emptyPreparer');
+    if (!list.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = list.map(o => {
+      const itemCount = Array.isArray(o.items) ? o.items.reduce((sum, it) => sum + (it.quantity || 1), 0) : '—';
+      return `<tr>
+        <td><span class="mono">${esc(o.reference)}</span></td>
+        <td>${K.ui.fmtAge(o.created_at)}</td>
+        <td>${itemCount}</td>
+        <td>${esc(o.destination_island || '—')}</td>
+        <td class="tbl-action"><button class="btn btn-gold btn-sm" onclick="doScan('${o.id}','preparation','${esc(o.reference)}')">📋 Scanner préparation</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderExpedier() {
+    const filter = (document.getElementById('filterExpedier').value || '').trim().toLowerCase();
+    let list = ordersPreparation;
+    if (filter) list = list.filter(o => (o.reference || '').toLowerCase().includes(filter));
+    const tbody = document.getElementById('tblExpedier');
+    const empty = document.getElementById('emptyExpedier');
+    if (!list.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = list.map(o => `<tr>
+      <td><span class="mono">${esc(o.reference)}</span></td>
+      <td>${K.ui.fmtAge(o.created_at)}</td>
+      <td>${esc(o.destination_island || '—')}</td>
+      <td class="tbl-action"><button class="btn btn-green btn-sm" onclick="doScan('${o.id}','shipped','${esc(o.reference)}')">🚀 Scanner expédition</button></td>
+    </tr>`).join('');
+  }
+
+  function renderHistorique() {
+    const tbody = document.getElementById('tblHistorique');
+    const empty = document.getElementById('emptyHistorique');
+    if (!allScans.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    const stepLabels = {
+      preparation: '📋 Préparation',
+      shipped: '🚀 Expédition',
+      in_transit: '✈️ En transit',
+      relais_received: '📍 Reçu relais',
+      collected: '✅ Collecté'
+    };
+    tbody.innerHTML = allScans.map(s => {
+      const time = new Date(s.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const ref = s.order_reference || s.order_id || '—';
+      const step = stepLabels[s.step] || s.step;
+      const ok = s.error ? `<span class="badge b-red">Erreur</span>` : `<span class="badge b-green">OK</span>`;
+      return `<tr>
+        <td>${time}</td>
+        <td><span class="mono">${esc(ref)}</span></td>
+        <td>${step}</td>
+        <td>${ok}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ===== Scan Actions ===== */
+  async function doScan(orderId, step, ref) {
+    try {
+      const payload = { order_id: orderId, step: step };
+      await K.scans.create(payload);
+      K.ui.toast(`Scan ${step} OK — ${ref}`, 'ok');
+      await loadAll();
+    } catch (e) {
+      console.error('Scan error:', e);
+      K.ui.toast(`Erreur scan: ${e.message || 'Échec'}`, 'err');
+    }
+  }
+
+  async function doQuickScan() {
+    const refInput = document.getElementById('scanRef');
+    const step = document.getElementById('scanStep').value;
+    const notes = document.getElementById('scanNotes').value.trim();
+    const resultEl = document.getElementById('scanResult');
+    const ref = refInput.value.trim();
+
+    if (!ref) {
+      K.ui.toast('Entrez une référence', 'warn');
+      refInput.focus();
+      return;
+    }
+
+    const btn = document.getElementById('btnScan');
+    btn.disabled = true;
+    btn.textContent = 'Scan en cours…';
+    resultEl.className = 'scan-result';
+    resultEl.style.display = 'none';
+
+    try {
+      /* Resolve reference to order ID */
+      const order = await K.orders.get(ref);
+      if (!order || !order.id) throw new Error('Commande introuvable');
+
+      const payload = { order_id: order.id, step: step };
+      if (notes) payload.notes = notes;
+      await K.scans.create(payload);
+
+      resultEl.textContent = `✓ Scan ${step} réussi — ${order.reference || ref}`;
+      resultEl.className = 'scan-result ok';
+      K.ui.toast(`Scan ${step} OK`, 'ok');
+
+      refInput.value = '';
+      document.getElementById('scanNotes').value = '';
+      refInput.focus();
+      await loadAll();
+    } catch (e) {
+      console.error('Quick scan error:', e);
+      resultEl.textContent = `✗ Erreur: ${e.message || 'Échec du scan'}`;
+      resultEl.className = 'scan-result err';
+      K.ui.toast(`Erreur: ${e.message || 'Échec'}`, 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'SCANNER';
+    }
+  }
+
+  /* ===== Search ===== */
+  async function doSearch() {
+    const q = document.getElementById('searchInput').value.trim();
+    if (!q) { K.ui.toast('Entrez une référence', 'warn'); return; }
+
+    document.getElementById('detailPanel').classList.remove('open');
+
+    try {
+      /* Try exact match first */
+      let results = [];
+      try {
+        const exact = await K.orders.get(q);
+        if (exact && exact.id) results = [exact];
+      } catch (_) { /* not found by ref, try listing */ }
+
+      if (!results.length) {
+        const all = await K.orders.list({});
+        if (Array.isArray(all)) {
+          const lq = q.toLowerCase();
+          results = all.filter(o => (o.reference || '').toLowerCase().includes(lq));
+        }
+      }
+
+      searchResults = results;
+      renderSearch();
+    } catch (e) {
+      console.error('Search error:', e);
+      K.ui.toast('Erreur de recherche', 'err');
+      searchResults = [];
+      renderSearch();
+    }
+  }
+
+  function renderSearch() {
+    const tbody = document.getElementById('tblRecherche');
+    const empty = document.getElementById('emptyRecherche');
+    if (!searchResults.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = searchResults.map(o => `<tr style="cursor:pointer" onclick="showDetail('${o.id}','${esc(o.reference)}')">
+      <td><span class="mono">${esc(o.reference)}</span></td>
+      <td>${K.ui.badge(o.status)}</td>
+      <td>${K.ui.fmtDate(o.created_at)}</td>
+      <td>${esc(o.destination_island || '—')}</td>
+    </tr>`).join('');
+  }
+
+  async function showDetail(orderId, ref) {
+    const panel = document.getElementById('detailPanel');
+    const title = document.getElementById('detailTitle');
+    const body = document.getElementById('detailBody');
+
+    title.textContent = `Commande ${ref}`;
+    body.innerHTML = '<p style="color:var(--text3)">Chargement…</p>';
+    panel.classList.add('open');
+
+    try {
+      const order = await K.orders.get(ref);
+      let historyHtml = '';
+      try {
+        const history = await K.request(`/api/orders/${orderId}/history`, 'GET');
+        if (Array.isArray(history) && history.length) {
+          historyHtml = `<div style="margin-top:1rem"><strong>Historique:</strong><div class="tl" style="margin-top:.5rem">${history.map(h => `<div class="tl-item"><div class="tl-dot"></div><div><span class="badge b-blue">${esc(h.status || h.step || '')}</span> <span style="color:var(--text3);font-size:.8rem">${K.ui.fmtDate(h.created_at)}</span></div></div>`).join('')}</div></div>`;
+        }
+      } catch (_) {}
+
+      const items = Array.isArray(order.items) ? order.items : [];
+      const itemCount = items.reduce((s, it) => s + (it.quantity || 1), 0);
+
+      body.innerHTML = `
+        <div class="detail-row"><span class="detail-label">Statut</span><span>${K.ui.badge(order.status)}</span></div>
+        <div class="detail-row"><span class="detail-label">Créée le</span><span>${K.ui.fmtDate(order.created_at)}</span></div>
+        <div class="detail-row"><span class="detail-label">Âge</span><span>${K.ui.fmtAge(order.created_at)}</span></div>
+        <div class="detail-row"><span class="detail-label">Articles</span><span>${itemCount}</span></div>
+        <div class="detail-row"><span class="detail-label">Destination</span><span>${esc(order.destination_island || '—')}</span></div>
+        <div class="detail-row"><span class="detail-label">Relais</span><span>${esc(order.relais_id || '—')}</span></div>
+        <div class="detail-row"><span class="detail-label">Montant</span><span>${order.total_amount ? order.total_amount + ' KMF' : '—'}</span></div>
+        <div class="detail-row"><span class="detail-label">Paiement</span><span>${esc(order.payment_method || '—')} / ${esc(order.payment_status || '—')}</span></div>
+        ${historyHtml}
+      `;
+    } catch (e) {
+      body.innerHTML = `<p style="color:var(--red)">Erreur: ${esc(e.message || 'Chargement échoué')}</p>`;
+    }
+  }
+
+  /* ===== Auto-refresh ===== */
+  function startAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(async () => {
+      try {
+        await loadAll();
+        setOnline();
+      } catch (e) {
+        setOffline();
+      }
+    }, 30000);
+  }
+
+  /* ===== Connection Status ===== */
+  function setOnline() {
+    const el = document.getElementById('connStatus');
+    el.className = 'conn-pill ok';
+    el.innerHTML = '<span class="conn-dot pulse"></span> En ligne';
+  }
+
+  function setOffline() {
+    const el = document.getElementById('connStatus');
+    el.className = 'conn-pill err';
+    el.innerHTML = '<span class="conn-dot"></span> Hors ligne';
+  }
+
+  /* ===== Helpers ===== */
+  function esc(s) {
+    if (s == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+  </script>
+</body>
+</html>
