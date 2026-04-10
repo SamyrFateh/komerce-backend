@@ -1,12 +1,11 @@
-/* Komerce Service Worker v6.0 — Cross-origin safe + Network-First HTML */
-const CACHE = 'komerce-v6';
+/* Komerce Service Worker v7.0 — Cache bust + Cross-origin safe + Network-First HTML */
+const CACHE = 'komerce-v7';
 
 const SHELL = [
   '/Komerce_Boutique.html',
   '/komerce-api.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/komerce-ui.css',
+  '/manifest.json'
 ];
 
 /* ── Install: précache le SHELL — tolérant ── */
@@ -16,7 +15,7 @@ self.addEventListener('install', (e) => {
       Promise.all(
         SHELL.map((url) =>
           cache.add(url).catch((err) => {
-            console.warn('[SW v6] Cache skip:', url, err.message || err);
+            console.warn('[SW v7] Cache skip:', url, err.message || err);
           })
         )
       )
@@ -30,7 +29,7 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.filter((k) => k !== CACHE).map((k) => {
-          console.log('[SW v6] Purging old cache:', k);
+          console.log('[SW v7] Purging old cache:', k);
           return caches.delete(k);
         })
       )
@@ -45,9 +44,7 @@ self.addEventListener('fetch', (e) => {
   /* Skip non-GET */
   if (request.method !== 'GET') return;
 
-  /* ★ CRITICAL: Skip cross-origin requests entirely ★
-     Let the browser handle Cloudinary, Unsplash, Google Fonts, CDNs etc.
-     The SW should only manage same-origin assets. */
+  /* ★ CRITICAL: Skip cross-origin requests entirely ★ */
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
@@ -82,7 +79,23 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* Same-origin static assets → CACHE-FIRST */
+  /* JS/CSS → NETWORK-FIRST too (ensures fresh code after deploy) */
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    e.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, clone).catch(() => {}));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((c) => c || new Response('', { status: 503 })))
+    );
+    return;
+  }
+
+  /* Other same-origin static assets → CACHE-FIRST */
   e.respondWith(
     caches.match(request)
       .then((cached) => {

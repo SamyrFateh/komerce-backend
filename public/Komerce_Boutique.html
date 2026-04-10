@@ -836,12 +836,22 @@ function renderCategories() {
 /* ── Products: Fetch ── */
 async function fetchProducts() {
   try {
-    var data = await K.products.list({ limit: 500 });
-    _products = (data.products || data || []).sort(function() { return Math.random() - 0.5; });
+    var data;
+    if (typeof K !== 'undefined' && K.products && K.products.list) {
+      data = await K.products.list({ limit: 500 });
+    } else {
+      console.warn('[Boutique] K.products not available, direct fetch fallback');
+      var res = await fetch('/api/products?limit=500');
+      data = await res.json();
+    }
+    _products = (data.products || data || []);
+    if (!Array.isArray(_products)) _products = [];
+    _products.sort(function() { return Math.random() - 0.5; });
+    console.log('[Boutique] Loaded', _products.length, 'products');
     renderFiltered();
   } catch (e) {
-    console.error('Failed to load products:', e);
-    $('product-grid').innerHTML = '<div class="empty-state"><p>⚠️</p><p>Erreur de chargement</p></div>';
+    console.error('[Boutique] Failed to load products:', e);
+    $('product-grid').innerHTML = '<div class="empty-state"><p>⚠️</p><p>Erreur de chargement</p><p style="font-size:0.75rem;color:#999">' + (e.message || e) + '</p></div>';
   }
 }
 
@@ -863,6 +873,7 @@ function getFiltered() {
 function renderFiltered() {
   _page = 0;
   _allLoaded = false;
+  _loading = false;
   $('product-grid').innerHTML = '';
   var filtered = getFiltered();
   $('product-count').textContent = filtered.length + ' produit' + (filtered.length > 1 ? 's' : '');
@@ -885,7 +896,10 @@ function loadNextPage(filtered) {
     return;
   }
   var grid = $('product-grid');
-  slice.forEach(function(p) { grid.appendChild(createCard(p)); });
+  slice.forEach(function(p) {
+    try { grid.appendChild(createCard(p)); }
+    catch(e) { console.error('[Boutique] Card render error:', p.sku, e); }
+  });
   _page++;
   $('loading-spinner').style.display = 'none';
   _loading = false;
