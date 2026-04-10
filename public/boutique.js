@@ -748,6 +748,8 @@ function openProductModal(p, fromSuggestion) {
   window._currentModalProduct = p;
 
   _pdQty = 1;
+  var titleEl = $('pd-modal-title');
+  if (titleEl) titleEl.textContent = p.name || 'Détail du produit';
   var body = $('product-modal-body');
   body.innerHTML = '';
   body.scrollTop = 0;
