@@ -1995,7 +1995,15 @@ setInterval(rotateProverbe, 12000);
 /* ═══════════════════════════════════════════════════
    BLOOM NAVIGATION JS — Injected from Web
    ═══════════════════════════════════════════════════ */
-/* ── State ── */
+
+  /* ── Cloudinary image optimizer — adds f_auto,q_auto,w_X ── */
+  function optimizeImgUrl(url, w) {
+    if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
+    if (url.indexOf('f_auto') !== -1) return url; // already optimized
+    return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
+  }
+
+  /* ── State ── */
 let _cart;
 var CART_VERSION = 2;
 try {
@@ -2156,7 +2164,7 @@ function flyToCart(sourceEl, product) {
   if (product.image_url) {
     var img = document.createElement('img');
     img.loading = 'lazy';
-    img.src = product.image_url;
+    img.src = optimizeImgUrl(product.image_url, 80);
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
     particle.appendChild(img);
   } else {
@@ -2338,7 +2346,7 @@ function renderProducts(list) {
     if (p.image_url) {
       var img = document.createElement('img');
       img.loading = 'lazy';
-      img.src = p.image_url;
+      img.src = optimizeImgUrl(p.image_url, 400);
       img.alt = sanitize(p.name);
       img.loading = 'eager';
       img.decoding = 'async';
@@ -2697,7 +2705,7 @@ function openProductModal(p, fromSuggestion) {
   if (p.image_url) {
     var img = document.createElement('img');
     img.loading = 'lazy';
-    img.src = p.image_url;
+    img.src = optimizeImgUrl(p.image_url, 400);
     img.alt = sanitize(p.name);
     // crossOrigin removed — was blocking on some Android
     img.loading = 'eager';
@@ -2846,9 +2854,10 @@ function openProductModal(p, fromSuggestion) {
       if (sp.image_url) {
         var mi = document.createElement('img');
         mi.loading = 'lazy';
-        mi.src = sp.image_url;
+        mi.src = optimizeImgUrl(sp.image_url, 200);
         mi.alt = sanitize(sp.name);
         mi.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        mi.onerror = function() { this.style.display='none'; this.parentElement.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2rem;'; this.parentElement.textContent = sp.emoji || '📦'; };
         mImg.appendChild(mi);
       } else {
         mImg.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2.5rem;';
@@ -2964,41 +2973,7 @@ function openProductModal(p, fromSuggestion) {
   // (bouton retour intégré dans la barre ← en haut)
 
   // ── Auto-scroll suggestions carrousels ──
-  if (window._sugScrollTimers) {
-    window._sugScrollTimers.forEach(function(id) { clearInterval(id); });
-  }
-  window._sugScrollTimers = [];
-
-  function _startSugScroll() {
-    var tracks = document.querySelectorAll('#product-modal-body .modal-swipe-track');
-    if (!tracks.length) return;
-    tracks.forEach(function(track) {
-      if (track.dataset.autoScroll) return; // already running
-      track.dataset.autoScroll = '1';
-      track.style.scrollSnapType = 'none'; // disable snap for smooth auto-scroll
-      var dir = 1;
-      var paused = false;
-      track.addEventListener('mouseenter', function() { paused = true; });
-      track.addEventListener('mouseleave', function() { paused = false; });
-      track.addEventListener('touchstart', function() {
-        paused = true;
-        setTimeout(function() { paused = false; }, 3000);
-      }, { passive: true });
-      var timer = setInterval(function() {
-        if (paused || track.dataset.arrowPause) return;
-        var max = track.scrollWidth - track.clientWidth;
-        if (max <= 5) return;
-        track.scrollLeft += dir * 1.5;
-        if (track.scrollLeft >= max - 2) dir = -1;
-        if (track.scrollLeft <= 1) dir = 1;
-      }, 25);
-      window._sugScrollTimers.push(timer);
-    });
-  }
-  // Try multiple times to catch late-rendered tracks
-  setTimeout(_startSugScroll, 800);
-  setTimeout(_startSugScroll, 2000);
-  setTimeout(_startSugScroll, 4000);
+  /* Auto-scroll fully removed */
 
   $('product-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -3211,7 +3186,7 @@ function renderCartBody(highlightId) {
     emojiBox.className = 'cart-item-emoji';
     if (item.product.image_url) {
       var img = document.createElement('img');
-      img.src = item.product.image_url;
+      img.src = optimizeImgUrl(item.product.image_url, 100);
       img.alt = item.product.name || '';
       emojiBox.appendChild(img);
     } else {
@@ -4073,7 +4048,7 @@ function renderFavs() {
     if (p.image_url) {
       var img = document.createElement('img');
       img.loading = 'lazy';
-      img.src = p.image_url;
+      img.src = optimizeImgUrl(p.image_url, 400);
       img.alt = sanitize(p.name);
       img.loading = 'eager';
       img.decoding = 'async';
@@ -4202,8 +4177,9 @@ function renderRows(list) {
       if (p.image_url) {
         var img = document.createElement('img');
         img.loading = 'lazy';
-        img.src = p.image_url;
+        img.src = optimizeImgUrl(p.image_url, 200);
         img.alt = sanitize(p.name);
+        img.onerror = function() { this.style.display='none'; this.parentElement.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:3rem;'; this.parentElement.textContent = productEmoji(p); };
         imgDiv.appendChild(img);
       } else {
         imgDiv.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:3rem;';
