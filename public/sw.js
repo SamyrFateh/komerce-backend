@@ -1,45 +1,70 @@
-/* Komerce Service Worker v2.0 — Stale-While-Revalidate + Offline Shell */
-const CACHE = 'komerce-v3';
+/* Komerce Service Worker v4.0 — Tolerant Install + Offline Boutique */
+const CACHE = 'komerce-v4';
+
+/* SHELL = vrais assets utilisés par la Boutique mobile */
 const SHELL = [
-  '/portal.html',
-  '/komerce-ui.css',
+  '/Komerce_Boutique.html',
   '/komerce-api.js',
+  '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
-/* Install: pre-cache shell */
+/* Autres pages — cachées au runtime, pas au SHELL */
+const RUNTIME_PAGES = [
+  '/portal.html',
+  '/komerce-ui.css',
+  '/Komerce_Hub.html',
+  '/Komerce_Relais.html',
+  '/Komerce_Admin.html',
+  '/Komerce_Pipeline.html'
+];
+
+/* Install: pre-cache SHELL — tolerant (un asset qui échoue ne casse pas tout) */
 self.addEventListener('install', function(e) {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(function(c) { return c.addAll(SHELL); })
-      .then(function() { return self.skipWaiting(); })
+    caches.open(CACHE).then(function(cache) {
+      return Promise.all(
+        SHELL.map(function(url) {
+          return cache.add(url).catch(function(err) {
+            console.warn('[SW] Échec cache:', url, err.message || err);
+          });
+        })
+      );
+    }).then(function() {
+      return self.skipWaiting();
+    })
   );
 });
 
-/* Activate: clean old caches */
+/* Activate: purge vieux caches (v1, v2, v3...) */
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.filter(function(k) { return k !== CACHE; })
-            .map(function(k) { return caches.delete(k); })
+            .map(function(k) {
+              console.log('[SW] Suppression ancien cache:', k);
+              return caches.delete(k);
+            })
       );
-    }).then(function() { return self.clients.claim(); })
+    }).then(function() {
+      return self.clients.claim();
+    })
   );
 });
 
-/* Fetch: stale-while-revalidate for HTML/CSS/JS, network-first for API */
+/* Fetch: stale-while-revalidate pour static, network-only pour API */
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
 
   /* Skip non-GET */
   if (e.request.method !== 'GET') return;
 
-  /* API calls: network only (never cache mutable data) */
+  /* API calls: network only (données mutables) */
   if (url.pathname.startsWith('/api/')) return;
 
-  /* Auth endpoints: never cache */
+  /* Auth endpoints: jamais en cache */
   if (url.pathname.indexOf('auth') !== -1) return;
 
   /* Static assets + HTML: stale-while-revalidate */
@@ -52,11 +77,17 @@ self.addEventListener('fetch', function(e) {
           }
           return response;
         }).catch(function() {
-          /* Offline: serve cached version */
-          return cached;
+          /* Offline: version cachée ou fallback Boutique */
+          if (cached) return cached;
+          /* Si c'est une page HTML, fallback vers Boutique cachée */
+          if (e.request.headers.get('accept') &&
+              e.request.headers.get('accept').indexOf('text/html') !== -1) {
+            return cache.match('/Komerce_Boutique.html');
+          }
+          return undefined;
         });
 
-        /* Return cached immediately, update in background */
+        /* Retourne le cache immédiatement, met à jour en arrière-plan */
         return cached || fetchPromise;
       });
     })
