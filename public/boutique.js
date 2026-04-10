@@ -9,7 +9,7 @@
 var _firstLoad = true;
 setTimeout(function(){ _firstLoad = false; }, 2000);
 
- safe innerHTML wrapper (Sprint 4b — S6 XSS fix) ──
+/* ── safe innerHTML wrapper (Sprint 4b — S6 XSS fix) ── */
 var _dpConfig = { ADD_ATTR: ['style'], ADD_TAGS: ['img'], ALLOW_DATA_ATTR: true };
 function safeHTML(el, h) { el.innerHTML = (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
 function sanitize(h) { return (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(h, _dpConfig) : h; }
