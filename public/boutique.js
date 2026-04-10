@@ -873,16 +873,18 @@ function openProductModal(p, fromSuggestion) {
   availTag.textContent = avail.icon + ' ' + avail.label;
   info.appendChild(availTag);
 
-  top.appendChild(info);
-  body.appendChild(top);
-
-  /* Description */
+  /* Description — inside info block, next to image */
   if (p.description) {
     var desc = document.createElement('p');
     desc.className = 'pd-desc';
-    desc.textContent = p.description;
-    body.appendChild(desc);
+    desc.style.margin = '6px 0 0';
+    var shortDesc = p.description.length > 80 ? p.description.substring(0, 80) + '…' : p.description;
+    desc.textContent = shortDesc;
+    info.appendChild(desc);
   }
+
+  top.appendChild(info);
+  body.appendChild(top);
 
   /* ── Share row ── */
   var shareRow = document.createElement('div');

@@ -1537,38 +1537,51 @@ body.modal-open .mobile-tabs {
   }
 
   .pd-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    margin-bottom: 0;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
   }
 
   .pd-emoji {
-    width: calc(100% + 40px);
-    max-width: none;
+    width: 42%;
+    min-width: 130px;
+    max-width: 180px;
     height: auto;
     aspect-ratio: 3/4;
-    margin: 0 -20px;
-    border-radius: 0;
+    border-radius: 12px;
     background: #f8f6f3;
+    flex-shrink: 0;
   }
 
   .pd-emoji img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    padding: 0;
+    padding: 4px;
   }
 
   .pd-info {
-    text-align: center;
-    width: 100%;
-    padding: 16px 0 8px;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    padding: 0;
   }
 
-  .pd-cat { font-size: 0.72rem; }
-  .pd-name { font-size: 1.05rem; }
-  .pd-desc { font-size: 0.88rem; text-align: left; }
+  .pd-cat { font-size: 0.68rem; margin-bottom: 2px; }
+  .pd-name { font-size: 0.95rem; line-height: 1.25; }
+  .pd-price { font-size: 1.1rem !important; }
+  .pd-price-conv { font-size: 0.72rem !important; margin-top: 0 !important; }
+  .pd-desc { font-size: 0.82rem; text-align: left; margin-top: 6px; line-height: 1.35; }
+
+  /* Share + trust compact */
+  .pd-share-row {
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .pd-share-btn { font-size: 0.72rem; padding: 6px 10px; }
+  .pd-trust { font-size: 0.68rem; gap: 6px; margin-top: 6px; padding: 6px 0; }
 
   .pd-controls {
     position: fixed;
@@ -1620,11 +1633,15 @@ body.modal-open .mobile-tabs {
 
 @media (max-width: 480px) {
   .pd-emoji {
-    aspect-ratio: 3/2;
+    width: 38%;
+    min-width: 110px;
+    max-width: 150px;
+    aspect-ratio: 3/4;
   }
 
-  .pd-info { padding: 12px 0 6px; }
-  .pd-name { font-size: 0.95rem; }
+  .pd-info { padding: 0; }
+  .pd-name { font-size: 0.88rem; }
+  .pd-cat { font-size: 0.65rem; }
 
   .pd-controls {
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
