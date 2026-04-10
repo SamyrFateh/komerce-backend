@@ -905,6 +905,10 @@ function openProductModal(p, fromSuggestion) {
   var controls = document.createElement('div');
   controls.className = 'pd-controls';
 
+  /* ── Qty live — modifie le panier en temps réel ── */
+  var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
+  var _pdQtyLive = _inCart ? _inCart.qty : 0;
+
   var qtyWrap = document.createElement('div');
   qtyWrap.className = 'pd-qty-wrap';
   var minusBtn = document.createElement('button');
@@ -912,33 +916,56 @@ function openProductModal(p, fromSuggestion) {
   minusBtn.textContent = '−';
   var qtyVal = document.createElement('span');
   qtyVal.className = 'qty-val';
-  qtyVal.textContent = '1';
+  qtyVal.textContent = _pdQtyLive;
   var plusBtn = document.createElement('button');
   plusBtn.className = 'qty-btn';
   plusBtn.textContent = '+';
-  minusBtn.addEventListener('click', function() { if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; } });
-  plusBtn.addEventListener('click', function() { _pdQty++; qtyVal.textContent = _pdQty; });
+
+  function _updateCartLive() {
+    qtyVal.textContent = _pdQtyLive;
+    if (_pdQtyLive === 0) {
+      /* Retirer du panier */
+      _cart = _cart.filter(function(ci) { return String(ci.product.id) !== String(p.id); });
+      saveCart();
+      updateBadge();
+      qtyVal.style.color = '';
+      minusBtn.style.opacity = '0.3';
+    } else {
+      var existing = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
+      if (existing) {
+        existing.qty = _pdQtyLive;
+      } else {
+        _cart.push({ product: p, qty: _pdQtyLive });
+      }
+      saveCart();
+      updateBadge();
+      qtyVal.style.color = '#16a34a';
+      minusBtn.style.opacity = '1';
+    }
+    if (typeof markAllCartButtons === 'function') markAllCartButtons();
+  }
+
+  minusBtn.addEventListener('click', function() {
+    if (_pdQtyLive > 0) { _pdQtyLive--; _updateCartLive(); }
+  });
+  plusBtn.addEventListener('click', function() {
+    _pdQtyLive++; _updateCartLive();
+  });
+  if (_pdQtyLive === 0) minusBtn.style.opacity = '0.3';
+  else qtyVal.style.color = '#16a34a';
+
   qtyWrap.appendChild(minusBtn);
   qtyWrap.appendChild(qtyVal);
   qtyWrap.appendChild(plusBtn);
   controls.appendChild(qtyWrap);
 
-  var addBtn = document.createElement('button');
-  addBtn.className = 'pd-add-round';
-  addBtn.innerHTML = '<img src="/images/panier_africain_sm.png" alt="panier">';
-  addBtn.addEventListener('click', function() {
-    addToCart(p, _pdQty, addBtn);
-    setTimeout(function() { closeProductModal(); }, 500);
-  });
-  controls.appendChild(addBtn);
-  /* ── Déjà dans le panier? ── */
-  var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
-  if (_inCart) {
-    var cartNote = document.createElement('span');
-    cartNote.className = 'pd-cart-note';
-    cartNote.textContent = '✓ ' + _inCart.qty;
-    controls.appendChild(cartNote);
-  }
+  /* ── Panier décoratif (pas de bouton séparé, le +/- fait tout) ── */
+  var basketIcon = document.createElement('img');
+  basketIcon.src = '/images/panier_africain_sm.png';
+  basketIcon.alt = 'panier';
+  basketIcon.style.cssText = 'width:36px;height:36px;border-radius:50%;object-fit:cover;';
+  controls.appendChild(basketIcon);
+
   body.appendChild(controls);
 
   /* ── Look Board / Suggestions — piloté par SUGGESTION_MAP ── */
