@@ -2334,6 +2334,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     background: var(--accent) !important;
     transform: scale(1.1) !important;
   }
+  .desktop-add-overlay { opacity: 1 !important; }
 
   /* Card body — cleaner spacing */
   .card-body {
@@ -3370,7 +3371,7 @@ function _renderMoreProducts(list, track) {
 
     var addOvl = document.createElement('button');
     addOvl.className = 'card-add-overlay';
-    addOvl.textContent = '+';
+    addOvl.textContent = '🛒';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -5745,7 +5746,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Quick-add button
       var addBtn = document.createElement('div');
       addBtn.className = 'desktop-add-overlay';
-      addBtn.innerHTML = '+';
+      addBtn.innerHTML = '🛒';
       addBtn.title = 'Ajouter au panier';
       addBtn.onclick = function(e) {
         e.stopPropagation();
@@ -5754,9 +5755,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var p = window._allProducts.find(function(x) { return String(x.id) === String(pid); });
         if (p) {
           addToCart(p, 1);
-          addBtn.innerHTML = '✓';
+          addBtn.innerHTML = '✅';
           addBtn.style.background = '#22c55e';
-          setTimeout(function() { addBtn.innerHTML = '+'; addBtn.style.background = ''; }, 1200);
+          setTimeout(function() { addBtn.innerHTML = '🛒'; addBtn.style.background = ''; }, 1200);
         }
       };
       imgWrap.appendChild(addBtn);
