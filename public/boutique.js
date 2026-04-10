@@ -966,150 +966,74 @@ function openProductModal(p, fromSuggestion) {
   // Overlay dismantled — mannequin désactivé
 
   /* ── Fonction swipe carousel natif pour la modale ── */
-  function makeSwipeSection(items, label, borderColor) {
-    var section = document.createElement('div');
-    section.style.cssText = 'margin-top:20px;margin-bottom:8px;';
+  // ── Suggestions produits — grille statique, même catégorie uniquement ──
+  var _similar = _products
+    .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat && !!x.image_url; })
+    .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
+    .slice(0, 3);
 
-    var title = document.createElement('div');
-    title.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--dark);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ' + borderColor + ';display:inline-block;';
-    title.textContent = label;
-    section.appendChild(title);
+  if (_similar.length) {
+    var sugSection = document.createElement('div');
+    sugSection.className = 'pd-suggestions';
 
-    var track = document.createElement('div');
-    track.className = 'modal-swipe-track';
+    var sugTitle = document.createElement('div');
+    sugTitle.className = 'pd-suggestions-title';
+    sugTitle.textContent = 'Dans la même collection';
+    sugSection.appendChild(sugTitle);
 
-    items.forEach(function(sp) {
+    var sugGrid = document.createElement('div');
+    sugGrid.className = 'pd-suggestions-grid';
+
+    _similar.forEach(function(sp) {
       var card = document.createElement('div');
-      card.style.cssText = 'flex:0 0 155px;min-width:155px;background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;scroll-snap-align:start;transition:transform 0.15s;';
+      card.className = 'pd-sug-card';
       card.addEventListener('click', function() { openProductModal(sp, true); });
-      card.addEventListener('touchstart', function() { card.style.transform='scale(0.97)'; }, {passive:true});
-      card.addEventListener('touchend', function() { card.style.transform=''; }, {passive:true});
 
-      var mImg = document.createElement('div');
-      mImg.style.cssText = 'height:100px;overflow:hidden;background:var(--primary-light);';
-      if (sp.image_url) {
-        var mi = document.createElement('img');
-        mi.loading = 'lazy';
-        mi.src = optimizeImgUrl(sp.image_url, 200);
-        mi.alt = sanitize(sp.name);
-        mi.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-        mi.onerror = function() { this.style.display='none'; this.parentElement.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2rem;'; this.parentElement.textContent = sp.emoji || '📦'; };
-        mImg.appendChild(mi);
-      } else {
-        mImg.style.cssText += 'display:flex;align-items:center;justify-content:center;font-size:2.5rem;';
-        mImg.textContent = productEmoji(sp);
-      }
-      card.appendChild(mImg);
+      var imgEl = document.createElement('img');
+      imgEl.src = optimizeImgUrl(sp.image_url, 200);
+      imgEl.alt = sanitize(sp.name);
+      imgEl.loading = 'lazy';
+      imgEl.className = 'pd-sug-img';
+      imgEl.onerror = function() { this.style.display='none'; };
+      card.appendChild(imgEl);
 
-      var mBody = document.createElement('div');
-      mBody.style.cssText = 'padding:7px 8px;';
-      var mName = document.createElement('div');
-      mName.style.cssText = 'font-size:0.73rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;';
-      mName.textContent = sp.name;
-      mBody.appendChild(mName);
-      var mPrice = document.createElement('div');
-      mPrice.style.cssText = 'font-size:0.78rem;color:var(--primary);font-weight:700;margin-bottom:4px;';
-      mPrice.textContent = fmt(sp.price_kmf || 0, 'KMF');
-      mBody.appendChild(mPrice);
-      var mAdd = document.createElement('button');
-      mAdd.style.cssText = 'width:100%;padding:5px;background:' + (sp.is_promo ? 'var(--accent);color:#1e2a38' : 'var(--primary);color:white') + ';border:none;border-radius:6px;font-size:0.7rem;font-weight:700;cursor:pointer;';
-      mAdd.textContent = '+ Panier';
-      mAdd.addEventListener('click', function(e) {
-        e.stopPropagation();
-        addToCart(sp, 1, mAdd);
-        toast(sp.name + ' ajouté', 'success');
+      var info = document.createElement('div');
+      info.className = 'pd-sug-info';
+      var sName = document.createElement('div');
+      sName.className = 'pd-sug-name';
+      sName.textContent = sp.name;
+      info.appendChild(sName);
+      var sPrice = document.createElement('div');
+      sPrice.className = 'pd-sug-price';
+      sPrice.textContent = fmt(sp.price_kmf || 0, 'KMF');
+      info.appendChild(sPrice);
+      card.appendChild(info);
+
+      sugGrid.appendChild(card);
+    });
+
+    sugSection.appendChild(sugGrid);
+
+    // Bouton "Voir la collection"
+    var seeAll = document.createElement('button');
+    seeAll.className = 'pd-see-collection';
+    seeAll.textContent = 'Voir toute la collection →';
+    seeAll.addEventListener('click', function() {
+      closeProductModal();
+      // Activer le filtre catégorie correspondant
+      var circles = document.querySelectorAll('.cat-circle');
+      circles.forEach(function(c) {
+        var cCat = (c.getAttribute('data-cat') || '').toLowerCase();
+        c.classList.toggle('active', cCat === _pCat);
       });
-      mBody.appendChild(mAdd);
-      card.appendChild(mBody);
-      track.appendChild(card);
+      var filtered = _products.filter(function(x) { return (x.category||'').toLowerCase() === _pCat; });
+      renderProducts(filtered);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+    sugSection.appendChild(seeAll);
 
-    // Wrapper relatif pour positionner les flèches
-    var wrap = document.createElement('div');
-    wrap.className = 'swipe-wrap';
-
-    // Flèches
-    var arrowL = document.createElement('button');
-    arrowL.className = 'swipe-arrow swipe-arrow-left hidden';
-    arrowL.innerHTML = '&#8249;';
-    arrowL.title = 'Précédent';
-
-    var arrowR = document.createElement('button');
-    arrowR.className = 'swipe-arrow swipe-arrow-right';
-    arrowR.innerHTML = '&#8250;';
-    arrowR.title = 'Suivant';
-
-    function updateArrows() {
-      arrowL.classList.toggle('hidden', track.scrollLeft <= 4);
-      arrowR.classList.toggle('hidden', track.scrollLeft >= track.scrollWidth - track.clientWidth - 4);
-    }
-
-    arrowL.addEventListener('click', function(e) {
-      e.stopPropagation();
-      track.dataset.arrowPause = '1';
-      track.scrollBy({ left: -280, behavior: 'smooth' });
-      setTimeout(function() { delete track.dataset.arrowPause; }, 1500);
-    });
-    arrowR.addEventListener('click', function(e) {
-      e.stopPropagation();
-      track.dataset.arrowPause = '1';
-      track.scrollBy({ left: 280, behavior: 'smooth' });
-      setTimeout(function() { delete track.dataset.arrowPause; }, 1500);
-    });
-    track.addEventListener('scroll', updateArrows, { passive: true });
-
-    // Masquer flèche droite si contenu ne déborde pas
-    setTimeout(function() {
-      if (track.scrollWidth <= track.clientWidth) {
-        arrowR.classList.add('hidden');
-      }
-    }, 80);
-
-    // Hint doigt swipe (mobile)
-    var hint = document.createElement('div');
-    hint.className = 'swipe-hint';
-    hint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Glisser pour voir plus';
-
-    wrap.appendChild(arrowL);
-    wrap.appendChild(track);
-    wrap.appendChild(arrowR);
-    section.appendChild(wrap);
-    section.appendChild(hint);
-    return section;
+    body.appendChild(sugSection);
   }
-
-  // ── Suggestions produits — piloté par SUGGESTION_MAP ────────
-  // _pCat et _mapEntry déjà définis plus haut
-
-  // Similaires : même catégorie, prix proche
-  if (_mapEntry.similaires) {
-    var _similar = _products
-      .filter(function(x) { return x.id !== p.id && (x.category||'').toLowerCase() === _pCat; })
-      .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
-      .slice(0, 8);
-    if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Vous aimerez aussi ✨', '#fef3c7'));
-  }
-
-  // Complémentaires : catégories croisées définies dans compCategories
-  if (_mapEntry.complementaires && _mapEntry.compCategories.length) {
-    var _compProds = _products
-      .filter(function(x) {
-        if (x.id === p.id) return false;
-        var xCat = (x.category||'').toLowerCase();
-        // Exclure les produits de la même catégorie (déjà dans similaires)
-        if (xCat === _pCat) return false;
-        return _mapEntry.compCategories.indexOf(xCat) >= 0;
-      })
-      .sort(function() { return 0.5 - Math.random(); })
-      .slice(0, 8);
-    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Complétez votre style 🌸', '#fff1ec'));
-  }
-
-  
-  // (bouton retour intégré dans la barre ← en haut)
-
-  // ── Auto-scroll suggestions carrousels ──
-  /* Auto-scroll fully removed */
 
   $('product-modal').classList.add('open');
   document.body.style.overflow = 'hidden';

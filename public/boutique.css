@@ -2473,60 +2473,91 @@ body.modal-open .mobile-tabs {
   background: var(--accent);
 }
 
-/* Modal suggestion carousels */
-.modal-swipe-track {
-  display: flex;
+/* Modal suggestions — static grid */
+.pd-suggestions {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pd-suggestions-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 12px;
+}
+
+.pd-suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 6px;
 }
 
-.modal-swipe-track::-webkit-scrollbar {
-  display: none;
-}
-
-.swipe-wrap {
-  position: relative;
-}
-
-.swipe-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.92);
+.pd-sug-card {
+  background: var(--card);
   border: 1px solid var(--border);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  border-radius: 10px;
+  overflow: hidden;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.pd-sug-card:active {
+  transform: scale(0.96);
+}
+
+.pd-sug-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  background: var(--primary-light);
+}
+
+.pd-sug-info {
+  padding: 6px 8px 8px;
+}
+
+.pd-sug-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
   color: var(--text);
-  z-index: 2;
-  transition: opacity 0.2s, transform 0.15s;
 }
 
-.swipe-arrow:active {
-  transform: translateY(-50%) scale(0.9);
+.pd-sug-price {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
 }
 
-.swipe-arrow.hidden {
-  opacity: 0;
-  pointer-events: none;
+.pd-see-collection {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  background: transparent;
+  border: 1.5px solid var(--primary);
+  border-radius: 10px;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
 }
 
-.swipe-arrow-left {
-  left: -6px;
+.pd-see-collection:hover {
+  background: var(--primary);
+  color: white;
 }
 
-.swipe-arrow-right {
-  right: -6px;
+.pd-see-collection:active {
+  transform: scale(0.97);
 }
 
 .swipe-hint {
