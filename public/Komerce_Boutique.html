@@ -932,7 +932,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .modal-box {
   background: var(--white); border-radius: 14px;
   max-width: 560px; width: 100%; max-height: 90vh;
-  overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+  overflow: hidden; overflow-x: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
   animation: fadeInUp 0.35s;
   display: flex; flex-direction: column;
 }
@@ -951,7 +951,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 .modal-close:hover { background: var(--border); transform: scale(1.1); }
-.modal-body { padding: 24px; flex: 1; overflow-y: auto; }
+.modal-body { padding: 24px; flex: 1; overflow-y: auto; overflow-x: hidden; }
 
 /* ────────────────────────────────────────
    PRODUCT DETAIL MODAL
@@ -1786,7 +1786,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .card-fav-overlay {
     display: flex !important;
     position: absolute !important;
-    bottom: 8px !important; right: 8px !important;
+    top: 8px !important; right: 8px !important;
     width: 28px !important; height: 28px !important;
     border-radius: 50% !important;
     background: rgba(255,255,255,0.92) !important;
@@ -1807,21 +1807,24 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .card-add-overlay {
     display: flex !important;
     position: absolute !important;
-    bottom: 8px !important; left: 8px !important;
-    width: 28px !important; height: 28px !important;
+    bottom: 8px !important; right: 8px !important;
+    width: 32px !important; height: 32px !important;
     border-radius: 50% !important;
-    background: var(--primary) !important;
-    color: white !important;
-    border: none !important;
+    background: rgba(255,255,255,0.92) !important;
+    border: 2px solid #D4A017 !important;
     align-items: center !important; justify-content: center !important;
-    font-size: 1.2rem !important;
-    font-weight: 600 !important;
-    line-height: 1 !important;
+    padding: 0 !important;
     cursor: pointer !important;
-    box-shadow: 0 2px 8px rgba(180,83,9,0.3) !important;
+    box-shadow: 0 2px 8px rgba(180,83,9,0.2) !important;
     z-index: 2 !important;
     -webkit-tap-highlight-color: transparent !important;
     transition: transform 0.12s !important;
+    overflow: hidden !important;
+  }
+  .card-add-overlay img {
+    width: 22px !important; height: 22px !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
   }
   .card-add-overlay:active { transform: scale(0.85) !important; }
 
@@ -1905,11 +1908,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     overflow: visible !important;
   }
   /* ── Reco / discovery mobile overrides ── */
-  .reco-section { padding:0 12px; }
-  .reco-grid { gap:6px; }
+  .reco-section { padding:0 12px; max-width:100%; overflow:hidden; box-sizing:border-box; }
+  .reco-grid { gap:6px; grid-template-columns:1fr 1fr; max-width:100%; }
   .reco-item { padding:6px; }
   .reco-item-img { width:44px;height:44px; }
-  .discovery-grid { max-height:350px; }
+  .discovery-grid { max-height:350px; max-width:100%; overflow-x:hidden; }
   .discovery-card img { aspect-ratio:1; }
   .sticky-cta { padding:8px 12px 6px; }
   .sticky-cta-row { gap:8px; }
@@ -1942,6 +1945,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     align-items: flex-start !important;
     gap: 12px !important;
     padding: 12px 14px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
   .pd-emoji {
     flex: 0 0 140px !important;
@@ -2266,8 +2272,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     transition: opacity 0.25s, transform 0.2s !important;
     backdrop-filter: blur(4px) !important;
   }
-  .product-card:hover .desktop-fav-overlay,
-  .product-card:hover .desktop-add-overlay {
+  .product-card:hover .desktop-fav-overlay {
     opacity: 1 !important;
   }
 
@@ -2287,16 +2292,22 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
   .desktop-add-overlay {
     bottom: 10px !important; right: 10px !important;
-    width: 38px !important; height: 38px !important;
-    background: var(--primary) !important;
-    color: white !important;
-    font-size: 1.2rem !important;
-    font-weight: 700 !important;
-    box-shadow: 0 3px 12px rgba(180,83,9,0.3) !important;
+    width: 40px !important; height: 40px !important;
+    background: rgba(255,255,255,0.92) !important;
+    border: 2px solid #D4A017 !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 8px rgba(180,83,9,0.2) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .desktop-add-overlay img {
+    width: 26px !important; height: 26px !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
   }
   .desktop-add-overlay:hover {
-    background: var(--accent) !important;
     transform: scale(1.1) !important;
+    box-shadow: 0 4px 16px rgba(212,160,23,0.4) !important;
   }
 
   /* Card body — cleaner spacing */
@@ -3334,7 +3345,11 @@ function _renderMoreProducts(list, track) {
 
     var addOvl = document.createElement('button');
     addOvl.className = 'card-add-overlay';
-    addOvl.textContent = '+';
+    var _addImg = document.createElement('img');
+    _addImg.src = '/images/avatar_panier.png';
+    _addImg.alt = 'Panier';
+    _addImg.width = 22; _addImg.height = 22;
+    addOvl.appendChild(_addImg);
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -5705,7 +5720,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Quick-add button
       var addBtn = document.createElement('div');
       addBtn.className = 'desktop-add-overlay';
-      addBtn.innerHTML = '+';
+      addBtn.innerHTML = '<img src="/images/avatar_panier.png" alt="Panier" width="26" height="26">';
       addBtn.title = 'Ajouter au panier';
       addBtn.onclick = function(e) {
         e.stopPropagation();
@@ -5714,9 +5729,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var p = window._allProducts.find(function(x) { return String(x.id) === String(pid); });
         if (p) {
           addToCart(p, 1);
-          addBtn.innerHTML = '✓';
-          addBtn.style.background = '#22c55e';
-          setTimeout(function() { addBtn.innerHTML = '+'; addBtn.style.background = ''; }, 1200);
+          addBtn.innerHTML = '✅';
+          setTimeout(function() { addBtn.innerHTML = '<img src="/images/avatar_panier.png" alt="Panier" width="26" height="26">'; }, 1200);
         }
       };
       imgWrap.appendChild(addBtn);
