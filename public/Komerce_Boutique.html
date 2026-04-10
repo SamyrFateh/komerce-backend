@@ -68,7 +68,7 @@
 }
 /* ── Vue rangées swipeables ── */
 .cat-rows-view { padding-bottom: 32px; }
-.cat-row-section { margin-bottom: 8px; }
+.cat-row-section { margin-bottom: 4px; }
 .cat-row-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 10px; }
 .cat-row-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; color: var(--dark); }
 .cat-row-more { font-size: 0.8rem; color: var(--primary); font-weight: 600; cursor: pointer; background: none; border: none; }
@@ -147,7 +147,7 @@
 .cat-scroll-right { right: 2px; }
 .cat-circles::-webkit-scrollbar { display: none; }
 .cat-circles {
-  display: flex; align-items: center;
+  display: flex; align-items: center; justify-content: center;
   gap: 12px; padding: 2px 8px;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   scrollbar-width: none; flex-wrap: nowrap;
@@ -1836,6 +1836,21 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     margin: 0 !important;
     animation: mobileSlideUp 0.3s ease-out !important;
   }
+  /* ── Description — compact on mobile ── */
+  .pd-desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    font-size: 0.82rem !important;
+    margin-bottom: 10px !important;
+    line-height: 1.4 !important;
+    cursor: pointer !important;
+  }
+  .pd-desc.expanded {
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+  }
   @keyframes mobileSlideUp {
     from { transform: translateY(40px); opacity: 0.8; }
     to { transform: translateY(0); opacity: 1; }
@@ -2059,10 +2074,12 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     padding: 14px 16px 8px !important;
     background: linear-gradient(135deg, #fdf8f0 0%, #faf6ee 100%) !important;
   }
-  .hero-minimal { padding: 4px 16px 0 !important; }
-  #hero .hero-title { font-size: 1.3rem !important; margin-bottom: 2px !important; }
-  .hero-sub { font-size: 0.8rem !important; }
-  .hero-proverbe { font-size: 0.7rem !important; margin-top: 2px !important; }
+  /* Hero = compact single-line strip */
+  #hero { padding: 6px 0 4px !important; min-height: auto !important; }
+  .hero-minimal { padding: 2px 16px 0 !important; }
+  #hero .hero-title { font-size: 1rem !important; margin-bottom: 0 !important; font-weight: 700 !important; }
+  .hero-sub { display: none !important; }
+  .hero-proverbe { display: none !important; }
 
   /* ── Nav — polished sticky bar ── */
   #main-nav {
@@ -2090,12 +2107,12 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
   /* ── Category circles — larger, polished ── */
   .cat-circles-wrap {
-    padding: 16px 28px 14px !important;
+    padding: 10px 20px 8px !important;
     background: white !important;
     border-bottom: 1px solid #f1f5f9 !important;
     box-shadow: none !important;
   }
-  .cat-circles { gap: 16px !important; }
+  .cat-circles { gap: 16px !important; justify-content: center !important; flex-wrap: wrap !important; }
   .cat-circle-img {
     width: 72px !important; height: 72px !important;
     border: 2px solid #f1f5f9 !important;
@@ -2259,7 +2276,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-top {
     display: flex !important;
     flex-direction: row !important;
-    gap: 28px !important;
+    gap: 20px !important;
     padding: 0 !important;
     align-items: flex-start !important;
   }
@@ -2278,6 +2295,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-info {
     flex: 1 !important;
     min-width: 0 !important;
+    max-height: 340px !important;
+    overflow-y: auto !important;
     padding-top: 8px !important;
     text-align: left !important;
   }
@@ -2297,7 +2316,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-desc {
     font-size: 0.88rem !important;
     line-height: 1.65 !important;
-    margin-bottom: 24px !important;
+    margin-bottom: 10px !important;
     color: #64748b !important;
   }
   .pd-controls {
@@ -3575,7 +3594,6 @@ function openProductModal(p, fromSuggestion) {
   emojiBox.style.position = 'relative';
   if (p.image_url) {
     var img = document.createElement('img');
-    img.loading = 'lazy';
     img.src = optimizeImgUrl(p.image_url, 400);
     img.alt = sanitize(p.name);
     // crossOrigin removed — was blocking on some Android
@@ -3650,7 +3668,7 @@ function openProductModal(p, fromSuggestion) {
     var desc = document.createElement('p');
     desc.className = 'pd-desc';
     desc.textContent = p.description;
-    body.appendChild(desc);
+    info.appendChild(desc);
   }
 
   /* ── Contrôles qty + ajouter ── */
@@ -5300,6 +5318,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('product-modal').addEventListener('click', function(e) {
     if (e.target === $('product-modal')) closeProductModal();
+  });
+  /* ── Description expand/collapse on mobile ── */
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('pd-desc')) {
+      e.target.classList.toggle('expanded');
+    }
   });
   $('order-modal').addEventListener('click', function(e) {
     if (e.target === $('order-modal')) closeOrderModal();
