@@ -1,8 +1,11 @@
-/* Komerce Service Worker v7.0 — Cache bust + Cross-origin safe + Network-First HTML */
-const CACHE = 'komerce-v8';
+/* Komerce Service Worker v9.0 — Refacto tri-fichiers (HTML + CSS + JS) */
+const CACHE = 'komerce-v9';
 
+/* Fichiers à pré-cacher au install */
 const SHELL = [
-  '/boutique.html',
+  '/Komerce_Boutique.html',
+  '/boutique.css',
+  '/boutique.js',
   '/manifest.json'
 ];
 
@@ -13,7 +16,7 @@ self.addEventListener('install', (e) => {
       Promise.all(
         SHELL.map((url) =>
           cache.add(url).catch((err) => {
-            console.warn('[SW v7] Cache skip:', url, err.message || err);
+            console.warn('[SW v9] Cache skip:', url, err.message || err);
           })
         )
       )
@@ -21,13 +24,13 @@ self.addEventListener('install', (e) => {
   );
 });
 
-/* ── Activate: purge ALL old caches ── */
+/* ── Activate: purge toutes les anciennes caches ── */
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys.filter((k) => k !== CACHE).map((k) => {
-          console.log('[SW v7] Purging old cache:', k);
+          console.log('[SW v9] Purging old cache:', k);
           return caches.delete(k);
         })
       )
@@ -42,14 +45,14 @@ self.addEventListener('fetch', (e) => {
   /* Skip non-GET */
   if (request.method !== 'GET') return;
 
-  /* ★ CRITICAL: Skip cross-origin requests entirely ★ */
+  /* Skip cross-origin (Google Fonts, Cloudinary, CDN…) */
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  /* Skip API requests — always network, no caching */
+  /* API → réseau pur, jamais de cache */
   if (url.pathname.startsWith('/api/')) return;
 
-  /* HTML pages → NETWORK-FIRST (always latest, cache = offline fallback) */
+  /* HTML → Network-first (toujours la version la plus récente) */
   const isHTML = request.mode === 'navigate'
     || url.pathname === '/'
     || url.pathname.endsWith('.html')
@@ -60,15 +63,14 @@ self.addEventListener('fetch', (e) => {
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, clone).catch(() => {}));
+            caches.open(CACHE).then((c) => c.put(request, response.clone()).catch(() => {}));
           }
           return response;
         })
         .catch(() =>
           caches.match(request)
-            .then((cached) => cached || caches.match('/boutique.html'))
-            .then((fallback) => fallback || new Response('Hors ligne', {
+            .then((cached) => cached || caches.match('/Komerce_Boutique.html'))
+            .then((fallback) => fallback || new Response('<h1>Hors ligne</h1>', {
               status: 503,
               headers: { 'Content-Type': 'text/html; charset=utf-8' }
             }))
@@ -77,14 +79,13 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* JS/CSS → NETWORK-FIRST too (ensures fresh code after deploy) */
+  /* JS / CSS → Network-first (déploiements fréquents, toujours fresh) */
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     e.respondWith(
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, clone).catch(() => {}));
+            caches.open(CACHE).then((c) => c.put(request, response.clone()).catch(() => {}));
           }
           return response;
         })
@@ -93,15 +94,14 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* Other same-origin static assets → CACHE-FIRST */
+  /* Autres assets statiques (images, icons…) → Cache-first */
   e.respondWith(
     caches.match(request)
       .then((cached) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, clone).catch(() => {}));
+            caches.open(CACHE).then((c) => c.put(request, response.clone()).catch(() => {}));
           }
           return response;
         });
