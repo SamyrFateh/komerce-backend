@@ -1,29 +1,31 @@
 /**
- * KOMERCE — Order ↔ Parcel Link Rules
+ * KOMERCE — Order ↔ Parcel Link Rules — v2.0 DEPRECATED
  *
- * Les deux cycles sont INDÉPENDANTS :
- *   order.status  = cycle business   (confirmed → ordered → preparation → in_transit → available → collected | cancelled)
- *   parcel.status = cycle logistique (draft → preparation → shipped → in_transit → available → collected | cancelled)
+ * ⚠️ DEPRECATED: This module is kept for backward compatibility only.
+ * All order status transitions now go through services/order-status-machine.js
+ * (architectural decisions D1/D2).
  *
- * Seuls les événements définis ici peuvent provoquer une transition sur orders.status.
- * Aucune déduction automatique hors de ces règles.
+ * The logic previously in R1/R3 is now handled by:
+ *   - utils/parcelSync.js → computeOrderStatus() → machine
+ *   - The machine's forward-only transition logic
  *
- * Règles autorisées :
- *   R1 — Tous les colis actifs = collected
- *        → orders.status = 'collected' (livraison totale confirmée)
- *
- *   R2 — Tous les colis = cancelled (même les actifs)
- *        → orders.computed_status = 'parcels_all_cancelled' (signal, pas de changement du status business)
- *
- *   R3 — Premier colis expédié (shipped | in_transit | available | collected)
- *        → orders.status = 'in_transit', uniquement si l'ordre est encore en ['confirmed', 'ordered', 'preparation']
+ * R2 (all parcels cancelled) is preserved as an observation signal.
+ */
+
+'use strict';
+
+const { transitionOrderStatus } = require('../services/order-status-machine');
+const { computeOrderStatus } = require('./parcels');
+
+/**
+ * Evaluate link rules between order and its parcels.
+ * Now delegates to the status machine for any status changes.
  *
  * @param {string} order_id
- * @param {object} db - instance pg pool
+ * @param {object} db - pg pool instance
  * @returns {string|null} code de la règle déclenchée, ou null
  */
 async function evaluateOrderParcelLinkRules(order_id, db) {
-  // Snapshot complet des colis de la commande
   const { rows: allParcels } = await db.query(
     'SELECT status FROM parcels WHERE order_id = $1',
     [order_id]
@@ -31,7 +33,6 @@ async function evaluateOrderParcelLinkRules(order_id, db) {
 
   if (!allParcels.length) return null;
 
-  // Snapshot de la commande
   const { rows: orderRows } = await db.query(
     'SELECT id, status FROM orders WHERE id = $1',
     [order_id]
@@ -39,43 +40,30 @@ async function evaluateOrderParcelLinkRules(order_id, db) {
   if (!orderRows.length) return null;
   const order = orderRows[0];
 
-  const activeParcels = allParcels.filter(p => p.status !== 'cancelled');
+  // Compute the aggregated status from parcels
+  const computedStatus = computeOrderStatus(allParcels);
 
-  // ── R1 — Tous les colis actifs sont collectés ──────────────────────────
-  if (activeParcels.length > 0 && activeParcels.every(p => p.status === 'collected')) {
-    await db.query(
-      `UPDATE orders
-          SET status = 'collected', computed_status = 'collected', updated_at = NOW()
-        WHERE id = $1`,
-      [order_id]
-    );
-    return 'R1_ALL_COLLECTED';
+  // ── R1/R3 — Delegate to machine ──────────────────────────────────────
+  // The machine handles forward-only transitions.
+  if (computedStatus !== order.status) {
+    const result = await transitionOrderStatus({
+      orderId: order_id,
+      newStatus: computedStatus,
+      actor: { id: null, role: 'system' },
+      source: 'system',
+      note: `[linkRules] computed=${computedStatus}`,
+    });
+
+    if (result.success && !result.noop) {
+      if (computedStatus === 'collected') return 'R1_ALL_COLLECTED';
+      return 'R3_STATUS_ADVANCED';
+    }
   }
 
-  // ── R2 — Tous les colis (y compris actifs) sont annulés ───────────────
+  // ── R2 — All parcels cancelled (observation signal) ───────────────────
   if (allParcels.every(p => p.status === 'cancelled') && order.status !== 'collected') {
-    await db.query(
-      `UPDATE orders
-          SET computed_status = 'parcels_all_cancelled', updated_at = NOW()
-        WHERE id = $1`,
-      [order_id]
-    );
+    console.log(`[LINK-RULES] R2: All parcels cancelled for order ${order_id}`);
     return 'R2_ALL_PARCELS_CANCELLED';
-  }
-
-  // ── R3 — Premier colis expédié / en transit ────────────────────────────
-  const SHIPPED_OR_BEYOND = ['shipped', 'in_transit', 'available', 'collected'];
-  const hasShippedParcel = activeParcels.some(p => SHIPPED_OR_BEYOND.includes(p.status));
-  const orderInEarlyStage = ['confirmed', 'ordered', 'preparation'].includes(order.status);
-
-  if (hasShippedParcel && orderInEarlyStage) {
-    await db.query(
-      `UPDATE orders
-          SET status = 'in_transit', updated_at = NOW()
-        WHERE id = $1`,
-      [order_id]
-    );
-    return 'R3_FIRST_PARCEL_SHIPPED';
   }
 
   return null;

@@ -16,6 +16,7 @@ const { validate }                  = require('../../middleware/validate');
 const { orders }                    = require('../../validators');
 const { recalculateLoyalty }        = require('../loyalty');
 const { notifyStatusChange }        = require('../../services/notification-service');
+const { transitionOrderStatus, ORDER_STATUSES: MACHINE_STATUSES, VALID_TRANSITIONS: MACHINE_TRANSITIONS } = require('../../services/order-status-machine');
 
 // ─── Constantes — pipeline MVP 6 étapes (v8.0) ──────────────────────────────
 
@@ -65,11 +66,9 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
     const { status, note } = req.body;
 
-    if (!ORDER_STATUSES.includes(status)) {
-      return res.status(400).json({
-        error: `Statut invalide. Valeurs : ${ORDER_STATUSES.join(', ')}`,
-      });
-    }
+    // ── D1/D2: ALL status transitions go through the machine ─────────────
+    // The machine handles: validation, transitions, timestamps, history,
+    // pickup_code generation, cash_relais auto-paid.
 
     const { rows: [order] } = await client.query(
       `SELECT o.*, r.name AS relais_name, u.phone AS user_phone
@@ -81,78 +80,23 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // ── Valider la transition d'état ─────────────────────────────────────────
-    const allowedNext = VALID_TRANSITIONS[order.status] || [];
-    if (!allowedNext.includes(status)) {
+    const result = await transitionOrderStatus({
+      orderId: order.id,
+      newStatus: status,
+      actor: { id: req.user.id, role: req.user.role },
+      source: 'patch',
+      note: note || null,
+      dbClient: client,
+    });
+
+    if (!result.success) {
       await client.query('ROLLBACK');
-      return res.status(422).json({
-        error: `Transition invalide : ${order.status} → ${status}. Transitions autorisées depuis "${order.status}" : ${allowedNext.join(', ') || 'aucune (état terminal)'}`,
+      const httpCode = result.error?.includes('Rôle') ? 403 : 422;
+      return res.status(httpCode).json({
+        error: result.error,
         current_status: order.status,
       });
     }
-
-    // Vérifier que le rôle de l'agent est autorisé pour cette transition
-    const allowedRoles = TRANSITION_ROLES[status] || ['admin'];
-    if (!allowedRoles.includes(req.user.role)) {
-      await client.query('ROLLBACK');
-      return res.status(403).json({
-        error: `Rôle "${req.user.role}" non autorisé pour la transition → ${status}`,
-      });
-    }
-
-    // agent_relais ne peut passer à 'ordered' que pour les commandes cash_relais
-    if (status === 'ordered' && req.user.role === 'agent_relais' && order.payment_mode !== 'cash_relais') {
-      await client.query('ROLLBACK');
-      return res.status(403).json({
-        error: "L'agent relais ne peut valider le paiement que pour les commandes cash relais",
-      });
-    }
-
-    // Si passage à available et pickup_code manquant → en générer un
-    let pickupCodeValue = null;
-    if (status === 'available' && !order.pickup_code) {
-      const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      const newCode = Array.from({ length: 6 }, () => {
-        let b;
-        do { b = randomBytes(1)[0]; } while (b >= 216);
-        return PICKUP_CHARS[b % 36];
-      }).join('');
-      pickupCodeValue = newCode;
-      console.log(`[ORDERS] pickup_code auto-généré pour ${order.reference}: ${newCode}`);
-    }
-
-    // Timestamps paramétrés via CASE WHEN
-    // Cast $1::text pour éviter "inconsistent types deduced for parameter $1"
-    // ($1 est utilisé à la fois en SET order_status_enum et en comparaison text)
-    await client.query(
-      `UPDATE orders SET
-         status         = $1::order_status,
-         ordered_at     = CASE WHEN $1::text = 'ordered'     AND ordered_at IS NULL     THEN NOW() ELSE ordered_at END,
-         preparation_at = CASE WHEN $1::text = 'preparation' AND preparation_at IS NULL THEN NOW() ELSE preparation_at END,
-         shipped_at     = CASE WHEN $1::text = 'shipped'     AND shipped_at IS NULL     THEN NOW() ELSE shipped_at END,
-         in_transit_at  = CASE WHEN $1::text = 'in_transit'  AND in_transit_at IS NULL  THEN NOW() ELSE in_transit_at END,
-         available_at   = CASE WHEN $1::text = 'available'   AND available_at IS NULL   THEN NOW() ELSE available_at END,
-         collected_at   = CASE WHEN $1::text = 'collected'   AND collected_at IS NULL   THEN NOW() ELSE collected_at END,
-         cancelled_at   = CASE WHEN $1::text = 'cancelled'   AND cancelled_at IS NULL   THEN NOW() ELSE cancelled_at END,
-         pickup_code    = COALESCE($2, pickup_code),
-         updated_at     = NOW()
-       WHERE id = $3`,
-      [status, pickupCodeValue, order.id]
-    );
-
-    // Mettre à jour payment_status pour les commandes cash_relais passées à 'ordered'
-    if (status === 'ordered' && order.payment_mode === 'cash_relais') {
-      await client.query(
-        `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
-        [order.id]
-      );
-    }
-
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, $2, $3, $4)`,
-      [order.id, status, note || null, req.user.id]
-    );
 
     await client.query('COMMIT');
 

@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Parcel Sync Engine (utils/parcelSync.js) — v2.1 PHASE 3
+ * KOMERCE — Parcel Sync Engine (utils/parcelSync.js) — v3.0 MACHINE
  *
  * Phase 3 : SOURCE DE VÉRITÉ UNIQUE pour orders.status.
  * Le trigger legacy trg_scan_sync_status est désactivé.
@@ -36,6 +36,7 @@
 'use strict';
 
 const { computeOrderStatus, STATUS_WEIGHT, PARCEL_STATUSES } = require('./parcels');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 const db = require('../db');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -80,7 +81,7 @@ const STEP_TO_ORDER_STATUS = Object.freeze({
  * @param {string|null} opts.order_item_id — Si le scan vise un article précis
  * @param {string|null} opts.scanned_by    — [P3-3] UUID de l'utilisateur qui a scanné
  * @param {string|null} opts.notes         — [P3-3] Notes du scan (pour l'historique)
- * @param {boolean}     opts.skipHistory   — [P3-3] Si true, ne pas insérer dans order_status_history
+ * @param {boolean}     opts.skipHistory   — DEPRECATED: machine handles history (kept for backward compat)
  * @param {object|null} dbClient           — [FIX-004] Client pg de transaction (optionnel).
  *                                            Si fourni, toutes les queries passent par ce client
  *                                            au lieu du pool. Permet de maintenir le verrou
@@ -160,7 +161,9 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
     );
   }
 
-  // ── 4. [P3-1] Recompute orders.status (SOURCE DE VÉRITÉ) ─────────────────
+  // ── 4. Recompute order status + transition via MACHINE (D1/D2) ──────────
+  // The machine is the SINGLE SOURCE OF TRUTH for orders.status.
+  // It handles: status validation, timestamps, order_status_history.
   const { rows: allParcels } = await q.query(
     `SELECT status, type FROM parcels WHERE order_id = $1`,
     [order_id]
@@ -168,46 +171,29 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
 
   const orderStatus = computeOrderStatus(allParcels);
 
-  // [P3-1] Écrire dans orders.status + [P3-2] timestamp sur orders
-  const tsParts = [];
-  const tsValues = [orderStatus, order_id];
+  // Call the machine — source 'scan' allows forward-only transitions
+  const transition = await transitionOrderStatus({
+    orderId: order_id,
+    newStatus: orderStatus,
+    actor: { id: scanned_by, role: 'system' },
+    source: 'scan',
+    scanId: scan_id,
+    note: notes || `[scan] step=${step}`,
+    dbClient: q,
+  });
 
-  if (orderTsCol) {
-    // Ne mettre à jour le timestamp que s'il n'est pas déjà set (forward only)
-    tsParts.push(`${orderTsCol} = COALESCE(${orderTsCol}, NOW())`);
-  }
+  // Use the machine's result (may differ if it was a no-op)
+  const finalOrderStatus = transition.newStatus || orderStatus;
 
-  const tsClause = tsParts.length > 0 ? `, ${tsParts.join(', ')}` : '';
-
-  await q.query(
-    `UPDATE orders
-     SET status = $1::order_status${tsClause}, updated_at = NOW()
-     WHERE id = $2`,
-    tsValues
-  );
-
-  // ── 5. [P3-3] Insert dans order_status_history ────────────────────────────
-  // Reprend le rôle de l'ancien trigger sync_order_status_from_scan.
-  // skipHistory = true si le caller gère déjà l'historique (ex: verify-qr transaction)
-  const stepOrderStatus = STEP_TO_ORDER_STATUS[step];
-  if (stepOrderStatus && scan_id && !skipHistory) {
-    try {
-      await q.query(
-        `INSERT INTO order_status_history (order_id, status, scan_id, changed_by, note)
-         VALUES ($1, $2::order_status, $3, $4, $5)`,
-        [order_id, stepOrderStatus, scan_id, scanned_by, notes]
-      );
-    } catch (histErr) {
-      // L'historique ne doit pas bloquer le flux principal
-      console.warn(`[PARCEL-SYNC] ⚠️ History insert failed (order=${order_id}):`, histErr.message);
-    }
-  }
+  // ── 5. History — HANDLED BY MACHINE (D6) ──────────────────────────────
+  // No direct insert into order_status_history here.
+  // The machine guarantees every transition is logged.
 
   console.log(
-    `[PARCEL-SYNC] ✅ order=${order_id} step=${step} → ${parcelsUpdated} parcel(s) updated, status=${orderStatus}`
+    `[PARCEL-SYNC] ✅ order=${order_id} step=${step} → ${parcelsUpdated} parcel(s) updated, status=${finalOrderStatus}`
   );
 
-  return { synced: true, parcelsUpdated, orderStatus };
+  return { synced: true, parcelsUpdated, orderStatus: finalOrderStatus };
 }
 
 

@@ -48,6 +48,7 @@ const { scans } = require('../validators');
 
 // [P2-1] Parcel sync — [P3-2] maintenant SOURCE DE VÉRITÉ (trigger désactivé)
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 // Alias middleware (le fichier original utilisait requireAuth dans certains endroits)
 const requireAuth = authenticate;
@@ -57,7 +58,7 @@ const STEP_ROLES = {
   preparation:     ['admin', 'agent_hub'],
   hub_preparation: ['admin', 'agent_hub'],
   shipped:         ['admin', 'agent_hub'],
-  in_transit:      ['admin'],                  // confirmation embarquement transitaire
+  in_transit:      ['admin', 'agent_hub'],     // D2: hub confirms departure
   relais_received: ['admin', 'agent_relais'],
   collected:       ['admin', 'agent_relais'],
 };
@@ -532,25 +533,26 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
       });
     }
 
-    // ✅ Token valide — marquer comme collecté et invalider le token
-    // [P3-2] On garde le UPDATE direct ici pour l'atomicité de la transaction QR.
-    // parcelSync recalculera après le COMMIT (résultat identique ou agrégé multi-parcel).
-    await client.query(
-      `UPDATE orders
-       SET status       = 'collected',
-           collected_at = NOW(),
-           qr_token     = NULL,       -- usage unique : invalider immédiatement
-           qr_expires_at = NULL,
-           updated_at   = NOW()
-       WHERE id = $1`,
-      [order.id]
-    );
+    // ✅ Token valide — transition via MACHINE (D1/D2)
+    // Machine handles: status, timestamp, history.
+    const machineResult = await transitionOrderStatus({
+      orderId: order.id,
+      newStatus: 'collected',
+      actor: { id: req.user.id, role: req.user.role },
+      source: 'patch',
+      note: 'Remise client via QR Code',
+      dbClient: client,
+    });
 
-    // Historiser le changement de statut (dans la transaction)
+    if (!machineResult.success) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({ error: machineResult.error });
+    }
+
+    // Invalidate QR token (same transaction — atomic)
     await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'collected', 'Remise client via QR Code', $2)`,
-      [order.id, req.user.id]
+      `UPDATE orders SET qr_token = NULL, qr_expires_at = NULL WHERE id = $1`,
+      [order.id]
     );
 
     // Enregistrer le scan
@@ -569,15 +571,15 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
     await client.query('COMMIT');
 
-    // [P3-1] Parcel sync — APRÈS le commit (met à jour les parcels)
-    // [P3-4] skipHistory=true — l'historique est déjà inséré dans la transaction ci-dessus
+    // Parcel sync — AFTER commit (updates parcel statuses)
+    // Machine handles history — parcelSync will call machine but it'll be a no-op
+    // (order is already 'collected')
     await safeSyncScanToParcels({
       order_id: order.id,
       step: 'collected',
       scan_id: scanRow?.id,
       scanned_by: req.user.id,
       notes: 'Retrait client via QR Code — token validé',
-      skipHistory: true,
     });
 
     console.log(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
