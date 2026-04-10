@@ -1,61 +1,25 @@
 /**
- * KOMERCE — Mise à jour statut & coût
+ * KOMERCE — Mise à jour statut & coût — v2.0 (cleaned)
  *
  * PATCH /:id/status → changer statut (admin/agent_hub/agent_relais)
  * PATCH /:id/cost   → saisir le coût réel (admin)
+ *
+ * v2.0 — E1 cleanup:
+ *   Removed dead local ORDER_STATUSES, VALID_TRANSITIONS, TRANSITION_ROLES.
+ *   All transition logic is in services/order-status-machine.js (D1/D2).
  */
 
 'use strict';
 
 const express = require('express');
 const router  = express.Router();
-const { randomBytes } = require('crypto');
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                  = require('../../middleware/validate');
 const { orders }                    = require('../../validators');
 const { recalculateLoyalty }        = require('../loyalty');
 const { notifyStatusChange }        = require('../../services/notification-service');
-const { transitionOrderStatus, ORDER_STATUSES: MACHINE_STATUSES, VALID_TRANSITIONS: MACHINE_TRANSITIONS } = require('../../services/order-status-machine');
-
-// ─── Constantes — pipeline MVP 6 étapes (v8.0) ──────────────────────────────
-
-const ORDER_STATUSES = [
-  'confirmed',    // commande créée
-  'ordered',      // paiement validé → commande lancée
-  'preparation',  // SCAN Hub — emballage
-  'shipped',      // remis au transitaire à Dubai
-  'in_transit',   // 🚢 embarqué — confirmation transitaire
-  'available',    // SCAN Relais — colis reçu
-  'collected',    // SCAN QR — remis au client
-  'cancelled',
-  'refunded',
-];
-
-// Matrice de transitions valides — pipeline MVP 7 étapes (v9.0)
-const VALID_TRANSITIONS = {
-  confirmed:   ['ordered', 'cancelled'],
-  ordered:     ['preparation', 'cancelled'],
-  preparation: ['shipped', 'cancelled'],
-  shipped:     ['in_transit', 'cancelled'],
-  in_transit:  ['available', 'cancelled'],
-  available:   ['collected', 'cancelled'],
-  collected:   [],
-  cancelled:   ['refunded'],
-  refunded:    [],
-};
-
-// Rôles autorisés par transition — pipeline MVP 7 étapes (v9.0)
-const TRANSITION_ROLES = {
-  ordered:     ['admin', 'agent_relais'],
-  preparation: ['admin', 'agent_hub'],
-  shipped:     ['admin', 'agent_hub'],
-  in_transit:  ['admin'],
-  available:   ['admin', 'agent_relais'],
-  collected:   ['admin', 'agent_relais'],
-  cancelled:   ['admin'],
-  refunded:    ['admin'],
-};
+const { transitionOrderStatus }     = require('../../services/order-status-machine');
 
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 
@@ -68,7 +32,8 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
     // ── D1/D2: ALL status transitions go through the machine ─────────────
     // The machine handles: validation, transitions, timestamps, history,
-    // pickup_code generation, cash_relais auto-paid.
+    // pickup_code generation, cash_relais auto-paid, wallet reversal (cancel),
+    // stock restore (cancel).
 
     const { rows: [order] } = await client.query(
       `SELECT o.*, r.name AS relais_name, u.phone AS user_phone
@@ -86,6 +51,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
       actor: { id: req.user.id, role: req.user.role },
       source: 'patch',
       note: note || null,
+      cancelReason: (status === 'cancelled' && note) ? note : null,
       dbClient: client,
     });
 

@@ -1,10 +1,15 @@
 /**
- * KOMERCE — Annulation commande
+ * KOMERCE — Annulation commande — v2.0
  *
  * POST /:id/cancel — annulation avec remboursement automatique
  *
  * Auth : client (sa propre commande) ou admin (toute commande)
  * Body : { reason?: string }
+ *
+ * v2.0 — F16 fix:
+ *   Status change, wallet reversal, stock restore ALL go through
+ *   order-status-machine.js (D1/D2 compliance).
+ *   This file handles: access control, cutoff check, Stripe refund, SMS.
  *
  * Règles (business_rules) :
  *   CANCEL_FREE_WINDOW_HOURS  — fenêtre remboursement 100% (défaut: 24h)
@@ -23,7 +28,7 @@ const { orders }                   = require('../../validators');
 const { getRule }                  = require('../../utils/rules');
 const { processRefund }            = require('../../services/refund-service');
 const { notifyCancellation }       = require('../../services/notification-service');
-const walletService                = require('../../services/wallet-service');
+const { transitionOrderStatus }    = require('../../services/order-status-machine');
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
 
@@ -115,7 +120,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       refundType        = inFreeWindow ? 'full' : 'partial';
     }
 
-    // ── 6. Exécuter le remboursement Stripe AVANT le COMMIT ────────────────
+    // ── 6. Exécuter le remboursement Stripe AVANT le statut ────────────────
     let refundResult = null;
 
     if (isPaid && refundAmountKmf > 0) {
@@ -136,62 +141,27 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       }
     }
 
-    // ── 6bis. Reverse wallet appliqué au checkout ────────────────────────────
-    //   Le wallet debit a lieu au checkout AVANT le paiement cash/stripe.
-    //   Il doit être reversé à l'annulation INDÉPENDAMMENT de isPaid.
-    const walletApplied = Number(order.wallet_applied_kmf || 0);
-    let walletReversalTx = null;
+    // ── 7. D1/D2: Transition via machine ─────────────────────────────────────
+    //   The machine handles: status change, cancel_reason, timestamps,
+    //   wallet reversal (idempotent), stock restore, and history insert.
+    const machineResult = await transitionOrderStatus({
+      orderId:      id,
+      newStatus:    'cancelled',
+      actor:        { id: req.user.id, role: req.user.role },
+      source:       'patch',
+      cancelReason: reason || null,
+      note:         reason ? `Annulation : ${reason}` : 'Annulation client',
+      dbClient:     client,
+    });
 
-    if (walletApplied > 0) {
-      try {
-        const walletReversal = await walletService.credit(client, {
-          userId:         order.user_id,
-          amountKmf:      walletApplied,
-          reason:         'order_cancel',
-          referenceId:    order.id,
-          idempotencyKey: `wallet_reversal_${order.id}`,
-          note:           `Avoir wallet — annulation commande ${order.reference} (${walletApplied.toLocaleString('fr-FR')} KMF)`,
-          createdBy:      req.user.id,
-        });
-        walletReversalTx = walletReversal.transaction;
-        console.log(`[CANCEL] Wallet reversal OK: ${walletApplied} KMF → user ${order.user_id} for ${order.reference}`);
-      } catch (walletErr) {
-        await client.query('ROLLBACK');
-        console.error('[CANCEL] Wallet reversal error:', walletErr.message);
-        return res.status(500).json({
-          error: `Annulation impossible — erreur remboursement wallet: ${walletErr.message}`,
-        });
-      }
-    }
-
-    // ── 7. Annuler la commande ──────────────────────────────────────────────
-    await client.query(
-      `UPDATE orders
-       SET status = 'cancelled', cancelled_at = NOW(), cancel_reason = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [reason || null, id]
-    );
-
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'cancelled', $2, $3)`,
-      [id, reason ? `Annulation : ${reason}` : 'Annulation client', req.user.id]
-    );
-
-    // ── 8. Restaurer le stock ───────────────────────────────────────────────
-    const { rows: items } = await client.query(
-      'SELECT product_id, quantity FROM order_items WHERE order_id = $1', [id]
-    );
-    for (const item of items) {
-      await client.query(
-        'UPDATE products SET stock = stock + $1 WHERE id = $2',
-        [item.quantity, item.product_id]
-      );
+    if (!machineResult.success) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({ error: machineResult.error, current_status: order.status });
     }
 
     await client.query('COMMIT');
 
-    // ── 9. SMS client (non bloquant) ───────────────────────────────────────
+    // ── 8. SMS client (non bloquant) ───────────────────────────────────────
     const smsRefundInfo = refundResult ? {
       method:    refundResult.method,
       amountEur: refundResult.amountEur,
@@ -201,6 +171,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
 
     // ── Réponse ─────────────────────────────────────────────────────────────
     const refundInfo = {};
+    const cancelFx = machineResult.cancelEffects || {};
 
     // Partie cash/stripe
     if (isPaid && refundAmountKmf > 0 && refundResult) {
@@ -215,22 +186,24 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       };
     }
 
-    // Partie wallet reversal
-    if (walletReversalTx) {
+    // Partie wallet reversal (from machine)
+    if (cancelFx.walletReversalAmount > 0) {
       refundInfo.wallet_reversal = {
-        amount_kmf:  walletApplied,
-        wallet_tx_id: walletReversalTx.id,
+        amount_kmf:   cancelFx.walletReversalAmount,
+        wallet_tx_id: cancelFx.walletReversalTxId || null,
       };
     }
 
     // Message
     let message;
     const parts = [];
-    if (!isPaid && walletApplied === 0) {
+    const walletReversed = cancelFx.walletReversalAmount || 0;
+
+    if (!isPaid && walletReversed === 0) {
       message = 'Commande annulée — aucun prélèvement effectué';
     } else {
-      if (walletApplied > 0) {
-        parts.push(`${walletApplied.toLocaleString('fr-FR')} KMF reversés sur votre wallet`);
+      if (walletReversed > 0) {
+        parts.push(`${walletReversed.toLocaleString('fr-FR')} KMF reversés sur votre wallet`);
       }
       if (isPaid && refundResult) {
         if (refundResult.method === 'stripe') {
@@ -251,7 +224,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     });
 
   } catch (err) {
-    await client.query('ROLLBACK');
+    try { await client.query('ROLLBACK'); } catch (_) {}
     next(err);
   } finally {
     client.release();

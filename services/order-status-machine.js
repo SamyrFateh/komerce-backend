@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.0
+ * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.1
  *
  * ╔══════════════════════════════════════════════════════════════════════╗
  * ║  SINGLE SOURCE OF TRUTH for all order status transitions.          ║
@@ -15,6 +15,11 @@
  *   - Every transition inserts into order_status_history
  *   - Timestamps are set ONCE (COALESCE — never overwritten)
  *   - Forward-only for scan/system (idempotent, never goes backward)
+ *
+ * v1.1 — F16 fix:
+ *   - Auto-effects for 'cancelled': wallet reversal + stock restore + cancel_reason
+ *   - Returns cancelEffects in result
+ *   - cancel.js and PATCH status now go through the same path
  *
  * Interdits:
  *   ❌ Direct UPDATE of orders.status outside this service
@@ -122,14 +127,15 @@ function generatePickupCode() {
  * orders.status in the entire codebase.
  *
  * @param {object} opts
- * @param {string}      opts.orderId    — UUID of the order
- * @param {string}      opts.newStatus  — Target order_status
- * @param {object}      opts.actor      — { id, role } of who initiated (default: system)
- * @param {string}      opts.source     — 'patch' | 'scan' | 'system'
- * @param {string|null} opts.scanId     — Scan UUID (for scan source)
- * @param {string|null} opts.note       — Optional note for history
- * @param {object|null} opts.dbClient   — Transaction client (optional)
- * @returns {Promise<{success:boolean, previousStatus:string, newStatus:string, noop?:boolean, pickupCode?:string, error?:string}>}
+ * @param {string}      opts.orderId       — UUID of the order
+ * @param {string}      opts.newStatus     — Target order_status
+ * @param {object}      opts.actor         — { id, role } of who initiated (default: system)
+ * @param {string}      opts.source        — 'patch' | 'scan' | 'system'
+ * @param {string|null} opts.scanId        — Scan UUID (for scan source)
+ * @param {string|null} opts.note          — Optional note for history
+ * @param {string|null} opts.cancelReason  — [v1.1] Reason for cancellation (set on orders.cancel_reason)
+ * @param {object|null} opts.dbClient      — Transaction client (optional)
+ * @returns {Promise<{success:boolean, previousStatus:string, newStatus:string, noop?:boolean, pickupCode?:string, cancelEffects?:object, error?:string}>}
  */
 async function transitionOrderStatus({
   orderId,
@@ -138,6 +144,7 @@ async function transitionOrderStatus({
   source = 'patch',
   scanId = null,
   note = null,
+  cancelReason = null,
   dbClient = null,
 }) {
   const q = dbClient || db;
@@ -211,6 +218,13 @@ async function transitionOrderStatus({
     paramIdx++;
   }
 
+  // [v1.1] Cancel reason
+  if (newStatus === 'cancelled' && cancelReason) {
+    setParts.push(`cancel_reason = $${paramIdx}`);
+    values.push(cancelReason);
+    paramIdx++;
+  }
+
   values.push(orderId);
 
   await q.query(
@@ -224,6 +238,53 @@ async function transitionOrderStatus({
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
       [orderId]
     );
+  }
+
+  // ── 5b. [v1.1] Auto-effects: cancelled → wallet reversal + stock restore ─
+  let cancelEffects = null;
+
+  if (newStatus === 'cancelled') {
+    cancelEffects = { walletReversalAmount: 0, walletReversalTxId: null, stockItemsRestored: 0 };
+
+    // Wallet reversal (idempotent via idempotency_key)
+    const { rows: [orderInfo] } = await q.query(
+      `SELECT wallet_applied_kmf, user_id, reference FROM orders WHERE id = $1`,
+      [orderId]
+    );
+    const walletApplied = Number(orderInfo?.wallet_applied_kmf || 0);
+
+    if (walletApplied > 0 && orderInfo.user_id) {
+      // Lazy require to avoid circular dependency
+      const walletService = require('../services/wallet-service');
+      const walletResult = await walletService.credit(q, {
+        userId:         orderInfo.user_id,
+        amountKmf:      walletApplied,
+        reason:         'order_cancel',
+        referenceId:    orderId,
+        idempotencyKey: `wallet_reversal_${orderId}`,
+        note:           `Avoir wallet — annulation ${orderInfo.reference} (${walletApplied.toLocaleString('fr-FR')} KMF)`,
+        createdBy:      actor.id,
+      });
+      cancelEffects.walletReversalAmount = walletApplied;
+      cancelEffects.walletReversalTxId = walletResult.transaction?.id || null;
+      console.log(`[STATUS-MACHINE] Wallet reversal: ${walletApplied} KMF → user ${orderInfo.user_id}`);
+    }
+
+    // Stock restore
+    const { rows: items } = await q.query(
+      'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
+      [orderId]
+    );
+    for (const item of items) {
+      await q.query(
+        'UPDATE products SET stock = stock + $1 WHERE id = $2',
+        [item.quantity, item.product_id]
+      );
+    }
+    cancelEffects.stockItemsRestored = items.length;
+    if (items.length > 0) {
+      console.log(`[STATUS-MACHINE] Stock restored: ${items.length} items for order ${orderId}`);
+    }
   }
 
   // ── 6. D6: Always log to order_status_history ───────────────────────────
@@ -241,7 +302,7 @@ async function transitionOrderStatus({
 
   console.log(`[STATUS-MACHINE] ✅ order=${orderId} ${previousStatus} → ${newStatus} (source=${source})`);
 
-  return { success: true, previousStatus, newStatus, pickupCode };
+  return { success: true, previousStatus, newStatus, pickupCode, cancelEffects };
 }
 
 
