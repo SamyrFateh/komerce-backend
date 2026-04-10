@@ -3788,6 +3788,15 @@ function openProductModal(p, fromSuggestion) {
 
   /* ── §2 CONTEXTUAL RECOMMENDATIONS — dynamic title per category ── */
   var _pCat = (p.category || '').toLowerCase();
+  var DEFAULT_RECO_TITLE = '\u{1F4E6} Souvent acheté avec';
+  var SUGGESTION_MAP = {
+    'mode':       { title: '\u{1F45C} Complétez votre look', compCategories: ['beaute','beauté','sur-mesure'] },
+    'sur-mesure': { title: '\u{1F9F5} Complétez votre commande', compCategories: ['mode','beaute','beauté'] },
+    'beaute':     { title: '\u{2728} Vous aimerez aussi', compCategories: ['mode','sur-mesure'] },
+    'beauté':     { title: '\u{2728} Vous aimerez aussi', compCategories: ['mode','sur-mesure'] },
+    'tech':       { title: '\u{1F50C} Accessoires compatibles', compCategories: [] },
+    'enfant':     { title: '\u{1F381} Complétez votre achat', compCategories: ['mode','beaute','beauté'] }
+  };
   var _mapEntry = SUGGESTION_MAP[_pCat] || { title: DEFAULT_RECO_TITLE, compCategories: [] };
   var _recoTitle = _mapEntry.title || DEFAULT_RECO_TITLE;
 
@@ -4110,15 +4119,6 @@ function openProductModal(p, fromSuggestion) {
    *  compCategories   → catégories dans lesquelles piocher les complémentaires
    *  Pour ajouter une catégorie : une ligne suffit.
    */
-  var SUGGESTION_MAP = {
-    'mode':       { title: '\u{1F45C} Complétez votre look', compCategories: ['beaute','beauté','sur-mesure'] },
-    'sur-mesure': { title: '\u{1F9F5} Complétez votre commande', compCategories: ['mode','beaute','beauté'] },
-    'beaute':     { title: '\u{2728} Vous aimerez aussi', compCategories: ['mode','sur-mesure'] },
-    'beauté':     { title: '\u{2728} Vous aimerez aussi', compCategories: ['mode','sur-mesure'] },
-    'tech':       { title: '\u{1F50C} Accessoires compatibles', compCategories: [] },
-    'enfant':     { title: '\u{1F381} Complétez votre achat', compCategories: ['mode','beaute','beauté'] }
-  };
-  var DEFAULT_RECO_TITLE = '\u{1F4E6} Souvent acheté avec';
 
 
 // ════════════════════════════════════════════════════════════════
