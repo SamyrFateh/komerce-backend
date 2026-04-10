@@ -2471,6 +2471,18 @@ function _renderMoreProducts(list, track) {
     card.appendChild(body);
     track.appendChild(card);
   });
+  _renderShown = end;
+  if (end < list.length) {
+    var moreBtn = document.createElement('button');
+    moreBtn.className = 'load-more-btn';
+    moreBtn.style.cssText = 'grid-column:1/-1;padding:14px 32px;border:2px solid var(--primary);background:white;color:var(--primary);font-weight:700;font-size:0.95rem;border-radius:var(--radius);cursor:pointer;margin:8px auto;transition:all 0.2s;';
+    moreBtn.textContent = 'Voir plus (' + (list.length - end) + ' produits)';
+    moreBtn.addEventListener('click', function() { _renderMoreProducts(list, track); });
+    moreBtn.addEventListener('mouseenter', function() { this.style.background = 'var(--primary)'; this.style.color = 'white'; });
+    moreBtn.addEventListener('mouseleave', function() { this.style.background = 'white'; this.style.color = 'var(--primary)'; });
+    track.appendChild(moreBtn);
+  }
+  updateCartBadges();
 }
 
 function scrollCarousel(dir) {
@@ -3076,18 +3088,6 @@ function saveCart() {
     console.warn('saveCart: localStorage indisponible', e);
   }
   refreshCartBadge();
-  _renderShown = end;
-  if (end < list.length) {
-    var moreBtn = document.createElement('button');
-    moreBtn.className = 'load-more-btn';
-    moreBtn.style.cssText = 'grid-column:1/-1;padding:14px 32px;border:2px solid var(--primary);background:white;color:var(--primary);font-weight:700;font-size:0.95rem;border-radius:var(--radius);cursor:pointer;margin:8px auto;transition:all 0.2s;';
-    moreBtn.textContent = 'Voir plus (' + (list.length - end) + ' produits)';
-    moreBtn.addEventListener('click', function() { _renderMoreProducts(list, track); });
-    moreBtn.addEventListener('mouseenter', function() { this.style.background = 'var(--primary)'; this.style.color = 'white'; });
-    moreBtn.addEventListener('mouseleave', function() { this.style.background = 'white'; this.style.color = 'var(--primary)'; });
-    track.appendChild(moreBtn);
-  }
-  updateCartBadges();
 }
 
 function addToCart(product, qty, btn) {
