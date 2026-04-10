@@ -924,8 +924,8 @@ function openProductModal(p, fromSuggestion) {
   controls.appendChild(qtyWrap);
 
   var addBtn = document.createElement('button');
-  addBtn.className = 'pd-add-btn';
-  addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">Ajouter';
+  addBtn.className = 'pd-add-round';
+  addBtn.innerHTML = '<img src="/images/panier_africain_sm.png" alt="panier">';
   addBtn.addEventListener('click', function() {
     addToCart(p, _pdQty, addBtn);
     setTimeout(function() { closeProductModal(); }, 500);
@@ -934,10 +934,9 @@ function openProductModal(p, fromSuggestion) {
   /* ── Déjà dans le panier? ── */
   var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
   if (_inCart) {
-    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">+ Ajouter';
-    var cartNote = document.createElement('div');
-    cartNote.style.cssText = 'text-align:center;font-size:0.7rem;color:var(--primary);font-weight:600;margin-top:2px;';
-    cartNote.textContent = '✓ ' + _inCart.qty + ' déjà dans le panier';
+    var cartNote = document.createElement('span');
+    cartNote.className = 'pd-cart-note';
+    cartNote.textContent = '✓ ' + _inCart.qty;
     controls.appendChild(cartNote);
   }
   body.appendChild(controls);

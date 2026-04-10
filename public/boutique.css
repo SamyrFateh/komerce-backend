@@ -1397,49 +1397,45 @@ body.modal-open .mobile-tabs {
   color: var(--text);
 }
 
-.pd-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: 24px;
-  background: var(--primary);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.88rem;
-  transition: all 0.2s var(--ease);
-  border: none;
+/* Bouton rond panier modal */
+.pd-add-round {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: rgba(255, 251, 240, 0.95);
   cursor: pointer;
-  flex: 1;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 4px;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  flex-shrink: 0;
 }
-
-.pd-add-btn:hover:not(:disabled) {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(255,107,53,0.3);
-}
-
-.pd-add-btn.added {
-  background: var(--success);
-  color: #fff;
-}
-
-.pd-add-btn:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.pd-add-btn .basket-icon {
-  width: 26px;
-  height: 26px;
+.pd-add-round img {
+  width: 34px;
+  height: 34px;
   object-fit: contain;
   border-radius: 50%;
-  transition: transform 0.2s;
+  pointer-events: none;
+}
+.pd-add-round:hover,
+.pd-add-round:active {
+  transform: scale(1.15);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+}
+.pd-add-round.added {
+  border-color: var(--success);
+  background: #dcfce7;
 }
 
-.pd-add-btn:hover .basket-icon {
-  transform: rotate(-8deg) scale(1.15);
+/* Note "✓ 2" à côté du bouton */
+.pd-cart-note {
+  font-size: 0.7rem;
+  color: var(--success);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Share row */
@@ -1537,7 +1533,7 @@ body.modal-open .mobile-tabs {
     background: rgba(255,255,255,0.97);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
     margin: 0;
     border-top: 1px solid var(--border);
     justify-content: center;
@@ -1548,27 +1544,24 @@ body.modal-open .mobile-tabs {
 
   /* Space for fixed CTA at bottom */
   .modal-body {
-    padding-bottom: 80px !important;
+    padding-bottom: 64px !important;
   }
 
-  .pd-add-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 12px 20px;
-    font-size: 0.92rem;
-    border-radius: 12px;
-    font-weight: 700;
+  .pd-add-round {
+    width: 44px;
+    height: 44px;
   }
+  .pd-add-round img { width: 30px; height: 30px; }
 
   .pd-qty-wrap .qty-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 1.1rem;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
   }
 
   .pd-qty-wrap .qty-val {
-    font-size: 1.15rem;
-    min-width: 32px;
+    font-size: 1rem;
+    min-width: 28px;
   }
 
   .modal-swipe-track {
@@ -1594,10 +1587,11 @@ body.modal-open .mobile-tabs {
     gap: 10px;
   }
 
-  .pd-add-btn {
-    padding: 10px 16px;
-    font-size: 0.85rem;
+  .pd-add-round {
+    width: 40px;
+    height: 40px;
   }
+  .pd-add-round img { width: 26px; height: 26px; }
 
   .modal-body {
     padding-bottom: 76px !important;
