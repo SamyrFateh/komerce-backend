@@ -1570,7 +1570,40 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       .card-img { height: 120px !important; }
     }
 
-  </style>
+  
+/* ── Mobile Bottom Tabs (unified with Hub/Relais/Admin) ── */
+@media(max-width:768px){
+  .mobile-tabs{display:flex !important}
+  .tab-nav{display:none !important}
+  body{padding-bottom:60px}
+}
+.mobile-tabs{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;
+  background:var(--white);border-top:2px solid var(--border);
+  padding:2px 0 calc(2px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+}
+.mobile-tabs-inner{display:flex;width:100%}
+.mtab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:6px 2px 4px;font-size:0.58rem;letter-spacing:0.01em;
+  color:var(--muted);background:none;border:none;cursor:pointer;
+  font-family:inherit;position:relative;transition:color 0.15s;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.mtab:active{transform:scale(0.92)}
+.mtab.active{color:var(--primary);font-weight:600}
+.mtab-icon{font-size:1.15rem;line-height:1}
+.mtab-badge{
+  position:absolute;top:-2px;right:calc(50% - 18px);
+  background:var(--primary);color:#fff;font-size:0.5rem;font-weight:700;
+  min-width:14px;height:14px;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;padding:0 3px;
+}
+.mtab-badge:empty{display:none}
+.pwa-standalone .mobile-tabs{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
 </head>
@@ -4442,6 +4475,99 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
 });
+
+/* ── Mobile Bottom Tabs Logic ── */
+(function() {
+  var mtabs = document.querySelectorAll('.mobile-tabs .mtab');
+  var tabBtns = document.querySelectorAll('.tab-nav .tab-btn');
+  var tabPanels = document.querySelectorAll('.tab-panel');
+
+  mtabs.forEach(function(mt) {
+    mt.addEventListener('click', function() {
+      // Cart special action
+      if (mt.dataset.mtabAction === 'cart') {
+        var overlay = document.getElementById('cart-overlay');
+        var drawer = document.getElementById('cart-drawer');
+        if (overlay && drawer) {
+          overlay.classList.add('open');
+          drawer.classList.add('open');
+        }
+        return;
+      }
+
+      var tab = mt.dataset.tab;
+      if (!tab) return;
+
+      // Update mobile tabs active state
+      mtabs.forEach(function(m) { m.classList.remove('active'); });
+      mt.classList.add('active');
+
+      // Sync desktop tabs
+      tabBtns.forEach(function(b) { b.classList.remove('active'); });
+      var desktopBtn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
+      if (desktopBtn) desktopBtn.classList.add('active');
+
+      // Switch panels
+      tabPanels.forEach(function(p) { p.classList.remove('active'); });
+      var panel = document.getElementById('tab-' + tab);
+      if (panel) panel.classList.add('active');
+
+      // Trigger fav render if needed
+      if (tab === 'favoris' && typeof renderFavs === 'function') renderFavs();
+
+      // Scroll to top
+      window.scrollTo(0, 0);
+    });
+  });
+
+  // Sync desktop tab clicks → mobile tabs
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tab = btn.dataset.tab;
+      mtabs.forEach(function(m) {
+        m.classList.remove('active');
+        if (m.dataset.tab === tab) m.classList.add('active');
+      });
+    });
+  });
+
+  // Keep cart badge in sync
+  var cartCountEl = document.getElementById('cart-count');
+  var mtabCartBadge = document.getElementById('mtab-cart-badge');
+  if (cartCountEl && mtabCartBadge) {
+    var syncCartBadge = function() {
+      var count = cartCountEl.textContent.trim();
+      mtabCartBadge.textContent = (count && count !== '0') ? count : '';
+    };
+    new MutationObserver(syncCartBadge).observe(cartCountEl, { childList: true, characterData: true, subtree: true });
+    syncCartBadge();
+  }
+
+  // Keep fav badge in sync
+  var favCountBadge = document.getElementById('fav-count-badge');
+  var mtabFavBadge = document.getElementById('mtab-fav-badge');
+  if (favCountBadge && mtabFavBadge) {
+    var syncFavBadge = function() {
+      var count = favCountBadge.textContent.trim();
+      mtabFavBadge.textContent = (count && count !== '0') ? count : '';
+    };
+    new MutationObserver(syncFavBadge).observe(favCountBadge, { childList: true, characterData: true, subtree: true });
+    syncFavBadge();
+  }
+})();
+
 </script>
+
+<!-- Mobile Bottom Tabs -->
+<div class="mobile-tabs">
+  <div class="mobile-tabs-inner">
+    <button class="mtab active" data-tab="boutique"><span class="mtab-icon">🛍️</span>Boutique</button>
+    <button class="mtab" data-tab="suivi"><span class="mtab-icon">📦</span>Suivi</button>
+    <button class="mtab" data-tab="favoris"><span class="mtab-icon">❤️</span>Favoris<span class="mtab-badge" id="mtab-fav-badge"></span></button>
+    <button class="mtab" data-mtab-action="cart"><span class="mtab-icon">🛒</span>Panier<span class="mtab-badge" id="mtab-cart-badge"></span></button>
+    <button class="mtab" data-tab="info"><span class="mtab-icon">ℹ️</span>Infos</button>
+  </div>
+</div>
+
 </body>
 </html>
