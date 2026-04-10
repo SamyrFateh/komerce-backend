@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Routes scan logistique — v8.6 F27 transactions
+ * KOMERCE — Routes scan logistique — v8.7 F27+fallback machine
  *
  * POST /api/scans             → enregistrer un scan (agent hub ou relais)
  * POST /api/scans/collect     → scan de retrait destinataire (code à 6 chiffres)
@@ -47,7 +47,7 @@ const { validate } = require('../middleware/validate');
 const { scans } = require('../validators');
 
 // [P2-1] Parcel sync — [P3-2] maintenant SOURCE DE VÉRITÉ (trigger désactivé)
-const { safeSyncScanToParcels } = require('../utils/parcelSync');
+const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 
 // Alias middleware (le fichier original utilisait requireAuth dans certains endroits)
@@ -210,7 +210,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
 
     // [P3-1] Parcel sync — awaité, source de vérité pour orders.status
     // [P3-3] Passage scanned_by + notes pour order_status_history
-    await safeSyncScanToParcels({
+    const syncResult = await safeSyncScanToParcels({
       order_id,
       step,
       scan_id: scan.id,
@@ -218,6 +218,19 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
       scanned_by: req.user.id,
       notes,
     }, client);
+
+    // Fallback: if no parcels exist, call machine directly
+    if (!syncResult.synced && STEP_TO_ORDER_STATUS[step]) {
+      await transitionOrderStatus({
+        orderId: order_id,
+        newStatus: STEP_TO_ORDER_STATUS[step],
+        actor: { id: req.user.id, role: req.user.role },
+        source: 'scan',
+        scanId: scan.id,
+        note: notes || `[scan] step=${step} (no parcels)`,
+        dbClient: client,
+      });
+    }
 
     await client.query('COMMIT');
 
@@ -355,13 +368,26 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
 
     // [P3-1] Parcel sync — awaité, source de vérité
     // [P3-3] Passage scanned_by + notes pour order_status_history
-    await safeSyncScanToParcels({
+    const collectSync = await safeSyncScanToParcels({
       order_id: order.id,
       step: 'collected',
       scan_id: scanRow?.id,
       scanned_by: req.user.id,
       notes: 'Retrait destinataire — code valide',
     }, client);
+
+    // Fallback: if no parcels exist, call machine directly
+    if (!collectSync.synced && STEP_TO_ORDER_STATUS['collected']) {
+      await transitionOrderStatus({
+        orderId: order.id,
+        newStatus: STEP_TO_ORDER_STATUS['collected'],
+        actor: { id: req.user.id, role: req.user.role },
+        source: 'scan',
+        scanId: scanRow?.id,
+        note: 'Retrait destinataire (no parcels)',
+        dbClient: client,
+      });
+    }
 
     await client.query('COMMIT');
 
