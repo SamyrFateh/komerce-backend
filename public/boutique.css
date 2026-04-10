@@ -1663,11 +1663,154 @@ body.modal-open .mobile-tabs { z-index: 100; }
   .pd-emoji { width: 150px !important; height: 150px !important; max-width: 180px !important; }
 }
 
-/* Mobile Product Modal responsive */
+/* ══════════════════════════════════════════
+   29. MOBILE PRODUCT MODAL — Full Responsive
+   ══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .pd-top { flex-direction: column !important; align-items: center !important; text-align: center; gap: 12px !important; }
-  .pd-emoji { width: 100% !important; max-width: 280px !important; height: 200px !important; margin: 0 auto !important; }
-  .pd-emoji img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+  /* Modal body: flex column, scroll, leave room for sticky CTA */
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px !important;
+  }
+
+  /* Product image — hero full-width, edge-to-edge */
+  .pd-top {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .pd-emoji {
+    width: calc(100% + 40px) !important;
+    max-width: none !important;
+    height: auto !important;
+    aspect-ratio: 4/3;
+    margin: 0 -20px !important;
+    border-radius: 0 !important;
+    background: #f3f4f6 !important;
+  }
+  .pd-emoji img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    padding: 0 !important;
+  }
+
+  /* Product info — centered under hero */
+  .pd-info {
+    text-align: center;
+    width: 100%;
+    padding: 16px 0 8px;
+  }
+  .pd-cat { font-size: 0.72rem; margin-bottom: 4px; }
+  .pd-name { font-size: 1.05rem !important; }
+  .pd-price { font-size: 1.2rem; }
+  .pd-desc { font-size: 0.88rem; padding: 0 4px; text-align: left; }
+
+  /* Sticky CTA footer — always visible at bottom */
+  .pd-controls {
+    position: sticky !important;
+    bottom: 0 !important;
+    left: 0; right: 0;
+    background: rgba(255,255,255,0.96) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 12px 16px !important;
+    margin: 0 -20px !important;
+    border-top: 1px solid var(--border);
+    display: flex !important;
+    justify-content: center;
+    gap: 12px !important;
+    z-index: 10;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  }
+  .pd-add-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 20px !important;
+    font-size: 0.92rem !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    background: var(--primary) !important;
+    color: white !important;
+    border-color: var(--primary) !important;
+  }
+  .pd-add-btn:hover { background: var(--primary-dark) !important; }
+  .pd-qty-wrap .qty-btn {
+    width: 38px !important; height: 38px !important;
+    font-size: 1.1rem !important;
+  }
+  .pd-qty-wrap .qty-val { font-size: 1.15rem; min-width: 32px; text-align: center; }
+
+  /* Suggestion cards in modal — better sizing */
+  .modal-swipe-track {
+    gap: 10px !important;
+    padding: 0 4px 8px !important;
+    scroll-padding-left: 4px;
+  }
+
+  /* Actions buttons */
   .pd-actions { flex-direction: column; gap: 8px; }
   .pd-actions button { width: 100%; }
+}
+
+/* ══════════════════════════════════════════
+   30. SMALL MOBILE (≤480px) — Tighter Layout
+   ══════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .pd-emoji {
+    aspect-ratio: 3/2 !important;
+  }
+  .pd-info { padding: 12px 0 6px; }
+  .pd-name { font-size: 0.95rem !important; }
+  .pd-controls {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+  .pd-add-btn {
+    padding: 10px 16px !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Cards grid tighter */
+  .product-grid { gap: 6px !important; padding: 0 6px 24px !important; }
+  .card-img { height: 140px !important; }
+  .card-body { padding: 6px 8px !important; }
+  .card-name { font-size: 0.75rem !important; }
+  .card-price { font-size: 0.82rem !important; }
+  .card-add { padding: 5px 8px !important; font-size: 0.7rem !important; }
+
+  /* Hero compact */
+  .hero-left { padding: 14px !important; }
+  .hero-title { font-size: 0.88rem !important; }
+  .hero-search { flex-direction: column; border-radius: var(--radius); }
+  .hero-search input { border-radius: var(--radius) var(--radius) 0 0; }
+  .hero-search button { border-radius: 0 0 var(--radius) var(--radius); }
+
+  /* Cart drawer full width */
+  #cart-drawer { width: 100% !important; border-radius: 0 !important; }
+  .cart-header { border-radius: 0 !important; }
+
+  /* Toasts edge-to-edge */
+  #toast-container { right: 10px !important; left: 10px !important; }
+  .toast { min-width: auto !important; max-width: 100% !important; }
+
+  /* Checkout fields single column */
+  .ck-field-row { grid-template-columns: 1fr !important; }
+}
+
+/* ══════════════════════════════════════════
+   31. TINY MOBILE (≤380px) — iPhone SE etc.
+   ══════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 4px !important; }
+  .card-img { height: 120px !important; }
+  .cat-circle-img { width: 44px !important; height: 44px !important; }
+  .cat-circle span { font-size: 0.6rem !important; }
+  .hero-title { font-size: 0.82rem !important; }
+  .modal-header span { font-size: 0.88rem !important; }
+  .pd-emoji { aspect-ratio: 1/1 !important; }
 }
