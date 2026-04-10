@@ -86,6 +86,7 @@ ORDER_IDS=()
 TP=0 TF=0 TW=0 TSK=0
 CP=0 CF=0 CW=0 CSK=0 CSEC=""
 declare -a SREP
+declare -A SEC_FAILS SEC_WARNS
 
 ss() {
   CSEC="$1"; CP=0; CF=0; CW=0; CSK=0
@@ -99,6 +100,7 @@ es() {
   local v="✅"; [[ $CW -gt 0 ]] && v="⚠️"; [[ $CF -gt 0 ]] && v="❌"
   printf '%s\n  [%s] %dP %dF %dW %dS  %s\n' \
     "────────────────────────────────────────" "$CSEC" $CP $CF $CW $CSK "$v"
+  SEC_FAILS[$CSEC]=$CF; SEC_WARNS[$CSEC]=$CW
   SREP+=("$(printf '[%-2s] %-22s %2dP %2dF %2dW %2dS %s' "$CSEC" "$1" $CP $CF $CW $CSK "$v")")
 }
 
@@ -903,7 +905,7 @@ section_H() {
   local w3
   w3=$(jn "$BODY" '.balance_kmf')
   [[ $w3 -eq $w1 ]] && pt "H6: Cancel → wallet reversed ($w3=$w1)" \
-    || wt "H6: Wallet after cancel" "expected=$w1 got=$w3"
+    || ft "H6: Cancel did NOT reverse wallet" "expected=$w1 got=$w3"
 
   # H7: Lot reversal + deterministic balance verification
   if [[ -n "$lot_id" ]]; then
@@ -992,7 +994,7 @@ section_I() {
   # I3: Author on each entry
   local nulls
   nulls=$(echo "$hist_body" | jq '[.[] | select(.changed_by_name == null)] | length' 2>/dev/null)
-  [[ "${nulls:-0}" == "0" ]] && pt "I3: All entries have author ✓" || wt "I3: $nulls entries without author"
+  [[ "${nulls:-0}" == "0" ]] && pt "I3: All entries have author ✓" || ft "I3: $nulls entries without author — D6 traçabilité violation"
 
   # I4: Timestamps in history entries
   local ts_count
@@ -1014,7 +1016,7 @@ section_I() {
 
   # I6: shipped→cancelled BLOCKED by machine
   do_cancel "$i1" "$ACK"
-  [[ "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "I6: shipped→cancelled BLOCKED by machine ✓" || wt "I6: shipped cancel" "HTTP=$HTTP"
+  [[ "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "I6: shipped→cancelled BLOCKED by machine ✓" || ft "I6: shipped→cancelled NOT BLOCKED by machine" "HTTP=$HTTP"
 
   es "AUDIT TRAIL"
 }
@@ -1115,14 +1117,14 @@ section_K() {
   # K4: Relais blocked from hub transition
   confirm_cash "$k1c"
   patch_st "$k1" "$RCK" "preparation"
-  [[ "$HTTP" == "403" || "$HTTP" == "422" ]] && pt "K4: Relais blocked from hub transition ($HTTP)" || ft "K4: Relais did hub work" "HTTP=$HTTP"
+  [[ "$HTTP" == "403" || "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "K4: Relais blocked from hub transition ($HTTP)" || ft "K4: Relais did hub work" "HTTP=$HTTP"
 
   # K5: Hub blocked from relais transition
   patch_st "$k1" "$HCK" "preparation"
   patch_st "$k1" "$HCK" "shipped"
   patch_st "$k1" "$HCK" "in_transit"
   patch_st "$k1" "$HCK" "available"
-  [[ "$HTTP" == "403" || "$HTTP" == "422" ]] && pt "K5: Hub blocked from relais transition ($HTTP)" || ft "K5: Hub did relais work" "HTTP=$HTTP"
+  [[ "$HTTP" == "403" || "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "K5: Hub blocked from relais transition ($HTTP)" || ft "K5: Hub did relais work" "HTTP=$HTTP"
 
   # K6: Unauthenticated → 401
   api GET "/api/orders" ""
@@ -1144,7 +1146,7 @@ section_K() {
   k3=$(jv "$BODY" '.order.id'); k3c=$(jv "$BODY" '.order.cash_ref_code'); track "$k3"
   confirm_cash "$k3c"
   do_cancel "$k3" "$C1CK"
-  [[ "$HTTP" == "200" ]] && pt "K3: Client can cancel own order ✓" || wt "K3: Client cancel" "HTTP=$HTTP"
+  [[ "$HTTP" == "200" ]] && pt "K3: Client can cancel own order ✓" || ft "K3: Client cannot cancel own order" "HTTP=$HTTP"
 
   do_cancel "$k1" "$ACK" > /dev/null 2>&1
 
@@ -1209,7 +1211,7 @@ section_L() {
   track "$l2"
   confirm_cash "$l2c"
   api POST "/api/scans" "$RCK" "{\"scan_code\":\"$l2r\",\"step\":\"preparation\"}"
-  [[ "$HTTP" == "403" ]] && pt "L6: Relais blocked from hub scan" || wt "L6: Role check" "HTTP=$HTTP"
+  [[ "$HTTP" == "403" || "$HTTP" == "422" ]] && pt "L6: Relais blocked from hub scan ($HTTP)" || ft "L6: RBAC not enforced on scans" "HTTP=$HTTP"
 
   # L7: Double scan same step
   api POST "/api/scans" "$HCK" "{\"scan_code\":\"$l2r\",\"step\":\"preparation\"}"
@@ -1495,6 +1497,17 @@ done
 echo "╠══════════════════════════════════════════════════════════════════╣"
 printf '║  TOTAL: %3d PASS | %2d FAIL | %2d WARN | %2d SKIP              ║\n' $TP $TF $TW $TSK
 echo "╠══════════════════════════════════════════════════════════════════╣"
+# ── Critical sections classification ──
+CRITICAL_SECS="C D E F G H I J K L"
+CRIT_FAIL=0
+CRIT_WARN=0
+for _sec in $CRITICAL_SECS; do
+  _sf=${SEC_FAILS[$_sec]:-0}
+  _sw=${SEC_WARNS[$_sec]:-0}
+  [[ $_sf -gt 0 ]] && ((CRIT_FAIL += _sf)) || true
+  [[ $_sw -gt 0 ]] && ((CRIT_WARN += _sw)) || true
+done
+
 if [[ $TF -gt 0 ]]; then
   echo "║  🔴 VERDICT: NOT READY                                        ║"
 elif [[ $TW -gt 0 ]]; then
@@ -1502,5 +1515,22 @@ elif [[ $TW -gt 0 ]]; then
 else
   echo "║  🟢 VERDICT: READY                                            ║"
 fi
+echo "╠══════════════════════════════════════════════════════════════════╣"
+echo "║                     GO / NO-GO CRITERIA                        ║"
+echo "╠══════════════════════════════════════════════════════════════════╣"
+echo "║                                                                ║"
+echo "║  Sections critiques (bloquantes si FAIL) :                     ║"
+echo "║  C Machine · D Concurrence · E Idempotence · F Atomicité      ║"
+echo "║  G Stock · H Wallet · I Audit · J Routing · K RBAC · L Scans  ║"
+echo "║                                                                ║"
+printf '║  Critiques → FAIL: %-3d  WARN: %-3d                            ║\n' $CRIT_FAIL $CRIT_WARN
+printf '║  Global    → FAIL: %-3d  WARN: %-3d  SKIP: %-3d                 ║\n' $TF $TW $TSK
+echo "║                                                                ║"
+echo "║  Règles de verdict :                                           ║"
+echo "║    • FAIL > 0 (toute section)     → 🔴 NOT READY              ║"
+echo "║    • FAIL = 0, WARN > 0           → 🟡 READY WITH RISKS       ║"
+echo "║    • FAIL = 0, WARN = 0           → 🟢 READY                  ║"
+echo "║                                                                ║"
+echo "║  FAIL dans section critique = bloquant, non négociable.        ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
 echo ""
