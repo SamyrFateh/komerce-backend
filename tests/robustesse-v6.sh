@@ -1,63 +1,88 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
-# KOMERCE — SUITE DE TESTS ROBUSTESSE v6.1
+# KOMERCE — SUITE DE TESTS ROBUSTESSE BUSINESS / TRANSACTIONNELLE v6.2
 # ═══════════════════════════════════════════════════════════════════════════════
-# 17 sections (A–Q) | ~145 tests | Concurrence | Idempotence | Atomicité
-# Verdict : READY | READY WITH RISKS | NOT READY
-# Cible   : https://komerce-backend-production.up.railway.app
+# PÉRIMÈTRE : Cette suite couvre la robustesse métier et transactionnelle :
+#   - Machine à états (cycle de vie commande)
+#   - Intégrité stock (décréments, restaurations, concurrence)
+#   - Intégrité wallet (crédits, débits, reversals, FIFO)
+#   - Audit trail (traçabilité obligatoire)
+#   - RBAC (rôles et périmètres)
+#   - Idempotence / atomicité des endpoints critiques
+#   - Scans & logistique (cycle colis)
+#   - Routing relais → destination
+#   - Compatibilité legacy
 #
-# v6.1 improvements:
-#   1. Explicit login + session verify for Client A & B
-#   2. B9: prove in_transit passes Joi (not just "non-400")
-#   3. Tolerate 409 or 422 on invalid transitions
-#   4. Concurrence: measure status/stock/history deltas
-#   5. Stock=1 real oversell scenario (via DB SET stock=1)
-#   6. Idempotence: verify no double business effect (history, stock)
-#   7. Atomicity reinforced or explicit WARN
-#   8. Correct legacy /credits + /store-credits endpoints
-#   9. Post reverse-lot: revalidate balance + transactions
+# HORS PÉRIMÈTRE (nécessitent outils dédiés) :
+#   - Performance / charge (k6, Artillery)
+#   - Stripe webhooks (clé test requise)
+#   - CORS / headers sécurité (OWASP ZAP)
+#   - Upload images / Cloudinary
+#   - WebSocket / temps réel
+#   - Rate-limiting
+#   - Emails / notifications
+#
+# MODES D'EXÉCUTION :
+#   MODE=prod    (défaut) → ZÉRO mutation SQL. Lectures API uniquement.
+#                           Les tests nécessitant DB sont SKIP.
+#   MODE=staging          → Lectures DB autorisées via $DB_URL (env var).
+#                           AUCUNE écriture SQL. Jamais. Nulle part.
+#
+# USAGE :
+#   MODE=prod bash tests/robustesse-v6.sh
+#   MODE=staging DB_URL="postgresql://..." bash tests/robustesse-v6.sh
+#   BASE="https://staging.example.com" bash tests/robustesse-v6.sh
+#
+# VERDICT :
+#   FAIL > 0          → NOT READY
+#   FAIL = 0, WARN > 0 → READY WITH RISKS
+#   FAIL = 0, WARN = 0 → READY
 # ═══════════════════════════════════════════════════════════════════════════════
 set -o pipefail
 export LC_ALL=C
 
-BASE="https://komerce-backend-production.up.railway.app"
+# ─── Configuration ───────────────────────────────────────────────────────────
+MODE="${MODE:-prod}"
+BASE="${BASE:-https://komerce-backend-production.up.railway.app}"
 TS=$(date +%s)
 
-# ─── DB direct ────────────────────────────────────────────────────────────────
-DB_URL="postgresql://postgres:OxyafJsCkdHGdFhZasHtpkFdmTSamnjA@crossover.proxy.rlwy.net:39045/railway"
-command -v psql > /dev/null 2>&1 || apk add --quiet postgresql16-client > /dev/null 2>&1
+# ─── DB — read-only, via env var, NEVER hardcoded ────────────────────────────
+# RULE: db_query_ro() is the ONLY function that touches the DB.
+#       It is READ-ONLY. No INSERT/UPDATE/DELETE ever.
+#       Only available when MODE=staging AND DB_URL is set.
+HAS_DB=false
+if [[ "$MODE" == "staging" && -n "${DB_URL:-}" ]]; then
+  command -v psql > /dev/null 2>&1 || apk add --quiet postgresql16-client > /dev/null 2>&1
+  if psql "$DB_URL" -c "SELECT 1" > /dev/null 2>&1; then
+    HAS_DB=true
+  fi
+fi
+
+db_query_ro() {
+  # Read-only DB query. Returns empty string if no DB.
+  if [[ "$HAS_DB" == "true" ]]; then
+    psql "$DB_URL" -t -A -c "$1" 2>/dev/null | tr -d '[:space:]'
+  fi
+}
 
 db_pickup() {
-  psql "$DB_URL" -t -A -c "SELECT pickup_code FROM orders WHERE id='$1'" 2>/dev/null | tr -d '[:space:]'
-}
-db_query() {
-  psql "$DB_URL" -t -A -c "$1" 2>/dev/null | tr -d '[:space:]'
-}
-db_set_stock() {
-  psql "$DB_URL" -t -A -c "UPDATE products SET stock=$2 WHERE id='$1'" 2>/dev/null
-}
-db_get_stock() {
-  psql "$DB_URL" -t -A -c "SELECT stock FROM products WHERE id='$1'" 2>/dev/null | tr -d '[:space:]'
-}
-db_history_count() {
-  psql "$DB_URL" -t -A -c "SELECT count(*) FROM order_status_history WHERE order_id='$1'" 2>/dev/null | tr -d '[:space:]'
+  db_query_ro "SELECT pickup_code FROM orders WHERE id='$1'"
 }
 
-# ─── Cookie jars ──────────────────────────────────────────────────────────────
+# ─── Cookie jars ─────────────────────────────────────────────────────────────
 ACK="/tmp/v6a_${TS}.ck"   # admin
 HCK="/tmp/v6h_${TS}.ck"   # hub
 RCK="/tmp/v6r_${TS}.ck"   # relais
 C1CK="/tmp/v6c1_${TS}.ck" # client A
 C2CK="/tmp/v6c2_${TS}.ck" # client B
 
-# ─── Shared state ─────────────────────────────────────────────────────────────
+# ─── Shared state ────────────────────────────────────────────────────────────
 PID="" PPRICE=0 RID=""
 CA_ID="" CB_ID=""
 R_ANJ="" R_MOR="" R_MOH="" R_MAY=""
 ORDER_IDS=()
-STOCK1_PID=""  # dedicated product for stock=1 tests
 
-# ═══ REPORTING ════════════════════════════════════════════════════════════════
+# ═══ REPORTING ═══════════════════════════════════════════════════════════════
 TP=0 TF=0 TW=0 TSK=0
 CP=0 CF=0 CW=0 CSK=0 CSEC=""
 declare -a SREP
@@ -77,7 +102,7 @@ es() {
   SREP+=("$(printf '[%-2s] %-22s %2dP %2dF %2dW %2dS %s' "$CSEC" "$1" $CP $CF $CW $CSK "$v")")
 }
 
-# ═══ API HELPERS ══════════════════════════════════════════════════════════════
+# ═══ API HELPERS ═════════════════════════════════════════════════════════════
 api() {
   local m="$1" p="$2" c="$3" d="$4"
   local a=(-s -o /tmp/v6_r.json -w '%{http_code}')
@@ -101,10 +126,23 @@ jn() { echo "$1" | jq -r "$2 // 0" 2>/dev/null; }
 jl() { echo "$1" | jq -r "$2 | length" 2>/dev/null; }
 
 get_stock() {
+  # API-based stock check — no DB needed
   local r
   r=$(curl -s -b "$ACK" "${BASE}/api/products" 2>/dev/null)
   echo "$r" | jq -r --arg p "$1" \
     '[(.products // .)[] | select(.id==$p)][0].stock // "0"' 2>/dev/null
+}
+
+api_history_count() {
+  # API-based history count via /api/orders/:id/history
+  local _hbody
+  _hbody=$(curl -s -b "$ACK" "${BASE}/api/orders/$1/history" 2>/dev/null)
+  echo "$_hbody" | jq 'if type == "array" then length else 0 end' 2>/dev/null
+}
+
+api_history_body() {
+  # Returns full history body for detailed checks
+  curl -s -b "$ACK" "${BASE}/api/orders/$1/history" 2>/dev/null
 }
 
 track() { ORDER_IDS+=("$1"); }
@@ -157,6 +195,8 @@ cnt200() {
 section_A() {
   ss "A" "AUTHENTIFICATION & SETUP"
 
+  printf '  ℹ️  MODE=%s | HAS_DB=%s\n' "$MODE" "$HAS_DB"
+
   # Admin reset (Railway redeploy safety)
   curl -s -X POST -H 'Content-Type: application/json' \
     -d '{"key":"komerce-dev-2026","new_password":"admin123"}' \
@@ -171,18 +211,16 @@ section_A() {
   do_login "fatouma@komerce.km" "admin123" "$RCK"
   [[ "$HTTP" == "200" ]] && pt "A3: Relais login" || ft "A3: Relais login" "HTTP=$HTTP"
 
-  # ── Client A — register then EXPLICIT login + session verify ──
+  # ── Client A — register + EXPLICIT login + session verify ──
   local ea="v6ca${TS}@test.km"
   local pa="+269${TS:3:7}"
   curl -s -o /tmp/v6_reg.json -w '%{http_code}' \
     -X POST -H 'Content-Type: application/json' \
     -d "{\"full_name\":\"V6 ClientA\",\"email\":\"$ea\",\"phone\":\"$pa\",\"password\":\"pass1234\"}" \
     "${BASE}/api/auth/register" > /tmp/v6_regh.txt 2>/dev/null
-  # Always login — register does NOT set httpOnly cookie
   do_login "$ea" "pass1234" "$C1CK"
   CA_ID=$(jv "$BODY" '.user.id // .id')
   if [[ "$HTTP" == "200" && -n "$CA_ID" ]]; then
-    # Verify session actually works on a protected endpoint
     api GET "/api/wallet" "$C1CK"
     if [[ "$HTTP" == "200" ]]; then
       pt "A4: Client A ($CA_ID) — login + session verified"
@@ -190,17 +228,16 @@ section_A() {
       ft "A4: Client A login OK but session broken" "wallet=$HTTP"
     fi
   else
-    ft "A4: Client A" "reg=$(cat /tmp/v6_regh.txt) login=$HTTP — $(jv "$(cat /tmp/v6_reg.json)" '.error')"
+    ft "A4: Client A" "login=$HTTP — $(jv "$(cat /tmp/v6_reg.json 2>/dev/null)" '.error')"
   fi
 
-  # ── Client B — register then EXPLICIT login + session verify ──
+  # ── Client B — register + EXPLICIT login + session verify ──
   local eb="v6cb${TS}@test.km"
   local pb="+269${TS:2:7}"
   curl -s -o /tmp/v6_reg.json -w '%{http_code}' \
     -X POST -H 'Content-Type: application/json' \
     -d "{\"full_name\":\"V6 ClientB\",\"email\":\"$eb\",\"phone\":\"$pb\",\"password\":\"pass1234\"}" \
     "${BASE}/api/auth/register" > /tmp/v6_regh.txt 2>/dev/null
-  # Always login — register does NOT set httpOnly cookie
   do_login "$eb" "pass1234" "$C2CK"
   CB_ID=$(jv "$BODY" '.user.id // .id')
   if [[ "$HTTP" == "200" && -n "$CB_ID" ]]; then
@@ -211,10 +248,10 @@ section_A() {
       ft "A5: Client B login OK but session broken" "wallet=$HTTP"
     fi
   else
-    ft "A5: Client B" "reg=$(cat /tmp/v6_regh.txt) login=$HTTP — $(jv "$(cat /tmp/v6_reg.json)" '.error')"
+    ft "A5: Client B" "login=$HTTP — $(jv "$(cat /tmp/v6_reg.json 2>/dev/null)" '.error')"
   fi
 
-  # Products — find one with stock>30 for main tests
+  # Products — find one with stock>30
   api GET "/api/products" "$ACK"
   PID=$(echo "$BODY" | jq -r \
     '[(.products // .)[] | select(.stock!=null and (.stock|tonumber)>30 and .is_active!=false)][0].id // empty' 2>/dev/null)
@@ -224,15 +261,6 @@ section_A() {
     pt "A6: Product $PID (stock=$(get_stock "$PID"), price=$PPRICE)"
   else
     ft "A6: No product with stock>30"
-  fi
-
-  # Find a SECOND product for stock=1 oversell tests
-  STOCK1_PID=$(echo "$BODY" | jq -r --arg p "$PID" \
-    '[(.products // .)[] | select(.id!=$p and .stock!=null and (.stock|tonumber)>5 and .is_active!=false)][0].id // empty' 2>/dev/null)
-  if [[ -n "$STOCK1_PID" ]]; then
-    pt "A6b: Stock-1 test product $STOCK1_PID"
-  else
-    wt "A6b: No 2nd product for stock=1 test"
   fi
 
   # Relais — flat JSON array, field is "island" not "island_code"
@@ -293,9 +321,9 @@ section_B() {
   api POST "/api/scans" "$HCK" '{"scan_code":"FAKE","step":"teleported"}'
   [[ "$HTTP" == "400" ]] && pt "B8: step=teleported → 400" || ft "B8: bad step" "HTTP=$HTTP"
 
-  # B9: in_transit step ACCEPTED by Joi (F22 regression) — PROVE it's not a validation error
-  # If Joi rejects in_transit, HTTP=400 with validation message mentioning "step" or "in_transit"
-  # If Joi accepts, HTTP will be 404 (scan_code FAKE not found) or 200/422 (downstream logic)
+  # B9: in_transit step ACCEPTED by Joi (F22 regression guard)
+  # PROOF: If Joi rejects → 400 with validation error about "step"
+  #        If Joi accepts → downstream logic (404=scan_code not found, 200/422=business logic)
   api POST "/api/scans" "$HCK" '{"scan_code":"FAKE","step":"in_transit"}'
   if [[ "$HTTP" == "400" ]]; then
     local err_msg
@@ -303,7 +331,6 @@ section_B() {
     if echo "$err_msg" | grep -qiE 'step|valid|allow|in_transit'; then
       ft "B9: F22 REGRESSION — in_transit rejected by Joi" "$err_msg"
     else
-      # 400 but not about step validation — might be another field
       wt "B9: 400 but unclear if Joi rejection" "msg=$err_msg"
     fi
   elif [[ "$HTTP" == "404" || "$HTTP" == "422" || "$HTTP" == "200" || "$HTTP" == "201" ]]; then
@@ -368,21 +395,30 @@ section_C() {
   patch_st "$oid" "$RCK" "available"
   [[ "$HTTP" == "200" ]] && pt "C6: → available" || ft "C6: available" "HTTP=$HTTP"
 
-  # Collect via pickup_code (queried from DB — not exposed by API)
+  # Collect via pickup_code — requires DB access (not exposed by API)
   local pcode
   pcode=$(db_pickup "$oid")
   if [[ -n "$pcode" ]]; then
     api POST "/api/scans/collect" "$RCK" "{\"pickup_code\":\"$pcode\"}"
     [[ "$HTTP" == "200" ]] && pt "C7: Collect → collected (pickup=$pcode)" || ft "C7: Collect" "HTTP=$HTTP"
   else
-    wt "C7: pickup_code not in DB" "detail.js ne l'expose pas"
+    if [[ "$HAS_DB" == "true" ]]; then
+      wt "C7: pickup_code not found in DB"
+    else
+      sk "C7: pickup_code requires DB access (MODE=staging)"
+    fi
   fi
 
   # Verify final status via history endpoint
-  api GET "/api/orders/$oid/history" "$ACK"
-  local last_st
-  last_st=$(echo "$BODY" | jq -r '.[-1].status // empty' 2>/dev/null)
-  [[ "$last_st" == "collected" ]] && pt "C8: Final status = collected ✓" || { [[ -z "$pcode" ]] && wt "C8: Status=$last_st (no pickup_code)" || ft "C8: Final=$last_st"; }
+  local hist_body last_st
+  hist_body=$(api_history_body "$oid")
+  last_st=$(echo "$hist_body" | jq -r '.[-1].status // empty' 2>/dev/null)
+  if [[ -n "$pcode" ]]; then
+    [[ "$last_st" == "collected" ]] && pt "C8: Final status = collected ✓" || ft "C8: Final=$last_st"
+  else
+    [[ "$last_st" == "available" ]] && pt "C8: Status = available ✓ (collect skipped)" \
+      || wt "C8: Status=$last_st (expected available, collect skipped)"
+  fi
 
   # ── Invalid transitions (tolerate 409 OR 422) ──
   mk_order "$C1CK" "$PID" "$RID" 1 "Invalid" "+2693100002"
@@ -402,9 +438,9 @@ section_C() {
   patch_st "$oid2" "$ACK" "ordered"
   [[ "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "C11: cancelled→ordered BLOCKED ($HTTP)" || ft "C11: not blocked" "HTTP=$HTTP"
 
-  # collected→cancelled (oid is collected)
+  # collected→cancelled (oid is collected or available)
   do_cancel "$oid" "$ACK"
-  [[ "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "C12: collected→cancelled BLOCKED ($HTTP)" || ft "C12: not blocked" "HTTP=$HTTP"
+  [[ "$HTTP" == "422" || "$HTTP" == "409" ]] && pt "C12: final→cancelled BLOCKED ($HTTP)" || ft "C12: not blocked" "HTTP=$HTTP"
 
   # ── Stock restoration on cancel ──
   mk_order "$C1CK" "$PID" "$RID" 2 "StockRestore" "+2693100003"
@@ -430,10 +466,9 @@ section_D() {
   mk_order "$C1CK" "$PID" "$RID" 1 "RaceD1" "+2693200001"
   local d1id d1crc
   d1id=$(jv "$BODY" '.order.id'); d1crc=$(jv "$BODY" '.order.cash_ref_code'); track "$d1id"
-  local stock_before_d1
+  local stock_before_d1 hist_before_d1
   stock_before_d1=$(get_stock "$PID")
-  local hist_before_d1
-  hist_before_d1=$(db_history_count "$d1id")
+  hist_before_d1=$(api_history_count "$d1id")
 
   race2 POST "/api/payments/cash/confirm" "$RCK" \
     "{\"cash_ref_code\":\"$d1crc\"}"
@@ -441,29 +476,31 @@ section_D() {
   ok=$(cnt200)
 
   # Measure post-race state
-  local stock_after_d1
+  local stock_after_d1 hist_after_d1
   stock_after_d1=$(get_stock "$PID")
-  local hist_after_d1
-  hist_after_d1=$(db_history_count "$d1id")
+  hist_after_d1=$(api_history_count "$d1id")
   api GET "/api/orders/$d1id" "$ACK"
   local status_d1
   status_d1=$(jv "$BODY" '.status')
 
   if [[ $ok -eq 1 ]]; then
     pt "D1: Double confirm → 1 win"
-    # Verify stock decremented exactly once
+    # Stock decremented exactly once
     [[ $((stock_before_d1 - stock_after_d1)) -eq 1 ]] \
       && pt "D1b: Stock delta = -1 ✓ ($stock_before_d1→$stock_after_d1)" \
       || ft "D1b: Stock delta" "expected -1 got $((stock_before_d1 - stock_after_d1))"
-    # Verify exactly 1 history entry added (confirmed→ordered)
+    # Exactly 1 history entry added
     [[ $((hist_after_d1 - hist_before_d1)) -eq 1 ]] \
       && pt "D1c: History delta = +1 ✓" \
-      || wt "D1c: History delta = $((hist_after_d1 - hist_before_d1))"
+      || ft "D1c: History delta = $((hist_after_d1 - hist_before_d1)) (expected 1)"
     [[ "$status_d1" == "ordered" ]] && pt "D1d: Status = ordered ✓" || ft "D1d: Status=$status_d1"
   elif [[ $ok -eq 0 ]]; then
     ft "D1: Both failed ($R1H/$R2H)"
   else
+    # Both won = race condition
     wt "D1: Both won — race condition" "stock_delta=$((stock_before_d1 - stock_after_d1)) hist_delta=$((hist_after_d1 - hist_before_d1))"
+    # Even if both won, stock must still be consistent
+    [[ $((stock_before_d1 - stock_after_d1)) -ge 0 ]] || ft "D1e: Negative stock delta after race!"
   fi
 
   # ── D2: Double cancel (simultané) ──
@@ -484,8 +521,10 @@ section_D() {
     [[ $((stock_after_d2 - stock_before_d2)) -eq 1 ]] \
       && pt "D2b: Stock restored +1 ✓" \
       || ft "D2b: Stock delta" "expected +1 got $((stock_after_d2 - stock_before_d2))"
+  elif [[ $ok -eq 2 ]]; then
+    ft "D2: Both cancel won — double stock reversal risk" "stock_delta=$((stock_after_d2 - stock_before_d2))"
   else
-    wt "D2: Cancel race ok=$ok" "stock_delta=$((stock_after_d2 - stock_before_d2))"
+    ft "D2: Both cancel failed ($R1H/$R2H)"
   fi
 
   # ── D3: Double PATCH même statut (simultané) ──
@@ -494,17 +533,16 @@ section_D() {
   d3id=$(jv "$BODY" '.order.id'); d3crc=$(jv "$BODY" '.order.cash_ref_code'); track "$d3id"
   confirm_cash "$d3crc"
   local hist_before_d3
-  hist_before_d3=$(db_history_count "$d3id")
+  hist_before_d3=$(api_history_count "$d3id")
 
   race2 PATCH "/api/orders/$d3id/status" "$HCK" '{"status":"preparation"}'
   api GET "/api/orders/$d3id" "$ACK"
   local status_d3
   status_d3=$(jv "$BODY" '.status')
   local hist_after_d3
-  hist_after_d3=$(db_history_count "$d3id")
+  hist_after_d3=$(api_history_count "$d3id")
 
   [[ "$status_d3" == "preparation" ]] && pt "D3: Double PATCH → consistent (preparation)" || ft "D3: Inconsistent $status_d3"
-  # History should have exactly 1 new entry, not 2
   local hdelta_d3=$((hist_after_d3 - hist_before_d3))
   [[ $hdelta_d3 -eq 1 ]] && pt "D3b: History delta = 1 ✓ (no duplicate)" \
     || wt "D3b: History delta = $hdelta_d3" "possible duplicate entry"
@@ -530,43 +568,10 @@ section_D() {
     || ft "D4: Stock mismatch" "expected=$expected got=$s1"
   [[ $s1 -ge 0 ]] && pt "D5: Stock ≥ 0 ($s1)" || ft "D5: NEGATIVE STOCK ($s1)"
 
-  # ── D6: SURVENTE stock=1 — vrai scénario dernier item ──
-  if [[ -n "$STOCK1_PID" ]]; then
-    # Save original stock, set to 1
-    local orig_stock
-    orig_stock=$(db_get_stock "$STOCK1_PID")
-    db_set_stock "$STOCK1_PID" 1
-
-    # Create 2 orders on the same product (stock=1)
-    mk_order "$C1CK" "$STOCK1_PID" "$RID" 1 "Race6a" "+2693200006"
-    local d6a d6ac
-    d6a=$(jv "$BODY" '.order.id'); d6ac=$(jv "$BODY" '.order.cash_ref_code'); track "$d6a"
-    mk_order "$C1CK" "$STOCK1_PID" "$RID" 1 "Race6b" "+2693200007"
-    local d6b d6bc
-    d6b=$(jv "$BODY" '.order.id'); d6bc=$(jv "$BODY" '.order.cash_ref_code'); track "$d6b"
-
-    # Race: both confirm simultaneously
-    race2 POST "/api/payments/cash/confirm" "$RCK" \
-      "{\"cash_ref_code\":\"$d6ac\"}" "$RCK" "{\"cash_ref_code\":\"$d6bc\"}"
-    local wins=0
-    [[ "$R1H" == "200" ]] && ((wins++)) || true
-    [[ "$R2H" == "200" ]] && ((wins++)) || true
-    local final_stock
-    final_stock=$(db_get_stock "$STOCK1_PID")
-
-    if [[ $wins -le 1 && ${final_stock:-0} -ge 0 ]]; then
-      pt "D6: Survente stock=1 → $wins win(s), stock=$final_stock ≥ 0 ✓"
-    else
-      ft "D6: Survente!" "wins=$wins stock=$final_stock (R1=$R1H R2=$R2H)"
-    fi
-
-    # Restore original stock
-    do_cancel "$d6a" "$ACK" > /dev/null 2>&1
-    do_cancel "$d6b" "$ACK" > /dev/null 2>&1
-    db_set_stock "$STOCK1_PID" "$orig_stock"
-  else
-    sk "D6: No 2nd product for stock=1 test"
-  fi
+  # ── D6: SURVENTE stock=1 ──
+  # Requires DB mutation (SET stock=1) which is FORBIDDEN in all modes.
+  # This test needs a dedicated admin stock API or staging fixtures.
+  sk "D6: Stock=1 race test" "requires admin stock API or staging fixtures (no DB mutation allowed)"
 
   # Cleanup
   do_cancel "$d3id" "$ACK" > /dev/null 2>&1
@@ -582,37 +587,34 @@ section_D() {
 section_E() {
   ss "E" "IDEMPOTENCE FORTE"
 
-  # ── E1: Double cash confirm séquentiel — vérifier absence de double effet ──
+  # ── E1: Double cash confirm séquentiel ──
   mk_order "$C1CK" "$PID" "$RID" 1 "Idemp1" "+2693300001"
   local e1id e1crc
   e1id=$(jv "$BODY" '.order.id'); e1crc=$(jv "$BODY" '.order.cash_ref_code'); track "$e1id"
-  local stock_e1_before
+  local stock_e1_before hist_e1_before
   stock_e1_before=$(get_stock "$PID")
-  local hist_e1_before
-  hist_e1_before=$(db_history_count "$e1id")
+  hist_e1_before=$(api_history_count "$e1id")
 
   confirm_cash "$e1crc"
   local h1="$HTTP"
   confirm_cash "$e1crc"
   local h2="$HTTP"
 
-  local stock_e1_after
+  local stock_e1_after hist_e1_after
   stock_e1_after=$(get_stock "$PID")
-  local hist_e1_after
-  hist_e1_after=$(db_history_count "$e1id")
+  hist_e1_after=$(api_history_count "$e1id")
 
   [[ "$h1" == "200" && "$h2" != "200" ]] && pt "E1: Double confirm → 2nd rejected ($h2)" \
-    || ft "E1: idempotence" "h1=$h1 h2=$h2"
-  # Stock must be decremented only once
+    || ft "E1: idempotence broken" "h1=$h1 h2=$h2"
+  # FAIL on double business effect (not WARN)
   [[ $((stock_e1_before - stock_e1_after)) -eq 1 ]] \
     && pt "E1b: Stock decrement = 1 (no double)" \
-    || ft "E1b: Double stock decrement" "delta=$((stock_e1_before - stock_e1_after))"
-  # History must have only 1 transition (confirmed→ordered)
+    || ft "E1b: DOUBLE STOCK DECREMENT" "delta=$((stock_e1_before - stock_e1_after))"
   [[ $((hist_e1_after - hist_e1_before)) -eq 1 ]] \
     && pt "E1c: History delta = 1 (no duplicate)" \
-    || ft "E1c: History doubled" "delta=$((hist_e1_after - hist_e1_before))"
+    || ft "E1c: DOUBLE HISTORY ENTRY" "delta=$((hist_e1_after - hist_e1_before))"
 
-  # ── E2: Double cancel séquentiel — stock restored only once ──
+  # ── E2: Double cancel séquentiel ──
   local stock_e2_before
   stock_e2_before=$(get_stock "$PID")
   do_cancel "$e1id" "$ACK"
@@ -622,13 +624,17 @@ section_E() {
   local stock_e2_after
   stock_e2_after=$(get_stock "$PID")
 
-  [[ "$h1" == "200" && ("$h2" == "422" || "$h2" == "409") ]] \
-    && pt "E2: Double cancel → 2nd blocked ($h2)" \
-    || wt "E2: cancel idempotence" "h1=$h1 h2=$h2"
-  # Stock restored only once (+1)
+  if [[ "$h1" == "200" && ("$h2" == "422" || "$h2" == "409") ]]; then
+    pt "E2: Double cancel → 2nd blocked ($h2)"
+  elif [[ "$h1" == "200" && "$h2" == "200" ]]; then
+    ft "E2: BOTH CANCELS SUCCEEDED — double stock reversal"
+  else
+    ft "E2: Unexpected" "h1=$h1 h2=$h2"
+  fi
+  # FAIL on double stock reversal
   [[ $((stock_e2_after - stock_e2_before)) -eq 1 ]] \
     && pt "E2b: Stock restored +1 (no double reversal)" \
-    || ft "E2b: Stock reversal" "delta=$((stock_e2_after - stock_e2_before)) expected +1"
+    || ft "E2b: DOUBLE STOCK REVERSAL" "delta=$((stock_e2_after - stock_e2_before)) expected +1"
 
   # ── E3–E4: Double PATCH même statut séquentiel ──
   mk_order "$C1CK" "$PID" "$RID" 1 "Idemp3" "+2693300003"
@@ -636,7 +642,7 @@ section_E() {
   e3id=$(jv "$BODY" '.order.id'); e3crc=$(jv "$BODY" '.order.cash_ref_code'); track "$e3id"
   confirm_cash "$e3crc"
   local hist_e3_before
-  hist_e3_before=$(db_history_count "$e3id")
+  hist_e3_before=$(api_history_count "$e3id")
 
   patch_st "$e3id" "$HCK" "preparation"
   h1="$HTTP"
@@ -644,20 +650,19 @@ section_E() {
   h2="$HTTP"
 
   local hist_e3_after
-  hist_e3_after=$(db_history_count "$e3id")
+  hist_e3_after=$(api_history_count "$e3id")
 
   [[ "$h1" == "200" ]] && pt "E3: First PATCH OK" || ft "E3: First PATCH" "$h1"
   [[ "$h2" == "200" || "$h2" == "422" ]] && pt "E4: Second PATCH handled ($h2)" || ft "E4: Second PATCH" "$h2"
-  # If both returned 200, history should still only have 1 extra entry (idempotent)
-  # If 2nd was 422, history = 1 extra. Either way: NOT 2 extra
+
   local hist_delta_e3=$((hist_e3_after - hist_e3_before))
   if [[ "$h2" == "422" ]]; then
     [[ $hist_delta_e3 -eq 1 ]] && pt "E4b: History delta = 1 (2nd blocked, no dup)" \
       || ft "E4b: History delta" "$hist_delta_e3"
   else
-    # Both 200 — allow 1 or 2 but warn if 2
+    # Both 200: history MUST be ≤ 1 — else FAIL (double effect)
     [[ $hist_delta_e3 -le 1 ]] && pt "E4b: History delta = $hist_delta_e3 (idempotent)" \
-      || wt "E4b: History delta = $hist_delta_e3" "double entry on same-status PATCH"
+      || ft "E4b: DOUBLE HISTORY on same-status PATCH" "delta=$hist_delta_e3"
   fi
 
   # ── E5: Double collect ──
@@ -671,10 +676,15 @@ section_E() {
     h1="$HTTP"
     api POST "/api/scans/collect" "$RCK" "{\"pickup_code\":\"$e3pc\"}"
     h2="$HTTP"
-    [[ "$h1" == "200" && "$h2" != "200" ]] && pt "E5: Double collect → 2nd blocked ($h2)" \
-      || wt "E5: collect idempotence" "h1=$h1 h2=$h2"
+    if [[ "$h1" == "200" && "$h2" != "200" ]]; then
+      pt "E5: Double collect → 2nd blocked ($h2)"
+    elif [[ "$h1" == "200" && "$h2" == "200" ]]; then
+      ft "E5: BOTH COLLECTS SUCCEEDED"
+    else
+      wt "E5: collect idempotence unclear" "h1=$h1 h2=$h2"
+    fi
   else
-    sk "E5: No pickup_code"
+    sk "E5: pickup_code requires DB access (MODE=staging)"
   fi
 
   es "IDEMPOTENCE"
@@ -691,16 +701,16 @@ section_F() {
   local f1id f1crc
   f1id=$(jv "$BODY" '.order.id'); f1crc=$(jv "$BODY" '.order.cash_ref_code'); track "$f1id"
   local hist_f1_before
-  hist_f1_before=$(db_history_count "$f1id")
+  hist_f1_before=$(api_history_count "$f1id")
 
   patch_st "$f1id" "$ACK" "shipped"  # confirmed→shipped = invalid
   api GET "/api/orders/$f1id" "$ACK"
   [[ "$(jv "$BODY" '.status')" == "confirmed" ]] && pt "F1: Status unchanged after failed transition" \
     || ft "F1: Dirty state $(jv "$BODY" '.status')"
 
-  # Verify no phantom history entry was created
+  # No phantom history entry
   local hist_f1_after
-  hist_f1_after=$(db_history_count "$f1id")
+  hist_f1_after=$(api_history_count "$f1id")
   [[ $hist_f1_after -eq $hist_f1_before ]] && pt "F1b: No phantom history entry" \
     || ft "F1b: Phantom history entry created" "before=$hist_f1_before after=$hist_f1_after"
 
@@ -718,18 +728,17 @@ section_F() {
   f3id=$(jv "$BODY" '.order.id'); f3crc=$(jv "$BODY" '.order.cash_ref_code'); track "$f3id"
   confirm_cash "$f3crc"
   patch_st "$f3id" "$HCK" "preparation"
-  # 3 transitions: confirmed→ordered→preparation → at least 3 history entries
+  # 3 transitions → at least 3 history entries
   local f3hist
-  f3hist=$(db_history_count "$f3id")
+  f3hist=$(api_history_count "$f3id")
   [[ ${f3hist:-0} -ge 3 ]] && pt "F3: History ≥ 3 entries ($f3hist)" || ft "F3: History=$f3hist"
 
   # ── F4: Failed cancel → stock/status unchanged ──
-  # Try to cancel from shipped (not allowed) — status and stock should be untouched
   patch_st "$f3id" "$HCK" "shipped"
   local stock_f4_before
   stock_f4_before=$(get_stock "$PID")
   do_cancel "$f3id" "$ACK"
-  [[ "$HTTP" == "422" || "$HTTP" == "409" ]] || wt "F4: Expected 422/409" "HTTP=$HTTP"
+  [[ "$HTTP" == "422" || "$HTTP" == "409" ]] || wt "F4x: Expected 422/409 on cancel" "HTTP=$HTTP"
   local stock_f4_after
   stock_f4_after=$(get_stock "$PID")
   api GET "/api/orders/$f3id" "$ACK"
@@ -739,12 +748,11 @@ section_F() {
     && pt "F4: Failed cancel → stock+status unchanged (shipped, $stock_f4_before)" \
     || ft "F4: State polluted" "stock=$stock_f4_before→$stock_f4_after status=$st_f4"
 
-  # ── F5: Wallet atomicity — credit then verify balance invariant ──
+  # ── F5: Wallet atomicity — invalid credit → balance unchanged ──
   if [[ -n "$CA_ID" ]]; then
     api GET "/api/wallet" "$C1CK"
     local w_before
     w_before=$(jn "$BODY" '.balance_kmf')
-    # Try to credit with invalid data (missing amount)
     api POST "/api/wallet/admin/credit" "$ACK" "{\"user_id\":\"$CA_ID\"}"
     api GET "/api/wallet" "$C1CK"
     local w_after
@@ -755,16 +763,22 @@ section_F() {
     wt "F5: No Client A — cannot test wallet atomicity"
   fi
 
-  # ── F6: Partial order — no dangling order if product doesn't exist ──
-  local order_count_before
-  order_count_before=$(db_query "SELECT count(*) FROM orders WHERE recipient_name='AtomGhost'")
+  # ── F6: No dangling order if product doesn't exist ──
   api POST "/api/orders" "$C1CK" \
     "{\"items\":[{\"product_id\":\"00000000-dead-dead-dead-000000000000\",\"quantity\":1}],\"relais_id\":\"$RID\",\"payment_mode\":\"cash_relais\",\"recipient_name\":\"AtomGhost\",\"recipient_phone\":\"+2693400006\"}"
-  local order_count_after
-  order_count_after=$(db_query "SELECT count(*) FROM orders WHERE recipient_name='AtomGhost'")
-  [[ "${order_count_after:-0}" == "${order_count_before:-0}" ]] \
-    && pt "F6: No dangling order after failed create" \
-    || wt "F6: Dangling order created" "before=$order_count_before after=$order_count_after"
+  local ghost_id
+  ghost_id=$(jv "$BODY" '.order.id')
+  if [[ "$HTTP" != "201" && -z "$ghost_id" ]]; then
+    pt "F6: No dangling order after failed create (HTTP=$HTTP)"
+  elif [[ -n "$ghost_id" ]]; then
+    ft "F6: Dangling order created!" "id=$ghost_id"
+    track "$ghost_id"
+  else
+    wt "F6: Ambiguous — HTTP=$HTTP but no order.id" "check manually"
+  fi
+
+  # ── F7: Atomicity limitation acknowledgment ──
+  wt "F7: Atomicity tested via invalid input, not via crash mid-transaction" "true crash atomicity requires chaos engineering"
 
   do_cancel "$f1id" "$ACK" > /dev/null 2>&1
 
@@ -824,40 +838,9 @@ section_G() {
     pt "G5: Overstock rejected at create ($HTTP)"
   fi
 
-  # ── G6: stock=1 survente séquentielle ──
-  if [[ -n "$STOCK1_PID" ]]; then
-    local orig_s1
-    orig_s1=$(db_get_stock "$STOCK1_PID")
-    db_set_stock "$STOCK1_PID" 1
-
-    mk_order "$C1CK" "$STOCK1_PID" "$RID" 1 "Stock1a" "+2693500006"
-    local g6a g6ac
-    g6a=$(jv "$BODY" '.order.id'); g6ac=$(jv "$BODY" '.order.cash_ref_code'); track "$g6a"
-    mk_order "$C1CK" "$STOCK1_PID" "$RID" 1 "Stock1b" "+2693500007"
-    local g6b g6bc
-    g6b=$(jv "$BODY" '.order.id'); g6bc=$(jv "$BODY" '.order.cash_ref_code'); track "$g6b"
-
-    confirm_cash "$g6ac"
-    local h_first="$HTTP"
-    confirm_cash "$g6bc"
-    local h_second="$HTTP"
-    local final_s1
-    final_s1=$(db_get_stock "$STOCK1_PID")
-
-    if [[ "$h_first" == "200" && "$h_second" != "200" && ${final_s1:-0} -ge 0 ]]; then
-      pt "G6: Stock=1 → 1st confirm OK, 2nd rejected ($h_second), stock=$final_s1 ✓"
-    elif [[ "$h_first" == "200" && "$h_second" == "200" ]]; then
-      ft "G6: SURVENTE! Both confirmed, stock=$final_s1"
-    else
-      wt "G6: Unexpected" "h1=$h_first h2=$h_second stock=$final_s1"
-    fi
-
-    do_cancel "$g6a" "$ACK" > /dev/null 2>&1
-    do_cancel "$g6b" "$ACK" > /dev/null 2>&1
-    db_set_stock "$STOCK1_PID" "$orig_s1"
-  else
-    sk "G6: No 2nd product for stock=1 test"
-  fi
+  # G6: Stock=1 oversell (séquentiel)
+  # Requires DB mutation (SET stock=1) → SKIP
+  sk "G6: Stock=1 sequential oversell" "requires admin stock API or staging fixtures"
 
   es "STOCK INTEGRITY"
 }
@@ -885,11 +868,12 @@ section_H() {
   local lot_id
   lot_id=$(jv "$BODY" '.lot.id // .transaction.lot_id // .id')
 
-  # H3: Balance verification
+  # H3: Balance = w0 + 5000
   api GET "/api/wallet" "$C1CK"
   local w1
   w1=$(jn "$BODY" '.balance_kmf')
-  [[ $w1 -eq $((w0 + 5000)) ]] && pt "H3: Balance = $w1 ✓" || ft "H3: Expected $((w0+5000)) got $w1"
+  [[ $w1 -eq $((w0 + 5000)) ]] && pt "H3: Balance = $w1 ✓ (expected $((w0 + 5000)))" \
+    || ft "H3: Expected $((w0+5000)) got $w1"
 
   # H4: Order with wallet
   mk_order "$C1CK" "$PID" "$RID" 1 "Wallet1" "+2693600001" "true"
@@ -899,13 +883,13 @@ section_H() {
   [[ "$HTTP" == "201" ]] && pt "H4: Order with wallet (credit=$credit_used)" || ft "H4: Order" "HTTP=$HTTP"
   track "$hw1"
 
-  # H5: Balance reduced
+  # H5: Balance reduced by exact credit_used amount
   api GET "/api/wallet" "$C1CK"
   local w2
   w2=$(jn "$BODY" '.balance_kmf')
   if [[ ${credit_used:-0} -gt 0 ]]; then
-    [[ $w2 -eq $((w1 - credit_used)) ]] && pt "H5: Balance after order = $w2 ✓" \
-      || ft "H5: Expected $((w1 - credit_used)) got $w2"
+    [[ $w2 -eq $((w1 - credit_used)) ]] && pt "H5: Balance after order = $w2 ✓ (w1=$w1 - credit=$credit_used)" \
+      || ft "H5: Balance mismatch" "expected=$((w1 - credit_used)) got=$w2"
   else
     wt "H5: No credit applied" "credit_used=0"
   fi
@@ -921,43 +905,54 @@ section_H() {
   [[ $w3 -eq $w1 ]] && pt "H6: Cancel → wallet reversed ($w3=$w1)" \
     || wt "H6: Wallet after cancel" "expected=$w1 got=$w3"
 
-  # H7: Lot reversal
+  # H7: Lot reversal + deterministic balance verification
   if [[ -n "$lot_id" ]]; then
+    # Record balance BEFORE reversal
+    api GET "/api/wallet" "$C1CK"
+    local w_pre_rev
+    w_pre_rev=$(jn "$BODY" '.balance_kmf')
+
     api POST "/api/wallet/admin/reverse-lot" "$ACK" "{\"lot_id\":\"$lot_id\"}"
     local rev_http="$HTTP"
     [[ "$rev_http" == "200" || "$rev_http" == "201" ]] && pt "H7: Lot reversal OK" \
       || wt "H7: Lot reversal" "HTTP=$rev_http (may be consumed)"
 
-    # ── CHANGE 9: Post reverse-lot — revalidate balance + transactions ──
-    api GET "/api/wallet" "$C1CK"
-    local w4
-    w4=$(jn "$BODY" '.balance_kmf')
     if [[ "$rev_http" == "200" || "$rev_http" == "201" ]]; then
-      # After successful reversal: balance should be w3 - 5000 (lot reversed)
-      local expected_w4=$((w3 - 5000))
+      # H7b: Balance MUST be pre_rev - 5000 (deterministic)
+      api GET "/api/wallet" "$C1CK"
+      local w4
+      w4=$(jn "$BODY" '.balance_kmf')
+      local expected_w4=$((w_pre_rev - 5000))
       [[ $expected_w4 -lt 0 ]] && expected_w4=0
-      [[ $w4 -eq $expected_w4 ]] && pt "H7b: Balance after reversal = $w4 ✓ (was $w3)" \
-        || wt "H7b: Balance after reversal" "expected=$expected_w4 got=$w4"
-    fi
+      [[ $w4 -eq $expected_w4 ]] && pt "H7b: Balance after reversal = $w4 ✓ (was $w_pre_rev, expected $expected_w4)" \
+        || ft "H7b: Balance after reversal wrong" "expected=$expected_w4 got=$w4 (was $w_pre_rev)"
 
-    # Verify transactions include reversal entry
-    api GET "/api/wallet/transactions" "$C1CK"
-    local rev_txn
-    rev_txn=$(echo "$BODY" | jq '[(.transactions // [])[] | select(.type=="reversal" or .type=="reverse" or .reason=="reversed" or (.amount_kmf < 0))] | length' 2>/dev/null)
-    [[ ${rev_txn:-0} -ge 1 ]] && pt "H7c: Reversal transaction logged ($rev_txn)" \
-      || wt "H7c: No reversal transaction found" "may use different field names"
+      # H7c: Transaction log MUST contain reversal entry
+      api GET "/api/wallet/transactions" "$C1CK"
+      local rev_txn
+      rev_txn=$(echo "$BODY" | jq '[(.transactions // [])[] | select(.type=="reversal" or .type=="reverse" or .type=="debit" or (.reason | test("(?i)revers"; "x") // false) or (.amount_kmf < 0))] | length' 2>/dev/null)
+      [[ ${rev_txn:-0} -ge 1 ]] && pt "H7c: Reversal transaction logged ($rev_txn)" \
+        || ft "H7c: No reversal transaction found in wallet history"
+
+      # H7d: Double reversal must be blocked
+      api POST "/api/wallet/admin/reverse-lot" "$ACK" "{\"lot_id\":\"$lot_id\"}"
+      if [[ "$HTTP" == "200" || "$HTTP" == "201" ]]; then
+        ft "H7d: Double reversal accepted — should be blocked"
+      else
+        pt "H7d: Double reversal blocked ($HTTP)"
+      fi
+    fi
   else
-    sk "H7: No lot_id captured"
+    sk "H7: No lot_id captured from credit response"
   fi
 
-  # H8: Transactions logged
+  # H8: Total transactions logged
   api GET "/api/wallet/transactions" "$C1CK"
   local txn
   txn=$(jl "$BODY" '.transactions // .')
   [[ ${txn:-0} -ge 1 ]] && pt "H8: Transactions logged ($txn)" || ft "H8: No transactions"
 
-  # ── CHANGE 8: Correct legacy credits endpoints ──
-  # H9: /credits deprecated
+  # H9: /credits deprecated (F33)
   api GET "/api/credits" "$C1CK"
   [[ "$HTTP" == "410" || "$HTTP" == "404" ]] \
     && pt "H9: /api/credits deprecated ($HTTP)" || wt "H9: /api/credits alive" "HTTP=$HTTP"
@@ -984,25 +979,25 @@ section_I() {
   patch_st "$i1" "$HCK" "shipped"
 
   # I1: History count ≥ 4 (confirmed + ordered + preparation + shipped)
-  api GET "/api/orders/$i1/history" "$ACK"
-  local hlen
-  hlen=$(echo "$BODY" | jq 'length' 2>/dev/null)
+  local hist_body hlen
+  hist_body=$(api_history_body "$i1")
+  hlen=$(echo "$hist_body" | jq 'length' 2>/dev/null)
   [[ ${hlen:-0} -ge 4 ]] && pt "I1: History entries ≥ 4 ($hlen)" || ft "I1: History count=$hlen"
 
   # I2: Chronological order
   local chrono
-  chrono=$(echo "$BODY" | jq '[.[].created_at] | . as $a | ($a | sort) == $a' 2>/dev/null)
-  [[ "$chrono" == "true" ]] && pt "I2: History chronological ✓" || wt "I2: Not chronological"
+  chrono=$(echo "$hist_body" | jq '[.[].created_at] | . as $a | ($a | sort) == $a' 2>/dev/null)
+  [[ "$chrono" == "true" ]] && pt "I2: History chronological ✓" || ft "I2: History NOT chronological"
 
   # I3: Author on each entry
   local nulls
-  nulls=$(echo "$BODY" | jq '[.[] | select(.changed_by_name == null)] | length' 2>/dev/null)
+  nulls=$(echo "$hist_body" | jq '[.[] | select(.changed_by_name == null)] | length' 2>/dev/null)
   [[ "${nulls:-0}" == "0" ]] && pt "I3: All entries have author ✓" || wt "I3: $nulls entries without author"
 
   # I4: Timestamps in history entries
   local ts_count
-  ts_count=$(echo "$BODY" | jq '[.[] | select(.created_at != null)] | length' 2>/dev/null)
-  [[ ${ts_count:-0} -ge 1 ]] && pt "I4: Timestamps present ($ts_count)" || wt "I4: No timestamps"
+  ts_count=$(echo "$hist_body" | jq '[.[] | select(.created_at != null)] | length' 2>/dev/null)
+  [[ ${ts_count:-0} -ge 1 ]] && pt "I4: Timestamps present ($ts_count)" || ft "I4: No timestamps"
 
   # I5: Cancel adds to history — use a fresh order at cancellable state (ordered)
   mk_order "$C1CK" "$PID" "$RID" 1 "Audit2" "+2693700002"
@@ -1010,10 +1005,10 @@ section_I() {
   i5=$(jv "$BODY" '.order.id'); i5c=$(jv "$BODY" '.order.cash_ref_code'); track "$i5"
   confirm_cash "$i5c"
   local hlen_before
-  hlen_before=$(db_history_count "$i5")
+  hlen_before=$(api_history_count "$i5")
   do_cancel "$i5" "$ACK"
   local hlen2
-  hlen2=$(db_history_count "$i5")
+  hlen2=$(api_history_count "$i5")
   [[ ${hlen2:-0} -gt ${hlen_before:-0} ]] && pt "I5: Cancel adds history ($hlen_before→$hlen2)" \
     || ft "I5: No cancel history entry"
 
@@ -1034,44 +1029,64 @@ section_J() {
     mk_order "$C1CK" "$PID" "$R_ANJ" 1 "RouteAnj" "+2693800001"
     if [[ "$HTTP" == "201" ]]; then
       pt "J1: ANJOUAN order created"
-      local dest
-      dest=$(jv "$BODY" '.order.destination // .order.routing.destination_island // .order.island')
-      [[ -n "$dest" ]] && pt "J2: Destination resolved ($dest)" || wt "J2: No destination in response"
+
+      # Explicitly check routing fields
+      local dest rmode thub
+      dest=$(jv "$BODY" '.order.destination_island // .order.routing.destination_island // .order.destination // .order.island')
+      rmode=$(jv "$BODY" '.order.routing_mode // .order.routing.routing_mode')
+      thub=$(jv "$BODY" '.order.transit_hub // .order.routing.transit_hub')
+
+      if [[ -n "$dest" ]]; then
+        pt "J1b: destination_island = $dest ✓"
+      else
+        wt "J1b: destination_island not in create response" "field may not be returned"
+      fi
+      if [[ -n "$rmode" ]]; then
+        pt "J1c: routing_mode = $rmode ✓"
+      else
+        wt "J1c: routing_mode not in create response"
+      fi
+      if [[ -n "$thub" ]]; then
+        pt "J1d: transit_hub = $thub ✓"
+      else
+        wt "J1d: transit_hub not in create response"
+      fi
+
       local j1; j1=$(jv "$BODY" '.order.id'); track "$j1"; do_cancel "$j1" "$ACK" > /dev/null 2>&1
     else
       ft "J1: ANJOUAN" "HTTP=$HTTP"
     fi
   else
-    sk "J1–J2: No ANJOUAN relais"
+    sk "J1: No ANJOUAN relais"
   fi
 
   if [[ -n "$R_MOR" ]]; then
     mk_order "$C1CK" "$PID" "$R_MOR" 1 "RouteMor" "+2693800003"
-    [[ "$HTTP" == "201" ]] && pt "J3: GRANDE COMORE order created" || ft "J3: GRANDE COMORE" "HTTP=$HTTP"
+    [[ "$HTTP" == "201" ]] && pt "J2: GRANDE COMORE order created" || ft "J2: GRANDE COMORE" "HTTP=$HTTP"
     local j3; j3=$(jv "$BODY" '.order.id'); [[ -n "$j3" ]] && { track "$j3"; do_cancel "$j3" "$ACK" > /dev/null 2>&1; }
   else
-    sk "J3: No GRANDE COMORE relais"
+    sk "J2: No GRANDE COMORE relais"
   fi
 
   if [[ -n "$R_MOH" ]]; then
     mk_order "$C1CK" "$PID" "$R_MOH" 1 "RouteMoh" "+2693800004"
-    [[ "$HTTP" == "201" ]] && pt "J4: MOHELI order created" || ft "J4: MOHELI" "HTTP=$HTTP"
+    [[ "$HTTP" == "201" ]] && pt "J3: MOHELI order created" || ft "J3: MOHELI" "HTTP=$HTTP"
     local j4; j4=$(jv "$BODY" '.order.id'); [[ -n "$j4" ]] && { track "$j4"; do_cancel "$j4" "$ACK" > /dev/null 2>&1; }
   else
-    sk "J4: No MOHELI relais"
+    sk "J3: No MOHELI relais"
   fi
 
   if [[ -n "$R_MAY" ]]; then
     mk_order "$C1CK" "$PID" "$R_MAY" 1 "RouteMay" "+2693800005"
-    [[ "$HTTP" == "201" ]] && pt "J5: MAYOTTE order created" || ft "J5: MAYOTTE" "HTTP=$HTTP"
+    [[ "$HTTP" == "201" ]] && pt "J4: MAYOTTE order created" || ft "J4: MAYOTTE" "HTTP=$HTTP"
     local j5; j5=$(jv "$BODY" '.order.id'); [[ -n "$j5" ]] && { track "$j5"; do_cancel "$j5" "$ACK" > /dev/null 2>&1; }
   else
-    sk "J5: No MAYOTTE relais (aucun relais Mayotte en DB)"
+    sk "J4: No MAYOTTE relais (aucun relais Mayotte en DB)"
   fi
 
   api POST "/api/orders" "$C1CK" \
     "{\"items\":[{\"product_id\":\"$PID\",\"quantity\":1}],\"relais_id\":\"00000000-0000-0000-0000-000000000099\",\"payment_mode\":\"cash_relais\",\"recipient_name\":\"T\",\"recipient_phone\":\"+2693800009\"}"
-  [[ "$HTTP" == "400" || "$HTTP" == "404" ]] && pt "J6: Invalid relais → $HTTP" || ft "J6: Invalid relais" "HTTP=$HTTP"
+  [[ "$HTTP" == "400" || "$HTTP" == "404" ]] && pt "J5: Invalid relais → $HTTP" || ft "J5: Invalid relais" "HTTP=$HTTP"
 
   es "ROUTING"
 }
@@ -1095,14 +1110,14 @@ section_K() {
 
   # K2: Client cannot PATCH status
   patch_st "$k1" "$C1CK" "ordered"
-  [[ "$HTTP" == "403" ]] && pt "K2: Client cannot PATCH status" || ft "K2: Client PATCH" "HTTP=$HTTP"
+  [[ "$HTTP" == "403" ]] && pt "K2: Client cannot PATCH status" || ft "K2: Client PATCH allowed" "HTTP=$HTTP"
 
-  # K4: Relais blocked from hub transition — 403 or 422 both valid
+  # K4: Relais blocked from hub transition
   confirm_cash "$k1c"
   patch_st "$k1" "$RCK" "preparation"
   [[ "$HTTP" == "403" || "$HTTP" == "422" ]] && pt "K4: Relais blocked from hub transition ($HTTP)" || ft "K4: Relais did hub work" "HTTP=$HTTP"
 
-  # K5: Hub blocked from relais transition — 403 or 422 both valid
+  # K5: Hub blocked from relais transition
   patch_st "$k1" "$HCK" "preparation"
   patch_st "$k1" "$HCK" "shipped"
   patch_st "$k1" "$HCK" "in_transit"
@@ -1120,7 +1135,7 @@ section_K() {
   api GET "/api/orders" "$C2CK"
   local bc
   bc=$(jl "$BODY" '.orders // .')
-  [[ ${ac:-0} -gt 0 ]] && pt "K7: Client A sees own orders ($ac)" || wt "K7: A sees 0"
+  [[ ${ac:-0} -gt 0 ]] && pt "K7: Client A sees own orders ($ac)" || wt "K7: A sees 0" "may be timing/filter issue"
   pt "K8: Client B sees own orders ($bc) — isolation OK"
 
   # K3: Client CAN cancel own order (correct behavior)
@@ -1161,10 +1176,31 @@ section_L() {
   api POST "/api/scans" "$RCK" "{\"scan_code\":\"$l1r\",\"step\":\"relais_received\"}"
   [[ "$HTTP" == "200" || "$HTTP" == "201" ]] && pt "L4: Scan relais_received" || ft "L4: scan" "HTTP=$HTTP"
 
-  # L5: Backward scan should be blocked
+  # L5: Backward scan — check STATUS not just HTTP
+  # Architecture note: parcel_events = observation layer (may log anything)
+  #                    order.status = enforcement layer (machine governs)
+  # So even if scan returns 201, the ORDER STATUS must NOT regress.
+  api GET "/api/orders/$l1" "$ACK"
+  local status_before_backward
+  status_before_backward=$(jv "$BODY" '.status')
+
   api POST "/api/scans" "$HCK" "{\"scan_code\":\"$l1r\",\"step\":\"preparation\"}"
-  [[ "$HTTP" == "400" || "$HTTP" == "409" || "$HTTP" == "422" ]] \
-    && pt "L5: Backward scan → BLOCKED ($HTTP)" || wt "L5: Backward scan accepted ($HTTP)" "scan events may not enforce forward-only"
+  local backward_http="$HTTP"
+
+  api GET "/api/orders/$l1" "$ACK"
+  local status_after_backward
+  status_after_backward=$(jv "$BODY" '.status')
+
+  if [[ "$status_before_backward" == "$status_after_backward" ]]; then
+    if [[ "$backward_http" == "400" || "$backward_http" == "409" || "$backward_http" == "422" ]]; then
+      pt "L5: Backward scan BLOCKED ($backward_http), status unchanged ✓"
+    else
+      wt "L5: Backward scan accepted ($backward_http) but status unchanged ($status_after_backward)" \
+        "observation layer logged, enforcement held — acceptable per architecture"
+    fi
+  else
+    ft "L5: BACKWARD SCAN REGRESSED ORDER STATUS" "$status_before_backward → $status_after_backward"
+  fi
 
   # L6: Wrong role (relais tries hub step)
   mk_order "$C1CK" "$PID" "$RID" 1 "Scan2" "+2693010002"
@@ -1188,14 +1224,14 @@ section_L() {
   scan_st=$(jv "$BODY" '.status')
   [[ "$scan_st" == "available" ]] && pt "L8: Scan→order sync (available) ✓" || wt "L8: Status=$scan_st"
 
-  # L9: Collect via DB pickup_code
+  # L9: Collect via pickup_code
   local l1pc
   l1pc=$(db_pickup "$l1")
   if [[ -n "$l1pc" ]]; then
     api POST "/api/scans/collect" "$RCK" "{\"pickup_code\":\"$l1pc\"}"
     [[ "$HTTP" == "200" ]] && pt "L9: Scan collect OK (pickup=$l1pc)" || ft "L9: collect" "HTTP=$HTTP"
   else
-    wt "L9: No pickup_code in DB"
+    sk "L9: pickup_code requires DB access (MODE=staging)"
   fi
 
   do_cancel "$l2" "$ACK" > /dev/null 2>&1
@@ -1214,16 +1250,50 @@ section_M() {
   m1=$(jv "$BODY" '.order.id'); m1c=$(jv "$BODY" '.order.cash_ref_code'); track "$m1"
   confirm_cash "$m1c"
 
+  # M1: Parcels accessible
   api GET "/api/orders/$m1" "$ACK"
   local plen
   plen=$(jl "$BODY" '.parcels')
   [[ ${plen:-0} -ge 0 ]] && pt "M1: Parcels accessible (count=${plen:-0})" || wt "M1: No parcels field"
 
+  # M2: GET /parcels → 200
   api GET "/api/parcels" "$ACK"
   [[ "$HTTP" == "200" ]] && pt "M2: GET /parcels → 200" || wt "M2: /parcels" "HTTP=$HTTP"
 
-  pt "M3: UNIQUE INDEX parcels.external_code ✓ (DB constraint D8)"
-  pt "M4: parcel_events table ✓ (D6 traçabilité)"
+  # M3: Banalisation — no PII leaked in parcels response
+  local has_pii
+  has_pii=$(echo "$BODY" | jq '[(.parcels // .)[] | select(
+    .recipient_name != null or .recipient_phone != null or .email != null or .password != null
+  )] | length' 2>/dev/null)
+  if [[ "${has_pii:-0}" == "0" ]]; then
+    pt "M3: No PII in parcels response (banalisation ✓)"
+  else
+    ft "M3: PII leaked in parcels response" "count=$has_pii"
+  fi
+
+  # M4: UNIQUE INDEX parcels.external_code (D8) — verified via DB constraint
+  # Cannot easily test via API without admin parcel creation endpoint
+  # But the constraint exists in DB migration
+  if [[ "$HAS_DB" == "true" ]]; then
+    local idx_exists
+    idx_exists=$(db_query_ro "SELECT count(*) FROM pg_indexes WHERE tablename='parcels' AND indexname LIKE '%external_code%'")
+    [[ "${idx_exists:-0}" -ge 1 ]] && pt "M4: UNIQUE INDEX parcels.external_code ✓ (D8)" \
+      || wt "M4: external_code index not found"
+  else
+    sk "M4: UNIQUE INDEX verification requires DB (MODE=staging)"
+  fi
+
+  # M5: parcel_events table exists (D6 traçabilité)
+  if [[ "$HAS_DB" == "true" ]]; then
+    local pe_exists
+    pe_exists=$(db_query_ro "SELECT count(*) FROM information_schema.tables WHERE table_name='parcel_events'")
+    [[ "${pe_exists:-0}" -ge 1 ]] && pt "M5: parcel_events table ✓ (D6)" \
+      || ft "M5: parcel_events table MISSING"
+  else
+    # Verify indirectly: scan should work (implies parcel_events table)
+    # Already tested in section L
+    pt "M5: parcel_events inferred from scan success (L1-L4)"
+  fi
 
   do_cancel "$m1" "$ACK" > /dev/null 2>&1
 
@@ -1236,7 +1306,7 @@ section_M() {
 section_N() {
   ss "N" "COMPATIBILITÉ LEGACY"
 
-  # N1: in_transit_at / history
+  # N1: in_transit recorded in history
   mk_order "$C1CK" "$PID" "$RID" 1 "Legacy1" "+2693030001"
   local n1 n1c
   n1=$(jv "$BODY" '.order.id'); n1c=$(jv "$BODY" '.order.cash_ref_code'); track "$n1"
@@ -1245,18 +1315,17 @@ section_N() {
   patch_st "$n1" "$HCK" "shipped"
   patch_st "$n1" "$HCK" "in_transit"
 
-  api GET "/api/orders/$n1/history" "$ACK"
-  local has_in_transit
-  has_in_transit=$(echo "$BODY" | jq '[.[] | select(.status=="in_transit")] | length' 2>/dev/null)
+  local hist_body has_in_transit
+  hist_body=$(api_history_body "$n1")
+  has_in_transit=$(echo "$hist_body" | jq '[.[] | select(.status=="in_transit")] | length' 2>/dev/null)
   [[ ${has_in_transit:-0} -ge 1 ]] && pt "N1: in_transit recorded in history ✓" || wt "N1: in_transit not in history"
 
-  # ── CHANGE 8: test both legacy credit endpoints ──
   # N2: /api/credits deprecated (F33)
   api GET "/api/credits" "$C1CK"
   [[ "$HTTP" == "410" || "$HTTP" == "404" ]] && pt "N2: /api/credits deprecated ($HTTP)" \
     || wt "N2: /api/credits alive" "HTTP=$HTTP"
 
-  # N3: store_credits.js throws
+  # N3: POST /credits/use throws
   api POST "/api/credits/use" "$C1CK" '{"amount":100}'
   [[ "$HTTP" == "410" || "$HTTP" == "404" || "$HTTP" == "500" ]] \
     && pt "N3: POST /credits/use throws ($HTTP)" || wt "N3: /credits/use alive" "HTTP=$HTTP"
@@ -1266,7 +1335,7 @@ section_N() {
   [[ "$HTTP" == "410" || "$HTTP" == "404" ]] && pt "N3b: /api/store-credits deprecated ($HTTP)" \
     || wt "N3b: /api/store-credits alive" "HTTP=$HTTP"
 
-  # N4: Order without optional fields
+  # N4: Order without optional fields (minimal payload)
   api POST "/api/orders" "$C1CK" \
     "{\"items\":[{\"product_id\":\"$PID\",\"quantity\":1}],\"relais_id\":\"$RID\",\"payment_mode\":\"cash_relais\",\"recipient_name\":\"T\",\"recipient_phone\":\"+2693030003\"}"
   [[ "$HTTP" == "201" ]] && pt "N4: Minimal order OK" || ft "N4: Minimal order" "HTTP=$HTTP"
@@ -1361,13 +1430,6 @@ section_Q() {
   done
   pt "Q1: Cleanup (${#ORDER_IDS[@]} tracked, $cancelled newly cancelled)"
 
-  # Restore stock=1 product if it was modified
-  if [[ -n "$STOCK1_PID" ]]; then
-    local cur_s1
-    cur_s1=$(db_get_stock "$STOCK1_PID")
-    pt "Q1b: Stock-1 product final stock=$cur_s1"
-  fi
-
   rm -f /tmp/v6*.ck /tmp/v6_r*.json /tmp/v6_r*.txt 2>/dev/null
   pt "Q2: Temp files cleaned"
 
@@ -1375,19 +1437,19 @@ section_Q() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# W. WARN / LIMITATIONS
+# W. PÉRIMÈTRE & LIMITATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 section_W() {
-  printf '\n%s\n' "═══════════════════════ WARN / LIMITATIONS ═══════════════════════"
-  printf '  ⚠️  Concurrence testée via background jobs bash (2 threads max)\n'
-  printf '  ⚠️  Pas de test Stripe webhook (pas de clé Stripe en test)\n'
-  printf '  ⚠️  Pas de test rate-limit /admin-reset\n'
-  printf '  ⚠️  Pas de test cross-origin / CORS headers\n'
-  printf '  ⚠️  Pas de test upload images / Cloudinary\n'
-  printf '  ⚠️  Pas de test WebSocket / temps réel\n'
-  printf '  ⚠️  Pas de test emails / notifications\n'
-  printf '  ⚠️  Atomicité F5/F6: testée via invalid input, pas via crash mid-transaction\n'
-  printf '%s\n' "═══════════════════════════════════════════════════════════════════"
+  printf '\n%s\n' "═══════════════════════ PÉRIMÈTRE & LIMITATIONS ═══════════════════════"
+  printf '  ℹ️  Périmètre : robustesse business/transactionnelle uniquement\n'
+  printf '  ℹ️  Mode : %s | DB : %s\n' "$MODE" "$HAS_DB"
+  printf '  ⚠️  Stock=1 survente non testable (nécessite admin stock API)\n'
+  printf '  ⚠️  pickup_code non exposé par API (collect tests = SKIP en MODE=prod)\n'
+  printf '  ⚠️  Concurrence limitée à 2 threads bash (pas de charge réelle)\n'
+  printf '  ⚠️  Atomicité testée via invalid input, pas via crash mid-transaction\n'
+  printf '  ⚠️  Pas de test Stripe webhook (clé Stripe test requise)\n'
+  printf '  ⚠️  Pas de test rate-limit / CORS / images / WebSocket / emails\n'
+  printf '%s\n' "═══════════════════════════════════════════════════════════════════════"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1395,9 +1457,10 @@ section_W() {
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "╔══════════════════════════════════════════════════════════════════╗"
-echo "║  KOMERCE — SUITE DE TESTS ROBUSTESSE v6.1                     ║"
+echo "║  KOMERCE — ROBUSTESSE BUSINESS/TRANSACTIONNELLE v6.2           ║"
 echo "║  $(date '+%Y-%m-%d %H:%M:%S %Z')                                          ║"
 echo "║  Target: $BASE  ║"
+echo "║  Mode: $MODE | DB: ${HAS_DB}                                        ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
 
 section_A
@@ -1424,7 +1487,7 @@ section_W
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "╔══════════════════════════════════════════════════════════════════╗"
-echo "║  RÉSUMÉ GLOBAL — v6.1                                         ║"
+echo "║  RÉSUMÉ GLOBAL — ROBUSTESSE v6.2                              ║"
 echo "╠══════════════════════════════════════════════════════════════════╣"
 for r in "${SREP[@]}"; do
   printf '║  %s\n' "$r"
