@@ -95,10 +95,10 @@
 @keyframes swipe-bounce { 0%,100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
 .modal-swipe-track::-webkit-scrollbar { display: none; }
 /* ── Recommendation Grid (contextual) ── */
-.reco-section { margin:12px 0 0; padding:0 2px; }
+.reco-section { margin:12px 0 0; padding:0 2px; overflow:hidden;max-width:100%;box-sizing:border-box; }
 .reco-section-title { font-size:0.82rem;font-weight:700;color:var(--dark);margin:0 0 8px;display:flex;align-items:center;gap:6px; }
-.reco-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
-.reco-item { display:flex;align-items:center;gap:8px;padding:8px;background:white;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s,background 0.15s;-webkit-tap-highlight-color:transparent;position:relative; }
+.reco-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow:hidden;max-width:100%;box-sizing:border-box; }
+.reco-item { display:flex;align-items:center;gap:8px;padding:8px;background:white;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s,background 0.15s;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;box-sizing:border-box;max-width:100%; }
 .reco-item.selected { border-color:var(--primary);background:var(--primary-light); }
 .reco-item-img { width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--primary-light); }
 .reco-item-info { flex:1;min-width:0; }
@@ -120,7 +120,7 @@
 .discovery-filters { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px; }
 .discovery-filter { font-size:0.7rem;padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:white;cursor:pointer;font-weight:500;-webkit-tap-highlight-color:transparent;transition:all 0.15s; }
 .discovery-filter.active { background:var(--primary);color:white;border-color:var(--primary); }
-.discovery-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch; }
+.discovery-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:400px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;max-width:100%;box-sizing:border-box; }
 .discovery-card { border-radius:10px;overflow:hidden;border:1px solid var(--border);background:white;cursor:pointer; }
 .discovery-card img { width:100%;aspect-ratio:1;object-fit:cover;background:var(--primary-light); }
 .discovery-card-info { padding:6px 8px; }
@@ -987,7 +987,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 .modal-close:hover { background: var(--border); transform: scale(1.1); }
-.modal-body { padding: 24px; flex: 1; overflow-y: auto; }
+.modal-body { padding: 24px; flex: 1; overflow-y: auto; overflow-x: hidden; }
 
 /* ────────────────────────────────────────
    PRODUCT DETAIL MODAL
@@ -1818,11 +1818,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     transition: none !important;
   }
 
-  /* ── Heart overlay — bottom right ── */
+  /* ── Heart overlay — top right ── */
   .card-fav-overlay {
     display: flex !important;
     position: absolute !important;
-    bottom: 8px !important; right: 8px !important;
+    top: 8px !important; right: 8px !important;
     width: 28px !important; height: 28px !important;
     border-radius: 50% !important;
     background: rgba(255,255,255,0.92) !important;
@@ -1839,7 +1839,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .card-fav-overlay.is-fav { color: #ef4444 !important; }
   .card-fav-overlay:active { transform: scale(1.2) !important; }
 
-  /* ── Quick-add "+" overlay — bottom left ── */
+  /* ── Quick-add basket overlay — bottom right ── */
   .card-add-overlay {
     display: flex !important;
     position: absolute !important;
@@ -1942,7 +1942,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   }
   /* ── Reco / discovery mobile overrides ── */
   .reco-section { padding:0 12px; }
-  .reco-grid { gap:6px; }
+  .reco-grid { gap:6px; grid-template-columns:1fr !important; }
   .reco-item { padding:6px; }
   .reco-item-img { width:44px;height:44px; }
   .discovery-grid { max-height:350px; }
@@ -3034,7 +3034,7 @@ function productEmoji(p) { return p.emoji || '📦'; }
 
 function availabilityInfo(p) {
   if (p.is_available !== false && (p.stock === null || p.stock === undefined || p.stock > 0))
-    return { label: 'Disponible', cls: 'disponible', icon: '✅' };
+    return null;
   if (p.is_available === false && p.sourcing_source)
     return { label: 'Bientôt disponible', cls: 'sourcing', icon: '🔄' };
   return { label: 'Sur commande', cls: 'surcommande', icon: '📋' };
@@ -3432,10 +3432,12 @@ function _renderMoreProducts(list, track) {
     }
 
     var avail = availabilityInfo(p);
-    var availBadge = document.createElement('div');
-    availBadge.className = 'avail-badge ' + avail.cls;
-    availBadge.textContent = avail.icon + ' ' + avail.label;
-    body.appendChild(availBadge);
+    if (avail) {
+      var availBadge = document.createElement('div');
+      availBadge.className = 'avail-badge ' + avail.cls;
+      availBadge.textContent = avail.icon + ' ' + avail.label;
+      body.appendChild(availBadge);
+    }
 
     var actions = document.createElement('div');
     actions.className = 'card-actions';
@@ -3806,11 +3808,13 @@ function openProductModal(p, fromSuggestion) {
   }
 
   var avail = availabilityInfo(p);
-  var availTag = document.createElement('div');
-  availTag.className = 'avail-badge ' + avail.cls;
-  availTag.style.cssText = 'margin-top:8px;';
-  availTag.textContent = avail.icon + ' ' + avail.label;
-  info.appendChild(availTag);
+  if (avail) {
+    var availTag = document.createElement('div');
+    availTag.className = 'avail-badge ' + avail.cls;
+    availTag.style.cssText = 'margin-top:8px;';
+    availTag.textContent = avail.icon + ' ' + avail.label;
+    info.appendChild(availTag);
+  }
 
   top.appendChild(info);
   body.appendChild(top);
