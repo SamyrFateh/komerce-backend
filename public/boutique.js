@@ -354,6 +354,7 @@ async function loadProducts() {
     _products = data.products || data || [];
     renderProducts(_products);
     updateCartBadges();
+    updateStoryPhotos(_products);
   } catch (e) {
     console.error('loadProducts:', e);
     var track = $('product-track');
@@ -363,6 +364,40 @@ async function loadProducts() {
     errDiv.textContent = 'Impossible de charger le catalogue.';
     track.appendChild(errDiv);
   }
+}
+
+/* ── Replace story emojis with real product photos ── */
+function updateStoryPhotos(products) {
+  if (!products || !products.length) return;
+  var circles = document.querySelectorAll('.story-item.cat-circle');
+  circles.forEach(function(item) {
+    var cat = (item.getAttribute('data-cat') || '').toLowerCase();
+    var ring = item.querySelector('.story-ring span');
+    if (!ring) return;
+
+    // "Tout" → use first product with image
+    var match;
+    if (!cat) {
+      match = products.find(function(p) { return !!p.image_url; });
+    } else {
+      match = products.find(function(p) {
+        return (p.category || '').toLowerCase() === cat && !!p.image_url;
+      });
+    }
+
+    if (match && match.image_url) {
+      var img = document.createElement('img');
+      img.src = optimizeImgUrl(match.image_url, 120);
+      img.alt = categoryLabel(match.category || '');
+      img.className = 'story-photo';
+      img.loading = 'lazy';
+      img.onerror = function() {
+        // Fallback: restore emoji if image fails
+        img.replaceWith(ring);
+      };
+      ring.replaceWith(img);
+    }
+  });
 }
 
 var _renderBatch = 40;

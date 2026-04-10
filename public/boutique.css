@@ -480,6 +480,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   font-size: 1.5rem;
 }
 
+.story-ring .story-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--card);
+  border: 2px solid var(--card);
+}
+
 /* Ring color variants */
 .ring-fire {
   background: linear-gradient(45deg, #ff6b35, #e6683c, #dc2743);
