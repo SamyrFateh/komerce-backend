@@ -710,14 +710,14 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    ──────────────────────────────────────── */
 /* ── CART DRAWER v2 — Redesign ────────────── */
 #cart-overlay {
-  display: none; position: fixed; inset: 0; z-index: 1099;
+  display: none; position: fixed; inset: 0; z-index: 1250;
   background: rgba(0,0,0,0.35); backdrop-filter: blur(2px);
   opacity: 0; transition: opacity 0.3s;
 }
 #cart-overlay.open { display: block; opacity: 1; }
 #cart-drawer {
   position: fixed; right: 0; bottom: 0;
-  width: 410px; max-width: 94vw; z-index: 1100;
+  width: 410px; max-width: 94vw; z-index: 1260;
   background: #fafaf8; box-shadow: -6px 0 32px rgba(0,0,0,0.12);
   display: flex; flex-direction: column;
   max-height: 90vh;
@@ -1596,7 +1596,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   body{padding-bottom:60px}
 }
 .mobile-tabs{
-  display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index: 1300;
   background:var(--white);border-top:2px solid var(--border);
   padding:2px 0 calc(2px + env(safe-area-inset-bottom,0px));
   box-shadow:0 -2px 12px rgba(0,0,0,0.08);
@@ -1837,9 +1837,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   #order-modal .modal-box {
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 100vh !important;
-    height: 100vh !important;
-    border-radius: 0 !important;
+    max-height: calc(100vh - 56px) !important;
+    height: calc(100vh - 56px) !important;
+    border-radius: 16px 16px 0 0 !important;
     margin: 0 !important;
     animation: mobileSlideUp 0.3s ease-out !important;
   }
@@ -1857,6 +1857,41 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .pd-desc.expanded {
     -webkit-line-clamp: unset !important;
     overflow: visible !important;
+  }
+  /* ── Compact reco sections on mobile ── */
+  .pd-reco-title {
+    font-size: 0.85rem !important;
+    margin: 12px 0 6px !important;
+    padding: 6px 12px !important;
+  }
+  .pd-reco-scroll {
+    gap: 8px !important;
+    padding: 0 12px 8px !important;
+  }
+  .pd-reco-card {
+    min-width: 110px !important;
+    max-width: 110px !important;
+    font-size: 0.7rem !important;
+  }
+  .pd-reco-card img {
+    height: 100px !important;
+  }
+  .pd-reco-card .reco-name {
+    font-size: 0.68rem !important;
+    padding: 4px 4px 0 !important;
+  }
+  .pd-reco-card .reco-price {
+    font-size: 0.72rem !important;
+    padding: 0 4px !important;
+  }
+  .pd-reco-card .reco-add {
+    padding: 4px 8px !important;
+    font-size: 0.65rem !important;
+    margin: 4px !important;
+  }
+  /* ── Modal body padding for fixed CTA ── */
+  .modal-body {
+    padding-bottom: 80px !important;
   }
   @keyframes mobileSlideUp {
     from { transform: translateY(40px); opacity: 0.8; }
@@ -1923,9 +1958,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   /* ── Fixed CTA bar at bottom of modal ── */
   .pd-controls {
     position: fixed !important;
-    bottom: 0 !important; left: 0 !important; right: 0 !important;
+    bottom: 56px !important; left: 0 !important; right: 0 !important;
     background: white !important;
-    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 8px 16px !important;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.08) !important;
     z-index: 20 !important;
     display: flex !important;
@@ -2470,6 +2505,28 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 @media (min-width: 1500px) {
   .product-grid { grid-template-columns: repeat(6, 1fr) !important; }
   .container { max-width: 1440px !important; }
+}
+
+
+/* ── Mobile: modal leaves room for tabs ── */
+@media (max-width: 768px) {
+  #product-modal .modal-box {
+    max-height: calc(100vh - 60px) !important;
+    height: auto !important;
+    bottom: 60px !important;
+    top: auto !important;
+  }
+  #product-modal.open {
+    align-items: flex-end !important;
+    padding-bottom: 60px !important;
+  }
+  .pd-cta-bar {
+    bottom: 0 !important;
+    position: sticky !important;
+  }
+  .mobile-tabs {
+    z-index: 1300 !important;
+  }
 }
 
 </style>
@@ -3897,7 +3954,9 @@ function openProductModal(p, fromSuggestion) {
   // ── Auto-scroll suggestions carrousels ──
   /* Auto-scroll fully removed */
 
-  $('product-modal').classList.add('open');
+    $('product-modal').classList.add('open');
+  // Scroll to top after content is rendered
+  requestAnimationFrame(function() { var mb = $('product-modal-body'); if(mb) mb.scrollTop = 0; var box = mb && mb.parentElement; if(box) box.scrollTop = 0; });
   document.body.style.overflow = 'hidden';
 }
 
