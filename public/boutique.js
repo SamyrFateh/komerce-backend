@@ -1419,7 +1419,7 @@ function renderCheckout() {
 
   /* ── Cart Summary ── */
   var summary = document.createElement('div');
-  summary.style.cssText = 'background:#f8fafc;border-radius:10px;padding:10px 14px;margin-bottom:14px;border:1px solid var(--border);';
+  summary.style.cssText = 'background:#f8fafc;border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid var(--border);';
 
   var countLine = document.createElement('div');
   countLine.style.cssText = 'font-size:0.82rem;color:var(--muted);';
@@ -1441,7 +1441,7 @@ function renderCheckout() {
 
   /* ── Toggle: C'est moi qui récupère ── */
   var toggleWrap = document.createElement('div');
-  toggleWrap.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:' + (_orderData.is_self_pickup ? 'var(--primary-light)' : '#f8fafc') + ';border-radius:var(--radius);margin-bottom:14px;cursor:pointer;border:2px solid ' + (_orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';transition:all 0.2s;user-select:none;';
+  toggleWrap.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:' + (_orderData.is_self_pickup ? 'var(--primary-light)' : '#f8fafc') + ';border-radius:var(--radius);margin-bottom:10px;cursor:pointer;border:2px solid ' + (_orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';transition:all 0.2s;user-select:none;';
 
   var toggleTrack = document.createElement('div');
   toggleTrack.style.cssText = 'width:40px;height:22px;border-radius:11px;background:' + (_orderData.is_self_pickup ? 'var(--primary)' : 'var(--border)') + ';position:relative;transition:background 0.3s;flex-shrink:0;';
@@ -1464,7 +1464,7 @@ function renderCheckout() {
   if (_orderData.is_self_pickup) {
     /* ── MODE: Je récupère moi-même → 1 seul formulaire ── */
     var secTitle = document.createElement('div');
-    secTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:10px;color:var(--text);';
+    secTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin-bottom:6px;color:var(--text);';
     secTitle.textContent = '\u{1F464} Vos coordonn\u00e9es';
     body.appendChild(secTitle);
 
@@ -1537,7 +1537,7 @@ function renderCheckout() {
 
     /* Section 1: Récupérateur */
     var pickTitle = document.createElement('div');
-    pickTitle.style.cssText = 'font-weight:700;font-size:0.92rem;margin-bottom:10px;color:var(--text);';
+    pickTitle.style.cssText = 'font-weight:700;font-size:0.85rem;margin-bottom:6px;color:var(--text);';
     pickTitle.textContent = '\u{1F4CD} Personne qui r\u00e9cup\u00e8re au relais';
     body.appendChild(pickTitle);
 

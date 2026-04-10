@@ -1020,8 +1020,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* ── Bouton panier rond (overlay bas-droite image) ── */
 .btn-basket-round {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  bottom: 6px;
+  right: 6px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -2631,26 +2631,26 @@ body.modal-open .mobile-tabs {
 .of-step-indicator.done { background: var(--success); }
 
 .of-group {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .of-group label {
   display: block;
   font-weight: 600;
-  font-size: 0.85rem;
-  margin-bottom: 4px;
+  font-size: 0.82rem;
+  margin-bottom: 2px;
   color: var(--text);
 }
 
 .of-group input,
 .of-group select {
   width: 100%;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 2px solid var(--border);
   border-radius: var(--radius);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   background: var(--bg);
 }
 
