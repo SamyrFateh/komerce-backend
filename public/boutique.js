@@ -504,7 +504,7 @@ function _renderMoreProducts(list, track) {
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.textContent = '+ Panier';
+    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg>+ Panier';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -2175,7 +2175,7 @@ function renderFavs() {
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.textContent = '+ Panier';
+    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg>+ Panier';
     addBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       addToCart(p, 1, addBtn);

@@ -1021,27 +1021,42 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: var(--primary-light);
-  color: var(--primary-dark);
+  background: #fffbf0;
+  color: #92400e;
   font-weight: 600;
   font-size: 0.72rem;
   padding: 6px 12px;
-  border-radius: 18px;
-  border: 1.5px solid rgba(255,107,53,0.2);
-  transition: all 0.2s var(--ease);
+  border-radius: 16px;
+  border: 1.5px solid var(--accent);
+  transition: all 0.25s;
   cursor: pointer;
 }
 
+.btn-add-cart .basket-icon {
+  width: 16px;
+  height: 16px;
+  stroke: #92400e;
+  flex-shrink: 0;
+}
+
 .btn-add-cart:hover:not(:disabled) {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+  background: var(--accent);
+  color: var(--dark);
+}
+
+.btn-add-cart:hover .basket-icon {
+  stroke: var(--dark);
 }
 
 .btn-add-cart.added {
-  background: var(--success);
-  color: #fff;
-  border-color: var(--success);
+  background: #22c55e;
+  color: white;
+  border-color: #22c55e;
+  transform: none;
+}
+
+.btn-add-cart.added .basket-icon {
+  stroke: white;
 }
 
 .btn-add-cart:disabled {
@@ -1063,7 +1078,13 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   justify-content: center;
   padding: 8px 12px;
   font-size: 0.78rem;
-  border-radius: 10px;
+  border-radius: 12px;
+  gap: 6px;
+}
+
+.card-actions-row .btn-add-cart .basket-icon {
+  width: 18px;
+  height: 18px;
 }
 
 /* Availability badges */
