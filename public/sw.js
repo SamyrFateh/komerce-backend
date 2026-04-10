@@ -1,7 +1,7 @@
-/* Komerce Service Worker v4.0 — Tolerant Install + Offline Boutique */
-const CACHE = 'komerce-v4';
+/* Komerce Service Worker v5.0 — Network-First HTML + Tolerant Cache */
+const CACHE = 'komerce-v5';
 
-/* SHELL = vrais assets utilisés par la Boutique mobile */
+/* SHELL = vrais assets utilisés par la Boutique */
 const SHELL = [
   '/Komerce_Boutique.html',
   '/komerce-api.js',
@@ -10,86 +10,103 @@ const SHELL = [
   '/icons/icon-512.png'
 ];
 
-/* Autres pages — cachées au runtime, pas au SHELL */
-const RUNTIME_PAGES = [
-  '/portal.html',
-  '/komerce-ui.css',
+/* Pages HTML — toujours network-first pour voir les mises à jour */
+const HTML_PAGES = [
+  '/Komerce_Boutique.html',
   '/Komerce_Hub.html',
   '/Komerce_Relais.html',
   '/Komerce_Admin.html',
-  '/Komerce_Pipeline.html'
+  '/Komerce_Pipeline.html',
+  '/portal.html'
 ];
 
-/* Install: pre-cache SHELL — tolerant (un asset qui échoue ne casse pas tout) */
-self.addEventListener('install', function(e) {
+function isHTMLRequest(request) {
+  const url = new URL(request.url);
+  if (HTML_PAGES.some(p => url.pathname === p || url.pathname === p.replace('.html', ''))) return true;
+  if (url.pathname === '/' || url.pathname === '') return true;
+  if (request.headers.get('accept') && request.headers.get('accept').includes('text/html')) return true;
+  return false;
+}
+
+function isAPIRequest(request) {
+  return new URL(request.url).pathname.startsWith('/api/');
+}
+
+/* ── Install: précache le SHELL — tolérant (un échec ne bloque pas) ── */
+self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE).then(function(cache) {
-      return Promise.all(
-        SHELL.map(function(url) {
-          return cache.add(url).catch(function(err) {
-            console.warn('[SW] Échec cache:', url, err.message || err);
-          });
+    caches.open(CACHE).then((cache) =>
+      Promise.all(
+        SHELL.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW v5] Cache skip:', url, err.message || err);
+          })
+        )
+      )
+    ).then(() => self.skipWaiting())
+  );
+});
+
+/* ── Activate: purge les anciens caches (v1, v2, v3, v4...) ── */
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE).map((k) => {
+          console.log('[SW v5] Purging old cache:', k);
+          return caches.delete(k);
         })
-      );
-    }).then(function() {
-      return self.skipWaiting();
-    })
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-/* Activate: purge vieux caches (v1, v2, v3...) */
-self.addEventListener('activate', function(e) {
-  e.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(
-        keys.filter(function(k) { return k !== CACHE; })
-            .map(function(k) {
-              console.log('[SW] Suppression ancien cache:', k);
-              return caches.delete(k);
-            })
-      );
-    }).then(function() {
-      return self.clients.claim();
-    })
-  );
-});
+/* ── Fetch strategy ── */
+self.addEventListener('fetch', (e) => {
+  const request = e.request;
 
-/* Fetch: stale-while-revalidate pour static, network-only pour API */
-self.addEventListener('fetch', function(e) {
-  var url = new URL(e.request.url);
+  /* Skip non-GET requests */
+  if (request.method !== 'GET') return;
 
-  /* Skip non-GET */
-  if (e.request.method !== 'GET') return;
+  /* Skip API requests — always go to network, no caching */
+  if (isAPIRequest(request)) return;
 
-  /* API calls: network only (données mutables) */
-  if (url.pathname.startsWith('/api/')) return;
-
-  /* Auth endpoints: jamais en cache */
-  if (url.pathname.indexOf('auth') !== -1) return;
-
-  /* Static assets + HTML: stale-while-revalidate */
-  e.respondWith(
-    caches.open(CACHE).then(function(cache) {
-      return cache.match(e.request).then(function(cached) {
-        var fetchPromise = fetch(e.request).then(function(response) {
-          if (response.ok && response.type === 'basic') {
-            cache.put(e.request, response.clone());
-          }
+  /* HTML pages → NETWORK-FIRST (always get latest, fallback to cache) */
+  if (isHTMLRequest(request)) {
+    e.respondWith(
+      fetch(request)
+        .then((response) => {
+          /* Cache the fresh copy for offline */
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, clone));
           return response;
-        }).catch(function() {
-          /* Offline: version cachée ou fallback Boutique */
-          if (cached) return cached;
-          /* Si c'est une page HTML, fallback vers Boutique cachée */
-          if (e.request.headers.get('accept') &&
-              e.request.headers.get('accept').indexOf('text/html') !== -1) {
-            return cache.match('/Komerce_Boutique.html');
-          }
-          return undefined;
-        });
+        })
+        .catch(() => {
+          /* Offline → serve from cache */
+          return caches.match(request)
+            .then((cached) => cached || caches.match('/Komerce_Boutique.html'));
+        })
+    );
+    return;
+  }
 
-        /* Retourne le cache immédiatement, met à jour en arrière-plan */
-        return cached || fetchPromise;
+  /* Static assets → CACHE-FIRST (fast, with network fallback) */
+  e.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        /* Cache static assets for future use */
+        if (response.ok && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, clone));
+        }
+        return response;
       });
+    }).catch(() => {
+      /* Ultimate fallback for navigation */
+      if (request.mode === 'navigate') {
+        return caches.match('/Komerce_Boutique.html');
+      }
     })
   );
 });
