@@ -38,6 +38,7 @@ router.get('/', authenticate, async (req, res, next) => {
          o.id, o.reference, o.status, o.total_kmf,
          o.payment_mode, o.payment_status,
          o.confection_type, o.module_type,
+         o.destination_island, o.routing_mode,
          o.created_at,
          r.name AS relais_name,
          -- Premier article de la commande (pour affichage)
@@ -100,6 +101,9 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
          o.shipped_at,
          o.created_at,
          o.cash_ref_code,
+         o.destination_island,
+         o.routing_mode,
+         o.transit_hub,
          rc.full_name  AS recipient_name,
          rc.phone      AS recipient_phone,
          r.name        AS relais_name,

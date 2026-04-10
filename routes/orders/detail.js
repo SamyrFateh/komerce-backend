@@ -100,6 +100,10 @@ router.get('/:ref', async (req, res, next) => {
       purchasing_at:         order.purchasing_at,
       shipped_at:            order.shipped_at,
       transit_comores_at:    order.transit_comores_at,
+      // Routing logistique
+      destination_island:    order.destination_island   || null,
+      routing_mode:          order.routing_mode         || null,
+      transit_hub:           order.transit_hub           || null,
       available_at:          order.available_at,
       collected_at:          order.collected_at,
       created_at:            order.created_at,

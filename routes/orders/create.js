@@ -18,6 +18,7 @@ const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { getUniqueRef, generateCashCode, generatePickupCode } = require('../../services/order-service');
 const walletService = require('../../services/wallet-service');
+const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
 const { notifyOrderCreated }             = require('../../services/notification-service');
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
@@ -100,6 +101,21 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         'SELECT * FROM relais WHERE is_active = TRUE ORDER BY id LIMIT 1'
       );
       relais = r;
+    }
+
+    // ── Résoudre le routage logistique depuis le relais ────────────────────
+    // Source unique de vérité : la destination vient TOUJOURS du relais, jamais du frontend
+    let routing = { destination_island: null, routing_mode: null, transit_hub: null };
+    if (relais) {
+      try {
+        routing = resolveRoutingFromRelais(relais);
+      } catch (e) {
+        if (e instanceof RoutingError) {
+          await client.query('ROLLBACK');
+          return res.status(e.statusCode || 400).json({ error: e.message, code: e.code });
+        }
+        throw e;
+      }
     }
 
     // ── Créer ou réutiliser le recipient ────────────────────────────────────
@@ -228,7 +244,8 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
          module_size, module_retouche, module_qty_meters, module_accessories,
          order_occasion,
          cost_estimated_kmf, margin_estimated_pct,
-         discount_pct, discount_kmf, loyalty_label
+         discount_pct, discount_kmf, loyalty_label,
+         destination_island, routing_mode, transit_hub
        ) VALUES (
          $1,$2,$3,$4,$5,
          $6,$7,
@@ -241,7 +258,8 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
          $20,$21,$22,$23,
          $24,
          $25,$26,
-         $27,$28,$29
+         $27,$28,$29,
+         $30,$31,$32
        ) RETURNING *`,
       [
         uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -268,6 +286,9 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         discountPct,
         discountKmf,
         loyaltyLabel,
+        routing.destination_island,
+        routing.routing_mode,
+        routing.transit_hub,
       ]
     );
 
@@ -364,6 +385,11 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         confection_type: order.confection_type,
         module_type:    order.module_type,
         relais: relais ? { id: relais.id, name: relais.name, address: relais.address } : null,
+        routing: {
+          destination_island: order.destination_island,
+          routing_mode:       order.routing_mode,
+          transit_hub:        order.transit_hub,
+        },
         created_at:     order.created_at,
       },
     });

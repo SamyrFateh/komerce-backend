@@ -215,6 +215,7 @@ router.get('/pending', ...hubAuth, async (req, res, next) => {
       SELECT p.id, p.reference, p.status, p.type, p.order_id, p.notes,
              p.created_at, p.updated_at,
              o.reference AS order_reference,
+             o.destination_island, o.routing_mode, o.transit_hub,
              u.full_name AS client_name,
              (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS items_count
       FROM parcels p

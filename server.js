@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.8 (avoirs/credits garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.9 (avoirs/credits garantit admin au démarrage)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -198,6 +198,7 @@ const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
 const walletRouter     = require('./routes/wallet');
 const walletService    = require('./services/wallet-service');
+const routingService   = require('./services/routing');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -239,7 +240,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.7',
+      version:       '10.9',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -327,8 +328,11 @@ const PORT = process.env.PORT || 3000;
 // Init wallet tables at startup
 walletService.ensureWalletTables().catch(e => console.error('Wallet init error:', e.message));
 
+// Init routing columns at startup (additive, idempotent)
+routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init error:', e.message));
+
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.8 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.9 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {

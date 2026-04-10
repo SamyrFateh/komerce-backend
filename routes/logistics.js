@@ -109,6 +109,7 @@ router.get('/labels/:shipment_id', ...adminOnly, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT o.reference, o.pickup_code, u.full_name, u.phone,
+             o.destination_island, o.routing_mode,
              r.name AS relais_name, r.address AS relais_address,
              array_agg(p.name||' x'||oi.quantity) AS articles
       FROM orders o
@@ -117,7 +118,7 @@ router.get('/labels/:shipment_id', ...adminOnly, async (req, res, next) => {
       LEFT JOIN order_items oi ON oi.order_id=o.id
       LEFT JOIN products p ON p.id=oi.product_id
       WHERE o.shipment_id=$1
-      GROUP BY o.id, o.reference, o.pickup_code, u.full_name, u.phone, r.name, r.address
+      GROUP BY o.id, o.reference, o.pickup_code, o.destination_island, o.routing_mode, u.full_name, u.phone, r.name, r.address
       ORDER BY o.reference
     `, [req.params.shipment_id]);
 
@@ -145,6 +146,9 @@ router.get('/labels/:shipment_id', ...adminOnly, async (req, res, next) => {
       doc.fontSize(9).font('Helvetica').text(`Tél : ${o.phone}`);
       doc.moveDown(0.3);
 
+      if (o.destination_island) {
+        doc.fontSize(9).font('Helvetica').text(`🏝️ ${o.destination_island}${o.routing_mode === 'INTER_ISLAND' ? ' (via Anjouan)' : o.routing_mode === 'SPECIAL_ROUTE' ? ' (route spéciale)' : ''}`, { align: 'right' });
+      }
       doc.fontSize(10).font('Helvetica-Bold').text(`Relais : ${o.relais_name}`);
       doc.fontSize(8).font('Helvetica').text(o.relais_address || '');
       doc.moveDown(0.3);
@@ -173,6 +177,7 @@ router.get('/manifest/:shipment_id', ...adminOnly, async (req, res, next) => {
 
     const { rows } = await db.query(`
       SELECT o.reference, o.total_kmf, o.total_eur, o.payment_mode,
+             o.destination_island, o.routing_mode,
              u.full_name, u.phone,
              r.name AS relais_name,
              COUNT(oi.id) AS nb_articles
@@ -181,7 +186,7 @@ router.get('/manifest/:shipment_id', ...adminOnly, async (req, res, next) => {
       LEFT JOIN relais r ON r.id=o.relais_id
       LEFT JOIN order_items oi ON oi.order_id=o.id
       WHERE o.shipment_id=$1
-      GROUP BY o.id, o.reference, o.total_kmf, o.total_eur, o.payment_mode, u.full_name, u.phone, r.name
+      GROUP BY o.id, o.reference, o.total_kmf, o.total_eur, o.payment_mode, o.destination_island, o.routing_mode, u.full_name, u.phone, r.name
       ORDER BY o.reference
     `, [req.params.shipment_id]);
 
@@ -200,7 +205,7 @@ router.get('/manifest/:shipment_id', ...adminOnly, async (req, res, next) => {
     doc.moveDown();
 
     const colW = [80, 110, 90, 90, 50, 80];
-    const headers = ['Réf', 'Client', 'Téléphone', 'Relais', 'Art.', 'Total KMF'];
+    const headers = ['Réf', 'Client', 'Destination', 'Relais', 'Art.', 'Total KMF'];
     let x = 40, y = doc.y;
 
     doc.fontSize(8).font('Helvetica-Bold');
@@ -211,7 +216,7 @@ router.get('/manifest/:shipment_id', ...adminOnly, async (req, res, next) => {
     let total = 0;
     for (const o of rows) {
       x = 40;
-      [o.reference, o.full_name, o.phone, o.relais_name||'-', o.nb_articles, (o.total_kmf||0).toLocaleString('fr')].forEach((v,i) => {
+      [o.reference, o.full_name, o.destination_island||'-', o.relais_name||'-', o.nb_articles, (o.total_kmf||0).toLocaleString('fr')].forEach((v,i) => {
         doc.text(String(v||'-'), x, y, { width: colW[i] }); x += colW[i];
       });
       y += 14; total += parseInt(o.total_kmf||0);
