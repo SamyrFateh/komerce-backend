@@ -3371,7 +3371,7 @@ function _renderMoreProducts(list, track) {
 
     var addOvl = document.createElement('button');
     addOvl.className = 'card-add-overlay';
-    addOvl.textContent = '🧺';
+    addOvl.innerHTML = '<img src="/images/avatar_panier.png" width="20" height="20" alt="Panier" style="pointer-events:none;">';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -3387,7 +3387,7 @@ function _renderMoreProducts(list, track) {
     cartBadge.className = 'card-cart-badge';
     cartBadge.setAttribute('data-badge-pid', p.id);
     var cartBadgeIcon = document.createElement('span');
-    cartBadgeIcon.textContent = '🧺';
+    cartBadgeIcon.innerHTML = '<img src="/images/avatar_panier.png" width="14" height="14" alt="" style="pointer-events:none;vertical-align:middle;">';
     cartBadgeIcon.style.fontSize = '0.7rem';
     cartBadge.appendChild(cartBadgeIcon);
     var cartBadgeQty = document.createElement('span');
@@ -3443,7 +3443,7 @@ function _renderMoreProducts(list, track) {
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.textContent = '🧺 Ajouter';
+    addBtn.innerHTML = '<img src="/images/avatar_panier.png" width="16" height="16" alt="" style="pointer-events:none;vertical-align:middle;"> Ajouter';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -4066,7 +4066,7 @@ function openProductModal(p, fromSuggestion) {
   // Add spacer so content isn't hidden behind fixed CTA
   var ctaSpacer = document.createElement('div');
   ctaSpacer.style.cssText = 'height:70px;flex-shrink:0;';
-  modalBody.appendChild(ctaSpacer);
+  body.appendChild(ctaSpacer);
 
   var stickyRow = document.createElement('div');
   stickyRow.className = 'sticky-cta-row';
@@ -5746,7 +5746,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Quick-add button
       var addBtn = document.createElement('div');
       addBtn.className = 'desktop-add-overlay';
-      addBtn.innerHTML = '🧺';
+      addBtn.innerHTML = '<img src="/images/avatar_panier.png" width="22" height="22" alt="Panier" style="pointer-events:none;">';
       addBtn.title = 'Ajouter au panier';
       addBtn.onclick = function(e) {
         e.stopPropagation();
@@ -5757,7 +5757,7 @@ document.addEventListener('DOMContentLoaded', function() {
           addToCart(p, 1);
           addBtn.innerHTML = '✅';
           addBtn.style.background = '#22c55e';
-          setTimeout(function() { addBtn.innerHTML = '🧺'; addBtn.style.background = ''; }, 1200);
+          setTimeout(function() { addBtn.innerHTML = '<img src="/images/avatar_panier.png" width="22" height="22" alt="Panier" style="pointer-events:none;">'; addBtn.style.background = ''; }, 1200);
         }
       };
       imgWrap.appendChild(addBtn);
