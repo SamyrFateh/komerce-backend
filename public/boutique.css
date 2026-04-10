@@ -317,6 +317,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   padding: 0 20px;
 }
+/* quand un modal est ouvert, le nav passe sous l'overlay */
+body.modal-open #main-nav { z-index: 100; }
 #main-nav .nav-inner {
   max-width: 1200px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;

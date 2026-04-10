@@ -1350,6 +1350,7 @@ function openProductModal(p, fromSuggestion) {
   // Auto-scroll désactivé — swipe manuel uniquement
 
   $('product-modal').classList.add('open');
+  document.body.classList.add('modal-open');
   document.body.style.overflow = 'hidden';
 }
 
@@ -1396,6 +1397,7 @@ function openProductModal(p, fromSuggestion) {
 
 function closeProductModal() {
   $('product-modal').classList.remove('open');
+  document.body.classList.remove('modal-open');
   document.body.style.overflow = '';
 }
 
@@ -1713,11 +1715,13 @@ function checkoutCart() {
   _orderData = { is_self_pickup: true, payment_mode: 'cash_relais' };
   renderCheckout();
   $('order-modal').classList.add('open');
+  document.body.classList.add('modal-open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeOrderModal() {
   $('order-modal').classList.remove('open');
+  document.body.classList.remove('modal-open');
   document.body.style.overflow = '';
 }
 
