@@ -1575,6 +1575,25 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
 </head>
 <body>
+<!-- ═══ Offline Banner ═══ -->
+<style>
+.kmrc-offline-bar{position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;text-align:center;padding:8px 16px;font-size:14px;font-weight:600;transform:translateY(-100%);transition:transform .3s ease;display:flex;align-items:center;justify-content:center;gap:8px;}
+.kmrc-offline-bar.show{transform:translateY(0);}
+.kmrc-offline-bar .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:kmrc-blink 1.5s infinite;}
+@keyframes kmrc-blink{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+<div id="kmrc-offline-bar" class="kmrc-offline-bar">
+  <span class="dot"></span> Pas de connexion internet — les données affichées peuvent ne pas être à jour
+</div>
+<script>
+(function(){
+  var bar=document.getElementById('kmrc-offline-bar');
+  function upd(){bar.classList.toggle('show',!navigator.onLine);}
+  window.addEventListener('online',upd);
+  window.addEventListener('offline',upd);
+  upd();
+})();
+</script>
 
 <!-- ========================================
      1. PROMO TOP BAR
@@ -1943,221 +1962,6 @@ setInterval(rotateProverbe, 12000);
 /* ═══════════════════════════════════════════════════
    BLOOM NAVIGATION JS — Injected from Web
    ═══════════════════════════════════════════════════ */
-// ═══════════════════════════════════════════════════════════════════
-//  INNOVATIVE CATEGORY NAVIGATION — v2 Genius
-// ═══════════════════════════════════════════════════════════════════
-
-var _situations = {
-  mode: {
-    icon: '\u{1F457}', label: 'Mode & accessoires', color: '#7c3aed', rgb: '124,58,237',
-    matchCats: ['mode','vetements','fashion','tissus','chaussures','accessoires','wax','ceremonie','tenues'],
-    subcats: [
-      { id:'mode-vetements',  name:'V\u00eatements & boubous', emoji:'\u{1F458}', category:'vetements',  desc:'Tenues, boubous, abayas' },
-      { id:'mode-tissus',     name:'Tissus & couture',    emoji:'\u{1F9F5}', category:'tissus',     desc:'Wax, bazin, dentelle' },
-      { id:'mode-chaussures', name:'Chaussures',          emoji:'\u{1F45F}', category:'chaussures', desc:'Sneakers, sandales' },
-      { id:'mode-access',     name:'Accessoires',         emoji:'\u{1F48D}', category:'accessoires',desc:'Sacs, bijoux, montres' }
-    ]
-  },
-  maison: {
-    icon: '\u{1F3E0}', label: 'Maison', color: '#0891b2', rgb: '8,145,178',
-    matchCats: ['maison','home','cuisine','decoration','entretien','equipement','electromenager'],
-    subcats: [
-      { id:'maison-cuisine',  name:'Cuisine',         emoji:'\u{1F373}', category:'cuisine',     desc:'Ustensiles, appareils' },
-      { id:'maison-deco',     name:'D\u00e9coration', emoji:'\u{1FAB4}', category:'decoration',  desc:'Tableaux, luminaires' },
-      { id:'maison-entret',   name:'Entretien',       emoji:'\u{1F9F9}', category:'entretien',   desc:'Nettoyage, m\u00e9nager' },
-      { id:'maison-equip',    name:'\u00c9quipement', emoji:'\u{1F50C}', category:'equipement',  desc:'Ventilo, multiprises' }
-    ]
-  },
-  tech: {
-    icon: '\u{1F4F1}', label: '\u00c9lectronique', color: '#0369a1', rgb: '3,105,161',
-    matchCats: ['tech','telephones','electronique','electronics','audio','hightech','accessoires-tel'],
-    subcats: [
-      { id:'tech-phones',    name:'T\u00e9l\u00e9phones', emoji:'\u{1F4F1}', category:'telephones',     desc:'Samsung, Xiaomi' },
-      { id:'tech-access',    name:'Accessoires tel',  emoji:'\u{1F50B}', category:'accessoires-tel',desc:'Coques, chargeurs' },
-      { id:'tech-audio',     name:'Audio & image',    emoji:'\u{1F3A7}', category:'audio',          desc:'\u00c9couteurs, enceintes' },
-      { id:'tech-hightech',  name:'High-tech',        emoji:'\u{1F4BB}', category:'hightech',       desc:'Tablettes, PC' }
-    ]
-  },
-  beaute: {
-    icon: '\u{1F484}', label: 'Beaut\u00e9 & bien-\u00eatre', color: '#db2777', rgb: '219,39,119',
-    matchCats: ['beaute','beauty','soins','cheveux','parfums','maquillage','services'],
-    subcats: [
-      { id:'beaute-soins',    name:'Soins',       emoji:'\u{1F9F4}', category:'soins',     desc:'Visage, corps' },
-      { id:'beaute-cheveux',  name:'Cheveux',     emoji:'\u{1F487}', category:'cheveux',   desc:'Huiles, soins' },
-      { id:'beaute-parfums',  name:'Parfums',     emoji:'\u{1F338}', category:'parfums',   desc:'Oud, musc' },
-      { id:'beaute-makeup',   name:'Maquillage',  emoji:'\u{1F484}', category:'maquillage',desc:'Palettes, rouges' }
-    ]
-  },
-  enfants: {
-    icon: '\u{1F9F8}', label: 'Enfants & b\u00e9b\u00e9', color: '#e11d48', rgb: '225,29,72',
-    matchCats: ['enfants','enfant','bebe','jouets','ecole','kids'],
-    subcats: [
-      { id:'enf-vetements', name:'V\u00eatements enfant', emoji:'\u{1F476}', category:'vetements-enfant', desc:'Boubous, robes' },
-      { id:'enf-bebe',      name:'B\u00e9b\u00e9',       emoji:'\u{1F37C}', category:'bebe',             desc:'Couches, biberons' },
-      { id:'enf-jouets',    name:'Jouets',            emoji:'\u{1F3AE}', category:'jouets',           desc:'Jeux, peluches' },
-      { id:'enf-ecole',     name:'\u00c9cole',       emoji:'\u{1F4DA}', category:'ecole',            desc:'Cahiers, cartables' }
-    ]
-  },
-  surmesure: {
-    icon: '\u2728', label: 'Sur Mesure', color: '#7e22ce', rgb: '126,34,206',
-    matchCats: ['surmesure','couture','personnalise','custom','sur-mesure','mariage-custom','optique','scolaire','traditionnel','ceremonie-custom','wedding'],
-    subcats: [
-      { id:'sm-couture',    name:'Couture',             emoji:'\u2702\uFE0F', category:'couture',          desc:'Tissus, abayas, salouva, caftans' },
-      { id:'sm-mariage',    name:'Mariage',             emoji:'\u{1F492}',     category:'mariage-custom',   desc:'Tenue mari\u00e9e, d\u00e9co, coffret' },
-      { id:'sm-scolaire',   name:'Scolaire',            emoji:'\u{1F393}',     category:'scolaire',         desc:'Uniformes, fournitures' },
-      { id:'sm-fetes',      name:'F\u00eates & c\u00e9r\u00e9monies', emoji:'\u{1F389}', category:'fetes', desc:'Manzaraka, Anda, anniversaires' },
-      { id:'sm-tradition',  name:'Traditionnel',        emoji:'\u{1F458}',     category:'traditionnel',     desc:'Chiromani, kofia, kangas' },
-      { id:'sm-optique',    name:'Optique',             emoji:'\u{1F453}',     category:'optique',          desc:'Lunettes, verres correcteurs' }
-    ]
-  }
-};
-
-var _activeMainCat = null;
-var _activeSubCat = null;
-var _currentSort = '';
-var _bloomTimeout = null;
-var _bloomLocked = false;
-var _lastList = [];
-
-function bloomHover(catKey) {
-  if (_bloomLocked) return;
-  clearTimeout(_bloomTimeout);
-  if (!catKey) { closeBloom(); return; }
-  openBloom(catKey);
-}
-
-function bloomNav(catKey) {
-  _activeSubCat = null;
-  if (!catKey) {
-    _activeMainCat = null;
-    _bloomLocked = false;
-    closeBloom();
-    updateOrbs(null);
-    updatePath();
-    filterProductsByNav();
-    return;
-  }
-  if (_activeMainCat === catKey && _bloomLocked) {
-    _activeMainCat = null;
-    _bloomLocked = false;
-    closeBloom();
-    updateOrbs(null);
-    updatePath();
-    filterProductsByNav();
-    return;
-  }
-  _activeMainCat = catKey;
-  _bloomLocked = true;
-  openBloom(catKey);
-  updateOrbs(catKey);
-  updatePath();
-  filterProductsByNav();
-}
-
-function openBloom(catKey) {
-  var sit = _situations[catKey];
-  if (!sit) return;
-  var panel = document.getElementById('bloom-panel');
-  if (!panel) return; /* bloom nav non présente dans cette vue */
-  var pointer = document.getElementById('bloom-pointer');
-  var header = document.getElementById('bloom-header');
-  var grid = document.getElementById('bloom-grid');
-
-  // Position pointer
-  var row = document.getElementById('cat-row');
-  if (!row) return;
-  var target = row.querySelector('[data-cat="' + catKey + '"]');
-  if (target && row) {
-    var rr = row.getBoundingClientRect();
-    var tr = target.getBoundingClientRect();
-    pointer.style.left = ((tr.left + tr.width/2) - rr.left) + 'px';
-  }
-
-  // Colors
-  panel.style.setProperty('--bloom-color', sit.color);
-  panel.style.setProperty('--bloom-rgb', sit.rgb);
-
-  // Header
-  safeHTML(header, '<span class="bloom-header-icon">' + sanitize(sit.icon) + '</span><span class="bloom-header-text" style="color:' + sanitize(sit.color) + '">' + sanitize(sit.label) + '</span>');
-  header.style.borderBottom = '2px solid ' + sit.color + '33';
-
-  // Chips
-  var h = '';
-  sit.subcats.forEach(function(sc) {
-    var sel = (_activeSubCat && _activeSubCat.id === sc.id) ? ' selected' : '';
-    h += '<div class="bloom-chip' + sel + '" data-sc-id="' + sc.id + '" data-cat-key="' + catKey + '" style="--bloom-color:' + sit.color + ';--bloom-rgb:' + sit.rgb + '">' +
-         '<span class="chip-emoji">' + sc.emoji + '</span>' +
-         '<span class="chip-name">' + sc.name + '</span></div>';
-  });
-  safeHTML(grid, h);
-  panel.classList.add('open');
-}
-
-function closeBloom() {
-  document.getElementById('bloom-panel').classList.remove('open');
-}
-
-function bloomLeave() {
-  if (_bloomLocked) return;
-  _bloomTimeout = setTimeout(closeBloom, 250);
-}
-
-function selectSubcat(scId, catKey) {
-  var sit = _situations[catKey];
-  if (!sit) return;
-  var sc = null;
-  sit.subcats.forEach(function(s) { if (s.id === scId) sc = s; });
-  if (!sc) return;
-  if (_activeSubCat && _activeSubCat.id === scId) {
-    _activeSubCat = null;
-  } else {
-    _activeSubCat = sc;
-    _activeMainCat = catKey;
-    _bloomLocked = true;
-  }
-  updateOrbs(catKey);
-  openBloom(catKey);
-  updatePath();
-  filterProductsByNav();
-}
-
-function updateOrbs(catKey) {
-  document.querySelectorAll('.cat-item').forEach(function(el) {
-    el.classList.toggle('active', (!catKey && el.dataset.cat === '') || el.dataset.cat === catKey);
-  });
-}
-
-function updatePath() {
-  var p = document.getElementById('cat-path');
-  if (!_activeMainCat) { p.innerHTML = ''; return; }
-  var s = _situations[_activeMainCat];
-  var h = '<span style="color:' + s.color + '">' + s.icon + ' ' + s.label + '</span>';
-  if (_activeSubCat) h += ' <span style="color:#ccc">\u203a</span> <span style="color:' + s.color + '">' + _activeSubCat.emoji + ' ' + _activeSubCat.name + '</span>';
-  safeHTML(p, h);
-}
-
-function filterProductsByNav() {
-  if (typeof _products === 'undefined' || !_products || !_products.length) return;
-  if (!_activeMainCat) { renderProducts(_products); return; }
-  var sit = _situations[_activeMainCat];
-  if (_activeSubCat) {
-    var k = _activeSubCat.category.toLowerCase();
-    renderProducts(_products.filter(function(p) {
-      var c = (p.category||'').toLowerCase();
-      return c === k || c.indexOf(k) !== -1;
-    }));
-  } else {
-    var mc = sit.matchCats.map(function(c){return c.toLowerCase();});
-    renderProducts(_products.filter(function(p) {
-      var c = (p.category||'').toLowerCase();
-      return mc.some(function(m){ return c===m||c.indexOf(m)!==-1||m.indexOf(c)!==-1; });
-    }));
-  }
-}
-
-
-
-
 /* ── State ── */
 let _cart;
 var CART_VERSION = 2;
@@ -2208,11 +2012,6 @@ function fmt(kmf, currency) {
   return val.toLocaleString('fr-FR') + (currency === 'EUR' ? ' €' : ' KMF');
 }
 
-function fmtBoth(kmf) {
-  var s = fmt(kmf, 'KMF');
-  if (_currency === 'EUR') s += ' (≈ ' + fmt(kmf, 'EUR') + ')';
-  return s;
-}
 
 function productEmoji(p) { return p.emoji || '📦'; }
 
@@ -2239,25 +2038,34 @@ function categoryLabel(cat) {
 
 /* ── API ── */
 async function apiGet(path) {
-  var res = await fetch(path, { credentials: 'include' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  var ctrl = new AbortController();
+  var t = setTimeout(function(){ ctrl.abort(); }, 10000);
+  try {
+    var res = await fetch(path, { credentials: 'include', signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  } finally { clearTimeout(t); }
 }
 
 async function apiPost(path, body) {
-  var res = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(body)
-  });
-  var data = await res.json();
-  if (!res.ok) {
-    var err = new Error(data.message || data.error || 'Erreur serveur');
-    err.data = data;
-    throw err;
-  }
-  return data;
+  var ctrl = new AbortController();
+  var t = setTimeout(function(){ ctrl.abort(); }, 15000);
+  try {
+    var res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      signal: ctrl.signal,
+      body: JSON.stringify(body)
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      var err = new Error(data.message || data.error || 'Erreur serveur');
+      err.data = data;
+      throw err;
+    }
+    return data;
+  } finally { clearTimeout(t); }
 }
 
 /* ── Toast générique ── */
@@ -2314,6 +2122,7 @@ function flyToCart(sourceEl, product) {
 
   if (product.image_url) {
     var img = document.createElement('img');
+    img.loading = 'lazy';
     img.src = product.image_url;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
     particle.appendChild(img);
@@ -2495,6 +2304,7 @@ function renderProducts(list) {
     imgDiv.style.position = 'relative';
     if (p.image_url) {
       var img = document.createElement('img');
+      img.loading = 'lazy';
       img.src = p.image_url;
       img.alt = sanitize(p.name);
       img.loading = 'eager';
@@ -2853,6 +2663,7 @@ function openProductModal(p, fromSuggestion) {
   emojiBox.style.position = 'relative';
   if (p.image_url) {
     var img = document.createElement('img');
+    img.loading = 'lazy';
     img.src = p.image_url;
     img.alt = sanitize(p.name);
     // crossOrigin removed — was blocking on some Android
@@ -3001,6 +2812,7 @@ function openProductModal(p, fromSuggestion) {
       mImg.style.cssText = 'height:100px;overflow:hidden;background:var(--primary-light);';
       if (sp.image_url) {
         var mi = document.createElement('img');
+        mi.loading = 'lazy';
         mi.src = sp.image_url;
         mi.alt = sanitize(sp.name);
         mi.style.cssText = 'width:100%;height:100%;object-fit:cover;';
@@ -4227,6 +4039,7 @@ function renderFavs() {
     imgDiv.style.position = 'relative';
     if (p.image_url) {
       var img = document.createElement('img');
+      img.loading = 'lazy';
       img.src = p.image_url;
       img.alt = sanitize(p.name);
       img.loading = 'eager';
@@ -4355,6 +4168,7 @@ function renderRows(list) {
       }
       if (p.image_url) {
         var img = document.createElement('img');
+        img.loading = 'lazy';
         img.src = p.image_url;
         img.alt = sanitize(p.name);
         imgDiv.appendChild(img);
@@ -4620,10 +4434,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Enter') searchTracking();
   });
 
-  // ─── Service Worker Registration ──────────────────────────────
-  // Service Worker Registration (PWA)
+  // ─── Service Worker Registration (PWA) ───────────────────────
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(function(e) { console.warn('[Komerce] SW:', e); });
+    navigator.serviceWorker.register('/sw.js').then(function(r) {
+      console.log('[Komerce] SW registered, scope:', r.scope);
+    }).catch(function(e) { console.warn('[Komerce] SW failed:', e); });
   }
 
 });
