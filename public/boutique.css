@@ -1207,15 +1207,17 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   .modal-box {
     max-width: 100%;
     width: 100%;
-    max-height: 92vh;
+    max-height: 82vh;
+    max-height: 82dvh;
     border-radius: 20px 20px 0 0;
     animation: slideUpSheet 0.35s var(--ease);
   }
 
   .modal-header {
     position: relative;
-    padding-top: 24px;
+    padding: 28px 20px 14px;
     border-radius: 20px 20px 0 0;
+    min-height: 52px;
   }
 
   .modal-header::before {
@@ -1230,7 +1232,17 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     background: #d1d5db;
   }
 
+  .modal-header span {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    max-width: calc(100% - 44px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .modal-body {
+    padding: 16px;
     padding-bottom: 80px;
   }
 }
