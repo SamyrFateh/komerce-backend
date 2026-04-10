@@ -199,6 +199,7 @@ const carriersRouter   = require('./routes/carriers');
 const walletRouter     = require('./routes/wallet');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
+const parcelSecurity   = require('./services/parcel-security');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -240,7 +241,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.9',
+      version:       '10.10',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -331,8 +332,11 @@ walletService.ensureWalletTables().catch(e => console.error('Wallet init error:'
 // Init routing columns at startup (additive, idempotent)
 routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init error:', e.message));
 
+// Init parcel security tables at startup (parcel_events, external_code, seal_code)
+parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
+
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.9 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.10 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {

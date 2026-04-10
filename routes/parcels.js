@@ -1,13 +1,26 @@
 /**
- * KOMERCE â Parcels CRUD API (R1 compliant)
- * GET    /api/parcels               â Liste colis (filtres, pagination)
- * GET    /api/parcels/:ref          â DÃ©tail colis par rÃ©fÃ©rence
- * POST   /api/parcels               â CrÃ©er colis manuellement
- * PATCH  /api/parcels/:id/status    â Changer statut via parcelSync (R1) + Ã©value link rules
- * POST   /api/parcels/:id/items     â Ajouter article au colis
- * DELETE /api/parcels/:id/items/:item_id â Retirer article du colis
- * POST   /api/parcels/optimize      â Optimiser la rÃ©partition des items en colis
- * POST   /api/parcels/bootstrap/:orderId â Migrer une commande legacy
+ * KOMERCE — Parcels CRUD API (R1 compliant + Security v1.0)
+ *
+ * SÉCURITÉ LOGISTIQUE v1.0 :
+ *   [S1] external_code neutre généré à la création
+ *   [S2] seal_code attribué à la création
+ *   [S3] parcel_event loggé à chaque changement de statut
+ *   [S4] Vérification poids (weight checkpoint) optionnelle
+ *   [S5] GET /api/parcels/:ref/events — historique événements
+ *   [S6] POST /api/parcels/:id/weight — enregistrer un checkpoint poids
+ *   [S7] POST /api/parcels/:id/verify-seal — vérifier le scellé
+ *
+ * GET    /api/parcels               — Liste colis (filtres, pagination)
+ * GET    /api/parcels/:ref          — Détail colis par référence
+ * GET    /api/parcels/:ref/events   — [NEW] Historique événements sécurité
+ * POST   /api/parcels               — Créer colis manuellement
+ * PATCH  /api/parcels/:id/status    — Changer statut via parcelSync (R1)
+ * POST   /api/parcels/:id/weight    — [NEW] Checkpoint poids
+ * POST   /api/parcels/:id/verify-seal — [NEW] Vérifier scellé
+ * POST   /api/parcels/:id/items     — Ajouter article au colis
+ * DELETE /api/parcels/:id/items/:item_id — Retirer article du colis
+ * POST   /api/parcels/optimize      — Optimiser la répartition des items
+ * POST   /api/parcels/bootstrap/:orderId — Migrer une commande legacy
  */
 
 const express = require('express');
@@ -21,6 +34,15 @@ const { generateParcelRef } = require('../utils/reference');
 const { PARCEL_STATUSES } = require('../utils/parcels');
 const { DEFAULT_CONFIG: DEFAULT_OPTIM_CONFIG } = require('../services/parcelOptimizationService');
 const { evaluateOrderParcelLinkRules } = require('../utils/orderParcelLinkRules');
+
+// [S1-S5] Sécurité logistique
+const {
+  generateExternalCode,
+  generateSealCode,
+  logParcelEvent,
+  checkWeightIntegrity,
+  verifySeal,
+} = require('../services/parcel-security');
 
 const adminAgent = [authenticate, requireRole(['admin', 'agent_hub'])];
 const adminAgentRelais = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
@@ -49,7 +71,7 @@ router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req
     if (status) { conditions.push(`p.status = $${idx++}`); params.push(status); }
     if (shipment_id) { conditions.push(`p.shipment_id = $${idx++}`); params.push(shipment_id); }
     if (order_id) { conditions.push(`p.order_id = $${idx++}`); params.push(order_id); }
-    if (search) { conditions.push(`p.reference ILIKE $${idx++}`); params.push(`%${search}%`); }
+    if (search) { conditions.push(`(p.reference ILIKE $${idx} OR p.external_code ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
 
     // Agent relais: only see parcels for their relay point's orders
     if (req.user.role === 'agent_relais') {
@@ -63,8 +85,9 @@ router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req
     const total = parseInt(countResult.rows[0].count);
 
     const { rows } = await db.query(`
-      SELECT p.*,
+      SELECT p.*, p.external_code,
              o.reference AS order_reference, o.status AS order_status,
+             o.destination_island, o.routing_mode,
              (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS items_count
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
@@ -77,14 +100,15 @@ router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req
   } catch(e) { next(e); }
 });
 
-// GET /api/parcels/:ref
+// GET /api/parcels/:ref — aussi cherche par external_code
 router.get('/:ref', ...adminAgentRelais, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
-      SELECT p.*, o.reference AS order_reference, o.status AS order_status, o.user_id, o.relais_id
+      SELECT p.*, o.reference AS order_reference, o.status AS order_status, o.user_id, o.relais_id,
+             o.destination_island, o.routing_mode, o.transit_hub
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
-      WHERE p.reference = $1
+      WHERE p.reference = $1 OR p.external_code = $1
     `, [req.params.ref]);
 
     if (!rows.length) return res.status(404).json({ error: 'Colis introuvable' });
@@ -101,63 +125,131 @@ router.get('/:ref', ...adminAgentRelais, async (req, res, next) => {
     `, [parcel.id]);
 
     parcel.items = items.rows;
+
+    // [S3] Info interne uniquement — pas sur l'étiquette physique
+    // Les items, noms produits, valeurs sont dans cette réponse API (système)
+    // mais ne seront JAMAIS sur l'étiquette PDF (voir logistics.js)
+
     res.json(parcel);
   } catch(e) { next(e); }
 });
 
-// POST /api/parcels
+// [S5] GET /api/parcels/:ref/events — Historique événements sécurité
+router.get('/:ref/events', ...adminAgentRelais, async (req, res, next) => {
+  try {
+    // Trouver le colis par ref ou external_code
+    const parcel = await db.query(
+      'SELECT id FROM parcels WHERE reference = $1 OR external_code = $1',
+      [req.params.ref]
+    );
+    if (!parcel.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
+
+    const { rows } = await db.query(`
+      SELECT pe.*, u.full_name AS actor_name, u.role AS actor_role
+      FROM parcel_events pe
+      LEFT JOIN users u ON u.id = pe.actor_id
+      WHERE pe.parcel_id = $1
+      ORDER BY pe.created_at ASC
+    `, [parcel.rows[0].id]);
+
+    res.json({ parcel_id: parcel.rows[0].id, events: rows, count: rows.length });
+  } catch(e) { next(e); }
+});
+
+// POST /api/parcels — [S1] external_code + seal_code + event logged
 router.post('/', ...adminAgent, validate(parcels.create), async (req, res, next) => {
   try {
-    const { order_id, type = 'standard', notes } = req.body;
+    const { order_id, type = 'standard', notes, weight_kg } = req.body;
 
     const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [order_id]);
     if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
     const reference = await generateParcelRef(db);
+    const external_code = generateExternalCode();
+    const seal_code = generateSealCode();
 
     const { rows } = await db.query(`
-      INSERT INTO parcels (reference, order_id, type, notes, status)
-      VALUES ($1, $2, $3, $4, 'draft')
+      INSERT INTO parcels (reference, external_code, seal_code, order_id, type, notes, status,
+                           weight_kg, last_weight_kg, last_weight_at)
+      VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $7, CASE WHEN $7 IS NOT NULL THEN NOW() ELSE NULL END)
       RETURNING *
-    `, [reference, order_id, type, notes || null]);
+    `, [reference, external_code, seal_code, order_id, type, notes || null, weight_kg || null]);
 
-    res.status(201).json(rows[0]);
+    const parcel = rows[0];
+
+    // [S2] Logger la création
+    await logParcelEvent(db, {
+      parcel_id: parcel.id,
+      event_type: 'created',
+      actor_id: req.user.id,
+      notes: `Colis créé — type: ${type}`,
+      metadata: { order_id, type, external_code, seal_code },
+    });
+
+    if (weight_kg) {
+      await logParcelEvent(db, {
+        parcel_id: parcel.id,
+        event_type: 'weight_recorded',
+        actor_id: req.user.id,
+        weight_kg,
+        notes: 'Poids initial',
+      });
+    }
+
+    // [S2] Logger le scellé
+    await logParcelEvent(db, {
+      parcel_id: parcel.id,
+      event_type: 'sealed',
+      actor_id: req.user.id,
+      notes: 'Scellé initial appliqué',
+      metadata: { seal_code },
+    });
+
+    res.status(201).json(parcel);
   } catch(e) {
     if (e.code === '23505' && e.constraint === 'one_draft_per_order') {
-      return res.status(409).json({ error: 'Un colis draft existe dÃ©jÃ  pour cette commande' });
+      return res.status(409).json({ error: 'Un colis draft existe déjà pour cette commande' });
     }
     next(e);
   }
 });
 
-// PATCH /api/parcels/:id/status
-// AprÃ¨s chaque changement de statut logistique, Ã©value les link rules order â parcel
-// Retourne le colis mis Ã  jour + l'ordre mis Ã  jour (pour vÃ©rification link rules)
+// PATCH /api/parcels/:id/status — [S3] log event on every status change
 router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async (req, res, next) => {
   try {
     const { status, notes } = req.body;
-    const parcelCheck = await db.query('SELECT id, order_id, status FROM parcels WHERE id = $1', [req.params.id]);
+    const parcelCheck = await db.query('SELECT id, order_id, status, external_code FROM parcels WHERE id = $1', [req.params.id]);
     if (!parcelCheck.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
 
     const parcel = parcelCheck.rows[0];
     const step = STATUS_TO_STEP[status];
     if (!step) return res.status(400).json({ error: `Statut invalide : ${status}` });
 
+    const oldStatus = parcel.status;
+
     await safeSyncScanToParcels({
       order_id:    parcel.order_id,
       step,
       scan_id:     null,
       scanned_by:  req.user.id,
-      notes:       notes || `Status â ${status}`,
+      notes:       notes || `Status → ${status}`,
     });
 
-    // Ãvaluer les rÃ¨gles de liaison order â parcel (R1/R2/R3)
+    // [S2] Logger le changement de statut
+    await logParcelEvent(db, {
+      parcel_id: parcel.id,
+      event_type: 'status_changed',
+      actor_id: req.user.id,
+      notes: notes || `${oldStatus} → ${status}`,
+      metadata: { from: oldStatus, to: status },
+    });
+
+    // Évaluer les règles de liaison order ↔ parcel (R1/R2/R3)
     const triggeredRule = await evaluateOrderParcelLinkRules(parcel.order_id, db);
     if (triggeredRule) {
-      console.info(`[LINK-RULE] ${triggeredRule} dÃ©clenchÃ© pour order ${parcel.order_id}`);
+      console.info(`[LINK-RULE] ${triggeredRule} déclenché pour order ${parcel.order_id}`);
     }
 
-    // RÃ©cupÃ©rer le colis ET l'ordre mis Ã  jour (pour vÃ©rification du statut)
     const [parcelResult, orderResult] = await Promise.all([
       db.query('SELECT * FROM parcels WHERE id = $1', [req.params.id]),
       db.query('SELECT id, status, computed_status FROM orders WHERE id = $1', [parcel.order_id]),
@@ -171,6 +263,99 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
       order: updatedOrder
         ? { id: updatedOrder.id, status: updatedOrder.status, computed_status: updatedOrder.computed_status }
         : null,
+    });
+  } catch(e) { next(e); }
+});
+
+// [S6] POST /api/parcels/:id/weight — Checkpoint poids
+router.post('/:id/weight', ...adminAgentRelais, async (req, res, next) => {
+  try {
+    const { weight_kg, location } = req.body;
+    if (!weight_kg || isNaN(parseFloat(weight_kg))) {
+      return res.status(400).json({ error: 'weight_kg requis (nombre)' });
+    }
+
+    const parcelCheck = await db.query(
+      'SELECT id, last_weight_kg, last_weight_location, external_code FROM parcels WHERE id = $1',
+      [req.params.id]
+    );
+    if (!parcelCheck.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
+
+    const parcel = parcelCheck.rows[0];
+
+    // [S5] Vérifier l'intégrité poids
+    const anomaly = checkWeightIntegrity(parcel.last_weight_kg, weight_kg);
+
+    // Mettre à jour le dernier poids
+    await db.query(`
+      UPDATE parcels
+      SET last_weight_kg = $1, last_weight_at = NOW(), last_weight_location = $2, updated_at = NOW()
+      WHERE id = $3
+    `, [weight_kg, location || null, parcel.id]);
+
+    // Logger le checkpoint
+    await logParcelEvent(db, {
+      parcel_id: parcel.id,
+      event_type: anomaly ? 'anomaly_detected' : 'weight_checked',
+      actor_id: req.user.id,
+      location,
+      weight_kg: parseFloat(weight_kg),
+      notes: anomaly ? anomaly.message : `Poids vérifié: ${weight_kg}kg`,
+      metadata: anomaly ? { anomaly, previous: parcel.last_weight_kg } : { previous: parcel.last_weight_kg },
+    });
+
+    res.json({
+      parcel_id: parcel.id,
+      external_code: parcel.external_code,
+      weight_kg: parseFloat(weight_kg),
+      previous_weight_kg: parcel.last_weight_kg ? parseFloat(parcel.last_weight_kg) : null,
+      anomaly: anomaly || null,
+      status: anomaly ? 'warning' : 'ok',
+    });
+  } catch(e) { next(e); }
+});
+
+// [S7] POST /api/parcels/:id/verify-seal — Vérifier le scellé
+router.post('/:id/verify-seal', ...adminAgentRelais, async (req, res, next) => {
+  try {
+    const { seal_code: providedSeal } = req.body;
+    if (!providedSeal) return res.status(400).json({ error: 'seal_code requis' });
+
+    const parcelCheck = await db.query(
+      'SELECT id, seal_code, external_code FROM parcels WHERE id = $1',
+      [req.params.id]
+    );
+    if (!parcelCheck.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
+
+    const parcel = parcelCheck.rows[0];
+    const result = verifySeal(parcel.seal_code, providedSeal);
+
+    // Logger la vérification
+    await logParcelEvent(db, {
+      parcel_id: parcel.id,
+      event_type: result.valid ? 'seal_verified' : 'anomaly_detected',
+      actor_id: req.user.id,
+      notes: result.valid ? 'Scellé vérifié OK' : `Scellé invalide: ${result.reason}`,
+      metadata: { valid: result.valid, reason: result.reason || null },
+    });
+
+    if (!result.valid) {
+      return res.status(422).json({
+        parcel_id: parcel.id,
+        external_code: parcel.external_code,
+        seal_valid: false,
+        reason: result.reason,
+        message: result.reason === 'seal_mismatch'
+          ? '⚠️ ALERTE: Le scellé ne correspond pas — possible ouverture/substitution'
+          : '⚠️ Scellé manquant',
+      });
+    }
+
+    res.json({
+      parcel_id: parcel.id,
+      external_code: parcel.external_code,
+      seal_valid: true,
+      message: '✅ Scellé vérifié — intégrité confirmée',
     });
   } catch(e) { next(e); }
 });
@@ -194,7 +379,7 @@ router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, 
     res.status(201).json(rows[0]);
   } catch(e) {
     if (e.code === '23505' && e.constraint === 'unique_order_item_per_parcel') {
-      return res.status(409).json({ error: 'Cet article est dÃ©jÃ  assignÃ© Ã  un colis' });
+      return res.status(409).json({ error: 'Cet article est déjà assigné à un colis' });
     }
     next(e);
   }
@@ -208,7 +393,7 @@ router.delete('/:id/items/:item_id', ...adminAgent, async (req, res, next) => {
       [req.params.id, req.params.item_id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Article de colis introuvable' });
-    res.json({ message: 'Article retirÃ© du colis', deleted: rows[0] });
+    res.json({ message: 'Article retiré du colis', deleted: rows[0] });
   } catch(e) { next(e); }
 });
 
@@ -221,7 +406,6 @@ router.post('/optimize', ...adminAgent, async (req, res, next) => {
     const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [order_id]);
     if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
-    // COALESCE sur les colonnes nullables (produits sans weight_kg/volume_cm3 renseignÃ©s)
     const { rows: items } = await db.query(`
       SELECT
         oi.id                               AS order_item_id,
@@ -261,13 +445,15 @@ router.post('/optimize', ...adminAgent, async (req, res, next) => {
 
     for (const cp of result.createdParcels) {
       const reference = await generateParcelRef(db);
+      const external_code = generateExternalCode();
+      const seal_code = generateSealCode();
       const type = result.createdParcels.length > 1 ? 'partial' : 'standard';
 
       const { rows: [parcel] } = await db.query(`
-        INSERT INTO parcels (reference, order_id, type, status, weight_kg, notes)
-        VALUES ($1, $2, $3, 'draft', $4, $5)
+        INSERT INTO parcels (reference, external_code, seal_code, order_id, type, status, weight_kg, notes)
+        VALUES ($1, $2, $3, $4, $5, 'draft', $6, $7)
         RETURNING *
-      `, [reference, order_id, type, cp.total_weight || null, cp.warnings.join('; ') || null]);
+      `, [reference, external_code, seal_code, order_id, type, cp.total_weight || null, cp.warnings.join('; ') || null]);
 
       for (const item of cp.items) {
         await db.query(`
@@ -276,6 +462,14 @@ router.post('/optimize', ...adminAgent, async (req, res, next) => {
           ON CONFLICT DO NOTHING
         `, [parcel.id, item.order_item_id, item.product_id, item.quantity_available]);
       }
+
+      // [S2] Logger la création via optimize
+      await logParcelEvent(db, {
+        parcel_id: parcel.id,
+        event_type: 'created',
+        notes: `Colis créé via optimize — type: ${type}`,
+        metadata: { order_id, type, external_code, items_count: cp.items.length },
+      });
 
       createdParcels.push({ ...parcel, items: cp.items, warnings: cp.warnings });
     }
@@ -292,7 +486,6 @@ router.post('/optimize', ...adminAgent, async (req, res, next) => {
       updatedParcels.push(up);
     }
 
-    // computed_status = vue logistique (lecture seule, ne pilote pas orders.status)
     const { computeOrderStatus } = require('../utils/parcels');
     const { rows: allParcels } = await db.query(
       'SELECT status, type FROM parcels WHERE order_id = $1',
@@ -328,7 +521,7 @@ router.post('/bootstrap/:orderId', ...adminAgent, async (req, res, next) => {
     );
     if (parseInt(existingCheck.rows[0].count) > 0) {
       return res.status(409).json({
-        error: 'La commande a dÃ©jÃ  des colis actifs. Utilisez /optimize pour enrichir.',
+        error: 'La commande a déjà des colis actifs. Utilisez /optimize pour enrichir.',
         hint: 'Annulez les colis existants avant de bootstrapper.',
       });
     }
