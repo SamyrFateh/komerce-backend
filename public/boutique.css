@@ -1443,47 +1443,8 @@ body.modal-open .mobile-tabs {
 }
 
 /* Share row */
-.pd-share-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-
-.pd-share-row button {
-  flex: 1;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1.5px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-}
-
-.pd-share-row button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.pd-share-row .wa-share {
-  background: var(--whatsapp);
-  color: #fff;
-  border-color: var(--whatsapp);
-}
-
-.pd-share-row .wa-share:hover {
-  background: #20bd5a;
-  border-color: #20bd5a;
-  color: #fff;
-}
+/* Share + trust supprimés — place aux suggestions */
+.pd-share-row, .pd-trust, .pd-share-trust { display: none !important; }
 
 /* Modal scroll-to-top */
 .modal-scroll-top {
@@ -1565,14 +1526,8 @@ body.modal-open .mobile-tabs {
   .pd-price-conv { font-size: 0.72rem !important; margin-top: 0 !important; }
   .pd-desc { font-size: 0.82rem; text-align: left; margin-top: 6px; line-height: 1.35; }
 
-  /* Share + trust compact */
-  .pd-share-row {
-    gap: 6px;
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-  .pd-share-btn { font-size: 0.72rem; padding: 6px 10px; }
-  .pd-trust { font-size: 0.68rem; gap: 6px; margin-top: 6px; padding: 6px 0; }
+  /* Share + trust supprimés sur mobile */
+  .pd-share-row, .pd-trust, .pd-share-trust { display: none !important; }
 
   .pd-controls {
     position: fixed;

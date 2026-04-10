@@ -899,40 +899,7 @@ function openProductModal(p, fromSuggestion) {
   top.appendChild(info);
   body.appendChild(top);
 
-  /* ── Share row ── */
-  var shareRow = document.createElement('div');
-  shareRow.className = 'pd-share-row';
-
-  var waShare = document.createElement('button');
-  waShare.className = 'pd-share-btn wa';
-  waShare.innerHTML = '💬 Partager sur WhatsApp';
-  waShare.addEventListener('click', function(e) {
-    e.stopPropagation();
-    var msg = '🛍 Regarde ce produit sur Komerce !\n\n'
-      + '*' + p.name + '*\n'
-      + '💰 ' + fmt(p.price_kmf || 0, 'KMF') + '\n\n'
-      + '👉 ' + window.location.origin;
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-  });
-  shareRow.appendChild(waShare);
-
-  var copyBtn = document.createElement('button');
-  copyBtn.className = 'pd-share-btn copy';
-  copyBtn.innerHTML = '🔗 Copier le lien';
-  copyBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    navigator.clipboard.writeText(window.location.origin).then(function() {
-      toast('Lien copié !', 'success');
-    });
-  });
-  shareRow.appendChild(copyBtn);
-  body.appendChild(shareRow);
-
-  /* ── Trust badges ── */
-  var trust = document.createElement('div');
-  trust.className = 'pd-trust';
-  trust.innerHTML = '<span>🇰🇲 Livré aux Comores</span><span>🔒 Paiement sécurisé</span><span>🏪 Retrait en relais</span>';
-  body.appendChild(trust);
+  /* ── Share + Trust supprimés — place aux suggestions ── */
 
   /* ── Contrôles qty + ajouter ── */
   var controls = document.createElement('div');
@@ -967,11 +934,11 @@ function openProductModal(p, fromSuggestion) {
   /* ── Déjà dans le panier? ── */
   var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
   if (_inCart) {
-    var cartBadge = document.createElement('div');
-    cartBadge.style.cssText = 'background:var(--primary-light);color:var(--primary-dark);padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;';
-    cartBadge.innerHTML = '✓ Déjà dans le panier <span style="background:var(--primary);color:white;border-radius:12px;padding:1px 8px;font-size:0.72rem;">×' + _inCart.qty + '</span>';
-    controls.insertBefore(cartBadge, controls.firstChild);
-    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">En ajouter';
+    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">+ Ajouter';
+    var cartNote = document.createElement('div');
+    cartNote.style.cssText = 'text-align:center;font-size:0.7rem;color:var(--primary);font-weight:600;margin-top:2px;';
+    cartNote.textContent = '✓ ' + _inCart.qty + ' déjà dans le panier';
+    controls.appendChild(cartNote);
   }
   body.appendChild(controls);
 
