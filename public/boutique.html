@@ -900,7 +900,92 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex-shrink: 0;
 }
 .modal-close:hover { background: var(--border); transform: scale(1.1); }
-.modal-body { padding: 24px; flex: 1; overflow-y: auto; }
+.modal-body { padding: 16px 20px 8px; flex: 1; overflow-y: auto; }
+.modal-footer {
+  flex-shrink: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border);
+  background: white;
+  border-radius: 0 0 14px 14px;
+}
+.modal-footer-trust {
+  font-size: 0.72rem; color: var(--muted); text-align: center;
+  margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.modal-footer-trust span { color: var(--primary); font-weight: 600; }
+.pd-controls-sticky {
+  display: flex; gap: 10px; align-items: center;
+}
+.pd-add-btn-full {
+  flex: 1; padding: 12px 16px; border-radius: 24px;
+  background: var(--primary); color: white;
+  font-weight: 700; font-size: 0.95rem;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+}
+.pd-add-btn-full:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+.pd-add-btn-full.added { background: #22c55e; }
+.pd-add-btn-full:disabled { opacity: 0.6; cursor: default; }
+.qty-pill {
+  display: flex; align-items: center; gap: 4px;
+  border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 6px 8px; background: var(--bg);
+}
+.qty-pill .qty-btn {
+  width: 28px; height: 28px; font-size: 1.1rem;
+  border-radius: 50%; border: none; background: var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; transition: background 0.15s;
+}
+.qty-pill .qty-btn:hover { background: var(--primary); color: white; }
+.qty-pill .qty-val { font-size: 1rem; font-weight: 700; min-width: 22px; text-align: center; }
+/* ── Bundle "Complétez votre look" ── */
+.bundle-section {
+  margin-top: 24px; border: 1.5px solid var(--primary-light);
+  border-radius: 12px; padding: 14px; background: var(--accent-light);
+}
+.bundle-title {
+  font-size: 0.85rem; font-weight: 700; color: var(--dark);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+.bundle-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.bundle-item {
+  display: flex; align-items: center; gap: 10px;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 10px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.bundle-item.selected {
+  border-color: var(--primary); background: var(--primary-light);
+}
+.bundle-item-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--border); background: white;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; transition: all 0.15s;
+}
+.bundle-item.selected .bundle-item-check {
+  background: var(--primary); border-color: var(--primary); color: white;
+}
+.bundle-item-img {
+  width: 44px; height: 44px; border-radius: 8px;
+  object-fit: cover; background: var(--primary-light);
+  flex-shrink: 0;
+}
+.bundle-item-info { flex: 1; min-width: 0; }
+.bundle-item-name { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bundle-item-price { font-size: 0.8rem; color: var(--primary); font-weight: 700; }
+.bundle-cta {
+  width: 100%; padding: 11px; border-radius: 10px;
+  background: var(--accent); color: var(--dark);
+  font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.bundle-cta:hover { background: var(--accent-dark); color: white; transform: translateY(-1px); }
+.bundle-total { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 6px; }
 
 /* ────────────────────────────────────────
    PRODUCT DETAIL MODAL
@@ -1871,6 +1956,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <button class="modal-close" id="product-modal-close" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body" id="product-modal-body"></div>
+    <div class="modal-footer" id="product-modal-footer"></div>
   </div>
 </div>
 
@@ -2831,6 +2917,8 @@ function openProductModal(p, fromSuggestion) {
   body.innerHTML = '';
   body.scrollTop = 0;
   body.style.position = 'relative';
+  var footer = $('product-modal-footer');
+  footer.innerHTML = '';
 
   /* ── Bouton retour produit précédent ── */
   if (window._productHistory.length > 0) {
@@ -2932,12 +3020,17 @@ function openProductModal(p, fromSuggestion) {
     body.appendChild(desc);
   }
 
-  /* ── Contrôles qty + ajouter ── */
-  var controls = document.createElement('div');
-  controls.className = 'pd-controls';
+  /* ── Footer sticky : trust copy + qty + add btn ── */
+  var trustEl = document.createElement('div');
+  trustEl.className = 'modal-footer-trust';
+  trustEl.innerHTML = '🇰🇲 <span>Livré aux Comores</span> · Paiement sécurisé 🔒';
+  footer.appendChild(trustEl);
 
-  var qtyWrap = document.createElement('div');
-  qtyWrap.className = 'pd-qty-wrap';
+  var controls = document.createElement('div');
+  controls.className = 'pd-controls-sticky';
+
+  var qtyPill = document.createElement('div');
+  qtyPill.className = 'qty-pill';
   var minusBtn = document.createElement('button');
   minusBtn.className = 'qty-btn';
   minusBtn.textContent = '−';
@@ -2949,29 +3042,30 @@ function openProductModal(p, fromSuggestion) {
   plusBtn.textContent = '+';
   minusBtn.addEventListener('click', function() { if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; } });
   plusBtn.addEventListener('click', function() { _pdQty++; qtyVal.textContent = _pdQty; });
-  qtyWrap.appendChild(minusBtn);
-  qtyWrap.appendChild(qtyVal);
-  qtyWrap.appendChild(plusBtn);
-  controls.appendChild(qtyWrap);
+  qtyPill.appendChild(minusBtn);
+  qtyPill.appendChild(qtyVal);
+  qtyPill.appendChild(plusBtn);
+  controls.appendChild(qtyPill);
 
   var addBtn = document.createElement('button');
-  addBtn.className = 'pd-add-btn';
-  addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/><path d="M6.5 12.5c1.5 1 3.5 1.5 5.5 1.5s4-.5 5.5-1.5" opacity="0.5"/><path d="M5.5 15c2 1.2 4 1.8 6.5 1.8s4.5-.6 6.5-1.8" opacity="0.4"/></svg>Ajouter';
-  addBtn.addEventListener('click', function() {
-    addToCart(p, _pdQty, addBtn);
-    setTimeout(function() { closeProductModal(); }, 500);
-  });
-  controls.appendChild(addBtn);
+  addBtn.className = 'pd-add-btn-full';
+  addBtn.innerHTML = '🛒 Ajouter au panier';
+
   /* ── Déjà dans le panier? ── */
   var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
   if (_inCart) {
-    var cartBadge = document.createElement('div');
-    cartBadge.style.cssText = 'background:var(--primary-light);color:var(--primary-dark);padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;';
-    cartBadge.innerHTML = '✓ Déjà dans le panier <span style="background:var(--primary);color:white;border-radius:12px;padding:1px 8px;font-size:0.72rem;">×' + _inCart.qty + '</span>';
-    controls.insertBefore(cartBadge, controls.firstChild);
-    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/><path d="M6.5 12.5c1.5 1 3.5 1.5 5.5 1.5s4-.5 5.5-1.5" opacity="0.5"/><path d="M5.5 15c2 1.2 4 1.8 6.5 1.8s4.5-.6 6.5-1.8" opacity="0.4"/></svg>En ajouter';
+    addBtn.innerHTML = '✓ En ajouter · ×' + _inCart.qty + ' déjà';
+    addBtn.style.background = 'var(--primary-dark)';
   }
-  body.appendChild(controls);
+
+  addBtn.addEventListener('click', function() {
+    addToCart(p, _pdQty, addBtn);
+    addBtn.innerHTML = '✓ Ajouté !';
+    addBtn.classList.add('added');
+    setTimeout(function() { closeProductModal(); }, 600);
+  });
+  controls.appendChild(addBtn);
+  footer.appendChild(controls);
 
   /* ── Look Board / Suggestions — piloté par SUGGESTION_MAP ── */
   var _pCat = (p.category || '').toLowerCase();
@@ -3101,19 +3195,111 @@ function openProductModal(p, fromSuggestion) {
     if (_similar.length) body.appendChild(makeSwipeSection(_similar, 'Vous aimerez aussi ✨', '#fef3c7'));
   }
 
-  // Complémentaires : catégories croisées définies dans compCategories
+  // Bundle "Complétez votre look"
   if (_mapEntry.complementaires && _mapEntry.compCategories.length) {
-    var _compProds = _products
+    var _bundlePool = _products
       .filter(function(x) {
         if (x.id === p.id) return false;
         var xCat = (x.category||'').toLowerCase();
-        // Exclure les produits de la même catégorie (déjà dans similaires)
         if (xCat === _pCat) return false;
-        return _mapEntry.compCategories.indexOf(xCat) >= 0;
+        return _mapEntry.compCategories.some(function(c) { return xCat === c || xCat.indexOf(c) >= 0; });
       })
       .sort(function() { return 0.5 - Math.random(); })
-      .slice(0, 8);
-    if (_compProds.length) body.appendChild(makeSwipeSection(_compProds, 'Complétez votre style 🌸', '#fff1ec'));
+      .slice(0, 3);
+
+    if (_bundlePool.length >= 1) {
+      var bundleSec = document.createElement('div');
+      bundleSec.className = 'bundle-section';
+
+      var bundleTitle = document.createElement('div');
+      bundleTitle.className = 'bundle-title';
+      bundleTitle.innerHTML = '✨ Complétez votre look';
+      bundleSec.appendChild(bundleTitle);
+
+      var bundleItems = document.createElement('div');
+      bundleItems.className = 'bundle-items';
+
+      var _bundleSelected = {};
+      _bundlePool.forEach(function(bp) { _bundleSelected[bp.id] = true; });
+
+      _bundlePool.forEach(function(bp) {
+        var item = document.createElement('div');
+        item.className = 'bundle-item selected';
+        item.dataset.pid = bp.id;
+
+        var check = document.createElement('div');
+        check.className = 'bundle-item-check';
+        check.innerHTML = '✓';
+
+        var imgEl;
+        if (bp.image_url) {
+          imgEl = document.createElement('img');
+          imgEl.className = 'bundle-item-img';
+          imgEl.src = bp.image_url;
+          imgEl.alt = bp.name;
+          imgEl.onerror = function() { imgEl.style.display='none'; };
+        } else {
+          imgEl = document.createElement('div');
+          imgEl.className = 'bundle-item-img';
+          imgEl.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:1.5rem;';
+          imgEl.textContent = productEmoji(bp);
+        }
+
+        var info = document.createElement('div');
+        info.className = 'bundle-item-info';
+        var bName = document.createElement('div');
+        bName.className = 'bundle-item-name';
+        bName.textContent = bp.name;
+        var bPrice = document.createElement('div');
+        bPrice.className = 'bundle-item-price';
+        bPrice.textContent = fmt(bp.price_kmf || 0, 'KMF');
+        info.appendChild(bName);
+        info.appendChild(bPrice);
+
+        item.appendChild(check);
+        item.appendChild(imgEl);
+        item.appendChild(info);
+        bundleItems.appendChild(item);
+
+        item.addEventListener('click', function() {
+          var sel = item.classList.toggle('selected');
+          _bundleSelected[bp.id] = sel;
+          updateBundleCta();
+        });
+      });
+
+      bundleSec.appendChild(bundleItems);
+
+      var bundleCta = document.createElement('button');
+      bundleCta.className = 'bundle-cta';
+      var bundleTotalEl = document.createElement('div');
+      bundleTotalEl.className = 'bundle-total';
+
+      function updateBundleCta() {
+        var sel = _bundlePool.filter(function(bp) { return _bundleSelected[bp.id]; });
+        var total = sel.reduce(function(s, bp) { return s + (bp.price_kmf || 0); }, 0);
+        bundleCta.innerHTML = '🛍️ Ajouter le look (' + sel.length + ' article' + (sel.length > 1 ? 's' : '') + ')';
+        bundleTotalEl.textContent = sel.length ? 'Total : ' + fmt(total, 'KMF') : '';
+        bundleCta.disabled = sel.length === 0;
+      }
+      updateBundleCta();
+
+      bundleCta.addEventListener('click', function() {
+        var added = 0;
+        _bundlePool.forEach(function(bp) {
+          if (_bundleSelected[bp.id]) { addToCart(bp, 1, null); added++; }
+        });
+        if (added) toast(added + ' article' + (added > 1 ? 's' : '') + ' ajouté' + (added > 1 ? 's' : '') + ' au panier 🛒', 'success');
+        bundleCta.innerHTML = '✓ Look ajouté !';
+        bundleCta.style.background = '#22c55e';
+        bundleCta.style.color = 'white';
+        setTimeout(function() { updateBundleCta(); bundleCta.style.background = ''; bundleCta.style.color = ''; }, 2500);
+      });
+
+      bundleSec.appendChild(bundleCta);
+      bundleSec.appendChild(bundleTotalEl);
+      body.appendChild(bundleSec);
+    }
   }
 
   
@@ -3170,12 +3356,29 @@ function openProductModal(p, fromSuggestion) {
    *  Pour ajouter une catégorie : une ligne suffit.
    */
   var SUGGESTION_MAP = {
-    'mode':       { similaires: true,  complementaires: true,  mannequin: false, compCategories: ['mode','beaute','beauté','enfant'] },
-    'sur-mesure': { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
-    'beaute':     { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
-    'beauté':     { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
-    'tech':       { similaires: true,  complementaires: false, mannequin: false, compCategories: [] },
-    'enfant':     { similaires: true,  complementaires: true,  mannequin: false, compCategories: ['enfant','mode'] }
+    'mode':           { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures','sacs','beaute','beauté'] },
+    'vetements':      { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures','sacs'] },
+    'fashion':        { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures','sacs'] },
+    'chaussures':     { similaires: true, complementaires: true,  compCategories: ['mode','accessoires','chaussettes','sacs'] },
+    'accessoires':    { similaires: true, complementaires: true,  compCategories: ['mode','vetements','bijoux','chaussures'] },
+    'bijoux':         { similaires: true, complementaires: true,  compCategories: ['mode','vetements','sacs','parfum'] },
+    'sacs':           { similaires: true, complementaires: true,  compCategories: ['mode','bijoux','chaussures','accessoires'] },
+    'sur-mesure':     { similaires: true, complementaires: true,  compCategories: ['accessoires','bijoux','chaussures'] },
+    'beaute':         { similaires: true, complementaires: true,  compCategories: ['parfum','soins','beaute','cheveux'] },
+    'beauté':         { similaires: true, complementaires: true,  compCategories: ['parfum','soins','beaute','cheveux'] },
+    'parfum':         { similaires: true, complementaires: true,  compCategories: ['beaute','soins','mode'] },
+    'soins':          { similaires: true, complementaires: true,  compCategories: ['beaute','parfum','cheveux'] },
+    'tech':           { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','coques','chargeurs','audio','hightech'] },
+    'telephones':     { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','coques','chargeurs','audio'] },
+    'electronique':   { similaires: true, complementaires: true,  compCategories: ['accessoires-tel','audio','hightech'] },
+    'accessoires-tel':{ similaires: true, complementaires: true,  compCategories: ['telephones','electronique','audio'] },
+    'audio':          { similaires: true, complementaires: true,  compCategories: ['telephones','electronique','accessoires-tel'] },
+    'enfant':         { similaires: true, complementaires: true,  compCategories: ['jouets','mode','chaussures','accessoires'] },
+    'jouets':         { similaires: true, complementaires: true,  compCategories: ['enfant','livres'] },
+    'maison':         { similaires: true, complementaires: true,  compCategories: ['deco','cuisine','linge'] },
+    'deco':           { similaires: true, complementaires: true,  compCategories: ['maison','linge','cuisine'] },
+    'alimentaire':    { similaires: true, complementaires: false, compCategories: [] },
+    'epicerie':       { similaires: true, complementaires: false, compCategories: [] }
   };
 
 
