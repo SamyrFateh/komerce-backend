@@ -1,14 +1,14 @@
 {
   "name": "Komerce — E-commerce des Comores",
   "short_name": "Komerce",
-  "description": "Le e-commerce qui rapproche la diaspora des Comores. Livraison rapide, paiement au relais.",
-  "start_url": "/Komerce_Boutique.html",
+  "description": "Commandez depuis la France, livré aux Comores. Suivi en temps réel.",
+  "start_url": "/portal.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#fffaf5",
   "theme_color": "#b45309",
+  "background_color": "#1a1a2e",
+  "orientation": "any",
+  "categories": ["shopping", "business"],
   "lang": "fr",
-  "categories": ["shopping", "lifestyle"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -23,13 +23,24 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Boutique",
       "short_name": "Boutique",
       "url": "/Komerce_Boutique.html",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Hub",
+      "short_name": "Hub",
+      "url": "/Komerce_Hub.html",
+      "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Relais",
+      "short_name": "Relais",
+      "url": "/Komerce_Relais.html",
+      "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]
     }
   ]
 }

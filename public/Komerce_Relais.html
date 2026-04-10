@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Komerce — Relais</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b45309">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Komerce">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<text y='.9em' font-size='90'>📍</text></svg>">
 <link rel="stylesheet" href="komerce-ui.css">
 <style>
 .scanner-zone{max-width:480px;margin:0 auto;text-align:center}
@@ -21,6 +28,59 @@
   .scanner-zone{max-width:100%}
   .search-box{max-width:100%}
 }
+</style>
+<style>
+/* ═══ PWA MOBILE: sidebar → bottom tabs ═══ */
+@media(max-width:768px){
+  .sidebar{display:none !important}
+  .layout,.main{flex-direction:column !important}
+  .content{margin-left:0 !important;padding:12px !important;padding-bottom:72px !important}
+  .hdr{flex-wrap:wrap;gap:6px;height:auto !important;min-height:48px;padding:8px 12px !important}
+  .hdr .logo{font-size:0.9rem}
+  .hdr-right{flex-wrap:wrap;gap:4px;font-size:0.75rem}
+  .mobile-tabs{display:flex !important}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:480px}
+  .stat-grid{grid-template-columns:repeat(2,1fr) !important;gap:8px !important}
+  .stat-card{padding:10px !important}
+  .stat-val{font-size:1.3rem !important}
+  .stat-label{font-size:0.65rem !important}
+  .screen{padding:10px !important}
+  .scan-box{padding:16px !important}
+  .scan-input{font-size:1.1rem !important}
+}
+@media(max-width:400px){
+  .stat-grid{grid-template-columns:1fr !important}
+  .hdr .logo{font-size:0.8rem}
+  .content{padding:8px !important;padding-bottom:68px !important}
+}
+.mobile-tabs{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;
+  background:var(--bg2);border-top:2px solid var(--border);
+  padding:2px 0 calc(2px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+}
+.mobile-tabs-inner{display:flex;width:100%}
+.mtab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:6px 2px 4px;font-size:0.58rem;letter-spacing:0.01em;
+  color:var(--text3);background:none;border:none;cursor:pointer;
+  font-family:inherit;position:relative;transition:color 0.15s;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.mtab:active{transform:scale(0.92)}
+.mtab.active{color:var(--gold);font-weight:600}
+.mtab-icon{font-size:1.15rem;line-height:1}
+.mtab-badge{
+  position:absolute;top:-2px;right:calc(50% - 18px);
+  background:var(--gold);color:#000;font-size:0.5rem;font-weight:700;
+  min-width:14px;height:14px;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;padding:0 3px;
+}
+.mtab-badge:empty{display:none}
+/* PWA standalone safe areas */
+.pwa-standalone .hdr{padding-top:calc(8px + env(safe-area-inset-top,0px)) !important}
+.pwa-standalone .mobile-tabs{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
 </style>
 </head>
 <body>
@@ -602,5 +662,57 @@
     }
   }, 60000);
   </script>
+<div class="mobile-tabs"><div class="mobile-tabs-inner"><button class="mtab active" data-screen="scrAttente"><span class="mtab-icon">📦</span>Attente<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrRemettre"><span class="mtab-icon">🤝</span>Remettre<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrScanner"><span class="mtab-icon">📱</span>Scanner<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrHistorique"><span class="mtab-icon">📜</span>Historique<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrRecherche"><span class="mtab-icon">🔍</span>Recherche<span class="mtab-badge"></span></button></div></div>
+<script>
+/* PWA: Mobile bottom tabs navigation */
+(function(){
+  var tabs = document.querySelectorAll('.mtab[data-screen]');
+  tabs.forEach(function(el){
+    el.addEventListener('click',function(){
+      tabs.forEach(function(t){t.classList.remove('active');});
+      document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+      document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+      el.classList.add('active');
+      var scr=document.getElementById(el.dataset.screen);
+      if(scr)scr.classList.add('active');
+      var sideItem=document.querySelector('.nav-item[data-screen="'+el.dataset.screen+'"]');
+      if(sideItem)sideItem.classList.add('active');
+      /* Auto-focus scanner input */
+      if(el.dataset.screen.indexOf('Scanner')!==-1||el.dataset.screen.indexOf('scanner')!==-1){
+        setTimeout(function(){var i=document.querySelector('#'+el.dataset.screen+' input[type="text"]');if(i)i.focus();},150);
+      }
+    });
+  });
+  /* Auto-sync sidebar badges → mobile badges */
+  function syncBadges(){
+    document.querySelectorAll('.nav-item[data-screen]').forEach(function(item){
+      var badge=item.querySelector('.nav-badge');
+      var screen=item.dataset.screen;
+      if(badge&&screen){
+        var mBadge=document.querySelector('.mtab[data-screen="'+screen+'"] .mtab-badge');
+        if(mBadge){var v=badge.textContent.trim();mBadge.textContent=(v&&v!=='0')?v:'';}
+      }
+    });
+  }
+  var sidebar=document.querySelector('.sidebar');
+  if(sidebar){
+    new MutationObserver(syncBadges).observe(sidebar,{childList:true,subtree:true,characterData:true});
+    setTimeout(syncBadges,2000);
+  }
+})();
+</script>
+<script>
+/* PWA: Service Worker + offline/online indicator */
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){document.body.classList.add('pwa-standalone');}
+function _pwaUpdateConn(online){
+  document.querySelectorAll('.conn-pill,[id$="-conn-status"]').forEach(function(p){
+    if(online){p.textContent='\u{1F7E2} En ligne';p.style.background='rgba(34,197,94,0.15)';p.style.color='#16a34a';}
+    else{p.textContent='\u{1F534} Hors ligne';p.style.background='rgba(239,68,68,0.15)';p.style.color='#dc2626';}
+  });
+}
+window.addEventListener('online',function(){_pwaUpdateConn(true);});
+window.addEventListener('offline',function(){_pwaUpdateConn(false);});
+</script>
 </body>
 </html>

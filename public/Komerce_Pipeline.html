@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Komerce — Pipeline</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b45309">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Komerce">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<text y='.9em' font-size='90'>🔄</text></svg>">
 <link rel="stylesheet" href="komerce-ui.css">
 <style>
 .pipeline-top{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:0 0 1rem}
@@ -50,6 +57,16 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 .stagnant-dot{width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse-dot 1.5s infinite}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+<style>
+@media(max-width:768px){
+  .hdr{flex-wrap:wrap;gap:6px;height:auto !important;min-height:48px;padding:8px 12px !important}
+  .kanban{flex-direction:column !important;gap:12px !important}
+  .kanban-col{min-width:auto !important;width:100% !important;max-height:400px}
+  .filters{flex-wrap:wrap;gap:6px}
+  .filter-input{min-width:150px}
+}
+.pwa-standalone .hdr{padding-top:calc(8px + env(safe-area-inset-top,0px)) !important}
 </style>
 </head>
 <body>
@@ -316,5 +333,18 @@
     }
   })();
   </script>
+<script>
+/* PWA: Service Worker + offline/online indicator */
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){document.body.classList.add('pwa-standalone');}
+function _pwaUpdateConn(online){
+  document.querySelectorAll('.conn-pill,[id$="-conn-status"]').forEach(function(p){
+    if(online){p.textContent='\u{1F7E2} En ligne';p.style.background='rgba(34,197,94,0.15)';p.style.color='#16a34a';}
+    else{p.textContent='\u{1F534} Hors ligne';p.style.background='rgba(239,68,68,0.15)';p.style.color='#dc2626';}
+  });
+}
+window.addEventListener('online',function(){_pwaUpdateConn(true);});
+window.addEventListener('offline',function(){_pwaUpdateConn(false);});
+</script>
 </body>
 </html>
