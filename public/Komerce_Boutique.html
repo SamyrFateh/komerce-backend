@@ -94,21 +94,51 @@
 .swipe-hint svg { animation: swipe-bounce 1.4s ease-in-out infinite; }
 @keyframes swipe-bounce { 0%,100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
 .modal-swipe-track::-webkit-scrollbar { display: none; }
-/* ── Look Grid (Complétez votre look) ── */
-.look-section-title { font-size:0.82rem;font-weight:700;color:var(--dark);margin:8px 0 6px;display:flex;align-items:center;gap:6px; }
-.look-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
-.look-card { display:flex;align-items:center;gap:8px;padding:8px;background:white;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s,background 0.15s;-webkit-tap-highlight-color:transparent; }
-.look-card.selected { border-color:var(--primary);background:var(--primary-light); }
-.look-card-img { width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--primary-light); }
-.look-card-info { flex:1;min-width:0; }
-.look-card-name { font-size:0.68rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.look-card-price { font-size:0.7rem;color:var(--primary);font-weight:700;margin-top:1px; }
-.look-card-check { width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:0; }
-.look-card.selected .look-card-check { background:var(--primary);border-color:var(--primary); }
-.look-card.selected .look-card-check::after { content:'✓';color:white;font-size:0.65rem;font-weight:700; }
-/* ── Sticky CTA bar ── */
-.sticky-cta { position:sticky;bottom:0;z-index:5;background:white;border-top:1px solid var(--border);padding:8px 0 4px;margin-top:10px; }
-.bundle-summary { font-size:0.7rem;color:var(--primary);font-weight:600;text-align:center;margin-bottom:4px;min-height:1px;transition:all 0.2s; }
+/* ── Recommendation Grid (contextual) ── */
+.reco-section { margin:12px 0 0; padding:0 2px; }
+.reco-section-title { font-size:0.82rem;font-weight:700;color:var(--dark);margin:0 0 8px;display:flex;align-items:center;gap:6px; }
+.reco-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.reco-item { display:flex;align-items:center;gap:8px;padding:8px;background:white;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s,background 0.15s;-webkit-tap-highlight-color:transparent;position:relative; }
+.reco-item.selected { border-color:var(--primary);background:var(--primary-light); }
+.reco-item-img { width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--primary-light); }
+.reco-item-info { flex:1;min-width:0; }
+.reco-item-name { font-size:0.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.reco-item-price { font-size:0.72rem;color:var(--primary);font-weight:700;margin-top:2px; }
+.reco-item-check { width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:0; }
+.reco-item.selected .reco-item-check { background:var(--primary);border-color:var(--primary); }
+.reco-item.selected .reco-item-check::after { content:'✓';color:white;font-size:0.7rem;font-weight:700; }
+/* ── Bundle CTA ── */
+.bundle-bar { display:none;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--primary-light);border-radius:10px;margin-top:8px;gap:8px; }
+.bundle-bar.visible { display:flex; }
+.bundle-bar-text { font-size:0.72rem;color:var(--primary-dark);font-weight:600; }
+.bundle-bar-btn { font-size:0.7rem;font-weight:700;color:white;background:var(--primary);border:none;border-radius:16px;padding:6px 14px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent; }
+/* ── Voir plus / Discovery ── */
+.voir-plus-btn { display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--primary);font-weight:600;background:none;border:1.5px solid var(--primary);border-radius:16px;padding:6px 14px;cursor:pointer;margin-top:10px;-webkit-tap-highlight-color:transparent;transition:background 0.2s; }
+.voir-plus-btn:active { background:var(--primary-light); }
+.discovery-panel { display:none;margin-top:10px; }
+.discovery-panel.open { display:block; }
+.discovery-filters { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px; }
+.discovery-filter { font-size:0.7rem;padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:white;cursor:pointer;font-weight:500;-webkit-tap-highlight-color:transparent;transition:all 0.15s; }
+.discovery-filter.active { background:var(--primary);color:white;border-color:var(--primary); }
+.discovery-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch; }
+.discovery-card { border-radius:10px;overflow:hidden;border:1px solid var(--border);background:white;cursor:pointer; }
+.discovery-card img { width:100%;aspect-ratio:1;object-fit:cover;background:var(--primary-light); }
+.discovery-card-info { padding:6px 8px; }
+.discovery-card-name { font-size:0.7rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.discovery-card-price { font-size:0.72rem;color:var(--primary);font-weight:700; }
+/* ── Micro UX Trust ── */
+.micro-trust { display:flex;align-items:center;gap:4px;font-size:0.7rem;color:var(--muted);margin-top:6px; }
+/* ── Sticky CTA bar v2 ── */
+.sticky-cta { position:sticky;bottom:0;z-index:5;background:white;border-top:1px solid var(--border);padding:10px 0 6px;margin-top:12px; }
+.sticky-cta-row { display:flex;align-items:center;gap:10px; }
+.sticky-cta .pd-qty-wrap { flex-shrink:0; }
+.sticky-cta .pd-qty-wrap .qty-btn { width:36px;height:36px;font-size:1.1rem;border-radius:10px;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:manipulation; }
+.sticky-cta .pd-qty-wrap .qty-btn:active { background:var(--primary-light); }
+.sticky-cta .pd-qty-wrap .qty-val { font-size:1rem;min-width:28px;text-align:center;font-weight:700; }
+.sticky-cta .pd-add-btn { flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:12px;background:var(--primary);color:white;font-weight:700;font-size:0.85rem;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background 0.2s; }
+.sticky-cta .pd-add-btn:active { background:var(--primary-dark,#6b3a0a); }
+.sticky-cta .pd-add-btn.added { background:#22c55e; }
+.sticky-cta .pd-add-btn .basket-icon { width:18px;height:18px; }
 
 
 /* ── Onglets navigation ── */
@@ -1874,37 +1904,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
     -webkit-line-clamp: unset !important;
     overflow: visible !important;
   }
-  /* ── Compact reco sections on mobile ── */
-  .pd-reco-title {
-    font-size: 0.85rem !important;
-    margin: 12px 0 6px !important;
-    padding: 6px 12px !important;
-  }
-  .pd-reco-scroll {
-    gap: 8px !important;
-    padding: 0 12px 8px !important;
-  }
-  .pd-reco-card {
-    min-width: 110px !important;
-    max-width: 110px !important;
-    font-size: 0.7rem !important;
-  }
-  .pd-reco-card img {
-    height: 100px !important;
-  }
-  .pd-reco-card .reco-name {
-    font-size: 0.68rem !important;
-    padding: 4px 4px 0 !important;
-  }
-  .pd-reco-card .reco-price {
-    font-size: 0.72rem !important;
-    padding: 0 4px !important;
-  }
-  .pd-reco-card .reco-add {
-    padding: 4px 8px !important;
-    font-size: 0.65rem !important;
-    margin: 4px !important;
-  }
+  /* ── Reco / discovery mobile overrides ── */
+  .reco-section { padding:0 12px; }
+  .reco-grid { gap:6px; }
+  .reco-item { padding:6px; }
+  .reco-item-img { width:44px;height:44px; }
+  .discovery-grid { max-height:350px; }
+  .discovery-card img { aspect-ratio:1; }
+  .sticky-cta { padding:8px 12px 6px; }
+  .sticky-cta-row { gap:8px; }
   /* ── Modal body padding for fixed CTA ── */
   .modal-body {
     padding-bottom: 80px !important;
@@ -3778,12 +3786,13 @@ function openProductModal(p, fromSuggestion) {
     info.appendChild(desc);
   }
 
-  /* ── Look Section — "Complétez votre look" — max 4, grid, bundle ── */
+  /* ── §2 CONTEXTUAL RECOMMENDATIONS — dynamic title per category ── */
   var _pCat = (p.category || '').toLowerCase();
-  var _mapEntry = SUGGESTION_MAP[_pCat] || { compCategories: [] };
+  var _mapEntry = SUGGESTION_MAP[_pCat] || { title: DEFAULT_RECO_TITLE, compCategories: [] };
+  var _recoTitle = _mapEntry.title || DEFAULT_RECO_TITLE;
 
-  // Build curated list: complementary first, fill with similar, max 4
-  var _lookItems = [];
+  // Build curated list: complementary first, then similar, max 4
+  var _recoItems = [];
   if (_mapEntry.compCategories && _mapEntry.compCategories.length) {
     var _comp = _products
       .filter(function(x) {
@@ -3793,52 +3802,57 @@ function openProductModal(p, fromSuggestion) {
       })
       .sort(function() { return 0.5 - Math.random(); })
       .slice(0, 4);
-    _lookItems = _lookItems.concat(_comp);
+    _recoItems = _recoItems.concat(_comp);
   }
-  if (_lookItems.length < 4) {
+  if (_recoItems.length < 4) {
     var _similar = _products
       .filter(function(x) {
         if (x.id === p.id) return false;
-        if (_lookItems.some(function(li) { return li.id === x.id; })) return false;
+        if (_recoItems.some(function(li) { return li.id === x.id; })) return false;
         return (x.category||'').toLowerCase() === _pCat;
       })
       .sort(function(a,b) { return Math.abs(a.price_kmf - p.price_kmf) - Math.abs(b.price_kmf - p.price_kmf); })
-      .slice(0, 4 - _lookItems.length);
-    _lookItems = _lookItems.concat(_similar);
+      .slice(0, 4 - _recoItems.length);
+    _recoItems = _recoItems.concat(_similar);
   }
 
-  // Bundle selection state
-  var _bundleIds = {};
-  var _bundleSummaryEl = null;
-  function updateBundleSummary() {
-    if (!_bundleSummaryEl) return;
-    var keys = Object.keys(_bundleIds);
-    if (keys.length === 0) { _bundleSummaryEl.textContent = ''; return; }
+  // §2b — Selection state for bundle
+  var _selectedIds = {};
+  var _bundleBarEl = null;
+  var _bundleTextEl = null;
+  function updateBundleBar() {
+    if (!_bundleBarEl) return;
+    var keys = Object.keys(_selectedIds);
+    if (keys.length === 0) { _bundleBarEl.classList.remove('visible'); return; }
     var total = 0;
     keys.forEach(function(id) {
-      var item = _lookItems.find(function(x) { return String(x.id) === id; });
+      var item = _recoItems.find(function(x) { return String(x.id) === id; });
       if (item) total += (item.price_kmf || 0);
     });
-    _bundleSummaryEl.textContent = '+ ' + keys.length + ' article' + (keys.length > 1 ? 's' : '') + ' · ' + fmt(total, 'KMF');
+    _bundleTextEl.textContent = keys.length + ' article' + (keys.length > 1 ? 's' : '') + ' · ' + fmt(total, 'KMF');
+    _bundleBarEl.classList.add('visible');
   }
 
-  // Create look grid
-  if (_lookItems.length) {
-    var lookTitle = document.createElement('div');
-    lookTitle.className = 'look-section-title';
-    lookTitle.innerHTML = '\u{1F45C} Complétez votre look';
-    body.appendChild(lookTitle);
+  // §2c — Render reco section
+  if (_recoItems.length) {
+    var recoSection = document.createElement('div');
+    recoSection.className = 'reco-section';
 
-    var lookGrid = document.createElement('div');
-    lookGrid.className = 'look-grid';
+    var recoTitleEl = document.createElement('div');
+    recoTitleEl.className = 'reco-section-title';
+    recoTitleEl.innerHTML = _recoTitle;
+    recoSection.appendChild(recoTitleEl);
 
-    _lookItems.forEach(function(item) {
+    var recoGrid = document.createElement('div');
+    recoGrid.className = 'reco-grid';
+
+    _recoItems.forEach(function(item) {
       var card = document.createElement('div');
-      card.className = 'look-card';
+      card.className = 'reco-item';
 
       if (item.image_url) {
         var img = document.createElement('img');
-        img.className = 'look-card-img';
+        img.className = 'reco-item-img';
         img.loading = 'lazy';
         img.src = optimizeImgUrl(item.image_url, 100);
         img.alt = sanitize(item.name);
@@ -3846,106 +3860,248 @@ function openProductModal(p, fromSuggestion) {
         card.appendChild(img);
       }
 
-      var info = document.createElement('div');
-      info.className = 'look-card-info';
+      var rinfo = document.createElement('div');
+      rinfo.className = 'reco-item-info';
       var nm = document.createElement('div');
-      nm.className = 'look-card-name';
+      nm.className = 'reco-item-name';
       nm.textContent = item.name;
-      info.appendChild(nm);
+      rinfo.appendChild(nm);
       var pr = document.createElement('div');
-      pr.className = 'look-card-price';
+      pr.className = 'reco-item-price';
       pr.textContent = fmt(item.price_kmf || 0, 'KMF');
-      info.appendChild(pr);
-      card.appendChild(info);
+      rinfo.appendChild(pr);
+      card.appendChild(rinfo);
 
       var chk = document.createElement('div');
-      chk.className = 'look-card-check';
+      chk.className = 'reco-item-check';
       card.appendChild(chk);
 
+      // Tap to select/deselect
       card.addEventListener('click', function(e) {
         e.stopPropagation();
         var sid = String(item.id);
-        if (_bundleIds[sid]) {
-          delete _bundleIds[sid];
+        if (_selectedIds[sid]) {
+          delete _selectedIds[sid];
           card.classList.remove('selected');
         } else {
-          _bundleIds[sid] = true;
+          _selectedIds[sid] = true;
           card.classList.add('selected');
         }
-        updateBundleSummary();
+        updateBundleBar();
       });
 
-      lookGrid.appendChild(card);
+      recoGrid.appendChild(card);
     });
-    body.appendChild(lookGrid);
+    recoSection.appendChild(recoGrid);
+
+    // §3 — Bundle bar (visible when items selected)
+    _bundleBarEl = document.createElement('div');
+    _bundleBarEl.className = 'bundle-bar';
+    _bundleTextEl = document.createElement('span');
+    _bundleTextEl.className = 'bundle-bar-text';
+    _bundleBarEl.appendChild(_bundleTextEl);
+    var bundleBtn = document.createElement('button');
+    bundleBtn.className = 'bundle-bar-btn';
+    bundleBtn.textContent = 'Ajouter l\u2019ensemble';
+    bundleBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      addToCart(p, _pdQty);
+      Object.keys(_selectedIds).forEach(function(id) {
+        var item = _recoItems.find(function(x) { return String(x.id) === id; });
+        if (item) addToCart(item, 1);
+      });
+      toast('Ensemble ajouté au panier ✔️', 'success');
+      setTimeout(function() { closeProductModal(); }, 400);
+    });
+    _bundleBarEl.appendChild(bundleBtn);
+    recoSection.appendChild(_bundleBarEl);
+
+    body.appendChild(recoSection);
   }
 
-  /* ── Sticky CTA — always visible at bottom ── */
+  /* ── §4 PROGRESSIVE DISCOVERY — "Voir plus" ── */
+  var _allRelated = _products.filter(function(x) { return x.id !== p.id; });
+  if (_allRelated.length > 4) {
+    var voirPlusBtn = document.createElement('button');
+    voirPlusBtn.className = 'voir-plus-btn';
+    voirPlusBtn.textContent = 'Voir plus (' + Math.min(_allRelated.length, 20) + ')';
+
+    var discoveryPanel = document.createElement('div');
+    discoveryPanel.className = 'discovery-panel';
+
+    // Category filters
+    var _discoveryCats = {};
+    _allRelated.forEach(function(x) {
+      var c = (x.category||'autre').toLowerCase();
+      _discoveryCats[c] = (_discoveryCats[c] || 0) + 1;
+    });
+    var _activeFilter = 'all';
+
+    var filtersWrap = document.createElement('div');
+    filtersWrap.className = 'discovery-filters';
+
+    function renderDiscoveryGrid() {
+      var grid = discoveryPanel.querySelector('.discovery-grid');
+      if (grid) grid.remove();
+      grid = document.createElement('div');
+      grid.className = 'discovery-grid';
+      var items = _activeFilter === 'all' ? _allRelated : _allRelated.filter(function(x) { return (x.category||'').toLowerCase() === _activeFilter; });
+      items.slice(0, 20).forEach(function(item) {
+        var card = document.createElement('div');
+        card.className = 'discovery-card';
+        if (item.image_url) {
+          var img = document.createElement('img');
+          img.loading = 'lazy';
+          img.src = optimizeImgUrl(item.image_url, 120);
+          img.alt = sanitize(item.name);
+          img.onerror = function() { this.style.display='none'; };
+          card.appendChild(img);
+        }
+        var dinfo = document.createElement('div');
+        dinfo.className = 'discovery-card-info';
+        var dn = document.createElement('div');
+        dn.className = 'discovery-card-name';
+        dn.textContent = item.name;
+        dinfo.appendChild(dn);
+        var dp = document.createElement('div');
+        dp.className = 'discovery-card-price';
+        dp.textContent = fmt(item.price_kmf || 0, 'KMF');
+        dinfo.appendChild(dp);
+        card.appendChild(dinfo);
+        card.addEventListener('click', function() { openProductModal(item, true); });
+        grid.appendChild(card);
+      });
+      discoveryPanel.appendChild(grid);
+    }
+
+    function makeFilterBtn(label, key) {
+      var fb = document.createElement('button');
+      fb.className = 'discovery-filter' + (key === 'all' ? ' active' : '');
+      fb.textContent = label;
+      fb.addEventListener('click', function() {
+        _activeFilter = key;
+        filtersWrap.querySelectorAll('.discovery-filter').forEach(function(b) { b.classList.remove('active'); });
+        fb.classList.add('active');
+        renderDiscoveryGrid();
+      });
+      return fb;
+    }
+
+    filtersWrap.appendChild(makeFilterBtn('Tout', 'all'));
+    Object.keys(_discoveryCats).sort().forEach(function(c) {
+      filtersWrap.appendChild(makeFilterBtn(categoryLabel(c) + ' (' + _discoveryCats[c] + ')', c));
+    });
+    discoveryPanel.appendChild(filtersWrap);
+
+    voirPlusBtn.addEventListener('click', function() {
+      if (discoveryPanel.classList.contains('open')) {
+        discoveryPanel.classList.remove('open');
+        voirPlusBtn.textContent = 'Voir plus (' + Math.min(_allRelated.length, 20) + ')';
+      } else {
+        discoveryPanel.classList.add('open');
+        voirPlusBtn.textContent = 'Voir moins';
+        if (!discoveryPanel.querySelector('.discovery-grid')) renderDiscoveryGrid();
+      }
+    });
+
+    body.appendChild(voirPlusBtn);
+    body.appendChild(discoveryPanel);
+  }
+
+  /* ── §8 MICRO UX — Trust badge ── */
+  var trustEl = document.createElement('div');
+  trustEl.className = 'micro-trust';
+  trustEl.innerHTML = '\u{1F1F0}\u{1F1F2} Livré aux Comores';
+  body.appendChild(trustEl);
+
+  /* ── §5 STICKY BOTTOM BAR — always visible ── */
   var stickyWrap = document.createElement('div');
   stickyWrap.className = 'sticky-cta';
 
-  _bundleSummaryEl = document.createElement('div');
-  _bundleSummaryEl.className = 'bundle-summary';
-  stickyWrap.appendChild(_bundleSummaryEl);
+  var stickyRow = document.createElement('div');
+  stickyRow.className = 'sticky-cta-row';
 
-  var controls = document.createElement('div');
-  controls.className = 'pd-controls';
-
+  // §6 — Quantity controls (fixed: large touch targets, proper z-index, pointer-events)
   var qtyWrap = document.createElement('div');
   qtyWrap.className = 'pd-qty-wrap';
+  qtyWrap.style.cssText = 'display:flex;align-items:center;gap:8px;z-index:10;position:relative;pointer-events:auto;';
+
   var minusBtn = document.createElement('button');
   minusBtn.className = 'qty-btn';
   minusBtn.textContent = '\u2212';
+  minusBtn.type = 'button';
+  minusBtn.style.pointerEvents = 'auto';
+
   var qtyVal = document.createElement('span');
   qtyVal.className = 'qty-val';
   qtyVal.textContent = '1';
+
   var plusBtn = document.createElement('button');
   plusBtn.className = 'qty-btn';
   plusBtn.textContent = '+';
-  minusBtn.addEventListener('click', function() { if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; } });
-  plusBtn.addEventListener('click', function() { _pdQty++; qtyVal.textContent = _pdQty; });
+  plusBtn.type = 'button';
+  plusBtn.style.pointerEvents = 'auto';
+
+  // Direct handlers — no delegation, no bubbling issues
+  minusBtn.addEventListener('click', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; }
+  });
+  plusBtn.addEventListener('click', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    _pdQty++; qtyVal.textContent = _pdQty;
+  });
+  // Touch fallback for Android
+  minusBtn.addEventListener('touchend', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    if (_pdQty > 1) { _pdQty--; qtyVal.textContent = _pdQty; }
+  });
+  plusBtn.addEventListener('touchend', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    _pdQty++; qtyVal.textContent = _pdQty;
+  });
+
   qtyWrap.appendChild(minusBtn);
   qtyWrap.appendChild(qtyVal);
   qtyWrap.appendChild(plusBtn);
-  controls.appendChild(qtyWrap);
+  stickyRow.appendChild(qtyWrap);
 
+  // §7 — Add to cart button
   var addBtn = document.createElement('button');
   addBtn.className = 'pd-add-btn';
-  addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg>Ajouter';
-  addBtn.addEventListener('click', function() {
+  addBtn.type = 'button';
+  addBtn.style.pointerEvents = 'auto';
+  addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg> Ajouter';
+  addBtn.addEventListener('click', function(e) {
+    e.preventDefault(); e.stopPropagation();
     addToCart(p, _pdQty, addBtn);
-    var bKeys = Object.keys(_bundleIds);
+    // Add selected bundle items
+    var bKeys = Object.keys(_selectedIds);
     bKeys.forEach(function(id) {
-      var item = _lookItems.find(function(x) { return String(x.id) === id; });
+      var item = _recoItems.find(function(x) { return String(x.id) === id; });
       if (item) addToCart(item, 1);
     });
-    if (bKeys.length > 0) toast(bKeys.length + ' article' + (bKeys.length > 1 ? 's' : '') + ' ajouté' + (bKeys.length > 1 ? 's' : ''), 'success');
-    setTimeout(function() { closeProductModal(); }, 500);
+    if (bKeys.length > 0) {
+      toast(bKeys.length + ' article' + (bKeys.length > 1 ? 's' : '') + ' ajouté' + (bKeys.length > 1 ? 's' : '') + ' \u2714\uFE0F', 'success');
+    }
   });
-  controls.appendChild(addBtn);
+  stickyRow.appendChild(addBtn);
 
+  // "Already in cart" indicator
   var _inCart = _cart.find(function(ci) { return String(ci.product.id) === String(p.id); });
   if (_inCart) {
-    var cartBadge = document.createElement('div');
-    cartBadge.style.cssText = 'background:var(--primary-light);color:var(--primary-dark);padding:4px 10px;border-radius:8px;font-size:0.7rem;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;';
-    cartBadge.innerHTML = '\u2713 Dans le panier <span style="background:var(--primary);color:white;border-radius:12px;padding:1px 6px;font-size:0.65rem;">\u00d7' + _inCart.qty + '</span>';
-    controls.insertBefore(cartBadge, controls.firstChild);
-    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg>En ajouter';
+    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg> En ajouter (\u00d7' + _inCart.qty + ')';
   }
-  stickyWrap.appendChild(controls);
+
+  stickyWrap.appendChild(stickyRow);
   body.appendChild(stickyWrap);
 
-  
-  // (bouton retour intégré dans la barre ← en haut)
-
-
-    $('product-modal').classList.add('open');
+      $('product-modal').classList.add('open');
   // Scroll to top after content is rendered
   requestAnimationFrame(function() { var mb = $('product-modal-body'); if(mb) mb.scrollTop = 0; var box = mb && mb.parentElement; if(box) box.scrollTop = 0; });
   document.body.style.overflow = 'hidden';
 }
 
-// [removed _lookLabels — replaced by V2 picker]
 
   /* ══ Table de mappage suggestions par catégorie ══
    *  similaires       → "Dans le même esprit" (même catégorie, prix proche)
@@ -3955,13 +4111,14 @@ function openProductModal(p, fromSuggestion) {
    *  Pour ajouter une catégorie : une ligne suffit.
    */
   var SUGGESTION_MAP = {
-    'mode':       { compCategories: ['beaute','beauté'] },
-    'sur-mesure': { compCategories: ['mode','beaute','beauté'] },
-    'beaute':     { compCategories: ['mode','sur-mesure'] },
-    'beauté':     { compCategories: ['mode','sur-mesure'] },
-    'tech':       { compCategories: [] },
-    'enfant':     { compCategories: ['mode','beaute','beauté'] }
+    'mode':       { title: '\u{1F45C} Complétez votre look', compCategories: ['beaute','beauté','sur-mesure'] },
+    'sur-mesure': { title: '\u{1F9F5} Complétez votre commande', compCategories: ['mode','beaute','beauté'] },
+    'beaute':     { title: '\u{2728} Vous aimerez aussi', compCategories: ['mode','sur-mesure'] },
+    'beauté':     { title: '\u{2728} Vous aimerez aussi', compCategories: ['mode','sur-mesure'] },
+    'tech':       { title: '\u{1F50C} Accessoires compatibles', compCategories: [] },
+    'enfant':     { title: '\u{1F381} Complétez votre achat', compCategories: ['mode','beaute','beauté'] }
   };
+  var DEFAULT_RECO_TITLE = '\u{1F4E6} Souvent acheté avec';
 
 
 // ════════════════════════════════════════════════════════════════
