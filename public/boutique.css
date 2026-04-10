@@ -855,8 +855,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    MODAL BASE
    ──────────────────────────────────────── */
 .modal-overlay {
-  display: none; position: fixed; inset: 0; z-index: 1100;
-  background: rgba(0,0,0,0.5);
+  display: none; position: fixed; inset: 0; z-index: 1200;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   align-items: center; justify-content: center;
   padding: 20px;
 }
@@ -1680,7 +1682,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
       #product-modal.modal-overlay {
         padding: 0 !important;
         align-items: flex-end !important;
-        background: rgba(0,0,0,0.55) !important;
+        background: rgba(0,0,0,0.72) !important;
       }
       #product-modal .modal-box {
         max-width: 100% !important;
