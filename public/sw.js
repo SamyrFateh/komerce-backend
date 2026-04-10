@@ -1,5 +1,5 @@
 /* Komerce Service Worker v2.0 — Stale-While-Revalidate + Offline Shell */
-const CACHE = 'komerce-v2';
+const CACHE = 'komerce-v3';
 const SHELL = [
   '/portal.html',
   '/komerce-ui.css',
