@@ -319,16 +319,31 @@ function flyToCart(sourceEl, product) {
   }, 350);
 }
 
-/* ── Feedback bouton ── */
-function btnAddedFeedback(btn, originalText) {
-  btn.textContent = '✅ Ajouté !';
+/* ── Feedback bouton (round basket) ── */
+function btnAddedFeedback(btn) {
   btn.classList.add('added');
   btn.disabled = true;
   setTimeout(function() {
-    btn.textContent = originalText;
     btn.classList.remove('added');
+    btn.classList.add('in-cart');
     btn.disabled = false;
-  }, 1600);
+    /* Restore basket img if it was replaced */
+    if (!btn.querySelector('img')) {
+      btn.innerHTML = '<img src="/images/panier_africain_sm.png" alt="Dans le panier">';
+    }
+  }, 800);
+}
+
+/* ── Marquer TOUS les boutons d'un produit comme "dans le panier" ── */
+function markAllCartButtons() {
+  _cart.forEach(function(item) {
+    var btns = document.querySelectorAll('[data-product-id="' + item.product.id + '"]');
+    btns.forEach(function(btn) {
+      if (!btn.classList.contains('in-cart')) {
+        btn.classList.add('in-cart');
+      }
+    });
+  });
 }
 
 /* ──────────────────────────────────────
@@ -431,7 +446,7 @@ function _renderMoreProducts(list, track) {
     card.className = 'product-card';
     card.setAttribute('data-id', p.id);
     card.addEventListener('click', function(e) {
-      if (e.target.closest('.btn-add-cart') || e.target.closest('.heart-btn')) return;
+      if (e.target.closest('.btn-basket-round') || e.target.closest('.btn-add-cart') || e.target.closest('.heart-btn')) return;
       openProductModal(p);
     });
 
@@ -498,21 +513,18 @@ function _renderMoreProducts(list, track) {
 
     card.appendChild(imgDiv);
 
-    /* Actions row below image */
-    var actionsRow = document.createElement('div');
-    actionsRow.className = 'card-actions-row';
+    /* Bouton panier rond — overlay bas-droite de l'image */
     var addBtn = document.createElement('button');
-    addBtn.className = 'btn-add-cart';
+    addBtn.className = 'btn-basket-round';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">+ Panier';
+    addBtn.innerHTML = '<img src="/images/panier_africain_sm.png" alt="Ajouter au panier">';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
         addToCart(product, 1, btn);
       });
     })(p, addBtn);
-    actionsRow.appendChild(addBtn);
-    card.appendChild(actionsRow);
+    imgDiv.appendChild(addBtn);
 
     /* Double-tap to favorite (Instagram gesture) */
     (function(product, cardEl) {
@@ -555,6 +567,7 @@ function _renderMoreProducts(list, track) {
     track.appendChild(moreBtn);
   }
   updateCartBadges();
+  markAllCartButtons();
 }
 
 function scrollCarousel(dir) {
@@ -1146,9 +1159,11 @@ function addToCart(product, qty, btn) {
 
   /* Feedback bouton */
   if (btn) {
-    var orig = btn.textContent;
-    btnAddedFeedback(btn, orig);
+    btnAddedFeedback(btn);
   }
+
+  /* Marquer tous les boutons de ce produit */
+  markAllCartButtons();
 
   /* Drawer Amazon-Komores */
   openCartWithHighlight(product.id);
@@ -2106,7 +2121,7 @@ function renderFavs() {
     card.className = 'product-card';
     card.setAttribute('data-id', p.id);
     card.addEventListener('click', function(e) {
-      if (e.target.closest('.btn-add-cart') || e.target.closest('.heart-btn')) return;
+      if (e.target.closest('.btn-basket-round') || e.target.closest('.btn-add-cart') || e.target.closest('.heart-btn')) return;
       openProductModal(p);
     });
 
@@ -2171,19 +2186,16 @@ function renderFavs() {
 
     card.appendChild(imgDiv);
 
-    /* Actions row */
-    var actionsRow = document.createElement('div');
-    actionsRow.className = 'card-actions-row';
+    /* Bouton panier rond — overlay bas-droite */
     var addBtn = document.createElement('button');
-    addBtn.className = 'btn-add-cart';
+    addBtn.className = 'btn-basket-round';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">+ Panier';
+    addBtn.innerHTML = '<img src="/images/panier_africain_sm.png" alt="Ajouter au panier">';
     addBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       addToCart(p, 1, addBtn);
     });
-    actionsRow.appendChild(addBtn);
-    card.appendChild(actionsRow);
+    imgDiv.appendChild(addBtn);
 
     grid.appendChild(card);
   });

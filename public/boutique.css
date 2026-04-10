@@ -1017,77 +1017,68 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 /* Add to cart on card — appears on hover */
-.btn-add-cart {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #fffbf0;
-  color: #92400e;
-  font-weight: 600;
-  font-size: 0.72rem;
-  padding: 6px 12px;
-  border-radius: 16px;
-  border: 1.5px solid var(--accent);
-  transition: all 0.25s;
-  cursor: pointer;
-}
-
-.btn-add-cart .basket-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  flex-shrink: 0;
+/* ── Bouton panier rond (overlay bas-droite image) ── */
+.btn-basket-round {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-}
-
-.btn-add-cart:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--dark);
-}
-
-.btn-add-cart:hover .basket-icon {
-  transform: scale(1.15);
-}
-
-.btn-add-cart.added {
-  background: #22c55e;
-  color: white;
-  border-color: #22c55e;
-  transform: none;
-}
-
-.btn-add-cart.added .basket-icon {
-  filter: brightness(10);
-}
-
-.btn-add-cart:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-/* Card actions row — below image */
-.card-actions-row {
+  border: 2px solid var(--accent);
+  background: rgba(255, 251, 240, 0.92);
+  backdrop-filter: blur(4px);
+  padding: 4px;
+  cursor: pointer;
+  z-index: 5;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 10px 10px;
-  background: var(--card);
 }
-
-.card-actions-row .btn-add-cart {
-  width: 100%;
-  justify-content: center;
-  padding: 8px 12px;
-  font-size: 0.78rem;
-  border-radius: 12px;
-  gap: 6px;
-}
-
-.card-actions-row .btn-add-cart .basket-icon {
-  width: 22px;
-  height: 22px;
+.btn-basket-round img {
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   border-radius: 50%;
+  pointer-events: none;
+}
+.btn-basket-round:hover,
+.btn-basket-round:active {
+  transform: scale(1.15);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+}
+
+/* État "ajouté" flash */
+.btn-basket-round.added {
+  background: #22c55e;
+  border-color: #22c55e;
+  transform: scale(1.2);
+}
+
+/* État persistant "dans le panier" */
+.btn-basket-round.in-cart {
+  border-color: #22c55e;
+  background: rgba(220, 252, 231, 0.95);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+}
+.btn-basket-round.in-cart::after {
+  content: '✓';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  background: #22c55e;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* Availability badges */
@@ -3330,14 +3321,16 @@ body.modal-open .mobile-tabs {
     font-size: 1.1rem;
   }
 
-  /* Add-to-cart row */
-  .card-actions-row {
-    padding: 6px 8px 8px;
+  /* Bouton panier rond mobile */
+  .btn-basket-round {
+    width: 40px;
+    height: 40px;
+    bottom: 8px;
+    right: 8px;
   }
-  .card-actions-row .btn-add-cart {
-    padding: 9px 10px;
-    font-size: 0.75rem;
-    font-weight: 700;
+  .btn-basket-round img {
+    width: 28px;
+    height: 28px;
   }
 
   /* Badge promo */
@@ -3409,12 +3402,15 @@ body.modal-open .mobile-tabs {
     font-size: 0.68rem;
   }
 
-  .card-actions-row {
-    padding: 5px 6px 7px;
+  .btn-basket-round {
+    width: 36px;
+    height: 36px;
+    bottom: 6px;
+    right: 6px;
   }
-  .card-actions-row .btn-add-cart {
-    padding: 7px 8px;
-    font-size: 0.72rem;
+  .btn-basket-round img {
+    width: 24px;
+    height: 24px;
   }
 
   .pd-emoji {
