@@ -504,7 +504,7 @@ function _renderMoreProducts(list, track) {
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg>+ Panier';
+    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">+ Panier';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -943,7 +943,7 @@ function openProductModal(p, fromSuggestion) {
 
   var addBtn = document.createElement('button');
   addBtn.className = 'pd-add-btn';
-  addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/><path d="M6.5 12.5c1.5 1 3.5 1.5 5.5 1.5s4-.5 5.5-1.5" opacity="0.5"/><path d="M5.5 15c2 1.2 4 1.8 6.5 1.8s4.5-.6 6.5-1.8" opacity="0.4"/></svg>Ajouter';
+  addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">Ajouter';
   addBtn.addEventListener('click', function() {
     addToCart(p, _pdQty, addBtn);
     setTimeout(function() { closeProductModal(); }, 500);
@@ -956,7 +956,7 @@ function openProductModal(p, fromSuggestion) {
     cartBadge.style.cssText = 'background:var(--primary-light);color:var(--primary-dark);padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;';
     cartBadge.innerHTML = '✓ Déjà dans le panier <span style="background:var(--primary);color:white;border-radius:12px;padding:1px 8px;font-size:0.72rem;">×' + _inCart.qty + '</span>';
     controls.insertBefore(cartBadge, controls.firstChild);
-    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/><path d="M6.5 12.5c1.5 1 3.5 1.5 5.5 1.5s4-.5 5.5-1.5" opacity="0.5"/><path d="M5.5 15c2 1.2 4 1.8 6.5 1.8s4.5-.6 6.5-1.8" opacity="0.4"/></svg>En ajouter';
+    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">En ajouter';
   }
   body.appendChild(controls);
 
@@ -2175,7 +2175,7 @@ function renderFavs() {
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.innerHTML = '<svg class="basket-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0 5 3.5 9 8 9s8-4 8-9"/><ellipse cx="12" cy="10" rx="8" ry="2.5"/><path d="M8 4c-1 2-1 4 0 6M16 4c1 2 1 4 0 6"/><path d="M8 4h8" stroke-width="1.8"/></svg>+ Panier';
+    addBtn.innerHTML = '<img class="basket-icon" src="/images/panier_africain_sm.png" alt="panier">+ Panier';
     addBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       addToCart(p, 1, addBtn);

@@ -1033,10 +1033,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 .btn-add-cart .basket-icon {
-  width: 16px;
-  height: 16px;
-  stroke: #92400e;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
   flex-shrink: 0;
+  border-radius: 50%;
 }
 
 .btn-add-cart:hover:not(:disabled) {
@@ -1045,7 +1046,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 .btn-add-cart:hover .basket-icon {
-  stroke: var(--dark);
+  transform: scale(1.15);
 }
 
 .btn-add-cart.added {
@@ -1056,7 +1057,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 .btn-add-cart.added .basket-icon {
-  stroke: white;
+  filter: brightness(10);
 }
 
 .btn-add-cart:disabled {
@@ -1083,8 +1084,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 .card-actions-row .btn-add-cart .basket-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 /* Availability badges */
@@ -1437,13 +1440,15 @@ body.modal-open .mobile-tabs {
 }
 
 .pd-add-btn .basket-icon {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 50%;
   transition: transform 0.2s;
 }
 
 .pd-add-btn:hover .basket-icon {
-  transform: rotate(-8deg) scale(1.1);
+  transform: rotate(-8deg) scale(1.15);
 }
 
 /* Share row */
