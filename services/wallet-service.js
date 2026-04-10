@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Wallet Service v1.0
+ * KOMERCE — Wallet Service v1.1 (Phase 5: reverseLot with consumption guard)
  *
  * Système de portefeuille client unifié.
  * Remplace l'ancien système store_credits.
@@ -330,6 +330,70 @@ async function createCreditFromCancel(client, { orderId, adminId, amountKmf }) {
   });
 }
 
+
+// ── Reversal : annuler un lot de crédit (Phase 5 — D5) ─────────────────────
+// RÈGLE : reversal BLOQUÉ si le lot a été consommé (même partiellement).
+// Pour corriger une erreur sur un lot consommé, l'admin doit d'abord annuler
+// la commande qui a utilisé le crédit (removeFromOrder), puis reverser le lot.
+async function reverseLot(client, { lotId, adminId, note }) {
+  // Load + lock the lot
+  const { rows: [lot] } = await client.query(
+    'SELECT * FROM wallet_credit_lots WHERE id = $1 FOR UPDATE',
+    [lotId]
+  );
+  if (!lot) throw new Error('Lot introuvable');
+  if (lot.status === 'reversed') throw new Error('Lot déjà annulé');
+  if (lot.status !== 'active') throw new Error(`Lot ${lot.status} — reversal impossible`);
+
+  // Phase 5 Decision: BLOCK if lot has ANY consumptions
+  const { rows: [{ c: consumptionCount }] } = await client.query(
+    'SELECT COUNT(*)::int AS c FROM wallet_consumptions WHERE credit_lot_id = $1',
+    [lotId]
+  );
+  if (consumptionCount > 0) {
+    throw new Error(
+      `Lot partiellement/totalement consommé (${consumptionCount} consommation(s)). ` +
+      `Reversal bloqué (décision D5). ` +
+      `Pour corriger : annulez d'abord la commande → le wallet sera re-crédité → puis reversez le lot.`
+    );
+  }
+
+  // Reverse: deduct from wallet balance
+  const { rows: [w] } = await client.query(
+    'SELECT * FROM wallets WHERE id = $1 FOR UPDATE',
+    [lot.wallet_id]
+  );
+  const amountToReverse = lot.remaining_kmf;
+  const newBalance = w.balance_kmf - amountToReverse;
+  if (newBalance < 0) {
+    throw new Error(
+      `Reversal causerait un solde négatif (${w.balance_kmf} - ${amountToReverse} = ${newBalance}). ` +
+      `Le client a probablement dépensé via un autre lot.`
+    );
+  }
+
+  await client.query(
+    'UPDATE wallets SET balance_kmf = $1, updated_at = NOW() WHERE id = $2',
+    [newBalance, lot.wallet_id]
+  );
+
+  await client.query(
+    "UPDATE wallet_credit_lots SET status = 'reversed', remaining_kmf = 0 WHERE id = $1",
+    [lotId]
+  );
+
+  const { rows: [tx] } = await client.query(`
+    INSERT INTO wallet_transactions
+      (wallet_id, type, amount_kmf, balance_after_kmf, reason, reference_id, note, created_by)
+    VALUES ($1, 'reversal', $2, $3, 'lot_reversal', $4, $5, $6)
+    RETURNING *
+  `, [lot.wallet_id, amountToReverse, newBalance, lot.source_order_id, note || 'Reversal admin', adminId]);
+
+  console.log(`[WALLET] ✅ Lot ${lotId} reversed: ${amountToReverse} KMF — new balance: ${newBalance}`);
+
+  return { transaction: tx, reversed_kmf: amountToReverse };
+}
+
 // ── Queries (read-only, pool) ───────────────────────────────────────────────
 async function getBalance(userId) {
   const r = await db.query(
@@ -419,6 +483,7 @@ module.exports = {
   applyToOrder,
   removeFromOrder,
   createCreditFromCancel,
+  reverseLot,
   getBalance,
   getBalanceInTx,
   getTransactions,

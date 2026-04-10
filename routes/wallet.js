@@ -14,6 +14,7 @@
  *   GET  /api/wallet/admin/:userId    — détail d'un wallet
  *   POST /api/wallet/admin/credit     — crédit manuel (geste commercial)
  *   POST /api/wallet/admin/order-credit/:orderId — avoir depuis commande
+ *   POST /api/wallet/admin/reverse-lot            — annuler un lot (Phase 5)
  */
 
 'use strict';
@@ -197,6 +198,41 @@ router.post('/admin/order-credit/:orderId', requireAdmin, async (req, res, next)
     res.status(201).json({ success: true, message: 'Avoir créé', ...result });
   } catch (err) {
     await client.query('ROLLBACK');
+    next(err);
+  } finally { client.release(); }
+});
+
+
+// POST /api/wallet/admin/reverse-lot — annuler un lot de crédit (Phase 5)
+// BLOQUÉ si le lot a été consommé (même partiellement).
+router.post('/admin/reverse-lot', requireAdmin, async (req, res, next) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const { lot_id, note } = req.body;
+    if (!lot_id) return res.status(400).json({ error: 'lot_id requis' });
+
+    const result = await walletService.reverseLot(client, {
+      lotId:   lot_id,
+      adminId: req.user.id,
+      note,
+    });
+    await client.query('COMMIT');
+
+    res.json({
+      success:      true,
+      message:      `${result.reversed_kmf} KMF annulés`,
+      reversed_kmf: result.reversed_kmf,
+      transaction:  result.transaction,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    // Business rule errors → 422
+    if (err.message.includes('consommé') || err.message.includes('introuvable')
+        || err.message.includes('négatif') || err.message.includes('annulé')
+        || err.message.includes('impossible')) {
+      return res.status(422).json({ error: err.message });
+    }
     next(err);
   } finally { client.release(); }
 });
