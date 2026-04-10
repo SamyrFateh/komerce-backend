@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Routes paiement v7.6
+ * KOMERCE — Routes paiement v8.0 — F17/F18/F21
  *
  * POST /api/payments/stripe/intent    → créer un PaymentIntent Stripe (EUR)
  * POST /api/payments/stripe/webhook   → webhook Stripe (confirmation paiement)
@@ -20,6 +20,7 @@ const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 const { triggerPurchasing } = require('./purchasing'); // Sourcing semi-automatisé v7.6
 const { validate } = require('../middleware/validate');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 const { payments } = require('../validators');
 
 // ── POST /api/payments/stripe/intent ─────────────────────────────────────────
@@ -115,23 +116,42 @@ router.post('/stripe/webhook',
       try {
         await client.query('BEGIN');
 
-        // Paiement confirmé → statut 'ordered' (spec §9.1 statut #1)
-        // 'paid' est un statut interne de validation paiement,
-        // 'ordered' est le statut opérationnel visible client.
+        // F18 fix: Machine — confirmed → ordered (D1/D2)
+        const machineResult = await transitionOrderStatus({
+          orderId:  order_id,
+          newStatus: 'ordered',
+          actor:    { id: null, role: 'system' },
+          source:   'stripe_webhook',
+          note:     'Paiement Stripe confirmé — commande lancée',
+          dbClient: client,
+        });
+        if (!machineResult.success) {
+          console.error('[STRIPE] Machine rejected:', machineResult.error);
+          await client.query('ROLLBACK');
+          client.release();
+          return res.json({ received: true });
+        }
+
+        // Machine auto-sets payment_status=paid only for cash_relais
+        // For stripe, set it explicitly
         await client.query(
-          `UPDATE orders SET
-             payment_status = 'paid',
-             status         = 'ordered',
-             ordered_at     = NOW()
-           WHERE id = $1`,
+          "UPDATE orders SET payment_status = 'paid' WHERE id = $1",
           [order_id]
         );
 
-        await client.query(
-          `INSERT INTO order_status_history (order_id, status, note)
-           VALUES ($1,'ordered','Paiement Stripe confirmé — commande lancée')`,
+        // F21 fix: Stock decrement — Stripe orders never decremented before!
+        const { rows: stripeItems } = await client.query(
+          `SELECT oi.product_id, oi.quantity FROM order_items oi
+           JOIN products p ON p.id = oi.product_id
+           WHERE oi.order_id = $1 AND p.stock IS NOT NULL`,
           [order_id]
         );
+        for (const si of stripeItems) {
+          await client.query(
+            'UPDATE products SET stock = stock - $1 WHERE id = $2',
+            [si.quantity, si.product_id]
+          );
+        }
 
         await client.query('COMMIT');
       } catch (err) {
@@ -207,25 +227,29 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     const order = rows[0];
 
-    // Paiement espèces confirmé → statut 'ordered' (spec §9.1 statut #1)
-    await client.query(
-      `UPDATE orders SET
-         payment_status = 'paid',
-         status         = 'ordered',
-         ordered_at     = NOW(),
-         cash_paid_at   = NOW()
-       WHERE id = $1`,
-      [order.id]
-    );
+    // F17 fix: Machine — confirmed → ordered (D1/D2)
+    const machineResult = await transitionOrderStatus({
+      orderId:   order.id,
+      newStatus: 'ordered',
+      actor:     { id: req.user.id, role: req.user.role },
+      source:    'cash_confirm',
+      note:      'Paiement espèces confirmé par agent relais — commande lancée',
+      dbClient:  client,
+    });
+    if (!machineResult.success) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: machineResult.error });
+    }
 
-    // ── DÉCRÉMENTAGE STOCK — uniquement ici pour le cash relais ──────────────
-    // Le stock n'est réservé qu'à partir du paiement réel, pas à la création
+    // cash_paid_at — not managed by machine
+    await client.query('UPDATE orders SET cash_paid_at = NOW() WHERE id = $1', [order.id]);
+
+    // ── DÉCRÉMENTAGE STOCK — seul point pour cash relais (F19 fix) ───────────
     const { rows: items } = await client.query(
       'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
       [order.id]
     );
     for (const item of items) {
-      // Vérifier le stock une dernière fois avant de décrémenter
       const { rows: prod } = await client.query(
         'SELECT stock, name FROM products WHERE id = $1',
         [item.product_id]
@@ -241,12 +265,6 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
         [item.quantity, item.product_id]
       );
     }
-
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by, note)
-       VALUES ($1,'ordered',$2,'Paiement espèces confirmé par agent relais — commande lancée')`,
-      [order.id, req.user.id]
-    );
 
     await client.query('COMMIT');
 

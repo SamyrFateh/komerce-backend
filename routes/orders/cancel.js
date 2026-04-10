@@ -1,12 +1,12 @@
 /**
- * KOMERCE — Annulation commande — v2.0
+ * KOMERCE — Annulation commande — v2.1 (source fix)
  *
  * POST /:id/cancel — annulation avec remboursement automatique
  *
  * Auth : client (sa propre commande) ou admin (toute commande)
  * Body : { reason?: string }
  *
- * v2.0 — F16 fix:
+ * v2.1 (source fix) — F16 fix:
  *   Status change, wallet reversal, stock restore ALL go through
  *   order-status-machine.js (D1/D2 compliance).
  *   This file handles: access control, cutoff check, Stripe refund, SMS.
@@ -148,7 +148,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
       orderId:      id,
       newStatus:    'cancelled',
       actor:        { id: req.user.id, role: req.user.role },
-      source:       'patch',
+      source:       'cancel',  // not 'patch' — bypass role check, cancel.js does its own access control
       cancelReason: reason || null,
       note:         reason ? `Annulation : ${reason}` : 'Annulation client',
       dbClient:     client,

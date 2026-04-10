@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.1
+ * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.2 (F20 wallet fix)
  *
  * ╔══════════════════════════════════════════════════════════════════════╗
  * ║  SINGLE SOURCE OF TRUTH for all order status transitions.          ║
@@ -254,20 +254,31 @@ async function transitionOrderStatus({
     const walletApplied = Number(orderInfo?.wallet_applied_kmf || 0);
 
     if (walletApplied > 0 && orderInfo.user_id) {
-      // Lazy require to avoid circular dependency
       const walletService = require('../services/wallet-service');
-      const walletResult = await walletService.credit(q, {
-        userId:         orderInfo.user_id,
-        amountKmf:      walletApplied,
-        reason:         'order_cancel',
-        referenceId:    orderId,
-        idempotencyKey: `wallet_reversal_${orderId}`,
-        note:           `Avoir wallet — annulation ${orderInfo.reference} (${walletApplied.toLocaleString('fr-FR')} KMF)`,
-        createdBy:      actor.id,
-      });
-      cancelEffects.walletReversalAmount = walletApplied;
-      cancelEffects.walletReversalTxId = walletResult.transaction?.id || null;
-      console.log(`[STATUS-MACHINE] Wallet reversal: ${walletApplied} KMF → user ${orderInfo.user_id}`);
+      try {
+        // F20 fix: removeFromOrder restores original lots + balance
+        const wResult = await walletService.removeFromOrder(q, { orderId });
+        cancelEffects.walletReversalAmount = wResult.reversed_kmf;
+        cancelEffects.walletReversalTxId = wResult.transaction?.id || null;
+        console.log(`[STATUS-MACHINE] Wallet reversed: ${wResult.reversed_kmf} KMF → user ${orderInfo.user_id}`);
+      } catch (e) {
+        console.error('[STATUS-MACHINE] removeFromOrder failed:', e.message, '— credit fallback');
+        try {
+          const wResult = await walletService.credit(q, {
+            userId:         orderInfo.user_id,
+            amountKmf:      walletApplied,
+            reason:         'order_cancel',
+            referenceId:    orderId,
+            idempotencyKey: `wallet_reversal_${orderId}`,
+            note:           `Avoir wallet — annulation ${orderInfo.reference}`,
+            createdBy:      actor.id,
+          });
+          cancelEffects.walletReversalAmount = walletApplied;
+          cancelEffects.walletReversalTxId = wResult.transaction?.id || null;
+        } catch (e2) {
+          console.error('[STATUS-MACHINE] Wallet credit fallback also failed:', e2.message);
+        }
+      }
     }
 
     // Stock restore

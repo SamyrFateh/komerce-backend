@@ -338,14 +338,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         ]
       );
 
-      // Décrémenter stock uniquement pour cash_relais
-      // (pour stripe_eur, le webhook payments.js gère la décrémentation après confirmation)
-      if (product.stock !== null && payment_mode === 'cash_relais') {
-        await client.query(
-          'UPDATE products SET stock = stock - $1 WHERE id = $2',
-          [qty, item.product_id]
-        );
-      }
+      // F19 fix: stock décrémenté UNIQUEMENT à la confirmation paiement (payments.js)
     }
 
     await client.query('COMMIT');
