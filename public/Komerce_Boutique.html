@@ -3,290 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Komerce Boutique — E-commerce des Comores</title>
-
-<!-- PWA -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#b45309">
+<meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Komerce">
+<meta name="description" content="Komerce — Votre boutique en ligne aux Comores 🇰🇲">
+<title>Komerce</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
-<meta name="description" content="Komerce : le e-commerce qui rapproche la diaspora des Comores. Livraison rapide, paiement sécurisé.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/boutique.css?v=6">
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.0/purify.min.js" integrity="sha384-0Olea29UkyQZfNulDPUf5MshXT3rXNrDqk+TXn1sY6UoVDiqIfEERRKn8oMgO9eF" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/boutique.css?v=10">
 </head>
 <body>
 
-<!-- ═══ Offline Banner ═══ -->
-<div id="kmrc-offline-bar" class="kmrc-offline-bar">
-  <span class="dot"></span> Pas de connexion internet — les données affichées peuvent ne pas être à jour
-</div>
-<script>
-(function(){
-  var bar=document.getElementById('kmrc-offline-bar');
-  function upd(){bar.classList.toggle('show',!navigator.onLine);}
-  window.addEventListener('online',upd);
-  window.addEventListener('offline',upd);
-  upd();
-})();
-</script>
-
-<!-- ═══ 1. PROMO TOP BAR ═══ -->
-<div id="promo-bar" role="marquee" aria-label="Promotions">
-  <div class="promo-msg active">Choisissez, on vous l'envoie · Livraison aux Comores · Récupérez au relais</div>
-</div>
-
-<!-- ═══ 2. NAVIGATION ═══ -->
-<nav id="main-nav" aria-label="Navigation principale">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo" aria-label="Komerce accueil"><span class="ko">Ko</span><span class="merce">merce</span></a>
-    <div class="nav-search-wrap">
-      <input type="text" id="hero-search-input" placeholder="Rechercher un produit…" aria-label="Rechercher un produit" autocomplete="off">
-      <button type="button" id="hero-search-btn">🔍</button>
-      <div class="search-dropdown" id="search-dropdown"></div>
-    </div>
-    <button class="cart-btn" id="nav-cart-btn" aria-label="Ouvrir le panier">
-      <img src="/images/avatar_panier.png" class="cart-avatar" width="42" height="42" alt="Panier">
-      <span id="cart-count" class="hidden">0</span>
-    </button>
+<!-- ═══ Promo Bar ═══ -->
+<div id="promo-bar" class="promo-bar">
+  <div class="promo-track">
+    <span>Livré aux Comores 🇰🇲</span>
+    <span>Paiement sécurisé 🔒</span>
+    <span>Retrait en point relais 🏪</span>
+    <span>Satisfait ou remboursé ✅</span>
   </div>
-  <div class="tab-nav">
-    <button class="tab-btn active" data-tab="boutique">Boutique</button>
-    <button class="tab-btn" data-tab="suivi">Suivi commande</button>
-    <button class="tab-btn" data-tab="info">Infos</button>
-    <button class="tab-btn" data-tab="favoris" id="tab-btn-favoris">Favoris <span id="fav-count-badge" style="display:none;background:var(--primary);color:white;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px;">0</span></button>
+</div>
+
+<!-- ═══ Navigation ═══ -->
+<nav id="main-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">Komerce</a>
+    <div class="nav-search-wrap" id="nav-search-wrap">
+      <input type="text" id="hero-search-input" placeholder="Rechercher un produit..." autocomplete="off">
+      <button id="hero-search-btn" aria-label="Rechercher">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <div id="search-dropdown" class="search-dropdown"></div>
+    </div>
+    <div class="nav-actions">
+      <button class="nav-icon-btn cart-btn" id="nav-cart-btn" aria-label="Panier">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-badge" id="cart-count">0</span>
+      </button>
+    </div>
   </div>
 </nav>
 
-<!-- ═══ PANNEAU BOUTIQUE ═══ -->
-<div class="tab-panel active" id="tab-boutique">
-
-  <!-- Cercles catégories -->
-  <div class="cat-circles-wrap">
-    <div class="cat-circles" id="cat-pills">
-      <button class="cat-circle active" data-cat="">
-        <div class="cat-circle-img" style="background: linear-gradient(135deg, #fef3c7, #fde68a); display:flex; align-items:center; justify-content:center;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
-        <span>Tout</span>
-      </button>
-      <button class="cat-circle" data-cat="Mode">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1614786269829-d24616faf56d?w=120&h=120&fit=crop&auto=format&q=80" alt="Mode">
-        </div>
-        <span>Mode</span>
-      </button>
-      <button class="cat-circle" data-cat="Sur-mesure">
-        <div class="cat-circle-img" style="background: linear-gradient(135deg, #fef3c7, #fde68a); display:flex; align-items:center; justify-content:center;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5L17.5 17.5"/><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12L17.5 17.5"/><circle cx="18" cy="18" r="3"/><path d="M17.5 6.5l-5 5"/><path d="M6.5 17.5l5-5"/></svg>
-        </div>
-        <span>Sur-mesure</span>
-      </button>
-      <button class="cat-circle" data-cat="Beauté">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1541643600914-78b084683601?w=120&h=120&fit=crop&auto=format&q=80" alt="Beauté">
-        </div>
-        <span>Beauté</span>
-      </button>
-      <button class="cat-circle" data-cat="Tech">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=120&h=120&fit=crop&auto=format&q=80" alt="Tech">
-        </div>
-        <span>Tech</span>
-      </button>
-      <button class="cat-circle" data-cat="Enfant">
-        <div class="cat-circle-img">
-          <img src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=120&h=120&fit=crop&auto=format&q=80" alt="Enfant">
-        </div>
-        <span>Enfant</span>
-      </button>
-    </div>
-  </div>
-
-  <section id="hero">
-    <div class="hero-minimal">
-      <h1 class="hero-title">Choisissez, <span class="hero-accent">on vous l'envoie</span></h1>
-      <p class="hero-sub">Le meilleur du monde · Livré aux Comores · Récupéré au relais près de chez vous</p>
-      <p id="hero-proverbe" class="hero-proverbe" onclick="rotateProverbe()"></p>
-    </div>
-  </section>
-
-  <section id="catalogue" style="scroll-margin-top: 140px; padding-top: 8px;">
-    <div class="container">
-      <div class="catalogue-header">
-        <div class="filter-bar" id="filter-bar">
-          <button class="filter-btn active" data-sort="">Nouveautés</button>
-          <button class="filter-btn" data-sort="promo">Soldes</button>
-          <button class="filter-btn" data-sort="price-asc">Prix ↑</button>
-          <button class="filter-btn" data-sort="price-desc">Prix ↓</button>
-          <button class="filter-btn" data-sort="stock">Disponible</button>
-        </div>
-        <div class="view-toggles">
-          <button id="view-grid-btn" title="Vue grille" class="view-btn active">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-          </button>
-          <button id="view-rows-btn" title="Vue rangées" class="view-btn">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
-          </button>
-        </div>
+<!-- ═══ Stories Bar (Instagram-style categories) ═══ -->
+<div class="stories-section">
+  <div class="stories-wrap" id="stories-wrap">
+    <button class="scroll-arrow scroll-arrow-left hidden" id="carousel-prev-btn" aria-label="Précédent">‹</button>
+    <div class="stories-track" id="cat-scroll">
+      <div class="story-item cat-circle active" data-cat="">
+        <div class="story-ring ring-fire"><span>🔥</span></div>
+        <span class="story-label">Tout</span>
       </div>
-      <div class="product-grid" id="product-track">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
+      <div class="story-item cat-circle" data-cat="Mode">
+        <div class="story-ring ring-mode"><span>👗</span></div>
+        <span class="story-label">Mode</span>
+      </div>
+      <div class="story-item cat-circle" data-cat="Sur-mesure">
+        <div class="story-ring ring-mesure"><span>✂️</span></div>
+        <span class="story-label">Sur-mesure</span>
+      </div>
+      <div class="story-item cat-circle" data-cat="Beauté">
+        <div class="story-ring ring-beaute"><span>💄</span></div>
+        <span class="story-label">Beauté</span>
+      </div>
+      <div class="story-item cat-circle" data-cat="Tech">
+        <div class="story-ring ring-tech"><span>📱</span></div>
+        <span class="story-label">Tech</span>
+      </div>
+      <div class="story-item cat-circle" data-cat="Enfant">
+        <div class="story-ring ring-enfant"><span>👶</span></div>
+        <span class="story-label">Enfant</span>
       </div>
     </div>
-  </section>
-</div>
-
-<!-- ═══ PANNEAU SUIVI ═══ -->
-<div class="tab-panel" id="tab-suivi">
-  <section id="tracking" style="padding-top:32px;">
-    <div class="container">
-      <h2 class="section-title">Suivre ma commande</h2>
-      <div class="tracking-box">
-        <div class="tracking-form">
-          <input type="text" id="tracking-input" placeholder="Référence de commande (ex: KMR-XXXXXX)" aria-label="Référence de commande">
-          <button type="button" id="tracking-search-btn">Suivre</button>
-        </div>
-        <div id="tracking-result"></div>
-      </div>
-    </div>
-  </section>
-</div>
-
-<!-- ═══ PANNEAU INFO ═══ -->
-<div class="tab-panel" id="tab-info">
-  <section id="how-it-works" style="padding-top:32px;">
-    <div class="container">
-      <h2 class="section-title">Comment ça marche</h2>
-      <div class="steps-grid">
-        <div class="step-card"><div class="step-num">1</div><div class="step-label">Choisissez</div><div class="step-desc">Parcourez le catalogue et trouvez le produit parfait</div></div>
-        <div class="step-card"><div class="step-num">2</div><div class="step-label">Commandez</div><div class="step-desc">Remplissez vos infos et choisissez le point relais</div></div>
-        <div class="step-card"><div class="step-num">3</div><div class="step-label">On achète</div><div class="step-desc">Nous achetons et préparons votre commande depuis Dubai</div></div>
-        <div class="step-card"><div class="step-num">4</div><div class="step-label">Livré au relais</div><div class="step-desc">Récupérez votre colis au point relais choisi</div></div>
-      </div>
-    </div>
-  </section>
-  <section id="trust" aria-label="Confiance" style="padding:32px 0;">
-    <div class="container">
-      <div class="trust-grid">
-        <div class="trust-item"><div class="trust-icon">🛡️</div><div class="trust-label">Paiement sécurisé</div></div>
-        <div class="trust-item"><div class="trust-icon">📍</div><div class="trust-label">Suivi en temps réel</div></div>
-        <div class="trust-item"><div class="trust-icon">👥</div><div class="trust-label">Service client</div></div>
-        <div class="trust-item"><div class="trust-icon">🏪</div><div class="trust-label">Réseau de relais</div></div>
-      </div>
-    </div>
-  </section>
-</div>
-
-<!-- ═══ PANNEAU FAVORIS ═══ -->
-<div class="tab-panel" id="tab-favoris">
-  <div class="container" style="padding-top:24px;padding-bottom:40px;">
-    <h2 class="section-title" style="text-align:left;margin-bottom:16px;">Mes coups de cœur</h2>
-    <div class="product-grid" id="favs-grid">
-      <p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0;">Aucun favori — cliquez sur ♡ sur un produit pour l'ajouter.</p>
-    </div>
+    <button class="scroll-arrow scroll-arrow-right" id="carousel-next-btn" aria-label="Suivant">›</button>
   </div>
 </div>
 
-<!-- ═══ FOOTER ═══ -->
-<footer id="footer">
-  <div class="footer-accent"></div>
-  <div class="footer-main">
-    <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <div class="nav-logo"><span class="ko">Ko</span><span class="merce">merce</span></div>
-          <p class="footer-tagline">Le e-commerce qui rapproche la diaspora comorienne. Commandez depuis la France, livré aux Comores.</p>
-          <div class="footer-social">
-            <a href="https://instagram.com/komerce.km" aria-label="Instagram" target="_blank" rel="noopener">📸</a>
-            <a href="https://facebook.com/komerce.km" aria-label="Facebook" target="_blank" rel="noopener">👤</a>
-            <a href="https://wa.me/33699272526" aria-label="WhatsApp" target="_blank" rel="noopener">💬</a>
-          </div>
-        </div>
-        <div class="footer-col"><h4>Navigation</h4><a href="#catalogue">Catalogue</a><a href="#how-it-works">Comment ça marche</a><a href="#tracking">Suivi de commande</a></div>
-        <div class="footer-col"><h4>Contact</h4><a href="mailto:contact@komerce.km">📧 contact@komerce.km</a><a href="tel:+2693210000">📞 +269 321 00 00</a><a href="https://wa.me/33699272526">💬 WhatsApp</a></div>
-        <div class="footer-col"><h4>Confiance</h4><div class="footer-trust-badges"><span class="footer-badge">Paiement sécurisé</span><span class="footer-badge">Livraison 7-14j</span><span class="footer-badge">MVola bientôt</span><span class="footer-badge">100% Comores</span></div></div>
-      </div>
-      <hr class="footer-divider">
-      <div class="footer-bottom">
-        <span>&copy; 2026 Komerce. Tous droits réservés.</span>
-        <span class="footer-islands">🏝️ Moroni · Anjouan · Mohéli · Mayotte</span>
-      </div>
-    </div>
-  </div>
-</footer>
+<!-- ═══ Tab Navigation ═══ -->
+<div class="tab-nav" id="tab-nav">
+  <button class="tab-btn active" data-tab="boutique">🛍 Boutique</button>
+  <button class="tab-btn" data-tab="suivi">📦 Suivi</button>
+  <button class="tab-btn" data-tab="favoris">❤️ Favoris <span class="tab-badge" id="fav-count-badge" style="display:none">0</span></button>
+</div>
 
-<!-- ═══ CART DRAWER ═══ -->
-<div id="cart-overlay"></div>
-<aside id="cart-drawer" aria-label="Panier">
-  <div class="cart-header">
-    <span id="cart-header-title">Mon Panier (0)</span>
-    <button class="cart-close" id="cart-close-btn" aria-label="Fermer le panier">✕</button>
-  </div>
-  <div class="cart-body" id="cart-body">
-    <div class="cart-empty">
-      <div class="empty-icon">🧺</div>
-      <p>Votre panier est vide</p>
-    </div>
-  </div>
-  <div class="cart-footer" id="cart-footer" style="display:none;">
-    <div class="cart-total"><span>Total</span><span id="cart-total-val">0 KMF</span></div>
-    <div class="cart-total-conv" id="cart-total-conv"></div>
-    <div class="cart-ctas">
-      <button class="btn-clear" id="footer-clear-btn">Vider le panier</button>
-      <button class="btn-checkout" id="footer-checkout-btn">Commander →</button>
-      <button class="btn-whatsapp" id="footer-whatsapp-btn">📲 Partager via WhatsApp</button>
-    </div>
-  </div>
-</aside>
+<!-- ═══ TAB: Boutique ═══ -->
+<div id="tab-boutique" class="tab-panel active">
 
-<!-- ═══ PRODUCT DETAIL MODAL ═══ -->
-<div class="modal-overlay" id="product-modal">
+  <!-- Hero Section -->
+  <section id="hero" class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Choisissez,<br><span class="hero-accent">on vous l'envoie</span> 🇰🇲</h1>
+      <p id="hero-proverbe" class="hero-proverbe">« Seul on va vite, ensemble on va loin. »</p>
+    </div>
+  </section>
+
+  <!-- Filter Pills -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-sort="">✨ Tous</button>
+    <button class="filter-btn" data-sort="promo">🏷 Soldes</button>
+    <button class="filter-btn" data-sort="price-asc">💰 Prix ↑</button>
+    <button class="filter-btn" data-sort="price-desc">💎 Prix ↓</button>
+    <button class="filter-btn" data-sort="stock">📦 En stock</button>
+  </div>
+
+  <!-- View Toggle -->
+  <div class="view-controls">
+    <div class="view-toggle">
+      <button id="view-grid-btn" class="vt-btn active" aria-label="Vue grille">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+      </button>
+      <button id="view-rows-btn" class="vt-btn" aria-label="Vue rangées">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="16" height="4" rx="1.5"/><rect x="0" y="6" width="16" height="4" rx="1.5"/><rect x="0" y="12" width="16" height="4" rx="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Product Grid -->
+  <div id="product-track" class="product-grid"></div>
+</div>
+
+<!-- ═══ TAB: Suivi ═══ -->
+<div id="tab-suivi" class="tab-panel">
+  <section id="tracking" class="tracking-section">
+    <div class="tracking-icon">📦</div>
+    <h2>Suivre ma commande</h2>
+    <p class="tracking-hint">Entrez votre référence de commande</p>
+    <div class="tracking-search">
+      <input type="text" id="tracking-input" placeholder="Ex: KMR-240101-ABCD" autocomplete="off">
+      <button id="tracking-search-btn">Rechercher</button>
+    </div>
+    <div id="tracking-result" style="display:none"></div>
+  </section>
+</div>
+
+<!-- ═══ TAB: Favoris ═══ -->
+<div id="tab-favoris" class="tab-panel">
+  <div id="favs-grid" class="product-grid"></div>
+</div>
+
+<!-- ═══ Product Modal ═══ -->
+<div id="product-modal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <span id="pd-modal-title">Détail du produit</span>
-      <button class="modal-close" id="product-modal-close" aria-label="Fermer">✕</button>
+      <button id="product-modal-close" class="modal-close-btn" aria-label="Fermer">✕</button>
     </div>
-    <div class="modal-body" id="product-modal-body"></div>
+    <div id="product-modal-body" class="modal-body"></div>
   </div>
 </div>
 
-<!-- ═══ ORDER FORM MODAL ═══ -->
-<div class="modal-overlay" id="order-modal">
+<!-- ═══ Order Modal ═══ -->
+<div id="order-modal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <span id="order-modal-title">Passer commande</span>
-      <button class="modal-close" id="order-modal-close" aria-label="Fermer">✕</button>
+      <span id="order-modal-title">Commande</span>
+      <button id="order-modal-close" class="modal-close-btn" aria-label="Fermer">✕</button>
     </div>
-    <div class="modal-body" id="order-modal-body"></div>
+    <div id="order-modal-body" class="modal-body"></div>
   </div>
 </div>
 
-<!-- ═══ TOAST ═══ -->
+<!-- ═══ Cart Drawer ═══ -->
+<div id="cart-overlay" class="cart-overlay"></div>
+<div id="cart-drawer" class="cart-drawer">
+  <div class="cart-header" id="cart-header">
+    <span id="cart-header-title">Mon Panier</span>
+    <button id="cart-close-btn" class="modal-close-btn" aria-label="Fermer">✕</button>
+  </div>
+  <div id="cart-body" class="cart-body"></div>
+  <div id="cart-footer" class="cart-footer" style="display:none">
+    <div class="cart-total-row">
+      <span>Total</span>
+      <div>
+        <span id="cart-total-val" class="cart-total-val"></span>
+        <span id="cart-total-conv" class="cart-total-conv"></span>
+      </div>
+    </div>
+    <div class="cart-footer-btns">
+      <button id="footer-continue-btn" class="cf-btn cf-secondary">← Continuer</button>
+      <button id="footer-clear-btn" class="cf-btn cf-danger">🗑</button>
+      <button id="footer-whatsapp-btn" class="cf-btn cf-whatsapp">💬</button>
+      <button id="footer-checkout-btn" class="cf-btn cf-primary">✅ Commander</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WhatsApp FAB ═══ -->
+<a id="wa-fab" class="wa-fab" href="https://wa.me/?text=Bonjour%20Komerce%20!%20Je%20suis%20intéressé(e)%20par%20vos%20produits%20🛍" target="_blank" rel="noopener" aria-label="Contacter via WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- ═══ Mobile Bottom Tabs ═══ -->
+<div class="mobile-tabs">
+  <button class="mtab active" data-tab="boutique">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Accueil</span>
+  </button>
+  <button class="mtab" data-tab="suivi">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+    <span>Suivi</span>
+  </button>
+  <button class="mtab" data-mtab-action="cart">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+    <span>Panier</span>
+    <span class="mtab-badge" id="mtab-cart-badge"></span>
+  </button>
+  <button class="mtab" data-tab="favoris">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+    <span>Favoris</span>
+    <span class="mtab-badge" id="mtab-fav-badge"></span>
+  </button>
+</div>
+
+<!-- ═══ Toast Container ═══ -->
 <div id="toast-container"></div>
 
-<!-- ═══ MOBILE BOTTOM TABS ═══ -->
-<div class="mobile-tabs">
-  <div class="mobile-tabs-inner">
-    <button class="mtab active" data-tab="boutique"><span class="mtab-icon">🛍️</span>Boutique</button>
-    <button class="mtab" data-tab="suivi"><span class="mtab-icon">📦</span>Suivi</button>
-    <button class="mtab" data-tab="favoris"><span class="mtab-icon">❤️</span>Favoris<span class="mtab-badge" id="mtab-fav-badge"></span></button>
-    <button class="mtab" data-mtab-action="cart"><span class="mtab-icon">🛒</span>Panier<span class="mtab-badge" id="mtab-cart-badge"></span></button>
-    <button class="mtab" data-tab="info"><span class="mtab-icon">ℹ️</span>Infos</button>
-  </div>
-</div>
-
-<script src="/boutique.js?v=6" defer></script>
+<!-- ═══ Scripts ═══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
+<script src="/boutique.js?v=10" defer></script>
 </body>
 </html>

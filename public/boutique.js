@@ -396,13 +396,12 @@ function _renderMoreProducts(list, track) {
     card.className = 'product-card';
     card.setAttribute('data-id', p.id);
     card.addEventListener('click', function(e) {
-      if (e.target.closest('.btn-add-cart') || e.target.closest('.btn-fav')) return;
+      if (e.target.closest('.btn-add-cart') || e.target.closest('.heart-btn')) return;
       openProductModal(p);
     });
 
     var imgDiv = document.createElement('div');
     imgDiv.className = 'card-img';
-    imgDiv.style.position = 'relative';
     if (p.image_url) {
       var img = document.createElement('img');
       img.loading = 'lazy';
@@ -418,100 +417,95 @@ function _renderMoreProducts(list, track) {
     /* Badge promo */
     if (p.is_promo && p.promo_pct) {
       var badge = document.createElement('div');
-      badge.className = 'card-badge';
-      badge.textContent = 'SOLDES -' + p.promo_pct + '%';
+      badge.className = 'badge-fire';
+      badge.textContent = '🔥 -' + p.promo_pct + '%';
       imgDiv.appendChild(badge);
     }
 
-    card.appendChild(imgDiv);
+    /* Heart button */
+    var heartBtn = document.createElement('button');
+    heartBtn.className = 'heart-btn' + (isFav(p.id) ? ' liked' : '');
+    heartBtn.textContent = isFav(p.id) ? '♥' : '♡';
+    (function(product, btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleFav(product.id);
+        btn.textContent = isFav(product.id) ? '♥' : '♡';
+        btn.classList.toggle('liked', isFav(product.id));
+        toast(isFav(product.id) ? 'Ajouté aux favoris ❤️' : 'Retiré des favoris', 'info');
+        updateFavBadge();
+      });
+    })(p, heartBtn);
+    imgDiv.appendChild(heartBtn);
 
     /* Badge quantité panier */
     var cartBadge = document.createElement('div');
     cartBadge.className = 'card-cart-badge';
     cartBadge.setAttribute('data-badge-pid', p.id);
-    var cartBadgeIcon = document.createElement('span');
-    cartBadgeIcon.textContent = '🧺';
-    cartBadgeIcon.style.fontSize = '0.7rem';
-    cartBadge.appendChild(cartBadgeIcon);
     var cartBadgeQty = document.createElement('span');
     cartBadgeQty.className = 'badge-qty';
     cartBadgeQty.textContent = '0';
     cartBadge.appendChild(cartBadgeQty);
-    card.appendChild(cartBadge);
+    imgDiv.appendChild(cartBadge);
 
-    var body = document.createElement('div');
-    body.className = 'card-body';
+    /* Overlay with price + name */
+    var overlay = document.createElement('div');
+    overlay.className = 'card-overlay';
+    var overlayPrice = document.createElement('div');
+    overlayPrice.className = 'card-price';
+    overlayPrice.textContent = fmt(p.price_kmf || 0, 'KMF');
+    overlay.appendChild(overlayPrice);
+    var overlayName = document.createElement('div');
+    overlayName.className = 'card-name';
+    overlayName.textContent = p.name || 'Produit';
+    overlay.appendChild(overlayName);
+    imgDiv.appendChild(overlay);
 
-    var cat = document.createElement('div');
-    cat.className = 'card-category';
-    cat.textContent = categoryLabel(p.category);
-    body.appendChild(cat);
+    card.appendChild(imgDiv);
 
-    var name = document.createElement('div');
-    name.className = 'card-name';
-    name.textContent = p.name || 'Produit';
-    name.title = p.name || '';
-    body.appendChild(name);
-
-    /* Prix barré si promo */
-    if (p.is_promo && p.promo_pct && p.cost_kmf) {
-      var origPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
-      var orig = document.createElement('div');
-      orig.className = 'card-price-original';
-      orig.textContent = fmt(origPrice, 'KMF');
-      body.appendChild(orig);
-    }
-
-    var price = document.createElement('div');
-    price.className = 'card-price';
-    price.textContent = fmt(p.price_kmf || 0, 'KMF');
-    body.appendChild(price);
-
-    if (_currency === 'EUR') {
-      var conv = document.createElement('div');
-      conv.className = 'card-price-conv';
-      conv.textContent = '≈ ' + fmt(p.price_kmf || 0, 'EUR');
-      body.appendChild(conv);
-    }
-
-    var avail = availabilityInfo(p);
-    var availBadge = document.createElement('div');
-    availBadge.className = 'avail-badge ' + avail.cls;
-    availBadge.textContent = avail.icon + ' ' + avail.label;
-    body.appendChild(availBadge);
-
-    var actions = document.createElement('div');
-    actions.className = 'card-actions';
-
+    /* Actions row below image */
+    var actionsRow = document.createElement('div');
+    actionsRow.className = 'card-actions-row';
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
     addBtn.setAttribute('data-product-id', p.id);
-    addBtn.textContent = '🧺 Ajouter';
+    addBtn.textContent = '+ Panier';
     (function(product, btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
         addToCart(product, 1, btn);
       });
     })(p, addBtn);
-    actions.appendChild(addBtn);
+    actionsRow.appendChild(addBtn);
+    card.appendChild(actionsRow);
 
-    var favBtn = document.createElement('button');
-    favBtn.className = 'btn-fav' + (isFav(p.id) ? ' is-fav' : '');
-    favBtn.textContent = isFav(p.id) ? '♥' : '♡';
-    (function(product, btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleFav(product.id);
-        btn.textContent = isFav(product.id) ? '♥' : '♡';
-        btn.className = 'btn-fav' + (isFav(product.id) ? ' is-fav' : '');
-        toast(isFav(product.id) ? 'Ajouté aux favoris ♥' : 'Retiré des favoris', 'info');
-        updateFavBadge();
-      });
-    })(p, favBtn);
-    actions.appendChild(favBtn);
+    /* Double-tap to favorite (Instagram gesture) */
+    (function(product, cardEl) {
+      var _lastTap = 0;
+      cardEl.addEventListener('touchend', function(e) {
+        var now = Date.now();
+        if (now - _lastTap < 300) {
+          e.preventDefault();
+          toggleFav(product.id);
+          /* Show heart animation */
+          var heart = document.createElement('div');
+          heart.className = 'double-tap-heart';
+          heart.textContent = '❤️';
+          cardEl.querySelector('.card-img').appendChild(heart);
+          setTimeout(function() { heart.remove(); }, 900);
+          /* Update heart button */
+          var hb = cardEl.querySelector('.heart-btn');
+          if (hb) {
+            hb.textContent = isFav(product.id) ? '♥' : '♡';
+            hb.classList.toggle('liked', isFav(product.id));
+          }
+          updateFavBadge();
+          toast(isFav(product.id) ? 'Ajouté aux favoris ❤️' : 'Retiré des favoris', 'info');
+        }
+        _lastTap = now;
+      }, {passive: false});
+    })(p, card);
 
-    body.appendChild(actions);
-    card.appendChild(body);
     track.appendChild(card);
   });
   _renderShown = end;
@@ -547,7 +541,7 @@ function heroSearch() {
     .then(function(data) {
       var results = data.products || data || [];
       renderProducts(results);
-      if (!_firstLoad) { document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' }); }
+      if (!_firstLoad) { var _catEl = document.getElementById('catalogue') || document.getElementById('product-track'); if (_catEl) _catEl.scrollIntoView({ behavior: 'smooth' }); }
     })
     .catch(function() {
       // Fallback local
@@ -557,7 +551,7 @@ function heroSearch() {
                (p.description || '').toLowerCase().indexOf(q) !== -1;
       });
       renderProducts(filtered);
-      if (!_firstLoad) { document.getElementById('catalogue').scrollIntoView({ behavior: 'smooth' }); }
+      if (!_firstLoad) { var _catEl2 = document.getElementById('catalogue') || document.getElementById('product-track'); if (_catEl2) _catEl2.scrollIntoView({ behavior: 'smooth' }); }
     });
 }
 
@@ -854,6 +848,41 @@ function openProductModal(p, fromSuggestion) {
     desc.textContent = p.description;
     body.appendChild(desc);
   }
+
+  /* ── Share row ── */
+  var shareRow = document.createElement('div');
+  shareRow.className = 'pd-share-row';
+
+  var waShare = document.createElement('button');
+  waShare.className = 'pd-share-btn wa';
+  waShare.innerHTML = '💬 Partager sur WhatsApp';
+  waShare.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var msg = '🛍 Regarde ce produit sur Komerce !\n\n'
+      + '*' + p.name + '*\n'
+      + '💰 ' + fmt(p.price_kmf || 0, 'KMF') + '\n\n'
+      + '👉 ' + window.location.origin;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  });
+  shareRow.appendChild(waShare);
+
+  var copyBtn = document.createElement('button');
+  copyBtn.className = 'pd-share-btn copy';
+  copyBtn.innerHTML = '🔗 Copier le lien';
+  copyBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    navigator.clipboard.writeText(window.location.origin).then(function() {
+      toast('Lien copié !', 'success');
+    });
+  });
+  shareRow.appendChild(copyBtn);
+  body.appendChild(shareRow);
+
+  /* ── Trust badges ── */
+  var trust = document.createElement('div');
+  trust.className = 'pd-trust';
+  trust.innerHTML = '<span>🇰🇲 Livré aux Comores</span><span>🔒 Paiement sécurisé</span><span>🏪 Retrait en relais</span>';
+  body.appendChild(trust);
 
   /* ── Contrôles qty + ajouter ── */
   var controls = document.createElement('div');
@@ -2116,13 +2145,12 @@ function renderFavs() {
     card.className = 'product-card';
     card.setAttribute('data-id', p.id);
     card.addEventListener('click', function(e) {
-      if (e.target.closest('.btn-add-cart') || e.target.closest('.btn-fav')) return;
+      if (e.target.closest('.btn-add-cart') || e.target.closest('.heart-btn')) return;
       openProductModal(p);
     });
 
     var imgDiv = document.createElement('div');
     imgDiv.className = 'card-img';
-    imgDiv.style.position = 'relative';
     if (p.image_url) {
       var img = document.createElement('img');
       img.loading = 'lazy';
@@ -2134,54 +2162,71 @@ function renderFavs() {
     } else {
       imgDiv.textContent = productEmoji(p);
     }
+
+    /* Badge promo */
+    if (p.is_promo && p.promo_pct) {
+      var badge = document.createElement('div');
+      badge.className = 'badge-fire';
+      badge.textContent = '🔥 -' + p.promo_pct + '%';
+      imgDiv.appendChild(badge);
+    }
+
+    /* Heart button (always liked in favs) */
+    var heartBtn = document.createElement('button');
+    heartBtn.className = 'heart-btn liked';
+    heartBtn.textContent = '♥';
+    (function(product, btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleFav(product.id);
+        updateFavBadge();
+        renderFavs();
+      });
+    })(p, heartBtn);
+    imgDiv.appendChild(heartBtn);
+
+    /* Cart badge */
+    var cartBadge = document.createElement('div');
+    cartBadge.className = 'card-cart-badge';
+    cartBadge.setAttribute('data-badge-pid', p.id);
+    var cartBadgeQty = document.createElement('span');
+    cartBadgeQty.className = 'badge-qty';
+    cartBadgeQty.textContent = '0';
+    cartBadge.appendChild(cartBadgeQty);
+    imgDiv.appendChild(cartBadge);
+
+    /* Overlay with price + name */
+    var overlay = document.createElement('div');
+    overlay.className = 'card-overlay';
+    var overlayPrice = document.createElement('div');
+    overlayPrice.className = 'card-price';
+    overlayPrice.textContent = fmt(p.price_kmf || 0, 'KMF');
+    overlay.appendChild(overlayPrice);
+    var overlayName = document.createElement('div');
+    overlayName.className = 'card-name';
+    overlayName.textContent = p.name || 'Produit';
+    overlay.appendChild(overlayName);
+    imgDiv.appendChild(overlay);
+
     card.appendChild(imgDiv);
 
-    var body = document.createElement('div');
-    body.className = 'card-body';
-
-    var cat = document.createElement('div');
-    cat.className = 'card-category';
-    cat.textContent = categoryLabel(p.category);
-    body.appendChild(cat);
-
-    var name = document.createElement('div');
-    name.className = 'card-name';
-    name.textContent = p.name;
-    body.appendChild(name);
-
-    var price = document.createElement('div');
-    price.className = 'card-price';
-    price.textContent = fmt(p.price_kmf || 0, 'KMF');
-    body.appendChild(price);
-
-    var actions = document.createElement('div');
-    actions.className = 'card-actions';
-
+    /* Actions row */
+    var actionsRow = document.createElement('div');
+    actionsRow.className = 'card-actions-row';
     var addBtn = document.createElement('button');
     addBtn.className = 'btn-add-cart';
-    addBtn.textContent = 'Ajouter';
+    addBtn.setAttribute('data-product-id', p.id);
+    addBtn.textContent = '+ Panier';
     addBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       addToCart(p, 1, addBtn);
     });
-    actions.appendChild(addBtn);
+    actionsRow.appendChild(addBtn);
+    card.appendChild(actionsRow);
 
-    var favBtn = document.createElement('button');
-    favBtn.className = 'btn-fav';
-    favBtn.textContent = '♥';
-    favBtn.style.color = '#ef4444';
-    favBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      toggleFav(p.id);
-      updateFavBadge();
-      renderFavs();
-    });
-    actions.appendChild(favBtn);
-
-    body.appendChild(actions);
-    card.appendChild(body);
     grid.appendChild(card);
   });
+  updateCartBadges();
 }
 
 /* ── Vue rangées swipeables par catégorie ── */
@@ -2321,87 +2366,34 @@ document.addEventListener('DOMContentLoaded', function() {
   if (proEl && typeof _proverbes !== 'undefined') {
     proEl.textContent = '\u00ab ' + _proverbes[_proIdx] + ' \u00bb';
   }
-  /* ── Category pills auto-scroll + arrows ── */
+  /* ── Stories/Category scroll + arrows ── */
   (function initCatScroll() {
-    var wrap = document.querySelector('.cat-circles-wrap');
-    var track = document.getElementById('cat-pills');
+    var wrap = document.getElementById('stories-wrap');
+    var track = document.getElementById('cat-scroll');
     if (!wrap || !track) return;
 
-    var arrowL = document.createElement('button');
-    arrowL.className = 'cat-scroll-btn cat-scroll-left hidden';
-    arrowL.innerHTML = '&#8249;';
-    arrowL.setAttribute('aria-label', 'Défiler gauche');
-
-    var arrowR = document.createElement('button');
-    arrowR.className = 'cat-scroll-btn cat-scroll-right';
-    arrowR.innerHTML = '&#8250;';
-    arrowR.setAttribute('aria-label', 'Défiler droite');
-
-    wrap.appendChild(arrowL);
-    wrap.appendChild(arrowR);
+    var arrowL = document.getElementById('carousel-prev-btn');
+    var arrowR = document.getElementById('carousel-next-btn');
 
     function updateCatArrows() {
-      arrowL.classList.toggle('hidden', wrap.scrollLeft <= 8);
-      arrowR.classList.toggle('hidden', wrap.scrollLeft >= wrap.scrollWidth - wrap.clientWidth - 8);
+      if (arrowL) arrowL.classList.toggle('hidden', track.scrollLeft <= 8);
+      if (arrowR) arrowR.classList.toggle('hidden', track.scrollLeft >= track.scrollWidth - track.clientWidth - 8);
     }
 
-    /* ── Auto-scroll doux : défile tout seul, pause au hover/touch ── */
-    var _autoDir = 1;
-    var _autoSpeed = 0.5;
-    var _autoPaused = false;
-    var _autoTimer = null;
-
-    function autoScrollTick() {
-      if (_autoPaused) return;
-      var maxScroll = wrap.scrollWidth - wrap.clientWidth;
-      if (maxScroll <= 0) return;
-      wrap.scrollLeft += _autoDir * _autoSpeed;
-      if (wrap.scrollLeft >= maxScroll - 2) { _autoDir = -1; }
-      if (wrap.scrollLeft <= 2) { _autoDir = 1; }
-      updateCatArrows();
+    if (arrowL) {
+      arrowL.addEventListener('click', function(e) {
+        e.stopPropagation();
+        track.scrollBy({ left: -200, behavior: 'smooth' });
+      });
+    }
+    if (arrowR) {
+      arrowR.addEventListener('click', function(e) {
+        e.stopPropagation();
+        track.scrollBy({ left: 200, behavior: 'smooth' });
+      });
     }
 
-    // Auto-scroll disabled — categories spread evenly
-    // setTimeout(function() {
-    //   _autoTimer = setInterval(autoScrollTick, 20);
-    // }, 2000);
-
-    // Pause on hover/touch
-    wrap.addEventListener('mouseenter', function() { _autoPaused = true; });
-    wrap.addEventListener('mouseleave', function() { _autoPaused = false; });
-    wrap.addEventListener('touchstart', function() { _autoPaused = true; }, {passive:true});
-    wrap.addEventListener('touchend', function() { setTimeout(function(){ _autoPaused = false; }, 3000); });
-
-    /* ── Manual arrows: click to scroll by chunk ── */
-    var _manualTimer = null;
-    var _manualSpeed = 2;
-
-    function startManualScroll(dir) {
-      stopManualScroll();
-      _autoPaused = true;
-      _manualSpeed = 2;
-      _manualTimer = setInterval(function() {
-        wrap.scrollLeft += dir * _manualSpeed;
-        if (_manualSpeed < 6) _manualSpeed += 0.15;
-        updateCatArrows();
-      }, 16);
-    }
-    function stopManualScroll() {
-      if (_manualTimer) { clearInterval(_manualTimer); _manualTimer = null; }
-      _manualSpeed = 2;
-      setTimeout(function(){ _autoPaused = false; }, 2000);
-    }
-
-    arrowL.addEventListener('mousedown', function(e) { e.preventDefault(); startManualScroll(-1); });
-    arrowR.addEventListener('mousedown', function(e) { e.preventDefault(); startManualScroll(1); });
-    arrowL.addEventListener('touchstart', function(e) { e.preventDefault(); startManualScroll(-1); }, {passive:false});
-    arrowR.addEventListener('touchstart', function(e) { e.preventDefault(); startManualScroll(1); }, {passive:false});
-    document.addEventListener('mouseup', stopManualScroll);
-    document.addEventListener('touchend', stopManualScroll);
-    arrowL.addEventListener('mouseleave', stopManualScroll);
-    arrowR.addEventListener('mouseleave', stopManualScroll);
-
-    wrap.addEventListener('scroll', updateCatArrows, {passive: true});
+    track.addEventListener('scroll', updateCatArrows, {passive: true});
     setTimeout(updateCatArrows, 500);
   })();
 
@@ -2491,10 +2483,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (trackBtn) trackBtn.addEventListener('click', function() { searchTracking(); });
   var heroBtn = document.getElementById('hero-search-btn');
   if (heroBtn) heroBtn.addEventListener('click', function() { heroSearch(); });
-  var prevBtn = document.getElementById('carousel-prev-btn');
-  if (prevBtn) prevBtn.addEventListener('click', function() { scrollCarousel(-1); });
-  var nextBtn = document.getElementById('carousel-next-btn');
-  if (nextBtn) nextBtn.addEventListener('click', function() { scrollCarousel(1); });
+  /* carousel-prev-btn / carousel-next-btn are now handled by initCatScroll for stories */
   var navCartBtn = document.getElementById('nav-cart-btn');
   if (navCartBtn) navCartBtn.addEventListener('click', function() { openCart(); });
   var fcBtn = document.getElementById('footer-continue-btn');
