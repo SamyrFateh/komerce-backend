@@ -1,10 +1,8 @@
 /* Komerce Service Worker v7.0 — Cache bust + Cross-origin safe + Network-First HTML */
-const CACHE = 'komerce-v7';
+const CACHE = 'komerce-v8';
 
 const SHELL = [
-  '/Komerce_Boutique.html',
-  '/komerce-api.js',
-  '/komerce-ui.css',
+  '/boutique.html',
   '/manifest.json'
 ];
 
@@ -69,7 +67,7 @@ self.addEventListener('fetch', (e) => {
         })
         .catch(() =>
           caches.match(request)
-            .then((cached) => cached || caches.match('/Komerce_Boutique.html'))
+            .then((cached) => cached || caches.match('/boutique.html'))
             .then((fallback) => fallback || new Response('Hors ligne', {
               status: 503,
               headers: { 'Content-Type': 'text/html; charset=utf-8' }
