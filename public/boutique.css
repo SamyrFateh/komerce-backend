@@ -1563,7 +1563,7 @@ body.modal-open .mobile-tabs {
 
   /* Space for fixed CTA at bottom */
   .modal-body {
-    padding-bottom: 48px !important;
+    padding-bottom: 60px !important;
   }
 
   .pd-add-round {
@@ -1609,7 +1609,7 @@ body.modal-open .mobile-tabs {
   .pd-cart-label { font-size: 0.75rem; }
 
   .modal-body {
-    padding-bottom: 44px !important;
+    padding-bottom: 60px !important;
   }
 }
 
@@ -2492,7 +2492,6 @@ body.modal-open .mobile-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  flex: 1;
 }
 
 .pd-sug-card {
@@ -2502,8 +2501,6 @@ body.modal-open .mobile-tabs {
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
 }
 
 .pd-sug-card:active {
@@ -2512,8 +2509,7 @@ body.modal-open .mobile-tabs {
 
 .pd-sug-img {
   width: 100%;
-  flex: 1;
-  min-height: 0;
+  aspect-ratio: 1;
   object-fit: cover;
   display: block;
   background: var(--primary-light);
