@@ -1239,9 +1239,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
   .modal-header {
     position: relative;
-    padding: 18px 16px 6px;
+    padding: 12px 16px 4px;
     border-radius: 20px 20px 0 0;
-    min-height: 36px;
+    min-height: 30px;
   }
 
   .modal-header::before {
@@ -1488,16 +1488,16 @@ body.modal-open .mobile-tabs {
     flex-direction: row;
     align-items: flex-start;
     gap: 8px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   .pd-emoji {
-    width: 28%;
-    min-width: 80px;
-    max-width: 110px;
+    width: 24%;
+    min-width: 70px;
+    max-width: 88px;
     height: auto;
-    aspect-ratio: 1/1;
-    border-radius: 10px;
+    aspect-ratio: 3/4;
+    border-radius: 8px;
     background: #f8f6f3;
     flex-shrink: 0;
   }
@@ -1542,11 +1542,11 @@ body.modal-open .mobile-tabs {
     background: rgba(255,255,255,0.97);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
     margin: 0;
     border-top: 1px solid var(--border);
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     z-index: 1200;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
   }
@@ -1559,7 +1559,7 @@ body.modal-open .mobile-tabs {
 
   /* Space for fixed CTA at bottom */
   .modal-body {
-    padding-bottom: 56px !important;
+    padding-bottom: 48px !important;
   }
 
   .pd-add-round {
@@ -1587,29 +1587,25 @@ body.modal-open .mobile-tabs {
 
 @media (max-width: 480px) {
   .pd-emoji {
-    width: 25%;
-    min-width: 75px;
-    max-width: 95px;
-    aspect-ratio: 1/1;
+    width: 22%;
+    min-width: 65px;
+    max-width: 80px;
+    aspect-ratio: 3/4;
   }
 
   .pd-info { padding: 0; }
-  .pd-name { font-size: 0.88rem; }
-  .pd-cat { font-size: 0.65rem; }
+  .pd-name { font-size: 0.84rem; }
+  .pd-cat { font-size: 0.62rem; }
 
   .pd-controls {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    gap: 10px;
+    padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+    gap: 8px;
   }
 
-  .pd-add-round {
-    width: 40px;
-    height: 40px;
-  }
-  .pd-add-round img { width: 26px; height: 26px; }
+  .pd-cart-label { font-size: 0.75rem; }
 
   .modal-body {
-    padding-bottom: 76px !important;
+    padding-bottom: 44px !important;
   }
 }
 
@@ -2473,28 +2469,28 @@ body.modal-open .mobile-tabs {
 
 /* Modal suggestions — static grid */
 .pd-suggestions {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: 4px;
+  padding-top: 4px;
   border-top: 1px solid var(--border);
 }
 
 .pd-suggestions-title {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--dark);
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 
 .pd-suggestions-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 .pd-sug-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.2s;
@@ -2506,14 +2502,14 @@ body.modal-open .mobile-tabs {
 
 .pd-sug-img {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4/3;
   object-fit: cover;
   display: block;
   background: var(--primary-light);
 }
 
 .pd-sug-info {
-  padding: 2px 4px 3px;
+  padding: 2px 4px 2px;
 }
 
 .pd-sug-name {
@@ -2535,13 +2531,13 @@ body.modal-open .mobile-tabs {
 .pd-see-collection {
   display: block;
   width: 100%;
-  margin-top: 12px;
-  padding: 10px;
+  margin-top: 6px;
+  padding: 6px;
   background: transparent;
   border: 1.5px solid var(--primary);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--primary);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
