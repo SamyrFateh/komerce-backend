@@ -1546,9 +1546,15 @@ body.modal-open .mobile-tabs {
     margin: 0;
     border-top: 1px solid var(--border);
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     z-index: 1200;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  }
+
+  .pd-cart-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   /* Space for fixed CTA at bottom */

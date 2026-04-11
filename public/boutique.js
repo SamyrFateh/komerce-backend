@@ -943,6 +943,7 @@ function openProductModal(p, fromSuggestion) {
       minusBtn.style.opacity = '1';
     }
     if (typeof markAllCartButtons === 'function') markAllCartButtons();
+    if (typeof _updateLabel === 'function') _updateLabel();
   }
 
   minusBtn.addEventListener('click', function() {
@@ -959,12 +960,20 @@ function openProductModal(p, fromSuggestion) {
   qtyWrap.appendChild(plusBtn);
   controls.appendChild(qtyWrap);
 
-  /* ── Panier décoratif (pas de bouton séparé, le +/- fait tout) ── */
-  var basketIcon = document.createElement('img');
-  basketIcon.src = '/images/panier_africain_sm.png';
-  basketIcon.alt = 'panier';
-  basketIcon.style.cssText = 'width:36px;height:36px;border-radius:50%;object-fit:cover;';
-  controls.appendChild(basketIcon);
+  /* ── Label dynamique panier ── */
+  var cartLabel = document.createElement('span');
+  cartLabel.className = 'pd-cart-label';
+  function _updateLabel() {
+    if (_pdQtyLive === 0) {
+      cartLabel.innerHTML = '🧺 Ajouter au panier';
+      cartLabel.style.color = '#6b7280';
+    } else {
+      cartLabel.innerHTML = '✓ Dans le panier';
+      cartLabel.style.color = '#16a34a';
+    }
+  }
+  _updateLabel();
+  controls.appendChild(cartLabel);
 
   body.appendChild(controls);
 
