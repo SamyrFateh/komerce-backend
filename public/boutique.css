@@ -1239,9 +1239,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
   .modal-header {
     position: relative;
-    padding: 28px 20px 14px;
+    padding: 18px 16px 6px;
     border-radius: 20px 20px 0 0;
-    min-height: 52px;
+    min-height: 36px;
   }
 
   .modal-header::before {
@@ -1266,7 +1266,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   }
 
   .modal-body {
-    padding: 16px;
+    padding: 8px 12px;
     padding-bottom: 80px;
   }
 }
@@ -1487,16 +1487,16 @@ body.modal-open .mobile-tabs {
   .pd-top {
     flex-direction: row;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 6px;
+    gap: 8px;
+    margin-bottom: 4px;
   }
 
   .pd-emoji {
-    width: 35%;
-    min-width: 100px;
-    max-width: 140px;
+    width: 28%;
+    min-width: 80px;
+    max-width: 110px;
     height: auto;
-    aspect-ratio: 3/4;
+    aspect-ratio: 1/1;
     border-radius: 10px;
     background: #f8f6f3;
     flex-shrink: 0;
@@ -1553,7 +1553,7 @@ body.modal-open .mobile-tabs {
 
   /* Space for fixed CTA at bottom */
   .modal-body {
-    padding-bottom: 64px !important;
+    padding-bottom: 56px !important;
   }
 
   .pd-add-round {
@@ -1581,10 +1581,10 @@ body.modal-open .mobile-tabs {
 
 @media (max-width: 480px) {
   .pd-emoji {
-    width: 32%;
-    min-width: 90px;
-    max-width: 120px;
-    aspect-ratio: 3/4;
+    width: 25%;
+    min-width: 75px;
+    max-width: 95px;
+    aspect-ratio: 1/1;
   }
 
   .pd-info { padding: 0; }
@@ -2467,22 +2467,22 @@ body.modal-open .mobile-tabs {
 
 /* Modal suggestions — static grid */
 .pd-suggestions {
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
 }
 
 .pd-suggestions-title {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--dark);
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .pd-suggestions-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .pd-sug-card {
@@ -2507,7 +2507,7 @@ body.modal-open .mobile-tabs {
 }
 
 .pd-sug-info {
-  padding: 4px 6px 5px;
+  padding: 2px 4px 3px;
 }
 
 .pd-sug-name {
