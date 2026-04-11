@@ -673,58 +673,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   font-weight: 900;
 }
 
-.hero-proverbe {
-  font-size: 0.85rem;
-  color: var(--muted);
-  font-style: italic;
-  margin-top: 4px;
-  opacity: 0.7;
-  cursor: pointer;
-  transition: opacity 0.4s ease;
-  line-height: 1.4;
-  max-width: 420px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.hero-proverbe:hover {
-  opacity: 1;
-}
-
-/* ── Hero Search Bar (Amazon-style) ── */
-.hero-search-bar {
-  margin: 10px auto 0;
-  max-width: 560px;
-  position: relative;
-  z-index: 100;
-}
-.hero-search-bar .nav-search-wrap {
-  background: #fff !important;
-  border: 2px solid var(--primary) !important;
-  border-radius: 28px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  margin: 0 !important;
-  max-width: 100%;
-}
-.hero-search-bar .nav-search-wrap:focus-within {
-  border-color: var(--accent) !important;
-  box-shadow: 0 2px 20px rgba(212,157,68,0.18);
-}
-.hero-search-bar .nav-search-wrap input {
-  color: var(--text) !important;
-  font-size: 0.95rem;
-  padding: 11px 16px;
-}
-.hero-search-bar .nav-search-wrap input::placeholder {
-  color: var(--muted) !important;
-}
-.hero-search-bar .nav-search-wrap button {
-  color: var(--primary) !important;
-  padding: 10px 14px;
-}
-.hero-search-bar .nav-search-wrap button:hover {
-  color: var(--accent) !important;
-}
+/* hero-proverbe + hero-search-bar removed — search is in nav */
 
 /* ── Hero Trust Badges ── */
 .hero-badges {
@@ -3247,18 +3196,6 @@ body.modal-open .mobile-tabs {
     height: 34px;
   }
 
-  /* Hero search compact on mobile */
-  .hero-search-bar {
-    margin: 8px auto 0;
-  }
-  .hero-search-bar .nav-search-wrap input {
-    font-size: 0.88rem;
-    padding: 9px 12px;
-  }
-  .hero-search-bar .nav-search-wrap button {
-    padding: 8px 12px;
-  }
-
   /* Stories compact & scrollable */
   .stories-section {
     padding: 0;
@@ -3285,21 +3222,17 @@ body.modal-open .mobile-tabs {
     display: none;
   }
 
-  /* Hero compact mobile */
+  /* Hero ultra-compact (tagline + badges only) */
   .hero-section {
-    padding: 10px 12px 8px;
+    padding: 8px 12px 6px;
   }
   .hero-title {
-    font-size: 1.1rem;
-  }
-  .hero-proverbe {
-    font-size: 0.7rem;
-    margin-top: 2px;
+    font-size: 1.05rem;
   }
   .hero-badges {
     font-size: 0.65rem;
     gap: 8px;
-    margin-top: 5px;
+    margin-top: 4px;
   }
 
   /* Filter bar: horizontal scroll */
@@ -3421,9 +3354,6 @@ body.modal-open .mobile-tabs {
   .hero-title {
     font-size: 1.05rem;
   }
-  .hero-proverbe {
-    font-size: 0.68rem;
-  }
   .hero-badges {
     font-size: 0.6rem;
     gap: 6px;
@@ -3478,11 +3408,6 @@ body.modal-open .mobile-tabs {
     width: 30px;
     height: 30px;
   }
-  .hero-search-bar .nav-search-wrap input {
-    font-size: 0.82rem;
-    padding: 8px 10px;
-  }
-
   .product-grid {
     gap: 4px;
     padding: 0 4px 84px;
