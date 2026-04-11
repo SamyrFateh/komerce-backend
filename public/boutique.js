@@ -84,6 +84,12 @@ let _rates = { EUR: 495, KMF: 1 };
 let _currency = detectCurrency();
 let _pdQty = 1;
 
+/* ── Stripe ── */
+var _stripe = null;
+var _stripeElements = null;
+var _stripeCard = null;
+try { _stripe = typeof Stripe !== 'undefined' ? Stripe('pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ') : null; } catch(e) { console.warn('Stripe not loaded:', e); }
+
 /* ── Helpers ── */
 function $(id) { return document.getElementById(id); }
 
@@ -1727,21 +1733,103 @@ function renderCheckout() {
   body.appendChild(mvolaOpt);
 
   var stripeOpt = document.createElement('label');
-  stripeOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius);margin-bottom:14px;cursor:not-allowed;background:white;opacity:0.6;';
+  stripeOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;background:white;';
   var stripeRadio = document.createElement('input');
   stripeRadio.type = 'radio';
   stripeRadio.name = 'payment_mode';
   stripeRadio.value = 'stripe_eur';
-  stripeRadio.disabled = true;
-  stripeRadio.style.cssText = 'width:16px;height:16px;flex-shrink:0;';
+  stripeRadio.style.cssText = 'width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;';
   stripeOpt.appendChild(stripeRadio);
   var stripeInfo = document.createElement('div');
   var stripeL = document.createElement('div');
   stripeL.style.cssText = 'font-weight:700;font-size:0.88rem;display:flex;align-items:center;gap:6px;';
-  stripeL.innerHTML = '\u{1F4B3} Carte bancaire <span style="font-size:0.65rem;background:var(--accent);color:white;padding:1px 6px;border-radius:8px;font-weight:700;">Bient\u00f4t</span>';
+  stripeL.innerHTML = '\u{1F4B3} Carte bancaire <span style="font-size:0.6rem;color:var(--muted);font-weight:400;">Visa, Mastercard</span>';
   stripeInfo.appendChild(stripeL);
+  var stripeSub = document.createElement('div');
+  stripeSub.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:1px;';
+  stripeSub.textContent = 'Paiement s\u00e9curis\u00e9 en EUR';
+  stripeInfo.appendChild(stripeSub);
   stripeOpt.appendChild(stripeInfo);
   body.appendChild(stripeOpt);
+
+  /* Stripe Card Element container */
+  var stripeCardWrap = document.createElement('div');
+  stripeCardWrap.id = 'stripe-card-wrap';
+  stripeCardWrap.style.cssText = 'display:none;margin-bottom:14px;padding:12px;border:2px solid var(--primary);border-radius:var(--radius);background:#fafbfc;';
+  var stripeCardLabel = document.createElement('div');
+  stripeCardLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:8px;';
+  stripeCardLabel.textContent = '\u{1F512} Informations de carte';
+  stripeCardWrap.appendChild(stripeCardLabel);
+  var stripeCardEl = document.createElement('div');
+  stripeCardEl.id = 'stripe-card-element';
+  stripeCardEl.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:6px;background:white;';
+  stripeCardWrap.appendChild(stripeCardEl);
+  var stripeCardError = document.createElement('div');
+  stripeCardError.id = 'stripe-card-error';
+  stripeCardError.style.cssText = 'color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;';
+  stripeCardWrap.appendChild(stripeCardError);
+  body.appendChild(stripeCardWrap);
+
+  /* EUR total display */
+  var eurDisplay = document.createElement('div');
+  eurDisplay.id = 'stripe-eur-display';
+  eurDisplay.style.cssText = 'display:none;text-align:center;font-size:0.82rem;color:var(--primary-dark);font-weight:700;margin-bottom:8px;';
+  eurDisplay.textContent = '\u2248 ' + fmt(cartTotal(), 'EUR') + ' seront d\u00e9bit\u00e9s';
+  stripeCardWrap.appendChild(eurDisplay);
+  /* ── Payment mode switching ── */
+  function updatePaymentUI() {
+    var mode = document.querySelector('input[name="payment_mode"]:checked');
+    var isStripe = mode && mode.value === 'stripe_eur';
+    _orderData.payment_mode = mode ? mode.value : 'cash_relais';
+
+    /* highlight selected */
+    cashOpt.style.borderColor = !isStripe ? 'var(--primary)' : 'var(--border)';
+    cashOpt.style.background = !isStripe ? 'var(--primary-light)' : 'white';
+    stripeOpt.style.borderColor = isStripe ? 'var(--primary)' : 'var(--border)';
+    stripeOpt.style.background = isStripe ? 'var(--primary-light)' : 'white';
+
+    /* show/hide card element */
+    var wrap = document.getElementById('stripe-card-wrap');
+    if (wrap) {
+      wrap.style.display = isStripe ? 'block' : 'none';
+      if (isStripe) {
+        var eurD = document.getElementById('stripe-eur-display');
+        if (eurD) { eurD.style.display = 'block'; eurD.textContent = '\u2248 ' + fmt(cartTotal(), 'EUR') + ' seront d\u00e9bit\u00e9s'; }
+      }
+    }
+
+    /* mount Stripe card if needed */
+    if (isStripe && _stripe && !_stripeCard) {
+      _stripeElements = _stripe.elements();
+      _stripeCard = _stripeElements.create('card', {
+        style: {
+          base: { fontSize: '15px', color: '#1e293b', fontFamily: 'Inter, sans-serif', '::placeholder': { color: '#94a3b8' } },
+          invalid: { color: '#dc2626' }
+        },
+        hidePostalCode: true
+      });
+      _stripeCard.mount('#stripe-card-element');
+      _stripeCard.on('change', function(ev) {
+        var errEl = document.getElementById('stripe-card-error');
+        if (errEl) {
+          errEl.textContent = ev.error ? ev.error.message : '';
+          errEl.style.display = ev.error ? 'block' : 'none';
+        }
+      });
+    }
+
+    /* update confirm button label */
+    var btn = document.getElementById('btn-confirm-order');
+    if (btn) {
+      btn.textContent = isStripe
+        ? '\u{1F4B3} Payer ' + fmt(cartTotal(), 'EUR')
+        : '\u2705 Confirmer \u2014 ' + fmt(cartTotal(), 'KMF');
+    }
+  }
+
+  cashRadio.addEventListener('change', updatePaymentUI);
+  stripeRadio.addEventListener('change', updatePaymentUI);
+
   /* Check wallet balance on modal open */
   checkWalletBalance();
 
@@ -1856,8 +1944,10 @@ async function submitOrder(btn) {
 
   var fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
 
+  var isStripe = _orderData.payment_mode === 'stripe_eur';
+
   btn.disabled = true;
-  btn.textContent = '\u23f3 Envoi en cours\u2026';
+  btn.textContent = isStripe ? '\u23f3 Paiement en cours\u2026' : '\u23f3 Envoi en cours\u2026';
   btn.style.opacity = '0.7';
 
   try {
@@ -1887,12 +1977,46 @@ async function submitOrder(btn) {
     /* API retourne { order: {...}, discount_pct, discount_kmf, loyalty_label } */
     var orderData = apiResult.order || apiResult;
 
-    /* Step 3 : vider le panier */
+    /* Step 3 : Si Stripe — créer PaymentIntent et confirmer le paiement */
+    if (isStripe) {
+      if (!_stripe || !_stripeCard) {
+        throw new Error('Stripe non charg\u00e9. Rechargez la page et r\u00e9essayez.');
+      }
+
+      btn.textContent = '\u{1F512} S\u00e9curisation du paiement\u2026';
+
+      /* 3a : créer le PaymentIntent côté serveur */
+      var intentResult = await apiPost('/api/payments/stripe/intent', {
+        order_reference: orderData.reference
+      });
+
+      btn.textContent = '\u{1F4B3} Validation en cours\u2026';
+
+      /* 3b : confirmer le paiement avec la carte */
+      var stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
+        payment_method: {
+          card: _stripeCard,
+          billing_details: { name: clientName, email: clientEmail || undefined }
+        }
+      });
+
+      if (stripeResult.error) {
+        /* Paiement échoué — la commande reste en pending */
+        var errEl = document.getElementById('stripe-card-error');
+        if (errEl) { errEl.textContent = stripeResult.error.message; errEl.style.display = 'block'; }
+        throw new Error(stripeResult.error.message);
+      }
+
+      /* Paiement réussi ! */
+      toast('\u{1F389} Paiement accept\u00e9 !', 'success');
+    }
+
+    /* Step 4 : vider le panier */
     _cart = [];
     saveCart();
     renderCartBody();
 
-    /* Step 4 : \u00e9cran de succ\u00e8s */
+    /* Step 5 : \u00e9cran de succ\u00e8s */
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult);
     toast('Commande confirm\u00e9e !', 'success');
 
@@ -1900,7 +2024,9 @@ async function submitOrder(btn) {
     console.error('submitOrder:', e);
     toast(e.message || 'Erreur lors de la commande.', 'error');
     btn.disabled = false;
-    btn.textContent = '\u2705 Confirmer \u2014 ' + fmt(cartTotal(), 'KMF');
+    btn.textContent = isStripe
+      ? '\u{1F4B3} Payer ' + fmt(cartTotal(), 'EUR')
+      : '\u2705 Confirmer \u2014 ' + fmt(cartTotal(), 'KMF');
     btn.style.opacity = '1';
   }
 }
