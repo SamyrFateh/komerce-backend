@@ -258,8 +258,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   margin: 0 auto;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  height: 56px;
+  height: 48px;
   padding: 0 16px;
 }
 
@@ -585,7 +586,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   background: var(--card);
   border-bottom: 1px solid var(--border);
   padding: 0 16px;
-  display: flex;
+  display: none !important;
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
@@ -646,7 +647,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
    7. HERO SECTION — Compact Banner
    ══════════════════════════════════════════ */
 .hero-section {
-  padding: 20px 16px 16px;
+  padding: 14px 16px 10px;
   text-align: center;
   background: linear-gradient(160deg, var(--primary-light) 0%, #fff 100%);
   position: relative;
@@ -660,10 +661,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .hero-title {
   font-family: 'Poppins', sans-serif;
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   color: var(--text);
   line-height: 1.2;
-  margin-bottom: 6px;
+  margin-bottom: 0;
   animation: fadeInUp 0.6s var(--ease);
 }
 
@@ -688,6 +689,58 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 
 .hero-proverbe:hover {
   opacity: 1;
+}
+
+/* ── Hero Search Bar (Amazon-style) ── */
+.hero-search-bar {
+  margin: 10px auto 0;
+  max-width: 560px;
+  position: relative;
+  z-index: 100;
+}
+.hero-search-bar .nav-search-wrap {
+  background: #fff !important;
+  border: 2px solid var(--primary) !important;
+  border-radius: 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  margin: 0 !important;
+  max-width: 100%;
+}
+.hero-search-bar .nav-search-wrap:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 2px 20px rgba(212,157,68,0.18);
+}
+.hero-search-bar .nav-search-wrap input {
+  color: var(--text) !important;
+  font-size: 0.95rem;
+  padding: 11px 16px;
+}
+.hero-search-bar .nav-search-wrap input::placeholder {
+  color: var(--muted) !important;
+}
+.hero-search-bar .nav-search-wrap button {
+  color: var(--primary) !important;
+  padding: 10px 14px;
+}
+.hero-search-bar .nav-search-wrap button:hover {
+  color: var(--accent) !important;
+}
+
+/* ── Hero Trust Badges ── */
+.hero-badges {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.hero-badges span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
 }
 
 
@@ -3180,26 +3233,30 @@ body.modal-open .mobile-tabs {
     overflow-x: hidden;
   }
 
-  /* Nav compact */
+  /* Nav slim — logo + cart only */
   #main-nav .nav-inner {
-    height: 50px;
+    height: 42px;
     padding: 0 10px;
     gap: 6px;
   }
   .nav-brand {
     font-size: 1.1rem;
   }
-  .nav-search-wrap {
-    margin: 0 4px;
-    min-width: 0;
-  }
   .cart-avatar {
     width: 34px;
     height: 34px;
   }
-  .nav-search-wrap input {
-    font-size: 0.82rem;
-    padding: 7px 10px;
+
+  /* Hero search compact on mobile */
+  .hero-search-bar {
+    margin: 8px auto 0;
+  }
+  .hero-search-bar .nav-search-wrap input {
+    font-size: 0.88rem;
+    padding: 9px 12px;
+  }
+  .hero-search-bar .nav-search-wrap button {
+    padding: 8px 12px;
   }
 
   /* Stories compact & scrollable */
@@ -3228,15 +3285,21 @@ body.modal-open .mobile-tabs {
     display: none;
   }
 
-  /* Hero compact */
+  /* Hero compact mobile */
   .hero-section {
-    padding: 14px 16px 12px;
+    padding: 10px 12px 8px;
   }
   .hero-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
   .hero-proverbe {
-    font-size: 0.78rem;
+    font-size: 0.7rem;
+    margin-top: 2px;
+  }
+  .hero-badges {
+    font-size: 0.65rem;
+    gap: 8px;
+    margin-top: 5px;
   }
 
   /* Filter bar: horizontal scroll */
@@ -3353,13 +3416,18 @@ body.modal-open .mobile-tabs {
   }
 
   .hero-section {
-    padding: 10px 12px 8px;
+    padding: 8px 10px 6px;
   }
   .hero-title {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
   }
   .hero-proverbe {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
+  }
+  .hero-badges {
+    font-size: 0.6rem;
+    gap: 6px;
+    margin-top: 4px;
   }
 
   .card-overlay .card-price {
@@ -3399,20 +3467,20 @@ body.modal-open .mobile-tabs {
 /* ── Tiny mobile (≤380px) — iPhone SE ── */
 @media (max-width: 380px) {
   #main-nav .nav-inner {
-    height: 46px;
+    height: 40px;
     padding: 0 6px;
     gap: 4px;
   }
   .nav-brand {
     font-size: 1rem;
   }
-  .nav-search-wrap input {
-    font-size: 0.78rem;
-    padding: 6px 8px;
-  }
   .cart-avatar {
     width: 30px;
     height: 30px;
+  }
+  .hero-search-bar .nav-search-wrap input {
+    font-size: 0.82rem;
+    padding: 8px 10px;
   }
 
   .product-grid {
@@ -3470,9 +3538,9 @@ body.modal-open .mobile-tabs {
     display: none !important;
   }
 
-  /* Show tab nav on tablet+ */
+  /* Tab nav hidden — use stories + bottom tabs instead */
   .tab-nav {
-    display: flex;
+    display: none !important;
   }
 
   .product-grid {

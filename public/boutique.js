@@ -370,6 +370,9 @@ async function loadProducts() {
     renderProducts(_products);
     updateCartBadges();
     updateStoryPhotos(_products);
+    // Update hero product count badge
+    var countEl = document.getElementById('hero-product-count');
+    if (countEl) countEl.textContent = '📦 ' + _products.length + '+ produits';
   } catch (e) {
     console.error('loadProducts:', e);
     var track = $('product-track');
