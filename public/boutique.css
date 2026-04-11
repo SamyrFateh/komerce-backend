@@ -1221,6 +1221,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Modal Bottom Sheet on mobile */
@@ -1278,6 +1279,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 /* Prevent nav overlapping modal */
 body.modal-open {
   overflow: hidden;
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
 }
 
 body.modal-open #main-nav {

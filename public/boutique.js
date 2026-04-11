@@ -1056,6 +1056,9 @@ function openProductModal(p, fromSuggestion) {
   }
 
   $('product-modal').classList.add('open');
+  // Lock body scroll (iOS needs position:fixed + saved scroll)
+  window._savedScrollY = window.scrollY;
+  document.body.style.top = '-' + window._savedScrollY + 'px';
   document.body.style.overflow = 'hidden';
   document.body.classList.add('modal-open');
 }
@@ -1084,8 +1087,14 @@ function openProductModal(p, fromSuggestion) {
 
 function closeProductModal() {
   $('product-modal').classList.remove('open');
-  document.body.style.overflow = '';
   document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.top = '';
+  // Restore scroll position
+  if (typeof window._savedScrollY === 'number') {
+    window.scrollTo(0, window._savedScrollY);
+    window._savedScrollY = 0;
+  }
 }
 
 /* ──────────────────────────────────────
@@ -1211,6 +1220,8 @@ function openCartWithHighlight(productId) {
   }
   $('cart-overlay').classList.add('open');
   $('cart-drawer').classList.add('open');
+  window._savedScrollY = window.scrollY;
+  document.body.style.top = '-' + window._savedScrollY + 'px';
   document.body.style.overflow = 'hidden';
   document.body.classList.add('modal-open');
   setTimeout(function() {
@@ -1222,8 +1233,13 @@ function openCartWithHighlight(productId) {
 function closeCart() {
   $('cart-overlay').classList.remove('open');
   $('cart-drawer').classList.remove('open');
-  document.body.style.overflow = '';
   document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.top = '';
+  if (typeof window._savedScrollY === 'number') {
+    window.scrollTo(0, window._savedScrollY);
+    window._savedScrollY = 0;
+  }
 }
 
 function openCart() {
@@ -1231,6 +1247,8 @@ function openCart() {
   $('cart-header-title').textContent = 'Mon Panier (' + cartQty() + ')';
   $('cart-overlay').classList.add('open');
   $('cart-drawer').classList.add('open');
+  window._savedScrollY = window.scrollY;
+  document.body.style.top = '-' + window._savedScrollY + 'px';
   document.body.style.overflow = 'hidden';
   document.body.classList.add('modal-open');
 }
@@ -1407,14 +1425,21 @@ function checkoutCart() {
   _orderData = { is_self_pickup: true, payment_mode: 'cash_relais' };
   renderCheckout();
   $('order-modal').classList.add('open');
+  window._savedScrollY = window.scrollY;
+  document.body.style.top = '-' + window._savedScrollY + 'px';
   document.body.style.overflow = 'hidden';
   document.body.classList.add('modal-open');
 }
 
 function closeOrderModal() {
   $('order-modal').classList.remove('open');
-  document.body.style.overflow = '';
   document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.top = '';
+  if (typeof window._savedScrollY === 'number') {
+    window.scrollTo(0, window._savedScrollY);
+    window._savedScrollY = 0;
+  }
 }
 
 function renderCheckout() {
