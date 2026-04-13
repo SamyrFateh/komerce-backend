@@ -29,9 +29,10 @@ const { generateParcelRef } = require('../utils/reference');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
-// ── Auto-create tables ──────────────────────────────────────────────────────
+// ── Auto-create + migrate tables (handles both hub and relay schemas) ────────
 (async () => {
   try {
+    // Create tables if not exist
     await db.query(`
       CREATE TABLE IF NOT EXISTS order_incidents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,94 +54,119 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
         author_id UUID REFERENCES users(id),
         author_name TEXT,
         author_role TEXT,
-        text TEXT NOT NULL,
+        text TEXT NOT NULL DEFAULT '',
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_oi_order ON order_incidents(order_id);
       CREATE INDEX IF NOT EXISTS idx_oi_status ON order_incidents(status);
       CREATE INDEX IF NOT EXISTS idx_oc_order ON order_comments(order_id);
     `);
+    // Migrate: if table was created with old hub schema (severity/reported_by/content)
+    // Add missing columns defensively
+    const migrations = [
+      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'normal'",
+      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS reporter_id UUID",
+      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS reporter_name TEXT",
+      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS resolution_note TEXT",
+      "ALTER TABLE order_comments ADD COLUMN IF NOT EXISTS author_name TEXT",
+      "ALTER TABLE order_comments ADD COLUMN IF NOT EXISTS author_role TEXT",
+      "ALTER TABLE order_comments ADD COLUMN IF NOT EXISTS text TEXT DEFAULT ''",
+    ];
+    for (const m of migrations) {
+      try { await db.query(m); } catch(e) { /* column may already exist */ }
+    }
+    console.log('[HUB-DASH] Tables + migrations OK');
   } catch(e) { console.warn('Hub-dash tables init (non-fatal):', e.message); }
 })();
 
-// ── GET /dashboard — KPIs Hub ───────────────────────────────────────────────
+// ── GET /dashboard — KPIs Hub (défensif) ────────────────────────────────────
 router.get('/dashboard', ...hubAuth, async (req, res, next) => {
   try {
-    // Orders KPIs
-    const ordersKpi = await db.query(`
-      SELECT
-        COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')) AS to_prepare,
-        COUNT(*) FILTER (WHERE status = 'preparation') AS in_preparation,
-        COUNT(*) FILTER (WHERE status = 'shipped' AND updated_at >= CURRENT_DATE) AS shipped_today,
-        COUNT(*) FILTER (WHERE status = 'shipped') AS shipped_total,
-        COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')
-          AND created_at < NOW() - INTERVAL '48 hours') AS urgent,
-        COUNT(*) FILTER (WHERE payment_mode = 'cash_relais'
-          AND payment_status != 'paid'
-          AND status NOT IN ('cancelled','collected')) AS cash_pending,
-        COUNT(*) AS total_active
-      FROM orders
-      WHERE status NOT IN ('cancelled','collected','draft')
-    `);
+    // Each query wrapped individually to isolate errors
+    let ordersData = { to_prepare: 0, in_preparation: 0, shipped_today: 0, shipped_total: 0, urgent: 0, cash_pending: 0, total_active: 0, today: 0 };
+    let parcelsData = { draft: 0, preparation: 0, shipped: 0, in_transit: 0, at_relay: 0 };
+    let incidentsData = { open: 0, critical: 0 };
+    let stockData = { low_stock_count: 0 };
 
-    // Parcels KPIs
-    const parcelsKpi = await db.query(`
-      SELECT
-        COUNT(*) FILTER (WHERE status = 'draft') AS draft,
-        COUNT(*) FILTER (WHERE status = 'preparation') AS preparation,
-        COUNT(*) FILTER (WHERE status = 'shipped') AS shipped,
-        COUNT(*) FILTER (WHERE status = 'in_transit') AS in_transit,
-        COUNT(*) FILTER (WHERE status = 'available') AS at_relay
-      FROM parcels
-      WHERE status NOT IN ('cancelled')
-    `);
+    // 1. Orders KPIs
+    try {
+      const { rows: [r] } = await db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')) AS to_prepare,
+          COUNT(*) FILTER (WHERE status = 'preparation') AS in_preparation,
+          COUNT(*) FILTER (WHERE status = 'shipped' AND updated_at >= CURRENT_DATE) AS shipped_today,
+          COUNT(*) FILTER (WHERE status = 'shipped') AS shipped_total,
+          COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')
+            AND created_at < NOW() - INTERVAL '48 hours') AS urgent,
+          COUNT(*) FILTER (WHERE payment_mode = 'cash_relais'
+            AND payment_status != 'paid'
+            AND status NOT IN ('cancelled','collected')) AS cash_pending,
+          COUNT(*) AS total_active
+        FROM orders
+        WHERE status NOT IN ('cancelled','collected','draft')
+      `);
+      const { rows: [t] } = await db.query(`SELECT COUNT(*) AS c FROM orders WHERE created_at >= CURRENT_DATE`);
+      ordersData = {
+        to_prepare: parseInt(r.to_prepare) || 0,
+        in_preparation: parseInt(r.in_preparation) || 0,
+        shipped_today: parseInt(r.shipped_today) || 0,
+        shipped_total: parseInt(r.shipped_total) || 0,
+        urgent: parseInt(r.urgent) || 0,
+        cash_pending: parseInt(r.cash_pending) || 0,
+        total_active: parseInt(r.total_active) || 0,
+        today: parseInt(t.c) || 0
+      };
+    } catch(e) { console.error('[HUB-DASH] Orders KPI error:', e.message); }
 
-    // Incidents ouverts
-    const incidents = await db.query(`
-      SELECT COUNT(*) FILTER (WHERE status = 'open') AS open_incidents,
-             COUNT(*) FILTER (WHERE priority = 'urgent' AND status = 'open') AS critical
-      FROM order_incidents
-    `);
+    // 2. Parcels KPIs
+    try {
+      const { rows: [r] } = await db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'draft') AS draft,
+          COUNT(*) FILTER (WHERE status = 'preparation') AS preparation,
+          COUNT(*) FILTER (WHERE status = 'shipped') AS shipped,
+          COUNT(*) FILTER (WHERE status = 'in_transit') AS in_transit,
+          COUNT(*) FILTER (WHERE status = 'available') AS at_relay
+        FROM parcels
+      `);
+      parcelsData = {
+        draft: parseInt(r.draft) || 0,
+        preparation: parseInt(r.preparation) || 0,
+        shipped: parseInt(r.shipped) || 0,
+        in_transit: parseInt(r.in_transit) || 0,
+        at_relay: parseInt(r.at_relay) || 0
+      };
+    } catch(e) { console.error('[HUB-DASH] Parcels KPI error:', e.message); }
 
-    // Stock alerts
-    const stockAlerts = await db.query(`
-      SELECT COUNT(*) AS low_stock
-      FROM products
-      WHERE stock IS NOT NULL AND stock <= 2 AND stock >= 0
-    `);
+    // 3. Incidents
+    try {
+      const { rows: [r] } = await db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'open') AS open_count,
+          COUNT(*) FILTER (WHERE status = 'open'
+            AND (priority = 'urgent' OR priority = 'high')) AS critical_count
+        FROM order_incidents
+      `);
+      incidentsData = {
+        open: parseInt(r.open_count) || 0,
+        critical: parseInt(r.critical_count) || 0
+      };
+    } catch(e) { console.error('[HUB-DASH] Incidents error:', e.message); }
 
-    // Commandes du jour
-    const today = await db.query(`
-      SELECT COUNT(*) AS orders_today
-      FROM orders
-      WHERE created_at >= CURRENT_DATE
-    `);
+    // 4. Stock alerts
+    try {
+      const { rows: [r] } = await db.query(`
+        SELECT COUNT(*) AS c FROM products
+        WHERE stock IS NOT NULL AND stock <= 2 AND stock >= 0
+      `);
+      stockData = { low_stock_count: parseInt(r.c) || 0 };
+    } catch(e) { console.error('[HUB-DASH] Stock error:', e.message); }
 
     res.json({
-      orders: {
-        to_prepare: parseInt(ordersKpi.rows[0].to_prepare),
-        in_preparation: parseInt(ordersKpi.rows[0].in_preparation),
-        shipped_today: parseInt(ordersKpi.rows[0].shipped_today || 0),
-        shipped_total: parseInt(ordersKpi.rows[0].shipped_total),
-        urgent: parseInt(ordersKpi.rows[0].urgent),
-        cash_pending: parseInt(ordersKpi.rows[0].cash_pending),
-        total_active: parseInt(ordersKpi.rows[0].total_active),
-        today: parseInt(today.rows[0].orders_today)
-      },
-      parcels: {
-        draft: parseInt(parcelsKpi.rows[0].draft),
-        preparation: parseInt(parcelsKpi.rows[0].preparation),
-        shipped: parseInt(parcelsKpi.rows[0].shipped),
-        in_transit: parseInt(parcelsKpi.rows[0].in_transit),
-        at_relay: parseInt(parcelsKpi.rows[0].at_relay)
-      },
-      incidents: {
-        open: parseInt(incidents.rows[0].open_incidents),
-        critical: parseInt(incidents.rows[0].critical)
-      },
-      stock: {
-        low_stock_count: parseInt(stockAlerts.rows[0].low_stock)
-      }
+      orders: ordersData,
+      parcels: parcelsData,
+      incidents: incidentsData,
+      stock: stockData
     });
   } catch(e) { next(e); }
 });
