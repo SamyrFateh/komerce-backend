@@ -832,8 +832,7 @@ function initApp(){
 }
 // Boot
 (function(){
-  fetch('/api/auth/me',{credentials:'include'}).then(r=>{if(r.ok){_isLoggedIn=true;initApp()}})
-  else{document.getElementById('loginScreen').style.display='flex'}
+  fetch('/api/auth/me',{credentials:'include'}).then(r=>{if(r.ok){_isLoggedIn=true;initApp()}else{document.getElementById('loginScreen').style.display='flex'}}).catch(()=>{document.getElementById('loginScreen').style.display='flex'})
   // Enter key on login
   document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
   document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus()});
