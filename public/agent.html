@@ -591,6 +591,8 @@ async function processScan(scanCode) {
       ${res.sms_triggered ? '<br>📱 SMS envoyé' : ''}
     </div>`;
     toast(`${res.order_reference} scanné ✅`, 'success');
+    // Refresh cached data in background
+    setTimeout(() => { api.dashPipeline().then(d => cacheOrders(d.pipeline || {})).catch(()=>{}); }, 500);
   } catch (err) {
     resultEl.innerHTML = `<div class="scan-result error">❌ ${err.message}</div>`;
     toast(err.message, 'error');
@@ -694,6 +696,7 @@ async function onCollectQrSuccess(decoded) {
       📍 ${res.relais}
     </div>`;
     toast(`${res.reference} remis à ${res.recipient} ✅`, 'success');
+    setTimeout(() => { api.dashPipeline().then(d => cacheOrders(d.pipeline || {})).catch(()=>{}); }, 500);
   } catch (err) {
     resultEl.innerHTML = `<div class="scan-result error">❌ ${err.message}</div>`;
     toast(err.message, 'error');
@@ -716,8 +719,9 @@ async function doCollect() {
       📍 ${res.relais}
     </div>`;
     toast(`${res.reference} remis ✅`, 'success');
-    // Clear digits
+    // Clear digits + refresh cache
     digits.forEach(d => d.value = '');
+    setTimeout(() => { api.dashPipeline().then(d => cacheOrders(d.pipeline || {})).catch(()=>{}); }, 500);
   } catch (err) {
     resultEl.innerHTML = `<div class="scan-result error">❌ ${err.message}</div>`;
     toast(err.message, 'error');
@@ -819,10 +823,24 @@ async function advanceFromModal(id, newStatus, ref, btn) {
   try {
     await api.advanceOrder(id, newStatus);
     toast(`${ref} → ${STATUS_LABELS[newStatus]} ✅`, 'success');
-    // Close modal and refresh
+    // Close modal
     document.querySelector('.modal-backdrop')?.remove();
-    if (currentScreen === 'dashboard') loadDashboard();
-    if (currentScreen === 'orders') loadOrders();
+    // Small delay to let DB commit, then refresh with loading indicator
+    await new Promise(r => setTimeout(r, 300));
+    const screenEl = document.getElementById('screen-content');
+    if (screenEl) {
+      const oldOpacity = screenEl.style.opacity;
+      screenEl.style.opacity = '0.5';
+      screenEl.style.transition = 'opacity 0.2s';
+      try {
+        if (currentScreen === 'dashboard') await loadDashboard();
+        else if (currentScreen === 'orders') await loadOrders();
+        else { await loadDashboard(); await loadOrders(); }
+      } finally {
+        const el2 = document.getElementById('screen-content');
+        if (el2) { el2.style.opacity = '1'; }
+      }
+    }
   } catch (err) {
     toast(err.message, 'error');
     btn.disabled = false;
