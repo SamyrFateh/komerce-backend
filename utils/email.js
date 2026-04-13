@@ -1,25 +1,12 @@
-/*  utils/email.js — Brevo SMTP via nodemailer
+/*  utils/email.js — Brevo REST API v3
     Envoie des emails transactionnels pour chaque étape de commande.
-    Variables d'environnement requises :
-      BREVO_SMTP_USER   (ex: a7f64f001@smtp-brevo.com)
-      BREVO_SMTP_PASS   (la clé xsmtpsib-...)
-      BREVO_SENDER_EMAIL (ex: fatehsamyr@gmail.com)
-      APP_URL
+    Variable requise : BREVO_API_KEY (commence par xkeysib-)
+    Optionnel : BREVO_SENDER_EMAIL, APP_URL
 */
-const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_SMTP_USER || 'a7f64f001@smtp-brevo.com',
-    pass: process.env.BREVO_SMTP_PASS || process.env.BREVO_API_KEY || ''
-  }
-});
-
-const SENDER = process.env.BREVO_SENDER_EMAIL || 'fatehsamyr@gmail.com';
-const APP    = process.env.APP_URL || 'https://komerce-backend-production.up.railway.app';
+const BREVO_KEY = process.env.BREVO_API_KEY || '';
+const SENDER    = process.env.BREVO_SENDER_EMAIL || 'fatehsamyr@gmail.com';
+const APP       = process.env.APP_URL || 'https://komerce-backend-production.up.railway.app';
 
 /* ─── template wrapper ──────────────────────────────────── */
 function wrap(title, body) {
@@ -48,134 +35,131 @@ function btn(url, label) {
 </td></tr></table>`;
 }
 
-/* ─── template par statut ──────────────────────────────── */
+/* ─── templates par statut ──────────────────────────────── */
 const templates = {
-  confirmed: (order) => ({
-    subject: `✅ Commande ${order.reference} confirmée`,
+  confirmed: (o) => ({
+    subject: `✅ Commande ${o.reference} confirmée`,
     html: wrap('Commande confirmée', `
-      <h2 style="color:#1a3a5c;margin:0 0 16px">Merci ${order.customer_name || 'cher client'} !</h2>
+      <h2 style="color:#1a3a5c;margin:0 0 16px">Merci ${o.customer_name || 'cher client'} !</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre commande <strong>${order.reference}</strong> a été confirmée et sera bientôt préparée à Dubai.
+        Votre commande <strong>${o.reference}</strong> a été confirmée et sera bientôt préparée à Dubai.
       </p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
-        <tr style="background:#f8f4ee"><td style="padding:12px;font-weight:600">Référence</td><td style="padding:12px">${order.reference}</td></tr>
-        <tr><td style="padding:12px;font-weight:600">Montant</td><td style="padding:12px">${(order.total_kmf||order.total||0).toLocaleString()} KMF</td></tr>
-        <tr style="background:#f8f4ee"><td style="padding:12px;font-weight:600">Paiement</td><td style="padding:12px">${order.payment_mode === 'cash_relais' ? '💰 Cash au relais' : '💳 Stripe'}</td></tr>
-        <tr><td style="padding:12px;font-weight:600">Relais</td><td style="padding:12px">${order.relay_name || order.relay_code || '—'}</td></tr>
+        <tr style="background:#f8f4ee"><td style="padding:12px;font-weight:600">Référence</td><td style="padding:12px">${o.reference}</td></tr>
+        <tr><td style="padding:12px;font-weight:600">Montant</td><td style="padding:12px">${(o.total_kmf||o.total||0).toLocaleString()} KMF</td></tr>
+        <tr style="background:#f8f4ee"><td style="padding:12px;font-weight:600">Paiement</td><td style="padding:12px">${o.payment_mode==='cash_relais'?'💰 Cash au relais':'💳 Carte'}</td></tr>
+        <tr><td style="padding:12px;font-weight:600">Relais</td><td style="padding:12px">${o.relay_name||o.relay_code||'—'}</td></tr>
       </table>
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Suivre ma commande')}
-      <p style="color:#888;font-size:13px;text-align:center">Conservez votre référence : <strong>${order.reference}</strong></p>
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Suivre ma commande')}
+      <p style="color:#888;font-size:13px;text-align:center">Conservez votre référence : <strong>${o.reference}</strong></p>
     `)
   }),
 
-  ordered: (order) => ({
-    subject: `🛍️ ${order.reference} — Approvisionnement lancé`,
+  ordered: (o) => ({
+    subject: `🛍️ ${o.reference} — Approvisionnement lancé`,
     html: wrap('Commande fournisseur passée', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">C'est en route ! 🛍️</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Nous avons passé commande auprès de nos fournisseurs à Dubai pour votre commande <strong>${order.reference}</strong>.
+        Nous avons passé commande auprès de nos fournisseurs à Dubai pour votre commande <strong>${o.reference}</strong>.
       </p>
       <p style="font-size:15px;color:#555">Prochaine étape : préparation et emballage.</p>
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Suivre ma commande')}
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Suivre ma commande')}
     `)
   }),
 
-  preparation: (order) => ({
-    subject: `📦 ${order.reference} — En préparation à Dubai`,
+  preparation: (o) => ({
+    subject: `📦 ${o.reference} — En préparation à Dubai`,
     html: wrap('En préparation', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">Votre colis se prépare ! 📦</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre commande <strong>${order.reference}</strong> est en cours de préparation dans notre entrepôt à Dubai.
+        Votre commande <strong>${o.reference}</strong> est en cours de préparation dans notre entrepôt à Dubai.
       </p>
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Suivre ma commande')}
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Suivre ma commande')}
     `)
   }),
 
-  shipped: (order) => ({
-    subject: `✈️ ${order.reference} — Remise au transitaire`,
+  shipped: (o) => ({
+    subject: `✈️ ${o.reference} — Remise au transitaire`,
     html: wrap('Expédiée !', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">C'est parti ! ✈️</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre colis <strong>${order.reference}</strong> a été remis au transitaire à Dubai. Direction les Comores !
+        Votre colis <strong>${o.reference}</strong> a été remis au transitaire à Dubai. Direction les Comores !
       </p>
       <p style="font-size:15px;color:#555">Délai estimé : 3 à 5 semaines par voie maritime 🚢</p>
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Suivre ma commande')}
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Suivre ma commande')}
     `)
   }),
 
-  in_transit: (order) => ({
-    subject: `🚢 ${order.reference} — En route vers les Comores`,
+  in_transit: (o) => ({
+    subject: `🚢 ${o.reference} — En route vers les Comores`,
     html: wrap('En transit maritime', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">Sur les flots ! 🚢</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre colis <strong>${order.reference}</strong> navigue vers les Comores.
+        Votre colis <strong>${o.reference}</strong> navigue vers les Comores.
         Nous vous préviendrons dès qu'il arrive au point relais.
       </p>
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Suivre ma commande')}
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Suivre ma commande')}
     `)
   }),
 
-  available: (order) => ({
-    subject: `🎉 ${order.reference} — Disponible au relais !`,
+  available: (o) => ({
+    subject: `🎉 ${o.reference} — Disponible au relais !`,
     html: wrap('Colis disponible !', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">Votre colis vous attend ! 🎉</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre colis <strong>${order.reference}</strong> est disponible au point relais
-        <strong>${order.relay_name || order.relay_code || ''}</strong>.
+        Votre colis <strong>${o.reference}</strong> est disponible au point relais
+        <strong>${o.relay_name||o.relay_code||''}</strong>.
       </p>
-      ${order.cash_ref_code ? `<div style="background:#fff3e0;border:2px dashed #e07a5f;border-radius:12px;padding:16px;text-align:center;margin:16px 0">
+      ${o.cash_ref_code ? `<div style="background:#fff3e0;border:2px dashed #e07a5f;border-radius:12px;padding:16px;text-align:center;margin:16px 0">
         <p style="margin:0 0 8px;font-size:14px;color:#888">Code de retrait</p>
-        <p style="margin:0;font-size:32px;font-weight:700;color:#1a3a5c;letter-spacing:4px">${order.cash_ref_code}</p>
+        <p style="margin:0;font-size:32px;font-weight:700;color:#1a3a5c;letter-spacing:4px">${o.cash_ref_code}</p>
       </div>` : ''}
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Voir QR de retrait')}
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Voir QR de retrait')}
       <p style="color:#e07a5f;font-size:14px;text-align:center;font-weight:600">
-        ${order.payment_mode === 'cash_relais' ? '💰 Pensez à apporter le montant exact en espèces' : '✅ Paiement déjà effectué'}
+        ${o.payment_mode==='cash_relais'?'💰 Pensez à apporter le montant exact en espèces':'✅ Paiement déjà effectué'}
       </p>
     `)
   }),
 
-  collected: (order) => ({
-    subject: `✅ ${order.reference} — Colis récupéré !`,
+  collected: (o) => ({
+    subject: `✅ ${o.reference} — Colis récupéré !`,
     html: wrap('Mission accomplie !', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">Merci et à bientôt ! 🎉</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre colis <strong>${order.reference}</strong> a bien été récupéré.
-        Merci pour votre confiance !
+        Votre colis <strong>${o.reference}</strong> a bien été récupéré. Merci pour votre confiance !
       </p>
-      ${btn(APP+'/Komerce_Boutique.html', '🛍️ Continuer mes achats')}
-      <p style="color:#888;font-size:13px;text-align:center">Une question ? Contactez-nous sur WhatsApp</p>
+      ${btn(APP+'/Komerce_Boutique.html','🛍️ Continuer mes achats')}
     `)
   }),
 
-  cancelled: (order) => ({
-    subject: `❌ ${order.reference} — Commande annulée`,
+  cancelled: (o) => ({
+    subject: `❌ ${o.reference} — Commande annulée`,
     html: wrap('Commande annulée', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">Commande annulée</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre commande <strong>${order.reference}</strong> a été annulée.
-        ${order.payment_status === 'paid' ? 'Un remboursement sera traité sous 48h.' : ''}
+        Votre commande <strong>${o.reference}</strong> a été annulée.
+        ${o.payment_status==='paid'?'Un remboursement sera traité sous 48h.':''}
       </p>
-      ${btn(APP+'/Komerce_Boutique.html', '🛍️ Retour à la boutique')}
+      ${btn(APP+'/Komerce_Boutique.html','🛍️ Retour à la boutique')}
     `)
   }),
 
-  cash_reminder: (order) => ({
-    subject: `⏰ ${order.reference} — Rappel paiement en attente`,
+  cash_reminder: (o) => ({
+    subject: `⏰ ${o.reference} — Rappel paiement en attente`,
     html: wrap('Rappel paiement', `
       <h2 style="color:#1a3a5c;margin:0 0 16px">Paiement en attente ⏰</h2>
       <p style="font-size:16px;color:#333;line-height:1.6">
-        Votre colis <strong>${order.reference}</strong> vous attend au relais
-        <strong>${order.relay_name || ''}</strong>.
+        Votre colis <strong>${o.reference}</strong> vous attend au relais <strong>${o.relay_name||''}</strong>.
       </p>
       <p style="font-size:15px;color:#e07a5f;font-weight:600">
-        Pensez à le récupérer et régler le montant de ${(order.total_kmf||order.total||0).toLocaleString()} KMF.
+        Pensez à le récupérer et régler le montant de ${(o.total_kmf||o.total||0).toLocaleString()} KMF.
       </p>
-      ${btn(APP+'/suivi.html?ref='+order.reference, '📍 Voir les détails')}
+      ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Voir les détails')}
     `)
   })
 };
 
-/* ─── Envoi ──────────────────────────────────────────── */
+/* ─── Envoi via API REST v3 ─────────────────────────────── */
 async function sendOrderEmail(order, status) {
   if (!order.customer_email) {
     console.log(`[EMAIL] Pas d'email client pour ${order.reference} — skip`);
@@ -188,36 +172,42 @@ async function sendOrderEmail(order, status) {
     return { skipped: true, reason: 'no_template' };
   }
 
+  if (!BREVO_KEY) {
+    console.log(`[EMAIL] ⚠️ BREVO_API_KEY non configurée — email non envoyé`);
+    return { skipped: true, reason: 'no_api_key' };
+  }
+
   const { subject, html } = templateFn(order);
 
   try {
-    const info = await transporter.sendMail({
-      from: `"Komerce" <${SENDER}>`,
-      to: order.customer_email,
-      subject,
-      html
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': BREVO_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'Komerce', email: SENDER },
+        to: [{ email: order.customer_email, name: order.customer_name || 'Client' }],
+        subject,
+        htmlContent: html
+      })
     });
-    console.log(`[EMAIL] ✅ ${status} → ${order.customer_email} (${order.reference}) msgId=${info.messageId}`);
-    return { sent: true, messageId: info.messageId };
+
+    const data = await res.json();
+
+    if (data.messageId) {
+      console.log(`[EMAIL] ✅ ${status} → ${order.customer_email} (${order.reference}) msgId=${data.messageId}`);
+      return { sent: true, messageId: data.messageId };
+    } else {
+      console.error(`[EMAIL] ❌ Erreur Brevo:`, JSON.stringify(data));
+      return { sent: false, error: data.message || JSON.stringify(data) };
+    }
   } catch (err) {
     console.error(`[EMAIL] ❌ Erreur envoi ${status} → ${order.customer_email}:`, err.message);
     return { sent: false, error: err.message };
   }
 }
 
-/* ─── Test connexion au démarrage ───────────────────── */
-async function verifyConnection() {
-  try {
-    await transporter.verify();
-    console.log('[EMAIL] ✅ Connexion SMTP Brevo OK');
-    return true;
-  } catch (err) {
-    console.error('[EMAIL] ❌ Connexion SMTP Brevo échouée:', err.message);
-    return false;
-  }
-}
-
-// Vérifier au chargement du module
-verifyConnection();
-
-module.exports = { sendOrderEmail, verifyConnection, templates };
+module.exports = { sendOrderEmail, templates };
