@@ -58,7 +58,7 @@ function isValidPhone(phone) {
  * @param {string} order_id  - UUID commande associée (peut être null)
  */
 async function sendSMS(to, message, type, order_id = null) {
-  // ← P1 FIX : valider le numéro avant tout
+  // Valider le numéro avant tout
   if (!isValidPhone(to)) {
     console.warn(`SMS ignoré — numéro invalide : ${to}`);
     return { success: false, error: 'invalid_phone' };
@@ -164,12 +164,10 @@ async function processCashRelaisReminders() {
   );
 
   for (const order of h36) {
-    // ← P1 FIX : Transaction pour atomicité annulation + restauration stock
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
-      // Annuler la commande — requête paramétrée pour cancel_reason
       await client.query(
         `UPDATE orders SET
            status        = 'cancelled',
@@ -180,14 +178,12 @@ async function processCashRelaisReminders() {
         [order.id, `Non-paiement cash relais apres ${cashTimeoutHours}h`]
       );
 
-      // Historique — requête paramétrée pour note
       await client.query(
         `INSERT INTO order_status_history (order_id, status, note)
          VALUES ($1, 'cancelled', $2)`,
         [order.id, `Annulation automatique H+${cashTimeoutHours} - non paiement`]
       );
 
-      // Restaurer le stock
       const { rows: items } = await client.query(
         'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
         [order.id]
@@ -203,12 +199,11 @@ async function processCashRelaisReminders() {
     } catch (txErr) {
       await client.query('ROLLBACK');
       console.error(`H+36 annulation échouée pour order ${order.id}:`, txErr.message);
-      continue; // Passer à la commande suivante, ne pas crasher le cron
+      continue;
     } finally {
       client.release();
     }
 
-    // SMS hors transaction (non critique — on ne rollback pas pour un SMS raté)
     if (order.user_phone) {
       await sendSMS(
         order.user_phone,
@@ -225,76 +220,56 @@ async function processCashRelaisReminders() {
 // ── Phase 4 — Templates SMS Expédition Partielle ──────────────────────────
 
 const PARTIAL_SHIP_SMS = {
-  /**
-   * Envoyé quand une expédition partielle est créée.
-   * @param {string} ref - Référence commande parent
-   * @param {number} shipped_count - Nb d'articles expédiés
-   * @param {number} backorder_count - Nb d'articles en backorder
-   */
   partial_created: (ref, shipped_count, backorder_count) =>
     `Komerce : Commande ${ref} — expedition partielle : ${shipped_count} article(s) expedie(s), ${backorder_count} en attente. Vous serez notifie pour chaque expedition.`,
 
-  /**
-   * Mise à jour sur un backorder (date estimée connue).
-   * @param {string} ref - Référence sous-commande backorder
-   * @param {string} estimated_date - Date estimée format lisible (ex: "15/05/2026")
-   */
   backorder_update: (ref, estimated_date) =>
     `Komerce : Backorder ${ref} — date d'expedition estimee : ${estimated_date}. Nous faisons le maximum pour accelerer.`,
 
-  /**
-   * Backorder annulé avec crédit/remboursement.
-   * @param {string} ref - Référence sous-commande backorder
-   * @param {string} credit_amount - Montant crédité/remboursé (ex: "15 000 KMF" ou "30.50 EUR")
-   */
   backorder_cancelled: (ref, credit_amount) =>
     `Komerce : Backorder ${ref} annule. ${credit_amount} credite sur votre compte. Merci de votre comprehension.`,
 
-  /**
-   * Sous-commande expédiée.
-   * @param {string} ref - Référence sous-commande
-   * @param {string} tracking - Référence de suivi (optionnel)
-   */
   sub_order_shipped: (ref, tracking) =>
     `Komerce : Sous-commande ${ref} expediee.${tracking ? ` Suivi : ${tracking}` : ''} Arrivee estimee 3-5 semaines.`,
 
-  /**
-   * Sous-commande disponible au relais.
-   * @param {string} ref - Référence sous-commande
-   * @param {string} relais - Nom du point relais
-   */
   sub_order_available: (ref, relais) =>
     `Komerce : Sous-commande ${ref} disponible au relais ${relais || ''}. Venez la recuperer !`,
 };
 
-// ── Phase 4 — Rappels automatiques backorder ──────────────────────────────
+// ── Rappels automatiques backorder (modèle parcel-first) ─────────────────────
 //
 // Appelé par un cron job toutes les 6 heures.
-// Détecte les backorders expirés et propose l'annulation au client par SMS.
+// Détecte les colis backorder expirés et propose l'annulation au client par SMS.
+// NOTE: sub_orders remplacé par parcels (type='backorder') — modèle parcel-first v10.15
 
 async function processBackorderReminders() {
   try {
     const backorderMaxDays = await getRuleNumber('BACKORDER_MAX_DAYS', 45);
 
-    // Trouver les backorders expirés non encore notifiés
+    // Migration douce — ajouter backorder_reminder_sent sur parcels si absente
+    await db.query(`
+      ALTER TABLE parcels ADD COLUMN IF NOT EXISTS backorder_reminder_sent BOOLEAN DEFAULT FALSE
+    `).catch(() => {}); // silencieux si table non disponible
+
+    // Trouver les colis backorder expirés non encore notifiés
     const { rows: expiredBackorders } = await db.query(
       `SELECT
-         so.id AS sub_order_id,
-         so.tracking_ref,
-         so.estimated_date,
-         so.parent_order_id,
-         o.reference AS order_reference,
+         p.id                            AS sub_order_id,
+         COALESCE(p.label, p.id::text)   AS tracking_ref,
+         p.eta                            AS estimated_date,
+         p.order_id                       AS parent_order_id,
+         o.reference                      AS order_reference,
          o.user_id,
-         u.phone AS user_phone
-       FROM sub_orders so
-       JOIN orders o ON o.id = so.parent_order_id
+         u.phone                          AS user_phone
+       FROM parcels p
+       JOIN orders o ON o.id = p.order_id
        LEFT JOIN users u ON u.id = o.user_id
-       WHERE so.type = 'backorder'
-         AND so.status = 'preparation'
-         AND so.backorder_reminder_sent = FALSE
+       WHERE p.type = 'backorder'
+         AND p.status NOT IN ('collected', 'cancelled')
+         AND p.backorder_reminder_sent = FALSE
          AND (
-           so.estimated_date < NOW()
-           OR so.created_at < NOW() - INTERVAL '1 day' * $1
+           (p.eta IS NOT NULL AND p.eta < NOW())
+           OR p.created_at < NOW() - INTERVAL '1 day' * $1
          )`,
       [backorderMaxDays]
     );
@@ -309,9 +284,9 @@ async function processBackorderReminders() {
         sentCount++;
       }
 
-      // Marquer comme notifié pour ne pas renvoyer le SMS
+      // Marquer comme notifié pour éviter les doublons
       await db.query(
-        `UPDATE sub_orders SET backorder_reminder_sent = TRUE, updated_at = NOW()
+        `UPDATE parcels SET backorder_reminder_sent = TRUE, updated_at = NOW()
          WHERE id = $1`,
         [bo.sub_order_id]
       );
