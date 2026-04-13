@@ -224,14 +224,18 @@ body{
 
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
 .k-cats{
-  display:flex;flex-wrap:wrap;gap:5px;
+  display:flex;gap:6px;
   padding:6px 12px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
 }
+.k-cats::-webkit-scrollbar{display:none}
 .k-chip{
   flex-shrink:0;
-  padding:5px 10px;
+  padding:6px 12px;
   border-radius:50px;
-  font-size:11px;font-weight:600;
+  font-size:12px;font-weight:600;
   background:var(--white);
   color:var(--text);
   box-shadow:var(--shadow-sm);
@@ -271,7 +275,7 @@ body{
   background:var(--sand-dark);
 }
 .k-card-img{
-  width:100%;aspect-ratio:4/3;
+  width:100%;aspect-ratio:3/2;
   object-fit:cover;
   transition:transform .3s;
 }
