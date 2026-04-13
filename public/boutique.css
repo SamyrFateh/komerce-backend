@@ -43,7 +43,7 @@ ul,ol{list-style:none}
   --radius-lg:20px;
   /* Spacing */
   --header-h:48px;
-  --bnav-h:64px;
+  --bnav-h:50px;
   /* Ease */
   --ease:cubic-bezier(.22,1,.36,1);
 }
@@ -64,7 +64,7 @@ body{
   position:sticky;top:0;z-index:100;
   background:#f0f5e6;
   padding:0 12px;
-  height:var(--header-h);
+  height:44px;
   box-shadow:0 2px 8px rgba(0,0,0,.06);
 }
 .k-header-inner{
@@ -153,9 +153,7 @@ body{
 .k-hero-tag{display:none}
 
 /* ── SECTIONS ──────────────────────────────────────────── */
-.k-section{padding:6px 10px 2px}
-.k-section-head{
-  display:flex;align-items:center;justify-content:space-between;
+.k-section{padding:6px 10px;align-items:center;justify-content:space-between;
   margin-bottom:8px;
 }
 .k-section-head h2{font-size:13px;font-weight:700}
@@ -168,7 +166,7 @@ body{
 
 /* ── PROMO RAIL ────────────────────────────────────────── */
 .k-promo-rail{
-  display:flex;gap:6px;
+  display:flex;gap:10px;
   overflow-x:hidden;
   padding-bottom:4px;
   scrollbar-width:none;
@@ -188,7 +186,7 @@ body{
 }
 
 .k-promo-card{
-  flex:0 0 100px;scroll-snap-align:start;
+  flex: 0 0 130px;scroll-snap-align:start;
   background:none;
   border-radius:0;
   overflow:visible;
@@ -213,10 +211,10 @@ body{
   box-shadow:0 1px 4px rgba(0,0,0,.15);
 }
 .k-promo-card-info{padding:2px 2px 0;background:none}
-.k-promo-card-name{font-size:10px;font-weight:600;line-height:1.3;color:var(--text);
+.k-promo-card-name{font-size:11px;font-weight:600;line-height:1.3;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .k-promo-card-price{
-  font-size:10px;font-weight:700;color:var(--coral);margin-top:2px;display:block;line-height:1.2;
+  font-size:12px;font-weight:700;color:var(--coral);margin-top:2px;display:block;line-height:1.2;
 }
 .k-promo-card-old{
   font-size:10px;color:var(--text-light);text-decoration:line-through;margin-left:0;display:block;line-height:1.2;
@@ -257,8 +255,8 @@ body{
 .k-grid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
-  gap:8px;
-  padding:4px 10px 12px;
+  gap:6px;
+  padding:4px 8px 12px;
 }
 
 .k-card{
@@ -322,7 +320,7 @@ body{
 }
 .k-card-add-count.show{display:flex}
 
-.k-card-info{padding:6px 8px}
+.k-card-info{padding:4px 6px}
 .k-card-name{
   font-size:10px;font-weight:600;line-height:1.2;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
@@ -332,7 +330,7 @@ body{
   display:flex;align-items:center;justify-content:space-between;
   margin-top:6px;
 }
-.k-card-price{font-size:12px;font-weight:700;color:var(--ocean)}
+.k-card-price{font-size:11px;font-weight:700;color:var(--ocean)}
 .k-card-emoji{font-size:16px}
 
 /* ── LOADING ───────────────────────────────────────────── */
@@ -854,19 +852,11 @@ body{
 /* ── RESPONSIVE ────────────────────────────────────────── */
 @media(min-width:480px){
   .k-grid{grid-template-columns:repeat(3,1fr)}
-  .k-promo-card{flex:0 0 120px}
+  .k-promo-card{flex: 0 0 130px}
   .k-hero img{height:160px}
 }
 @media(min-width:768px){
-  .k-grid{grid-template-columns:repeat(3,1fr);gap:16px}
-  .k-promo-card{flex:0 0 180px}
-  .k-hero img{height:200px}
-  .k-section{padding:20px 24px 12px}
-  .k-cats{padding:12px 24px}
-  .k-grid{padding:8px 24px 24px}
-}
-@media(min-width:1024px){
-  .k-grid{grid-template-columns:repeat(4,1fr);gap:20px}
+  .k-grid{grid-template-columns:repeat(3,1fr);gap:6px;gap:20px}
   .k-bnav{display:none}
   body{padding-bottom:0}
   .k-hero img{height:240px;object-fit:contain;background:var(--ocean)}
@@ -912,13 +902,8 @@ body{
 /* Very small screens */
 @media(max-width:380px){
   .k-logo-text{display:none}
-  .k-promo-card{flex:0 0 90px}
-  .k-grid{gap:10px;padding:4px 10px 16px}
-}
-
-/* ── Panier tressé icon on cards ── */
-.k-card-add{
-  background:none!important;
+  .k-promo-card{flex: 0 0 130px}
+  .k-grid{gap:6px;padding:4px 8px 12px;
   border:none;
   padding:0;
   position:relative;
