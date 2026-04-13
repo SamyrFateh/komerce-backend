@@ -189,6 +189,35 @@ CT.html.advanceBtn = function(id, ref, status) {
     'title="→ ' + label + '">▶ ' + label + '</button>';
 };
 
+/* WhatsApp link helpers */
+CT.html.whatsappLink = function(phone, ref, status) {
+  var baseUrl = window.location.origin;
+  var suiviUrl = baseUrl + '/suivi.html?ref=' + ref;
+  var messages = {
+    confirmed: '✅ Commande Komerce ' + ref + ' confirmée !\nSuivez-la ici : ' + suiviUrl,
+    ordered: '📋 Commande ' + ref + ' en approvisionnement\n' + suiviUrl,
+    preparation: '🛍️ Commande ' + ref + ' en préparation à Dubai\n' + suiviUrl,
+    shipped: '📦 Colis ' + ref + ' expédié !\n' + suiviUrl,
+    in_transit: '🚢 Colis ' + ref + ' en route vers les Comores\n' + suiviUrl,
+    available: '🎉 Colis ' + ref + ' disponible au relais !\nRetrait : ' + suiviUrl,
+    collected: '✅ Colis ' + ref + ' récupéré ! Merci 🙏'
+  };
+  var msg = messages[status] || 'Commande Komerce ' + ref + '\n' + suiviUrl;
+  var cleanPhone = (phone || '').replace(/[^0-9+]/g, '');
+  if (cleanPhone) return 'https://wa.me/' + cleanPhone.replace('+', '') + '?text=' + encodeURIComponent(msg);
+  return 'https://wa.me/?text=' + encodeURIComponent(msg);
+};
+CT.html.whatsappBtn = function(phone, ref, status, compact) {
+  var link = CT.html.whatsappLink(phone, ref, status);
+  if (compact) return '<a href="' + link + '" target="_blank" rel="noopener" ' +
+    'style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#25d366;color:#fff;border-radius:6px;font-size:.7rem;font-weight:700;text-decoration:none" ' +
+    'title="WhatsApp">📱</a>';
+  return '<a href="' + link + '" target="_blank" rel="noopener" ' +
+    'style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:.75rem;font-weight:700;text-decoration:none" ' +
+    'title="Envoyer WhatsApp">📱 WA</a>';
+};
+
+
 /* ===============================================================
    🧠 VIEW: GLOBAL (CEO / PILOTAGE)
    =============================================================== */
@@ -343,14 +372,15 @@ CT.views.hub = {
       });
       if (hubOrders.length > 0) {
         actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📋 File de travail (' + hubOrders.length + ')</div>';
-        var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Action'];
+        var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Action', '📱'];
         var rows = hubOrders.slice(0, 30).map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
             CT.html.badge(o._status),
             o.client_name || o.recipient_name || '—',
             CT.html.formatKMF(o.total_kmf),
-            CT.html.advanceBtn(o.id, o.reference, o._status)
+            CT.html.advanceBtn(o.id, o.reference, o._status),
+            CT.html.whatsappBtn(o.client_phone, o.reference, o._status, true)
           ];
         });
         actionContent += CT.html.table(headers, rows);
@@ -447,7 +477,7 @@ CT.views.transit = {
       });
       if (transitOrders.length > 0) {
         actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📋 Colis en mouvement (' + transitOrders.length + ')</div>';
-        var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Créée le', 'Action'];
+        var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Créée le', 'Action', '📱'];
         var rows = transitOrders.slice(0, 30).map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
@@ -455,7 +485,8 @@ CT.views.transit = {
             o.client_name || o.recipient_name || '—',
             CT.html.formatKMF(o.total_kmf),
             CT.html.formatDate(o.created_at),
-            CT.html.advanceBtn(o.id, o.reference, o._status)
+            CT.html.advanceBtn(o.id, o.reference, o._status),
+            CT.html.whatsappBtn(o.client_phone, o.reference, o._status, true)
           ];
         });
         actionContent += CT.html.table(headers, rows);
@@ -531,13 +562,14 @@ CT.views.relais = {
       // Table à remettre
       if (aRemettre.length > 0) {
         actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📦 Colis à remettre aux clients</div>';
-        var h1 = ['Réf.', 'Client', 'Tél.', 'Montant', 'Relais', 'Attente'];
+        var h1 = ['Réf.', 'Client', 'Tél.', 'Montant', 'Relais', 'Attente', '📱'];
         var r1 = aRemettre.map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
             o.client_nom || '—', o.client_phone || '—',
             CT.html.formatKMF(o.total_kmf), o.relais_nom || '—',
-            '<span style="color:' + ((o.heures_attente||0) > 48 ? 'var(--ct-red)' : 'var(--ct-text)') + ';font-weight:600">' + (o.heures_attente || 0) + 'h</span>'
+            '<span style="color:' + ((o.heures_attente||0) > 48 ? 'var(--ct-red)' : 'var(--ct-text)') + ';font-weight:600">' + (o.heures_attente || 0) + 'h</span>',
+            CT.html.whatsappBtn(o.client_phone, o.reference, 'available', false)
           ];
         });
         actionContent += CT.html.table(h1, r1);

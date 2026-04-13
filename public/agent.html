@@ -233,6 +233,23 @@ function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 }
 
+function whatsappLink(phone, ref, status) {
+  const baseUrl = window.location.origin;
+  const suiviUrl = baseUrl + '/suivi.html?ref=' + ref;
+  const messages = {
+    confirmed: '✅ Commande Komerce ' + ref + ' confirmée !\nSuivez-la ici : ' + suiviUrl,
+    preparation: '🛍️ Commande ' + ref + ' en préparation à Dubai\n' + suiviUrl,
+    shipped: '📦 Colis ' + ref + ' expédié !\n' + suiviUrl,
+    in_transit: '🚢 Colis ' + ref + ' en route vers les Comores\n' + suiviUrl,
+    available: '🎉 Colis ' + ref + ' disponible au relais !\nRetrait : ' + suiviUrl,
+    collected: '✅ Colis ' + ref + ' récupéré ! Merci 🙏'
+  };
+  const msg = messages[status] || 'Commande Komerce ' + ref + '\n' + suiviUrl;
+  const cleanPhone = (phone || '').replace(/[^0-9+]/g, '');
+  if (cleanPhone) return 'https://wa.me/' + cleanPhone.replace('+', '') + '?text=' + encodeURIComponent(msg);
+  return 'https://wa.me/?text=' + encodeURIComponent(msg);
+}
+
 /* ── Auth ─────────────────────────────────────────── */
 async function checkAuth() {
   try {
@@ -804,6 +821,17 @@ async function showOrderDetail(ref) {
           ▶ Passer à "${STATUS_LABELS[ns] || ns}"
         </button>
       </div>` : ''}
+
+      <div class="advance-row" style="margin-top:8px">
+        <a href="${whatsappLink(o.client_phone || o.phone, o.reference, o.status)}" target="_blank" rel="noopener"
+          class="advance-btn" style="background:#25d366;color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:10px;font-weight:700;font-size:.85rem">
+          📱 WhatsApp client
+        </a>
+        <a href="${window.location.origin}/suivi.html?ref=${o.reference}" target="_blank" rel="noopener"
+          class="advance-btn" style="background:var(--ocean);color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:10px;font-weight:700;font-size:.85rem">
+          📍 Page suivi
+        </a>
+      </div>
 
       <div class="card" style="margin-top:12px">
         <div class="card-title">Parcours</div>

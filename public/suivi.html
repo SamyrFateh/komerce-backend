@@ -115,6 +115,13 @@ body{min-height:100dvh;display:flex;flex-direction:column}
 
 .footer{text-align:center;padding:16px;font-size:.75rem;color:var(--gray);background:var(--white);border-top:1px solid rgba(26,58,92,.06)}
 .footer a{color:var(--coral);text-decoration:none;font-weight:600}
+.share-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:#25d366;color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:10px;transition:transform .15s,box-shadow .15s}
+.share-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,211,102,.3)}
+.share-btn .wa-logo{font-size:1.2rem}
+.share-row{display:flex;gap:8px;margin-bottom:14px}
+.share-row .share-btn{margin-bottom:0}
+.share-row .copy-btn{flex-shrink:0;padding:14px 18px;background:var(--ocean);color:var(--white);border:none;border-radius:14px;font-size:1rem;cursor:pointer;transition:transform .15s}
+.share-row .copy-btn:hover{transform:translateY(-1px)}
 
 @media(min-width:600px){
   .search-section{padding:24px}
@@ -301,12 +308,39 @@ function renderTracking(data) {
     html += '</div></div></div>';
   }
 
+  // Share buttons
+  var shareUrl = window.location.origin + '/suivi.html?ref=' + data.reference;
+  var statusStep2 = STEPS.find(function(s) { return s.key === data.status; });
+  var shareMsg = '📦 Ma commande Komerce ' + data.reference + ' — ' + (statusStep2 ? statusStep2.label : data.status) + '\n👉 ' + shareUrl;
+  var waShareLink = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
+
+  html += '<div class="share-row">';
+  html += '<a href="' + waShareLink + '" target="_blank" rel="noopener" class="share-btn" style="flex:1"><span class="wa-logo">📱</span> Partager sur WhatsApp</a>';
+  html += '<button class="copy-btn" onclick="copyLink()" title="Copier le lien">📋</button>';
+  html += '</div>';
+
   // Auto-refresh
   if (['collected','cancelled','refunded'].indexOf(data.status) === -1) {
     html += '<div class="refresh-bar">Actualisation automatique • <span onclick="trackOrder()">Rafraîchir maintenant</span></div>';
   }
 
   content.innerHTML = html;
+}
+
+function copyLink() {
+  var url = window.location.origin + '/suivi.html?ref=' + currentRef;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      var btn = document.querySelector('.copy-btn');
+      if (btn) { btn.textContent = '✅'; setTimeout(function() { btn.textContent = '📋'; }, 2000); }
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    var btn = document.querySelector('.copy-btn');
+    if (btn) { btn.textContent = '✅'; setTimeout(function() { btn.textContent = '📋'; }, 2000); }
+  }
 }
 </script>
 </body>
