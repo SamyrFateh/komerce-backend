@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<script>
+// Force SW update + cache purge (one-time)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){r.update()});
+  });
+  // Also clear all caches
+  if(window.caches){
+    caches.keys().then(function(names){
+      names.forEach(function(n){
+        if(n.indexOf('komerce-v10')===-1) caches.delete(n);
+      });
+    });
+  }
+}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
