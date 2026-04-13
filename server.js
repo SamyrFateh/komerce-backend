@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.13 (Relay dashboard + suivi.html public)
+ * KOMERCE — Serveur API v10.14 (Hub dashboard + Relay dashboard + suivi.html public)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
  * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
  * Changelog v10.12: F34 stock constraint garantit admin au démarrage
  */
@@ -174,6 +175,7 @@ const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
 const walletRouter     = require('./routes/wallet');
 const relayDashRouter  = require('./routes/relay-dashboard');
+const hubDashRouter    = require('./routes/hub-dashboard');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -188,6 +190,7 @@ app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
+app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);
@@ -218,7 +221,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.13',
+      version:       '10.14',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -303,7 +306,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.13 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.14 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
