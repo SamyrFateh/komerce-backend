@@ -1,17 +1,24 @@
 /**
- * KOMERCE — Notification Service
+ * KOMERCE — Notification Service v2
  *
- * Wrapper unifié sur utils/sms.js et utils/email.js.
+ * Wrapper unifié : SMS (Africa's Talking) + Email (Brevo) + WhatsApp (liens)
  * Toutes les notifications sortantes passent par ce module.
+ *
+ * v2.0 — Ajout emails Brevo + liens WhatsApp sur TOUS les changements de statut
  */
 
 'use strict';
 
 const { sendSMS }               = require('../utils/sms');
-const { sendOrderConfirmation } = require('../utils/email');
+const {
+  sendOrderConfirmation,
+  sendStatusEmail,
+  getWhatsAppLink,
+  sendCashReminder,
+  getCashReminderWA,
+} = require('../utils/email');
 
-// SMS déclenchés par changement de statut — pipeline MVP 7 étapes (v9.0)
-// Seuls les statuts visibles client reçoivent un SMS
+// SMS templates (inchangés depuis v1)
 const STATUS_SMS = {
   ordered:     (ref) => `Komerce : Commande ${ref} lancée ! Votre article est en cours de traitement.`,
   preparation: (ref) => `Komerce : Commande ${ref} — colis reçu au Hub, contrôle qualité en cours.`,
@@ -22,81 +29,103 @@ const STATUS_SMS = {
 };
 
 const PARCEL_SMS = {
-  shipped:   (ref) =>
-    `Komerce : Colis ${ref} expedie. Vous serez notifie a l'arrivee.`,
-  available: (ref, relais) =>
-    `Komerce : Colis ${ref} disponible au relais ${relais || ''}. Venez le recuperer !`,
-  collected: (ref) =>
-    `Komerce : Colis ${ref} remis. Merci ! 🎉`,
+  shipped:   (ref) => `Komerce : Colis ${ref} expedie. Vous serez notifie a l'arrivee.`,
+  available: (ref, relais) => `Komerce : Colis ${ref} disponible au relais ${relais || ''}. Venez le recuperer !`,
+  collected: (ref) => `Komerce : Colis ${ref} remis. Merci ! 🎉`,
 };
 
 /**
- * Envoie le SMS correspondant au changement de statut d'une commande.
- * @param {Object} order  - Commande avec { id, reference, user_phone, relais_name }
+ * Envoie SMS + Email + génère lien WhatsApp pour un changement de statut.
+ * @param {Object} order  - Commande { id, reference, user_phone, user_email, relais_name, customer_name, ... }
  * @param {string} status - Nouveau statut
+ * @returns {Object|undefined} { email, whatsapp_link } si applicable
  */
 function notifyStatusChange(order, status) {
+  const results = {};
+
+  // 1. SMS (existant — Africa's Talking ou mode dev)
   const smsPhone = order.user_phone;
   if (smsPhone && STATUS_SMS[status]) {
     sendSMS(smsPhone, STATUS_SMS[status](order.reference, order.relais_name), status, order.id)
-      .catch(console.error);
+      .catch(e => console.error('[NOTIF-SMS]', e.message));
   }
+
+  // 2. Email via Brevo (nouveau)
+  sendStatusEmail(order, status)
+    .then(r => {
+      if (r && r.sent) console.log(`[NOTIF-EMAIL] ✅ ${status} → ${order.user_email || order.customer_email}`);
+    })
+    .catch(e => console.error('[NOTIF-EMAIL]', e.message));
+
+  // 3. WhatsApp link (nouveau — log pour CT/Agent)
+  const waLink = getWhatsAppLink(order, status);
+  if (waLink) {
+    console.log(`[NOTIF-WA] 📱 Lien WhatsApp ${status} : ${waLink.substring(0, 80)}...`);
+    results.whatsapp_link = waLink;
+  }
+
+  return results;
 }
 
 /**
- * Envoie SMS + email lors de la création d'une commande.
- * @param {Object}      order       - Commande (id, reference, total_kmf, payment_mode, cash_ref_code)
- * @param {string|null} phone       - Téléphone du client
- * @param {string|null} email       - Email du client
- * @param {Array}       emailItems  - Articles pour l'email [{name, qty, price_kmf}]
- * @param {Object|null} relais      - Relais {name, address}
- * @param {string|null} cashSmsText - Texte SMS custom (cash_relais)
+ * Notifications lors de la création d'une commande.
  */
 function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText) {
+  // SMS
   if (phone) {
-    const smsText  = cashSmsText || STATUS_SMS.ordered(order.reference);
-    const smsType  = order.payment_mode === 'cash_relais' ? 'cash_relais_confirm' : 'confirmation';
-    sendSMS(phone, smsText, smsType, order.id).catch(console.error);
+    const smsText = cashSmsText || STATUS_SMS.ordered(order.reference);
+    const smsType = order.payment_mode === 'cash_relais' ? 'cash_relais_confirm' : 'confirmation';
+    sendSMS(phone, smsText, smsType, order.id).catch(e => console.error('[NOTIF-SMS]', e.message));
   }
+
+  // Email via Brevo (template amélioré)
   if (email) {
     sendOrderConfirmation(
       { reference: order.reference, total_kmf: order.total_kmf, relais_name: relais?.name },
       email,
       emailItems
-    ).catch(err => console.error('[EMAIL] Order confirmation error:', err.message));
+    ).catch(e => console.error('[NOTIF-EMAIL]', e.message));
   }
 }
 
 /**
- * Envoie un SMS lors du changement de statut d'un colis.
- * @param {Object} parcel - Colis avec { reference, user_phone, relais_name, parent_id }
- * @param {string} status - Nouveau statut
+ * Notifications pour les colis (parcels).
  */
 function notifyParcelStatus(parcel, status) {
   if (parcel.user_phone && PARCEL_SMS[status]) {
-    const smsText = PARCEL_SMS[status](parcel.reference, parcel.relais_name);
-    sendSMS(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(console.error);
+    sendSMS(parcel.user_phone, PARCEL_SMS[status](parcel.reference, parcel.relais_name), `parcel_${status}`, parcel.parent_id)
+      .catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 }
 
 /**
- * Envoie un SMS d'annulation au client.
- * @param {Object}      order      - Commande avec { id, reference, user_phone }
- * @param {Object|null} refundInfo - { method, amountEur, amountKmf } ou null si non payée
+ * Notification d'annulation.
  */
 function notifyCancellation(order, refundInfo) {
-  const userPhone = order.user_phone;
-  if (!userPhone) return;
+  const phone = order.user_phone;
 
-  let smsText;
-  if (!refundInfo) {
-    smsText = `Komerce : Commande ${order.reference} annulee. Aucun paiement n'a ete preleve.`;
-  } else if (refundInfo.method === 'stripe') {
-    smsText = `Komerce : Commande ${order.reference} annulee. Remboursement de ${refundInfo.amountEur.toFixed(2)}EUR en cours (2-5 jours ouvres Stripe).`;
-  } else {
-    smsText = `Komerce : Commande ${order.reference} annulee. Credit boutique de ${Number(refundInfo.amountKmf).toLocaleString('fr-FR')} KMF credite sur votre compte.`;
+  // SMS annulation
+  if (phone) {
+    let smsText;
+    if (!refundInfo) {
+      smsText = `Komerce : Commande ${order.reference} annulee. Aucun paiement n'a ete preleve.`;
+    } else if (refundInfo.method === 'stripe') {
+      smsText = `Komerce : Commande ${order.reference} annulee. Remboursement de ${refundInfo.amountEur.toFixed(2)}EUR en cours (2-5 jours ouvres Stripe).`;
+    } else {
+      smsText = `Komerce : Commande ${order.reference} annulee. Credit boutique de ${Number(refundInfo.amountKmf).toLocaleString('fr-FR')} KMF credite.`;
+    }
+    sendSMS(phone, smsText, 'cancellation', order.id).catch(e => console.error('[NOTIF-SMS]', e.message));
   }
-  sendSMS(userPhone, smsText, 'cancellation', order.id).catch(console.error);
+
+  // Email annulation via Brevo
+  let refund_info_text = null;
+  if (refundInfo) {
+    refund_info_text = refundInfo.method === 'stripe'
+      ? `Remboursement de ${refundInfo.amountEur.toFixed(2)}€ en cours (2-5 jours ouvrés Stripe).`
+      : `Crédit boutique de ${Number(refundInfo.amountKmf).toLocaleString('fr-FR')} KMF crédité sur votre compte.`;
+  }
+  sendStatusEmail({ ...order, refund_info: refund_info_text }, 'cancelled')
+    .catch(e => console.error('[NOTIF-EMAIL]', e.message));
 }
 
 module.exports = {
