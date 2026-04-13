@@ -1,5 +1,5 @@
 /* Komerce Service Worker v9.0 — Refacto tri-fichiers (HTML + CSS + JS) */
-const CACHE = 'komerce-v9';
+const CACHE = 'komerce-v10';
 
 /* Fichiers à pré-cacher au install */
 const SHELL = [
@@ -16,7 +16,7 @@ self.addEventListener('install', (e) => {
       Promise.all(
         SHELL.map((url) =>
           cache.add(url).catch((err) => {
-            console.warn('[SW v9] Cache skip:', url, err.message || err);
+            console.warn('[SW v10] Cache skip:', url, err.message || err);
           })
         )
       )
@@ -30,7 +30,7 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.filter((k) => k !== CACHE).map((k) => {
-          console.log('[SW v9] Purging old cache:', k);
+          console.log('[SW v10] Purging old cache:', k);
           return caches.delete(k);
         })
       )
