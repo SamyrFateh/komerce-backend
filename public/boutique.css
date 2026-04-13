@@ -153,10 +153,10 @@ body{
 .k-hero-tag{display:none}
 
 /* ── SECTIONS ──────────────────────────────────────────── */
-.k-section{padding:16px 12px 8px}
+.k-section{padding:10px 12px 6px}
 .k-section-head{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:12px;
+  margin-bottom:8px;
 }
 .k-section-head h2{font-size:17px;font-weight:700}
 .k-see-all{
@@ -177,7 +177,7 @@ body{
 .k-promo-rail::-webkit-scrollbar{display:none}
 
 .k-promo-card{
-  flex:0 0 140px;scroll-snap-align:start;
+  flex:0 0 110px;scroll-snap-align:start;
   background:var(--white);
   border-radius:var(--radius);
   overflow:hidden;
@@ -188,7 +188,7 @@ body{
 }
 .k-promo-card:active{transform:scale(.97)}
 .k-promo-card-img{
-  width:100%;height:140px;
+  width:100%;height:100px;
   object-fit:cover;
   background:var(--sand-dark);
 }
@@ -199,10 +199,10 @@ body{
   padding:2px 8px;border-radius:50px;
 }
 .k-promo-card-info{padding:8px 10px}
-.k-promo-card-name{font-size:12px;font-weight:600;line-height:1.3;color:var(--text);
+.k-promo-card-name{font-size:11px;font-weight:600;line-height:1.3;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .k-promo-card-price{
-  font-size:14px;font-weight:800;color:var(--coral);margin-top:4px;
+  font-size:12px;font-weight:800;color:var(--coral);margin-top:4px;
 }
 .k-promo-card-old{
   font-size:11px;color:var(--text-light);text-decoration:line-through;margin-left:4px;
