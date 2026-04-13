@@ -108,6 +108,8 @@
     relais: [],
     orderData: { is_self_pickup: true, payment_mode: 'cash_relais' },
     walletBalance: 0,
+    page: 0,
+    pageSize: 16,
   };
 
   /* ── DOM REFS ──────────────────────────────────────────── */
@@ -205,6 +207,7 @@
 
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
   async function loadProducts() {
+    showSkeletons(16);
     dom.loading.classList.add('show');
     try {
       const data = await K.products.list();
@@ -273,15 +276,14 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              <img src="/images/panier_tresse.png" class="k-card-basket-icon" width="28" height="28" alt="">
-              <span class="k-card-add-count${qty > 0 ? ' show' : ''}">${qty}</span>
+              <span class="k-card-add-plus">${qty > 0 ? qty : '+'}</span>
             </button>
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${p.name}</div>
             <div class="k-card-bottom">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-              <span class="k-card-emoji">${p.emoji || ''}</span>
+              ${p.promo_pct ? \`<span class="k-card-old-price">\${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>\` : ''}
             </div>
           </div>
         </div>`;
@@ -1415,6 +1417,126 @@
     });
   }
 
+  /* ── INFINITE SCROLL ───────────────────────────────────── */
+  function setupInfiniteScroll() {
+    // Créer le sentinel + spinner
+    const sentinel = document.createElement('div');
+    sentinel.id = 'k-scroll-sentinel';
+    const spinner = document.createElement('div');
+    spinner.id = 'k-load-more-spinner';
+    spinner.className = 'k-load-more-spinner';
+    spinner.innerHTML = '<div class="k-spinner" style="width:22px;height:22px"></div>';
+    const catalogSec = document.getElementById('k-catalog-section');
+    if (catalogSec) {
+      catalogSec.appendChild(spinner);
+      catalogSec.appendChild(sentinel);
+    }
+    // Observer
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        spinner.classList.add('show');
+        setTimeout(() => appendNextPage(), 300);
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(sentinel);
+  }
+
+  /* ── VUE FAVORIS ────────────────────────────────────────── */
+  function renderFavView() {
+    let el = document.getElementById('k-fav-view');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'k-fav-view'; el.className = 'k-fav-view';
+      document.getElementById('k-catalog-section').after(el);
+    }
+    const favProducts = state.products.filter(p => state.favs.includes(p.id));
+    if (!favProducts.length) {
+      el.innerHTML = `<h2>❤️ Favoris</h2>
+        <div class="k-fav-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <p>Aucun favori pour l'instant</p>
+          <p style="font-size:12px">Appuie sur 🤍 sur un produit pour l'ajouter ici</p>
+        </div>`;
+    } else {
+      el.innerHTML = `<h2>❤️ Favoris <span style="font-size:14px;font-weight:400;color:var(--text-muted)">${favProducts.length} produit${favProducts.length > 1 ? 's' : ''}</span></h2>
+        <div class="k-grid" id="k-fav-grid">${favProducts.map(buildCardHTML).join('')}</div>`;
+      const favGrid = document.getElementById('k-fav-grid');
+      if (favGrid) bindCardEvents(favGrid);
+    }
+  }
+
+  /* ── VUE SUIVI ───────────────────────────────────────────── */
+  function renderTrackView() {
+    let el = document.getElementById('k-track-view');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'k-track-view'; el.className = 'k-track-view';
+      const favEl = document.getElementById('k-fav-view') || document.getElementById('k-catalog-section');
+      favEl.after(el);
+    }
+    el.innerHTML = `<h2>📦 Suivi de commande</h2>
+      <div class="k-track-form">
+        <label>Numéro de commande</label>
+        <input class="k-track-input" id="k-track-input" type="text" placeholder="ex: KMR-2025-0042" autocomplete="off">
+        <button class="k-track-btn" id="k-track-submit-btn">Rechercher</button>
+      </div>
+      <div class="k-track-steps" id="k-track-steps" style="display:none">
+        <div class="k-track-step">
+          <div class="k-track-step-dot done">✓</div>
+          <div class="k-track-step-info">
+            <div class="k-track-step-label">Commande reçue</div>
+            <div class="k-track-step-sub">Votre commande a bien été enregistrée</div>
+          </div>
+        </div>
+        <div class="k-track-step">
+          <div class="k-track-step-dot current">⏳</div>
+          <div class="k-track-step-info">
+            <div class="k-track-step-label">En cours de préparation</div>
+            <div class="k-track-step-sub">Nous préparons votre colis</div>
+          </div>
+        </div>
+        <div class="k-track-step">
+          <div class="k-track-step-dot">🚚</div>
+          <div class="k-track-step-info">
+            <div class="k-track-step-label">En livraison</div>
+            <div class="k-track-step-sub">—</div>
+          </div>
+        </div>
+        <div class="k-track-step">
+          <div class="k-track-step-dot">🏠</div>
+          <div class="k-track-step-info">
+            <div class="k-track-step-label">Livré</div>
+            <div class="k-track-step-sub">—</div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('k-track-submit-btn').addEventListener('click', () => {
+      const val = document.getElementById('k-track-input').value.trim();
+      if (!val) { showToast('Entrez un numéro de commande'); return; }
+      const steps = document.getElementById('k-track-steps');
+      steps.style.display = 'block';
+      showToast('📦 Statut chargé pour ' + val);
+    });
+  }
+
+  /* ── VUE SWITCHER ───────────────────────────────────────── */
+  function switchView(tab) {
+    const catalog = document.getElementById('k-catalog-section');
+    const favView = document.getElementById('k-fav-view');
+    const trackView = document.getElementById('k-track-view');
+    // Show catalog by default
+    if (catalog) catalog.style.display = tab === 'shop' ? '' : 'none';
+    if (favView) favView.classList.toggle('show', tab === 'fav');
+    if (trackView) trackView.classList.toggle('show', tab === 'track');
+    // Also hide promo section when not on shop
+    const promoSec = document.getElementById('k-promos-section');
+    if (promoSec) promoSec.style.display = tab === 'shop' ? '' : 'none';
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   /* ── BOTTOM NAV ─────────────────────────────────────────── */
   function setupBnav() {
     $$('.k-bnav-item').forEach(item => {
@@ -1423,9 +1545,9 @@
         $$('.k-bnav-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
         if (tab === 'cart') { openCart(); return; }
-        if (tab === 'shop') window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (tab === 'fav') showToast('❤️ ' + state.favs.length + ' favoris');
-        if (tab === 'track') showToast('📦 Suivi bientôt disponible');
+        if (tab === 'fav') { renderFavView(); switchView('fav'); return; }
+        if (tab === 'track') { renderTrackView(); switchView('track'); return; }
+        switchView('shop');
       });
     });
   }
@@ -1462,6 +1584,7 @@
     setupDrawer();
     setupBnav();
     setupSeeAll();
+    setupInfiniteScroll();
     loadProducts();
     loadRelais();
   }
