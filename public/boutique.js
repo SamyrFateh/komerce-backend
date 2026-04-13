@@ -13,6 +13,18 @@
     return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
   }
 
+  function promoImgUrl(url, w) {
+    if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
+    // e_background_removal = détourage IA Cloudinary (add-on Background Removal)
+    const base = url.indexOf('f_auto') !== -1
+      ? url  // déjà transformé, on injecte en tête
+      : url.replace('/upload/', '/upload/e_background_removal,f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
+    if (url.indexOf('f_auto') !== -1) {
+      return url.replace('/upload/', '/upload/e_background_removal,');
+    }
+    return base;
+  }
+
   function detectCurrency() {
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
@@ -311,7 +323,7 @@
       const oldPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
       return `
         <div class="k-promo-card" data-id="${p.id}">
-          <img class="k-promo-card-img" src="${optimizeImgUrl(p.image_url, 300)}" alt="${p.name}" loading="lazy">
+          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
           <span class="k-promo-badge">-${p.promo_pct}%</span>
           <div class="k-promo-card-info">
             <div class="k-promo-card-name">${p.name}</div>
@@ -1076,6 +1088,8 @@
   function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
+    // Supprimer tout bouton confirm précédent hors scroll area
+    body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     dom.orderTitle.textContent = '🛒 Commander';
 
     const od = state.orderData;
@@ -1161,7 +1175,8 @@
     confirmBtn.id = 'btn-confirm-order';
     confirmBtn.className = 'ck-confirm-btn';
     confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
-    body.appendChild(confirmBtn);
+    // Bouton confirm HORS du scroll area → toujours visible en bas du modal
+    body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
     function updatePaymentUI() {
