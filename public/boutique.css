@@ -915,3 +915,61 @@ body{
   .k-promo-card{flex:0 0 90px}
   .k-grid{gap:10px;padding:4px 10px 16px}
 }
+
+/* ── Panier tressé icon on cards ── */
+.k-card-add{
+  background:none!important;
+  border:none;
+  padding:0;
+  position:relative;
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:transform .2s;
+}
+.k-card-add:active{transform:scale(.85)}
+.k-card-basket-icon{
+  width:32px;height:32px;
+  object-fit:contain;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.k-card-add:active .k-card-basket-icon{transform:scale(.8)}
+.k-card-add.in-cart .k-card-basket-icon{transform:scale(1.1)}
+
+/* Floating qty badge on basket */
+.k-card-add-count{
+  position:absolute!important;
+  top:-4px;right:-4px;
+  min-width:18px;height:18px;
+  background:var(--green);
+  color:#fff;
+  border-radius:50%;
+  font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  transform:scale(0);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+  line-height:1;
+  padding:0 4px;
+}
+.k-card-add-count.show{transform:scale(1)}
+
+/* Bottom nav basket icon */
+.k-bnav-basket{
+  width:24px;height:24px;
+  object-fit:contain;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.1));
+}
+.k-bnav-item.active .k-bnav-basket{
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.1)) brightness(0.9);
+  transform:scale(1.1);
+}
+
+/* Modal add button with basket */
+.k-add-cart-btn img{
+  width:22px;height:22px;
+  object-fit:contain;
+  margin-right:6px;
+}

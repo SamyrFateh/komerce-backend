@@ -273,7 +273,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              +
+              <img src="/images/panier_tresse.png" class="k-card-basket-icon" width="28" height="28" alt="">
               <span class="k-card-add-count${qty > 0 ? ' show' : ''}">${qty}</span>
             </button>
           </div>
