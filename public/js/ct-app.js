@@ -1,13 +1,14 @@
 /* ===================================================================
-   Komerce Control Tower — ct-app.js v3.0
+   Komerce Control Tower — ct-app.js v3.1
    Router, sidebar, toast system, init, login.
+   + Vue Commandes ajoutée dans la sidebar
    =================================================================== */
 window.CT = window.CT || {};
 
 CT.currentView = null;
 
 /* ---------------------------------------------------------------
-   Sidebar items — 5 dashboards métier + Scénarios
+   Sidebar items — 6 dashboards métier + Scénarios
    --------------------------------------------------------------- */
 CT.SIDEBAR_ITEMS = [
   { id: 'global',    icon: '🧠', label: 'Global',      section: 'dashboards' },
@@ -15,6 +16,7 @@ CT.SIDEBAR_ITEMS = [
   { id: 'transit',   icon: '🚢', label: 'Transit',      section: 'dashboards' },
   { id: 'relais',    icon: '🏝️', label: 'Relais',       section: 'dashboards' },
   { id: 'finance',   icon: '💰', label: 'Finance',      section: 'dashboards' },
+  { id: 'commandes', icon: '📋', label: 'Commandes',    section: 'dashboards' },
   { id: 'scenarios', icon: '🎮', label: 'Scénarios',    section: 'tools' }
 ];
 

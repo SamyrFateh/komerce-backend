@@ -1,6 +1,7 @@
 /* ===================================================================
-   Komerce Control Tower — ct-views.js v3.0
+   Komerce Control Tower — ct-views.js v3.1
    5 Dashboards métier : Global / Hub / Transit / Relais / Finance
+   + Vue Commandes : toutes les entrées, statut optimiste inline
    Layout : 🔝 ACTION (haut) + 🔻 INFO/ALERTES (bas)
    =================================================================== */
 window.CT = window.CT || {};
@@ -55,18 +56,203 @@ CT.html.NEXT_STATUS = {
   confirmed: 'ordered', ordered: 'preparation', preparation: 'shipped',
   shipped: 'in_transit', in_transit: 'available', available: 'collected'
 };
+
+/* Full next-status map (including cancel) */
+CT.html.ALL_NEXT = {
+  new:         ['confirmed', 'cancelled'],
+  confirmed:   ['ordered', 'cancelled'],
+  ordered:     ['preparation', 'cancelled'],
+  preparation: ['shipped', 'cancelled'],
+  shipped:     ['in_transit', 'cancelled'],
+  in_transit:  ['available', 'cancelled'],
+  available:   ['collected', 'cancelled'],
+  collected:   [],
+  cancelled:   ['refunded'],
+  refunded:    []
+};
+
+/* Hex colors for status chips */
+CT.html.STATUS_HEX = {
+  new: '#3b82f6', confirmed: '#10b981', ordered: '#06b6d4',
+  preparation: '#8b5cf6', shipped: '#f59e0b', in_transit: '#f97316',
+  available: '#eab308', collected: '#059669', delivered: '#059669',
+  cancelled: '#ef4444', refunded: '#94a3b8'
+};
+
+/* Age formatter */
+CT.html._age = function(dateStr) {
+  if (!dateStr) return '—';
+  var diff = Date.now() - new Date(dateStr).getTime();
+  var h = Math.floor(diff / 3600000);
+  if (h < 1) return '<1h';
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'j';
+};
+
+/* ---------------------------------------------------------------
+   Optimistic status chip — clickable badge with dropdown
+   --------------------------------------------------------------- */
+CT.html.statusChip = function(id, ref, status) {
+  var nexts = CT.html.ALL_NEXT[status] || [];
+  var chipId = 'chip-' + id;
+  if (nexts.length === 0) {
+    return '<span id="' + chipId + '" class="ct-badge ' + status + '">' + CT.html.statusLabel(status) + '</span>';
+  }
+  return '<span id="' + chipId + '" class="ct-badge ' + status + '" style="cursor:pointer;user-select:none" ' +
+    'onclick="CT.html._openStatusMenu(event,\'' + id + '\',\'' + (ref||'') + '\',\'' + status + '\')">' +
+    CT.html.statusLabel(status) + ' ▾</span>';
+};
+
+CT.html._openStatusMenu = function(e, id, ref, status) {
+  e.stopPropagation();
+  document.querySelectorAll('.ct-status-menu').forEach(function(m) { m.remove(); });
+  var nexts = CT.html.ALL_NEXT[status] || [];
+  if (nexts.length === 0) return;
+
+  var menu = document.createElement('div');
+  menu.className = 'ct-status-menu';
+  menu.style.cssText = [
+    'position:fixed;z-index:9999',
+    'background:var(--ct-bg2,#1e293b)',
+    'border:1px solid var(--ct-border,rgba(255,255,255,.1))',
+    'border-radius:10px;padding:6px',
+    'box-shadow:0 8px 24px rgba(0,0,0,.3)',
+    'min-width:160px'
+  ].join(';');
+
+  nexts.forEach(function(next) {
+    var item = document.createElement('div');
+    var hex = CT.html.STATUS_HEX[next] || '#94a3b8';
+    item.style.cssText = 'padding:8px 12px;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:8px;color:' + hex;
+    item.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + hex + ';flex-shrink:0"></span>→ ' + CT.html.statusLabel(next);
+    item.addEventListener('mouseover', function() { item.style.background = 'rgba(255,255,255,.06)'; });
+    item.addEventListener('mouseout', function() { item.style.background = ''; });
+    item.addEventListener('click', function(ev) {
+      ev.stopPropagation();
+      menu.remove();
+      CT.html._doStatusChange(id, ref, status, next);
+    });
+    menu.appendChild(item);
+  });
+
+  var chip = document.getElementById('chip-' + id);
+  if (chip) {
+    var rect = chip.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.left = rect.left + 'px';
+  }
+  document.body.appendChild(menu);
+
+  setTimeout(function() {
+    function closer(e2) {
+      if (!menu.contains(e2.target)) {
+        menu.remove();
+        document.removeEventListener('click', closer);
+      }
+    }
+    document.addEventListener('click', closer);
+  }, 0);
+};
+
+CT.html._doStatusChange = async function(id, ref, currentStatus, nextStatus) {
+  var chip = document.getElementById('chip-' + id);
+  var nextsNew = CT.html.ALL_NEXT[nextStatus] || [];
+
+  // Optimistic update
+  if (chip) {
+    chip.className = 'ct-badge ' + nextStatus;
+    chip.style.opacity = '0.6';
+    chip.innerHTML = CT.html.statusLabel(nextStatus) + (nextsNew.length > 0 ? ' ▾' : '');
+    if (nextsNew.length > 0) {
+      chip.setAttribute('onclick', 'CT.html._openStatusMenu(event,\'' + id + '\',\'' + ref + '\',\'' + nextStatus + '\')');
+    } else {
+      chip.removeAttribute('onclick');
+      chip.style.cursor = 'default';
+    }
+  }
+
+  try {
+    await CT.api.updateOrderStatus(id, nextStatus);
+    if (chip) {
+      chip.style.opacity = '1';
+      chip.style.outline = '2px solid #10b981';
+      chip.style.outlineOffset = '2px';
+      setTimeout(function() { if (chip) chip.style.outline = ''; }, 1500);
+    }
+    // Update row age highlight
+    var row = chip ? chip.closest('tr') : null;
+    if (row) {
+      row.style.background = 'rgba(16,185,129,.07)';
+      setTimeout(function() { if (row) row.style.background = ''; }, 1500);
+    }
+    CT.bus.emit('toast', ref + ' → ' + CT.html.statusLabel(nextStatus) + ' ✅', 'success');
+
+    // Sync in-memory orders for commandes view
+    if (CT.views.commandes && CT.views.commandes._orders) {
+      var o = CT.views.commandes._orders.find(function(x) { return String(x.id) === String(id); });
+      if (o) o.status = nextStatus;
+    }
+  } catch(e) {
+    // Revert on error
+    if (chip) {
+      chip.className = 'ct-badge ' + currentStatus;
+      chip.style.opacity = '1';
+      chip.innerHTML = CT.html.statusLabel(currentStatus) + (CT.html.ALL_NEXT[currentStatus] || []).length > 0 ? ' ▾' : '';
+      chip.setAttribute('onclick', 'CT.html._openStatusMenu(event,\'' + id + '\',\'' + ref + '\',\'' + currentStatus + '\')');
+      chip.style.outline = '2px solid #ef4444';
+      chip.style.outlineOffset = '2px';
+      setTimeout(function() { if (chip) chip.style.outline = ''; }, 1500);
+    }
+    CT.bus.emit('toast', '❌ Erreur: ' + e.message, 'error');
+  }
+};
+
+/* ---------------------------------------------------------------
+   advanceOrder — fixed: no more full view reload
+   --------------------------------------------------------------- */
 CT.html.advanceOrder = async function(id, ref, currentStatus, btn) {
   var next = CT.html.NEXT_STATUS[currentStatus];
   if (!next) return;
-  if (!confirm('Avancer ' + ref + ' → ' + CT.html.statusLabel(next) + ' ?')) return;
-  btn.disabled = true; btn.textContent = '⏳';
+  btn.disabled = true;
+  btn.textContent = '⏳';
+
   try {
     await CT.api.updateOrderStatus(id, next);
     CT.bus.emit('toast', ref + ' → ' + CT.html.statusLabel(next) + ' ✅', 'success');
-    if (CT.currentView) setTimeout(function(){ CT.navigate(CT.currentView); }, 500);
+
+    // Update chip if commandes view is loaded
+    var chip = document.getElementById('chip-' + id);
+    if (chip) {
+      var nextsNew = CT.html.ALL_NEXT[next] || [];
+      chip.className = 'ct-badge ' + next;
+      chip.innerHTML = CT.html.statusLabel(next) + (nextsNew.length > 0 ? ' ▾' : '');
+      if (nextsNew.length > 0) {
+        chip.setAttribute('onclick', 'CT.html._openStatusMenu(event,\'' + id + '\',\'' + ref + '\',\'' + next + '\')');
+      }
+      chip.style.outline = '2px solid #10b981';
+      chip.style.outlineOffset = '2px';
+      setTimeout(function() { if (chip) chip.style.outline = ''; }, 1500);
+    }
+
+    // Update button to next possible action (no reload)
+    var newNext = CT.html.NEXT_STATUS[next];
+    if (newNext) {
+      btn.disabled = false;
+      btn.textContent = '▶ ' + CT.html.statusLabel(newNext);
+      btn.setAttribute('onclick', 'CT.html.advanceOrder(\'' + id + '\',\'' + ref + '\',\'' + next + '\', this)');
+    } else {
+      btn.remove();
+    }
+
+    // Sync commandes view memory
+    if (CT.views.commandes && CT.views.commandes._orders) {
+      var o = CT.views.commandes._orders.find(function(x) { return String(x.id) === String(id); });
+      if (o) o.status = next;
+    }
   } catch(e) {
-    CT.bus.emit('toast', 'Erreur: ' + e.message, 'error');
-    btn.disabled = false; btn.textContent = '▶';
+    CT.bus.emit('toast', '❌ Erreur: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '▶';
   }
 };
 
@@ -355,7 +541,6 @@ CT.views.hub = {
 
       // ─── 🔝 ACTION HUB ───
       var actionContent = '<div class="ct-action-grid">';
-      // Orders to prepare (confirmed + ordered)
       var toPrepare = (pipe.confirmed ? pipe.confirmed.count : 0) + (pipe.ordered ? pipe.ordered.count : 0);
       actionContent += CT.html.actionCard('Commandes à préparer', toPrepare, '🛒', 'blue');
       actionContent += CT.html.actionCard('En préparation', pipe.preparation ? pipe.preparation.count : 0, '📦', 'purple');
@@ -376,7 +561,7 @@ CT.views.hub = {
         var rows = hubOrders.slice(0, 30).map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            CT.html.badge(o._status),
+            CT.html.statusChip(o.id, o.reference, o._status),
             o.client_name || o.recipient_name || '—',
             CT.html.formatKMF(o.total_kmf),
             CT.html.advanceBtn(o.id, o.reference, o._status),
@@ -391,7 +576,6 @@ CT.views.hub = {
       // ─── 🔻 INFO HUB ───
       var infoContent = '';
 
-      // Alertes
       var hasAlerts = (act.commandes_bloquees || 0) > 0 || (alertes.anomalies || 0) > 0 || (alertes.low_stock || 0) > 0;
       if (hasAlerts) {
         infoContent += '<div class="ct-card">';
@@ -402,7 +586,6 @@ CT.views.hub = {
         infoContent += '</div>';
       }
 
-      // Suivi opérationnel
       infoContent += '<div class="ct-grid-2">';
       infoContent += '<div class="ct-card"><div class="ct-card-title">📊 Suivi opérationnel</div>';
       infoContent += '<div class="ct-stat-grid">';
@@ -410,7 +593,6 @@ CT.views.hub = {
       infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (act.livrees_aujourd_hui || 0) + '</div><div class="ct-stat-label">Expédiées aujourd\'hui</div></div>';
       infoContent += '</div></div>';
 
-      // Logistique pipeline
       infoContent += '<div class="ct-card"><div class="ct-card-title">🚚 Pipeline logistique</div>';
       var logItems = [
         { key: 'dubai_reception', color: 'cyan' },
@@ -455,9 +637,7 @@ CT.views.transit = {
       var pipe = pipeline.pipeline || {};
       var html = '';
 
-      // ─── 🔝 ACTION TRANSIT ───
       var actionContent = '<div class="ct-action-grid">';
-      // In transit orders count
       var shippedCount = pipe.shipped ? pipe.shipped.count : 0;
       var transitCount = pipe.in_transit ? pipe.in_transit.count : 0;
       var transitaireCount = log.transitaire ? log.transitaire.count : 0;
@@ -468,7 +648,6 @@ CT.views.transit = {
       actionContent += CT.html.actionCard('En mer', bateauCount, '⛵', 'cyan');
       actionContent += '</div>';
 
-      // Transit orders table
       var transitOrders = [];
       ['shipped','in_transit'].forEach(function(s) {
         if (pipe[s] && pipe[s].orders) {
@@ -481,7 +660,7 @@ CT.views.transit = {
         var rows = transitOrders.slice(0, 30).map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            CT.html.badge(o._status),
+            CT.html.statusChip(o.id, o.reference, o._status),
             o.client_name || o.recipient_name || '—',
             CT.html.formatKMF(o.total_kmf),
             CT.html.formatDate(o.created_at),
@@ -494,11 +673,8 @@ CT.views.transit = {
       }
       html += CT.html.zoneAction('Colis en mouvement', actionContent);
 
-      // ─── 🔻 INFO TRANSIT ───
       var infoContent = '';
       infoContent += '<div class="ct-grid-2">';
-
-      // Volumes par zone
       infoContent += '<div class="ct-card"><div class="ct-card-title">📍 Par destination</div>';
       var destinations = [
         { label: '📥 Réception Dubaï', count: log.dubai_reception ? log.dubai_reception.count : 0 },
@@ -515,7 +691,6 @@ CT.views.transit = {
       });
       infoContent += '</div>';
 
-      // Temps moyen
       infoContent += '<div class="ct-card"><div class="ct-card-title">⏱️ Temps moyen</div>';
       infoContent += '<div class="ct-stat-grid">';
       infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (delais.avg_preparation_jours || 0) + 'j</div><div class="ct-stat-label">Préparation</div></div>';
@@ -551,7 +726,6 @@ CT.views.relais = {
       var availableCount = pipe.available ? pipe.available.count : 0;
       var html = '';
 
-      // ─── 🔝 ACTION RELAIS ───
       var actionContent = '<div class="ct-action-grid">';
       actionContent += CT.html.actionCard('Colis à remettre', aRemettre.length, '📦', 'green');
       actionContent += CT.html.actionCard('Cash à encaisser', alertes.cash_pending || 0, '💰', 'amber');
@@ -559,7 +733,6 @@ CT.views.relais = {
       actionContent += CT.html.actionCard('À valider', aValider.length, '📝', 'purple');
       actionContent += '</div>';
 
-      // Table à remettre
       if (aRemettre.length > 0) {
         actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📦 Colis à remettre aux clients</div>';
         var h1 = ['Réf.', 'Client', 'Tél.', 'Montant', 'Relais', 'Attente', '📱'];
@@ -576,7 +749,6 @@ CT.views.relais = {
         actionContent += '</div>';
       }
 
-      // Table à valider
       if (aValider.length > 0) {
         actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📝 Commandes à valider</div>';
         var h2 = ['Réf.', 'Client', 'Montant', 'Relais', 'Île', 'Attente'];
@@ -592,10 +764,7 @@ CT.views.relais = {
       }
       html += CT.html.zoneAction('Actions terrain', actionContent);
 
-      // ─── 🔻 INFO RELAIS ───
       var infoContent = '';
-
-      // Alertes relais
       var critiques = aRemettre.filter(function(o) { return (o.heures_attente || 0) > 72; });
       var importants = aRemettre.filter(function(o) { var h = o.heures_attente || 0; return h > 24 && h <= 72; });
       if (critiques.length > 0 || importants.length > 0) {
@@ -606,7 +775,6 @@ CT.views.relais = {
         infoContent += '</div>';
       }
 
-      // Suivi
       infoContent += '<div class="ct-card"><div class="ct-card-title">📊 Suivi</div>';
       infoContent += '<div class="ct-stat-grid">';
       infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + aRemettre.length + '</div><div class="ct-stat-label">Colis en attente</div></div>';
@@ -650,7 +818,6 @@ CT.views.finance = {
       var parCategorie = finance.par_categorie || [];
       var html = '';
 
-      // ─── 🔝 ACTION FINANCE ───
       var actionContent = '<div class="ct-action-grid">';
       actionContent += CT.html.actionCard('Cash en attente', alertes.cash_pending || 0, '💰', 'amber');
       actionContent += CT.html.actionCard('Paiements cash', cashData.count || 0, '💵', 'green');
@@ -658,7 +825,6 @@ CT.views.finance = {
       actionContent += CT.html.actionCard('Annulées', kpi.nb_annulees || 0, '❌', 'red');
       actionContent += '</div>';
 
-      // Paiements breakdown
       actionContent += '<div class="ct-grid-2 ct-mt-md">';
       actionContent += '<div class="ct-card"><div class="ct-card-title">💵 Cash Relais</div>';
       actionContent += '<div class="ct-stat-grid">';
@@ -675,10 +841,7 @@ CT.views.finance = {
 
       html += CT.html.zoneAction('Paiements et encaissements', actionContent);
 
-      // ─── 🔻 INFO FINANCE ───
       var infoContent = '';
-
-      // KPIs
       infoContent += '<div class="ct-kpi-row">';
       infoContent += CT.html.kpiCard('CA (KMF)', CT.html.formatKMF(kpi.ca_kmf), '💵', 'green');
       infoContent += CT.html.kpiCard('CA (EUR)', CT.html.formatEUR(kpi.ca_eur), '💶', 'blue');
@@ -686,7 +849,6 @@ CT.views.finance = {
       infoContent += CT.html.kpiCard('Panier moyen', CT.html.formatKMF(kpi.panier_moyen_kmf), '🛒', 'amber');
       infoContent += '</div>';
 
-      // Marges
       infoContent += '<div class="ct-card"><div class="ct-card-title">📈 Marges</div>';
       infoContent += '<div class="ct-stat-grid">';
       infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + CT.html.formatKMF(marges.marge_reelle_kmf || 0) + '</div><div class="ct-stat-label">Marge réelle</div></div>';
@@ -698,7 +860,6 @@ CT.views.finance = {
       }
       infoContent += '</div>';
 
-      // Charts
       infoContent += '<div class="ct-grid-2">';
       if (parCategorie.length > 0) {
         infoContent += '<div class="ct-card"><div class="ct-card-title">📂 CA par catégorie</div>';
@@ -716,7 +877,6 @@ CT.views.finance = {
       html += CT.html.zoneInfo('Indicateurs financiers', infoContent);
       el.innerHTML = html;
 
-      // Render chart
       if (parCategorie.length > 0 && typeof Chart !== 'undefined') {
         var ctx = document.getElementById('chart-categories');
         if (ctx) {
@@ -732,5 +892,121 @@ CT.views.finance = {
         }
       }
     } catch(e) { el.innerHTML = CT.html.error(e.message); }
+  }
+};
+
+/* ===============================================================
+   📋 VIEW: COMMANDES (TOUTES LES COMMANDES — STATUT OPTIMISTE)
+   =============================================================== */
+CT.views.commandes = {
+  label: 'Commandes',
+  icon: '📋',
+  _orders: [],
+  _filter: 'all',
+  _search: '',
+
+  load: async function(el) {
+    el.innerHTML = CT.html.loading();
+    CT.html.destroyCharts();
+    try {
+      var result = await CT.api.adminOrders({ limit: 500 });
+      // API may return array directly or { orders: [...] } or { data: [...] }
+      this._orders = Array.isArray(result) ? result : (result.orders || result.data || []);
+      this._filter = 'all';
+      this._search = '';
+      this._render(el);
+    } catch(e) {
+      el.innerHTML = CT.html.error(e.message);
+    }
+  },
+
+  _filtered: function() {
+    var self = this;
+    var orders = this._filter === 'all'
+      ? this._orders
+      : this._orders.filter(function(o) { return o.status === self._filter; });
+    if (this._search) {
+      var q = this._search.toLowerCase();
+      orders = orders.filter(function(o) {
+        return (o.reference || '').toLowerCase().includes(q) ||
+               (o.recipient_name || o.client_name || '').toLowerCase().includes(q);
+      });
+    }
+    return orders;
+  },
+
+  _render: function(el) {
+    var self = this;
+    var allStatuses = ['all','new','confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
+    var statusLabels = {
+      all:'Tous', new:'Nouveau', confirmed:'Confirmé', ordered:'Commandé',
+      preparation:'Préparation', shipped:'Expédié', in_transit:'En transit',
+      available:'Disponible', collected:'Collecté', cancelled:'Annulé', refunded:'Remboursé'
+    };
+
+    var orders = this._filtered();
+    var total = this._orders.length;
+
+    var html = '<div class="ct-zone ct-zone-action" style="margin-bottom:0">';
+    html += '<div class="ct-zone-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
+    html += '<span><span class="ct-zone-tag action">📋 COMMANDES</span> ' + total + ' commandes — <span style="color:var(--ct-text-muted);font-size:.85rem">' + orders.length + ' affichées</span></span>';
+    html += '<button onclick="CT.views.commandes.load(document.getElementById(\'content-area\'))" style="padding:4px 12px;border:1px solid var(--ct-border);border-radius:6px;background:var(--ct-bg3);color:var(--ct-text);font-size:.8rem;cursor:pointer">🔄 Rafraîchir</button>';
+    html += '</div>';
+    html += '<div class="ct-zone-body">';
+
+    // Search bar
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">';
+    html += '<input id="cmd-search" type="text" placeholder="🔍 Rechercher ref, client..." value="' + (this._search || '') + '" ' +
+      'oninput="CT.views.commandes._search=this.value;CT.views.commandes._render(document.getElementById(\'content-area\'))" ' +
+      'style="flex:1;min-width:200px;padding:6px 12px;border:1px solid var(--ct-border);border-radius:8px;background:var(--ct-bg3);color:var(--ct-text);font-size:.85rem">';
+    html += '</div>';
+
+    // Filter chips
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
+    allStatuses.forEach(function(s) {
+      var count = s === 'all' ? total : self._orders.filter(function(o) { return o.status === s; }).length;
+      if (s !== 'all' && count === 0) return;
+      var active = s === self._filter;
+      var hex = CT.html.STATUS_HEX[s] || '#64748b';
+      var bg = active ? hex : 'var(--ct-bg3)';
+      var color = active ? '#fff' : 'var(--ct-text)';
+      html += '<button onclick="CT.views.commandes._setFilter(\'' + s + '\')" ' +
+        'style="padding:4px 12px;border:none;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;' +
+        'background:' + bg + ';color:' + color + ';transition:all .15s">' +
+        statusLabels[s] + ' <span style="opacity:.7">(' + count + ')</span></button>';
+    });
+    html += '</div>';
+
+    // Table
+    if (orders.length === 0) {
+      html += CT.html.empty('🔍', 'Aucune commande trouvée');
+    } else {
+      var headers = ['Réf.', 'Destinataire', 'Montant', 'Statut', 'Île', 'Paiement', 'Âge', '📱'];
+      var rows = orders.map(function(o) {
+        var payBadge = o.payment_status === 'paid'
+          ? '<span style="color:#10b981;font-size:.7rem;font-weight:700">✓ Payé</span>'
+          : '<span style="color:var(--ct-text-muted);font-size:.7rem">' + (o.payment_method || '—') + '</span>';
+        return [
+          '<span class="ct-font-mono" style="font-weight:700;font-size:.8rem;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
+          '<span style="font-size:.85rem">' + (o.recipient_name || o.client_name || '—') + '</span>',
+          '<span style="font-weight:600;font-size:.85rem">' + CT.html.formatKMF(o.total_amount || o.total_kmf) + '</span>',
+          CT.html.statusChip(o.id, o.reference, o.status),
+          '<span style="font-size:.8rem">' + (o.destination_island || '—') + '</span>',
+          payBadge,
+          '<span style="font-size:.75rem;color:var(--ct-text-muted)">' + CT.html._age(o.updated_at || o.created_at) + '</span>',
+          CT.html.whatsappBtn(o.client_phone || o.recipient_phone, o.reference, o.status, true)
+        ];
+      });
+      html += CT.html.table(headers, rows);
+    }
+
+    html += '</div></div>';
+    el.innerHTML = html;
+  },
+
+  _setFilter: function(f) {
+    this._filter = f;
+    var el = document.getElementById('content-area');
+    if (el) this._render(el);
   }
 };
