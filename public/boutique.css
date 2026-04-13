@@ -786,6 +786,20 @@ body{
 }
 .k-of-group input:focus{border-color:var(--ocean)}
 
+
+/* Responsive image ratios */
+@media(min-width:600px){
+  .k-card-img{aspect-ratio:4/3}
+  .k-grid{gap:14px}
+}
+@media(min-width:1024px){
+  .k-card-img{aspect-ratio:1/1}
+  .k-grid{grid-template-columns:repeat(4,1fr);gap:18px}
+}
+@media(min-width:1400px){
+  .k-grid{grid-template-columns:repeat(5,1fr);gap:20px}
+}
+
 /* ══════════════════════════════════════════════════════════
    WHATSAPP FAB
    ══════════════════════════════════════════════════════════ */
@@ -856,7 +870,7 @@ body{
   .k-hero img{height:160px}
 }
 @media(min-width:768px){
-  .k-grid{grid-template-columns:repeat(3,1fr);gap:6px;gap:20px}
+  .k-grid{grid-template-columns:repeat(3,1fr);gap:14px}
   .k-bnav{display:none}
   body{padding-bottom:0}
   .k-hero img{height:240px;object-fit:contain;background:var(--ocean)}
@@ -957,4 +971,11 @@ body{
   width:22px;height:22px;
   object-fit:contain;
   margin-right:6px;
+}
+
+@media(min-width:768px){
+  .k-hero{height:180px}
+}
+@media(min-width:1024px){
+  .k-hero{height:280px}
 }
