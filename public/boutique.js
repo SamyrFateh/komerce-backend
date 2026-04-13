@@ -386,7 +386,8 @@
       });
     });
 
-    dom.grid.querySelectorAll('.k-card-add').forEach(btn => {
+    dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
+      btn.dataset.bound = '1';
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
