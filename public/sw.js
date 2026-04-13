@@ -1,5 +1,5 @@
 /* Komerce Service Worker v9.0 — Refacto tri-fichiers (HTML + CSS + JS) */
-const CACHE = 'komerce-v10';
+const CACHE = 'komerce-v11';
 
 /* Fichiers à pré-cacher au install */
 const SHELL = [
