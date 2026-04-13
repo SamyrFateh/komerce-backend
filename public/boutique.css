@@ -62,7 +62,7 @@ body{
 /* ── HEADER ────────────────────────────────────────────── */
 .k-header{
   position:sticky;top:0;z-index:100;
-  background:#f0f5e6;
+  background:var(--white);
   padding:0 12px;
   height:44px;
   box-shadow:0 2px 8px rgba(0,0,0,.06);
@@ -254,9 +254,9 @@ body{
 /* ── PRODUCT GRID ──────────────────────────────────────── */
 .k-grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:4px;
-  padding:2px 4px 8px;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  padding:4px 8px 12px;
 }
 
 .k-card{
@@ -280,19 +280,19 @@ body{
 }
 .k-card:hover .k-card-img{transform:scale(1.05)}
 .k-card-promo{
-  position:absolute;top:4px;left:4px;
+  position:absolute;top:6px;left:6px;
   background:var(--coral);color:var(--white);
-  font-size:8px;font-weight:700;
-  padding:1px 5px;border-radius:50px;
+  font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:50px;
   letter-spacing:.2px;
 }
 .k-card-fav{
-  position:absolute;top:3px;right:3px;
-  width:18px;height:18px;
+  position:absolute;top:6px;right:6px;
+  width:24px;height:24px;
   background:rgba(255,255,255,.85);border:none;
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:9px;
+  font-size:12px;
   transition:transform .2s;
   backdrop-filter:blur(6px);
 }
@@ -305,9 +305,9 @@ body{
 
 /* ── CARD ADD BUTTON — clean "+" circle ── */
 .k-card-add{
-  position:absolute;bottom:4px;right:4px;
-  width:24px;height:24px;
-  background:var(--ocean);
+  position:absolute;bottom:8px;right:8px;
+  width:30px;height:30px;
+  background:var(--text);
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 2px 8px rgba(0,0,0,.22);
@@ -318,13 +318,13 @@ body{
 .k-card-add.in-cart{background:var(--coral)}
 .k-card-add:active{transform:scale(.88)}
 .k-card-add-plus{
-  font-size:14px;font-weight:700;
+  font-size:18px;font-weight:400;
   color:var(--white);line-height:1;
   pointer-events:none;
 }
 /* Old (strikethrough) price on card */
 .k-card-old-price{
-  font-size:8px;color:var(--text-light);
+  font-size:10px;color:var(--text-light);
   text-decoration:line-through;
   line-height:1.2;
   display:block;
@@ -340,16 +340,16 @@ body{
 }
 .k-card-add-count.show{display:flex}
 
-.k-card-info{padding:3px 4px 5px}
+.k-card-info{padding:6px 8px 8px}
 .k-card-name{
-  font-size:9px;font-weight:600;line-height:1.2;color:var(--text);
+  font-size:12px;font-weight:600;line-height:1.3;color:var(--text);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .k-card-bottom{
   display:flex;flex-direction:column;align-items:flex-start;
   margin-top:2px;gap:0;
 }
-.k-card-price{font-size:10px;font-weight:800;color:var(--coral);line-height:1.2}
+.k-card-price{font-size:13px;font-weight:800;color:var(--coral);line-height:1.2}
 .k-card-emoji{display:none}
 
 /* ── LOADING ───────────────────────────────────────────── */
@@ -366,7 +366,7 @@ body{
 
 /* Skeleton */
 .k-skeleton{
-  background:linear-gradient(90deg,#cddab5 25%,#dce8ca 50%,#cddab5 75%);
+  background:linear-gradient(90deg,#eeeeee 25%,#f5f5f5 50%,#eeeeee 75%);
   background-size:200% 100%;
   animation:k-shimmer 1.4s ease-in-out infinite;
   border-radius:var(--radius);
@@ -382,14 +382,14 @@ body{
 }
 .k-skel-img{
   width:100%;aspect-ratio:1/1;
-  background:linear-gradient(90deg,#cddab5 25%,#e8f0d8 50%,#cddab5 75%);
+  background:linear-gradient(90deg,#eeeeee 25%,#f5f5f5 50%,#eeeeee 75%);
   background-size:200% 100%;
   animation:k-shimmer 1.4s ease-in-out infinite;
 }
 .k-skel-line{
   margin:6px 6px 0;
   border-radius:4px;height:10px;
-  background:linear-gradient(90deg,#cddab5 25%,#e8f0d8 50%,#cddab5 75%);
+  background:linear-gradient(90deg,#eeeeee 25%,#f5f5f5 50%,#eeeeee 75%);
   background-size:200% 100%;
   animation:k-shimmer 1.4s ease-in-out infinite;
 }
@@ -419,7 +419,7 @@ body{
 .k-modal-topbar{
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 12px;
-  background:var(--ocean);color:var(--white);
+  background:var(--text);color:var(--white);
   flex-shrink:0;
   padding-top:calc(10px + env(safe-area-inset-top));
 }
@@ -621,7 +621,7 @@ body{
 }
 
 .k-cart-header{
-  background:linear-gradient(135deg,var(--ocean-dark),var(--ocean));
+  background:var(--text);
   color:#fff;
   padding:18px 20px;
   display:flex;align-items:center;justify-content:space-between;
@@ -804,7 +804,7 @@ body{
 .k-order-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:14px 16px;
-  background:var(--ocean);color:var(--white);
+  background:var(--text);color:var(--white);
   flex-shrink:0;font-weight:700;font-size:1rem;
   padding-top:calc(14px + env(safe-area-inset-top));
 }
@@ -872,7 +872,7 @@ body{
 /* ── TOAST ─────────────────────────────────────────────── */
 .k-toast{
   position:fixed;top:-60px;left:50%;transform:translateX(-50%);
-  background:var(--ocean);color:var(--white);
+  background:var(--text);color:var(--white);
   padding:10px 20px;border-radius:50px;
   font-size:14px;font-weight:600;
   box-shadow:var(--shadow-lg);
@@ -906,7 +906,7 @@ body{
 
 /* ── RESPONSIVE ────────────────────────────────────────── */
 @media(min-width:480px){
-  .k-grid{grid-template-columns:repeat(5,1fr);gap:6px}
+  .k-grid{grid-template-columns:repeat(3,1fr);gap:8px}
   .k-promo-card{flex: 0 0 110px}
   .k-hero img{height:160px}
   .k-card-add{width:36px;height:36px}
@@ -914,7 +914,7 @@ body{
   .k-card-fav{width:26px;height:26px;top:6px;right:6px;font-size:13px}
 }
 @media(min-width:768px){
-  .k-grid{grid-template-columns:repeat(5,1fr);gap:14px}
+  .k-grid{grid-template-columns:repeat(4,1fr);gap:14px}
   .k-bnav{display:none}
   body{padding-bottom:0}
   .k-hero img{height:240px;object-fit:contain;background:var(--ocean)}
@@ -983,7 +983,7 @@ body{
 .k-track-input:focus{border-color:var(--ocean)}
 .k-track-btn{
   width:100%;margin-top:12px;padding:13px;
-  background:var(--ocean);color:white;border:none;
+  background:var(--text);color:white;border:none;
   border-radius:8px;font-size:15px;font-weight:700;
   cursor:pointer;font-family:inherit;
   transition:opacity .15s;
@@ -1056,17 +1056,7 @@ body{
 /* Floating qty badge on basket */
 
 /* ── CARD ADD BUTTON — clean "+" circle ── */
-.k-card-add{
-  position:absolute;bottom:4px;right:4px;
-  width:24px;height:24px;
-  background:var(--ocean);
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.22);
-  transition:background .15s,transform .15s;
-  border:none;
-  padding:0;
-}
+/* (doublon supprimé — voir définition principale) */
 .k-card-add.in-cart{background:var(--coral)}
 .k-card-add:active{transform:scale(.88)}
 .k-card-add-plus{
