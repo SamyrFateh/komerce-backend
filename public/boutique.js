@@ -248,7 +248,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              <span class="k-card-add-plus">${qty > 0 ? qty : '+'}</span>
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
@@ -275,7 +275,11 @@
     });
     dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
       btn.dataset.bound = '1';
-      btn.addEventListener('click', (e) => { e.stopPropagation(); quickAdd(btn.dataset.add, btn); });
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
+        else { quickAdd(btn.dataset.add, btn); }
+      });
     });
     if (spinner) spinner.classList.remove('show');
   }
@@ -354,7 +358,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              <span class="k-card-add-plus">${qty > 0 ? qty : '+'}</span>
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
@@ -385,7 +389,8 @@
     dom.grid.querySelectorAll('.k-card-add').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        quickAdd(btn.dataset.add, btn);
+        if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
+        else { quickAdd(btn.dataset.add, btn); }
       });
     });
   }
@@ -553,8 +558,7 @@
     // Un-mark grid buttons
     document.querySelectorAll(`.k-card-add[data-add="${pid}"]`).forEach(btn => {
       btn.classList.remove('in-cart');
-      const counter = btn.querySelector('.k-card-add-count');
-      if (counter) { counter.textContent = '0'; counter.classList.remove('show'); }
+      btn.innerHTML = '<span class="k-card-add-plus">+</span>';
     });
   }
 
@@ -566,6 +570,7 @@
       item.qty = newQty;
       saveCart();
       renderCartBody();
+      markAllCartButtons();
     }
   }
 
@@ -573,8 +578,7 @@
     state.cart.forEach(item => {
       document.querySelectorAll(`.k-card-add[data-add="${item.product.id}"]`).forEach(btn => {
         btn.classList.add('in-cart');
-        const counter = btn.querySelector('.k-card-add-count');
-        if (counter) { counter.textContent = item.qty; counter.classList.add('show'); }
+        btn.innerHTML = '<span class="k-add-minus" data-pid="' + item.product.id + '">−</span><span class="k-add-qty">' + item.qty + '</span><span class="k-add-plus-ic">+</span>';
       });
     });
   }
@@ -585,6 +589,17 @@
     if (!product) return;
     addToCart(product, 1, btnEl);
     showToast(`${product.emoji || '✓'} ${product.name} ajouté`);
+  }
+
+  function quickRemove(productId, btnEl) {
+    const pid = String(productId);
+    const item = state.cart.find(i => String(i.product.id) === pid);
+    if (!item) return;
+    if (item.qty <= 1) {
+      removeFromCart(pid);
+    } else {
+      setQty(pid, item.qty - 1);
+    }
   }
 
   /* ── TOGGLE FAV ─────────────────────────────────────────── */
@@ -608,7 +623,18 @@
 
   /* ── CATEGORIES ─────────────────────────────────────────── */
   function setupCats() {
+    // Split emoji + label pour le layout en carré empilé
+    const emojiRx = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*/u;
     $$('.k-chip').forEach(chip => {
+      const raw = chip.textContent.trim();
+      const m = raw.match(emojiRx);
+      if (m) {
+        const emoji = m[1];
+        const label = raw.slice(m[0].length);
+        chip.innerHTML =
+          `<span class="k-chip-emoji">${emoji}</span>` +
+          `<span class="k-chip-label">${label}</span>`;
+      }
       chip.addEventListener('click', () => {
         $$('.k-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
