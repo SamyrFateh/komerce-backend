@@ -738,7 +738,7 @@
       .slice(0, 8);
     renderSuggestions(suggestions);
 
-    dom.modal.scrollTop = 0;
+    dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -1076,82 +1076,108 @@
   function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
-    dom.orderTitle.textContent = '🛒 Finaliser ma commande';
+    dom.orderTitle.textContent = '🛒 Commander';
 
-    /* ── Cart Summary ── */
+    const od = state.orderData;
+
+    /* ── 1. Mini résumé ── */
     const summary = document.createElement('div');
-    summary.style.cssText = 'background:var(--sand-light,#e8eddb);border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid rgba(0,0,0,0.06);';
-
-    const countLine = document.createElement('div');
-    countLine.style.cssText = 'font-size:0.82rem;color:var(--text-muted);';
-    countLine.textContent = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
-    summary.appendChild(countLine);
-
-    const priceLine = document.createElement('div');
-    priceLine.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-top:2px;';
-    const bigPrice = document.createElement('span');
-    bigPrice.style.cssText = 'font-weight:800;font-size:1.25rem;color:var(--ocean);';
-    bigPrice.textContent = fmt(cartTotal(), 'KMF');
-    priceLine.appendChild(bigPrice);
-    const eurEquiv = document.createElement('span');
-    eurEquiv.style.cssText = 'font-size:0.88rem;color:var(--text-muted);';
-    eurEquiv.textContent = '≈ ' + fmt(cartTotal(), 'EUR');
-    priceLine.appendChild(eurEquiv);
-    summary.appendChild(priceLine);
+    summary.className = 'ck-summary';
+    const qtyLabel = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
+    summary.innerHTML = '<span class="ck-sum-qty">' + qtyLabel + '</span>'
+      + '<span class="ck-sum-sep">·</span>'
+      + '<span class="ck-sum-total">' + fmt(cartTotal(), 'KMF') + '</span>';
     body.appendChild(summary);
 
-    /* ── Retrait aux Comores : bloc unique bénéficiaire ── */
-    const od = state.orderData;
-    body.appendChild(makeSection('🏪 Retrait au Point Relais'));
-    body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *', 'text', 'Nom de la personne qui récupère', od, 'beneficiary_name'));
-    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire (+269) *', od, 'beneficiary_phone'));
-    const smsPromise = document.createElement('div');
-    smsPromise.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin:-8px 0 14px;padding-left:2px;display:flex;align-items:center;gap:5px;';
-    smsPromise.innerHTML = '📲 <span>SMS envoyé dès que la commande arrive au relais</span>';
-    body.appendChild(smsPromise);
+    /* ── 2. Bénéficiaire ── */
+    const s1 = document.createElement('div');
+    s1.className = 'ck-label';
+    s1.textContent = '📦 Bénéficiaire';
+    body.appendChild(s1);
+    body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
+    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. (+269) *', od, 'beneficiary_phone'));
 
-    /* ── Payment mode ── */
-    body.appendChild(makeSection('💳 Paiement'));
+    /* ── 3. Paiement ── */
+    const s2 = document.createElement('div');
+    s2.className = 'ck-label';
+    s2.textContent = '💳 Paiement';
+    body.appendChild(s2);
 
-    // Cash option
-    const cashOpt = makePaymentOption('cash_relais', '🏪 Cash au point relais', 'Payez en KMF au retrait', true);
+    const cashOpt = makePaymentOption('cash_relais', '🏪 Cash au relais', '', true);
     body.appendChild(cashOpt.wrapper);
 
-    // MVola (disabled)
-    const mvolaOpt = document.createElement('label');
-    mvolaOpt.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid rgba(0,0,0,0.08);border-radius:8px;margin-bottom:6px;cursor:not-allowed;background:white;opacity:0.6;';
-    mvolaOpt.innerHTML = '<input type="radio" name="payment_mode" value="mvola" disabled style="width:16px;height:16px;flex-shrink:0;"><div><div style="font-weight:700;font-size:0.88rem;">MVola <span style="font-size:0.65rem;background:#00a651;color:white;padding:1px 6px;border-radius:8px;font-weight:700;">Bientôt</span></div><div style="font-size:0.75rem;color:#888;margin-top:1px;">Paiement mobile money</div></div>';
-    body.appendChild(mvolaOpt);
+    const mvolaWrap = document.createElement('label');
+    mvolaWrap.className = 'ck-pay-mvola';
+    mvolaWrap.innerHTML = '<input type="radio" name="payment_mode" value="mvola" disabled>'
+      + '<span>MVola <span class="ck-soon">Bientôt</span></span>';
+    body.appendChild(mvolaWrap);
 
-    // Stripe option
-    const stripeOpt = makePaymentOption('stripe_eur', '💳 Carte bancaire', 'Paiement sécurisé en EUR', false);
+    const stripeOpt = makePaymentOption('stripe_eur', '💳 Carte bancaire', '', false);
     body.appendChild(stripeOpt.wrapper);
 
-    // Stripe card container
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;margin-bottom:14px;padding:12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(67,160,71,0.03);';
-    stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div><div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div><div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div><div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
+    stripeCardWrap.style.cssText = 'display:none;margin-bottom:10px;padding:10px 12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(67,160,71,0.03);';
+    stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div>'
+      + '<div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div>'
+      + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div>'
+      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
     body.appendChild(stripeCardWrap);
 
-    // Payment switching
+    /* ── 4. Suivi SMS accordion ── */
+    const trackRow = document.createElement('div');
+    trackRow.className = 'ck-track-row';
+    trackRow.innerHTML = '<label class="ck-track-toggle">'
+      + '<input type="checkbox" id="cb-want-tracking">'
+      + '<span>📲 Recevoir aussi le suivi SMS</span></label>';
+    body.appendChild(trackRow);
+
+    const trackExtra = document.createElement('div');
+    trackExtra.id = 'ck-track-extra';
+    trackExtra.className = 'ck-track-extra';
+    trackExtra.style.display = 'none';
+    const senderGroup = makePhoneInput('of-sender-phone', 'Votre tél. payeur (+269)', od, 'sender_phone');
+    const trkHint = document.createElement('div');
+    trkHint.className = 'ck-track-hint';
+    trkHint.textContent = 'Notifié dès que la commande arrive au relais';
+    trackExtra.appendChild(senderGroup);
+    trackExtra.appendChild(trkHint);
+    body.appendChild(trackExtra);
+
+    /* ── 5. Wallet ── */
+    checkWalletBalance();
+    const walletSection = document.createElement('div');
+    walletSection.id = 'wallet-section';
+    walletSection.style.cssText = 'margin-top:8px;padding:10px 12px;border:2px dashed var(--ocean);border-radius:8px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);display:none;';
+    walletSection.innerHTML = '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;">'
+      + '<input type="checkbox" id="cb-use-wallet" style="width:18px;height:18px;accent-color:var(--ocean);flex-shrink:0;">'
+      + '<div style="flex:1;"><div style="font-weight:700;font-size:0.85rem;color:var(--ocean);">💰 Utiliser mon crédit</div>'
+      + '<div id="wallet-balance-text" style="font-size:0.72rem;color:#888;margin-top:1px;">Chargement…</div></div></label>'
+      + '<div id="wallet-deduction" style="margin-top:6px;padding:6px 8px;background:white;border-radius:6px;font-size:0.82rem;display:none;"></div>';
+    body.appendChild(walletSection);
+
+    /* ── 6. Confirm (sticky) ── */
+    const confirmBtn = document.createElement('button');
+    confirmBtn.id = 'btn-confirm-order';
+    confirmBtn.className = 'ck-confirm-btn';
+    confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    body.appendChild(confirmBtn);
+
+    /* ── Payment switching ── */
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
-      cashOpt.wrapper.style.borderColor = !isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      cashOpt.wrapper.style.background = !isStripe ? 'rgba(67,160,71,0.06)' : 'white';
+      cashOpt.wrapper.style.borderColor  = !isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
+      cashOpt.wrapper.style.background   = !isStripe ? 'rgba(67,160,71,0.06)' : 'white';
       stripeOpt.wrapper.style.borderColor = isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      stripeOpt.wrapper.style.background = isStripe ? 'rgba(67,160,71,0.06)' : 'white';
+      stripeOpt.wrapper.style.background  = isStripe ? 'rgba(67,160,71,0.06)' : 'white';
 
       const wrap = document.getElementById('stripe-card-wrap');
       if (wrap) {
         wrap.style.display = isStripe ? 'block' : 'none';
-        if (isStripe) {
-          const eurD = document.getElementById('stripe-eur-display');
-          if (eurD) { eurD.style.display = 'block'; }
-        }
+        if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.style.display = 'block'; }
       }
 
       if (isStripe && _stripe && !_stripeCard) {
@@ -1168,44 +1194,26 @@
       }
 
       const btn = document.getElementById('btn-confirm-order');
-      if (btn) {
-        btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'EUR') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
-      }
+      if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'EUR') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     }
 
     cashOpt.radio.addEventListener('change', updatePaymentUI);
     stripeOpt.radio.addEventListener('change', updatePaymentUI);
 
-    // Wallet
-    checkWalletBalance();
-
-    const walletSection = document.createElement('div');
-    walletSection.id = 'wallet-section';
-    walletSection.style.cssText = 'margin-top:12px;padding:12px 14px;border:2px dashed var(--ocean);border-radius:8px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);display:none;';
-    walletSection.innerHTML = '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="cb-use-wallet" style="width:18px;height:18px;accent-color:var(--ocean);flex-shrink:0;"><div style="flex:1;"><div style="font-weight:700;font-size:0.88rem;color:var(--ocean);">💰 Utiliser mon crédit boutique</div><div id="wallet-balance-text" style="font-size:0.75rem;color:#888;margin-top:2px;">Chargement du solde…</div></div></label><div id="wallet-deduction" style="margin-top:8px;padding:8px 10px;background:white;border-radius:8px;font-size:0.82rem;display:none;"></div>';
-    body.appendChild(walletSection);
-
-    // Wire wallet checkbox after DOM insertion
     setTimeout(() => {
+      const cbTrack = document.getElementById('cb-want-tracking');
+      if (cbTrack) cbTrack.addEventListener('change', function() {
+        const extra = document.getElementById('ck-track-extra');
+        if (extra) extra.style.display = this.checked ? 'block' : 'none';
+      });
       const cb = document.getElementById('cb-use-wallet');
       if (cb) cb.addEventListener('change', function() { od.use_wallet = this.checked; updateWalletDisplay(); });
     }, 0);
 
-    /* ── Confirm Button ── */
-    const confirmBtn = document.createElement('button');
-    confirmBtn.id = 'btn-confirm-order';
-    confirmBtn.style.cssText = 'width:100%;padding:13px;border-radius:8px;background:linear-gradient(135deg,#d97706,#f59e0b);color:white;font-weight:800;font-size:1rem;border:none;cursor:pointer;transition:filter 0.2s,transform 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(217,119,6,0.3);margin-top:14px;';
-    confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
-    body.appendChild(confirmBtn);
-
-    const smsHint = document.createElement('div');
-    smsHint.style.cssText = 'text-align:center;font-size:0.75rem;color:#888;margin-top:8px;';
-    smsHint.textContent = 'Code + QR envoyés par SMS pour le retrait';
-    body.appendChild(smsHint);
   }
 
-  /* ── Checkout form helpers ── */
+    /* ── Checkout form helpers ── */
   function makeSection(text) {
     const div = document.createElement('div');
     div.style.cssText = 'font-weight:700;font-size:0.85rem;margin-bottom:6px;margin-top:10px;';
@@ -1322,6 +1330,7 @@
     const od = state.orderData;
     const recipName   = (document.getElementById('of-beneficiary-name')?.value  || '').trim();
     const recipPhone  = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
+    const senderPhone = (document.getElementById('of-sender-phone')?.value || '').trim();
     const clientName  = recipName;
     const clientPhone = '+269' + recipPhone.replace(/\s/g, '');
     const clientEmail = undefined;
@@ -1357,7 +1366,8 @@
         recipient_name: recipName,
         recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode,
-        use_wallet: od.use_wallet || false
+        use_wallet: od.use_wallet || false,
+        sender_phone: senderPhone ? '+269' + senderPhone.replace(/\s/g,'') : undefined
       });
 
       const orderData = apiResult.order || apiResult;

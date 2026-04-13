@@ -517,6 +517,7 @@ body{
 /* ── MODAL CONTENT — HORIZONTAL LAYOUT ── */
 .k-modal-scroll{
   flex:1;overflow-y:auto;min-height:0;
+  display:flex;flex-direction:column;
 }
 .k-modal-content{
   display:flex;gap:12px;
@@ -528,7 +529,7 @@ body{
   overflow:hidden;align-self:flex-start;
 }
 .k-modal-img-wrap img{
-  width:100%;aspect-ratio:3/4;object-fit:cover;display:block;
+  width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top center;display:block;
 }
 .k-modal-promo-badge{
   display:none;
@@ -596,7 +597,7 @@ body{
 .k-add-cart-btn.added{background:var(--green)!important}
 
 /* ── SUGGESTIONS — COMPACT ── */
-.k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark)}
+.k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark);flex-shrink:0}
 .k-modal-suggestions h3{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-muted)}
 
 /* ── DESKTOP: wider modal ── */
@@ -862,7 +863,7 @@ body{
   padding-top:calc(14px + env(safe-area-inset-top));
 }
 .k-order-body{
-  flex:1;overflow-y:auto;padding:16px;
+  flex:1;overflow-y:auto;padding:12px 14px;
 }
 
 @media(min-width:600px){
@@ -945,6 +946,7 @@ body{
     padding:0;
     gap:0;
     align-items:stretch;
+    min-height:0;
   }
   .k-modal-img-wrap{
     flex:0 0 260px;
@@ -957,10 +959,11 @@ body{
     height:100%;
     min-height:300px;
     object-fit:cover;
+    object-position:top center;
   }
   .k-modal-info{
     padding:20px 16px;
-    overflow-y:auto;
+    overflow-y:visible;
     justify-content:flex-start;
   }
   .k-modal-suggestions{
@@ -1324,3 +1327,98 @@ body{
 .k-track-steps--compact .k-track-step-sub {
   display: none;
 }
+
+/* ══════════════════════════════════════════════════════════
+   COMPACT CHECKOUT — .ck-*
+   ══════════════════════════════════════════════════════════ */
+
+/* Mini cart résumé */
+.ck-summary{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 10px;
+  background:var(--sand);border-radius:8px;
+  margin-bottom:10px;
+}
+.ck-sum-qty{font-size:0.8rem;color:var(--text-muted)}
+.ck-sum-sep{color:var(--text-muted);font-size:0.8rem}
+.ck-sum-total{font-weight:800;font-size:1rem;color:var(--ocean);margin-left:auto}
+
+/* Section label */
+.ck-label{
+  font-size:0.72rem;font-weight:700;
+  color:var(--text-muted);text-transform:uppercase;
+  letter-spacing:.05em;
+  margin:10px 0 5px;
+}
+
+/* Compact form inputs */
+.k-order-body input[type=text],
+.k-order-body input[type=tel]{
+  padding:8px 10px;font-size:0.88rem;
+}
+.k-order-body label[style*="display:block"]{
+  font-size:0.78rem !important;margin-bottom:2px !important;
+}
+.k-order-body > div[style*="margin-bottom:8px"]{
+  margin-bottom:6px !important;
+}
+
+/* makeSection override: tighter */
+.k-order-body > div[style*="font-weight:700;font-size:0.85rem"]{
+  margin-top:8px !important;margin-bottom:4px !important;
+}
+
+/* makePaymentOption override: less padding */
+.k-order-body > label[style*="padding:10px 14px"]{
+  padding:8px 11px !important;margin-bottom:4px !important;
+}
+
+/* MVola compact */
+.ck-pay-mvola{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 11px;
+  border:2px solid rgba(0,0,0,0.08);border-radius:8px;
+  margin-bottom:4px;
+  cursor:not-allowed;opacity:.5;
+  font-size:0.88rem;font-weight:600;
+  background:white;
+}
+.ck-pay-mvola input{width:15px;height:15px;flex-shrink:0}
+.ck-soon{
+  font-size:0.62rem;background:var(--green,#43a047);color:white;
+  padding:1px 5px;border-radius:5px;font-weight:700;vertical-align:middle;
+}
+
+/* Tracking accordion */
+.ck-track-row{margin:10px 0 0}
+.ck-track-toggle{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-size:0.85rem;font-weight:600;color:var(--text);
+}
+.ck-track-toggle input[type=checkbox]{
+  width:16px;height:16px;flex-shrink:0;
+  accent-color:var(--ocean);
+}
+.ck-track-extra{
+  margin-top:6px;padding:10px;
+  background:var(--sand);border-radius:8px;
+}
+.ck-track-hint{
+  font-size:0.72rem;color:var(--text-muted);margin-top:4px;
+}
+
+/* Sticky confirm button */
+.ck-confirm-btn{
+  position:sticky;bottom:0;
+  width:100%;padding:13px;
+  border-radius:10px;
+  background:linear-gradient(135deg,#d97706,#f59e0b);
+  color:white;font-weight:800;font-size:1rem;
+  border:none;cursor:pointer;
+  margin-top:14px;
+  box-shadow:0 -4px 16px rgba(0,0,0,0.07),0 4px 14px rgba(217,119,6,.3);
+  transition:filter .2s,transform .15s;
+  z-index:5;
+}
+.ck-confirm-btn:active{transform:scale(.97);filter:brightness(.95)}
+.ck-confirm-btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
