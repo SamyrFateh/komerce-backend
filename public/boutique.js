@@ -846,18 +846,27 @@
   }
 
   /* ── SHARE CART WHATSAPP ────────────────────────────────── */
+  function buildCartShareURL() {
+    // Encode cart as URL: ?cart=id1:qty1,id2:qty2
+    const items = state.cart.map(function(item) {
+      return item.product.id + ':' + item.qty;
+    });
+    return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
+  }
+
   function shareCartWhatsApp() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
 
-    const lines = [];
+    var cartURL = buildCartShareURL();
+    var lines = [];
     lines.push('🧺 *Mon panier Komerce*');
     lines.push('━━━━━━━━━━━━━━━━');
     lines.push('');
 
-    state.cart.forEach((item, idx) => {
-      const name = item.product.name || 'Produit';
-      const priceKMF = (item.product.price_kmf || 0) * item.qty;
-      let line = (idx + 1) + '. ' + name;
+    state.cart.forEach(function(item, idx) {
+      var name = item.product.name || 'Produit';
+      var priceKMF = (item.product.price_kmf || 0) * item.qty;
+      var line = (idx + 1) + '. ' + name;
       if (item.qty > 1) line += ' x' + item.qty;
       line += ' — ' + fmt(priceKMF, 'KMF');
       lines.push(line);
@@ -868,10 +877,60 @@
     lines.push('💰 *Total : ' + fmt(cartTotal(), 'KMF') + '* (≈ ' + fmt(cartTotal(), 'EUR') + ')');
     lines.push('📦 Livraison incluse · 3-5 semaines');
     lines.push('');
-    lines.push('👉 Commande sur : ' + window.location.origin);
+    lines.push('👉 Voir le panier et commander :');
+    lines.push(cartURL);
 
-    const msg = lines.join('\n');
+    var msg = lines.join('\n');
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  }
+
+  /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
+  function loadSharedCart() {
+    var params = new URLSearchParams(window.location.search);
+    var cartParam = params.get('cart');
+    if (!cartParam) return;
+
+    // Parse cart=id1:qty1,id2:qty2
+    var entries = cartParam.split(',').map(function(e) {
+      var parts = e.split(':');
+      return { id: parts[0], qty: parseInt(parts[1]) || 1 };
+    }).filter(function(e) { return e.id; });
+
+    if (entries.length === 0) return;
+
+    // Wait for products to load, then populate cart
+    var checkProducts = setInterval(function() {
+      if (!state.products || state.products.length === 0) return;
+      clearInterval(checkProducts);
+
+      // Clear existing cart
+      state.cart = [];
+
+      entries.forEach(function(entry) {
+        var product = state.products.find(function(p) { return p.id === entry.id; });
+        if (product) {
+          state.cart.push({ product: product, qty: entry.qty });
+        }
+      });
+
+      if (state.cart.length > 0) {
+        saveCart();
+        renderCart();
+        // Open the cart drawer automatically
+        setTimeout(function() {
+          dom.cartDrawer.classList.add('open');
+          dom.cartOverlay.classList.add('show');
+          document.body.style.overflow = 'hidden';
+          showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
+        }, 500);
+      }
+
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }, 200);
+
+    // Timeout after 10s
+    setTimeout(function() { clearInterval(checkProducts); }, 10000);
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1336,6 +1395,7 @@
       showToast('🗑 Panier vidé');
     });
     dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
+    loadSharedCart();
     dom.cartCheckout.addEventListener('click', checkoutCart);
 
     // Order modal
