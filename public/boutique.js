@@ -351,7 +351,7 @@
       const sp = document.createElement('div');
       sp.style.cssText = [
         'position:fixed', 'z-index:9998', 'pointer-events:none',
-        'border-radius:50%', 'background:var(--corail)',
+        'border-radius:50%', 'background:var(--coral)',
         'width:8px', 'height:8px',
         'left:' + startX + 'px', 'top:' + startY + 'px',
         'transform:translate(-50%,-50%)', 'opacity:0'
@@ -925,11 +925,11 @@
 
       if (state.cart.length > 0) {
         saveCart();
-        renderCart();
+        renderCartBody();
         // Open the cart drawer automatically
         setTimeout(function() {
           dom.cartDrawer.classList.add('open');
-          dom.cartOverlay.classList.add('show');
+          dom.cartOverlay.classList.add('open');
           document.body.style.overflow = 'hidden';
           showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
