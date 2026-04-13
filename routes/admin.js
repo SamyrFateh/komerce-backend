@@ -18,12 +18,24 @@ const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
 // Tables enfants avec FK vers orders: order_items, scans, order_status_history, sms_log, disputes, ceremony_order_items
 async function deleteOrderCascade(client_or_db, id) {
   // Supprimer les tables enfants dans l'ordre correct
-  await client_or_db.query('DELETE FROM scans WHERE order_id = $1::uuid', [id]);
-  await client_or_db.query('DELETE FROM order_status_history WHERE order_id = $1::uuid', [id]);
-  await client_or_db.query('DELETE FROM ceremony_order_items WHERE order_id = $1::uuid', [id]);
-  await client_or_db.query('DELETE FROM disputes WHERE order_id = $1::uuid', [id]);
-  await client_or_db.query('UPDATE sms_log SET order_id = NULL WHERE order_id = $1::uuid', [id]);
-  await client_or_db.query('DELETE FROM order_items WHERE order_id = $1::uuid', [id]);
+  // Use SAVEPOINT to survive missing tables (PG aborts TX on error)
+  const childOps = [
+    ['DELETE FROM scans WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM order_status_history WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM ceremony_order_items WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM disputes WHERE order_id = $1::uuid', [id]],
+    ['UPDATE sms_log SET order_id = NULL WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM order_items WHERE order_id = $1::uuid', [id]],
+  ];
+  for (let i = 0; i < childOps.length; i++) {
+    try {
+      await client_or_db.query(`SAVEPOINT sp_del_${i}`);
+      await client_or_db.query(childOps[i][0], childOps[i][1]);
+      await client_or_db.query(`RELEASE SAVEPOINT sp_del_${i}`);
+    } catch (_) {
+      await client_or_db.query(`ROLLBACK TO SAVEPOINT sp_del_${i}`);
+    }
+  }
   await client_or_db.query('DELETE FROM orders WHERE id = $1::uuid', [id]);
 }
 
@@ -181,30 +193,49 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     
     // Use TRUNCATE CASCADE for clean, reliable deletion
     // This properly handles all FK constraints
+    // Delete child tables using SAVEPOINT to survive missing tables
+    // In PostgreSQL, a failed query inside a transaction aborts the whole TX
+    // unless wrapped in SAVEPOINT/ROLLBACK TO SAVEPOINT
     const orderChildTables = ['scans', 'order_status_history', 'ceremony_order_items', 'disputes', 'order_items'];
     
     for (const table of orderChildTables) {
       try {
+        await client.query(`SAVEPOINT sp_${table}`);
         const r = await client.query(`DELETE FROM ${table}`);
         report.deleted[table] = r.rowCount;
+        await client.query(`RELEASE SAVEPOINT sp_${table}`);
       } catch (_) {
+        await client.query(`ROLLBACK TO SAVEPOINT sp_${table}`);
         report.deleted[table] = 'table absente';
       }
     }
     
     // Nullify sms_log references (SET NULL, not CASCADE)
     try {
+      await client.query('SAVEPOINT sp_sms');
       await client.query('UPDATE sms_log SET order_id = NULL WHERE order_id IS NOT NULL');
-    } catch (_) {}
+      await client.query('RELEASE SAVEPOINT sp_sms');
+    } catch (_) {
+      await client.query('ROLLBACK TO SAVEPOINT sp_sms');
+    }
     
     // Now delete orders (no more FK references)
     const orders = await client.query('DELETE FROM orders RETURNING id');
     report.deleted.orders = orders.rowCount;
     
     // Clean up baskets and recipients
-    try { const b = await client.query('DELETE FROM basket_items'); report.deleted.basket_items = b.rowCount; } catch (_) {}
-    try { const b = await client.query('DELETE FROM baskets'); report.deleted.baskets = b.rowCount; } catch (_) {}
-    try { const r = await client.query('DELETE FROM recipients'); report.deleted.recipients = r.rowCount; } catch (_) {}
+    // Clean baskets, recipients with SAVEPOINT protection
+    for (const tbl of ['basket_items', 'baskets', 'recipients']) {
+      try {
+        await client.query(`SAVEPOINT sp_clean_${tbl}`);
+        const r = await client.query(`DELETE FROM ${tbl}`);
+        report.deleted[tbl] = r.rowCount;
+        await client.query(`RELEASE SAVEPOINT sp_clean_${tbl}`);
+      } catch (_) {
+        await client.query(`ROLLBACK TO SAVEPOINT sp_clean_${tbl}`);
+        report.deleted[tbl] = 'table absente';
+      }
+    }
     
     if (mode === 'users' || mode === 'factory') {
       const users = await client.query("DELETE FROM users WHERE role != 'admin'");

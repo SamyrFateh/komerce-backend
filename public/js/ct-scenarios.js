@@ -83,18 +83,47 @@ CT.registerScenario({
 });
 
 CT.registerScenario({
-  id: 'reset-data',
-  name: 'Reset complet',
+  id: 'reset-orders',
+  name: 'Supprimer toutes les commandes',
   icon: '🗑️',
   category: 'setup',
-  description: 'Supprime TOUTES les données (commandes, clients, produits). Irréversible !',
+  description: 'Supprime toutes les commandes (et order_items, scans, etc.) mais garde les produits, relais et users.',
   fields: [],
   execute: async function() {
-    if (!confirm('⚠️ Supprimer TOUTES les données ? Cette action est irréversible.')) {
-      return '🚫 Reset annulé par l\'utilisateur.';
+    if (!confirm('⚠️ Supprimer TOUTES les commandes ? Les produits et users seront conservés.')) {
+      return '🚫 Reset annulé.';
     }
-    var result = await CT.api.resetAll();
-    return '✅ Reset complet effectué.\n' + JSON.stringify(result, null, 2);
+    var result = await CT.api.resetAll('orders');
+    var msg = '✅ Commandes supprimées !\n\n';
+    if (result.deleted) {
+      for (var table in result.deleted) {
+        msg += '  • ' + table + ': ' + result.deleted[table] + '\n';
+      }
+    }
+    return msg;
+  }
+});
+
+CT.registerScenario({
+  id: 'reset-factory',
+  name: 'Reset usine (TOUT)',
+  icon: '🏭',
+  category: 'setup',
+  description: 'Reset complet : commandes + users + produits + relais. Irréversible ! Il faudra ré-injecter les données.',
+  fields: [],
+  execute: async function() {
+    if (!confirm('🚨 RESET USINE — Tout sera supprimé (commandes, users, produits, relais). Confirmer ?')) {
+      return '🚫 Reset annulé.';
+    }
+    var result = await CT.api.resetAll('factory');
+    var msg = '🏭 Reset usine effectué !\n\n';
+    if (result.deleted) {
+      for (var table in result.deleted) {
+        msg += '  • ' + table + ': ' + result.deleted[table] + '\n';
+      }
+    }
+    msg += '\n⚠️ Vous devez maintenant ré-injecter les données via "Injecter données test".';
+    return msg;
   }
 });
 
@@ -401,6 +430,128 @@ CT.registerScenario({
 });
 
 /* ---------------------------------------------------------------
+   CATEGORY: payments
+   --------------------------------------------------------------- */
+
+CT.registerScenario({
+  id: 'stripe-intent',
+  name: 'Paiement Stripe (test)',
+  icon: '💳',
+  category: 'payments',
+  description: 'Crée un PaymentIntent Stripe pour une commande existante (mode test). Affiche le client_secret pour valider le flux.',
+  fields: [
+    { key: 'reference', label: 'Référence commande', type: 'text', default: '' }
+  ],
+  execute: async function(params) {
+    if (!params.reference) throw new Error('Veuillez entrer une référence de commande');
+
+    // Verify Stripe is configured
+    var config;
+    try { config = await CT.api.stripeConfig(); } catch(e) {
+      throw new Error('Stripe non configuré côté serveur: ' + e.message);
+    }
+
+    // Create PaymentIntent
+    var intent = await CT.api.stripeCreateIntent(params.reference);
+
+    var msg = '💳 <strong>PaymentIntent Stripe créé</strong>\n\n';
+    msg += '📋 Commande: ' + params.reference + '\n';
+    msg += '💰 Montant: ' + intent.amount_eur + ' EUR (' + intent.amount_cents + ' centimes)\n';
+    msg += '🔑 Client Secret: <code>' + intent.client_secret.substring(0, 30) + '...</code>\n\n';
+    msg += '✅ En mode test, utilisez la carte <code>4242 4242 4242 4242</code>\n';
+    msg += '📅 Expiration: n\'importe quelle date future, CVC: 3 chiffres quelconques\n\n';
+    msg += '🔗 Clé publique: <code>' + (config.publishable_key || '—').substring(0, 20) + '...</code>';
+    return msg;
+  }
+});
+
+CT.registerScenario({
+  id: 'stripe-full-flow',
+  name: 'Flux Stripe complet',
+  icon: '🔄💳',
+  category: 'payments',
+  description: 'Crée une commande Stripe EUR + génère le PaymentIntent. Workflow complet du checkout au paiement.',
+  fields: [
+    { key: 'product', label: 'Produit', type: 'select', options: [{ value: '', label: 'Chargement...' }] },
+    { key: 'customerName', label: 'Nom du client', type: 'text', default: 'Client Stripe Test' },
+    { key: 'customerPhone', label: 'Téléphone', type: 'text', default: '+2693215000' }
+  ],
+  execute: async function(params) {
+    if (!params.product) throw new Error('Veuillez sélectionner un produit');
+
+    var msg = '';
+
+    // Step 1: Guest checkout
+    await CT.api.guestCheckout(params.customerPhone, params.customerName);
+    msg += '👤 Client: ' + params.customerName + '\n';
+
+    // Step 2: Create order with Stripe
+    var order = await CT.api.createOrder({
+      items: [{ product_id: params.product, quantity: 1 }],
+      relay_point_id: 'Moroni Centre',
+      payment_mode: 'stripe_eur',
+      recipient_name: params.customerName,
+      recipient_phone: params.customerPhone
+    });
+    msg += '📦 Commande: ' + (order.reference || order.id) + '\n';
+    msg += '💰 Total: ' + CT.html.formatKMF(order.total_kmf) + ' / ' + (order.total_eur || '—') + ' EUR\n\n';
+
+    // Step 3: Create PaymentIntent
+    try {
+      var intent = await CT.api.stripeCreateIntent(order.reference);
+      msg += '💳 <strong>PaymentIntent créé !</strong>\n';
+      msg += '🔑 Montant: ' + intent.amount_eur + ' EUR (' + intent.amount_cents + ' centimes)\n';
+      msg += '🎯 Secret: <code>' + intent.client_secret.substring(0, 30) + '...</code>\n\n';
+      msg += '✅ Carte test: <code>4242 4242 4242 4242</code> | Exp: 12/28 | CVC: 123';
+    } catch(e) {
+      msg += '⚠️ PaymentIntent non créé: ' + e.message + '\n';
+      msg += '(Stripe est probablement non configuré côté serveur)';
+    }
+
+    return msg;
+  }
+});
+
+CT.registerScenario({
+  id: 'cash-confirm',
+  name: 'Confirmer paiement cash',
+  icon: '💵',
+  category: 'payments',
+  description: 'Simule la confirmation de paiement espèces par un agent relais via le code cash de la commande.',
+  fields: [
+    { key: 'cashCode', label: 'Code cash (cash_ref_code)', type: 'text', default: '' }
+  ],
+  execute: async function(params) {
+    if (!params.cashCode) throw new Error('Veuillez entrer le code cash de la commande');
+
+    var result = await CT.api.cashConfirm(params.cashCode);
+
+    var msg = '💵 <strong>Paiement cash confirmé</strong>\n\n';
+    msg += '📋 Référence: ' + (result.reference || '—') + '\n';
+    msg += '💰 Payé à: ' + (result.paid_at || '—') + '\n';
+    msg += '⏭️ Prochaine étape: ' + (result.next_step || '—');
+    return msg;
+  }
+});
+
+CT.registerScenario({
+  id: 'exchange-rates',
+  name: 'Taux de change',
+  icon: '💱',
+  category: 'payments',
+  description: 'Affiche les taux de change actuels (EUR→KMF, AED→KMF) utilisés pour la conversion.',
+  fields: [],
+  execute: async function() {
+    var rates = await CT.api.paymentRates();
+    var msg = '💱 <strong>Taux de change actuels</strong>\n\n';
+    msg += '🇪🇺 EUR → KMF: ' + (rates.eur_kmf || '—') + '\n';
+    msg += '🇦🇪 AED → KMF: ' + (rates.aed_kmf || '—') + '\n';
+    if (rates.valid_from) msg += '📅 Valide depuis: ' + new Date(rates.valid_from).toLocaleDateString('fr-FR');
+    return msg;
+  }
+});
+
+/* ---------------------------------------------------------------
    CATEGORY: cleanup
    --------------------------------------------------------------- */
 
@@ -446,6 +597,7 @@ CT.views.scenarios = {
     var categories = {
       setup: '⚙️ Configuration',
       orders: '📦 Commandes',
+      payments: '💳 Paiements',
       problems: '⚠️ Problèmes',
       cleanup: '🧹 Nettoyage'
     };
@@ -475,16 +627,18 @@ CT.views.scenarios = {
       }
     });
 
-    // Load products into create-order product select
-    CT._loadProductSelect(el);
+    // Load products into all product selects (create-order + stripe-full-flow)
+    CT._loadProductSelect(el, 'create-order');
+    CT._loadProductSelect(el, 'stripe-full-flow');
   }
 };
 
 /**
  * Populate the create-order product select with real product data.
  */
-CT._loadProductSelect = async function(container) {
-  var selectEl = container.querySelector('#field-create-order-product');
+CT._loadProductSelect = async function(container, scenarioId) {
+  scenarioId = scenarioId || 'create-order';
+  var selectEl = container.querySelector('#field-' + scenarioId + '-product');
   if (!selectEl) return;
   try {
     var products = await CT.api.products();

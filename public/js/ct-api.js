@@ -59,7 +59,15 @@ CT.api = {
     return this.get('/api/admin/orders' + (qs ? '?' + qs : ''));
   },
   seedTest: function() { return this.post('/api/admin/seed-test', { confirm: true }); },
-  resetAll: function() { return this.post('/api/admin/reset', { confirm: true }); },
+  resetAll: function(mode) { return this.post('/api/admin/reset', { mode: mode || 'orders' }); },
+  adminCounts: function() { return this.get('/api/admin/counts'); },
+  adminUsers: function() { return this.get('/api/admin/users'); },
+
+  // ---- Payments (Stripe + Cash) ----
+  stripeCreateIntent: function(orderRef) { return this.post('/api/payments/stripe/intent', { order_reference: orderRef }); },
+  cashConfirm: function(cashRefCode) { return this.post('/api/payments/cash/confirm', { cash_ref_code: cashRefCode }); },
+  paymentRates: function() { return this.get('/api/payments/rates'); },
+  stripeConfig: function() { return this.get('/api/payments/config'); },
 
   // ---- Products ----
   // API returns {products: [...], total, limit, offset} — we extract the array
