@@ -1,22 +1,16 @@
 /**
- * KOMERCE — Notification Service v2
+ * KOMERCE — Notification Service v2.1
  *
  * Wrapper unifié : SMS (Africa's Talking) + Email (Brevo) + WhatsApp (liens)
  * Toutes les notifications sortantes passent par ce module.
  *
- * v2.0 — Ajout emails Brevo + liens WhatsApp sur TOUS les changements de statut
+ * v2.1 — Fix: aligned imports with utils/email.js exports (sendOrderEmail)
  */
 
 'use strict';
 
-const { sendSMS }               = require('../utils/sms');
-const {
-  sendOrderConfirmation,
-  sendStatusEmail,
-  getWhatsAppLink,
-  sendCashReminder,
-  getCashReminderWA,
-} = require('../utils/email');
+const { sendSMS }        = require('../utils/sms');
+const { sendOrderEmail } = require('../utils/email');
 
 // SMS templates (inchangés depuis v1)
 const STATUS_SMS = {
@@ -35,10 +29,33 @@ const PARCEL_SMS = {
 };
 
 /**
+ * Generate a WhatsApp link for a status update.
+ */
+function getWhatsAppLink(order, status) {
+  const phone = order.user_phone || order.phone;
+  if (!phone) return null;
+
+  const cleanPhone = phone.replace(/[^0-9]/g, '');
+  const ref = order.reference || '???';
+
+  const messages = {
+    ordered:     `Bonjour ! Votre commande ${ref} a été passée auprès de nos fournisseurs. Nous vous tenons informé ! 🛍️`,
+    preparation: `Bonjour ! Votre commande ${ref} est en préparation à Dubai 📦`,
+    shipped:     `Bonjour ! Votre colis ${ref} a été remis au transitaire à Dubai ✈️`,
+    in_transit:  `Bonjour ! Votre colis ${ref} est en route vers les Comores 🚢`,
+    available:   `Bonjour ! Votre colis ${ref} est disponible au relais ${order.relais_name || ''}. Venez le récupérer ! 🎉`,
+    collected:   `Merci d'avoir récupéré votre commande ${ref} ! À bientôt sur Komerce 🙏`,
+    cancelled:   `Votre commande ${ref} a été annulée. N'hésitez pas à nous contacter pour toute question.`,
+  };
+
+  const msg = messages[status];
+  if (!msg) return null;
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+}
+
+/**
  * Envoie SMS + Email + génère lien WhatsApp pour un changement de statut.
- * @param {Object} order  - Commande { id, reference, user_phone, user_email, relais_name, customer_name, ... }
- * @param {string} status - Nouveau statut
- * @returns {Object|undefined} { email, whatsapp_link } si applicable
  */
 function notifyStatusChange(order, status) {
   const results = {};
@@ -50,14 +67,14 @@ function notifyStatusChange(order, status) {
       .catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 
-  // 2. Email via Brevo (nouveau)
-  sendStatusEmail(order, status)
+  // 2. Email via Brevo (v2.1 fix: use sendOrderEmail)
+  sendOrderEmail(order, status)
     .then(r => {
-      if (r && r.sent) console.log(`[NOTIF-EMAIL] ✅ ${status} → ${order.user_email || order.customer_email}`);
+      if (r && r.sent) console.log(`[NOTIF-EMAIL] ✅ ${status} → ${order.customer_email || order.user_email}`);
     })
     .catch(e => console.error('[NOTIF-EMAIL]', e.message));
 
-  // 3. WhatsApp link (nouveau — log pour CT/Agent)
+  // 3. WhatsApp link (log pour CT/Agent)
   const waLink = getWhatsAppLink(order, status);
   if (waLink) {
     console.log(`[NOTIF-WA] 📱 Lien WhatsApp ${status} : ${waLink.substring(0, 80)}...`);
@@ -78,13 +95,11 @@ function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText
     sendSMS(phone, smsText, smsType, order.id).catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 
-  // Email via Brevo (template amélioré)
+  // Email via Brevo (v2.1 fix: use sendOrderEmail with 'confirmed' status)
   if (email) {
-    sendOrderConfirmation(
-      { reference: order.reference, total_kmf: order.total_kmf, relais_name: relais?.name },
-      email,
-      emailItems
-    ).catch(e => console.error('[NOTIF-EMAIL]', e.message));
+    const orderWithEmail = { ...order, customer_email: email, relay_name: relais?.name };
+    sendOrderEmail(orderWithEmail, 'confirmed')
+      .catch(e => console.error('[NOTIF-EMAIL]', e.message));
   }
 }
 
@@ -117,15 +132,32 @@ function notifyCancellation(order, refundInfo) {
     sendSMS(phone, smsText, 'cancellation', order.id).catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 
-  // Email annulation via Brevo
+  // Email annulation via Brevo (v2.1 fix: use sendOrderEmail)
   let refund_info_text = null;
   if (refundInfo) {
     refund_info_text = refundInfo.method === 'stripe'
       ? `Remboursement de ${refundInfo.amountEur.toFixed(2)}€ en cours (2-5 jours ouvrés Stripe).`
       : `Crédit boutique de ${Number(refundInfo.amountKmf).toLocaleString('fr-FR')} KMF crédité sur votre compte.`;
   }
-  sendStatusEmail({ ...order, refund_info: refund_info_text }, 'cancelled')
+  sendOrderEmail({ ...order, refund_info: refund_info_text }, 'cancelled')
     .catch(e => console.error('[NOTIF-EMAIL]', e.message));
+}
+
+/**
+ * Cash reminder (email + WhatsApp link).
+ */
+function sendCashReminder(order) {
+  sendOrderEmail(order, 'cash_reminder')
+    .catch(e => console.error('[NOTIF-EMAIL] cash_reminder:', e.message));
+}
+
+function getCashReminderWA(order) {
+  const phone = order.user_phone || order.phone;
+  if (!phone) return null;
+  const cleanPhone = phone.replace(/[^0-9]/g, '');
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+    `Bonjour ! Rappel : votre colis ${order.reference} vous attend au relais ${order.relais_name||''}. Montant : ${(order.total_kmf||0).toLocaleString()} KMF 💰`
+  )}`;
 }
 
 module.exports = {
@@ -133,6 +165,9 @@ module.exports = {
   notifyOrderCreated,
   notifyParcelStatus,
   notifyCancellation,
+  sendCashReminder,
+  getCashReminderWA,
+  getWhatsAppLink,
   STATUS_SMS,
   PARCEL_SMS,
 };
