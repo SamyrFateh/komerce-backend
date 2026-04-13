@@ -29,7 +29,7 @@ ul,ol{list-style:none}
   --whatsapp:#25d366;
   --red:#e53e3e;
   --white:#ffffff;
-  --text:#1a1a2e;
+  --text:#2d3a2e;
   --text-muted:#6b7280;
   --text-light:#9ca3af;
   --border:#bfcea0;
@@ -149,15 +149,8 @@ body{
   object-fit:cover;object-position:center;
   opacity:.9;
 }
-.k-hero-overlay{
-  position:absolute;bottom:0;left:0;right:0;
-  padding:8px 16px;
-  background:linear-gradient(transparent,rgba(56,142,60,.5));
-}
-.k-hero-tag{
-  font-size:13px;font-weight:600;color:var(--white);
-  text-shadow:0 1px 4px rgba(0,0,0,.3);
-}
+.k-hero-overlay{display:none}
+.k-hero-tag{display:none}
 
 /* ── SECTIONS ──────────────────────────────────────────── */
 .k-section{padding:16px 12px 8px}
@@ -206,7 +199,7 @@ body{
   padding:2px 8px;border-radius:50px;
 }
 .k-promo-card-info{padding:8px 10px}
-.k-promo-card-name{font-size:12px;font-weight:600;line-height:1.3;
+.k-promo-card-name{font-size:12px;font-weight:600;line-height:1.3;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .k-promo-card-price{
   font-size:14px;font-weight:800;color:var(--coral);margin-top:4px;
@@ -316,7 +309,7 @@ body{
 
 .k-card-info{padding:10px}
 .k-card-name{
-  font-size:13px;font-weight:600;line-height:1.3;
+  font-size:13px;font-weight:600;line-height:1.3;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   min-height:34px;
 }
