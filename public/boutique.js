@@ -283,7 +283,7 @@
             <div class="k-card-name">${p.name}</div>
             <div class="k-card-bottom">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-              ${p.promo_pct ? \`<span class="k-card-old-price">\${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>\` : ''}
+              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
           </div>
         </div>`;
