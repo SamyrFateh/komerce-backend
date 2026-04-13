@@ -351,7 +351,7 @@ tr.clickable:hover td{background:#eff6ff}
 
 <script>
 /* ── Helpers ── */
-function getToken(){const m=document.cookie.match(/komerce_token=([^;]+)/);return m?m[1]:null}
+let _isLoggedIn=false;function getToken(){return _isLoggedIn?'cookie':null}
 function fmt(n){if(n==null)return '—';return Number(n).toLocaleString('fr-FR')}
 function fmtKMF(n){return fmt(n)+' KMF'}
 function fmtEUR(n){return Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}
@@ -374,8 +374,7 @@ const STATUS_LABELS={confirmed:'Confirmée',ordered:'Commandée',preparation:'Pr
 function statusBadge(s){const c=STATUS_COLORS[s]||'#94a3b8';const l=STATUS_LABELS[s]||s;return `<span class="badge" style="background:${c}">${l}</span>`}
 
 async function api(endpoint,options={}){
-  const token=getToken();
-  const headers={'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{}),...(options.headers||{})};
+  const headers={'Content-Type':'application/json',...(options.headers||{})};
   delete options.headers;
   const res=await fetch(endpoint,{credentials:'include',headers,...options});
   if(!res.ok){const e=await res.json().catch(()=>({error:res.statusText}));throw e}
@@ -392,11 +391,11 @@ async function doLogin(){
   try{
     const res=await fetch('/api/auth/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const data=await res.json();
-    if(data.token){document.cookie=`komerce_token=${data.token}; path=/; max-age=${30*86400}`;initApp()}
+    if(data.user){_isLoggedIn=true;initApp()}
     else{errEl.textContent=data.error||data.message||'Erreur de connexion'}
   }catch(e){errEl.textContent='Erreur réseau: '+e.message}
 }
-function doLogout(){document.cookie='komerce_token=; path=/; max-age=0';location.reload()}
+function doLogout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).finally(()=>location.reload())}
 
 /* ── Navigation ── */
 const titles={overview:'🏠 Vue d\'ensemble',pipeline:'📦 Pipeline',finance:'💰 Finance',clients:'👥 Clients',retards:'⚠️ Retards & SAV',scripts:'🎮 Scripts',tendances:'📈 Tendances'};
@@ -833,7 +832,7 @@ function initApp(){
 }
 // Boot
 (function(){
-  if(getToken()){initApp()}
+  fetch('/api/auth/me',{credentials:'include'}).then(r=>{if(r.ok){_isLoggedIn=true;initApp()}})
   else{document.getElementById('loginScreen').style.display='flex'}
   // Enter key on login
   document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
