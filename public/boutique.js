@@ -14,15 +14,9 @@
   }
 
   function promoImgUrl(url, w) {
-    if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
-    // e_background_removal = détourage IA Cloudinary (add-on Background Removal)
-    const base = url.indexOf('f_auto') !== -1
-      ? url  // déjà transformé, on injecte en tête
-      : url.replace('/upload/', '/upload/e_background_removal,f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
-    if (url.indexOf('f_auto') !== -1) {
-      return url.replace('/upload/', '/upload/e_background_removal,');
-    }
-    return base;
+    // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
+    // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
+    return optimizeImgUrl(url, w);
   }
 
   function detectCurrency() {
