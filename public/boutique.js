@@ -1136,7 +1136,7 @@
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-extra';
     trackExtra.style.display = 'none';
-    const senderGroup = makePhoneInput('of-sender-phone', 'Votre tél. payeur (+269)', od, 'sender_phone');
+    const senderGroup = makeIntlPhoneInput('of-sender-phone', 'Votre tél. (pour le suivi)', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
     trkHint.textContent = 'Notifié dès que la commande arrive au relais';
@@ -1238,6 +1238,73 @@
     input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', () => { dataObj[key] = input.value; });
     group.appendChild(input);
+    return group;
+  }
+
+
+  function makeIntlPhoneInput(id, label, dataObj, key) {
+    const COUNTRIES = [
+      { code: '+33',  flag: '🇫🇷', name: 'France',         max: 10, ph: '06 12 34 56 78' },
+      { code: '+269', flag: '🇰🇲', name: 'Comores',        max: 7,  ph: '321 12 34' },
+      { code: '+32',  flag: '🇧🇪', name: 'Belgique',       max: 10, ph: '0470 12 34 56' },
+      { code: '+41',  flag: '🇨🇭', name: 'Suisse',         max: 10, ph: '076 123 45 67' },
+      { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni',    max: 11, ph: '07911 123456' },
+      { code: '+1',   flag: '🇺🇸', name: 'USA / Canada',   max: 11, ph: '202 555 0147' },
+      { code: '+971', flag: '🇦🇪', name: 'Émirats',        max: 9,  ph: '050 123 4567' },
+      { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite',max: 9,  ph: '055 123 4567' },
+      { code: '+60',  flag: '🇲🇾', name: 'Malaisie',       max: 10, ph: '012 345 6789' },
+      { code: '+212', flag: '🇲🇦', name: 'Maroc',          max: 9,  ph: '0612 345678' },
+    ];
+    let currentCountry = COUNTRIES[0];
+
+    const group = document.createElement('div');
+    group.style.cssText = 'margin-bottom:8px;';
+
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
+    lbl.textContent = label;
+    group.appendChild(lbl);
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:0;position:relative;';
+
+    /* selector */
+    const sel = document.createElement('select');
+    sel.id = id + '-country';
+    sel.style.cssText = 'appearance:none;-webkit-appearance:none;background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 8px 9px 10px;font-weight:700;font-size:0.88rem;color:#555;cursor:pointer;outline:none;min-width:72px;text-align:center;';
+    COUNTRIES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.code;
+      opt.textContent = c.flag + ' ' + c.code;
+      sel.appendChild(opt);
+    });
+    wrap.appendChild(sel);
+
+    /* number input */
+    const input = document.createElement('input');
+    input.type = 'tel';
+    input.id = id;
+    input.placeholder = currentCountry.ph;
+    input.value = dataObj[key] || '';
+    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;min-width:0;';
+
+    const sync = () => {
+      dataObj[key] = currentCountry.code + input.value.replace(/\s/g,'');
+    };
+
+    sel.addEventListener('change', () => {
+      currentCountry = COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
+      input.placeholder = currentCountry.ph;
+      input.maxLength = currentCountry.max + 4; /* allow spaces */
+      sync();
+    });
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.addEventListener('input', sync);
+
+    input.maxLength = currentCountry.max + 4;
+    wrap.appendChild(input);
+    group.appendChild(wrap);
     return group;
   }
 
@@ -1367,7 +1434,7 @@
         recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false,
-        sender_phone: senderPhone ? '+269' + senderPhone.replace(/\s/g,'') : undefined
+        sender_phone: senderPhone || undefined
       });
 
       const orderData = apiResult.order || apiResult;
