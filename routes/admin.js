@@ -191,40 +191,27 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
   try {
     await client.query('BEGIN');
     
-    // Use TRUNCATE CASCADE for clean, reliable deletion
-    // This properly handles all FK constraints
-    // Delete child tables using SAVEPOINT to survive missing tables
-    // In PostgreSQL, a failed query inside a transaction aborts the whole TX
-    // unless wrapped in SAVEPOINT/ROLLBACK TO SAVEPOINT
-    const orderChildTables = ['scans', 'order_status_history', 'ceremony_order_items', 'disputes', 'order_items'];
+    // Count orders before truncate (TRUNCATE doesn't support RETURNING)
+    const { rows: [{ count: orderCount }] } = await client.query('SELECT COUNT(*)::int AS count FROM orders');
+    report.deleted.orders = orderCount;
     
-    for (const table of orderChildTables) {
-      try {
-        await client.query(`SAVEPOINT sp_${table}`);
-        const r = await client.query(`DELETE FROM ${table}`);
-        report.deleted[table] = r.rowCount;
-        await client.query(`RELEASE SAVEPOINT sp_${table}`);
-      } catch (_) {
-        await client.query(`ROLLBACK TO SAVEPOINT sp_${table}`);
-        report.deleted[table] = 'table absente';
-      }
-    }
+    // TRUNCATE CASCADE — the nuclear option that actually works.
+    // PostgreSQL automatically removes all rows in any table with FK to orders
+    // (order_items, scans, parcels, parcel_items, disputes, order_status_history, etc.)
+    // No need to manually enumerate child tables — CASCADE handles everything.
+    await client.query('TRUNCATE orders CASCADE');
     
-    // Nullify sms_log references (SET NULL, not CASCADE)
+    // Also clean sms_log references (SET NULL FK — not CASCADE'd by TRUNCATE)
     try {
       await client.query('SAVEPOINT sp_sms');
-      await client.query('UPDATE sms_log SET order_id = NULL WHERE order_id IS NOT NULL');
+      const sms = await client.query('UPDATE sms_log SET order_id = NULL WHERE order_id IS NOT NULL');
+      report.deleted.sms_log_nullified = sms.rowCount;
       await client.query('RELEASE SAVEPOINT sp_sms');
     } catch (_) {
       await client.query('ROLLBACK TO SAVEPOINT sp_sms');
     }
     
-    // Now delete orders (no more FK references)
-    const orders = await client.query('DELETE FROM orders RETURNING id');
-    report.deleted.orders = orders.rowCount;
-    
-    // Clean up baskets and recipients
-    // Clean baskets, recipients with SAVEPOINT protection
+    // Clean baskets and recipients (no FK to orders, but related session data)
     for (const tbl of ['basket_items', 'baskets', 'recipients']) {
       try {
         await client.query(`SAVEPOINT sp_clean_${tbl}`);
