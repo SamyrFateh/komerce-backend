@@ -13,7 +13,7 @@
 <div id="login-screen" class="ct-login">
   <div class="ct-login-card">
     <h1>🏗️ Komerce</h1>
-    <p>Control Tower</p>
+    <p>Control Tower v3</p>
     <form id="login-form">
       <input type="email" id="login-email" placeholder="Email" value="admin@komerce.km" required>
       <input type="password" id="login-pass" placeholder="Mot de passe" required>
@@ -23,14 +23,14 @@
   </div>
 </div>
 
-<!-- APP SHELL (hidden until login) -->
+<!-- APP SHELL -->
 <div id="app-shell" class="ct-app" style="display:none">
   
   <!-- SIDEBAR -->
   <aside class="ct-sidebar" id="sidebar">
     <div class="ct-sidebar-brand">🏗️ <span>Komerce</span> CT</div>
     <nav id="sidebar-nav">
-      <!-- Populated by ct-app.js -->
+      <!-- Built by ct-app.js -->
     </nav>
     <div class="ct-sidebar-footer">
       <span id="user-info"></span>
@@ -38,27 +38,40 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main class="ct-main">
     <header class="ct-header">
       <button class="ct-menu-toggle" id="menu-toggle">☰</button>
-      <h2 id="page-title">Overview</h2>
+      <h2 id="page-title">🧠 Global</h2>
       <div class="ct-header-actions">
         <span id="last-refresh" class="ct-muted"></span>
         <button id="btn-refresh" class="ct-btn ct-btn-sm" title="Rafraîchir">🔄</button>
+        
+        <!-- 🔔 Notification Bell -->
+        <div class="ct-notif-wrapper">
+          <button id="notif-bell" title="Notifications">
+            🔔
+            <span id="notif-badge">0</span>
+          </button>
+          <div id="notif-dropdown"></div>
+        </div>
       </div>
     </header>
     
-    <!-- Content sections — each view renders into its section -->
     <div id="content-area" class="ct-content">
-      <!-- Views are rendered here dynamically by ct-views.js -->
+      <!-- Views rendered here -->
     </div>
   </main>
 </div>
 
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Scripts (order matters) -->
 <script src="/js/ct-api.js"></script>
 <script src="/js/ct-views.js"></script>
 <script src="/js/ct-scenarios.js"></script>
+<script src="/js/ct-notifications.js"></script>
 <script src="/js/ct-app.js"></script>
 </body>
 </html>

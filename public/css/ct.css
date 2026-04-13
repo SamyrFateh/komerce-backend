@@ -850,3 +850,326 @@ img { max-width: 100%; }
 .ct-mb-lg { margin-bottom: var(--ct-space-lg); }
 .ct-mt-md { margin-top: var(--ct-space-md); }
 .ct-mt-lg { margin-top: var(--ct-space-lg); }
+
+/* ===================================================================
+   v3.0 — ACTION/INFO Zones + Notifications + Funnel
+   =================================================================== */
+
+/* ----- ACTION/INFO Zone Layout ----- */
+.ct-zone {
+  border-radius: var(--ct-radius);
+  margin-bottom: var(--ct-space-lg);
+  overflow: hidden;
+  box-shadow: var(--ct-shadow);
+}
+.ct-zone-header {
+  padding: var(--ct-space-md) var(--ct-space-lg);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: var(--ct-space-sm);
+}
+.ct-zone-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ct-zone-tag.action {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: #fff;
+}
+.ct-zone-tag.info {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #fff;
+}
+.ct-zone-body {
+  padding: 0 var(--ct-space-lg) var(--ct-space-lg);
+}
+.ct-zone-action {
+  background: linear-gradient(180deg, #fef3f2 0%, #ffffff 40%);
+  border: 1px solid #fecdd3;
+}
+.ct-zone-action .ct-zone-header {
+  color: #991b1b;
+}
+.ct-zone-info {
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 40%);
+  border: 1px solid #bfdbfe;
+}
+.ct-zone-info .ct-zone-header {
+  color: #1e40af;
+}
+
+/* ----- Action Cards Grid ----- */
+.ct-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--ct-space-md);
+}
+.ct-action-card {
+  background: var(--ct-surface);
+  border-radius: var(--ct-radius);
+  padding: var(--ct-space-lg) var(--ct-space-md);
+  text-align: center;
+  box-shadow: var(--ct-shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-top: 3px solid var(--ct-blue);
+}
+.ct-action-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--ct-shadow-lg);
+}
+.ct-action-card.red { border-top-color: var(--ct-red); }
+.ct-action-card.amber { border-top-color: var(--ct-amber); }
+.ct-action-card.orange { border-top-color: var(--ct-orange); }
+.ct-action-card.green { border-top-color: var(--ct-green); }
+.ct-action-card.blue { border-top-color: var(--ct-blue); }
+.ct-action-card.purple { border-top-color: var(--ct-purple); }
+.ct-action-card.cyan { border-top-color: var(--ct-cyan); }
+
+.ct-action-icon { font-size: 1.8rem; margin-bottom: var(--ct-space-xs); }
+.ct-action-value { font-size: 2rem; font-weight: 800; line-height: 1.2; }
+.ct-action-label { font-size: 0.8rem; color: var(--ct-text-secondary); margin-top: 2px; }
+
+/* Value color coding: 0 = green, >0 for danger cards = red pulse */
+.ct-action-card.red .ct-action-value { color: var(--ct-red); }
+.ct-action-card.amber .ct-action-value { color: var(--ct-amber); }
+
+/* ----- Stat Grid ----- */
+.ct-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--ct-space-md);
+}
+.ct-stat-item {
+  text-align: center;
+  padding: var(--ct-space-md);
+  background: var(--ct-bg);
+  border-radius: var(--ct-radius-sm);
+}
+.ct-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ct-text);
+}
+.ct-stat-label {
+  font-size: 0.75rem;
+  color: var(--ct-text-secondary);
+  margin-top: 2px;
+}
+
+/* ----- Funnel ----- */
+.ct-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ct-funnel-step {
+  display: flex;
+  align-items: center;
+  gap: var(--ct-space-sm);
+}
+.ct-funnel-label {
+  width: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ct-text-secondary);
+  text-align: right;
+  flex-shrink: 0;
+}
+.ct-funnel-bar {
+  flex: 1;
+  height: 22px;
+  background: var(--ct-bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.ct-funnel-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+  min-width: 4px;
+}
+.ct-funnel-count {
+  width: 36px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ----- Notification Bell ----- */
+.ct-notif-wrapper {
+  position: relative;
+}
+#notif-bell {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--ct-radius-sm);
+  transition: background 0.2s;
+  position: relative;
+}
+#notif-bell:hover {
+  background: var(--ct-bg);
+}
+#notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  background: var(--ct-red);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 999px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(239,68,68,0.4);
+}
+.ct-bell-pulse {
+  animation: ct-bell-ring 0.6s ease 3;
+}
+@keyframes ct-bell-ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(12deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-8deg); }
+  75% { transform: rotate(4deg); }
+}
+
+/* ----- Notification Dropdown ----- */
+#notif-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 340px;
+  max-height: 480px;
+  background: var(--ct-surface);
+  border: 1px solid var(--ct-border);
+  border-radius: var(--ct-radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 200;
+  overflow: hidden;
+}
+.ct-notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ct-space-md);
+  border-bottom: 1px solid var(--ct-border);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.ct-notif-clear {
+  background: none;
+  border: none;
+  color: var(--ct-blue);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.ct-notif-clear:hover { text-decoration: underline; }
+.ct-notif-list {
+  overflow-y: auto;
+  max-height: 400px;
+}
+.ct-notif-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ct-space-sm);
+  padding: 10px var(--ct-space-md);
+  border-bottom: 1px solid var(--ct-border);
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.ct-notif-item:hover { background: var(--ct-bg); }
+.ct-notif-item:last-child { border-bottom: none; }
+.ct-notif-unread { background: #eff6ff; }
+.ct-notif-danger { border-left: 3px solid var(--ct-red); }
+.ct-notif-warning { border-left: 3px solid var(--ct-amber); }
+.ct-notif-success { border-left: 3px solid var(--ct-green); }
+.ct-notif-icon { font-size: 1.1rem; flex-shrink: 0; }
+.ct-notif-text { flex: 1; }
+.ct-notif-time { color: var(--ct-text-muted); font-size: 0.72rem; flex-shrink: 0; }
+.ct-notif-empty {
+  padding: var(--ct-space-xl);
+  text-align: center;
+  color: var(--ct-text-muted);
+  font-size: 0.9rem;
+}
+
+/* ----- Toast System ----- */
+#toast-container {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+.ct-toast {
+  padding: 12px 16px;
+  border-radius: var(--ct-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: var(--ct-shadow-lg);
+  animation: ct-toast-in 0.3s ease;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.ct-toast.success { background: var(--ct-green-light); color: var(--ct-green-dark); border-left: 4px solid var(--ct-green); }
+.ct-toast.error { background: var(--ct-red-light); color: var(--ct-red); border-left: 4px solid var(--ct-red); }
+.ct-toast.warning { background: var(--ct-amber-light); color: #92400e; border-left: 4px solid var(--ct-amber); }
+@keyframes ct-toast-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ----- Nav Separator ----- */
+.ct-nav-separator {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: var(--ct-space-sm) var(--ct-space-md);
+}
+
+/* ----- ct-mt-md helper ----- */
+.ct-mt-md { margin-top: var(--ct-space-md); }
+
+/* ----- Mobile adjustments for new layout ----- */
+@media (max-width: 768px) {
+  .ct-action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #notif-dropdown {
+    width: 300px;
+    right: -60px;
+  }
+  .ct-funnel-label {
+    width: 70px;
+    font-size: 0.7rem;
+  }
+}
+@media (max-width: 480px) {
+  .ct-action-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ct-action-value {
+    font-size: 1.5rem;
+  }
+}
