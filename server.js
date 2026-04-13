@@ -1,25 +1,11 @@
 /**
- * KOMERCE — Serveur API v10.12 (F34 stock constraint garantit admin au démarrage)
+ * KOMERCE — Serveur API v10.13 (Relay dashboard + suivi.html public)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
- * Changelog v10.5 : seedAdmin() ajouté — admin@komerce.km garanti au démarrage
- * Changelog v10.4 : Vague 3 — migrations non-bloquantes (démarrage immédiat),
- *                   gestion centralisée des erreurs (middleware/error-handler.js)
- * Changelog v10.3 : Étape 3 clean-up — pilotage.js supprimé, finance dé-dupliqué,
- *                   seeds + migrations extraits dans scripts/
- * Changelog v10.0 : Dashboards unifiés v11 — pilotage.js absorbé, 0 overlap, auth blindée
- * Changelog v9.2 : Helmet CSP corrigé — inline scripts + Google Fonts + images HTTPS autorisés
- * Changelog v9.1 : BUG-014 cookie-parser ajouté — JWT migré vers httpOnly cookie
- * Changelog v8.8 : migration robuste (try/catch individuel) + CREATE TABLE partners + gen_random_uuid
- * Changelog v8.7 : auto-migration customs_history colonnes + loyalty_tiers table + users.loyalty_tier_id
- * Changelog v8.6 : auto-migration bcrypt admin hash · fix P0 dashboard + scans · fix 404 routes
- * Changelog v8.5 : rate-limit middleware branché · health route montée · .env retiré du repo
- * Changelog v8.1 : Helmet · CORS fix · graceful shutdown · health check DB · cron lock
- * Changelog v8.0 : /api/loyalty ajouté · /api/unsold ajouté · migration session 6
- * Changelog v7.6 : /api/purchasing ajouté · triggerPurchasing dans payments.js (cash + Stripe)
- * Changelog v7.5 : /api/ceremony → /api/modules · /api/pilotage ajouté
+ * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
+ * Changelog v10.12: F34 stock constraint garantit admin au démarrage
  */
 
 require('dotenv').config();
@@ -57,13 +43,8 @@ const {
   adminLimiter,
 } = require('./middleware/rate-limit');
 
-// ── Migrations extraites (FIX-012 + Vague 3) ──────────────────────────────
-// Les migrations NE BLOQUENT PLUS le démarrage — elles tournent en background
-// après que le serveur est prêt à recevoir des requêtes.
 const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
 const { runAllSeeds }                     = require('./scripts/seed');
-
-// ── Gestion centralisée des erreurs (Vague 3) ───────────────────────────
 const { errorHandler } = require('./middleware/error-handler');
 
 const app = express();
@@ -72,7 +53,7 @@ app.set('trust proxy', 1);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
-// ── CORS — politique stricte (Vague 1 security hardening) ──────────────────────
+// ── CORS ──────────────────────────────────────────────────────────────────────
 
 function isAllowedOrigin(origin) {
   if (!origin) return true;
@@ -122,16 +103,11 @@ app.use(helmet({
 
 app.use(cors(corsOptions));
 
-// ── Body parsing ─────────────────────────────────────────────────────────
-
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-// ── Cookie parser (BUG-014 : JWT httpOnly cookie) ────────────────────────────
-
 app.use(cookieParser());
 
-// ── Rate limiting (middleware/rate-limit.js) ────────────────────────────────
+// ── Rate limiting ────────────────────────────────────────────────────────────
 
 app.use('/api/', globalLimiter);
 app.use('/api/auth/login', authLimiter);
@@ -151,11 +127,11 @@ app.use('/api/admin/', adminLimiter);
 // ── Auth guard injection — auto-injects session checker into admin pages ────
 const _fs = require('fs');
 app.get('/*.html', (req, res, next) => {
-  // Skip boutique and portal — they handle their own auth
-  if (req.path.includes('Boutique') || req.path === '/portal.html') return next();
+  // Skip boutique, portal, and public pages
+  if (req.path.includes('Boutique') || req.path === '/portal.html' || req.path === '/suivi.html') return next();
   const filePath = path.join(__dirname, 'public', req.path);
   _fs.readFile(filePath, 'utf8', (err, html) => {
-    if (err) return next(); // file not found — fall through
+    if (err) return next();
     html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\n</body>');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -193,11 +169,11 @@ const purchasingRouter = require('./routes/purchasing');
 const loyaltyRouter    = require('./routes/loyalty');
 const unsoldRouter     = require('./routes/unsold');
 const healthRouter     = require('./routes/health');
-// P1-001 fix: configRouter removed (no config table in DB)
 const parcelsRouter    = require('./routes/parcels');
 const hubRouter        = require('./routes/hub');
 const carriersRouter   = require('./routes/carriers');
 const walletRouter     = require('./routes/wallet');
+const relayDashRouter  = require('./routes/relay-dashboard');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -211,6 +187,7 @@ app.use('/api/admin/pilotage', dashboardRouter);
 app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/dashboard',  dashboardRouter);
+app.use('/api/relay',      relayDashRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);
@@ -231,10 +208,9 @@ app.use('/api/finance', (req, res) => {
 app.use('/api/purchasing', purchasingRouter);
 app.use('/api/loyalty',    loyaltyRouter);
 app.use('/api/unsold',     unsoldRouter);
-// P1-001 fix: /api/config route removed (dead route)
 app.use('/health',         healthRouter);
 
-// ── Healthcheck (avec test DB) ─────────────────────────────────────────────
+// ── Healthcheck ─────────────────────────────────────────────────────────────
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -242,7 +218,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.12',
+      version:       '10.13',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -262,12 +238,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Komerce_Boutique.html'));
 });
 
-// ── Gestion centralisée des erreurs (Vague 3) ────────────────────────────
-// Doit être monté APRÈS toutes les routes.
-
 app.use(errorHandler);
 
-// ── Cron cash relais (avec verrou anti-concurrence) ───────────────────────────
+// ── Cron cash relais ──────────────────────────────────────────────────────────
 
 const { processCashRelaisReminders, processBackorderReminders } = require('./utils/sms');
 const { getRuleNumber: _getRuleNum } = require('./utils/rules');
@@ -321,34 +294,23 @@ setTimeout(() => {
     .catch(err => console.error('[CRON] Initial backorder check error:', err.message));
 }, 30 * 1000);
 
-// ── Démarrage + Graceful Shutdown ──────────────────────────────────────────────────
-// Vague 3 : le serveur démarre IMMEDÉDIATEMENT.
-// Les migrations tournent en background après listen() — elles ne bloquent plus Railway.
+// ── Démarrage + Graceful Shutdown ──────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 
-// Init wallet tables at startup
 walletService.ensureWalletTables().catch(e => console.error('Wallet init error:', e.message));
-
-// Init routing columns at startup (additive, idempotent)
 routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init error:', e.message));
-
-// Init parcel security tables at startup (parcel_events, external_code, seal_code)
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.11 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.13 — port ${PORT} — démarrage immédiat — migrations en background`);
 
-  // ── Migrations & seeds non-bloquantes ───────────────────────────────────
   setImmediate(async () => {
     try {
       await fixAdminHash();
       await fixMissingSchema();
       await runAllSeeds();
 
-      // ── Phase 1 safety-net migrations (idempotent) ─────────────────
-      // D7: JWT_SECRET enforced at startup (REQUIRED_ENV)
-      // F1: Rename transit_comores_at → in_transit_at
       try {
         await db.query(`
           DO $$ BEGIN
@@ -361,7 +323,6 @@ const server = app.listen(PORT, () => {
         `);
       } catch(e) { console.warn('Phase1 migration (non-fatal):', e.message); }
 
-      // Add in_transit to scan_step enum if missing
       try {
         await db.query(`
           DO $$ BEGIN
@@ -374,7 +335,6 @@ const server = app.listen(PORT, () => {
         `);
       } catch(e) { console.warn('Phase1 scan_step migration (non-fatal):', e.message); }
 
-      // F34: prevent negative stock at DB level
       try {
         await db.query(`DO $$ BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_stock_nonneg')
@@ -401,4 +361,3 @@ process.on('SIGTERM', () => {
 });
 
 module.exports = app;
-
