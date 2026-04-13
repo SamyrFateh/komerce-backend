@@ -1,16 +1,20 @@
 /**
- * KOMERCE — Notification Service v2.1
+ * KOMERCE — Notification Service v2.2
  *
  * Wrapper unifié : SMS (Africa's Talking) + Email (Brevo) + WhatsApp (liens)
  * Toutes les notifications sortantes passent par ce module.
  *
- * v2.1 — Fix: aligned imports with utils/email.js exports (sendOrderEmail)
+ * v2.2 — Emails uniquement aux étapes clés (confirmed, shipped, available, cancelled)
+ *        SMS/WA restent à chaque transition.
  */
 
 'use strict';
 
 const { sendSMS }        = require('../utils/sms');
 const { sendOrderEmail } = require('../utils/email');
+
+// Statuts pour lesquels on envoie un EMAIL (les moments importants)
+const EMAIL_STATUSES = new Set(['confirmed', 'shipped', 'available', 'cancelled']);
 
 // SMS templates (inchangés depuis v1)
 const STATUS_SMS = {
@@ -55,24 +59,28 @@ function getWhatsAppLink(order, status) {
 }
 
 /**
- * Envoie SMS + Email + génère lien WhatsApp pour un changement de statut.
+ * Envoie SMS + Email (si étape clé) + génère lien WhatsApp pour un changement de statut.
  */
 function notifyStatusChange(order, status) {
   const results = {};
 
-  // 1. SMS (existant — Africa's Talking ou mode dev)
+  // 1. SMS — toujours (Africa's Talking ou mode dev)
   const smsPhone = order.user_phone;
   if (smsPhone && STATUS_SMS[status]) {
     sendSMS(smsPhone, STATUS_SMS[status](order.reference, order.relais_name), status, order.id)
       .catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 
-  // 2. Email via Brevo (v2.1 fix: use sendOrderEmail)
-  sendOrderEmail(order, status)
-    .then(r => {
-      if (r && r.sent) console.log(`[NOTIF-EMAIL] ✅ ${status} → ${order.customer_email || order.user_email}`);
-    })
-    .catch(e => console.error('[NOTIF-EMAIL]', e.message));
+  // 2. Email via Brevo — UNIQUEMENT aux étapes clés
+  if (EMAIL_STATUSES.has(status)) {
+    sendOrderEmail(order, status)
+      .then(r => {
+        if (r && r.sent) console.log(`[NOTIF-EMAIL] ✅ ${status} → ${order.customer_email || order.user_email}`);
+      })
+      .catch(e => console.error('[NOTIF-EMAIL]', e.message));
+  } else {
+    console.log(`[NOTIF-EMAIL] ⏭️ ${status} — pas d'email (étape intermédiaire)`);
+  }
 
   // 3. WhatsApp link (log pour CT/Agent)
   const waLink = getWhatsAppLink(order, status);
@@ -95,7 +103,7 @@ function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText
     sendSMS(phone, smsText, smsType, order.id).catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 
-  // Email via Brevo (v2.1 fix: use sendOrderEmail with 'confirmed' status)
+  // Email confirmation (étape clé → toujours envoyé)
   if (email) {
     const orderWithEmail = { ...order, customer_email: email, relay_name: relais?.name };
     sendOrderEmail(orderWithEmail, 'confirmed')
@@ -114,7 +122,7 @@ function notifyParcelStatus(parcel, status) {
 }
 
 /**
- * Notification d'annulation.
+ * Notification d'annulation (étape clé → email + SMS).
  */
 function notifyCancellation(order, refundInfo) {
   const phone = order.user_phone;
@@ -132,7 +140,7 @@ function notifyCancellation(order, refundInfo) {
     sendSMS(phone, smsText, 'cancellation', order.id).catch(e => console.error('[NOTIF-SMS]', e.message));
   }
 
-  // Email annulation via Brevo (v2.1 fix: use sendOrderEmail)
+  // Email annulation (étape clé → toujours envoyé)
   let refund_info_text = null;
   if (refundInfo) {
     refund_info_text = refundInfo.method === 'stripe'
