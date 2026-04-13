@@ -1103,14 +1103,12 @@
     /* ── Retrait aux Comores : bloc unique bénéficiaire ── */
     const od = state.orderData;
     body.appendChild(makeSection('🏪 Retrait au Point Relais'));
-    body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *',       'text',  'Nom de la personne qui récupère',  od, 'beneficiary_name'));
-    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. au relais (+269) *', od, 'beneficiary_phone'));
-    body.appendChild(makeInput('of-sender-phone',       'Votre numéro de suivi *',     'tel',   '+33 6 12 34 56 78',                od, 'sender_phone'));
+    body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *', 'text', 'Nom de la personne qui récupère', od, 'beneficiary_name'));
+    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire (+269) *', od, 'beneficiary_phone'));
     const smsPromise = document.createElement('div');
     smsPromise.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin:-8px 0 14px;padding-left:2px;display:flex;align-items:center;gap:5px;';
-    smsPromise.innerHTML = '📲 <span>Notifié dès que la commande arrive au relais</span>';
+    smsPromise.innerHTML = '📲 <span>SMS envoyé dès que la commande arrive au relais</span>';
     body.appendChild(smsPromise);
-    body.appendChild(makeInput('of-beneficiary-email',  'Email (pour le code de suivi)', 'email', 'votre@email.com',              od, 'beneficiary_email'));
 
     /* ── Payment mode ── */
     body.appendChild(makeSection('💳 Paiement'));
@@ -1324,14 +1322,12 @@
     const od = state.orderData;
     const recipName   = (document.getElementById('of-beneficiary-name')?.value  || '').trim();
     const recipPhone  = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
-    const clientEmail = (document.getElementById('of-beneficiary-email')?.value || '').trim();
-    const senderPhone = (document.getElementById('of-sender-phone')?.value      || '').trim();
     const clientName  = recipName;
     const clientPhone = '+269' + recipPhone.replace(/\s/g, '');
+    const clientEmail = undefined;
 
-    if (!recipName)   { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
-    if (!recipPhone)  { showToast('Indiquez le téléphone du récupérateur (+269).', 'error'); return; }
-    if (!senderPhone) { showToast('Indiquez votre numéro (expéditeur) pour le suivi.', 'error'); return; }
+    if (!recipName)  { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
+    if (!recipPhone) { showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error'); return; }
 
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const isStripe = od.payment_mode === 'stripe_eur';
@@ -1360,7 +1356,6 @@
         relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
         recipient_name: recipName,
         recipient_phone: fullRecipPhone,
-        sender_phone: senderPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false
       });
