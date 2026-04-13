@@ -354,6 +354,7 @@ async function loadDashboard() {
 
     // KPIs
     const p = pipeline?.pipeline || {};
+    cacheOrders(p);
     const totalActive = (pipeline?.active) || 0;
     const prep = p.preparation?.count || 0;
     const transit = p.in_transit?.count || 0;
@@ -415,7 +416,18 @@ async function loadDashboard() {
   }
 }
 
+// Cache orders from pipeline for detail lookup
+let ordersCache = {};
+
+function cacheOrders(pipeline) {
+  STATUS_FLOW.concat(['cancelled','refunded']).forEach(s => {
+    const col = pipeline[s];
+    if (col?.orders) col.orders.forEach(o => { if (o.id) ordersCache[o.reference || o.id] = o; });
+  });
+}
+
 function orderItem(o) {
+  if (o.id) ordersCache[o.reference || o.id] = o;
   return `<div class="order-item" onclick="showOrderDetail('${o.reference || o.id}')">
     <div class="order-info">
       <div class="order-ref">${o.reference || o.id || '—'}</div>
@@ -433,6 +445,7 @@ async function loadOrders() {
   try {
     const data = await api.dashPipeline();
     const p = data.pipeline || {};
+    cacheOrders(p);
     let allOrders = [];
     STATUS_FLOW.forEach(s => {
       if (p[s]?.orders) allOrders = allOrders.concat(p[s].orders);
@@ -725,8 +738,15 @@ async function showOrderDetail(ref) {
   app.appendChild(backdrop);
 
   try {
-    const order = await api.orderByRef(ref);
-    const o = order.order || order;
+    // Use cached pipeline data (has id, client_name etc.) with API fallback
+    const cached = ordersCache[ref];
+    let o;
+    if (cached && cached.id) {
+      o = cached;
+    } else {
+      const order = await api.orderByRef(ref);
+      o = order.order || order;
+    }
     const ns = nextStatus(o.status);
     const isAdmin = currentUser.role === 'admin';
     const isHub = currentUser.role === 'agent_hub';
