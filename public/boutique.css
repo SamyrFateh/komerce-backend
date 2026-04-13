@@ -168,13 +168,13 @@ body{
 
 /* ── PROMO RAIL ────────────────────────────────────────── */
 .k-promo-rail{
-  display:flex;gap:12px;
+  display:flex;gap:6px;
   overflow-x:hidden;
-  padding-bottom:8px;
+  padding-bottom:4px;
   scrollbar-width:none;
 }
 .k-promo-rail-inner{
-  display:flex;gap:12px;
+  display:flex;gap:6px;
   animation:promo-scroll 25s linear infinite;
   will-change:transform;
 }
@@ -188,7 +188,7 @@ body{
 }
 
 .k-promo-card{
-  flex:0 0 150px;scroll-snap-align:start;
+  flex:0 0 100px;scroll-snap-align:start;
   background:none;
   border-radius:0;
   overflow:visible;
@@ -199,7 +199,7 @@ body{
 }
 .k-promo-card:active{transform:scale(.97)}
 .k-promo-card-img{
-  width:100%;height:100px;
+  width:100%;height:55px;
   border-radius:14px;
   box-shadow:0 3px 12px rgba(0,0,0,.08);
   object-fit:cover;
@@ -208,15 +208,15 @@ body{
 .k-promo-badge{
   position:absolute;top:6px;left:6px;z-index:2;
   background:var(--coral);color:var(--white);
-  font-size:10px;font-weight:700;
-  padding:3px 8px;border-radius:50px;
+  font-size:9px;font-weight:700;
+  padding:2px 6px;border-radius:50px;
   box-shadow:0 1px 4px rgba(0,0,0,.15);
 }
-.k-promo-card-info{padding:5px 4px 0;background:none}
-.k-promo-card-name{font-size:12px;font-weight:600;line-height:1.3;color:var(--text);
+.k-promo-card-info{padding:2px 2px 0;background:none}
+.k-promo-card-name{font-size:10px;font-weight:600;line-height:1.3;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .k-promo-card-price{
-  font-size:12px;font-weight:700;color:var(--coral);margin-top:4px;display:block;line-height:1.2;
+  font-size:10px;font-weight:700;color:var(--coral);margin-top:2px;display:block;line-height:1.2;
 }
 .k-promo-card-old{
   font-size:10px;color:var(--text-light);text-decoration:line-through;margin-left:0;display:block;line-height:1.2;
@@ -224,8 +224,8 @@ body{
 
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
 .k-cats{
-  display:flex;gap:6px;
-  padding:6px 12px;
+  display:flex;flex-wrap:nowrap;gap:4px;
+  padding:3px 10px;
   overflow-x:auto;
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
@@ -233,9 +233,10 @@ body{
 .k-cats::-webkit-scrollbar{display:none}
 .k-chip{
   flex-shrink:0;
-  padding:6px 12px;
+  white-space:nowrap;
+  padding:4px 8px;
   border-radius:50px;
-  font-size:12px;font-weight:600;
+  font-size:10px;font-weight:600;
   background:var(--white);
   color:var(--text);
   box-shadow:var(--shadow-sm);
@@ -275,7 +276,7 @@ body{
   background:var(--sand-dark);
 }
 .k-card-img{
-  width:100%;aspect-ratio:3/2;
+  width:100%;aspect-ratio:16/9;
   object-fit:cover;
   transition:transform .3s;
 }
@@ -323,7 +324,7 @@ body{
 
 .k-card-info{padding:6px 8px}
 .k-card-name{
-  font-size:11px;font-weight:600;line-height:1.2;color:var(--text);
+  font-size:10px;font-weight:600;line-height:1.2;color:var(--text);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   min-height:26px;
 }
@@ -853,7 +854,7 @@ body{
 /* ── RESPONSIVE ────────────────────────────────────────── */
 @media(min-width:480px){
   .k-grid{grid-template-columns:repeat(3,1fr)}
-  .k-promo-card{flex:0 0 160px}
+  .k-promo-card{flex:0 0 120px}
   .k-hero img{height:160px}
 }
 @media(min-width:768px){
@@ -911,6 +912,6 @@ body{
 /* Very small screens */
 @media(max-width:380px){
   .k-logo-text{display:none}
-  .k-promo-card{flex:0 0 140px}
+  .k-promo-card{flex:0 0 90px}
   .k-grid{gap:10px;padding:4px 10px 16px}
 }
