@@ -205,6 +205,81 @@
     localStorage.setItem('k_favs', JSON.stringify(state.favs));
   }
 
+
+  /* ── SKELETON LOADING ───────────────────────────────────── */
+  function showSkeletons(n) {
+    if (!dom.grid) return;
+    dom.grid.innerHTML = Array.from({length: n}, () => `
+      <div class="k-card k-card-skeleton">
+        <div class="k-skeleton k-skeleton-img"></div>
+        <div class="k-card-info">
+          <div class="k-skeleton k-skeleton-title"></div>
+          <div class="k-skeleton k-skeleton-price"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  function hideSkeletons() {
+    dom.grid.querySelectorAll('.k-card-skeleton').forEach(el => el.remove());
+  }
+
+  /* ── INFINITE SCROLL — append next page ─────────────────── */
+  function appendNextPage() {
+    const spinner = document.getElementById('k-load-more-spinner');
+    const list = state.activeCat === 'all'
+      ? state.filtered
+      : state.filtered.filter(p => p.category === state.activeCat);
+    const start = (state.page + 1) * state.pageSize;
+    if (start >= list.length) {
+      if (spinner) spinner.classList.remove('show');
+      return;
+    }
+    state.page += 1;
+    const nextItems = list.slice(start, start + state.pageSize);
+    const fragment = nextItems.map(p => {
+      const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+      const qty = inCart ? inCart.qty : 0;
+      return `
+        <div class="k-card" data-id="${p.id}">
+          <div class="k-card-img-wrap">
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+            ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
+            <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
+              ${isFav(p.id) ? '❤️' : '🤍'}
+            </button>
+            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+              <span class="k-card-add-plus">${qty > 0 ? qty : '+'}</span>
+            </button>
+          </div>
+          <div class="k-card-info">
+            <div class="k-card-name">${p.name}</div>
+            <div class="k-card-bottom">
+              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+    dom.grid.insertAdjacentHTML('beforeend', fragment);
+    // Re-bind events on new cards
+    dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
+      card.dataset.bound = '1';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add')) return;
+        openModal(card.dataset.id);
+      });
+    });
+    dom.grid.querySelectorAll('.k-card-fav:not([data-bound])').forEach(btn => {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(btn.dataset.fav, btn); });
+    });
+    dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); quickAdd(btn.dataset.add, btn); });
+    });
+    if (spinner) spinner.classList.remove('show');
+  }
+
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
   async function loadProducts() {
     showSkeletons(16);
@@ -215,6 +290,7 @@
         .filter(p => p.is_available);
       state.filtered = [...state.products];
       renderPromos();
+      hideSkeletons();
       renderGrid();
     } catch (e) {
       showToast('Erreur de chargement', 'error');
@@ -260,11 +336,13 @@
 
   /* ── RENDER GRID ────────────────────────────────────────── */
   function renderGrid() {
+    state.page = 0;
     const list = state.activeCat === 'all'
       ? state.filtered
       : state.filtered.filter(p => p.category === state.activeCat);
+    const pageItems = list.slice(0, state.pageSize);
 
-    dom.grid.innerHTML = list.map(p => {
+    dom.grid.innerHTML = pageItems.map(p => {
       const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
       const qty = inCart ? inCart.qty : 0;
       return `

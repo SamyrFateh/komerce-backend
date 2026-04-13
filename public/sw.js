@@ -63,7 +63,8 @@ self.addEventListener('fetch', (e) => {
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            caches.open(CACHE).then((c) => c.put(request, response.clone()).catch(() => {}));
+            const responseClone = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, responseClone).catch(() => {}));
           }
           return response;
         })
@@ -85,7 +86,8 @@ self.addEventListener('fetch', (e) => {
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            caches.open(CACHE).then((c) => c.put(request, response.clone()).catch(() => {}));
+            const responseClone = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, responseClone).catch(() => {}));
           }
           return response;
         })
@@ -101,7 +103,8 @@ self.addEventListener('fetch', (e) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
           if (response.ok) {
-            caches.open(CACHE).then((c) => c.put(request, response.clone()).catch(() => {}));
+            const responseClone = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, responseClone).catch(() => {}));
           }
           return response;
         });
