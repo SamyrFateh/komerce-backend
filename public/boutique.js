@@ -106,7 +106,7 @@
     modalHistory: [],
     searchTimeout: null,
     relais: [],
-    orderData: { is_self_pickup: true, payment_mode: 'cash_relais' },
+    orderData: { payment_mode: 'cash_relais' },
     walletBalance: 0,
     page: 0,
     pageSize: 16,
@@ -1057,7 +1057,7 @@
   function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     closeCart();
-    state.orderData = { is_self_pickup: true, payment_mode: 'cash_relais' };
+    state.orderData = { payment_mode: 'cash_relais' };
     renderCheckout();
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
@@ -1100,43 +1100,17 @@
     summary.appendChild(priceLine);
     body.appendChild(summary);
 
-    /* ── Toggle: Self pickup ── */
+    /* ── Retrait aux Comores : bloc unique bénéficiaire ── */
     const od = state.orderData;
-    const toggleWrap = document.createElement('div');
-    toggleWrap.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:' + (od.is_self_pickup ? 'rgba(91,196,154,0.12)' : '#e8eddb') + ';border-radius:8px;margin-bottom:10px;cursor:pointer;border:2px solid ' + (od.is_self_pickup ? 'var(--green)' : 'rgba(0,0,0,0.08)') + ';transition:all 0.2s;user-select:none;';
-
-    const toggleTrack = document.createElement('div');
-    toggleTrack.style.cssText = 'width:40px;height:22px;border-radius:11px;background:' + (od.is_self_pickup ? 'var(--green)' : '#ccc') + ';position:relative;transition:background 0.3s;flex-shrink:0;';
-    const toggleThumb = document.createElement('div');
-    toggleThumb.style.cssText = 'width:18px;height:18px;border-radius:50%;background:white;position:absolute;top:2px;left:' + (od.is_self_pickup ? '20px' : '2px') + ';transition:left 0.3s;box-shadow:0 1px 3px rgba(0,0,0,0.2);';
-    toggleTrack.appendChild(toggleThumb);
-    toggleWrap.appendChild(toggleTrack);
-
-    const toggleLabel = document.createElement('span');
-    toggleLabel.style.cssText = 'font-size:0.88rem;font-weight:600;';
-    toggleLabel.textContent = '🏪 C\u2019est moi qui récupère au relais';
-    toggleWrap.appendChild(toggleLabel);
-    toggleWrap.addEventListener('click', () => { od.is_self_pickup = !od.is_self_pickup; renderCheckout(); });
-    body.appendChild(toggleWrap);
-
-    if (od.is_self_pickup) {
-      body.appendChild(makeSection('👤 Vos coordonnées'));
-      body.appendChild(makeInput('of-my-name', 'Nom complet *', 'text', 'Votre nom', od, 'my_name'));
-      body.appendChild(makePhoneInput('of-my-phone', 'Téléphone (+269) *', od, 'my_phone'));
-      body.appendChild(makeInput('of-my-email', 'Email (pour le suivi)', 'email', 'votre@email.com', od, 'my_email'));
-    } else {
-      body.appendChild(makeSection('📍 Personne qui récupère au relais'));
-      body.appendChild(makeInput('of-pickup-name', 'Nom complet *', 'text', 'Nom de la personne locale', od, 'pickup_name'));
-      body.appendChild(makePhoneInput('of-pickup-phone', 'Téléphone (+269) *', od, 'pickup_phone'));
-      body.appendChild(makeSection('👤 Vos coordonnées'));
-      const hint = document.createElement('div');
-      hint.style.cssText = 'font-size:0.78rem;color:var(--text-muted);margin:-6px 0 10px;';
-      hint.textContent = 'Pour recevoir le suivi de votre commande';
-      body.appendChild(hint);
-      body.appendChild(makeInput('of-client-name', 'Votre nom', 'text', 'Votre nom', od, 'client_name'));
-      body.appendChild(makeInput('of-client-phone', 'Téléphone', 'tel', '+33 6 ...', od, 'client_phone'));
-      body.appendChild(makeInput('of-client-email', 'Email', 'email', 'votre@email.com', od, 'client_email'));
-    }
+    body.appendChild(makeSection('🏪 Retrait au Point Relais'));
+    body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *',       'text',  'Nom de la personne qui récupère',  od, 'beneficiary_name'));
+    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. au relais (+269) *', od, 'beneficiary_phone'));
+    body.appendChild(makeInput('of-sender-phone',       'Votre numéro de suivi *',     'tel',   '+33 6 12 34 56 78',                od, 'sender_phone'));
+    const smsPromise = document.createElement('div');
+    smsPromise.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin:-8px 0 14px;padding-left:2px;display:flex;align-items:center;gap:5px;';
+    smsPromise.innerHTML = '📲 <span>Notifié dès que la commande arrive au relais</span>';
+    body.appendChild(smsPromise);
+    body.appendChild(makeInput('of-beneficiary-email',  'Email (pour le code de suivi)', 'email', 'votre@email.com',              od, 'beneficiary_email'));
 
     /* ── Payment mode ── */
     body.appendChild(makeSection('💳 Paiement'));
@@ -1227,10 +1201,10 @@
     confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
     body.appendChild(confirmBtn);
 
-    const hint = document.createElement('div');
-    hint.style.cssText = 'text-align:center;font-size:0.75rem;color:#888;margin-top:8px;';
-    hint.textContent = 'Code + QR envoyés par SMS pour le retrait';
-    body.appendChild(hint);
+    const smsHint = document.createElement('div');
+    smsHint.style.cssText = 'text-align:center;font-size:0.75rem;color:#888;margin-top:8px;';
+    smsHint.textContent = 'Code + QR envoyés par SMS pour le retrait';
+    body.appendChild(smsHint);
   }
 
   /* ── Checkout form helpers ── */
@@ -1348,24 +1322,16 @@
   /* ── Submit Order ── */
   async function submitOrder(btn) {
     const od = state.orderData;
-    let recipName, recipPhone, clientName, clientPhone, clientEmail;
+    const recipName   = (document.getElementById('of-beneficiary-name')?.value  || '').trim();
+    const recipPhone  = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
+    const clientEmail = (document.getElementById('of-beneficiary-email')?.value || '').trim();
+    const senderPhone = (document.getElementById('of-sender-phone')?.value      || '').trim();
+    const clientName  = recipName;
+    const clientPhone = '+269' + recipPhone.replace(/\s/g, '');
 
-    if (od.is_self_pickup) {
-      recipName = (document.getElementById('of-my-name')?.value || '').trim();
-      recipPhone = (document.getElementById('of-my-phone')?.value || '').trim();
-      clientName = recipName;
-      clientPhone = '+269' + recipPhone.replace(/\s/g, '');
-      clientEmail = (document.getElementById('of-my-email')?.value || '').trim();
-    } else {
-      recipName = (document.getElementById('of-pickup-name')?.value || '').trim();
-      recipPhone = (document.getElementById('of-pickup-phone')?.value || '').trim();
-      clientName = (document.getElementById('of-client-name')?.value || '').trim() || recipName;
-      clientPhone = (document.getElementById('of-client-phone')?.value || '').trim() || ('+269' + recipPhone.replace(/\s/g, ''));
-      clientEmail = (document.getElementById('of-client-email')?.value || '').trim();
-    }
-
-    if (!recipName) { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
-    if (!recipPhone) { showToast('Indiquez le téléphone du récupérateur.', 'error'); return; }
+    if (!recipName)   { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
+    if (!recipPhone)  { showToast('Indiquez le téléphone du récupérateur (+269).', 'error'); return; }
+    if (!senderPhone) { showToast('Indiquez votre numéro (expéditeur) pour le suivi.', 'error'); return; }
 
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const isStripe = od.payment_mode === 'stripe_eur';
@@ -1394,6 +1360,7 @@
         relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
         recipient_name: recipName,
         recipient_phone: fullRecipPhone,
+        sender_phone: senderPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false
       });
@@ -1573,6 +1540,59 @@
   }
 
   /* ── VUE SUIVI ───────────────────────────────────────────── */
+  /* ── OTP helpers ────────────────────────────────────────────────────── */
+  const TRACK_STEPS = [
+    { key: 'pending',     label: 'Commande reçue',         icon: '✓',  sub: 'Enregistrée avec succès' },
+    { key: 'preparing',   label: 'En préparation',          icon: '⚙️', sub: 'Nous préparons votre colis' },
+    { key: 'in_transit',  label: 'En route vers le relais', icon: '🚚', sub: '' },
+    { key: 'at_relay',    label: 'Disponible au relais',    icon: '🏪', sub: 'Prêt à être retiré' },
+    { key: 'delivered',   label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' }
+  ];
+
+  function buildTimeline(status) {
+    const idx = TRACK_STEPS.findIndex(s => s.key === status);
+    return TRACK_STEPS.map((s, i) => {
+      const done    = i < idx;
+      const current = i === idx;
+      const cls     = done ? 'done' : current ? 'current' : '';
+      return `<div class="k-track-step">
+        <div class="k-track-step-dot ${cls}">${done ? '✓' : s.icon}</div>
+        <div class="k-track-step-info">
+          <div class="k-track-step-label">${s.label}</div>
+          <div class="k-track-step-sub">${s.sub}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderOrdersHistory(orders, container) {
+    if (!orders.length) {
+      container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);">Aucune commande trouvée.</div>';
+      return;
+    }
+    container.innerHTML = orders.map(o => `
+      <div class="k-order-card">
+        <div class="k-order-card-head">
+          <span class="k-order-ref">${o.reference || o.id}</span>
+          <span class="k-order-date">${o.created_at ? new Date(o.created_at).toLocaleDateString('fr-FR') : ''}</span>
+        </div>
+        <div class="k-order-card-total">${fmt(o.total_amount || 0, 'KMF')}</div>
+        <div class="k-track-steps k-track-steps--compact">${buildTimeline(o.status || 'pending')}</div>
+      </div>`).join('');
+  }
+
+  function renderOrderDetail(order, container) {
+    container.innerHTML = `
+      <div class="k-order-card">
+        <div class="k-order-card-head">
+          <span class="k-order-ref">${order.reference || order.id}</span>
+          <span class="k-order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : ''}</span>
+        </div>
+        <div class="k-order-card-total">${fmt(order.total_amount || 0, 'KMF')}</div>
+        <div class="k-track-steps">${buildTimeline(order.status || 'pending')}</div>
+      </div>`;
+  }
+
   function renderTrackView() {
     let el = document.getElementById('k-track-view');
     if (!el) {
@@ -1581,49 +1601,119 @@
       const favEl = document.getElementById('k-fav-view') || document.getElementById('k-catalog-section');
       favEl.after(el);
     }
-    el.innerHTML = `<h2>📦 Suivi de commande</h2>
-      <div class="k-track-form">
-        <label>Numéro de commande</label>
-        <input class="k-track-input" id="k-track-input" type="text" placeholder="ex: KMR-2025-0042" autocomplete="off">
-        <button class="k-track-btn" id="k-track-submit-btn">Rechercher</button>
+
+    const otpState = { email: '' };
+
+    el.innerHTML = `
+      <h2>📦 Suivi & Historique</h2>
+
+      <!-- Étape 1 : identification -->
+      <div id="k-otp-step1">
+        <p class="k-otp-hint">Entrez l'email utilisé lors de votre commande pour accéder à votre historique et recevoir un code gratuit.</p>
+        <div class="k-track-form">
+          <input class="k-track-input" id="k-otp-email" type="email" placeholder="votre@email.com" autocomplete="email" inputmode="email">
+          <button class="k-track-btn" id="k-otp-request-btn">Envoyer le code</button>
+        </div>
+        <div class="k-otp-divider"><span>ou</span></div>
+        <div class="k-track-form">
+          <input class="k-track-input" id="k-otp-ref" type="text" placeholder="Référence commande : KMR-2025-0042" autocomplete="off" style="text-transform:uppercase">
+          <button class="k-track-btn k-track-btn--ghost" id="k-otp-ref-btn">Suivre sans code</button>
+        </div>
       </div>
-      <div class="k-track-steps" id="k-track-steps" style="display:none">
-        <div class="k-track-step">
-          <div class="k-track-step-dot done">✓</div>
-          <div class="k-track-step-info">
-            <div class="k-track-step-label">Commande reçue</div>
-            <div class="k-track-step-sub">Votre commande a bien été enregistrée</div>
-          </div>
+
+      <!-- Étape 2 : saisie OTP -->
+      <div id="k-otp-step2" style="display:none">
+        <div class="k-otp-sent-banner">
+          📧 Code envoyé à <strong id="k-otp-email-display"></strong><br>
+          <small>Vérifiez vos spams si vous ne le recevez pas dans 1 minute.</small>
         </div>
-        <div class="k-track-step">
-          <div class="k-track-step-dot current">⏳</div>
-          <div class="k-track-step-info">
-            <div class="k-track-step-label">En cours de préparation</div>
-            <div class="k-track-step-sub">Nous préparons votre colis</div>
-          </div>
-        </div>
-        <div class="k-track-step">
-          <div class="k-track-step-dot">🚚</div>
-          <div class="k-track-step-info">
-            <div class="k-track-step-label">En livraison</div>
-            <div class="k-track-step-sub">—</div>
-          </div>
-        </div>
-        <div class="k-track-step">
-          <div class="k-track-step-dot">🏠</div>
-          <div class="k-track-step-info">
-            <div class="k-track-step-label">Livré</div>
-            <div class="k-track-step-sub">—</div>
-          </div>
-        </div>
+        <input class="k-otp-code-input" id="k-otp-code" type="text" inputmode="numeric" placeholder="_ _ _ _ _ _" maxlength="6" autocomplete="one-time-code">
+        <button class="k-track-btn" id="k-otp-verify-btn">Vérifier</button>
+        <button class="k-otp-resend-btn" id="k-otp-resend-btn">Renvoyer le code</button>
+      </div>
+
+      <!-- Étape 3 : résultats -->
+      <div id="k-otp-step3" style="display:none">
+        <div id="k-orders-list"></div>
+        <button class="k-otp-resend-btn" id="k-otp-back-btn" style="margin-top:16px">← Nouvelle recherche</button>
       </div>`;
-    document.getElementById('k-track-submit-btn').addEventListener('click', () => {
-      const val = document.getElementById('k-track-input').value.trim();
-      if (!val) { showToast('Entrez un numéro de commande'); return; }
-      const steps = document.getElementById('k-track-steps');
-      steps.style.display = 'block';
-      showToast('📦 Statut chargé pour ' + val);
+
+    /* ── Step 1a : request OTP by email ── */
+    el.querySelector('#k-otp-request-btn').addEventListener('click', async () => {
+      const email = el.querySelector('#k-otp-email').value.trim();
+      if (!email || !email.includes('@')) { showToast('Entrez une adresse email valide.', 'error'); return; }
+      const btn = el.querySelector('#k-otp-request-btn');
+      btn.disabled = true; btn.textContent = '⏳ Envoi…';
+      try {
+        await apiPost('/api/auth/otp/request', { email });
+        otpState.email = email;
+        el.querySelector('#k-otp-email-display').textContent = email;
+        el.querySelector('#k-otp-step1').style.display = 'none';
+        el.querySelector('#k-otp-step2').style.display = 'block';
+        showToast('📧 Code envoyé !', 'success');
+      } catch(e) {
+        showToast('Erreur lors de l\'envoi. Réessayez.', 'error');
+        btn.disabled = false; btn.textContent = 'Envoyer le code';
+      }
     });
+
+    /* ── Step 1b : direct reference lookup (no auth) ── */
+    el.querySelector('#k-otp-ref-btn').addEventListener('click', async () => {
+      const ref = el.querySelector('#k-otp-ref').value.trim().toUpperCase();
+      if (!ref) { showToast('Entrez une référence de commande.', 'error'); return; }
+      const btn = el.querySelector('#k-otp-ref-btn');
+      btn.disabled = true; btn.textContent = '⏳ Recherche…';
+      try {
+        const data = await apiGet('/api/orders/public/' + encodeURIComponent(ref));
+        el.querySelector('#k-otp-step1').style.display = 'none';
+        el.querySelector('#k-otp-step3').style.display = 'block';
+        renderOrderDetail(data.order || data, el.querySelector('#k-orders-list'));
+      } catch(e) {
+        showToast('Référence introuvable.', 'error');
+        btn.disabled = false; btn.textContent = 'Suivre sans code';
+      }
+    });
+
+    /* ── Step 2 : verify OTP ── */
+    el.querySelector('#k-otp-verify-btn').addEventListener('click', async () => {
+      const code = el.querySelector('#k-otp-code').value.replace(/\s/g, '');
+      if (code.length < 4) { showToast('Entrez le code complet.', 'error'); return; }
+      const btn = el.querySelector('#k-otp-verify-btn');
+      btn.disabled = true; btn.textContent = '⏳ Vérification…';
+      try {
+        const result = await apiPost('/api/auth/otp/verify', { email: otpState.email, code });
+        el.querySelector('#k-otp-step2').style.display = 'none';
+        el.querySelector('#k-otp-step3').style.display = 'block';
+        renderOrdersHistory(result.orders || [], el.querySelector('#k-orders-list'));
+      } catch(e) {
+        showToast('Code incorrect ou expiré.', 'error');
+        btn.disabled = false; btn.textContent = 'Vérifier';
+      }
+    });
+
+    /* ── Step 2 : resend ── */
+    let resendTimer = null;
+    el.querySelector('#k-otp-resend-btn').addEventListener('click', async () => {
+      const btn = el.querySelector('#k-otp-resend-btn');
+      if (resendTimer) return;
+      btn.disabled = true; btn.textContent = '⏳ Renvoi…';
+      try {
+        await apiPost('/api/auth/otp/request', { email: otpState.email });
+        showToast('📧 Nouveau code envoyé !', 'success');
+        let countdown = 30;
+        resendTimer = setInterval(() => {
+          countdown--;
+          btn.textContent = `Renvoyer (${countdown}s)`;
+          if (countdown <= 0) { clearInterval(resendTimer); resendTimer = null; btn.disabled = false; btn.textContent = 'Renvoyer le code'; }
+        }, 1000);
+      } catch(e) {
+        showToast('Erreur lors du renvoi.', 'error');
+        btn.disabled = false; btn.textContent = 'Renvoyer le code';
+      }
+    });
+
+    /* ── Step 3 : back ── */
+    el.querySelector('#k-otp-back-btn').addEventListener('click', () => renderTrackView());
   }
 
   /* ── VUE SWITCHER ───────────────────────────────────────── */
