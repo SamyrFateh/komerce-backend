@@ -171,11 +171,12 @@ body{
   overflow-x:hidden;
   padding-bottom:4px;
   scrollbar-width:none;
+  background:#ffffff;
+  isolation:isolate;
 }
 .k-promo-rail-inner{
   display:flex;gap:6px;
   animation:promo-scroll 25s linear infinite;
-  will-change:transform;
 }
 .k-promo-rail-inner:hover,
 .k-promo-rail-inner:active{
@@ -202,9 +203,9 @@ body{
   border-radius:0;
   box-shadow:none;
   object-fit:contain;
-  background:transparent;
+  background:#ffffff;
   mix-blend-mode:multiply;
-  filter:drop-shadow(0 6px 12px rgba(0,0,0,.18));
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.22));
   animation:promo-float 3s ease-in-out infinite;
 }
 @keyframes promo-float{
