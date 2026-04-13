@@ -35,22 +35,25 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
     await db.query(`
       CREATE TABLE IF NOT EXISTS order_incidents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES orders(id),
-        type VARCHAR(50) NOT NULL DEFAULT 'other',
+        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        reporter_id UUID REFERENCES users(id),
+        reporter_name TEXT,
+        type TEXT NOT NULL DEFAULT 'autre',
         description TEXT,
-        severity VARCHAR(20) DEFAULT 'medium',
-        status VARCHAR(20) DEFAULT 'open',
-        reported_by UUID REFERENCES users(id),
-        resolved_by UUID REFERENCES users(id),
+        priority TEXT DEFAULT 'normal',
+        status TEXT DEFAULT 'open',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
         resolved_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        resolved_by UUID REFERENCES users(id),
+        resolution_note TEXT
       );
       CREATE TABLE IF NOT EXISTS order_comments (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES orders(id),
+        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
         author_id UUID REFERENCES users(id),
-        content TEXT NOT NULL,
-        type VARCHAR(30) DEFAULT 'note',
+        author_name TEXT,
+        author_role TEXT,
+        text TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_oi_order ON order_incidents(order_id);
@@ -73,7 +76,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
         COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')
           AND created_at < NOW() - INTERVAL '48 hours') AS urgent,
         COUNT(*) FILTER (WHERE payment_mode = 'cash_relais'
-          AND paid = false
+          AND payment_status != 'paid'
           AND status NOT IN ('cancelled','collected')) AS cash_pending,
         COUNT(*) AS total_active
       FROM orders
@@ -95,7 +98,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
     // Incidents ouverts
     const incidents = await db.query(`
       SELECT COUNT(*) FILTER (WHERE status = 'open') AS open_incidents,
-             COUNT(*) FILTER (WHERE severity = 'critical' AND status = 'open') AS critical
+             COUNT(*) FILTER (WHERE priority = 'urgent' AND status = 'open') AS critical
       FROM order_incidents
     `);
 
@@ -187,7 +190,7 @@ router.get('/queue', ...hubAuth, async (req, res, next) => {
     const { rows } = await db.query(`
       SELECT
         o.id, o.reference, o.status, o.computed_status,
-        o.payment_mode, o.paid, o.total_kmf,
+        o.payment_mode, o.payment_status, o.total_kmf,
         o.destination_island, o.routing_mode, o.transit_hub,
         o.created_at, o.updated_at,
         u.full_name AS client_name, u.phone AS client_phone, u.email AS client_email,
@@ -228,7 +231,7 @@ router.get('/queue', ...hubAuth, async (req, res, next) => {
       ORDER BY
         -- Priority: oldest first, urgent first, paid first
         CASE WHEN o.created_at < NOW() - INTERVAL '48 hours' THEN 0 ELSE 1 END,
-        CASE WHEN o.paid = true THEN 0 ELSE 1 END,
+        CASE WHEN o.payment_status = 'paid' THEN 0 ELSE 1 END,
         o.created_at ASC
       LIMIT $${idx++} OFFSET $${idx++}
     `, [...params, safeLimit, offset]);
@@ -311,7 +314,7 @@ router.get('/orders/:id', ...hubAuth, async (req, res, next) => {
     const { rows: incidents } = await db.query(`
       SELECT i.*, u.full_name AS reporter_name
       FROM order_incidents i
-      LEFT JOIN users u ON u.id = i.reported_by
+      LEFT JOIN users u ON u.id = i.reporter_id
       WHERE i.order_id = $1
       ORDER BY i.created_at DESC
     `, [order.id]);
@@ -342,7 +345,7 @@ router.get('/orders/:id', ...hubAuth, async (req, res, next) => {
     // Payment info
     const payment = {
       mode: order.payment_mode,
-      paid: order.paid,
+      paid: order.payment_status === 'paid',
       total_kmf: order.total_kmf,
       stripe_payment_id: order.stripe_payment_id || null,
       blocking: order.payment_mode === 'cash_relais' && !order.paid
@@ -374,7 +377,7 @@ router.get('/orders/:id', ...hubAuth, async (req, res, next) => {
 router.get('/validate/:id', ...hubAuth, async (req, res, next) => {
   try {
     const { rows: orderRows } = await db.query(
-      'SELECT id, status, payment_mode, paid, total_kmf FROM orders WHERE id = $1',
+      'SELECT id, status, payment_mode, payment_status, total_kmf FROM orders WHERE id = $1',
       [req.params.id]
     );
     if (!orderRows.length) return res.status(404).json({ error: 'Commande introuvable' });
@@ -422,7 +425,7 @@ router.get('/validate/:id', ...hubAuth, async (req, res, next) => {
     }
 
     // 3. Check payment for shipping
-    if (!order.paid && order.payment_mode !== 'cash_relais') {
+    if (order.payment_status !== 'paid' && order.payment_mode !== 'cash_relais') {
       warnings.push({ code: 'UNPAID', message: 'Commande non payée (paiement non cash)' });
     }
 
@@ -515,8 +518,8 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
 
     // Log comment
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, 'Préparation démarrée', 'status')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', 'Préparation démarrée')
     `, [order.id, req.user.id]);
 
     res.json({ message: `Commande ${order.reference} en préparation`, status: 'preparation' });
@@ -567,8 +570,8 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
 
     // Log
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'action')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
     `, [order.id, req.user.id, `Colis ${reference} créé (${type})`]);
 
     res.status(201).json({
@@ -655,8 +658,8 @@ router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
 
     // Log
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'action')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
     `, [parcel.order_id, req.user.id, `Colis ${parcel.reference} prêt à expédier`]);
 
     res.json({ message: `Colis ${parcel.reference} prêt`, status: 'preparation' });
@@ -688,10 +691,10 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
 
     // Anti-error: check order payment for non-cash
     const { rows: [order] } = await db.query(
-      'SELECT payment_mode, paid, reference FROM orders WHERE id = $1',
+      'SELECT payment_mode, payment_status, reference FROM orders WHERE id = $1',
       [parcel.order_id]
     );
-    if (!order.paid && order.payment_mode !== 'cash_relais') {
+    if (order.payment_status !== 'paid' && order.payment_mode !== 'cash_relais') {
       return res.status(400).json({
         error: `⚠️ Commande ${order.reference} non payée`,
         hint: 'Vérifiez le paiement avant expédition'
@@ -721,8 +724,8 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
 
     // Log
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'action')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
     `, [parcel.order_id, req.user.id,
        `Colis ${parcel.reference} expédié — ${transport || 'transport non précisé'}`]);
 
@@ -737,12 +740,12 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
 // ── POST /orders/:id/incident — Signaler incident ──────────────────────────
 router.post('/orders/:id/incident', ...hubAuth, async (req, res, next) => {
   try {
-    const { type, description, severity = 'medium' } = req.body;
+    const { type, description, priority = 'normal' } = req.body;
     if (!type || !description) {
       return res.status(400).json({ error: 'type et description requis' });
     }
 
-    const validTypes = ['rupture', 'damaged', 'missing_item', 'payment', 'address', 'other'];
+    const validTypes = ['retard', 'blocage', 'paiement', 'stock', 'colis_endommage', 'colis_perdu', 'client_absent', 'autre'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: `Type invalide. Valides: ${validTypes.join(', ')}` });
     }
@@ -751,15 +754,15 @@ router.post('/orders/:id/incident', ...hubAuth, async (req, res, next) => {
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
     const { rows: [incident] } = await db.query(`
-      INSERT INTO order_incidents (order_id, type, description, severity, reported_by)
+      INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
-    `, [order.id, type, description, severity, req.user.id]);
+    `, [order.id, type, description, priority, req.user.id]);
 
     // Auto-comment
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'incident')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
     `, [order.id, req.user.id, `🚨 Incident ${type}: ${description}`]);
 
     res.status(201).json({ message: 'Incident signalé', incident });
@@ -779,15 +782,15 @@ router.post('/orders/:id/escalate', ...hubAuth, async (req, res, next) => {
 
     // Create critical incident
     const { rows: [incident] } = await db.query(`
-      INSERT INTO order_incidents (order_id, type, description, severity, reported_by)
-      VALUES ($1, 'escalation', $2, 'critical', $3)
+      INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
+      VALUES ($1, 'autre', $2, 'urgent', $3)
       RETURNING *
     `, [order.id, `[ESCALADE] ${reason}`, req.user.id]);
 
     // Log comment
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'escalation')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
     `, [order.id, req.user.id, `⚠️ ESCALADE: ${reason}`]);
 
     res.status(201).json({
@@ -808,10 +811,10 @@ router.post('/orders/:id/comment', ...hubAuth, async (req, res, next) => {
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
     const { rows: [comment] } = await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'note')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
       RETURNING *
-    `, [order.id, req.user.id, content]);
+    `, [order.id, req.user.id, req.body.content]);
 
     res.json({ message: 'Commentaire ajouté', comment });
   } catch(e) { next(e); }
@@ -829,14 +832,14 @@ router.post('/orders/:id/backorder', ...hubAuth, async (req, res, next) => {
 
     // Create incident
     await db.query(`
-      INSERT INTO order_incidents (order_id, type, description, severity, reported_by)
+      INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
       VALUES ($1, 'backorder', $2, 'medium', $3)
     `, [order.id, reason || 'En attente fournisseur', req.user.id]);
 
     // Log
     await db.query(`
-      INSERT INTO order_comments (order_id, author_id, content, type)
-      VALUES ($1, $2, $3, 'action')
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
     `, [order.id, req.user.id,
        `📦 Backorder: ${reason || 'En attente fournisseur'}${items_waiting ? ` (${items_waiting.length} articles)` : ''}`]);
 
