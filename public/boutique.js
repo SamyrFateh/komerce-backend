@@ -14,10 +14,28 @@
   }
 
   function promoImgUrl(url, w) {
-    // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
-    // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
-    return optimizeImgUrl(url, w);
+    // Essaie l'image détourée (uploadée par le trigger rembg) → fallback original
+    if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
+    try {
+      // Extrait le basename : "mod_034" depuis ".../komerce/products/mode/mod_034.jpg"
+      const parts = url.split('/upload/');
+      if (parts.length < 2) return optimizeImgUrl(url, w);
+      const pathPart = parts[1].replace(/^v\d+\//, ''); // retire version
+      const basename = pathPart.split('/').pop().replace(/\.[^.]+$/, ''); // sans ext
+      const wParam = w ? ',w_' + w : '';
+      return 'https://res.cloudinary.com/dloffvvdz/image/upload/f_auto,q_auto' + wParam + '/komerce/promos_bg/' + basename + '.png';
+    } catch(e) {
+      return optimizeImgUrl(url, w);
+    }
   }
+
+  window.promoImgFallback = function(el, url, w) {
+    // Appelé via onerror si l'image détourée n'existe pas encore
+    el.onerror = null;
+    el.src = url.indexOf('res.cloudinary.com') !== -1
+      ? url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/')
+      : url;
+  };
 
   function detectCurrency() {
     try {
@@ -317,7 +335,7 @@
       const oldPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
       return `
         <div class="k-promo-card" data-id="${p.id}">
-          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" onerror="promoImgFallback(this,'${p.image_url}',400)" alt="${p.name}" loading="lazy">
           <span class="k-promo-badge">-${p.promo_pct}%</span>
           <div class="k-promo-card-info">
             <div class="k-promo-card-name">${p.name}</div>

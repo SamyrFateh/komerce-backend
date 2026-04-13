@@ -87,6 +87,64 @@
 /* PWA standalone safe areas */
 .pwa-standalone .hdr{padding-top:calc(8px + env(safe-area-inset-top,0px)) !important}
 .pwa-standalone .mobile-tabs{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+<style>
+/* ═══ ORDERS SCREEN — Status chips inline ═══ */
+.orders-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.orders-toolbar input{flex:1;min-width:160px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:.85rem}
+.filter-chips{display:flex;gap:4px;flex-wrap:wrap}
+.fchip{padding:3px 10px;border-radius:20px;font-size:.75rem;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .2s}
+.fchip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.orders-table-wrap{overflow-x:auto}
+.orders-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.orders-table th{text-align:left;padding:6px 8px;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap}
+.orders-table td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.orders-table tbody tr{cursor:default;transition:background .15s}
+.orders-table tbody tr:hover{background:var(--bg2)}
+
+/* Optimistic row states */
+.row-updating td{opacity:.6}
+.row-updating td .status-chip{animation:chip-pulse .6s infinite}
+@keyframes chip-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.row-success{animation:row-flash-ok .8s ease-out}
+@keyframes row-flash-ok{0%{background:rgba(67,160,71,.18)}100%{background:transparent}}
+.row-error{animation:row-flash-err .8s ease-out}
+@keyframes row-flash-err{0%{background:rgba(229,57,53,.18)}100%{background:transparent}}
+
+/* Status chip */
+.status-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:.74rem;font-weight:600;cursor:pointer;border:none;transition:all .25s cubic-bezier(.4,0,.2,1);white-space:nowrap;user-select:none}
+.status-chip:hover{filter:brightness(1.12);transform:scale(1.04)}
+.status-chip::after{content:'▾';font-size:.6rem;opacity:.7}
+.status-chip.no-next::after{display:none;cursor:default}
+
+/* Chip colors */
+.sc-confirmed{background:#fff3e0;color:#e65100}
+.sc-ordered{background:#e3f2fd;color:#1565c0}
+.sc-preparation{background:#f3e5f5;color:#6a1b9a}
+.sc-shipped{background:#e0f2f1;color:#00695c}
+.sc-in_transit{background:#e8eaf6;color:#283593}
+.sc-available{background:#fff9c4;color:#f57f17}
+.sc-collected{background:#e8f5e9;color:#2e7d32}
+.sc-cancelled{background:#ffebee;color:#b71c1c}
+.sc-refunded{background:#f5f5f5;color:#616161}
+
+/* Status popover */
+.status-popover{position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;min-width:160px;display:none}
+.status-popover.open{display:block;animation:pop-in .15s ease-out}
+@keyframes pop-in{from{opacity:0;transform:scale(.92) translateY(-4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.spop-item{padding:7px 12px;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:500;transition:background .12s;display:flex;align-items:center;gap:8px}
+.spop-item:hover{background:var(--bg2)}
+.spop-cancel{border-top:1px solid var(--border);margin-top:4px;padding-top:8px;color:var(--red)}
+
+/* Age indicators */
+.age-ok{color:var(--text3)}
+.age-warn{color:#ff9800;font-weight:600}
+.age-crit{color:var(--red);font-weight:700}
+
+/* Ref mono */
+.ref-mono{font-family:var(--mono,monospace);font-size:.8rem;font-weight:600;letter-spacing:.02em}
+
+/* Orders count badge */
+.orders-count{font-size:.8rem;color:var(--text3);margin-left:auto}
 </style>
 </head>
 <body>
@@ -104,7 +162,8 @@
   <nav class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label">Navigation</div>
-      <div class="nav-item active" data-screen="scrDashboard"><span class="nav-icon">🎯</span> Tableau de bord</div>
+      <div class="nav-item" data-screen="scrDashboard"><span class="nav-icon">🎯</span> Tableau de bord</div>
+      <div class="nav-item active" data-screen="scrOrders"><span class="nav-icon">📋</span> Toutes les commandes <span class="nav-badge" id="ordersTotalBadge" style="background:var(--blue)">0</span></div>
       <div class="nav-item" data-screen="scrQueue"><span class="nav-icon">⚡</span> File d'attente <span class="nav-badge" id="queueBadge">0</span></div>
       <div class="nav-item" data-screen="scrSearch"><span class="nav-icon">🔍</span> Recherche</div>
       <div class="nav-item" data-screen="scrWallet"><span class="nav-icon">💰</span> Wallet</div>
@@ -114,8 +173,52 @@
 
   <div class="content">
 
+<!-- ===== A0 — TOUTES LES COMMANDES ===== -->
+<div class="screen active" id="scrOrders">
+  <div class="screen-hdr">
+    <div class="screen-title">Toutes les commandes</div>
+    <div class="screen-sub">Cliquez sur un statut pour le modifier instantanément</div>
+  </div>
+  <div class="orders-toolbar">
+    <input type="text" id="ordersSearch" placeholder="🔍 Référence, destinataire…" oninput="filterOrders()">
+    <div class="filter-chips" id="ordersFilterChips">
+      <div class="fchip active" data-status="">Tous</div>
+      <div class="fchip" data-status="confirmed">Confirmé</div>
+      <div class="fchip" data-status="ordered">Payé</div>
+      <div class="fchip" data-status="preparation">Prépa.</div>
+      <div class="fchip" data-status="shipped">Expédié</div>
+      <div class="fchip" data-status="in_transit">Transit</div>
+      <div class="fchip" data-status="available">Dispo.</div>
+      <div class="fchip" data-status="collected">Récup.</div>
+      <div class="fchip" data-status="cancelled">Annulé</div>
+    </div>
+    <span class="orders-count" id="ordersCountLabel">— commandes</span>
+  </div>
+  <div class="orders-table-wrap">
+    <table class="orders-table">
+      <thead>
+        <tr>
+          <th>Référence</th>
+          <th>Destinataire</th>
+          <th>Montant</th>
+          <th>Statut</th>
+          <th>Île</th>
+          <th>Paiement</th>
+          <th>Âge</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody">
+        <tr><td colspan="7" style="color:var(--text3);text-align:center;padding:24px">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Status popover (singleton) -->
+<div class="status-popover" id="statusPopover"></div>
+
     <!-- ===== A1 — TABLEAU DE BORD ===== -->
-    <div class="screen active" id="scrDashboard">
+    <div class="screen" id="scrDashboard">
       <div class="screen-hdr">
         <div class="screen-title">Tableau de bord</div>
         <div class="screen-sub">Vue temps réel — rafraîchissement auto 60s</div>
@@ -377,6 +480,7 @@ document.querySelectorAll('.nav-item[data-screen]').forEach(el=>{
     document.getElementById(el.dataset.screen).classList.add('active');
     // Load screen-specific data
     const scr = el.dataset.screen;
+    if(scr==='scrOrders') renderOrders();
     if(scr==='scrQueue') renderQueue();
     if(scr==='scrOverview') renderOverview();
   });
@@ -405,6 +509,7 @@ async function loadAllData(){
   }
   renderDashboard();
   renderQueue();
+  renderOrders();
   updateQueueBadge();
 }
 
@@ -479,6 +584,7 @@ function renderDashboard(){
       +'<td style="color:var(--text3);font-size:.85rem">'+safeAge(o.updated_at)+'</td></tr>'
     ).join('');
   }
+  renderOrders();
 }
 
 /* ── A2: Queue ── */
@@ -790,8 +896,224 @@ function renderOverview(){
 
 /* ── Util ── */
 function esc(s){ if(s===null||s===undefined) return ''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+
+/* ═══════════════════════════════════════════════════
+   ORDERS SCREEN — Inline status chips
+   ═══════════════════════════════════════════════════ */
+
+const STATUS_NEXT = {
+  confirmed:   ['ordered', 'cancelled'],
+  ordered:     ['preparation', 'cancelled'],
+  preparation: ['shipped', 'cancelled'],
+  shipped:     ['in_transit', 'cancelled'],
+  in_transit:  ['available', 'cancelled'],
+  available:   ['collected', 'cancelled'],
+  collected:   [],
+  cancelled:   ['confirmed'],
+  refunded:    []
+};
+
+const STATUS_CHIP_CLS = {
+  confirmed:'sc-confirmed', ordered:'sc-ordered', preparation:'sc-preparation',
+  shipped:'sc-shipped', in_transit:'sc-in_transit', available:'sc-available',
+  collected:'sc-collected', cancelled:'sc-cancelled', refunded:'sc-refunded'
+};
+
+const STATUS_NEXT_ICONS = {
+  ordered:'💳', preparation:'📦', shipped:'🚢', in_transit:'🔄',
+  available:'📍', collected:'✅', cancelled:'❌', confirmed:'↩️'
+};
+
+let _ordersFilter = '';
+let _ordersSearch = '';
+
+function renderOrders() {
+  let orders = allOrders.slice();
+  if (_ordersFilter) orders = orders.filter(o => o.status === _ordersFilter);
+  if (_ordersSearch) {
+    const q = _ordersSearch.toLowerCase();
+    orders = orders.filter(o =>
+      (o.reference||'').toLowerCase().includes(q) ||
+      (o.recipient_name||o.customer_name||'').toLowerCase().includes(q)
+    );
+  }
+  // Sort: newest first
+  orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const tbody = document.getElementById('ordersBody');
+  if (!tbody) return;
+
+  document.getElementById('ordersCountLabel').textContent = orders.length + ' commande' + (orders.length !== 1 ? 's' : '');
+  document.getElementById('ordersTotalBadge').textContent = allOrders.length;
+
+  if (orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:24px">Aucune commande</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = orders.map(o => {
+    const h = (Date.now() - new Date(o.created_at).getTime()) / 3600000;
+    const ageCls = h < 24 ? 'age-ok' : h < 48 ? 'age-warn' : 'age-crit';
+    const ageStr = h < 1 ? Math.round(h*60)+'min' : h < 24 ? Math.round(h)+'h' : Math.round(h/24)+'j';
+    const nexts = STATUS_NEXT[o.status] || [];
+    const chipCls = STATUS_CHIP_CLS[o.status] || '';
+    const label = STATUS_LABELS[o.status] || o.status;
+    const noNext = nexts.length === 0 ? ' no-next' : '';
+    const payIcon = (o.payment_method||'').includes('cash') ? '💵' : (o.payment_method||'').includes('stripe')||((o.payment_method||'').includes('card')) ? '💳' : (o.payment_method||'').includes('mvola') ? '📱' : '💳';
+    const recipient = esc(o.recipient_name || o.customer_name || '—');
+    const amount = fmtKMF(o.total_amount || 0);
+    const island = esc(o.destination_island || '—');
+    const ref = esc(o.reference || '—');
+
+    return `<tr data-order-id="${esc(o.id)}" data-status="${esc(o.status)}">
+      <td><span class="ref-mono">${ref}</span></td>
+      <td>${recipient}</td>
+      <td style="font-weight:600">${amount}</td>
+      <td>
+        <button class="status-chip ${chipCls}${noNext}"
+          onclick="openStatusPopover(event, '${esc(o.id)}', '${esc(o.status)}', this)"
+          title="${nexts.length > 0 ? 'Changer le statut' : 'Statut final'}">${label}</button>
+      </td>
+      <td>${island}</td>
+      <td>${payIcon}</td>
+      <td><span class="${ageCls}">${ageStr}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterOrders() {
+  _ordersSearch = (document.getElementById('ordersSearch').value || '').trim().toLowerCase();
+  renderOrders();
+}
+
+// Filter chips
+document.getElementById('ordersFilterChips').addEventListener('click', e => {
+  const chip = e.target.closest('.fchip');
+  if (!chip) return;
+  document.querySelectorAll('#ordersFilterChips .fchip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  _ordersFilter = chip.dataset.status || '';
+  renderOrders();
+});
+
+/* ─── Status Popover ─── */
+let _popoverCallback = null;
+let _popoverChipEl = null;
+
+function openStatusPopover(event, orderId, currentStatus, chipEl) {
+  event.stopPropagation();
+  const nexts = STATUS_NEXT[currentStatus] || [];
+  if (nexts.length === 0) return;
+
+  const pop = document.getElementById('statusPopover');
+  _popoverChipEl = chipEl;
+
+  pop.innerHTML = nexts.map(s => {
+    const isCancelOrRefund = s === 'cancelled' || s === 'refunded';
+    return `<div class="spop-item${isCancelOrRefund ? ' spop-cancel' : ''}" onclick="applyStatusChange('${esc(orderId)}', '${esc(currentStatus)}', '${s}')">
+      <span>${STATUS_NEXT_ICONS[s] || '▶'}</span>
+      <span>${STATUS_LABELS[s] || s}</span>
+    </div>`;
+  }).join('');
+
+  // Position below chip
+  const rect = chipEl.getBoundingClientRect();
+  pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  pop.style.left = Math.min(rect.left + window.scrollX, window.innerWidth - 180) + 'px';
+  pop.classList.add('open');
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', closeStatusPopover, { once: true });
+  }, 10);
+}
+
+function closeStatusPopover() {
+  const pop = document.getElementById('statusPopover');
+  pop.classList.remove('open');
+}
+
+async function applyStatusChange(orderId, oldStatus, newStatus) {
+  closeStatusPopover();
+
+  // Find row and chip
+  const row = document.querySelector(`tr[data-order-id="${orderId}"]`);
+  const chip = row ? row.querySelector('.status-chip') : null;
+
+  // Optimistic update — change color immediately
+  if (chip) {
+    chip.className = `status-chip ${STATUS_CHIP_CLS[newStatus] || ''}`;
+    chip.textContent = STATUS_LABELS[newStatus] || newStatus;
+    if ((STATUS_NEXT[newStatus] || []).length === 0) chip.classList.add('no-next');
+    else chip.setAttribute('onclick', `openStatusPopover(event,'${orderId}','${newStatus}',this)`);
+    chip.setAttribute('data-status', newStatus);
+  }
+  if (row) {
+    row.dataset.status = newStatus;
+    row.classList.add('row-updating');
+  }
+
+  try {
+    await K.request('/api/orders/' + orderId + '/status', 'PATCH', { status: newStatus, role: 'admin' });
+
+    // Update local state — no full reload
+    const order = allOrders.find(o => o.id === orderId);
+    if (order) order.status = newStatus;
+
+    if (row) {
+      row.classList.remove('row-updating');
+      row.classList.add('row-success');
+      setTimeout(() => row.classList.remove('row-success'), 1200);
+    }
+
+    // Update chip with new onclick
+    if (chip) {
+      const newNexts = STATUS_NEXT[newStatus] || [];
+      if (newNexts.length === 0) chip.classList.add('no-next');
+      chip.onclick = newNexts.length > 0
+        ? (e) => openStatusPopover(e, orderId, newStatus, chip)
+        : null;
+    }
+
+    // Update sidebar badges & queue
+    updateQueueBadge();
+    document.getElementById('ordersTotalBadge').textContent = allOrders.length;
+
+    // If filter active and new status doesn't match, remove row after flash
+    if (_ordersFilter && newStatus !== _ordersFilter) {
+      setTimeout(() => {
+        if (row) row.remove();
+        const label = document.getElementById('ordersCountLabel');
+        const curr = parseInt(label.textContent) || 0;
+        label.textContent = Math.max(0, curr - 1) + ' commande' + (curr - 1 !== 1 ? 's' : '');
+      }, 1000);
+    }
+
+    K.ui.toast('✓ ' + (STATUS_LABELS[newStatus] || newStatus), 'ok');
+
+  } catch (e) {
+    // Revert on error
+    if (chip) {
+      chip.className = `status-chip ${STATUS_CHIP_CLS[oldStatus] || ''}`;
+      chip.textContent = STATUS_LABELS[oldStatus] || oldStatus;
+      chip.onclick = (STATUS_NEXT[oldStatus] || []).length > 0
+        ? (ev) => openStatusPopover(ev, orderId, oldStatus, chip)
+        : null;
+    }
+    if (row) {
+      row.dataset.status = oldStatus;
+      row.classList.remove('row-updating');
+      row.classList.add('row-error');
+      setTimeout(() => row.classList.remove('row-error'), 1200);
+    }
+    const order = allOrders.find(o => o.id === orderId);
+    if (order) order.status = oldStatus;
+    K.ui.toast('Erreur: ' + (e.message || 'échec'), 'err');
+  }
+}
+
 </script>
-<div class="mobile-tabs"><div class="mobile-tabs-inner"><button class="mtab active" data-screen="scrDashboard"><span class="mtab-icon">🎯</span>Board<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrQueue"><span class="mtab-icon">⚡</span>File<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrSearch"><span class="mtab-icon">🔍</span>Recherche<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrWallet"><span class="mtab-icon">💰</span>Wallet<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrOverview"><span class="mtab-icon">📈</span>Vue<span class="mtab-badge"></span></button></div></div>
+<div class="mobile-tabs"><div class="mobile-tabs-inner"><button class="mtab active" data-screen="scrOrders"><span class="mtab-icon">📋</span>Commandes<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrDashboard"><span class="mtab-icon">🎯</span>Board<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrQueue"><span class="mtab-icon">⚡</span>File<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrSearch"><span class="mtab-icon">🔍</span>Recherche<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrWallet"><span class="mtab-icon">💰</span>Wallet<span class="mtab-badge"></span></button><button class="mtab" data-screen="scrOverview"><span class="mtab-icon">📈</span>Vue<span class="mtab-badge"></span></button></div></div>
 <script>
 /* PWA: Mobile bottom tabs navigation */
 (function(){
