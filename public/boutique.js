@@ -319,7 +319,7 @@
       'width:56px', 'height:56px',
       'display:flex', 'align-items:center', 'justify-content:center',
       'font-size:1.5rem',
-      'box-shadow:0 4px 20px rgba(26,58,92,0.6)',
+      'box-shadow:0 4px 20px rgba(58,125,68,0.6)',
       'overflow:hidden',
       'left:' + startX + 'px', 'top:' + startY + 'px',
       'transform:translate(-50%,-50%) scale(0)', 'opacity:0'
@@ -904,7 +904,7 @@
 
     /* ── Cart Summary ── */
     const summary = document.createElement('div');
-    summary.style.cssText = 'background:var(--sand-light,#faf5eb);border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid rgba(0,0,0,0.06);';
+    summary.style.cssText = 'background:var(--sand-light,#e8eddb);border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid rgba(0,0,0,0.06);';
 
     const countLine = document.createElement('div');
     countLine.style.cssText = 'font-size:0.82rem;color:var(--text-muted);';
@@ -927,7 +927,7 @@
     /* ── Toggle: Self pickup ── */
     const od = state.orderData;
     const toggleWrap = document.createElement('div');
-    toggleWrap.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:' + (od.is_self_pickup ? 'rgba(91,196,154,0.12)' : '#faf5eb') + ';border-radius:8px;margin-bottom:10px;cursor:pointer;border:2px solid ' + (od.is_self_pickup ? 'var(--green)' : 'rgba(0,0,0,0.08)') + ';transition:all 0.2s;user-select:none;';
+    toggleWrap.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:' + (od.is_self_pickup ? 'rgba(91,196,154,0.12)' : '#e8eddb') + ';border-radius:8px;margin-bottom:10px;cursor:pointer;border:2px solid ' + (od.is_self_pickup ? 'var(--green)' : 'rgba(0,0,0,0.08)') + ';transition:all 0.2s;user-select:none;';
 
     const toggleTrack = document.createElement('div');
     toggleTrack.style.cssText = 'width:40px;height:22px;border-radius:11px;background:' + (od.is_self_pickup ? 'var(--green)' : '#ccc') + ';position:relative;transition:background 0.3s;flex-shrink:0;';
@@ -982,7 +982,7 @@
     // Stripe card container
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;margin-bottom:14px;padding:12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(26,58,92,0.03);';
+    stripeCardWrap.style.cssText = 'display:none;margin-bottom:14px;padding:12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(58,125,68,0.03);';
     stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div><div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div><div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div><div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
     body.appendChild(stripeCardWrap);
 
@@ -993,9 +993,9 @@
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
       cashOpt.wrapper.style.borderColor = !isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      cashOpt.wrapper.style.background = !isStripe ? 'rgba(26,58,92,0.06)' : 'white';
+      cashOpt.wrapper.style.background = !isStripe ? 'rgba(58,125,68,0.06)' : 'white';
       stripeOpt.wrapper.style.borderColor = isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      stripeOpt.wrapper.style.background = isStripe ? 'rgba(26,58,92,0.06)' : 'white';
+      stripeOpt.wrapper.style.background = isStripe ? 'rgba(58,125,68,0.06)' : 'white';
 
       const wrap = document.getElementById('stripe-card-wrap');
       if (wrap) {
@@ -1033,7 +1033,7 @@
 
     const walletSection = document.createElement('div');
     walletSection.id = 'wallet-section';
-    walletSection.style.cssText = 'margin-top:12px;padding:12px 14px;border:2px dashed var(--ocean);border-radius:8px;background:linear-gradient(135deg,#fffbf0,#fef3e2);display:none;';
+    walletSection.style.cssText = 'margin-top:12px;padding:12px 14px;border:2px dashed var(--ocean);border-radius:8px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);display:none;';
     walletSection.innerHTML = '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="cb-use-wallet" style="width:18px;height:18px;accent-color:var(--ocean);flex-shrink:0;"><div style="flex:1;"><div style="font-weight:700;font-size:0.88rem;color:var(--ocean);">💰 Utiliser mon crédit boutique</div><div id="wallet-balance-text" style="font-size:0.75rem;color:#888;margin-top:2px;">Chargement du solde…</div></div></label><div id="wallet-deduction" style="margin-top:8px;padding:8px 10px;background:white;border-radius:8px;font-size:0.82rem;display:none;"></div>';
     body.appendChild(walletSection);
 
@@ -1095,7 +1095,7 @@
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;gap:0;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#f5f5f3;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 10px;font-weight:700;color:#888;white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;';
+    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 10px;font-weight:700;color:#888;white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;';
     prefix.textContent = '+269';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
@@ -1122,7 +1122,7 @@
 
   function makePaymentOption(value, title, subtitle, checked) {
     const wrapper = document.createElement('label');
-    wrapper.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid ' + (checked ? 'var(--ocean)' : 'rgba(0,0,0,0.08)') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (checked ? 'rgba(26,58,92,0.06)' : 'white') + ';';
+    wrapper.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid ' + (checked ? 'var(--ocean)' : 'rgba(0,0,0,0.08)') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (checked ? 'rgba(58,125,68,0.06)' : 'white') + ';';
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'payment_mode';
@@ -1282,7 +1282,7 @@
     wrap.innerHTML = '<div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>' +
       '<h3 style="color:var(--ocean);margin-bottom:6px;font-size:1.1rem;">Commande enregistrée !</h3>' +
       '<p style="color:#888;font-size:0.85rem;margin-bottom:2px;">Votre référence :</p>' +
-      '<div style="display:inline-block;background:rgba(26,58,92,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>';
+      '<div style="display:inline-block;background:rgba(58,125,68,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>';
 
     // Cash ref code
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
@@ -1297,11 +1297,11 @@
 
     // Wallet deduction
     if (fullResult && fullResult.credit_applied_kmf > 0) {
-      wrap.innerHTML += '<div style="margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#fffbf0,#fef3e2);border-radius:8px;font-size:0.85rem;text-align:center;">💰 Crédit boutique appliqué : <strong style="color:var(--ocean)">-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
+      wrap.innerHTML += '<div style="margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);border-radius:8px;font-size:0.85rem;text-align:center;">💰 Crédit boutique appliqué : <strong style="color:var(--ocean)">-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
     }
 
     // Info block
-    wrap.innerHTML += '<div style="margin-top:12px;padding:10px 12px;background:#f5f5f3;border-radius:10px;font-size:0.82rem;color:#888;line-height:1.6;text-align:left;">' +
+    wrap.innerHTML += '<div style="margin-top:12px;padding:10px 12px;background:#eef2e4;border-radius:10px;font-size:0.82rem;color:#888;line-height:1.6;text-align:left;">' +
       '<div>🏪 Paiement en cash (KMF) au point relais lors du retrait.</div>' +
       '<div style="margin-top:4px;">📱 ' + sanitize(recipientName || '') + ' recevra un SMS de confirmation.</div>' +
       (clientEmail ? '<div style="margin-top:4px;">📧 Suivi envoyé à ' + sanitize(clientEmail) + '</div>' : '') +
@@ -1309,7 +1309,7 @@
 
     // Buttons
     wrap.innerHTML += '<button id="k-order-track-btn" style="margin-top:12px;width:100%;padding:11px;border-radius:8px;font-weight:700;font-size:0.9rem;background:var(--ocean);color:white;border:none;cursor:pointer;">📍 Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#f5f5f3;color:var(--ocean);border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer</button>';
+      '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#eef2e4;color:var(--ocean);border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer</button>';
 
     body.appendChild(wrap);
 

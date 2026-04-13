@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   KOMERCE — Boutique CSS v2.0 "Archipel" + Full Cart
+   KOMERCE — Boutique CSS v3.0 "Sage & Green" + Full Cart
    Mobile-first · Comorian identity · Fast & clean
    ═══════════════════════════════════════════════════════════ */
 
@@ -14,28 +14,28 @@ ul,ol{list-style:none}
 
 /* ── TOKENS ────────────────────────────────────────────── */
 :root{
-  /* Palette Archipel */
-  --ocean:#1a3a5c;
-  --ocean-light:#2a5a8c;
-  --ocean-dark:#0f2940;
-  --sand:#faf6f0;
-  --sand-dark:#f0e8da;
-  --coral:#e07a5f;
-  --coral-dark:#c4583e;
-  --gold:#d4a847;
-  --gold-light:#f2d98c;
-  --green:#2d8a6e;
-  --green-light:#5bc49a;
+  /* Palette Sage & Green */
+  --ocean:#3a7d44;
+  --ocean-light:#4CAF50;
+  --ocean-dark:#2d5f33;
+  --sand:#e8eddb;
+  --sand-dark:#d8dfca;
+  --coral:#E88430;
+  --coral-dark:#cc6d1a;
+  --gold:#E88430;
+  --gold-light:#f5c066;
+  --green:#43A047;
+  --green-light:#81C784;
   --whatsapp:#25d366;
   --red:#e53e3e;
   --white:#ffffff;
   --text:#1a1a2e;
   --text-muted:#6b7280;
   --text-light:#9ca3af;
-  --border:#e8e0d4;
-  --shadow-sm:0 1px 3px rgba(26,58,92,.08);
-  --shadow-md:0 4px 12px rgba(26,58,92,.12);
-  --shadow-lg:0 8px 30px rgba(26,58,92,.18);
+  --border:#c8d3ae;
+  --shadow-sm:0 1px 3px rgba(58,125,68,.08);
+  --shadow-md:0 4px 12px rgba(58,125,68,.12);
+  --shadow-lg:0 8px 30px rgba(58,125,68,.18);
   /* Type */
   --font:'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --radius:12px;
@@ -72,7 +72,7 @@ body{
   height:100%;max-width:1200px;margin:0 auto;
 }
 .k-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(212,168,71,.5))}
+.k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(67,160,71,.5))}
 .k-logo-text{font-size:18px;font-weight:800;color:var(--white);letter-spacing:-.5px}
 
 /* Search */
@@ -152,7 +152,7 @@ body{
 .k-hero-overlay{
   position:absolute;bottom:0;left:0;right:0;
   padding:8px 16px;
-  background:linear-gradient(transparent,rgba(26,58,92,.7));
+  background:linear-gradient(transparent,rgba(58,125,68,.7));
 }
 .k-hero-tag{
   font-size:13px;font-weight:600;color:var(--white);
@@ -171,7 +171,7 @@ body{
   padding:4px 8px;border-radius:50px;
   transition:background .2s;
 }
-.k-see-all:active{background:rgba(224,122,95,.1)}
+.k-see-all:active{background:rgba(232,132,48,.1)}
 
 /* ── PROMO RAIL ────────────────────────────────────────── */
 .k-promo-rail{
@@ -239,7 +239,7 @@ body{
 .k-chip.active{
   background:var(--ocean);color:var(--white);
   border-color:var(--ocean);
-  box-shadow:0 2px 8px rgba(26,58,92,.3);
+  box-shadow:0 2px 8px rgba(58,125,68,.3);
 }
 .k-chip:not(.active):active{
   background:var(--sand-dark);
@@ -352,7 +352,7 @@ body{
 /* ── MODAL OVERLAY ── */
 .k-modal-overlay{
   display:none;position:fixed;inset:0;z-index:300;
-  background:rgba(26,26,46,.5);
+  background:rgba(45,95,51,.5);
   justify-content:center;align-items:stretch;
 }
 .k-modal-overlay.open{display:flex}
@@ -719,7 +719,7 @@ body{
 }
 .kcf-primary{
   flex:2;background:var(--ocean);color:#fff;
-  box-shadow:0 2px 10px rgba(26,58,92,.25);
+  box-shadow:0 2px 10px rgba(58,125,68,.25);
 }
 .kcf-primary:hover{background:var(--ocean-dark);transform:translateY(-1px)}
 .kcf-whatsapp{background:var(--whatsapp);color:#fff;flex:0 0 auto}
@@ -742,7 +742,7 @@ body{
    ══════════════════════════════════════════════════════════ */
 .k-order-overlay{
   display:none;position:fixed;inset:0;z-index:1200;
-  background:rgba(26,26,46,.55);
+  background:rgba(45,95,51,.55);
   justify-content:center;align-items:stretch;
 }
 .k-order-overlay.open{display:flex}
