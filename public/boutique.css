@@ -914,19 +914,23 @@ body{
 ::-webkit-scrollbar-track{background:transparent}
 
 /* Very small screens */
+/* Very small screens */
 @media(max-width:380px){
   .k-logo-text{display:none}
-  .k-promo-card{flex: 0 0 130px}
-  .k-grid{gap:6px;padding:4px 8px 12px;
-  border:none;
-  padding:0;
-  position:relative;
+  .k-promo-card{flex:0 0 130px}
+  .k-grid{gap:6px;padding:4px 8px 12px}
+}
+
+/* Card add to cart button */
+.k-card-add{
+  border:none;padding:0;position:relative;
   width:36px;height:36px;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
+  cursor:pointer;background:transparent;
   transition:transform .2s;
 }
 .k-card-add:active{transform:scale(.85)}
+
 .k-card-basket-icon{
   width:32px;height:32px;
   object-fit:contain;
