@@ -114,7 +114,7 @@ router.get('/dashboard', ...transitAuth, async (req, res, next) => {
     // ── Répartition par île ──────────────────────────────────────────────────
     const { rows: byIsland } = await db.query(`
       SELECT
-        COALESCE(destination_island, o.destination_island, 'Non défini') AS island,
+        COALESCE(p.destination_island, o.destination_island, 'Non défini') AS island,
         COUNT(*) AS total,
         COUNT(*) FILTER (WHERE p.status NOT IN ('collected','cancelled')) AS active
       FROM parcels p
