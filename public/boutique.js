@@ -1117,17 +1117,23 @@
     s2.textContent = '💳 Paiement';
     body.appendChild(s2);
 
-    const cashOpt = makePaymentOption('cash_relais', '🏪 Cash au relais', '', true);
-    body.appendChild(cashOpt.wrapper);
-
-    const mvolaWrap = document.createElement('label');
-    mvolaWrap.className = 'ck-pay-mvola';
-    mvolaWrap.innerHTML = '<input type="radio" name="payment_mode" value="mvola" disabled>'
-      + '<span>MVola <span class="ck-soon">Bientôt</span></span>';
-    body.appendChild(mvolaWrap);
-
-    const stripeOpt = makePaymentOption('stripe_eur', '💳 Carte bancaire', '', false);
-    body.appendChild(stripeOpt.wrapper);
+    const payGrid = document.createElement('div');
+    payGrid.className = 'ck-pay-grid';
+    payGrid.innerHTML =
+      '<label class="ck-pay-chip" id="ck-chip-cash">'
+      + '<input type="radio" name="payment_mode" value="cash_relais" checked>'
+      + '<span class="ck-chip-icon">🏪</span><span class="ck-chip-lbl">Cash</span>'
+      + '</label>'
+      + '<label class="ck-pay-chip ck-pay-chip--off">'
+      + '<input type="radio" name="payment_mode" value="mvola" disabled>'
+      + '<span class="ck-chip-icon">📱</span>'
+      + '<span class="ck-chip-lbl">MVola<br><em class="ck-soon">Bientôt</em></span>'
+      + '</label>'
+      + '<label class="ck-pay-chip" id="ck-chip-stripe">'
+      + '<input type="radio" name="payment_mode" value="stripe_eur">'
+      + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte</span>'
+      + '</label>';
+    body.appendChild(payGrid);
 
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
@@ -1184,10 +1190,10 @@
       const isStripe = mode && mode.value === 'stripe_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
-      cashOpt.wrapper.style.borderColor  = !isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      cashOpt.wrapper.style.background   = !isStripe ? 'rgba(67,160,71,0.06)' : 'white';
-      stripeOpt.wrapper.style.borderColor = isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      stripeOpt.wrapper.style.background  = isStripe ? 'rgba(67,160,71,0.06)' : 'white';
+      document.querySelectorAll('.ck-pay-chip').forEach(chip => {
+        const r = chip.querySelector('input[type=radio]');
+        if (r && !r.disabled) chip.classList.toggle('ck-pay-chip--active', r.checked);
+      });
 
       const wrap = document.getElementById('stripe-card-wrap');
       if (wrap) {
@@ -1212,8 +1218,8 @@
       if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'EUR') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     }
 
-    cashOpt.radio.addEventListener('change', updatePaymentUI);
-    stripeOpt.radio.addEventListener('change', updatePaymentUI);
+    payGrid.addEventListener('change', updatePaymentUI);
+    updatePaymentUI(); // init état chip cash
 
     setTimeout(() => {
       const cbTrack = document.getElementById('cb-want-tracking');
