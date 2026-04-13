@@ -72,7 +72,7 @@ body{
   height:100%;max-width:1200px;margin:0 auto;
 }
 .k-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(67,160,71,.5))}
+.k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(230,74,25,.35))}
 .k-logo-text{font-size:16px;font-weight:800;color:var(--coral);letter-spacing:-.5px}
 
 /* Search */
@@ -89,7 +89,7 @@ body{
   transition:background .2s;
 }
 .k-search input::placeholder{color:rgba(0,0,0,.35)}
-.k-search input:focus{background:rgba(255,255,255,1);box-shadow:0 0 0 2px rgba(67,160,71,.3)}
+.k-search input:focus{background:rgba(255,255,255,1);box-shadow:0 0 0 2px rgba(var(--coral-rgb,230,74,25),.2)}
 .k-search-icon{
   position:absolute;left:10px;top:50%;transform:translateY(-50%);
   width:18px;height:18px;color:rgba(0,0,0,.35);
@@ -244,14 +244,11 @@ body{
   min-width:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;
-  padding:8px 4px;
+  padding:8px 2px;
   border-radius:12px;
   font-size:9px;font-weight:700;
   letter-spacing:.2px;
   text-align:center;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
   background:var(--white);
   color:var(--text);
   box-shadow:0 1px 4px rgba(0,0,0,.08);
@@ -264,7 +261,12 @@ body{
   line-height:1;
 }
 .k-chip .k-chip-label{
-  font-size:9px;font-weight:700;
+  font-size:8px;font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+  padding:0 2px;
 }
 .k-chip.active{
   background:var(--ocean);color:var(--white);
@@ -331,20 +333,45 @@ body{
 /* ── CARD ADD BUTTON — clean "+" circle ── */
 .k-card-add{
   position:absolute;bottom:8px;right:8px;
-  width:30px;height:30px;
+  width:28px;height:28px;
   background:var(--coral);
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 2px 8px rgba(0,0,0,.22);
-  transition:background .15s,transform .15s;
+  transition:background .15s,transform .15s,width .2s,border-radius .2s,padding .2s;
   border:none;
   padding:0;
+  z-index:5;
+  cursor:pointer;
+  overflow:hidden;
 }
-.k-card-add.in-cart{background:var(--ocean)}
+/* Stepper pill quand produit déjà dans le panier */
+.k-card-add.in-cart{
+  background:var(--coral);
+  border-radius:14px;
+  width:68px;
+  padding:0 4px;
+  justify-content:space-between;
+  gap:0;
+}
 .k-card-add:active{transform:scale(.88)}
 .k-card-add-plus{
   font-size:18px;font-weight:400;
   color:var(--white);line-height:1;
+  pointer-events:none;
+}
+/* Stepper parts */
+.k-add-minus,.k-add-plus-ic{
+  color:#fff;font-size:16px;font-weight:700;
+  width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  pointer-events:none;
+}
+.k-add-minus{ pointer-events:auto; }
+.k-add-qty{
+  color:#fff;font-size:11px;font-weight:800;
+  min-width:16px;text-align:center;
   pointer-events:none;
 }
 /* Old (strikethrough) price on card */
@@ -856,7 +883,7 @@ body{
 
 /* Responsive image ratios */
 @media(min-width:600px){
-  .k-card-img{aspect-ratio:4/3}
+  .k-card-img{aspect-ratio:1/1}
   .k-grid{gap:14px}
 }
 @media(min-width:1024px){
@@ -865,6 +892,64 @@ body{
 }
 @media(min-width:1400px){
   .k-grid{grid-template-columns:repeat(5,1fr);gap:20px}
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   DESKTOP — vrai layout ≥ 768px
+   ══════════════════════════════════════════════════════════ */
+@media(min-width:768px){
+
+  /* Header plus imposant */
+  .k-header{height:64px;padding:0 24px;box-shadow:0 1px 0 var(--border)}
+  .k-header-inner{gap:20px}
+  .k-logo-text{font-size:20px}
+
+  /* Search : centrée, max-width */
+  .k-search{flex:1;max-width:480px;margin:0 auto}
+
+  /* Content area centré */
+  .k-main,
+  .k-section,
+  .k-cats,
+  .k-promo-rail{
+    max-width:1200px;
+    margin-left:auto;
+    margin-right:auto;
+    padding-left:24px;
+    padding-right:24px;
+  }
+  .k-cats{padding-top:12px;padding-bottom:12px}
+
+  /* Cards : textes plus grands */
+  .k-card-name{font-size:13px}
+  .k-card-price{font-size:14px}
+  .k-card-add{width:36px;height:36px}
+
+  /* Section titres */
+  .k-section-head h2{font-size:18px}
+
+  /* Panier : largeur fixe, pas plein écran */
+  .k-cart-panel{
+    max-width:420px;
+    left:auto;
+  }
+
+  /* Modal produit : popup centrée, pas plein écran */
+  .k-modal{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .k-modal-content{
+    max-width:520px;
+    width:100%;
+    max-height:90vh;
+    border-radius:16px;
+    overflow:hidden;
+  }
+  .k-modal-img{height:300px}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -943,7 +1028,7 @@ body{
   .k-grid{grid-template-columns:repeat(4,1fr);gap:14px}
   .k-bnav{display:none}
   body{padding-bottom:0}
-  .k-hero img{height:240px;object-fit:contain;background:var(--ocean)}
+  .k-hero img{height:240px;object-fit:contain;background:transparent}
   .k-card-add{width:44px;height:44px;bottom:6px;right:6px}
   .k-card-basket-icon{width:40px;height:40px}
   .k-card-fav{width:32px;height:32px;top:8px;right:8px;font-size:16px}
@@ -1057,64 +1142,7 @@ body{
   .k-grid{gap:6px;padding:4px 8px 12px}
 }
 
-/* Card add to cart button */
-.k-card-add{
-  border:none;padding:0;
-  position:absolute;bottom:4px;right:4px;
-  width:28px;height:28px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;background:none;
-  transition:transform .2s;
-  z-index:5;
-}
-.k-card-add:active{transform:scale(.85)}
-
-.k-card-basket-icon{
-  width:24px;height:24px;
-  object-fit:contain;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));
-  mix-blend-mode:multiply;
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
-}
-.k-card-add:active .k-card-basket-icon{transform:scale(.8)}
-.k-card-add.in-cart .k-card-basket-icon{transform:scale(1.1)}
-
-/* Floating qty badge on basket */
-
-/* ── CARD ADD BUTTON — clean "+" circle ── */
-/* (doublon supprimé — voir définition principale) */
-.k-card-add.in-cart{background:var(--coral)}
-.k-card-add:active{transform:scale(.88)}
-.k-card-add-plus{
-  font-size:14px;font-weight:700;
-  color:var(--white);line-height:1;
-  pointer-events:none;
-}
-/* Old (strikethrough) price on card */
-.k-card-old-price{
-  font-size:8px;color:var(--text-light);
-  text-decoration:line-through;
-  line-height:1.2;
-  display:block;
-}
-
-.k-card-add-count{
-  position:absolute!important;
-  top:-4px;right:-4px;
-  min-width:18px;height:18px;
-  background:var(--green);
-  color:#fff;
-  border-radius:50%;
-  font-size:11px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-  transform:scale(0);
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
-  pointer-events:none;
-  box-shadow:0 1px 3px rgba(0,0,0,.2);
-  line-height:1;
-  padding:0 4px;
-}
-.k-card-add-count.show{transform:scale(1)}
+/* (doublon bouton add supprimé) */
 
 /* Bottom nav basket icon */
 .k-bnav-basket{
