@@ -240,7 +240,17 @@
         </div>`;
     }).join('');
 
-    dom.promoRail.querySelectorAll('.k-promo-card').forEach(card => {
+    // Wrap in inner div for seamless auto-scroll
+    const inner = document.createElement('div');
+    inner.className = 'k-promo-rail-inner';
+    inner.innerHTML = dom.promoRail.innerHTML + dom.promoRail.innerHTML;
+    dom.promoRail.innerHTML = '';
+    dom.promoRail.appendChild(inner);
+    // Pause on touch (mobile)
+    inner.addEventListener('touchstart', () => inner.style.animationPlayState = 'paused');
+    inner.addEventListener('touchend', () => inner.style.animationPlayState = 'running');
+    
+    inner.querySelectorAll('.k-promo-card').forEach(card => {
       card.addEventListener('click', () => openModal(card.dataset.id));
     });
   }
