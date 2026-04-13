@@ -481,43 +481,71 @@ CT.html.showOrderDetail = async function(orderId, orderRef) {
     html += '<div><span style="color:var(--ct-text-muted)">Île</span><br>' + (order.destination_island || '—') + '</div>';
     html += '</div></div>';
 
-    // Articles
-    if (order.items && order.items.length) {
-      html += '<div class="ct-card" style="margin-bottom:12px">';
-      html += '<div class="ct-card-title">🛍️ Articles (' + order.items.length + ')</div>';
-      order.items.forEach(function(item) {
-        var stockColor = item.stock_status === 'ok' ? '#10b981' : item.stock_status === 'partial' ? '#f59e0b' : '#ef4444';
-        html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--ct-border,rgba(255,255,255,.06))">';
-        if (item.image_url) html += '<img src="' + item.image_url + '" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0">';
-        html += '<div style="flex:1;min-width:0">';
-        html += '<div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.product_name || '—') + '</div>';
-        html += '<div style="font-size:.75rem;color:var(--ct-text-muted)">Qté : ' + item.quantity + ' · ' + CT.html.formatKMF(item.price_kmf) + '</div>';
-        html += '</div>';
-        html += '<span style="font-size:.7rem;color:' + stockColor + ';font-weight:700">' + (item.stock_status === 'ok' ? '✓' : item.stock_status === 'partial' ? '⚠' : '✗') + '</span>';
-        html += '</div>';
-      });
-      html += '</div>';
+    // Colis + Articles imbriqués — vue encapsulation
+    var allItems = order.items || [];
+    var parcels = order.parcels || [];
+
+    // Associer les items aux colis (via id dans p.items)
+    var assignedItemIds = {};
+    parcels.forEach(function(p) {
+      if (p.items && p.items.length) {
+        p.items.forEach(function(it) { assignedItemIds[it.id] = true; });
+      }
+    });
+    var floatingItems = allItems.filter(function(it) { return !assignedItemIds[it.id]; });
+
+    function renderItem(item) {
+      var stockColor = item.stock_status === 'ok' ? '#10b981' : item.stock_status === 'partial' ? '#f59e0b' : '#ef4444';
+      var s = '<div style="display:flex;align-items:center;gap:8px;padding:5px 0 5px 12px;border-left:2px solid rgba(255,255,255,.08)">';
+      if (item.image_url) s += '<img src="' + item.image_url + '" style="width:32px;height:32px;border-radius:4px;object-fit:cover;flex-shrink:0">';
+      else s += '<div style="width:32px;height:32px;border-radius:4px;background:rgba(255,255,255,.06);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem">📦</div>';
+      s += '<div style="flex:1;min-width:0">';
+      s += '<div style="font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.product_name || '—') + '</div>';
+      s += '<div style="font-size:.72rem;color:var(--ct-text-muted)">×' + item.quantity + '  ·  ' + CT.html.formatKMF(item.price_kmf) + '</div>';
+      s += '</div>';
+      s += '<span style="font-size:.7rem;color:' + stockColor + ';font-weight:700;flex-shrink:0">' + (item.stock_status === 'ok' ? '✓' : item.stock_status === 'partial' ? '⚠' : '✗') + '</span>';
+      s += '</div>';
+      return s;
     }
 
-    // Colis
-    if (order.parcels && order.parcels.length) {
+    if (parcels.length) {
       html += '<div class="ct-card" style="margin-bottom:12px">';
-      html += '<div class="ct-card-title">📮 Colis (' + order.parcels.length + ')</div>';
-      order.parcels.forEach(function(p) {
-        html += '<div style="padding:8px 0;border-bottom:1px solid var(--ct-border,rgba(255,255,255,.06))">';
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
-        html += '<span class="ct-font-mono" style="font-size:.8rem;font-weight:700;color:var(--ct-blue)">' + (p.reference || '—') + '</span>';
+      html += '<div class="ct-card-title">📮 Colis (' + parcels.length + ')</div>';
+      parcels.forEach(function(p, idx) {
+        var pItems = (p.items && p.items.length) ? p.items : (parcels.length === 1 ? allItems : []);
+        if (idx > 0) html += '<div style="margin-top:10px;border-top:1px solid var(--ct-border,rgba(255,255,255,.08));padding-top:10px"></div>';
+        // Header colis
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+        html += '<span class="ct-font-mono" style="font-size:.82rem;font-weight:700;color:var(--ct-blue)">🗃 ' + (p.reference || 'Colis #' + (idx+1)) + '</span>';
         html += CT.html.parcelStatusChip(p.id, p.reference, p.status);
         html += '</div>';
-        if (p.items && p.items.length) {
-          html += '<div style="font-size:.75rem;color:var(--ct-text-muted)">' + p.items.length + ' article(s)';
-          if (p.weight_kg) html += ' · ' + p.weight_kg + ' kg';
-          html += '</div>';
+        var meta = [];
+        if (p.weight_kg) meta.push(p.weight_kg + ' kg');
+        if (p.destination_island) meta.push('🏝 ' + p.destination_island);
+        if (meta.length) html += '<div style="font-size:.72rem;color:var(--ct-text-muted);margin-bottom:6px">' + meta.join(' · ') + '</div>';
+        // Articles imbriqués
+        if (pItems.length) {
+          pItems.forEach(function(item) { html += renderItem(item); });
+        } else {
+          html += '<div style="font-size:.75rem;color:var(--ct-text-muted);padding-left:12px">Aucun article enregistré</div>';
         }
+        // Bouton avancer colis
         var advBtn = CT.html.advanceParcelBtn(p.id, p.reference, p.status);
-        if (advBtn.indexOf('button') !== -1) html += '<div style="margin-top:6px">' + advBtn + '</div>';
-        html += '</div>';
+        if (advBtn.indexOf('button') !== -1) html += '<div style="margin-top:8px">' + advBtn + '</div>';
       });
+      // Items flottants (non affectés à un colis)
+      if (floatingItems.length) {
+        html += '<div style="margin-top:10px;border-top:1px dashed rgba(255,255,255,.1);padding-top:8px">';
+        html += '<div style="font-size:.72rem;color:#f59e0b;margin-bottom:4px">⚠ Articles non assignés à un colis</div>';
+        floatingItems.forEach(function(item) { html += renderItem(item); });
+        html += '</div>';
+      }
+      html += '</div>';
+    } else if (allItems.length) {
+      // Pas encore de colis — afficher les articles directement
+      html += '<div class="ct-card" style="margin-bottom:12px">';
+      html += '<div class="ct-card-title">🛍️ Articles (' + allItems.length + ') <span style="font-size:.7rem;color:var(--ct-text-muted);font-weight:400">— aucun colis créé</span></div>';
+      allItems.forEach(function(item) { html += renderItem(item); });
       html += '</div>';
     }
 
