@@ -68,8 +68,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
       SELECT
         COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')) AS to_prepare,
         COUNT(*) FILTER (WHERE status = 'preparation') AS in_preparation,
-        COUNT(*) FILTER (WHERE status = 'shipped') AS shipped_today
-          FILTER (WHERE status = 'shipped' AND updated_at >= CURRENT_DATE),
+        COUNT(*) FILTER (WHERE status = 'shipped' AND updated_at >= CURRENT_DATE) AS shipped_today,
         COUNT(*) FILTER (WHERE status = 'shipped') AS shipped_total,
         COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')
           AND created_at < NOW() - INTERVAL '48 hours') AS urgent,
