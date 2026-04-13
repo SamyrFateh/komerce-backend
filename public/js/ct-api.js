@@ -74,5 +74,31 @@ CT.api = {
   products: async function() {
     var data = await this.get('/api/products');
     return data.products || data || [];
+  },
+
+  // ---- Parcels (colis — unité logistique R1) ----
+  // GET /api/parcels  → { data: [...], pagination: {...} }
+  parcels: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/parcels' + (qs ? '?' + qs : ''));
+  },
+  getParcel: function(ref) { return this.get('/api/parcels/' + ref); },
+  // PATCH /api/parcels/:id/status  → change parcel status (logistic unit)
+  updateParcelStatus: function(id, status, notes) {
+    return this.patch('/api/parcels/' + id + '/status', { status: status, notes: notes || null });
+  },
+  parcelEvents: function(ref) { return this.get('/api/parcels/' + ref + '/events'); },
+
+  // ---- Hub Dashboard (KPIs opérationnels + file + détail complet) ----
+  hubDashboard: function() { return this.get('/api/hub-dashboard/dashboard'); },
+  hubQueue: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/hub-dashboard/queue' + (qs ? '?' + qs : ''));
+  },
+  // GET /api/hub-dashboard/orders/:id → détail commande avec colis, items, timeline, incidents
+  hubOrderDetail: function(id) { return this.get('/api/hub-dashboard/orders/' + id); },
+  hubStartPrep: function(id) { return this.post('/api/hub-dashboard/orders/' + id + '/start-prep', {}); },
+  hubShipParcel: function(parcelId, data) {
+    return this.post('/api/hub-dashboard/parcels/' + parcelId + '/ship', data || {});
   }
 };

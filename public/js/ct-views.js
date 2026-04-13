@@ -71,6 +71,32 @@ CT.html.ALL_NEXT = {
   refunded:    []
 };
 
+/* ─── COLIS (PARCEL) — l'unité logistique réelle ─── */
+/* Statuts parcels: draft → preparation → shipped → in_transit → available → collected */
+CT.html.PARCEL_NEXT = {
+  draft: 'preparation',
+  preparation: 'shipped',
+  shipped: 'in_transit',
+  in_transit: 'available',
+  available: 'collected'
+};
+CT.html.PARCEL_ALL_NEXT = {
+  draft:       ['preparation', 'cancelled'],
+  preparation: ['shipped', 'cancelled'],
+  shipped:     ['in_transit', 'cancelled'],
+  in_transit:  ['available', 'cancelled'],
+  available:   ['collected', 'cancelled'],
+  collected:   [],
+  cancelled:   []
+};
+CT.html.parcelStatusLabel = function(status) {
+  var map = {
+    draft: 'Brouillon', preparation: 'Préparation', shipped: 'Expédié',
+    in_transit: 'En transit', available: 'Au relais', collected: 'Collecté', cancelled: 'Annulé'
+  };
+  return map[status] || status;
+};
+
 /* Hex colors for status chips */
 CT.html.STATUS_HEX = {
   new: '#3b82f6', confirmed: '#10b981', ordered: '#06b6d4',
@@ -208,6 +234,328 @@ CT.html._doStatusChange = async function(id, ref, currentStatus, nextStatus) {
 };
 
 /* ---------------------------------------------------------------
+   Parcel status chip — cliquable, appelle updateParcelStatus
+   --------------------------------------------------------------- */
+CT.html.parcelStatusChip = function(id, ref, status) {
+  var nexts = CT.html.PARCEL_ALL_NEXT[status] || [];
+  var chipId = 'pchip-' + id;
+  var hex = CT.html.STATUS_HEX[status] || '#94a3b8';
+  if (nexts.length === 0) {
+    return '<span id="' + chipId + '" class="ct-badge ' + status + '">' + CT.html.parcelStatusLabel(status) + '</span>';
+  }
+  return '<span id="' + chipId + '" class="ct-badge ' + status + '" style="cursor:pointer;user-select:none" ' +
+    'onclick="CT.html._openParcelMenu(event,\'' + id + '\',\'' + (ref||'') + '\',\'' + status + '\')">' +
+    CT.html.parcelStatusLabel(status) + ' ▾</span>';
+};
+
+CT.html._openParcelMenu = function(e, id, ref, status) {
+  e.stopPropagation();
+  document.querySelectorAll('.ct-status-menu').forEach(function(m) { m.remove(); });
+  var nexts = CT.html.PARCEL_ALL_NEXT[status] || [];
+  if (nexts.length === 0) return;
+
+  var menu = document.createElement('div');
+  menu.className = 'ct-status-menu';
+  menu.style.cssText = [
+    'position:fixed;z-index:9999',
+    'background:var(--ct-bg2,#1e293b)',
+    'border:1px solid var(--ct-border,rgba(255,255,255,.1))',
+    'border-radius:10px;padding:6px',
+    'box-shadow:0 8px 24px rgba(0,0,0,.3)',
+    'min-width:180px'
+  ].join(';');
+
+  nexts.forEach(function(next) {
+    var item = document.createElement('div');
+    var hex = CT.html.STATUS_HEX[next] || '#94a3b8';
+    item.style.cssText = 'padding:8px 12px;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:8px;color:' + hex;
+    item.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + hex + ';flex-shrink:0"></span>→ ' + CT.html.parcelStatusLabel(next);
+    item.addEventListener('mouseover', function() { item.style.background = 'rgba(255,255,255,.06)'; });
+    item.addEventListener('mouseout', function() { item.style.background = ''; });
+    item.addEventListener('click', function(ev) {
+      ev.stopPropagation();
+      menu.remove();
+      CT.html._doParcelStatusChange(id, ref, status, next);
+    });
+    menu.appendChild(item);
+  });
+
+  var chip = document.getElementById('pchip-' + id);
+  if (chip) {
+    var rect = chip.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.left = rect.left + 'px';
+  }
+  document.body.appendChild(menu);
+
+  setTimeout(function() {
+    function closer(e2) {
+      if (!menu.contains(e2.target)) { menu.remove(); document.removeEventListener('click', closer); }
+    }
+    document.addEventListener('click', closer);
+  }, 0);
+};
+
+CT.html._doParcelStatusChange = async function(id, ref, currentStatus, nextStatus) {
+  var chip = document.getElementById('pchip-' + id);
+  var nextsNew = CT.html.PARCEL_ALL_NEXT[nextStatus] || [];
+
+  // Mise à jour optimiste
+  if (chip) {
+    chip.className = 'ct-badge ' + nextStatus;
+    chip.style.opacity = '0.6';
+    chip.innerHTML = CT.html.parcelStatusLabel(nextStatus) + (nextsNew.length > 0 ? ' ▾' : '');
+    if (nextsNew.length > 0) {
+      chip.setAttribute('onclick', 'CT.html._openParcelMenu(event,\'' + id + '\',\'' + ref + '\',\'' + nextStatus + '\')');
+    } else {
+      chip.removeAttribute('onclick');
+      chip.style.cursor = 'default';
+    }
+  }
+
+  // Mettre à jour les KPI action cards (grosses étiquettes)
+  var oldKpi = document.getElementById('kpi-val-' + currentStatus);
+  var newKpi = document.getElementById('kpi-val-' + nextStatus);
+  if (oldKpi) { var v = parseInt(oldKpi.textContent) || 0; oldKpi.textContent = Math.max(0, v - 1); }
+  if (newKpi) { var v2 = parseInt(newKpi.textContent) || 0; newKpi.textContent = v2 + 1; }
+
+  try {
+    await CT.api.updateParcelStatus(id, nextStatus);
+    if (chip) {
+      chip.style.opacity = '1';
+      chip.style.outline = '2px solid #10b981';
+      chip.style.outlineOffset = '2px';
+      setTimeout(function() { if (chip) chip.style.outline = ''; }, 1500);
+    }
+    var row = chip ? chip.closest('tr') : null;
+    if (row) {
+      row.style.background = 'rgba(16,185,129,.07)';
+      setTimeout(function() { if (row) row.style.background = ''; }, 1500);
+    }
+    CT.bus.emit('toast', '📦 Colis ' + ref + ' → ' + CT.html.parcelStatusLabel(nextStatus) + ' ✅', 'success');
+  } catch(e) {
+    // Revert
+    if (chip) {
+      chip.className = 'ct-badge ' + currentStatus;
+      chip.style.opacity = '1';
+      chip.innerHTML = CT.html.parcelStatusLabel(currentStatus) + ((CT.html.PARCEL_ALL_NEXT[currentStatus] || []).length > 0 ? ' ▾' : '');
+      chip.setAttribute('onclick', 'CT.html._openParcelMenu(event,\'' + id + '\',\'' + ref + '\',\'' + currentStatus + '\')');
+      chip.style.outline = '2px solid #ef4444';
+      chip.style.outlineOffset = '2px';
+      setTimeout(function() { if (chip) chip.style.outline = ''; }, 1500);
+    }
+    // Revert KPI cards
+    if (oldKpi) { var vr = parseInt(oldKpi.textContent) || 0; oldKpi.textContent = vr + 1; }
+    if (newKpi) { var v2r = parseInt(newKpi.textContent) || 0; newKpi.textContent = Math.max(0, v2r - 1); }
+    CT.bus.emit('toast', '❌ Erreur: ' + e.message, 'error');
+  }
+};
+
+CT.html.advanceParcelBtn = function(id, ref, status) {
+  var next = CT.html.PARCEL_NEXT[status];
+  if (!next || !id) return '<span class="ct-muted" style="font-size:.75rem">—</span>';
+  var label = CT.html.parcelStatusLabel(next);
+  return '<button onclick="CT.html.advanceParcel(\'' + id + '\',\'' + (ref||'') + '\',\'' + status + '\', this)" ' +
+    'style="padding:4px 10px;border:none;background:var(--ct-blue);color:#fff;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer" ' +
+    'title="→ ' + label + '">▶ ' + label + '</button>';
+};
+
+CT.html.advanceParcel = async function(id, ref, currentStatus, btn) {
+  var next = CT.html.PARCEL_NEXT[currentStatus];
+  if (!next) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+
+  try {
+    await CT.api.updateParcelStatus(id, next);
+    CT.bus.emit('toast', '📦 Colis ' + ref + ' → ' + CT.html.parcelStatusLabel(next) + ' ✅', 'success');
+
+    // Mettre à jour chip si visible
+    var chip = document.getElementById('pchip-' + id);
+    if (chip) {
+      var nextsNew = CT.html.PARCEL_ALL_NEXT[next] || [];
+      chip.className = 'ct-badge ' + next;
+      chip.innerHTML = CT.html.parcelStatusLabel(next) + (nextsNew.length > 0 ? ' ▾' : '');
+      if (nextsNew.length > 0) {
+        chip.setAttribute('onclick', 'CT.html._openParcelMenu(event,\'' + id + '\',\'' + ref + '\',\'' + next + '\')');
+      }
+      chip.style.outline = '2px solid #10b981';
+      chip.style.outlineOffset = '2px';
+      setTimeout(function() { if (chip) chip.style.outline = ''; }, 1500);
+    }
+    // Mettre à jour KPI cards
+    var oldKpi = document.getElementById('kpi-val-' + currentStatus);
+    var newKpi = document.getElementById('kpi-val-' + next);
+    if (oldKpi) { var v = parseInt(oldKpi.textContent) || 0; oldKpi.textContent = Math.max(0, v - 1); }
+    if (newKpi) { var v2 = parseInt(newKpi.textContent) || 0; newKpi.textContent = v2 + 1; }
+
+    var newNext = CT.html.PARCEL_NEXT[next];
+    if (newNext) {
+      btn.disabled = false;
+      btn.textContent = '▶ ' + CT.html.parcelStatusLabel(newNext);
+      btn.setAttribute('onclick', 'CT.html.advanceParcel(\'' + id + '\',\'' + ref + '\',\'' + next + '\', this)');
+    } else {
+      btn.remove();
+    }
+  } catch(e) {
+    CT.bus.emit('toast', '❌ Erreur: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '▶';
+  }
+};
+
+/* ---------------------------------------------------------------
+   Order detail modal — panneau latéral au clic sur une commande
+   --------------------------------------------------------------- */
+CT.html.showOrderDetail = async function(orderId, orderRef) {
+  // Fermer si déjà ouvert
+  var existing = document.getElementById('ct-detail-panel');
+  if (existing) { existing.remove(); if (existing.dataset.orderId === String(orderId)) return; }
+
+  // Créer le panneau
+  var panel = document.createElement('div');
+  panel.id = 'ct-detail-panel';
+  panel.dataset.orderId = String(orderId);
+  panel.style.cssText = [
+    'position:fixed;top:0;right:0;width:min(480px,100vw);height:100vh',
+    'background:var(--ct-bg1,#0f172a);border-left:1px solid var(--ct-border,rgba(255,255,255,.1))',
+    'z-index:8000;display:flex;flex-direction:column',
+    'box-shadow:-8px 0 32px rgba(0,0,0,.4)',
+    'animation:slideInRight .2s ease'
+  ].join(';');
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--ct-border,rgba(255,255,255,.1));flex-shrink:0';
+  header.innerHTML = '<div><div style="font-weight:700;font-size:1rem">📋 Commande ' + (orderRef || orderId) + '</div>' +
+    '<div style="font-size:.75rem;color:var(--ct-text-muted)">Détail complet</div></div>' +
+    '<button onclick="document.getElementById(\'ct-detail-panel\').remove()" style="background:none;border:none;cursor:pointer;color:var(--ct-text-muted);font-size:1.2rem;padding:4px">✕</button>';
+  panel.appendChild(header);
+
+  // Body (scrollable)
+  var body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:16px 20px';
+  body.innerHTML = '<div style="color:var(--ct-text-muted);text-align:center;padding:40px 0">Chargement...</div>';
+  panel.appendChild(body);
+
+  document.body.appendChild(panel);
+
+  // Ajouter animation CSS si pas déjà là
+  if (!document.getElementById('ct-slide-style')) {
+    var style = document.createElement('style');
+    style.id = 'ct-slide-style';
+    style.textContent = '@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}';
+    document.head.appendChild(style);
+  }
+
+  // Cliquer en dehors pour fermer
+  setTimeout(function() {
+    function closer(e) {
+      var p = document.getElementById('ct-detail-panel');
+      if (p && !p.contains(e.target)) { p.remove(); document.removeEventListener('click', closer); }
+    }
+    document.addEventListener('click', closer);
+  }, 200);
+
+  // Charger les données
+  try {
+    var order = await CT.api.hubOrderDetail(orderId);
+    var html = '';
+
+    // Client
+    html += '<div class="ct-card" style="margin-bottom:12px">';
+    html += '<div class="ct-card-title">👤 Client</div>';
+    html += '<div style="font-size:.85rem">';
+    html += '<div style="font-weight:600">' + (order.client_name || '—') + '</div>';
+    if (order.client_phone) html += '<div style="color:var(--ct-text-muted)">' + order.client_phone + '</div>';
+    if (order.relais_name) html += '<div style="margin-top:4px">📍 Relais : <strong>' + order.relais_name + '</strong>' + (order.relais_island ? ' (' + order.relais_island + ')' : '') + '</div>';
+    html += '</div></div>';
+
+    // Infos commande
+    html += '<div class="ct-card" style="margin-bottom:12px">';
+    html += '<div class="ct-card-title">📦 Commande</div>';
+    html += '<div style="font-size:.85rem;display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+    html += '<div><span style="color:var(--ct-text-muted)">Statut</span><br>' + CT.html.badge(order.status) + '</div>';
+    html += '<div><span style="color:var(--ct-text-muted)">Total</span><br><strong>' + CT.html.formatKMF(order.total_kmf) + '</strong></div>';
+    html += '<div><span style="color:var(--ct-text-muted)">Paiement</span><br>' + (order.payment_mode || '—') + (order.payment_status === 'paid' ? ' <span style="color:#10b981">✓</span>' : '') + '</div>';
+    html += '<div><span style="color:var(--ct-text-muted)">Île</span><br>' + (order.destination_island || '—') + '</div>';
+    html += '</div></div>';
+
+    // Articles
+    if (order.items && order.items.length) {
+      html += '<div class="ct-card" style="margin-bottom:12px">';
+      html += '<div class="ct-card-title">🛍️ Articles (' + order.items.length + ')</div>';
+      order.items.forEach(function(item) {
+        var stockColor = item.stock_status === 'ok' ? '#10b981' : item.stock_status === 'partial' ? '#f59e0b' : '#ef4444';
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--ct-border,rgba(255,255,255,.06))">';
+        if (item.image_url) html += '<img src="' + item.image_url + '" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0">';
+        html += '<div style="flex:1;min-width:0">';
+        html += '<div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.product_name || '—') + '</div>';
+        html += '<div style="font-size:.75rem;color:var(--ct-text-muted)">Qté : ' + item.quantity + ' · ' + CT.html.formatKMF(item.price_kmf) + '</div>';
+        html += '</div>';
+        html += '<span style="font-size:.7rem;color:' + stockColor + ';font-weight:700">' + (item.stock_status === 'ok' ? '✓' : item.stock_status === 'partial' ? '⚠' : '✗') + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Colis
+    if (order.parcels && order.parcels.length) {
+      html += '<div class="ct-card" style="margin-bottom:12px">';
+      html += '<div class="ct-card-title">📮 Colis (' + order.parcels.length + ')</div>';
+      order.parcels.forEach(function(p) {
+        html += '<div style="padding:8px 0;border-bottom:1px solid var(--ct-border,rgba(255,255,255,.06))">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+        html += '<span class="ct-font-mono" style="font-size:.8rem;font-weight:700;color:var(--ct-blue)">' + (p.reference || '—') + '</span>';
+        html += CT.html.parcelStatusChip(p.id, p.reference, p.status);
+        html += '</div>';
+        if (p.items && p.items.length) {
+          html += '<div style="font-size:.75rem;color:var(--ct-text-muted)">' + p.items.length + ' article(s)';
+          if (p.weight_kg) html += ' · ' + p.weight_kg + ' kg';
+          html += '</div>';
+        }
+        var advBtn = CT.html.advanceParcelBtn(p.id, p.reference, p.status);
+        if (advBtn.indexOf('button') !== -1) html += '<div style="margin-top:6px">' + advBtn + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Timeline
+    if (order.timeline && order.timeline.length) {
+      html += '<div class="ct-card" style="margin-bottom:12px">';
+      html += '<div class="ct-card-title">🗺️ Timeline</div>';
+      order.timeline.forEach(function(t) {
+        html += '<div style="display:flex;gap:10px;padding:5px 0;font-size:.78rem">';
+        html += '<span style="color:var(--ct-text-muted);flex-shrink:0">' + CT.html.formatDateTime(t.created_at) + '</span>';
+        html += '<span style="font-weight:600">' + (CT.html.statusLabel(t.step) || t.step) + '</span>';
+        if (t.scanned_by_name) html += '<span style="color:var(--ct-text-muted)">par ' + t.scanned_by_name + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Commentaires
+    if (order.comments && order.comments.length) {
+      html += '<div class="ct-card">';
+      html += '<div class="ct-card-title">💬 Commentaires</div>';
+      order.comments.slice(0, 5).forEach(function(c) {
+        html += '<div style="padding:5px 0;border-bottom:1px solid var(--ct-border,rgba(255,255,255,.06));font-size:.78rem">';
+        html += '<span style="color:var(--ct-text-muted)">' + CT.html.formatDateTime(c.created_at) + '</span> · ';
+        html += '<span style="font-weight:600">' + (c.author_name || 'Hub') + '</span><br>';
+        html += c.text || '';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    body.innerHTML = html || '<div style="color:var(--ct-text-muted);text-align:center;padding:40px 0">Aucun détail disponible</div>';
+  } catch(e) {
+    body.innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center">❌ Erreur : ' + e.message + '</div>';
+  }
+};
+
+/* ---------------------------------------------------------------
    advanceOrder — fixed: no more full view reload
    --------------------------------------------------------------- */
 CT.html.advanceOrder = async function(id, ref, currentStatus, btn) {
@@ -269,13 +617,14 @@ CT.html.kpiCard = function(label, value, icon, color) {
   '</div>';
 };
 
-CT.html.actionCard = function(label, value, icon, color, onClick) {
+CT.html.actionCard = function(label, value, icon, color, onClick, statusKey) {
   var cls = 'ct-action-card ' + (color || '');
   var click = onClick ? ' onclick="' + onClick + '"' : '';
   var cursor = onClick ? ' style="cursor:pointer"' : '';
+  var kpiId = statusKey ? ' id="kpi-val-' + statusKey + '"' : '';
   return '<div class="' + cls + '"' + click + cursor + '>' +
     '<div class="ct-action-icon">' + (icon || '') + '</div>' +
-    '<div class="ct-action-value">' + value + '</div>' +
+    '<div class="ct-action-value"' + kpiId + '>' + value + '</div>' +
     '<div class="ct-action-label">' + label + '</div>' +
   '</div>';
 };
@@ -619,88 +968,118 @@ CT.views.hub = {
 };
 
 /* ===============================================================
-   🚢 VIEW: TRANSIT (VISION GLOBALE)
+   🚢 VIEW: TRANSIT — LES COLIS (unité logistique)
+   Les commandes sont encapsulées dans des colis.
+   C'est le COLIS qui avance : shipped → in_transit → available → collected
    =============================================================== */
 CT.views.transit = {
   label: 'Transit',
   icon: '🚢',
+  _parcels: [],
+  _filter: 'all',
+
   load: async function(el) {
     el.innerHTML = CT.html.loading();
     CT.html.destroyCharts();
     try {
-      var [ops, pipeline] = await Promise.all([
-        CT.api.dashboard('ops'),
-        CT.api.dashboard('pipeline')
+      // KPI hub-dashboard + liste de colis actifs
+      var [hubData, parcelsRes, opsData] = await Promise.all([
+        CT.api.hubDashboard(),
+        CT.api.parcels({ limit: 200 }),
+        CT.api.dashboard('ops')
       ]);
-      var log = ops.logistique || {};
-      var delais = ops.delais || {};
-      var pipe = pipeline.pipeline || {};
-      var html = '';
+      var parcelsKpi = hubData.parcels || {};
+      var delais = opsData.delais || {};
+      var allParcels = parcelsRes.data || [];
 
-      var actionContent = '<div class="ct-action-grid">';
-      var shippedCount = pipe.shipped ? pipe.shipped.count : 0;
-      var transitCount = pipe.in_transit ? pipe.in_transit.count : 0;
-      var transitaireCount = log.transitaire ? log.transitaire.count : 0;
-      var bateauCount = log.bateau ? log.bateau.count : 0;
-      actionContent += CT.html.actionCard('En expédition', shippedCount, '📦', 'amber');
-      actionContent += CT.html.actionCard('En transit', transitCount, '🚢', 'orange');
-      actionContent += CT.html.actionCard('Chez transitaire', transitaireCount, '🏢', 'blue');
-      actionContent += CT.html.actionCard('En mer', bateauCount, '⛵', 'cyan');
-      actionContent += '</div>';
-
-      var transitOrders = [];
-      ['shipped','in_transit'].forEach(function(s) {
-        if (pipe[s] && pipe[s].orders) {
-          pipe[s].orders.forEach(function(o) { o._status = s; transitOrders.push(o); });
-        }
+      // On garde les colis logistiquement actifs (pas draft, pas cancelled)
+      this._parcels = allParcels.filter(function(p) {
+        return ['preparation','shipped','in_transit','available'].indexOf(p.status) !== -1;
       });
-      if (transitOrders.length > 0) {
-        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📋 Colis en mouvement (' + transitOrders.length + ')</div>';
-        var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Créée le', 'Action', '📱'];
-        var rows = transitOrders.slice(0, 30).map(function(o) {
-          return [
-            '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            CT.html.statusChip(o.id, o.reference, o._status),
-            o.client_name || o.recipient_name || '—',
-            CT.html.formatKMF(o.total_kmf),
-            CT.html.formatDate(o.created_at),
-            CT.html.advanceBtn(o.id, o.reference, o._status),
-            CT.html.whatsappBtn(o.client_phone, o.reference, o._status, true)
-          ];
-        });
-        actionContent += CT.html.table(headers, rows);
-        actionContent += '</div>';
-      }
-      html += CT.html.zoneAction('Colis en mouvement', actionContent);
-
-      var infoContent = '';
-      infoContent += '<div class="ct-grid-2">';
-      infoContent += '<div class="ct-card"><div class="ct-card-title">📍 Par destination</div>';
-      var destinations = [
-        { label: '📥 Réception Dubaï', count: log.dubai_reception ? log.dubai_reception.count : 0 },
-        { label: '📦 Expédition Dubaï', count: log.dubai_expedition ? log.dubai_expedition.count : 0 },
-        { label: '🏢 Transitaire', count: transitaireCount },
-        { label: '🚢 En mer', count: bateauCount },
-        { label: '📍 Relais Anjouan', count: log.anjouan ? log.anjouan.count : 0 }
-      ];
-      destinations.forEach(function(d) {
-        infoContent += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--ct-border)">';
-        infoContent += '<span>' + d.label + '</span>';
-        infoContent += '<span style="font-weight:700">' + d.count + '</span>';
-        infoContent += '</div>';
-      });
-      infoContent += '</div>';
-
-      infoContent += '<div class="ct-card"><div class="ct-card-title">⏱️ Temps moyen</div>';
-      infoContent += '<div class="ct-stat-grid">';
-      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (delais.avg_preparation_jours || 0) + 'j</div><div class="ct-stat-label">Préparation</div></div>';
-      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (delais.avg_livraison_totale_jours || 0) + 'j</div><div class="ct-stat-label">Livraison totale</div></div>';
-      infoContent += '</div></div>';
-      infoContent += '</div>';
-
-      html += CT.html.zoneInfo('Volumes et performance', infoContent);
-      el.innerHTML = html;
+      this._filter = 'all';
+      this._render(el, parcelsKpi, delais);
     } catch(e) { el.innerHTML = CT.html.error(e.message); }
+  },
+
+  _render: function(el, parcelsKpi, delais) {
+    var self = this;
+    parcelsKpi = parcelsKpi || {};
+    delais = delais || {};
+
+    var html = '';
+
+    // ─── 🔝 ACTION : KPI colis ───
+    var actionContent = '<div class="ct-action-grid">';
+    actionContent += CT.html.actionCard('En préparation', parcelsKpi.preparation || 0, '🛒', 'purple', null, 'preparation');
+    actionContent += CT.html.actionCard('Expédiés', parcelsKpi.shipped || 0, '📦', 'amber', null, 'shipped');
+    actionContent += CT.html.actionCard('En transit', parcelsKpi.in_transit || 0, '🚢', 'orange', null, 'in_transit');
+    actionContent += CT.html.actionCard('Au relais', parcelsKpi.at_relay || 0, '📍', 'green', null, 'available');
+    actionContent += '</div>';
+
+    // Filtres
+    var filteredParcels = this._filter === 'all'
+      ? this._parcels
+      : this._parcels.filter(function(p) { return p.status === self._filter; });
+
+    var filterStatuses = ['all','preparation','shipped','in_transit','available'];
+    var filterLabels = { all:'Tous', preparation:'Préparation', shipped:'Expédié', in_transit:'En transit', available:'Au relais' };
+
+    actionContent += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px">';
+    filterStatuses.forEach(function(s) {
+      var count = s === 'all' ? self._parcels.length : self._parcels.filter(function(p) { return p.status === s; }).length;
+      var active = s === self._filter;
+      var hex = CT.html.STATUS_HEX[s] || '#64748b';
+      actionContent += '<button onclick="CT.views.transit._setFilter(\'' + s + '\')" ' +
+        'style="padding:4px 12px;border:none;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;' +
+        'background:' + (active ? hex : 'var(--ct-bg3)') + ';color:' + (active ? '#fff' : 'var(--ct-text)') + ';transition:all .15s">' +
+        filterLabels[s] + ' <span style="opacity:.7">(' + count + ')</span></button>';
+    });
+    actionContent += '</div>';
+
+    // Table des colis
+    if (filteredParcels.length === 0) {
+      actionContent += CT.html.empty('📦', 'Aucun colis dans ce statut');
+    } else {
+      actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📦 Colis (' + filteredParcels.length + ') — cliquez sur une ligne pour voir la commande</div>';
+      var tbl = '<div class="ct-table-wrap"><table class="ct-table"><thead><tr>';
+      ['Colis', 'Commande', 'Statut', 'Art.', 'Dest.', 'Créé le', 'Action'].forEach(function(h) { tbl += '<th>' + h + '</th>'; });
+      tbl += '</tr></thead><tbody>';
+      filteredParcels.forEach(function(p) {
+        var orderRef = p.order_reference || '—';
+        var orderId = p.order_id || '';
+        var clickable = orderId ? ' style="cursor:pointer" onclick="CT.html.showOrderDetail(\'' + orderId + '\',\'' + orderRef + '\')"' : '';
+        tbl += '<tr' + clickable + ' title="Cliquer pour voir la commande ' + orderRef + '">';
+        tbl += '<td><span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span></td>';
+        tbl += '<td><span class="ct-font-mono" style="font-size:.75rem;color:var(--ct-text-muted)">' + orderRef + '</span></td>';
+        tbl += '<td>' + CT.html.parcelStatusChip(p.id, p.reference, p.status) + '</td>';
+        tbl += '<td><span style="font-size:.8rem">' + (p.items_count || 0) + '</span></td>';
+        tbl += '<td><span style="font-size:.78rem">' + (p.destination_island || p.routing_mode || '—') + '</span></td>';
+        tbl += '<td><span style="font-size:.75rem;color:var(--ct-text-muted)">' + CT.html.formatDate(p.created_at) + '</span></td>';
+        tbl += '<td>' + CT.html.advanceParcelBtn(p.id, p.reference, p.status) + '</td>';
+        tbl += '</tr>';
+      });
+      tbl += '</tbody></table></div>';
+      actionContent += tbl + '</div>';
+    }
+
+    html += CT.html.zoneAction('Colis en mouvement', actionContent);
+
+    // ─── 🔻 INFO ───
+    var infoContent = '';
+    infoContent += '<div class="ct-card"><div class="ct-card-title">⏱️ Délais moyens</div>';
+    infoContent += '<div class="ct-stat-grid">';
+    infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (delais.avg_preparation_jours || 0) + 'j</div><div class="ct-stat-label">Préparation</div></div>';
+    infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (delais.avg_livraison_totale_jours || 0) + 'j</div><div class="ct-stat-label">Livraison totale</div></div>';
+    infoContent += '</div></div>';
+
+    html += CT.html.zoneInfo('Performance', infoContent);
+    el.innerHTML = html;
+  },
+
+  _setFilter: function(f) {
+    this._filter = f;
+    var el = document.getElementById('content-area');
+    if (el) this._render(el, null, null);
   }
 };
 
@@ -977,27 +1356,31 @@ CT.views.commandes = {
     });
     html += '</div>';
 
-    // Table
+    // Table — lignes cliquables → panneau détail commande
     if (orders.length === 0) {
       html += CT.html.empty('🔍', 'Aucune commande trouvée');
     } else {
-      var headers = ['Réf.', 'Destinataire', 'Montant', 'Statut', 'Île', 'Paiement', 'Âge', '📱'];
-      var rows = orders.map(function(o) {
+      html += '<div style="font-size:.75rem;color:var(--ct-text-muted);margin-bottom:6px">💡 Cliquez sur une ligne pour voir ses colis et sa timeline</div>';
+      var tbl = '<div class="ct-table-wrap"><table class="ct-table"><thead><tr>';
+      ['Réf.', 'Destinataire', 'Montant', 'Statut', 'Île', 'Paiement', 'Âge', '📱'].forEach(function(h) { tbl += '<th>' + h + '</th>'; });
+      tbl += '</tr></thead><tbody>';
+      orders.forEach(function(o) {
         var payBadge = o.payment_status === 'paid'
           ? '<span style="color:#10b981;font-size:.7rem;font-weight:700">✓ Payé</span>'
-          : '<span style="color:var(--ct-text-muted);font-size:.7rem">' + (o.payment_method || '—') + '</span>';
-        return [
-          '<span class="ct-font-mono" style="font-weight:700;font-size:.8rem;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-          '<span style="font-size:.85rem">' + (o.recipient_name || o.client_name || '—') + '</span>',
-          '<span style="font-weight:600;font-size:.85rem">' + CT.html.formatKMF(o.total_amount || o.total_kmf) + '</span>',
-          CT.html.statusChip(o.id, o.reference, o.status),
-          '<span style="font-size:.8rem">' + (o.destination_island || '—') + '</span>',
-          payBadge,
-          '<span style="font-size:.75rem;color:var(--ct-text-muted)">' + CT.html._age(o.updated_at || o.created_at) + '</span>',
-          CT.html.whatsappBtn(o.client_phone || o.recipient_phone, o.reference, o.status, true)
-        ];
+          : '<span style="color:var(--ct-text-muted);font-size:.7rem">' + (o.payment_method || o.payment_mode || '—') + '</span>';
+        tbl += '<tr style="cursor:pointer" onclick="CT.html.showOrderDetail(\'' + o.id + '\',\'' + (o.reference||'') + '\')" title="Voir colis et détail">';
+        tbl += '<td><span class="ct-font-mono" style="font-weight:700;font-size:.8rem;color:var(--ct-blue)">' + (o.reference || '—') + '</span></td>';
+        tbl += '<td><span style="font-size:.85rem">' + (o.recipient_name || o.client_name || '—') + '</span></td>';
+        tbl += '<td><span style="font-weight:600;font-size:.85rem">' + CT.html.formatKMF(o.total_amount || o.total_kmf) + '</span></td>';
+        tbl += '<td>' + CT.html.statusChip(o.id, o.reference, o.status) + '</td>';
+        tbl += '<td><span style="font-size:.8rem">' + (o.destination_island || '—') + '</span></td>';
+        tbl += '<td>' + payBadge + '</td>';
+        tbl += '<td><span style="font-size:.75rem;color:var(--ct-text-muted)">' + CT.html._age(o.updated_at || o.created_at) + '</span></td>';
+        tbl += '<td onclick="event.stopPropagation()">' + CT.html.whatsappBtn(o.client_phone || o.recipient_phone, o.reference, o.status, true) + '</td>';
+        tbl += '</tr>';
       });
-      html += CT.html.table(headers, rows);
+      tbl += '</tbody></table></div>';
+      html += tbl;
     }
 
     html += '</div></div>';
