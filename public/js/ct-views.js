@@ -43,6 +43,31 @@ CT.html.statusColor = function(status) {
   return map[status] || 'var(--ct-text-muted)';
 };
 
+/* Next-status map for order advancement */
+CT.html.NEXT_STATUS = {
+  confirmed: 'ordered', ordered: 'preparation', preparation: 'shipped',
+  shipped: 'in_transit', in_transit: 'available', available: 'collected'
+};
+
+CT.html.advanceOrder = async function(id, ref, currentStatus, btn) {
+  var next = CT.html.NEXT_STATUS[currentStatus];
+  if (!next) return;
+  if (!confirm('Avancer ' + ref + ' → ' + CT.html.statusLabel(next) + ' ?')) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    await CT.api.updateOrderStatus(id, next);
+    CT.bus.emit('toast', ref + ' → ' + CT.html.statusLabel(next) + ' ✅', 'success');
+    // Reload pipeline view
+    var el = document.querySelector('.ct-main');
+    if (el && CT.views.pipeline) CT.views.pipeline.load(el);
+  } catch(e) {
+    CT.bus.emit('toast', 'Erreur: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '▶';
+  }
+};
+
 CT.html.statusLabel = function(status) {
   var map = {
     new: 'Nouveau', confirmed: 'Confirmé', ordered: 'Commandé',
@@ -360,8 +385,16 @@ CT.views.pipeline = {
           html += '<div class="ct-empty" style="padding:12px;font-size:0.8rem">Aucune</div>';
         } else {
           orders.slice(0, 20).forEach(function(o) {
+            var hasNext = !!CT.html.NEXT_STATUS[status];
+            var nextLabel = hasNext ? CT.html.statusLabel(CT.html.NEXT_STATUS[status]) : '';
             html += '<div class="ct-pipeline-order">';
-            html += '<div class="ref">' + (o.reference || o.id || '—') + '</div>';
+            html += '<div style="display:flex;align-items:center;gap:6px"><div class="ref">' + (o.reference || o.id || '—') + '</div>';
+            if (hasNext && o.id) {
+              html += '<button onclick="CT.html.advanceOrder(\'' + o.id + '\',\'' + (o.reference||'') + '\',\'' + status + '\', this)" '
+                + 'title="→ ' + nextLabel + '" '
+                + 'style="margin-left:auto;padding:2px 8px;border:none;background:var(--ct-green,#22c55e);color:#fff;border-radius:6px;font-size:.7rem;font-weight:700;cursor:pointer">▶</button>';
+            }
+            html += '</div>';
             html += '<div class="client">' + (o.client_name || o.recipient_name || '[Compte supprimé]') + '</div>';
             html += '<div class="amount">' + CT.html.formatKMF(o.total_kmf) + '</div>';
             html += '</div>';
@@ -385,15 +418,23 @@ CT.views.pipeline = {
 
       html += '<div class="ct-section">';
       html += '<div class="ct-section-title">📋 Toutes les commandes</div>';
-      var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Paiement', 'Créée le'];
+      var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Paiement', 'Créée le', 'Action'];
       var rows = allOrders.slice(0, 50).map(function(o) {
+        var hasNext = !!CT.html.NEXT_STATUS[o.status];
+        var nextLabel = hasNext ? CT.html.statusLabel(CT.html.NEXT_STATUS[o.status]) : '';
+        var actionHtml = hasNext && o.id
+          ? '<button onclick="CT.html.advanceOrder(\'' + o.id + '\',\'' + (o.reference||'') + '\',\'' + o.status + '\', this)" '
+            + 'style="padding:4px 10px;border:none;background:var(--ct-green,#22c55e);color:#fff;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer" '
+            + 'title="→ ' + nextLabel + '">▶ ' + nextLabel + '</button>'
+          : '<span style="color:var(--ct-text-muted,#94a3b8);font-size:.75rem">—</span>';
         return [
           '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
           CT.html.badge(o.status),
           o.client_name || o.recipient_name || '—',
           CT.html.formatKMF(o.total_kmf),
           o.payment_mode || '—',
-          CT.html.formatDate(o.created_at)
+          CT.html.formatDate(o.created_at),
+          actionHtml
         ];
       });
       html += CT.html.table(headers, rows);

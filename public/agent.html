@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a3a5c">
+<title>Komerce Agent</title>
+<link rel="icon" href="/images/avatar_panier.png">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--ocean:#1a3a5c;--ocean-light:#2a5a8c;--sand:#f4e8d1;--sand-light:#faf5eb;--coral:#e07a5f;--coral-light:#f09a7f;--green:#22c55e;--green-dark:#16a34a;--amber:#f59e0b;--red:#ef4444;--text:#1e293b;--text-muted:#64748b;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--radius:14px;--shadow:0 2px 12px rgba(26,58,92,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;-webkit-tap-highlight-color:transparent}
+.app{display:flex;flex-direction:column;min-height:100dvh}
+
+/* Header */
+.header{background:linear-gradient(135deg,var(--ocean),var(--ocean-light));color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.header .logo{font-size:1.3rem;font-weight:800;letter-spacing:-.5px}
+.header .role-badge{background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:.7rem;text-transform:uppercase;letter-spacing:1px}
+.header .logout-btn{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:.8rem;cursor:pointer}
+
+/* Main content */
+.main{flex:1;padding:16px;padding-bottom:90px;max-width:600px;margin:0 auto;width:100%}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;gap:3px;cursor:pointer;transition:color .2s;color:var(--text-muted);text-decoration:none;border:none;background:none;font-family:inherit}
+.nav-item.active{color:var(--ocean)}
+.nav-item .nav-icon{font-size:1.4rem}
+.nav-item .nav-label{font-size:.65rem;font-weight:600}
+
+/* Login */
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px;background:linear-gradient(160deg,var(--ocean) 0%,var(--ocean-light) 100%)}
+.login-card{background:var(--card);border-radius:var(--radius);padding:32px 24px;width:100%;max-width:380px;box-shadow:var(--shadow)}
+.login-title{text-align:center;font-size:1.5rem;font-weight:800;color:var(--ocean);margin-bottom:4px}
+.login-sub{text-align:center;color:var(--text-muted);font-size:.85rem;margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;color:var(--text-muted)}
+.form-group input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:1rem;transition:border .2s;outline:none}
+.form-group input:focus{border-color:var(--ocean)}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--ocean);color:#fff}
+.btn-coral{background:var(--coral);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-outline{background:transparent;border:2px solid var(--ocean);color:var(--ocean)}
+.btn-sm{padding:8px 16px;font-size:.85rem;width:auto;display:inline-block}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Cards */
+.card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;font-weight:700}
+
+/* KPI Row */
+.kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:var(--shadow);border:1px solid var(--border)}
+.kpi .value{font-size:1.8rem;font-weight:800;color:var(--ocean)}
+.kpi .label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.kpi.green .value{color:var(--green-dark)}
+.kpi.coral .value{color:var(--coral)}
+.kpi.amber .value{color:var(--amber)}
+
+/* Order list */
+.order-item{display:flex;align-items:center;padding:14px 16px;background:var(--card);border-radius:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid var(--border);gap:12px;cursor:pointer;transition:background .15s}
+.order-item:active{background:var(--sand-light)}
+.order-ref{font-weight:800;font-family:'Courier New',monospace;font-size:.95rem;color:var(--ocean)}
+.order-info{flex:1}
+.order-client{font-size:.8rem;color:var(--text-muted);margin-top:2px}
+.order-amount{font-weight:700;font-size:.85rem;text-align:right}
+.order-status{font-size:.65rem;padding:3px 8px;border-radius:6px;font-weight:700;text-transform:uppercase;display:inline-block;margin-top:4px}
+
+/* Status badges */
+.st-confirmed{background:#dcfce7;color:#166534}
+.st-ordered{background:#e0f2fe;color:#075985}
+.st-preparation{background:#f3e8ff;color:#7c3aed}
+.st-shipped{background:#fef3c7;color:#92400e}
+.st-in_transit{background:#ffedd5;color:#c2410c}
+.st-available{background:#fef3c7;color:#92400e}
+.st-collected{background:#dcfce7;color:#166534}
+.st-cancelled{background:#fee2e2;color:#991b1b}
+
+/* Scanner */
+.scanner-area{width:100%;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;background:#000;margin-bottom:16px;position:relative}
+.scanner-area video{width:100%;height:100%;object-fit:cover}
+.scanner-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.scanner-frame{width:200px;height:200px;border:3px solid var(--coral);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)}
+.scan-result{padding:16px;background:var(--sand-light);border-radius:12px;margin-bottom:12px;text-align:center}
+.scan-result.success{background:#dcfce7;color:#166534}
+.scan-result.error{background:#fee2e2;color:#991b1b}
+
+/* Manual input */
+.manual-input{display:flex;gap:8px;margin-bottom:16px}
+.manual-input input{flex:1;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:1rem;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px}
+.manual-input button{flex-shrink:0}
+
+/* Step selector */
+.step-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.step-btn{padding:8px 14px;border-radius:8px;border:2px solid var(--border);background:var(--card);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
+.step-btn.active{border-color:var(--ocean);background:var(--ocean);color:#fff}
+
+/* Pickup code */
+.pickup-input{display:flex;justify-content:center;gap:8px;margin:20px 0}
+.pickup-digit{width:48px;height:56px;text-align:center;font-size:1.6rem;font-weight:800;border:2px solid var(--border);border-radius:10px;font-family:'Courier New',monospace;outline:none;transition:border .2s}
+.pickup-digit:focus{border-color:var(--coral)}
+
+/* Timeline */
+.timeline{padding-left:24px;border-left:3px solid var(--border);margin:16px 0}
+.timeline-item{position:relative;padding:0 0 16px 16px}
+.timeline-item::before{content:'';position:absolute;left:-29px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--border)}
+.timeline-item.done::before{background:var(--green)}
+.timeline-item.current::before{background:var(--coral);box-shadow:0 0 0 4px rgba(224,122,95,.3)}
+.timeline-step{font-weight:700;font-size:.85rem}
+.timeline-date{font-size:.75rem;color:var(--text-muted)}
+
+/* Toast */
+.toast-container{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:1000;width:90%;max-width:360px}
+.toast{padding:14px 18px;border-radius:12px;color:#fff;font-weight:600;font-size:.9rem;margin-bottom:8px;animation:slideIn .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.success{background:var(--green-dark)}
+.toast.error{background:var(--red)}
+.toast.info{background:var(--ocean)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section title */
+.section-title{font-size:.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:20px 0 12px;display:flex;align-items:center;gap:8px}
+
+/* Empty state */
+.empty{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.empty .icon{font-size:3rem;margin-bottom:8px}
+.empty .msg{font-size:.9rem}
+
+/* Loading */
+.loading{text-align:center;padding:40px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--ocean);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Detail modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end}
+.modal-content{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:1.1rem;font-weight:800;margin-bottom:16px}
+
+/* Advance button */
+.advance-row{display:flex;gap:8px;margin-top:12px}
+.advance-btn{flex:1;padding:10px;border:none;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.advance-btn:active{transform:scale(.97)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast-container" id="toasts"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE AGENT PWA — v1.0
+   Mobile scanner app for hub & relais agents
+   ═══════════════════════════════════════════════════════════════ */
+
+const BASE = window.location.origin;
+let currentUser = null;
+let currentScreen = 'dashboard';
+let scanner = null;
+
+/* ── API ─────────────────────────────────────────── */
+const api = {
+  async fetch(path, opts = {}) {
+    const url = BASE + path;
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts
+    });
+    if (res.status === 401) { currentUser = null; render(); throw new Error('Session expirée'); }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || data.message || 'Erreur serveur');
+    return data;
+  },
+  get(p) { return this.fetch(p); },
+  post(p, b) { return this.fetch(p, { method: 'POST', body: JSON.stringify(b) }); },
+  patch(p, b) { return this.fetch(p, { method: 'PATCH', body: JSON.stringify(b) }); },
+
+  login(email, pw) { return this.post('/api/auth/login', { email, password: pw }); },
+  me() { return this.get('/api/auth/me'); },
+  resetPw(key, pw) { return this.post('/api/auth/admin-reset', { key, new_password: pw }); },
+
+  hubPending() { return this.get('/api/scans/hub/pending'); },
+  scan(scan_code, step, notes) { return this.post('/api/scans', { scan_code, step, notes: notes || '' }); },
+  collect(pickup_code) { return this.post('/api/scans/collect', { pickup_code }); },
+  verifyQr(token) { return this.post('/api/scans/verify-qr', { token }); },
+  scanHistory(orderId) { return this.get('/api/scans/' + orderId); },
+
+  advanceOrder(id, status) { return this.patch('/api/orders/' + id + '/status', { status }); },
+  orderByRef(ref) { return this.get('/api/orders/' + ref); },
+  dashPipeline() { return this.get('/api/dashboard/pipeline'); },
+  dashOps() { return this.get('/api/dashboard/ops'); },
+};
+
+/* ── Toast ────────────────────────────────────────── */
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+/* ── Status helpers ──────────────────────────────── */
+const STATUS_LABELS = {
+  confirmed: 'Confirmé', ordered: 'Commandé', preparation: 'Préparation',
+  shipped: 'Expédié', in_transit: 'En transit', available: 'Disponible',
+  collected: 'Collecté', cancelled: 'Annulé', refunded: 'Remboursé',
+  relais_received: 'Reçu relais'
+};
+
+const STATUS_FLOW = ['confirmed','ordered','preparation','shipped','in_transit','available','collected'];
+
+function nextStatus(current) {
+  const i = STATUS_FLOW.indexOf(current);
+  return i >= 0 && i < STATUS_FLOW.length - 1 ? STATUS_FLOW[i + 1] : null;
+}
+
+function statusBadge(st) {
+  return `<span class="order-status st-${st}">${STATUS_LABELS[st] || st}</span>`;
+}
+
+function formatKMF(n) {
+  return n ? new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF' : '0 KMF';
+}
+
+function formatDate(d) {
+  return d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+}
+
+/* ── Auth ─────────────────────────────────────────── */
+async function checkAuth() {
+  try {
+    const data = await api.me();
+    currentUser = data.user || data;
+    return true;
+  } catch { currentUser = null; return false; }
+}
+
+/* ── Render Engine ───────────────────────────────── */
+function render() {
+  stopScanner();
+  const app = document.getElementById('app');
+  if (!currentUser) { app.innerHTML = renderLogin(); bindLogin(); return; }
+
+  const isHub = currentUser.role === 'agent_hub' || currentUser.role === 'admin';
+  const isRelais = currentUser.role === 'agent_relais' || currentUser.role === 'admin';
+  const roleLabel = { admin: 'Admin', agent_hub: 'Agent Hub', agent_relais: 'Agent Relais' }[currentUser.role] || currentUser.role;
+
+  let content = '';
+  if (currentScreen === 'dashboard') content = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+  else if (currentScreen === 'scanner') content = renderScannerScreen();
+  else if (currentScreen === 'collect') content = renderCollectScreen();
+  else if (currentScreen === 'orders') content = '<div class="loading"><div class="spinner"></div>Chargement...</div>';
+
+  app.innerHTML = `
+    <div class="app">
+      <div class="header">
+        <div class="logo">📦 Komerce Agent</div>
+        <div class="role-badge">${roleLabel}</div>
+        <button class="logout-btn" onclick="doLogout()">Déco</button>
+      </div>
+      <div class="main" id="screen-content">${content}</div>
+      <nav class="bottom-nav">
+        <button class="nav-item ${currentScreen === 'dashboard' ? 'active' : ''}" onclick="goTo('dashboard')">
+          <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
+        </button>
+        ${isHub ? `<button class="nav-item ${currentScreen === 'scanner' ? 'active' : ''}" onclick="goTo('scanner')">
+          <span class="nav-icon">📷</span><span class="nav-label">Scanner</span>
+        </button>` : ''}
+        ${isRelais ? `<button class="nav-item ${currentScreen === 'collect' ? 'active' : ''}" onclick="goTo('collect')">
+          <span class="nav-icon">🔑</span><span class="nav-label">Retrait</span>
+        </button>` : ''}
+        <button class="nav-item ${currentScreen === 'orders' ? 'active' : ''}" onclick="goTo('orders')">
+          <span class="nav-icon">📋</span><span class="nav-label">Commandes</span>
+        </button>
+      </nav>
+    </div>`;
+
+  if (currentScreen === 'dashboard') loadDashboard();
+  if (currentScreen === 'orders') loadOrders();
+  if (currentScreen === 'scanner') initScanner();
+}
+
+function goTo(screen) { currentScreen = screen; render(); }
+
+/* ── Login Screen ────────────────────────────────── */
+function renderLogin() {
+  return `<div class="login-screen">
+    <div class="login-card">
+      <div class="login-title">📦 Komerce</div>
+      <div class="login-sub">Espace Agent</div>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input id="login-email" type="email" placeholder="agent@komerce.km" required>
+        </div>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input id="login-password" type="password" placeholder="••••••••" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Se connecter</button>
+      </form>
+      <div id="login-error" style="color:var(--red);font-size:.85rem;text-align:center;margin-top:12px"></div>
+    </div>
+  </div>`;
+}
+
+function bindLogin() {
+  const form = document.getElementById('login-form');
+  if (!form) return;
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const pw = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    try {
+      errEl.textContent = 'Connexion...';
+      await api.login(email, pw);
+      await checkAuth();
+      render();
+    } catch (err) { errEl.textContent = err.message; }
+  };
+}
+
+function doLogout() {
+  document.cookie = 'kmrc_jwt=;path=/;max-age=0';
+  currentUser = null;
+  currentScreen = 'dashboard';
+  render();
+}
+
+/* ── Dashboard ───────────────────────────────────── */
+async function loadDashboard() {
+  const el = document.getElementById('screen-content');
+  if (!el) return;
+  try {
+    const [ops, pipeline] = await Promise.all([
+      api.dashOps().catch(() => null),
+      api.dashPipeline().catch(() => null)
+    ]);
+
+    const isHub = currentUser.role === 'agent_hub' || currentUser.role === 'admin';
+    const isRelais = currentUser.role === 'agent_relais' || currentUser.role === 'admin';
+
+    let html = `<div style="margin-bottom:16px;font-size:1.1rem;font-weight:700">
+      Bonjour ${currentUser.full_name || currentUser.email} 👋
+    </div>`;
+
+    // KPIs
+    const p = pipeline?.pipeline || {};
+    const totalActive = (pipeline?.active) || 0;
+    const prep = p.preparation?.count || 0;
+    const transit = p.in_transit?.count || 0;
+    const avail = p.available?.count || 0;
+    const collected = p.collected?.count || 0;
+
+    html += '<div class="kpi-row">';
+    html += `<div class="kpi"><div class="value">${totalActive}</div><div class="label">Actives</div></div>`;
+    if (isHub) {
+      html += `<div class="kpi coral"><div class="value">${prep}</div><div class="label">En préparation</div></div>`;
+      html += `<div class="kpi amber"><div class="value">${transit}</div><div class="label">En transit</div></div>`;
+    }
+    if (isRelais) {
+      html += `<div class="kpi amber"><div class="value">${avail}</div><div class="label">À retirer</div></div>`;
+      html += `<div class="kpi green"><div class="value">${collected}</div><div class="label">Collectées</div></div>`;
+    }
+    html += '</div>';
+
+    // Quick actions
+    html += '<div class="section-title">⚡ Actions rapides</div>';
+    if (isHub) {
+      html += `<div class="card" onclick="goTo('scanner')" style="cursor:pointer;display:flex;align-items:center;gap:12px">
+        <span style="font-size:2rem">📷</span>
+        <div><div style="font-weight:700">Scanner un colis</div><div style="font-size:.8rem;color:var(--text-muted)">Caméra QR ou saisie manuelle</div></div>
+        <span style="margin-left:auto;font-size:1.2rem;color:var(--text-muted)">›</span>
+      </div>`;
+    }
+    if (isRelais) {
+      html += `<div class="card" onclick="goTo('collect')" style="cursor:pointer;display:flex;align-items:center;gap:12px">
+        <span style="font-size:2rem">🔑</span>
+        <div><div style="font-weight:700">Retrait client</div><div style="font-size:.8rem;color:var(--text-muted)">Code 6 chiffres ou QR</div></div>
+        <span style="margin-left:auto;font-size:1.2rem;color:var(--text-muted)">›</span>
+      </div>`;
+    }
+
+    // Recent available orders for relais
+    if (isRelais && avail > 0) {
+      html += '<div class="section-title">📍 À retirer au relais</div>';
+      const availOrders = p.available?.orders || [];
+      availOrders.slice(0, 5).forEach(o => {
+        html += orderItem(o);
+      });
+    }
+
+    // Pending for hub
+    if (isHub) {
+      const confirmed = p.confirmed?.orders || [];
+      const ordered = p.ordered?.orders || [];
+      const pending = [...confirmed, ...ordered];
+      if (pending.length) {
+        html += '<div class="section-title">📥 En attente</div>';
+        pending.slice(0, 5).forEach(o => { html += orderItem(o); });
+      }
+    }
+
+    el.innerHTML = html;
+  } catch (err) {
+    el.innerHTML = `<div class="card" style="color:var(--red)">Erreur: ${err.message}</div>`;
+  }
+}
+
+function orderItem(o) {
+  return `<div class="order-item" onclick="showOrderDetail('${o.reference || o.id}')">
+    <div class="order-info">
+      <div class="order-ref">${o.reference || o.id || '—'}</div>
+      <div class="order-client">${o.client_name || o.recipient_name || '—'}</div>
+      ${statusBadge(o.status)}
+    </div>
+    <div class="order-amount">${formatKMF(o.total_kmf)}<br><span style="font-size:.7rem;color:var(--text-muted)">${formatDate(o.created_at)}</span></div>
+  </div>`;
+}
+
+/* ── Orders List ─────────────────────────────────── */
+async function loadOrders() {
+  const el = document.getElementById('screen-content');
+  if (!el) return;
+  try {
+    const data = await api.dashPipeline();
+    const p = data.pipeline || {};
+    let allOrders = [];
+    STATUS_FLOW.forEach(s => {
+      if (p[s]?.orders) allOrders = allOrders.concat(p[s].orders);
+    });
+    if (p.cancelled?.orders) allOrders = allOrders.concat(p.cancelled.orders);
+    allOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    let html = '<div class="section-title">📋 Toutes les commandes (' + allOrders.length + ')</div>';
+    if (!allOrders.length) {
+      html += '<div class="empty"><div class="icon">📭</div><div class="msg">Aucune commande</div></div>';
+    } else {
+      allOrders.forEach(o => { html += orderItem(o); });
+    }
+    el.innerHTML = html;
+  } catch (err) {
+    el.innerHTML = `<div class="card" style="color:var(--red)">Erreur: ${err.message}</div>`;
+  }
+}
+
+/* ── Scanner Screen (Hub) ────────────────────────── */
+function renderScannerScreen() {
+  const hubSteps = ['preparation', 'shipped', 'in_transit'];
+  const relaisSteps = ['relais_received'];
+  const isAdmin = currentUser.role === 'admin';
+  const steps = currentUser.role === 'agent_relais' ? relaisSteps : (isAdmin ? [...hubSteps, ...relaisSteps] : hubSteps);
+
+  return `
+    <div class="section-title">📷 Scanner un colis</div>
+    <div class="card">
+      <div class="card-title">Étape du scan</div>
+      <div class="step-selector" id="step-selector">
+        ${steps.map((s, i) => `<button class="step-btn ${i === 0 ? 'active' : ''}" data-step="${s}">${STATUS_LABELS[s] || s}</button>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Caméra QR</div>
+      <div class="scanner-area" id="scanner-area">
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:.9rem">
+          Initialisation caméra...
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="toggleScanner()" id="scanner-toggle-btn">⏸ Pause</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Saisie manuelle</div>
+      <div class="manual-input">
+        <input id="manual-ref" placeholder="Référence (ex: KYRH5XM)" autocapitalize="characters">
+        <button class="btn btn-primary btn-sm" onclick="doManualScan()">Scanner</button>
+      </div>
+    </div>
+
+    <div id="scan-result"></div>`;
+}
+
+let selectedStep = 'preparation';
+let scannerRunning = false;
+
+function initScanner() {
+  // Bind step selector
+  document.querySelectorAll('.step-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedStep = btn.dataset.step;
+    };
+  });
+
+  // Init QR scanner
+  if (typeof Html5Qrcode === 'undefined') {
+    document.getElementById('scanner-area').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:.85rem;padding:20px;text-align:center">📷 Librairie QR non chargée.<br>Utilisez la saisie manuelle.</div>';
+    return;
+  }
+
+  scanner = new Html5Qrcode('scanner-area');
+  startScanner();
+}
+
+async function startScanner() {
+  if (!scanner) return;
+  try {
+    scannerRunning = true;
+    await scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.0 },
+      onScanSuccess,
+      () => {} // ignore errors during scan
+    );
+  } catch (err) {
+    document.getElementById('scanner-area').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:.85rem;padding:20px;text-align:center">📷 Caméra non disponible.<br>${err.message}<br><br>Utilisez la saisie manuelle.</div>`;
+    scannerRunning = false;
+  }
+}
+
+function stopScanner() {
+  if (scanner && scannerRunning) {
+    scanner.stop().catch(() => {});
+    scannerRunning = false;
+  }
+  scanner = null;
+}
+
+function toggleScanner() {
+  const btn = document.getElementById('scanner-toggle-btn');
+  if (scannerRunning) {
+    scanner.stop().catch(() => {});
+    scannerRunning = false;
+    btn.textContent = '▶ Reprendre';
+  } else {
+    startScanner();
+    btn.textContent = '⏸ Pause';
+  }
+}
+
+let lastScanTime = 0;
+async function onScanSuccess(decoded) {
+  if (Date.now() - lastScanTime < 3000) return; // debounce
+  lastScanTime = Date.now();
+
+  // Vibrate feedback
+  if (navigator.vibrate) navigator.vibrate(200);
+
+  await processScan(decoded);
+}
+
+async function doManualScan() {
+  const ref = document.getElementById('manual-ref')?.value?.trim();
+  if (!ref) { toast('Saisissez une référence', 'error'); return; }
+  await processScan(ref);
+}
+
+async function processScan(scanCode) {
+  const resultEl = document.getElementById('scan-result');
+  if (!resultEl) return;
+
+  resultEl.innerHTML = '<div class="scan-result"><div class="spinner"></div>Scan en cours...</div>';
+
+  try {
+    const res = await api.scan(scanCode, selectedStep);
+    resultEl.innerHTML = `<div class="scan-result success">
+      ✅ <strong>${res.order_reference}</strong> → ${STATUS_LABELS[res.new_status] || res.new_status}
+      ${res.sms_triggered ? '<br>📱 SMS envoyé' : ''}
+    </div>`;
+    toast(`${res.order_reference} scanné ✅`, 'success');
+  } catch (err) {
+    resultEl.innerHTML = `<div class="scan-result error">❌ ${err.message}</div>`;
+    toast(err.message, 'error');
+  }
+}
+
+/* ── Collect Screen (Relais) ─────────────────────── */
+function renderCollectScreen() {
+  return `
+    <div class="section-title">🔑 Retrait client</div>
+
+    <div class="card">
+      <div class="card-title">Code de retrait (6 chiffres)</div>
+      <div class="pickup-input" id="pickup-input">
+        <input class="pickup-digit" maxlength="1" inputmode="numeric" data-idx="0">
+        <input class="pickup-digit" maxlength="1" inputmode="numeric" data-idx="1">
+        <input class="pickup-digit" maxlength="1" inputmode="numeric" data-idx="2">
+        <input class="pickup-digit" maxlength="1" inputmode="numeric" data-idx="3">
+        <input class="pickup-digit" maxlength="1" inputmode="numeric" data-idx="4">
+        <input class="pickup-digit" maxlength="1" inputmode="numeric" data-idx="5">
+      </div>
+      <button class="btn btn-coral" onclick="doCollect()">Confirmer le retrait</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Ou scanner le QR du client</div>
+      <div id="collect-scanner-area" class="scanner-area" style="aspect-ratio:4/3;height:240px"></div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="toggleCollectScanner()" id="collect-scanner-toggle">⏸ Pause</button>
+    </div>
+
+    <div id="collect-result"></div>`;
+}
+
+let collectScanner = null;
+let collectScannerRunning = false;
+
+function initCollectScanner() {
+  // Bind pickup digits
+  const digits = document.querySelectorAll('.pickup-digit');
+  digits.forEach((d, i) => {
+    d.oninput = () => {
+      if (d.value && i < 5) digits[i + 1].focus();
+      if (d.value && i === 5) doCollect();
+    };
+    d.onkeydown = (e) => {
+      if (e.key === 'Backspace' && !d.value && i > 0) digits[i - 1].focus();
+    };
+  });
+
+  if (typeof Html5Qrcode === 'undefined') {
+    document.getElementById('collect-scanner-area').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:.85rem">Utilisez le code 6 chiffres</div>';
+    return;
+  }
+
+  collectScanner = new Html5Qrcode('collect-scanner-area');
+  startCollectScanner();
+}
+
+async function startCollectScanner() {
+  if (!collectScanner) return;
+  try {
+    collectScannerRunning = true;
+    await collectScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 180, height: 180 } },
+      onCollectQrSuccess,
+      () => {}
+    );
+  } catch (err) {
+    document.getElementById('collect-scanner-area').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:.85rem;padding:16px;text-align:center">📷 ${err.message}</div>`;
+    collectScannerRunning = false;
+  }
+}
+
+function toggleCollectScanner() {
+  const btn = document.getElementById('collect-scanner-toggle');
+  if (collectScannerRunning) {
+    collectScanner.stop().catch(() => {});
+    collectScannerRunning = false;
+    btn.textContent = '▶ Reprendre';
+  } else {
+    startCollectScanner();
+    btn.textContent = '⏸ Pause';
+  }
+}
+
+let lastCollectTime = 0;
+async function onCollectQrSuccess(decoded) {
+  if (Date.now() - lastCollectTime < 3000) return;
+  lastCollectTime = Date.now();
+  if (navigator.vibrate) navigator.vibrate(200);
+
+  const resultEl = document.getElementById('collect-result');
+  resultEl.innerHTML = '<div class="scan-result"><div class="spinner"></div>Vérification QR...</div>';
+
+  try {
+    const res = await api.verifyQr(decoded);
+    resultEl.innerHTML = `<div class="scan-result success">
+      ✅ Retrait confirmé !<br>
+      <strong>${res.reference}</strong> — ${res.recipient}<br>
+      📍 ${res.relais}
+    </div>`;
+    toast(`${res.reference} remis à ${res.recipient} ✅`, 'success');
+  } catch (err) {
+    resultEl.innerHTML = `<div class="scan-result error">❌ ${err.message}</div>`;
+    toast(err.message, 'error');
+  }
+}
+
+async function doCollect() {
+  const digits = document.querySelectorAll('.pickup-digit');
+  const code = Array.from(digits).map(d => d.value).join('');
+  if (code.length !== 6) { toast('Saisissez les 6 chiffres', 'error'); return; }
+
+  const resultEl = document.getElementById('collect-result');
+  resultEl.innerHTML = '<div class="scan-result"><div class="spinner"></div>Vérification...</div>';
+
+  try {
+    const res = await api.collect(code);
+    resultEl.innerHTML = `<div class="scan-result success">
+      ✅ Retrait confirmé !<br>
+      <strong>${res.reference}</strong> — ${res.recipient}<br>
+      📍 ${res.relais}
+    </div>`;
+    toast(`${res.reference} remis ✅`, 'success');
+    // Clear digits
+    digits.forEach(d => d.value = '');
+  } catch (err) {
+    resultEl.innerHTML = `<div class="scan-result error">❌ ${err.message}</div>`;
+    toast(err.message, 'error');
+  }
+}
+
+/* ── Order Detail Modal ──────────────────────────── */
+async function showOrderDetail(ref) {
+  const app = document.getElementById('app');
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.onclick = (e) => { if (e.target === backdrop) backdrop.remove(); };
+
+  backdrop.innerHTML = `<div class="modal-content">
+    <div class="modal-handle"></div>
+    <div class="loading"><div class="spinner"></div>Chargement...</div>
+  </div>`;
+  app.appendChild(backdrop);
+
+  try {
+    const order = await api.orderByRef(ref);
+    const o = order.order || order;
+    const ns = nextStatus(o.status);
+    const isAdmin = currentUser.role === 'admin';
+    const isHub = currentUser.role === 'agent_hub';
+    const isRelais = currentUser.role === 'agent_relais';
+
+    // Can this agent advance this order?
+    const hubStatuses = ['confirmed', 'ordered', 'preparation', 'shipped'];
+    const relaisStatuses = ['in_transit', 'available'];
+    let canAdvance = false;
+    if (ns) {
+      if (isAdmin) canAdvance = true;
+      else if (isHub && hubStatuses.includes(o.status)) canAdvance = true;
+      else if (isRelais && relaisStatuses.includes(o.status)) canAdvance = true;
+    }
+
+    // Build timeline
+    const history = o.status_history || o.history || [];
+    let timelineHtml = '<div class="timeline">';
+    STATUS_FLOW.forEach(st => {
+      const isDone = STATUS_FLOW.indexOf(st) < STATUS_FLOW.indexOf(o.status);
+      const isCurrent = st === o.status;
+      const cls = isDone ? 'done' : (isCurrent ? 'current' : '');
+      const histEntry = history.find(h => h.status === st || h.new_status === st);
+      timelineHtml += `<div class="timeline-item ${cls}">
+        <div class="timeline-step">${STATUS_LABELS[st] || st}</div>
+        <div class="timeline-date">${histEntry ? formatDate(histEntry.created_at || histEntry.changed_at) : '—'}</div>
+      </div>`;
+    });
+    timelineHtml += '</div>';
+
+    backdrop.querySelector('.modal-content').innerHTML = `
+      <div class="modal-handle"></div>
+      <div class="modal-title">${o.reference || '—'}</div>
+      <div style="margin-bottom:16px">
+        ${statusBadge(o.status)}
+        <span style="margin-left:8px;font-size:.85rem;color:var(--text-muted)">${formatDate(o.created_at)}</span>
+      </div>
+      <div class="card">
+        <div class="card-title">Détails</div>
+        <div style="font-size:.9rem;line-height:1.8">
+          👤 ${o.client_name || o.customer_name || '—'}<br>
+          📱 ${o.client_phone || o.phone || '—'}<br>
+          📍 ${o.relais_name || '—'}<br>
+          💰 ${formatKMF(o.total_kmf)} <span style="color:var(--text-muted)">(${o.payment_mode || '—'})</span>
+          ${o.pickup_code ? `<br>🔑 Code retrait : <strong style="font-family:monospace;font-size:1.1rem">${o.pickup_code}</strong>` : ''}
+        </div>
+      </div>
+
+      ${canAdvance ? `<div class="advance-row">
+        <button class="advance-btn btn-green" onclick="advanceFromModal('${o.id}','${ns}','${o.reference}', this)">
+          ▶ Passer à "${STATUS_LABELS[ns] || ns}"
+        </button>
+      </div>` : ''}
+
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">Parcours</div>
+        ${timelineHtml}
+      </div>
+    `;
+  } catch (err) {
+    backdrop.querySelector('.modal-content').innerHTML = `
+      <div class="modal-handle"></div>
+      <div style="color:var(--red);padding:20px">Erreur: ${err.message}</div>`;
+  }
+}
+
+async function advanceFromModal(id, newStatus, ref, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ En cours...';
+  try {
+    await api.advanceOrder(id, newStatus);
+    toast(`${ref} → ${STATUS_LABELS[newStatus]} ✅`, 'success');
+    // Close modal and refresh
+    document.querySelector('.modal-backdrop')?.remove();
+    if (currentScreen === 'dashboard') loadDashboard();
+    if (currentScreen === 'orders') loadOrders();
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '❌ Réessayer';
+  }
+}
+
+/* ── Override goTo for collect scanner ─────────────── */
+const _goTo = goTo;
+window.goTo = function(screen) {
+  // Stop collect scanner before leaving
+  if (collectScanner && collectScannerRunning) {
+    collectScanner.stop().catch(() => {});
+    collectScannerRunning = false;
+  }
+  collectScanner = null;
+  currentScreen = screen;
+  render();
+  // Init collect scanner after render
+  if (screen === 'collect') setTimeout(initCollectScanner, 100);
+};
+
+/* ── INIT ────────────────────────────────────────── */
+(async function() {
+  await checkAuth();
+  render();
+})();
+</script>
+</body>
+</html>
