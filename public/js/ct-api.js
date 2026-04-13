@@ -35,6 +35,7 @@ CT.api = {
   get: function(path) { return this.fetch(path); },
   post: function(path, body) { return this.fetch(path, { method: 'POST', body: JSON.stringify(body) }); },
   put: function(path, body) { return this.fetch(path, { method: 'PUT', body: JSON.stringify(body) }); },
+  patch: function(path, body) { return this.fetch(path, { method: 'PATCH', body: JSON.stringify(body) }); },
   del: function(path) { return this.fetch(path, { method: 'DELETE' }); },
 
   // ---- Auth ----
@@ -48,8 +49,8 @@ CT.api = {
 
   // ---- Orders ----
   createOrder: function(data) { return this.post('/api/orders', data); },
-  updateOrderStatus: function(id, status) { return this.put('/api/orders/' + id + '/status', { status: status }); },
-  deleteOrder: function(id) { return this.del('/api/orders/' + id); },
+  updateOrderStatus: function(id, status) { return this.patch('/api/orders/' + id + '/status', { status: status }); },
+  deleteOrder: function(id) { return this.del('/api/admin/orders/' + id); },
   getOrder: function(ref) { return this.get('/api/orders/' + ref); },
 
   // ---- Admin ----
@@ -57,9 +58,13 @@ CT.api = {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/admin/orders' + (qs ? '?' + qs : ''));
   },
-  seedTest: function() { return this.post('/api/admin/seed-test'); },
-  resetAll: function() { return this.post('/api/admin/reset'); },
+  seedTest: function() { return this.post('/api/admin/seed-test', { confirm: true }); },
+  resetAll: function() { return this.post('/api/admin/reset', { confirm: true }); },
 
   // ---- Products ----
-  products: function() { return this.get('/api/products'); }
+  // API returns {products: [...], total, limit, offset} — we extract the array
+  products: async function() {
+    var data = await this.get('/api/products');
+    return data.products || data || [];
+  }
 };

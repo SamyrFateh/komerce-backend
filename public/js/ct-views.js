@@ -1,6 +1,7 @@
 /* ===================================================================
    Komerce Control Tower — ct-views.js
    Dashboard views: each section is a self-contained view object.
+   All field names match the REAL API responses (verified 2026-04-13).
    =================================================================== */
 window.CT = window.CT || {};
 CT.views = {};
@@ -47,7 +48,7 @@ CT.html.statusLabel = function(status) {
     new: 'Nouveau', confirmed: 'Confirmé', ordered: 'Commandé',
     preparation: 'Préparation', shipped: 'Expédié', in_transit: 'En transit',
     available: 'Disponible', collected: 'Collecté', delivered: 'Livré',
-    cancelled: 'Annulé', returned: 'Retourné',
+    cancelled: 'Annulé', returned: 'Retourné', refunded: 'Remboursé',
     hub_received: 'Hub reçu', hub_dispatched: 'Hub expédié',
     relay_received: 'Relais reçu', relay_ready: 'Relais prêt'
   };
@@ -154,6 +155,20 @@ CT.html.destroyCharts = function() {
 
 /* ---------------------------------------------------------------
    VIEW: Overview
+   API /api/dashboard/ops returns:
+   {
+     activite: {commandes_aujourd_hui, commandes_en_cours, commandes_bloquees, livrees_aujourd_hui, livrees_30j},
+     sla: {on_time, warning, late, blocked, details: {late: [...]}},
+     logistique: {
+       dubai_reception: {count, items, label},
+       dubai_expedition: {count, items, label},
+       transitaire: {count, items, label},
+       bateau: {count, items, label},
+       anjouan: {count, items, label}
+     },
+     delais: {avg_preparation_jours, avg_livraison_totale_jours},
+     alertes: {cash_pending, anomalies, low_stock}   ← OBJECT not array!
+   }
    --------------------------------------------------------------- */
 CT.views.overview = {
   label: 'Overview',
@@ -163,24 +178,24 @@ CT.views.overview = {
     CT.html.destroyCharts();
     try {
       var data = await CT.api.dashboard('ops');
-      var kpi = data.kpi || {};
+      var act = data.activite || {};
       var sla = data.sla || {};
       var log = data.logistique || {};
-      var alertes = data.alertes || [];
-      var stockAlerts = data.stock_alerts || [];
+      var delais = data.delais || {};
+      var alertes = data.alertes || {};  // OBJECT not array
 
       var html = '';
 
       // KPI Row
       html += '<div class="ct-kpi-row">';
-      html += CT.html.kpiCard('Commandes en cours', kpi.en_cours || 0, '📦', 'blue');
-      html += CT.html.kpiCard('Bloquées', kpi.bloquees || 0, '🚫', 'red');
-      html += CT.html.kpiCard('Livrées aujourd\'hui', kpi.livrees_jour || 0, '✅', 'green');
-      html += CT.html.kpiCard('Cash pending', kpi.cash_pending || 0, '💰', 'amber');
-      html += CT.html.kpiCard('Cash pending (KMF)', CT.html.formatKMF(kpi.cash_pending_kmf || 0), '💵', 'orange');
+      html += CT.html.kpiCard('Commandes en cours', act.commandes_en_cours || 0, '📦', 'blue');
+      html += CT.html.kpiCard('Bloquées', act.commandes_bloquees || 0, '🚫', 'red');
+      html += CT.html.kpiCard("Livrées aujourd'hui", act.livrees_aujourd_hui || 0, '✅', 'green');
+      html += CT.html.kpiCard('Livrées 30j', act.livrees_30j || 0, '📊', 'cyan');
+      html += CT.html.kpiCard('Cash pending', alertes.cash_pending || 0, '💰', 'amber');
       html += '</div>';
 
-      // SLA Chart + Logistics + Alerts grid
+      // SLA + Logistics + Alerts grid
       html += '<div class="ct-grid-3">';
 
       // SLA Donut
@@ -202,50 +217,60 @@ CT.views.overview = {
       // Logistics
       html += '<div class="ct-card">';
       html += '<div class="ct-card-title">🚚 Logistique</div>';
-      var dubai = log.dubai || {};
-      var relais = log.relais || {};
-      html += '<div class="ct-section">';
-      html += '<div class="ct-section-title">🏢 Dubai Hub</div>';
-      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
-      html += '<div class="ct-kpi-card cyan" style="flex:1;min-width:100px;padding:12px">';
-      html += '<div class="ct-kpi-value" style="font-size:1.4rem">' + (dubai.a_receptionner || 0) + '</div>';
-      html += '<div class="ct-kpi-label">À réceptionner</div></div>';
-      html += '<div class="ct-kpi-card purple" style="flex:1;min-width:100px;padding:12px">';
-      html += '<div class="ct-kpi-value" style="font-size:1.4rem">' + (dubai.a_expedier || 0) + '</div>';
-      html += '<div class="ct-kpi-label">À expédier</div></div>';
-      html += '</div></div>';
+      var logItems = [
+        { key: 'dubai_reception', label: '📥 Réceptionner', color: 'cyan' },
+        { key: 'dubai_expedition', label: '📦 Expédier', color: 'purple' },
+        { key: 'transitaire', label: '🏢 Transitaire', color: 'blue' },
+        { key: 'bateau', label: '🚢 En mer', color: 'amber' },
+        { key: 'anjouan', label: '📍 Relais', color: 'green' }
+      ];
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+      logItems.forEach(function(li) {
+        var step = log[li.key] || {};
+        html += '<div class="ct-kpi-card ' + li.color + '" style="flex:1;min-width:80px;padding:10px">';
+        html += '<div class="ct-kpi-value" style="font-size:1.3rem">' + (step.count || 0) + '</div>';
+        html += '<div class="ct-kpi-label" style="font-size:0.7rem">' + li.label + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      // Délais moyens
       html += '<div class="ct-section ct-mt-md">';
-      html += '<div class="ct-section-title">📍 Relais</div>';
-      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
-      html += '<div class="ct-kpi-card amber" style="flex:1;min-width:100px;padding:12px">';
-      html += '<div class="ct-kpi-value" style="font-size:1.4rem">' + (relais.a_valider || 0) + '</div>';
-      html += '<div class="ct-kpi-label">À valider</div></div>';
-      html += '<div class="ct-kpi-card green" style="flex:1;min-width:100px;padding:12px">';
-      html += '<div class="ct-kpi-value" style="font-size:1.4rem">' + (relais.en_attente_retrait || 0) + '</div>';
-      html += '<div class="ct-kpi-label">Attente retrait</div></div>';
+      html += '<div class="ct-section-title">📏 Délais moyens</div>';
+      html += '<div style="display:flex;gap:12px">';
+      html += '<div style="flex:1;text-align:center;padding:8px;background:var(--ct-bg-tertiary);border-radius:8px">';
+      html += '<div style="font-size:1.2rem;font-weight:700">' + (delais.avg_preparation_jours || 0) + 'j</div>';
+      html += '<div class="ct-muted" style="font-size:0.75rem">Préparation</div></div>';
+      html += '<div style="flex:1;text-align:center;padding:8px;background:var(--ct-bg-tertiary);border-radius:8px">';
+      html += '<div style="font-size:1.2rem;font-weight:700">' + (delais.avg_livraison_totale_jours || 0) + 'j</div>';
+      html += '<div class="ct-muted" style="font-size:0.75rem">Livraison totale</div></div>';
       html += '</div></div>';
       html += '</div>';
 
       // Alerts
       html += '<div class="ct-card">';
       html += '<div class="ct-card-title">🔔 Alertes</div>';
-      if (alertes.length === 0 && stockAlerts.length === 0) {
+      var hasAlerts = (alertes.cash_pending || 0) > 0 || (alertes.anomalies || 0) > 0 || (alertes.low_stock || 0) > 0;
+      if (!hasAlerts) {
         html += CT.html.empty('✅', 'Aucune alerte');
       } else {
-        alertes.forEach(function(a) {
-          var cls = a.type === 'danger' ? 'danger' : a.type === 'warning' ? 'warning' : 'info';
-          html += '<div class="ct-alert-item ' + cls + '">';
-          html += '<span>' + a.message + '</span>';
-          if (a.count != null) html += '<span class="ct-alert-count">' + a.count + '</span>';
+        // Build alert items from the alertes object
+        if (alertes.cash_pending > 0) {
+          html += '<div class="ct-alert-item warning">';
+          html += '<span>💰 Paiements cash en attente</span>';
+          html += '<span class="ct-alert-count">' + alertes.cash_pending + '</span>';
           html += '</div>';
-        });
-        if (stockAlerts.length > 0) {
-          html += '<div class="ct-section-title ct-mt-md">📦 Alertes Stock</div>';
-          stockAlerts.forEach(function(s) {
-            html += '<div class="ct-alert-item warning">';
-            html += '<span>' + s.product_name + ' — Restant: ' + s.stock_remaining + ' (seuil: ' + s.min_threshold + ')</span>';
-            html += '</div>';
-          });
+        }
+        if (alertes.anomalies > 0) {
+          html += '<div class="ct-alert-item danger">';
+          html += '<span>⚠️ Anomalies détectées</span>';
+          html += '<span class="ct-alert-count">' + alertes.anomalies + '</span>';
+          html += '</div>';
+        }
+        if (alertes.low_stock > 0) {
+          html += '<div class="ct-alert-item info">';
+          html += '<span>📦 Stock bas</span>';
+          html += '<span class="ct-alert-count">' + alertes.low_stock + '</span>';
+          html += '</div>';
         }
       }
       html += '</div>';
@@ -255,7 +280,7 @@ CT.views.overview = {
       el.innerHTML = html;
 
       // Render SLA chart
-      if (total_sla > 0) {
+      if (total_sla > 0 && typeof Chart !== 'undefined') {
         var ctx = document.getElementById('chart-sla');
         if (ctx) {
           CT._charts.sla = new Chart(ctx.getContext('2d'), {
@@ -287,6 +312,15 @@ CT.views.overview = {
 
 /* ---------------------------------------------------------------
    VIEW: Pipeline
+   API /api/dashboard/pipeline returns:
+   {
+     total: 228, active: 39,
+     pipeline: {
+       confirmed: {count, orders: [{reference, client_name, recipient_name, total_kmf, status, created_at, ...}]},
+       ordered: {count, orders: [...]},
+       preparation, shipped, in_transit, available, collected, cancelled, refunded
+     }
+   }
    --------------------------------------------------------------- */
 CT.views.pipeline = {
   label: 'Pipeline',
@@ -297,21 +331,17 @@ CT.views.pipeline = {
     try {
       var data = await CT.api.dashboard('pipeline');
       var pipeline = data.pipeline || {};
-      var statusOrder = ['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled'];
+      var statusOrder = ['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
       var html = '';
 
       // KPI row
       html += '<div class="ct-kpi-row">';
       html += CT.html.kpiCard('Total commandes', data.total || 0, '📦', 'blue');
       html += CT.html.kpiCard('Actives', data.active || 0, '⚡', 'green');
-      var statusCounts = {};
-      statusOrder.forEach(function(s) {
-        if (pipeline[s]) statusCounts[s] = pipeline[s].count || 0;
-      });
-      var topStatus = Object.entries(statusCounts).sort(function(a,b){ return b[1]-a[1]; }).slice(0,2);
-      topStatus.forEach(function(entry) {
-        html += CT.html.kpiCard(CT.html.statusLabel(entry[0]), entry[1], CT.html.badge(entry[0]), '');
-      });
+      var cancelled = pipeline.cancelled ? pipeline.cancelled.count : 0;
+      var available = pipeline.available ? pipeline.available.count : 0;
+      html += CT.html.kpiCard('Annulé', cancelled, CT.html.badge('cancelled'), 'red');
+      html += CT.html.kpiCard('Disponible', available, CT.html.badge('available'), 'amber');
       html += '</div>';
 
       // Pipeline Kanban
@@ -322,7 +352,7 @@ CT.views.pipeline = {
         var orders = col.orders || [];
         html += '<div class="ct-pipeline-col">';
         html += '<div class="ct-pipeline-col-header">';
-        html += '<span>' + CT.html.statusLabel(status) + '</span>';
+        html += '<span>' + CT.html.statusLabel(status).toUpperCase() + '</span>';
         html += '<span class="ct-count">' + (col.count || 0) + '</span>';
         html += '</div>';
         html += '<div class="ct-pipeline-col-body">';
@@ -331,8 +361,8 @@ CT.views.pipeline = {
         } else {
           orders.slice(0, 20).forEach(function(o) {
             html += '<div class="ct-pipeline-order">';
-            html += '<div class="ref">' + (o.reference || o.id) + '</div>';
-            html += '<div class="client">' + (o.client_name || o.recipient_name || '—') + '</div>';
+            html += '<div class="ref">' + (o.reference || o.id || '—') + '</div>';
+            html += '<div class="client">' + (o.client_name || o.recipient_name || '[Compte supprimé]') + '</div>';
             html += '<div class="amount">' + CT.html.formatKMF(o.total_kmf) + '</div>';
             html += '</div>';
           });
@@ -344,7 +374,7 @@ CT.views.pipeline = {
       });
       html += '</div>';
 
-      // Orders table
+      // Full orders table
       var allOrders = [];
       statusOrder.forEach(function(s) {
         if (pipeline[s] && pipeline[s].orders) {
@@ -381,6 +411,18 @@ CT.views.pipeline = {
 
 /* ---------------------------------------------------------------
    VIEW: Finance
+   API /api/dashboard/finance returns:
+   {
+     period: 30, taux: {eur_kmf, aed_kmf},
+     kpi: {ca_kmf, ca_eur, nb_commandes, nb_livrees, nb_annulees, panier_moyen_kmf, evolution: {ca_pct, cmd_pct}},
+     paiements: {
+       cash: {count, total_kmf},
+       stripe: {count, total_eur}
+     },
+     marges: {marge_reelle_kmf, cout_logistique_kmf, taux_marge_pct, nb_avec_cost, nb_sans_cost, alertes_perte},
+     par_categorie: [{category, count, revenue_kmf}],
+     top_produits: [{name, count, revenue_kmf}]
+   }
    --------------------------------------------------------------- */
 CT.views.finance = {
   label: 'Finance',
@@ -390,19 +432,19 @@ CT.views.finance = {
     CT.html.destroyCharts();
     try {
       var data = await CT.api.dashboard('finance');
-      var ca = data.ca || {};
+      var kpi = data.kpi || {};
       var paiements = data.paiements || {};
-      var panierMoyen = data.panier_moyen || {};
+      var marges = data.marges || {};
       var topProduits = data.top_produits || [];
       var parCategorie = data.par_categorie || [];
       var html = '';
 
       // KPI row
       html += '<div class="ct-kpi-row">';
-      html += CT.html.kpiCard('CA (KMF)', CT.html.formatKMF(ca.kmf), '💵', 'green');
-      html += CT.html.kpiCard('CA (EUR)', CT.html.formatEUR(ca.eur), '💶', 'blue');
-      html += CT.html.kpiCard('Nb commandes', data.nb_commandes || 0, '📦', 'purple');
-      html += CT.html.kpiCard('Panier moyen', CT.html.formatKMF(panierMoyen.kmf), '🛒', 'amber');
+      html += CT.html.kpiCard('CA (KMF)', CT.html.formatKMF(kpi.ca_kmf), '💵', 'green');
+      html += CT.html.kpiCard('CA (EUR)', CT.html.formatEUR(kpi.ca_eur), '💶', 'blue');
+      html += CT.html.kpiCard('Nb commandes', kpi.nb_commandes || 0, '📦', 'purple');
+      html += CT.html.kpiCard('Panier moyen', CT.html.formatKMF(kpi.panier_moyen_kmf), '🛒', 'amber');
       html += '</div>';
 
       html += '<div class="ct-grid-2">';
@@ -410,27 +452,42 @@ CT.views.finance = {
       // Paiements breakdown
       html += '<div class="ct-card">';
       html += '<div class="ct-card-title">💳 Répartition des paiements</div>';
-      var cashRelais = paiements.cash_relais || {};
-      var stripeEur = paiements.stripe_eur || {};
+      var cashData = paiements.cash || {};
+      var stripeData = paiements.stripe || {};
       html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
       html += '<div class="ct-kpi-card amber" style="flex:1;min-width:140px;padding:16px">';
-      html += '<div class="ct-kpi-value" style="font-size:1.3rem">' + (cashRelais.count || 0) + '</div>';
+      html += '<div class="ct-kpi-value" style="font-size:1.3rem">' + (cashData.count || 0) + '</div>';
       html += '<div class="ct-kpi-label">Cash Relais</div>';
-      html += '<div class="ct-muted">' + CT.html.formatKMF(cashRelais.total_kmf) + '</div>';
+      html += '<div class="ct-muted">' + CT.html.formatKMF(cashData.total_kmf) + '</div>';
       html += '</div>';
       html += '<div class="ct-kpi-card blue" style="flex:1;min-width:140px;padding:16px">';
-      html += '<div class="ct-kpi-value" style="font-size:1.3rem">' + (stripeEur.count || 0) + '</div>';
+      html += '<div class="ct-kpi-value" style="font-size:1.3rem">' + (stripeData.count || 0) + '</div>';
       html += '<div class="ct-kpi-label">Stripe EUR</div>';
-      html += '<div class="ct-muted">' + CT.html.formatKMF(stripeEur.total_kmf) + '</div>';
+      html += '<div class="ct-muted">' + CT.html.formatEUR(stripeData.total_eur) + '</div>';
       html += '</div>';
       html += '</div>';
-      // Marges
-      if (data.marges) {
-        html += '<div class="ct-section ct-mt-md">';
-        html += '<div class="ct-section-title">📈 Marges</div>';
-        html += '<pre style="font-size:0.85rem;color:var(--ct-text-secondary)">' + JSON.stringify(data.marges, null, 2) + '</pre>';
-        html += '</div>';
+
+      // Marges — render as proper cards, not raw JSON
+      html += '<div class="ct-section ct-mt-md">';
+      html += '<div class="ct-section-title">📈 Marges</div>';
+      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+      html += '<div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--ct-bg-tertiary);border-radius:8px">';
+      html += '<div style="font-size:1.1rem;font-weight:700">' + CT.html.formatKMF(marges.marge_reelle_kmf || 0) + '</div>';
+      html += '<div class="ct-muted" style="font-size:0.75rem">Marge réelle</div></div>';
+      html += '<div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--ct-bg-tertiary);border-radius:8px">';
+      html += '<div style="font-size:1.1rem;font-weight:700">' + CT.html.formatKMF(marges.cout_logistique_kmf || 0) + '</div>';
+      html += '<div class="ct-muted" style="font-size:0.75rem">Coût logistique</div></div>';
+      html += '<div style="flex:1;min-width:120px;text-align:center;padding:12px;background:var(--ct-bg-tertiary);border-radius:8px">';
+      html += '<div style="font-size:1.1rem;font-weight:700">' + (marges.taux_marge_pct != null ? marges.taux_marge_pct + '%' : '—') + '</div>';
+      html += '<div class="ct-muted" style="font-size:0.75rem">Taux marge</div></div>';
+      html += '</div>';
+      if (marges.nb_sans_cost > 0) {
+        html += '<div class="ct-muted" style="margin-top:8px;font-size:0.8rem">⚠️ ' + marges.nb_sans_cost + ' commandes sans coût renseigné</div>';
       }
+      if (marges.alertes_perte) {
+        html += '<div class="ct-alert-item danger" style="margin-top:8px"><span>🚨 ' + marges.alertes_perte + '</span></div>';
+      }
+      html += '</div>';
       html += '</div>';
 
       // Par catégorie chart
@@ -448,17 +505,17 @@ CT.views.finance = {
       // Top produits table
       html += '<div class="ct-section">';
       html += '<div class="ct-section-title">🏆 Top Produits</div>';
-      var headers = ['Produit', 'Quantité', 'CA (KMF)'];
-      var rows = topProduits.map(function(p) {
-        return [p.name, p.count, CT.html.formatKMF(p.revenue_kmf)];
+      var tpHeaders = ['Produit', 'Quantité', 'CA (KMF)'];
+      var tpRows = topProduits.map(function(p) {
+        return [p.name || '—', p.count || 0, CT.html.formatKMF(p.revenue_kmf)];
       });
-      html += CT.html.table(headers, rows);
+      html += CT.html.table(tpHeaders, tpRows);
       html += '</div>';
 
       el.innerHTML = html;
 
       // Render categories chart
-      if (parCategorie.length > 0) {
+      if (parCategorie.length > 0 && typeof Chart !== 'undefined') {
         var ctx = document.getElementById('chart-categories');
         if (ctx) {
           var colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#64748b'];
@@ -491,6 +548,11 @@ CT.views.finance = {
 
 /* ---------------------------------------------------------------
    VIEW: Relais
+   API /api/dashboard/relais returns:
+   {
+     a_valider: [{reference, client_nom, client_phone, produits, total_kmf, payment_mode, payment_status, date_arrivee, heures_attente, relais_nom, ile, priorite}],
+     a_remettre: [same structure]
+   }
    --------------------------------------------------------------- */
 CT.views.relais = {
   label: 'Relais',
@@ -516,13 +578,16 @@ CT.views.relais = {
       if (aValider.length === 0) {
         html += CT.html.empty('✅', 'Aucune commande à valider');
       } else {
-        var headers = ['Référence', 'Client', 'Relais', 'Date'];
+        var headers = ['Référence', 'Client', 'Montant', 'Relais', 'Île', 'Attente', 'Arrivée'];
         var rows = aValider.map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            o.client_name || '—',
-            o.relais_name || '—',
-            CT.html.formatDateTime(o.created_at)
+            o.client_nom || '—',
+            CT.html.formatKMF(o.total_kmf),
+            o.relais_nom || '—',
+            o.ile || '—',
+            (o.heures_attente || 0) + 'h',
+            CT.html.formatDateTime(o.date_arrivee)
           ];
         });
         html += CT.html.table(headers, rows);
@@ -535,13 +600,17 @@ CT.views.relais = {
       if (aRemettre.length === 0) {
         html += CT.html.empty('✅', 'Aucune commande à remettre');
       } else {
-        var headers2 = ['Référence', 'Client', 'Relais', 'Disponible depuis'];
+        var headers2 = ['Référence', 'Client', 'Tél.', 'Montant', 'Relais', 'Île', 'Attente', 'Arrivée'];
         var rows2 = aRemettre.map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            o.client_name || '—',
-            o.relais_name || '—',
-            CT.html.formatDateTime(o.available_at)
+            o.client_nom || '—',
+            o.client_phone || '—',
+            CT.html.formatKMF(o.total_kmf),
+            o.relais_nom || '—',
+            o.ile || '—',
+            (o.heures_attente || 0) + 'h',
+            CT.html.formatDateTime(o.date_arrivee)
           ];
         });
         html += CT.html.table(headers2, rows2);
@@ -557,6 +626,15 @@ CT.views.relais = {
 
 /* ---------------------------------------------------------------
    VIEW: Clients
+   API /api/dashboard/clients returns:
+   {
+     periode: {debut, fin},
+     kpi: {nb_clients, commandes_valides, ca_total_kmf, panier_moyen_kmf, clients_recurrents, taux_recurrence_pct},
+     top_clients: [{name, phone, nb_commandes, ca_kmf, derniere_commande}],
+     top_produits: [{name, count}],
+     par_relais: [{relais, ile, nb_commandes, ca_kmf, livrees}],
+     evolution: [{mois, nb_commandes, nb_clients, ca_kmf}]
+   }
    --------------------------------------------------------------- */
 CT.views.clients = {
   label: 'Clients',
@@ -566,18 +644,20 @@ CT.views.clients = {
     CT.html.destroyCharts();
     try {
       var data = await CT.api.dashboard('clients');
+      var kpi = data.kpi || {};
       var topClients = data.top_clients || [];
       var topProduits = data.top_produits || [];
       var parRelais = data.par_relais || [];
+      var evolution = data.evolution || [];
       var html = '';
 
       // KPI row
       html += '<div class="ct-kpi-row">';
-      html += CT.html.kpiCard('Clients', data.total_clients || 0, '👥', 'blue');
-      html += CT.html.kpiCard('Commandes', data.total_commandes || 0, '📦', 'green');
-      html += CT.html.kpiCard('CA total', CT.html.formatKMF(data.ca_total_kmf), '💰', 'amber');
-      html += CT.html.kpiCard('Panier moyen', CT.html.formatKMF(data.panier_moyen_kmf), '🛒', 'purple');
-      html += CT.html.kpiCard('Récurrents', data.recurrents || 0, '🔄', 'cyan');
+      html += CT.html.kpiCard('Clients', kpi.nb_clients || 0, '👥', 'blue');
+      html += CT.html.kpiCard('Commandes', kpi.commandes_valides || 0, '📦', 'green');
+      html += CT.html.kpiCard('CA total', CT.html.formatKMF(kpi.ca_total_kmf), '💰', 'amber');
+      html += CT.html.kpiCard('Panier moyen', CT.html.formatKMF(kpi.panier_moyen_kmf), '🛒', 'purple');
+      html += CT.html.kpiCard('Récurrents (' + (kpi.taux_recurrence_pct || 0) + '%)', kpi.clients_recurrents || 0, '🔄', 'cyan');
       html += '</div>';
 
       html += '<div class="ct-grid-2">';
@@ -585,40 +665,77 @@ CT.views.clients = {
       // Top clients
       html += '<div class="ct-section">';
       html += '<div class="ct-section-title">🏆 Top Clients</div>';
-      var headers = ['#', 'Nom', 'Téléphone', 'Commandes', 'CA (KMF)'];
-      var rows = topClients.map(function(c, i) {
-        return [i + 1, c.full_name || '—', c.phone || '—', c.nb_commandes, CT.html.formatKMF(c.ca_kmf)];
+      var tcHeaders = ['#', 'Nom', 'Téléphone', 'Commandes', 'CA (KMF)'];
+      var tcRows = topClients.map(function(c, i) {
+        return [i + 1, c.name || '—', c.phone || '—', c.nb_commandes || 0, CT.html.formatKMF(c.ca_kmf)];
       });
-      html += CT.html.table(headers, rows);
+      html += CT.html.table(tcHeaders, tcRows);
       html += '</div>';
 
       // Top produits
       html += '<div class="ct-section">';
       html += '<div class="ct-section-title">🛍️ Top Produits</div>';
-      var headers2 = ['Produit', 'Nb commandes'];
-      var rows2 = topProduits.map(function(p) {
-        return [p.name, p.count];
+      var tpHeaders = ['Produit', 'Nb commandes'];
+      var tpRows = topProduits.map(function(p) {
+        return [p.name || '—', p.count || 0];
       });
-      html += CT.html.table(headers2, rows2);
+      html += CT.html.table(tpHeaders, tpRows);
       html += '</div>';
 
       html += '</div>'; // end grid-2
 
       // Par relais
-      html += '<div class="ct-section">';
-      html += '<div class="ct-section-title">📍 Par Relais</div>';
       if (parRelais.length > 0) {
-        var headers3 = ['Relais', 'Nb commandes'];
-        var rows3 = parRelais.map(function(r) {
-          return [r.relais_name || '—', r.count];
+        html += '<div class="ct-section">';
+        html += '<div class="ct-section-title">📍 Par Relais</div>';
+        var prHeaders = ['Relais', 'Île', 'Commandes', 'CA (KMF)', 'Livrées'];
+        var prRows = parRelais.map(function(r) {
+          return [r.relais || '—', r.ile || '—', r.nb_commandes || 0, CT.html.formatKMF(r.ca_kmf), r.livrees || 0];
         });
-        html += CT.html.table(headers3, rows3);
-      } else {
-        html += CT.html.empty('📍', 'Aucune donnée par relais');
+        html += CT.html.table(prHeaders, prRows);
+        html += '</div>';
       }
-      html += '</div>';
+
+      // Evolution chart
+      if (evolution.length > 1 && typeof Chart !== 'undefined') {
+        html += '<div class="ct-section">';
+        html += '<div class="ct-section-title">📈 Évolution mensuelle</div>';
+        html += '<div class="ct-chart-container"><canvas id="chart-evolution"></canvas></div>';
+        html += '</div>';
+      }
 
       el.innerHTML = html;
+
+      // Render evolution chart
+      if (evolution.length > 1 && typeof Chart !== 'undefined') {
+        var ctx = document.getElementById('chart-evolution');
+        if (ctx) {
+          CT._charts.evolution = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels: evolution.map(function(e) { return e.mois; }),
+              datasets: [{
+                label: 'Commandes',
+                data: evolution.map(function(e) { return parseInt(e.nb_commandes) || 0; }),
+                borderColor: '#3b82f6',
+                tension: 0.3,
+                fill: false
+              }, {
+                label: 'Clients',
+                data: evolution.map(function(e) { return parseInt(e.nb_clients) || 0; }),
+                borderColor: '#10b981',
+                tension: 0.3,
+                fill: false
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { position: 'bottom' } },
+              scales: { y: { beginAtZero: true } }
+            }
+          });
+        }
+      }
     } catch (e) {
       el.innerHTML = CT.html.error(e.message);
     }
@@ -627,6 +744,17 @@ CT.views.clients = {
 
 /* ---------------------------------------------------------------
    VIEW: Retards
+   API /api/dashboard/retards returns:
+   {
+     total: 0,
+     par_niveau: {
+       remboursement_possible: {count, label: "Remboursement possible (8 sem+)"},
+       remise_10pct_prochaine_cmd: {count, label: "Remise −10% prochaine commande"},
+       avoir_5pct: {count, label: "Avoir 5% offert"},
+       contact_preventif: {count, label: "Contact préventif"}
+     },
+     clients: [{...}]
+   }
    --------------------------------------------------------------- */
 CT.views.retards = {
   label: 'Retards',
@@ -637,33 +765,21 @@ CT.views.retards = {
     try {
       var data = await CT.api.dashboard('retards');
       var parNiveau = data.par_niveau || {};
-      var niveaux = data.niveaux || [];
       var clients = data.clients || [];
       var html = '';
 
-      // KPI row
+      // KPI row — iterate over par_niveau keys
       html += '<div class="ct-kpi-row">';
       html += CT.html.kpiCard('Total retards', data.total || 0, '⏰', 'red');
-      html += CT.html.kpiCard('Niveau 1', parNiveau.level1 || 0, '🟡', 'amber');
-      html += CT.html.kpiCard('Niveau 2', parNiveau.level2 || 0, '🟠', 'orange');
-      html += CT.html.kpiCard('Niveau 3', parNiveau.level3 || 0, '🔴', 'red');
+      var niveauIcons = ['🟡', '🟠', '🔴', '⚫'];
+      var niveauColors = ['amber', 'orange', 'red', 'slate'];
+      var nIdx = 0;
+      Object.keys(parNiveau).forEach(function(key) {
+        var n = parNiveau[key];
+        html += CT.html.kpiCard(n.label || key, n.count || 0, niveauIcons[nIdx] || '⚪', niveauColors[nIdx] || 'slate');
+        nIdx++;
+      });
       html += '</div>';
-
-      // Niveaux descriptions
-      if (niveaux.length > 0) {
-        html += '<div class="ct-section">';
-        html += '<div class="ct-section-title">📋 Niveaux de retard</div>';
-        html += '<div class="ct-grid-3">';
-        niveaux.forEach(function(n) {
-          var color = n.level === 'level1' ? 'amber' : n.level === 'level2' ? 'orange' : 'red';
-          html += '<div class="ct-card" style="border-left:4px solid var(--ct-' + color + ')">';
-          html += '<div class="ct-card-title">' + (n.label || n.level) + '</div>';
-          html += '<p style="font-size:0.85rem;color:var(--ct-text-secondary);margin-bottom:8px">' + (n.description || '') + '</p>';
-          html += '<div class="ct-muted">Seuil: ' + (n.threshold_days || '—') + ' jours</div>';
-          html += '</div>';
-        });
-        html += '</div></div>';
-      }
 
       // Clients table
       html += '<div class="ct-section">';
