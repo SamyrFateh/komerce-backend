@@ -15,11 +15,11 @@ ul,ol{list-style:none}
 /* ── TOKENS ────────────────────────────────────────────── */
 :root{
   /* Palette Sage & Green */
-  --ocean:#3a7d44;
-  --ocean-light:#4CAF50;
-  --ocean-dark:#2d5f33;
-  --sand:#e8eddb;
-  --sand-dark:#d8dfca;
+  --ocean:#43a047;
+  --ocean-light:#66bb6a;
+  --ocean-dark:#388e3c;
+  --sand:#dce8ca;
+  --sand-dark:#cddab5;
   --coral:#E88430;
   --coral-dark:#cc6d1a;
   --gold:#E88430;
@@ -32,10 +32,10 @@ ul,ol{list-style:none}
   --text:#1a1a2e;
   --text-muted:#6b7280;
   --text-light:#9ca3af;
-  --border:#c8d3ae;
-  --shadow-sm:0 1px 3px rgba(58,125,68,.08);
-  --shadow-md:0 4px 12px rgba(58,125,68,.12);
-  --shadow-lg:0 8px 30px rgba(58,125,68,.18);
+  --border:#bfcea0;
+  --shadow-sm:0 1px 3px rgba(67,160,71,.06);
+  --shadow-md:0 4px 12px rgba(67,160,71,.08);
+  --shadow-lg:0 8px 30px rgba(67,160,71,.12);
   /* Type */
   --font:'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --radius:12px;
@@ -62,10 +62,10 @@ body{
 /* ── HEADER ────────────────────────────────────────────── */
 .k-header{
   position:sticky;top:0;z-index:100;
-  background:var(--ocean);
+  background:#f0f5e6;
   padding:0 12px;
   height:var(--header-h);
-  box-shadow:var(--shadow-md);
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
 }
 .k-header-inner{
   display:flex;align-items:center;gap:10px;
@@ -73,7 +73,7 @@ body{
 }
 .k-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(67,160,71,.5))}
-.k-logo-text{font-size:18px;font-weight:800;color:var(--white);letter-spacing:-.5px}
+.k-logo-text{font-size:18px;font-weight:800;color:#2e7d32;letter-spacing:-.5px}
 
 /* Search */
 .k-search{
@@ -82,17 +82,17 @@ body{
 .k-search input{
   width:100%;height:36px;
   padding:0 12px 0 36px;
-  background:rgba(255,255,255,.15);
+  background:#ffffff;border:1px solid var(--border);
   border-radius:50px;
-  color:var(--white);
+  color:var(--text);
   font-size:14px;
   transition:background .2s;
 }
-.k-search input::placeholder{color:rgba(255,255,255,.55)}
-.k-search input:focus{background:rgba(255,255,255,.25)}
+.k-search input::placeholder{color:rgba(0,0,0,.35)}
+.k-search input:focus{background:rgba(255,255,255,1);box-shadow:0 0 0 2px rgba(67,160,71,.3)}
 .k-search-icon{
   position:absolute;left:10px;top:50%;transform:translateY(-50%);
-  width:18px;height:18px;color:rgba(255,255,255,.55);
+  width:18px;height:18px;color:rgba(0,0,0,.35);
   pointer-events:none;
 }
 .k-search-dropdown{
@@ -119,8 +119,8 @@ body{
   border-radius:50%;
   transition:background .2s;
 }
-.k-cart-btn svg{width:22px;height:22px;color:var(--white)}
-.k-cart-btn:active{background:rgba(255,255,255,.15)}
+.k-cart-btn svg{width:22px;height:22px;color:#2e7d32}
+.k-cart-btn:active{background:rgba(67,160,71,.1)}
 .k-cart-badge{
   position:absolute;top:0;right:0;
   min-width:18px;height:18px;
@@ -152,7 +152,7 @@ body{
 .k-hero-overlay{
   position:absolute;bottom:0;left:0;right:0;
   padding:8px 16px;
-  background:linear-gradient(transparent,rgba(58,125,68,.7));
+  background:linear-gradient(transparent,rgba(56,142,60,.5));
 }
 .k-hero-tag{
   font-size:13px;font-weight:600;color:var(--white);
@@ -282,7 +282,7 @@ body{
 .k-card-fav{
   position:absolute;top:8px;right:8px;
   width:32px;height:32px;
-  background:rgba(255,255,255,.85);
+  background:#ffffff;border:1px solid var(--border);
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-size:16px;
@@ -352,7 +352,7 @@ body{
 /* ── MODAL OVERLAY ── */
 .k-modal-overlay{
   display:none;position:fixed;inset:0;z-index:300;
-  background:rgba(45,95,51,.5);
+  background:rgba(0,0,0,.4);
   justify-content:center;align-items:stretch;
 }
 .k-modal-overlay.open{display:flex}
@@ -388,7 +388,7 @@ body{
 .k-modal-cart-btn{
   position:relative;
   width:34px;height:34px;border-radius:50%;
-  background:rgba(255,255,255,.15);border:none;cursor:pointer;
+  background:#ffffff;border:1px solid var(--border);border:none;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .2s;
 }
@@ -407,7 +407,7 @@ body{
 .k-modal-cart-badge:empty{display:none}
 .k-modal-close{
   width:34px;height:34px;
-  background:rgba(255,255,255,.15);
+  background:#ffffff;border:1px solid var(--border);
   border-radius:50%;font-size:16px;color:var(--white);
   display:flex;align-items:center;justify-content:center;
   transition:background .2s;

@@ -319,7 +319,7 @@
       'width:56px', 'height:56px',
       'display:flex', 'align-items:center', 'justify-content:center',
       'font-size:1.5rem',
-      'box-shadow:0 4px 20px rgba(58,125,68,0.6)',
+      'box-shadow:0 4px 20px rgba(67,160,71,0.6)',
       'overflow:hidden',
       'left:' + startX + 'px', 'top:' + startY + 'px',
       'transform:translate(-50%,-50%) scale(0)', 'opacity:0'
@@ -1041,7 +1041,7 @@
     // Stripe card container
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;margin-bottom:14px;padding:12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(58,125,68,0.03);';
+    stripeCardWrap.style.cssText = 'display:none;margin-bottom:14px;padding:12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(67,160,71,0.03);';
     stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div><div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div><div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div><div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
     body.appendChild(stripeCardWrap);
 
@@ -1052,9 +1052,9 @@
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
       cashOpt.wrapper.style.borderColor = !isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      cashOpt.wrapper.style.background = !isStripe ? 'rgba(58,125,68,0.06)' : 'white';
+      cashOpt.wrapper.style.background = !isStripe ? 'rgba(67,160,71,0.06)' : 'white';
       stripeOpt.wrapper.style.borderColor = isStripe ? 'var(--ocean)' : 'rgba(0,0,0,0.08)';
-      stripeOpt.wrapper.style.background = isStripe ? 'rgba(58,125,68,0.06)' : 'white';
+      stripeOpt.wrapper.style.background = isStripe ? 'rgba(67,160,71,0.06)' : 'white';
 
       const wrap = document.getElementById('stripe-card-wrap');
       if (wrap) {
@@ -1181,7 +1181,7 @@
 
   function makePaymentOption(value, title, subtitle, checked) {
     const wrapper = document.createElement('label');
-    wrapper.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid ' + (checked ? 'var(--ocean)' : 'rgba(0,0,0,0.08)') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (checked ? 'rgba(58,125,68,0.06)' : 'white') + ';';
+    wrapper.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid ' + (checked ? 'var(--ocean)' : 'rgba(0,0,0,0.08)') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (checked ? 'rgba(67,160,71,0.06)' : 'white') + ';';
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'payment_mode';
@@ -1341,7 +1341,7 @@
     wrap.innerHTML = '<div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>' +
       '<h3 style="color:var(--ocean);margin-bottom:6px;font-size:1.1rem;">Commande enregistrée !</h3>' +
       '<p style="color:#888;font-size:0.85rem;margin-bottom:2px;">Votre référence :</p>' +
-      '<div style="display:inline-block;background:rgba(58,125,68,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>';
+      '<div style="display:inline-block;background:rgba(67,160,71,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>';
 
     // Cash ref code
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
