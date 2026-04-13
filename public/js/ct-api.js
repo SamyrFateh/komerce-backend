@@ -90,15 +90,27 @@ CT.api = {
   parcelEvents: function(ref) { return this.get('/api/parcels/' + ref + '/events'); },
 
   // ---- Hub Dashboard (KPIs opérationnels + file + détail complet) ----
-  hubDashboard: function() { return this.get('/api/hub-dashboard/dashboard'); },
+  // NOTE: route montée sur /api/hub-dash (pas hub-dashboard)
+  hubDashboard: function() { return this.get('/api/hub-dash/dashboard'); },
   hubQueue: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/hub-dashboard/queue' + (qs ? '?' + qs : ''));
+    return this.get('/api/hub-dash/queue' + (qs ? '?' + qs : ''));
   },
-  // GET /api/hub-dashboard/orders/:id → détail commande avec colis, items, timeline, incidents
-  hubOrderDetail: function(id) { return this.get('/api/hub-dashboard/orders/' + id); },
-  hubStartPrep: function(id) { return this.post('/api/hub-dashboard/orders/' + id + '/start-prep', {}); },
+  // GET /api/hub-dash/orders/:id → détail commande avec colis, items, timeline, incidents
+  hubOrderDetail: function(id) { return this.get('/api/hub-dash/orders/' + id); },
+  hubStartPrep: function(id) { return this.post('/api/hub-dash/orders/' + id + '/start-prep', {}); },
   hubShipParcel: function(parcelId, data) {
-    return this.post('/api/hub-dashboard/parcels/' + parcelId + '/ship', data || {});
-  }
+    return this.post('/api/hub-dash/parcels/' + parcelId + '/ship', data || {});
+  },
+
+  // ---- Transit Dashboard (colis-first) ----
+  transitDashboard: function() { return this.get('/api/transit/dashboard'); },
+  transitParcels: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/transit/parcels' + (qs ? '?' + qs : ''));
+  },
+  transitDelayed: function() { return this.get('/api/transit/delayed'); },
+  transitAlerts: function() { return this.get('/api/transit/alerts'); },
+  resolveAlert: function(id) { return this.post('/api/transit/alerts/' + id + '/resolve', {}); },
+  setParcelDestination: function(id, data) { return this.patch('/api/transit/parcels/' + id + '/destination', data); }
 };

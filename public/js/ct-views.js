@@ -1010,26 +1010,26 @@ CT.views.transit = {
     el.innerHTML = CT.html.loading();
     CT.html.destroyCharts();
     try {
-      // KPI hub-dashboard + liste de colis actifs
-      var [hubData, parcelsRes, opsData] = await Promise.all([
-        CT.api.hubDashboard(),
-        CT.api.parcels({ limit: 200 }),
-        CT.api.dashboard('ops')
+      // Transit dashboard parcel-first + liste colis actifs
+      var [transitData, parcelsRes] = await Promise.all([
+        CT.api.transitDashboard(),
+        CT.api.transitParcels({ limit: 200 })
       ]);
-      var parcelsKpi = hubData.parcels || {};
-      var delais = opsData.delais || {};
+      var parcelsKpi = transitData.kpi || {};
+      var delais = transitData.delays || {};
       var allParcels = parcelsRes.data || [];
 
-      // On garde les colis logistiquement actifs (pas draft, pas cancelled)
-      this._parcels = allParcels.filter(function(p) {
-        return ['preparation','shipped','in_transit','available'].indexOf(p.status) !== -1;
-      });
+      this._parcels = allParcels; // déjà filtrés côté API (actifs uniquement)
       this._filter = 'all';
+      this._alertsData = transitData.alerts || {};
+      this._byIsland = transitData.by_island || [];
       this._render(el, parcelsKpi, delais);
     } catch(e) { el.innerHTML = CT.html.error(e.message); }
   },
 
   _render: function(el, parcelsKpi, delais) {
+    this._parcelsKpi = parcelsKpi;
+    this._delais = delais;
     var self = this;
     parcelsKpi = parcelsKpi || {};
     delais = delais || {};
@@ -1043,6 +1043,18 @@ CT.views.transit = {
     actionContent += CT.html.actionCard('En transit', parcelsKpi.in_transit || 0, '🚢', 'orange', null, 'in_transit');
     actionContent += CT.html.actionCard('Au relais', parcelsKpi.at_relay || 0, '📍', 'green', null, 'available');
     actionContent += '</div>';
+
+    // ─── ⚠ ALERTES actives ───
+    var alertsData = this._alertsData || {};
+    if (alertsData.total > 0) {
+      var alertColor = alertsData.high > 0 ? '#ef4444' : alertsData.medium > 0 ? '#f59e0b' : '#64748b';
+      actionContent += '<div style="background:' + alertColor + '15;border-left:3px solid ' + alertColor + ';border-radius:6px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:1.1rem">⚠️</span>' +
+        '<span style="font-size:.83rem;font-weight:600;color:' + alertColor + '">' + alertsData.total + ' alerte(s) active(s)</span>' +
+        (alertsData.high > 0 ? '<span style="background:#ef4444;color:#fff;font-size:.7rem;padding:1px 6px;border-radius:8px">' + alertsData.high + ' critique(s)</span>' : '') +
+        '<button onclick="CT.views.transit._loadAlerts()" style="margin-left:auto;background:' + alertColor + ';color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer">Voir</button>' +
+        '</div>';
+    }
 
     // Filtres
     var filteredParcels = this._filter === 'all'
@@ -1077,7 +1089,14 @@ CT.views.transit = {
         var orderId = p.order_id || '';
         var clickable = orderId ? ' style="cursor:pointer" onclick="CT.html.showOrderDetail(\'' + orderId + '\',\'' + orderRef + '\')"' : '';
         tbl += '<tr' + clickable + ' title="Cliquer pour voir la commande ' + orderRef + '">';
-        tbl += '<td><span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span></td>';
+        // Retard badge
+        var delayBadge = '';
+        if (p.delay_status === 'late') {
+          delayBadge = '<span style="background:#ef4444;color:#fff;font-size:.65rem;padding:1px 5px;border-radius:8px;margin-left:4px">RETARD</span>';
+        } else if (p.delay_status === 'warning') {
+          delayBadge = '<span style="background:#f59e0b;color:#fff;font-size:.65rem;padding:1px 5px;border-radius:8px;margin-left:4px">⚠</span>';
+        }
+        tbl += '<td><span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span>' + delayBadge + '</td>';
         tbl += '<td><span class="ct-font-mono" style="font-size:.75rem;color:var(--ct-text-muted)">' + orderRef + '</span></td>';
         tbl += '<td>' + CT.html.parcelStatusChip(p.id, p.reference, p.status) + '</td>';
         tbl += '<td><span style="font-size:.8rem">' + (p.items_count || 0) + '</span></td>';
