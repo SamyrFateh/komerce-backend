@@ -489,3 +489,30 @@ window.generateInvoice = async function(orderId) {
 };
 
 console.log('[CT] ct-views-ops.js v5.0 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
+
+
+// ---- REGISTER VIEWS IN CT.views ----
+// Critical: ct-app.js only shows sidebar items if CT.views[id] exists
+(function() {
+  if (!window.CT) window.CT = {};
+  if (!CT.views) CT.views = {};
+
+  CT.views.incidents = {
+    icon: '⚠️', label: 'Incidents',
+    load: function(container) { renderIncidentsView(container); }
+  };
+  CT.views.reconciliation = {
+    icon: '🔄', label: 'Réconciliation',
+    load: function(container) { renderReconciliationView(container); }
+  };
+  CT.views.alertes = {
+    icon: '🚨', label: 'Alertes',
+    load: function(container) { renderAlertsView(container); }
+  };
+  CT.views.factures = {
+    icon: '🧾', label: 'Factures',
+    load: function(container) { renderInvoicesView(container); }
+  };
+
+  console.log('[CT] Ops views registered:', Object.keys(CT.views).filter(function(k) { return ['incidents','reconciliation','alertes','factures'].indexOf(k) >= 0; }));
+})();
