@@ -72,7 +72,7 @@ window.renderParcelDrillDown = async function(parcelId) {
       return `<div class="accordion-order">
         <div class="accordion-header" onclick="toggleAccordion('ord-${orderId}')">
           <span class="accordion-arrow" id="arrow-ord-${orderId}">▶</span>
-          <span>📋 Commande #${orderId}</span>
+          <span>📋 Commande ${o.reference || orderId}</span>
           <span class="${badgeClass}">${badge}</span>
           <span style="margin-left:auto; font-weight:600">${Number(o.total_kmf || o.total || 0).toLocaleString('fr-FR')} KMF</span>
         </div>
@@ -89,7 +89,7 @@ window.renderParcelDrillDown = async function(parcelId) {
     <div class="modal-overlay" onclick="closeParcelModal(event)">
       <div class="modal-content modal-large" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2>📦 Colis #${p.id} ${statusBadge}</h2>
+          <h2>📦 Colis ${p.reference || p.id} ${statusBadge}</h2>
           <button onclick="closeParcelModal()" class="modal-close">✕</button>
         </div>
         <div class="modal-body">
