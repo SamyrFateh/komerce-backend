@@ -1,10 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.17 (+ Invoice system)
+ * KOMERCE — Serveur API v10.18 (+ Invoice system)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
- * Changelog v10.17: routes/invoices.js ajouté (mini-facture client)
+ * Changelog v10.18: routes/invoices.js ajouté (mini-facture client)
  * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
  * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
  * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
@@ -133,7 +133,7 @@ app.use('/api/admin/', adminLimiter);
 const _fs = require('fs');
 app.get('/*.html', (req, res, next) => {
   // Skip boutique, portal, and public pages
-  if (req.path.includes('Boutique') || req.path === '/portal.html' || req.path === '/suivi.html') return next();
+  if (req.path.includes('Boutique') || req.path === '/portal.html' || req.path === '/suivi.html' || req.path === '/mon-compte.html') return next();
   const filePath = path.join(__dirname, 'public', req.path);
   _fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
@@ -183,6 +183,8 @@ const hubDashRouter    = require('./routes/hub-dashboard');
 const transitDashRouter = require('./routes/transit-dashboard');
 const invoicesRouter   = require('./routes/invoices');
 const opsApiRouter = require('./routes/ops-api');
+const trackingRouter   = require('./routes/tracking');
+const clientAuthRouter = require('./routes/client-auth');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -200,6 +202,9 @@ app.use('/api/relay',      relayDashRouter);
 app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/transit',    transitDashRouter);
 app.use('/api/v2', opsApiRouter);
+app.use('/api/tracking', trackingRouter);
+app.use('/api/auth', clientAuthRouter);  // Magic link routes
+app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
@@ -231,7 +236,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.16',
+      version:       '10.18',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -242,6 +247,20 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ── SPA fallback ────────────────────────────────────────────────────────────
+
+// ── Tracking short URL: /s/:token → serve suivi.html ──────────────────────
+app.get('/s/:token', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'suivi.html'));
+});
+
+// ── Mon Compte — serve without auth-guard ─────────────────────────────────
+app.get('/mon-compte', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'mon-compte.html'));
+});
 
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
@@ -316,7 +335,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.17 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.18 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
