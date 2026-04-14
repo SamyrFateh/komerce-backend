@@ -466,7 +466,7 @@ CT.html.showOrderDetail = async function(orderId, orderRef) {
     html += '<div class="ct-card" style="margin-bottom:12px">';
     html += '<div class="ct-card-title">👤 Client</div>';
     html += '<div style="font-size:.85rem">';
-    html += '<div style="font-weight:600">' + (order.client_name || '—') + '</div>';
+    html += '<div style="font-weight:600">' + (order.customer_name || order.client_name || '—') + '</div>';
     if (order.client_phone) html += '<div style="color:var(--ct-text-muted)">' + order.client_phone + '</div>';
     if (order.relais_name) html += '<div style="margin-top:4px">📍 Relais : <strong>' + order.relais_name + '</strong>' + (order.relais_island ? ' (' + order.relais_island + ')' : '') + '</div>';
     html += '</div></div>';
@@ -1396,7 +1396,7 @@ CT.views.commandes = {
       var q = this._search.toLowerCase();
       orders = orders.filter(function(o) {
         return (o.reference || '').toLowerCase().includes(q) ||
-               (o.recipient_name || o.client_name || '').toLowerCase().includes(q);
+               (o.customer_name || o.recipient_name || o.client_name || '').toLowerCase().includes(q);
       });
     }
     return orders;
@@ -1458,13 +1458,13 @@ CT.views.commandes = {
           : '<span style="color:var(--ct-text-muted);font-size:.7rem">' + (o.payment_method || o.payment_mode || '—') + '</span>';
         tbl += '<tr style="cursor:pointer" onclick="CT.html.showOrderDetail(\'' + o.id + '\',\'' + (o.reference||'') + '\')" title="Voir colis et détail">';
         tbl += '<td><span class="ct-font-mono" style="font-weight:700;font-size:.8rem;color:var(--ct-blue)">' + (o.reference || '—') + '</span></td>';
-        tbl += '<td><span style="font-size:.85rem">' + (o.recipient_name || o.client_name || '—') + '</span></td>';
-        tbl += '<td><span style="font-weight:600;font-size:.85rem">' + CT.html.formatKMF(o.total_amount || o.total_kmf) + '</span></td>';
+        tbl += '<td><span style="font-size:.85rem">' + (o.customer_name || o.recipient_name || o.client_name || '—') + '</span></td>';
+        tbl += '<td><span style="font-weight:600;font-size:.85rem">' + CT.html.formatKMF(o.total_kmf || o.total_amount) + '</span></td>';
         tbl += '<td>' + CT.html.statusChip(o.id, o.reference, o.status) + '</td>';
-        tbl += '<td><span style="font-size:.8rem">' + (o.destination_island || '—') + '</span></td>';
+        tbl += '<td><span style="font-size:.8rem">' + (o.destination_island || o.relais_island || '—') + '</span></td>';
         tbl += '<td>' + payBadge + '</td>';
         tbl += '<td><span style="font-size:.75rem;color:var(--ct-text-muted)">' + CT.html._age(o.updated_at || o.created_at) + '</span></td>';
-        tbl += '<td onclick="event.stopPropagation()">' + CT.html.whatsappBtn(o.client_phone || o.recipient_phone, o.reference, o.status, true) + '</td>';
+        tbl += '<td onclick="event.stopPropagation()">' + CT.html.whatsappBtn(o.customer_phone || o.client_phone || o.recipient_phone, o.reference, o.status, true) + '</td>';
         tbl += '</tr>';
       });
       tbl += '</tbody></table></div>';
