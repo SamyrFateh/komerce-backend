@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.18 (+ Invoice system)
+ * KOMERCE — Serveur API v11.0 (COLIS-FIRST)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v11.0: Parcel-First API v2 (routes/parcel-api-v2.js) — refonte COLIS-FIRST
  * Changelog v10.18: routes/invoices.js ajouté (mini-facture client)
  * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
  * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
@@ -189,6 +190,9 @@ const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
 
+// ── NEW: Parcel-First API v2 (COLIS-FIRST) ──────────────────────────────────
+const parcelApiV2Router = require('./routes/parcel-api-v2');
+
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
 app.use('/api/orders',     ordersRouter);
@@ -201,7 +205,11 @@ app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
 app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/transit',    transitDashRouter);
+
+// ── Parcel-First API MUST be mounted BEFORE generic /api/v2 ─────────────────
+app.use('/api/v2/parcels', parcelApiV2Router);
 app.use('/api/v2', opsApiRouter);
+
 app.use('/api/tracking', trackingRouter);
 app.use('/api/auth', clientAuthRouter);  // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
@@ -236,7 +244,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.18',
+      version:       '11.0',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -335,7 +343,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.18 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v11.0 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
