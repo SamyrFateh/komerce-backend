@@ -1,769 +1,283 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Komerce — Hub</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#b45309">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Komerce">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="komerce-ui.css">
-<style>
-/* ═══ Hub-specific styles ═══ */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Komerce Hub — Gestion Colis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      min-height: 100vh;
+    }
 
-/* KPI bar */
-.kpi-bar{display:flex;gap:10px;padding:12px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.kpi-bar::-webkit-scrollbar{display:none}
-.kpi-card{flex:0 0 auto;min-width:130px;padding:12px 16px;border-radius:12px;background:var(--bg2,#fff);border:1px solid var(--border);cursor:pointer;transition:all .2s}
-.kpi-card:hover,.kpi-card.active{border-color:var(--gold);box-shadow:0 2px 12px rgba(180,83,9,.12)}
-.kpi-val{font-size:1.5rem;font-weight:800;color:var(--gold)}
-.kpi-label{font-size:0.75rem;color:var(--text3);margin-top:2px}
+    .hub-header {
+      background: #111827;
+      color: #fff;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .hub-header h1 { font-size: 18px; font-weight: 800; }
+    .hub-header .hub-user { font-size: 13px; color: #9ca3af; }
 
-/* Reception cards */
-.reception-card{background:var(--bg2,#fff);border:1px solid var(--border);border-left:4px solid #3b82f6;border-radius:12px;padding:16px;margin-bottom:12px}
-.reception-card .ref{font-family:'SF Mono',Monaco,monospace;font-weight:700;font-size:0.95rem}
-.reception-progress{height:6px;border-radius:3px;background:var(--border);margin:8px 0 4px;overflow:hidden}
-.reception-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#2563eb);transition:width .5s}
-.reception-items{font-size:0.82rem;color:var(--text2);margin-top:6px}
-.reception-items span{display:inline-block;background:var(--bg);padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;border:1px solid var(--border)}
-.qty-ok{color:#16a34a;font-weight:600}
-.qty-missing{color:#dc2626;font-weight:600}
+    .hub-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 16px;
+    }
 
-/* Order cards (prepare/ship) */
-.order-card{background:var(--bg2,#fff);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.order-card .order-info{flex:1;min-width:200px}
-.order-card .order-ref{font-family:'SF Mono',Monaco,monospace;font-weight:700;font-size:0.95rem}
-.order-card .order-meta{font-size:0.8rem;color:var(--text3);margin-top:4px;display:flex;flex-wrap:wrap;gap:8px}
-.order-card .order-meta span{display:inline-flex;align-items:center;gap:3px}
-.order-card .order-items{font-size:0.82rem;color:var(--text2);margin-top:6px}
+    /* ── Actions ────────────────────────────── */
+    .hub-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .hub-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 16px 8px;
+      border: 2px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .hub-action-btn:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .hub-action-btn .emoji { font-size: 28px; }
 
-/* Stock alerts */
-.stock-card{background:var(--bg2,#fff);border:1px solid var(--border);border-left:4px solid #f59e0b;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.stock-card.critical{border-left-color:#ef4444}
-.stock-name{font-weight:600;font-size:0.9rem}
-.stock-sku{font-size:0.75rem;color:var(--text3);font-family:'SF Mono',Monaco,monospace}
-.stock-badge{font-size:0.85rem;font-weight:800;padding:4px 12px;border-radius:8px;white-space:nowrap}
-.stock-zero{background:#fef2f2;color:#dc2626}
-.stock-low{background:#fef3c7;color:#92400e}
+    /* ── Tabs ──────────────────────────────── */
+    .hub-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+    }
+    .hub-tab {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .hub-tab.active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
 
-/* Problem cards */
-.problem-card{background:var(--bg2,#fff);border:1px solid var(--border);border-left:4px solid #ef4444;border-radius:12px;padding:16px;margin-bottom:12px}
-.problem-badge{font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.5px}
-.pb-finance{background:#fef3c7;color:#92400e}
-.pb-logistique{background:#dbeafe;color:#1e40af}
-.pb-client{background:#fce7f3;color:#9d174d}
-.pb-donnees{background:#f3e8ff;color:#6b21a8}
-.health-score{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:700}
-.hs-green{background:#dcfce7;color:#166534}
-.hs-amber{background:#fef3c7;color:#92400e}
-.hs-red{background:#fef2f2;color:#991b1b}
+    /* ── Scanner ───────────────────────────── */
+    .scan-section {
+      background: #fff;
+      border: 2px solid #3b82f6;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .scan-input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      text-transform: uppercase;
+    }
+    .scan-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .scan-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .scan-btn:hover { background: #2563eb; }
+    .scan-btn:disabled { background: #9ca3af; cursor: not-allowed; }
 
-/* Parcel cards (expéditions) */
-.parcel-card{background:var(--bg2,#fff);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
-.parcel-ref{font-family:'SF Mono',Monaco,monospace;font-weight:700;font-size:0.95rem}
-.parcel-meta{font-size:0.8rem;color:var(--text3);margin-top:4px;display:flex;flex-wrap:wrap;gap:8px}
-.eta-bar{height:6px;border-radius:3px;background:var(--border);margin:10px 0 6px;overflow:hidden}
-.eta-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
-.eta-green{background:linear-gradient(90deg,#22c55e,#16a34a)}
-.eta-amber{background:linear-gradient(90deg,#f59e0b,#d97706)}
-.eta-red{background:linear-gradient(90deg,#ef4444,#dc2626)}
-.eta-text{font-size:0.75rem;color:var(--text3)}
-.parcel-status-badge{font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.3px}
-.ps-shipped{background:#dbeafe;color:#1e40af}
-.ps-in_transit{background:#fef3c7;color:#92400e}
-.ps-available{background:#dcfce7;color:#166534}
-.ps-collected{background:#f3e8ff;color:#6b21a8}
-.ps-other{background:#f1f5f9;color:#475569}
-
-/* Scanner */
-.scanner-zone{max-width:480px;margin:0 auto;text-align:center}
-.scanner-zone .inp{font-size:1.25rem;padding:1rem;text-align:center;letter-spacing:0.08em;text-transform:uppercase}
-.scanner-zone .btn{width:100%;padding:1rem;font-size:1.125rem;margin-top:0.75rem}
-.scanner-zone select.inp{font-size:1.05rem;padding:0.75rem}
-.scanner-result{margin-top:1.25rem;padding:1rem;border-radius:8px;display:none}
-.scanner-result.ok{display:block;background:color-mix(in srgb,var(--green) 12%,transparent);border:1px solid var(--green)}
-.scanner-result.err{display:block;background:color-mix(in srgb,var(--red) 12%,transparent);border:1px solid var(--red)}
-
-/* Section headers */
-.section-hdr{display:flex;align-items:center;justify-content:space-between;margin:16px 0 12px;flex-wrap:wrap;gap:8px}
-.section-title{font-size:1.1rem;font-weight:700;color:var(--text)}
-.section-count{font-size:0.8rem;color:var(--text3);background:var(--bg);padding:2px 10px;border-radius:12px;border:1px solid var(--border)}
-
-/* Filter bar */
-.filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.filter-bar .inp{flex:1;min-width:200px}
-.filter-bar select.inp{flex:0 0 auto;min-width:150px}
-
-/* Empty states */
-.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
-.empty-state .empty-icon{font-size:3rem;margin-bottom:12px}
-.empty-state .empty-text{font-size:0.95rem}
-
-/* Utility */
-.flex-between{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.mono{font-family:'SF Mono',Monaco,Consolas,monospace}
-.text-muted{color:var(--text3);font-size:0.8rem}
-.mb-12{margin-bottom:12px}
-
-/* ═══ PWA MOBILE: sidebar → bottom tabs ═══ */
-@media(max-width:768px){
-  .sidebar{display:none !important}
-  .layout,.main{flex-direction:column !important}
-  .content{margin-left:0 !important;padding:12px !important;padding-bottom:72px !important}
-  .hdr{flex-wrap:wrap;gap:6px;height:auto !important;min-height:48px;padding:8px 12px !important}
-  .hdr .logo{font-size:0.9rem}
-  .hdr-right{flex-wrap:wrap;gap:4px;font-size:0.75rem}
-  .mobile-tabs{display:flex !important}
-  .kpi-bar{padding:8px 0}
-  .kpi-card{min-width:110px;padding:10px 12px}
-  .kpi-val{font-size:1.2rem}
-  .order-card{flex-direction:column;align-items:stretch}
-  .scanner-zone .inp{font-size:1.1rem}
-}
-@media(max-width:400px){
-  .hdr .logo{font-size:0.8rem}
-  .content{padding:8px !important;padding-bottom:68px !important}
-  .kpi-card{min-width:100px;padding:8px 10px}
-  .kpi-val{font-size:1.1rem}
-}
-.mobile-tabs{
-  display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;
-  background:var(--bg2);border-top:2px solid var(--border);
-  padding:2px 0 calc(2px + env(safe-area-inset-bottom,0px));
-  box-shadow:0 -2px 12px rgba(0,0,0,0.08);
-}
-.mobile-tabs-inner{display:flex;width:100%}
-.mtab{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
-  padding:6px 2px 4px;font-size:0.58rem;letter-spacing:0.01em;
-  color:var(--text3);background:none;border:none;cursor:pointer;
-  font-family:inherit;position:relative;transition:color 0.15s;
-  -webkit-tap-highlight-color:transparent;user-select:none;
-}
-.mtab:active{transform:scale(0.92)}
-.mtab.active{color:var(--gold);font-weight:600}
-.mtab-icon{font-size:1.15rem;line-height:1}
-.mtab-badge{
-  position:absolute;top:-2px;right:calc(50% - 18px);
-  background:var(--gold);color:#000;font-size:0.5rem;font-weight:700;
-  min-width:14px;height:14px;border-radius:99px;
-  display:flex;align-items:center;justify-content:center;padding:0 3px;
-}
-.mtab-badge:empty{display:none}
-.pwa-standalone .hdr{padding-top:calc(8px + env(safe-area-inset-top,0px)) !important}
-.pwa-standalone .mobile-tabs{padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
-</style>
+    /* ── Misc ──────────────────────────────── */
+    .hub-empty {
+      text-align: center;
+      padding: 40px;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-<div class="hdr">
-  <div class="logo">K<em>OMERCE</em> · HUB</div>
-  <div class="hdr-right">
-    <span class="conn-pill ok" id="connStatus"><span class="conn-dot pulse"></span> En ligne</span>
-    <span id="userInfo" style="font-size:0.875rem;color:var(--text3)"></span>
-    <span id="userRole" style="font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(217,119,6,.12);color:var(--gold);text-transform:uppercase;letter-spacing:.5px"></span>
-    <button class="btn btn-ghost btn-sm" onclick="K.auth.logout().then(function(){location.href='portal.html'})" style="font-size:0.8rem;padding:6px 14px;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text2);background:var(--bg2)">Déconnexion</button>
-  </div>
-</div>
 
-<!-- KPI Bar -->
-<div class="kpi-bar" id="kpiBar" style="padding-left:16px;padding-right:16px">
-  <div class="kpi-card active" data-screen="scrReception" onclick="switchScreen('scrReception',this)">
-    <div class="kpi-val" id="kpiReception">0</div>
-    <div class="kpi-label">📥 À recevoir</div>
-  </div>
-  <div class="kpi-card" data-screen="scrPreparer" onclick="switchScreen('scrPreparer',this)">
-    <div class="kpi-val" id="kpiPreparer">0</div>
-    <div class="kpi-label">📦 À préparer</div>
-  </div>
-  <div class="kpi-card" data-screen="scrExpedier" onclick="switchScreen('scrExpedier',this)">
-    <div class="kpi-val" id="kpiExpedier">0</div>
-    <div class="kpi-label">🚀 À expédier</div>
-  </div>
-  <div class="kpi-card" data-screen="scrAlertes" onclick="switchScreen('scrAlertes',this)">
-    <div class="kpi-val" id="kpiAlertes">0</div>
-    <div class="kpi-label">⚠️ Alertes</div>
-  </div>
-  <div class="kpi-card" data-screen="scrExpeditions" onclick="switchScreen('scrExpeditions',this)">
-    <div class="kpi-val" id="kpiExpeditions">0</div>
-    <div class="kpi-label">🚛 En route</div>
-  </div>
-</div>
+  <header class="hub-header">
+    <h1>📦 Hub Dubai</h1>
+    <div class="hub-user" id="hub-user">Agent Hub</div>
+  </header>
 
-<div class="content" style="padding:0 16px 80px">
-
-  <!-- S1: Réception -->
-  <div class="screen active" id="scrReception">
-    <div class="section-hdr">
-      <div class="section-title">📥 Réception fournisseurs</div>
-      <div class="section-count" id="receptionCount">0 commandes</div>
+  <div class="hub-content">
+    <!-- Action buttons -->
+    <div class="hub-actions">
+      <button class="hub-action-btn" onclick="Hub.showScan('preparation')">
+        <span class="emoji">📋</span>
+        Préparer
+      </button>
+      <button class="hub-action-btn" onclick="Hub.showScan('shipped')">
+        <span class="emoji">🚀</span>
+        Expédier
+      </button>
+      <button class="hub-action-btn" onclick="Hub.showScan('in_transit')">
+        <span class="emoji">🚢</span>
+        En transit
+      </button>
     </div>
-    <div class="filter-bar">
-      <input class="inp" id="filterReception" placeholder="Filtrer par référence…" oninput="renderReception()">
+
+    <!-- Scanner (hidden by default) -->
+    <div class="scan-section" id="scan-section" style="display:none">
+      <h3 id="scan-title" style="margin-bottom:12px;font-size:16px">📷 Scanner un colis</h3>
+      <input type="text" class="scan-input" id="scan-input" placeholder="PCL-2026-XXXXX" autofocus>
+      <button class="scan-btn" id="scan-btn" onclick="Hub.doScan()">✅ Confirmer le scan</button>
+      <div id="scan-result" style="margin-top:12px"></div>
     </div>
-    <div id="receptionList"></div>
-    <div class="empty-state" id="emptyReception" style="display:none">
-      <div class="empty-icon">✅</div>
-      <div class="empty-text">Toutes les réceptions sont à jour</div>
+
+    <!-- Parcels tabs -->
+    <div class="hub-tabs" id="hub-tabs">
+      <button class="hub-tab active" data-filter="active" onclick="Hub.filterTab('active')">🔄 Actifs</button>
+      <button class="hub-tab" data-filter="preparation" onclick="Hub.filterTab('preparation')">📋 Préparation</button>
+      <button class="hub-tab" data-filter="shipped" onclick="Hub.filterTab('shipped')">🚀 Expédiés</button>
+      <button class="hub-tab" data-filter="in_transit" onclick="Hub.filterTab('in_transit')">🚢 Transit</button>
+      <button class="hub-tab" data-filter="anomalies" onclick="Hub.filterTab('anomalies')">⚠️ Anomalies</button>
+    </div>
+
+    <!-- Parcels list -->
+    <div id="hub-parcels">
+      <div class="hub-empty">⏳ Chargement des colis...</div>
     </div>
   </div>
 
-  <!-- S2: Préparer -->
-  <div class="screen" id="scrPreparer">
-    <div class="section-hdr">
-      <div class="section-title">📦 À préparer</div>
-      <div class="section-count" id="preparerCount">0 commandes</div>
-    </div>
-    <div class="filter-bar">
-      <input class="inp" id="filterPreparer" placeholder="Filtrer par référence…" oninput="renderPreparer()">
-    </div>
-    <div id="preparerList"></div>
-    <div class="empty-state" id="emptyPreparer" style="display:none">
-      <div class="empty-icon">✅</div>
-      <div class="empty-text">Aucune commande à préparer</div>
-    </div>
-  </div>
+  <!-- Scripts -->
+  <script src="/js/ct-api.js"></script>
+  <script src="/js/parcel-components.js"></script>
+  <script>
+    window.Hub = {};
+    Hub.parcels = [];
+    Hub.scanType = null;
 
-  <!-- S3: Expédier -->
-  <div class="screen" id="scrExpedier">
-    <div class="section-hdr">
-      <div class="section-title">🚀 À expédier</div>
-      <div class="section-count" id="expedierCount">0 colis</div>
-    </div>
-    <div class="filter-bar">
-      <input class="inp" id="filterExpedier" placeholder="Filtrer par référence…" oninput="renderExpedier()">
-    </div>
-    <div id="expedierList"></div>
-    <div class="empty-state" id="emptyExpedier" style="display:none">
-      <div class="empty-icon">✅</div>
-      <div class="empty-text">Aucun colis à expédier</div>
-    </div>
-  </div>
-
-  <!-- S4: Alertes / Sourcing -->
-  <div class="screen" id="scrAlertes">
-    <div class="section-hdr">
-      <div class="section-title">⚠️ Alertes sourcing &amp; problèmes</div>
-      <span class="health-score" id="healthBadge"></span>
-    </div>
-
-    <div class="section-hdr" style="margin-top:8px">
-      <div style="font-size:0.95rem;font-weight:600">📊 Stock critique</div>
-    </div>
-    <div id="stockAlertsList"></div>
-    <div class="empty-state" id="emptyStock" style="display:none;padding:20px">
-      <div class="empty-text">Tous les stocks sont suffisants ✅</div>
-    </div>
-
-    <div class="section-hdr">
-      <div style="font-size:0.95rem;font-weight:600">🚨 Commandes problématiques</div>
-      <div class="section-count" id="problemsCount">0</div>
-    </div>
-    <div id="problemsList"></div>
-    <div class="empty-state" id="emptyProblems" style="display:none;padding:20px">
-      <div class="empty-text">Aucun problème détecté ✅</div>
-    </div>
-  </div>
-
-  <!-- S5: Expéditions (suivi) -->
-  <div class="screen" id="scrExpeditions">
-    <div class="section-hdr">
-      <div class="section-title">🚛 Suivi expéditions</div>
-      <div class="section-count" id="expeditionsCount">0 colis</div>
-    </div>
-    <div class="filter-bar">
-      <input class="inp" id="filterExpeditions" placeholder="Filtrer par référence…" oninput="renderExpeditions()">
-      <select class="inp" id="filterExpStatus" onchange="renderExpeditions()">
-        <option value="">Tous statuts</option>
-        <option value="shipped">Expédié</option>
-        <option value="in_transit">En transit</option>
-        <option value="available">Disponible</option>
-        <option value="collected">Collecté</option>
-      </select>
-    </div>
-    <div id="expeditionsList"></div>
-    <div class="empty-state" id="emptyExpeditions" style="display:none">
-      <div class="empty-icon">📭</div>
-      <div class="empty-text">Aucune expédition en cours</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- Mobile bottom tabs -->
-<div class="mobile-tabs"><div class="mobile-tabs-inner">
-  <button class="mtab active" data-screen="scrReception" onclick="switchScreen('scrReception',this)"><span class="mtab-icon">📥</span>Réception<span class="mtab-badge" id="mbReception"></span></button>
-  <button class="mtab" data-screen="scrPreparer" onclick="switchScreen('scrPreparer',this)"><span class="mtab-icon">📦</span>Préparer<span class="mtab-badge" id="mbPreparer"></span></button>
-  <button class="mtab" data-screen="scrExpedier" onclick="switchScreen('scrExpedier',this)"><span class="mtab-icon">🚀</span>Expédier<span class="mtab-badge" id="mbExpedier"></span></button>
-  <button class="mtab" data-screen="scrAlertes" onclick="switchScreen('scrAlertes',this)"><span class="mtab-icon">⚠️</span>Alertes<span class="mtab-badge" id="mbAlertes"></span></button>
-  <button class="mtab" data-screen="scrExpeditions" onclick="switchScreen('scrExpeditions',this)"><span class="mtab-icon">🚛</span>Suivi<span class="mtab-badge" id="mbExpeditions"></span></button>
-</div></div>
-
-<div id="k-toast" class="toast"></div>
-<script src="komerce-api.js"></script>
-<script>
-/* ═══════════════════════════════════════════════════
-   KOMERCE HUB v2.0 — Réception · Emballage · Expédition
-   ═══════════════════════════════════════════════════ */
-
-/* ── State ────────────────────────────────────── */
-var _receptionOrders = [];
-var _preparerOrders = [];
-var _expedierOrders = [];
-var _problems = [];
-var _stockAlerts = [];
-var _parcels = [];
-var _refreshTimer = null;
-
-/* ── Init ─────────────────────────────────────── */
-(async function init() {
-  try {
-    var user = await K.auth.restore();
-    if (!user || (user.role !== 'agent_hub' && user.role !== 'admin')) {
-      window.location.href = 'portal.html';
-      return;
-    }
-    document.getElementById('userInfo').textContent = user.full_name || user.email;
-    document.getElementById('userRole').textContent = user.role === 'admin' ? 'ADMIN' : 'AGENT HUB';
-    await loadAll();
-    startAutoRefresh();
-  } catch (e) {
-    console.error('Init error:', e);
-    K.ui.toast('Erreur de connexion', 'err');
-    setOffline();
-  }
-})();
-
-/* ── Navigation ────────────────────────────────── */
-function switchScreen(id, el) {
-  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
-  document.querySelectorAll('.kpi-card').forEach(function(c) { c.classList.remove('active'); });
-  document.querySelectorAll('.mtab').forEach(function(t) { t.classList.remove('active'); });
-  var scr = document.getElementById(id);
-  if (scr) scr.classList.add('active');
-  if (el) el.classList.add('active');
-  /* Sync KPI + mobile tab */
-  document.querySelectorAll('.kpi-card[data-screen="' + id + '"]').forEach(function(c) { c.classList.add('active'); });
-  document.querySelectorAll('.mtab[data-screen="' + id + '"]').forEach(function(t) { t.classList.add('active'); });
-}
-
-/* ── Data Loading ────────────────────────────── */
-async function loadAll() {
-  try {
-    await Promise.all([
-      loadReception(),
-      loadPreparer(),
-      loadExpedier(),
-      loadAlertes(),
-      loadExpeditions()
-    ]);
-    setOnline();
-  } catch (e) {
-    console.error('Load error:', e);
-    setOffline();
-  }
-}
-
-async function loadReception() {
-  try {
-    var data = await K.request('/api/scans/hub/pending');
-    _receptionOrders = (data && data.orders) ? data.orders : [];
-    _receptionOrders.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at); });
-  } catch (e) {
-    console.warn('Reception load:', e.message);
-    _receptionOrders = [];
-  }
-  document.getElementById('kpiReception').textContent = _receptionOrders.length;
-  updateMobileBadge('mbReception', _receptionOrders.length);
-  renderReception();
-}
-
-async function loadPreparer() {
-  try {
-    var data = await K.orders.list({ status: 'ordered' });
-    _preparerOrders = Array.isArray(data) ? data : [];
-    _preparerOrders.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at); });
-  } catch (e) {
-    console.warn('Preparer load:', e.message);
-    _preparerOrders = [];
-  }
-  document.getElementById('kpiPreparer').textContent = _preparerOrders.length;
-  updateMobileBadge('mbPreparer', _preparerOrders.length);
-  renderPreparer();
-}
-
-async function loadExpedier() {
-  try {
-    var data = await K.orders.list({ status: 'preparation' });
-    _expedierOrders = Array.isArray(data) ? data : [];
-    _expedierOrders.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at); });
-  } catch (e) {
-    console.warn('Expedier load:', e.message);
-    _expedierOrders = [];
-  }
-  document.getElementById('kpiExpedier').textContent = _expedierOrders.length;
-  updateMobileBadge('mbExpedier', _expedierOrders.length);
-  renderExpedier();
-}
-
-async function loadAlertes() {
-  var alertCount = 0;
-  /* Stock alerts */
-  try {
-    var prodData = await K.products.list({ limit: 300 });
-    var products = prodData.products || prodData || [];
-    _stockAlerts = products.filter(function(p) {
-      return p.stock !== null && p.stock !== undefined && p.stock < 5;
-    }).sort(function(a, b) { return (a.stock || 0) - (b.stock || 0); });
-    alertCount += _stockAlerts.length;
-  } catch (e) {
-    console.warn('Stock load:', e.message);
-    _stockAlerts = [];
-  }
-  renderStockAlerts();
-
-  /* Order problems */
-  try {
-    var data = await K.request('/api/orders/problems');
-    _problems = (data && data.problems) ? data.problems : [];
-    alertCount += _problems.length;
-
-    var score = data.health_score || 0;
-    var badge = document.getElementById('healthBadge');
-    var cls = score >= 80 ? 'hs-green' : score >= 50 ? 'hs-amber' : 'hs-red';
-    badge.className = 'health-score ' + cls;
-    badge.textContent = 'Santé: ' + score + '/100';
-  } catch (e) {
-    console.warn('Problems load:', e.message);
-    _problems = [];
-  }
-  renderProblems();
-
-  document.getElementById('kpiAlertes').textContent = alertCount;
-  updateMobileBadge('mbAlertes', alertCount);
-}
-
-async function loadExpeditions() {
-  try {
-    var data = await K.parcels.list();
-    var parcels = (data && data.data) ? data.data : (Array.isArray(data) ? data : []);
-    /* Only shipped/in_transit/available/collected */
-    _parcels = parcels.filter(function(p) {
-      return ['shipped', 'in_transit', 'available', 'collected'].indexOf(p.status) !== -1;
-    });
-    _parcels.sort(function(a, b) { return new Date(b.shipped_at || b.created_at) - new Date(a.shipped_at || a.created_at); });
-  } catch (e) {
-    console.warn('Expeditions load:', e.message);
-    _parcels = [];
-  }
-  var enRoute = _parcels.filter(function(p) { return p.status === 'shipped' || p.status === 'in_transit'; }).length;
-  document.getElementById('kpiExpeditions').textContent = enRoute;
-  updateMobileBadge('mbExpeditions', enRoute);
-  renderExpeditions();
-}
-
-/* ── Renderers ────────────────────────────────── */
-
-/* Reception */
-function renderReception() {
-  var filter = (document.getElementById('filterReception').value || '').trim().toLowerCase();
-  var list = _receptionOrders;
-  if (filter) list = list.filter(function(o) { return (o.reference || '').toLowerCase().indexOf(filter) !== -1; });
-
-  var container = document.getElementById('receptionList');
-  var empty = document.getElementById('emptyReception');
-  document.getElementById('receptionCount').textContent = list.length + ' commande' + (list.length !== 1 ? 's' : '');
-
-  if (!list.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = list.map(function(o) {
-    var totalPOs = parseInt(o.total_pos) || 0;
-    var received = parseInt(o.pos_recus) || 0;
-    var missing = parseInt(o.qty_manquante) || 0;
-    var pct = totalPOs > 0 ? Math.round((received / totalPOs) * 100) : 0;
-    var articles = o.articles || [];
-
-    return '<div class="reception-card">' +
-      '<div class="flex-between">' +
-        '<div><span class="ref">' + esc(o.reference) + '</span> <span class="text-muted">· ' + fmtAge(o.created_at) + '</span></div>' +
-        '<div>' +
-          (missing > 0
-            ? '<span class="qty-missing">' + missing + ' manquant' + (missing > 1 ? 's' : '') + '</span>'
-            : '<span class="qty-ok">Complet ✓</span>') +
-        '</div>' +
-      '</div>' +
-      '<div class="reception-progress"><div class="reception-progress-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="text-muted">' + received + '/' + totalPOs + ' articles reçus (' + pct + '%)</div>' +
-      '<div class="reception-items">' + articles.map(function(a) { return '<span>' + esc(a) + '</span>'; }).join('') + '</div>' +
-    '</div>';
-  }).join('');
-}
-
-/* Préparer */
-function renderPreparer() {
-  var filter = (document.getElementById('filterPreparer').value || '').trim().toLowerCase();
-  var list = _preparerOrders;
-  if (filter) list = list.filter(function(o) { return (o.reference || '').toLowerCase().indexOf(filter) !== -1; });
-
-  var container = document.getElementById('preparerList');
-  var empty = document.getElementById('emptyPreparer');
-  document.getElementById('preparerCount').textContent = list.length + ' commande' + (list.length !== 1 ? 's' : '');
-
-  if (!list.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = list.map(function(o) {
-    var items = Array.isArray(o.items) ? o.items : [];
-    var itemCount = items.reduce(function(s, it) { return s + (it.quantity || 1); }, 0);
-    var itemNames = items.map(function(it) { return (it.product_name || it.name || 'Article') + ' ×' + (it.quantity || 1); });
-
-    return '<div class="order-card">' +
-      '<div class="order-info">' +
-        '<div class="order-ref">' + esc(o.reference) + '</div>' +
-        '<div class="order-meta">' +
-          '<span>🕐 ' + fmtAge(o.created_at) + '</span>' +
-          '<span>📦 ' + itemCount + ' article' + (itemCount !== 1 ? 's' : '') + '</span>' +
-          '<span>🏝️ ' + esc(o.destination_island || '—') + '</span>' +
-          (o.total_amount ? '<span>💰 ' + fmtKMF(o.total_amount) + '</span>' : '') +
-        '</div>' +
-        (itemNames.length ? '<div class="order-items">' + itemNames.map(function(n) { return esc(n); }).join(' · ') + '</div>' : '') +
-      '</div>' +
-      '<button class="btn btn-gold" onclick="doScan(\'' + esc(o.reference) + '\',\'preparation\')" style="white-space:nowrap">📋 Préparer</button>' +
-    '</div>';
-  }).join('');
-}
-
-/* Expédier */
-function renderExpedier() {
-  var filter = (document.getElementById('filterExpedier').value || '').trim().toLowerCase();
-  var list = _expedierOrders;
-  if (filter) list = list.filter(function(o) { return (o.reference || '').toLowerCase().indexOf(filter) !== -1; });
-
-  var container = document.getElementById('expedierList');
-  var empty = document.getElementById('emptyExpedier');
-  document.getElementById('expedierCount').textContent = list.length + ' colis';
-
-  if (!list.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = list.map(function(o) {
-    var items = Array.isArray(o.items) ? o.items : [];
-    var itemCount = items.reduce(function(s, it) { return s + (it.quantity || 1); }, 0);
-
-    return '<div class="order-card">' +
-      '<div class="order-info">' +
-        '<div class="order-ref">' + esc(o.reference) + '</div>' +
-        '<div class="order-meta">' +
-          '<span>🕐 ' + fmtAge(o.created_at) + '</span>' +
-          '<span>📦 ' + itemCount + ' article' + (itemCount !== 1 ? 's' : '') + '</span>' +
-          '<span>🏝️ ' + esc(o.destination_island || '—') + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<button class="btn" onclick="doScan(\'' + esc(o.reference) + '\',\'shipped\')" style="white-space:nowrap;background:#16a34a;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer">🚀 Expédier</button>' +
-    '</div>';
-  }).join('');
-}
-
-/* Stock Alerts */
-function renderStockAlerts() {
-  var container = document.getElementById('stockAlertsList');
-  var empty = document.getElementById('emptyStock');
-
-  if (!_stockAlerts.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = _stockAlerts.slice(0, 30).map(function(p) {
-    var isZero = !p.stock || p.stock === 0;
-    return '<div class="stock-card' + (isZero ? ' critical' : '') + '">' +
-      '<div>' +
-        '<div class="stock-name">' + esc(p.name) + '</div>' +
-        '<div class="stock-sku">' + esc(p.sku || '') + ' · ' + esc(p.category || '') + '</div>' +
-      '</div>' +
-      '<div class="stock-badge ' + (isZero ? 'stock-zero' : 'stock-low') + '">' +
-        (isZero ? '🔴 Rupture' : '🟡 Stock: ' + p.stock) +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-/* Problems */
-function renderProblems() {
-  var container = document.getElementById('problemsList');
-  var empty = document.getElementById('emptyProblems');
-  document.getElementById('problemsCount').textContent = _problems.length;
-
-  if (!_problems.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = _problems.slice(0, 20).map(function(p) {
-    var cats = (p.categories || []);
-    var badges = cats.map(function(c) {
-      var cls = c === 'finance' ? 'pb-finance' : c === 'logistique' ? 'pb-logistique' : c === 'client' ? 'pb-client' : 'pb-donnees';
-      return '<span class="problem-badge ' + cls + '">' + esc(c) + '</span>';
-    }).join(' ');
-
-    var rules = (p.rules || []).map(function(r) { return esc(r); }).join(' · ');
-
-    return '<div class="problem-card">' +
-      '<div class="flex-between mb-12">' +
-        '<span class="mono" style="font-weight:700">' + esc(p.reference) + '</span>' +
-        '<div>' + badges + '</div>' +
-      '</div>' +
-      '<div style="font-size:0.82rem;color:var(--text2)">' +
-        '<div>Statut: <strong>' + esc(p.status) + '</strong> · Paiement: ' + esc(p.payment_status || '—') + ' · Mode: ' + esc(p.payment_mode || '—') + '</div>' +
-        (p.total_kmf ? '<div>Montant: <strong>' + fmtKMF(p.total_kmf) + '</strong></div>' : '') +
-        (rules ? '<div style="margin-top:4px;color:var(--text3)">Règles: ' + rules + '</div>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-/* Expéditions */
-function renderExpeditions() {
-  var filter = (document.getElementById('filterExpeditions').value || '').trim().toLowerCase();
-  var statusFilter = document.getElementById('filterExpStatus').value;
-  var list = _parcels;
-
-  if (filter) list = list.filter(function(p) { return (p.reference || '').toLowerCase().indexOf(filter) !== -1; });
-  if (statusFilter) list = list.filter(function(p) { return p.status === statusFilter; });
-
-  var container = document.getElementById('expeditionsList');
-  var empty = document.getElementById('emptyExpeditions');
-  document.getElementById('expeditionsCount').textContent = list.length + ' colis';
-
-  if (!list.length) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = list.map(function(p) {
-    var statusLabels = {
-      shipped: ['Expédié', 'ps-shipped'],
-      in_transit: ['En transit', 'ps-in_transit'],
-      available: ['Disponible', 'ps-available'],
-      collected: ['Collecté', 'ps-collected']
+    Hub.init = async function() {
+      try {
+        const { parcels } = await CT.api.get('/api/v2/parcels');
+        Hub.parcels = parcels;
+        Hub.filterTab('active');
+      } catch (err) {
+        document.getElementById('hub-parcels').innerHTML = 
+          `<div class="hub-empty" style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
+      }
     };
-    var sl = statusLabels[p.status] || [p.status, 'ps-other'];
-    var eta = estimateArrival(p);
 
-    return '<div class="parcel-card">' +
-      '<div class="flex-between">' +
-        '<div class="parcel-ref">' + esc(p.reference) + '</div>' +
-        '<span class="parcel-status-badge ' + sl[1] + '">' + sl[0] + '</span>' +
-      '</div>' +
-      '<div class="parcel-meta">' +
-        (p.shipped_at ? '<span>📤 Expédié ' + fmtDate(p.shipped_at) + '</span>' : '') +
-        (p.in_transit_at ? '<span>✈️ Transit ' + fmtDate(p.in_transit_at) + '</span>' : '') +
-        (p.available_at ? '<span>📍 Dispo ' + fmtDate(p.available_at) + '</span>' : '') +
-        (p.collected_at ? '<span>✅ Collecté ' + fmtDate(p.collected_at) + '</span>' : '') +
-      '</div>' +
-      (eta.show ? '<div class="eta-bar"><div class="eta-bar-fill ' + eta.colorClass + '" style="width:' + eta.pct + '%"></div></div><div class="eta-text">' + eta.text + '</div>' : '') +
-    '</div>';
-  }).join('');
-}
+    Hub.filterTab = function(filter) {
+      // Update tabs
+      document.querySelectorAll('.hub-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.filter === filter);
+      });
 
-/* ── Actions ────────────────────────────────── */
+      let filtered;
+      switch(filter) {
+        case 'active':
+          filtered = Hub.parcels.filter(p => !['collected','cancelled'].includes(p.status));
+          break;
+        case 'anomalies':
+          filtered = Hub.parcels.filter(p => p.open_incidents > 0 || (p.alerts && p.alerts.length > 0));
+          break;
+        default:
+          filtered = Hub.parcels.filter(p => p.status === filter);
+      }
 
-async function doScan(reference, step) {
-  if (!reference) { K.ui.toast('Référence manquante', 'warn'); return; }
-  var stepLabels = { preparation: 'Préparation', shipped: 'Expédition', in_transit: 'Transit' };
-  var label = stepLabels[step] || step;
+      ParcelUI.renderParcelList('hub-parcels', filtered, {
+        onClick: 'ParcelUI.openDetail',
+        showActions: true,
+        emptyMessage: '📦 Aucun colis dans cette catégorie',
+      });
+    };
 
-  if (!confirm(label + ' pour ' + reference + ' ?')) return;
+    Hub.showScan = function(type) {
+      Hub.scanType = type;
+      const labels = {
+        preparation: '📋 Préparer un colis',
+        shipped: '🚀 Expédier un colis',
+        in_transit: '🚢 Marquer en transit',
+      };
+      document.getElementById('scan-section').style.display = '';
+      document.getElementById('scan-title').textContent = labels[type] || '📷 Scanner';
+      document.getElementById('scan-input').value = '';
+      document.getElementById('scan-result').innerHTML = '';
+      document.getElementById('scan-input').focus();
+    };
 
-  try {
-    var result = await K.scans.create({ scan_code: reference, step: step });
-    K.ui.toast('✅ ' + label + ' OK — ' + (result.order_reference || reference), 'ok');
-    await loadAll();
-  } catch (e) {
-    console.error('Scan error:', e);
-    K.ui.toast('❌ Erreur: ' + (e.message || 'Scan échoué'), 'err');
-  }
-}
+    Hub.doScan = async function() {
+      const ref = document.getElementById('scan-input').value.trim();
+      if (!ref) return;
 
-/* ── Helpers ────────────────────────────────── */
+      const btn = document.getElementById('scan-btn');
+      const result = document.getElementById('scan-result');
+      btn.disabled = true;
+      result.innerHTML = '⏳ Scan en cours...';
 
-function esc(s) {
-  if (s == null) return '';
-  var d = document.createElement('div');
-  d.textContent = String(s);
-  return d.innerHTML;
-}
+      try {
+        const res = await CT.api.post(`/api/v2/parcels/${ref}/scan`, {
+          event_type: Hub.scanType,
+          location: 'Hub Dubai',
+          actor_name: 'Agent Hub',
+          actor_role: 'hub_agent',
+        });
 
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
+        result.innerHTML = `
+          <div style="background:#d1fae5;padding:12px;border-radius:8px;margin-top:8px">
+            ✅ <strong>${res.parcel.reference}</strong> — ${res.parcel.old_status} → <strong>${res.parcel.new_status}</strong>
+            ${res.synced_orders > 0 ? `<br>📋 ${res.synced_orders} commande(s) synchronisée(s)` : ''}
+          </div>
+        `;
 
-function fmtAge(dateStr) {
-  if (!dateStr) return '—';
-  var days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  if (days === 0) return "Aujourd'hui";
-  if (days === 1) return '1 jour';
-  return days + ' jours';
-}
+        // Refresh list
+        Hub.init();
+      } catch (err) {
+        result.innerHTML = `<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">❌ ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    };
 
-function fmtKMF(amount) {
-  if (!amount) return '—';
-  return Number(amount).toLocaleString('fr-FR') + ' KMF';
-}
+    // Enter key to scan
+    document.getElementById('scan-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') Hub.doScan();
+    });
 
-function estimateArrival(parcel) {
-  if (parcel.status !== 'shipped' && parcel.status !== 'in_transit') return { show: false };
-  var shipped = parcel.shipped_at || parcel.created_at;
-  if (!shipped) return { show: false };
+    // Init on load
+    Hub.init();
+  </script>
 
-  var TRANSIT_DAYS = 10;
-  var shippedDate = new Date(shipped);
-  var arrivalDate = new Date(shippedDate.getTime() + TRANSIT_DAYS * 86400000);
-  var now = Date.now();
-  var elapsed = (now - shippedDate.getTime()) / 86400000;
-  var pct = Math.min(100, Math.max(0, Math.round((elapsed / TRANSIT_DAYS) * 100)));
-
-  var remaining = Math.max(0, Math.ceil((arrivalDate.getTime() - now) / 86400000));
-  var colorClass = remaining > 3 ? 'eta-green' : remaining > 0 ? 'eta-amber' : 'eta-red';
-  var text = remaining > 0
-    ? 'Arrivée estimée dans ~' + remaining + ' jour' + (remaining > 1 ? 's' : '')
-    : (pct >= 100 ? 'Devrait être arrivé' : 'Arrivée imminente');
-
-  return { show: true, pct: pct, colorClass: colorClass, text: text };
-}
-
-function updateMobileBadge(id, count) {
-  var el = document.getElementById(id);
-  if (el) el.textContent = count > 0 ? count : '';
-}
-
-/* ── Auto-refresh ────────────────────────────── */
-
-function startAutoRefresh() {
-  if (_refreshTimer) clearInterval(_refreshTimer);
-  _refreshTimer = setInterval(function() {
-    loadAll().catch(function() { setOffline(); });
-  }, 30000);
-}
-
-/* ── Connection Status ────────────────────────── */
-
-function setOnline() {
-  var el = document.getElementById('connStatus');
-  el.className = 'conn-pill ok';
-  el.innerHTML = '<span class="conn-dot pulse"></span> En ligne';
-}
-
-function setOffline() {
-  var el = document.getElementById('connStatus');
-  el.className = 'conn-pill err';
-  el.innerHTML = '<span class="conn-dot"></span> Hors ligne';
-}
-
-/* ── PWA ────────────────────────────────────── */
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function() {}); }
-if (window.matchMedia('(display-mode:standalone)').matches || window.navigator.standalone) { document.body.classList.add('pwa-standalone'); }
-window.addEventListener('online', function() { setOnline(); });
-window.addEventListener('offline', function() { setOffline(); });
-</script>
 </body>
 </html>
