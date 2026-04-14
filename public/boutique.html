@@ -3686,7 +3686,11 @@ function shareCartWhatsApp() {
   lines.push('💰 *Total : ' + fmt(cartTotal(), 'KMF') + '* (≈ ' + fmt(cartTotal(), 'EUR') + ')');
   lines.push('📦 Livraison incluse · 3-5 semaines');
   lines.push('');
-  lines.push('👉 Commande sur : ' + window.location.origin + window.location.pathname);
+  // Build cart URL with items
+  var cartItems = _cart.map(function(item) { return item.product.id + ':' + item.qty; });
+  var cartURL = window.location.origin + '/boutique.html?cart=' + encodeURIComponent(cartItems.join(','));
+  lines.push('👉 Voir le panier et commander :');
+  lines.push(cartURL);
 
   var msg = lines.join('\n');
   var url = 'https://wa.me/?text=' + encodeURIComponent(msg);
@@ -4841,5 +4845,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
+<script src="/js/auth-guard.js"></script>
 </body>
 </html>
