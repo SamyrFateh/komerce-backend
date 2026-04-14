@@ -963,8 +963,10 @@ body{
     aspect-ratio:unset;
     height:100%;
     min-height:420px;
-    object-fit:cover;
-    object-position:center 10%;
+    object-fit:contain;
+    object-position:center center;
+    padding:12px;
+    box-sizing:border-box;
   }
   .k-modal-info{
     padding:20px 16px;
