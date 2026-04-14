@@ -283,9 +283,13 @@
 
 <script>
 (function() {
-  // Extract token from URL: /s/TOKEN
+  // Extract token from URL: /s/TOKEN or ?ref=REFERENCE (fallback from CT)
   var path = window.location.pathname;
   var token = path.split('/s/')[1];
+  if (!token) {
+    var params = new URLSearchParams(window.location.search);
+    token = params.get('ref') || params.get('token');
+  }
   if (!token) {
     showError('Lien invalide');
     return;
