@@ -316,7 +316,7 @@ router.get('/orders/:id', ...hubAuth, async (req, res, next) => {
 
     for (const parcel of parcels) {
       const { rows: pItems } = await db.query(`
-        SELECT pi.id, pi.order_item_id, pi.quantity,
+        SELECT pi.id, pi.order_item_id, pi.quantity, oi.price_kmf,
                pr.name AS product_name, pr.image_url
         FROM parcel_items pi
         LEFT JOIN order_items oi ON oi.id = pi.order_item_id
