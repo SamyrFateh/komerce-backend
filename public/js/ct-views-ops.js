@@ -1,5 +1,5 @@
 // ============================================================
-// ct-views-ops.js — Control Tower v5.1 — Fix: CT.api + drill-down /detail
+// ct-views-ops.js — Control Tower v5.2 — Fix: UX lisibilité (noms clients, refs lisibles)
 // Vues opérationnelles : Incidents, Réconciliation, Alertes, Factures
 // + Modal drill-down Colis → Commandes → Articles
 // ============================================================
@@ -72,7 +72,7 @@ window.renderParcelDrillDown = async function(parcelId) {
       return `<div class="accordion-order">
         <div class="accordion-header" onclick="toggleAccordion('ord-${orderId}')">
           <span class="accordion-arrow" id="arrow-ord-${orderId}">▶</span>
-          <span>📋 Commande #${orderId}</span>
+          <span>📋 ${o.reference || ("Commande #" + orderId)}</span>
           <span class="${badgeClass}">${badge}</span>
           <span style="margin-left:auto; font-weight:600">${Number(o.total_amount || o.total || 0).toLocaleString('fr-FR')} KMF</span>
         </div>
@@ -89,7 +89,7 @@ window.renderParcelDrillDown = async function(parcelId) {
     <div class="modal-overlay" onclick="closeParcelModal(event)">
       <div class="modal-content modal-large" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <h2>📦 Colis #${p.id} ${statusBadge}</h2>
+          <h2>📦 Colis ${p.reference || p.id} ${statusBadge}</h2>
           <button onclick="closeParcelModal()" class="modal-close">✕</button>
         </div>
         <div class="modal-body">
@@ -216,12 +216,18 @@ window.renderIncidentsView = async function(container) {
       const date = inc.created_at ? new Date(inc.created_at).toLocaleDateString('fr-FR') : '—';
       const sevClass = getSeverityClass(inc.severity);
       const statusIcon = {open:'🔴', investigating:'🟡', resolved:'✅', dismissed:'⚪'}[inc.status] || '❓';
-      return `<tr class="${sevClass}" style="cursor:pointer" onclick="renderParcelDrillDown(${inc.parcel_id})">
-        <td>${inc.id}</td>
+      const clientName = inc.client_name || 'Client inconnu';
+      const clientPhone = inc.client_phone || '';
+      const pRef = inc.parcel_reference || '—';
+      const oRef = inc.order_reference || '—';
+      const parcelUuid = inc.parcel_id ? ("'" + inc.parcel_id + "'") : null;
+      return `<tr class="${sevClass}" style="cursor:pointer" onclick="renderParcelDrillDown(${parcelUuid})">
+        <td><strong>${clientName}</strong>${clientPhone ? '<br><small>📞 ' + clientPhone + '</small>' : ''}</td>
+        <td><small>${oRef}</small></td>
         <td>${getIncidentBadge(inc.incident_type)}</td>
         <td><span class="${sevClass}">${(inc.severity||'').toUpperCase()}</span></td>
         <td>${statusIcon} ${inc.status}</td>
-        <td>📦 #${inc.parcel_id || '—'}</td>
+        <td>📦 ${pRef}</td>
         <td>${inc.description || '—'}</td>
         <td>${date}</td>
       </tr>`;
@@ -236,7 +242,7 @@ window.renderIncidentsView = async function(container) {
         <div class="stat-card"><span class="stat-num">${incidents.length}</span><span class="stat-label">📊 Total</span></div>
       </div>
       <table class="data-table">
-        <thead><tr><th>#</th><th>Type</th><th>Sévérité</th><th>Statut</th><th>Colis</th><th>Description</th><th>Date</th></tr></thead>
+        <thead><tr><th>Client</th><th>Commande</th><th>Type</th><th>Sévérité</th><th>Statut</th><th>Colis</th><th>Description</th><th>Date</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p class="hint">💡 Cliquez sur un incident pour voir le détail du colis</p>`;
@@ -344,14 +350,18 @@ window.renderAlertsView = async function(container) {
         'weight_mismatch': '⚖️', 'margin_alert': '📊', 'missing_item': '📦'
       }[a.alert_type] || '⚠️';
       
-      return `<tr class="${isActive ? 'row-alert' : ''}" style="cursor:pointer" onclick="renderParcelDrillDown(${a.parcel_id})">
+      const alertCustomer = a.customer || '';
+      const alertOrderRef = a.order_reference || '';
+      const alertParcelRef = a.parcel_reference || '';
+      const alertIdStr = a.id ? ("'" + a.id + "'") : "null";
+      return `<tr class="${isActive ? 'row-alert' : ''}">
         <td>${isActive ? '🔴' : '✅'}</td>
-        <td>${typeIcon} ${(a.alert_type || '').replace(/_/g, ' ')}</td>
+        <td>${typeIcon} ${(a.type || a.alert_type || '').replace(/_/g, ' ')}</td>
         <td>${a.severity || '—'}</td>
-        <td>📦 #${a.parcel_id || '—'}</td>
+        <td>${alertCustomer ? '<strong>' + alertCustomer + '</strong><br>' : ''}${alertOrderRef ? '<small>📋 ' + alertOrderRef + '</small>' : ''}${alertParcelRef ? '<br><small>📦 ' + alertParcelRef + '</small>' : ''}</td>
         <td>${a.message || a.description || '—'}</td>
         <td>${date}</td>
-        <td>${isActive ? '<button class="btn-sm" onclick="event.stopPropagation();ackAlert('+a.id+')">✓ Acquitter</button>' : '✅ OK'}</td>
+        <td>${isActive ? '<button class="btn-sm" onclick="event.stopPropagation();ackAlert(' + alertIdStr + ')">✓ Acquitter</button>' : '✅ OK'}</td>
       </tr>`;
     }).join('');
 
@@ -363,7 +373,7 @@ window.renderAlertsView = async function(container) {
         <div class="stat-card"><span class="stat-num">${alerts.length}</span><span class="stat-label">📊 Total</span></div>
       </div>
       <table class="data-table">
-        <thead><tr><th>État</th><th>Type</th><th>Sévérité</th><th>Colis</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>
+        <thead><tr><th>État</th><th>Type</th><th>Sévérité</th><th>Client / Commande</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p class="hint">💡 Cliquez sur une alerte pour voir le détail du colis</p>`;
@@ -485,7 +495,7 @@ window.generateInvoice = async function(orderId) {
   }
 };
 
-console.log('[CT] ct-views-ops.js v5.1 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
+console.log('[CT] ct-views-ops.js v5.2 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
 
 
 // ---- REGISTER VIEWS IN CT.views ----

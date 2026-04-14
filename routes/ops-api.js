@@ -1,4 +1,4 @@
-// routes/ops-api.js — v2.1 — Fix: reconciliation alias + cash_relais enum — Endpoints opérationnels pour Control Tower
+// routes/ops-api.js — v2.2 — Fix: UX lisibilité (client_name, client_phone) — Fix: reconciliation alias + cash_relais enum — Endpoints opérationnels pour Control Tower
 // Requête directement la DB — pas de dépendance aux services v2
 const express = require('express');
 const router = express.Router();
@@ -15,11 +15,14 @@ router.get('/incidents', async (req, res) => {
         i.created_at, i.updated_at,
         p.reference AS parcel_reference, p.status AS parcel_status,
         o.reference AS order_reference,
+        u_client.full_name AS client_name,
+        u_client.phone AS client_phone,
         u_detected.full_name AS detected_by_name,
         u_resolved.full_name AS resolved_by_name
       FROM incidents i
       LEFT JOIN parcels p ON i.parcel_id = p.id
       LEFT JOIN orders o ON i.order_id = o.id
+      LEFT JOIN users u_client ON o.user_id = u_client.id
       LEFT JOIN users u_detected ON i.detected_by = u_detected.id
       LEFT JOIN users u_resolved ON i.resolved_by = u_resolved.id
       ORDER BY 
