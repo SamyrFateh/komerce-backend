@@ -716,7 +716,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
               parcelRef, scan.actor_id, scan.actor_name, scan.actor_role,
               scan.location, scan.notes,
               JSON.stringify({ source: 'seed', device: 'system' }),
-              'ok', scan.created_at,
+              'applied', scan.created_at,
             ]
           );
           await client.query('RELEASE SAVEPOINT sp_scan');
@@ -733,24 +733,24 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
           title: 'Écart de poids détecté',
           description: `Le colis ${parcelRef} présente un écart de poids significatif : déclaré 1.5kg, mesuré ${weightKg}kg`,
           details: { declared_kg: 1.5, measured_kg: weightKg, delta_pct: Math.round(Math.abs(weightKg - 1.5) / 1.5 * 100) },
-          client_impact: 'Possible erreur de contenu — vérification requise',
-          detected_source: 'scan',
+          client_impact: 'delayed',
+          detected_source: 'hub_agent',
         },
         missing_item: {
           severity: 'critical', status: 'investigating',
           title: 'Article manquant dans le colis',
           description: `Un article commandé est absent du colis ${parcelRef} lors du scan de réception`,
           details: { expected_items: totalQty, received_items: totalQty - 1, missing: orderItemIds[0]?.productName || 'inconnu' },
-          client_impact: 'Client ne recevra pas tous ses articles — réclamation probable',
-          detected_source: 'scan',
+          client_impact: 'partial_delivery',
+          detected_source: 'relay_agent',
         },
         damaged_item: {
           severity: 'high', status: 'resolved',
           title: 'Article endommagé à la réception',
           description: `Un article du colis ${parcelRef} est arrivé endommagé (emballage écrasé)`,
           details: { item: orderItemIds[0]?.productName || 'inconnu', damage_type: 'crushed_packaging', photos: 1 },
-          client_impact: 'Remplacement ou remboursement nécessaire',
-          detected_source: 'manual',
+          client_impact: 'wrong_item',
+          detected_source: 'relay_agent',
           resolved: true,
           resolution: { action: 'replacement_sent', resolved_note: 'Article remplacé et réexpédié' },
         },
@@ -759,16 +759,16 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
           title: 'Article non attendu dans le colis',
           description: `Le colis ${parcelRef} contient un article qui ne correspond pas à la commande`,
           details: { unexpected_product: 'Article inconnu', order_ref: s.ref },
-          client_impact: 'Échange nécessaire — confusion possible avec un autre colis',
-          detected_source: 'scan',
+          client_impact: 'wrong_item',
+          detected_source: 'hub_agent',
         },
         sequence_violation: {
           severity: 'low', status: 'open',
           title: 'Violation de séquence de scan',
           description: `Le colis ${parcelRef} a été scanné "disponible" avant d'être scanné "arrivé"`,
           details: { expected_sequence: 'arrived → available', actual_sequence: 'available (arrived skipped)' },
-          client_impact: 'Aucun impact direct — anomalie de traçabilité',
-          detected_source: 'auto',
+          client_impact: 'none',
+          detected_source: 'system',
         },
       };
 
@@ -776,7 +776,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
         const def = incidentDefs[incType];
         if (!def) continue;
 
-        const detectedBy = def.detected_source === 'scan'
+        const detectedBy = ['relay_agent', 'customer'].includes(def.detected_source)
           ? (relaisAgentOf[s.rid] || HUB).id
           : HUB.id;
 
