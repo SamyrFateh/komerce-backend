@@ -983,7 +983,7 @@
     const items = state.cart.map(function(item) {
       return item.product.id + ':' + item.qty;
     });
-    return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
+    return window.location.origin + '/boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
   function shareCartWhatsApp() {

@@ -1878,7 +1878,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="footer-social">
             <a href="https://instagram.com/komerce.km" aria-label="Instagram" target="_blank" rel="noopener">📸</a>
             <a href="https://facebook.com/komerce.km" aria-label="Facebook" target="_blank" rel="noopener">👤</a>
-            <a href="https://wa.me/33699272526" aria-label="WhatsApp" target="_blank" rel="noopener">💬</a>
+            <a href="https://wa.me/2693210000" aria-label="WhatsApp" target="_blank" rel="noopener">💬</a>
           </div>
         </div>
 
@@ -1896,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <h4>Contact</h4>
           <a href="/cdn-cgi/l/email-protection#680b07061c090b1c280307050d1a0b0d460305">📧 <span class="__cf_email__" data-cfemail="f695999882979582b69d999b93849593d89d9b">[email&#160;protected]</span></a>
           <a href="tel:+2693210000">📞 +269 321 00 00</a>
-          <a href="https://wa.me/33699272526">💬 WhatsApp</a>
+          <a href="https://wa.me/2693210000">💬 WhatsApp</a>
         </div>
 
         <!-- Confiance -->
@@ -3686,7 +3686,11 @@ function shareCartWhatsApp() {
   lines.push('💰 *Total : ' + fmt(cartTotal(), 'KMF') + '* (≈ ' + fmt(cartTotal(), 'EUR') + ')');
   lines.push('📦 Livraison incluse · 3-5 semaines');
   lines.push('');
-  lines.push('👉 Commande sur : ' + window.location.origin + window.location.pathname);
+  // Build cart URL with items
+  var cartItems = _cart.map(function(item) { return item.product.id + ':' + item.qty; });
+  var cartURL = window.location.origin + '/boutique.html?cart=' + encodeURIComponent(cartItems.join(','));
+  lines.push('👉 Voir le panier et commander :');
+  lines.push(cartURL);
 
   var msg = lines.join('\n');
   var url = 'https://wa.me/?text=' + encodeURIComponent(msg);
@@ -4841,5 +4845,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
+<script src="/js/auth-guard.js"></script>
 </body>
 </html>
