@@ -409,6 +409,40 @@ body{
 .k-card-price{font-size:13px;font-weight:800;color:var(--coral);line-height:1.2}
 .k-card-emoji{display:none}
 
+/* ── CARTE : éléments desktop enrichis ─────────────────── */
+/* catégorie, EUR, badge — masqués mobile, visibles ≥600px */
+.k-card-category{
+  font-size:9px;font-weight:700;letter-spacing:.08em;
+  color:#9a9a9a;text-transform:uppercase;
+  margin-bottom:2px;line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:none;
+}
+.k-card-prices{
+  display:flex;flex-direction:column;align-items:flex-start;gap:0;
+}
+.k-card-eur{
+  font-size:10px;color:#aaa;line-height:1.2;
+  display:none;
+}
+.k-card-avail{
+  font-size:9px;font-weight:600;
+  color:#2e7d32;background:#e8f5e9;
+  border-radius:20px;padding:2px 6px;
+  white-space:nowrap;line-height:1.4;
+  display:none;
+}
+/* bottom = row sur desktop pour prix + badge côte à côte */
+@media(min-width:600px){
+  .k-card-category{display:block}
+  .k-card-eur{display:block}
+  .k-card-avail{display:inline-flex;align-items:center;gap:2px}
+  .k-card-bottom{
+    flex-direction:row;align-items:center;
+    justify-content:space-between;gap:4px;
+  }
+}
+
 /* ── LOADING ───────────────────────────────────────────── */
 .k-loading{display:none;padding:40px;text-align:center}
 .k-loading.show{display:block}

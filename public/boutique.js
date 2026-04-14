@@ -260,30 +260,7 @@
     }
     state.page += 1;
     const nextItems = list.slice(start, start + state.pageSize);
-    const fragment = nextItems.map(p => {
-      const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
-      const qty = inCart ? inCart.qty : 0;
-      return `
-        <div class="k-card" data-id="${p.id}">
-          <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
-            ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
-            <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
-              ${isFav(p.id) ? '❤️' : '🤍'}
-            </button>
-            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
-            </button>
-          </div>
-          <div class="k-card-info">
-            <div class="k-card-name">${p.name}</div>
-            <div class="k-card-bottom">
-              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
-            </div>
-          </div>
-        </div>`;
-    }).join('');
+    const fragment = nextItems.map(p => buildCardHTML(p)).join('');
     dom.grid.insertAdjacentHTML('beforeend', fragment);
     // Re-bind events on new cards
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
@@ -362,6 +339,43 @@
     });
   }
 
+  /* ── CARD BUILDER (helper partagé renderGrid + appendNextPage) ── */
+  const KMF_TO_EUR = 491.97;
+  function buildCardHTML(p) {
+    const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+    const qty    = inCart ? inCart.qty : 0;
+    const catLabel = p.category ? p.category.replace(/_/g,' ').toUpperCase() : '';
+    const eurPrice = Math.round(p.price_kmf / KMF_TO_EUR);
+    const oldKmf   = p.promo_pct ? Math.round(p.price_kmf / (1 - p.promo_pct / 100)) : 0;
+    return `
+      <div class="k-card" data-id="${p.id}">
+        <div class="k-card-img-wrap">
+          <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+          ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
+          <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
+            ${isFav(p.id) ? '❤️' : '🤍'}
+          </button>
+          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+            ${qty > 0
+              ? `<span class="k-add-minus" data-pid="${p.id}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`
+              : '<span class="k-card-add-plus">+</span>'}
+          </button>
+        </div>
+        <div class="k-card-info">
+          ${catLabel ? `<div class="k-card-category">${catLabel}</div>` : ''}
+          <div class="k-card-name">${p.name}</div>
+          <div class="k-card-bottom">
+            <div class="k-card-prices">
+              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+              ${p.promo_pct ? `<span class="k-card-old-price">${fmtPrice(oldKmf)}</span>` : ''}
+              <span class="k-card-eur">≈ ${eurPrice} €</span>
+            </div>
+            <span class="k-card-avail">✓ Dispo</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
   /* ── RENDER GRID ────────────────────────────────────────── */
   function renderGrid() {
     state.page = 0;
@@ -370,30 +384,7 @@
       : state.filtered.filter(p => p.category === state.activeCat);
     const pageItems = list.slice(0, state.pageSize);
 
-    dom.grid.innerHTML = pageItems.map(p => {
-      const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
-      const qty = inCart ? inCart.qty : 0;
-      return `
-        <div class="k-card" data-id="${p.id}">
-          <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
-            ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
-            <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
-              ${isFav(p.id) ? '❤️' : '🤍'}
-            </button>
-            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
-            </button>
-          </div>
-          <div class="k-card-info">
-            <div class="k-card-name">${p.name}</div>
-            <div class="k-card-bottom">
-              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
-            </div>
-          </div>
-        </div>`;
-    }).join('');
+    dom.grid.innerHTML = pageItems.map(p => buildCardHTML(p)).join('');
 
     // Events
     dom.grid.querySelectorAll('.k-card').forEach(card => {
@@ -992,7 +983,7 @@
     const items = state.cart.map(function(item) {
       return item.product.id + ':' + item.qty;
     });
-    return window.location.origin + '/boutique.html?cart=' + encodeURIComponent(items.join(','));
+    return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
   function shareCartWhatsApp() {
