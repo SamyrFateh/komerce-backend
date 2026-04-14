@@ -1,38 +1,32 @@
 /**
- * KOMERCE — Structured Logger (Pino)
+ * KOMERCE — Structured Logger (Pino with console fallback)
  *
- * Replaces all console.log/warn/error throughout the codebase.
- * Structured JSON logging for production, pretty-print for dev.
+ * Uses Pino for structured JSON logging when available.
+ * Falls back gracefully to console if pino is not installed.
  *
  * Usage:
  *   const log = require('../utils/logger');
  *   log.info({ orderId, userId }, 'Order created');
- *   log.warn({ phone }, 'SMS skipped — invalid phone');
+ *   log.warn({ phone }, 'SMS skipped');
  *   log.error({ err, orderId }, 'Payment failed');
  *
  * Child loggers for modules:
  *   const log = require('../utils/logger').child({ module: 'sms' });
- *   log.info({ to, type }, 'SMS sent');
  */
 
 'use strict';
 
-const pino = require('pino');
-
 const isDev = process.env.NODE_ENV !== 'production';
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
+let logger;
 
-  // Structured fields added to every log line
-  base: {
-    service: 'komerce-backend',
-    env: process.env.NODE_ENV || 'development',
-  },
+try {
+  const pino = require('pino');
 
-  // Pretty-print in dev, JSON in production
-  transport: isDev
-    ? {
+  let transport;
+  if (isDev) {
+    try {
+      transport = {
         target: 'pino-pretty',
         options: {
           colorize: true,
@@ -40,50 +34,68 @@ const logger = pino({
           ignore: 'pid,hostname,service,env',
           singleLine: false,
         },
-      }
-    : undefined,
+      };
+    } catch (_) {
+      transport = undefined;
+    }
+  }
 
-  // Standardize error serialization
-  serializers: {
-    err: pino.stdSerializers.err,
-    req: (req) => ({
-      method: req.method,
-      url: req.url,
-      id: req.id,
-      ip: req.ip,
-    }),
-    res: (res) => ({
-      statusCode: res.statusCode,
-    }),
-  },
+  logger = pino({
+    level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
+    base: {
+      service: 'komerce-backend',
+      env: process.env.NODE_ENV || 'development',
+    },
+    transport,
+    serializers: {
+      err: pino.stdSerializers.err,
+      req: (req) => ({
+        method: req.method,
+        url: req.url,
+        id: req.id,
+        ip: req.ip,
+      }),
+      res: (res) => ({
+        statusCode: res.statusCode,
+      }),
+    },
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'password',
+        'token',
+        'secret',
+        'creditCard',
+      ],
+      censor: '[REDACTED]',
+    },
+    timestamp: pino.stdTimeFunctions.isoTime,
+  });
 
-  // Redact sensitive fields
-  redact: {
-    paths: [
-      'req.headers.authorization',
-      'req.headers.cookie',
-      'password',
-      'token',
-      'secret',
-      'creditCard',
-    ],
-    censor: '[REDACTED]',
-  },
+} catch (_) {
+  console.warn('⚠️  pino not installed — using console fallback. Run: npm install pino pino-pretty');
 
-  // Timestamp as ISO string (Railway/Datadog friendly)
-  timestamp: pino.stdTimeFunctions.isoTime,
-});
+  const noop = () => {};
 
-// ── Express middleware — request logging ─────────────────────────────────────
+  function makeConsoleLogger(context = {}) {
+    const prefix = context.module ? `[${context.module}]` : '[komerce]';
 
-/**
- * Express middleware that logs every request with timing.
- * Place after requestIdMiddleware, before routes.
- *
- * Usage in server.js:
- *   const { httpLogger } = require('./utils/logger');
- *   app.use(httpLogger);
- */
+    return {
+      trace: noop,
+      debug: (...args) => isDev && console.debug(prefix, ...args),
+      info:  (...args) => console.log(prefix, ...args),
+      warn:  (...args) => console.warn(prefix, ...args),
+      error: (...args) => console.error(prefix, ...args),
+      fatal: (...args) => console.error('💀', prefix, ...args),
+      child: (childCtx) => makeConsoleLogger({ ...context, ...childCtx }),
+      level: isDev ? 'debug' : 'info',
+    };
+  }
+
+  logger = makeConsoleLogger();
+}
+
 function httpLogger(req, res, next) {
   const start = Date.now();
   const child = logger.child({
@@ -91,28 +103,28 @@ function httpLogger(req, res, next) {
     module: 'http',
   });
 
-  // Log on response finish
   res.on('finish', () => {
     const duration = Date.now() - start;
     const level = res.statusCode >= 500 ? 'error'
                : res.statusCode >= 400 ? 'warn'
                : 'info';
 
-    child[level]({
-      method: req.method,
-      url: req.originalUrl,
-      status: res.statusCode,
-      duration_ms: duration,
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-      userId: req.user?.id || null,
-    }, `${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`);
+    child[level](
+      {
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        duration_ms: duration,
+        ip: req.ip,
+        userId: req.user?.id || null,
+      },
+      `${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`
+    );
   });
 
   next();
 }
 
-// Attach httpLogger as a property for easy import
 logger.httpLogger = httpLogger;
 
 module.exports = logger;
