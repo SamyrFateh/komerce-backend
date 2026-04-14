@@ -230,7 +230,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     // 5. Generate parcel reference
     const year = new Date().getFullYear();
     const { rows: [{ max_seq }] } = await client.query(
-      `SELECT COALESCE(MAX(CAST(SUBSTRING(reference FROM 'PCL-\\\\d{4}-(\\\\d+)') AS INT)), 0) AS max_seq
+      `SELECT COALESCE(MAX(CAST(SUBSTRING(reference FROM 'PCL-\\d{4}-(\\d+)') AS INT)), 0) AS max_seq
        FROM parcels WHERE reference LIKE $1`, [`PCL-${year}-%`]
     );
     const newSeq = (max_seq || 0) + 1;
