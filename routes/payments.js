@@ -179,6 +179,18 @@ router.post('/stripe/webhook',
 
       console.log(`✅ Paiement Stripe confirmé : ${order_reference}`);
 
+      // ── NOTIFICATIONS COMPLÈTES — WhatsApp + Email + Facture (fire-and-forget) ──
+      try {
+        const notifSvc = require('../services/notification-service');
+        notifSvc.notifyPaymentConfirmed(order_id, order_reference)
+          .then(result => {
+            if (result?.invoice) {
+              console.log(`🧾 [STRIPE] Invoice ${result.invoice} sent for ${order_reference}`);
+            }
+          })
+          .catch(e => console.error('[STRIPE-NOTIF] ❌', e.message));
+      } catch(e) { console.error('[STRIPE-NOTIF] require error:', e.message); }
+
       // ── Sourcing semi-automatisé — déclenché après paiement Stripe ──────────
       triggerPurchasing(order_id)
         .then(r => console.log('[PURCHASING] Stripe trigger OK:', order_reference, r))
@@ -284,6 +296,17 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
       );
     }
 
+    // ── NOTIFICATIONS COMPLÈTES — WhatsApp + Email + Facture (fire-and-forget) ──
+    try {
+      const notifSvc = require('../services/notification-service');
+      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+        .then(result => {
+          if (result?.invoice) {
+            console.log(`🧾 [CASH-OLD] Invoice ${result.invoice} sent for ${order.reference}`);
+          }
+        })
+        .catch(e => console.error('[CASH-NOTIF] ❌', e.message));
+    } catch(e) { console.error('[CASH-NOTIF] require error:', e.message); }
 
     // ── Sourcing semi-automatisé — déclenché après paiement cash ──────────────
     triggerPurchasing(order.id)
