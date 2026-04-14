@@ -1351,7 +1351,7 @@
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;gap:0;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#f0f0ee;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:7px 8px;font-weight:600;color:#555;white-space:nowrap;display:flex;align-items:center;gap:4px;font-size:0.8rem;';
+    prefix.style.cssText = 'background:#fff4f0;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:7px 8px;font-weight:600;color:var(--coral);white-space:nowrap;display:flex;align-items:center;gap:4px;font-size:0.8rem;';
     prefix.innerHTML = '🇰🇲 <span style="letter-spacing:-0.3px">+269</span>';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
