@@ -204,7 +204,7 @@ body{
   border-radius:4px;
   box-shadow:none;
   object-fit:contain;
-  background:#ffffff;
+  background:transparent;
   mix-blend-mode:multiply;
   /* drop-shadow donne l'effet flotant + détourage visuel */
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.20)) drop-shadow(0 1px 3px rgba(0,0,0,.10));
