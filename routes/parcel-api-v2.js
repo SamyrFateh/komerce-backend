@@ -196,13 +196,14 @@ function reconcileParcel(parcel) {
   if (parcel.clients) {
     for (const cl of parcel.clients) {
       for (const ord of cl.orders || []) {
-        if (ord.payment_mode === 'cash_relais' && parcel.status === 'available' && ord.payment_status === 'pending') {
-          // Cash pas encore confirmé mais colis dispo = attention
+        if (ord.payment_mode === 'cash_relais' && ord.payment_status !== 'paid') {
+          // RÈGLE MÉTIER: Pas de paiement confirmé = pas de commande = pas de colis
+          // Un colis ne devrait JAMAIS exister avec une commande cash_relais impayée
           checks.payment_sync = false;
           issues.push({
             check: 'payment_sync',
-            message: `Commande ${ord.reference} en cash relais non payée`,
-            severity: 'info'
+            message: `⚠️ ÉTAT IMPOSSIBLE: Colis existe avec commande ${ord.reference} cash relais impayée`,
+            severity: 'critical'
           });
         }
       }
@@ -720,16 +721,16 @@ router.get('/reconciliation', async (req, res, next) => {
       const checks = {
         content_match: true, // Need parcel_items data for full check
         status_sync: p.order_status === p.status || p.status === 'preparation',
-        payment_sync: !(p.payment_mode === 'cash_relais' && p.status === 'available' && p.payment_status === 'pending'),
+        payment_sync: !(p.payment_mode === 'cash_relais' && p.payment_status !== 'paid'), // RÈGLE: cash_relais impayé + colis = impossible
         scan_sequence_ok: checkScanSequence(scans.sequence),
-        delivery_ready: p.status !== 'available' || !['pending'].includes(p.payment_status),
+        delivery_ready: p.payment_status === 'paid' || p.payment_mode !== 'cash_relais', // RÈGLE: cash_relais non payé = pas de colis
       };
 
       const issues = [];
       if (!checks.status_sync) issues.push(`Statut désynchronisé: colis=${p.status}, commande=${p.order_status}`);
-      if (!checks.payment_sync) issues.push(`Cash relais non confirmé`);
+      if (!checks.payment_sync) issues.push(`⚠️ ÉTAT IMPOSSIBLE: Cash relais non payé — ce colis ne devrait pas exister`);
       if (!checks.scan_sequence_ok) issues.push(`Séquence de scans incohérente`);
-      if (!checks.delivery_ready) issues.push(`Paiement non confirmé — remise bloquée`);
+      if (!checks.delivery_ready) issues.push(`⚠️ ÉTAT IMPOSSIBLE: Paiement non confirmé — ce colis ne devrait pas exister`);
 
       const hasBlocking = issues.length > 0 && (!checks.scan_sequence_ok || !checks.delivery_ready);
       const hasWarning = issues.length > 0;
