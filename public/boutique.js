@@ -1448,7 +1448,8 @@
       await apiPost('/api/auth/guest-checkout', {
         full_name: clientName,
         phone: clientPhone,
-        email: clientEmail || undefined
+        email: clientEmail || undefined,
+        whatsapp_phone: senderPhone || undefined
       });
 
       // Step 2: create order
