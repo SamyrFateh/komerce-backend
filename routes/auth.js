@@ -167,7 +167,7 @@ function guestCheckoutRateLimit(req, res, next) {
 
 router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestCheckout), async (req, res, next) => {
   try {
-    const { full_name, phone, email, country = 'KM' } = req.body;
+    const { full_name, phone, email, country = 'KM', whatsapp_phone } = req.body;
     if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
     const { rows: existing } = await db.query('SELECT * FROM users WHERE phone = $1 LIMIT 1', [phone]);
     if (existing.length) {
@@ -204,7 +204,7 @@ function requireInternalKey(req, res, next) {
 
 router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), async (req, res, next) => {
   try {
-    const { full_name, phone, email, country = 'KM' } = req.body;
+    const { full_name, phone, email, country = 'KM', whatsapp_phone } = req.body;
     if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
     const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
     const { rows: existing } = await db.query(
