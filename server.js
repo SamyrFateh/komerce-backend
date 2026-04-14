@@ -1,10 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.16 (+ Invoice system)
+ * KOMERCE — Serveur API v10.17 (+ Invoice system)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
- * Changelog v10.16: routes/invoices.js ajouté (mini-facture client)
+ * Changelog v10.17: routes/invoices.js ajouté (mini-facture client)
  * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
  * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
  * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
@@ -182,6 +182,7 @@ const relayDashRouter  = require('./routes/relay-dashboard');
 const hubDashRouter    = require('./routes/hub-dashboard');
 const transitDashRouter = require('./routes/transit-dashboard');
 const invoicesRouter   = require('./routes/invoices');
+const opsApiRouter = require('./routes/ops-api');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -198,6 +199,7 @@ app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
 app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/transit',    transitDashRouter);
+app.use('/api/v2', opsApiRouter);
 app.use('/api/invoices',   invoicesRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
@@ -314,7 +316,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.16 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.17 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
