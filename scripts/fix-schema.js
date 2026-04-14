@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Auto-migrations schéma & hash admin
+ * KOMERCE — Auto-migrations schéma & hash admin/hub/relais
  *
  * Extrait de server.js (FIX-012) — Étape 3 clean-up
  * Exécuté au démarrage avant les seeds.
@@ -40,6 +40,29 @@ async function fixAdminHash() {
     );
     if (clientResult.rowCount > 0) {
       console.log(`✅ Migration: ${clientResult.rowCount} demo client hashes corrigés`);
+    }
+
+    // ── Force Hub & Relais passwords at startup ──────────────────────────
+    const hubPassword = process.env.HUB_PASSWORD;
+    if (hubPassword) {
+      console.log('🏢 HUB_PASSWORD défini — migration des hash agents hub');
+      const hubHash = await bcryptMigrate.hash(hubPassword, 10);
+      const hubResult = await db.query(
+        "UPDATE users SET password_hash = $1 WHERE role = 'agent_hub'",
+        [hubHash]
+      );
+      console.log(`✅ Migration: hub hash forcé — ${hubResult.rowCount} agent(s) hub`);
+    }
+
+    const relaisPassword = process.env.RELAIS_PASSWORD;
+    if (relaisPassword) {
+      console.log('🏪 RELAIS_PASSWORD défini — migration des hash agents relais');
+      const relaisHash = await bcryptMigrate.hash(relaisPassword, 10);
+      const relaisResult = await db.query(
+        "UPDATE users SET password_hash = $1 WHERE role = 'agent_relais'",
+        [relaisHash]
+      );
+      console.log(`✅ Migration: relais hash forcé — ${relaisResult.rowCount} agent(s) relais`);
     }
   } catch (err) {
     console.error('Migration admin hash error (non-fatal):', err.message);
