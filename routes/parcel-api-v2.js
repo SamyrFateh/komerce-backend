@@ -1104,6 +1104,11 @@ router.post('/:ref/scan', async (req, res, next) => {
 
     clearCache();
 
+    // ── NOTIFICATIONS (fire-and-forget) ──
+    const notif = require('../services/notification-service');
+    notif.notifyParcelScan(parcel.id, parcel.reference, newStatus)
+      .catch(e => console.error('[SCAN-NOTIF] ❌', e.message));
+
     res.json({
       success: true,
       scan: {

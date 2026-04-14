@@ -119,6 +119,12 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
     await client.query('COMMIT');
 
     console.log(`💰 Cash confirmed: ${order.reference} by ${req.user?.email || 'system'}`);
+
+    // ── NOTIFICATIONS (fire-and-forget) ──
+    const notif = require('../services/notification-service');
+    notif.notifyPaymentConfirmed(order.id, order.reference)
+      .catch(e => console.error('[CONFIRM-NOTIF] ❌', e.message));
+
     res.json({
       success: true,
       message: `Paiement confirmé pour ${order.reference}`,
@@ -288,6 +294,12 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     await client.query('COMMIT');
 
     console.log(`📦 Parcel created: ${parcelRef} for ${order.reference} by ${req.user?.email || 'system'}`);
+
+    // ── NOTIFICATIONS (fire-and-forget) ──
+    const notifSvc = require('../services/notification-service');
+    notifSvc.notifyParcelCreated(parcelRef, order.id, order.reference)
+      .catch(e => console.error('[CREATE-NOTIF] ❌', e.message));
+
     res.json({
       success: true,
       message: `Colis ${parcelRef} créé pour ${order.reference}`,
