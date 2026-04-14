@@ -1,18 +1,14 @@
 /* ===================================================================
-   Komerce Control Tower — ct-api.js v5.0
+   Komerce Control Tower — ct-api.js v6.0
    API layer: all HTTP calls go through here.
    Auth is handled by httpOnly cookie (kmrc_jwt), set by the server.
-   v5: + Parcel-First v2 endpoints + Invoices
+   v6: + Operational endpoints (confirm cash, create parcel, advance status)
    =================================================================== */
 window.CT = window.CT || {};
 
 CT.api = {
-  BASE: '', // Same origin
+  BASE: '',
 
-  /**
-   * Core fetch wrapper — always sends credentials (httpOnly cookie).
-   * Throws on non-OK responses with server error message.
-   */
   async fetch(path, options) {
     options = options || {};
     var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -27,14 +23,13 @@ CT.api = {
       try { err = await res.json(); } catch(_e) { err = { error: res.statusText }; }
       throw new Error(err.error || err.message || 'Erreur API (' + res.status + ')');
     }
-    // Handle 204 No Content
     var text = await res.text();
     if (!text) return {};
     return JSON.parse(text);
   },
 
   get: function(path) { return this.fetch(path); },
-  post: function(path, body) { return this.fetch(path, { method: 'POST', body: JSON.stringify(body) }); },
+  post: function(path, body) { return this.fetch(path, { method: 'POST', body: JSON.stringify(body || {}) }); },
   put: function(path, body) { return this.fetch(path, { method: 'PUT', body: JSON.stringify(body) }); },
   patch: function(path, body) { return this.fetch(path, { method: 'PATCH', body: JSON.stringify(body) }); },
   del: function(path) { return this.fetch(path, { method: 'DELETE' }); },
@@ -43,120 +38,54 @@ CT.api = {
   login: function(email, password) { return this.post('/api/auth/login', { email: email, password: password }); },
   logout: function() { return this.post('/api/auth/logout'); },
   me: function() { return this.get('/api/auth/me'); },
-  guestCheckout: function(phone, fullName) { return this.post('/api/auth/guest-checkout', { phone: phone, full_name: fullName }); },
-
-  // ---- Dashboard ----
-  dashboard: function(endpoint) { return this.get('/api/dashboard/' + endpoint); },
-
-  // ---- Orders ----
-  createOrder: function(data) { return this.post('/api/orders', data); },
-  updateOrderStatus: function(id, status) { return this.patch('/api/orders/' + id + '/status', { status: status }); },
-  deleteOrder: function(id) { return this.del('/api/admin/orders/' + id); },
-  getOrder: function(ref) { return this.get('/api/orders/' + ref); },
 
   // ---- Admin ----
-  adminOrders: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/admin/orders' + (qs ? '?' + qs : ''));
-  },
   seedTest: function() { return this.post('/api/admin/seed-test', { confirm: true }); },
   resetAll: function(mode) { return this.post('/api/admin/reset', { mode: mode || 'orders' }); },
   adminCounts: function() { return this.get('/api/admin/counts'); },
-  adminUsers: function() { return this.get('/api/admin/users'); },
 
-  // ---- Payments (Stripe + Cash) ----
-  stripeCreateIntent: function(orderRef) { return this.post('/api/payments/stripe/intent', { order_reference: orderRef }); },
-  cashConfirm: function(cashRefCode) { return this.post('/api/payments/cash/confirm', { cash_ref_code: cashRefCode }); },
-  paymentRates: function() { return this.get('/api/payments/rates'); },
-  stripeConfig: function() { return this.get('/api/payments/config'); },
+  // ═══════════════════════════════════════════════════════════════
+  // PARCEL-FIRST v2 ENDPOINTS
+  // ═══════════════════════════════════════════════════════════════
 
-  // ---- Products ----
-  products: async function() {
-    var data = await this.get('/api/products');
-    return data.products || data || [];
-  },
-
-  // ---- Parcels (colis — unité logistique R1) ----
-  parcels: function(params) {
+  // ---- Parcels (COLIS) ----
+  v2Parcels: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/parcels' + (qs ? '?' + qs : ''));
+    return this.get('/api/v2/parcels' + (qs ? '?' + qs : ''));
   },
-  getParcel: function(ref) { return this.get('/api/parcels/' + ref); },
-  updateParcelStatus: function(id, status, notes) {
-    return this.patch('/api/parcels/' + id + '/status', { status: status, notes: notes || null });
-  },
-  parcelEvents: function(ref) { return this.get('/api/parcels/' + ref + '/events'); },
+  v2ParcelDetail: function(ref) { return this.get('/api/v2/parcels/' + ref); },
+  v2ParcelKpis: function() { return this.get('/api/v2/parcels/kpis'); },
+  v2ParcelAlerts: function() { return this.get('/api/v2/parcels/alerts'); },
+  v2ParcelCritical: function() { return this.get('/api/v2/parcels/critical'); },
+  v2ParcelReconciliation: function() { return this.get('/api/v2/parcels/reconciliation'); },
+  v2ParcelTimeline: function(ref) { return this.get('/api/v2/parcels/' + ref + '/timeline'); },
 
-  // ---- Hub Dashboard ----
-  hubDashboard: function() { return this.get('/api/hub-dash/dashboard'); },
-  hubQueue: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/hub-dash/queue' + (qs ? '?' + qs : ''));
-  },
-  hubOrderDetail: function(id) { return this.get('/api/hub-dash/orders/' + id); },
-  hubStartPrep: function(id) { return this.post('/api/hub-dash/orders/' + id + '/start-prep', {}); },
-  hubShipParcel: function(parcelId, data) {
-    return this.post('/api/hub-dash/parcels/' + parcelId + '/ship', data || {});
-  },
-
-  // ---- Transit Dashboard (colis-first) ----
-  transitDashboard: function() { return this.get('/api/transit/dashboard'); },
-  transitParcels: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/transit/parcels' + (qs ? '?' + qs : ''));
-  },
-  transitDelayed: function() { return this.get('/api/transit/delayed'); },
-  transitAlerts: function() { return this.get('/api/transit/alerts'); },
-  resolveAlert: function(id) { return this.post('/api/transit/alerts/' + id + '/resolve', {}); },
-  setParcelDestination: function(id, data) { return this.patch('/api/transit/parcels/' + id + '/destination', data); },
-
-  // ============================================================
-  // v5: PARCEL-FIRST v2 ENDPOINTS
-  // ============================================================
-
-  // ---- Scan Engine (v2) ----
-  v2Scan: function(data) { return this.post('/api/v2/scan', data); },
-  v2ParcelEvents: function(parcelId) { return this.get('/api/v2/parcels/' + parcelId + '/events'); },
-  v2ParcelTimeline: function(parcelId) { return this.get('/api/v2/parcels/' + parcelId + '/timeline'); },
-
-  // ---- Reconciliation (v2) ----
-  v2RecoRun: function() { return this.post('/api/v2/reconciliation/run', {}); },
-  v2RecoStatus: function() { return this.get('/api/v2/reconciliation/status'); },
-  v2RecoHistory: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/v2/reconciliation/history' + (qs ? '?' + qs : ''));
+  // ---- Scan / Advance Status ----
+  v2Scan: function(ref, eventType, notes) {
+    return this.post('/api/v2/parcels/' + ref + '/scan', {
+      event_type: eventType,
+      notes: notes || null,
+      actor_name: 'Admin Control Tower',
+      actor_role: 'system'
+    });
   },
 
-  // ---- Incidents (v2) ----
+  // ---- Orders v2 (Opérationnel) ----
+  v2PendingCash: function() { return this.get('/api/v2/orders/pending-cash'); },
+  v2ReadyForParcel: function() { return this.get('/api/v2/orders/ready-for-parcel'); },
+  v2ConfirmCash: function(ref) { return this.post('/api/v2/orders/' + ref + '/confirm-cash'); },
+  v2CreateParcel: function(ref) { return this.post('/api/v2/orders/' + ref + '/create-parcel'); },
+
+  // ---- Incidents ----
   v2Incidents: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/v2/incidents' + (qs ? '?' + qs : ''));
   },
-  v2IncidentDetail: function(id) { return this.get('/api/v2/incidents/' + id); },
   v2ResolveIncident: function(id, resolution) {
     return this.post('/api/v2/incidents/' + id + '/resolve', { resolution: resolution });
   },
 
-  // ---- Alerts (v2) ----
-  v2Alerts: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/v2/alerts' + (qs ? '?' + qs : ''));
-  },
-  v2AckAlert: function(id, notes) {
-    return this.post('/api/v2/alerts/' + id + '/acknowledge', { notes: notes || '' });
-  },
-  v2AlertStats: function() { return this.get('/api/v2/alerts/stats'); },
-
-  // ---- Invoices (🧾) ----
-  invoicesList: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/invoices' + (qs ? '?' + qs : ''));
-  },
-  invoiceGet: function(orderId) { return this.get('/api/invoices/' + orderId); },
-  invoiceDeliver: function(orderId) { return this.post('/api/invoices/' + orderId + '/deliver', {}); },
-  invoiceHtml: function(orderId, mode) {
-    var url = '/api/invoices/' + orderId;
-    if (mode) url += '?mode=' + mode;
-    return url; // Returns URL for iframe/window.open, not a fetch call
-  }
+  // ---- Invoices ----
+  invoicesList: function() { return this.get('/api/invoices'); },
+  invoiceGet: function(id) { return this.get('/api/invoices/' + id); },
 };

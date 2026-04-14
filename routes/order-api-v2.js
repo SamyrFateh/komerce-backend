@@ -1,18 +1,14 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════
- * ORDER API v2 — Komerce
- * ═══════════════════════════════════════════════════════════════════════
+ * ═══════════════════════════════════════════════════════════════
+ * ORDER API v2 — Komerce (COLIS-FIRST)
+ * ═══════════════════════════════════════════════════════════════
  * 
- * RÈGLE MÉTIER FONDAMENTALE:
- *   Pas de paiement confirmé → Pas de commande confirmée → Pas de colis
- *
- *   cash_relais  → Client paie au relais → Agent relais confirme ici
- *   online       → Client paie en ligne  → Stripe/webhook confirme
- * 
- * Endpoints:
- *   POST /api/v2/orders/:ref/confirm-cash-payment → Confirmer paiement cash relais
- *   GET  /api/v2/orders/pending-cash              → Liste commandes cash en attente
- * ═══════════════════════════════════════════════════════════════════════
+ * Endpoints opérationnels pour la Control Tower:
+ *   GET  /api/v2/orders/pending-cash        → Commandes cash en attente
+ *   GET  /api/v2/orders/ready-for-parcel    → Commandes prêtes (sans colis)
+ *   POST /api/v2/orders/:ref/confirm-cash   → Confirmer paiement cash
+ *   POST /api/v2/orders/:ref/create-parcel  → Créer colis pour commande
+ * ═══════════════════════════════════════════════════════════════
  */
 
 const express = require('express');
@@ -20,199 +16,300 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
-// ═══════════════════════════════════════════════════════════════════════
-// 1. POST /:ref/confirm-cash-payment — Confirmer paiement cash relais
-// ═══════════════════════════════════════════════════════════════════════
-/**
- * Appelé par l'agent relais quand le client paie en cash au point relais.
- * 
- * Flow:
- *   1. Client vient au relais, paie cash
- *   2. Agent relais scanne/saisit la référence commande
- *   3. Cet endpoint confirme le paiement
- *   4. La commande passe en "confirmed" → eligible pour création colis au hub
- *
- * Body: { notes?: string }
- */
-router.post('/:ref/confirm-cash-payment',
-  authenticate,
-  requireRole(['agent_relais', 'admin']),
-  async (req, res, next) => {
-    const client = await db.getClient();
+const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
+
+// ═══════════════════════════════════════════════════════════════
+// 1. GET /pending-cash — Commandes cash_relais en attente de paiement
+// ═══════════════════════════════════════════════════════════════
+
+router.get('/pending-cash', ...guard, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT o.id, o.reference, o.status, o.total_kmf, o.total_eur,
+        o.payment_mode, o.payment_status, o.cash_ref_code,
+        o.created_at, o.destination_island,
+        u.full_name AS customer_name, u.phone AS customer_phone,
+        r.name AS relais_name, r.island AS relais_island,
+        (SELECT COUNT(*)::int FROM order_items WHERE order_id = o.id) AS nb_items,
+        (SELECT SUM(quantity)::int FROM order_items WHERE order_id = o.id) AS total_qty
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.payment_mode = 'cash_relais' 
+        AND o.payment_status = 'pending'
+        AND o.status NOT IN ('cancelled', 'collected', 'refunded')
+      ORDER BY o.created_at ASC
+    `);
+    res.json({ count: rows.length, orders: rows });
+  } catch (err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 2. GET /ready-for-parcel — Commandes confirmées sans colis
+// ═══════════════════════════════════════════════════════════════
+
+router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT o.id, o.reference, o.status, o.total_kmf, o.total_eur,
+        o.payment_mode, o.payment_status,
+        o.created_at, o.destination_island,
+        u.full_name AS customer_name, u.phone AS customer_phone,
+        r.name AS relais_name, r.island AS relais_island, r.id AS relais_id,
+        (SELECT COUNT(*)::int FROM order_items WHERE order_id = o.id) AS nb_items,
+        (SELECT SUM(quantity)::int FROM order_items WHERE order_id = o.id) AS total_qty
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.payment_status = 'paid'
+        AND o.status IN ('confirmed', 'ordered')
+        AND NOT EXISTS (SELECT 1 FROM parcels p WHERE p.order_id = o.id)
+      ORDER BY o.created_at ASC
+    `);
+    res.json({ count: rows.length, orders: rows });
+  } catch (err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 3. POST /:ref/confirm-cash — Confirmer paiement cash relais
+// ═══════════════════════════════════════════════════════════════
+
+router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const { ref } = req.params;
+
+    const { rows: [order] } = await client.query(
+      `SELECT id, reference, status, payment_mode, payment_status, total_kmf, user_id
+       FROM orders WHERE reference = $1 OR id::text = $1`, [ref]
+    );
+
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `Commande ${ref} introuvable` });
+    }
+    if (order.payment_mode !== 'cash_relais') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
+    }
+    if (order.payment_status === 'paid') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Paiement déjà confirmé' });
+    }
+
+    // Update order: paid + confirmed
+    await client.query(
+      `UPDATE orders SET payment_status = 'paid', status = 'confirmed', 
+         cash_paid_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      [order.id]
+    );
+
+    // Log status change
     try {
-      await client.query('BEGIN');
-
-      const { ref } = req.params;
-      const { notes } = req.body || {};
-
-      // Find order by reference or UUID
-      const { rows: [order] } = await client.query(
-        `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status,
-                o.total_kmf, o.user_id,
-                u.full_name AS customer_name, u.phone AS customer_phone,
-                r.name AS relais_name
-         FROM orders o
-         LEFT JOIN users u ON u.id = o.user_id
-         LEFT JOIN relais r ON r.id = COALESCE(o.relais_id, o.destination_relais)
-         WHERE o.reference = $1 OR o.id::text = $1`,
-        [ref]
-      );
-
-      if (!order) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({
-          error: `Commande ${ref} introuvable`,
-          hint: 'Vérifiez la référence (ex: KT-001)'
-        });
-      }
-
-      // Validations
-      if (order.payment_mode !== 'cash_relais') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          error: `Commande ${order.reference} n'est pas en mode cash relais`,
-          payment_mode: order.payment_mode,
-          hint: order.payment_mode === 'stripe_eur'
-            ? 'Cette commande est payée en ligne — pas besoin de confirmation manuelle'
-            : `Mode de paiement: ${order.payment_mode}`
-        });
-      }
-
-      if (order.payment_status === 'paid') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          error: `Commande ${order.reference} est déjà payée`,
-          payment_status: 'paid',
-          hint: 'Le paiement a déjà été confirmé'
-        });
-      }
-
-      if (order.status === 'cancelled') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          error: `Commande ${order.reference} est annulée — impossible de confirmer le paiement`,
-          status: 'cancelled'
-        });
-      }
-
-      // ── CONFIRMER LE PAIEMENT ─────────────────────────────────────
-      const noteText = notes
-        || `💰 Paiement cash confirmé par ${req.user.full_name || req.user.email} au relais`;
-
-      await client.query(
-        `UPDATE orders SET
-           payment_status = 'paid',
-           cash_paid_at = NOW(),
-           status = CASE
-             WHEN status IN ('pending', 'confirmed') THEN 'confirmed'
-             ELSE status
-           END,
-           updated_at = NOW()
-         WHERE id = $1`,
-        [order.id]
-      );
-
-      // Log dans l'historique
+      await client.query('SAVEPOINT sp_osh');
       await client.query(
         `INSERT INTO order_status_history (order_id, status, note, changed_by)
-         VALUES ($1, 'confirmed', $2, $3::uuid)`,
-        [order.id, noteText, req.user.id]
+         VALUES ($1, 'confirmed', 'Paiement cash confirmé par agent', $2::uuid)`,
+        [order.id, req.user?.id || null]
       );
+      await client.query('RELEASE SAVEPOINT sp_osh');
+    } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_osh'); }
 
-      await client.query('COMMIT');
+    await client.query('COMMIT');
 
-      const newStatus = ['pending', 'confirmed'].includes(order.status) ? 'confirmed' : order.status;
-
-      console.log(`💰 [CASH] ${order.reference} — ${order.total_kmf} KMF — confirmé par ${req.user.email} (${order.relais_name || '?'})`);
-
-      res.json({
-        success: true,
-        message: `✅ Paiement cash confirmé pour ${order.reference}`,
-        order: {
-          reference: order.reference,
-          customer_name: order.customer_name,
-          customer_phone: order.customer_phone,
-          relais_name: order.relais_name,
-          total_kmf: order.total_kmf,
-          old_status: order.status,
-          new_status: newStatus,
-          old_payment_status: order.payment_status,
-          new_payment_status: 'paid',
-          confirmed_by: req.user.full_name || req.user.email,
-          confirmed_at: new Date().toISOString(),
-        },
-        next_step: 'La commande est maintenant éligible à la création d\'un colis au hub.',
-      });
-
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      next(err);
-    } finally {
-      client.release();
-    }
+    console.log(`💰 Cash confirmed: ${order.reference} by ${req.user?.email || 'system'}`);
+    res.json({
+      success: true,
+      message: `Paiement confirmé pour ${order.reference}`,
+      order: {
+        reference: order.reference,
+        old_status: order.status,
+        new_status: 'confirmed',
+        payment_status: 'paid',
+        total_kmf: Number(order.total_kmf),
+      }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
   }
-);
+});
 
-// ═══════════════════════════════════════════════════════════════════════
-// 2. GET /pending-cash — Liste commandes cash relais en attente de paiement
-// ═══════════════════════════════════════════════════════════════════════
-/**
- * Liste toutes les commandes cash_relais non payées.
- * Utilisé par le dashboard relais pour voir qui doit payer.
- * 
- * Filtres query: ?island=Anjouan&relais_id=xxx
- */
-router.get('/pending-cash',
-  authenticate,
-  requireRole(['agent_relais', 'admin', 'agent_hub']),
-  async (req, res, next) => {
+// ═══════════════════════════════════════════════════════════════
+// 4. POST /:ref/create-parcel — Créer un colis pour une commande
+// ═══════════════════════════════════════════════════════════════
+
+router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
+  const { v4: uuidv4 } = require('uuid');
+  const { randomBytes } = require('crypto');
+  const client = await db.getClient();
+  
+  try {
+    await client.query('BEGIN');
+    const { ref } = req.params;
+
+    // 1. Find order
+    const { rows: [order] } = await client.query(
+      `SELECT o.id, o.reference, o.status, o.payment_status, o.payment_mode,
+         o.total_kmf, o.user_id, o.relais_id, o.destination_island,
+         u.full_name AS customer_name, u.phone AS customer_phone,
+         r.name AS relais_name, r.island AS relais_island
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       LEFT JOIN relais r ON r.id = o.relais_id
+       WHERE o.reference = $1 OR o.id::text = $1`, [ref]
+    );
+
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `Commande ${ref} introuvable` });
+    }
+
+    // 2. Validate: must be paid
+    if (order.payment_status !== 'paid') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: 'Paiement non confirmé — impossible de créer un colis',
+        rule: 'PAS DE PAIEMENT = PAS DE COLIS'
+      });
+    }
+
+    // 3. Check no existing parcel
+    const { rows: existing } = await client.query(
+      'SELECT id, reference FROM parcels WHERE order_id = $1', [order.id]
+    );
+    if (existing.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: `Un colis existe déjà pour cette commande: ${existing[0].reference}` 
+      });
+    }
+
+    // 4. Get order items
+    const { rows: items } = await client.query(
+      `SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
+         p.name AS product_name, p.weight_kg AS product_weight
+       FROM order_items oi
+       LEFT JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id = $1`, [order.id]
+    );
+
+    // 5. Generate parcel reference
+    const year = new Date().getFullYear();
+    const { rows: [{ max_seq }] } = await client.query(
+      `SELECT COALESCE(MAX(CAST(SUBSTRING(reference FROM 'PCL-\\d{4}-(\\d+)') AS INT)), 0) AS max_seq
+       FROM parcels WHERE reference LIKE $1`, [`PCL-${year}-%`]
+    );
+    const newSeq = (max_seq || 0) + 1;
+    const parcelRef = `PCL-${year}-${String(newSeq).padStart(4, '0')}`;
+
+    // 6. Compute weight
+    const totalQty = items.reduce((s, i) => s + i.quantity, 0);
+    const weightKg = items.reduce((s, i) => s + (Number(i.product_weight) || 0.5) * i.quantity, 0);
+
+    // 7. Generate pickup code
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const pickupCode = Array.from({ length: 6 }, () => {
+      let b; do { b = randomBytes(1)[0]; } while (b >= 216);
+      return CHARS[b % 36];
+    }).join('');
+
+    // 8. Insert parcel
+    const parcelId = uuidv4();
+    await client.query(
+      `INSERT INTO parcels (
+         id, order_id, reference, type, status, relais_id,
+         weight_kg, destination_island, recipient_name, recipient_phone,
+         items_count, total_qty, pickup_code, prepared_at
+       ) VALUES (
+         $1::uuid, $2::uuid, $3, 'standard', 'preparation', $4::uuid,
+         $5, $6, $7, $8,
+         $9, $10, $11, NOW()
+       )`,
+      [
+        parcelId, order.id, parcelRef, order.relais_id,
+        weightKg.toFixed(2), order.relais_island || order.destination_island || 'Comores',
+        order.customer_name || 'Client', order.customer_phone || '',
+        items.length, totalQty, pickupCode,
+      ]
+    );
+
+    // 9. Insert parcel_items
+    for (const item of items) {
+      try {
+        await client.query('SAVEPOINT sp_pi');
+        await client.query(
+          `INSERT INTO parcel_items (
+             id, parcel_id, order_item_id, product_id, quantity,
+             qty_allocated, qty_packed, qty_shipped, qty_received, qty_collected,
+             verified, product_name
+           ) VALUES (
+             $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5,
+             $6, $7, 0, 0, 0,
+             false, $8
+           )`,
+          [uuidv4(), parcelId, item.id, item.product_id, item.quantity,
+           item.quantity, item.quantity, item.product_name]
+        );
+        await client.query('RELEASE SAVEPOINT sp_pi');
+      } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_pi'); }
+    }
+
+    // 10. Insert initial scan event
     try {
-      const { island, relais_id } = req.query;
+      await client.query('SAVEPOINT sp_scan');
+      await client.query(
+        `INSERT INTO scan_events (
+           id, parcel_id, order_id, event_type,
+           scan_code, scanned_by, actor_name, actor_role,
+           location, notes, status, created_at
+         ) VALUES (
+           $1::uuid, $2::uuid, $3::uuid, 'preparation',
+           $4, $5::uuid, $6, $7,
+           'Hub', $8, 'applied', NOW()
+         )`,
+        [uuidv4(), parcelId, order.id, parcelRef,
+         req.user?.id || null, req.user?.full_name || 'Admin CT',
+         req.user?.role === 'agent_hub' ? 'hub_agent' : 'system',
+         `Colis ${parcelRef} créé depuis la Control Tower`]
+      );
+      await client.query('RELEASE SAVEPOINT sp_scan');
+    } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
 
-      const conditions = [
-        "o.payment_mode = 'cash_relais'",
-        "o.payment_status != 'paid'",
-        "o.status != 'cancelled'"
-      ];
-      const params = [];
-      let pi = 1;
+    // 11. Update order status
+    await client.query(
+      `UPDATE orders SET status = 'preparation', preparation_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      [order.id]
+    );
 
-      if (island) {
-        conditions.push(`o.destination_island = $${pi++}`);
-        params.push(island);
+    await client.query('COMMIT');
+
+    console.log(`📦 Parcel created: ${parcelRef} for ${order.reference} by ${req.user?.email || 'system'}`);
+    res.json({
+      success: true,
+      message: `Colis ${parcelRef} créé pour ${order.reference}`,
+      parcel: {
+        id: parcelId,
+        reference: parcelRef,
+        status: 'preparation',
+        pickup_code: pickupCode,
+        order_ref: order.reference,
+        customer_name: order.customer_name,
+        destination_island: order.relais_island || order.destination_island,
+        nb_items: items.length,
+        total_qty: totalQty,
+        weight_kg: Number(weightKg.toFixed(2)),
       }
-      if (relais_id) {
-        conditions.push(`COALESCE(o.relais_id, o.destination_relais) = $${pi++}::uuid`);
-        params.push(relais_id);
-      }
-
-      const { rows } = await db.query(`
-        SELECT
-          o.reference, o.status, o.total_kmf, o.payment_status,
-          o.destination_island, o.created_at,
-          u.full_name AS customer_name, u.phone AS customer_phone,
-          r.name AS relais_name, r.island AS relais_island,
-          (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id)::int AS nb_items
-        FROM orders o
-        LEFT JOIN users u ON u.id = o.user_id
-        LEFT JOIN relais r ON r.id = COALESCE(o.relais_id, o.destination_relais)
-        WHERE ${conditions.join(' AND ')}
-        ORDER BY o.created_at DESC
-      `, params);
-
-      res.json({
-        pending_cash_orders: rows,
-        total: rows.length,
-        total_kmf: rows.reduce((s, r) => s + (Number(r.total_kmf) || 0), 0),
-        message: rows.length === 0
-          ? 'Aucune commande cash en attente 🎉'
-          : `${rows.length} commande(s) en attente de paiement cash`,
-      });
-
-    } catch (err) {
-      next(err);
-    }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
   }
-);
+});
 
 module.exports = router;
