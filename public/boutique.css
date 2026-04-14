@@ -142,7 +142,7 @@ body{
 /* ── HERO ──────────────────────────────────────────────── */
 .k-hero{
   position:relative;overflow:hidden;
-  background:var(--ocean);
+  background:var(--sand);
 }
 .k-hero img{
   width:100%;height:80px;
