@@ -1121,7 +1121,7 @@
     s1.textContent = '📦 Bénéficiaire';
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
-    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. (+269) *', od, 'beneficiary_phone'));
+    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. *', od, 'beneficiary_phone'));
 
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
@@ -1351,8 +1351,8 @@
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;gap:0;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 10px;font-weight:700;color:#888;white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;';
-    prefix.textContent = '+269';
+    prefix.style.cssText = 'background:#f0f0ee;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:7px 8px;font-weight:600;color:#555;white-space:nowrap;display:flex;align-items:center;gap:4px;font-size:0.8rem;';
+    prefix.innerHTML = '🇰🇲 <span style="letter-spacing:-0.3px">+269</span>';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
     input.type = 'tel';
