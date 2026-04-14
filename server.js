@@ -133,7 +133,7 @@ app.use('/api/admin/', adminLimiter);
 const _fs = require('fs');
 app.get('/*.html', (req, res, next) => {
   // Skip boutique, portal, and public pages
-  if (req.path.includes('Boutique') || req.path === '/portal.html' || req.path === '/suivi.html' || req.path === '/mon-compte.html') return next();
+  if (req.path.includes('Boutique') || req.path === '/boutique.html' || req.path === '/portal.html' || req.path === '/suivi.html' || req.path === '/mon-compte.html') return next();
   const filePath = path.join(__dirname, 'public', req.path);
   _fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
@@ -267,7 +267,7 @@ app.get('*', (req, res) => {
     return res.status(404).json({ error: 'Endpoint introuvable' });
   }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.sendFile(path.join(__dirname, 'public', 'boutique.html'));
+  res.sendFile(path.join(__dirname, 'public', 'Komerce_Boutique.html'));
 });
 
 app.use(errorHandler);
