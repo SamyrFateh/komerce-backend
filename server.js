@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v11.0 (COLIS-FIRST)
+ * KOMERCE — Serveur API v12.0 (CT v7 — 3 sections)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -192,6 +192,7 @@ const parcelSecurity   = require('./services/parcel-security');
 
 // ── NEW: Parcel-First API v2 (COLIS-FIRST) ──────────────────────────────────
 const parcelApiV2Router = require('./routes/parcel-api-v2');
+const orderApiV2Router = require('./routes/order-api-v2');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -208,6 +209,7 @@ app.use('/api/transit',    transitDashRouter);
 
 // ── Parcel-First API MUST be mounted BEFORE generic /api/v2 ─────────────────
 app.use('/api/v2/parcels', parcelApiV2Router);
+app.use('/api/v2/orders', orderApiV2Router);
 app.use('/api/v2', opsApiRouter);
 
 app.use('/api/tracking', trackingRouter);
@@ -244,7 +246,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '11.0',
+      version:       '12.0',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -343,7 +345,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v11.0 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v12.0 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
@@ -411,6 +413,20 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 023: invoices table ready');
       } catch(e) { console.warn('Migration 023 (non-fatal):', e.message); }
+
+      
+      // ── Migration: ensure 'pending' in order_status enum ──
+      try {
+        await db.query(`
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid
+              WHERE t.typname = 'order_status' AND e.enumlabel = 'pending')
+            THEN ALTER TYPE order_status ADD VALUE 'pending' BEFORE 'confirmed';
+                 RAISE NOTICE 'Added pending to order_status enum';
+            END IF;
+          END$$
+        `);
+      } catch(e) { console.warn('Pending enum migration (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
