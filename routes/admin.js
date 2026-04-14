@@ -180,7 +180,18 @@ router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req,
 });
 
 // ─── POST /api/admin/reset ─────────────────────────────────────────
+// CRIT-04 FIX: Disabled in production to prevent accidental data destruction.
 router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) => {
+  // ══════════════════════════════════════════════════════════════════
+  // CRIT-04 FIX: Block in production — this endpoint is dev/staging only.
+  // ══════════════════════════════════════════════════════════════════
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      error: 'Endpoint désactivé en production',
+      hint: 'POST /admin/reset est uniquement disponible en dev/staging',
+    });
+  }
+
   const mode = req.body.mode || 'orders';
   const validModes = ['orders', 'users', 'factory'];
   if (!validModes.includes(mode)) return res.status(400).json({ error: `Mode invalide. Utilisez: ${validModes.join(', ')}` });
@@ -272,7 +283,18 @@ router.get('/counts', ...guard, async (req, res, next) => {
 });
 
 // ─── POST /api/admin/seed-test ─────────────────────────────────────
+// CRIT-04 FIX: Also disabled in production.
 router.post('/seed-test', ...guard, async (req, res, next) => {
+  // ══════════════════════════════════════════════════════════════════
+  // CRIT-04 FIX: Block in production — seed-test is dev/staging only.
+  // ══════════════════════════════════════════════════════════════════
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      error: 'Endpoint désactivé en production',
+      hint: 'POST /admin/seed-test est uniquement disponible en dev/staging',
+    });
+  }
+
   const { v4: uuidv4 } = require('uuid');
   const { randomBytes } = require('crypto');
   const client = await db.getClient();
