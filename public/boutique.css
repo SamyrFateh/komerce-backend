@@ -153,7 +153,7 @@ body{
 .k-hero-tag{display:none}
 
 /* ── SECTIONS ──────────────────────────────────────────── */
-.k-section{padding:4px 8px;margin-bottom:8px;}
+.k-section{padding:4px 12px;margin-bottom:8px;}
 .k-section-head{
   display:flex;align-items:center;justify-content:space-between;width:100%;
 }
@@ -173,7 +173,16 @@ body{
   scrollbar-width:none;
   background:transparent;
   isolation:isolate;
+  position:relative;
 }
+.k-promo-rail::before,
+.k-promo-rail::after{
+  content:'';
+  position:absolute;top:0;bottom:4px;
+  width:18px;z-index:3;pointer-events:none;
+}
+.k-promo-rail::before{left:0;background:linear-gradient(to right,#f7f7f7 40%,transparent)}
+.k-promo-rail::after{right:0;background:linear-gradient(to left,#f7f7f7 40%,transparent)}
 .k-promo-rail-inner{
   display:flex;gap:6px;
   animation:promo-scroll 25s linear infinite;
@@ -239,7 +248,7 @@ body{
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
 .k-cats{
   display:flex;flex-wrap:nowrap;gap:7px;
-  padding:10px 8px 8px;
+  padding:10px 12px 8px;
   margin-top:-10px;
   position:relative;z-index:2;
 }
@@ -295,7 +304,7 @@ body{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:8px;
-  padding:4px 8px 12px;
+  padding:4px 12px 12px;
 }
 
 .k-card{
@@ -1201,7 +1210,7 @@ body{
 @media(max-width:380px){
   .k-logo-text{display:none}
   .k-promo-card{flex: 0 0 110px}
-  .k-grid{gap:6px;padding:4px 8px 12px}
+  .k-grid{gap:6px;padding:4px 10px 12px}
 }
 
 /* (doublon bouton add supprimé) */
