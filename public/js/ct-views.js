@@ -478,7 +478,7 @@ CT.html.showOrderDetail = async function(orderId, orderRef) {
     html += '<div><span style="color:var(--ct-text-muted)">Statut</span><br>' + CT.html.badge(order.status) + '</div>';
     html += '<div><span style="color:var(--ct-text-muted)">Total</span><br><strong>' + CT.html.formatKMF(order.total_kmf) + '</strong></div>';
     html += '<div><span style="color:var(--ct-text-muted)">Paiement</span><br>' + (order.payment_mode || '—') + (order.payment_status === 'paid' ? ' <span style="color:#10b981">✓</span>' : '') + '</div>';
-    html += '<div><span style="color:var(--ct-text-muted)">Île</span><br>' + (order.destination_island || '—') + '</div>';
+    html += '<div><span style="color:var(--ct-text-muted)">Île</span><br>' + (order.destination_island || order.relais_island || '—') + '</div>';
     html += '</div></div>';
 
     // Colis + Articles imbriqués — vue encapsulation
@@ -489,7 +489,7 @@ CT.html.showOrderDetail = async function(orderId, orderRef) {
     var assignedItemIds = {};
     parcels.forEach(function(p) {
       if (p.items && p.items.length) {
-        p.items.forEach(function(it) { assignedItemIds[it.id] = true; });
+        p.items.forEach(function(it) { assignedItemIds[it.order_item_id || it.id] = true; });
       }
     });
     var floatingItems = allItems.filter(function(it) { return !assignedItemIds[it.id]; });
