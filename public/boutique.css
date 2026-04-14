@@ -449,7 +449,7 @@ body{
 .k-spinner{
   width:32px;height:32px;margin:0 auto;
   border:3px solid var(--border);
-  border-top-color:var(--ocean);
+  border-top-color:var(--coral);
   border-radius:50%;
   animation:k-spin .7s linear infinite;
 }
@@ -753,8 +753,8 @@ body{
   color:var(--text-muted);cursor:pointer;transition:all .2s;
 }
 .k-cart-continue-shop:hover{
-  background:var(--sand);border-color:var(--ocean);
-  color:var(--ocean);border-style:solid;
+  background:var(--sand);border-color:var(--border);
+  color:var(--text);border-style:solid;
 }
 
 /* Cart item */
@@ -812,12 +812,12 @@ body{
 }
 .k-qty-ctrl{
   width:30px;height:30px;border-radius:50%;
-  background:transparent;color:var(--ocean);
+  background:transparent;color:var(--coral);
   font-weight:700;font-size:1rem;
   display:flex;align-items:center;justify-content:center;
   transition:all .2s;cursor:pointer;border:none;
 }
-.k-qty-ctrl:hover{background:var(--ocean);color:#fff}
+.k-qty-ctrl:hover{background:var(--coral);color:#fff}
 .k-qty-ctrl-val{
   min-width:20px;text-align:center;font-weight:700;font-size:.88rem;
 }
@@ -858,10 +858,10 @@ body{
   cursor:pointer;border:none;
 }
 .kcf-primary{
-  flex:2;background:var(--ocean);color:#fff;
-  box-shadow:0 2px 10px rgba(58,125,68,.25);
+  flex:2;background:var(--coral);color:#fff;
+  box-shadow:0 2px 10px rgba(255,111,97,.25);
 }
-.kcf-primary:hover{background:var(--ocean-dark);transform:translateY(-1px)}
+.kcf-primary:hover{background:#e05a48;transform:translateY(-1px)}
 .kcf-whatsapp{background:var(--whatsapp);color:#fff;flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;font-size:0.78rem;font-weight:700;padding:8px 12px;white-space:nowrap}
 .kcf-whatsapp:hover{background:#20bd5a}
 .kcf-danger{
@@ -874,7 +874,7 @@ body{
   border:1px solid var(--border);flex:1;
 }
 .kcf-secondary:hover{
-  background:var(--white);border-color:var(--ocean);color:var(--ocean);
+  background:var(--white);border-color:var(--border);color:var(--text);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -918,7 +918,7 @@ body{
   border-radius:var(--radius);font-size:.9rem;
   transition:border-color .2s;outline:none;background:var(--white);
 }
-.k-of-group input:focus{border-color:var(--ocean)}
+.k-of-group input:focus{border-color:var(--coral)}
 
 
 /* Responsive image ratios (aspect-ratio only — colonnes gérées dans bloc RESPONSIVE) */
@@ -1145,7 +1145,7 @@ body{
   border-radius:8px;font-size:15px;font-family:inherit;
   box-sizing:border-box;outline:none;transition:border-color .2s;
 }
-.k-track-input:focus{border-color:var(--ocean)}
+.k-track-input:focus{border-color:var(--coral)}
 .k-track-btn{
   width:100%;margin-top:12px;padding:13px;
   background:var(--text);color:white;border:none;
@@ -1238,7 +1238,7 @@ body{
 /* Bannière "code envoyé" */
 .k-otp-sent-banner {
   background: #f0fdf4;
-  border-left: 3px solid var(--green);
+  border-left: 3px solid #aaa;
   border-radius: 0 8px 8px 0;
   padding: 10px 14px;
   font-size: 0.82rem;
@@ -1375,7 +1375,7 @@ body{
 }
 .ck-sum-qty{font-size:0.8rem;color:var(--text-muted)}
 .ck-sum-sep{color:var(--text-muted);font-size:0.8rem}
-.ck-sum-total{font-weight:800;font-size:1rem;color:var(--ocean);margin-left:auto}
+.ck-sum-total{font-weight:800;font-size:1rem;color:var(--coral);margin-left:auto}
 
 /* Section label */
 .ck-label{
@@ -1419,7 +1419,7 @@ body{
 }
 .ck-pay-mvola input{width:15px;height:15px;flex-shrink:0}
 .ck-soon{
-  font-size:0.62rem;background:var(--green,#43a047);color:white;
+  font-size:0.62rem;background:var(--coral);color:white;
   padding:1px 5px;border-radius:5px;font-weight:700;vertical-align:middle;
 }
 
@@ -1431,7 +1431,7 @@ body{
 }
 .ck-track-toggle input[type=checkbox]{
   width:16px;height:16px;flex-shrink:0;
-  accent-color:var(--ocean);
+  accent-color:var(--coral);
 }
 .ck-track-extra{
   margin-top:6px;padding:10px;
@@ -1481,7 +1481,7 @@ body{
 }
 .ck-pay-chip input[type=radio]{display:none}
 .ck-pay-chip--active{
-  border-color:var(--ocean) !important;
+  border-color:var(--coral) !important;
   background:rgba(67,160,71,0.07) !important;
 }
 .ck-pay-chip--off{
