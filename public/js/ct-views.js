@@ -1,5 +1,5 @@
 /* ===================================================================
-   Komerce Control Tower — ct-views.js v3.1
+   Komerce Control Tower — ct-views.js v4.0 — Colis-Centric
    5 Dashboards métier : Global / Hub / Transit / Relais / Finance
    + Vue Commandes : toutes les entrées, statut optimiste inline
    Layout : 🔝 ACTION (haut) + 🔻 INFO/ALERTES (bas)
@@ -896,7 +896,11 @@ CT.views.global = {
 };
 
 /* ===============================================================
-   🏭 VIEW: HUB (DUBAI / LOGISTIQUE)
+   🏭 VIEW: HUB (DUBAI / LOGISTIQUE) — COLIS-CENTRIC
+   Le hub manipule des COLIS. 3 zones :
+   1. Commandes à optimiser (pas encore de colis)
+   2. Colis à emballer (draft/preparation)
+   3. Colis à expédier (shipped)
    =============================================================== */
 CT.views.hub = {
   label: 'Hub Dubaï',
@@ -905,89 +909,107 @@ CT.views.hub = {
     el.innerHTML = CT.html.loading();
     CT.html.destroyCharts();
     try {
-      var [ops, pipeline] = await Promise.all([
-        CT.api.dashboard('ops'),
-        CT.api.dashboard('pipeline')
+      var [hubData, ops] = await Promise.all([
+        CT.api.dashboard('hub-dubai'),
+        CT.api.dashboard('ops')
       ]);
-      var log = ops.logistique || {};
-      var act = ops.activite || {};
+      var kpi = hubData.kpi || {};
       var alertes = ops.alertes || {};
       var delais = ops.delais || {};
-      var pipe = pipeline.pipeline || {};
+      var aOptimiser = hubData.a_optimiser || [];
+      var aEmballer = hubData.a_emballer || [];
+      var aExpedier = hubData.a_expedier || [];
       var html = '';
 
       // ─── 🔝 ACTION HUB ───
       var actionContent = '<div class="ct-action-grid">';
-      var toPrepare = (pipe.confirmed ? pipe.confirmed.count : 0) + (pipe.ordered ? pipe.ordered.count : 0);
-      actionContent += CT.html.actionCard('Commandes à préparer', toPrepare, '🛒', 'blue');
-      actionContent += CT.html.actionCard('En préparation', pipe.preparation ? pipe.preparation.count : 0, '📦', 'purple');
-      actionContent += CT.html.actionCard('À expédier', log.dubai_expedition ? log.dubai_expedition.count : 0, '🚚', 'amber');
-      actionContent += CT.html.actionCard('À réceptionner', log.dubai_reception ? log.dubai_reception.count : 0, '📥', 'cyan');
+      actionContent += CT.html.actionCard('À optimiser', kpi.a_optimiser || 0, '🛒', 'blue');
+      actionContent += CT.html.actionCard('Colis à emballer', kpi.a_emballer || 0, '📦', 'purple', null, 'preparation');
+      actionContent += CT.html.actionCard('Colis à expédier', kpi.a_expedier || 0, '🚚', 'amber', null, 'shipped');
+      actionContent += CT.html.actionCard('Poids total', (kpi.total_poids_kg || 0) + ' kg', '⚖️', 'cyan');
       actionContent += '</div>';
 
-      // Orders table for hub operator
-      var hubOrders = [];
-      ['confirmed','ordered','preparation'].forEach(function(s) {
-        if (pipe[s] && pipe[s].orders) {
-          pipe[s].orders.forEach(function(o) { o._status = s; hubOrders.push(o); });
-        }
-      });
-      if (hubOrders.length > 0) {
-        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📋 File de travail (' + hubOrders.length + ')</div>';
-        var headers = ['Réf.', 'Statut', 'Client', 'Montant', 'Action', '📱'];
-        var rows = hubOrders.slice(0, 30).map(function(o) {
+      // ── Commandes à optimiser (pas encore de colis)
+      if (aOptimiser.length > 0) {
+        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">🛒 Commandes à optimiser (' + aOptimiser.length + ') <span style="font-size:.72rem;color:var(--ct-text-muted);font-weight:400">— pas encore de colis créé</span></div>';
+        var h0 = ['Réf. commande', 'Statut', 'Client', 'Articles', 'Montant', 'Âge'];
+        var r0 = aOptimiser.map(function(o) {
           return [
             '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            CT.html.statusChip(o.id, o.reference, o._status),
-            o.client_name || o.recipient_name || '—',
+            CT.html.statusChip(o.id, o.reference, o.status),
+            o.client_nom || '—',
+            o.nb_articles || 0,
             CT.html.formatKMF(o.total_kmf),
-            CT.html.advanceBtn(o.id, o.reference, o._status),
-            CT.html.whatsappBtn(o.client_phone, o.reference, o._status, true)
+            '<span style="color:' + (o.jours > 3 ? 'var(--ct-red)' : 'var(--ct-text)') + ';font-weight:600">' + (o.jours || 0) + 'j</span>'
           ];
         });
-        actionContent += CT.html.table(headers, rows);
+        actionContent += CT.html.table(h0, r0);
         actionContent += '</div>';
       }
+
+      // ── Colis à emballer
+      if (aEmballer.length > 0) {
+        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📦 Colis à emballer (' + aEmballer.length + ')</div>';
+        var h1 = ['Colis', 'Commande', 'Statut', 'Type', 'Poids', 'Client', 'Action'];
+        var r1 = aEmballer.map(function(p) {
+          var typeBadge = p.type === 'partial' ? '<span style="color:#f59e0b;font-size:.7rem;font-weight:700">PARTIEL</span>' :
+                         p.type === 'backorder' ? '<span style="color:#ef4444;font-size:.7rem;font-weight:700">BACKORDER</span>' :
+                         '<span style="color:var(--ct-text-muted);font-size:.7rem">standard</span>';
+          return [
+            '<span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span>',
+            '<span class="ct-font-mono" style="font-size:.75rem;color:var(--ct-text-muted)">' + (p.order_reference || '—') + '</span>',
+            CT.html.parcelStatusChip(p.id, p.reference, p.status),
+            typeBadge,
+            p.weight_kg ? p.weight_kg + ' kg' : '—',
+            p.client_nom || '—',
+            CT.html.advanceParcelBtn(p.id, p.reference, p.status)
+          ];
+        });
+        actionContent += CT.html.table(h1, r1);
+        actionContent += '</div>';
+      }
+
+      // ── Colis à expédier
+      if (aExpedier.length > 0) {
+        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">🚚 Colis à expédier (' + aExpedier.length + ')</div>';
+        var h2 = ['Colis', 'Commande', 'Statut', 'Poids', 'Scellé', 'Action'];
+        var r2 = aExpedier.map(function(p) {
+          return [
+            '<span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span>',
+            '<span class="ct-font-mono" style="font-size:.75rem;color:var(--ct-text-muted)">' + (p.order_reference || '—') + '</span>',
+            CT.html.parcelStatusChip(p.id, p.reference, p.status),
+            p.weight_kg ? p.weight_kg + ' kg' : '—',
+            p.seal_code ? '<span style="color:#10b981;font-size:.75rem">🔒 ' + p.seal_code + '</span>' : '<span style="color:var(--ct-text-muted);font-size:.75rem">—</span>',
+            CT.html.advanceParcelBtn(p.id, p.reference, p.status)
+          ];
+        });
+        actionContent += CT.html.table(h2, r2);
+        actionContent += '</div>';
+      }
+
+      if (aOptimiser.length === 0 && aEmballer.length === 0 && aExpedier.length === 0) {
+        actionContent += CT.html.empty('📦', 'Aucun colis en attente — le hub est à jour ! 🎉');
+      }
+
       html += CT.html.zoneAction('File de travail opérateur', actionContent);
 
       // ─── 🔻 INFO HUB ───
       var infoContent = '';
 
-      var hasAlerts = (act.commandes_bloquees || 0) > 0 || (alertes.anomalies || 0) > 0 || (alertes.low_stock || 0) > 0;
+      var hasAlerts = (alertes.anomalies || 0) > 0 || (alertes.low_stock || 0) > 0;
       if (hasAlerts) {
         infoContent += '<div class="ct-card">';
-        infoContent += '<div class="ct-card-title">⚠️ Alertes prioritaires</div>';
-        if (act.commandes_bloquees > 0) infoContent += CT.html.alertItem('⛔', 'Commandes bloquées', act.commandes_bloquees, 'danger');
+        infoContent += '<div class="ct-card-title">⚠️ Alertes</div>';
         if (alertes.anomalies > 0) infoContent += CT.html.alertItem('⚠️', 'Anomalies détectées', alertes.anomalies, 'danger');
         if (alertes.low_stock > 0) infoContent += CT.html.alertItem('📦', 'Stock bas', alertes.low_stock, 'warning');
         infoContent += '</div>';
       }
 
-      infoContent += '<div class="ct-grid-2">';
       infoContent += '<div class="ct-card"><div class="ct-card-title">📊 Suivi opérationnel</div>';
       infoContent += '<div class="ct-stat-grid">';
       infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (delais.avg_preparation_jours || 0) + 'j</div><div class="ct-stat-label">Temps moyen préparation</div></div>';
-      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (act.livrees_aujourd_hui || 0) + '</div><div class="ct-stat-label">Expédiées aujourd\'hui</div></div>';
+      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + (kpi.total_poids_kg || 0) + ' kg</div><div class="ct-stat-label">Poids total en hub</div></div>';
       infoContent += '</div></div>';
-
-      infoContent += '<div class="ct-card"><div class="ct-card-title">🚚 Pipeline logistique</div>';
-      var logItems = [
-        { key: 'dubai_reception', color: 'cyan' },
-        { key: 'dubai_expedition', color: 'purple' },
-        { key: 'transitaire', color: 'blue' },
-        { key: 'bateau', color: 'amber' },
-        { key: 'anjouan', color: 'green' }
-      ];
-      infoContent += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
-      logItems.forEach(function(li) {
-        var step = log[li.key] || {};
-        infoContent += '<div class="ct-kpi-card ' + li.color + '" style="flex:1;min-width:80px;padding:10px">';
-        infoContent += '<div class="ct-kpi-value" style="font-size:1.3rem">' + (step.count || 0) + '</div>';
-        infoContent += '<div class="ct-kpi-label" style="font-size:0.7rem">' + (step.label || li.key) + '</div>';
-        infoContent += '</div>';
-      });
-      infoContent += '</div></div>';
-      infoContent += '</div>';
 
       html += CT.html.zoneInfo('Alertes et suivi', infoContent);
       el.innerHTML = html;
@@ -1131,7 +1153,9 @@ CT.views.transit = {
 };
 
 /* ===============================================================
-   🏝️ VIEW: RELAIS (PAR POINT RELAIS)
+   🏝️ VIEW: RELAIS — COLIS-CENTRIC
+   Le relais reçoit et remet des COLIS.
+   2 zones : colis en transit → colis à remettre
    =============================================================== */
 CT.views.relais = {
   label: 'Relais',
@@ -1140,75 +1164,92 @@ CT.views.relais = {
     el.innerHTML = CT.html.loading();
     CT.html.destroyCharts();
     try {
-      var [relaisData, ops, pipeline] = await Promise.all([
+      var [relaisData, ops] = await Promise.all([
         CT.api.dashboard('relais'),
-        CT.api.dashboard('ops'),
-        CT.api.dashboard('pipeline')
+        CT.api.dashboard('ops')
       ]);
-      var aValider = relaisData.a_valider || [];
+      var enTransit = relaisData.en_transit || [];
       var aRemettre = relaisData.a_remettre || [];
+      var kpi = relaisData.kpi || {};
       var alertes = ops.alertes || {};
-      var pipe = pipeline.pipeline || {};
-      var availableCount = pipe.available ? pipe.available.count : 0;
       var html = '';
 
+      // ─── 🔝 ACTION ───
       var actionContent = '<div class="ct-action-grid">';
-      actionContent += CT.html.actionCard('Colis à remettre', aRemettre.length, '📦', 'green');
-      actionContent += CT.html.actionCard('Cash à encaisser', alertes.cash_pending || 0, '💰', 'amber');
-      actionContent += CT.html.actionCard('Disponible retrait', availableCount, '📬', 'blue');
-      actionContent += CT.html.actionCard('À valider', aValider.length, '📝', 'purple');
+      actionContent += CT.html.actionCard('Colis à remettre', kpi.a_remettre || 0, '📦', 'green', null, 'available');
+      actionContent += CT.html.actionCard('Cash à encaisser', kpi.cash_pending || 0, '💰', 'amber');
+      actionContent += CT.html.actionCard('En transit', kpi.en_transit || 0, '🚢', 'blue', null, 'in_transit');
+      actionContent += CT.html.actionCard('Total colis', (kpi.en_transit || 0) + (kpi.a_remettre || 0), '📊', 'purple');
       actionContent += '</div>';
 
+      // ── Colis à remettre (au relais, client peut venir chercher)
       if (aRemettre.length > 0) {
-        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📦 Colis à remettre aux clients</div>';
-        var h1 = ['Réf.', 'Client', 'Tél.', 'Montant', 'Relais', 'Attente', '📱'];
-        var r1 = aRemettre.map(function(o) {
+        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📦 Colis à remettre aux clients (' + aRemettre.length + ')</div>';
+        var h1 = ['Colis', 'Commande', 'Statut', 'Client', 'Tél.', 'Relais', 'Attente', '📱'];
+        var r1 = aRemettre.map(function(p) {
+          var pickupInfo = p.pickup_code
+            ? '<div style="font-size:.65rem;color:#10b981;font-weight:700">🔑 ' + p.pickup_code + '</div>'
+            : '';
           return [
-            '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            o.client_nom || '—', o.client_phone || '—',
-            CT.html.formatKMF(o.total_kmf), o.relais_nom || '—',
-            '<span style="color:' + ((o.heures_attente||0) > 48 ? 'var(--ct-red)' : 'var(--ct-text)') + ';font-weight:600">' + (o.heures_attente || 0) + 'h</span>',
-            CT.html.whatsappBtn(o.client_phone, o.reference, 'available', false)
+            '<span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span>' + pickupInfo,
+            '<span class="ct-font-mono" style="font-size:.75rem;color:var(--ct-text-muted)">' + (p.order_reference || '—') + '</span>',
+            CT.html.parcelStatusChip(p.id, p.reference, p.status),
+            p.client_nom || '—',
+            p.client_phone || '—',
+            p.relais_nom || '—',
+            '<span style="color:' + ((p.heures_attente||0) > 48 ? 'var(--ct-red)' : 'var(--ct-text)') + ';font-weight:600">' + (p.heures_attente || 0) + 'h</span>',
+            CT.html.whatsappBtn(p.client_phone, p.order_reference || p.reference, 'available', false)
           ];
         });
         actionContent += CT.html.table(h1, r1);
         actionContent += '</div>';
       }
 
-      if (aValider.length > 0) {
-        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">📝 Commandes à valider</div>';
-        var h2 = ['Réf.', 'Client', 'Montant', 'Relais', 'Île', 'Attente'];
-        var r2 = aValider.map(function(o) {
+      // ── Colis en transit (en route vers le relais)
+      if (enTransit.length > 0) {
+        actionContent += '<div class="ct-card ct-mt-md"><div class="ct-card-title">🚢 Colis en transit (' + enTransit.length + ')</div>';
+        var h2 = ['Colis', 'Commande', 'Statut', 'Client', 'Relais', 'Île', 'Action'];
+        var r2 = enTransit.map(function(p) {
           return [
-            '<span class="ct-font-mono" style="font-weight:700;color:var(--ct-blue)">' + (o.reference || '—') + '</span>',
-            o.client_nom || '—', CT.html.formatKMF(o.total_kmf),
-            o.relais_nom || '—', o.ile || '—', (o.heures_attente || 0) + 'h'
+            '<span class="ct-font-mono" style="font-weight:700;font-size:.82rem;color:var(--ct-blue)">' + (p.reference || '—') + '</span>',
+            '<span class="ct-font-mono" style="font-size:.75rem;color:var(--ct-text-muted)">' + (p.order_reference || '—') + '</span>',
+            CT.html.parcelStatusChip(p.id, p.reference, p.status),
+            p.client_nom || '—',
+            p.relais_nom || '—',
+            p.ile || '—',
+            CT.html.advanceParcelBtn(p.id, p.reference, p.status)
           ];
         });
         actionContent += CT.html.table(h2, r2);
         actionContent += '</div>';
       }
+
+      if (aRemettre.length === 0 && enTransit.length === 0) {
+        actionContent += CT.html.empty('📭', 'Aucun colis en attente au relais');
+      }
+
       html += CT.html.zoneAction('Actions terrain', actionContent);
 
+      // ─── 🔻 INFO ───
       var infoContent = '';
-      var critiques = aRemettre.filter(function(o) { return (o.heures_attente || 0) > 72; });
-      var importants = aRemettre.filter(function(o) { var h = o.heures_attente || 0; return h > 24 && h <= 72; });
+      var critiques = aRemettre.filter(function(p) { return (p.heures_attente || 0) > 72; });
+      var importants = aRemettre.filter(function(p) { var h = p.heures_attente || 0; return h > 24 && h <= 72; });
       if (critiques.length > 0 || importants.length > 0) {
         infoContent += '<div class="ct-card">';
         infoContent += '<div class="ct-card-title">⚠️ Alertes</div>';
-        if (critiques.length > 0) infoContent += CT.html.alertItem('🔴', 'Non collectés > 72h (deadline dépassée)', critiques.length, 'danger');
-        if (importants.length > 0) infoContent += CT.html.alertItem('🟠', 'En attente > 24h', importants.length, 'warning');
+        if (critiques.length > 0) infoContent += CT.html.alertItem('🔴', 'Colis non collectés > 72h', critiques.length, 'danger');
+        if (importants.length > 0) infoContent += CT.html.alertItem('🟠', 'Colis en attente > 24h', importants.length, 'warning');
         infoContent += '</div>';
       }
 
-      infoContent += '<div class="ct-card"><div class="ct-card-title">📊 Suivi</div>';
+      infoContent += '<div class="ct-card"><div class="ct-card-title">📊 Suivi relais</div>';
       infoContent += '<div class="ct-stat-grid">';
-      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + aRemettre.length + '</div><div class="ct-stat-label">Colis en attente</div></div>';
-      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + aValider.length + '</div><div class="ct-stat-label">À valider</div></div>';
+      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + aRemettre.length + '</div><div class="ct-stat-label">Colis au relais</div></div>';
+      infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + enTransit.length + '</div><div class="ct-stat-label">En transit</div></div>';
       var avgAttente = 0;
       if (aRemettre.length > 0) {
         var total = 0;
-        aRemettre.forEach(function(o) { total += o.heures_attente || 0; });
+        aRemettre.forEach(function(p) { total += p.heures_attente || 0; });
         avgAttente = Math.round(total / aRemettre.length);
       }
       infoContent += '<div class="ct-stat-item"><div class="ct-stat-value">' + avgAttente + 'h</div><div class="ct-stat-label">Délai moyen retrait</div></div>';

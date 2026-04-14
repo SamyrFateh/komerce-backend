@@ -270,6 +270,93 @@ CT.registerScenario({
 });
 
 /* ---------------------------------------------------------------
+   CATEGORY: parcels — Les colis sont l'unité logistique réelle
+   --------------------------------------------------------------- */
+
+CT.registerScenario({
+  id: 'advance-parcel',
+  name: 'Avancer colis',
+  icon: '📦⏩',
+  category: 'parcels',
+  description: 'Avance un colis au statut suivant. Le statut de la commande se recalcule automatiquement.',
+  fields: [
+    { key: 'reference', label: 'Référence colis (KOM-P-...)', type: 'text', default: '' }
+  ],
+  execute: async function(params) {
+    if (!params.reference) throw new Error('Veuillez entrer une référence de colis');
+
+    // Chercher le colis par référence
+    var parcel = await CT.api.getParcel(params.reference);
+    if (!parcel || !parcel.id) throw new Error('Colis non trouvé: ' + params.reference);
+
+    var flow = ['draft', 'preparation', 'shipped', 'in_transit', 'available', 'collected'];
+    var current = parcel.status;
+    var currentIdx = flow.indexOf(current);
+
+    if (currentIdx === -1) throw new Error('Statut "' + current + '" non avançable');
+    if (currentIdx >= flow.length - 1) throw new Error('Colis déjà au statut final: ' + CT.html.parcelStatusLabel(current));
+
+    var nextStatus = flow[currentIdx + 1];
+    await CT.api.updateParcelStatus(parcel.id, nextStatus);
+
+    // Stepper visuel
+    var stepper = '<div class="ct-stepper">';
+    flow.forEach(function(s, i) {
+      var cls = i < currentIdx + 1 ? 'done' : (i === currentIdx + 1 ? 'current' : 'pending');
+      if (i > 0) stepper += '<span class="ct-step-arrow">→</span>';
+      stepper += '<span class="ct-step ' + cls + '">' + CT.html.parcelStatusLabel(s) + '</span>';
+    });
+    stepper += '</div>';
+
+    return '✅ Colis ' + params.reference + ' avancé\n' +
+           CT.html.parcelStatusLabel(current) + ' → ' + CT.html.parcelStatusLabel(nextStatus) + '\n' +
+           '📋 Commande: ' + (parcel.order_reference || '—') + ' (statut recalculé automatiquement)\n\n' +
+           stepper;
+  }
+});
+
+CT.registerScenario({
+  id: 'view-parcel',
+  name: 'Voir colis d\'une commande',
+  icon: '🔍📦',
+  category: 'parcels',
+  description: 'Affiche tous les colis associés à une commande et leur statut.',
+  fields: [
+    { key: 'reference', label: 'Référence commande', type: 'text', default: '' }
+  ],
+  execute: async function(params) {
+    if (!params.reference) throw new Error('Veuillez entrer une référence de commande');
+
+    var order = await CT.api.getOrder(params.reference);
+    if (!order || !order.id) throw new Error('Commande non trouvée: ' + params.reference);
+
+    var detail = await CT.api.hubOrderDetail(order.id);
+    var parcels = detail.parcels || [];
+
+    if (parcels.length === 0) {
+      return '📋 Commande ' + params.reference + ' — Statut: ' + CT.html.statusLabel(order.status) + '\n\n' +
+             '⚠️ Aucun colis créé. L\'optimiseur n\'a pas encore dispatché cette commande.';
+    }
+
+    var msg = '📋 Commande ' + params.reference + ' — ' + parcels.length + ' colis\n\n';
+    parcels.forEach(function(p, idx) {
+      var items = p.items || [];
+      msg += '📦 <strong>' + (p.reference || 'Colis #' + (idx+1)) + '</strong>';
+      msg += ' — ' + CT.html.parcelStatusLabel(p.status);
+      msg += ' — ' + (p.type || 'standard');
+      if (p.weight_kg) msg += ' — ' + p.weight_kg + ' kg';
+      msg += '\n';
+      items.forEach(function(it) {
+        msg += '  • ' + it.product_name + ' ×' + it.quantity + '\n';
+      });
+      msg += '\n';
+    });
+
+    return msg;
+  }
+});
+
+/* ---------------------------------------------------------------
    CATEGORY: problems
    --------------------------------------------------------------- */
 
@@ -597,6 +684,7 @@ CT.views.scenarios = {
     var categories = {
       setup: '⚙️ Configuration',
       orders: '📦 Commandes',
+      parcels: '🗃️ Colis',
       payments: '💳 Paiements',
       problems: '⚠️ Problèmes',
       cleanup: '🧹 Nettoyage'
