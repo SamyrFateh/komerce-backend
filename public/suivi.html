@@ -1,347 +1,436 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1a3a5c">
-<title>Komerce — Suivi commande</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --ocean:#1a3a5c;--ocean-light:#2a5a8c;--sand:#f4e8d1;--sand-light:#faf5ed;
-  --coral:#e07a5f;--coral-light:#f4a889;--white:#fff;--gray:#94a3b8;
-  --green:#10b981;--green-bg:#ecfdf5;--orange:#f59e0b;--orange-bg:#fffbeb;
-  --red:#ef4444;--red-bg:#fef2f2;--blue:#3b82f6;--blue-bg:#eff6ff;
-}
-html{font-family:'DM Sans',system-ui,sans-serif;background:var(--sand-light);color:var(--ocean)}
-body{min-height:100dvh;display:flex;flex-direction:column}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi commande — Komerce</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .header h1 { font-size: 20px; margin-bottom: 4px; }
+    .header .ref { font-size: 14px; opacity: 0.85; }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
 
-.header{background:var(--ocean);color:var(--sand);padding:16px 20px;text-align:center;position:sticky;top:0;z-index:10}
-.header h1{font-size:1.1rem;font-weight:700;letter-spacing:1px}
-.header p{font-size:.78rem;opacity:.7;margin-top:2px}
+    /* Status badge */
+    .status-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .status-ordered { background: #e3f2fd; color: #1565c0; }
+    .status-preparation { background: #fff3e0; color: #e65100; }
+    .status-shipped { background: #e8f5e9; color: #2e7d32; }
+    .status-in_transit { background: #e0f7fa; color: #00695c; }
+    .status-available { background: #c8e6c9; color: #1b5e20; }
+    .status-collected { background: #e8eaf6; color: #283593; }
+    .status-cancelled { background: #ffebee; color: #c62828; }
+    .status-default { background: #f5f5f5; color: #616161; }
+    .status-info { font-size: 13px; color: #777; }
 
-.search-section{padding:20px;background:var(--white);border-bottom:1px solid rgba(26,58,92,.08)}
-.search-box{display:flex;gap:8px;max-width:480px;margin:0 auto}
-.search-box input{flex:1;padding:12px 16px;border:2px solid rgba(26,58,92,.15);border-radius:12px;font-size:1rem;font-family:inherit;background:var(--sand-light);transition:border .2s}
-.search-box input:focus{outline:none;border-color:var(--coral)}
-.search-box input::placeholder{color:var(--gray)}
-.search-box button{padding:12px 20px;background:var(--coral);color:var(--white);border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s}
-.search-box button:hover{background:#c96a4f}
-.search-box button:disabled{opacity:.5;cursor:not-allowed}
+    /* Timeline */
+    .timeline-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .timeline-card h2 { font-size: 16px; margin-bottom: 16px; color: #333; }
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: #e0e0e0;
+    }
+    .timeline-step {
+      position: relative;
+      padding-bottom: 24px;
+    }
+    .timeline-step:last-child { padding-bottom: 0; }
+    .timeline-dot {
+      position: absolute;
+      left: -25px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      border: 2px solid #e0e0e0;
+    }
+    .timeline-step.completed .timeline-dot {
+      background: #1a73e8;
+      border-color: #1a73e8;
+    }
+    .timeline-step.current .timeline-dot {
+      background: white;
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 4px rgba(26,115,232,0.2);
+    }
+    .timeline-label { font-weight: 600; font-size: 14px; color: #333; }
+    .timeline-step:not(.completed):not(.current) .timeline-label { color: #bbb; }
+    .timeline-date { font-size: 12px; color: #999; margin-top: 2px; }
 
-.container{max-width:520px;margin:0 auto;width:100%;padding:16px;flex:1}
+    /* Pickup code card */
+    .pickup-card {
+      background: linear-gradient(135deg, #43a047, #2e7d32);
+      color: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .pickup-card h2 { font-size: 16px; margin-bottom: 8px; }
+    .pickup-code {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      margin: 12px 0;
+      font-family: 'Courier New', monospace;
+    }
+    .pickup-relay { font-size: 13px; opacity: 0.9; }
 
-.empty-state{text-align:center;padding:60px 20px;color:var(--gray)}
-.empty-state .icon{font-size:3rem;margin-bottom:12px}
-.empty-state p{font-size:.9rem;line-height:1.5}
+    /* Items */
+    .items-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .items-card h2 { font-size: 16px; margin-bottom: 12px; }
+    .item-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-emoji { font-size: 24px; margin-right: 12px; }
+    .item-details { flex: 1; }
+    .item-name { font-weight: 500; font-size: 14px; }
+    .item-qty { font-size: 12px; color: #999; }
+    .item-price { font-weight: 600; font-size: 14px; color: #1a73e8; }
 
-.loading{text-align:center;padding:40px}
-.spinner{width:32px;height:32px;border:3px solid rgba(26,58,92,.1);border-top-color:var(--coral);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
-@keyframes spin{to{transform:rotate(360deg)}}
+    /* Parcels */
+    .parcel-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .parcel-card h2 { font-size: 16px; margin-bottom: 12px; }
+    .parcel-ref { font-weight: 600; font-size: 14px; }
+    .parcel-status {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    .parcel-event {
+      padding: 6px 0;
+      font-size: 13px;
+      color: #666;
+      border-left: 2px solid #e0e0e0;
+      padding-left: 12px;
+      margin-left: 4px;
+    }
+    .parcel-event-date { font-size: 11px; color: #999; }
 
-.error-card{background:var(--red-bg);border:1px solid #fecaca;border-radius:14px;padding:20px;text-align:center;margin:20px 0}
-.error-card .icon{font-size:2rem;margin-bottom:8px}
-.error-card p{color:var(--red);font-weight:500}
+    /* Total */
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-top: 2px solid #f0f0f0;
+      margin-top: 8px;
+      font-weight: 700;
+      font-size: 16px;
+    }
 
-.alerts{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
-.alert{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:14px;font-size:.88rem;line-height:1.4}
-.alert .a-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
-.alert .a-body{flex:1}
-.alert .a-body strong{display:block;margin-bottom:2px}
-.alert-success{background:var(--green-bg);border:1px solid #a7f3d0}
-.alert-success .a-body{color:#065f46}
-.alert-warning{background:var(--orange-bg);border:1px solid #fde68a}
-.alert-warning .a-body{color:#92400e}
-.alert-info{background:var(--blue-bg);border:1px solid #bfdbfe}
-.alert-info .a-body{color:#1e40af}
-.alert-action{background:linear-gradient(135deg,var(--ocean),var(--ocean-light));color:var(--sand);border:none;cursor:pointer;transition:transform .15s}
-.alert-action:hover{transform:scale(1.01)}
-.alert-action .a-body{color:var(--sand)}
-.alert-action .a-body a{color:var(--sand);text-decoration:underline;font-weight:600}
+    /* Loading */
+    .loading { text-align: center; padding: 60px 20px; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #1a73e8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-.order-header{background:var(--white);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(26,58,92,.06)}
-.order-ref{font-family:monospace;font-size:1.3rem;font-weight:700;color:var(--ocean);letter-spacing:1px}
-.order-meta{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
-.order-meta .badge{padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
-.badge-status{background:var(--coral);color:var(--white)}
-.badge-payment{background:var(--green-bg);color:#065f46}
-.badge-payment.pending{background:var(--orange-bg);color:#92400e}
-.order-date{font-size:.8rem;color:var(--gray);margin-top:6px}
+    /* Error */
+    .error-card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .error-icon { font-size: 48px; margin-bottom: 12px; }
+    .error-msg { font-size: 16px; color: #666; }
 
-.timeline-card{background:var(--white);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(26,58,92,.06)}
-.timeline-card h3{font-size:.9rem;font-weight:600;color:var(--gray);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
-.timeline{position:relative;padding-left:28px}
-.timeline::before{content:'';position:absolute;left:9px;top:4px;bottom:4px;width:2px;background:rgba(26,58,92,.1)}
-.tl-step{position:relative;padding-bottom:20px;display:flex;align-items:flex-start;gap:10px}
-.tl-step:last-child{padding-bottom:0}
-.tl-dot{position:absolute;left:-28px;top:2px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;z-index:1}
-.tl-dot.done{background:var(--green);color:var(--white)}
-.tl-dot.current{background:var(--coral);color:var(--white);box-shadow:0 0 0 4px rgba(224,122,95,.25);animation:pulse-dot 2s infinite}
-.tl-dot.pending{background:rgba(26,58,92,.1);color:var(--gray)}
-@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 4px rgba(224,122,95,.25)}50%{box-shadow:0 0 0 8px rgba(224,122,95,.1)}}
-.tl-info{flex:1}
-.tl-label{font-weight:600;font-size:.88rem;color:var(--ocean)}
-.tl-label.pending-label{color:var(--gray);font-weight:400}
-.tl-date{font-size:.75rem;color:var(--gray);margin-top:1px}
-.tl-sublabel{font-size:.75rem;color:var(--gray);font-style:italic}
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: #999;
+    }
+    .footer a { color: #1a73e8; text-decoration: none; }
 
-.items-card{background:var(--white);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(26,58,92,.06)}
-.items-card h3{font-size:.9rem;font-weight:600;color:var(--gray);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
-.item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(26,58,92,.05)}
-.item-row:last-child{border-bottom:none}
-.item-img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--sand)}
-.item-emoji{width:40px;height:40px;border-radius:8px;background:var(--sand);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
-.item-name{flex:1;font-size:.88rem;font-weight:500}
-.item-qty{font-size:.8rem;color:var(--gray);font-weight:600}
-
-.relais-card{background:var(--white);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(26,58,92,.06)}
-.relais-card h3{font-size:.9rem;font-weight:600;color:var(--gray);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
-.relais-info{display:flex;gap:12px;align-items:flex-start}
-.relais-icon{font-size:1.8rem}
-.relais-details{flex:1}
-.relais-name{font-weight:600;font-size:1rem}
-.relais-addr{font-size:.82rem;color:var(--gray);margin-top:2px}
-.relais-hours{font-size:.78rem;color:var(--ocean-light);margin-top:4px;font-style:italic}
-.relais-phone{display:inline-block;margin-top:6px;padding:4px 12px;background:var(--green-bg);color:#065f46;border-radius:20px;font-size:.78rem;font-weight:600;text-decoration:none}
-
-.qr-button{display:block;width:100%;padding:14px;background:linear-gradient(135deg,var(--coral),#d06a4f);color:var(--white);border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;margin-bottom:14px;transition:transform .15s,box-shadow .15s}
-.qr-button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(224,122,95,.3)}
-.qr-button .qr-icon{font-size:1.2rem;margin-right:6px}
-
-.refresh-bar{text-align:center;padding:8px;font-size:.72rem;color:var(--gray)}
-.refresh-bar span{cursor:pointer;text-decoration:underline}
-
-.footer{text-align:center;padding:16px;font-size:.75rem;color:var(--gray);background:var(--white);border-top:1px solid rgba(26,58,92,.06)}
-.footer a{color:var(--coral);text-decoration:none;font-weight:600}
-.share-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:#25d366;color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:10px;transition:transform .15s,box-shadow .15s}
-.share-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,211,102,.3)}
-.share-btn .wa-logo{font-size:1.2rem}
-.share-row{display:flex;gap:8px;margin-bottom:14px}
-.share-row .share-btn{margin-bottom:0}
-.share-row .copy-btn{flex-shrink:0;padding:14px 18px;background:var(--ocean);color:var(--white);border:none;border-radius:14px;font-size:1rem;cursor:pointer;transition:transform .15s}
-.share-row .copy-btn:hover{transform:translateY(-1px)}
-
-@media(min-width:600px){
-  .search-section{padding:24px}
-  .container{padding:20px}
-}
-</style>
+    /* Responsive */
+    @media (min-width: 768px) {
+      .container { padding: 24px; }
+      .header h1 { font-size: 24px; }
+    }
+  </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>🏝️ KOMERCE</h1>
-  <p>Suivez votre commande</p>
+  <h1>📦 Komerce</h1>
+  <div class="ref" id="headerRef">Suivi de commande</div>
 </div>
 
-<div class="search-section">
-  <div class="search-box">
-    <input type="text" id="refInput" placeholder="Votre référence (ex: KYRH5XM)" maxlength="12" autocomplete="off" spellcheck="false">
-    <button id="searchBtn" onclick="trackOrder()">Suivre</button>
+<div class="container">
+  <!-- Loading state -->
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <p>Chargement de votre commande...</p>
   </div>
-</div>
 
-<div class="container" id="content">
-  <div class="empty-state">
-    <div class="icon">📦</div>
-    <p>Entrez votre référence de commande<br>pour suivre votre colis en temps réel</p>
+  <!-- Error state -->
+  <div id="errorState" style="display:none">
+    <div class="error-card">
+      <div class="error-icon">🔍</div>
+      <div class="error-msg" id="errorMsg">Commande introuvable</div>
+    </div>
+  </div>
+
+  <!-- Tracking content -->
+  <div id="trackingContent" style="display:none">
+
+    <!-- Status -->
+    <div class="status-card">
+      <div class="status-badge" id="statusBadge"></div>
+      <div class="status-info" id="statusInfo"></div>
+    </div>
+
+    <!-- Pickup code (only when at relay) -->
+    <div class="pickup-card" id="pickupCard" style="display:none">
+      <h2>🔑 Code de retrait</h2>
+      <div class="pickup-code" id="pickupCode"></div>
+      <div class="pickup-relay" id="pickupRelay"></div>
+      <div style="margin-top:8px;font-size:12px;opacity:0.8">Présentez ce code au relais pour retirer votre commande</div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-card">
+      <h2>📍 Suivi en temps réel</h2>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <!-- Items -->
+    <div class="items-card">
+      <h2>🛍️ Articles commandés</h2>
+      <div id="itemsList"></div>
+      <div class="total-row">
+        <span>Total</span>
+        <span id="totalAmount"></span>
+      </div>
+    </div>
+
+    <!-- Parcels -->
+    <div id="parcelsSection"></div>
   </div>
 </div>
 
 <div class="footer">
-  <a href="/Komerce_Boutique.html">← Retour à la boutique</a>
+  <p>Besoin d'aide ? <a href="https://wa.me/2693221111">Contactez-nous sur WhatsApp</a></p>
+  <p style="margin-top:4px">© 2026 Komerce — E-commerce des Comores</p>
 </div>
 
 <script>
-const API = window.location.origin;
-const STEPS = [
-  { key: 'confirmed',   label: 'Commande confirmée', icon: '✓', sub: 'Reçue et validée' },
-  { key: 'ordered',     label: 'Approvisionnement',  icon: '📋', sub: 'Commande fournisseur passée' },
-  { key: 'preparation', label: 'En préparation',     icon: '🛍️', sub: 'Préparation à Dubai' },
-  { key: 'shipped',     label: 'Expédiée',           icon: '📦', sub: 'Remise au transitaire' },
-  { key: 'in_transit',  label: 'En transit maritime', icon: '🚢', sub: 'En route vers les Comores' },
-  { key: 'available',   label: 'Disponible',         icon: '📍', sub: 'Prêt au point relais' },
-  { key: 'collected',   label: 'Récupéré',           icon: '✅', sub: 'Colis remis' },
-];
+(function() {
+  // Extract token from URL: /s/TOKEN
+  var path = window.location.pathname;
+  var token = path.split('/s/')[1];
+  if (!token) {
+    showError('Lien invalide');
+    return;
+  }
 
-let refreshTimer = null;
-let currentRef = null;
+  // Fetch tracking data
+  var apiBase = window.location.origin;
+  fetch(apiBase + '/api/tracking/' + encodeURIComponent(token))
+    .then(function(r) {
+      if (!r.ok) throw new Error(r.status === 404 ? 'Commande introuvable' : 'Erreur serveur');
+      return r.json();
+    })
+    .then(function(data) { renderTracking(data); })
+    .catch(function(err) { showError(err.message); });
 
-// Check URL param
-const urlRef = new URLSearchParams(location.search).get('ref');
-if (urlRef) {
-  document.getElementById('refInput').value = urlRef.toUpperCase();
-  trackOrder();
-}
+  function showError(msg) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorMsg').textContent = msg;
+  }
 
-// Enter key
-document.getElementById('refInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') trackOrder();
-});
+  function fmt(n) {
+    return Number(n || 0).toLocaleString('fr-FR');
+  }
 
-async function trackOrder() {
-  var input = document.getElementById('refInput');
-  var ref = input.value.trim().toUpperCase();
-  if (!ref) { input.focus(); return; }
+  function fmtDate(d) {
+    if (!d) return '';
+    var dt = new Date(d);
+    var opts = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return dt.toLocaleDateString('fr-FR', opts);
+  }
 
-  currentRef = ref;
-  input.value = ref;
+  function renderTracking(data) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('trackingContent').style.display = 'block';
 
-  // Update URL
-  history.replaceState(null, '', '?ref=' + ref);
+    // Header
+    document.getElementById('headerRef').textContent = data.reference;
 
-  var content = document.getElementById('content');
-  content.innerHTML = '<div class="loading"><div class="spinner"></div><p>Recherche en cours...</p></div>';
+    // Status badge
+    var badge = document.getElementById('statusBadge');
+    badge.textContent = data.statusLabel;
+    var statusClass = 'status-' + (data.status || 'default');
+    badge.className = 'status-badge ' + (['ordered','confirmed','preparation','shipped','in_transit','available','collected','cancelled'].indexOf(data.status) >= 0 ? statusClass : 'status-default');
+    
+    var info = document.getElementById('statusInfo');
+    if (data.destinationIsland) {
+      info.textContent = '🏝️ Destination : ' + data.destinationIsland;
+    }
 
-  try {
-    var res = await fetch(API + '/api/orders/' + ref);
-    if (!res.ok) {
-      if (res.status === 404) {
-        content.innerHTML = '<div class="error-card"><div class="icon">🔍</div><p>Aucune commande trouvée pour <strong>' + ref + '</strong></p><p style="color:var(--gray);font-weight:400;margin-top:6px;font-size:.82rem">Vérifiez votre référence et réessayez</p></div>';
-        return;
+    // Pickup code (only when at relay)
+    if (data.pickupCode) {
+      document.getElementById('pickupCard').style.display = 'block';
+      document.getElementById('pickupCode').textContent = data.pickupCode;
+      var relayText = '';
+      if (data.relay && data.relay.name) {
+        relayText = '📍 ' + data.relay.name;
+        if (data.relay.address) relayText += ' — ' + data.relay.address;
       }
-      throw new Error('Erreur ' + res.status);
+      document.getElementById('pickupRelay').textContent = relayText;
     }
 
-    var data = await res.json();
-    renderTracking(data);
-
-    // Auto-refresh pour commandes actives
-    clearInterval(refreshTimer);
-    if (['collected','cancelled','refunded'].indexOf(data.status) === -1) {
-      refreshTimer = setInterval(function() { silentRefresh(ref); }, 60000);
-    }
-
-  } catch(err) {
-    content.innerHTML = '<div class="error-card"><div class="icon">⚠️</div><p>Erreur de connexion</p><p style="color:var(--gray);font-weight:400;margin-top:6px;font-size:.82rem">Veuillez réessayer dans quelques instants</p></div>';
-  }
-}
-
-async function silentRefresh(ref) {
-  try {
-    var res = await fetch(API + '/api/orders/' + ref);
-    if (res.ok) {
-      var data = await res.json();
-      renderTracking(data);
-    }
-  } catch(e) {}
-}
-
-function renderTracking(data) {
-  var content = document.getElementById('content');
-  var html = '';
-
-  // Alerts
-  if (data.alerts && data.alerts.length) {
-    html += '<div class="alerts">';
-    for (var a of data.alerts) {
-      if (a.type === 'action' && a.qr_link) {
-        html += '<a href="' + a.qr_link + '" class="alert alert-action" style="text-decoration:none"><span class="a-icon">' + a.icon + '</span><span class="a-body"><strong>' + a.message + '</strong>Appuyez pour afficher votre QR de retrait →</span></a>';
-      } else {
-        html += '<div class="alert alert-' + a.type + '"><span class="a-icon">' + a.icon + '</span><span class="a-body">' + a.message + '</span></div>';
+    // Timeline
+    var timelineEl = document.getElementById('timeline');
+    var html = '';
+    var foundCurrent = false;
+    for (var i = 0; i < data.timeline.length; i++) {
+      var step = data.timeline[i];
+      var cls = 'timeline-step';
+      if (step.completed && !foundCurrent) {
+        // Check if next is not completed → this is current
+        var nextCompleted = (i + 1 < data.timeline.length) && data.timeline[i+1].completed;
+        if (!nextCompleted && step.completed) {
+          cls += ' current';
+          foundCurrent = true;
+        } else {
+          cls += ' completed';
+        }
+      } else if (step.completed) {
+        cls += ' completed';
       }
+      html += '<div class="' + cls + '">';
+      html += '<div class="timeline-dot"></div>';
+      html += '<div class="timeline-label">' + escHtml(step.label) + '</div>';
+      if (step.date) {
+        html += '<div class="timeline-date">' + fmtDate(step.date) + '</div>';
+      }
+      html += '</div>';
     }
-    html += '</div>';
-  }
+    timelineEl.innerHTML = html;
 
-  // QR Button
-  if (data.has_qr && data.qr_link) {
-    html += '<a href="' + data.qr_link + '" class="qr-button"><span class="qr-icon">📱</span> Afficher mon QR de retrait</a>';
-  }
+    // Items
+    var itemsHtml = '';
+    for (var j = 0; j < data.items.length; j++) {
+      var item = data.items[j];
+      itemsHtml += '<div class="item-row">';
+      itemsHtml += '<div class="item-emoji">' + (item.emoji || '📦') + '</div>';
+      itemsHtml += '<div class="item-details">';
+      itemsHtml += '<div class="item-name">' + escHtml(item.name) + '</div>';
+      itemsHtml += '<div class="item-qty">Qté: ' + item.quantity + '</div>';
+      itemsHtml += '</div>';
+      itemsHtml += '<div class="item-price">' + fmt(item.priceKmf) + ' KMF</div>';
+      itemsHtml += '</div>';
+    }
+    document.getElementById('itemsList').innerHTML = itemsHtml;
+    document.getElementById('totalAmount').textContent = fmt(data.totalKmf) + ' KMF';
 
-  // Order header
-  var statusStep = STEPS.find(function(s) { return s.key === data.status; });
-  var statusLabel = statusStep ? statusStep.label : data.status;
-  var payLabel = data.payment_status === 'paid' ? 'Payé ✓' : data.payment_status === 'pending' ? 'En attente' : (data.payment_status || '');
-  var payClass = data.payment_status === 'paid' ? '' : 'pending';
-  var dateStr = data.created_at ? new Date(data.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
-
-  html += '<div class="order-header"><div class="order-ref">' + data.reference + '</div><div class="order-meta"><span class="badge badge-status">' + statusLabel + '</span>';
-  if (payLabel) html += '<span class="badge badge-payment ' + payClass + '">' + payLabel + '</span>';
-  html += '</div><div class="order-date">Commandé le ' + dateStr + '</div></div>';
-
-  // Timeline
-  var currentIdx = STEPS.findIndex(function(s) { return s.key === data.status; });
-  var timelineMap = {};
-  if (data.timeline) {
-    for (var t of data.timeline) {
-      timelineMap[t.status] = t.date;
+    // Parcels
+    if (data.parcels && data.parcels.length > 0) {
+      var parcelsHtml = '';
+      for (var k = 0; k < data.parcels.length; k++) {
+        var parcel = data.parcels[k];
+        parcelsHtml += '<div class="parcel-card">';
+        parcelsHtml += '<h2>📦 Colis ' + (k + 1) + '/' + data.parcels.length + '</h2>';
+        parcelsHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+        parcelsHtml += '<span class="parcel-ref">' + escHtml(parcel.reference) + '</span>';
+        parcelsHtml += '<span class="parcel-status">' + escHtml(parcel.statusLabel) + '</span>';
+        parcelsHtml += '</div>';
+        if (parcel.weightKg) {
+          parcelsHtml += '<div style="font-size:13px;color:#666;margin-bottom:8px">⚖️ ' + parcel.weightKg + ' kg</div>';
+        }
+        // Scan events
+        if (parcel.events && parcel.events.length > 0) {
+          for (var e = 0; e < parcel.events.length; e++) {
+            var ev = parcel.events[e];
+            parcelsHtml += '<div class="parcel-event">';
+            parcelsHtml += '<strong>' + escHtml(ev.label) + '</strong>';
+            if (ev.location) parcelsHtml += ' — ' + escHtml(ev.location);
+            parcelsHtml += '<div class="parcel-event-date">' + fmtDate(ev.date) + '</div>';
+            parcelsHtml += '</div>';
+          }
+        }
+        parcelsHtml += '</div>';
+      }
+      document.getElementById('parcelsSection').innerHTML = parcelsHtml;
     }
   }
 
-  html += '<div class="timeline-card"><h3>📍 Suivi</h3><div class="timeline">';
-  for (var i = 0; i < STEPS.length; i++) {
-    var step = STEPS[i];
-    var isDone = i < currentIdx;
-    var isCurrent = i === currentIdx;
-    var dotClass = isDone ? 'done' : isCurrent ? 'current' : 'pending';
-    var labelClass = (!isDone && !isCurrent) ? 'pending-label' : '';
-
-    var stepDate = timelineMap[step.key];
-    var dateDisplay = stepDate ? new Date(stepDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-
-    html += '<div class="tl-step"><div class="tl-dot ' + dotClass + '">' + (isDone ? '✓' : isCurrent ? step.icon : '') + '</div><div class="tl-info"><div class="tl-label ' + labelClass + '">' + step.label + '</div>';
-    if (dateDisplay) html += '<div class="tl-date">' + dateDisplay + '</div>';
-    if (isDone || isCurrent) html += '<div class="tl-sublabel">' + step.sub + '</div>';
-    html += '</div></div>';
+  function escHtml(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
   }
-  html += '</div></div>';
-
-  // Items
-  if (data.items && data.items.length) {
-    html += '<div class="items-card"><h3>🛍️ Articles</h3>';
-    for (var item of data.items) {
-      var imgHtml = item.image ? '<img class="item-img" src="' + item.image + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="item-emoji">' + (item.emoji || '📦') + '</div>';
-      html += '<div class="item-row">' + imgHtml + '<span class="item-name">' + item.name + '</span><span class="item-qty">×' + item.qty + '</span></div>';
-    }
-    html += '</div>';
-  }
-
-  // Relais
-  if (data.relais) {
-    html += '<div class="relais-card"><h3>🏪 Point relais</h3><div class="relais-info"><div class="relais-icon">🏝️</div><div class="relais-details"><div class="relais-name">' + data.relais.name + '</div>';
-    if (data.relais.address) html += '<div class="relais-addr">' + data.relais.address + '</div>';
-    if (data.relais.hours) html += '<div class="relais-hours">🕐 ' + data.relais.hours + '</div>';
-    if (data.relais.phone) html += '<a href="tel:' + data.relais.phone + '" class="relais-phone">📞 ' + data.relais.phone + '</a>';
-    html += '</div></div></div>';
-  }
-
-  // Share buttons
-  var shareUrl = window.location.origin + '/suivi.html?ref=' + data.reference;
-  var statusStep2 = STEPS.find(function(s) { return s.key === data.status; });
-  var shareMsg = '📦 Ma commande Komerce ' + data.reference + ' — ' + (statusStep2 ? statusStep2.label : data.status) + '\n👉 ' + shareUrl;
-  var waShareLink = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
-
-  html += '<div class="share-row">';
-  html += '<a href="' + waShareLink + '" target="_blank" rel="noopener" class="share-btn" style="flex:1"><span class="wa-logo">📱</span> Partager sur WhatsApp</a>';
-  html += '<button class="copy-btn" onclick="copyLink()" title="Copier le lien">📋</button>';
-  html += '</div>';
-
-  // Auto-refresh
-  if (['collected','cancelled','refunded'].indexOf(data.status) === -1) {
-    html += '<div class="refresh-bar">Actualisation automatique • <span onclick="trackOrder()">Rafraîchir maintenant</span></div>';
-  }
-
-  content.innerHTML = html;
-}
-
-function copyLink() {
-  var url = window.location.origin + '/suivi.html?ref=' + currentRef;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(function() {
-      var btn = document.querySelector('.copy-btn');
-      if (btn) { btn.textContent = '✅'; setTimeout(function() { btn.textContent = '📋'; }, 2000); }
-    });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = url; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    var btn = document.querySelector('.copy-btn');
-    if (btn) { btn.textContent = '✅'; setTimeout(function() { btn.textContent = '📋'; }, 2000); }
-  }
-}
+})();
 </script>
 </body>
 </html>
