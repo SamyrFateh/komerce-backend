@@ -282,8 +282,9 @@ router.get('/counts', ...guard, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
 // ─── POST /api/admin/seed-test ─────────────────────────────────────
-// CRIT-04 FIX: Also disabled in production.
+// Rich seed v2: populates entire Control Tower dashboard with realistic data
 router.post('/seed-test', ...guard, async (req, res, next) => {
   // ══════════════════════════════════════════════════════════════════
   // CRIT-04 FIX: Block in production — seed-test is dev/staging only.
@@ -299,6 +300,11 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
   const { randomBytes } = require('crypto');
   const client = await db.getClient();
 
+  // ── Helpers ──────────────────────────────────────────────────────
+  const now = new Date();
+  const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
+  const YEAR = now.getFullYear();
+
   const genPickup = () => {
     const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     return Array.from({ length: 6 }, () => {
@@ -308,9 +314,14 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
     }).join('');
   };
 
-  const ts = Date.now();
   let cashRefIdx = 0;
-  const genCashRef = () => String(ts + (cashRefIdx++)).slice(-8);
+  const genCashRef = () => String(Date.now() + (cashRefIdx++)).slice(-8);
+  let parcelSeq = 0;
+  const genParcelRef = () => `PCL-${YEAR}-${String(++parcelSeq).padStart(4, '0')}`;
+  let invoiceSeq = 0;
+  const genInvoiceNum = () => `INV-${YEAR}-${String(++invoiceSeq).padStart(4, '0')}`;
+  let scanCodeSeq = 0;
+  const genScanCode = () => `SC-${YEAR}-${String(++scanCodeSeq).padStart(4, '0')}`;
 
   try {
     const { confirm } = req.body;
@@ -320,32 +331,90 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
 
     await client.query('BEGIN');
 
+    // ── Fetch existing data ────────────────────────────────────────
     const { rows: products } = await client.query(
-      'SELECT id, name, price_kmf FROM products WHERE is_active = TRUE ORDER BY name LIMIT 1'
+      'SELECT id, name, price_kmf FROM products WHERE is_active = TRUE ORDER BY name LIMIT 10'
     );
-    const { rows: relaisList } = await client.query(
-      'SELECT id, name FROM relais WHERE is_active = TRUE LIMIT 1'
-    );
-
     if (!products.length) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Aucun produit actif — impossible de seeder' });
     }
-    if (!relaisList.length) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Aucun relais actif — impossible de seeder' });
-    }
 
-    const product = products[0];
-    const relais  = relaisList[0];
-    const adminId = req.user.id;
+    const pickProduct = (i) => products[i % products.length];
 
-    const { rows: enumVals } = await client.query(
-      `SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'order_status'`
-    );
-    const availableStatuses = new Set(enumVals.map(r => r.enumlabel));
+    // ── Known IDs ──────────────────────────────────────────────────
+    const R = {
+      volo_volo:  '02c78574-0086-5905-a5cd-e0f48a4d134c',
+      mutsamudu:  '326a56cd-4efe-5721-a6a2-f5f4fa30d176',
+      domoni:     '7c19dde1-9142-5045-83eb-1c1162adb1b9',
+      fomboni:    '48224a8f-5f3f-509a-8a38-5bb153f69a59',
+    };
+    const islandOf = {
+      [R.volo_volo]: 'Grande Comore',
+      [R.mutsamudu]: 'Anjouan',
+      [R.domoni]:    'Anjouan',
+      [R.fomboni]:   'Mohéli',
+    };
+    const relaisNameOf = {
+      [R.volo_volo]: 'Relais Moroni Volo-Volo',
+      [R.mutsamudu]: 'Relais Mutsamudu Centre',
+      [R.domoni]:    'Relais Domoni',
+      [R.fomboni]:   'Relais Fomboni',
+    };
 
-    // Supprimer les commandes test précédentes
+    const C = [
+      { id: '874cf1a5-a449-412d-a3ee-5b5381802338', name: 'Fatima Abdou',     phone: '+2693210001' },
+      { id: '096352ba-a113-4bf7-880d-4d20de28392e', name: 'Ahmed Salim',      phone: '+2693210002' },
+      { id: 'de13928f-85e4-45c9-b9ca-4635c933a76a', name: 'Mariam Hassan',    phone: '+2693210003' },
+      { id: '37ce3571-d050-4d6f-8897-d1a23117a93a', name: 'Ibrahim Youssouf', phone: '+2693210004' },
+      { id: '52ca53a6-60e2-4ea7-b84c-e78e92a037c1', name: 'Zaïna Mohamed',    phone: '+2693210005' },
+      { id: '5ab3d044-68e7-4e69-b139-1b435223339b', name: 'Ali Combo',        phone: '+2693210006' },
+    ];
+
+    const HUB = { id: '79ef88b1-d7a0-47b7-bf39-8d379f2e5a1c', name: 'Moussa Hub Dubai' };
+    const relaisAgentOf = {
+      [R.mutsamudu]: { id: '631b2cf7-1341-4cda-96f0-d3de53d75370', name: 'Agent Relais Mutsamudu Centre' },
+      [R.domoni]:    { id: '631b2cf7-1341-4cda-96f0-d3de53d75370', name: 'Agent Relais Mutsamudu Centre' },
+      [R.volo_volo]: { id: 'ba785225-eedf-43b8-a3a1-981b575bcb55', name: 'Agent Relais Moroni Volo-Volo' },
+      [R.fomboni]:   { id: 'ba785225-eedf-43b8-a3a1-981b575bcb55', name: 'Agent Relais Moroni Volo-Volo' },
+    };
+
+    // ── 20 Scenarios ───────────────────────────────────────────────
+    // Helper: compute order timestamps from days-ago values
+    const T = (o, pr, sh, av, co, ca) => ({
+      ordered_at:     o  != null ? daysAgo(o)  : null,
+      preparation_at: pr != null ? daysAgo(pr) : null,
+      shipped_at:     sh != null ? daysAgo(sh) : null,
+      available_at:   av != null ? daysAgo(av) : null,
+      collected_at:   co != null ? daysAgo(co) : null,
+      cancelled_at:   ca != null ? daysAgo(ca) : null,
+    });
+
+    const scenarios = [
+      // #  ref       client  relais       status        payMode       payStatus  age  hasPcl  pclSt         incidents                      invoice  itemQtys
+      { n:1,  ref:'KT-001', ci:0, rid:R.volo_volo,  st:'confirmed',   pm:'cash_relais', ps:'pending', age:0,   pcl:false, pst:null,          inc:[],                                inv:false, iq:[{pi:0,q:2}],                       ...T(null,null,null,null,null,null) },
+      { n:2,  ref:'KT-002', ci:1, rid:R.mutsamudu,  st:'confirmed',   pm:'stripe_eur',  ps:'paid',    age:1,   pcl:false, pst:null,          inc:[],                                inv:false, iq:[{pi:1,q:1},{pi:0,q:1}],            ...T(null,null,null,null,null,null) },
+      { n:3,  ref:'KT-003', ci:2, rid:R.domoni,     st:'ordered',     pm:'cash_relais', ps:'paid',    age:5,   pcl:false, pst:null,          inc:[],                                inv:false, iq:[{pi:2,q:3}],                       ...T(5,null,null,null,null,null) },
+      { n:4,  ref:'KT-004', ci:3, rid:R.fomboni,    st:'preparation', pm:'cash_relais', ps:'paid',    age:8,   pcl:false, pst:null,          inc:[],                                inv:false, iq:[{pi:3,q:1}],                       ...T(8,6,null,null,null,null) },
+      { n:5,  ref:'KT-005', ci:4, rid:R.volo_volo,  st:'preparation', pm:'stripe_eur',  ps:'paid',    age:10,  pcl:false, pst:null,          inc:[],                                inv:false, iq:[{pi:4,q:2},{pi:0,q:1}],            ...T(10,8,null,null,null,null) },
+      { n:6,  ref:'KT-006', ci:5, rid:R.mutsamudu,  st:'shipped',     pm:'cash_relais', ps:'paid',    age:14,  pcl:true,  pst:'shipped',     inc:[],                                inv:false, iq:[{pi:5,q:1}],                       ...T(14,12,10,null,null,null) },
+      { n:7,  ref:'KT-007', ci:0, rid:R.domoni,     st:'shipped',     pm:'stripe_eur',  ps:'paid',    age:12,  pcl:true,  pst:'shipped',     inc:[],                                inv:false, iq:[{pi:1,q:2}],                       ...T(12,10,8,null,null,null) },
+      { n:8,  ref:'KT-008', ci:1, rid:R.volo_volo,  st:'in_transit',  pm:'cash_relais', ps:'paid',    age:20,  pcl:true,  pst:'in_transit',  inc:[],                                inv:false, iq:[{pi:2,q:1},{pi:3,q:2}],            ...T(20,18,15,null,null,null) },
+      { n:9,  ref:'KT-009', ci:2, rid:R.mutsamudu,  st:'in_transit',  pm:'stripe_eur',  ps:'paid',    age:18,  pcl:true,  pst:'in_transit',  inc:['weight_mismatch'],               inv:false, iq:[{pi:4,q:3}],                       ...T(18,16,13,null,null,null) },
+      { n:10, ref:'KT-010', ci:3, rid:R.fomboni,    st:'in_transit',  pm:'cash_relais', ps:'paid',    age:25,  pcl:true,  pst:'in_transit',  inc:[],                                inv:false, iq:[{pi:0,q:2}],         stuck:true,   ...T(25,23,20,null,null,null) },
+      { n:11, ref:'KT-011', ci:4, rid:R.volo_volo,  st:'available',   pm:'cash_relais', ps:'pending', age:30,  pcl:true,  pst:'available',   inc:['missing_item'],                  inv:false, iq:[{pi:1,q:1},{pi:5,q:2}],            ...T(30,28,25,22,null,null) },
+      { n:12, ref:'KT-012', ci:5, rid:R.domoni,     st:'available',   pm:'stripe_eur',  ps:'paid',    age:28,  pcl:true,  pst:'available',   inc:[],                                inv:false, iq:[{pi:2,q:2}],                       ...T(28,26,23,20,null,null) },
+      { n:13, ref:'KT-013', ci:0, rid:R.mutsamudu,  st:'available',   pm:'cash_relais', ps:'paid',    age:3,   pcl:true,  pst:'available',   inc:[],                                inv:false, iq:[{pi:3,q:1}],                       ...T(3,2.5,2,0.5,null,null) },
+      { n:14, ref:'KT-014', ci:1, rid:R.volo_volo,  st:'collected',   pm:'cash_relais', ps:'paid',    age:35,  pcl:true,  pst:'collected',   inc:[],                                inv:true,  iq:[{pi:4,q:1},{pi:0,q:2}],            ...T(35,33,30,27,25,null) },
+      { n:15, ref:'KT-015', ci:2, rid:R.fomboni,    st:'collected',   pm:'stripe_eur',  ps:'paid',    age:32,  pcl:true,  pst:'collected',   inc:['damaged_item'],                  inv:true,  iq:[{pi:5,q:2}],                       ...T(32,30,27,24,22,null) },
+      { n:16, ref:'KT-016', ci:3, rid:R.domoni,     st:'collected',   pm:'cash_relais', ps:'paid',    age:40,  pcl:true,  pst:'collected',   inc:[],                                inv:true,  iq:[{pi:1,q:3}],                       ...T(40,38,35,32,30,null) },
+      { n:17, ref:'KT-017', ci:4, rid:R.mutsamudu,  st:'cancelled',   pm:'cash_relais', ps:'pending', age:5,   pcl:false, pst:null,          inc:[],                                inv:false, iq:[{pi:2,q:1}],                       ...T(null,null,null,null,null,3) },
+      { n:18, ref:'KT-018', ci:5, rid:R.volo_volo,  st:'in_transit',  pm:'cash_relais', ps:'pending', age:4,   pcl:true,  pst:'in_transit',  inc:['unexpected_item'],               inv:false, iq:[{pi:3,q:2}],                       ...T(4,3,2,null,null,null) },
+      { n:19, ref:'KT-019', ci:0, rid:R.domoni,     st:'shipped',     pm:'cash_relais', ps:'pending', age:4,   pcl:true,  pst:'shipped',     inc:[],                                inv:false, iq:[{pi:4,q:1}],                       ...T(4,3,2,null,null,null) },
+      { n:20, ref:'KT-020', ci:1, rid:R.fomboni,    st:'available',   pm:'cash_relais', ps:'pending', age:5,   pcl:true,  pst:'available',   inc:['sequence_violation'],             inv:false, iq:[{pi:5,q:1},{pi:0,q:1}],            ...T(5,4,3,1,null,null) },
+    ];
+
+    // ── Cleanup ────────────────────────────────────────────────────
     const { rows: prevOrders } = await client.query(
       "SELECT id FROM orders WHERE reference LIKE 'KT-%'"
     );
@@ -355,72 +424,443 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       deletedCount++;
     }
 
-    const now     = new Date();
-    const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
+    // Truncate new tables safely
+    for (const tbl of ['scan_events', 'incidents', 'invoices', 'parcel_items', 'parcels']) {
+      try {
+        await client.query(`SAVEPOINT sp_trunc_${tbl}`);
+        await client.query(`TRUNCATE ${tbl} CASCADE`);
+        await client.query(`RELEASE SAVEPOINT sp_trunc_${tbl}`);
+      } catch (_) {
+        await client.query(`ROLLBACK TO SAVEPOINT sp_trunc_${tbl}`);
+      }
+    }
 
-    const allScenarios = [
-      { status: 'confirmed',   ref: 'KT-CONFIRMED',   payment_mode: 'cash_relais', payment_status: 'pending',  ordered_at: null,        preparation_at: null,        shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: null },
-      { status: 'ordered',     ref: 'KT-ORDERED',     payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(7),  preparation_at: null,        shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: null },
-      { status: 'preparation', ref: 'KT-PREPARATION', payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(8),  preparation_at: daysAgo(6),  shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: null },
-      { status: 'shipped',     ref: 'KT-SHIPPED',     payment_mode: 'stripe_eur',  payment_status: 'paid',     ordered_at: daysAgo(14), preparation_at: daysAgo(12), shipped_at: daysAgo(10), available_at: null,       collected_at: null,       cancelled_at: null },
-      { status: 'in_transit',  ref: 'KT-INTRANSIT',   payment_mode: 'stripe_eur',  payment_status: 'paid',     ordered_at: daysAgo(20), preparation_at: daysAgo(18), shipped_at: daysAgo(15), available_at: null,       collected_at: null,       cancelled_at: null },
-      { status: 'available',   ref: 'KT-AVAILABLE',   payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(30), preparation_at: daysAgo(28), shipped_at: daysAgo(25), available_at: daysAgo(2), collected_at: null,       cancelled_at: null },
-      { status: 'collected',   ref: 'KT-COLLECTED',   payment_mode: 'cash_relais', payment_status: 'paid',     ordered_at: daysAgo(35), preparation_at: daysAgo(33), shipped_at: daysAgo(30), available_at: daysAgo(5), collected_at: daysAgo(1), cancelled_at: null },
-      { status: 'cancelled',   ref: 'KT-CANCELLED',   payment_mode: 'cash_relais', payment_status: 'pending',  ordered_at: null,        preparation_at: null,        shipped_at: null,        available_at: null,       collected_at: null,       cancelled_at: daysAgo(3) },
-    ];
+    // ── Create data ────────────────────────────────────────────────
+    const summary = {
+      orders: [], parcels: [], scan_events: 0, incidents: [], invoices: [],
+    };
 
-    const testScenarios = allScenarios.filter(t => availableStatuses.has(t.status));
-    const skippedStatuses = allScenarios.filter(t => !availableStatuses.has(t.status)).map(t => t.status);
+    for (const s of scenarios) {
+      const orderId = uuidv4();
+      const cl = C[s.ci];
+      const totalKmf = s.iq.reduce((sum, item) => sum + pickProduct(item.pi).price_kmf * item.q, 0);
+      const totalEur = +(totalKmf / 492).toFixed(2);
+      const cashRef = s.pm === 'cash_relais' ? genCashRef() : null;
+      const createdAt = daysAgo(s.age);
 
-    const created = [];
-    for (const t of testScenarios) {
-      const id = uuidv4();
-      const cashRef = t.payment_mode === 'cash_relais' ? genCashRef() : null;
-
+      // ── INSERT order ─────────────────────────────────────────────
       await client.query(
         `INSERT INTO orders (
            id, reference, user_id, relais_id,
            total_kmf, total_eur, payment_mode, payment_status,
-           cash_ref_code, pickup_code, status, confection_type,
-           ordered_at, preparation_at, shipped_at, available_at, collected_at, cancelled_at
+           cash_ref_code, pickup_code, status, confection_type, qr_token,
+           created_at, ordered_at, preparation_at, shipped_at,
+           available_at, collected_at, cancelled_at
          ) VALUES (
            $1::uuid, $2, $3::uuid, $4::uuid,
            $5, $6, $7, $8,
-           $9, $10, $11, 'aucun',
-           $12, $13, $14, $15, $16, $17
+           $9, $10, $11, $12, $13,
+           $14, $15, $16, $17,
+           $18, $19, $20
          )`,
         [
-          id, t.ref, adminId, relais.id,
-          5000, 10.16, t.payment_mode, t.payment_status,
-          cashRef, genPickup(), t.status,
-          t.ordered_at, t.preparation_at, t.shipped_at,
-          t.available_at, t.collected_at, t.cancelled_at,
+          orderId, s.ref, cl.id, s.rid,
+          totalKmf, totalEur, s.pm, s.ps,
+          cashRef, genPickup(), s.st, 'aucun', uuidv4(),
+          createdAt, s.ordered_at, s.preparation_at, s.shipped_at,
+          s.available_at, s.collected_at, s.cancelled_at,
         ]
       );
-      await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
-         VALUES ($1::uuid, $2::uuid, $3, $4)`,
-        [id, product.id, 1, product.price_kmf]
-      );
-      await client.query(
-        `INSERT INTO order_status_history (order_id, status, note, changed_by)
-         VALUES ($1::uuid, $2, $3, $4::uuid)`,
-        [id, t.status, 'Seed test data', adminId]
-      );
-      created.push({ id, reference: t.ref, status: t.status });
-    }
+
+      // ── INSERT order_items ───────────────────────────────────────
+      const orderItemIds = [];
+      for (const item of s.iq) {
+        const prod = pickProduct(item.pi);
+        const oiId = uuidv4();
+        await client.query(
+          `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, scan_code)
+           VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)`,
+          [oiId, orderId, prod.id, item.q, prod.price_kmf, genScanCode()]
+        );
+        orderItemIds.push({ id: oiId, productId: prod.id, productName: prod.name, qty: item.q });
+      }
+
+      // ── INSERT order_status_history (optional table) ─────────────
+      try {
+        await client.query('SAVEPOINT sp_osh');
+        await client.query(
+          `INSERT INTO order_status_history (order_id, status, note, changed_by)
+           VALUES ($1::uuid, $2, $3, $4::uuid)`,
+          [orderId, s.st, 'Seed test data v2', cl.id]
+        );
+        await client.query('RELEASE SAVEPOINT sp_osh');
+      } catch (_) {
+        await client.query('ROLLBACK TO SAVEPOINT sp_osh');
+      }
+
+      summary.orders.push({ id: orderId, ref: s.ref, status: s.st, total_kmf: totalKmf });
+
+      // ── CREATE PARCEL ────────────────────────────────────────────
+      if (!s.pcl) continue;
+
+      const parcelId = uuidv4();
+      const parcelRef = genParcelRef();
+      const totalItems = orderItemIds.length;
+      const totalQty = orderItemIds.reduce((sum, oi) => sum + oi.qty, 0);
+      const weightKg = +(totalQty * 0.8 + Math.random() * 2).toFixed(2);
+
+      // Compute parcel timestamps from order timestamps
+      const pTs = {
+        prepared_at:  s.preparation_at,
+        shipped_at:   s.shipped_at,
+        in_transit_at: null,
+        arrived_at:   null,
+        available_at: null,
+        collected_at: null,
+      };
+
+      // in_transit+ gets in_transit_at
+      if (['in_transit', 'arrived', 'available', 'collected'].includes(s.pst)) {
+        if (s.shipped_at) {
+          if (s.stuck) {
+            // Stuck: in_transit very early for >7 day alert
+            pTs.in_transit_at = new Date(new Date(s.shipped_at).getTime() + 1 * 86400000).toISOString();
+          } else {
+            pTs.in_transit_at = new Date(new Date(s.shipped_at).getTime() + 1.5 * 86400000).toISOString();
+          }
+        }
+      }
+
+      // available+ gets arrived_at and available_at
+      if (['available', 'collected'].includes(s.pst)) {
+        if (s.available_at) {
+          pTs.arrived_at = new Date(new Date(s.available_at).getTime() - 6 * 3600000).toISOString();
+          pTs.available_at = s.available_at;
+        }
+      }
+
+      // collected gets collected_at
+      if (s.pst === 'collected') {
+        pTs.collected_at = s.collected_at;
+      }
+
+      // ── INSERT parcel ────────────────────────────────────────────
+      try {
+        await client.query('SAVEPOINT sp_parcel');
+        await client.query(
+          `INSERT INTO parcels (
+             id, order_id, reference, type, status, relais_id,
+             weight_kg, prepared_at, shipped_at, in_transit_at,
+             arrived_at, available_at, collected_at,
+             destination_island, recipient_name, recipient_phone,
+             items_count, total_qty
+           ) VALUES (
+             $1::uuid, $2::uuid, $3, $4, $5, $6::uuid,
+             $7, $8, $9, $10,
+             $11, $12, $13,
+             $14, $15, $16,
+             $17, $18
+           )`,
+          [
+            parcelId, orderId, parcelRef, 'standard', s.pst, s.rid,
+            weightKg, pTs.prepared_at, pTs.shipped_at, pTs.in_transit_at,
+            pTs.arrived_at, pTs.available_at, pTs.collected_at,
+            islandOf[s.rid] || 'Comores', cl.name, cl.phone,
+            totalItems, totalQty,
+          ]
+        );
+        await client.query('RELEASE SAVEPOINT sp_parcel');
+      } catch (pErr) {
+        await client.query('ROLLBACK TO SAVEPOINT sp_parcel');
+        console.warn(`⚠️ Parcel insert failed for ${s.ref}: ${pErr.message}`);
+        continue; // Skip parcel_items, scans, incidents for this order
+      }
+
+      summary.parcels.push({ id: parcelId, ref: parcelRef, order: s.ref, status: s.pst });
+
+      // ── INSERT parcel_items ──────────────────────────────────────
+      const isReceived = ['available', 'collected'].includes(s.pst);
+      const isCollected = s.pst === 'collected';
+
+      for (const oi of orderItemIds) {
+        try {
+          await client.query('SAVEPOINT sp_pi');
+          await client.query(
+            `INSERT INTO parcel_items (
+               id, parcel_id, order_item_id, product_id, quantity,
+               qty_allocated, qty_packed, qty_shipped, qty_received, qty_collected,
+               verified, verified_at, verified_by, product_name
+             ) VALUES (
+               $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5,
+               $6, $7, $8, $9, $10,
+               $11, $12, $13, $14
+             )`,
+            [
+              uuidv4(), parcelId, oi.id, oi.productId, oi.qty,
+              oi.qty, oi.qty, oi.qty,
+              isReceived  ? oi.qty : 0,
+              isCollected ? oi.qty : 0,
+              isCollected, isCollected ? pTs.collected_at : null,
+              isCollected ? (relaisAgentOf[s.rid] || {}).id || null : null,
+              oi.productName,
+            ]
+          );
+          await client.query('RELEASE SAVEPOINT sp_pi');
+        } catch (_) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_pi');
+        }
+      }
+
+      // ── INSERT scan_events ───────────────────────────────────────
+      // Build scan chain based on parcel status progression
+      const scanStages = [];
+      const statusProgression = ['shipped', 'in_transit', 'available', 'collected'];
+      const statusIdx = statusProgression.indexOf(s.pst);
+
+      // Preparation scan
+      if (pTs.prepared_at) {
+        scanStages.push({
+          event_type: 'preparation',
+          created_at: pTs.prepared_at,
+          actor_id: HUB.id,
+          actor_name: HUB.name,
+          actor_role: 'hub_agent',
+          location: 'Hub Dubai',
+          notes: `Colis ${parcelRef} préparé`,
+        });
+      }
+
+      // Shipped scan
+      if (pTs.shipped_at) {
+        scanStages.push({
+          event_type: 'shipped',
+          created_at: pTs.shipped_at,
+          actor_id: HUB.id,
+          actor_name: HUB.name,
+          actor_role: 'hub_agent',
+          location: 'Hub Dubai',
+          notes: `Colis ${parcelRef} expédié vers ${islandOf[s.rid] || 'Comores'}`,
+        });
+      }
+
+      // In-transit scan
+      if (statusIdx >= 1 && pTs.in_transit_at) {
+        scanStages.push({
+          event_type: 'in_transit',
+          created_at: pTs.in_transit_at,
+          actor_id: HUB.id,
+          actor_name: HUB.name,
+          actor_role: 'hub_agent',
+          location: 'En transit',
+          notes: `Colis ${parcelRef} en transit vers ${relaisNameOf[s.rid] || 'relais'}`,
+        });
+      }
+
+      // Arrived scan
+      if (statusIdx >= 2 && pTs.arrived_at) {
+        const ra = relaisAgentOf[s.rid] || { id: HUB.id, name: HUB.name };
+        scanStages.push({
+          event_type: 'arrived',
+          created_at: pTs.arrived_at,
+          actor_id: ra.id,
+          actor_name: ra.name,
+          actor_role: 'relay_agent',
+          location: relaisNameOf[s.rid] || 'Relais',
+          notes: `Colis ${parcelRef} arrivé au ${relaisNameOf[s.rid] || 'relais'}`,
+        });
+      }
+
+      // Available scan
+      if (statusIdx >= 2 && pTs.available_at) {
+        const ra = relaisAgentOf[s.rid] || { id: HUB.id, name: HUB.name };
+        scanStages.push({
+          event_type: 'available',
+          created_at: pTs.available_at,
+          actor_id: ra.id,
+          actor_name: ra.name,
+          actor_role: 'relay_agent',
+          location: relaisNameOf[s.rid] || 'Relais',
+          notes: `Colis ${parcelRef} disponible pour retrait`,
+        });
+      }
+
+      // Collected scan
+      if (statusIdx >= 3 && pTs.collected_at) {
+        const ra = relaisAgentOf[s.rid] || { id: HUB.id, name: HUB.name };
+        scanStages.push({
+          event_type: 'collected',
+          created_at: pTs.collected_at,
+          actor_id: ra.id,
+          actor_name: ra.name,
+          actor_role: 'relay_agent',
+          location: relaisNameOf[s.rid] || 'Relais',
+          notes: `Colis ${parcelRef} récupéré par ${cl.name}`,
+        });
+      }
+
+      for (const scan of scanStages) {
+        try {
+          await client.query('SAVEPOINT sp_scan');
+          await client.query(
+            `INSERT INTO scan_events (
+               id, parcel_id, order_id, event_type,
+               scan_code, scanned_by, actor_name, actor_role,
+               location, notes, metadata, status, created_at
+             ) VALUES (
+               $1::uuid, $2::uuid, $3::uuid, $4,
+               $5, $6::uuid, $7, $8,
+               $9, $10, $11::jsonb, $12, $13
+             )`,
+            [
+              uuidv4(), parcelId, orderId, scan.event_type,
+              parcelRef, scan.actor_id, scan.actor_name, scan.actor_role,
+              scan.location, scan.notes,
+              JSON.stringify({ source: 'seed', device: 'system' }),
+              'ok', scan.created_at,
+            ]
+          );
+          await client.query('RELEASE SAVEPOINT sp_scan');
+          summary.scan_events++;
+        } catch (_) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_scan');
+        }
+      }
+
+      // ── INSERT incidents ─────────────────────────────────────────
+      const incidentDefs = {
+        weight_mismatch: {
+          severity: 'high', status: 'open',
+          title: 'Écart de poids détecté',
+          description: `Le colis ${parcelRef} présente un écart de poids significatif : déclaré 1.5kg, mesuré ${weightKg}kg`,
+          details: { declared_kg: 1.5, measured_kg: weightKg, delta_pct: Math.round(Math.abs(weightKg - 1.5) / 1.5 * 100) },
+          client_impact: 'Possible erreur de contenu — vérification requise',
+          detected_source: 'scan',
+        },
+        missing_item: {
+          severity: 'critical', status: 'investigating',
+          title: 'Article manquant dans le colis',
+          description: `Un article commandé est absent du colis ${parcelRef} lors du scan de réception`,
+          details: { expected_items: totalQty, received_items: totalQty - 1, missing: orderItemIds[0]?.productName || 'inconnu' },
+          client_impact: 'Client ne recevra pas tous ses articles — réclamation probable',
+          detected_source: 'scan',
+        },
+        damaged_item: {
+          severity: 'high', status: 'resolved',
+          title: 'Article endommagé à la réception',
+          description: `Un article du colis ${parcelRef} est arrivé endommagé (emballage écrasé)`,
+          details: { item: orderItemIds[0]?.productName || 'inconnu', damage_type: 'crushed_packaging', photos: 1 },
+          client_impact: 'Remplacement ou remboursement nécessaire',
+          detected_source: 'manual',
+          resolved: true,
+          resolution: { action: 'replacement_sent', resolved_note: 'Article remplacé et réexpédié' },
+        },
+        unexpected_item: {
+          severity: 'medium', status: 'open',
+          title: 'Article non attendu dans le colis',
+          description: `Le colis ${parcelRef} contient un article qui ne correspond pas à la commande`,
+          details: { unexpected_product: 'Article inconnu', order_ref: s.ref },
+          client_impact: 'Échange nécessaire — confusion possible avec un autre colis',
+          detected_source: 'scan',
+        },
+        sequence_violation: {
+          severity: 'low', status: 'open',
+          title: 'Violation de séquence de scan',
+          description: `Le colis ${parcelRef} a été scanné "disponible" avant d'être scanné "arrivé"`,
+          details: { expected_sequence: 'arrived → available', actual_sequence: 'available (arrived skipped)' },
+          client_impact: 'Aucun impact direct — anomalie de traçabilité',
+          detected_source: 'auto',
+        },
+      };
+
+      for (const incType of s.inc) {
+        const def = incidentDefs[incType];
+        if (!def) continue;
+
+        const detectedBy = def.detected_source === 'scan'
+          ? (relaisAgentOf[s.rid] || HUB).id
+          : HUB.id;
+
+        try {
+          await client.query('SAVEPOINT sp_inc');
+          await client.query(
+            `INSERT INTO incidents (
+               id, parcel_id, order_id, incident_type, severity,
+               status, title, description, details,
+               client_impact, client_notified, detected_by,
+               detected_source, resolution, resolved_at, resolved_by
+             ) VALUES (
+               $1::uuid, $2::uuid, $3::uuid, $4, $5,
+               $6, $7, $8, $9::jsonb,
+               $10, $11, $12::uuid,
+               $13, $14::jsonb, $15, $16
+             )`,
+            [
+              uuidv4(), parcelId, orderId, incType, def.severity,
+              def.status, def.title, def.description, JSON.stringify(def.details),
+              def.client_impact, false, detectedBy,
+              def.detected_source,
+              def.resolved ? JSON.stringify(def.resolution) : null,
+              def.resolved ? daysAgo(Math.max(s.age - 5, 1)) : null,
+              def.resolved ? detectedBy : null,
+            ]
+          );
+          await client.query('RELEASE SAVEPOINT sp_inc');
+          summary.incidents.push({ order: s.ref, type: incType, severity: def.severity, status: def.status });
+        } catch (_) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_inc');
+        }
+      }
+
+      // ── INSERT invoice (collected orders only) ───────────────────
+      if (s.inv && s.pst === 'collected') {
+        const invNum = genInvoiceNum();
+        const itemsSnapshot = orderItemIds.map(oi => ({
+          product_name: oi.productName,
+          quantity: oi.qty,
+          price_kmf: pickProduct(s.iq.find(x => x.pi !== undefined)?.pi || 0).price_kmf,
+        }));
+
+        try {
+          await client.query('SAVEPOINT sp_inv');
+          await client.query(
+            `INSERT INTO invoices (
+               id, invoice_number, order_id, parcel_id,
+               client_name, client_phone, relay_name,
+               items_snapshot, subtotal_kmf, shipping_kmf, total_kmf,
+               payment_mode, payment_status, delivered_via, delivered_at, created_at
+             ) VALUES (
+               $1::uuid, $2, $3::uuid, $4::uuid,
+               $5, $6, $7,
+               $8::jsonb, $9, $10, $11,
+               $12, $13, $14, $15, $16
+             )`,
+          [
+              uuidv4(), invNum, orderId, parcelId,
+              cl.name, cl.phone, relaisNameOf[s.rid] || 'Relais',
+              JSON.stringify(itemsSnapshot), totalKmf, 0, totalKmf,
+              s.pm, s.ps, relaisNameOf[s.rid] || 'Relais', pTs.collected_at, pTs.collected_at,
+            ]
+          );
+          await client.query('RELEASE SAVEPOINT sp_inv');
+          summary.invoices.push({ number: invNum, order: s.ref, total_kmf: totalKmf });
+        } catch (_) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_inv');
+        }
+      }
+    } // end scenario loop
 
     await client.query('COMMIT');
 
-    console.log(`🌱 Seed-test: ${created.length} commandes créées par ${req.user.email} (${deletedCount} anciennes supprimées)`);
+    const caTotal = summary.orders.reduce((s, o) => s + o.total_kmf, 0);
+    console.log(`🌱 Rich seed v2: ${summary.orders.length} orders, ${summary.parcels.length} parcels, ${summary.scan_events} scans, ${summary.incidents.length} incidents, ${summary.invoices.length} invoices — by ${req.user.email}`);
+
     res.json({
-      success:          true,
-      message:          `${created.length} commandes test créées — statuts couverts`,
+      success: true,
+      message: `Rich seed v2 — ${summary.orders.length} commandes, ${summary.parcels.length} colis, ${summary.scan_events} scans, ${summary.incidents.length} incidents, ${summary.invoices.length} factures`,
       deleted_previous: deletedCount,
-      product_used:     product.name,
-      relais_used:      relais.name || relais.id,
-      skipped_statuses: skippedStatuses,
-      orders:           created,
+      products_available: products.length,
+      ca_total_kmf: caTotal,
+      summary,
     });
 
   } catch (err) {
