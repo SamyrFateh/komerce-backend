@@ -8,7 +8,7 @@
  * - Snapshot immutable (data captured at creation time)
  */
 
-const pool = require('../config/database');
+const pool = require('../db');
 
 class InvoiceService {
 
@@ -293,4 +293,3 @@ function escapeHtml(str) {
 }
 
 module.exports = new InvoiceService();
-
