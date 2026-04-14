@@ -1,13 +1,16 @@
 /**
  * ═══════════════════════════════════════════════════════════════
- * ORDER API v2 — Komerce (COLIS-FIRST)
+ * ORDER API v2.1 — Komerce (COLIS-FIRST) — Flux corrigé
  * ═══════════════════════════════════════════════════════════════
  * 
+ * FLUX CORRECT:
+ *   pending → confirmed → ordered → preparation → shipped → in_transit → available → collected
+ *
  * Endpoints opérationnels pour la Control Tower:
  *   GET  /api/v2/orders/pending-cash        → Commandes cash en attente
- *   GET  /api/v2/orders/ready-for-parcel    → Commandes prêtes (sans colis)
- *   POST /api/v2/orders/:ref/confirm-cash   → Confirmer paiement cash
- *   POST /api/v2/orders/:ref/create-parcel  → Créer colis pour commande
+ *   GET  /api/v2/orders/ready-for-parcel    → Commandes CONFIRMÉES sans colis
+ *   POST /api/v2/orders/:ref/confirm-cash   → Confirmer paiement cash + FACTURE
+ *   POST /api/v2/orders/:ref/create-parcel  → Créer colis (status → ordered)
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -45,7 +48,8 @@ router.get('/pending-cash', ...guard, async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// 2. GET /ready-for-parcel — Commandes confirmées sans colis
+// 2. GET /ready-for-parcel — Commandes CONFIRMÉES sans colis
+//    ⚠️ UNIQUEMENT status = 'confirmed' (payées, prêtes pour colis)
 // ═══════════════════════════════════════════════════════════════
 
 router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
@@ -62,7 +66,7 @@ router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.payment_status = 'paid'
-        AND o.status IN ('confirmed', 'ordered')
+        AND o.status = 'confirmed'
         AND NOT EXISTS (SELECT 1 FROM parcels p WHERE p.order_id = o.id)
       ORDER BY o.created_at ASC
     `);
@@ -72,6 +76,7 @@ router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
 
 // ═══════════════════════════════════════════════════════════════
 // 3. POST /:ref/confirm-cash — Confirmer paiement cash relais
+//    → Génère la FACTURE + envoie WhatsApp avec facture
 // ═══════════════════════════════════════════════════════════════
 
 router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
@@ -81,8 +86,11 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
     const { ref } = req.params;
 
     const { rows: [order] } = await client.query(
-      `SELECT id, reference, status, payment_mode, payment_status, total_kmf, user_id
-       FROM orders WHERE reference = $1 OR id::text = $1`, [ref]
+      `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status, o.total_kmf, o.user_id,
+         u.full_name AS customer_name, u.phone AS customer_phone
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       WHERE o.reference = $1 OR o.id::text = $1`, [ref]
     );
 
     if (!order) {
@@ -98,19 +106,19 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       return res.status(400).json({ error: 'Paiement déjà confirmé' });
     }
 
-    // Update order: paid + confirmed
+    // ── Update order: paid + confirmed ──
     await client.query(
       `UPDATE orders SET payment_status = 'paid', status = 'confirmed', 
          cash_paid_at = NOW(), updated_at = NOW() WHERE id = $1`,
       [order.id]
     );
 
-    // Log status change
+    // ── Log status change ──
     try {
       await client.query('SAVEPOINT sp_osh');
       await client.query(
         `INSERT INTO order_status_history (order_id, status, note, changed_by)
-         VALUES ($1, 'confirmed', 'Paiement cash confirmé par agent', $2::uuid)`,
+         VALUES ($1::uuid, 'confirmed', 'Paiement cash confirmé par agent', $2::uuid)`,
         [order.id, req.user?.id || null]
       );
       await client.query('RELEASE SAVEPOINT sp_osh');
@@ -120,20 +128,27 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
 
     console.log(`💰 Cash confirmed: ${order.reference} by ${req.user?.email || 'system'}`);
 
-    // ── NOTIFICATIONS (fire-and-forget) ──
+    // ── NOTIFICATIONS — Facture + WhatsApp (fire-and-forget) ──
     const notif = require('../services/notification-service');
     notif.notifyPaymentConfirmed(order.id, order.reference)
+      .then(result => {
+        if (result?.invoice) {
+          console.log(`🧾 Invoice ${result.invoice} sent for ${order.reference}`);
+        }
+      })
       .catch(e => console.error('[CONFIRM-NOTIF] ❌', e.message));
 
     res.json({
       success: true,
-      message: `Paiement confirmé pour ${order.reference}`,
+      message: `✅ Paiement confirmé pour ${order.reference} — Facture envoyée par WhatsApp`,
       order: {
         reference: order.reference,
         old_status: order.status,
         new_status: 'confirmed',
         payment_status: 'paid',
         total_kmf: Number(order.total_kmf),
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
       }
     });
   } catch (err) {
@@ -146,6 +161,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
 
 // ═══════════════════════════════════════════════════════════════
 // 4. POST /:ref/create-parcel — Créer un colis pour une commande
+//    → Status: confirmed → ORDERED (pas preparation)
 // ═══════════════════════════════════════════════════════════════
 
 router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
@@ -174,12 +190,20 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
       return res.status(404).json({ error: `Commande ${ref} introuvable` });
     }
 
-    // 2. Validate: must be paid
+    // 2. Validate: must be PAID + CONFIRMED
     if (order.payment_status !== 'paid') {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         error: 'Paiement non confirmé — impossible de créer un colis',
         rule: 'PAS DE PAIEMENT = PAS DE COLIS'
+      });
+    }
+
+    if (order.status !== 'confirmed') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: `La commande doit être en statut "confirmed" (actuellement: ${order.status})`,
+        rule: 'Flux: pending → confirmed → ordered'
       });
     }
 
@@ -190,7 +214,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     if (existing.length > 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
-        error: `Un colis existe déjà pour cette commande: ${existing[0].reference}` 
+        error: `Un colis existe déjà: ${existing[0].reference}` 
       });
     }
 
@@ -206,7 +230,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     // 5. Generate parcel reference
     const year = new Date().getFullYear();
     const { rows: [{ max_seq }] } = await client.query(
-      `SELECT COALESCE(MAX(CAST(SUBSTRING(reference FROM 'PCL-\\d{4}-(\\d+)') AS INT)), 0) AS max_seq
+      `SELECT COALESCE(MAX(CAST(SUBSTRING(reference FROM 'PCL-\\\\d{4}-(\\\\d+)') AS INT)), 0) AS max_seq
        FROM parcels WHERE reference LIKE $1`, [`PCL-${year}-%`]
     );
     const newSeq = (max_seq || 0) + 1;
@@ -223,7 +247,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
       return CHARS[b % 36];
     }).join('');
 
-    // 8. Insert parcel
+    // 8. Insert parcel (status = preparation)
     const parcelId = uuidv4();
     await client.query(
       `INSERT INTO parcels (
@@ -280,20 +304,31 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
         [uuidv4(), parcelId, order.id, parcelRef,
          req.user?.id || null, req.user?.full_name || 'Admin CT',
          req.user?.role === 'agent_hub' ? 'hub_agent' : 'system',
-         `Colis ${parcelRef} créé depuis la Control Tower`]
+         `Colis ${parcelRef} créé pour ${order.reference}`]
       );
       await client.query('RELEASE SAVEPOINT sp_scan');
     } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
 
-    // 11. Update order status
+    // 11. Update order status → ORDERED ✅
     await client.query(
-      `UPDATE orders SET status = 'preparation', preparation_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      `UPDATE orders SET status = 'ordered', ordered_at = NOW(), updated_at = NOW() WHERE id = $1`,
       [order.id]
     );
 
+    // Log status change
+    try {
+      await client.query('SAVEPOINT sp_osh2');
+      await client.query(
+        `INSERT INTO order_status_history (order_id, status, note, changed_by)
+         VALUES ($1::uuid, 'ordered', 'Colis créé — commande passée en "ordered"', $2::uuid)`,
+        [order.id, req.user?.id || null]
+      );
+      await client.query('RELEASE SAVEPOINT sp_osh2');
+    } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_osh2'); }
+
     await client.query('COMMIT');
 
-    console.log(`📦 Parcel created: ${parcelRef} for ${order.reference} by ${req.user?.email || 'system'}`);
+    console.log(`📦 Parcel created: ${parcelRef} for ${order.reference} — status → ordered`);
 
     // ── NOTIFICATIONS (fire-and-forget) ──
     const notifSvc = require('../services/notification-service');
@@ -302,13 +337,14 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `Colis ${parcelRef} créé pour ${order.reference}`,
+      message: `📦 Colis ${parcelRef} créé — Commande ${order.reference} passée en "ordered"`,
       parcel: {
         id: parcelId,
         reference: parcelRef,
         status: 'preparation',
         pickup_code: pickupCode,
         order_ref: order.reference,
+        order_status: 'ordered',
         customer_name: order.customer_name,
         destination_island: order.relais_island || order.destination_island,
         nb_items: items.length,
