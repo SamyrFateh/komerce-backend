@@ -238,48 +238,56 @@ body{
 
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
 .k-cats{
-  display:flex;flex-wrap:nowrap;gap:6px;
-  padding:10px 10px 6px;
+  display:flex;flex-wrap:nowrap;gap:7px;
+  padding:10px 12px 8px;
   margin-top:-10px;
   position:relative;z-index:2;
 }
 .k-chip{
   flex:1;
   min-width:0;
+  height:62px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;
-  padding:12px 4px;
-  border-radius:14px;
-  font-size:10px;font-weight:700;
-  letter-spacing:.2px;
+  gap:5px;
+  padding:0 4px;
+  border-radius:12px;
   text-align:center;
   background:var(--white);
   color:var(--text);
-  box-shadow:0 2px 6px rgba(0,0,0,.1);
-  border:1.5px solid #e8e8e8;
-  transition:all .2s;
-  line-height:1.2;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  border:none;
+  cursor:pointer;
+  transition:transform .15s, box-shadow .15s, background .15s;
+  line-height:1;
+}
+.k-chip:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(0,0,0,.11);
 }
 .k-chip .k-chip-emoji{
   font-size:22px;
   line-height:1;
 }
 .k-chip .k-chip-label{
-  font-size:10px;font-weight:700;
+  font-size:9px;font-weight:700;
+  letter-spacing:.3px;
+  text-transform:uppercase;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
   max-width:100%;
   padding:0 2px;
+  color:var(--text-light);
 }
 .k-chip.active{
-  background:var(--ocean);color:var(--white);
-  border-color:var(--ocean);
-  box-shadow:0 2px 8px rgba(58,125,68,.25);
+  background:var(--ocean);
+  box-shadow:0 3px 10px rgba(58,125,68,.3);
 }
+.k-chip.active .k-chip-emoji{ filter:brightness(10); }
+.k-chip.active .k-chip-label{ color:rgba(255,255,255,.85); }
 .k-chip:not(.active):active{
+  transform:scale(.96);
   background:var(--sand);
-  border-color:var(--sand-dark);
 }
 
 /* ── PRODUCT GRID ──────────────────────────────────────── */
