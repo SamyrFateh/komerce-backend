@@ -679,7 +679,7 @@ body{
 }
 
 .k-cart-header{
-  background:var(--text);
+  background:#1f2937;
   color:#fff;
   padding:18px 20px;
   display:flex;align-items:center;justify-content:space-between;
@@ -768,7 +768,7 @@ body{
   font-size:.72rem;color:var(--text-muted);margin-top:2px;
 }
 .k-cart-item-price{
-  font-size:.88rem;color:var(--ocean);font-weight:700;margin-top:2px;
+  font-size:.88rem;color:var(--coral);font-weight:700;margin-top:2px;
 }
 .k-cart-item-qty{
   display:flex;align-items:center;gap:0;margin-top:6px;
@@ -807,7 +807,7 @@ body{
   display:flex;justify-content:space-between;align-items:baseline;
   margin-bottom:4px;font-weight:700;font-size:1.1rem;
 }
-.k-cart-total-val{font-weight:800;color:var(--ocean)}
+.k-cart-total-val{font-weight:800;color:var(--coral)}
 .k-cart-total-conv{
   font-size:.78rem;color:var(--text-muted);
   display:block;text-align:right;margin-bottom:12px;
