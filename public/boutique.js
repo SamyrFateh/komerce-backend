@@ -1204,17 +1204,24 @@
         if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.style.display = 'block'; }
       }
 
-      if (isStripe && _stripe && !_stripeCard) {
-        _stripeElements = _stripe.elements();
-        _stripeCard = _stripeElements.create('card', {
-          style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
-          hidePostalCode: true
-        });
-        _stripeCard.mount('#stripe-card-element');
-        _stripeCard.on('change', ev => {
-          const errEl = document.getElementById('stripe-card-error');
-          if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.style.display = ev.error ? 'block' : 'none'; }
-        });
+      if (isStripe && !_stripeCard) {
+        // Lazy-init Stripe (le script defer peut charger après boutique.js)
+        if (!_stripe) {
+          try { _stripe = typeof Stripe !== 'undefined' ? Stripe('pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ') : null; }
+          catch(e) { console.warn('Stripe not ready:', e); }
+        }
+        if (_stripe) {
+          _stripeElements = _stripe.elements();
+          _stripeCard = _stripeElements.create('card', {
+            style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
+            hidePostalCode: true
+          });
+          _stripeCard.mount('#stripe-card-element');
+          _stripeCard.on('change', ev => {
+            const errEl = document.getElementById('stripe-card-error');
+            if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.style.display = ev.error ? 'block' : 'none'; }
+          });
+        }
       }
 
       const btn = document.getElementById('btn-confirm-order');
@@ -1438,14 +1445,10 @@
 
     try {
       // Step 1: guest-checkout
-      // sender_phone = numéro diaspora (depuis checkbox "Recevoir aussi le suivi SMS")
-      const whatsappPhone = senderPhone || '';
-
       await apiPost('/api/auth/guest-checkout', {
         full_name: clientName,
         phone: clientPhone,
-        email: clientEmail || undefined,
-        whatsapp_phone: whatsappPhone || undefined
+        email: clientEmail || undefined
       });
 
       // Step 2: create order
