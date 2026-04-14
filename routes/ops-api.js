@@ -1,4 +1,4 @@
-// routes/ops-api.js — v2.0 — Endpoints opérationnels pour Control Tower
+// routes/ops-api.js — v2.1 — Fix: reconciliation alias + cash_relais enum — Endpoints opérationnels pour Control Tower
 // Requête directement la DB — pas de dépendance aux services v2
 const express = require('express');
 const router = express.Router();
@@ -37,7 +37,7 @@ router.get('/incidents', async (req, res) => {
 });
 
 // ─── GET /api/v2/reconciliation/summary ─────────────────────────────
-router.get('/reconciliation/summary', async (req, res) => {
+const reconciliationHandler = async (req, res) => {
   try {
     // Reconciliation based on parcel_items.verified status
     const { rows: summary } = await pool.query(`
@@ -111,7 +111,11 @@ router.get('/reconciliation/summary', async (req, res) => {
     console.error('GET /api/v2/reconciliation/summary error:', err.message);
     res.status(500).json({ error: err.message });
   }
-});
+};
+
+// Register reconciliation on both paths (frontend uses /reconciliation)
+router.get('/reconciliation', reconciliationHandler);
+router.get('/reconciliation/summary', reconciliationHandler);
 
 // ─── GET /api/v2/alerts ─────────────────────────────────────────────
 // Auto-generated alerts from business rules
@@ -128,7 +132,7 @@ router.get('/alerts', async (req, res) => {
       FROM orders o
       LEFT JOIN users u ON o.user_id = u.id
       LEFT JOIN relais r ON o.relais_id = r.id
-      WHERE o.payment_mode = 'cash' 
+      WHERE o.payment_mode = 'cash_relais' 
         AND o.payment_status = 'pending'
         AND o.status NOT IN ('cancelled', 'collected')
         AND o.created_at < NOW() - INTERVAL '72 hours'
