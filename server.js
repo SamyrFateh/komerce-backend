@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.15 (Hub dashboard + Relay dashboard + suivi.html public)
+ * KOMERCE — Serveur API v10.16 (+ Invoice system)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v10.16: routes/invoices.js ajouté (mini-facture client)
  * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
  * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
  * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
@@ -180,6 +181,7 @@ const walletRouter     = require('./routes/wallet');
 const relayDashRouter  = require('./routes/relay-dashboard');
 const hubDashRouter    = require('./routes/hub-dashboard');
 const transitDashRouter = require('./routes/transit-dashboard');
+const invoicesRouter   = require('./routes/invoices');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -196,6 +198,7 @@ app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
 app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/transit',    transitDashRouter);
+app.use('/api/invoices',   invoicesRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);
@@ -226,7 +229,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '10.15',
+      version:       '10.16',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -311,7 +314,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.15 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v10.16 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
@@ -351,6 +354,34 @@ const server = app.listen(PORT, () => {
           END IF;
         END$$`);
       } catch(e) { console.warn('F34 stock CHECK (non-fatal):', e.message); }
+
+      // ── Migration 023: invoices table ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS invoices (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            invoice_number TEXT NOT NULL UNIQUE,
+            order_id UUID NOT NULL REFERENCES orders(id),
+            parcel_id UUID REFERENCES parcels(id),
+            client_name TEXT NOT NULL,
+            client_phone TEXT NOT NULL,
+            relay_name TEXT NOT NULL,
+            items_snapshot JSONB NOT NULL,
+            subtotal_kmf INTEGER NOT NULL,
+            shipping_kmf INTEGER NOT NULL DEFAULT 0,
+            total_kmf INTEGER NOT NULL,
+            payment_mode TEXT NOT NULL,
+            payment_status TEXT NOT NULL DEFAULT 'paid',
+            delivered_via TEXT,
+            delivered_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE SEQUENCE IF NOT EXISTS invoice_seq START 1;
+          CREATE INDEX IF NOT EXISTS idx_invoices_order ON invoices(order_id);
+          CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number);
+        `);
+        console.log('✅ Migration 023: invoices table ready');
+      } catch(e) { console.warn('Migration 023 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
