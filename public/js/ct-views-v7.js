@@ -93,6 +93,13 @@ CT.views._showParcel = async function(ref, container) {
     '</div>';
 
     // Clients → Commandes → Articles
+    html += '<div class="ct-action-bar" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">';
+    // Print label buttons
+    html += '<button class="ct-btn ct-btn-secondary" onclick="window.open(\'/api/v2/parcels/' + p.reference + '/label\', \'_blank\')">' +
+      '🏷️ Etiquette A5</button>';
+    html += '<button class="ct-btn ct-btn-secondary" onclick="window.open(\'/api/v2/parcels/' + p.reference + '/label?format=thermal\', \'_blank\')">' +
+      '🖨️ Etiquette thermique</button>';
+    html += '</div>';
     html += '<div class="ct-section-block"><h3>👥 Clients & Commandes</h3>' + CT.pc.hierarchy(p.clients) + '</div>';
     
     // Timeline

@@ -4,7 +4,7 @@
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
- * Changelog v11.0: Parcel-First API v2 (routes/parcel-api-v2.js) — refonte COLIS-FIRST
+ * Changelog v11.2: Parcel-First API v2 (routes/parcel-api-v2.js) — refonte COLIS-FIRST
  * Changelog v10.18: routes/invoices.js ajouté (mini-facture client)
  * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
  * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
@@ -192,6 +192,7 @@ const parcelSecurity   = require('./services/parcel-security');
 
 // ── NEW: Parcel-First API v2 (COLIS-FIRST) ──────────────────────────────────
 const parcelApiV2Router = require('./routes/parcel-api-v2');
+const parcelLabelRouter = require('./routes/parcel-label');
 const orderApiV2Router = require('./routes/order-api-v2');
 
 app.use('/api/auth',       authRouter);
@@ -209,6 +210,7 @@ app.use('/api/transit',    transitDashRouter);
 
 // ── Parcel-First API MUST be mounted BEFORE generic /api/v2 ─────────────────
 app.use('/api/v2/parcels', parcelApiV2Router);
+app.use('/api/v2/parcels', parcelLabelRouter);
 app.use('/api/v2/orders', orderApiV2Router);
 app.use('/api/v2', opsApiRouter);
 
