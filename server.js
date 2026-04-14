@@ -48,6 +48,7 @@ const {
 const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
 const { runAllSeeds }                     = require('./scripts/seed');
 const { errorHandler } = require('./middleware/error-handler');
+const { requestIdMiddleware } = require('./middleware/request-id');
 
 const app = express();
 
@@ -108,6 +109,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+app.use(requestIdMiddleware);
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
 
