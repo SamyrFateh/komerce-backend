@@ -1351,8 +1351,8 @@
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;gap:0;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#fff4f0;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:0 10px;font-weight:700;color:var(--coral);white-space:nowrap;display:flex;align-items:center;font-size:0.82rem;line-height:1;';
-    prefix.textContent = '+269';
+    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 8px 9px 10px;font-weight:700;font-size:0.88rem;color:#555;white-space:nowrap;display:flex;align-items:center;min-width:72px;justify-content:center;';
+    prefix.textContent = '🇰🇲 +269';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
     input.type = 'tel';
