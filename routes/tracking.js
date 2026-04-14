@@ -42,7 +42,7 @@ router.get('/:token', async (req, res) => {
       return res.status(400).json({ error: 'Token invalide' });
     }
 
-    // Fetch order by qr_token
+    // Fetch order by qr_token OR by reference (fallback for CT WhatsApp links)
     const orderResult = await pool.query(`
       SELECT
         o.id, o.reference, o.status, o.total_kmf,
@@ -58,7 +58,7 @@ router.get('/:token', async (req, res) => {
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN relais rel ON rel.id = o.relais_id
-      WHERE o.qr_token = $1
+      WHERE o.qr_token = $1 OR o.reference = $1
     `, [token]);
 
     if (orderResult.rows.length === 0) {
