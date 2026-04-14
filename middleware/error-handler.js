@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Gestion centralisée des erreurs (Vague 3)
+ * KOMERCE — Gestion centralisée des erreurs (V2.2 — Request ID + operational distinction)
  *
  * AppError   : classe d'erreur métier intentionnelle et typée
  * errorHandler : middleware Express final — monté après toutes les routes dans server.js
@@ -7,6 +7,11 @@
  * Conventions :
  *   - err.isOperational = true  → erreur connue, message safe à envoyer au client
  *   - err.isOperational = false → bug inattendu → log complet + 500 générique
+ *
+ * V2.2 CHANGES:
+ *   - Request ID (req.requestId) included in all error responses
+ *   - Request ID included in all error logs for correlation
+ *   - Structured error logging with timestamp + method + path + requestId
  */
 
 'use strict';
@@ -71,6 +76,34 @@ class AppError extends Error {
   }
 }
 
+// ── Helper: build error response with request ID ────────────────────────────
+
+function buildErrorResponse(res, statusCode, error, code, req) {
+  const body = { error, code };
+  if (req?.requestId) body.requestId = req.requestId;
+  return res.status(statusCode).json(body);
+}
+
+// ── Structured error logger ─────────────────────────────────────────────────
+
+function logError(level, req, err, extra = {}) {
+  const entry = {
+    level,
+    timestamp: new Date().toISOString(),
+    requestId: req?.requestId || 'unknown',
+    method:    req?.method,
+    path:      req?.path,
+    message:   err.message,
+    ...extra,
+  };
+  if (level === 'error') {
+    if (process.env.NODE_ENV !== 'production') entry.stack = err.stack;
+    console.error('[ERROR]', JSON.stringify(entry));
+  } else {
+    console.warn(`[WARN]`, JSON.stringify(entry));
+  }
+}
+
 // ── Middleware Express d'erreurs centralisé ──────────────────────────────────
 
 /**
@@ -84,73 +117,66 @@ function errorHandler(err, req, res, next) {
 
   // ── 1. Erreurs métier intentionnelles (AppError) ─────────────────────────
   if (err.isOperational) {
-    return res.status(err.statusCode).json({
-      error: err.message,
-      code:  err.code,
-    });
+    return buildErrorResponse(res, err.statusCode, err.message, err.code, req);
   }
 
   // ── 2. CORS ───────────────────────────────────────────────────────────────
   if (err.message?.startsWith('Not allowed by CORS')) {
-    console.warn('[CORS] Blocked:', err.message);
-    return res.status(403).json({ error: 'Origine non autorisée', code: 'CORS_BLOCKED' });
+    logError('warn', req, err, { type: 'cors' });
+    return buildErrorResponse(res, 403, 'Origine non autorisée', 'CORS_BLOCKED', req);
   }
 
   // ── 3. Multer — fichier trop grand ────────────────────────────────────────
   if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ error: 'Fichier trop volumineux (max 5 Mo)', code: 'FILE_TOO_LARGE' });
+    return buildErrorResponse(res, 413, 'Fichier trop volumineux (max 5 Mo)', 'FILE_TOO_LARGE', req);
   }
 
   // ── 4. Multer — format non autorisé (lancé depuis fileFilter) ────────────
   if (err.message?.includes('Format image non supporté') || err.message?.includes('magic bytes')) {
-    return res.status(415).json({ error: err.message, code: 'UNSUPPORTED_MEDIA_TYPE' });
+    return buildErrorResponse(res, 415, err.message, 'UNSUPPORTED_MEDIA_TYPE', req);
   }
 
   // ── 5. Validation Joi ─────────────────────────────────────────────────────
   if (err.isJoi || err.name === 'ValidationError') {
     const msg = err.details?.[0]?.message ?? err.message;
-    return res.status(400).json({ error: msg, code: 'VALIDATION_ERROR' });
+    return buildErrorResponse(res, 400, msg, 'VALIDATION_ERROR', req);
   }
 
   // ── 6. JWT ────────────────────────────────────────────────────────────────
   if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({ error: 'Token invalide', code: 'INVALID_TOKEN' });
+    return buildErrorResponse(res, 401, 'Token invalide', 'INVALID_TOKEN', req);
   }
   if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({ error: 'Token expiré', code: 'TOKEN_EXPIRED' });
+    return buildErrorResponse(res, 401, 'Token expiré', 'TOKEN_EXPIRED', req);
   }
 
   // ── 7. PostgreSQL ─────────────────────────────────────────────────────────
   if (err.code === '23505') { // unique_violation
-    return res.status(409).json({ error: 'Ressource déjà existante', code: 'DUPLICATE' });
+    return buildErrorResponse(res, 409, 'Ressource déjà existante', 'DUPLICATE', req);
   }
   if (err.code === '23503') { // foreign_key_violation
-    return res.status(400).json({ error: 'Référence invalide', code: 'FOREIGN_KEY' });
+    return buildErrorResponse(res, 400, 'Référence invalide', 'FOREIGN_KEY', req);
   }
   if (err.code === '22P02') { // invalid_text_representation (UUID malformé)
-    return res.status(400).json({ error: 'Identifiant invalide (UUID malformé)', code: 'INVALID_UUID' });
+    return buildErrorResponse(res, 400, 'Identifiant invalide (UUID malformé)', 'INVALID_UUID', req);
   }
   if (err.code === '23502') { // not_null_violation
-    return res.status(400).json({ error: 'Champ obligatoire manquant', code: 'MISSING_FIELD' });
+    return buildErrorResponse(res, 400, 'Champ obligatoire manquant', 'MISSING_FIELD', req);
   }
   if (err.code === '42P01') { // undefined_table
-    return res.status(500).json({ error: 'Erreur de schéma base de données', code: 'DB_SCHEMA_ERROR' });
+    logError('error', req, err, { type: 'db_schema' });
+    return buildErrorResponse(res, 500, 'Erreur de schéma base de données', 'DB_SCHEMA_ERROR', req);
   }
 
   // ── 8. SyntaxError — JSON malformé dans le body ───────────────────────────
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ error: 'JSON invalide dans le body', code: 'INVALID_JSON' });
+    return buildErrorResponse(res, 400, 'JSON invalide dans le body', 'INVALID_JSON', req);
   }
 
   // ── 9. Erreur non gérée ───────────────────────────────────────────────────
-  console.error('[ERROR] Unhandled exception:', {
-    method:  req.method,
-    path:    req.path,
-    message: err.message,
-    stack:   process.env.NODE_ENV !== 'production' ? err.stack : '(masqué en prod)',
-  });
+  logError('error', req, err, { type: 'unhandled' });
 
-  return res.status(500).json({ error: 'Erreur serveur interne', code: 'INTERNAL_ERROR' });
+  return buildErrorResponse(res, 500, 'Erreur serveur interne', 'INTERNAL_ERROR', req);
 }
 
 module.exports = { AppError, errorHandler };

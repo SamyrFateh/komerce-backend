@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Back-office Admin v8.2 (fixed cascade + reset)
+ * KOMERCE — Back-office Admin v8.2 (fixed cascade + reset) — V2.1 Password Security
  */
 
 'use strict';
@@ -499,18 +499,72 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
 });
 
 // ─── PUT /api/admin/users/:id/password ─────────────────────────────
+// V2.1: Password strength + self-change verification + same-password check
 router.put('/users/:id/password', ...guard, async (req, res, next) => {
   const bcrypt = require('bcryptjs');
   try {
     const { id } = req.params;
-    const { password } = req.body;
-    if (!password || password.length < 6) return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
-    const { rows: [existing] } = await db.query('SELECT id, full_name, email FROM users WHERE id = $1::uuid', [id]);
+    const { password, current_password } = req.body;
+
+    // V2.1: Password strength validation
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        error: 'Le mot de passe doit contenir au moins 8 caractères',
+        code: 'WEAK_PASSWORD',
+      });
+    }
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return res.status(400).json({
+        error: 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre',
+        code: 'WEAK_PASSWORD',
+      });
+    }
+
+    const { rows: [existing] } = await db.query(
+      'SELECT id, full_name, email, password_hash FROM users WHERE id = $1::uuid',
+      [id]
+    );
     if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    const password_hash = await bcrypt.hash(password, 10);
-    await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid', [password_hash, id]);
-    console.log(`🔒 Admin reset password for ${existing.email} by ${req.user.email}`);
-    res.json({ success: true, message: `Mot de passe réinitialisé pour ${existing.full_name}` });
+
+    // V2.1: Self-change requires current_password verification
+    if (id === req.user.id) {
+      if (!current_password) {
+        return res.status(400).json({
+          error: 'current_password requis pour modifier votre propre mot de passe',
+          code: 'CURRENT_PASSWORD_REQUIRED',
+        });
+      }
+      const isValid = await bcrypt.compare(current_password, existing.password_hash);
+      if (!isValid) {
+        console.warn(`🔒 Failed self-password-change attempt for ${existing.email} from ${req.ip}`);
+        return res.status(403).json({
+          error: 'Mot de passe actuel incorrect',
+          code: 'INVALID_CURRENT_PASSWORD',
+        });
+      }
+    }
+
+    // V2.1: Prevent reusing same password
+    const isSame = await bcrypt.compare(password, existing.password_hash);
+    if (isSame) {
+      return res.status(400).json({
+        error: 'Le nouveau mot de passe doit être différent de l\'ancien',
+        code: 'SAME_PASSWORD',
+      });
+    }
+
+    const password_hash = await bcrypt.hash(password, 12);
+    await db.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid',
+      [password_hash, id]
+    );
+
+    const action = id === req.user.id ? 'self-changed' : 'admin-reset';
+    console.log(`🔒 Password ${action} for ${existing.email} by ${req.user.email} (IP: ${req.ip})`);
+    res.json({
+      success: true,
+      message: `Mot de passe ${id === req.user.id ? 'modifié' : 'réinitialisé'} pour ${existing.full_name}`,
+    });
   } catch(err) { next(err); }
 });
 
