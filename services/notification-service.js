@@ -173,6 +173,23 @@ async function sendWhatsApp(phone, text) {
   return result;
 }
 
+
+// ─── Get unique phone numbers (local + diaspora) ────────────
+
+function getUniquePhones(localPhone, diasporaPhone) {
+  const phones = [];
+  const seen = new Set();
+  for (const p of [localPhone, diasporaPhone]) {
+    if (!p) continue;
+    const clean = p.replace(/[^0-9+]/g, '');
+    if (clean.length >= 8 && !seen.has(clean)) {
+      seen.add(clean);
+      phones.push(clean);
+    }
+  }
+  return phones;
+}
+
 // ─── Log notification to DB ─────────────────────────────────
 
 async function logNotification({ parcelRef, orderRef, channel, event, recipient, status, detail }) {
@@ -206,7 +223,9 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         o.reference AS order_ref, o.total_kmf,
         o.payment_mode, o.payment_status,
         COALESCE( u.full_name, p.recipient_name) AS customer_name,
-        COALESCE(u.whatsapp_phone, u.phone, p.recipient_phone) AS customer_phone,
+        u.phone AS local_phone,
+        u.whatsapp_phone AS diaspora_phone,
+        COALESCE(u.phone, p.recipient_phone) AS fallback_phone,
         u.email AS customer_email,
         o.id AS order_id, o.cash_ref_code
       FROM parcels p
@@ -234,20 +253,25 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         pickupCode: row.pickup_code,
       };
 
-      // 1. WhatsApp (PRIMARY)
+      // Build list of ALL unique phones (local +269 + diaspora +33)
+      const allPhones = getUniquePhones(row.local_phone || row.fallback_phone, row.diaspora_phone);
+
+      // 1. WhatsApp → send to ALL phones (local + diaspora)
       const waTemplate = WA_MESSAGES[newStatus];
-      if (waTemplate && row.customer_phone) {
+      if (waTemplate && allPhones.length > 0) {
         const waText = waTemplate(d);
-        const waResult = await sendWhatsApp(row.customer_phone, waText);
-        results.whatsapp.push(waResult);
-        
-        await logNotification({
-          parcelRef: row.parcel_ref, orderRef: row.order_ref,
-          channel: 'whatsapp', event: `scan_${newStatus}`,
-          recipient: row.customer_phone,
-          status: waResult.success ? 'sent' : 'link_generated',
-          detail: waResult
-        });
+        for (const phone of allPhones) {
+          const waResult = await sendWhatsApp(phone, waText);
+          results.whatsapp.push(waResult);
+          
+          await logNotification({
+            parcelRef: row.parcel_ref, orderRef: row.order_ref,
+            channel: 'whatsapp', event: `scan_${newStatus}`,
+            recipient: phone,
+            status: waResult.success ? 'sent' : 'link_generated',
+            detail: waResult
+          });
+        }
       }
 
       // 2. Email (key stages only)
@@ -273,21 +297,23 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         });
       }
 
-      // 3. SMS
-      if (row.customer_phone && STATUS_SMS[newStatus]) {
-        const smsText = STATUS_SMS[newStatus](row.order_ref || row.parcel_ref, row.relais_name);
-        sendSMS(row.customer_phone, smsText, `parcel_${newStatus}`, row.order_id)
-          .then(r => logNotification({
-            parcelRef: row.parcel_ref, orderRef: row.order_ref,
-            channel: 'sms', event: `scan_${newStatus}`,
-            recipient: row.customer_phone, status: 'sent', detail: r
-          }))
-          .catch(e => logNotification({
-            parcelRef: row.parcel_ref, orderRef: row.order_ref,
-            channel: 'sms', event: `scan_${newStatus}`,
-            recipient: row.customer_phone, status: 'failed', detail: { error: e.message }
-          }));
-        results.sms.push({ queued: true });
+      // 3. SMS → send to ALL phones
+      if (allPhones.length > 0 && STATUS_SMS[newStatus]) {
+        for (const phone of allPhones) {
+          const smsText = STATUS_SMS[newStatus](row.order_ref || row.parcel_ref, row.relais_name);
+          sendSMS(phone, smsText, `parcel_${newStatus}`, row.order_id)
+            .then(r => logNotification({
+              parcelRef: row.parcel_ref, orderRef: row.order_ref,
+              channel: 'sms', event: `scan_${newStatus}`,
+              recipient: phone, status: 'sent', detail: r
+            }))
+            .catch(e => logNotification({
+              parcelRef: row.parcel_ref, orderRef: row.order_ref,
+              channel: 'sms', event: `scan_${newStatus}`,
+              recipient: phone, status: 'failed', detail: { error: e.message }
+            }));
+          results.sms.push({ queued: true, phone });
+        }
       }
     }
 
@@ -308,7 +334,8 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
         u.full_name AS customer_name,
-        COALESCE(u.whatsapp_phone, u.phone) AS customer_phone,
+        u.phone AS local_phone,
+        u.whatsapp_phone AS diaspora_phone,
         u.email AS customer_email,
         r.name AS relais_name
       FROM orders o
@@ -318,6 +345,10 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
     `, [orderId]);
 
     if (!order) return null;
+
+    // Build list of ALL phone numbers to notify
+    order.all_phones = getUniquePhones(order.local_phone, order.diaspora_phone);
+    order.customer_phone = order.all_phones[0] || null;
 
     // ── Fetch order items for invoice ──
     const { rows: items } = await db.query(`
@@ -379,26 +410,28 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 
     const payLabel = order.payment_mode === 'cash_relais' ? 'Cash au relais ✅' : 'En ligne ✅';
 
-    // ── WhatsApp: invoice message (PRIMARY) ──
-    if (order.customer_phone) {
-      const d = {
-        customerName: order.customer_name || 'Client',
-        orderRef: order.reference,
-        totalKmf: order.total_kmf,
-        invoiceNum: invNum || order.reference,
-        itemsText,
-        paymentLabel: payLabel,
-      };
+    // ── WhatsApp: invoice message → ALL phones (local + diaspora) ──
+    const d = {
+      customerName: order.customer_name || 'Client',
+      orderRef: order.reference,
+      totalKmf: order.total_kmf,
+      invoiceNum: invNum || order.reference,
+      itemsText,
+      paymentLabel: payLabel,
+    };
 
+    results.whatsapp = [];
+    for (const phone of order.all_phones) {
       const waText = WA_MESSAGES.invoice(d);
-      results.whatsapp = await sendWhatsApp(order.customer_phone, waText);
+      const waResult = await sendWhatsApp(phone, waText);
+      results.whatsapp.push(waResult);
 
       await logNotification({
         orderRef: order.reference,
         channel: 'whatsapp', event: 'payment_confirmed_invoice',
-        recipient: order.customer_phone,
-        status: results.whatsapp.success ? 'sent' : 'link_generated',
-        detail: { ...results.whatsapp, invoice: invNum }
+        recipient: phone,
+        status: waResult.success ? 'sent' : 'link_generated',
+        detail: { ...waResult, invoice: invNum }
       });
     }
 
@@ -439,7 +472,8 @@ async function notifyParcelCreated(parcelRef, orderId, orderRef) {
     const { rows: [data] } = await db.query(`
       SELECT o.reference AS order_ref, o.total_kmf,
         u.full_name AS customer_name,
-        COALESCE(u.whatsapp_phone, u.phone) AS customer_phone,
+        u.phone AS local_phone,
+        u.whatsapp_phone AS diaspora_phone,
         u.email AS customer_email
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
@@ -455,13 +489,15 @@ async function notifyParcelCreated(parcelRef, orderId, orderRef) {
       totalKmf: data.total_kmf,
     };
 
-    if (data.customer_phone) {
+    // Send to ALL phones (local + diaspora)
+    const allPhones = getUniquePhones(data.local_phone, data.diaspora_phone);
+    for (const phone of allPhones) {
       const waText = WA_MESSAGES.parcel_created(d);
-      const result = await sendWhatsApp(data.customer_phone, waText);
+      const result = await sendWhatsApp(phone, waText);
       await logNotification({
         parcelRef, orderRef: data.order_ref,
         channel: 'whatsapp', event: 'parcel_created',
-        recipient: data.customer_phone,
+        recipient: phone,
         status: result.success ? 'sent' : 'link_generated',
         detail: result
       });
