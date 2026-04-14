@@ -171,7 +171,7 @@ body{
   overflow-x:hidden;
   padding-bottom:4px;
   scrollbar-width:none;
-  background:#ffffff;
+  background:transparent;
   isolation:isolate;
 }
 .k-promo-rail-inner{
@@ -205,7 +205,6 @@ body{
   box-shadow:none;
   object-fit:contain;
   background:transparent;
-  mix-blend-mode:multiply;
   /* drop-shadow donne l'effet flotant + détourage visuel */
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.20)) drop-shadow(0 1px 3px rgba(0,0,0,.10));
   animation:promo-float 3s ease-in-out infinite;
