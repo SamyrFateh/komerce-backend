@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v12.0 (CT v7 — 3 sections)
+ * KOMERCE — Serveur API v12.1 (CT v7 — 3 sections)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -194,6 +194,7 @@ const parcelSecurity   = require('./services/parcel-security');
 const parcelApiV2Router = require('./routes/parcel-api-v2');
 const parcelLabelRouter = require('./routes/parcel-label');
 const orderApiV2Router = require('./routes/order-api-v2');
+const notificationApiRouter = require('./routes/notification-api');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -212,6 +213,7 @@ app.use('/api/transit',    transitDashRouter);
 app.use('/api/v2/parcels', parcelApiV2Router);
 app.use('/api/v2/parcels', parcelLabelRouter);
 app.use('/api/v2/orders', orderApiV2Router);
+app.use('/api/v2/notifications', notificationApiRouter);
 app.use('/api/v2', opsApiRouter);
 
 app.use('/api/tracking', trackingRouter);
@@ -248,7 +250,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '12.0',
+      version:       '12.1',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -347,7 +349,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v12.0 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v12.1 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
@@ -415,6 +417,28 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 023: invoices table ready');
       } catch(e) { console.warn('Migration 023 (non-fatal):', e.message); }
+
+      // ── Migration 024: notification_log table ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS notification_log (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            parcel_ref VARCHAR(30),
+            order_ref VARCHAR(30),
+            channel VARCHAR(20) NOT NULL,
+            event VARCHAR(50) NOT NULL,
+            recipient VARCHAR(100) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            detail JSONB DEFAULT '{}',
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_notif_parcel ON notification_log(parcel_ref);
+          CREATE INDEX IF NOT EXISTS idx_notif_order ON notification_log(order_ref);
+          CREATE INDEX IF NOT EXISTS idx_notif_channel ON notification_log(channel);
+          CREATE INDEX IF NOT EXISTS idx_notif_created ON notification_log(created_at DESC);
+        `);
+        console.log('✅ Migration 024: notification_log table ready');
+      } catch(e) { console.warn('Migration 024 (non-fatal):', e.message); }
 
       
       // ── Migration: ensure 'pending' in order_status enum ──
