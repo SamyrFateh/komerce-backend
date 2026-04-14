@@ -1,5 +1,5 @@
 /* ===================================================================
-   Komerce Control Tower — ct-api.js
+   Komerce Control Tower — ct-api.js v4.0 — Parcel-First
    API layer: all HTTP calls go through here.
    Auth is handled by httpOnly cookie (kmrc_jwt), set by the server.
    =================================================================== */
@@ -38,22 +38,22 @@ CT.api = {
   patch: function(path, body) { return this.fetch(path, { method: 'PATCH', body: JSON.stringify(body) }); },
   del: function(path) { return this.fetch(path, { method: 'DELETE' }); },
 
-  // ---- Auth ----
+  // ── Auth ──────────────────────────────────────────────────
   login: function(email, password) { return this.post('/api/auth/login', { email: email, password: password }); },
   logout: function() { return this.post('/api/auth/logout'); },
   me: function() { return this.get('/api/auth/me'); },
   guestCheckout: function(phone, fullName) { return this.post('/api/auth/guest-checkout', { phone: phone, full_name: fullName }); },
 
-  // ---- Dashboard ----
+  // ── Dashboard (legacy) ────────────────────────────────────
   dashboard: function(endpoint) { return this.get('/api/dashboard/' + endpoint); },
 
-  // ---- Orders ----
+  // ── Orders ────────────────────────────────────────────────
   createOrder: function(data) { return this.post('/api/orders', data); },
   updateOrderStatus: function(id, status) { return this.patch('/api/orders/' + id + '/status', { status: status }); },
   deleteOrder: function(id) { return this.del('/api/admin/orders/' + id); },
   getOrder: function(ref) { return this.get('/api/orders/' + ref); },
 
-  // ---- Admin ----
+  // ── Admin ─────────────────────────────────────────────────
   adminOrders: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/admin/orders' + (qs ? '?' + qs : ''));
@@ -63,47 +63,42 @@ CT.api = {
   adminCounts: function() { return this.get('/api/admin/counts'); },
   adminUsers: function() { return this.get('/api/admin/users'); },
 
-  // ---- Payments (Stripe + Cash) ----
+  // ── Payments ──────────────────────────────────────────────
   stripeCreateIntent: function(orderRef) { return this.post('/api/payments/stripe/intent', { order_reference: orderRef }); },
   cashConfirm: function(cashRefCode) { return this.post('/api/payments/cash/confirm', { cash_ref_code: cashRefCode }); },
   paymentRates: function() { return this.get('/api/payments/rates'); },
   stripeConfig: function() { return this.get('/api/payments/config'); },
 
-  // ---- Products ----
-  // API returns {products: [...], total, limit, offset} — we extract the array
+  // ── Products ──────────────────────────────────────────────
   products: async function() {
     var data = await this.get('/api/products');
     return data.products || data || [];
   },
 
-  // ---- Parcels (colis — unité logistique R1) ----
-  // GET /api/parcels  → { data: [...], pagination: {...} }
+  // ── Parcels (legacy v1) ───────────────────────────────────
   parcels: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/parcels' + (qs ? '?' + qs : ''));
   },
   getParcel: function(ref) { return this.get('/api/parcels/' + ref); },
-  // PATCH /api/parcels/:id/status  → change parcel status (logistic unit)
   updateParcelStatus: function(id, status, notes) {
     return this.patch('/api/parcels/' + id + '/status', { status: status, notes: notes || null });
   },
   parcelEvents: function(ref) { return this.get('/api/parcels/' + ref + '/events'); },
 
-  // ---- Hub Dashboard (KPIs opérationnels + file + détail complet) ----
-  // NOTE: route montée sur /api/hub-dash (pas hub-dashboard)
+  // ── Hub Dashboard ─────────────────────────────────────────
   hubDashboard: function() { return this.get('/api/hub-dash/dashboard'); },
   hubQueue: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/hub-dash/queue' + (qs ? '?' + qs : ''));
   },
-  // GET /api/hub-dash/orders/:id → détail commande avec colis, items, timeline, incidents
   hubOrderDetail: function(id) { return this.get('/api/hub-dash/orders/' + id); },
   hubStartPrep: function(id) { return this.post('/api/hub-dash/orders/' + id + '/start-prep', {}); },
   hubShipParcel: function(parcelId, data) {
     return this.post('/api/hub-dash/parcels/' + parcelId + '/ship', data || {});
   },
 
-  // ---- Transit Dashboard (colis-first) ----
+  // ── Transit Dashboard ─────────────────────────────────────
   transitDashboard: function() { return this.get('/api/transit/dashboard'); },
   transitParcels: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
@@ -112,5 +107,61 @@ CT.api = {
   transitDelayed: function() { return this.get('/api/transit/delayed'); },
   transitAlerts: function() { return this.get('/api/transit/alerts'); },
   resolveAlert: function(id) { return this.post('/api/transit/alerts/' + id + '/resolve', {}); },
-  setParcelDestination: function(id, data) { return this.patch('/api/transit/parcels/' + id + '/destination', data); }
+  setParcelDestination: function(id, data) { return this.patch('/api/transit/parcels/' + id + '/destination', data); },
+
+  // ════════════════════════════════════════════════════════════
+  // ── PARCEL-FIRST V2 API ────────────────────────────────────
+  // ════════════════════════════════════════════════════════════
+
+  // ── Scans (source de vérité) ──────────────────────────────
+  scanParcel: function(parcelRef, eventType, data) {
+    return this.post('/api/v2/scans/' + parcelRef, Object.assign({ event_type: eventType }, data || {}));
+  },
+  parcelTimeline: function(parcelRef) {
+    return this.get('/api/v2/scans/' + parcelRef + '/timeline');
+  },
+
+  // ── Traçabilité ───────────────────────────────────────────
+  parcelTrace: function(parcelRef) {
+    return this.get('/api/v2/parcels/' + parcelRef + '/trace');
+  },
+
+  // ── Vérification relais ───────────────────────────────────
+  verifyParcelContent: function(parcelRef, items, notes) {
+    return this.post('/api/v2/parcels/' + parcelRef + '/verify', { items: items, notes: notes });
+  },
+
+  // ── Incidents ─────────────────────────────────────────────
+  getIncidents: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/incidents' + (qs ? '?' + qs : ''));
+  },
+  resolveIncident: function(id, data) {
+    return this.post('/api/v2/incidents/' + id + '/resolve', data);
+  },
+
+  // ── Réconciliation ────────────────────────────────────────
+  runReconciliation: function() {
+    return this.post('/api/v2/reconciliation/run', {});
+  },
+  getReconciliationReport: function() {
+    return this.get('/api/v2/reconciliation/report');
+  },
+  orderFulfillment: function(orderId) {
+    return this.get('/api/v2/reconciliation/order/' + orderId);
+  },
+
+  // ── Dashboard v2 (parcel-first) ───────────────────────────
+  hubDashV2: function() { return this.get('/api/v2/dashboard/hub'); },
+  relaisDashV2: function() { return this.get('/api/v2/dashboard/relais'); },
+  opsDashV2: function() { return this.get('/api/v2/dashboard/ops'); },
+
+  // ── Alertes ───────────────────────────────────────────────
+  getAlerts: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/alerts' + (qs ? '?' + qs : ''));
+  },
+  acknowledgeAlert: function(id) {
+    return this.post('/api/v2/alerts/' + id + '/ack', {});
+  }
 };

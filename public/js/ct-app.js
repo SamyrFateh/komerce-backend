@@ -1,23 +1,26 @@
 /* ===================================================================
-   Komerce Control Tower — ct-app.js v3.1
+   Komerce Control Tower — ct-app.js v4.0 — Parcel-First
    Router, sidebar, toast system, init, login.
-   + Vue Commandes ajoutée dans la sidebar
+   + Vues Incidents & Réconciliation dans la sidebar
    =================================================================== */
 window.CT = window.CT || {};
 
 CT.currentView = null;
 
 /* ---------------------------------------------------------------
-   Sidebar items — 6 dashboards métier + Scénarios
+   Sidebar items — 9 dashboards + Scénarios
    --------------------------------------------------------------- */
 CT.SIDEBAR_ITEMS = [
-  { id: 'global',    icon: '🧠', label: 'Global',      section: 'dashboards' },
-  { id: 'hub',       icon: '🏭', label: 'Hub Dubaï',    section: 'dashboards' },
-  { id: 'transit',   icon: '🚢', label: 'Transit',      section: 'dashboards' },
-  { id: 'relais',    icon: '🏝️', label: 'Relais',       section: 'dashboards' },
-  { id: 'finance',   icon: '💰', label: 'Finance',      section: 'dashboards' },
-  { id: 'commandes', icon: '📋', label: 'Commandes',    section: 'dashboards' },
-  { id: 'scenarios', icon: '🎮', label: 'Scénarios',    section: 'tools' }
+  { id: 'global',         icon: '🧠', label: 'Global',         section: 'dashboards' },
+  { id: 'hub',            icon: '🏭', label: 'Hub Dubaï',       section: 'dashboards' },
+  { id: 'transit',        icon: '🚢', label: 'Transit',         section: 'dashboards' },
+  { id: 'relais',         icon: '🏝️', label: 'Relais',          section: 'dashboards' },
+  { id: 'finance',        icon: '💰', label: 'Finance',         section: 'dashboards' },
+  { id: 'commandes',      icon: '📋', label: 'Commandes',       section: 'dashboards' },
+  { id: 'incidents',      icon: '⚠️', label: 'Incidents',       section: 'operations' },
+  { id: 'reconciliation', icon: '🔄', label: 'Réconciliation',  section: 'operations' },
+  { id: 'alerts',         icon: '🚨', label: 'Alertes',         section: 'operations' },
+  { id: 'scenarios',      icon: '🎮', label: 'Scénarios',       section: 'tools' }
 ];
 
 /* ---------------------------------------------------------------
