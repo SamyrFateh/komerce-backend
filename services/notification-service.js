@@ -206,7 +206,7 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         o.reference AS order_ref, o.total_kmf,
         o.payment_mode, o.payment_status,
         COALESCE( u.full_name, p.recipient_name) AS customer_name,
-        COALESCE( u.phone, p.recipient_phone) AS customer_phone,
+        COALESCE(u.whatsapp_phone, u.phone, p.recipient_phone) AS customer_phone,
         u.email AS customer_email,
         o.id AS order_id, o.cash_ref_code
       FROM parcels p
@@ -308,7 +308,7 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
         u.full_name AS customer_name,
-        u.phone AS customer_phone,
+        COALESCE(u.whatsapp_phone, u.phone) AS customer_phone,
         u.email AS customer_email,
         r.name AS relais_name
       FROM orders o
@@ -439,7 +439,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderRef) {
     const { rows: [data] } = await db.query(`
       SELECT o.reference AS order_ref, o.total_kmf,
         u.full_name AS customer_name,
-        u.phone AS customer_phone,
+        COALESCE(u.whatsapp_phone, u.phone) AS customer_phone,
         u.email AS customer_email
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id

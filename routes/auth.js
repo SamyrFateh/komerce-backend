@@ -172,15 +172,19 @@ router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestChecko
     const { rows: existing } = await db.query('SELECT * FROM users WHERE phone = $1 LIMIT 1', [phone]);
     if (existing.length) {
       const user = existing[0];
+      // Update whatsapp_phone if provided (diaspora number for notifications)
+      if (whatsapp_phone) {
+        await db.query('UPDATE users SET whatsapp_phone = $1, updated_at = NOW() WHERE id = $2', [whatsapp_phone, user.id]);
+      }
       setAuthCookie(res, generateToken(user));
       return res.json({ user: userResponse(user), created: false });
     }
     const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
     const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
     const { rows: [user] } = await db.query(
-      `INSERT INTO users (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF') RETURNING *`,
-      [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
+      `INSERT INTO users (full_name, email, phone, whatsapp_phone, password_hash, role, country, currency_pref)
+       VALUES ($1, $2, $3, $4, $5, 'client', $6, 'KMF') RETURNING *`,
+      [full_name || 'Client Komerce', resolvedEmail, phone, whatsapp_phone || null, password_hash, country]
     );
     setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
@@ -213,9 +217,9 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
     }
     const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
     const { rows: [user] } = await db.query(
-      `INSERT INTO users (full_name, email, phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, 'client', $5, 'KMF') RETURNING *`,
-      [full_name || 'Client Komerce', resolvedEmail, phone, password_hash, country]
+      `INSERT INTO users (full_name, email, phone, whatsapp_phone, password_hash, role, country, currency_pref)
+       VALUES ($1, $2, $3, $4, $5, 'client', $6, 'KMF') RETURNING *`,
+      [full_name || 'Client Komerce', resolvedEmail, phone, whatsapp_phone || null, password_hash, country]
     );
     setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
