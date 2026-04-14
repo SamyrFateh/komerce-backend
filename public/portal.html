@@ -1,284 +1,35 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Komerce — Portail</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#b45309">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Komerce">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<text y='.9em' font-size='90'>📊</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f5f6f8;--bg2:#fff;--bg3:#f0f2f5;
-  --border:#e2e6ec;--border2:#d0d7e2;
-  --ink:#1a202c;--ink2:#4a5568;--ink3:#8a9ab5;
-  --gold:#d97706;--gold2:#f59e0b;--amber-bg:#fffbeb;
-  --green:#16a34a;--green-bg:#f0fdf4;
-  --blue:#2563eb;--blue-bg:#eff6ff;
-  --red:#dc2626;--red-bg:#fee2e2;
-  --teal:#0d9488;--teal-bg:#f0fdfa;
-  --purple:#7c3aed;--purple-bg:#faf5ff;
-  --shadow:0 1px 3px rgba(0,0,0,.08);
-  --shadow-lg:0 10px 25px rgba(0,0,0,.1);
-  --sans:'IBM Plex Sans',system-ui,sans-serif;
-  --mono:'IBM Plex Mono',monospace;
-}
-html,body{height:100%;font-family:var(--sans);background:var(--bg)}
-
-/* Login */
-.login-screen{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;transition:opacity .4s,visibility .4s}
-.login-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-.login-card{background:var(--bg2);border-radius:20px;padding:44px 40px;width:100%;max-width:420px;margin:16px;box-shadow:0 25px 60px rgba(0,0,0,.3)}
-.login-brand{text-align:center;margin-bottom:32px}
-.login-brand h1{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:3px;color:var(--ink)}
-.login-brand h1 span{color:var(--gold)}
-.login-brand p{color:var(--ink3);font-size:14px;margin-top:6px}
-.form-group{margin-bottom:18px}
-.form-label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;letter-spacing:.3px}
-.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border2);border-radius:10px;font-size:14px;font-family:var(--sans);background:var(--bg);color:var(--ink);outline:none;transition:all .2s}
-.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,119,6,.1)}
-.login-error{background:var(--red-bg);color:var(--red);border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
-.login-error.show{display:block}
-.btn-login{width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b45309);color:#fff;font-size:15px;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .2s;letter-spacing:.3px}
-.btn-login:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(217,119,6,.4)}
-.btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.login-footer{text-align:center;margin-top:20px}
-.login-footer a{color:var(--gold);font-size:13px;text-decoration:none}
-.login-footer a:hover{text-decoration:underline}
-
-/* Portal */
-.portal{display:none;min-height:100vh;background:var(--bg)}
-.portal.visible{display:block}
-.portal-header{background:var(--bg2);border-bottom:3px solid var(--gold);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.portal-logo{font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--gold)}
-.portal-logo em{color:var(--ink3);font-style:normal}
-.portal-right{display:flex;align-items:center;gap:16px}
-.portal-user{font-size:13px;color:var(--ink2)}
-.portal-user strong{color:var(--ink)}
-.portal-role{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--amber-bg);color:var(--gold);border:1px solid #fcd34d}
-.btn-logout{padding:7px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s}
-.btn-logout:hover{background:var(--red-bg);color:var(--red);border-color:#fecaca}
-
-.portal-body{max-width:900px;margin:0 auto;padding:40px 24px}
-.portal-welcome{margin-bottom:36px}
-.portal-welcome h2{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.portal-welcome p{font-size:14px;color:var(--ink3)}
-.section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:40px}
-.dash-tile{background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:24px 20px;cursor:pointer;transition:all .2s;text-decoration:none;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
-.dash-tile:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-.dash-tile::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--tile-accent,var(--gold));opacity:0;transition:opacity .2s}
-.dash-tile:hover::before{opacity:1}
-.tile-icon{font-size:28px}
-.tile-name{font-size:15px;font-weight:700;color:var(--ink)}
-.tile-desc{font-size:12px;color:var(--ink3);line-height:1.4}
-.tile-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;width:fit-content}
-.tile-badge.ops{background:var(--blue-bg);color:var(--blue)}
-.tile-badge.logistics{background:var(--teal-bg);color:var(--teal)}
-.tile-badge.finance{background:var(--green-bg);color:var(--green)}
-.tile-role-gate{display:none}
-.public-note{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--green);font-weight:600;background:var(--green-bg);padding:4px 12px;border-radius:20px;margin-bottom:16px}
-
-@media(max-width:640px){
-  .login-card{padding:32px 24px}
-  .portal-header{padding:0 16px}
-  .portal-body{padding:24px 16px}
-  .dash-grid{grid-template-columns:1fr}
-  .portal-user{display:none}
-}
-</style>
-
-<style>
-.pwa-install-btn{display:none;padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b45309);color:#fff;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;transition:all 0.2s;margin-top:12px;width:100%}
-.pwa-install-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(217,119,6,0.4)}
-.pwa-standalone .login-screen{padding-top:env(safe-area-inset-top,0px)}
-@media(max-width:640px){.dash-grid{grid-template-columns:1fr !important}}
-</style>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="3;url=/control-tower.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Komerce — Redirection</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: #111827; color: #fff;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; text-align: center;
+    }
+    .box { max-width: 400px; padding: 40px; }
+    .emoji { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 20px; margin-bottom: 12px; font-weight: 700; }
+    p { color: #9ca3af; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+    a { display: inline-block; background: #3b82f6; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 15px; }
+    a:hover { background: #2563eb; }
+    .old { color: #6b7280; font-size: 12px; margin-top: 16px; }
+  </style>
 </head>
 <body>
-
-<!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
-  <div class="login-card">
-    <div class="login-brand">
-      <h1>K<span>OMERCE</span></h1>
-      <p>Portail Dashboards</p>
-    </div>
-    <div class="login-error" id="loginError"></div>
-    <div class="form-group">
-      <label class="form-label" for="email">Email</label>
-      <input class="form-input" id="email" type="email" placeholder="admin@komerce.km" autocomplete="email">
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="password">Mot de passe</label>
-      <input class="form-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn-login" id="btnLogin">Se connecter</button>
-    <div class="login-footer">
-      <a href="Komerce_Boutique.html">Accéder à la Boutique →</a>
-    </div>
+  <div class="box">
+    <div class="emoji">🗼</div>
+    <h2>Page déplacée</h2>
+    <p>Cette page a été remplacée par la <strong>Control Tower v6</strong> — le nouveau tableau de bord COLIS-FIRST.</p>
+    <p>Redirection automatique dans 3 secondes...</p>
+    <a href="/control-tower.html">📦 Ouvrir la Control Tower</a>
+    <div class="old">Ancien: Portal (legacy)</div>
   </div>
-</div>
-
-<!-- PORTAL -->
-<div class="portal" id="portal">
-  <div class="portal-header">
-    <div class="portal-logo">K<em>OMERCE</em></div>
-    <div class="portal-right">
-      <div class="portal-user">Connecté : <strong id="userName"></strong></div>
-      <div class="portal-role" id="userRole"></div>
-      <button class="btn-logout" id="btnLogout">Déconnexion</button>
-    </div>
-  </div>
-
-  <div class="portal-body">
-    <div class="portal-welcome">
-      <h2>👋 Bienvenue sur Komerce</h2>
-      <p>Sélectionnez un tableau de bord.</p>
-    </div>
-
-    <!-- DASHBOARDS OPÉRATIONNELS -->
-    <div class="section-title">📊 Tableaux de bord</div>
-    <div class="dash-grid" id="dashGrid">
-
-      <a class="dash-tile" href="Komerce_Admin.html" data-roles="admin" style="--tile-accent:var(--gold)">
-        <div class="tile-icon">🎯</div>
-        <div class="tile-name">Tour de Contrôle</div>
-        <div class="tile-desc">Piloter le business à distance — alertes, file d'attente, wallet, KPIs</div>
-        <div class="tile-badge ops">Admin</div>
-      </a>
-
-      <a class="dash-tile" href="Komerce_Pipeline.html" data-roles="admin" style="--tile-accent:var(--blue)">
-        <div class="tile-icon">🔄</div>
-        <div class="tile-name">Pipeline</div>
-        <div class="tile-desc">Vue kanban temps réel de toutes les commandes par statut</div>
-        <div class="tile-badge ops">Admin</div>
-      </a>
-
-      <a class="dash-tile" href="Komerce_Hub.html" data-roles="admin,agent_hub" style="--tile-accent:var(--teal)">
-        <div class="tile-icon">📦</div>
-        <div class="tile-name">Hub Dubai</div>
-        <div class="tile-desc">Préparer, scanner et expédier les colis</div>
-        <div class="tile-badge logistics">Logistique</div>
-      </a>
-
-      <a class="dash-tile" href="Komerce_Relais.html" data-roles="admin,agent_relais" style="--tile-accent:var(--teal)">
-        <div class="tile-icon">📍</div>
-        <div class="tile-name">Relais</div>
-        <div class="tile-desc">Réceptionner les colis et les remettre aux clients</div>
-        <div class="tile-badge logistics">Logistique</div>
-      </a>
-
-    </div>
-
-    <!-- ACCÈS PUBLIC -->
-    <div class="section-title">🌍 Accès public</div>
-    <div class="public-note">🔓 Accessible sans connexion</div>
-    <div class="dash-grid">
-      <a class="dash-tile" href="Komerce_Boutique.html" style="--tile-accent:var(--green)">
-        <div class="tile-icon">🛍️</div>
-        <div class="tile-name">Boutique</div>
-        <div class="tile-desc">Catalogue produits, panier, commandes</div>
-        <div class="tile-badge" style="background:var(--green-bg);color:var(--green)">Public</div>
-      </a>
-    </div>
-  </div>
-</div>
-
-<script src="komerce-api.js"></script>
-<script>
-(async function init() {
-  // Try restore session
-  const user = await K.auth.restore();
-  if (user) {
-    showPortal(user);
-  }
-  
-  // Login handler
-  document.getElementById('btnLogin').addEventListener('click', doLogin);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) doLogin();
-  });
-  document.getElementById('btnLogout').addEventListener('click', doLogout);
-})();
-
-async function doLogin() {
-  const btn = document.getElementById('btnLogin');
-  const err = document.getElementById('loginError');
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('password').value;
-  err.classList.remove('show');
-  if (!email || !pass) { err.textContent = 'Remplissez tous les champs.'; err.classList.add('show'); return; }
-  btn.disabled = true; btn.textContent = 'Connexion…';
-  try {
-    const { user } = await K.auth.login(email, pass);
-    showPortal(user);
-  } catch (e) {
-    err.textContent = e.message || 'Identifiants invalides';
-    err.classList.add('show');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Se connecter';
-  }
-}
-
-function showPortal(user) {
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('portal').classList.add('visible');
-  document.getElementById('userName').textContent = user.email || user.name || '';
-  document.getElementById('userRole').textContent = user.role || 'user';
-  
-  // RBAC: show only tiles matching user role
-  document.querySelectorAll('.dash-tile[data-roles]').forEach(tile => {
-    const roles = tile.dataset.roles.split(',');
-    tile.style.display = roles.includes(user.role) ? '' : 'none';
-  });
-}
-
-async function doLogout() {
-  await K.auth.logout();
-  document.getElementById('loginScreen').classList.remove('hidden');
-  document.getElementById('portal').classList.remove('visible');
-  document.getElementById('password').value = '';
-  // Show all tiles again
-  document.querySelectorAll('.dash-tile[data-roles]').forEach(t => t.style.display = '');
-}
-</script>
-<script>
-/* PWA Install Prompt */
-var _deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){
-  e.preventDefault();_deferredPrompt=e;
-  var btn=document.getElementById('pwa-install-btn');
-  if(btn)btn.style.display='block';
-});
-function pwaInstall(){
-  if(!_deferredPrompt)return;
-  _deferredPrompt.prompt();
-  _deferredPrompt.userChoice.then(function(){_deferredPrompt=null;
-    var btn=document.getElementById('pwa-install-btn');
-    if(btn)btn.style.display='none';
-  });
-}
-</script>
-<script>
-/* PWA: Service Worker + offline/online indicator */
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
-if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){document.body.classList.add('pwa-standalone');}
-function _pwaUpdateConn(online){
-  document.querySelectorAll('.conn-pill,[id$="-conn-status"]').forEach(function(p){
-    if(online){p.textContent='\u{1F7E2} En ligne';p.style.background='rgba(34,197,94,0.15)';p.style.color='#16a34a';}
-    else{p.textContent='\u{1F534} Hors ligne';p.style.background='rgba(239,68,68,0.15)';p.style.color='#dc2626';}
-  });
-}
-window.addEventListener('online',function(){_pwaUpdateConn(true);});
-window.addEventListener('offline',function(){_pwaUpdateConn(false);});
-</script>
 </body>
 </html>
