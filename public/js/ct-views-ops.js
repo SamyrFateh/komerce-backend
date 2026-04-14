@@ -1,5 +1,5 @@
 // ============================================================
-// ct-views-ops.js — Control Tower v5.0
+// ct-views-ops.js — Control Tower v5.1 — Fix: CT.api + drill-down /detail
 // Vues opérationnelles : Incidents, Réconciliation, Alertes, Factures
 // + Modal drill-down Colis → Commandes → Articles
 // ============================================================
@@ -12,20 +12,17 @@ window.renderParcelDrillDown = async function(parcelId) {
   modal.style.display = 'flex';
 
   try {
-    // Fetch parcel details
-    const parcel = await ctApi.get(`/api/v2/parcels/${parcelId}`);
-    // Fetch scan timeline
-    let scans = [];
-    try { scans = await ctApi.get(`/api/v2/parcels/${parcelId}/scans`); } catch(e) {}
-    // Fetch linked orders
-    let linkedOrders = [];
-    try { linkedOrders = await ctApi.get(`/api/v2/parcels/${parcelId}/orders`); } catch(e) {}
+    // Fetch all parcel data in one call (detail endpoint)
+    const detail = await CT.api.get(`/api/v2/parcels/${parcelId}/detail`);
+    const parcel = detail;
+    const scans = detail.scans || [];
+    const linkedOrders = detail.orders || [];
 
     const p = parcel.parcel || parcel;
     const statusBadge = getStatusBadge(p.status);
     
     // Build scan timeline
-    const timelineHtml = (scans.scans || scans || []).map(s => {
+    const timelineHtml = (Array.isArray(scans) ? scans : []).map(s => {
       const d = new Date(s.scanned_at || s.created_at);
       const time = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
       const icon = {
@@ -41,7 +38,7 @@ window.renderParcelDrillDown = async function(parcelId) {
     }).join('') || '<p style="color:#888">Aucun scan enregistré</p>';
 
     // Build orders accordion
-    const ordersHtml = (linkedOrders.orders || linkedOrders || []).map(ord => {
+    const ordersHtml = (Array.isArray(linkedOrders) ? linkedOrders : []).map(ord => {
       const o = ord.order || ord;
       const totalParcels = o.total_parcels || 1;
       const deliveredParcels = o.delivered_parcels || 0;
@@ -191,12 +188,12 @@ window.renderIncidentsView = async function(container) {
   try {
     let incidents = [];
     try {
-      const resp = await ctApi.get('/api/v2/incidents');
+      const resp = await CT.api.get('/api/v2/incidents');
       incidents = resp.incidents || resp || [];
     } catch(e) {
       // Fallback: direct DB via dashboard ops
       try {
-        const ops = await ctApi.get('/api/dashboard/ops');
+        const ops = await CT.api.get('/api/dashboard/ops');
         incidents = ops.incidents || [];
       } catch(e2) {}
     }
@@ -254,10 +251,10 @@ window.renderReconciliationView = async function(container) {
   try {
     let recoData = {};
     try {
-      recoData = await ctApi.get('/api/v2/reconciliation/summary');
+      recoData = await CT.api.get('/api/v2/reconciliation/summary');
     } catch(e) {
       try {
-        const ops = await ctApi.get('/api/dashboard/ops');
+        const ops = await CT.api.get('/api/dashboard/ops');
         recoData = ops.reconciliation || ops;
       } catch(e2) {}
     }
@@ -318,11 +315,11 @@ window.renderAlertsView = async function(container) {
   try {
     let alerts = [];
     try {
-      const resp = await ctApi.get('/api/v2/alerts');
+      const resp = await CT.api.get('/api/v2/alerts');
       alerts = resp.alerts || resp || [];
     } catch(e) {
       try {
-        const ops = await ctApi.get('/api/dashboard/ops');
+        const ops = await CT.api.get('/api/dashboard/ops');
         alerts = ops.alerts || [];
       } catch(e2) {}
     }
@@ -378,7 +375,7 @@ window.renderAlertsView = async function(container) {
 // Acknowledge alert
 window.ackAlert = async function(alertId) {
   try {
-    await ctApi.post(`/api/v2/alerts/${alertId}/acknowledge`);
+    await CT.api.post(`/api/v2/alerts/${alertId}/acknowledge`);
     // Refresh view
     const container = document.getElementById('main-content');
     if (container) renderAlertsView(container);
@@ -393,14 +390,14 @@ window.renderInvoicesView = async function(container) {
   try {
     let invoices = [];
     try {
-      const resp = await ctApi.get('/api/invoices');
+      const resp = await CT.api.get('/api/invoices');
       invoices = resp.invoices || resp || [];
     } catch(e) {}
 
     // Also fetch collected orders that might need invoices
     let collectedOrders = [];
     try {
-      const ops = await ctApi.get('/api/dashboard/ops');
+      const ops = await CT.api.get('/api/dashboard/ops');
       // Get orders with collected status
       collectedOrders = (ops.recent_orders || []).filter(o => 
         o.status === 'collected' || o.status === 'delivered'
@@ -488,7 +485,7 @@ window.generateInvoice = async function(orderId) {
   }
 };
 
-console.log('[CT] ct-views-ops.js v5.0 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
+console.log('[CT] ct-views-ops.js v5.1 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
 
 
 // ---- REGISTER VIEWS IN CT.views ----
