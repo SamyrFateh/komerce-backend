@@ -1114,17 +1114,6 @@
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. *', od, 'beneficiary_phone'));
 
-    /* ── 2b. WhatsApp diaspora (pour recevoir le suivi) ── */
-    const s1b = document.createElement('div');
-    s1b.className = 'ck-label';
-    s1b.textContent = '📱 WhatsApp (suivi colis)';
-    body.appendChild(s1b);
-    body.appendChild(makeIntlPhoneInput('of-whatsapp-phone', 'N° WhatsApp (ex: +33 6 99 ...)', od, 'whatsapp_phone'));
-    const waHint = document.createElement('div');
-    waHint.style.cssText = 'font-size:0.72rem;color:#888;margin:-4px 0 8px 4px;';
-    waHint.textContent = '💡 Diaspora : entrez votre numéro français/international pour recevoir le suivi WhatsApp';
-    body.appendChild(waHint);
-
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-label';
@@ -1449,8 +1438,8 @@
 
     try {
       // Step 1: guest-checkout
-      // Read WhatsApp phone from the international input
-      const whatsappPhone = od.whatsapp_phone || '';
+      // sender_phone = numéro diaspora (depuis checkbox "Recevoir aussi le suivi SMS")
+      const whatsappPhone = senderPhone || '';
 
       await apiPost('/api/auth/guest-checkout', {
         full_name: clientName,
