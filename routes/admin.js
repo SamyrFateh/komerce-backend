@@ -185,10 +185,10 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
   // ══════════════════════════════════════════════════════════════════
   // CRIT-04 FIX: Block in production — this endpoint is dev/staging only.
   // ══════════════════════════════════════════════════════════════════
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED !== 'true') {
     return res.status(403).json({
       error: 'Endpoint désactivé en production',
-      hint: 'POST /admin/reset est uniquement disponible en dev/staging',
+      hint: 'Ajoutez ALLOW_SEED=true dans les variables Railway pour activer',
     });
   }
 
@@ -288,10 +288,10 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
   // ══════════════════════════════════════════════════════════════════
   // CRIT-04 FIX: Block in production — seed-test is dev/staging only.
   // ══════════════════════════════════════════════════════════════════
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED !== 'true') {
     return res.status(403).json({
       error: 'Endpoint désactivé en production',
-      hint: 'POST /admin/seed-test est uniquement disponible en dev/staging',
+      hint: 'Ajoutez ALLOW_SEED=true dans les variables Railway pour activer',
     });
   }
 
