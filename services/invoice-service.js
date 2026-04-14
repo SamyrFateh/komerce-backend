@@ -1,7 +1,9 @@
 /**
- * Invoice Service — Komerce
+ * Invoice Service — Komerce v1.1
  * Generates mini-invoices for client payments
  * 
+ * v1.1: Suppression ligne "Livraison" — tout inclus dans le prix
+ *
  * Supports:
  * - HTML generation (A5 + thermal modes)
  * - Invoice number sequencing
@@ -83,7 +85,7 @@ class InvoiceService {
     const invoiceNumber = `KOM-INV-${year}-${String(seq).padStart(6, '0')}`;
 
     const subtotal = items.reduce((sum, i) => sum + i.total, 0);
-    const shipping = order.cost_transport_kmf || 0;
+    // Livraison incluse dans le prix — pas de frais supplémentaires
     const total = order.total_kmf;
 
     // Insert invoice (immutable snapshot)
@@ -104,7 +106,7 @@ class InvoiceService {
       order.relay_name || 'Relais',
       JSON.stringify(items),
       subtotal,
-      shipping,
+      0,  // shipping_kmf = 0 (livraison incluse dans le prix)
       total,
       order.payment_mode,
       order.payment_status
@@ -260,9 +262,10 @@ body{font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.4;
     <tbody>${itemRows}</tbody>
   </table>
   <div class="totals">
-    <div class="total-row"><span>Sous-total</span><span>${fmt(invoice.subtotal_kmf)} KMF</span></div>
-    <div class="total-row"><span>Livraison</span><span>${fmt(invoice.shipping_kmf)} KMF</span></div>
     <div class="total-row grand"><span>TOTAL</span><span>${fmt(invoice.total_kmf)} KMF</span></div>
+  </div>
+  <div class="totals-note" style="font-size:9px;text-align:center;margin-bottom:8px;color:#555">
+    <em>Livraison incluse — pas de frais supplémentaires</em>
   </div>
   <div class="payment-block">
     <div class="payment-method">${payIcon} ${payLabel}</div>
