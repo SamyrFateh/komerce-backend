@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Schémas de validation Joi
+ * KOMERCE — Schémas de validation Joi v2.0 (Vague 1)
  * 
  * Organisation : un objet exporté par route-file.
  * Chaque schéma définit { body?, params?, query? } avec des règles Joi.
@@ -10,6 +10,8 @@
  *   · UUIDs : format strict (toute version)
  *   · Enums : .valid() avec les valeurs de l'app
  *   · Dates : format ISO ou timestamp
+ *
+ * v2.0 — Added validators for: loyalty, pricing, purchasing, unsold, finance
  */
 
 'use strict';
@@ -528,6 +530,148 @@ const hub = {
   }),
 };
 
+// ════════════════════════════════════════════════════════════════════════════════
+// V1.9 — NEW VALIDATORS (Vague 1)
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ── Schémas : loyalty.js ────────────────────────────────────────────────────────
+
+const loyalty = {
+  updateTier: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      label:        safeStr(50),
+      badge:        safeStr(10),
+      min_orders:   Joi.number().integer().min(0).max(10000),
+      discount_pct: Joi.number().min(0).max(100),
+    }).min(1),
+  },
+
+  recalculate: {
+    params: Joi.object({ user_id: uuid.required() }),
+  },
+};
+
+// ── Schémas : pricing.js ────────────────────────────────────────────────────────
+
+const pricing = {
+  calculate: {
+    body: Joi.object({
+      product_id:  uuid.required(),
+      qty:         posInt.max(1000).default(1),
+      is_diaspora: Joi.boolean().default(false),
+      relais_type: Joi.string().valid('standard', 'express', 'hub').default('standard'),
+    }),
+  },
+
+  couture: {
+    body: Joi.object({
+      fabric_id:   uuid.required(),
+      model_id:    uuid.required(),
+      qty:         posInt.max(100).default(1),
+      is_diaspora: Joi.boolean().default(false),
+    }),
+  },
+
+  updateRates: {
+    body: Joi.object({
+      eur_kmf: posNum.min(1).max(10000).required(),
+      aed_kmf: posNum.min(1).max(10000).required(),
+    }),
+  },
+};
+
+// ── Schémas : purchasing.js ─────────────────────────────────────────────────────
+
+const PLATFORMS = ['noon', 'amazon_uae', 'aliexpress', 'whatsapp', 'manual', 'local'];
+
+const purchasing = {
+  createSupplier: {
+    body: Joi.object({
+      name:           safeStr(200).required(),
+      platform:       Joi.string().valid(...PLATFORMS).required(),
+      contact_name:   safeStr(100),
+      contact_phone:  phone,
+      contact_email:  email,
+      api_key_enc:    safeStr(500),
+      api_secret_enc: safeStr(500),
+      account_id:     safeStr(100),
+      auto_order:     Joi.boolean().default(false),
+      lead_time_days: Joi.number().integer().min(0).max(365).default(2),
+      notes:          safeStr(1000),
+    }),
+  },
+
+  mapProduct: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      product_id:         uuid.required(),
+      supplier_sku:       safeStr(200).required(),
+      supplier_url:       url,
+      supplier_price_aed: posNum.required(),
+      min_order_qty:      posInt.default(1),
+      priority:           Joi.number().integer().min(1).max(100).default(1),
+      notes:              safeStr(1000),
+    }),
+  },
+
+  confirmOrder: {
+    params: Joi.object({ order_id: uuid.required() }),
+    body: Joi.object({
+      purchase_order_id:  uuid.required(),
+      supplier_order_id:  safeStr(200),
+      unit_price_aed:     posNum,
+      tracking_url:       url,
+      tracking_number:    safeStr(100),
+      notes:              safeStr(1000),
+    }),
+  },
+
+  receive: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      qty_recue: Joi.number().integer().min(0).max(10000),
+    }),
+  },
+};
+
+// ── Schémas : unsold.js ─────────────────────────────────────────────────────────
+
+const UNSOLD_STATUSES   = ['sold_whatsapp', 'sold_reseller', 'donated', 'destroyed'];
+const UNSOLD_CHANNELS   = ['whatsapp', 'reseller', 'both'];
+
+const unsold = {
+  update: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      unsold_price_kmf: posNum,
+      channel:          Joi.string().valid(...UNSOLD_CHANNELS),
+      notes:            safeStr(1000),
+    }).min(1),
+  },
+
+  resolve: {
+    params: Joi.object({ id: uuid.required() }),
+    body: Joi.object({
+      status:            Joi.string().valid(...UNSOLD_STATUSES).required(),
+      resolved_price_kmf: Joi.number().min(0),
+      reseller_id:       uuid,
+      notes:             safeStr(1000),
+    }),
+  },
+};
+
+// ── Schémas : finance.js (query params) ─────────────────────────────────────────
+
+const finance = {
+  periodQuery: {
+    query: Joi.object({
+      month: Joi.number().integer().min(1).max(12),
+      year:  Joi.number().integer().min(2024).max(2099),
+    }),
+  },
+};
+
 // ── Export ───────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -543,4 +687,10 @@ module.exports = {
   config,
   parcels,
   hub,
+  // V1.9 — Nouveaux validators (Vague 1)
+  loyalty,
+  pricing,
+  purchasing,
+  unsold,
+  finance,
 };
