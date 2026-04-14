@@ -1,9 +1,10 @@
 /**
- * KOMERCE — Serveur API v10.17 (+ Invoice system)
+ * KOMERCE — Serveur API v10.18 (+ Tracking & Client Account) (+ Invoice system)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
  *
+ * Changelog v10.18: routes/tracking.js + routes/client-account.js (suivi + magic link)
  * Changelog v10.17: routes/invoices.js ajouté (mini-facture client)
  * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
  * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
@@ -133,7 +134,7 @@ app.use('/api/admin/', adminLimiter);
 const _fs = require('fs');
 app.get('/*.html', (req, res, next) => {
   // Skip boutique, portal, and public pages
-  if (req.path.includes('Boutique') || req.path === '/portal.html' || req.path === '/suivi.html') return next();
+  if (req.path.includes('Boutique') || req.path === '/portal.html' || req.path === '/mon-compte.html' || req.path === '/suivi.html') return next();
   const filePath = path.join(__dirname, 'public', req.path);
   _fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
@@ -143,6 +144,9 @@ app.get('/*.html', (req, res, next) => {
     res.send(html);
   });
 });
+
+// ── Short URL for tracking ────────────────────────────────────────────────
+app.get('/s/:token', (req, res) => res.redirect('/suivi.html?t=' + req.params.token));
 
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
@@ -183,6 +187,8 @@ const hubDashRouter    = require('./routes/hub-dashboard');
 const transitDashRouter = require('./routes/transit-dashboard');
 const invoicesRouter   = require('./routes/invoices');
 const opsApiRouter = require('./routes/ops-api');
+const trackingRouter = require('./routes/tracking');
+const clientAccountRouter = require('./routes/client-account');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -201,6 +207,9 @@ app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/transit',    transitDashRouter);
 app.use('/api/v2', opsApiRouter);
 app.use('/api/invoices',   invoicesRouter);
+app.use('/api/tracking',   trackingRouter);
+app.use('/api/client',     clientAccountRouter);
+app.use('/api/auth',       clientAccountRouter);  // magic-link endpoints
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);

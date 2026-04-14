@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Auto-migrations schéma & hash admin
+ * KOMERCE — Auto-migrations schéma & hash admin/hub/relais
  *
  * Extrait de server.js (FIX-012) — Étape 3 clean-up
  * Exécuté au démarrage avant les seeds.
@@ -8,6 +8,7 @@
 'use strict';
 
 const db = require('../db');
+const crypto = require('crypto');
 const bcryptMigrate = require('bcryptjs');
 
 async function fixAdminHash() {
@@ -40,6 +41,29 @@ async function fixAdminHash() {
     );
     if (clientResult.rowCount > 0) {
       console.log(`✅ Migration: ${clientResult.rowCount} demo client hashes corrigés`);
+    }
+
+    // ── Force Hub & Relais passwords at startup ──────────────────────────
+    const hubPassword = process.env.HUB_PASSWORD;
+    if (hubPassword) {
+      console.log('🏢 HUB_PASSWORD défini — migration des hash agents hub');
+      const hubHash = await bcryptMigrate.hash(hubPassword, 10);
+      const hubResult = await db.query(
+        "UPDATE users SET password_hash = $1 WHERE role = 'agent_hub'",
+        [hubHash]
+      );
+      console.log(`✅ Migration: hub hash forcé — ${hubResult.rowCount} agent(s) hub`);
+    }
+
+    const relaisPassword = process.env.RELAIS_PASSWORD;
+    if (relaisPassword) {
+      console.log('🏪 RELAIS_PASSWORD défini — migration des hash agents relais');
+      const relaisHash = await bcryptMigrate.hash(relaisPassword, 10);
+      const relaisResult = await db.query(
+        "UPDATE users SET password_hash = $1 WHERE role = 'agent_relais'",
+        [relaisHash]
+      );
+      console.log(`✅ Migration: relais hash forcé — ${relaisResult.rowCount} agent(s) relais`);
     }
   } catch (err) {
     console.error('Migration admin hash error (non-fatal):', err.message);
@@ -292,6 +316,43 @@ async function fixMissingSchema() {
     `ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'in_transit' AFTER 'shipped'`);
 
   // Migration 025 removed — all images migrated to Cloudinary (P2-006)
+
+
+  // ── Migration 026 : Tracking tokens + Magic link ───────────────────────────
+  await run('users.magic_token',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS magic_token TEXT');
+  await run('users.magic_token_expires_at',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS magic_token_expires_at TIMESTAMPTZ');
+
+  // Generate qr_token for orders without one (6-char base62)
+  try {
+    const ordersNoToken = await db.query('SELECT id FROM orders WHERE qr_token IS NULL');
+    if (ordersNoToken.rows.length > 0) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      for (const row of ordersNoToken.rows) {
+        let token = '';
+        const bytes = crypto.randomBytes(6);
+        for (let i = 0; i < 6; i++) token += chars[bytes[i] % chars.length];
+        await db.query('UPDATE orders SET qr_token = $1 WHERE id = $2 AND qr_token IS NULL', [token, row.id]);
+      }
+      console.log(`  ✅ Generated qr_token for ${ordersNoToken.rows.length} orders`);
+    }
+  } catch (err) { console.error('  ⚠️ qr_token generation:', err.message); }
+
+  // Generate pickup_code for orders without one (4 digits)
+  try {
+    const ordersNoCode = await db.query('SELECT id FROM orders WHERE pickup_code IS NULL');
+    if (ordersNoCode.rows.length > 0) {
+      for (const row of ordersNoCode.rows) {
+        const code = String(crypto.randomInt(1000, 10000));
+        await db.query('UPDATE orders SET pickup_code = $1 WHERE id = $2 AND pickup_code IS NULL', [code, row.id]);
+      }
+      console.log(`  ✅ Generated pickup_code for ${ordersNoCode.rows.length} orders`);
+    }
+  } catch (err) { console.error('  ⚠️ pickup_code generation:', err.message); }
+
+  await run('idx_orders_qr_token',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_qr_token ON orders(qr_token) WHERE qr_token IS NOT NULL');
 
   console.log('🔧 Schema migrations complete.');
 }

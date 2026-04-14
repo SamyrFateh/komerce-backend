@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Compte — Komerce</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0fdf4;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: white;
+      padding: 20px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header .user-name { font-size: 13px; opacity: 0.9; }
+    .logout-btn {
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.3); }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+    /* Login form */
+    .login-card {
+      background: white; border-radius: 16px; padding: 32px 24px;
+      margin-top: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .login-card .icon { font-size: 48px; margin-bottom: 16px; }
+    .login-card h2 { font-size: 20px; margin-bottom: 8px; }
+    .login-card p { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    .phone-input-group { display: flex; gap: 8px; margin-bottom: 16px; }
+    .phone-prefix {
+      width: 80px; padding: 14px 12px; border: 2px solid #e5e7eb;
+      border-radius: 12px; font-size: 15px; text-align: center;
+      background: #f9fafb; color: #374151; font-weight: 600;
+    }
+    .phone-input {
+      flex: 1; padding: 14px 16px; border: 2px solid #e5e7eb;
+      border-radius: 12px; font-size: 15px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .phone-input:focus { border-color: #16a34a; }
+    .login-btn {
+      width: 100%; padding: 14px; background: #16a34a; color: white;
+      border: none; border-radius: 12px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .login-btn:hover { background: #15803d; }
+    .login-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .login-msg {
+      margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 14px;
+      display: none;
+    }
+    .login-msg.success { display: block; background: #dcfce7; color: #16a34a; }
+    .login-msg.error { display: block; background: #fee2e2; color: #dc2626; }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 4px; margin-bottom: 16px;
+      background: white; border-radius: 12px; padding: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .tab {
+      flex: 1; padding: 10px; text-align: center; border: none;
+      background: transparent; border-radius: 10px; font-size: 14px;
+      font-weight: 600; cursor: pointer; color: #6b7280;
+      transition: all 0.2s;
+    }
+    .tab.active { background: #16a34a; color: white; }
+
+    /* Order cards */
+    .order-card {
+      background: white; border-radius: 16px; padding: 16px;
+      margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .order-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .order-ref { font-size: 14px; font-weight: 700; color: #374151; }
+    .order-date { font-size: 12px; color: #9ca3af; }
+    .order-status {
+      display: inline-block; padding: 4px 10px; border-radius: 12px;
+      font-size: 12px; font-weight: 600;
+    }
+    .order-items-list { margin: 10px 0; }
+    .order-item-row {
+      display: flex; align-items: center; padding: 6px 0;
+      font-size: 13px; gap: 8px;
+    }
+    .order-item-row .emoji { flex-shrink: 0; }
+    .order-item-row .name { flex: 1; }
+    .order-item-row .price { font-weight: 600; color: #16a34a; }
+    .order-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 10px; border-top: 1px solid #f3f4f6;
+    }
+    .order-total { font-size: 15px; font-weight: 700; }
+    .order-track-btn {
+      padding: 8px 16px; background: #f0fdf4; color: #16a34a; border: 1px solid #16a34a;
+      border-radius: 10px; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    .order-track-btn:hover { background: #dcfce7; }
+    .order-parcels { margin-top: 8px; }
+    .order-parcel {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; padding: 4px 0; color: #6b7280;
+    }
+    .order-parcel .parcel-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 600;
+    }
+
+    /* Invoices */
+    .invoice-card {
+      background: white; border-radius: 16px; padding: 16px;
+      margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .invoice-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .invoice-number { font-size: 14px; font-weight: 700; }
+    .invoice-date { font-size: 12px; color: #9ca3af; }
+    .invoice-details { font-size: 13px; color: #6b7280; }
+    .invoice-details .row { display: flex; justify-content: space-between; padding: 3px 0; }
+    .invoice-total {
+      display: flex; justify-content: space-between; font-weight: 700;
+      font-size: 15px; padding-top: 8px; border-top: 1px solid #f3f4f6; margin-top: 8px;
+    }
+
+    /* Badge colors (shared) */
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-blue { background: #dbeafe; color: #2563eb; }
+    .badge-yellow { background: #fef9c3; color: #a16207; }
+    .badge-gray { background: #f3f4f6; color: #6b7280; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: #9ca3af;
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 40px; }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid #e5e7eb;
+      border-top-color: #16a34a; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer {
+      text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;
+    }
+    .footer a { color: #16a34a; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="header" id="header">
+    <h1>👤 Mon Compte</h1>
+    <div class="header-right" id="header-right" style="display:none">
+      <span class="user-name" id="user-name"></span>
+      <button class="logout-btn" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="container" id="app">
+    <!-- Login view -->
+    <div id="login-view">
+      <div class="login-card">
+        <div class="icon">🔐</div>
+        <h2>Connexion</h2>
+        <p>Entrez votre numéro de téléphone pour recevoir un lien de connexion</p>
+        <div class="phone-input-group">
+          <input type="text" class="phone-prefix" value="+269" readonly>
+          <input type="tel" class="phone-input" id="phone-input" placeholder="3221111" maxlength="10" inputmode="numeric">
+        </div>
+        <button class="login-btn" id="login-btn" onclick="requestMagicLink()">
+          Recevoir le lien
+        </button>
+        <div class="login-msg" id="login-msg"></div>
+      </div>
+    </div>
+
+    <!-- Account view -->
+    <div id="account-view" style="display:none">
+      <div class="tabs">
+        <button class="tab active" id="tab-orders" onclick="switchTab('orders')">📦 Commandes</button>
+        <button class="tab" id="tab-invoices" onclick="switchTab('invoices')">🧾 Factures</button>
+      </div>
+      <div id="orders-view">
+        <div class="loading" id="orders-loading">
+          <div class="spinner"></div>
+          <p>Chargement...</p>
+        </div>
+        <div id="orders-list"></div>
+      </div>
+      <div id="invoices-view" style="display:none">
+        <div class="loading" id="invoices-loading" style="display:none">
+          <div class="spinner"></div>
+          <p>Chargement...</p>
+        </div>
+        <div id="invoices-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Propulsé par <a href="/">Komerce</a></p>
+  </div>
+
+  <script>
+    var currentUser = null;
+    var ordersLoaded = false;
+    var invoicesLoaded = false;
+
+    // On page load: check for magic link token in URL or check existing session
+    (function init() {
+      var params = new URLSearchParams(window.location.search);
+      var magicToken = params.get('token');
+
+      if (magicToken) {
+        // Redirect to validation endpoint (server will set cookie and redirect back)
+        window.location.href = '/api/auth/magic-link/validate?token=' + encodeURIComponent(magicToken);
+        return;
+      }
+
+      // Check existing session
+      checkSession();
+    })();
+
+    function checkSession() {
+      fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('not_auth');
+          return r.json();
+        })
+        .then(function(user) {
+          currentUser = user;
+          showAccountView();
+        })
+        .catch(function() {
+          showLoginView();
+        });
+    }
+
+    function showLoginView() {
+      document.getElementById('login-view').style.display = 'block';
+      document.getElementById('account-view').style.display = 'none';
+      document.getElementById('header-right').style.display = 'none';
+    }
+
+    function showAccountView() {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('account-view').style.display = 'block';
+      document.getElementById('header-right').style.display = 'flex';
+      document.getElementById('user-name').textContent = currentUser.fullName;
+      loadOrders();
+    }
+
+    function requestMagicLink() {
+      var phone = document.getElementById('phone-input').value.trim();
+      if (!phone) return;
+
+      var fullPhone = '+269' + phone.replace(/\s/g, '');
+      var btn = document.getElementById('login-btn');
+      var msg = document.getElementById('login-msg');
+
+      btn.disabled = true;
+      btn.textContent = 'Envoi en cours...';
+      msg.style.display = 'none';
+
+      fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.success) {
+            msg.className = 'login-msg success';
+            msg.textContent = '✅ Un lien de connexion vous a été envoyé. Vérifiez vos messages WhatsApp.';
+          } else {
+            msg.className = 'login-msg error';
+            msg.textContent = '❌ ' + (data.error || 'Erreur');
+          }
+          msg.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Recevoir le lien';
+        })
+        .catch(function() {
+          msg.className = 'login-msg error';
+          msg.textContent = '❌ Erreur de connexion. Veuillez réessayer.';
+          msg.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Recevoir le lien';
+        });
+    }
+
+    function doLogout() {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+        .then(function() {
+          currentUser = null;
+          ordersLoaded = false;
+          invoicesLoaded = false;
+          showLoginView();
+        });
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-orders').className = 'tab' + (tab === 'orders' ? ' active' : '');
+      document.getElementById('tab-invoices').className = 'tab' + (tab === 'invoices' ? ' active' : '');
+      document.getElementById('orders-view').style.display = tab === 'orders' ? 'block' : 'none';
+      document.getElementById('invoices-view').style.display = tab === 'invoices' ? 'block' : 'none';
+
+      if (tab === 'invoices' && !invoicesLoaded) {
+        loadInvoices();
+      }
+    }
+
+    function loadOrders() {
+      if (ordersLoaded) return;
+      document.getElementById('orders-loading').style.display = 'block';
+
+      fetch('/api/client/orders', { credentials: 'same-origin' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('err');
+          return r.json();
+        })
+        .then(function(data) {
+          document.getElementById('orders-loading').style.display = 'none';
+          ordersLoaded = true;
+          renderOrders(data.orders);
+        })
+        .catch(function() {
+          document.getElementById('orders-loading').style.display = 'none';
+          document.getElementById('orders-list').innerHTML = '<div class="empty-state"><div class="icon">❌</div><p>Erreur de chargement</p></div>';
+        });
+    }
+
+    function loadInvoices() {
+      if (invoicesLoaded) return;
+      document.getElementById('invoices-loading').style.display = 'block';
+
+      fetch('/api/client/invoices', { credentials: 'same-origin' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('err');
+          return r.json();
+        })
+        .then(function(data) {
+          document.getElementById('invoices-loading').style.display = 'none';
+          invoicesLoaded = true;
+          renderInvoices(data.invoices);
+        })
+        .catch(function() {
+          document.getElementById('invoices-loading').style.display = 'none';
+          document.getElementById('invoices-list').innerHTML = '<div class="empty-state"><div class="icon">❌</div><p>Erreur de chargement</p></div>';
+        });
+    }
+
+    function renderOrders(orders) {
+      var el = document.getElementById('orders-list');
+      if (!orders || orders.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>Aucune commande</p></div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < orders.length; i++) {
+        var o = orders[i];
+        html += '<div class="order-card">';
+        html += '<div class="order-header">';
+        html += '<div><div class="order-ref">' + esc(o.reference) + '</div>';
+        html += '<div class="order-date">' + formatDate(o.createdAt) + '</div></div>';
+        html += '<span class="order-status ' + getBadgeClass(o.status) + '">' + esc(o.statusLabel) + '</span>';
+        html += '</div>';
+
+        // Items
+        if (o.items && o.items.length > 0) {
+          html += '<div class="order-items-list">';
+          for (var j = 0; j < o.items.length; j++) {
+            var item = o.items[j];
+            html += '<div class="order-item-row">';
+            html += '<span class="emoji">' + (item.emoji || '📦') + '</span>';
+            html += '<span class="name">' + esc(item.name) + ' × ' + item.quantity + '</span>';
+            html += '<span class="price">' + formatKMF(item.priceKmf * item.quantity) + '</span>';
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+
+        // Parcels
+        if (o.parcels && o.parcels.length > 0) {
+          html += '<div class="order-parcels">';
+          for (var k = 0; k < o.parcels.length; k++) {
+            var p = o.parcels[k];
+            html += '<div class="order-parcel">';
+            html += '<span>📦 ' + esc(p.reference) + '</span>';
+            html += '<span class="parcel-badge ' + getBadgeClass(p.status) + '">' + esc(getStatusLabel(p.status)) + '</span>';
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+
+        html += '<div class="order-footer">';
+        html += '<div class="order-total">' + formatKMF(o.totalKmf) + '</div>';
+        if (o.qrToken) {
+          html += '<a href="/suivi.html?t=' + encodeURIComponent(o.qrToken) + '" class="order-track-btn">📍 Suivre</a>';
+        }
+        html += '</div>';
+
+        html += '</div>';
+      }
+
+      el.innerHTML = html;
+    }
+
+    function renderInvoices(invoices) {
+      var el = document.getElementById('invoices-list');
+      if (!invoices || invoices.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">🧾</div><p>Aucune facture</p></div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < invoices.length; i++) {
+        var inv = invoices[i];
+        html += '<div class="invoice-card">';
+        html += '<div class="invoice-header">';
+        html += '<div>';
+        html += '<div class="invoice-number">🧾 ' + esc(inv.invoiceNumber) + '</div>';
+        html += '<div class="invoice-date">' + esc(inv.orderReference) + ' · ' + formatDate(inv.createdAt) + '</div>';
+        html += '</div></div>';
+        html += '<div class="invoice-details">';
+        html += '<div class="row"><span>Sous-total</span><span>' + formatKMF(inv.subtotalKmf) + '</span></div>';
+        html += '<div class="row"><span>Livraison</span><span>' + formatKMF(inv.shippingKmf) + '</span></div>';
+        html += '</div>';
+        html += '<div class="invoice-total"><span>Total</span><span>' + formatKMF(inv.totalKmf) + '</span></div>';
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    // Allow Enter key on phone input
+    document.getElementById('phone-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') requestMagicLink();
+    });
+
+    function getBadgeClass(status) {
+      switch (status) {
+        case 'available': case 'collected': case 'delivered': return 'badge-green';
+        case 'shipped': case 'in_transit': return 'badge-blue';
+        case 'ordered': case 'confirmed': case 'preparation': return 'badge-yellow';
+        case 'cancelled': case 'refunded': return 'badge-red';
+        default: return 'badge-gray';
+      }
+    }
+
+    function getStatusLabel(status) {
+      var labels = {
+        ordered: 'Confirmée', confirmed: 'Confirmée', preparation: 'En préparation',
+        shipped: 'Expédiée', in_transit: 'En transit', arrived: 'Arrivée',
+        available: 'Disponible', collected: 'Retirée', delivered: 'Livrée',
+        cancelled: 'Annulée', refunded: 'Remboursée', draft: 'Brouillon'
+      };
+      return labels[status] || status;
+    }
+
+    function formatKMF(amount) {
+      if (!amount && amount !== 0) return '—';
+      return new Intl.NumberFormat('fr-FR').format(amount) + ' KMF';
+    }
+
+    function formatDate(d) {
+      if (!d) return '';
+      try {
+        var date = new Date(d);
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch (e) { return String(d); }
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
