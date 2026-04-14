@@ -6,6 +6,139 @@
   <title>Komerce — Control Tower</title>
   <link rel="stylesheet" href="/css/ct.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    /* ===== DRILL-DOWN MODAL STYLES ===== */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .modal-content {
+      background: #fff; border-radius: 12px; padding: 1.5rem;
+      max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-large { max-width: 900px; }
+    
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1rem;
+    }
+    .modal-header h2 { margin: 0; font-size: 1.3rem; }
+    .modal-close {
+      background: none; border: none; font-size: 1.5rem; cursor: pointer;
+      color: #6b7280; padding: 0.25rem 0.5rem; border-radius: 4px;
+    }
+    .modal-close:hover { background: #f3f4f6; color: #111; }
+    
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) { .modal-grid { grid-template-columns: 1fr; } }
+    
+    .modal-section h3 { margin: 0 0 0.75rem 0; font-size: 1rem; color: #374151; }
+    
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; }
+    .info-table td:first-child { color: #6b7280; width: 40%; }
+    
+    /* Timeline */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before {
+      content: ''; position: absolute; left: 0.6rem; top: 0; bottom: 0;
+      width: 2px; background: #d1d5db;
+    }
+    .timeline-item {
+      position: relative; padding: 0.5rem 0; display: flex; flex-wrap: wrap; gap: 0.5rem;
+      align-items: center; font-size: 0.85rem;
+    }
+    .timeline-icon { font-size: 1.1rem; }
+    .timeline-time { color: #6b7280; font-size: 0.8rem; min-width: 100px; }
+    .timeline-label { font-weight: 500; }
+    .timeline-note { color: #9ca3af; font-size: 0.8rem; width: 100%; padding-left: 1.5rem; }
+    
+    /* Accordion */
+    .accordion-order { border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 0.5rem; overflow: hidden; }
+    .accordion-header {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+      cursor: pointer; background: #f9fafb; transition: background 0.15s;
+    }
+    .accordion-header:hover { background: #f3f4f6; }
+    .accordion-arrow { font-size: 0.8rem; color: #9ca3af; transition: transform 0.2s; min-width: 1rem; }
+    .accordion-body { padding: 0.5rem 1rem 1rem; background: #fff; }
+    
+    .items-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .items-table th { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 2px solid #e5e7eb; color: #6b7280; font-size: 0.8rem; }
+    .items-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f3f4f6; }
+    
+    /* Badges */
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-gray { background: #f3f4f6; color: #6b7280; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-orange { background: #fef3c7; color: #d97706; }
+    .badge-purple { background: #f3e8ff; color: #7c3aed; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-ok { color: #16a34a; font-weight: 600; }
+    .badge-warn { color: #d97706; font-weight: 600; }
+    
+    /* Stats row */
+    .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+    .stat-card {
+      flex: 1; min-width: 140px; padding: 1rem; border-radius: 10px;
+      background: #f9fafb; border: 1px solid #e5e7eb; text-align: center;
+    }
+    .stat-num { display: block; font-size: 1.8rem; font-weight: 700; color: #111827; }
+    .stat-label { display: block; font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
+    .stat-green { border-color: #86efac; background: #f0fdf4; }
+    .stat-orange { border-color: #fed7aa; background: #fffbeb; }
+    .stat-red { border-color: #fca5a5; background: #fef2f2; }
+    
+    /* Progress bar */
+    .progress-bar-bg { width: 100%; height: 1.2rem; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+    
+    /* Data table */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+    .data-table th { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 2px solid #e5e7eb; color: #6b7280; font-size: 0.8rem; text-transform: uppercase; }
+    .data-table td { padding: 0.5rem 0.5rem; border-bottom: 1px solid #f3f4f6; }
+    .data-table tr:hover { background: #f9fafb; }
+    
+    /* Severity */
+    .severity-critical { border-left: 3px solid #dc2626; }
+    .severity-high { border-left: 3px solid #f59e0b; }
+    .severity-medium { border-left: 3px solid #3b82f6; }
+    .severity-low { border-left: 3px solid #d1d5db; }
+    
+    /* Alert row */
+    .row-alert { background: #fef2f2 !important; }
+    .row-warn { background: #fffbeb !important; }
+    
+    /* Buttons */
+    .btn-sm { display: inline-block; padding: 0.25rem 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.8rem; cursor: pointer; background: #fff; text-decoration: none; color: #374151; }
+    .btn-sm:hover { background: #f3f4f6; }
+    .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .btn-primary:hover { background: #1d4ed8; }
+    
+    .hint { font-size: 0.8rem; color: #9ca3af; margin-top: 0.75rem; }
+    .error { color: #dc2626; padding: 1rem; background: #fef2f2; border-radius: 8px; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #6b7280; }
+    .empty-state p:first-child { font-size: 1.5rem; }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      .modal-content { background: #1f2937; color: #e5e7eb; }
+      .modal-header { border-color: #374151; }
+      .accordion-header { background: #111827; }
+      .accordion-header:hover { background: #1f2937; }
+      .accordion-body { background: #1f2937; }
+      .stat-card { background: #111827; border-color: #374151; }
+      .info-table td { border-color: #374151; }
+      .data-table th { border-color: #374151; }
+      .data-table td { border-color: #1f2937; }
+    }
+  </style>
 </head>
 <body>
 
@@ -13,7 +146,7 @@
 <div id="login-screen" class="ct-login">
   <div class="ct-login-card">
     <h1>🏗️ Komerce</h1>
-    <p>Control Tower v3</p>
+    <p>Control Tower v5</p>
     <form id="login-form">
       <input type="email" id="login-email" placeholder="Email" value="admin@komerce.km" required>
       <input type="password" id="login-pass" placeholder="Mot de passe" required>
@@ -28,7 +161,7 @@
   
   <!-- SIDEBAR -->
   <aside class="ct-sidebar" id="sidebar">
-    <div class="ct-sidebar-brand">🏗️ <span>Komerce</span> CT</div>
+    <div class="ct-sidebar-brand">🏗️ <span>Komerce</span> CT v5</div>
     <nav id="sidebar-nav">
       <!-- Built by ct-app.js -->
     </nav>
@@ -64,12 +197,16 @@
   </main>
 </div>
 
+<!-- PARCEL DRILL-DOWN MODAL -->
+<div id="parcel-modal" style="display:none"></div>
+
 <!-- Toast container -->
 <div id="toast-container"></div>
 
 <!-- Scripts (order matters) -->
 <script src="/js/ct-api.js"></script>
 <script src="/js/ct-views.js"></script>
+<script src="/js/ct-views-ops.js"></script>
 <script src="/js/ct-scenarios.js"></script>
 <script src="/js/ct-notifications.js"></script>
 <script src="/js/ct-app.js"></script>

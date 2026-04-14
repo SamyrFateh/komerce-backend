@@ -1,23 +1,27 @@
 /* ===================================================================
-   Komerce Control Tower — ct-app.js v3.1
+   Komerce Control Tower — ct-app.js v5.0
    Router, sidebar, toast system, init, login.
-   + Vue Commandes ajoutée dans la sidebar
+   v5: + Incidents, Réconciliation, Alertes, Factures
    =================================================================== */
 window.CT = window.CT || {};
 
 CT.currentView = null;
 
 /* ---------------------------------------------------------------
-   Sidebar items — 6 dashboards métier + Scénarios
+   Sidebar items — 11 dashboards
    --------------------------------------------------------------- */
 CT.SIDEBAR_ITEMS = [
-  { id: 'global',    icon: '🧠', label: 'Global',      section: 'dashboards' },
-  { id: 'hub',       icon: '🏭', label: 'Hub Dubaï',    section: 'dashboards' },
-  { id: 'transit',   icon: '🚢', label: 'Transit',      section: 'dashboards' },
-  { id: 'relais',    icon: '🏝️', label: 'Relais',       section: 'dashboards' },
-  { id: 'finance',   icon: '💰', label: 'Finance',      section: 'dashboards' },
-  { id: 'commandes', icon: '📋', label: 'Commandes',    section: 'dashboards' },
-  { id: 'scenarios', icon: '🎮', label: 'Scénarios',    section: 'tools' }
+  { id: 'global',          icon: '🧠', label: 'Global',          section: 'dashboards' },
+  { id: 'hub',             icon: '🏭', label: 'Hub Dubaï',       section: 'dashboards' },
+  { id: 'transit',         icon: '🚢', label: 'Transit',         section: 'dashboards' },
+  { id: 'relais',          icon: '🏝️', label: 'Relais',          section: 'dashboards' },
+  { id: 'finance',         icon: '💰', label: 'Finance',         section: 'dashboards' },
+  { id: 'commandes',       icon: '📋', label: 'Commandes',       section: 'dashboards' },
+  { id: 'incidents',       icon: '⚠️', label: 'Incidents',       section: 'ops' },
+  { id: 'reconciliation',  icon: '🔄', label: 'Réconciliation',  section: 'ops' },
+  { id: 'alertes',         icon: '🚨', label: 'Alertes',         section: 'ops' },
+  { id: 'factures',        icon: '🧾', label: 'Factures',        section: 'ops' },
+  { id: 'scenarios',       icon: '🎮', label: 'Scénarios',       section: 'tools' }
 ];
 
 /* ---------------------------------------------------------------
@@ -91,9 +95,14 @@ CT.init = function() {
   CT.SIDEBAR_ITEMS.forEach(function(item) {
     var view = CT.views[item.id];
     if (!view) return;
-    // Section separator
+    // Section separator with label
     if (item.section !== currentSection) {
       if (currentSection) html += '<div class="ct-nav-separator"></div>';
+      if (item.section === 'ops') {
+        html += '<div class="ct-nav-section-label">⚙️ Opérations</div>';
+      } else if (item.section === 'tools') {
+        html += '<div class="ct-nav-section-label">🛠️ Outils</div>';
+      }
       currentSection = item.section;
     }
     html += '<div class="ct-nav-item" data-view="' + item.id + '">' +

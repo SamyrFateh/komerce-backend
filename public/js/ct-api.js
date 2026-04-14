@@ -1,7 +1,8 @@
 /* ===================================================================
-   Komerce Control Tower — ct-api.js
+   Komerce Control Tower — ct-api.js v5.0
    API layer: all HTTP calls go through here.
    Auth is handled by httpOnly cookie (kmrc_jwt), set by the server.
+   v5: + Parcel-First v2 endpoints + Invoices
    =================================================================== */
 window.CT = window.CT || {};
 
@@ -70,33 +71,28 @@ CT.api = {
   stripeConfig: function() { return this.get('/api/payments/config'); },
 
   // ---- Products ----
-  // API returns {products: [...], total, limit, offset} — we extract the array
   products: async function() {
     var data = await this.get('/api/products');
     return data.products || data || [];
   },
 
   // ---- Parcels (colis — unité logistique R1) ----
-  // GET /api/parcels  → { data: [...], pagination: {...} }
   parcels: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/parcels' + (qs ? '?' + qs : ''));
   },
   getParcel: function(ref) { return this.get('/api/parcels/' + ref); },
-  // PATCH /api/parcels/:id/status  → change parcel status (logistic unit)
   updateParcelStatus: function(id, status, notes) {
     return this.patch('/api/parcels/' + id + '/status', { status: status, notes: notes || null });
   },
   parcelEvents: function(ref) { return this.get('/api/parcels/' + ref + '/events'); },
 
-  // ---- Hub Dashboard (KPIs opérationnels + file + détail complet) ----
-  // NOTE: route montée sur /api/hub-dash (pas hub-dashboard)
+  // ---- Hub Dashboard ----
   hubDashboard: function() { return this.get('/api/hub-dash/dashboard'); },
   hubQueue: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/hub-dash/queue' + (qs ? '?' + qs : ''));
   },
-  // GET /api/hub-dash/orders/:id → détail commande avec colis, items, timeline, incidents
   hubOrderDetail: function(id) { return this.get('/api/hub-dash/orders/' + id); },
   hubStartPrep: function(id) { return this.post('/api/hub-dash/orders/' + id + '/start-prep', {}); },
   hubShipParcel: function(parcelId, data) {
@@ -112,5 +108,55 @@ CT.api = {
   transitDelayed: function() { return this.get('/api/transit/delayed'); },
   transitAlerts: function() { return this.get('/api/transit/alerts'); },
   resolveAlert: function(id) { return this.post('/api/transit/alerts/' + id + '/resolve', {}); },
-  setParcelDestination: function(id, data) { return this.patch('/api/transit/parcels/' + id + '/destination', data); }
+  setParcelDestination: function(id, data) { return this.patch('/api/transit/parcels/' + id + '/destination', data); },
+
+  // ============================================================
+  // v5: PARCEL-FIRST v2 ENDPOINTS
+  // ============================================================
+
+  // ---- Scan Engine (v2) ----
+  v2Scan: function(data) { return this.post('/api/v2/scan', data); },
+  v2ParcelEvents: function(parcelId) { return this.get('/api/v2/parcels/' + parcelId + '/events'); },
+  v2ParcelTimeline: function(parcelId) { return this.get('/api/v2/parcels/' + parcelId + '/timeline'); },
+
+  // ---- Reconciliation (v2) ----
+  v2RecoRun: function() { return this.post('/api/v2/reconciliation/run', {}); },
+  v2RecoStatus: function() { return this.get('/api/v2/reconciliation/status'); },
+  v2RecoHistory: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/reconciliation/history' + (qs ? '?' + qs : ''));
+  },
+
+  // ---- Incidents (v2) ----
+  v2Incidents: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/incidents' + (qs ? '?' + qs : ''));
+  },
+  v2IncidentDetail: function(id) { return this.get('/api/v2/incidents/' + id); },
+  v2ResolveIncident: function(id, resolution) {
+    return this.post('/api/v2/incidents/' + id + '/resolve', { resolution: resolution });
+  },
+
+  // ---- Alerts (v2) ----
+  v2Alerts: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/alerts' + (qs ? '?' + qs : ''));
+  },
+  v2AckAlert: function(id, notes) {
+    return this.post('/api/v2/alerts/' + id + '/acknowledge', { notes: notes || '' });
+  },
+  v2AlertStats: function() { return this.get('/api/v2/alerts/stats'); },
+
+  // ---- Invoices (🧾) ----
+  invoicesList: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/invoices' + (qs ? '?' + qs : ''));
+  },
+  invoiceGet: function(orderId) { return this.get('/api/invoices/' + orderId); },
+  invoiceDeliver: function(orderId) { return this.post('/api/invoices/' + orderId + '/deliver', {}); },
+  invoiceHtml: function(orderId, mode) {
+    var url = '/api/invoices/' + orderId;
+    if (mode) url += '?mode=' + mode;
+    return url; // Returns URL for iframe/window.open, not a fetch call
+  }
 };
