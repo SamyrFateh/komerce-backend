@@ -1,5 +1,5 @@
 // ============================================================
-// ct-views-ops.js — Control Tower v5.1 — Fix: CT.api + drill-down /detail
+// ct-views-ops.js — Control Tower v5.2 — Fix: CT.api + drill-down /detail
 // Vues opérationnelles : Incidents, Réconciliation, Alertes, Factures
 // + Modal drill-down Colis → Commandes → Articles
 // ============================================================
@@ -217,11 +217,11 @@ window.renderIncidentsView = async function(container) {
       const sevClass = getSeverityClass(inc.severity);
       const statusIcon = {open:'🔴', investigating:'🟡', resolved:'✅', dismissed:'⚪'}[inc.status] || '❓';
       return `<tr class="${sevClass}" style="cursor:pointer" onclick="renderParcelDrillDown(${inc.parcel_id})">
-        <td>${inc.id}</td>
+        <td><strong>${inc.client_name || '—'}</strong><br><small>📋 ${inc.order_reference || '—'} ${inc.client_phone ? '📞 ' + inc.client_phone : ''}</small></td>
         <td>${getIncidentBadge(inc.incident_type)}</td>
         <td><span class="${sevClass}">${(inc.severity||'').toUpperCase()}</span></td>
         <td>${statusIcon} ${inc.status}</td>
-        <td>📦 #${inc.parcel_id || '—'}</td>
+        <td>📦 ${inc.parcel_reference || '—'}</td>
         <td>${inc.description || '—'}</td>
         <td>${date}</td>
       </tr>`;
@@ -236,7 +236,7 @@ window.renderIncidentsView = async function(container) {
         <div class="stat-card"><span class="stat-num">${incidents.length}</span><span class="stat-label">📊 Total</span></div>
       </div>
       <table class="data-table">
-        <thead><tr><th>#</th><th>Type</th><th>Sévérité</th><th>Statut</th><th>Colis</th><th>Description</th><th>Date</th></tr></thead>
+        <thead><tr><th>Client</th><th>Type</th><th>Sévérité</th><th>Statut</th><th>Colis</th><th>Description</th><th>Date</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p class="hint">💡 Cliquez sur un incident pour voir le détail du colis</p>`;
@@ -348,7 +348,7 @@ window.renderAlertsView = async function(container) {
         <td>${isActive ? '🔴' : '✅'}</td>
         <td>${typeIcon} ${(a.alert_type || '').replace(/_/g, ' ')}</td>
         <td>${a.severity || '—'}</td>
-        <td>📦 #${a.parcel_id || '—'}</td>
+        <td><strong>${a.customer || '—'}</strong><br><small>📋 ${a.order_reference || '—'} ${a.customer_phone ? '📞 ' + a.customer_phone : ''}</small></td>
         <td>${a.message || a.description || '—'}</td>
         <td>${date}</td>
         <td>${isActive ? '<button class="btn-sm" onclick="event.stopPropagation();ackAlert('+a.id+')">✓ Acquitter</button>' : '✅ OK'}</td>
@@ -363,7 +363,7 @@ window.renderAlertsView = async function(container) {
         <div class="stat-card"><span class="stat-num">${alerts.length}</span><span class="stat-label">📊 Total</span></div>
       </div>
       <table class="data-table">
-        <thead><tr><th>État</th><th>Type</th><th>Sévérité</th><th>Colis</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>
+        <thead><tr><th>État</th><th>Type</th><th>Sévérité</th><th>Client</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p class="hint">💡 Cliquez sur une alerte pour voir le détail du colis</p>`;
@@ -485,7 +485,7 @@ window.generateInvoice = async function(orderId) {
   }
 };
 
-console.log('[CT] ct-views-ops.js v5.1 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
+console.log('[CT] ct-views-ops.js v5.2 loaded — Incidents, Réconciliation, Alertes, Factures + Parcel DrillDown');
 
 
 // ---- REGISTER VIEWS IN CT.views ----

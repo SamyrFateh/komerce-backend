@@ -15,11 +15,13 @@ router.get('/incidents', async (req, res) => {
         i.created_at, i.updated_at,
         p.reference AS parcel_reference, p.status AS parcel_status,
         o.reference AS order_reference,
+        u_client.full_name AS client_name, u_client.phone AS client_phone,
         u_detected.full_name AS detected_by_name,
         u_resolved.full_name AS resolved_by_name
       FROM incidents i
       LEFT JOIN parcels p ON i.parcel_id = p.id
       LEFT JOIN orders o ON i.order_id = o.id
+      LEFT JOIN users u_client ON o.user_id = u_client.id
       LEFT JOIN users u_detected ON i.detected_by = u_detected.id
       LEFT JOIN users u_resolved ON i.resolved_by = u_resolved.id
       ORDER BY 
@@ -154,9 +156,11 @@ router.get('/alerts', async (req, res) => {
     const { rows: stuckAlerts } = await pool.query(`
       SELECT p.id, p.reference, p.status, p.updated_at,
              o.reference AS order_reference,
+             u.full_name AS customer_name, u.phone AS customer_phone,
              EXTRACT(EPOCH FROM (NOW() - p.updated_at)) / 86400 AS days_stuck
       FROM parcels p
       LEFT JOIN orders o ON p.order_id = o.id
+      LEFT JOIN users u ON o.user_id = u.id
       WHERE p.status NOT IN ('collected', 'cancelled', 'draft')
         AND p.updated_at < NOW() - INTERVAL '7 days'
       ORDER BY p.updated_at ASC
@@ -168,6 +172,7 @@ router.get('/alerts', async (req, res) => {
       message: `📦 Colis bloqué depuis ${Math.round(p.days_stuck)}j en statut "${p.status}" — ${p.reference}`,
       parcel_reference: p.reference,
       order_reference: p.order_reference,
+      customer: p.customer_name, customer_phone: p.customer_phone,
       status: p.status,
       days_stuck: Math.round(p.days_stuck),
       created_at: p.updated_at
@@ -199,9 +204,12 @@ router.get('/alerts', async (req, res) => {
     // 4. Weight anomalies (incidents of type weight_mismatch still open)
     const { rows: weightAlerts } = await pool.query(`
       SELECT i.id, i.title, i.description, i.details, i.created_at,
-             p.reference AS parcel_reference
+             p.reference AS parcel_reference,
+             u.full_name AS customer_name, u.phone AS customer_phone, o.reference AS order_reference
       FROM incidents i
       LEFT JOIN parcels p ON i.parcel_id = p.id
+      LEFT JOIN orders o ON p.order_id = o.id
+      LEFT JOIN users u ON o.user_id = u.id
       WHERE i.incident_type = 'weight_mismatch' AND i.status = 'open'
       ORDER BY i.created_at DESC
     `);
@@ -211,6 +219,7 @@ router.get('/alerts', async (req, res) => {
       severity: 'medium',
       message: `⚖️ Anomalie poids — ${i.parcel_reference}: ${i.title}`,
       parcel_reference: i.parcel_reference,
+      customer: i.customer_name, customer_phone: i.customer_phone, order_reference: i.order_reference,
       details: i.details,
       created_at: i.created_at
     }));
