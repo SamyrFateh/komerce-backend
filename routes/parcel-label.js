@@ -24,51 +24,79 @@ router.get('/:ref/label', async (req, res) => {
   const thermal = req.query.format === 'thermal';
 
   try {
-    // 1. Fetch parcel
+    // 1. Fetch parcel — FIX: COALESCE only same-type columns (uuid)
     const pRes = await db.query(`
       SELECT p.id, p.reference, p.status, p.pickup_code, p.weight_kg,
-             p.created_at, p.shipped_at, p.arrived_at,
+             p.destination_island,
+             p.created_at, p.shipped_at, p.available_at,
              r.name AS relais_name, r.island, r.city AS relais_city
       FROM parcels p
-      LEFT JOIN relais r ON r.id = COALESCE(p.relais_id, p.destination_relais)
+      LEFT JOIN relais r ON r.id = COALESCE(p.relay_id, p.relais_id)
       WHERE p.reference = $1
     `, [ref]);
 
     if (!pRes.rows.length) return res.status(404).send('Colis non trouvé: ' + ref);
     const p = pRes.rows[0];
 
-    // 2. Fetch clients + orders + items
+    // 2. Fetch clients + orders via parcel_items → order_items → orders
+    //    FIX: parcel_items has order_item_id, NOT order_id
     const oRes = await db.query(`
-      SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.payment_status,
+      SELECT DISTINCT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.payment_status,
              u.full_name AS client_name, u.phone AS client_phone
-      FROM orders o
-      JOIN users u ON u.id = o.user_id
-      JOIN parcel_items pi ON pi.order_id = o.id
+      FROM parcel_items pi
+      JOIN order_items oi ON oi.id = pi.order_item_id
+      JOIN orders o ON o.id = oi.order_id
+      LEFT JOIN users u ON u.id = o.user_id
       WHERE pi.parcel_id = $1
-      GROUP BY o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.payment_status,
-               u.full_name, u.phone
       ORDER BY o.reference
     `, [p.id]);
 
-    const orders = oRes.rows;
+    let orders = oRes.rows;
 
-    // 3. Fetch items per order
+    // Fallback: if no parcel_items, use parcels.order_id (1:1 legacy)
+    if (orders.length === 0) {
+      const fallback = await db.query(`
+        SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.payment_status,
+               u.full_name AS client_name, u.phone AS client_phone
+        FROM parcels p2
+        JOIN orders o ON o.id = p2.order_id
+        LEFT JOIN users u ON u.id = o.user_id
+        WHERE p2.id = $1
+      `, [p.id]);
+      orders = fallback.rows;
+    }
+
+    // 3. Fetch items per order via parcel_items → order_items → products
     for (let i = 0; i < orders.length; i++) {
       const iRes = await db.query(`
-        SELECT pi.quantity, pi.unit_price, pr.name AS product_name
+        SELECT pi.quantity, oi.price_kmf AS unit_price, 
+               COALESCE(pr.name, pi.product_name, 'Article') AS product_name
         FROM parcel_items pi
-        LEFT JOIN products pr ON pr.id = pi.product_id
-        WHERE pi.parcel_id = $1 AND pi.order_id = $2
+        JOIN order_items oi ON oi.id = pi.order_item_id
+        LEFT JOIN products pr ON pr.id = oi.product_id
+        WHERE pi.parcel_id = $1 AND oi.order_id = $2
       `, [p.id, orders[i].id]);
       orders[i].items = iRes.rows;
+
+      // Fallback: if no parcel_items for this order, use order_items directly
+      if (orders[i].items.length === 0) {
+        const fb = await db.query(`
+          SELECT oi.quantity, oi.price_kmf AS unit_price,
+                 COALESCE(pr.name, 'Article') AS product_name
+          FROM order_items oi
+          LEFT JOIN products pr ON pr.id = oi.product_id
+          WHERE oi.order_id = $1
+        `, [orders[i].id]);
+        orders[i].items = fb.rows;
+      }
     }
 
     // 4. Compute totals
     const totalOrders = orders.length;
     const totalItems = orders.reduce((s, o) => s + (o.items || []).length, 0);
     const totalKmf = orders.reduce((s, o) => s + (parseInt(o.total_kmf) || 0), 0);
-    const clientName = orders[0]?.client_name || 'Client';
-    const clientPhone = orders[0]?.client_phone || '';
+    const clientName = orders[0]?.client_name || p.recipient_name || 'Client';
+    const clientPhone = orders[0]?.client_phone || p.recipient_phone || '';
 
     // 5. Build tracking URL for QR
     const baseUrl = req.protocol + '://' + req.get('host');
@@ -148,7 +176,7 @@ router.get('/:ref/label', async (req, res) => {
   </button>
   <span style="margin-left:10px;font-size:13px;color:#666">
     ${thermal ? 'Format thermique 80mm' : 'Format A5'}
-    &middot; <a href="?ref=${p.reference}&format=${thermal ? '' : 'thermal'}">${thermal ? 'Version A5' : 'Version thermique'}</a>
+    &middot; <a href="?format=${thermal ? '' : 'thermal'}">${thermal ? 'Version A5' : 'Version thermique'}</a>
   </span>
 </div>
 <div class="label">
@@ -162,7 +190,7 @@ router.get('/:ref/label', async (req, res) => {
     <div class="qr-info">
       <div>
         <div class="field-label">Destination</div>
-        <div class="field-value"><span class="island-badge">${p.island || '—'}</span></div>
+        <div class="field-value"><span class="island-badge">${p.destination_island || p.island || '—'}</span></div>
       </div>
       <div>
         <div class="field-label">Relais</div>
@@ -196,7 +224,7 @@ router.get('/:ref/label', async (req, res) => {
 
   <div class="footer">
     Cree le ${fmtDate(p.created_at)} ${p.shipped_at ? '&middot; Expedie le ' + fmtDate(p.shipped_at) : ''}
-    ${p.arrived_at ? '&middot; Arrive le ' + fmtDate(p.arrived_at) : ''}
+    ${p.available_at ? '&middot; Arrive le ' + fmtDate(p.available_at) : ''}
     <br>Scannez le QR code pour le suivi en temps reel
   </div>
 </div>
