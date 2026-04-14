@@ -85,7 +85,7 @@ CT.views._doReset = async function() {
   const status = document.getElementById('seed-status');
   status.innerHTML = '⏳ Reset en cours...';
   try {
-    const res = await CT.api.post('/api/admin/reset');
+    const res = await CT.api.post('/api/admin/reset', { mode: 'orders' });
     status.innerHTML = `<div style="color:#059669">✅ Reset terminé${res.message ? ': ' + res.message : ''}</div>`;
   } catch (err) {
     status.innerHTML = `<div style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
@@ -96,7 +96,7 @@ CT.views._doSeed = async function() {
   const status = document.getElementById('seed-status');
   status.innerHTML = '⏳ Injection des données de test...';
   try {
-    const res = await CT.api.post('/api/admin/seed-test');
+    const res = await CT.api.post('/api/admin/seed-test', { confirm: true });
     status.innerHTML = `<div style="color:#059669">✅ Seed terminé${res.message ? ': ' + res.message : ''}</div>`;
   } catch (err) {
     status.innerHTML = `<div style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
