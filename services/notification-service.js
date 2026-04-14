@@ -205,9 +205,9 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         r.name AS relais_name, r.island AS relais_island,
         o.reference AS order_ref, o.total_kmf,
         o.payment_mode, o.payment_status,
-        COALESCE(o.customer_name, u.full_name, p.recipient_name) AS customer_name,
-        COALESCE(o.customer_phone, u.phone, p.recipient_phone) AS customer_phone,
-        COALESCE(o.customer_email, u.email) AS customer_email,
+        COALESCE( u.full_name, p.recipient_name) AS customer_name,
+        COALESCE( u.phone, p.recipient_phone) AS customer_phone,
+        u.email AS customer_email,
         o.id AS order_id, o.cash_ref_code
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
@@ -307,9 +307,9 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
   try {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
-        COALESCE(o.customer_name, u.full_name) AS customer_name,
-        COALESCE(o.customer_phone, u.phone) AS customer_phone,
-        COALESCE(o.customer_email, u.email) AS customer_email,
+        u.full_name AS customer_name,
+        u.phone AS customer_phone,
+        u.email AS customer_email,
         r.name AS relais_name
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
@@ -438,9 +438,9 @@ async function notifyParcelCreated(parcelRef, orderId, orderRef) {
   try {
     const { rows: [data] } = await db.query(`
       SELECT o.reference AS order_ref, o.total_kmf,
-        COALESCE(o.customer_name, u.full_name) AS customer_name,
-        COALESCE(o.customer_phone, u.phone) AS customer_phone,
-        COALESCE(o.customer_email, u.email) AS customer_email
+        u.full_name AS customer_name,
+        u.phone AS customer_phone,
+        u.email AS customer_email
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
       WHERE o.id = $1::uuid
