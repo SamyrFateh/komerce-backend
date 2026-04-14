@@ -436,6 +436,9 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       }
     }
 
+        // ── Fix relais encoding (MohÃ©li → Mohéli) ────────────────────
+    await client.query("UPDATE relais SET island = 'Mohéli' WHERE island != 'Mohéli' AND island LIKE '%oh%li%'");
+
     // ── Create data ────────────────────────────────────────────────
     const summary = {
       orders: [], parcels: [], scan_events: 0, incidents: [], invoices: [],
