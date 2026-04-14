@@ -66,7 +66,7 @@ router.get('/orders', ...guard, async (req, res, next) => {
 
     const where = conditions.join(' AND ');
     const { rows } = await db.query(
-      `SELECT
+      `SELECT DISTINCT ON (o.id)
          o.id, o.reference, o.status, o.total_kmf,
          o.cost_estimated_kmf, o.cost_real_kmf, o.cost_delta_pct,
          o.margin_estimated_pct, o.margin_real_pct, o.margin_alert, o.sourcing_blocked,
@@ -75,17 +75,18 @@ router.get('/orders', ...guard, async (req, res, next) => {
          rc.full_name AS recipient_name, rc.phone AS recipient_phone,
          o.created_at, o.ordered_at, o.purchasing_at, o.preparation_at,
          o.shipped_at, o.available_at, o.collected_at, o.cash_paid_at,
-         p.name AS product_name, p.category,
+         (SELECT p2.name FROM order_items oi2 JOIN products p2 ON p2.id = oi2.product_id WHERE oi2.order_id = o.id LIMIT 1) AS product_name,
+         (SELECT p2.category FROM order_items oi2 JOIN products p2 ON p2.id = oi2.product_id WHERE oi2.order_id = o.id LIMIT 1) AS category,
          u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
-         r.name AS relais_name, r.zone AS relais_zone
+         r.name AS relais_name, r.zone AS relais_zone,
+         r.island AS relais_island,
+         o.destination_island
        FROM orders o
-       LEFT JOIN order_items oi ON oi.order_id = o.id
-       LEFT JOIN products p ON p.id = oi.product_id
        LEFT JOIN users    u ON u.id = o.user_id
        LEFT JOIN relais   r ON r.id = o.relais_id
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
        WHERE ${where}
-       ORDER BY o.created_at DESC
+       ORDER BY o.id, o.created_at DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, Number(limit), Number(offset)]
     );
