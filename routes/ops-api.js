@@ -458,4 +458,88 @@ router.get('/parcels/:id/orders', async (req, res) => {
   }
 });
 
+
+// ─── GET /api/v2/invoices ───────────────────────────────────────────
+// List all invoices with order + client info
+router.get('/invoices', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        inv.id, inv.invoice_number, inv.order_id, inv.parcel_id,
+        inv.client_name, inv.client_phone, inv.relay_name,
+        inv.items_snapshot, inv.subtotal_kmf, inv.shipping_kmf, inv.total_kmf,
+        inv.payment_mode, inv.payment_status,
+        inv.delivered_via, inv.delivered_at, inv.created_at,
+        o.reference AS order_reference, o.status AS order_status,
+        p.reference AS parcel_reference
+      FROM invoices inv
+      LEFT JOIN orders o ON inv.order_id = o.id
+      LEFT JOIN parcels p ON inv.parcel_id = p.id
+      ORDER BY inv.created_at DESC
+      LIMIT 200
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/v2/invoices error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/v2/scan-events ────────────────────────────────────────
+// List recent scan events across all parcels
+router.get('/scan-events', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const { rows } = await pool.query(`
+      SELECT 
+        se.id, se.event_type, se.scan_code, se.actor_name, se.actor_role,
+        se.location, se.notes, se.status, se.created_at,
+        p.reference AS parcel_reference, p.status AS parcel_status,
+        o.reference AS order_reference,
+        u.full_name AS scanned_by_name
+      FROM scan_events se
+      LEFT JOIN parcels p ON se.parcel_id = p.id
+      LEFT JOIN orders o ON se.order_id = o.id
+      LEFT JOIN users u ON se.scanned_by = u.id
+      ORDER BY se.created_at DESC
+      LIMIT $1
+    `, [limit]);
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/v2/scan-events error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/v2/parcels ────────────────────────────────────────────
+// List all parcels with order + relay info
+router.get('/parcels', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT 
+        p.id, p.reference, p.type, p.status, p.weight_kg,
+        p.destination_island, p.recipient_name, p.recipient_phone,
+        p.items_count, p.total_qty,
+        p.prepared_at, p.shipped_at, p.in_transit_at,
+        p.arrived_at, p.available_at, p.collected_at,
+        p.created_at,
+        o.reference AS order_reference, o.status AS order_status,
+        o.total_kmf, o.payment_mode, o.payment_status,
+        u.full_name AS customer_name, u.phone AS customer_phone,
+        r.name AS relay_name, r.zone AS relay_zone
+      FROM parcels p
+      LEFT JOIN orders o ON p.order_id = o.id
+      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN relais r ON p.relais_id = r.id
+      WHERE p.status NOT IN ('draft', 'cancelled')
+      ORDER BY p.created_at DESC
+      LIMIT 200
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/v2/parcels error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
