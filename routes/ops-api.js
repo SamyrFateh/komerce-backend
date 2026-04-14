@@ -4,6 +4,109 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
+// ─── GET /api/v2/global ─────────────────────────────────────────────
+// Dashboard summary — all KPIs in one call
+router.get('/global', async (req, res) => {
+  try {
+    // Orders summary
+    const { rows: orderStats } = await pool.query(`
+      SELECT 
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled','refunded'))::int AS active,
+        json_object_agg(status, cnt) AS by_status
+      FROM (SELECT status, COUNT(*)::int AS cnt FROM orders GROUP BY status) sub
+      CROSS JOIN (SELECT COUNT(*)::int AS total, 
+        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled','refunded'))::int AS active 
+        FROM orders) totals
+    `);
+    
+    // Simpler approach
+    const { rows: oByStatus } = await pool.query(`
+      SELECT status, COUNT(*)::int AS count FROM orders GROUP BY status ORDER BY status
+    `);
+    const { rows: [oTotals] } = await pool.query(`
+      SELECT 
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled','refunded'))::int AS active
+      FROM orders
+    `);
+    
+    // Parcels summary
+    let parcelData = { total: 0, by_status: {} };
+    try {
+      const { rows: pByStatus } = await pool.query(`
+        SELECT status, COUNT(*)::int AS count FROM parcels GROUP BY status ORDER BY status
+      `);
+      const pTotal = pByStatus.reduce((s, r) => s + r.count, 0);
+      parcelData = { total: pTotal, by_status: Object.fromEntries(pByStatus.map(r => [r.status, r.count])) };
+    } catch(_) {}
+    
+    // Finance
+    const { rows: [finance] } = await pool.query(`
+      SELECT 
+        COALESCE(SUM(total_kmf), 0)::int AS ca_total_kmf,
+        COUNT(*) FILTER (WHERE payment_mode = 'cash_relais' AND payment_status = 'pending' AND status NOT IN ('cancelled','refunded'))::int AS cash_pending,
+        COUNT(*) FILTER (WHERE payment_status = 'paid')::int AS paid
+      FROM orders
+    `);
+    
+    // Incidents
+    let incidentData = { total: 0, open: 0, resolved: 0 };
+    try {
+      const { rows: [inc] } = await pool.query(`
+        SELECT 
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE status = 'open')::int AS open,
+          COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved
+        FROM incidents
+      `);
+      incidentData = inc;
+    } catch(_) {}
+    
+    // Alerts count (reuse logic from /alerts)
+    let alertCount = { total: 0, critical: 0, high: 0 };
+    try {
+      const { rows: [sla] } = await pool.query(`
+        SELECT COUNT(*)::int AS c FROM orders 
+        WHERE status NOT IN ('cancelled','collected','refunded') 
+        AND created_at < NOW() - INTERVAL '21 days'
+      `);
+      const { rows: [cash] } = await pool.query(`
+        SELECT COUNT(*)::int AS c FROM orders 
+        WHERE payment_mode = 'cash_relais' AND payment_status = 'pending' 
+        AND status NOT IN ('cancelled','collected') 
+        AND created_at < NOW() - INTERVAL '72 hours'
+      `);
+      const { rows: [stuck] } = await pool.query(`
+        SELECT COUNT(*)::int AS c FROM parcels 
+        WHERE status NOT IN ('collected','cancelled','draft') 
+        AND updated_at < NOW() - INTERVAL '7 days'
+      `);
+      alertCount = {
+        total: (sla?.c || 0) + (cash?.c || 0) + (stuck?.c || 0),
+        critical: sla?.c || 0,
+        high: cash?.c || 0,
+        medium: stuck?.c || 0
+      };
+    } catch(_) {}
+    
+    res.json({
+      orders: {
+        total: oTotals.total,
+        active: oTotals.active,
+        by_status: Object.fromEntries(oByStatus.map(r => [r.status, r.count]))
+      },
+      parcels: parcelData,
+      finance,
+      incidents: incidentData,
+      alerts: alertCount
+    });
+  } catch (err) {
+    console.error('GET /api/v2/global error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── GET /api/v2/incidents ──────────────────────────────────────────
 router.get('/incidents', async (req, res) => {
   try {
