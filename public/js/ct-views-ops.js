@@ -28,11 +28,11 @@ window.renderParcelDrillDown = async function(parcelId) {
       const icon = {
         'packed': '📦', 'shipped': '🚀', 'in_transit': '✈️',
         'received_relay': '🏪', 'delivered': '✅', 'collected': '💰'
-      }[s.scan_type] || '📌';
+      }[s.event_type] || '📌';
       return `<div class="timeline-item">
         <span class="timeline-icon">${icon}</span>
         <span class="timeline-time">${time}</span>
-        <span class="timeline-label">${s.scan_type} — ${s.actor_role || ''}</span>
+        <span class="timeline-label">${s.event_type} — ${s.actor_role || ''}</span>
         ${s.notes ? `<span class="timeline-note">${s.notes}</span>` : ''}
       </div>`;
     }).join('') || '<p style="color:#888">Aucun scan enregistré</p>';
@@ -74,7 +74,7 @@ window.renderParcelDrillDown = async function(parcelId) {
           <span class="accordion-arrow" id="arrow-ord-${orderId}">▶</span>
           <span>📋 Commande #${orderId}</span>
           <span class="${badgeClass}">${badge}</span>
-          <span style="margin-left:auto; font-weight:600">${Number(o.total_amount || o.total || 0).toLocaleString('fr-FR')} KMF</span>
+          <span style="margin-left:auto; font-weight:600">${Number(o.total_kmf || o.total || 0).toLocaleString('fr-FR')} KMF</span>
         </div>
         <div class="accordion-body" id="ord-${orderId}" style="display:none">
           <table class="items-table">
@@ -216,7 +216,7 @@ window.renderIncidentsView = async function(container) {
       const date = inc.created_at ? new Date(inc.created_at).toLocaleDateString('fr-FR') : '—';
       const sevClass = getSeverityClass(inc.severity);
       const statusIcon = {open:'🔴', investigating:'🟡', resolved:'✅', dismissed:'⚪'}[inc.status] || '❓';
-      return `<tr class="${sevClass}" style="cursor:pointer" onclick="renderParcelDrillDown(${inc.parcel_id})">
+      return `<tr class="${sevClass}" style="cursor:pointer" onclick="renderParcelDrillDown('${inc.parcel_reference || ""}')">
         <td><strong>${inc.client_name || '—'}</strong><br><small>📋 ${inc.order_reference || '—'} ${inc.client_phone ? '📞 ' + inc.client_phone : ''}</small></td>
         <td>${getIncidentBadge(inc.incident_type)}</td>
         <td><span class="${sevClass}">${(inc.severity||'').toUpperCase()}</span></td>
@@ -273,7 +273,7 @@ window.renderReconciliationView = async function(container) {
 
     // Mismatches table
     const mismatchRows = mismatches.map(m => {
-      return `<tr onclick="renderParcelDrillDown(${m.parcel_id})" style="cursor:pointer">
+      return `<tr onclick="renderParcelDrillDown('${m.id}')" style="cursor:pointer">
         <td>📦 #${m.parcel_id}</td>
         <td>${m.type || m.mismatch_type || '—'}</td>
         <td>${m.expected || '—'}</td>
@@ -344,7 +344,7 @@ window.renderAlertsView = async function(container) {
         'weight_mismatch': '⚖️', 'margin_alert': '📊', 'missing_item': '📦'
       }[a.alert_type] || '⚠️';
       
-      return `<tr class="${isActive ? 'row-alert' : ''}" style="cursor:pointer" onclick="renderParcelDrillDown(${a.parcel_id})">
+      return `<tr class="${isActive ? 'row-alert' : ''}" style="cursor:pointer" onclick="renderParcelDrillDown('${a.parcel_reference || a.order_reference || ""}')">
         <td>${isActive ? '🔴' : '✅'}</td>
         <td>${typeIcon} ${(a.alert_type || '').replace(/_/g, ' ')}</td>
         <td>${a.severity || '—'}</td>
@@ -390,7 +390,7 @@ window.renderInvoicesView = async function(container) {
   try {
     let invoices = [];
     try {
-      const resp = await CT.api.get('/api/invoices');
+      const resp = await CT.api.get('/api/v2/invoices');
       invoices = resp.invoices || resp || [];
     } catch(e) {}
 
@@ -404,7 +404,7 @@ window.renderInvoicesView = async function(container) {
       );
     } catch(e) {}
 
-    const totalInvoiced = invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
+    const totalInvoiced = invoices.reduce((sum, inv) => sum + Number(inv.total_kmf || 0), 0);
     const delivered = invoices.filter(i => i.delivered_at).length;
     const pending = invoices.filter(i => !i.delivered_at).length;
 
@@ -416,13 +416,13 @@ window.renderInvoicesView = async function(container) {
         <td><strong>${inv.invoice_number || inv.id}</strong></td>
         <td>#${inv.order_id}</td>
         <td>${inv.client_name || '—'}</td>
-        <td style="text-align:right">${Number(inv.total_amount || 0).toLocaleString('fr-FR')} KMF</td>
-        <td>${inv.payment_method === 'cash' ? '💵 Cash' : '💳 Stripe'}</td>
+        <td style="text-align:right">${Number(inv.total_kmf || 0).toLocaleString('fr-FR')} KMF</td>
+        <td>${inv.payment_mode === 'cash_relais' ? '💵 Cash' : '💳 Stripe'}</td>
         <td>${isDelivered ? '✅ Délivrée' : '⏳ En attente'}</td>
         <td>${date}</td>
         <td>
-          <a href="/api/invoices/${inv.order_id}" target="_blank" class="btn-sm">👁️ Voir</a>
-          <a href="/api/invoices/${inv.order_id}?mode=thermal" target="_blank" class="btn-sm">🖨️</a>
+          <a href="/api/v2/invoices/${inv.id}" target="_blank" class="btn-sm">👁️ Voir</a>
+          <a href="/api/v2/invoices/${inv.id}?mode=thermal" target="_blank" class="btn-sm">🖨️</a>
         </td>
       </tr>`;
     }).join('');
@@ -435,11 +435,11 @@ window.renderInvoicesView = async function(container) {
         <td>—</td>
         <td>#${o.id}</td>
         <td>${o.client_name || '—'}</td>
-        <td style="text-align:right">${Number(o.total_amount || 0).toLocaleString('fr-FR')} KMF</td>
-        <td>${o.payment_method === 'cash' ? '💵 Cash' : '💳 Stripe'}</td>
+        <td style="text-align:right">${Number(o.total_kmf || 0).toLocaleString('fr-FR')} KMF</td>
+        <td>${o.payment_mode === 'cash_relais' ? '💵 Cash' : '💳 Stripe'}</td>
         <td>⚠️ Non facturée</td>
         <td>—</td>
-        <td><button class="btn-sm btn-primary" onclick="generateInvoice(${o.id})">🧾 Générer</button></td>
+        <td><button class="btn-sm btn-primary" onclick="generateInvoice('${o.id}')">🧾 Générer</button></td>
       </tr>`;
     }).join('');
 

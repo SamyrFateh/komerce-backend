@@ -1,11 +1,11 @@
-// routes/ops-api.js — v2.1 — Fix: reconciliation alias + cash_relais enum — Endpoints opérationnels pour Control Tower
-// Requête directement la DB — pas de dépendance aux services v2
+// routes/ops-api.js â v2.2 â Fix: reconciliation alias + cash_relais enum â Endpoints opÃ©rationnels pour Control Tower
+// RequÃªte directement la DB â pas de dÃ©pendance aux services v2
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// ─── GET /api/v2/global ─────────────────────────────────────────────
-// Dashboard summary — all KPIs in one call
+// âââ GET /api/v2/global âââââââââââââââââââââââââââââââââââââââââââââ
+// Dashboard summary â all KPIs in one call
 router.get('/global', async (req, res) => {
   try {
     // Orders summary
@@ -107,7 +107,7 @@ router.get('/global', async (req, res) => {
   }
 });
 
-// ─── GET /api/v2/incidents ──────────────────────────────────────────
+// âââ GET /api/v2/incidents ââââââââââââââââââââââââââââââââââââââââââ
 router.get('/incidents', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -141,7 +141,7 @@ router.get('/incidents', async (req, res) => {
   }
 });
 
-// ─── GET /api/v2/reconciliation/summary ─────────────────────────────
+// âââ GET /api/v2/reconciliation/summary âââââââââââââââââââââââââââââ
 const reconciliationHandler = async (req, res) => {
   try {
     // Reconciliation based on parcel_items.verified status
@@ -222,7 +222,7 @@ const reconciliationHandler = async (req, res) => {
 router.get('/reconciliation', reconciliationHandler);
 router.get('/reconciliation/summary', reconciliationHandler);
 
-// ─── GET /api/v2/alerts ─────────────────────────────────────────────
+// âââ GET /api/v2/alerts âââââââââââââââââââââââââââââââââââââââââââââ
 // Auto-generated alerts from business rules
 router.get('/alerts', async (req, res) => {
   try {
@@ -247,7 +247,7 @@ router.get('/alerts', async (req, res) => {
       id: `cash-${o.id}`,
       type: 'cash_pending',
       severity: 'high',
-      message: `💵 Paiement cash en attente depuis ${Math.round(o.hours_pending)}h — ${o.reference}`,
+      message: `ðµ Paiement cash en attente depuis ${Math.round(o.hours_pending)}h â ${o.reference}`,
       order_reference: o.reference,
       customer: o.customer_name,
       relay: o.relay_name,
@@ -272,7 +272,7 @@ router.get('/alerts', async (req, res) => {
       id: `stuck-${p.id}`,
       type: 'stuck_parcel',
       severity: 'medium',
-      message: `📦 Colis bloqué depuis ${Math.round(p.days_stuck)}j en statut "${p.status}" — ${p.reference}`,
+      message: `ð¦ Colis bloquÃ© depuis ${Math.round(p.days_stuck)}j en statut "${p.status}" â ${p.reference}`,
       parcel_reference: p.reference,
       order_reference: p.order_reference,
       customer: p.customer_name, customer_phone: p.customer_phone,
@@ -281,7 +281,7 @@ router.get('/alerts', async (req, res) => {
       created_at: p.updated_at
     }));
 
-    // 3. SLA breach > 21 days (order created → collected)
+    // 3. SLA breach > 21 days (order created â collected)
     const { rows: slaAlerts } = await pool.query(`
       SELECT o.id, o.reference, o.status, o.created_at, o.total_kmf,
              u.full_name AS customer_name,
@@ -296,7 +296,7 @@ router.get('/alerts', async (req, res) => {
       id: `sla-${o.id}`,
       type: 'sla_breach',
       severity: 'critical',
-      message: `🚨 SLA dépassé (${Math.round(o.days_elapsed)}j) — ${o.reference} (${o.customer_name || 'Client inconnu'})`,
+      message: `ð¨ SLA dÃ©passÃ© (${Math.round(o.days_elapsed)}j) â ${o.reference} (${o.customer_name || 'Client inconnu'})`,
       order_reference: o.reference,
       customer: o.customer_name,
       days_elapsed: Math.round(o.days_elapsed),
@@ -320,7 +320,7 @@ router.get('/alerts', async (req, res) => {
       id: `weight-${i.id}`,
       type: 'weight_anomaly',
       severity: 'medium',
-      message: `⚖️ Anomalie poids — ${i.parcel_reference}: ${i.title}`,
+      message: `âï¸ Anomalie poids â ${i.parcel_reference}: ${i.title}`,
       parcel_reference: i.parcel_reference,
       customer: i.customer_name, customer_phone: i.customer_phone, order_reference: i.order_reference,
       details: i.details,
@@ -338,7 +338,7 @@ router.get('/alerts', async (req, res) => {
   }
 });
 
-// ─── POST /api/v2/alerts/:id/acknowledge ────────────────────────────
+// âââ POST /api/v2/alerts/:id/acknowledge ââââââââââââââââââââââââââââ
 router.post('/alerts/:id/acknowledge', async (req, res) => {
   try {
     // For incident-based alerts, mark as resolved
@@ -349,18 +349,93 @@ router.post('/alerts/:id/acknowledge', async (req, res) => {
       await pool.query(
         `UPDATE incidents SET status = 'resolved', resolved_at = NOW(), 
          resolution = $1 WHERE id = $2`,
-        [JSON.stringify({ type: 'acknowledged', note: 'Acquitté via Control Tower' }), incidentId]
+        [JSON.stringify({ type: 'acknowledged', note: 'AcquittÃ© via Control Tower' }), incidentId]
       );
     }
     
-    res.json({ success: true, message: 'Alerte acquittée' });
+    res.json({ success: true, message: 'Alerte acquittÃ©e' });
   } catch (err) {
     console.error('POST /api/v2/alerts/:id/acknowledge error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── GET /api/v2/parcels/:id ────────────────────────────────────────
+// ─── GET /api/v2/parcels/:ref/detail ────────────────────────────────
+// Combined drill-down: parcel + scans + orders+items in one call
+// Accepts UUID or reference (PCL-2026-xxxx)
+router.get('/parcels/:ref/detail', async (req, res) => {
+  try {
+    const ref = req.params.ref;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref);
+    const whereClause = isUUID ? 'p.id = $1' : 'p.reference = $1';
+
+    // 1. Get parcel
+    const { rows: parcelRows } = await pool.query(`
+      SELECT 
+        p.*,
+        o.reference AS order_reference, o.status AS order_status,
+        o.total_kmf, o.payment_mode, o.payment_status,
+        u.full_name AS customer_name, u.phone AS customer_phone,
+        r.name AS relay_name, r.city AS relay_city
+      FROM parcels p
+      LEFT JOIN orders o ON p.order_id = o.id
+      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN relais r ON p.relais_id = r.id
+      WHERE ${whereClause}
+    `, [ref]);
+
+    if (!parcelRows.length) return res.status(404).json({ error: 'Colis non trouvé' });
+    const parcel = parcelRows[0];
+
+    // 2. Get scan events
+    const { rows: scans } = await pool.query(`
+      SELECT 
+        se.id, se.event_type, se.scan_code, se.actor_name, se.actor_role,
+        se.location, se.notes, se.status, se.created_at,
+        u.full_name AS scanned_by_name
+      FROM scan_events se
+      LEFT JOIN users u ON se.scanned_by = u.id
+      WHERE se.parcel_id = $1
+      ORDER BY se.created_at ASC
+    `, [parcel.id]);
+
+    // 3. Get linked orders with items
+    const { rows: orders } = await pool.query(`
+      SELECT 
+        o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.payment_status,
+        o.created_at, o.shipped_at, o.available_at, o.collected_at,
+        u.full_name AS customer_name,
+        r.name AS relay_name
+      FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN relais r ON o.relais_id = r.id
+      WHERE o.id = $1
+    `, [parcel.order_id]);
+
+    for (const order of orders) {
+      const { rows: items } = await pool.query(`
+        SELECT 
+          oi.id, oi.quantity, oi.price_kmf, oi.scan_code,
+          pr.name AS product_name, pr.sku,
+          pi.quantity AS parcel_qty, pi.qty_packed, pi.qty_shipped, 
+          pi.qty_received, pi.qty_collected, pi.verified
+        FROM order_items oi
+        LEFT JOIN products pr ON oi.product_id = pr.id
+        LEFT JOIN parcel_items pi ON pi.order_item_id = oi.id AND pi.parcel_id = $1
+        WHERE oi.order_id = $2
+        ORDER BY oi.created_at ASC
+      `, [parcel.id, order.id]);
+      order.items = items;
+    }
+
+    res.json({ parcel, scans, orders });
+  } catch (err) {
+    console.error('GET /api/v2/parcels/:ref/detail error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// âââ GET /api/v2/parcels/:id ââââââââââââââââââââââââââââââââââââââââ
 router.get('/parcels/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -380,7 +455,7 @@ router.get('/parcels/:id', async (req, res) => {
       WHERE p.id = $1
     `, [req.params.id]);
 
-    if (!rows.length) return res.status(404).json({ error: 'Colis non trouvé' });
+    if (!rows.length) return res.status(404).json({ error: 'Colis non trouvÃ©' });
     res.json(rows[0]);
   } catch (err) {
     console.error('GET /api/v2/parcels/:id error:', err.message);
@@ -388,7 +463,7 @@ router.get('/parcels/:id', async (req, res) => {
   }
 });
 
-// ─── GET /api/v2/parcels/:id/scans ──────────────────────────────────
+// âââ GET /api/v2/parcels/:id/scans ââââââââââââââââââââââââââââââââââ
 router.get('/parcels/:id/scans', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -410,7 +485,7 @@ router.get('/parcels/:id/scans', async (req, res) => {
   }
 });
 
-// ─── GET /api/v2/parcels/:id/orders ─────────────────────────────────
+// âââ GET /api/v2/parcels/:id/orders âââââââââââââââââââââââââââââââââ
 // Returns orders linked to this parcel + their items (for drill-down accordion)
 router.get('/parcels/:id/orders', async (req, res) => {
   try {
@@ -459,7 +534,7 @@ router.get('/parcels/:id/orders', async (req, res) => {
 });
 
 
-// ─── GET /api/v2/invoices ───────────────────────────────────────────
+// âââ GET /api/v2/invoices âââââââââââââââââââââââââââââââââââââââââââ
 // List all invoices with order + client info
 router.get('/invoices', async (req, res) => {
   try {
@@ -485,7 +560,7 @@ router.get('/invoices', async (req, res) => {
   }
 });
 
-// ─── GET /api/v2/scan-events ────────────────────────────────────────
+// âââ GET /api/v2/scan-events ââââââââââââââââââââââââââââââââââââââââ
 // List recent scan events across all parcels
 router.get('/scan-events', async (req, res) => {
   try {
@@ -511,7 +586,7 @@ router.get('/scan-events', async (req, res) => {
   }
 });
 
-// ─── GET /api/v2/parcels ────────────────────────────────────────────
+// âââ GET /api/v2/parcels ââââââââââââââââââââââââââââââââââââââââââââ
 // List all parcels with order + relay info
 router.get('/parcels', async (req, res) => {
   try {
