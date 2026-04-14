@@ -57,6 +57,7 @@ WHERE qty_allocated = 0 AND COALESCE(quantity, 1) > 0;
 -- C. ENRICHISSEMENT parcels — vérification, poids, destination
 -- ══════════════════════════════════════════════════════════════
 
+ALTER TABLE parcels ADD COLUMN IF NOT EXISTS shipped_at          TIMESTAMPTZ;
 ALTER TABLE parcels ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'pending';
 ALTER TABLE parcels ADD COLUMN IF NOT EXISTS verified_at         TIMESTAMPTZ;
 ALTER TABLE parcels ADD COLUMN IF NOT EXISTS verified_by         UUID;
@@ -388,8 +389,11 @@ SELECT
   p.total_qty,
   p.created_at AS parcel_created,
   p.shipped_at,
-  p.received_at,
-  p.collected_at,
+  -- Dériver received_at et collected_at depuis les scan_events
+  (SELECT MIN(se2.created_at) FROM scan_events se2 
+   WHERE se2.parcel_id = p.id AND se2.event_type = 'relais_received' AND se2.status = 'applied') AS received_at,
+  (SELECT MIN(se3.created_at) FROM scan_events se3 
+   WHERE se3.parcel_id = p.id AND se3.event_type = 'customer_collected' AND se3.status = 'applied') AS collected_at,
   -- Dernier scan
   last_scan.event_type AS last_event_type,
   last_scan.created_at AS last_event_at,
