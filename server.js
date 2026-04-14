@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v10.15 (Hub dashboard + Relay dashboard + suivi.html public)
+ * KOMERCE — Serveur API v10.16 (V3 — Logging + Monitoring + SMS Queue + SLA) (Hub dashboard + Relay dashboard + suivi.html public)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -47,8 +47,13 @@ const {
 
 const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
 const { runAllSeeds }                     = require('./scripts/seed');
-const { errorHandler } = require('./middleware/error-handler');
+const { errorHandler, notFoundHandler } = require('./middleware/error-handler');
 const { requestIdMiddleware } = require('./middleware/request-id');
+
+// ── V3 — Logging + Monitoring + SMS Queue ────────────────────────────────────
+const log = require('./utils/logger');
+const { metricsMiddleware } = require('./services/monitoring');
+const { startSMSQueue, stopSMSQueue } = require('./services/sms-queue');
 
 const app = express();
 
@@ -110,6 +115,8 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 app.use(requestIdMiddleware);
+app.use(log.httpLogger);         // V3.1 — Structured request logging
+app.use(metricsMiddleware);      // V3.2 — Metrics collection
 
 // ── Rate limiting ────────────────────────────────────────────────────────────
 
@@ -180,6 +187,7 @@ const walletRouter     = require('./routes/wallet');
 const relayDashRouter  = require('./routes/relay-dashboard');
 const hubDashRouter    = require('./routes/hub-dashboard');
 const transitDashRouter = require('./routes/transit-dashboard');
+const dashCostsRouter  = require('./routes/dashboard-costs');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
@@ -196,6 +204,7 @@ app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
 app.use('/api/hub-dash',   hubDashRouter);
 app.use('/api/transit',    transitDashRouter);
+app.use('/api/dashboard', dashCostsRouter);  // V3.7 — costs + SLA
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);
@@ -261,7 +270,7 @@ let cronRunning = false;
     intervalMin = await _getRuleNum('CASH_REMINDER_INTERVAL_MIN', 60);
   } catch (_) { /* fallback 60min */ }
 
-  console.log(`⏰ Cash reminder cron: every ${intervalMin}min`);
+  log.info({ intervalMin }, '⏰ Cash reminder cron started');
 
   setInterval(async () => {
     if (cronRunning) return;
@@ -269,7 +278,7 @@ let cronRunning = false;
     try {
       await processCashRelaisReminders();
     } catch (err) {
-      console.error('Cash reminder cron error:', err.message);
+      log.error({ err }, 'Cash reminder cron error');
     } finally {
       cronRunning = false;
     }
@@ -290,7 +299,7 @@ setInterval(async () => {
       console.log(`[CRON] Backorder check: ${result.processed} traités, ${result.sms_sent} SMS envoyés`);
     }
   } catch (err) {
-    console.error('[CRON] Backorder check error:', err.message);
+    log.error({ err }, '[CRON] Backorder check error');
   } finally {
     backorderCronRunning = false;
   }
@@ -311,7 +320,8 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v10.15 — port ${PORT} — démarrage immédiat — migrations en background`);
+  log.info({ port: PORT, version: '10.16' }, 'KOMERCE API v10.16 — démarrage immédiat');
+  startSMSQueue(); // V3.4 — Async SMS queue
 
   setImmediate(async () => {
     try {
@@ -352,17 +362,18 @@ const server = app.listen(PORT, () => {
         END$$`);
       } catch(e) { console.warn('F34 stock CHECK (non-fatal):', e.message); }
 
-      console.log('✅ Migrations et seeds terminées');
+      log.info('✅ Migrations et seeds terminées');
     } catch (err) {
-      console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
+      log.error({ err }, '❌ Migration error (non-fatal)');
     }
   });
 });
 
 process.on('SIGTERM', () => {
-  console.log('SIGTERM reçu — fermeture gracieuse...');
+  log.info('SIGTERM reçu — fermeture gracieuse...');
+  stopSMSQueue(); // V3.4 — Stop SMS queue
   server.close(() => {
-    console.log('Serveur fermé proprement.');
+    log.info('Serveur fermé proprement.');
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 10_000);
