@@ -302,14 +302,15 @@ body{
 .k-card:active{transform:scale(.98)}
 .k-card-img-wrap{
   position:relative;overflow:hidden;
-  background:var(--sand-dark);
+  background:#faf8f5;
 }
 .k-card-img{
   width:100%;aspect-ratio:1/1;
-  object-fit:cover;
+  object-fit:contain;
+  padding:8px;
   transition:transform .3s;
 }
-.k-card:hover .k-card-img{transform:scale(1.05)}
+.k-card:hover .k-card-img{transform:scale(1.03)}
 .k-card-promo{
   position:absolute;top:6px;left:6px;
   background:var(--coral);color:var(--white);
@@ -886,17 +887,9 @@ body{
 .k-of-group input:focus{border-color:var(--ocean)}
 
 
-/* Responsive image ratios */
+/* Responsive image ratios (aspect-ratio only — colonnes gérées dans bloc RESPONSIVE) */
 @media(min-width:600px){
   .k-card-img{aspect-ratio:1/1}
-  .k-grid{gap:14px}
-}
-@media(min-width:1024px){
-  .k-card-img{aspect-ratio:1/1}
-  .k-grid{grid-template-columns:repeat(4,1fr);gap:18px}
-}
-@media(min-width:1400px){
-  .k-grid{grid-template-columns:repeat(5,1fr);gap:20px}
 }
 
 
