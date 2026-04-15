@@ -330,8 +330,16 @@ async function processScan(params) {
     const { rows: [updatedParcel] } = await client.query(
       `SELECT * FROM parcels WHERE id = $1`, [params.parcel_id]
     );
-    result.parcel = updatedParcel;
+       result.parcel = updatedParcel;
     result.success = true;
+
+    // ── 14. Notifications WhatsApp (après COMMIT, non-bloquant) ──
+    if (flow.parcel_status && ['shipped', 'available'].includes(flow.parcel_status)) {
+      const { notifyParcelScan } = require('./notification-service');
+      notifyParcelScan(params.parcel_id, updatedParcel.reference, flow.parcel_status)
+        .catch(err => console.error('[SCAN-ENGINE] Notification error:', err.message));
+    }
+
     return result;
 
   } catch (err) {
