@@ -265,8 +265,15 @@ async function notifyOrderCreated(order, phone, email, emailItems, relais, cashS
       itemsText,
     };
 
-    // WhatsApp → tous les téléphones disponibles
-    const allPhones = phone ? [phone.replace(/[^0-9+]/g, '')] : [];
+    // WhatsApp → tous les téléphones disponibles (local + diaspora)
+    let diasporaPhone = null;
+    if (order.user_id) {
+      try {
+        const userRow = await db.get('SELECT whatsapp_phone FROM users WHERE id = ?', [order.user_id]);
+        if (userRow?.whatsapp_phone) diasporaPhone = userRow.whatsapp_phone;
+      } catch (_) { /* ignore */ }
+    }
+    const allPhones = getUniquePhones(phone, diasporaPhone);
     for (const ph of allPhones) {
       const waText = WA_MESSAGES.order_created_cash(d);
       const waResult = await sendWhatsApp(ph, waText);
