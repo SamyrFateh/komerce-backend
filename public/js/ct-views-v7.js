@@ -507,7 +507,40 @@ CT.views.dashboard = async function(container) {
     var fin = kpis.finance;
     var inc = kpis.incidents;
 
-    var html = '<div class="ct-view-header"><h2>🎯 Dashboard COLIS-FIRST</h2></div>';
+    // Also fetch order KPIs
+    var orderData = {};
+    try { orderData = await CT.api.v2Orders(); } catch(_) {}
+    var ok = orderData.kpis || {};
+    
+    var html = '<div class="ct-view-header"><h2>🎯 Dashboard</h2></div>';
+    
+    // ── Orders Overview ──
+    var awaitingParcel = (ok.confirmed || 0) + (ok.ordered || 0);
+    if (ok.total > 0) {
+      html += '<div class="ct-section-block"><h3>📋 Commandes</h3>';
+      html += '<div class="ct-kpi-grid">';
+      html += CT.pc.kpiCard('📋', 'Total commandes', ok.total || 0, '#6366f1');
+      html += CT.pc.kpiCard('⏳', 'En attente paiement', ok.pending || 0, '#f59e0b');
+      html += CT.pc.kpiCard('📦', 'En attente colis', awaitingParcel, awaitingParcel > 0 ? '#ef4444' : '#22c55e');
+      html += CT.pc.kpiCard('🔄', 'En cours', (ok.preparation || 0) + (ok.shipped || 0) + (ok.in_transit || 0), '#3b82f6');
+      html += CT.pc.kpiCard('📍', 'À retirer', ok.available || 0, '#22c55e');
+      html += CT.pc.kpiCard('✔️', 'Collectées', ok.collected || 0, '#16a34a');
+      html += CT.pc.kpiCard('💳', 'Stripe', ok.stripe_count || 0, '#6366f1');
+      html += CT.pc.kpiCard('💰', 'Cash', ok.cash_count || 0, '#f59e0b');
+      html += '</div>';
+      // Alert if orders waiting for parcel
+      if (awaitingParcel > 0) {
+        html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px">' +
+          '⚠️ <strong>' + awaitingParcel + ' commande(s) payée(s) en attente de colis</strong> — ' +
+          '<a href="#" onclick="CT.app.navigate(\'createParcel\');return false" style="color:#1d4ed8;text-decoration:underline">Créer les colis →</a></div>';
+      }
+      // Alert if payment incidents
+      if ((ok.payment_failed || 0) > 0) {
+        html += '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px">' +
+          '🚨 <strong>' + ok.payment_failed + ' paiement(s) échoué(s)</strong> — vérifier dans Stripe</div>';
+      }
+      html += '</div>';
+    }
 
     // KPI row 1: Parcels by status
     html += '<div class="ct-kpi-grid">';
@@ -557,16 +590,33 @@ CT.views.finances = async function(container) {
     var kpis = await CT.api.v2ParcelKpis();
     var fin = kpis.finance;
     var pk = kpis.parcels;
+    
+    // Also fetch order-level finance
+    var orderData = {};
+    try { orderData = await CT.api.v2Orders(); } catch(_) {}
+    var ok = orderData.kpis || {};
 
     var html = '<div class="ct-view-header"><h2>💰 Finances</h2></div>';
+    
+    // Order-level financial KPIs (the real source of truth)
+    html += '<div class="ct-section-block"><h3>📋 Chiffre d\'affaires commandes</h3>';
     html += '<div class="ct-kpi-grid">';
-    html += CT.pc.kpiCard('💰', 'CA Total', CT.pc.fmt(fin.ca_total_kmf), '#16a34a');
+    html += CT.pc.kpiCard('💰', 'CA Total (commandes)', CT.pc.fmt(ok.ca_total_kmf || 0), '#16a34a');
+    html += CT.pc.kpiCard('💳', 'CA Stripe', CT.pc.fmt(ok.ca_stripe_kmf || 0), '#6366f1');
+    html += CT.pc.kpiCard('💵', 'CA Cash', CT.pc.fmt(ok.ca_cash_kmf || 0), '#f59e0b');
+    html += CT.pc.kpiCard('📋', 'Commandes payées', ok.total_paid || ((ok.stripe_count || 0) + (ok.cash_count || 0)), '#3b82f6');
+    html += '</div></div>';
+    
+    // Colis-level financial KPIs
+    html += '<div class="ct-section-block"><h3>📦 Suivi financier colis</h3>';
+    html += '<div class="ct-kpi-grid">';
+    html += CT.pc.kpiCard('💰', 'CA Colis (lié)', CT.pc.fmt(fin.ca_total_kmf), '#16a34a');
     html += CT.pc.kpiCard('📊', 'CA Actif (en cours)', CT.pc.fmt(fin.ca_active_kmf), '#3b82f6');
     html += CT.pc.kpiCard('✅', 'CA Livré', CT.pc.fmt(fin.ca_collected_kmf), '#16a34a');
     html += CT.pc.kpiCard('🧺', 'Panier moyen', CT.pc.fmt(fin.avg_basket_kmf), '#8b5cf6');
     html += CT.pc.kpiCard('👥', 'Clients uniques', fin.nb_clients, '#f59e0b');
     html += CT.pc.kpiCard('📦', 'Colis actifs', pk.active, '#3b82f6');
-    html += '</div>';
+    html += '</div></div>';
 
     // Breakdown
     html += '<div class="ct-section-block"><h3>📊 Répartition par statut</h3>';

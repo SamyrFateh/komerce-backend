@@ -76,7 +76,10 @@ router.get('/', ...guard, async (req, res, next) => {
         COUNT(*) FILTER (WHERE payment_mode = 'stripe_eur')::int AS stripe_count,
         COUNT(*) FILTER (WHERE payment_mode = 'cash_relais')::int AS cash_count,
         COALESCE(SUM(total_kmf) FILTER (WHERE status NOT IN ('cancelled','refunded')), 0)::int AS ca_total_kmf,
-        COALESCE(SUM(total_eur) FILTER (WHERE status NOT IN ('cancelled','refunded')), 0)::numeric(10,2) AS ca_total_eur
+        COALESCE(SUM(total_eur) FILTER (WHERE status NOT IN ('cancelled','refunded')), 0)::numeric(10,2) AS ca_total_eur,
+        COALESCE(SUM(total_kmf) FILTER (WHERE payment_status = 'paid' AND payment_mode = 'stripe_eur'), 0)::int AS ca_stripe_kmf,
+        COALESCE(SUM(total_kmf) FILTER (WHERE payment_status = 'paid' AND payment_mode = 'cash_relais'), 0)::int AS ca_cash_kmf,
+        COUNT(*) FILTER (WHERE payment_status = 'paid')::int AS total_paid
       FROM orders
     `);
 
@@ -148,7 +151,7 @@ router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.payment_status = 'paid'
-        AND o.status = 'confirmed'
+        AND o.status IN ('confirmed', 'ordered')
         AND NOT EXISTS (SELECT 1 FROM parcels p WHERE p.order_id = o.id)
       ORDER BY o.created_at ASC
     `);
@@ -283,11 +286,11 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
       });
     }
 
-    if (order.status !== 'confirmed') {
+    if (!['confirmed', 'ordered'].includes(order.status)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
-        error: `La commande doit être en statut "confirmed" (actuellement: ${order.status})`,
-        rule: 'Flux: pending → confirmed → ordered'
+        error: `La commande doit être en statut "confirmed" ou "ordered" (actuellement: ${order.status})`,
+        rule: 'Flux: confirmed → ordered → preparation (via colis)'
       });
     }
 
@@ -393,22 +396,39 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
       await client.query('RELEASE SAVEPOINT sp_scan');
     } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
 
-    // 11. Transition order status → ORDERED via state machine ✅
-    const _orderedResult = await transitionOrderStatus({
+    // 11. Transition order status via state machine ✅
+    // Stripe orders are already 'ordered' → transition to 'preparation'
+    // Cash orders are 'confirmed' → transition to 'ordered' first, then 'preparation'
+    if (order.status === 'confirmed') {
+      const _orderedResult = await transitionOrderStatus({
+        orderId: order.id,
+        newStatus: 'ordered',
+        actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
+        source: 'hub_create_parcel',
+        note: 'Colis créé — commande passée en "ordered"',
+        dbClient: client,
+      });
+      if (!_orderedResult.success) {
+        console.warn(`[ORDER-V2] transition → ordered failed: ${_orderedResult.error}`);
+      }
+    }
+
+    // Both paths → preparation (colis créé = hub commence la prep)
+    const _prepResult = await transitionOrderStatus({
       orderId: order.id,
-      newStatus: 'ordered',
+      newStatus: 'preparation',
       actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
       source: 'hub_create_parcel',
-      note: 'Colis créé — commande passée en "ordered"',
+      note: `Colis ${parcelRef} créé — préparation lancée`,
       dbClient: client,
     });
-    if (!_orderedResult.success) {
-      console.warn(`[ORDER-V2] transitionOrderStatus ordered failed for ${order.id}: ${_orderedResult.error}`);
+    if (!_prepResult.success) {
+      console.warn(`[ORDER-V2] transition → preparation failed: ${_prepResult.error}`);
     }
 
     await client.query('COMMIT');
 
-    console.log(`📦 Parcel created: ${parcelRef} for ${order.reference} — status → ordered`);
+    console.log(`📦 Parcel created: ${parcelRef} for ${order.reference} — status → preparation`);
 
     // ── NOTIFICATIONS (fire-and-forget) ──
     const notifSvc = require('../services/notification-service');
@@ -417,14 +437,14 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `📦 Colis ${parcelRef} créé — Commande ${order.reference} passée en "ordered"`,
+      message: `📦 Colis ${parcelRef} créé — Commande ${order.reference} en préparation`,
       parcel: {
         id: parcelId,
         reference: parcelRef,
         status: 'preparation',
         pickup_code: pickupCode,
         order_ref: order.reference,
-        order_status: 'ordered',
+        order_status: 'preparation',
         customer_name: order.customer_name,
         destination_island: order.relais_island || order.destination_island,
         nb_items: items.length,

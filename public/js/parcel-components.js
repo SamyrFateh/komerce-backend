@@ -89,6 +89,7 @@ CT.pc.parcelCard = function(p, onClick) {
       '<div>👤 <strong>' + (p.recipient_name || 'Client') + '</strong></div>' +
       '<div>🏝️ ' + (p.destination_island || p.relais_island || '—') +
         (p.relais_name ? ' — ' + p.relais_name : '') + '</div>' +
+      (p.main_order_ref ? '<div>📋 <span style="font-family:monospace;color:#3730a3">' + p.main_order_ref + '</span></div>' : '') +
       '<div>📦 ' + (p.nb_orders || 0) + ' cmd · ' + (p.nb_items || 0) + ' art · ' +
         CT.pc.fmt(p.total_kmf) + '</div>' +
     '</div>' +
@@ -202,7 +203,8 @@ CT.pc.recoCard = function(p) {
     '</div>' +
     '<div class="ct-reco-body">' +
       '<div>📦 ' + CT.pc.badge(p.status) + ' · 💰 ' + CT.pc.fmt(p.total_kmf) + '</div>' +
-      '<div>👤 ' + (p.recipient_name || 'Client') + ' · 💳 ' + (p.payment_mode || '—') + '</div>';
+      '<div>👤 ' + (p.recipient_name || 'Client') + ' · 💳 ' + (p.payment_mode || '—') + '</div>' +
+      (p.main_order_ref ? '<div>📋 Commande <span style="font-family:monospace;color:#3730a3">' + p.main_order_ref + '</span></div>' : '');
   
   if (reco.issues && reco.issues.length > 0) {
     html += '<div class="ct-reco-issues">';
