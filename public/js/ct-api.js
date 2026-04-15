@@ -71,6 +71,13 @@ CT.api = {
   },
 
   // ---- Orders v2 (Opérationnel) ----
+  // ─── Orders (full lifecycle) ──────────────────────
+  v2Orders: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/orders' + (qs ? '?' + qs : ''));
+  },
+  v2OrderDetail: function(ref) { return this.get('/api/v2/orders/' + ref); },
+
   v2PendingCash: function() { return this.get('/api/v2/orders/pending-cash'); },
   v2ReadyForParcel: function() { return this.get('/api/v2/orders/ready-for-parcel'); },
   v2ConfirmCash: function(ref) { return this.post('/api/v2/orders/' + ref + '/confirm-cash'); },

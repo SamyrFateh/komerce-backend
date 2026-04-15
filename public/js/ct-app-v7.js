@@ -76,6 +76,7 @@ CT.app = {
     var main = document.getElementById('ct-main');
     var viewFn = {
       'dashboard': CT.views.dashboard,
+      'orders': CT.views.orders,
       'parcels': CT.views.parcels,
       'pending-cash': CT.views.pendingCash,
       'create-parcel': CT.views.createParcel,

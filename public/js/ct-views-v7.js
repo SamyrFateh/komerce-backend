@@ -13,6 +13,233 @@ CT.views = {};
 // ═══════════════════════════════════════════════════════════════
 
 // ── 1a. COLIS (liste + drill-down + actions) ──────────────────
+// ═══════════════════════════════════════════════════════════════
+// COMMANDES — Vue complète du cycle de vie (avant colis)
+// ═══════════════════════════════════════════════════════════════
+
+CT.views.orders = async function(container) {
+  container.innerHTML = '<div class="ct-loading">Chargement des commandes...</div>';
+  
+  try {
+    var data = await CT.api.v2Orders();
+    var k = data.kpis || {};
+    var orders = data.orders || [];
+    
+    // Status badge helper
+    function statusBadge(s) {
+      var map = {
+        'pending':     { bg: '#fef3c7', fg: '#92400e', label: '⏳ En attente' },
+        'confirmed':   { bg: '#dbeafe', fg: '#1e40af', label: '✅ Confirmée' },
+        'ordered':     { bg: '#e0e7ff', fg: '#3730a3', label: '📦 Commandée' },
+        'preparation': { bg: '#fce7f3', fg: '#9d174d', label: '🔧 Préparation' },
+        'shipped':     { bg: '#ccfbf1', fg: '#065f46', label: '🚢 Expédiée' },
+        'in_transit':  { bg: '#cffafe', fg: '#155e75', label: '✈️ En transit' },
+        'available':   { bg: '#d1fae5', fg: '#065f46', label: '📍 Disponible' },
+        'collected':   { bg: '#f0fdf4', fg: '#166534', label: '✔️ Collectée' },
+        'cancelled':   { bg: '#fee2e2', fg: '#991b1b', label: '❌ Annulée' },
+        'refunded':    { bg: '#fef3c7', fg: '#92400e', label: '↩️ Remboursée' }
+      };
+      var m = map[s] || { bg: '#f1f5f9', fg: '#475569', label: s };
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;background:' + m.bg + ';color:' + m.fg + '">' + m.label + '</span>';
+    }
+    
+    function payBadge(ps, pm) {
+      if (ps === 'paid') return '<span style="color:#059669;font-weight:600">💚 Payé</span>';
+      if (ps === 'failed') return '<span style="color:#dc2626;font-weight:600">🔴 Échoué</span>';
+      if (ps === 'refunded') return '<span style="color:#d97706;font-weight:600">↩️ Remboursé</span>';
+      if (ps === 'pending' && pm === 'cash_relais') return '<span style="color:#d97706;font-weight:600">💰 Cash en attente</span>';
+      if (ps === 'pending') return '<span style="color:#d97706;font-weight:600">⏳ En attente</span>';
+      return '<span style="color:#64748b">' + (ps || '—') + '</span>';
+    }
+    
+    function modeIcon(pm) {
+      if (pm === 'stripe_eur') return '💳 Stripe';
+      if (pm === 'cash_relais') return '💰 Cash';
+      return pm || '—';
+    }
+    
+    function timeAgo(d) {
+      if (!d) return '—';
+      var diff = Date.now() - new Date(d).getTime();
+      var mins = Math.floor(diff / 60000);
+      if (mins < 60) return mins + 'min';
+      var hours = Math.floor(mins / 60);
+      if (hours < 24) return hours + 'h';
+      return Math.floor(hours / 24) + 'j';
+    }
+    
+    // ─── KPI Cards ───
+    var hasIncidents = (k.payment_failed || 0) > 0;
+    var hasPending = (k.payment_pending || 0) > 0;
+    
+    var html = '';
+    
+    // Alert banner for payment incidents
+    if (hasIncidents) {
+      html += '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:8px">'
+        + '<span style="font-size:20px">🚨</span>'
+        + '<div><strong style="color:#991b1b">' + k.payment_failed + ' paiement(s) échoué(s)</strong>'
+        + '<div style="color:#7f1d1d;font-size:13px">Action requise — vérifier dans Stripe</div></div></div>';
+    }
+    
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
+    
+    var kpis = [
+      { label: 'Total', val: k.total || 0, icon: '📋', bg: '#f1f5f9' },
+      { label: 'En attente', val: (k.pending || 0) + (k.confirmed || 0), icon: '⏳', bg: '#fef3c7' },
+      { label: 'En cours', val: (k.ordered || 0) + (k.preparation || 0) + (k.shipped || 0) + (k.in_transit || 0), icon: '🔄', bg: '#dbeafe' },
+      { label: 'À retirer', val: k.available || 0, icon: '📍', bg: '#d1fae5' },
+      { label: 'Collectées', val: k.collected || 0, icon: '✔️', bg: '#f0fdf4' },
+      { label: '💳 Stripe', val: k.stripe_count || 0, icon: '', bg: '#ede9fe' },
+      { label: '💰 Cash', val: k.cash_count || 0, icon: '', bg: '#fff7ed' },
+      { label: 'CA (KMF)', val: (k.ca_total_kmf || 0).toLocaleString(), icon: '💰', bg: '#ecfdf5' },
+    ];
+    
+    kpis.forEach(function(kpi) {
+      html += '<div style="background:' + kpi.bg + ';border-radius:12px;padding:14px 16px;text-align:center">'
+        + '<div style="font-size:24px;font-weight:700">' + (kpi.icon ? kpi.icon + ' ' : '') + kpi.val + '</div>'
+        + '<div style="font-size:12px;color:#64748b;margin-top:4px">' + kpi.label + '</div></div>';
+    });
+    html += '</div>';
+    
+    // ─── Filters ───
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center">'
+      + '<select id="ct-orders-status" style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px">'
+      + '<option value="">Tous les statuts</option>'
+      + '<option value="pending">⏳ Pending</option>'
+      + '<option value="confirmed">✅ Confirmed</option>'
+      + '<option value="ordered">📦 Ordered</option>'
+      + '<option value="preparation">🔧 Preparation</option>'
+      + '<option value="shipped">🚢 Shipped</option>'
+      + '<option value="in_transit">✈️ In Transit</option>'
+      + '<option value="available">📍 Available</option>'
+      + '<option value="collected">✔️ Collected</option>'
+      + '<option value="cancelled">❌ Cancelled</option>'
+      + '</select>'
+      + '<select id="ct-orders-payment" style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px">'
+      + '<option value="">Tous modes</option>'
+      + '<option value="stripe_eur">💳 Stripe</option>'
+      + '<option value="cash_relais">💰 Cash</option>'
+      + '</select>'
+      + '<input id="ct-orders-search" type="text" placeholder="🔍 Référence, nom..." style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px;flex:1;min-width:150px">'
+      + '<button id="ct-orders-refresh" style="padding:6px 14px;border-radius:8px;background:#3b82f6;color:white;border:none;cursor:pointer;font-size:13px">🔄</button>'
+      + '</div>';
+    
+    // ─── Orders Table ───
+    html += '<div style="overflow-x:auto;border-radius:12px;border:1px solid #e2e8f0">'
+      + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+      + '<thead><tr style="background:#f8fafc">'
+      + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Réf</th>'
+      + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Client</th>'
+      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Statut</th>'
+      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Paiement</th>'
+      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Mode</th>'
+      + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Montant</th>'
+      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Articles</th>'
+      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Colis</th>'
+      + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Âge</th>'
+      + '</tr></thead><tbody>';
+    
+    if (orders.length === 0) {
+      html += '<tr><td colspan="9" style="padding:40px;text-align:center;color:#94a3b8">Aucune commande</td></tr>';
+    } else {
+      orders.forEach(function(o) {
+        var rowBg = '';
+        if (o.payment_status === 'failed') rowBg = 'background:#fef2f2;';
+        else if (o.status === 'pending') rowBg = 'background:#fffbeb;';
+        
+        html += '<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;' + rowBg + '" '
+          + 'onmouseover="this.style.background=\'#f0f9ff\'" '
+          + 'onmouseout="this.style.background=\'' + (rowBg ? rowBg.split(';')[0].split(':')[1] : '') + '\'" '
+          + 'data-ref="' + o.reference + '">'
+          + '<td style="padding:10px 12px;font-weight:600;font-family:monospace;color:#1e40af">' + o.reference + '</td>'
+          + '<td style="padding:10px 12px">'
+          +   '<div style="font-weight:500">' + (o.customer_name || '—') + '</div>'
+          +   '<div style="font-size:11px;color:#94a3b8">' + (o.relais_name || '') + (o.relais_island ? ' · ' + o.relais_island : '') + '</div>'
+          + '</td>'
+          + '<td style="padding:10px 12px;text-align:center">' + statusBadge(o.status) + '</td>'
+          + '<td style="padding:10px 12px;text-align:center">' + payBadge(o.payment_status, o.payment_mode) + '</td>'
+          + '<td style="padding:10px 12px;text-align:center;font-size:12px">' + modeIcon(o.payment_mode) + '</td>'
+          + '<td style="padding:10px 12px;text-align:right;font-weight:600">'
+          +   (o.total_eur ? o.total_eur + '€' : '') + (o.total_eur && o.total_kmf ? '<br>' : '')
+          +   (o.total_kmf ? '<span style="font-size:11px;color:#64748b">' + o.total_kmf.toLocaleString() + ' KMF</span>' : '')
+          + '</td>'
+          + '<td style="padding:10px 12px;text-align:center">' + (o.total_qty || 0) + ' <span style="font-size:11px;color:#94a3b8">(' + (o.nb_items || 0) + ' réf)</span></td>'
+          + '<td style="padding:10px 12px;text-align:center">'
+          +   (o.has_parcel ? '<span style="color:#059669" title="' + (o.parcel_ref || '') + '">📦 ' + (o.parcel_ref || 'oui') + '</span>' : '<span style="color:#94a3b8">—</span>')
+          + '</td>'
+          + '<td style="padding:10px 12px;text-align:right;color:#64748b;font-size:12px">' + timeAgo(o.created_at) + '</td>'
+          + '</tr>';
+      });
+    }
+    
+    html += '</tbody></table></div>';
+    
+    // ─── Summary ───
+    html += '<div style="margin-top:12px;text-align:right;font-size:12px;color:#94a3b8">'
+      + orders.length + ' commande(s) affichée(s) sur ' + (k.total || 0) + ' total'
+      + '</div>';
+    
+    container.innerHTML = html;
+    
+    // ─── Interactivity ───
+    // Filter/refresh
+    var filterHandler = async function() {
+      var params = {};
+      var s = document.getElementById('ct-orders-status');
+      var p = document.getElementById('ct-orders-payment');
+      var q = document.getElementById('ct-orders-search');
+      if (s && s.value) params.status = s.value;
+      if (p && p.value) params.payment_mode = p.value;
+      if (q && q.value) params.search = q.value;
+      
+      container.innerHTML = '<div class="ct-loading">Chargement...</div>';
+      try {
+        var d = await CT.api.v2Orders(params);
+        // Re-render with filtered data (reuse same function but avoid infinite loop)
+        data.orders = d.orders;
+        data.kpis = d.kpis;
+        CT.views.orders(container);
+      } catch(e) {
+        container.innerHTML = '<div class="ct-error">Erreur: ' + e.message + '</div>';
+      }
+    };
+    
+    var statusEl = document.getElementById('ct-orders-status');
+    var paymentEl = document.getElementById('ct-orders-payment');
+    var searchEl = document.getElementById('ct-orders-search');
+    var refreshEl = document.getElementById('ct-orders-refresh');
+    
+    if (statusEl) statusEl.addEventListener('change', filterHandler);
+    if (paymentEl) paymentEl.addEventListener('change', filterHandler);
+    if (refreshEl) refreshEl.addEventListener('click', filterHandler);
+    if (searchEl) {
+      var debounce;
+      searchEl.addEventListener('input', function() {
+        clearTimeout(debounce);
+        debounce = setTimeout(filterHandler, 400);
+      });
+    }
+    
+    // Row click → detail (future: order detail view)
+    container.querySelectorAll('tr[data-ref]').forEach(function(row) {
+      row.addEventListener('click', function() {
+        var ref = row.dataset.ref;
+        // For now, if has parcel → go to parcel view, else show alert
+        var parcelCell = row.querySelector('td:nth-child(8) span[title]');
+        if (parcelCell && parcelCell.getAttribute('title')) {
+          CT.views._showParcel(parcelCell.getAttribute('title'), container);
+        } else {
+          alert('Commande ' + ref + ' — pas encore de colis créé.\nUtilisez "Créer colis" pour la préparer.');
+        }
+      });
+    });
+    
+  } catch(err) {
+    container.innerHTML = '<div class="ct-error">Erreur chargement: ' + err.message + '</div>';
+  }
+};
+
 CT.views.parcels = async function(container) {
   container.innerHTML = '<div class="ct-loading">📦 Chargement des colis...</div>';
   try {
