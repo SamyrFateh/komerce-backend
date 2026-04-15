@@ -168,6 +168,7 @@
     qtyMinus: $('#k-qty-minus'),
     qtyPlus: $('#k-qty-plus'),
     addCartBtn: $('#k-add-cart-btn'),
+    buyNowBtn: $('#k-buy-now-btn'),
     sugRail: $('#k-sug-rail'),
     // Cart Drawer
     cartOverlay: $('#k-cart-overlay'),
@@ -193,9 +194,52 @@
   };
 
   /* ── TOAST ─────────────────────────────────────────────── */
-  function showToast(msg, type) {
+  /* ── RICH TOAST (after cart add) ────────────────────────────── */
+  function showRichToast(product) {
+    const qty = cartQty();
+    const imgSrc = product.image_url ? optimizeImgUrl(product.image_url, 80) : '';
+    const emoji = product.emoji || '🛍';
+    dom.toast.innerHTML = `
+      <div class="k-toast-inner k-toast-rich">
+        ${imgSrc
+          ? `<img class="k-toast-thumb" src="${imgSrc}" alt="" onerror="this.style.display='none'">`
+          : `<span class="k-toast-emoji">${emoji}</span>`}
+        <div class="k-toast-body">
+          <span class="k-toast-label">✓ Ajouté</span>
+          <span class="k-toast-name">${product.name}</span>
+        </div>
+        <button class="k-toast-cta" id="k-toast-cta-btn">Voir&nbsp;(${qty})&nbsp;→</button>
+      </div>`;
+    dom.toast.className = 'k-toast show';
+    clearTimeout(dom.toast._t);
+    dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 3500);
+    const cta = document.getElementById('k-toast-cta-btn');
+    if (cta) cta.addEventListener('click', () => { dom.toast.classList.remove('show'); openCart(); });
+  }
+
+  /* ── MODAL ADD BUTTON TRANSFORM ─────────────────────────────── */
+  function transformAddBtn() {
+    const qty = cartQty();
+    dom.addCartBtn.classList.add('confirmed');
+    dom.addCartBtn.innerHTML =
+      '<span class="k-btn-done">✓ Dans le panier</span>' +
+      '<span class="k-btn-sep">|</span>' +
+      '<span class="k-btn-see">Voir (' + qty + ') →</span>';
+  }
+
+  /* ── BUY NOW (add + go straight to checkout) ─────────────────── */
+  function buyNow(product, qty) {
+    addToCart(product, qty || 1, null, { skipFeedback: true });
+    closeModal();
+    setTimeout(() => {
+      openCart();
+      setTimeout(() => { if (dom.cartCheckout) dom.cartCheckout.click(); }, 250);
+    }, 200);
+  }
+
+    function showToast(msg, type) {
     type = type || '';
-    dom.toast.textContent = msg;
+    dom.toast.innerHTML = '<div class="k-toast-inner k-toast-simple"><span>' + msg + '</span></div>';
     dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
     clearTimeout(dom.toast._t);
     dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 2800);
@@ -532,7 +576,7 @@
   }
 
   /* ── ADD TO CART ────────────────────────────────────────── */
-  function addToCart(product, qty, sourceBtn) {
+  function addToCart(product, qty, sourceBtn, opts) {
     qty = qty || 1;
     const existing = state.cart.find(i => String(i.product.id) === String(product.id));
     if (existing) {
@@ -562,8 +606,18 @@
     // Mark all grid buttons for this product
     markAllCartButtons();
 
-    // Open drawer with highlight
-    openCartWithHighlight(product.id);
+    // Ring pulse on cart icon
+    dom.cartBtn.classList.remove('ring-pulse');
+    void dom.cartBtn.offsetWidth;
+    dom.cartBtn.classList.add('ring-pulse');
+    setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+
+    // Smart feedback — no drawer interrupt
+    if (opts && opts.fromModal) {
+      transformAddBtn();
+    } else if (!opts || !opts.skipFeedback) {
+      showRichToast(product);
+    }
   }
 
   function removeFromCart(productId) {
@@ -603,8 +657,7 @@
   function quickAdd(productId, btnEl) {
     const product = state.products.find(p => p.id === productId);
     if (!product) return;
-    addToCart(product, 1, btnEl);
-    showToast(`${product.emoji || '✓'} ${product.name} ajouté`);
+    addToCart(product, 1, btnEl);  // showRichToast called inside
   }
 
   function quickRemove(productId, btnEl) {
@@ -726,6 +779,10 @@
     state.modalProduct = product;
     state.modalQty = 1;
 
+    // Reset add button to default state
+    dom.addCartBtn.classList.remove('confirmed');
+    dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse.png" width="20" height="20" alt="" style="vertical-align:middle"> Ajouter';
+
     dom.modalImg.src = optimizeImgUrl(product.image_url, 600);
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
@@ -747,6 +804,11 @@
     dom.modalStock.textContent = product.stock > 0 ? `✓ En stock (${product.stock})` : '✗ Rupture';
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
+
+    // If product already in cart, show confirmed state
+    if (state.cart.find(i => String(i.product.id) === String(product.id))) {
+      transformAddBtn();
+    }
 
     const suggestions = state.products
       .filter(p => p.category === product.category && p.id !== product.id)
@@ -817,8 +879,18 @@
 
     dom.addCartBtn.addEventListener('click', () => {
       if (!state.modalProduct) return;
-      addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
-      showToast(`${state.modalProduct.emoji || '✓'} ${state.modalProduct.name} × ${state.modalQty}`);
+      if (dom.addCartBtn.classList.contains('confirmed')) {
+        // "Voir" zone clicked → go to cart
+        closeModal();
+        setTimeout(openCart, 150);
+        return;
+      }
+      addToCart(state.modalProduct, state.modalQty, dom.addCartBtn, { fromModal: true });
+    });
+
+    dom.buyNowBtn && dom.buyNowBtn.addEventListener('click', () => {
+      if (!state.modalProduct) return;
+      buyNow(state.modalProduct, state.modalQty);
     });
   }
 
@@ -1204,24 +1276,17 @@
         if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.style.display = 'block'; }
       }
 
-      if (isStripe && !_stripeCard) {
-        // Lazy-init Stripe (le script defer peut charger après boutique.js)
-        if (!_stripe) {
-          try { _stripe = typeof Stripe !== 'undefined' ? Stripe('pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ') : null; }
-          catch(e) { console.warn('Stripe not ready:', e); }
-        }
-        if (_stripe) {
-          _stripeElements = _stripe.elements();
-          _stripeCard = _stripeElements.create('card', {
-            style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
-            hidePostalCode: true
-          });
-          _stripeCard.mount('#stripe-card-element');
-          _stripeCard.on('change', ev => {
-            const errEl = document.getElementById('stripe-card-error');
-            if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.style.display = ev.error ? 'block' : 'none'; }
-          });
-        }
+      if (isStripe && _stripe && !_stripeCard) {
+        _stripeElements = _stripe.elements();
+        _stripeCard = _stripeElements.create('card', {
+          style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
+          hidePostalCode: true
+        });
+        _stripeCard.mount('#stripe-card-element');
+        _stripeCard.on('change', ev => {
+          const errEl = document.getElementById('stripe-card-error');
+          if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.style.display = ev.error ? 'block' : 'none'; }
+        });
       }
 
       const btn = document.getElementById('btn-confirm-order');
@@ -1448,8 +1513,7 @@
       await apiPost('/api/auth/guest-checkout', {
         full_name: clientName,
         phone: clientPhone,
-        email: clientEmail || undefined,
-        whatsapp_phone: senderPhone || undefined
+        email: clientEmail || undefined
       });
 
       // Step 2: create order
