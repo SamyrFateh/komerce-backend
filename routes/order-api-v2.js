@@ -160,6 +160,54 @@ router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 1b. GET /:ref — Détail complet d'une commande
+// ═══════════════════════════════════════════════════════════════
+
+router.get('/:ref', ...guard, async (req, res, next) => {
+  try {
+    const { ref } = req.params;
+
+    const { rows: [order] } = await db.query(`
+      SELECT o.id, o.reference, o.status, o.total_kmf, o.total_eur,
+        o.payment_mode, o.payment_status, o.cash_ref_code,
+        o.created_at, o.updated_at, o.destination_island,
+        o.confirmed_at, o.shipped_at, o.pending_at,
+        u.full_name AS customer_name, u.phone AS local_phone, u.email AS customer_email,
+        u.diaspora_phone,
+        r.name AS relais_name, r.island AS relais_island,
+        (SELECT p.reference FROM parcels p WHERE p.order_id = o.id LIMIT 1) AS parcel_ref,
+        (SELECT p.status FROM parcels p WHERE p.order_id = o.id LIMIT 1) AS parcel_status,
+        (SELECT p.pickup_code FROM parcels p WHERE p.order_id = o.id LIMIT 1) AS pickup_code,
+        EXISTS(SELECT 1 FROM parcels p WHERE p.order_id = o.id) AS has_parcel
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.reference = $1 OR o.id::text = $1
+    `, [ref]);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande ' + ref + ' introuvable' });
+    }
+
+    // Get items
+    const { rows: items } = await db.query(`
+      SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf AS unit_price_kmf,
+        p.name AS product_name, p.image_url,
+        (SELECT pi.id FROM parcel_items pi WHERE pi.order_item_id = oi.id LIMIT 1) IS NOT NULL AS in_parcel,
+        (SELECT pcl.reference FROM parcel_items pi JOIN parcels pcl ON pcl.id = pi.parcel_id WHERE pi.order_item_id = oi.id LIMIT 1) AS parcel_ref
+      FROM order_items oi
+      LEFT JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = $1
+      ORDER BY oi.created_at ASC
+    `, [order.id]);
+
+    order.items = items;
+
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 3. POST /:ref/confirm-cash — Confirmer paiement cash relais
 //    → Génère la FACTURE + envoie WhatsApp avec facture
 // ═══════════════════════════════════════════════════════════════
