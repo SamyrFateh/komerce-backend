@@ -142,7 +142,8 @@ app.get('/*.html', (req, res, next) => {
   const filePath = path.join(__dirname, 'public', req.path);
   _fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
-    html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\n</body>');
+    html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\
+</body>');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.send(html);
@@ -202,6 +203,7 @@ const notificationApiRouter = require('./routes/notification-api');
 const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
+const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -236,6 +238,7 @@ app.use('/api/baskets',    basketsRouter);
 app.use('/api/logistics',  logisticsRouter);
 app.use('/api/parcels',    parcelsRouter);
 app.use('/api/hub',        hubRouter);
+app.use('/api/hub',        hubMarkOrderedRouter);
 app.use('/api/carriers',   carriersRouter);
 app.use('/api/wallet',     walletRouter);
 app.use('/api/payments',   paymentsRouter);

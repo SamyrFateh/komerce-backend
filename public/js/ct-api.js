@@ -1,8 +1,8 @@
 /* ===================================================================
-   Komerce Control Tower — ct-api.js v6.0
+   Komerce Control Tower — ct-api.js v6.1
    API layer: all HTTP calls go through here.
    Auth is handled by httpOnly cookie (kmrc_jwt), set by the server.
-   v6: + Operational endpoints (confirm cash, create parcel, advance status)
+   v6.1: + hubMarkOrdered (confirmed → ordered)
    =================================================================== */
 window.CT = window.CT || {};
 
@@ -71,7 +71,6 @@ CT.api = {
   },
 
   // ---- Orders v2 (Opérationnel) ----
-  // ─── Orders (full lifecycle) ──────────────────────
   v2Orders: function(params) {
     var qs = new URLSearchParams(params || {}).toString();
     return this.get('/api/v2/orders' + (qs ? '?' + qs : ''));
@@ -104,6 +103,7 @@ CT.api = {
   simCleanup: function() { return this.post("/api/simulator/cleanup"); },
 
   // ---- Hub operational ----
+  hubMarkOrdered: function(ref) { return this.post("/api/hub/orders/mark-ordered", { reference: ref }); },
   hubShip: function(parcelId) { return this.post("/api/hub-dash/ship/" + parcelId); },
   hubStartPrep: function(parcelId) { return this.post("/api/hub-dash/start-prep/" + parcelId); },
   hubParcels: function() { return this.get("/api/v2/parcels"); },
