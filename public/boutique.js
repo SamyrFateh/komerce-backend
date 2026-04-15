@@ -1618,6 +1618,11 @@
       (clientEmail ? '<div style="margin-top:4px;">📧 Suivi envoyé à ' + sanitize(clientEmail) + '</div>' : '') +
       '<div style="margin-top:4px;">📍 Présentez la référence ou le code au point relais.</div></div>';
 
+    // WhatsApp notice
+    if (recipientPhone) {
+      wrap.innerHTML += '<div style="margin-top:10px;padding:9px 12px;background:#e7f9ef;border-radius:10px;font-size:0.82rem;color:#1a7a3e;font-weight:600;display:flex;align-items:center;gap:8px;">📲 Une confirmation WhatsApp sera envoyée au <span style="font-family:monospace;">' + sanitize(recipientPhone) + '</span></div>';
+    }
+
     // Buttons
     wrap.innerHTML += '<button id="k-order-track-btn" style="margin-top:12px;width:100%;padding:11px;border-radius:8px;font-weight:700;font-size:0.9rem;background:var(--coral);color:white;border:none;cursor:pointer;">📍 Suivre ma commande</button>' +
       '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#f5f5f2;color:#666;border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer</button>';
