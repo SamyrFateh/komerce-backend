@@ -126,17 +126,18 @@ async function fixMissingSchema() {
   await run('users.loyalty_tier_id',
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS loyalty_tier_id UUID`);
 
-  // 5. customs_taux_mensuel view
-  await run('customs_taux_mensuel view', `
-    CREATE OR REPLACE VIEW customs_taux_mensuel AS
-    SELECT
-      TO_CHAR(created_at, 'YYYY-MM') AS mois,
-      ROUND(AVG(customs_delta_pct)::numeric, 2) AS taux_effectif_pct
-    FROM customs_history
-    WHERE customs_real_kmf > 0
-    GROUP BY TO_CHAR(created_at, 'YYYY-MM')
-  `);
+ // 5. customs_taux_mensuel view
+await run('customs_taux_mensuel view', `
+  DROP VIEW IF EXISTS customs_taux_mensuel;
 
+  CREATE VIEW customs_taux_mensuel AS
+  SELECT
+    TO_CHAR(created_at, 'YYYY-MM') AS mois,
+    ROUND(AVG(customs_delta_pct)::numeric, 2) AS taux_effectif_pct
+  FROM customs_history
+  WHERE customs_real_kmf > 0
+  GROUP BY TO_CHAR(created_at, 'YYYY-MM');
+`);
   // 6. Seed default loyalty tiers
   try {
     const { rows } = await db.query('SELECT COUNT(*)::int AS c FROM loyalty_tiers');
