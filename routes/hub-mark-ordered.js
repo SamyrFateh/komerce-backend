@@ -43,19 +43,11 @@ router.post('/orders/mark-ordered', ...hubAuth, async (req, res, next) => {
       return res.status(400).json({ error: result.error });
     }
 
-    // Log scan event
-    try {
-      await db.query(`
-        INSERT INTO scans (order_id, step, scanned_by, notes)
-        VALUES ($1, 'ordered', $2, $3)
-      `, [order.id, req.user.id, `Commandé au sourcing par ${req.user.full_name || 'hub'}`]);
-    } catch(e) { console.warn('[HUB] scan log failed:', e.message); }
-
-    // Log comment
+    // Log comment (no scan — "ordered" is not a valid scan_step)
     try {
       await db.query(`
         INSERT INTO order_comments (order_id, author_id, author_name, text)
-        VALUES ($1, $2, 'Hub', 'Commandé au sourcing 🛒')
+        VALUES ($1, $2, 'Hub', '🛒 Commandé au sourcing')
       `, [order.id, req.user.id]);
     } catch(e) { /* non-critical */ }
 
