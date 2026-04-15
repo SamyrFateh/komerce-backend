@@ -777,7 +777,8 @@
     state.modalQty = 1;
 
     // Reset add button to default state
-    dom.addCartBtn.classList.remove('confirmed');
+    dom.addCartBtn.classList.remove('confirmed', 'added', 'in-cart');
+    dom.addCartBtn.disabled = false;
     dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse.png" width="20" height="20" alt="" style="vertical-align:middle"> Ajouter';
 
     dom.modalImg.src = optimizeImgUrl(product.image_url, 600);
