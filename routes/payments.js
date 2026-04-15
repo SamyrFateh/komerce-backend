@@ -303,44 +303,46 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     await client.query('COMMIT');
 
-    // SMS au commanditaire
-    const { rows: [fullOrder] } = await db.query(
-      `SELECT o.*, u.phone AS user_phone
-       FROM orders o LEFT JOIN users u ON u.id = o.user_id
-       WHERE o.id = $1`,
-      [order.id]
-    );
-    if (fullOrder?.user_phone) {
-      await sendSMS(
-        fullOrder.user_phone,
-        `Komerce · Paiement reçu pour la commande ${order.reference} (${order.total_kmf.toLocaleString('fr-FR')} KMF). Votre commande est confirmée et en cours de préparation. Délai : 3 à 5 semaines.`,
-        'confirmation', order.id
-      );
-    }
-
-    // ── NOTIFICATIONS COMPLÈTES — WhatsApp + Email + Facture (fire-and-forget) ──
-    try {
-      const notifSvc = require('../services/notification-service');
-      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
-        .then(result => {
-          if (result?.invoice) {
-            console.log(`🧾 [CASH-OLD] Invoice ${result.invoice} sent for ${order.reference}`);
-          }
-        })
-        .catch(e => console.error('[CASH-NOTIF] ❌', e.message));
-    } catch(e) { console.error('[CASH-NOTIF] require error:', e.message); }
-
-    // ── Sourcing semi-automatisé — déclenché après paiement cash ──────────────
-    triggerPurchasing(order.id)
-      .then(r => console.log('[PURCHASING] Cash trigger OK:', order.reference, r))
-      .catch(e => console.error('[PURCHASING] Cash trigger error:', order.reference, e.message));
-
+    // ── Réponse IMMÉDIATE au user (transaction déjà committée) ──
     res.json({
       message:   'Paiement espèces confirmé — commande validée',
       reference: order.reference,
       paid_at:   new Date().toISOString(),
       next_step: 'Sourcing déclenché automatiquement — bon de commande à l\'agent Dubai',
     });
+
+    // ── POST-COMMIT: Notifications crash-safe (fire-and-forget) ──
+    // Un échec ici ne doit JAMAIS impacter la réponse utilisateur
+    try {
+      const { rows: [fullOrder] } = await db.query(
+        `SELECT o.*, u.phone AS user_phone
+         FROM orders o LEFT JOIN users u ON u.id = o.user_id
+         WHERE o.id = $1`,
+        [order.id]
+      );
+      if (fullOrder?.user_phone) {
+        sendSMS(
+          fullOrder.user_phone,
+          `Komerce · Paiement reçu pour la commande ${order.reference} (${order.total_kmf.toLocaleString('fr-FR')} KMF). Votre commande est confirmée et en cours de préparation. Délai : 3 à 5 semaines.`,
+          'confirmation', order.id
+        ).catch(e => console.error('[CASH-SMS] ❌', e.message));
+      }
+
+      const notifSvc = require('../services/notification-service');
+      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+        .then(result => {
+          if (result?.invoice) {
+            console.log(`🧾 [CASH] Invoice ${result.invoice} sent for ${order.reference}`);
+          }
+        })
+        .catch(e => console.error('[CASH-NOTIF] ❌', e.message));
+
+      triggerPurchasing(order.id)
+        .then(r => console.log('[PURCHASING] Cash trigger OK:', order.reference, r))
+        .catch(e => console.error('[PURCHASING] Cash trigger error:', order.reference, e.message));
+    } catch(e) {
+      console.error('[CASH-POSTCOMMIT] ❌ Non-fatal notification error:', e.message);
+    }
 
   } catch (err) {
     await client.query('ROLLBACK');
