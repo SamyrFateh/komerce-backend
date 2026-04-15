@@ -199,6 +199,8 @@ const parcelApiV2Router = require('./routes/parcel-api-v2');
 const parcelLabelRouter = require('./routes/parcel-label');
 const orderApiV2Router = require('./routes/order-api-v2');
 const notificationApiRouter = require('./routes/notification-api');
+const otpRouter = require('./routes/otp');
+const clientTrackingRouter = require('./routes/client-tracking');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -221,7 +223,9 @@ app.use('/api/v2/notifications', notificationApiRouter);
 app.use('/api/v2', opsApiRouter);
 
 app.use('/api/tracking', trackingRouter);
-app.use('/api/auth', clientAuthRouter);  // Magic link routes
+app.use('/api/auth/otp', otpRouter);      // WhatsApp OTP auth
+app.use('/api/client/tracking', clientTrackingRouter); // Authenticated client tracking
+app.use('/api/auth', clientAuthRouter);   // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);
 app.use('/api/pricing',    pricingRouter);
@@ -445,6 +449,24 @@ const server = app.listen(PORT, () => {
       } catch(e) { console.warn('Migration 024 (non-fatal):', e.message); }
 
       
+      // ── Migration 025: otp_codes table ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS otp_codes (
+            id SERIAL PRIMARY KEY,
+            phone VARCHAR(20) NOT NULL,
+            code VARCHAR(6) NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            attempts INTEGER DEFAULT 0,
+            verified BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_otp_phone ON otp_codes(phone);
+          CREATE INDEX IF NOT EXISTS idx_otp_expires ON otp_codes(expires_at);
+        `);
+        console.log('✅ Migration 025: otp_codes table ready');
+      } catch(e) { console.warn('Migration 025 (non-fatal):', e.message); }
+
       // ── Migration: ensure 'pending' in order_status enum ──
       try {
         await db.query(`
