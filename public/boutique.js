@@ -231,10 +231,7 @@
   function buyNow(product, qty) {
     addToCart(product, qty || 1, null, { skipFeedback: true });
     closeModal();
-    setTimeout(() => {
-      openCart();
-      setTimeout(() => { if (dom.cartCheckout) dom.cartCheckout.click(); }, 250);
-    }, 200);
+    setTimeout(() => { openCart(); }, 200);
   }
 
     function showToast(msg, type) {
