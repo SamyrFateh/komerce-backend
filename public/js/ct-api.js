@@ -1,8 +1,9 @@
 /* ===================================================================
-   Komerce Control Tower — ct-api.js v6.1
+   Komerce Control Tower — ct-api.js v6.2
    API layer: all HTTP calls go through here.
    Auth is handled by httpOnly cookie (kmrc_jwt), set by the server.
    v6.1: + hubMarkOrdered (confirmed → ordered)
+   v6.2: fix transit functions inside CT.api object
    =================================================================== */
 window.CT = window.CT || {};
 
@@ -112,14 +113,7 @@ CT.api = {
   relaisScanArrival: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "available" }); },
   relaisScanCollect: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "collected" }); },
 
+  // ---- Transit Dashboard ----
+  transitParcels: function() { return this.get('/api/transit-dashboard'); },
+  markInTransit: function(ref) { return this.post('/api/transit-dashboard/' + ref + '/transit'); }
 };
-// ─────────────────────────────────────────────
-// TRANSIT DASHBOARD
-// ─────────────────────────────────────────────
-transitParcels: function() {
-  return this.get('/api/transit-dashboard');
-},
-
-markInTransit: function(ref) {
-  return this.post('/api/transit-dashboard/' + ref + '/transit');
-},
