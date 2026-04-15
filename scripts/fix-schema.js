@@ -341,7 +341,9 @@ async function fixMissingSchema() {
 
   // Generate pickup_code for orders without one (4 digits)
   try {
-    const ordersNoCode = await db.query("SELECT id FROM orders WHERE pickup_code IS NULL AND status IN ('available', 'collected', 'delivered')");
+    const ordersNoCode = await db.query(
+  "SELECT id FROM orders WHERE pickup_code IS NULL AND status = 'available'"
+);
     if (ordersNoCode.rows.length > 0) {
       for (const row of ordersNoCode.rows) {
         const code = String(crypto.randomInt(1000, 10000));
