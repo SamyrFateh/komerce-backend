@@ -1624,14 +1624,14 @@
 
     body.appendChild(wrap);
 
-    // Wire button events
+    // Wire button events + auto-close countdown
     setTimeout(() => {
       const trackBtn = document.getElementById('k-order-track-btn');
       if (trackBtn) trackBtn.addEventListener('click', () => {
+        clearInterval(countdownTimer);
         closeOrderModal();
         renderTrackView();
         switchView('track');
-        // Pré-remplir ref + tél et lancer la recherche automatiquement
         setTimeout(() => {
           const refInput  = document.getElementById('k-track-ref');
           const telInput  = document.getElementById('k-track-phone');
@@ -1644,11 +1644,26 @@
       });
       const closeBtn = document.getElementById('k-order-close-btn');
       if (closeBtn) closeBtn.addEventListener('click', () => {
+        clearInterval(countdownTimer);
         closeOrderModal();
-        // Revenir au catalogue en haut de page
         switchView('shop');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
+
+      // Auto-close après 7s avec compte à rebours sur le bouton Fermer
+      let secs = 7;
+      const updateLabel = () => { if (closeBtn) closeBtn.textContent = 'Fermer (' + secs + 's)'; };
+      updateLabel();
+      var countdownTimer = setInterval(() => {
+        secs--;
+        updateLabel();
+        if (secs <= 0) {
+          clearInterval(countdownTimer);
+          closeOrderModal();
+          switchView('shop');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 1000);
     }, 0);
   }
 
