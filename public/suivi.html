@@ -275,8 +275,14 @@
     <div class="input-group">
       <label>Numéro de téléphone</label>
       <div class="phone-input">
-        <span class="phone-prefix">🇰🇲 +269</span>
-        <input type="tel" id="phoneInput" placeholder="32 21 111" maxlength="12"
+        <select id="phonePrefix" style="font-size:16px;font-weight:600;color:var(--green-dark);border:none;background:transparent;cursor:pointer;padding:0 2px;">
+          <option value="+269">🇰🇲 +269</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+261">🇲🇬 +261</option>
+          <option value="+255">🇹🇿 +255</option>
+        </select>
+        <input type="tel" id="phoneInput" placeholder="32 21 111" maxlength="15"
                inputmode="tel" autocomplete="tel">
       </div>
     </div>
@@ -447,7 +453,8 @@
     const digits = phoneInput.value.replace(/\D/g, '');
     if (digits.length < 7) return;
 
-    currentPhone = '+269' + digits;
+    const prefix = document.getElementById('phonePrefix').value;
+    currentPhone = prefix + digits;
     const errEl = document.getElementById('phoneError');
     errEl.textContent = '';
     sendBtn.disabled = true;
