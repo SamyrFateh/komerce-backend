@@ -118,7 +118,9 @@ async function sendWhatsAppTwilio(phone, text) {
   if (!phone) return { success: false, provider: 'twilio', reason: 'no_phone' };
 
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
-  const to = cleanPhone.startsWith('whatsapp:') ? cleanPhone : `whatsapp:${cleanPhone}`;
+  // FIX: ensure the number has a leading '+' for E.164 format required by Twilio
+  const withPlus = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
+  const to = cleanPhone.startsWith('whatsapp:') ? cleanPhone : `whatsapp:${withPlus}`;
 
   try {
     const resp = await fetch(
