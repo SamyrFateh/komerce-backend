@@ -211,13 +211,18 @@ async function sendWhatsApp(phone, text) {
 function getUniquePhones(localPhone, diasporaPhone) {
   const phones = [];
   const seen = new Set();
-  for (const p of [localPhone, diasporaPhone]) {
+  // In simulation mode: only diaspora phone (skip local/beneficiary +269)
+  const phonesToCheck = isSimulation() ? [diasporaPhone] : [localPhone, diasporaPhone];
+  for (const p of phonesToCheck) {
     if (!p) continue;
     const clean = p.replace(/[^0-9+]/g, '');
     if (clean.length >= 8 && !seen.has(clean)) {
       seen.add(clean);
       phones.push(clean);
     }
+  }
+  if (isSimulation()) {
+    console.log(`[SIM] 📱 Phones filtered: local=${localPhone || 'none'} (SKIPPED) | diaspora=${diasporaPhone || 'none'} → sending to: [${phones.join(', ')}]`);
   }
   return phones;
 }
@@ -246,7 +251,7 @@ async function logNotification({ parcelRef, orderRef, channel, event, recipient,
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText) {
-  if (isSimulation()) { console.log('[SIM] skip notifyOrderCreated', order.reference); return; }
+  // Simulation mode: getUniquePhones() will filter to diaspora-only
   // Stripe : skip — la facture arrive avec notifyPaymentConfirmed() après le webhook
   if (order.payment_mode !== 'cash_relais') {
     console.log(`[NOTIF] ⏭️ Order created ${order.reference} (${order.payment_mode}) — skip, attente paiement Stripe`);
@@ -301,7 +306,7 @@ async function notifyOrderCreated(order, phone, email, emailItems, relais, cashS
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyPaymentConfirmed(orderId, orderRef) {
-  if (isSimulation()) { console.log('[SIM] skip notifyPaymentConfirmed', orderRef); return null; }
+  // Simulation mode: getUniquePhones() will filter to diaspora-only
   try {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
@@ -443,7 +448,7 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) {
-  if (isSimulation()) { console.log('[SIM] skip notifyParcelScan', parcelRef, newStatus); return null; }
+  // Simulation mode: getUniquePhones() will filter to diaspora-only
   // ❌ On ne notifie QUE shipped + available
   if (!WA_SCAN_STATUSES.has(newStatus)) {
     console.log(`[NOTIF] ⏭️ Scan ${newStatus} → ${parcelRef} — pas de notification`);
