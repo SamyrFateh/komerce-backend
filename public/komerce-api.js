@@ -200,6 +200,10 @@ const K = (() => {
     },
     get(id) { return request(`/api/orders/${id}`); },
     stats() { return request('/api/orders/stats'); },
+	 // ✅ ICI
+  create(data) {
+    return request('/api/orders', 'POST', data);
+	 },
   };
 
   // ── LOGISTICS ──────────────────────────────────────────────
