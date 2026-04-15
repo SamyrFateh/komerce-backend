@@ -470,7 +470,7 @@
     const particle = document.createElement('div');
     particle.style.cssText = [
       'position:fixed', 'z-index:9999', 'pointer-events:none',
-      'border-radius:50%', 'background:var(--ocean)',
+      'border-radius:50%', 'background:var(--coral)',
       'width:56px', 'height:56px',
       'display:flex', 'align-items:center', 'justify-content:center',
       'font-size:1.5rem',
@@ -1212,11 +1212,11 @@
 
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;margin-bottom:10px;padding:10px 12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(67,160,71,0.03);';
+    stripeCardWrap.style.cssText = 'display:none;margin-bottom:10px;padding:10px 12px;border:2px solid var(--coral);border-radius:8px;background:rgba(255,107,53,0.03);';
     stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div>'
       + '<div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div>'
       + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div>'
-      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
+      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--coral);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
     body.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
@@ -1243,10 +1243,10 @@
     checkWalletBalance();
     const walletSection = document.createElement('div');
     walletSection.id = 'wallet-section';
-    walletSection.style.cssText = 'margin-top:8px;padding:10px 12px;border:2px dashed var(--ocean);border-radius:8px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);display:none;';
+    walletSection.style.cssText = 'margin-top:8px;padding:10px 12px;border:2px dashed var(--coral);border-radius:8px;background:rgba(255,107,53,0.04);display:none;';
     walletSection.innerHTML = '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;">'
-      + '<input type="checkbox" id="cb-use-wallet" style="width:18px;height:18px;accent-color:var(--ocean);flex-shrink:0;">'
-      + '<div style="flex:1;"><div style="font-weight:700;font-size:0.85rem;color:var(--ocean);">💰 Utiliser mon crédit</div>'
+      + '<input type="checkbox" id="cb-use-wallet" style="width:18px;height:18px;accent-color:var(--coral);flex-shrink:0;">'
+      + '<div style="flex:1;"><div style="font-weight:700;font-size:0.85rem;color:var(--coral);">💰 Utiliser mon crédit</div>'
       + '<div id="wallet-balance-text" style="font-size:0.72rem;color:#888;margin-top:1px;">Chargement…</div></div></label>'
       + '<div id="wallet-deduction" style="margin-top:6px;padding:6px 8px;background:white;border-radius:6px;font-size:0.82rem;display:none;"></div>';
     body.appendChild(walletSection);
@@ -1330,7 +1330,7 @@
     input.placeholder = placeholder;
     input.value = dataObj[key] || '';
     input.style.cssText = 'width:100%;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);border-radius:8px;outline:none;font-size:0.9rem;transition:border-color 0.2s;box-sizing:border-box;';
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
     input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', () => { dataObj[key] = input.value; });
     group.appendChild(input);
@@ -1394,7 +1394,7 @@
       input.maxLength = currentCountry.max + 4; /* allow spaces */
       sync();
     });
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
     input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', sync);
 
@@ -1424,7 +1424,7 @@
     input.value = dataObj[key] || '';
     input.maxLength = 10;
     input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;';
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
     input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', () => {
       let raw = input.value.replace(/[^0-9]/g, '');
@@ -1441,13 +1441,13 @@
 
   function makePaymentOption(value, title, subtitle, checked) {
     const wrapper = document.createElement('label');
-    wrapper.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid ' + (checked ? 'var(--ocean)' : 'rgba(0,0,0,0.08)') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (checked ? 'rgba(67,160,71,0.06)' : 'white') + ';';
+    wrapper.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid ' + (checked ? 'var(--coral)' : 'rgba(0,0,0,0.08)') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (checked ? 'rgba(255,107,53,0.06)' : 'white') + ';';
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'payment_mode';
     radio.value = value;
     radio.checked = checked;
-    radio.style.cssText = 'width:16px;height:16px;accent-color:var(--ocean);flex-shrink:0;';
+    radio.style.cssText = 'width:16px;height:16px;accent-color:var(--coral);flex-shrink:0;';
     wrapper.appendChild(radio);
     const info = document.createElement('div');
     info.innerHTML = '<div style="font-weight:700;font-size:0.88rem;">' + title + '</div><div style="font-size:0.75rem;color:#888;margin-top:1px;">' + subtitle + '</div>';
@@ -1481,7 +1481,7 @@
       const applied = Math.min(state.walletBalance, total);
       const remaining = total - applied;
       ded.style.display = 'block';
-      ded.innerHTML = '<div style="display:flex;justify-content:space-between;"><span>💰 Crédit appliqué</span><span style="font-weight:700;color:var(--ocean)">-' + fmt(applied, 'KMF') + '</span></div>' +
+      ded.innerHTML = '<div style="display:flex;justify-content:space-between;"><span>💰 Crédit appliqué</span><span style="font-weight:700;color:var(--coral)">-' + fmt(applied, 'KMF') + '</span></div>' +
         (remaining > 0 ? '<div style="display:flex;justify-content:space-between;margin-top:4px;"><span>Reste à payer</span><span style="font-weight:700">' + fmt(remaining, 'KMF') + '</span></div>' : '<div style="margin-top:4px;text-align:center;font-weight:700;color:#16a34a;">✅ Entièrement couvert par votre crédit !</div>');
     } else {
       ded.style.display = 'none';
@@ -1591,9 +1591,10 @@
     wrap.style.cssText = 'text-align:center;padding:14px 0;';
 
     wrap.innerHTML = '<div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>' +
-      '<h3 style="color:var(--ocean);margin-bottom:6px;font-size:1.1rem;">Commande enregistrée !</h3>' +
+      '<h3 style="color:var(--coral);margin-bottom:6px;font-size:1.1rem;">Commande enregistrée !</h3>' +
       '<p style="color:#888;font-size:0.85rem;margin-bottom:2px;">Votre référence :</p>' +
-      '<div style="display:inline-block;background:rgba(67,160,71,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>';
+      '<div style="display:inline-block;background:rgba(255,107,53,0.08);color:var(--coral);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;" id="k-order-ref-display">' + sanitize(order.reference || '—') + '</div>' +
+      '<button onclick="navigator.clipboard.writeText(\'' + sanitize(order.reference || '') + '\').then(()=>showToast(\'✅ Référence copiée !\')).catch(()=>{})" style="margin-top:4px;padding:5px 14px;background:transparent;border:1.5px solid var(--coral);color:var(--coral);border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;letter-spacing:0.5px;">📋 Copier</button>';
 
     // Cash ref code
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
@@ -1608,19 +1609,19 @@
 
     // Wallet deduction
     if (fullResult && fullResult.credit_applied_kmf > 0) {
-      wrap.innerHTML += '<div style="margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);border-radius:8px;font-size:0.85rem;text-align:center;">💰 Crédit boutique appliqué : <strong style="color:var(--ocean)">-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
+      wrap.innerHTML += '<div style="margin-top:6px;padding:8px 14px;background:rgba(255,107,53,0.06);border-radius:8px;font-size:0.85rem;text-align:center;">💰 Crédit boutique appliqué : <strong style="color:var(--coral)">-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
     }
 
     // Info block
-    wrap.innerHTML += '<div style="margin-top:12px;padding:10px 12px;background:#eef2e4;border-radius:10px;font-size:0.82rem;color:#888;line-height:1.6;text-align:left;">' +
+    wrap.innerHTML += '<div style="margin-top:12px;padding:10px 12px;background:#f5f5f2;border-radius:10px;font-size:0.82rem;color:#888;line-height:1.6;text-align:left;">' +
       '<div>🏪 Paiement en cash (KMF) au point relais lors du retrait.</div>' +
       '<div style="margin-top:4px;">📱 ' + sanitize(recipientName || '') + ' recevra un SMS de confirmation.</div>' +
       (clientEmail ? '<div style="margin-top:4px;">📧 Suivi envoyé à ' + sanitize(clientEmail) + '</div>' : '') +
       '<div style="margin-top:4px;">📍 Présentez la référence ou le code au point relais.</div></div>';
 
     // Buttons
-    wrap.innerHTML += '<button id="k-order-track-btn" style="margin-top:12px;width:100%;padding:11px;border-radius:8px;font-weight:700;font-size:0.9rem;background:var(--ocean);color:white;border:none;cursor:pointer;">📍 Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#eef2e4;color:var(--ocean);border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer</button>';
+    wrap.innerHTML += '<button id="k-order-track-btn" style="margin-top:12px;width:100%;padding:11px;border-radius:8px;font-weight:700;font-size:0.9rem;background:var(--coral);color:white;border:none;cursor:pointer;">📍 Suivre ma commande</button>' +
+      '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#f5f5f2;color:#666;border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer</button>';
 
     body.appendChild(wrap);
 
@@ -1770,118 +1771,52 @@
       favEl.after(el);
     }
 
-    const otpState = { email: '' };
-
     el.innerHTML = `
-      <h2>📦 Suivi & Historique</h2>
+      <h2>📦 Suivi de commande</h2>
 
-      <!-- Étape 1 : identification -->
-      <div id="k-otp-step1">
-        <p class="k-otp-hint">Entrez l'email utilisé lors de votre commande pour accéder à votre historique et recevoir un code gratuit.</p>
-        <div class="k-track-form">
-          <input class="k-track-input" id="k-otp-email" type="email" placeholder="votre@email.com" autocomplete="email" inputmode="email">
-          <button class="k-track-btn" id="k-otp-request-btn">Envoyer le code</button>
+      <!-- Formulaire ref + tél -->
+      <div id="k-track-form-step">
+        <p class="k-otp-hint">Entrez votre référence commande et le téléphone du bénéficiaire pour accéder au suivi.</p>
+        <div class="k-track-form" style="margin-bottom:8px;">
+          <input class="k-track-input" id="k-track-ref" type="text"
+            placeholder="Référence : KMR-2025-0042"
+            autocomplete="off" style="text-transform:uppercase">
         </div>
-        <div class="k-otp-divider"><span>ou</span></div>
         <div class="k-track-form">
-          <input class="k-track-input" id="k-otp-ref" type="text" placeholder="Référence commande : KMR-2025-0042" autocomplete="off" style="text-transform:uppercase">
-          <button class="k-track-btn k-track-btn--ghost" id="k-otp-ref-btn">Suivre sans code</button>
+          <input class="k-track-input" id="k-track-phone" type="tel"
+            placeholder="Tél. bénéficiaire : +269 321 45 67"
+            autocomplete="tel" inputmode="tel">
+          <button class="k-track-btn" id="k-track-search-btn">Suivre →</button>
         </div>
       </div>
 
-      <!-- Étape 2 : saisie OTP -->
-      <div id="k-otp-step2" style="display:none">
-        <div class="k-otp-sent-banner">
-          📧 Code envoyé à <strong id="k-otp-email-display"></strong><br>
-          <small>Vérifiez vos spams si vous ne le recevez pas dans 1 minute.</small>
-        </div>
-        <input class="k-otp-code-input" id="k-otp-code" type="text" inputmode="numeric" placeholder="_ _ _ _ _ _" maxlength="6" autocomplete="one-time-code">
-        <button class="k-track-btn" id="k-otp-verify-btn">Vérifier</button>
-        <button class="k-otp-resend-btn" id="k-otp-resend-btn">Renvoyer le code</button>
-      </div>
-
-      <!-- Étape 3 : résultats -->
-      <div id="k-otp-step3" style="display:none">
+      <!-- Résultats -->
+      <div id="k-track-results-step" style="display:none">
         <div id="k-orders-list"></div>
-        <button class="k-otp-resend-btn" id="k-otp-back-btn" style="margin-top:16px">← Nouvelle recherche</button>
+        <button class="k-otp-resend-btn" id="k-track-reset-btn" style="margin-top:16px">← Nouvelle recherche</button>
       </div>`;
 
-    /* ── Step 1a : request OTP by email ── */
-    el.querySelector('#k-otp-request-btn').addEventListener('click', async () => {
-      const email = el.querySelector('#k-otp-email').value.trim();
-      if (!email || !email.includes('@')) { showToast('Entrez une adresse email valide.', 'error'); return; }
-      const btn = el.querySelector('#k-otp-request-btn');
-      btn.disabled = true; btn.textContent = '⏳ Envoi…';
-      try {
-        await apiPost('/api/auth/otp/request', { email });
-        otpState.email = email;
-        el.querySelector('#k-otp-email-display').textContent = email;
-        el.querySelector('#k-otp-step1').style.display = 'none';
-        el.querySelector('#k-otp-step2').style.display = 'block';
-        showToast('📧 Code envoyé !', 'success');
-      } catch(e) {
-        showToast('Erreur lors de l\'envoi. Réessayez.', 'error');
-        btn.disabled = false; btn.textContent = 'Envoyer le code';
-      }
-    });
-
-    /* ── Step 1b : direct reference lookup (no auth) ── */
-    el.querySelector('#k-otp-ref-btn').addEventListener('click', async () => {
-      const ref = el.querySelector('#k-otp-ref').value.trim().toUpperCase();
-      if (!ref) { showToast('Entrez une référence de commande.', 'error'); return; }
-      const btn = el.querySelector('#k-otp-ref-btn');
+    /* ── Recherche ref + tél ── */
+    el.querySelector('#k-track-search-btn').addEventListener('click', async () => {
+      const ref   = el.querySelector('#k-track-ref').value.trim().toUpperCase();
+      const phone = el.querySelector('#k-track-phone').value.trim();
+      if (!ref)   { showToast('Entrez votre référence commande.', 'error'); return; }
+      if (!phone) { showToast('Entrez le téléphone du bénéficiaire.', 'error'); return; }
+      const btn = el.querySelector('#k-track-search-btn');
       btn.disabled = true; btn.textContent = '⏳ Recherche…';
       try {
-        const data = await apiGet('/api/orders/public/' + encodeURIComponent(ref));
-        el.querySelector('#k-otp-step1').style.display = 'none';
-        el.querySelector('#k-otp-step3').style.display = 'block';
+        const data = await apiGet('/api/orders/public/' + encodeURIComponent(ref) + '?phone=' + encodeURIComponent(phone));
+        el.querySelector('#k-track-form-step').style.display = 'none';
+        el.querySelector('#k-track-results-step').style.display = 'block';
         renderOrderDetail(data.order || data, el.querySelector('#k-orders-list'));
       } catch(e) {
-        showToast('Référence introuvable.', 'error');
-        btn.disabled = false; btn.textContent = 'Suivre sans code';
+        showToast('Référence ou téléphone incorrect.', 'error');
+        btn.disabled = false; btn.textContent = 'Suivre →';
       }
     });
 
-    /* ── Step 2 : verify OTP ── */
-    el.querySelector('#k-otp-verify-btn').addEventListener('click', async () => {
-      const code = el.querySelector('#k-otp-code').value.replace(/\s/g, '');
-      if (code.length < 4) { showToast('Entrez le code complet.', 'error'); return; }
-      const btn = el.querySelector('#k-otp-verify-btn');
-      btn.disabled = true; btn.textContent = '⏳ Vérification…';
-      try {
-        const result = await apiPost('/api/auth/otp/verify', { email: otpState.email, code });
-        el.querySelector('#k-otp-step2').style.display = 'none';
-        el.querySelector('#k-otp-step3').style.display = 'block';
-        renderOrdersHistory(result.orders || [], el.querySelector('#k-orders-list'));
-      } catch(e) {
-        showToast('Code incorrect ou expiré.', 'error');
-        btn.disabled = false; btn.textContent = 'Vérifier';
-      }
-    });
-
-    /* ── Step 2 : resend ── */
-    let resendTimer = null;
-    el.querySelector('#k-otp-resend-btn').addEventListener('click', async () => {
-      const btn = el.querySelector('#k-otp-resend-btn');
-      if (resendTimer) return;
-      btn.disabled = true; btn.textContent = '⏳ Renvoi…';
-      try {
-        await apiPost('/api/auth/otp/request', { email: otpState.email });
-        showToast('📧 Nouveau code envoyé !', 'success');
-        let countdown = 30;
-        resendTimer = setInterval(() => {
-          countdown--;
-          btn.textContent = `Renvoyer (${countdown}s)`;
-          if (countdown <= 0) { clearInterval(resendTimer); resendTimer = null; btn.disabled = false; btn.textContent = 'Renvoyer le code'; }
-        }, 1000);
-      } catch(e) {
-        showToast('Erreur lors du renvoi.', 'error');
-        btn.disabled = false; btn.textContent = 'Renvoyer le code';
-      }
-    });
-
-    /* ── Step 3 : back ── */
-    el.querySelector('#k-otp-back-btn').addEventListener('click', () => renderTrackView());
+    /* ── Retour ── */
+    el.querySelector('#k-track-reset-btn').addEventListener('click', () => renderTrackView());
   }
 
   /* ── VUE SWITCHER ───────────────────────────────────────── */

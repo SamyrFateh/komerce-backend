@@ -33,9 +33,9 @@ ul,ol{list-style:none}
   --text-muted:#6b7280;
   --text-light:#9ca3af;
   --border:#bfcea0;
-  --shadow-sm:0 1px 3px rgba(67,160,71,.06);
-  --shadow-md:0 4px 12px rgba(67,160,71,.08);
-  --shadow-lg:0 8px 30px rgba(67,160,71,.12);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 8px 30px rgba(0,0,0,.10);
   /* Type */
   --font:'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --radius:12px;
@@ -120,7 +120,7 @@ body{
   transition:background .2s;
 }
 .k-cart-btn svg{width:22px;height:22px;color:var(--coral)}
-.k-cart-btn:active{background:rgba(67,160,71,.1)}
+.k-cart-btn:active{background:rgba(255,107,53,.1)}
 .k-cart-badge{
   position:absolute;top:0;right:0;
   min-width:18px;height:18px;
@@ -1536,7 +1536,7 @@ body{
 .ck-pay-chip input[type=radio]{display:none}
 .ck-pay-chip--active{
   border-color:var(--coral) !important;
-  background:rgba(67,160,71,0.07) !important;
+  background:rgba(255,107,53,0.07) !important;
 }
 .ck-pay-chip--off{
   opacity:.5;cursor:not-allowed;
@@ -1599,7 +1599,7 @@ body{
 .k-btn-done{
   flex:1;padding:0 10px;
   font-size:12px;font-weight:700;
-  color:var(--ocean);
+  color:var(--coral);
   text-align:center;
 }
 .k-btn-sep{
