@@ -17,20 +17,40 @@ CT.views = {};
 // COMMANDES — Vue complète du cycle de vie (avant colis)
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// COMMANDES & COLIS — Vue unifiée avec tabs
+// ═══════════════════════════════════════════════════════════════
+
+CT.views._ordersTab = 'all';
+
 CT.views.orders = async function(container) {
-  container.innerHTML = '<div class="ct-loading">Chargement des commandes...</div>';
-  
+  container.innerHTML = '<div class="ct-loading">📋 Chargement commandes & colis...</div>';
+
   try {
-    var data = await CT.api.v2Orders();
-    var k = data.kpis || {};
-    var orders = data.orders || [];
-    
-    // Status badge helper
+    var ordersData, parcelsData;
+    var results = await Promise.all([
+      CT.api.v2Orders(),
+      CT.api.v2Parcels().catch(function() { return { parcels: [] }; })
+    ]);
+    ordersData = results[0];
+    parcelsData = results[1];
+
+    var orders = ordersData.orders || [];
+    var k = ordersData.kpis || {};
+    var parcels = parcelsData.parcels || [];
+
+    // ── Classify orders ──
+    var freeOrders = orders.filter(function(o) { return !o.has_parcel; });
+    var parceledOrders = orders.filter(function(o) { return o.has_parcel; });
+
+    var activeTab = CT.views._ordersTab || 'all';
+
+    // ── Helpers ──
     function statusBadge(s) {
       var map = {
         'pending':     { bg: '#fef3c7', fg: '#92400e', label: '⏳ En attente' },
         'confirmed':   { bg: '#dbeafe', fg: '#1e40af', label: '✅ Confirmée' },
-        'ordered':     { bg: '#e0e7ff', fg: '#3730a3', label: '📦 Commandée' },
+        'ordered':     { bg: '#e0e7ff', fg: '#3730a3', label: '🛒 Commandée' },
         'preparation': { bg: '#fce7f3', fg: '#9d174d', label: '🔧 Préparation' },
         'shipped':     { bg: '#ccfbf1', fg: '#065f46', label: '🚢 Expédiée' },
         'in_transit':  { bg: '#cffafe', fg: '#155e75', label: '✈️ En transit' },
@@ -42,22 +62,22 @@ CT.views.orders = async function(container) {
       var m = map[s] || { bg: '#f1f5f9', fg: '#475569', label: s };
       return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;background:' + m.bg + ';color:' + m.fg + '">' + m.label + '</span>';
     }
-    
+
     function payBadge(ps, pm) {
       if (ps === 'paid') return '<span style="color:#059669;font-weight:600">💚 Payé</span>';
       if (ps === 'failed') return '<span style="color:#dc2626;font-weight:600">🔴 Échoué</span>';
       if (ps === 'refunded') return '<span style="color:#d97706;font-weight:600">↩️ Remboursé</span>';
-      if (ps === 'pending' && pm === 'cash_relais') return '<span style="color:#d97706;font-weight:600">💰 Cash en attente</span>';
-      if (ps === 'pending') return '<span style="color:#d97706;font-weight:600">⏳ En attente</span>';
+      if (ps === 'pending' && pm === 'cash_relais') return '<span style="color:#d97706;font-weight:600">💰 Cash attente</span>';
+      if (ps === 'pending') return '<span style="color:#d97706;font-weight:600">⏳ Attente</span>';
       return '<span style="color:#64748b">' + (ps || '—') + '</span>';
     }
-    
+
     function modeIcon(pm) {
       if (pm === 'stripe_eur') return '💳 Stripe';
       if (pm === 'cash_relais') return '💰 Cash';
       return pm || '—';
     }
-    
+
     function timeAgo(d) {
       if (!d) return '—';
       var diff = Date.now() - new Date(d).getTime();
@@ -67,233 +87,367 @@ CT.views.orders = async function(container) {
       if (hours < 24) return hours + 'h';
       return Math.floor(hours / 24) + 'j';
     }
-    
-    // ─── KPI Cards ───
-    var hasIncidents = (k.payment_failed || 0) > 0;
-    var hasPending = (k.payment_pending || 0) > 0;
-    
-    var html = '';
-    
-    // Alert banner for payment incidents
-    if (hasIncidents) {
-      html += '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:8px">'
-        + '<span style="font-size:20px">🚨</span>'
-        + '<div><strong style="color:#991b1b">' + k.payment_failed + ' paiement(s) échoué(s)</strong>'
-        + '<div style="color:#7f1d1d;font-size:13px">Action requise — vérifier dans Stripe</div></div></div>';
+
+    function colisageBadge(o) {
+      if (!o.has_parcel) {
+        return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#fef3c7;color:#92400e">' +
+          '🔓 Libre</span>';
+      }
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#d1fae5;color:#065f46;cursor:pointer" ' +
+        'data-parcel-ref="' + (o.parcel_ref || '') + '" title="Voir le colis">' +
+        '📦 ' + (o.parcel_ref || 'Oui') + '</span>';
     }
-    
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
-    
+
+    // ── Build HTML ──
+    var html = '';
+
+    // Title
+    html += '<div class="ct-view-header"><h2>📋 Commandes & Colis</h2>';
+    html += '<p class="ct-subtitle">Vue unifiée du cycle de vie — de la commande à la livraison</p></div>';
+
+    // KPIs
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px">';
     var kpis = [
-      { label: 'Total', val: k.total || 0, icon: '📋', bg: '#f1f5f9' },
-      { label: 'En attente', val: (k.pending || 0) + (k.confirmed || 0), icon: '⏳', bg: '#fef3c7' },
-      { label: 'En cours', val: (k.ordered || 0) + (k.preparation || 0) + (k.shipped || 0) + (k.in_transit || 0), icon: '🔄', bg: '#dbeafe' },
-      { label: 'À retirer', val: k.available || 0, icon: '📍', bg: '#d1fae5' },
-      { label: 'Collectées', val: k.collected || 0, icon: '✔️', bg: '#f0fdf4' },
-      { label: '💳 Stripe', val: k.stripe_count || 0, icon: '', bg: '#ede9fe' },
-      { label: '💰 Cash', val: k.cash_count || 0, icon: '', bg: '#fff7ed' },
-      { label: 'CA (KMF)', val: (k.ca_total_kmf || 0).toLocaleString(), icon: '💰', bg: '#ecfdf5' },
+      { icon: '📋', label: 'Total', val: orders.length, color: '#6366f1' },
+      { icon: '🔓', label: 'Libres', val: freeOrders.length, color: freeOrders.length > 0 ? '#f59e0b' : '#22c55e' },
+      { icon: '✅', label: 'Colisées', val: parceledOrders.length, color: '#22c55e' },
+      { icon: '📦', label: 'Colis', val: parcels.length, color: '#3b82f6' },
+      { icon: '⏳', label: 'En attente', val: (k.pending || 0), color: '#f59e0b' },
+      { icon: '🔄', label: 'En cours', val: (k.ordered || 0) + (k.preparation || 0) + (k.shipped || 0) + (k.in_transit || 0), color: '#3b82f6' },
+      { icon: '📍', label: 'À retirer', val: k.available || 0, color: '#059669' },
+      { icon: '💰', label: 'CA (KMF)', val: (k.ca_total_kmf || 0).toLocaleString(), color: '#16a34a' },
     ];
-    
     kpis.forEach(function(kpi) {
-      html += '<div style="background:' + kpi.bg + ';border-radius:12px;padding:14px 16px;text-align:center">'
-        + '<div style="font-size:24px;font-weight:700">' + (kpi.icon ? kpi.icon + ' ' : '') + kpi.val + '</div>'
-        + '<div style="font-size:12px;color:#64748b;margin-top:4px">' + kpi.label + '</div></div>';
+      html += '<div style="background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.06);border-left:4px solid ' + kpi.color + '">' +
+        '<div style="font-size:22px;font-weight:700">' + kpi.icon + ' ' + kpi.val + '</div>' +
+        '<div style="font-size:11px;color:#64748b;margin-top:2px">' + kpi.label + '</div></div>';
     });
     html += '</div>';
-    
-    // ─── Filters ───
-    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center">'
-      + '<select id="ct-orders-status" style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px">'
-      + '<option value="">Tous les statuts</option>'
-      + '<option value="pending">⏳ Pending</option>'
-      + '<option value="confirmed">✅ Confirmed</option>'
-      + '<option value="ordered">📦 Ordered</option>'
-      + '<option value="preparation">🔧 Preparation</option>'
-      + '<option value="shipped">🚢 Shipped</option>'
-      + '<option value="in_transit">✈️ In Transit</option>'
-      + '<option value="available">📍 Available</option>'
-      + '<option value="collected">✔️ Collected</option>'
-      + '<option value="cancelled">❌ Cancelled</option>'
-      + '</select>'
-      + '<select id="ct-orders-payment" style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px">'
-      + '<option value="">Tous modes</option>'
-      + '<option value="stripe_eur">💳 Stripe</option>'
-      + '<option value="cash_relais">💰 Cash</option>'
-      + '</select>'
-      + '<input id="ct-orders-search" type="text" placeholder="🔍 Référence, nom..." style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px;flex:1;min-width:150px">'
-      + '<button id="ct-orders-refresh" style="padding:6px 14px;border-radius:8px;background:#3b82f6;color:white;border:none;cursor:pointer;font-size:13px">🔄</button>'
-      + '</div>';
-    
-    // ─── Orders Table ───
-    html += '<div style="overflow-x:auto;border-radius:12px;border:1px solid #e2e8f0">'
-      + '<table style="width:100%;border-collapse:collapse;font-size:13px">'
-      + '<thead><tr style="background:#f8fafc">'
-      + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Réf</th>'
-      + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Client</th>'
-      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Statut</th>'
-      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Paiement</th>'
-      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Mode</th>'
-      + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Montant</th>'
-      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Articles</th>'
-      + '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Colis</th>'
-      + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Âge</th>'
-      + '</tr></thead><tbody>';
-    
-    if (orders.length === 0) {
-      html += '<tr><td colspan="9" style="padding:40px;text-align:center;color:#94a3b8">Aucune commande</td></tr>';
-    } else {
-      orders.forEach(function(o) {
-        var rowBg = '';
-        if (o.payment_status === 'failed') rowBg = 'background:#fef2f2;';
-        else if (o.status === 'pending') rowBg = 'background:#fffbeb;';
-        
-        html += '<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;' + rowBg + '" '
-          + 'onmouseover="this.style.background=\'#f0f9ff\'" '
-          + 'onmouseout="this.style.background=\'' + (rowBg ? rowBg.split(';')[0].split(':')[1] : '') + '\'" '
-          + 'data-ref="' + o.reference + '">'
-          + '<td style="padding:10px 12px;font-weight:600;font-family:monospace;color:#1e40af">' + o.reference + '</td>'
-          + '<td style="padding:10px 12px">'
-          +   '<div style="font-weight:500">' + (o.customer_name || '—') + '</div>'
-          +   '<div style="font-size:11px;color:#94a3b8">' + (o.relais_name || '') + (o.relais_island ? ' · ' + o.relais_island : '') + '</div>'
-          + '</td>'
-          + '<td style="padding:10px 12px;text-align:center">' + statusBadge(o.status) + '</td>'
-          + '<td style="padding:10px 12px;text-align:center">' + payBadge(o.payment_status, o.payment_mode) + '</td>'
-          + '<td style="padding:10px 12px;text-align:center;font-size:12px">' + modeIcon(o.payment_mode) + '</td>'
-          + '<td style="padding:10px 12px;text-align:right;font-weight:600">'
-          +   (o.total_eur ? o.total_eur + '€' : '') + (o.total_eur && o.total_kmf ? '<br>' : '')
-          +   (o.total_kmf ? '<span style="font-size:11px;color:#64748b">' + o.total_kmf.toLocaleString() + ' KMF</span>' : '')
-          + '</td>'
-          + '<td style="padding:10px 12px;text-align:center">' + (o.total_qty || 0) + ' <span style="font-size:11px;color:#94a3b8">(' + (o.nb_items || 0) + ' réf)</span></td>'
-          + '<td style="padding:10px 12px;text-align:center">'
-          +   (o.has_parcel ? '<span style="color:#059669" title="' + (o.parcel_ref || '') + '">📦 ' + (o.parcel_ref || 'oui') + '</span>' : '<span style="color:#94a3b8">—</span>')
-          + '</td>'
-          + '<td style="padding:10px 12px;text-align:right;color:#64748b;font-size:12px">' + timeAgo(o.created_at) + '</td>'
-          + '</tr>';
-      });
+
+    // Alert banners
+    if ((k.payment_failed || 0) > 0) {
+      html += '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:20px">🚨</span>' +
+        '<div><strong style="color:#991b1b">' + k.payment_failed + ' paiement(s) échoué(s)</strong>' +
+        '<div style="color:#7f1d1d;font-size:13px">Vérifier dans Stripe</div></div></div>';
     }
-    
-    html += '</tbody></table></div>';
-    
-    // ─── Summary ───
-    html += '<div style="margin-top:12px;text-align:right;font-size:12px;color:#94a3b8">'
-      + orders.length + ' commande(s) affichée(s) sur ' + (k.total || 0) + ' total'
-      + '</div>';
-    
-    container.innerHTML = html;
-    
-    // ─── Interactivity ───
-    // Filter/refresh
-    var filterHandler = async function() {
-      var params = {};
-      var s = document.getElementById('ct-orders-status');
-      var p = document.getElementById('ct-orders-payment');
-      var q = document.getElementById('ct-orders-search');
-      if (s && s.value) params.status = s.value;
-      if (p && p.value) params.payment_mode = p.value;
-      if (q && q.value) params.search = q.value;
-      
-      container.innerHTML = '<div class="ct-loading">Chargement...</div>';
-      try {
-        var d = await CT.api.v2Orders(params);
-        // Re-render with filtered data (reuse same function but avoid infinite loop)
-        data.orders = d.orders;
-        data.kpis = d.kpis;
-        CT.views.orders(container);
-      } catch(e) {
-        container.innerHTML = '<div class="ct-error">Erreur: ' + e.message + '</div>';
+    if (freeOrders.length > 0 && activeTab !== 'free') {
+      html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:18px">⚠️</span>' +
+        '<span><strong>' + freeOrders.length + ' commande(s) sans colis</strong> — à traiter dans le Hub</span></div>';
+    }
+
+    // ── Tabs ──
+    html += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid #e2e8f0;padding-bottom:12px">';
+    var tabs = [
+      { id: 'all', label: 'Toutes', count: orders.length, icon: '📋' },
+      { id: 'free', label: 'Libres', count: freeOrders.length, icon: '🔓' },
+      { id: 'parceled', label: 'Colisées', count: parceledOrders.length, icon: '✅' },
+      { id: 'parcels', label: 'Par colis', count: parcels.length, icon: '📦' },
+    ];
+    tabs.forEach(function(tab) {
+      var isActive = activeTab === tab.id;
+      var btnStyle = isActive
+        ? 'background:#1e40af;color:white;border-color:#1e40af;font-weight:700'
+        : 'background:white;color:#475569;border-color:#e2e8f0';
+      html += '<button class="ct-tab-btn" data-tab="' + tab.id + '" style="padding:8px 16px;border-radius:8px;border:2px solid;cursor:pointer;font-size:13px;transition:all 0.15s;' + btnStyle + '">' +
+        tab.icon + ' ' + tab.label + ' <span style="opacity:0.7">(' + tab.count + ')</span></button>';
+    });
+    html += '</div>';
+
+    // ── Filters (for order tabs) ──
+    if (activeTab !== 'parcels') {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">' +
+        '<select id="ct-orders-status" style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px">' +
+        '<option value="">Tous statuts</option>' +
+        '<option value="pending">⏳ Pending</option><option value="confirmed">✅ Confirmed</option>' +
+        '<option value="ordered">🛒 Ordered</option><option value="preparation">🔧 Preparation</option>' +
+        '<option value="shipped">🚢 Shipped</option><option value="in_transit">✈️ In Transit</option>' +
+        '<option value="available">📍 Available</option><option value="collected">✔️ Collected</option>' +
+        '<option value="cancelled">❌ Cancelled</option></select>' +
+        '<select id="ct-orders-payment" style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px">' +
+        '<option value="">Tous modes</option><option value="stripe_eur">💳 Stripe</option><option value="cash_relais">💰 Cash</option></select>' +
+        '<input id="ct-orders-search" type="text" placeholder="🔍 Référence, nom..." style="padding:6px 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px;flex:1;min-width:150px">' +
+        '<button id="ct-orders-refresh" style="padding:6px 14px;border-radius:8px;background:#3b82f6;color:white;border:none;cursor:pointer;font-size:13px">🔄</button>' +
+        '</div>';
+    }
+
+    // ── Content based on tab ──
+    if (activeTab === 'parcels') {
+      // ─── Parcels view ───
+      html += '<div id="ct-parcel-list">';
+      if (!parcels.length) {
+        html += '<div class="ct-empty-state">📭 Aucun colis créé</div>';
+      } else {
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">';
+        parcels.forEach(function(p) {
+          var sBg = { preparation:'#fef3c7', shipped:'#dbeafe', in_transit:'#e0e7ff', available:'#d1fae5', collected:'#f0fdf4' }[p.status] || '#f1f5f9';
+          var sLabel = { preparation:'🔧 Préparation', shipped:'🚢 Expédié', in_transit:'✈️ Transit', available:'📍 Disponible', collected:'✔️ Collecté' }[p.status] || p.status;
+
+          html += '<div class="ct-parcel-card" data-ref="' + p.reference + '" style="background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer;transition:transform 0.1s;border-left:4px solid ' + (p.status === 'available' ? '#22c55e' : p.status === 'collected' ? '#16a34a' : '#3b82f6') + '">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+          html += '<strong style="font-family:monospace;font-size:15px;color:#1e40af">' + p.reference + '</strong>';
+          html += '<span style="padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:' + sBg + '">' + sLabel + '</span>';
+          html += '</div>';
+
+          html += '<div style="font-size:13px;color:#475569;line-height:1.6">';
+          html += '<div>🏝️ ' + (p.destination_island || '—') + (p.relais_name ? ' · 📍 ' + p.relais_name : '') + '</div>';
+          html += '<div>⚖️ ' + (p.weight_kg || '?') + 'kg · 💰 ' + (p.total_kmf || 0).toLocaleString() + ' KMF</div>';
+          html += '<div>📋 ' + (p.nb_orders || '?') + ' commande(s) · ' + (p.nb_items || '?') + ' article(s)</div>';
+          if (p.pickup_code) html += '<div>🔑 Code: <strong>' + p.pickup_code + '</strong></div>';
+          html += '</div>';
+
+          html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:10px;padding-top:8px;border-top:1px solid #f1f5f9">';
+          html += '<span>Créé ' + timeAgo(p.created_at) + '</span>';
+          if (p.open_incidents > 0) html += '<span style="color:#ef4444;font-weight:600">🚨 ' + p.open_incidents + ' incident(s)</span>';
+          html += '</div>';
+
+          html += '</div>';
+        });
+        html += '</div>';
       }
-    };
-    
-    var statusEl = document.getElementById('ct-orders-status');
-    var paymentEl = document.getElementById('ct-orders-payment');
-    var searchEl = document.getElementById('ct-orders-search');
-    var refreshEl = document.getElementById('ct-orders-refresh');
-    
-    if (statusEl) statusEl.addEventListener('change', filterHandler);
-    if (paymentEl) paymentEl.addEventListener('change', filterHandler);
-    if (refreshEl) refreshEl.addEventListener('click', filterHandler);
-    if (searchEl) {
-      var debounce;
-      searchEl.addEventListener('input', function() {
-        clearTimeout(debounce);
-        debounce = setTimeout(filterHandler, 400);
+      html += '</div>';
+      html += '<div id="ct-parcel-detail" style="display:none"></div>';
+
+    } else {
+      // ─── Orders table ───
+      var filteredOrders = activeTab === 'free' ? freeOrders : (activeTab === 'parceled' ? parceledOrders : orders);
+
+      html += '<div style="overflow-x:auto;border-radius:12px;border:1px solid #e2e8f0">';
+      html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+      html += '<thead><tr style="background:#f8fafc">';
+      html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Réf</th>';
+      html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Client</th>';
+      html += '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Statut</th>';
+      html += '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Paiement</th>';
+      html += '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Mode</th>';
+      html += '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Montant</th>';
+      html += '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Articles</th>';
+      html += '<th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Colisage</th>';
+      html += '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Âge</th>';
+      html += '</tr></thead><tbody>';
+
+      if (filteredOrders.length === 0) {
+        html += '<tr><td colspan="9" style="padding:40px;text-align:center;color:#94a3b8">';
+        html += activeTab === 'free' ? '✅ Toutes les commandes sont colisées !' : 'Aucune commande';
+        html += '</td></tr>';
+      } else {
+        filteredOrders.forEach(function(o) {
+          var rowBg = '';
+          if (o.payment_status === 'failed') rowBg = '#fef2f2';
+          else if (!o.has_parcel && o.status !== 'pending' && o.status !== 'cancelled') rowBg = '#fffbeb';
+          else if (o.has_parcel) rowBg = '#f0fdf4';
+
+          html += '<tr class="ct-order-row" style="border-bottom:1px solid #f1f5f9;cursor:pointer;background:' + rowBg + '" ' +
+            'data-ref="' + o.reference + '" data-has-parcel="' + (o.has_parcel ? '1' : '0') + '" data-parcel-ref="' + (o.parcel_ref || '') + '">';
+
+          html += '<td style="padding:10px 12px;font-weight:600;font-family:monospace;color:#1e40af">' + o.reference + '</td>';
+          html += '<td style="padding:10px 12px">' +
+            '<div style="font-weight:500">' + (o.customer_name || '—') + '</div>' +
+            '<div style="font-size:11px;color:#94a3b8">' + (o.relais_name || '') + (o.relais_island ? ' · ' + o.relais_island : '') + '</div></td>';
+          html += '<td style="padding:10px 12px;text-align:center">' + statusBadge(o.status) + '</td>';
+          html += '<td style="padding:10px 12px;text-align:center">' + payBadge(o.payment_status, o.payment_mode) + '</td>';
+          html += '<td style="padding:10px 12px;text-align:center;font-size:12px">' + modeIcon(o.payment_mode) + '</td>';
+          html += '<td style="padding:10px 12px;text-align:right;font-weight:600">';
+          if (o.total_eur) html += o.total_eur + '€';
+          if (o.total_eur && o.total_kmf) html += '<br>';
+          if (o.total_kmf) html += '<span style="font-size:11px;color:#64748b">' + o.total_kmf.toLocaleString() + ' KMF</span>';
+          html += '</td>';
+          html += '<td style="padding:10px 12px;text-align:center">' + (o.total_qty || 0) + ' <span style="font-size:11px;color:#94a3b8">(' + (o.nb_items || 0) + ' réf)</span></td>';
+          html += '<td style="padding:10px 12px;text-align:center">' + colisageBadge(o) + '</td>';
+          html += '<td style="padding:10px 12px;text-align:right;color:#64748b;font-size:12px">' + timeAgo(o.created_at) + '</td>';
+          html += '</tr>';
+
+          // Expandable detail row (hidden by default)
+          html += '<tr class="ct-order-detail-row" data-detail-for="' + o.reference + '" style="display:none">';
+          html += '<td colspan="9" style="padding:0;background:#f8fafc">';
+          html += '<div class="ct-order-expand" id="detail-' + o.reference + '" style="padding:16px 20px">';
+          html += '<div style="text-align:center;color:#94a3b8;font-size:13px">Cliquez pour charger les détails...</div>';
+          html += '</div></td></tr>';
+        });
+      }
+
+      html += '</tbody></table></div>';
+
+      // Summary
+      html += '<div style="margin-top:10px;text-align:right;font-size:12px;color:#94a3b8">';
+      html += filteredOrders.length + ' commande(s) affichée(s) sur ' + (k.total || 0) + ' total</div>';
+    }
+
+    container.innerHTML = html;
+
+    // ── Interactivity ──
+
+    // Tab switching
+    container.querySelectorAll('.ct-tab-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        CT.views._ordersTab = btn.dataset.tab;
+        CT.views.orders(container);
+      });
+    });
+
+    // Parcel card click (in parcels tab)
+    if (activeTab === 'parcels') {
+      container.querySelectorAll('.ct-parcel-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          CT.views._showParcel(card.dataset.ref, container);
+        });
       });
     }
-    
-    // Row click → detail (future: order detail view)
-    container.querySelectorAll('tr[data-ref]').forEach(function(row) {
-      row.addEventListener('click', function() {
+
+    // Order row click → expand detail
+    container.querySelectorAll('.ct-order-row').forEach(function(row) {
+      row.addEventListener('click', async function() {
         var ref = row.dataset.ref;
-        // For now, if has parcel → go to parcel view, else show alert
-        var parcelCell = row.querySelector('td:nth-child(8) span[title]');
-        if (parcelCell && parcelCell.getAttribute('title')) {
-          CT.views._showParcel(parcelCell.getAttribute('title'), container);
-        } else {
-          alert('Commande ' + ref + ' — pas encore de colis créé.\nUtilisez "Créer colis" pour la préparer.');
+        var detailRow = container.querySelector('[data-detail-for="' + ref + '"]');
+        if (!detailRow) return;
+
+        // Toggle visibility
+        var isOpen = detailRow.style.display !== 'none';
+        // Close all other open details
+        container.querySelectorAll('.ct-order-detail-row').forEach(function(r) {
+          r.style.display = 'none';
+        });
+
+        if (isOpen) return; // Was open, now closed
+
+        detailRow.style.display = '';
+        var expandDiv = document.getElementById('detail-' + ref);
+        expandDiv.innerHTML = '<div style="text-align:center;padding:12px;color:#64748b">⏳ Chargement...</div>';
+
+        try {
+          var detail = await CT.api.v2OrderDetail(ref);
+          var o = detail.order || detail;
+          var dhtml = '';
+
+          // Two-column layout
+          dhtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+
+          // Left: Client + Order info
+          dhtml += '<div>';
+          dhtml += '<div style="background:white;border-radius:10px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">';
+          dhtml += '<h4 style="margin:0 0 8px;font-size:14px;color:#334155">👤 Client</h4>';
+          dhtml += '<div style="font-size:13px;line-height:1.8;color:#475569">';
+          dhtml += '<div><strong>' + (o.customer_name || '—') + '</strong></div>';
+          if (o.local_phone) dhtml += '<div>📱 Local: ' + o.local_phone + '</div>';
+          if (o.diaspora_phone) dhtml += '<div>📱 Diaspora: ' + o.diaspora_phone + '</div>';
+          dhtml += '<div>🏝️ ' + (o.relais_island || '—') + (o.relais_name ? ' · 📍 ' + o.relais_name : '') + '</div>';
+          dhtml += '</div></div>';
+
+          // Payment info
+          dhtml += '<div style="background:white;border-radius:10px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">';
+          dhtml += '<h4 style="margin:0 0 8px;font-size:14px;color:#334155">💳 Paiement</h4>';
+          dhtml += '<div style="font-size:13px;line-height:1.8;color:#475569">';
+          dhtml += '<div>Mode: <strong>' + modeIcon(o.payment_mode) + '</strong></div>';
+          dhtml += '<div>Statut: ' + payBadge(o.payment_status, o.payment_mode) + '</div>';
+          if (o.total_eur) dhtml += '<div>EUR: <strong>' + o.total_eur + '€</strong></div>';
+          if (o.total_kmf) dhtml += '<div>KMF: <strong>' + o.total_kmf.toLocaleString() + ' KMF</strong></div>';
+          dhtml += '</div></div>';
+          dhtml += '</div>';
+
+          // Right: Items + Parcel info
+          dhtml += '<div>';
+
+          // Items
+          dhtml += '<div style="background:white;border-radius:10px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">';
+          dhtml += '<h4 style="margin:0 0 8px;font-size:14px;color:#334155">🛒 Articles</h4>';
+          var items = o.items || [];
+          if (items.length) {
+            items.forEach(function(item) {
+              var inParcel = o.has_parcel || (item.parcel_ref);
+              dhtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px">';
+              dhtml += '<div><span style="font-weight:600">' + (item.quantity || 1) + 'x</span> ' + (item.product_name || item.name || 'Article') + '</div>';
+              dhtml += '<div style="display:flex;align-items:center;gap:6px">';
+              if (item.unit_price_kmf) dhtml += '<span style="color:#64748b;font-size:12px">' + (item.unit_price_kmf * (item.quantity || 1)).toLocaleString() + ' KMF</span>';
+              dhtml += inParcel ? '<span style="color:#059669;font-size:14px" title="Dans un colis">✅</span>' : '<span style="color:#f59e0b;font-size:14px" title="Pas encore colisé">🔓</span>';
+              dhtml += '</div></div>';
+            });
+          } else {
+            dhtml += '<div style="color:#94a3b8;font-size:13px">Détail articles non disponible</div>';
+          }
+          dhtml += '</div>';
+
+          // Parcel info
+          if (o.has_parcel || o.parcel_ref) {
+            dhtml += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">';
+            dhtml += '<h4 style="margin:0 0 8px;font-size:14px;color:#166534">📦 Colis</h4>';
+            dhtml += '<div style="font-size:13px;line-height:1.8">';
+            dhtml += '<div>Référence: <strong style="font-family:monospace;color:#1e40af;cursor:pointer" onclick="CT.views._ordersTab=\'parcels\';CT.views.orders(document.getElementById(\'ct-main\'));setTimeout(function(){var c=document.querySelector(\'[data-ref=\\x27' + (o.parcel_ref || '') + '\\x27]\');if(c)c.click();},300)">' + (o.parcel_ref || '—') + ' →</strong></div>';
+            dhtml += '<div>Statut colis: ' + statusBadge(o.parcel_status || o.status) + '</div>';
+            if (o.pickup_code) dhtml += '<div>🔑 Code retrait: <strong>' + o.pickup_code + '</strong></div>';
+            dhtml += '</div></div>';
+          } else {
+            dhtml += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px">';
+            dhtml += '<div style="font-size:13px;color:#92400e">';
+            dhtml += '🔓 <strong>Pas de colis</strong> — cette commande est à traiter dans le Hub';
+            dhtml += '</div></div>';
+          }
+
+          dhtml += '</div>';
+          dhtml += '</div>'; // close grid
+
+          // Timestamps
+          dhtml += '<div style="margin-top:10px;font-size:11px;color:#94a3b8;display:flex;gap:16px;flex-wrap:wrap">';
+          if (o.created_at) dhtml += '<span>📅 Créée ' + timeAgo(o.created_at) + '</span>';
+          if (o.confirmed_at) dhtml += '<span>✅ Confirmée ' + timeAgo(o.confirmed_at) + '</span>';
+          if (o.shipped_at) dhtml += '<span>🚢 Expédiée ' + timeAgo(o.shipped_at) + '</span>';
+          dhtml += '</div>';
+
+          expandDiv.innerHTML = dhtml;
+        } catch(err) {
+          expandDiv.innerHTML = '<div style="color:#dc2626;padding:12px">❌ Erreur: ' + err.message + '</div>';
         }
       });
     });
-    
+
+    // Filter/search handlers (for order tabs)
+    if (activeTab !== 'parcels') {
+      var filterHandler = function() {
+        var rows = container.querySelectorAll('.ct-order-row');
+        var statusVal = (document.getElementById('ct-orders-status') || {}).value || '';
+        var paymentVal = (document.getElementById('ct-orders-payment') || {}).value || '';
+        var searchVal = ((document.getElementById('ct-orders-search') || {}).value || '').toLowerCase();
+
+        rows.forEach(function(row) {
+          var text = row.textContent.toLowerCase();
+          var show = true;
+          if (statusVal && text.indexOf(statusVal) < 0) {
+            // Check via data attributes would be better, use text for now
+            var cells = row.querySelectorAll('td');
+            var statusText = cells[2] ? cells[2].textContent.toLowerCase() : '';
+            if (statusText.indexOf(statusVal) < 0) show = false;
+          }
+          if (searchVal && text.indexOf(searchVal) < 0) show = false;
+          row.style.display = show ? '' : 'none';
+          // Also hide corresponding detail row
+          var detailRow = container.querySelector('[data-detail-for="' + row.dataset.ref + '"]');
+          if (detailRow && !show) detailRow.style.display = 'none';
+        });
+      };
+
+      var statusEl = document.getElementById('ct-orders-status');
+      var paymentEl = document.getElementById('ct-orders-payment');
+      var searchEl = document.getElementById('ct-orders-search');
+      var refreshBtn = document.getElementById('ct-orders-refresh');
+
+      if (statusEl) statusEl.addEventListener('change', filterHandler);
+      if (paymentEl) paymentEl.addEventListener('change', filterHandler);
+      if (searchEl) { var debounce; searchEl.addEventListener('input', function() { clearTimeout(debounce); debounce = setTimeout(filterHandler, 300); }); }
+      if (refreshBtn) refreshBtn.addEventListener('click', function() { CT.views.orders(container); });
+    }
+
   } catch(err) {
-    container.innerHTML = '<div class="ct-error">Erreur chargement: ' + err.message + '</div>';
+    container.innerHTML = '<div class="ct-error">❌ Erreur: ' + err.message + '</div>';
   }
 };
 
-CT.views.parcels = async function(container) {
-  container.innerHTML = '<div class="ct-loading">📦 Chargement des colis...</div>';
-  try {
-    var data = await CT.api.v2Parcels();
-    var parcels = data.parcels || [];
-    
-    var html = '<div class="ct-view-header"><h2>📦 Colis (' + parcels.length + ')</h2>' +
-      '<div class="ct-filters">' +
-        '<select id="ct-filter-status" class="ct-select"><option value="">Tous statuts</option>' +
-        '<option value="preparation">🔧 Préparation</option>' +
-        '<option value="shipped">✈️ Expédié</option>' +
-        '<option value="in_transit">🚢 En transit</option>' +
-        '<option value="available">📍 Disponible</option>' +
-        '<option value="collected">✅ Récupéré</option></select>' +
-        '<input id="ct-search" class="ct-input" placeholder="🔍 Rechercher...">' +
-      '</div></div>';
-
-    html += '<div id="ct-parcel-list" class="ct-card-grid">';
-    for (var i = 0; i < parcels.length; i++) {
-      html += CT.pc.parcelCard(parcels[i]);
-    }
-    if (!parcels.length) html += '<div class="ct-empty">Aucun colis</div>';
-    html += '</div>';
-    html += '<div id="ct-parcel-detail" class="ct-detail-panel" style="display:none"></div>';
-
-    container.innerHTML = html;
-
-    // Click handlers
-    container.querySelectorAll('.ct-parcel-card').forEach(function(card) {
-      card.addEventListener('click', function() { CT.views._showParcel(card.dataset.ref, container); });
-    });
-
-    // Filter
-    var filterSt = container.querySelector('#ct-filter-status');
-    var searchBox = container.querySelector('#ct-search');
-    function applyFilter() {
-      var st = filterSt.value;
-      var q = (searchBox.value || '').toLowerCase();
-      container.querySelectorAll('.ct-parcel-card').forEach(function(card) {
-        var ref = card.dataset.ref.toLowerCase();
-        var text = card.textContent.toLowerCase();
-        var matchSt = !st || text.indexOf(CT.pc.STATUS[st]?.label.toLowerCase() || '') >= 0;
-        var matchQ = !q || text.indexOf(q) >= 0;
-        card.style.display = (matchSt && matchQ) ? '' : 'none';
-      });
-    }
-    filterSt.addEventListener('change', applyFilter);
-    searchBox.addEventListener('input', applyFilter);
-  } catch (err) {
-    container.innerHTML = '<div class="ct-error">❌ ' + err.message + '</div>';
-  }
+// Parcels view = alias → unified view with parcels tab
+CT.views.parcels = function(container) {
+  CT.views._ordersTab = 'parcels';
+  CT.views.orders(container);
 };
 
-// ── Parcel Detail (drill-down) ────────────────────────────────
+
 CT.views._showParcel = async function(ref, container) {
   var detail = container.querySelector('#ct-parcel-detail');
   var list = container.querySelector('#ct-parcel-list');
