@@ -161,6 +161,8 @@ router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
 
 // ═══════════════════════════════════════════════════════════════
 // 1b. GET /:ref — Détail complet d'une commande
+//     ⚠️ Pas de colonnes optionnelles (confirmed_at, shipped_at, etc.)
+//        car elles n'existent pas forcément dans tous les envts.
 // ═══════════════════════════════════════════════════════════════
 
 router.get('/:ref', ...guard, async (req, res, next) => {
@@ -171,9 +173,7 @@ router.get('/:ref', ...guard, async (req, res, next) => {
       SELECT o.id, o.reference, o.status, o.total_kmf, o.total_eur,
         o.payment_mode, o.payment_status, o.cash_ref_code,
         o.created_at, o.updated_at, o.destination_island,
-        o.confirmed_at, o.shipped_at, o.pending_at,
         u.full_name AS customer_name, u.phone AS local_phone, u.email AS customer_email,
-        u.diaspora_phone,
         r.name AS relais_name, r.island AS relais_island,
         (SELECT p.reference FROM parcels p WHERE p.order_id = o.id LIMIT 1) AS parcel_ref,
         (SELECT p.status FROM parcels p WHERE p.order_id = o.id LIMIT 1) AS parcel_status,
@@ -445,8 +445,6 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
 
     // 11. Transition order status via state machine ✅
-    // Stripe orders are already 'ordered' → transition to 'preparation'
-    // Cash orders are 'confirmed' → transition to 'ordered' first, then 'preparation'
     if (order.status === 'confirmed') {
       const _orderedResult = await transitionOrderStatus({
         orderId: order.id,
@@ -461,7 +459,6 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
       }
     }
 
-    // Both paths → preparation (colis créé = hub commence la prep)
     const _prepResult = await transitionOrderStatus({
       orderId: order.id,
       newStatus: 'preparation',
