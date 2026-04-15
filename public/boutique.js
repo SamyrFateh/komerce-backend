@@ -591,13 +591,17 @@
 
     // Mark button feedback
     if (sourceBtn) {
-      sourceBtn.classList.add('added');
-      sourceBtn.disabled = true;
-      setTimeout(() => {
-        sourceBtn.classList.remove('added');
-        sourceBtn.classList.add('in-cart');
-        sourceBtn.disabled = false;
-      }, 800);
+      const isModalBtn = (sourceBtn === dom.addCartBtn);
+      if (!isModalBtn) {
+        // Grid/suggestion +button: animate + disable briefly
+        sourceBtn.classList.add('added');
+        sourceBtn.disabled = true;
+        setTimeout(() => {
+          sourceBtn.classList.remove('added');
+          sourceBtn.classList.add('in-cart');
+          sourceBtn.disabled = false;
+        }, 800);
+      }
     }
 
     // Mark all grid buttons for this product
