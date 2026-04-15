@@ -6,14 +6,40 @@
  * 
  * Ce module remplace progressivement l'ancien parcelSync.js
  * et utilise le scan-engine pour les opérations.
+ *
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  PATCH P0.2a (15/04/2026):                                         ║
+ * ║  - computeOrderStatus() retourne désormais des statuts ENUM valides ║
+ * ║  - fullSync() passe par transitionOrderStatus() (SSOT)              ║
+ * ║  - Plus de UPDATE orders SET status = direct                        ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  */
 
 const pool = require('../db');
+const { transitionOrderStatus } = require('../services/order-status-machine');
+
+/**
+ * Mapping statut calculé → statut ENUM valide.
+ * Les statuts non-mappables retournent null (= on ne touche pas).
+ */
+const COMPUTED_TO_ENUM = {
+  collected:           'collected',   // tous les colis récupérés
+  available:           'available',   // au moins un colis disponible
+  in_transit:          'in_transit',  // au moins un colis en transit/shipped
+  preparation:         'preparation', // au moins un colis en préparation
+  pending:             'pending',     // tous les colis en draft (pas encore traités)
+  // Statuts sans équivalent direct dans order_status ENUM:
+  // 'delivered' → 'collected' (tous récupérés = même sens)
+  // 'partially_delivered' → null (ambigu, on ne touche pas — incident créé)
+  // 'processing' → 'preparation' (en cours = même sens)
+};
 
 /**
  * Recalcule le statut d'une commande depuis ses colis.
  * Appelé automatiquement par le scan-engine après chaque scan.
  * Peut aussi être appelé manuellement (réconciliation).
+ *
+ * Retourne un statut ENUM valide ou null si non-déterminable.
  */
 async function computeOrderStatus(orderId, client = null) {
   const db = client || pool;
@@ -41,13 +67,14 @@ async function computeOrderStatus(orderId, client = null) {
 
   const total = parcels.length;
 
-  if (counts.collected === total) return 'delivered';
-  if (counts.collected > 0) return 'partially_delivered';
+  // Mapping vers statuts ENUM valides
+  if (counts.collected === total) return 'collected';        // était 'delivered'
+  if (counts.collected > 0) return null;                     // était 'partially_delivered' → ambig, skip
   if (counts.available > 0) return 'available';
   if (counts.in_transit > 0 || counts.shipped > 0) return 'in_transit';
-  if (counts.preparation > 0) return 'processing';
+  if (counts.preparation > 0) return 'preparation';         // était 'processing'
   if (counts.draft === total) return 'pending';
-  return 'processing';
+  return 'preparation';                                       // fallback safe (était 'processing')
 }
 
 /**
@@ -81,7 +108,10 @@ async function syncOrderItemQuantities(orderId, client = null) {
 }
 
 /**
- * Full sync: quantités + statut commande
+ * Full sync: quantités + statut commande via STATE MACHINE (SSOT)
+ *
+ * PATCH P0.2a: Remplace le UPDATE direct par transitionOrderStatus().
+ * La state machine gère: validation, historique, timestamps, side-effects.
  */
 async function fullSync(orderId) {
   const client = await pool.connect();
@@ -91,15 +121,29 @@ async function fullSync(orderId) {
     await syncOrderItemQuantities(orderId, client);
     
     const newStatus = await computeOrderStatus(orderId, client);
+    
     if (newStatus) {
-      await client.query(
-        `UPDATE orders SET status = $2, updated_at = NOW() WHERE id = $1`,
-        [orderId, newStatus]
-      );
+      // ── PATCH P0.2a: Passe par la state machine au lieu de UPDATE direct ──
+      const result = await transitionOrderStatus({
+        orderId,
+        newStatus,
+        actor: { id: null, role: 'system' },
+        source: 'system',
+        note: `[parcelSync-v2] Sync depuis colis → ${newStatus}`,
+        dbClient: client,
+      });
+
+      if (!result.success && !result.noop) {
+        // La transition a été refusée — log warning mais ne crash pas
+        console.warn(`[PARCEL-SYNC-V2] ⚠️ Transition refusée pour order=${orderId}: ${result.error}`);
+      }
+
+      await client.query('COMMIT');
+      return { orderId, newStatus: result.noop ? result.previousStatus : newStatus, noop: result.noop };
     }
 
     await client.query('COMMIT');
-    return { orderId, newStatus };
+    return { orderId, newStatus: null, skipped: true };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

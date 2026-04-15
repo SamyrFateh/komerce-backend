@@ -12,6 +12,14 @@
  * Peut tourner :
  *   - À la demande (reconcileOrder, reconcileParcel)
  *   - En batch (reconcileAll — via cron)
+ *
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  PATCH P0.2b (15/04/2026):                                         ║
+ * ║  - CHECK 4: Plus d'auto-correction directe (UPDATE orders SET...)   ║
+ * ║  - Remplacé par LOG WARNING + incident (read-only + alerting)       ║
+ * ║  - computeOrderStatusFromParcels() retourne des statuts ENUM valides║
+ * ║  - La réconciliation est désormais OBSERVATRICE, pas CORRECTRICE    ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  */
 
 const pool = require('../db');
@@ -129,6 +137,12 @@ async function reconcileOrder(orderId) {
     }
 
     // ── CHECK 4: Statut commande cohérent avec colis ──
+    // ╔══════════════════════════════════════════════════════════════════════╗
+    // ║  PATCH P0.2b: Plus d'auto-correction directe.                      ║
+    // ║  On LOG le drift + on crée un incident, mais on NE MODIFIE PAS     ║
+    // ║  le statut directement. La correction doit passer par la state     ║
+    // ║  machine (transitionOrderStatus) si nécessaire.                     ║
+    // ╚══════════════════════════════════════════════════════════════════════╝
     const computedStatus = computeOrderStatusFromParcels(parcels);
     if (computedStatus && order.status !== computedStatus) {
       const issue = {
@@ -143,12 +157,14 @@ async function reconcileOrder(orderId) {
       };
       issues.push(issue);
 
-      // Auto-corriger le statut commande
-      await client.query(
-        `UPDATE orders SET status = $2, updated_at = NOW() WHERE id = $1`,
-        [orderId, computedStatus]
-      );
-      issue.auto_corrected = true;
+      // PATCH P0.2b: LOG WARNING au lieu de UPDATE direct
+      // L'auto-correction est désactivée — la réconciliation est observatrice.
+      // Un opérateur ou un processus automatisé doit corriger via la state machine.
+      console.warn(`[RECONCILIATION] ⚠️ Status drift détecté: order=${orderId} current=${order.status} computed=${computedStatus} — PAS d'auto-correction (P0.2b)`);
+      
+      await createReconciliationIncident(client, orderId, null, null, issue);
+      issue.auto_corrected = false;
+      issue.logged_only = true;
     }
 
     // ── CHECK 5: Colis bloqués (aucun scan depuis X jours) ──
@@ -256,7 +272,7 @@ async function reconcileAll(options = {}) {
     JOIN parcels p ON p.order_id = o.id
   `;
   if (onlyActive) {
-    query += ` WHERE o.status NOT IN ('delivered', 'cancelled', 'refunded')`;
+    query += ` WHERE o.status NOT IN ('collected', 'cancelled', 'refunded')`;
   }
   query += ` ORDER BY o.id LIMIT $1`;
 
@@ -355,6 +371,12 @@ function getExpectedStatuses(eventType) {
   return map[eventType] || null;
 }
 
+/**
+ * Calcule le statut "attendu" d'une commande d'après ses colis.
+ *
+ * PATCH P0.2b: Retourne des statuts ENUM valides uniquement.
+ * Les anciens statuts 'delivered'/'partially_delivered'/'processing' sont mappés.
+ */
 function computeOrderStatusFromParcels(parcels) {
   const active = parcels.filter(p => p.status !== 'cancelled');
   if (active.length === 0) return null;
@@ -364,11 +386,12 @@ function computeOrderStatusFromParcels(parcels) {
   const inTransit = active.filter(p => ['shipped', 'in_transit'].includes(p.status)).length;
   const pending = active.filter(p => ['draft', 'preparation'].includes(p.status)).length;
 
-  if (collected === active.length) return 'delivered';
-  if (collected > 0) return 'partially_delivered';
+  // PATCH P0.2b: Retourner des statuts ENUM valides
+  if (collected === active.length) return 'collected';     // était 'delivered'
+  if (collected > 0) return 'available';                    // était 'partially_delivered' → certains dispo
   if (available > 0) return 'available';
   if (inTransit > 0) return 'in_transit';
-  if (pending > 0) return 'processing';
+  if (pending > 0) return 'preparation';                    // était 'processing'
   return null;
 }
 
