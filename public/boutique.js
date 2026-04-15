@@ -846,7 +846,10 @@
     `).join('');
 
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
-      card.querySelector('img').addEventListener('click', () => openModal(card.dataset.id));
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.k-sug-add')) return; // laisser le + gérer son propre click
+        openModal(card.dataset.id);
+      });
     });
 
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
