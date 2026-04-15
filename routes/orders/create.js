@@ -342,6 +342,34 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     }
 
     await client.query('COMMIT');
+	
+	 // ── Notifications business (post-commit, non bloquant) ───────────────────
+    const userEmail = req.user.email || req.body.email;
+
+    if (payment_mode === 'cash_relais') {
+      const totalStr = Number(order.total_kmf).toLocaleString('fr-FR');
+
+      const cashSmsText = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez ${cashTimeout}h.`;
+
+      const emailItems = items.map(i => {
+        const p = productMap[i.product_id] || {};
+        const qty = parseInt(i.quantity) || 1;
+        return {
+          name: p.name || 'Produit',
+          qty,
+          price_kmf: (p.price_kmf || 0) * qty,
+        };
+      });
+
+      notifyOrderCreated(
+        order,
+        rPhone,       // ✅ destinataire réel (IMPORTANT)
+        userEmail,
+        emailItems,
+        relais,
+        cashSmsText
+      ).catch(err => console.error('[ORDER-CREATED] ❌', err.message));
+    }
 
     // ── SMS + email confirmation (non bloquant) ─────────────────────────────
     const smsPhone  = req.user.phone;
