@@ -14,7 +14,7 @@
  *   - Erreurs critiques → rejet du scan
  *   - Jamais de suppression, toujours correction append-only
  */
-
+console.log('[SCAN-ENGINE] version 5ed2bac loaded');
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../db');
 
