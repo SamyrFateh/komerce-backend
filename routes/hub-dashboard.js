@@ -26,6 +26,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
@@ -530,11 +531,16 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
       });
     }
 
-    // Update status
-    await db.query(
-      "UPDATE orders SET status = 'preparation', preparation_at = NOW(), updated_at = NOW() WHERE id = $1",
-      [order.id]
-    );
+    // Transition via state machine
+    const _prepResult = await transitionOrderStatus({
+      orderId: order.id,
+      newStatus: 'preparation',
+      actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
+      source: 'hub_start_prep',
+    });
+    if (!_prepResult.success) {
+      console.warn(`[HUB] transitionOrderStatus failed for ${order.id}: ${_prepResult.error}`);
+    }
 
     // Log scan
     await db.query(`

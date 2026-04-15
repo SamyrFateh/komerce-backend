@@ -18,6 +18,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
 
@@ -106,23 +107,25 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       return res.status(400).json({ error: 'Paiement déjà confirmé' });
     }
 
-    // ── Update order: paid + confirmed ──
+    // ── Update payment fields (NOT status — handled by state machine) ──
     await client.query(
-      `UPDATE orders SET payment_status = 'paid', status = 'confirmed', 
+      `UPDATE orders SET payment_status = 'paid',
          cash_paid_at = NOW(), updated_at = NOW() WHERE id = $1`,
       [order.id]
     );
 
-    // ── Log status change ──
-    try {
-      await client.query('SAVEPOINT sp_osh');
-      await client.query(
-        `INSERT INTO order_status_history (order_id, status, note, changed_by)
-         VALUES ($1::uuid, 'confirmed', 'Paiement cash confirmé par agent', $2::uuid)`,
-        [order.id, req.user?.id || null]
-      );
-      await client.query('RELEASE SAVEPOINT sp_osh');
-    } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_osh'); }
+    // ── Transition status via state machine ──
+    const _confirmResult = await transitionOrderStatus({
+      orderId: order.id,
+      newStatus: 'confirmed',
+      actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
+      source: 'cash_confirm',
+      note: 'Paiement cash confirmé par agent',
+      dbClient: client,
+    });
+    if (!_confirmResult.success) {
+      console.warn(`[ORDER-V2] transitionOrderStatus confirm failed for ${order.id}: ${_confirmResult.error}`);
+    }
 
     await client.query('COMMIT');
 
@@ -309,22 +312,18 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
       await client.query('RELEASE SAVEPOINT sp_scan');
     } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
 
-    // 11. Update order status → ORDERED ✅
-    await client.query(
-      `UPDATE orders SET status = 'ordered', ordered_at = NOW(), updated_at = NOW() WHERE id = $1`,
-      [order.id]
-    );
-
-    // Log status change
-    try {
-      await client.query('SAVEPOINT sp_osh2');
-      await client.query(
-        `INSERT INTO order_status_history (order_id, status, note, changed_by)
-         VALUES ($1::uuid, 'ordered', 'Colis créé — commande passée en "ordered"', $2::uuid)`,
-        [order.id, req.user?.id || null]
-      );
-      await client.query('RELEASE SAVEPOINT sp_osh2');
-    } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_osh2'); }
+    // 11. Transition order status → ORDERED via state machine ✅
+    const _orderedResult = await transitionOrderStatus({
+      orderId: order.id,
+      newStatus: 'ordered',
+      actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
+      source: 'hub_create_parcel',
+      note: 'Colis créé — commande passée en "ordered"',
+      dbClient: client,
+    });
+    if (!_orderedResult.success) {
+      console.warn(`[ORDER-V2] transitionOrderStatus ordered failed for ${order.id}: ${_orderedResult.error}`);
+    }
 
     await client.query('COMMIT');
 
