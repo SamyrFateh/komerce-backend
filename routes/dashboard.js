@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Dashboard unifié v11.0 — Coffre-fort
+ * KOMERCE — Dashboard unifié v12.0 — Colis-Centric — Coffre-fort
  * ================================================
  * Consolidation de dashboard.js + pilotage.js + finance/summary + admin/margins
  *
@@ -114,35 +114,26 @@ router.get('/ops', async (req, res, next) => {
       else sla.on_time++;
     }
 
-    // ── Logistique (5 étapes physiques) ─────────────────────────────────────
-    const logQueries = {
-      dubai_reception:  { status: 'ordered',     label: '📥 Réceptionner', dateCol: 'ordered_at' },
-      dubai_expedition: { status: 'preparation', label: '📦 Expédier',     dateCol: 'ordered_at' },
-      transitaire:      { status: 'shipped',     label: '🏢 Transitaire',  dateCol: 'shipped_at' },
-      bateau:           { status: 'in_transit',  label: '🚢 En mer',       dateCol: 'shipped_at' },
-    };
-
-    const logistique = {};
-    for (const [key, cfg] of Object.entries(logQueries)) {
-      const { rows } = await db.query(`
-        SELECT o.reference, o.status,
-          EXTRACT(EPOCH FROM (NOW() - COALESCE(o.${cfg.dateCol}, o.created_at))) / 86400 AS jours
-        FROM orders o WHERE o.status = $1 ORDER BY o.created_at ASC LIMIT 50
-      `, [cfg.status]);
-      logistique[key] = { count: rows.length, items: rows, label: cfg.label };
-    }
-
-    // Anjouan (relais)
-    const { rows: anjouanItems } = await db.query(`
-      SELECT o.reference, rc.full_name AS destinataire, r.name AS relais_nom,
-        EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600 AS heures_en_attente
-      FROM orders o
-      LEFT JOIN relais r ON r.id = o.relais_id
-      LEFT JOIN recipients rc ON rc.id = o.recipient_id
-      WHERE o.status = 'available'
-      ORDER BY o.available_at ASC NULLS LAST LIMIT 50
+    // ── Logistique COLIS (unité physique qui voyage) ───────────────────────
+    const { rows: [parcelCounts] } = await db.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status IN ('draft', 'preparation'))               AS hub_preparation,
+        COUNT(*) FILTER (WHERE status = 'shipped')                               AS expedie,
+        COUNT(*) FILTER (WHERE status = 'in_transit')                            AS en_transit,
+        COUNT(*) FILTER (WHERE status = 'available')                             AS au_relais,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected', 'cancelled'))          AS total_actifs,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected', 'cancelled')
+                           AND updated_at < NOW() - INTERVAL '7 days')           AS colis_bloques,
+        COUNT(*) FILTER (WHERE status = 'collected' AND updated_at::date = CURRENT_DATE) AS livres_aujourd_hui
+      FROM parcels
     `);
-    logistique.anjouan = { count: anjouanItems.length, items: anjouanItems, label: '📍 Relais Anjouan' };
+
+    const logistique = {
+      hub_preparation: { count: Number(parcelCounts.hub_preparation), label: '📦 Hub préparation' },
+      expedie:         { count: Number(parcelCounts.expedie),         label: '🚚 Expédié' },
+      en_transit:      { count: Number(parcelCounts.en_transit),      label: '🚢 En mer' },
+      au_relais:       { count: Number(parcelCounts.au_relais),       label: '📍 Au relais' },
+    };
 
     // ── Délais moyens ───────────────────────────────────────────────────────
     const { rows: [delais] } = await db.query(`
@@ -446,7 +437,7 @@ router.get('/pipeline', async (req, res, next) => {
       ORDER BY o.created_at DESC
     `);
 
-    const STAGES = ['pending','confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
+    const STAGES = ['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
     const pipeline = {};
     for (const s of STAGES) pipeline[s] = { count: 0, orders: [] };
 
@@ -476,7 +467,7 @@ router.get('/retards', async (req, res, next) => {
 
     const { rows } = await db.query(`
       SELECT o.id, o.reference, o.status,
-        rc.full_name AS client_nom, rc.phone AS client_phone,
+        COALESCE(p.recipient_name, u.full_name, rc.full_name) AS client_nom, COALESCE(p.recipient_phone, u.phone, rc.phone) AS client_phone,
         u.email AS client_email,
         EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours
       FROM orders o
@@ -705,7 +696,9 @@ router.get('/history', async (req, res, next) => {
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 9. GET /hub-dubai — Operations Hub Dubai (reception, emballage, expedition)
+// 9. GET /hub-dubai — Operations Hub Dubai — COLIS-CENTRIC
+//    Le hub manipule des COLIS, pas des commandes.
+//    3 zones : commandes à optimiser → colis à emballer → colis à expédier
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/hub-dubai', async (req, res, next) => {
@@ -713,63 +706,103 @@ router.get('/hub-dubai', async (req, res, next) => {
     const hit = cached('hub-dubai');
     if (hit) return res.json(hit);
 
-    const { rows: orders } = await db.query(`
+    // 1. Commandes sans colis (en attente d'optimisation)
+    const { rows: ordersToOptimize } = await db.query(`
       SELECT o.id, o.reference, o.status, o.total_kmf, o.created_at,
         u.full_name AS client_nom,
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.id)::int AS nb_articles,
         EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS jours
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
-      WHERE o.status IN ('confirmed', 'ordered', 'preparation', 'shipped')
+      WHERE o.status IN ('confirmed', 'ordered')
+        AND NOT EXISTS (SELECT 1 FROM parcels p2 WHERE p2.order_id = o.id AND p2.status != 'cancelled')
       ORDER BY o.created_at ASC
     `);
 
-    const orderIds = orders.map(o => o.id);
+    // 2. Colis actifs au hub (draft, preparation, shipped)
+    const { rows: parcels } = await db.query(`
+      SELECT p.id, p.reference, p.status, p.type, p.weight_kg, p.items_count,
+        p.created_at, p.external_code, p.seal_code,
+        o.id AS order_id, o.reference AS order_reference, o.total_kmf AS order_total_kmf,
+        u.full_name AS client_nom,
+        EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400 AS jours
+      FROM parcels p
+      JOIN orders o ON o.id = p.order_id
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE p.status IN ('draft', 'preparation', 'shipped')
+      ORDER BY p.created_at ASC
+    `);
+
+    // 3. Contenu des colis (parcel_items)
+    const parcelIds = parcels.map(p => p.id);
     const itemsMap = {};
-
-    if (orderIds.length > 0) {
+    if (parcelIds.length > 0) {
       const { rows: items } = await db.query(`
-        SELECT oi.order_id, p.name AS nom, oi.quantity AS quantite,
-          oi.price_kmf AS prix_kmf, p.stock,
+        SELECT pi.parcel_id, pr.name AS nom, pi.quantity AS quantite,
+          oi.price_kmf AS prix_kmf, pr.stock,
           CASE
-            WHEN p.is_active = FALSE THEN 'annule'
-            WHEN p.stock IS NOT NULL AND p.stock <= 0 THEN 'hors_stock'
-            WHEN p.stock IS NOT NULL AND p.stock > 0 THEN 'complet'
+            WHEN pr.is_active = FALSE THEN 'annule'
+            WHEN pr.stock IS NOT NULL AND pr.stock <= 0 THEN 'hors_stock'
+            WHEN pr.stock IS NOT NULL AND pr.stock > 0 THEN 'complet'
             ELSE 'en_attente'
-          END AS status
-        FROM order_items oi
-        JOIN products p ON p.id = oi.product_id
-        WHERE oi.order_id = ANY($1)
-      `, [orderIds]);
-
+          END AS stock_status
+        FROM parcel_items pi
+        JOIN order_items oi ON oi.id = pi.order_item_id
+        JOIN products pr ON pr.id = oi.product_id
+        WHERE pi.parcel_id = ANY($1)
+      `, [parcelIds]);
       for (const item of items) {
-        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
-        itemsMap[item.order_id].push({
+        if (!itemsMap[item.parcel_id]) itemsMap[item.parcel_id] = [];
+        itemsMap[item.parcel_id].push({
           nom: item.nom,
           quantite: Number(item.quantite),
           prix_kmf: Number(item.prix_kmf),
-          status: item.status,
-          note: item.status === 'hors_stock' ? 'Rupture de stock' : null,
+          stock_status: item.stock_status,
         });
       }
     }
 
-    function toHubOrder(o) {
-      const jours = Math.round(Number(o.jours));
+    function toHubParcel(p) {
+      const jours = Math.round(Number(p.jours));
       return {
-        reference: o.reference,
-        client_nom: o.client_nom || 'Client',
-        produits: itemsMap[o.id] || [{ nom: 'Produit', quantite: 1, prix_kmf: Number(o.total_kmf), status: 'en_attente' }],
-        total_kmf: Number(o.total_kmf),
-        date_commande: o.created_at,
+        id: p.id,
+        reference: p.reference,
+        status: p.status,
+        type: p.type,
+        weight_kg: p.weight_kg ? Number(p.weight_kg) : null,
+        items_count: Number(p.items_count || 0),
+        external_code: p.external_code,
+        seal_code: p.seal_code,
+        order_id: p.order_id,
+        order_reference: p.order_reference,
+        order_total_kmf: Number(p.order_total_kmf),
+        client_nom: p.client_nom || 'Client',
+        produits: itemsMap[p.id] || [],
+        date_creation: p.created_at,
         jours,
-        priorite: jours > 35 ? 'urgente' : 'normale',
+        priorite: jours > 7 ? 'urgente' : 'normale',
       };
     }
 
     const result = {
-      a_receptionner: orders.filter(o => ['confirmed', 'ordered'].includes(o.status)).map(toHubOrder),
-      a_emballer:     orders.filter(o => o.status === 'preparation').map(toHubOrder),
-      a_expedier:     orders.filter(o => o.status === 'shipped').map(toHubOrder),
+      a_optimiser: ordersToOptimize.map(o => ({
+        id: o.id,
+        reference: o.reference,
+        status: o.status,
+        total_kmf: Number(o.total_kmf),
+        client_nom: o.client_nom || 'Client',
+        nb_articles: Number(o.nb_articles),
+        date_commande: o.created_at,
+        jours: Math.round(Number(o.jours)),
+      })),
+      a_emballer: parcels.filter(p => ['draft', 'preparation'].includes(p.status)).map(toHubParcel),
+      a_expedier: parcels.filter(p => p.status === 'shipped').map(toHubParcel),
+      kpi: {
+        a_optimiser: ordersToOptimize.length,
+        a_emballer: parcels.filter(p => ['draft', 'preparation'].includes(p.status)).length,
+        a_expedier: parcels.filter(p => p.status === 'shipped').length,
+        total_poids_kg: Math.round(parcels.reduce((s, p) => s + (p.weight_kg ? Number(p.weight_kg) : 0), 0) * 10) / 10,
+      },
     };
 
     setCache('hub-dubai', result);
@@ -779,7 +812,9 @@ router.get('/hub-dubai', async (req, res, next) => {
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 10. GET /relais — Operations Relais (validation, remise colis)
+// 10. GET /relais — Operations Relais — COLIS-CENTRIC
+//     Le relais reçoit et remet des COLIS, pas des commandes.
+//     2 zones : colis en transit → colis à remettre
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/relais', async (req, res, next) => {
@@ -787,64 +822,83 @@ router.get('/relais', async (req, res, next) => {
     const hit = cached('relais');
     if (hit) return res.json(hit);
 
-    const { rows: orders } = await db.query(`
-      SELECT o.id, o.reference, o.status, o.total_kmf,
+    // Colis au stade relais
+    const { rows: parcels } = await db.query(`
+      SELECT p.id, p.reference, p.status, p.type, p.weight_kg,
+        p.external_code, p.seal_code, p.pickup_code, p.items_count,
+        p.created_at, p.updated_at,
+        o.id AS order_id, o.reference AS order_reference,
+        o.total_kmf AS order_total_kmf,
         o.payment_mode, o.payment_status,
-        o.available_at, o.created_at, o.updated_at,
-        COALESCE(EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600, 0) AS heures_attente,
-        rc.full_name AS client_nom, rc.phone AS client_phone,
-        r.name AS relais_nom, r.island AS ile
-      FROM orders o
+        COALESCE(p.recipient_name, u.full_name, rc.full_name) AS client_nom, COALESCE(p.recipient_phone, u.phone, rc.phone) AS client_phone,
+        r.name AS relais_nom, r.island AS ile,
+        COALESCE(EXTRACT(EPOCH FROM (NOW() - COALESCE(p.updated_at, p.created_at))) / 3600, 0) AS heures_attente
+      FROM parcels p
+      JOIN orders o ON o.id = p.order_id
       LEFT JOIN recipients rc ON rc.id = o.recipient_id
+      LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN relais r ON r.id = o.relais_id
-      WHERE o.status IN ('in_transit', 'available')
-      ORDER BY o.available_at ASC NULLS LAST, o.updated_at ASC
+      WHERE p.status IN ('in_transit', 'available')
+      ORDER BY p.updated_at ASC NULLS LAST, p.created_at ASC
     `);
 
-    const orderIds = orders.map(o => o.id);
+    // Contenu des colis
+    const parcelIds = parcels.map(p => p.id);
     const itemsMap = {};
-
-    if (orderIds.length > 0) {
+    if (parcelIds.length > 0) {
       const { rows: items } = await db.query(`
-        SELECT oi.order_id, p.name AS nom, oi.quantity AS quantite,
+        SELECT pi.parcel_id, pr.name AS nom, pi.quantity AS quantite,
           oi.price_kmf AS prix_kmf
-        FROM order_items oi
-        JOIN products p ON p.id = oi.product_id
-        WHERE oi.order_id = ANY($1)
-      `, [orderIds]);
-
+        FROM parcel_items pi
+        JOIN order_items oi ON oi.id = pi.order_item_id
+        JOIN products pr ON pr.id = oi.product_id
+        WHERE pi.parcel_id = ANY($1)
+      `, [parcelIds]);
       for (const item of items) {
-        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
-        itemsMap[item.order_id].push({
+        if (!itemsMap[item.parcel_id]) itemsMap[item.parcel_id] = [];
+        itemsMap[item.parcel_id].push({
           nom: item.nom,
           quantite: Number(item.quantite),
           prix_kmf: Number(item.prix_kmf),
-          status: 'complet',
         });
       }
     }
 
-    function toRelaisOrder(o) {
-      const heures = Math.round(Number(o.heures_attente));
+    function toRelaisParcel(p) {
+      const heures = Math.round(Number(p.heures_attente));
       return {
-        reference: o.reference,
-        client_nom: o.client_nom || 'Client',
-        client_phone: o.client_phone || '',
-        produits: itemsMap[o.id] || [{ nom: 'Produit', quantite: 1, prix_kmf: Number(o.total_kmf), status: 'complet' }],
-        total_kmf: Number(o.total_kmf),
-        payment_mode: o.payment_mode === 'stripe_eur' ? 'stripe' : 'cash_relais',
-        payment_status: o.payment_status === 'paid' ? 'paid' : 'pending',
-        date_arrivee: o.available_at || o.created_at,
+        id: p.id,
+        reference: p.reference,
+        status: p.status,
+        type: p.type,
+        weight_kg: p.weight_kg ? Number(p.weight_kg) : null,
+        external_code: p.external_code,
+        seal_code: p.seal_code,
+        pickup_code: p.pickup_code,
+        items_count: Number(p.items_count || 0),
+        order_id: p.order_id,
+        order_reference: p.order_reference,
+        order_total_kmf: Number(p.order_total_kmf),
+        client_nom: p.client_nom || 'Client',
+        client_phone: p.client_phone || '',
+        produits: itemsMap[p.id] || [],
+        payment_mode: p.payment_mode === 'stripe_eur' ? 'stripe' : 'cash_relais',
+        payment_status: p.payment_status === 'paid' ? 'paid' : 'pending',
+        relais_nom: p.relais_nom || 'Relais inconnu',
+        ile: p.ile || 'Comores',
         heures_attente: heures,
-        relais_nom: o.relais_nom || 'Relais inconnu',
-        ile: o.ile || 'Comores',
         priorite: heures > 120 ? 'urgente' : 'normale',
       };
     }
 
     const result = {
-      a_valider:  orders.filter(o => o.status === 'in_transit').map(toRelaisOrder),
-      a_remettre: orders.filter(o => o.status === 'available').map(toRelaisOrder),
+      en_transit: parcels.filter(p => p.status === 'in_transit').map(toRelaisParcel),
+      a_remettre: parcels.filter(p => p.status === 'available').map(toRelaisParcel),
+      kpi: {
+        en_transit: parcels.filter(p => p.status === 'in_transit').length,
+        a_remettre: parcels.filter(p => p.status === 'available').length,
+        cash_pending: parcels.filter(p => p.status === 'available' && p.payment_mode === 'cash_relais' && p.payment_status !== 'paid').length,
+      },
     };
 
     setCache('relais', result);
@@ -1037,6 +1091,123 @@ router.get('/annulations-parcels', async (req, res, next) => {
     setCache('annulations-parcels', result);
     res.json(result);
   } catch(err) { next(err); }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 12. GET /global — Vue globale unifiée (CT Global view)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/global', async (req, res, next) => {
+  try {
+    const hit = cached('global');
+    if (hit) return res.json(hit);
+
+    const { rows: [kpi] } = await db.query(`
+      SELECT
+        COUNT(*)::int AS total_orders,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled'))::int AS active_orders,
+        COUNT(*) FILTER (WHERE status = 'collected')::int AS completed_orders,
+        COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled_orders,
+        COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS ca_total_kmf,
+        COALESCE(AVG(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS avg_basket_kmf,
+        COUNT(DISTINCT user_id)::int AS nb_clients
+      FROM orders
+    `);
+
+    const { rows: funnelRows } = await db.query(`
+      SELECT status, COUNT(*)::int AS count
+      FROM orders WHERE status != 'cancelled'
+      GROUP BY status ORDER BY
+        CASE status
+          WHEN 'confirmed' THEN 1 WHEN 'ordered' THEN 2 WHEN 'preparation' THEN 3
+          WHEN 'shipped' THEN 4 WHEN 'in_transit' THEN 5 WHEN 'available' THEN 6
+          WHEN 'collected' THEN 7 ELSE 8
+        END
+    `);
+    const funnel = {};
+    for (const r of funnelRows) funnel[r.status] = r.count;
+
+    const { rows: [parcelKpi] } = await db.query(`
+      SELECT
+        COUNT(*)::int AS total_parcels,
+        COUNT(*) FILTER (WHERE status = 'shipped')::int AS shipped,
+        COUNT(*) FILTER (WHERE status = 'in_transit')::int AS in_transit,
+        COUNT(*) FILTER (WHERE status = 'available')::int AS at_relay,
+        COUNT(*) FILTER (WHERE status = 'collected')::int AS collected
+      FROM parcels
+    `);
+
+    let incidentCount = 0;
+    try {
+      const { rows: [ic] } = await db.query("SELECT COUNT(*)::int AS c FROM incidents WHERE status != 'resolved'");
+      incidentCount = ic.c;
+    } catch (_) {}
+
+    let scanCount = 0;
+    try {
+      const { rows: [sc] } = await db.query("SELECT COUNT(*)::int AS c FROM scan_events");
+      scanCount = sc.c;
+    } catch (_) {}
+
+    let invoiceCount = 0;
+    try {
+      const { rows: [inv] } = await db.query("SELECT COUNT(*)::int AS c FROM invoices");
+      invoiceCount = inv.c;
+    } catch (_) {}
+
+    const { rows: recentOrders } = await db.query(`
+      SELECT o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at,
+        COALESCE(u.full_name, 'Client') AS customer_name,
+        r.name AS relais_name, r.island
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      ORDER BY o.created_at DESC LIMIT 10
+    `);
+
+    const result = {
+      kpi: {
+        total_orders: Number(kpi.total_orders),
+        active_orders: Number(kpi.active_orders),
+        completed_orders: Number(kpi.completed_orders),
+        cancelled_orders: Number(kpi.cancelled_orders),
+        ca_total_kmf: Math.round(Number(kpi.ca_total_kmf)),
+        avg_basket_kmf: Math.round(Number(kpi.avg_basket_kmf)),
+        nb_clients: Number(kpi.nb_clients),
+      },
+      funnel,
+      parcels: {
+        total: Number(parcelKpi.total_parcels),
+        shipped: Number(parcelKpi.shipped),
+        in_transit: Number(parcelKpi.in_transit),
+        at_relay: Number(parcelKpi.at_relay),
+        collected: Number(parcelKpi.collected),
+      },
+      incidents: incidentCount,
+      scan_events: scanCount,
+      invoices: invoiceCount,
+      recent_orders: recentOrders.map(o => ({
+        reference: o.reference,
+        status: o.status,
+        total_kmf: Number(o.total_kmf),
+        payment_mode: o.payment_mode,
+        customer_name: o.customer_name,
+        relais_name: o.relais_name,
+        island: o.island,
+        created_at: o.created_at,
+      })),
+    };
+
+    setCache('global', result);
+    res.json(result);
+  } catch(err) { next(err); }
+});
+
+// Alias: /hub → /hub-dubai (frontend compatibility)
+router.get('/hub', (req, res, next) => {
+  req.url = '/hub-dubai';
+  router.handle(req, res, next);
 });
 
 module.exports = router;
