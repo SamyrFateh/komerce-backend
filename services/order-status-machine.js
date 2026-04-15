@@ -1,29 +1,27 @@
 /**
- * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.3 (F26+F28 robustesse)
+ * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.4 (pending status)
  *
  * ╔══════════════════════════════════════════════════════════════════════╗
  * ║  SINGLE SOURCE OF TRUTH for all order status transitions.          ║
  * ║  Architectural decisions D1/D2: every status change MUST go here.  ║
  * ╚══════════════════════════════════════════════════════════════════════╝
  *
+ * v1.4 — Ajout du statut 'pending' :
+ *   - pending   = commande créée, en attente de paiement
+ *   - confirmed = paiement reçu (cash OU Stripe), prêt pour CT
+ *   - ordered   = commande passée chez le fournisseur
+ *
  * Sources:
  *   'patch'  — Admin/agent manually changes status via PATCH
  *   'scan'   — Scan-triggered via parcelSync (forward-only, no role check)
- *   'system' — Auto-transition (cash_relais auto-paid, wallet 100%)
+ *   'system' — Auto-transition (wallet 100%)
+ *   'stripe_webhook' — Webhook Stripe (pending → confirmed)
+ *   'cash_confirm'   — Agent relais confirme cash (pending → confirmed)
  *
  * Guarantees (D6):
  *   - Every transition inserts into order_status_history
  *   - Timestamps are set ONCE (COALESCE — never overwritten)
  *   - Forward-only for scan/system (idempotent, never goes backward)
- *
- * v1.1 — F16 fix:
- *   - Auto-effects for 'cancelled': wallet reversal + stock restore + cancel_reason
- *   - Returns cancelEffects in result
- *   - cancel.js and PATCH status now go through the same path
- *
- * Interdits:
- *   ❌ Direct UPDATE of orders.status outside this service
- *   ❌ Status change without order_status_history entry
  */
 
 'use strict';
@@ -36,24 +34,28 @@ const { randomBytes } = require('crypto');
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ORDER_STATUSES = Object.freeze([
-  'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit',
+  'pending',      // ← NOUVEAU: en attente de paiement
+  'confirmed',    // paiement reçu, prêt pour CT
+  'ordered', 'preparation', 'shipped', 'in_transit',
   'available', 'collected', 'cancelled', 'refunded',
 ]);
 
 /** Rank for forward-only checks. Higher = further along. */
 const STATUS_RANK = Object.freeze({
-  confirmed:   0,
-  ordered:     1,
-  preparation: 2,
-  shipped:     3,
-  in_transit:  4,
-  available:   5,
-  collected:   6,
+  pending:     0,   // ← NOUVEAU
+  confirmed:   1,
+  ordered:     2,
+  preparation: 3,
+  shipped:     4,
+  in_transit:  5,
+  available:   6,
+  collected:   7,
   // cancelled/refunded are special — handled separately
 });
 
 /** Strict transition matrix (for 'patch' source). */
 const VALID_TRANSITIONS = Object.freeze({
+  pending:     ['confirmed', 'cancelled'],  // ← NOUVEAU
   confirmed:   ['ordered', 'cancelled'],
   ordered:     ['preparation', 'cancelled'],
   preparation: ['shipped', 'cancelled'],
@@ -67,10 +69,11 @@ const VALID_TRANSITIONS = Object.freeze({
 
 /** Role permissions per target status (for 'patch' source). */
 const TRANSITION_ROLES = Object.freeze({
-  ordered:     ['admin', 'agent_relais'],
+  confirmed:   ['admin', 'agent_relais', 'system'],  // ← NOUVEAU: paiement confirmé
+  ordered:     ['admin', 'agent_hub'],
   preparation: ['admin', 'agent_hub'],
   shipped:     ['admin', 'agent_hub'],
-  in_transit:  ['admin', 'agent_hub'],   // D2 validated: hub confirms departure
+  in_transit:  ['admin', 'agent_hub'],
   available:   ['admin', 'agent_relais'],
   collected:   ['admin', 'agent_relais'],
   cancelled:   ['admin'],
@@ -79,6 +82,8 @@ const TRANSITION_ROLES = Object.freeze({
 
 /** Timestamp column for each status on orders table. */
 const STATUS_TIMESTAMP = Object.freeze({
+  pending:     'pending_at',     // ← NOUVEAU
+  confirmed:   'confirmed_at',   // ← NOUVEAU (optionnel, à ajouter si besoin)
   ordered:     'ordered_at',
   preparation: 'preparation_at',
   shipped:     'shipped_at',
@@ -130,10 +135,10 @@ function generatePickupCode() {
  * @param {string}      opts.orderId       — UUID of the order
  * @param {string}      opts.newStatus     — Target order_status
  * @param {object}      opts.actor         — { id, role } of who initiated (default: system)
- * @param {string}      opts.source        — 'patch' | 'scan' | 'system'
+ * @param {string}      opts.source        — 'patch' | 'scan' | 'system' | 'stripe_webhook' | 'cash_confirm'
  * @param {string|null} opts.scanId        — Scan UUID (for scan source)
  * @param {string|null} opts.note          — Optional note for history
- * @param {string|null} opts.cancelReason  — [v1.1] Reason for cancellation (set on orders.cancel_reason)
+ * @param {string|null} opts.cancelReason  — Reason for cancellation (set on orders.cancel_reason)
  * @param {object|null} opts.dbClient      — Transaction client (optional)
  * @returns {Promise<{success:boolean, previousStatus:string, newStatus:string, noop?:boolean, pickupCode?:string, cancelEffects?:object, error?:string}>}
  */
@@ -150,7 +155,6 @@ async function transitionOrderStatus({
   const q = dbClient || db;
 
   // ── 1. Load current order ────────────────────────────────────────────────
-  // F26 fix: FOR UPDATE prevents concurrent transition races
   const forUpdate = dbClient ? ' FOR UPDATE' : '';
   const { rows: [order] } = await q.query(
     `SELECT id, status, payment_mode, pickup_code FROM orders WHERE id = $1${forUpdate}`,
@@ -187,15 +191,24 @@ async function transitionOrderStatus({
       };
     }
 
-    // Special: agent_relais can only set 'ordered' for cash_relais
-    if (newStatus === 'ordered' && actor.role === 'agent_relais' && order.payment_mode !== 'cash_relais') {
+    // Special: agent_relais can only set 'confirmed' for cash_relais
+    if (newStatus === 'confirmed' && actor.role === 'agent_relais' && order.payment_mode !== 'cash_relais') {
       return { success: false, error: "Agent relais: uniquement commandes cash relais" };
     }
 
+  } else if (['stripe_webhook', 'cash_confirm', 'system'].includes(source)) {
+    // Payment sources: only pending → confirmed allowed
+    if (newStatus === 'confirmed' && previousStatus !== 'pending') {
+      // Already confirmed or beyond — no-op
+      return { success: true, previousStatus, newStatus: previousStatus, noop: true };
+    }
+    // For other transitions from these sources, use forward-only logic
+    if (newStatus !== 'confirmed' && !isForwardTransition(previousStatus, newStatus)) {
+      return { success: true, previousStatus, newStatus: previousStatus, noop: true };
+    }
   } else {
     // scan/system: forward-only, no role check
     if (!isForwardTransition(previousStatus, newStatus)) {
-      // Not an error — just means the order is already ahead. Idempotent.
       return { success: true, previousStatus, newStatus: previousStatus, noop: true };
     }
   }
@@ -208,7 +221,13 @@ async function transitionOrderStatus({
   // Timestamp for this status (set ONCE via COALESCE)
   const tsCol = STATUS_TIMESTAMP[newStatus];
   if (tsCol) {
-    setParts.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
+    // Check if column exists before using COALESCE (pending_at/confirmed_at may not exist yet)
+    if (['pending_at', 'confirmed_at'].includes(tsCol)) {
+      // These columns may not exist in older schemas — skip silently
+      // TODO: Add these columns in migration
+    } else {
+      setParts.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
+    }
   }
 
   // Auto-generate pickup_code when → available
@@ -220,7 +239,7 @@ async function transitionOrderStatus({
     paramIdx++;
   }
 
-  // [v1.1] Cancel reason
+  // Cancel reason
   if (newStatus === 'cancelled' && cancelReason) {
     setParts.push(`cancel_reason = $${paramIdx}`);
     values.push(cancelReason);
@@ -234,15 +253,16 @@ async function transitionOrderStatus({
     values
   );
 
-  // ── 5. Special: cash_relais → ordered = auto-paid ───────────────────────
-  if (newStatus === 'ordered' && order.payment_mode === 'cash_relais') {
+  // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──
+  // Ceci remplace la logique qui était dans payments.js
+  if (newStatus === 'confirmed' && ['stripe_webhook', 'cash_confirm', 'system'].includes(source)) {
     await q.query(
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
       [orderId]
     );
   }
 
-  // ── 5b. [v1.1] Auto-effects: cancelled → wallet reversal + stock restore ─
+  // ── 5b. Auto-effects: cancelled → wallet reversal + stock restore ────────
   let cancelEffects = null;
 
   if (newStatus === 'cancelled') {
@@ -258,7 +278,6 @@ async function transitionOrderStatus({
     if (walletApplied > 0 && orderInfo.user_id) {
       const walletService = require('../services/wallet-service');
       try {
-        // F20 fix: removeFromOrder restores original lots + balance
         const wResult = await walletService.removeFromOrder(q, { orderId });
         cancelEffects.walletReversalAmount = wResult.reversed_kmf;
         cancelEffects.walletReversalTxId = wResult.transaction?.id || null;
@@ -309,7 +328,6 @@ async function transitionOrderStatus({
       [orderId, newStatus, scanId, actor.id, historyNote]
     );
   } catch (histErr) {
-    // F28 fix: D6 requires history — re-throw to guarantee audit trail
     console.error(`[STATUS-MACHINE] ⚠️ History insert failed (order=${orderId}):`, histErr.message);
     throw histErr;
   }

@@ -39,6 +39,7 @@
       font-size: 16px;
       margin-bottom: 8px;
     }
+    .status-pending { background: #fef3c7; color: #d97706; }
     .status-ordered { background: #e3f2fd; color: #1565c0; }
     .status-preparation { background: #fff3e0; color: #e65100; }
     .status-shipped { background: #e8f5e9; color: #2e7d32; }
@@ -333,7 +334,7 @@
     var badge = document.getElementById('statusBadge');
     badge.textContent = data.statusLabel;
     var statusClass = 'status-' + (data.status || 'default');
-    badge.className = 'status-badge ' + (['ordered','confirmed','preparation','shipped','in_transit','available','collected','cancelled'].indexOf(data.status) >= 0 ? statusClass : 'status-default');
+    badge.className = 'status-badge ' + (['pending','ordered','confirmed','preparation','shipped','in_transit','available','collected','cancelled'].indexOf(data.status) >= 0 ? statusClass : 'status-default');
     
     var info = document.getElementById('statusInfo');
     if (data.destinationIsland) {

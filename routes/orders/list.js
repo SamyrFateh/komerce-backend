@@ -85,7 +85,7 @@ router.get('/', authenticate, async (req, res, next) => {
 // âââ GET /api/orders/relais âââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Liste les commandes disponibles (status = 'available') au relais de l'agent connectÃ©.
 // Inclut aussi les commandes en transit vers ce relais (statut shipped / transit_comores).
-// Inclut les commandes cash en attente de paiement (status='confirmed', payment_mode='cash_relais').
+// Inclut les commandes cash en attente de paiement (status='pending', payment_mode='cash_relais').
 // RÃ´les : admin, agent_relais
 
 router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
@@ -137,7 +137,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
        WHERE ${conditions}
          AND (
            o.status IN ('shipped', 'available')
-           OR (o.status = 'confirmed' AND o.payment_mode = 'cash_relais' AND o.payment_status = 'pending')
+           OR (o.status = 'pending' AND o.payment_mode = 'cash_relais' AND o.payment_status = 'pending')
          )
          AND o.status NOT IN ('collected', 'cancelled', 'refunded')
        ORDER BY
@@ -168,7 +168,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
       en_attente:   enriched.filter(o => o.status === 'available').length,
       en_transit:   enriched.filter(o => o.status === 'shipped').length,
       alertes_48h:  enriched.filter(o => o.alert_48h).length,
-      cash_pending: enriched.filter(o => o.status === 'confirmed' && o.payment_mode === 'cash_relais').length,
+      cash_pending: enriched.filter(o => o.status === 'pending' && o.payment_mode === 'cash_relais').length,
     };
 
     res.json({ summary, orders: enriched });

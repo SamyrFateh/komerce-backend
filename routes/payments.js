@@ -1,14 +1,15 @@
 /**
- * KOMERCE — Routes paiement v8.1 (F24/F33) — F17/F18/F21
+ * KOMERCE — Routes paiement v8.2 (pending status fix)
  *
  * POST /api/payments/stripe/intent    → créer un PaymentIntent Stripe (EUR)
  * POST /api/payments/stripe/webhook   → webhook Stripe (confirmation paiement)
  * POST /api/payments/cash/confirm     → agent relais confirme réception espèces
  * GET  /api/payments/rates            → taux de change actuels
  *
- * Changelog v7.6 :
- *   · triggerPurchasing() déclenché après paiement Stripe ET cash confirmé
- *   · Point d'entrée unique pour le sourcing — plus de déclenchement dans orders.js
+ * Changelog v8.2 :
+ *   · Webhook Stripe: pending → confirmed (au lieu de confirmed → ordered)
+ *   · Cash confirm: pending → confirmed (au lieu de confirmed → ordered)
+ *   · La machine d'état gère maintenant payment_status = 'paid' automatiquement
  */
 
 const express = require('express');
@@ -116,13 +117,13 @@ router.post('/stripe/webhook',
       try {
         await client.query('BEGIN');
 
-        // F18 fix: Machine — confirmed → ordered (D1/D2)
+        // v8.2 fix: Machine — pending → confirmed (paiement reçu)
         const machineResult = await transitionOrderStatus({
           orderId:  order_id,
-          newStatus: 'ordered',
+          newStatus: 'confirmed',  // ← CHANGÉ: 'ordered' → 'confirmed'
           actor:    { id: null, role: 'system' },
           source:   'stripe_webhook',
-          note:     'Paiement Stripe confirmé — commande lancée',
+          note:     'Paiement Stripe confirmé — commande prête pour traitement',
           dbClient: client,
         });
         if (!machineResult.success) {
@@ -132,12 +133,8 @@ router.post('/stripe/webhook',
           return res.json({ received: true });
         }
 
-        // Machine auto-sets payment_status=paid only for cash_relais
-        // For stripe, set it explicitly
-        await client.query(
-          "UPDATE orders SET payment_status = 'paid' WHERE id = $1",
-          [order_id]
-        );
+        // Note: payment_status = 'paid' est maintenant géré par la machine
+        // pour source='stripe_webhook' — plus besoin de le faire ici
 
         // F21 fix: Stock decrement — Stripe orders never decremented before!
         const { rows: stripeItems } = await client.query(
@@ -172,26 +169,17 @@ router.post('/stripe/webhook',
       if (order?.user_phone) {
         sendSMS(
           order.user_phone,
-          `Komerce · Paiement reçu pour la commande ${order_reference}. Votre commande est lancée — achat en cours à Dubai.`,
-          'ordered', order_id
+          `Komerce · Paiement reçu pour la commande ${order_reference}. Votre commande sera traitée sous peu.`,
+          'confirmed', order_id  // ← CHANGÉ: 'ordered' → 'confirmed'
         ).catch(err => console.error('SMS webhook error:', err.message));
       }
 
       console.log(`✅ Paiement Stripe confirmé : ${order_reference}`);
 
-      // ── NOTIFICATIONS COMPLÈTES — WhatsApp + Email + Facture (fire-and-forget) ──
-      try {
-        const notifSvc = require('../services/notification-service');
-        notifSvc.notifyPaymentConfirmed(order_id, order_reference)
-          .then(result => {
-            if (result?.invoice) {
-              console.log(`🧾 [STRIPE] Invoice ${result.invoice} sent for ${order_reference}`);
-            }
-          })
-          .catch(e => console.error('[STRIPE-NOTIF] ❌', e.message));
-      } catch(e) { console.error('[STRIPE-NOTIF] require error:', e.message); }
-
       // ── Sourcing semi-automatisé — déclenché après paiement Stripe ──────────
+      // Note: Le sourcing ne démarre qu'après passage à 'ordered' par le hub
+      // Pour l'instant on le garde ici pour compatibilité, mais il pourrait
+      // être déplacé vers le moment où le hub passe la commande à 'ordered'
       triggerPurchasing(order_id)
         .then(r => console.log('[PURCHASING] Stripe trigger OK:', order_reference, r))
         .catch(e => console.error('[PURCHASING] Stripe trigger error:', order_reference, e.message));
@@ -215,7 +203,7 @@ router.post('/stripe/webhook',
 
 // ── POST /api/payments/cash/confirm ──────────────────────────────────────────
 // L'agent relais confirme la réception des espèces.
-// C'est ICI que la commande est vraiment validée et le stock décrémenté.
+// C'est ICI que la commande passe de 'pending' à 'confirmed' et le stock est décrémenté.
 // Body : { cash_ref_code }
 router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), validate(payments.cashConfirm), async (req, res, next) => {
   const client = await db.pool.connect();
@@ -225,11 +213,13 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
     const { cash_ref_code } = req.body;
     if (!cash_ref_code) return res.status(400).json({ error: 'cash_ref_code requis' });
 
+    // v8.2 fix: Chercher les commandes 'pending' (au lieu de 'confirmed')
     const { rows } = await client.query(
       `SELECT * FROM orders
        WHERE cash_ref_code = $1
          AND payment_mode = 'cash_relais'
-         AND payment_status = 'pending'`,
+         AND payment_status = 'pending'
+         AND status = 'pending'`,  // ← AJOUTÉ: vérifier aussi le status
       [cash_ref_code]
     );
 
@@ -240,13 +230,13 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     const order = rows[0];
 
-    // F17 fix: Machine — confirmed → ordered (D1/D2)
+    // v8.2 fix: Machine — pending → confirmed (paiement reçu)
     const machineResult = await transitionOrderStatus({
       orderId:   order.id,
-      newStatus: 'ordered',
+      newStatus: 'confirmed',  // ← CHANGÉ: 'ordered' → 'confirmed'
       actor:     { id: req.user.id, role: req.user.role },
       source:    'cash_confirm',
-      note:      'Paiement espèces confirmé par agent relais — commande lancée',
+      note:      'Paiement espèces confirmé par agent relais — commande prête pour traitement',
       dbClient:  client,
     });
     if (!machineResult.success) {
@@ -256,6 +246,9 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     // cash_paid_at — not managed by machine
     await client.query('UPDATE orders SET cash_paid_at = NOW() WHERE id = $1', [order.id]);
+
+    // Note: payment_status = 'paid' est maintenant géré par la machine
+    // pour source='cash_confirm' — plus besoin de le faire ici
 
     // ── DÉCRÉMENTAGE STOCK — seul point pour cash relais (F19 fix) ───────────
     const { rows: items } = await client.query(
@@ -291,33 +284,23 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
     if (fullOrder?.user_phone) {
       await sendSMS(
         fullOrder.user_phone,
-        `Komerce · Paiement reçu pour la commande ${order.reference} (${order.total_kmf.toLocaleString('fr-FR')} KMF). Votre commande est confirmée et en cours de préparation. Délai : 3 à 5 semaines.`,
-        'confirmation', order.id
+        `Komerce · Paiement reçu pour la commande ${order.reference} (${order.total_kmf.toLocaleString('fr-FR')} KMF). Votre commande sera traitée sous peu.`,
+        'confirmed', order.id  // ← CHANGÉ: 'confirmation' → 'confirmed'
       );
     }
 
-    // ── NOTIFICATIONS COMPLÈTES — WhatsApp + Email + Facture (fire-and-forget) ──
-    try {
-      const notifSvc = require('../services/notification-service');
-      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
-        .then(result => {
-          if (result?.invoice) {
-            console.log(`🧾 [CASH-OLD] Invoice ${result.invoice} sent for ${order.reference}`);
-          }
-        })
-        .catch(e => console.error('[CASH-NOTIF] ❌', e.message));
-    } catch(e) { console.error('[CASH-NOTIF] require error:', e.message); }
 
     // ── Sourcing semi-automatisé — déclenché après paiement cash ──────────────
+    // Note: Comme pour Stripe, le sourcing pourrait être déplacé vers 'ordered'
     triggerPurchasing(order.id)
       .then(r => console.log('[PURCHASING] Cash trigger OK:', order.reference, r))
       .catch(e => console.error('[PURCHASING] Cash trigger error:', order.reference, e.message));
 
     res.json({
-      message:   'Paiement espèces confirmé — commande validée',
+      message:   'Paiement espèces confirmé — commande prête pour traitement',
       reference: order.reference,
       paid_at:   new Date().toISOString(),
-      next_step: 'Sourcing déclenché automatiquement — bon de commande à l\'agent Dubai',
+      next_step: 'Commande visible dans CT — en attente de traitement hub',
     });
 
   } catch (err) {

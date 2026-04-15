@@ -80,7 +80,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     // ── 4. Vérifier le statut de coupure (CANCEL_CUTOFF_STATUS) ──────────────
     const cutoffStatus = await getRule('CANCEL_CUTOFF_STATUS', 'shipped');
     const STATUS_ORDER = [
-      'confirmed', 'ordered', 'preparation',
+      'pending', 'confirmed', 'ordered', 'preparation',
       'shipped', 'in_transit', 'available', 'collected',
     ];
     const currentIdx = STATUS_ORDER.indexOf(order.status);

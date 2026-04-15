@@ -95,8 +95,8 @@ const STATUS_WEIGHT = Object.freeze({
  * @returns {string} Statut agrégé compatible avec orders.status (ENUM order_status)
  */
 function computeOrderStatus(parcels) {
-  // FIX-001: 'pending' n'existe pas dans order_status → 'confirmed'
-  if (!parcels || parcels.length === 0) return 'confirmed';
+  // FIX-001: 'pending' est le statut initial avant paiement
+  if (!parcels || parcels.length === 0) return 'pending';
 
   const active = parcels.filter(p => p.status !== PARCEL_STATUSES.CANCELLED);
 

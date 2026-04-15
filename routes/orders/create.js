@@ -251,7 +251,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
          $6,$7,
          $8,$9,$10,
          $11,$12,
-         'confirmed',
+         'pending',
          $13,$14,
          $15,$16,
          $17,$18,$19,
@@ -295,7 +295,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     // ── Historiser statut initial ───────────────────────────────────────────
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'confirmed', 'Commande créée', $2)`,
+       VALUES ($1, 'pending', 'Commande créée', $2)`,
       [order.id, req.user.id]
     );
 
