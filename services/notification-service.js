@@ -23,8 +23,9 @@ const TWILIO_SID     = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_TOKEN   = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_WA_FROM = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
 
-// Statuts pour lesquels on envoie un EMAIL
-const EMAIL_STATUSES = new Set(['confirmed', 'shipped', 'available', 'collected', 'cancelled']);
+// Statuts pour lesquels on envoie un EMAIL (4 étapes clés uniquement)
+// ❌ collected retiré — pas d'email pour la remise (user instruction)
+const EMAIL_STATUSES = new Set(['confirmed', 'shipped', 'available', 'cancelled']);
 
 // ─── SMS templates ──────────────────────────────────────────
 
@@ -583,3 +584,4 @@ module.exports = {
   getWhatsAppLink,
   STATUS_SMS,
 };
+

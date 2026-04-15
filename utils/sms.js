@@ -251,23 +251,8 @@ async function processCashRelaisReminders() {
 
 
 // ── Phase 4 — Templates SMS Expédition Partielle ──────────────────────────
-
-const PARTIAL_SHIP_SMS = {
-  partial_created: (ref, shipped_count, backorder_count) =>
-    `Komerce : Commande ${ref} — expedition partielle : ${shipped_count} article(s) expedie(s), ${backorder_count} en attente. Vous serez notifie pour chaque expedition.`,
-
-  backorder_update: (ref, estimated_date) =>
-    `Komerce : Backorder ${ref} — date d'expedition estimee : ${estimated_date}. Nous faisons le maximum pour accelerer.`,
-
-  backorder_cancelled: (ref, credit_amount) =>
-    `Komerce : Backorder ${ref} annule. ${credit_amount} credite sur votre compte. Merci de votre comprehension.`,
-
-  sub_order_shipped: (ref, tracking) =>
-    `Komerce : Sous-commande ${ref} expediee.${tracking ? ` Suivi : ${tracking}` : ''} Arrivee estimee 3-5 semaines.`,
-
-  sub_order_available: (ref, relais) =>
-    `Komerce : Sous-commande ${ref} disponible au relais ${relais || ''}. Venez la recuperer !`,
-};
+// REMOVED: PARTIAL_SHIP_SMS templates referenced sub_orders table that doesn't exist.
+// Will be rebuilt when partial shipments (parcel-first) are implemented.
 
 // ── Rappels automatiques backorder (modèle parcel-first) ─────────────────────
 //
@@ -339,4 +324,5 @@ async function processBackorderReminders() {
   }
 }
 
-module.exports = { sendSMS, processCashRelaisReminders, processBackorderReminders, PARTIAL_SHIP_SMS };
+module.exports = { sendSMS, processCashRelaisReminders, processBackorderReminders };
+

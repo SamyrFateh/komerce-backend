@@ -84,7 +84,7 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 router.get('/dashboard', ...hubAuth, async (req, res, next) => {
   try {
     // Each query wrapped individually to isolate errors
-    let ordersData = { to_prepare: 0, in_preparation: 0, shipped_today: 0, shipped_total: 0, urgent: 0, cash_pending: 0, total_active: 0, today: 0 };
+    let ordersData = { to_prepare: 0, in_preparation: 0, shipped_today: 0, shipped_total: 0, urgent: 0, cash_pending: 0, pending: 0, total_active: 0, today: 0 };
     let parcelsData = { draft: 0, preparation: 0, shipped: 0, in_transit: 0, at_relay: 0 };
     let incidentsData = { open: 0, critical: 0 };
     let stockData = { low_stock_count: 0 };
@@ -102,9 +102,10 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
           COUNT(*) FILTER (WHERE payment_mode = 'cash_relais'
             AND payment_status != 'paid'
             AND status NOT IN ('cancelled','collected')) AS cash_pending,
+          COUNT(*) FILTER (WHERE status = 'pending') AS pending,
           COUNT(*) AS total_active
         FROM orders
-        WHERE status NOT IN ('cancelled','collected','draft')
+        WHERE status NOT IN ('cancelled','collected','pending')
       `);
       const { rows: [t] } = await db.query(`SELECT COUNT(*) AS c FROM orders WHERE created_at >= CURRENT_DATE`);
       ordersData = {
@@ -114,6 +115,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
         shipped_total: parseInt(r.shipped_total) || 0,
         urgent: parseInt(r.urgent) || 0,
         cash_pending: parseInt(r.cash_pending) || 0,
+        pending: parseInt(r.pending) || 0,
         total_active: parseInt(r.total_active) || 0,
         today: parseInt(t.c) || 0
       };
@@ -883,3 +885,4 @@ router.post('/orders/:id/backorder', ...hubAuth, async (req, res, next) => {
 });
 
 module.exports = router;
+
