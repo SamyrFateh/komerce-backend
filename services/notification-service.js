@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Notification Service v5.0 (SIMPLIFIÉ)
+ * KOMERCE — Notification Service v5.1
  *
  * 4 moments de notification uniquement :
  * ┌─────────────────────────┬──────────────────┬────────────────────┐
@@ -13,12 +13,18 @@
  *
  * Canal principal : WhatsApp via Twilio
  * Email : shipped + available + cancelled uniquement
+ *
+ * Mode test/dev :
+ * - on évite de spammer les numéros locaux +269
+ * - support des tableaux de numéros (local + diaspora)
  */
 
 'use strict';
-// ─── Simulation Mode Guard ──────────────────────────────────
-function isSimulation() { return !!global.__SIMULATION_ACTIVE; }
 
+// ─── Simulation Mode Guard ──────────────────────────────────
+function isSimulation() {
+  return !!global.__SIMULATION_ACTIVE;
+}
 
 const { sendSMS }        = require('../utils/sms');
 const { sendOrderEmail } = require('../utils/email');
@@ -37,6 +43,72 @@ const EMAIL_STATUSES = new Set(['shipped', 'available', 'cancelled']);
 
 // Statuts qui déclenchent une notif WhatsApp au scan colis
 const WA_SCAN_STATUSES = new Set(['shipped', 'available']);
+
+// ─── Helpers environnement test ─────────────────────────────
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
+function normalizePhone(phone) {
+  if (!phone) return null;
+  const clean = String(phone).replace(/[^0-9+]/g, '');
+  return clean.length >= 8 ? clean : null;
+}
+
+function isComorosPhone(phone) {
+  const p = normalizePhone(phone);
+  return !!p && p.startsWith('+269');
+}
+
+// Autorisations explicites possibles en dev/test
+// Exemples:
+// NOTIF_TEST_ALLOW_PHONES=+33611111111,+2691234567
+function getAllowedTestPhones() {
+  const raw = process.env.NOTIF_TEST_ALLOW_PHONES || '';
+  if (!raw.trim()) return new Set();
+  return new Set(
+    raw
+      .split(',')
+      .map(s => normalizePhone(s.trim()))
+      .filter(Boolean)
+  );
+}
+
+/**
+ * Filtre de sécurité pour tests/dev :
+ * - en prod : on laisse tout passer
+ * - en simulation : getUniquePhones() gère déjà la préférence diaspora
+ * - en dev/test : on bloque les +269 sauf whitelist explicite
+ */
+function filterTestPhones(phones, context = 'unknown') {
+  const list = Array.isArray(phones) ? phones : [phones];
+  const normalized = [...new Set(list.map(normalizePhone).filter(Boolean))];
+
+  if (isProduction()) {
+    return normalized;
+  }
+
+  const allowed = getAllowedTestPhones();
+  const kept = [];
+
+  for (const phone of normalized) {
+    if (allowed.has(phone)) {
+      console.log(`[NOTIF-TEST] ✅ whitelisted → ${phone} (${context})`);
+      kept.push(phone);
+      continue;
+    }
+
+    if (isComorosPhone(phone)) {
+      console.log(`[NOTIF-TEST] 🚫 local +269 bloqué en test/dev → ${phone} (${context})`);
+      continue;
+    }
+
+    kept.push(phone);
+  }
+
+  return kept;
+}
 
 // ─── WhatsApp message templates ─────────────────────────────
 
@@ -118,7 +190,6 @@ async function sendWhatsAppTwilio(phone, text) {
   if (!phone) return { success: false, provider: 'twilio', reason: 'no_phone' };
 
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
-  // FIX: ensure the number has a leading '+' for E.164 format required by Twilio
   const withPlus = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
   const to = cleanPhone.startsWith('whatsapp:') ? cleanPhone : `whatsapp:${withPlus}`;
 
@@ -188,15 +259,12 @@ async function sendWhatsAppBrevo(phone, text) {
 async function sendWhatsApp(phone, text) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
-  // 1. Try Twilio (principal)
   let result = await sendWhatsAppTwilio(phone, text);
 
-  // 2. Fallback: Brevo
   if (!result.success) {
     result = await sendWhatsAppBrevo(phone, text);
   }
 
-  // 3. Always generate wa.me link
   const waLink = getWhatsAppLink(phone, text);
 
   if (!result.success) {
@@ -213,20 +281,39 @@ async function sendWhatsApp(phone, text) {
 function getUniquePhones(localPhone, diasporaPhone) {
   const phones = [];
   const seen = new Set();
-  // In simulation mode: only diaspora phone (skip local/beneficiary +269)
+
+  // En simulation : only diaspora phone
   const phonesToCheck = isSimulation() ? [diasporaPhone] : [localPhone, diasporaPhone];
+
   for (const p of phonesToCheck) {
-    if (!p) continue;
-    const clean = p.replace(/[^0-9+]/g, '');
-    if (clean.length >= 8 && !seen.has(clean)) {
+    const clean = normalizePhone(p);
+    if (!clean) continue;
+
+    if (!seen.has(clean)) {
       seen.add(clean);
       phones.push(clean);
     }
   }
+
   if (isSimulation()) {
     console.log(`[SIM] 📱 Phones filtered: local=${localPhone || 'none'} (SKIPPED) | diaspora=${diasporaPhone || 'none'} → sending to: [${phones.join(', ')}]`);
   }
+
   return phones;
+}
+
+// ─── Normalize callers: string or array ─────────────────────
+
+function resolvePhones(inputPhone, diasporaPhone = null, context = 'unknown') {
+  let phones = [];
+
+  if (Array.isArray(inputPhone)) {
+    phones = [...new Set(inputPhone.map(normalizePhone).filter(Boolean))];
+  } else {
+    phones = getUniquePhones(inputPhone, diasporaPhone);
+  }
+
+  return filterTestPhones(phones, context);
 }
 
 // ─── Log notification to DB ─────────────────────────────────
@@ -253,8 +340,6 @@ async function logNotification({ parcelRef, orderRef, channel, event, recipient,
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText) {
-  // Simulation mode: getUniquePhones() will filter to diaspora-only
-  // Stripe : skip — la facture arrive avec notifyPaymentConfirmed() après le webhook
   if (order.payment_mode !== 'cash_relais') {
     console.log(`[NOTIF] ⏭️ Order created ${order.reference} (${order.payment_mode}) — skip, attente paiement Stripe`);
     return;
@@ -276,24 +361,39 @@ async function notifyOrderCreated(order, phone, email, emailItems, relais, cashS
       itemsText,
     };
 
-    // WhatsApp → tous les téléphones disponibles (local + diaspora)
     let diasporaPhone = null;
-    if (order.user_id) {
+    if (order.user_id && !Array.isArray(phone)) {
       try {
-        const { rows: [userRow] } = await db.query('SELECT whatsapp_phone FROM users WHERE id = $1', [order.user_id]);
+        const { rows: [userRow] } = await db.query(
+          'SELECT whatsapp_phone FROM users WHERE id = $1',
+          [order.user_id]
+        );
         if (userRow?.whatsapp_phone) diasporaPhone = userRow.whatsapp_phone;
-      } catch (_) { /* ignore */ }
+      } catch (_) {
+        // ignore
+      }
     }
-    const allPhones = getUniquePhones(phone, diasporaPhone);
+
+    const allPhones = resolvePhones(phone, diasporaPhone, 'order_created_cash');
+
+    if (allPhones.length === 0) {
+      console.log(`[NOTIF] ⏭️ No allowed test phones for order ${order.reference}`);
+      return;
+    }
+
     for (const ph of allPhones) {
       const waText = WA_MESSAGES.order_created_cash(d);
       const waResult = await sendWhatsApp(ph, waText);
+
       await logNotification({
-        orderRef: order.reference, channel: 'whatsapp',
-        event: 'order_created_cash', recipient: ph,
+        orderRef: order.reference,
+        channel: 'whatsapp',
+        event: 'order_created_cash',
+        recipient: ph,
         status: waResult.success ? 'sent' : 'link_generated',
         detail: waResult,
       });
+
       console.log(`[NOTIF] 🛒 Cash order WA → ${order.reference} → ${ph} | ${waResult.success ? '✅' : '⚠️'}`);
     }
   } catch (err) {
@@ -303,12 +403,11 @@ async function notifyOrderCreated(order, phone, email, emailItems, relais, cashS
 
 // ═══════════════════════════════════════════════════════════════
 // ② PAIEMENT CONFIRMÉ
-// Cash → facture WhatsApp (2ème message client)
-// Stripe → récap + facture WhatsApp (1er message client)
+// Cash → facture WhatsApp
+// Stripe → récap + facture WhatsApp
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyPaymentConfirmed(orderId, orderRef) {
-  // Simulation mode: getUniquePhones() will filter to diaspora-only
   try {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
@@ -328,9 +427,8 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
       return null;
     }
 
-    const allPhones = getUniquePhones(order.local_phone, order.diaspora_phone);
+    const allPhones = resolvePhones(order.local_phone, order.diaspora_phone, 'payment_confirmed');
 
-    // ── Fetch order items ──
     const { rows: items } = await db.query(`
       SELECT oi.quantity, oi.price_kmf, p.name AS product_name
       FROM order_items oi
@@ -338,7 +436,6 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
       WHERE oi.order_id = $1::uuid
     `, [orderId]);
 
-    // ── Generate invoice ──
     const { v4: uuidv4 } = require('uuid');
     const year = new Date().getFullYear();
     let invNum = null;
@@ -346,7 +443,8 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
     try {
       const { rows: [{ max_seq }] } = await db.query(
         `SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 'INV-\\d{4}-(\\d+)') AS INT)), 0) AS max_seq
-         FROM invoices WHERE invoice_number LIKE $1`, [`INV-${year}-%`]
+         FROM invoices WHERE invoice_number LIKE $1`,
+        [`INV-${year}-%`]
       );
       const seq = (max_seq || 0) + 1;
       invNum = `INV-${year}-${String(seq).padStart(4, '0')}`;
@@ -370,9 +468,15 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
           $10, 'paid', NOW()
         )
       `, [
-        uuidv4(), invNum, orderId,
-        order.customer_name, allPhones[0] || null, order.relais_name,
-        JSON.stringify(itemsSnapshot), order.total_kmf, order.total_kmf,
+        uuidv4(),
+        invNum,
+        orderId,
+        order.customer_name,
+        allPhones[0] || null,
+        order.relais_name,
+        JSON.stringify(itemsSnapshot),
+        order.total_kmf,
+        order.total_kmf,
         order.payment_mode,
       ]);
 
@@ -383,7 +487,6 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 
     const results = { whatsapp: [], email: null };
 
-    // ── Build WhatsApp message ──
     const itemsText = items.map(i =>
       `• ${i.product_name || 'Article'} ×${i.quantity} — ${Number(i.price_kmf).toLocaleString()} KMF`
     ).join('\n');
@@ -401,7 +504,6 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
       trackingUrl,
     };
 
-    // ── WhatsApp facture → tous les téléphones ──
     for (const phone of allPhones) {
       const waText = WA_MESSAGES.invoice(d);
       const waResult = await sendWhatsApp(phone, waText);
@@ -409,14 +511,14 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 
       await logNotification({
         orderRef: order.reference,
-        channel: 'whatsapp', event: 'payment_confirmed_invoice',
+        channel: 'whatsapp',
+        event: 'payment_confirmed_invoice',
         recipient: phone,
         status: waResult.success ? 'sent' : 'link_generated',
         detail: { ...waResult, invoice: invNum },
       });
     }
 
-    // ── Email confirmation ──
     if (order.customer_email) {
       const emailData = {
         reference: order.reference,
@@ -430,7 +532,8 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 
       await logNotification({
         orderRef: order.reference,
-        channel: 'email', event: 'payment_confirmed',
+        channel: 'email',
+        event: 'payment_confirmed',
         recipient: order.customer_email,
         status: results.email?.sent ? 'sent' : 'skipped',
         detail: results.email,
@@ -446,12 +549,10 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ③④ SCAN COLIS — shipped + available SEULEMENT
+// ③④ SCAN COLIS — shipped + available seulement
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) {
-  // Simulation mode: getUniquePhones() will filter to diaspora-only
-  // ❌ On ne notifie QUE shipped + available
   if (!WA_SCAN_STATUSES.has(newStatus)) {
     console.log(`[NOTIF] ⏭️ Scan ${newStatus} → ${parcelRef} — pas de notification`);
     return null;
@@ -497,9 +598,12 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         trackingUrl,
       };
 
-      const allPhones = getUniquePhones(row.local_phone || row.fallback_phone, row.diaspora_phone);
+      const allPhones = resolvePhones(
+        row.local_phone || row.fallback_phone,
+        row.diaspora_phone,
+        `scan_${newStatus}`
+      );
 
-      // WhatsApp → tous les téléphones
       const waTemplate = WA_MESSAGES[newStatus];
       if (waTemplate && allPhones.length > 0) {
         const waText = waTemplate(d);
@@ -508,8 +612,10 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
           results.whatsapp.push(waResult);
 
           await logNotification({
-            parcelRef: row.parcel_ref, orderRef: row.order_ref,
-            channel: 'whatsapp', event: `scan_${newStatus}`,
+            parcelRef: row.parcel_ref,
+            orderRef: row.order_ref,
+            channel: 'whatsapp',
+            event: `scan_${newStatus}`,
             recipient: phone,
             status: waResult.success ? 'sent' : 'link_generated',
             detail: waResult,
@@ -517,7 +623,6 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         }
       }
 
-      // Email (shipped + available)
       if (EMAIL_STATUSES.has(newStatus) && row.customer_email) {
         const emailData = {
           reference: row.order_ref || row.parcel_ref,
@@ -532,8 +637,10 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
         results.email.push(emailResult);
 
         await logNotification({
-          parcelRef: row.parcel_ref, orderRef: row.order_ref,
-          channel: 'email', event: `scan_${newStatus}`,
+          parcelRef: row.parcel_ref,
+          orderRef: row.order_ref,
+          channel: 'email',
+          event: `scan_${newStatus}`,
           recipient: row.customer_email,
           status: emailResult?.sent ? 'sent' : 'skipped',
           detail: emailResult,
@@ -550,27 +657,23 @@ async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) 
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Legacy exports (no-op — backward compat pour éviter les crashes)
+// Legacy exports
 // ═══════════════════════════════════════════════════════════════
 
 function notifyStatusChange(order, status) {
-  // v5: no-op — remplacé par notifyParcelScan(shipped, available)
   console.log(`[NOTIF] ⏭️ notifyStatusChange(${order?.reference}, ${status}) — no-op v5`);
 }
 
 function notifyParcelStatus(parcel, status) {
-  // v5: no-op
   console.log(`[NOTIF] ⏭️ notifyParcelStatus(${parcel?.reference}, ${status}) — no-op v5`);
 }
 
 async function notifyParcelCreated(parcelRef, orderId, orderRef) {
-  // v5: no-op — pas de notif à la création du colis
   console.log(`[NOTIF] ⏭️ notifyParcelCreated(${parcelRef}) — no-op v5`);
   return null;
 }
 
 function notifyCancellation(order, refundInfo) {
-  // Keep email for cancellations
   const email = order.customer_email;
   if (email) {
     sendOrderEmail({ ...order, refund_info: refundInfo ? 'Voir détails' : null }, 'cancelled')
@@ -585,13 +688,13 @@ function sendCashReminder(order) {
 function getCashReminderWA(order) {
   const phone = order.user_phone || order.phone;
   if (!phone) return null;
-  return getWhatsAppLink(phone, `Rappel : votre colis ${order.reference} vous attend au relais. Montant : ${(order.total_kmf||0).toLocaleString()} KMF 💰`);
+  return getWhatsAppLink(
+    phone,
+    `Rappel : votre colis ${order.reference} vous attend au relais. Montant : ${(order.total_kmf || 0).toLocaleString()} KMF 💰`
+  );
 }
 
-// ═══════════════════════════════════════════════════════════════
-
 module.exports = {
-  // New v5 API
   notifyParcelScan,
   notifyPaymentConfirmed,
   notifyOrderCreated,
@@ -600,7 +703,6 @@ module.exports = {
   logNotification,
   WA_MESSAGES,
 
-  // Legacy exports (backward compat)
   notifyStatusChange,
   notifyParcelStatus,
   notifyParcelCreated,
