@@ -683,6 +683,25 @@ body{
 .k-sug-card-name{padding:6px 8px;font-size:11px;font-weight:600;line-height:1.2;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .k-sug-card-price{padding:0 8px 6px;font-size:12px;font-weight:700;color:var(--coral)}
+.k-sug-wrap{position:relative}
+.k-sug-wrap::before,.k-sug-wrap::after{
+  content:'';position:absolute;top:0;bottom:0;width:28px;
+  pointer-events:none;z-index:2;
+}
+.k-sug-wrap::before{left:0;background:linear-gradient(to right,rgba(255,255,255,.9),transparent)}
+.k-sug-wrap::after{right:0;background:linear-gradient(to left,rgba(255,255,255,.9),transparent)}
+.k-sug-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:3;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--coral);color:#fff;border:none;cursor:pointer;
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);transition:opacity .2s,transform .2s;
+  opacity:.92;
+}
+.k-sug-arrow:hover{opacity:1;transform:translateY(-50%) scale(1.08)}
+.k-sug-arrow.prev{left:-6px}
+.k-sug-arrow.next{right:-6px}
+.k-sug-arrow[hidden]{display:none}
 .k-sug-add{
   position:absolute;top:6px;right:6px;
   width:24px;height:24px;

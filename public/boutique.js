@@ -853,6 +853,39 @@
         showToast(`${product.emoji || '✓'} ${product.name} ajouté`);
       });
     });
+
+    // Flèches navigation
+    const wrap = dom.sugRail.closest('.k-sug-wrap') || dom.sugRail.parentElement;
+    wrap.classList.add('k-sug-wrap');
+    // Supprimer anciennes flèches si re-render
+    wrap.querySelectorAll('.k-sug-arrow').forEach(a => a.remove());
+
+    const scrollStep = 240;
+    const btnPrev = document.createElement('button');
+    btnPrev.className = 'k-sug-arrow prev';
+    btnPrev.innerHTML = '&#8249;';
+    btnPrev.setAttribute('aria-label', 'Précédent');
+    const btnNext = document.createElement('button');
+    btnNext.className = 'k-sug-arrow next';
+    btnNext.innerHTML = '&#8250;';
+    btnNext.setAttribute('aria-label', 'Suivant');
+
+    const updateArrows = () => {
+      btnPrev.hidden = dom.sugRail.scrollLeft <= 4;
+      btnNext.hidden = dom.sugRail.scrollLeft + dom.sugRail.clientWidth >= dom.sugRail.scrollWidth - 4;
+    };
+
+    btnPrev.addEventListener('click', () => {
+      dom.sugRail.scrollBy({left: -scrollStep, behavior: 'smooth'});
+    });
+    btnNext.addEventListener('click', () => {
+      dom.sugRail.scrollBy({left: scrollStep, behavior: 'smooth'});
+    });
+    dom.sugRail.addEventListener('scroll', updateArrows, {passive: true});
+
+    wrap.appendChild(btnPrev);
+    wrap.appendChild(btnNext);
+    updateArrows();
   }
 
   function setupModal() {
