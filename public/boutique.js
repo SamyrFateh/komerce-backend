@@ -1566,7 +1566,7 @@
       renderCartBody();
 
       // Step 5: success screen
-      renderOrderSuccess(orderData, recipName, clientEmail, apiResult, fullRecipPhone);
+      renderOrderSuccess(orderData, recipName, clientEmail, apiResult, fullRecipPhone, senderPhone);
       showToast('Commande confirmée !', 'success');
 
     } catch (e) {
@@ -1579,7 +1579,7 @@
   }
 
   /* ── Order Success ── */
-  function renderOrderSuccess(order, recipientName, clientEmail, fullResult, recipientPhone) {
+  function renderOrderSuccess(order, recipientName, clientEmail, fullResult, recipientPhone, senderPhone) {
     const body = dom.orderBody;
     body.innerHTML = '';
     dom.orderTitle.textContent = '✅ Commande confirmée';
@@ -1620,7 +1620,11 @@
 
     // WhatsApp notice
     if (recipientPhone) {
-      wrap.innerHTML += '<div style="margin-top:10px;padding:9px 12px;background:#e7f9ef;border-radius:10px;font-size:0.82rem;color:#1a7a3e;font-weight:600;display:flex;align-items:center;gap:8px;">📲 Une confirmation WhatsApp sera envoyée au <span style="font-family:monospace;">' + sanitize(recipientPhone) + '</span></div>';
+      let waLines = '📲 Confirmation WhatsApp envoyée au <strong>' + sanitize(recipientPhone) + '</strong>';
+      if (senderPhone && senderPhone.trim()) {
+        waLines += ' et à <strong>' + sanitize(senderPhone.trim()) + '</strong>';
+      }
+      wrap.innerHTML += '<div style="margin-top:10px;padding:9px 12px;background:#e7f9ef;border-radius:10px;font-size:0.82rem;color:#1a7a3e;font-weight:600;line-height:1.5;">'+waLines+'</div>';
     }
 
     // Buttons
