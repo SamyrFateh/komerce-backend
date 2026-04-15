@@ -22,6 +22,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -62,6 +63,9 @@ const SLA = {
 /**
  * Synchronise le statut d'un colis vers toutes ses commandes.
  * Règle : si parcel = in_transit → orders = in_transit, etc.
+ * 
+ * ✅ Phase 3 FIX: Uses transitionOrderStatus() instead of direct SQL.
+ *    State machine handles: validation, timestamps, history, side effects.
  */
 async function syncParcelToOrders(client, parcelId, newStatus) {
   const statusMap = {
@@ -73,15 +77,7 @@ async function syncParcelToOrders(client, parcelId, newStatus) {
   };
 
   const orderStatus = statusMap[newStatus];
-  if (!orderStatus) return; // draft, preparation → no sync
-
-  const timestampCol = {
-    shipped: 'shipped_at',
-    in_transit: 'in_transit_at',
-    available: 'available_at',
-    collected: 'collected_at',
-    cancelled: 'cancelled_at',
-  }[newStatus];
+  if (!orderStatus) return 0; // draft, preparation → no sync
 
   // Find all orders linked to this parcel (via parcel_items or parcels.order_id)
   const { rows: orderIds } = await client.query(`
@@ -99,27 +95,25 @@ async function syncParcelToOrders(client, parcelId, newStatus) {
     )
   `, [parcelId]);
 
+  let synced = 0;
   for (const { id: orderId } of orderIds) {
-    const setClauses = [`status = $2`, `updated_at = NOW()`];
-    const params = [orderId, orderStatus];
-    
-    if (timestampCol) {
-      setClauses.push(`${timestampCol} = NOW()`);
+    const result = await transitionOrderStatus({
+      orderId,
+      newStatus: orderStatus,
+      actor: { id: null, role: 'system' },
+      source: 'scan',
+      note: `Synced from parcel scan: ${newStatus}`,
+      dbClient: client,
+    });
+    if (result.success) {
+      synced++;
+    } else {
+      // Non-fatal: log and continue (e.g. order already at target status)
+      console.warn(`[PARCEL-SYNC] transition ${orderStatus} failed for order ${orderId}: ${result.error}`);
     }
-
-    await client.query(
-      `UPDATE orders SET ${setClauses.join(', ')} WHERE id = $1`,
-      params
-    );
-
-    // Log in order_status_history
-    await client.query(`
-      INSERT INTO order_status_history (order_id, status, note)
-      VALUES ($1, $2, $3)
-    `, [orderId, orderStatus, `Synced from parcel status: ${newStatus}`]);
   }
 
-  return orderIds.length;
+  return synced;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
