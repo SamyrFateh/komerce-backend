@@ -8,7 +8,7 @@ const db = require('../db');
 router.get('/', async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT reference, destination_island, relais_name, weight_kg, created_at
+      SELECT reference, destination_island, destination_relais AS relais_name, weight_kg, created_at
       FROM parcels
       WHERE status = 'shipped'
       ORDER BY created_at ASC
