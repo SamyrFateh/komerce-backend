@@ -95,7 +95,7 @@ const STATUS_WEIGHT = Object.freeze({
  * @returns {string} Statut agrégé compatible avec orders.status (ENUM order_status)
  */
 function computeOrderStatus(parcels) {
-  // FIX-001: 'pending' n'existe pas dans order_status → 'confirmed'
+  // Aucun colis → commande pas encore traitée logistiquement
   if (!parcels || parcels.length === 0) return 'confirmed';
 
   const active = parcels.filter(p => p.status !== PARCEL_STATUSES.CANCELLED);
@@ -103,16 +103,23 @@ function computeOrderStatus(parcels) {
   // Tous annulés → commande annulée
   if (active.length === 0) return 'cancelled';
 
-  // FIX-001: 'delivered' n'existe pas dans order_status → 'collected'
+  // Tous collectés → commande terminée
   if (active.every(p => p.status === PARCEL_STATUSES.COLLECTED)) return 'collected';
 
+  // ── FIX S2: Partiellement collecté → ambiguïté, on ne touche pas ──
+  // Certains colis récupérés mais pas tous → la state machine décidera
+  const someCollected = active.some(p => p.status === PARCEL_STATUSES.COLLECTED);
+  if (someCollected) return null;
+
   // Au moins un disponible, aucun en mouvement → commande dispo
-  // FIX-001: inclure ARRIVED dans le check "en mouvement" (arrivé au port ≠ dispo au relais)
   const inMovement = active.some(p =>
     [PARCEL_STATUSES.SHIPPED, PARCEL_STATUSES.IN_TRANSIT, PARCEL_STATUSES.ARRIVED].includes(p.status)
   );
   const someAvailable = active.some(p => p.status === PARCEL_STATUSES.AVAILABLE);
   if (someAvailable && !inMovement) return 'available';
+
+  // ── FIX S2: Tous en draft → pending (pas preparation) ──
+  if (active.every(p => p.status === PARCEL_STATUSES.DRAFT)) return 'pending';
 
   // Sinon : le statut du colis le moins avancé (pire cas)
   const lowestStatus = active.reduce((lowest, p) => {
@@ -121,10 +128,9 @@ function computeOrderStatus(parcels) {
     return w < lw ? p.status : lowest;
   }, active[0].status);
 
-  // FIX-001: Mapping parcel_status → order_status
-  // Toutes les valeurs retournées sont des ENUM order_status valides.
+  // Mapping parcel_status → order_status (ENUM valides uniquement)
   const PARCEL_TO_ORDER = {
-    [PARCEL_STATUSES.DRAFT]:       'preparation',  // draft → pas d'équivalent order, on met preparation
+    [PARCEL_STATUSES.DRAFT]:       'preparation',
     [PARCEL_STATUSES.PREPARATION]: 'preparation',
     [PARCEL_STATUSES.SHIPPED]:     'shipped',
     [PARCEL_STATUSES.IN_TRANSIT]:  'in_transit',
@@ -133,7 +139,6 @@ function computeOrderStatus(parcels) {
     [PARCEL_STATUSES.COLLECTED]:   'collected',
   };
 
-  // FIX-001: fallback 'processing' → 'preparation'
   return PARCEL_TO_ORDER[lowestStatus] || 'preparation';
 }
 

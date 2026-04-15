@@ -17,27 +17,13 @@
 
 const pool = require('../db');
 const { transitionOrderStatus } = require('../services/order-status-machine');
-
-/**
- * Mapping statut calculé → statut ENUM valide.
- * Les statuts non-mappables retournent null (= on ne touche pas).
- */
-const COMPUTED_TO_ENUM = {
-  collected:           'collected',   // tous les colis récupérés
-  available:           'available',   // au moins un colis disponible
-  in_transit:          'in_transit',  // au moins un colis en transit/shipped
-  preparation:         'preparation', // au moins un colis en préparation
-  pending:             'pending',     // tous les colis en draft (pas encore traités)
-  // Statuts sans équivalent direct dans order_status ENUM:
-  // 'delivered' → 'collected' (tous récupérés = même sens)
-  // 'partially_delivered' → null (ambigu, on ne touche pas — incident créé)
-  // 'processing' → 'preparation' (en cours = même sens)
-};
+// ── S2 FIX: Utilise la version CANONIQUE de computeOrderStatus ──
+// Une seule source de vérité pour le calcul du statut agrégé.
+const { computeOrderStatus: computeOrderStatusFromParcels } = require('./parcels');
 
 /**
  * Recalcule le statut d'une commande depuis ses colis.
- * Appelé automatiquement par le scan-engine après chaque scan.
- * Peut aussi être appelé manuellement (réconciliation).
+ * Délègue à la version canonique dans utils/parcels.js.
  *
  * Retourne un statut ENUM valide ou null si non-déterminable.
  */
@@ -45,36 +31,15 @@ async function computeOrderStatus(orderId, client = null) {
   const db = client || pool;
 
   const { rows: parcels } = await db.query(
-    `SELECT status FROM parcels WHERE order_id = $1 AND status != 'cancelled'`,
+    `SELECT status, type FROM parcels WHERE order_id = $1`,
     [orderId]
   );
 
+  // Pas de colis du tout → null (skip, pas de sync nécessaire)
   if (parcels.length === 0) return null;
 
-  const counts = {
-    collected: 0, available: 0, in_transit: 0, 
-    shipped: 0, preparation: 0, draft: 0
-  };
-
-  for (const p of parcels) {
-    if (p.status === 'collected') counts.collected++;
-    else if (['available', 'arrived'].includes(p.status)) counts.available++;
-    else if (p.status === 'in_transit') counts.in_transit++;
-    else if (p.status === 'shipped') counts.shipped++;
-    else if (p.status === 'preparation') counts.preparation++;
-    else if (p.status === 'draft') counts.draft++;
-  }
-
-  const total = parcels.length;
-
-  // Mapping vers statuts ENUM valides
-  if (counts.collected === total) return 'collected';        // était 'delivered'
-  if (counts.collected > 0) return null;                     // était 'partially_delivered' → ambig, skip
-  if (counts.available > 0) return 'available';
-  if (counts.in_transit > 0 || counts.shipped > 0) return 'in_transit';
-  if (counts.preparation > 0) return 'preparation';         // était 'processing'
-  if (counts.draft === total) return 'pending';
-  return 'preparation';                                       // fallback safe (était 'processing')
+  // Délègue à la version canonique (gère cancelled, partial collected, etc.)
+  return computeOrderStatusFromParcels(parcels);
 }
 
 /**
