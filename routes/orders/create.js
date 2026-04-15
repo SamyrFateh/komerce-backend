@@ -82,7 +82,6 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     } = req.body;
 
     // ── Validation ──────────────────────────────────────────────────────────
-    // BUG-009 fix: validation Array.isArray pour éviter crash sur input malformé
     if (!Array.isArray(items) || items.length === 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'items[] obligatoire (tableau, min 1 article)' });
@@ -119,7 +118,6 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     }
 
     // ── Résoudre le routage logistique depuis le relais ────────────────────
-    // Source unique de vérité : la destination vient TOUJOURS du relais, jamais du frontend
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };
 
     if (relais) {
@@ -159,7 +157,6 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     // ── Charger les produits en une seule requête ───────────────────────────
     const productIds = items.map(i => i.product_id);
 
-    // BUG-008 fix: FOR UPDATE pour verrouiller les lignes et empêcher la survente
     const { rows: products } = await client.query(
       'SELECT * FROM products WHERE id = ANY($1) AND is_active = TRUE FOR UPDATE',
       [productIds]
@@ -208,7 +205,6 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
 
       total_kmf += product.price_kmf * qty;
 
-      // Estimation coût : sourcing + fret + douane estimée
       const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
       const base_aed_kmf = (product.price_aed || 0) * aedFallback * qty;
       const customs_est = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
@@ -219,7 +215,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
       : 0;
 
-    // ── Loyalty : récupérer le rabais du client connecté ──────────────────
+    // ── Loyalty ─────────────────────────────────────────────────────────────
     let discountPct = 0;
     let discountKmf = 0;
     let loyaltyLabel = null;
@@ -232,7 +228,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       total_kmf = total_kmf - discountKmf;
     }
 
-    // ── Wallet — appliquer si demandé et solde disponible ──────────────────
+    // ── Wallet ──────────────────────────────────────────────────────────────
     let creditApplied = 0;
 
     if (use_wallet && req.user?.id) {
@@ -240,18 +236,15 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       if (walletBalance > 0) {
         creditApplied = Math.min(walletBalance, total_kmf);
         total_kmf -= creditApplied;
-        // Débit wallet effectif après INSERT order (besoin de order.id)
       }
     }
 
-    // ── Code cash 6 chiffres — lisible oralement ───────────────────────────
+    // ── Codes ───────────────────────────────────────────────────────────────
     const cash_ref_code = payment_mode === 'cash_relais'
       ? generateCashCode()
       : null;
 
-    // Code de retrait 6 caractères alphanumériques (crypto)
     const pickup_code = generatePickupCode();
-
     const reference = await getUniqueRef(db);
 
     const { rows: [order] } = await client.query(
@@ -315,14 +308,14 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       ]
     );
 
-    // ── Historiser statut initial ───────────────────────────────────────────
+    // ── Historique statut initial ───────────────────────────────────────────
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
        VALUES ($1, 'pending', 'Commande créée', $2)`,
       [order.id, req.user.id]
     );
 
-    // ── Wallet : débit effectif FIFO (après INSERT pour avoir order.id) ─────
+    // ── Wallet debit effectif ───────────────────────────────────────────────
     if (creditApplied > 0) {
       await walletService.debit(client, {
         userId: req.user.id,
@@ -364,14 +357,15 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
           item.module_accessories ? JSON.stringify(item.module_accessories) : null,
         ]
       );
-
-      // F19 fix: stock décrémenté UNIQUEMENT à la confirmation paiement (payments.js)
     }
 
     await client.query('COMMIT');
 
-    // ── Notifications post-commit (non bloquant) ───────────────────────────
-    const smsPhone = rPhone || req.user.phone;
+    // ── Notifications post-commit (multi-numéros) ──────────────────────────
+    const localPhone = rPhone || null;
+    const diasporaPhone = req.user?.phone || null;
+    const smsPhones = [...new Set([localPhone, diasporaPhone].filter(Boolean))];
+
     const userEmail = req.user?.email || req.body?.email || null;
 
     let cashSmsText = null;
@@ -390,7 +384,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       };
     });
 
-    notifyOrderCreated(order, smsPhone, userEmail, emailItems, relais, cashSmsText)
+    notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
       .catch(err => console.error('[ORDER-CREATED] ❌', err.message));
 
     return res.status(201).json({
