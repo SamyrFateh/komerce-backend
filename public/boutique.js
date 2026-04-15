@@ -1620,11 +1620,10 @@
 
     // WhatsApp notice
     if (recipientPhone) {
-      let waLines = '📲 Confirmation WhatsApp envoyée au <strong>' + sanitize(recipientPhone) + '</strong>';
-      if (senderPhone && senderPhone.trim()) {
-        waLines += ' et à <strong>' + sanitize(senderPhone.trim()) + '</strong>';
-      }
-      wrap.innerHTML += '<div style="margin-top:10px;padding:9px 12px;background:#e7f9ef;border-radius:10px;font-size:0.82rem;color:#1a7a3e;font-weight:600;line-height:1.5;">'+waLines+'</div>';
+      const waMsg = (senderPhone && senderPhone.trim())
+        ? '📲 Le bénéficiaire et vous recevrez une confirmation WhatsApp'
+        : '📲 Le bénéficiaire recevra une confirmation WhatsApp';
+      wrap.innerHTML += '<div style="margin-top:10px;padding:9px 12px;background:#e7f9ef;border-radius:10px;font-size:0.82rem;color:#1a7a3e;font-weight:600;">'+waMsg+'</div>';
     }
 
     // Buttons
