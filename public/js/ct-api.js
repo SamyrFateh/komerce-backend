@@ -113,3 +113,13 @@ CT.api = {
   relaisScanCollect: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "collected" }); },
 
 };
+// ─────────────────────────────────────────────
+// TRANSIT DASHBOARD
+// ─────────────────────────────────────────────
+transitParcels: function() {
+  return this.get('/api/transit-dashboard');
+},
+
+markInTransit: function(ref) {
+  return this.post('/api/transit-dashboard/' + ref + '/transit');
+},

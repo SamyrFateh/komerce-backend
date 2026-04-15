@@ -453,3 +453,67 @@ function _wireRelaisActions(container) {
     });
   });
 }
+// ═══════════════════════════════════════════════
+// 🚢 TRANSITAIRE
+// ═══════════════════════════════════════════════
+CT.views.transitaire = async function(container) {
+  container.innerHTML = '<div style="padding:40px;text-align:center">🚢 Chargement transitaire...</div>';
+
+  try {
+    const res = await CT.api.transitParcels();
+    const parcels = res.parcels || [];
+
+    let html = '<h2 style="margin-bottom:12px">🚢 Transitaire</h2>';
+
+    if (!parcels.length) {
+      html += '<div style="color:#64748b">✅ Aucun colis à envoyer</div>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse">';
+      html += `
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="padding:8px">Réf</th>
+            <th>Destination</th>
+            <th>Poids</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+      `;
+
+      parcels.forEach(p => {
+        html += `
+          <tr style="border-bottom:1px solid #e2e8f0">
+            <td style="padding:8px;font-weight:700">${p.reference}</td>
+            <td>${p.destination_island || '-'}</td>
+            <td>${p.weight_kg || '-'} kg</td>
+            <td style="text-align:right">
+              <button onclick="CT.views._goTransit('${p.reference}')"
+                style="background:#3b82f6;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
+                🚢 Envoyer
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += '</tbody></table>';
+    }
+
+    container.innerHTML = html;
+
+  } catch (err) {
+    container.innerHTML = `<div style="color:red">❌ ${err.message}</div>`;
+  }
+};
+
+// action
+CT.views._goTransit = async function(ref) {
+  try {
+    await CT.api.markInTransit(ref);
+    alert('✅ Colis en transit');
+    CT.views.transitaire(document.getElementById('ct-main'));
+  } catch (err) {
+    alert('❌ ' + err.message);
+  }
+};

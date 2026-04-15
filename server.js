@@ -204,7 +204,9 @@ const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
 const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
+const transitDashboardRoutes = require('./routes/transit-dashboard');
 
+app.use('/api/transit-dashboard', transitDashboardRoutes);
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
 app.use('/api/orders',     ordersRouter);
