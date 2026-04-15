@@ -67,6 +67,12 @@ const WA_MESSAGES = {
 
   incident: (d) =>
     `🚨 *Incident signalé*\n\nBonjour ${d.customerName},\nUn incident a été signalé sur votre colis *${d.parcelRef}*.\n\nNotre équipe traite le problème.\n— Komerce 🛒`,
+
+  order_created_cash: (d) =>
+    `🛒 *Commande enregistrée !*\n\nBonjour ${d.customerName},\nVotre commande *${d.orderRef}* a bien été enregistrée.\n\n${d.itemsText}\n\n━━━━━━━━━━━━━━━━━━\n💰 *Total : ${Number(d.totalKmf).toLocaleString()} KMF*\n━━━━━━━━━━━━━━━━━━\n\n🏪 *Relais : ${d.relaisName || 'votre relais'}*\n🔑 *Code de paiement : ${d.cashCode}*\n\n📋 *Prochaine étape :*\nRendez-vous au relais pour payer en espèces.\nPrésentez votre code *${d.cashCode}* ou la référence *${d.orderRef}*.\n\n⏰ Vous avez 36h pour régler.\n\n📍 Suivre ma commande :\n${d.trackingUrl}\n\n— Komerce 🛒`,
+
+  order_created_stripe: (d) =>
+    `🛒 *Commande confirmée !*\n\nBonjour ${d.customerName},\nVotre commande *${d.orderRef}* est confirmée et payée ✅\n\n${d.itemsText}\n\n━━━━━━━━━━━━━━━━━━\n💰 *Total : ${Number(d.totalKmf).toLocaleString()} KMF*\n━━━━━━━━━━━━━━━━━━\n\n✅ Paiement en ligne reçu.\nVotre commande est en cours de traitement !\n\n📍 Suivre ma commande :\n${d.trackingUrl}\n\n— Komerce 🛒`,
 };
 
 // ─── WhatsApp wa.me link generator ──────────────────────────
@@ -523,15 +529,64 @@ function notifyStatusChange(order, status) {
   }
 }
 
-function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText) {
-  if (phone) {
-    const smsText = cashSmsText || STATUS_SMS.ordered(order.reference);
-    sendSMS(phone, smsText, order.payment_mode === 'cash_relais' ? 'cash_relais_confirm' : 'confirmation', order.id)
-      .catch(e => console.error('[NOTIF-SMS]', e.message));
-  }
-  if (email) {
-    sendOrderEmail({ ...order, customer_email: email, relay_name: relais?.name }, 'confirmed')
-      .catch(e => console.error('[NOTIF-EMAIL]', e.message));
+async function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText) {
+  const BASE_URL = process.env.BASE_URL || 'https://komerce-backend-production.up.railway.app';
+  const trackingUrl = `${BASE_URL}/suivi.html`;
+
+  try {
+    // Build items text for WhatsApp
+    const itemsText = (emailItems || []).map(i =>
+      `• ${i.name || 'Article'} ×${i.qty} — ${Number(i.price_kmf).toLocaleString()} KMF`
+    ).join('\n') || '(voir détails sur la boutique)';
+
+    const d = {
+      customerName: order.recipient_name || order.customer_name || 'Client',
+      orderRef: order.reference,
+      totalKmf: order.total_kmf,
+      relaisName: relais?.name || '',
+      cashCode: order.cash_ref_code || '',
+      trackingUrl,
+      itemsText,
+    };
+
+    // ── WhatsApp via Twilio (PRINCIPAL) ──
+    if (phone) {
+      const isCash = order.payment_mode === 'cash_relais';
+      const waTemplate = isCash ? WA_MESSAGES.order_created_cash : WA_MESSAGES.order_created_stripe;
+      const waText = waTemplate(d);
+      const waResult = await sendWhatsApp(phone, waText);
+
+      await logNotification({
+        orderRef: order.reference,
+        channel: 'whatsapp',
+        event: isCash ? 'order_created_cash' : 'order_created_stripe',
+        recipient: phone,
+        status: waResult.success ? 'sent' : 'link_generated',
+        detail: waResult,
+      });
+
+      console.log(`[NOTIF] 🛒 Order created WA → ${order.reference} (${isCash ? 'cash' : 'stripe'}) → ${phone} | ${waResult.success ? '✅' : '⚠️'}`);
+    }
+
+    // ── SMS fallback (Africa's Talking) ──
+    if (phone) {
+      const smsText = cashSmsText || STATUS_SMS.ordered(order.reference);
+      sendSMS(phone, smsText, order.payment_mode === 'cash_relais' ? 'cash_relais_confirm' : 'confirmation', order.id)
+        .catch(e => console.error('[NOTIF-SMS]', e.message));
+    }
+
+    // ── Email ──
+    if (email) {
+      sendOrderEmail({ ...order, customer_email: email, relay_name: relais?.name }, 'confirmed')
+        .catch(e => console.error('[NOTIF-EMAIL]', e.message));
+    }
+  } catch (err) {
+    console.error(`[NOTIF] ❌ notifyOrderCreated(${order.reference}):`, err.message);
+    // Fallback to legacy SMS if WhatsApp fails completely
+    if (phone) {
+      const smsText = cashSmsText || STATUS_SMS.ordered(order.reference);
+      sendSMS(phone, smsText, 'fallback', order.id).catch(() => {});
+    }
   }
 }
 
