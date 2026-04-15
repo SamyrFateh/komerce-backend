@@ -1,17 +1,14 @@
 /* ===================================================================
-   Komerce Control Tower — ct-api.js
+   Komerce Control Tower — ct-api.js v6.0
    API layer: all HTTP calls go through here.
    Auth is handled by httpOnly cookie (kmrc_jwt), set by the server.
+   v6: + Operational endpoints (confirm cash, create parcel, advance status)
    =================================================================== */
 window.CT = window.CT || {};
 
 CT.api = {
-  BASE: '', // Same origin
+  BASE: '',
 
-  /**
-   * Core fetch wrapper — always sends credentials (httpOnly cookie).
-   * Throws on non-OK responses with server error message.
-   */
   async fetch(path, options) {
     options = options || {};
     var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -26,14 +23,13 @@ CT.api = {
       try { err = await res.json(); } catch(_e) { err = { error: res.statusText }; }
       throw new Error(err.error || err.message || 'Erreur API (' + res.status + ')');
     }
-    // Handle 204 No Content
     var text = await res.text();
     if (!text) return {};
     return JSON.parse(text);
   },
 
   get: function(path) { return this.fetch(path); },
-  post: function(path, body) { return this.fetch(path, { method: 'POST', body: JSON.stringify(body) }); },
+  post: function(path, body) { return this.fetch(path, { method: 'POST', body: JSON.stringify(body || {}) }); },
   put: function(path, body) { return this.fetch(path, { method: 'PUT', body: JSON.stringify(body) }); },
   patch: function(path, body) { return this.fetch(path, { method: 'PATCH', body: JSON.stringify(body) }); },
   del: function(path) { return this.fetch(path, { method: 'DELETE' }); },
@@ -42,37 +38,54 @@ CT.api = {
   login: function(email, password) { return this.post('/api/auth/login', { email: email, password: password }); },
   logout: function() { return this.post('/api/auth/logout'); },
   me: function() { return this.get('/api/auth/me'); },
-  guestCheckout: function(phone, fullName) { return this.post('/api/auth/guest-checkout', { phone: phone, full_name: fullName }); },
-
-  // ---- Dashboard ----
-  dashboard: function(endpoint) { return this.get('/api/dashboard/' + endpoint); },
-
-  // ---- Orders ----
-  createOrder: function(data) { return this.post('/api/orders', data); },
-  updateOrderStatus: function(id, status) { return this.patch('/api/orders/' + id + '/status', { status: status }); },
-  deleteOrder: function(id) { return this.del('/api/admin/orders/' + id); },
-  getOrder: function(ref) { return this.get('/api/orders/' + ref); },
 
   // ---- Admin ----
-  adminOrders: function(params) {
-    var qs = new URLSearchParams(params || {}).toString();
-    return this.get('/api/admin/orders' + (qs ? '?' + qs : ''));
-  },
   seedTest: function() { return this.post('/api/admin/seed-test', { confirm: true }); },
   resetAll: function(mode) { return this.post('/api/admin/reset', { mode: mode || 'orders' }); },
   adminCounts: function() { return this.get('/api/admin/counts'); },
-  adminUsers: function() { return this.get('/api/admin/users'); },
 
-  // ---- Payments (Stripe + Cash) ----
-  stripeCreateIntent: function(orderRef) { return this.post('/api/payments/stripe/intent', { order_reference: orderRef }); },
-  cashConfirm: function(cashRefCode) { return this.post('/api/payments/cash/confirm', { cash_ref_code: cashRefCode }); },
-  paymentRates: function() { return this.get('/api/payments/rates'); },
-  stripeConfig: function() { return this.get('/api/payments/config'); },
+  // ═══════════════════════════════════════════════════════════════
+  // PARCEL-FIRST v2 ENDPOINTS
+  // ═══════════════════════════════════════════════════════════════
 
-  // ---- Products ----
-  // API returns {products: [...], total, limit, offset} — we extract the array
-  products: async function() {
-    var data = await this.get('/api/products');
-    return data.products || data || [];
-  }
+  // ---- Parcels (COLIS) ----
+  v2Parcels: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/parcels' + (qs ? '?' + qs : ''));
+  },
+  v2ParcelDetail: function(ref) { return this.get('/api/v2/parcels/' + ref); },
+  v2ParcelKpis: function() { return this.get('/api/v2/parcels/kpis'); },
+  v2ParcelAlerts: function() { return this.get('/api/v2/parcels/alerts'); },
+  v2ParcelCritical: function() { return this.get('/api/v2/parcels/critical'); },
+  v2ParcelReconciliation: function() { return this.get('/api/v2/parcels/reconciliation'); },
+  v2ParcelTimeline: function(ref) { return this.get('/api/v2/parcels/' + ref + '/timeline'); },
+
+  // ---- Scan / Advance Status ----
+  v2Scan: function(ref, eventType, notes) {
+    return this.post('/api/v2/parcels/' + ref + '/scan', {
+      event_type: eventType,
+      notes: notes || null,
+      actor_name: 'Admin Control Tower',
+      actor_role: 'system'
+    });
+  },
+
+  // ---- Orders v2 (Opérationnel) ----
+  v2PendingCash: function() { return this.get('/api/v2/orders/pending-cash'); },
+  v2ReadyForParcel: function() { return this.get('/api/v2/orders/ready-for-parcel'); },
+  v2ConfirmCash: function(ref) { return this.post('/api/v2/orders/' + ref + '/confirm-cash'); },
+  v2CreateParcel: function(ref) { return this.post('/api/v2/orders/' + ref + '/create-parcel'); },
+
+  // ---- Incidents ----
+  v2Incidents: function(params) {
+    var qs = new URLSearchParams(params || {}).toString();
+    return this.get('/api/v2/incidents' + (qs ? '?' + qs : ''));
+  },
+  v2ResolveIncident: function(id, resolution) {
+    return this.post('/api/v2/incidents/' + id + '/resolve', { resolution: resolution });
+  },
+
+  // ---- Invoices ----
+  invoicesList: function() { return this.get('/api/invoices'); },
+  invoiceGet: function(id) { return this.get('/api/invoices/' + id); },
 };
