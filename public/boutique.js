@@ -1431,20 +1431,7 @@ console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);
     btn.style.opacity = '0.7';
 
     try {
-      // Step 1: guest-checkout
-     await apiPost('/api/orders', {
-  recipient_name: clientName,
-  recipient_phone: fullRecipPhone,
-  tracking_phone: trackingPhone,
-  payment_mode: od.payment_mode,
-  relais_id: od.relais_id,
-  items: state.cart.map(item => ({
-    product_id: item.product.id,
-    quantity: item.qty
-  }))
-});
-
-      // Step 2: create order
+      // Créer la commande
       const items = state.cart.map(i => ({
         product_id: String(i.product.id),
         quantity: i.qty,
@@ -1458,7 +1445,7 @@ console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);
         recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false,
-        sender_phone: senderPhone || undefined
+        tracking_phone: trackingPhone || undefined
       });
 
       const orderData = apiResult.order || apiResult;
