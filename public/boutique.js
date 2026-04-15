@@ -1423,6 +1423,8 @@
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const isStripe = od.payment_mode === 'stripe_eur';
 	const trackingPhone = senderPhone ? senderPhone : null;
+console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);    
+	
 
     btn.disabled = true;
     btn.textContent = isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…';
@@ -1430,13 +1432,16 @@
 
     try {
       // Step 1: guest-checkout
-      await apiPost('/api/orders', {
+     await apiPost('/api/orders', {
   recipient_name: clientName,
   recipient_phone: fullRecipPhone,
-  tracking_phone: trackingPhone || "+33699272526", // 🔥 TEST DIRECT
+  tracking_phone: trackingPhone,
   payment_mode: od.payment_mode,
   relais_id: od.relais_id,
-  items: ...
+  items: state.cart.map(item => ({
+    product_id: item.product.id,
+    quantity: item.qty
+  }))
 });
 
       // Step 2: create order
