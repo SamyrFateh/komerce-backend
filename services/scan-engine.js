@@ -582,6 +582,8 @@ async function processContentVerification(client, parcelId, orderId, items, veri
 async function syncOrderFromParcels(client, orderId) {
   if (!orderId) return;
 
+  const { transitionOrderStatus } = require('./order-status-machine');
+
   // Agréger les quantités des parcel_items par order_item_id
   await client.query(`
     UPDATE order_items oi SET
@@ -606,7 +608,9 @@ async function syncOrderFromParcels(client, orderId) {
     WHERE oi.id = agg.order_item_id
   `, [orderId]);
 
-  // Recalculer le statut commande depuis les colis
+  // ── Recalculer le statut commande depuis les colis ──
+  // ✅ FIX: Uses VALID statuses from the order_status ENUM only
+  // ✅ FIX: Uses transitionOrderStatus (state machine SSOT) instead of direct SQL
   const { rows: [stats] } = await client.query(`
     SELECT
       COUNT(*) FILTER (WHERE status NOT IN ('cancelled')) AS active,
@@ -617,26 +621,34 @@ async function syncOrderFromParcels(client, orderId) {
     FROM parcels WHERE order_id = $1
   `, [orderId]);
 
-  let newStatus;
-  if (!stats || stats.active === 0) {
-    newStatus = null; // Pas de changement
+  // Map parcel aggregate status → valid order status
+  let newStatus = null;
+  if (!stats || parseInt(stats.active) === 0) {
+    newStatus = null; // No change
   } else if (parseInt(stats.collected) === parseInt(stats.active)) {
-    newStatus = 'delivered';
-  } else if (parseInt(stats.collected) > 0) {
-    newStatus = 'partially_delivered';
+    newStatus = 'collected';        // ✅ Was 'delivered' (INVALID)
   } else if (parseInt(stats.available) > 0) {
-    newStatus = 'available';
+    newStatus = 'available';        // ✅ Valid
   } else if (parseInt(stats.in_transit) > 0) {
-    newStatus = 'in_transit';
+    newStatus = 'in_transit';       // ✅ Valid
   } else if (parseInt(stats.pending) > 0) {
-    newStatus = 'processing';
+    newStatus = 'preparation';      // ✅ Was 'processing' (INVALID)
   }
+  // ❌ Removed 'partially_delivered' — not in ENUM
 
   if (newStatus) {
-    await client.query(
-      `UPDATE orders SET status = $2, updated_at = NOW() WHERE id = $1`,
-      [orderId, newStatus]
-    );
+    // Use state machine SSOT — NOT direct SQL
+    const result = await transitionOrderStatus({
+      orderId,
+      newStatus,
+      actor: { id: null, role: 'system' },
+      source: 'scan_engine_sync',
+      note: `Auto-sync from parcel aggregation`,
+      dbClient: client,
+    });
+    if (!result.success) {
+      console.warn(`[SCAN-ENGINE] syncOrderFromParcels: transition to ${newStatus} failed for order ${orderId}: ${result.error}`);
+    }
   }
 }
 

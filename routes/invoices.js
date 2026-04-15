@@ -11,15 +11,16 @@
 const express = require('express');
 const router = express.Router();
 const invoiceService = require('../services/invoice-service');
+const { authenticate } = require('../middleware/auth');
 
-// ── Middleware: require auth ──
-function requireAuth(req, res, next) {
+// ── Middleware: authenticate (extracts JWT → req.user) + check ──
+const guard = [authenticate, (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
   next();
-}
+}];
 
 // ── GET /api/invoices — List all invoices (admin) ──
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', ...guard, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const offset = parseInt(req.query.offset) || 0;
@@ -32,7 +33,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // ── GET /api/invoices/:orderId — Generate and display invoice HTML ──
-router.get('/:orderId', requireAuth, async (req, res) => {
+router.get('/:orderId', ...guard, async (req, res) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     const mode = req.query.mode || 'a5'; // 'a5' or 'thermal'
@@ -62,7 +63,7 @@ router.get('/:orderId', requireAuth, async (req, res) => {
 });
 
 // ── GET /api/invoices/:orderId/json — Invoice data as JSON ──
-router.get('/:orderId/json', requireAuth, async (req, res) => {
+router.get('/:orderId/json', ...guard, async (req, res) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     res.json({ ok: true, invoice });
@@ -73,7 +74,7 @@ router.get('/:orderId/json', requireAuth, async (req, res) => {
 });
 
 // ── GET /api/invoices/:orderId/download — Download standalone HTML ──
-router.get('/:orderId/download', requireAuth, async (req, res) => {
+router.get('/:orderId/download', ...guard, async (req, res) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     const mode = req.query.mode || 'a5';
@@ -90,7 +91,7 @@ router.get('/:orderId/download', requireAuth, async (req, res) => {
 });
 
 // ── POST /api/invoices/:orderId/deliver — Mark as delivered ──
-router.post('/:orderId/deliver', requireAuth, async (req, res) => {
+router.post('/:orderId/deliver', ...guard, async (req, res) => {
   try {
     const { via } = req.body; // 'print', 'email', 'whatsapp'
     if (!via || !['print', 'email', 'whatsapp'].includes(via)) {
@@ -108,4 +109,3 @@ router.post('/:orderId/deliver', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
-
