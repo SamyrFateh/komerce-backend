@@ -36,65 +36,80 @@ const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 //   recipient_phone      → téléphone du destinataire
 //   confection_type      → 'aucun' | 'couture_standard' | 'sur_mesure' | 'retouche_locale' | 'broderie' | 'lunettes_vue' | 'lunettes_solaires'
 //   confection_instructions, confection_delay_days, confection_artisan_id
-//   module_type  → si commande cérémonie globale
-//   module_*     → autres champs module au niveau commande
+//   module_type          → si commande cérémonie globale
+//   module_*             → autres champs module au niveau commande
 
 router.post('/', authenticate, validate(orders.create), async (req, res, next) => {
   const client = await db.getClient();
+
   try {
     await client.query('BEGIN');
 
     // Taux de change actuels — utilisés pour total_eur et cost_estimated
-    const rates  = await getRates();
+    const rates = await getRates();
     // BUG-002 fix: fallback si getRates() échoue ou retourne 0/null
     const eurKmf = rates?.eur_kmf || 492;
 
     const {
-      items                 = [],
+      items = [],
       relais_id,
       payment_mode,
       stripe_payment_intent,
       recipient_name,
       recipient_phone,
+
       // Module spécialisé niveau commande
-      confection_type           = 'aucun',
+      confection_type = 'aucun',
       confection_instructions,
-      confection_delay_days     = 0,
+      confection_delay_days = 0,
       confection_artisan_id,
+
       // Module spécialisé niveau commande (optionnel — sinon porté par items)
       module_type,
       module_fabric_id,
       module_fabric_type,
       module_size,
-      module_retouche         = false,
+      module_retouche = false,
       module_qty_meters,
       module_accessories,
+
       // Spec §11 : capturer dès MVP pour fidélisation Phase 2
       // Valeurs : mariage · cadeau · personnel · construction · rentree · ramadan · aid · autre
-      order_occasion        = null,
+      order_occasion = null,
+
       // Wallet opt-in : le client choisit d'appliquer son wallet
-      use_wallet            = false,
+      use_wallet = false,
     } = req.body;
 
     // ── Validation ──────────────────────────────────────────────────────────
     // BUG-009 fix: validation Array.isArray pour éviter crash sur input malformé
     if (!Array.isArray(items) || items.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'items[] obligatoire (tableau, min 1 article)' });
     }
+
     if (!['stripe_eur', 'cash_relais'].includes(payment_mode)) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais' });
     }
+
     if (module_type && !MODULE_TYPES.includes(module_type)) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: `module_type invalide. Valeurs : ${MODULE_TYPES.join(', ')}` });
     }
 
     // ── Résoudre relais ─────────────────────────────────────────────────────
     let relais = null;
+
     if (relais_id) {
       const { rows: [r] } = await client.query(
-        'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE', [relais_id]
+        'SELECT * FROM relais WHERE id = $1 AND is_active = TRUE',
+        [relais_id]
       );
-      if (!r) return res.status(404).json({ error: 'Relais introuvable' });
+      if (!r) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Relais introuvable' });
+      }
       relais = r;
     } else {
       const { rows: [r] } = await client.query(
@@ -106,6 +121,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     // ── Résoudre le routage logistique depuis le relais ────────────────────
     // Source unique de vérité : la destination vient TOUJOURS du relais, jamais du frontend
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };
+
     if (relais) {
       try {
         routing = resolveRoutingFromRelais(relais);
@@ -122,12 +138,13 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     let recipient_id = null;
     const rName  = recipient_name  || req.user.full_name;
     const rPhone = recipient_phone || req.user.phone;
+
     if (rName && rPhone) {
-      // Chercher un recipient existant pour cet utilisateur + relais
       const { rows: [existingRc] } = await client.query(
         'SELECT id FROM recipients WHERE user_id = $1 AND phone = $2 AND relais_id = $3 LIMIT 1',
         [req.user.id, rPhone, relais?.id || null]
       );
+
       if (existingRc) {
         recipient_id = existingRc.id;
       } else {
@@ -141,6 +158,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
 
     // ── Charger les produits en une seule requête ───────────────────────────
     const productIds = items.map(i => i.product_id);
+
     // BUG-008 fix: FOR UPDATE pour verrouiller les lignes et empêcher la survente
     const { rows: products } = await client.query(
       'SELECT * FROM products WHERE id = ANY($1) AND is_active = TRUE FOR UPDATE',
@@ -148,7 +166,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     );
     const productMap = Object.fromEntries(products.map(p => [p.id, p]));
 
-    // ── Charger toutes les règles métier en parallèle (Tâche 6 — optimisation) ──
+    // ── Charger toutes les règles métier en parallèle ──────────────────────
     const [maxQty, fretPerKg, aedFallback, customsPct, cashTimeout] = await Promise.all([
       getRule('MAX_QUANTITY_PER_ITEM', 100),
       getRule('FREIGHT_KMF_PER_KG', 65),
@@ -158,7 +176,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     ]);
 
     // ── Vérifier stock + calculer totaux ────────────────────────────────────
-    let total_kmf      = 0;
+    let total_kmf = 0;
     let cost_estimated = 0;
 
     for (const item of items) {
@@ -166,16 +184,20 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'product_id invalide' });
       }
+
       const product = productMap[item.product_id];
       if (!product) {
         await client.query('ROLLBACK');
         return res.status(404).json({ error: `Produit introuvable : ${item.product_id}` });
       }
-      const qty = parseInt(item.quantity) || 1;
+
+      const qty = parseInt(item.quantity, 10) || 1;
+
       if (qty < 1 || qty > maxQty) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: `Quantité invalide pour ${item.product_id}: min 1, max ${maxQty}` });
       }
+
       if (product.stock !== null && product.stock < qty) {
         await client.query('ROLLBACK');
         return res.status(409).json({
@@ -183,13 +205,14 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
           available_stock: product.stock,
         });
       }
+
       total_kmf += product.price_kmf * qty;
 
       // Estimation coût : sourcing + fret + douane estimée
-      const fret_kmf     = (product.weight_kg || 0.5) * qty * fretPerKg;
+      const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
       const base_aed_kmf = (product.price_aed || 0) * aedFallback * qty;
-      const customs_est  = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
-      cost_estimated    += base_aed_kmf + fret_kmf + customs_est;
+      const customs_est = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
+      cost_estimated += base_aed_kmf + fret_kmf + customs_est;
     }
 
     const margin_est = total_kmf > 0
@@ -197,31 +220,31 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       : 0;
 
     // ── Loyalty : récupérer le rabais du client connecté ──────────────────
-    let discountPct   = 0;
-    let discountKmf   = 0;
-    let loyaltyLabel  = null;
+    let discountPct = 0;
+    let discountKmf = 0;
+    let loyaltyLabel = null;
+
     if (req.user?.id) {
-      const ld      = await getLoyaltyDiscount(db, req.user.id);
-      discountPct   = ld.discountPct  || 0;
-      loyaltyLabel  = ld.discountLabel || null;
-      discountKmf   = Math.round(total_kmf * discountPct / 100);
-      total_kmf     = total_kmf - discountKmf;
+      const ld = await getLoyaltyDiscount(db, req.user.id);
+      discountPct = ld.discountPct || 0;
+      loyaltyLabel = ld.discountLabel || null;
+      discountKmf = Math.round(total_kmf * discountPct / 100);
+      total_kmf = total_kmf - discountKmf;
     }
 
     // ── Wallet — appliquer si demandé et solde disponible ──────────────────
     let creditApplied = 0;
+
     if (use_wallet && req.user?.id) {
       const walletBalance = await walletService.getBalanceInTx(client, req.user.id);
       if (walletBalance > 0) {
         creditApplied = Math.min(walletBalance, total_kmf);
-        total_kmf    -= creditApplied;
+        total_kmf -= creditApplied;
         // Débit wallet effectif après INSERT order (besoin de order.id)
       }
     }
 
-    // ── Code cash 6 chiffres (v7.7) — lisible oralement ─────────────────────
-    // Ex: "482917" au lieu de "0c92c35b321fb02b"
-    // Le client dicte le code à l'agent relais en 3 secondes.
+    // ── Code cash 6 chiffres — lisible oralement ───────────────────────────
     const cash_ref_code = payment_mode === 'cash_relais'
       ? generateCashCode()
       : null;
@@ -273,14 +296,14 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
         confection_instructions || null,
         confection_delay_days,
         confection_artisan_id || null,
-        module_type        || null,
-        module_fabric_id   || null,
+        module_type || null,
+        module_fabric_id || null,
         module_fabric_type || null,
-        module_size        || null,
+        module_size || null,
         module_retouche,
-        module_qty_meters  || null,
+        module_qty_meters || null,
         module_accessories ? JSON.stringify(module_accessories) : null,
-        order_occasion     || null,
+        order_occasion || null,
         Math.round(cost_estimated),
         Number(margin_est),
         discountPct,
@@ -299,16 +322,17 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       [order.id, req.user.id]
     );
 
-    // ── Wallet : débit effectif FIFO (après INSERT pour avoir order.id) ──────
+    // ── Wallet : débit effectif FIFO (après INSERT pour avoir order.id) ─────
     if (creditApplied > 0) {
       await walletService.debit(client, {
-        userId:         req.user.id,
-        amountKmf:      creditApplied,
-        reason:         'checkout',
-        referenceId:    order.id,
+        userId: req.user.id,
+        amountKmf: creditApplied,
+        reason: 'checkout',
+        referenceId: order.id,
         idempotencyKey: `checkout_${order.id}`,
-        note:           `Wallet appliqué à commande ${order.reference}`,
+        note: `Wallet appliqué à commande ${order.reference}`,
       });
+
       await client.query(
         'UPDATE orders SET wallet_applied_kmf = $1 WHERE id = $2',
         [creditApplied, order.id]
@@ -318,7 +342,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     // ── Créer les order_items ───────────────────────────────────────────────
     for (const item of items) {
       const product = productMap[item.product_id];
-      const qty     = parseInt(item.quantity) || 1;
+      const qty = parseInt(item.quantity, 10) || 1;
 
       await client.query(
         `INSERT INTO order_items (
@@ -327,13 +351,16 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
            module_size, module_retouche, module_qty_meters, module_accessories
          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [
-          order.id, item.product_id, qty, product.price_kmf,
-          item.module_type        || null,
-          item.module_fabric_id   || null,
+          order.id,
+          item.product_id,
+          qty,
+          product.price_kmf,
+          item.module_type || null,
+          item.module_fabric_id || null,
           item.module_fabric_type || null,
-          item.module_size        || null,
-          item.module_retouche    || false,
-          item.module_qty_meters  || null,
+          item.module_size || null,
+          item.module_retouche || false,
+          item.module_qty_meters || null,
           item.module_accessories ? JSON.stringify(item.module_accessories) : null,
         ]
       );
@@ -342,38 +369,10 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     }
 
     await client.query('COMMIT');
-	
-	 // ── Notifications business (post-commit, non bloquant) ───────────────────
-    const userEmail = req.user.email || req.body.email;
 
-    if (payment_mode === 'cash_relais') {
-      const totalStr = Number(order.total_kmf).toLocaleString('fr-FR');
-
-      const cashSmsText = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez ${cashTimeout}h.`;
-
-      const emailItems = items.map(i => {
-        const p = productMap[i.product_id] || {};
-        const qty = parseInt(i.quantity) || 1;
-        return {
-          name: p.name || 'Produit',
-          qty,
-          price_kmf: (p.price_kmf || 0) * qty,
-        };
-      });
-
-      notifyOrderCreated(
-        order,
-        rPhone,       // ✅ destinataire réel (IMPORTANT)
-        userEmail,
-        emailItems,
-        relais,
-        cashSmsText
-      ).catch(err => console.error('[ORDER-CREATED] ❌', err.message));
-    }
-
-    // ── SMS + email confirmation (non bloquant) ─────────────────────────────
-    const smsPhone  = req.user.phone;
-    const userEmail = req.user.email || req.body.email;
+    // ── Notifications post-commit (non bloquant) ───────────────────────────
+    const smsPhone = rPhone || req.user.phone;
+    const userEmail = req.user?.email || req.body?.email || null;
 
     let cashSmsText = null;
     if (payment_mode === 'cash_relais') {
@@ -381,42 +380,55 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       cashSmsText = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez ${cashTimeout}h.`;
     }
 
-    const emailItems = items.map(i => ({
-      name:      productMap[i.product_id]?.name || 'Produit',
-      qty:       parseInt(i.quantity) || 1,
-      price_kmf: productMap[i.product_id]?.price_kmf || 0,
-    }));
+    const emailItems = items.map(i => {
+      const p = productMap[i.product_id] || {};
+      const qty = parseInt(i.quantity, 10) || 1;
+      return {
+        name: p.name || 'Produit',
+        qty,
+        price_kmf: (p.price_kmf || 0) * qty,
+      };
+    });
 
-    notifyOrderCreated(order, smsPhone, userEmail, emailItems, relais, cashSmsText);
+    notifyOrderCreated(order, smsPhone, userEmail, emailItems, relais, cashSmsText)
+      .catch(err => console.error('[ORDER-CREATED] ❌', err.message));
 
-    res.status(201).json({
-      discount_pct:       order.discount_pct    || 0,
-      discount_kmf:       order.discount_kmf    || 0,
-      loyalty_label:      order.loyalty_label   || null,
+    return res.status(201).json({
+      discount_pct: order.discount_pct || 0,
+      discount_kmf: order.discount_kmf || 0,
+      loyalty_label: order.loyalty_label || null,
       credit_applied_kmf: creditApplied,
       order: {
-        id:             order.id,
-        reference:      order.reference,
-        status:         order.status,
-        total_kmf:      order.total_kmf,
-        total_eur:      order.total_eur,
-        payment_mode:   order.payment_mode,
+        id: order.id,
+        reference: order.reference,
+        status: order.status,
+        total_kmf: order.total_kmf,
+        total_eur: order.total_eur,
+        payment_mode: order.payment_mode,
         payment_status: order.payment_status,
-        cash_ref_code:  order.cash_ref_code,
+        cash_ref_code: order.cash_ref_code,
         confection_type: order.confection_type,
-        module_type:    order.module_type,
-        relais: relais ? { id: relais.id, name: relais.name, address: relais.address } : null,
+        module_type: order.module_type,
+        relais: relais ? {
+          id: relais.id,
+          name: relais.name,
+          address: relais.address,
+        } : null,
         routing: {
           destination_island: order.destination_island,
-          routing_mode:       order.routing_mode,
-          transit_hub:        order.transit_hub,
+          routing_mode: order.routing_mode,
+          transit_hub: order.transit_hub,
         },
-        created_at:     order.created_at,
+        created_at: order.created_at,
       },
     });
 
   } catch (err) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {
+      // no-op
+    }
     next(err);
   } finally {
     client.release();
