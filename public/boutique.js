@@ -1569,7 +1569,7 @@
       renderCartBody();
 
       // Step 5: success screen
-      renderOrderSuccess(orderData, recipName, clientEmail, apiResult);
+      renderOrderSuccess(orderData, recipName, clientEmail, apiResult, fullRecipPhone);
       showToast('Commande confirmée !', 'success');
 
     } catch (e) {
@@ -1582,10 +1582,12 @@
   }
 
   /* ── Order Success ── */
-  function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
+  function renderOrderSuccess(order, recipientName, clientEmail, fullResult, recipientPhone) {
     const body = dom.orderBody;
     body.innerHTML = '';
     dom.orderTitle.textContent = '✅ Commande confirmée';
+    // Retirer le bouton Confirmer sticky (⏳ Envoi en cours…)
+    body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
 
     const wrap = document.createElement('div');
     wrap.style.cssText = 'text-align:center;padding:14px 0;';
@@ -1628,9 +1630,28 @@
     // Wire button events
     setTimeout(() => {
       const trackBtn = document.getElementById('k-order-track-btn');
-      if (trackBtn) trackBtn.addEventListener('click', () => { closeOrderModal(); showToast('📦 Suivi bientôt disponible'); });
+      if (trackBtn) trackBtn.addEventListener('click', () => {
+        closeOrderModal();
+        renderTrackView();
+        switchView('track');
+        // Pré-remplir ref + tél et lancer la recherche automatiquement
+        setTimeout(() => {
+          const refInput  = document.getElementById('k-track-ref');
+          const telInput  = document.getElementById('k-track-phone');
+          const searchBtn = document.getElementById('k-track-search-btn');
+          if (refInput)  refInput.value  = order.reference || '';
+          if (telInput && recipientPhone)  telInput.value  = recipientPhone;
+          if (searchBtn && refInput && refInput.value) searchBtn.click();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 80);
+      });
       const closeBtn = document.getElementById('k-order-close-btn');
-      if (closeBtn) closeBtn.addEventListener('click', closeOrderModal);
+      if (closeBtn) closeBtn.addEventListener('click', () => {
+        closeOrderModal();
+        // Revenir au catalogue en haut de page
+        switchView('shop');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     }, 0);
   }
 
