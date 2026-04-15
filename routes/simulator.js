@@ -1,0 +1,80 @@
+/**
+ * Komerce — Simulator API Route
+ * POST /api/simulator/start   — Démarrer simulation
+ * POST /api/simulator/stop    — Arrêter simulation
+ * GET  /api/simulator/status  — Statut en temps réel
+ * GET  /api/simulator/journal — Journal complet
+ * POST /api/simulator/cleanup — Nettoyer données test
+ */
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+const { authenticate, requireRole } = require('../middleware/auth');
+const engine = require('../services/simulator/engine');
+const journal = require('../services/simulator/journal');
+const { cleanup } = require('../services/simulator/cleanup');
+
+const adminAuth = [authenticate, requireRole(['admin'])];
+
+// POST /start — Démarrer la simulation
+router.post('/start', ...adminAuth, async (req, res, next) => {
+  try {
+    const config = {
+      cadence_minutes: req.body.cadence_minutes || 3,
+      max_orders: req.body.max_orders || 20,
+      chaos_level: req.body.chaos_level || 0.1,
+      scenarios: req.body.scenarios || ['nominal', 'abandoned', 'cancelled'],
+    };
+    const status = await engine.start(config);
+    res.json({ message: '🚀 Simulation démarrée', ...status });
+  } catch(e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// POST /stop — Arrêter la simulation
+router.post('/stop', ...adminAuth, async (req, res, next) => {
+  try {
+    const status = await engine.stop();
+    res.json({ message: '⏹️ Simulation arrêtée', ...status });
+  } catch(e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// GET /status — Statut temps réel
+router.get('/status', ...adminAuth, async (req, res) => {
+  try {
+    res.json(engine.getStatus());
+  } catch(e) {
+    res.json({ running: false, error: e.message });
+  }
+});
+
+// GET /journal — Journal complet
+router.get('/journal', ...adminAuth, async (req, res) => {
+  try {
+    res.json({ entries: journal.getAll() });
+  } catch(e) {
+    res.json({ entries: [], error: e.message });
+  }
+});
+
+// POST /cleanup — Nettoyer les données de simulation
+router.post('/cleanup', ...adminAuth, async (req, res) => {
+  try {
+    // Stop simulation first if running
+    try { await engine.stop(); } catch(_) {}
+
+    const results = await cleanup();
+    res.json({
+      message: '🧹 Nettoyage terminé',
+      ...results
+    });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+module.exports = router;

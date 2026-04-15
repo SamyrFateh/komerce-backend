@@ -85,6 +85,9 @@ CT.app = {
       'alerts': CT.views.alerts,
       'incidents': CT.views.incidents,
       'reconciliation': CT.views.reconciliation,
+      'hub': CT.views.hub,
+      'relais': CT.views.relais,
+      'simulator': CT.views.simulator,
     }[view];
 
     if (viewFn) {

@@ -16,6 +16,9 @@
  */
 
 'use strict';
+// ─── Simulation Mode Guard ──────────────────────────────────
+function isSimulation() { return !!global.__SIMULATION_ACTIVE; }
+
 
 const { sendSMS }        = require('../utils/sms');
 const { sendOrderEmail } = require('../utils/email');
@@ -243,6 +246,7 @@ async function logNotification({ parcelRef, orderRef, channel, event, recipient,
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyOrderCreated(order, phone, email, emailItems, relais, cashSmsText) {
+  if (isSimulation()) { console.log('[SIM] skip notifyOrderCreated', order.reference); return; }
   // Stripe : skip — la facture arrive avec notifyPaymentConfirmed() après le webhook
   if (order.payment_mode !== 'cash_relais') {
     console.log(`[NOTIF] ⏭️ Order created ${order.reference} (${order.payment_mode}) — skip, attente paiement Stripe`);
@@ -269,7 +273,7 @@ async function notifyOrderCreated(order, phone, email, emailItems, relais, cashS
     let diasporaPhone = null;
     if (order.user_id) {
       try {
-        const userRow = await db.get('SELECT whatsapp_phone FROM users WHERE id = ?', [order.user_id]);
+        const { rows: [userRow] } = await db.query('SELECT whatsapp_phone FROM users WHERE id = $1', [order.user_id]);
         if (userRow?.whatsapp_phone) diasporaPhone = userRow.whatsapp_phone;
       } catch (_) { /* ignore */ }
     }
@@ -297,6 +301,7 @@ async function notifyOrderCreated(order, phone, email, emailItems, relais, cashS
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyPaymentConfirmed(orderId, orderRef) {
+  if (isSimulation()) { console.log('[SIM] skip notifyPaymentConfirmed', orderRef); return null; }
   try {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
@@ -438,6 +443,7 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
 // ═══════════════════════════════════════════════════════════════
 
 async function notifyParcelScan(parcelId, parcelRef, newStatus, extraData = {}) {
+  if (isSimulation()) { console.log('[SIM] skip notifyParcelScan', parcelRef, newStatus); return null; }
   // ❌ On ne notifie QUE shipped + available
   if (!WA_SCAN_STATUSES.has(newStatus)) {
     console.log(`[NOTIF] ⏭️ Scan ${newStatus} → ${parcelRef} — pas de notification`);

@@ -201,6 +201,7 @@ const orderApiV2Router = require('./routes/order-api-v2');
 const notificationApiRouter = require('./routes/notification-api');
 const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
+const simulatorRouter = require('./routes/simulator');
 
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
@@ -224,7 +225,8 @@ app.use('/api/v2', opsApiRouter);
 
 app.use('/api/tracking', trackingRouter);
 app.use('/api/auth/otp', otpRouter);      // WhatsApp OTP auth
-app.use('/api/client/tracking', clientTrackingRouter); // Authenticated client tracking
+app.use('/api/client/tracking', clientTrackingRouter);
+app.use('/api/simulator', simulatorRouter); // Authenticated client tracking
 app.use('/api/auth', clientAuthRouter);   // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);

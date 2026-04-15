@@ -95,4 +95,21 @@ CT.api = {
   // ---- Invoices ----
   invoicesList: function() { return this.get('/api/invoices'); },
   invoiceGet: function(id) { return this.get('/api/invoices/' + id); },
+
+  // ---- Simulator ----
+  simStart: function(config) { return this.post("/api/simulator/start", config); },
+  simStop: function() { return this.post("/api/simulator/stop"); },
+  simStatus: function() { return this.get("/api/simulator/status"); },
+  simJournal: function() { return this.get("/api/simulator/journal"); },
+  simCleanup: function() { return this.post("/api/simulator/cleanup"); },
+
+  // ---- Hub operational ----
+  hubShip: function(parcelId) { return this.post("/api/hub-dash/ship/" + parcelId); },
+  hubStartPrep: function(parcelId) { return this.post("/api/hub-dash/start-prep/" + parcelId); },
+  hubParcels: function() { return this.get("/api/v2/parcels"); },
+
+  // ---- Relais operational ----
+  relaisScanArrival: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "available" }); },
+  relaisScanCollect: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "collected" }); },
+
 };
