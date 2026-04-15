@@ -1,351 +1,234 @@
 /* ===================================================================
-   Komerce Control Tower — ct-views-hub-relais.js v2
-   Dashboards métier Hub (France/Dubai) & Relais (Comores)
-   
-   Hub pipeline:  🛒 Sourcing → 📦 Colis → ✈️ Expédition
-   Relais pipeline: 💰 Cash → 🚢 Réception → 📍 Distribution
-   
-   3 actions Hub:
-     ① confirmed → ordered   (Commander au sourcing)
-     ② ordered → preparation  (Créer colis)
-     ③ preparation → shipped  (Expédier)
-   
-   3 actions Relais:
-     ① pending → confirmed    (Encaisser cash)
-     ② in_transit → available (Réceptionner colis)
-     ③ available → collected  (Remettre au client)
+   Komerce Control Tower — ct-views-hub-relais.js v3 COMPACT
+   Hub: 🛒 Sourcing → 📦 Colis → ✈️ Expédition
+   Relais: 💰 Cash → 🚢 Réception → 📍 Distribution
    =================================================================== */
 'use strict';
 
 window.CT = window.CT || {};
 CT.views = CT.views || {};
 
-// ── Helpers ──────────────────────────────────────────────────
+// ── Compact helpers ──────────────────────────────────────────
 
-function _section(icon, title, color, id, content, collapsed) {
-  return '<div class="ct-section" style="margin:16px 0;border-left:4px solid ' + color + ';border-radius:8px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06)">' +
-    '<div class="ct-section-head" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer" onclick="var b=document.getElementById(\'' + id + '\');b.style.display=b.style.display===\'none\'?\'block\':\'none\'">' +
-    '<h3 style="margin:0;font-size:16px;color:' + color + '">' + icon + ' ' + title + '</h3>' +
-    '<span style="color:#94a3b8">▼</span></div>' +
-    '<div id="' + id + '" style="padding:0 16px 16px;' + (collapsed ? 'display:none' : '') + '">' + content + '</div></div>';
+function _badge(count, color, label) {
+  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;' +
+    'background:' + (count > 0 ? color + '15' : '#f1f5f9') + ';color:' + (count > 0 ? color : '#94a3b8') + '">' +
+    label + ' <b>' + count + '</b></span>';
 }
 
-function _actionCard(ref, title, details, timing, btnLabel, btnAction) {
-  return '<div class="ct-action-card" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;min-width:240px;flex:1;max-width:360px">' +
-    '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">' +
-    '<strong style="color:#1e40af;font-size:14px">' + ref + '</strong>' +
-    (timing ? '<span style="font-size:11px;color:#94a3b8">' + timing + '</span>' : '') +
-    '</div>' +
-    '<div style="font-size:13px;font-weight:600;margin-bottom:4px">' + title + '</div>' +
-    '<div style="font-size:12px;color:#64748b;line-height:1.6;margin-bottom:10px">' + details + '</div>' +
-    (btnLabel ? '<button data-action="' + btnAction + '" data-ref="' + ref + '" style="width:100%;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;' +
-    (btnAction.includes('ship') ? 'background:#dbeafe;color:#1d4ed8' :
-     btnAction.includes('parcel') || btnAction.includes('colis') ? 'background:#f0fdf4;color:#16a34a' :
-     btnAction.includes('order') || btnAction.includes('sourcing') ? 'background:#fef3c7;color:#b45309' :
-     btnAction.includes('cash') || btnAction.includes('confirm') ? 'background:#fef3c7;color:#b45309' :
-     btnAction.includes('arrived') ? 'background:#ede9fe;color:#7c3aed' :
-     btnAction.includes('collected') ? 'background:#d1fae5;color:#065f46' :
-     'background:#f1f5f9;color:#475569') + '">' + btnLabel + '</button>' : '') +
-    '</div>';
+function _tab(id, icon, label, count, color, active) {
+  return '<button class="ct-tab" data-tab="' + id + '" style="padding:8px 16px;border:none;border-bottom:3px solid ' +
+    (active ? color : 'transparent') + ';background:' + (active ? color + '08' : 'transparent') +
+    ';color:' + (active ? color : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer;transition:all .2s">' +
+    icon + ' ' + label + (count > 0 ? ' <span style="background:' + color + ';color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + count + '</span>' : '') +
+    '</button>';
 }
 
-function _infoTable(items, columns) {
-  if (!items || items.length === 0) return '<div style="color:#94a3b8;padding:8px;font-size:13px">Aucune donnée</div>';
-  var h = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
-  h += '<thead><tr style="background:#f8fafc">';
-  columns.forEach(function(c) { h += '<th style="padding:8px 10px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0">' + c.label + '</th>'; });
-  h += '</tr></thead><tbody>';
-  items.forEach(function(item, i) {
-    h += '<tr style="border-bottom:1px solid #f1f5f9;' + (i % 2 ? 'background:#fafbfd' : '') + '">';
-    columns.forEach(function(c) { h += '<td style="padding:7px 10px">' + c.render(item) + '</td>'; });
+function _compactRow(ref, client, info, timing, btnLabel, btnAction, btnColor) {
+  return '<tr style="border-bottom:1px solid #f1f5f9">' +
+    '<td style="padding:8px 10px;font-weight:700;color:#1e40af;font-size:13px;white-space:nowrap">' + ref + '</td>' +
+    '<td style="padding:8px 10px;font-size:13px">' + client + '</td>' +
+    '<td style="padding:8px 10px;font-size:12px;color:#64748b">' + info + '</td>' +
+    '<td style="padding:8px 10px;font-size:11px;color:#94a3b8;white-space:nowrap">' + timing + '</td>' +
+    '<td style="padding:8px 6px;text-align:right">' +
+    (btnLabel ? '<button data-action="' + btnAction + '" data-ref="' + ref + '" style="padding:5px 12px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;' +
+    'background:' + btnColor + '18;color:' + btnColor + '">' + btnLabel + '</button>' : '') +
+    '</td></tr>';
+}
+
+function _compactTable(headers, rows) {
+  if (!rows || rows.length === 0) return '<div style="color:#94a3b8;padding:12px;text-align:center;font-size:13px">✅ Rien à traiter</div>';
+  return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr style="background:#f8fafc">' +
+    headers.map(function(h) { return '<th style="padding:6px 10px;text-align:left;font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;border-bottom:1px solid #e2e8f0">' + h + '</th>'; }).join('') +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function _miniTable(items, columns) {
+  if (!items || items.length === 0) return '<div style="color:#94a3b8;font-size:12px;padding:6px">—</div>';
+  var h = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  items.slice(0, 8).forEach(function(item, i) {
+    h += '<tr style="border-bottom:1px solid #f8fafc;' + (i % 2 ? 'background:#fafbfd' : '') + '">';
+    columns.forEach(function(c) { h += '<td style="padding:4px 8px">' + c(item) + '</td>'; });
     h += '</tr>';
   });
-  h += '</tbody></table></div>';
+  if (items.length > 8) h += '<tr><td colspan="99" style="padding:4px 8px;color:#94a3b8;font-size:11px">+ ' + (items.length - 8) + ' autres...</td></tr>';
+  h += '</table>';
   return h;
 }
 
-function _pipelineIndicator(steps) {
-  var h = '<div style="display:flex;align-items:center;gap:0;margin:16px 0 20px;flex-wrap:wrap">';
-  steps.forEach(function(s, i) {
-    h += '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;' +
-      'background:' + (s.active ? s.color + '15' : '#f1f5f9') + ';color:' + (s.active ? s.color : '#94a3b8') + ';' +
-      'border:1.5px solid ' + (s.active ? s.color + '40' : '#e2e8f0') + '">' +
-      s.icon + ' ' + s.label + (typeof s.count !== 'undefined' ? ' <span style="background:' + (s.active ? s.color : '#cbd5e1') + ';color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">' + s.count + '</span>' : '') +
-      '</div>';
-    if (i < steps.length - 1) h += '<div style="color:#cbd5e1;font-size:18px;margin:0 4px">→</div>';
+function _alertBadge(icon, label, count, color) {
+  if (!count) return '';
+  return '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:' + color + '08;border:1px solid ' + color + '25;border-radius:8px;margin-bottom:6px;font-size:12px">' +
+    '<span>' + icon + '</span><span style="flex:1">' + label + '</span><strong style="color:' + color + '">' + count + '</strong></div>';
+}
+
+function _switchTab(containerId, tabId) {
+  var c = document.getElementById(containerId);
+  if (!c) return;
+  c.querySelectorAll('.ct-tab').forEach(function(t) {
+    var active = t.dataset.tab === tabId;
+    t.style.borderBottomColor = active ? t.dataset.color || '#3b82f6' : 'transparent';
+    t.style.background = active ? (t.dataset.color || '#3b82f6') + '08' : 'transparent';
+    t.style.color = active ? (t.dataset.color || '#3b82f6') : '#64748b';
   });
-  h += '</div>';
-  return h;
-}
-
-function _emptyState(msg) {
-  return '<div style="color:#22c55e;padding:20px;text-align:center;font-size:14px">✅ ' + msg + '</div>';
-}
-
-function _alertCard(icon, title, items, color) {
-  if (!items || items.length === 0) return '';
-  var h = '<div style="background:' + color + '08;border:1px solid ' + color + '30;border-radius:10px;padding:14px;margin-bottom:12px">';
-  h += '<h4 style="margin:0 0 8px;color:' + color + ';font-size:14px">' + icon + ' ' + title + ' (' + items.length + ')</h4>';
-  h += '<div style="display:flex;flex-direction:column;gap:6px">';
-  items.forEach(function(item) {
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:white;border-radius:6px;font-size:12px">' +
-      '<span><strong>' + (item.reference || item.ref || '—') + '</strong> · ' + (item.label || '') + '</span>' +
-      '<span style="color:' + color + ';font-weight:600">' + (item.badge || '') + '</span></div>';
+  c.querySelectorAll('.ct-tab-panel').forEach(function(p) {
+    p.style.display = p.dataset.panel === tabId ? 'block' : 'none';
   });
-  h += '</div></div>';
-  return h;
 }
 
-function _stepHeader(num, icon, label, count, color) {
-  return '<div style="margin-bottom:20px">' +
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid ' + color + '20">' +
-    '<span style="background:' + color + '20;color:' + color + ';font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">ÉTAPE ' + num + '</span>' +
-    '<h4 style="margin:0;color:' + color + '">' + icon + ' ' + label + ' (' + count + ')</h4>' +
-    '</div>';
+// ── Toast ────────────────────────────────────────────────────
+function _toast(msg) {
+  var el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:20px;right:20px;background:#065f46;color:white;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2)';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 2500);
+  setTimeout(function() { el.remove(); }, 3000);
 }
-
 
 // ═══════════════════════════════════════════════════════════════
-// 🏭 HUB — Centre logistique (France / Dubai)
-// Pipeline: confirmed → ordered → preparation → shipped
-// 3 boutons d'action: Commander · Créer colis · Expédier
+// 🏭 HUB — Centre logistique COMPACT
 // ═══════════════════════════════════════════════════════════════
 CT.views.hub = async function(container) {
   container.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">🏭 Chargement Hub...</div>';
 
   try {
-    var results = await Promise.all([
-      CT.api.v2Orders().catch(function() { return { orders: [], kpis: {} }; }),
+    var res = await Promise.all([
+      CT.api.v2Orders().catch(function() { return { orders: [] }; }),
       CT.api.v2Parcels().catch(function() { return { parcels: [] }; })
     ]);
 
-    var allOrders = results[0].orders || [];
-    var allParcels = results[1].parcels || [];
+    var orders = res[0].orders || [];
+    var parcels = res[1].parcels || [];
 
-    // ── Classify orders ──
-    var pendingOrders   = allOrders.filter(function(o) { return o.status === 'pending'; });
-    var confirmedOrders = allOrders.filter(function(o) { return o.status === 'confirmed'; });
-    var orderedOrders   = allOrders.filter(function(o) { return o.status === 'ordered'; });
-    var prepOrders      = allOrders.filter(function(o) { return o.status === 'preparation'; });
+    var pending    = orders.filter(function(o) { return o.status === 'pending'; });
+    var confirmed  = orders.filter(function(o) { return o.status === 'confirmed'; });
+    var ordered    = orders.filter(function(o) { return o.status === 'ordered'; });
+    var prep       = orders.filter(function(o) { return o.status === 'preparation'; });
 
-    // ── Classify parcels ──
-    var prepParcels     = allParcels.filter(function(p) { return p.status === 'preparation'; });
-    var shippedParcels  = allParcels.filter(function(p) { return p.status === 'shipped'; });
-    var transitParcels  = allParcels.filter(function(p) { return p.status === 'in_transit'; });
+    var prepP      = parcels.filter(function(p) { return p.status === 'preparation'; });
+    var shippedP   = parcels.filter(function(p) { return p.status === 'shipped'; });
+    var transitP   = parcels.filter(function(p) { return p.status === 'in_transit'; });
 
-    // ── Orders ready for parcel (ordered, no parcel yet) ──
-    var parcelOrderRefs = new Set();
-    allParcels.forEach(function(p) { if (p.main_order_ref) parcelOrderRefs.add(p.main_order_ref); });
-    var readyForParcel = orderedOrders.filter(function(o) { return !parcelOrderRefs.has(o.reference); });
+    var parcelRefs = new Set();
+    parcels.forEach(function(p) { if (p.main_order_ref) parcelRefs.add(p.main_order_ref); });
+    var readyParcel = ordered.filter(function(o) { return !parcelRefs.has(o.reference); });
 
-    // ── Alerting data ──
     var now = Date.now();
-    var stuckConfirmed48h = confirmedOrders.filter(function(o) {
-      return o.created_at && (now - new Date(o.created_at).getTime()) > 48 * 3600000;
-    });
-    var stuckOrdered48h = orderedOrders.filter(function(o) {
-      return o.created_at && (now - new Date(o.created_at).getTime()) > 48 * 3600000;
-    });
-    var stuckOrders7d = orderedOrders.concat(confirmedOrders).filter(function(o) {
-      return o.created_at && (now - new Date(o.created_at).getTime()) > 7 * 24 * 3600000;
-    });
-    var pendingExpired = pendingOrders.filter(function(o) {
-      return o.created_at && (now - new Date(o.created_at).getTime()) > 36 * 3600000;
-    });
+    var stuck48h = confirmed.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 48*3600000; });
+    var stuckOrd48h = ordered.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 48*3600000; });
+    var expired36h = pending.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 36*3600000; });
+    var critical7d = ordered.concat(confirmed).filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 7*24*3600000; });
+    var alertCount = stuck48h.length + stuckOrd48h.length + expired36h.length + critical7d.length;
 
-    // ═══ BUILD HTML ═══
-    var html = '<div style="padding:16px 0">' +
-      '<h2 style="margin:0 0 4px">🏭 Hub — Centre logistique</h2>' +
-      '<p style="margin:0;color:#64748b;font-size:14px">Commander · Mise en colis · Expédition</p>' +
-      '<button style="margin-top:8px;padding:6px 14px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:white;font-size:13px" onclick="CT.views.hub(document.getElementById(\'ct-main\'))">🔄 Rafraîchir</button>' +
-      '</div>';
+    // ═══ BUILD ═══
+    var html = '<div id="hub-container" style="padding:12px 0">';
 
-    // ── Pipeline indicator (3 steps) ──
-    html += _pipelineIndicator([
-      { icon: '🛒', label: 'À commander', count: confirmedOrders.length, color: '#f59e0b', active: confirmedOrders.length > 0 },
-      { icon: '📦', label: 'À emballer', count: readyForParcel.length, color: '#3b82f6', active: readyForParcel.length > 0 },
-      { icon: '✈️', label: 'À expédier', count: prepParcels.length, color: '#8b5cf6', active: prepParcels.length > 0 },
-      { icon: '✅', label: 'Expédiés', count: shippedParcels.length + transitParcels.length, color: '#22c55e', active: shippedParcels.length + transitParcels.length > 0 }
-    ]);
-
-    // ── KPIs ──
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">';
-    html += CT.pc.kpiCard('🛒', 'À commander', confirmedOrders.length, confirmedOrders.length > 0 ? '#f59e0b' : '#22c55e');
-    html += CT.pc.kpiCard('📦', 'À emballer', readyForParcel.length, readyForParcel.length > 0 ? '#3b82f6' : '#22c55e');
-    html += CT.pc.kpiCard('✈️', 'À expédier', prepParcels.length, prepParcels.length > 0 ? '#8b5cf6' : '#22c55e');
-    html += CT.pc.kpiCard('🚀', 'En route', shippedParcels.length + transitParcels.length, '#3b82f6');
-    html += CT.pc.kpiCard('⏳', 'Attente paiement', pendingOrders.length, '#94a3b8');
-    html += CT.pc.kpiCard('🚨', 'Alertes', stuckConfirmed48h.length + stuckOrdered48h.length + pendingExpired.length, (stuckConfirmed48h.length + stuckOrdered48h.length + pendingExpired.length) > 0 ? '#ef4444' : '#22c55e');
+    // ── Header + KPI badges ──
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+    html += '<div><h2 style="margin:0;font-size:20px">🏭 Hub</h2><span style="color:#64748b;font-size:12px">Commander · Emballer · Expédier</span></div>';
+    html += '<button style="padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:12px" onclick="CT.views.hub(document.getElementById(\'ct-main\'))">🔄</button>';
     html += '</div>';
 
-    // ══════════════════════════════════════════
-    // ⚙️ OPÉRATIONNEL — 3 étapes: Commander → Emballer → Expédier
-    // ══════════════════════════════════════════
-    var opContent = '';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
+    html += _badge(confirmed.length, '#f59e0b', '🛒 Commander');
+    html += _badge(readyParcel.length, '#3b82f6', '📦 Emballer');
+    html += _badge(prepP.length, '#8b5cf6', '✈️ Expédier');
+    html += _badge(shippedP.length + transitP.length, '#22c55e', '🚀 En route');
+    html += _badge(pending.length, '#94a3b8', '⏳ Attente');
+    html += _badge(alertCount, '#ef4444', '🚨 Alertes');
+    html += '</div>';
 
-    // ── ÉTAPE ① 🛒 COMMANDER AU SOURCING (confirmed → ordered) ──
-    opContent += _stepHeader('1', '🛒', 'Commander au sourcing', confirmedOrders.length, '#b45309');
+    // ── Tab bar ──
+    var firstActive = confirmed.length > 0 ? 'h1' : (readyParcel.length > 0 ? 'h2' : 'h3');
+    html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
+    html += '<button class="ct-tab" data-tab="h1" data-color="#f59e0b" onclick="_switchTab(\'hub-container\',\'h1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h1' ? '#f59e0b' : 'transparent') + ';background:' + (firstActive === 'h1' ? '#f59e0b08' : 'transparent') + ';color:' + (firstActive === 'h1' ? '#f59e0b' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🛒 Commander' + (confirmed.length ? ' <span style="background:#f59e0b;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + confirmed.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h2" data-color="#3b82f6" onclick="_switchTab(\'hub-container\',\'h2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h2' ? '#3b82f6' : 'transparent') + ';background:' + (firstActive === 'h2' ? '#3b82f608' : 'transparent') + ';color:' + (firstActive === 'h2' ? '#3b82f6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📦 Colis' + (readyParcel.length ? ' <span style="background:#3b82f6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + readyParcel.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h3" data-color="#8b5cf6" onclick="_switchTab(\'hub-container\',\'h3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h3' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'h3' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'h3' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">✈️ Expédier' + (prepP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + prepP.length + '</span>' : '') + '</button>';
+    html += '</div>';
 
-    if (confirmedOrders.length > 0) {
-      opContent += '<div class="ct-card-grid" style="display:flex;flex-wrap:wrap;gap:12px">';
-      confirmedOrders.forEach(function(o) {
-        var items = [];
-        try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
-        var itemsText = items.map(function(it) { return (it.quantity || 1) + '× ' + (it.product_name || it.name || '?'); }).join(', ');
+    // ── Tab panels ──
+    // Panel 1: Commander au sourcing
+    var rows1 = '';
+    confirmed.forEach(function(o) {
+      var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
+      var desc = (items.length || o.nb_items || 0) + ' art. · ' + CT.pc.fmt(o.total_kmf) + ' · ' + (o.relais_island || '—');
+      rows1 += _compactRow(o.reference, o.customer_name || 'Client', desc, CT.pc.ago(o.created_at), '🛒 Commander', 'hub-mark-ordered', '#b45309');
+    });
+    html += '<div class="ct-tab-panel" data-panel="h1" style="' + (firstActive !== 'h1' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
+    html += _compactTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows1);
+    html += '</div>';
 
-        opContent += _actionCard(
-          o.reference,
-          '👤 ' + (o.customer_name || 'Client'),
-          '<div>🏝️ ' + (o.relais_island || '—') + (o.relais_name ? ' — ' + o.relais_name : '') + '</div>' +
-          '<div>🛒 ' + (items.length || o.nb_items || 0) + ' articles · ' + CT.pc.fmt(o.total_kmf) + '</div>' +
-          (itemsText ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + itemsText + '</div>' : '') +
-          '<div>' + CT.pc.badge(o.status) + ' · ' + (o.payment_mode === 'stripe_eur' ? '💳 Stripe' : '💰 Cash') + '</div>',
-          '⏱️ ' + CT.pc.ago(o.created_at),
-          '🛒 Commander au sourcing',
-          'hub-mark-ordered'
-        );
-      });
-      opContent += '</div>';
+    // Panel 2: Créer colis
+    var rows2 = '';
+    readyParcel.forEach(function(o) {
+      var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
+      var desc = (items.length || o.nb_items || 0) + ' art. · ' + CT.pc.fmt(o.total_kmf) + ' · ' + (o.relais_island || '—');
+      rows2 += _compactRow(o.reference, o.customer_name || 'Client', desc, CT.pc.ago(o.created_at), '📦 Créer colis', 'hub-create-parcel', '#1d4ed8');
+    });
+    html += '<div class="ct-tab-panel" data-panel="h2" style="' + (firstActive !== 'h2' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
+    html += _compactTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows2);
+    html += '</div>';
+
+    // Panel 3: Expédier
+    var rows3 = '';
+    prepP.forEach(function(p) {
+      var desc = (p.main_order_ref || '—') + ' · ' + (p.nb_items || 0) + ' art. · ' + (p.destination_island || p.relais_island || '—');
+      rows3 += _compactRow(p.reference, p.recipient_name || 'Client', desc, '', '✈️ Expédier', 'hub-ship', '#7c3aed');
+    });
+    html += '<div class="ct-tab-panel" data-panel="h3" style="' + (firstActive !== 'h3' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
+    html += _compactTable(['Colis', 'Client', 'Détails', '', ''], rows3);
+    html += '</div>';
+
+    // ── Bottom: Prévisionnel + Alertes côte à côte ──
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">';
+
+    // Prévisionnel
+    html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px">';
+    html += '<h4 style="margin:0 0 10px;font-size:14px;color:#6366f1">📋 Prévisionnel</h4>';
+
+    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:4px">🛍️ Attente paiement (' + pending.length + ')</div>';
+    html += _miniTable(pending, [
+      function(o) { return '<strong>' + o.reference + '</strong>'; },
+      function(o) { return o.customer_name || '—'; },
+      function(o) { return o.payment_mode === 'stripe_eur' ? '💳' : '💰'; },
+      function(o) { return CT.pc.ago(o.created_at); }
+    ]);
+
+    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin:8px 0 4px">📬 En sourcing (' + ordered.length + ')</div>';
+    html += _miniTable(ordered, [
+      function(o) { return '<strong>' + o.reference + '</strong>'; },
+      function(o) { return o.customer_name || '—'; },
+      function(o) { return (o.nb_items || '—') + ' art.'; },
+      function(o) { return CT.pc.ago(o.created_at); }
+    ]);
+
+    var enRoute = shippedP.concat(transitP);
+    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin:8px 0 4px">🚀 En route (' + enRoute.length + ')</div>';
+    html += _miniTable(enRoute, [
+      function(p) { return '<strong>' + p.reference + '</strong>'; },
+      function(p) { return CT.pc.badge(p.status); },
+      function(p) { return '🏝️ ' + (p.destination_island || '—'); },
+      function(p) { return CT.pc.ago(p.shipped_at || p.created_at); }
+    ]);
+    html += '</div>';
+
+    // Alertes
+    html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px">';
+    html += '<h4 style="margin:0 0 10px;font-size:14px;color:#ef4444">🚨 Alertes</h4>';
+    if (alertCount === 0) {
+      html += '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
     } else {
-      opContent += '<div style="color:#22c55e;padding:12px;text-align:center;font-size:13px">✅ Aucune commande à commander</div>';
+      html += _alertBadge('💸', 'Paiements expirés >36h', expired36h.length, '#f59e0b');
+      html += _alertBadge('🛒', 'Sourcing retard >48h', stuck48h.length, '#ef4444');
+      html += _alertBadge('⏰', 'Ordered bloqué >48h', stuckOrd48h.length, '#ef4444');
+      html += _alertBadge('🔴', 'Critique >7 jours', critical7d.length, '#dc2626');
     }
-    opContent += '</div>';
+    html += '</div>';
+    html += '</div>'; // end grid
 
-    // ── ÉTAPE ② 📦 MISE EN COLIS (ordered → preparation) ──
-    opContent += _stepHeader('2', '📦', 'Créer colis', readyForParcel.length, '#1d4ed8');
-
-    if (readyForParcel.length > 0) {
-      opContent += '<div class="ct-card-grid" style="display:flex;flex-wrap:wrap;gap:12px">';
-      readyForParcel.forEach(function(o) {
-        var items = [];
-        try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
-        var itemsText = items.map(function(it) { return (it.quantity || 1) + '× ' + (it.product_name || it.name || '?'); }).join(', ');
-
-        opContent += _actionCard(
-          o.reference,
-          '👤 ' + (o.customer_name || 'Client'),
-          '<div>🏝️ ' + (o.relais_island || '—') + (o.relais_name ? ' — ' + o.relais_name : '') + '</div>' +
-          '<div>🛒 ' + (items.length || o.nb_items || 0) + ' articles · ' + CT.pc.fmt(o.total_kmf) + '</div>' +
-          (itemsText ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + itemsText + '</div>' : '') +
-          '<div>' + CT.pc.badge(o.status) + ' · ' + (o.payment_mode === 'stripe_eur' ? '💳 Stripe' : '💰 Cash') + '</div>',
-          '⏱️ ' + CT.pc.ago(o.created_at),
-          '📦 Créer colis',
-          'hub-create-parcel'
-        );
-      });
-      opContent += '</div>';
-    } else {
-      opContent += '<div style="color:#22c55e;padding:12px;text-align:center;font-size:13px">✅ Toutes les commandes ont un colis</div>';
-    }
-    opContent += '</div>';
-
-    // ── ÉTAPE ③ ✈️ EXPÉDIER (preparation → shipped) ──
-    opContent += _stepHeader('3', '✈️', 'Expédier aux transitaires', prepParcels.length, '#7c3aed');
-
-    if (prepParcels.length > 0) {
-      opContent += '<div class="ct-card-grid" style="display:flex;flex-wrap:wrap;gap:12px">';
-      prepParcels.forEach(function(p) {
-        opContent += _actionCard(
-          p.reference,
-          '👤 ' + (p.recipient_name || 'Client'),
-          '<div>🏝️ ' + (p.destination_island || p.relais_island || '—') +
-            (p.relais_name ? ' — ' + p.relais_name : '') + '</div>' +
-          '<div>📋 ' + (p.main_order_ref || '—') + ' · ' + (p.nb_items || 0) + ' articles</div>' +
-          '<div>💰 ' + CT.pc.fmt(p.total_kmf) + '</div>',
-          null,
-          '✈️ Expédier',
-          'hub-ship'
-        );
-      });
-      opContent += '</div>';
-    } else {
-      opContent += '<div style="color:#22c55e;padding:12px;text-align:center;font-size:13px">✅ Aucun colis à expédier</div>';
-    }
-    opContent += '</div>';
-
-    html += _section('⚙️', 'Opérationnel — Pipeline logistique', '#3b82f6', 'hub-op', opContent);
-
-    // ══════════════════════════════════════════
-    // 📋 PRÉVISIONNEL — Pipeline d'approvisionnement
-    // ══════════════════════════════════════════
-    var prevContent = '';
-
-    // 1. Nouvelles commandes (boutique → attente paiement)
-    prevContent += '<h4 style="margin:0 0 10px;color:#6366f1">🛍️ Commandes en attente de paiement (' + pendingOrders.length + ')</h4>';
-    if (pendingOrders.length > 0) {
-      prevContent += _infoTable(pendingOrders, [
-        { label: 'Réf', render: function(o) { return '<strong>' + o.reference + '</strong>'; } },
-        { label: 'Client', render: function(o) { return o.customer_name || '—'; } },
-        { label: 'Mode', render: function(o) { return o.payment_mode === 'stripe_eur' ? '💳 Stripe' : '💰 Cash'; } },
-        { label: 'Total', render: function(o) { return CT.pc.fmt(o.total_kmf); } },
-        { label: 'Depuis', render: function(o) { return CT.pc.ago(o.created_at); } }
-      ]);
-    } else {
-      prevContent += '<div style="color:#94a3b8;font-size:13px;padding:8px">Aucune commande en attente</div>';
-    }
-
-    // 2. Articles en sourcing (ordered)
-    prevContent += '<h4 style="margin:16px 0 10px;color:#6366f1">📬 Articles en attente du sourcing (' + orderedOrders.length + ' commandes)</h4>';
-    if (orderedOrders.length > 0) {
-      prevContent += _infoTable(orderedOrders, [
-        { label: 'Réf', render: function(o) { return '<strong>' + o.reference + '</strong>'; } },
-        { label: 'Client', render: function(o) { return o.customer_name || '—'; } },
-        { label: 'Destination', render: function(o) { return '🏝️ ' + (o.relais_island || '—'); } },
-        { label: 'Articles', render: function(o) { return (o.nb_items || '—'); } },
-        { label: 'Total', render: function(o) { return CT.pc.fmt(o.total_kmf); } },
-        { label: 'Commandé', render: function(o) { return CT.pc.ago(o.created_at); } }
-      ]);
-    } else {
-      prevContent += '<div style="color:#94a3b8;font-size:13px;padding:8px">Aucun article en attente</div>';
-    }
-
-    // 3. Colis en route
-    var enRoute = shippedParcels.concat(transitParcels);
-    prevContent += '<h4 style="margin:16px 0 10px;color:#6366f1">🚀 Colis en route (' + enRoute.length + ')</h4>';
-    if (enRoute.length > 0) {
-      prevContent += _infoTable(enRoute, [
-        { label: 'Colis', render: function(p) { return '<strong>' + p.reference + '</strong>'; } },
-        { label: 'Statut', render: function(p) { return CT.pc.badge(p.status); } },
-        { label: 'Destination', render: function(p) { return '🏝️ ' + (p.destination_island || '—'); } },
-        { label: 'Articles', render: function(p) { return p.nb_items || '—'; } },
-        { label: 'Expédié', render: function(p) { return CT.pc.ago(p.shipped_at || p.created_at); } }
-      ]);
-    } else {
-      prevContent += '<div style="color:#94a3b8;font-size:13px;padding:8px">Aucun colis en transit</div>';
-    }
-
-    html += _section('📋', 'Prévisionnel — Approvisionnement', '#8b5cf6', 'hub-prev', prevContent);
-
-    // ══════════════════════════════════════════
-    // 🚨 ALERTING
-    // ══════════════════════════════════════════
-    var alertContent = '';
-
-    alertContent += _alertCard('💸', 'Paiements expirés (>36h)', pendingExpired.map(function(o) {
-      return { reference: o.reference, label: (o.customer_name || 'Client') + ' · ' + (o.payment_mode === 'stripe_eur' ? '💳' : '💰') + ' ' + CT.pc.fmt(o.total_kmf), badge: CT.pc.ago(o.created_at) };
-    }), '#f59e0b');
-
-    alertContent += _alertCard('🛒', 'Sourcing en retard (>48h)', stuckConfirmed48h.map(function(o) {
-      return { reference: o.reference, label: (o.customer_name || 'Client') + ' · confirmed', badge: CT.pc.ago(o.created_at) };
-    }), '#ef4444');
-
-    alertContent += _alertCard('⏰', 'En attente sourcing (>48h)', stuckOrdered48h.map(function(o) {
-      return { reference: o.reference, label: (o.customer_name || 'Client') + ' · ordered', badge: CT.pc.ago(o.created_at) };
-    }), '#ef4444');
-
-    alertContent += _alertCard('🔴', 'Commandes critiques (>7 jours)', stuckOrders7d.map(function(o) {
-      return { reference: o.reference, label: (o.customer_name || 'Client') + ' · URGENT', badge: CT.pc.ago(o.created_at) };
-    }), '#dc2626');
-
-    if (!alertContent) {
-      alertContent = _emptyState('Aucune alerte — tout va bien !');
-    } else {
-      alertContent += '<div style="margin-top:12px;padding:10px;background:#fefce8;border-radius:8px;font-size:12px;color:#92400e">' +
-        '💡 <strong>À venir :</strong> Alertes sourcing (échecs fournisseurs, produits défectueux, retours)</div>';
-    }
-
-    html += _section('🚨', 'Alerting', '#ef4444', 'hub-alert', alertContent, true);
-
+    html += '</div>'; // end hub-container
     container.innerHTML = html;
     _wireHubActions(container);
 
@@ -354,254 +237,130 @@ CT.views.hub = async function(container) {
   }
 };
 
-// ── Hub Action Handlers ──────────────────────────────────────
-function _wireHubActions(container) {
-  // ① Commander au sourcing (confirmed → ordered)
-  container.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      var ref = btn.dataset.ref;
-      if (!confirm('Commander au sourcing la commande ' + ref + ' ?\n\nStatut: confirmed → ordered')) return;
-      btn.disabled = true; btn.textContent = '⏳ Envoi au sourcing...';
-      try {
-        var r = await CT.api.hubMarkOrdered(ref);
-        _toast('✅ ' + ref + ' envoyée au sourcing 🛒');
-        CT.views.hub(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '🛒 Commander au sourcing'; }
-    });
-  });
-
-  // ② Créer colis (ordered → preparation)
-  container.querySelectorAll('[data-action="hub-create-parcel"]').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      var ref = btn.dataset.ref;
-      if (!confirm('Créer un colis pour la commande ' + ref + ' ?\n\nStatut: ordered → preparation')) return;
-      btn.disabled = true; btn.textContent = '⏳ Création...';
-      try {
-        var r = await CT.api.v2CreateParcel(ref);
-        _toast('✅ Colis créé ' + (r.parcel ? r.parcel.reference : '') + ' 📦');
-        CT.views.hub(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '📦 Créer colis'; }
-    });
-  });
-
-  // ③ Expédier (preparation → shipped)
-  container.querySelectorAll('[data-action="hub-ship"]').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      var ref = btn.dataset.ref;
-      if (!confirm('Expédier le colis ' + ref + ' via transitaire ?\n\nStatut: preparation → shipped')) return;
-      btn.disabled = true; btn.textContent = '⏳ Expédition...';
-      try {
-        await CT.api.v2Scan(ref, 'shipped', 'Expédié depuis Hub — Control Tower');
-        _toast('✅ ' + ref + ' expédié ✈️');
-        CT.views.hub(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
-    });
-  });
-}
-
 
 // ═══════════════════════════════════════════════════════════════
-// 📦 RELAIS — Point de retrait (Comores)
-// Pipeline: pending/cash → confirmed → ... → in_transit → available → collected
-// 3 boutons d'action: Encaisser · Réceptionner · Distribuer
+// 📦 RELAIS — Point de retrait COMPACT
 // ═══════════════════════════════════════════════════════════════
 CT.views.relais = async function(container) {
   container.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">📦 Chargement Relais...</div>';
 
   try {
-    var results = await Promise.all([
-      CT.api.v2Orders().catch(function() { return { orders: [], kpis: {} }; }),
+    var res = await Promise.all([
+      CT.api.v2Orders().catch(function() { return { orders: [] }; }),
       CT.api.v2Parcels().catch(function() { return { parcels: [] }; })
     ]);
 
-    var allOrders = results[0].orders || [];
-    var allParcels = results[1].parcels || [];
+    var orders = res[0].orders || [];
+    var parcels = res[1].parcels || [];
 
-    // ── Classify ──
-    var cashPending = allOrders.filter(function(o) {
-      return o.status === 'pending' && o.payment_mode === 'cash_relay' && o.payment_status !== 'paid';
+    var cashPending = orders.filter(function(o) {
+      return o.status === 'pending' && (o.payment_mode === 'cash_relay' || o.payment_mode === 'cash_relais') && o.payment_status !== 'paid';
     });
-    // Also check cash_relais variant
-    if (cashPending.length === 0) {
-      cashPending = allOrders.filter(function(o) {
-        return o.status === 'pending' && (o.payment_mode === 'cash_relay' || o.payment_mode === 'cash_relais') && o.payment_status !== 'paid';
-      });
-    }
-    var transitParcels    = allParcels.filter(function(p) { return p.status === 'in_transit'; });
-    var shippedParcels    = allParcels.filter(function(p) { return p.status === 'shipped'; });
-    var availableParcels  = allParcels.filter(function(p) { return p.status === 'available'; });
-    var collectedParcels  = allParcels.filter(function(p) { return p.status === 'collected'; });
+    var transitP    = parcels.filter(function(p) { return p.status === 'in_transit'; });
+    var shippedP    = parcels.filter(function(p) { return p.status === 'shipped'; });
+    var availableP  = parcels.filter(function(p) { return p.status === 'available'; });
+    var collectedP  = parcels.filter(function(p) { return p.status === 'collected'; });
 
-    // ── Alerting data ──
     var now = Date.now();
-    var uncollected72h = availableParcels.filter(function(p) {
-      return p.updated_at && (now - new Date(p.updated_at).getTime()) > 72 * 3600000;
-    });
-    var lateTransit = transitParcels.concat(shippedParcels).filter(function(p) {
-      return p.created_at && (now - new Date(p.created_at).getTime()) > 10 * 24 * 3600000;
-    });
-    var cashExpired = cashPending.filter(function(o) {
-      return o.created_at && (now - new Date(o.created_at).getTime()) > 36 * 3600000;
-    });
+    var uncollected72 = availableP.filter(function(p) { return p.updated_at && (now - new Date(p.updated_at).getTime()) > 72*3600000; });
+    var lateTransit = transitP.concat(shippedP).filter(function(p) { return p.created_at && (now - new Date(p.created_at).getTime()) > 10*24*3600000; });
+    var cashExpired = cashPending.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 36*3600000; });
+    var alertCount = uncollected72.length + lateTransit.length + cashExpired.length;
 
-    // ═══ BUILD HTML ═══
-    var html = '<div style="padding:16px 0">' +
-      '<h2 style="margin:0 0 4px">📦 Relais — Point de retrait</h2>' +
-      '<p style="margin:0;color:#64748b;font-size:14px">Encaisser · Réceptionner · Distribuer</p>' +
-      '<button style="margin-top:8px;padding:6px 14px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:white;font-size:13px" onclick="CT.views.relais(document.getElementById(\'ct-main\'))">🔄 Rafraîchir</button>' +
-      '</div>';
+    // ═══ BUILD ═══
+    var html = '<div id="relais-container" style="padding:12px 0">';
 
-    // ── Pipeline indicator (3 steps) ──
-    html += _pipelineIndicator([
-      { icon: '💰', label: 'Cash', count: cashPending.length, color: '#f59e0b', active: cashPending.length > 0 },
-      { icon: '🚢', label: 'Réception', count: transitParcels.length, color: '#8b5cf6', active: transitParcels.length > 0 },
-      { icon: '📍', label: 'Distribution', count: availableParcels.length, color: '#22c55e', active: availableParcels.length > 0 },
-      { icon: '✅', label: 'Collectés', count: collectedParcels.length, color: '#16a34a', active: collectedParcels.length > 0 }
-    ]);
-
-    // ── KPIs ──
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">';
-    html += CT.pc.kpiCard('💰', 'Cash à encaisser', cashPending.length, cashPending.length > 0 ? '#f59e0b' : '#22c55e');
-    html += CT.pc.kpiCard('🚢', 'En transit', transitParcels.length + shippedParcels.length, transitParcels.length + shippedParcels.length > 0 ? '#8b5cf6' : '#94a3b8');
-    html += CT.pc.kpiCard('📍', 'À distribuer', availableParcels.length, availableParcels.length > 0 ? '#22c55e' : '#94a3b8');
-    html += CT.pc.kpiCard('✅', 'Collectés', collectedParcels.length, '#16a34a');
-    html += CT.pc.kpiCard('⏰', 'Non collectés >72h', uncollected72h.length, uncollected72h.length > 0 ? '#ef4444' : '#22c55e');
-    html += CT.pc.kpiCard('🚨', 'Alertes', (uncollected72h.length + lateTransit.length + cashExpired.length), (uncollected72h.length + lateTransit.length + cashExpired.length) > 0 ? '#ef4444' : '#22c55e');
+    // ── Header + KPI badges ──
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+    html += '<div><h2 style="margin:0;font-size:20px">📦 Relais</h2><span style="color:#64748b;font-size:12px">Encaisser · Réceptionner · Distribuer</span></div>';
+    html += '<button style="padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:12px" onclick="CT.views.relais(document.getElementById(\'ct-main\'))">🔄</button>';
     html += '</div>';
 
-    // ══════════════════════════════════════════
-    // ⚙️ OPÉRATIONNEL — Pipeline Cash → Réception → Distribution
-    // ══════════════════════════════════════════
-    var opContent = '';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
+    html += _badge(cashPending.length, '#f59e0b', '💰 Cash');
+    html += _badge(transitP.length, '#8b5cf6', '🚢 Transit');
+    html += _badge(availableP.length, '#22c55e', '📍 Distribuer');
+    html += _badge(collectedP.length, '#16a34a', '✅ Collectés');
+    html += _badge(alertCount, '#ef4444', '🚨 Alertes');
+    html += '</div>';
 
-    // ── ÉTAPE ① 💰 ENCAISSER CASH (pending → confirmed) ──
-    opContent += _stepHeader('1', '💰', 'Paiements cash à encaisser', cashPending.length, '#b45309');
+    // ── Tab bar ──
+    var firstActive = cashPending.length > 0 ? 'r1' : (transitP.length > 0 ? 'r2' : 'r3');
+    html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
+    html += '<button class="ct-tab" data-tab="r1" data-color="#f59e0b" onclick="_switchTab(\'relais-container\',\'r1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r1' ? '#f59e0b' : 'transparent') + ';background:' + (firstActive === 'r1' ? '#f59e0b08' : 'transparent') + ';color:' + (firstActive === 'r1' ? '#f59e0b' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">💰 Encaisser' + (cashPending.length ? ' <span style="background:#f59e0b;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + cashPending.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="r2" data-color="#8b5cf6" onclick="_switchTab(\'relais-container\',\'r2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r2' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'r2' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'r2' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🚢 Réceptionner' + (transitP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + transitP.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="r3" data-color="#22c55e" onclick="_switchTab(\'relais-container\',\'r3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r3' ? '#22c55e' : 'transparent') + ';background:' + (firstActive === 'r3' ? '#22c55e08' : 'transparent') + ';color:' + (firstActive === 'r3' ? '#22c55e' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📍 Distribuer' + (availableP.length ? ' <span style="background:#22c55e;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + availableP.length + '</span>' : '') + '</button>';
+    html += '</div>';
 
-    if (cashPending.length > 0) {
-      opContent += '<div class="ct-card-grid" style="display:flex;flex-wrap:wrap;gap:12px">';
-      cashPending.forEach(function(o) {
-        opContent += _actionCard(
-          o.reference,
-          '👤 ' + (o.customer_name || 'Client'),
-          '<div>🏝️ ' + (o.relais_island || '—') + (o.relais_name ? ' — ' + o.relais_name : '') + '</div>' +
-          '<div>🛒 ' + (o.nb_items || 0) + ' articles · ' + CT.pc.fmt(o.total_kmf) + '</div>' +
-          '<div>📞 ' + (o.customer_phone || '—') + '</div>' +
-          (o.cash_code ? '<div>🔑 Code : <strong style="color:#b45309;font-size:15px">' + o.cash_code + '</strong></div>' : ''),
-          '⏱️ ' + CT.pc.ago(o.created_at),
-          '💰 Encaisser & Confirmer',
-          'relais-confirm-cash'
-        );
-      });
-      opContent += '</div>';
+    // ── Tab panels ──
+    // Panel 1: Encaisser cash
+    var rows1 = '';
+    cashPending.forEach(function(o) {
+      var desc = (o.nb_items || 0) + ' art. · ' + CT.pc.fmt(o.total_kmf) + (o.cash_code ? ' · 🔑 ' + o.cash_code : '');
+      rows1 += _compactRow(o.reference, o.customer_name || 'Client', desc, CT.pc.ago(o.created_at), '💰 Encaisser', 'relais-confirm-cash', '#b45309');
+    });
+    html += '<div class="ct-tab-panel" data-panel="r1" style="' + (firstActive !== 'r1' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
+    html += _compactTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows1);
+    html += '</div>';
+
+    // Panel 2: Réceptionner
+    var rows2 = '';
+    transitP.forEach(function(p) {
+      var desc = (p.main_order_ref || '—') + ' · ' + (p.nb_items || 0) + ' art. · 🏝️ ' + (p.destination_island || '—');
+      rows2 += _compactRow(p.reference, p.recipient_name || 'Client', desc, CT.pc.ago(p.shipped_at || p.created_at), '📍 Réceptionner', 'relais-arrived', '#7c3aed');
+    });
+    html += '<div class="ct-tab-panel" data-panel="r2" style="' + (firstActive !== 'r2' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
+    html += _compactTable(['Colis', 'Client', 'Détails', 'Expédié', ''], rows2);
+    html += '</div>';
+
+    // Panel 3: Distribuer
+    var rows3 = '';
+    availableP.forEach(function(p) {
+      var desc = (p.nb_items || 0) + ' art. · ' + CT.pc.fmt(p.total_kmf) + (p.pickup_code ? ' · 🔑 ' + p.pickup_code : '');
+      rows3 += _compactRow(p.reference, p.recipient_name || 'Client', desc, CT.pc.ago(p.updated_at || p.created_at), '✅ Remis', 'relais-collected', '#065f46');
+    });
+    html += '<div class="ct-tab-panel" data-panel="r3" style="' + (firstActive !== 'r3' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
+    html += _compactTable(['Colis', 'Client', 'Détails', 'Dispo', ''], rows3);
+    html += '</div>';
+
+    // ── Bottom: Prévisionnel + Alertes côte à côte ──
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">';
+
+    // Prévisionnel
+    html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px">';
+    html += '<h4 style="margin:0 0 10px;font-size:14px;color:#6366f1">📋 Prévisionnel</h4>';
+
+    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:4px">✈️ En route (' + shippedP.length + ')</div>';
+    html += _miniTable(shippedP, [
+      function(p) { return '<strong>' + p.reference + '</strong>'; },
+      function(p) { return p.recipient_name || '—'; },
+      function(p) { return '🏝️ ' + (p.destination_island || '—'); },
+      function(p) { return CT.pc.ago(p.shipped_at || p.created_at); }
+    ]);
+
+    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin:8px 0 4px">✅ Récentes (' + collectedP.length + ')</div>';
+    html += _miniTable(collectedP, [
+      function(p) { return '<strong>' + p.reference + '</strong>'; },
+      function(p) { return p.recipient_name || '—'; },
+      function(p) { return '🏝️ ' + (p.destination_island || '—'); },
+      function(p) { return CT.pc.ago(p.updated_at || p.created_at); }
+    ]);
+    html += '</div>';
+
+    // Alertes
+    html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px">';
+    html += '<h4 style="margin:0 0 10px;font-size:14px;color:#ef4444">🚨 Alertes</h4>';
+    if (alertCount === 0) {
+      html += '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
     } else {
-      opContent += '<div style="color:#22c55e;padding:12px;text-align:center;font-size:13px">✅ Aucun paiement en attente</div>';
+      html += _alertBadge('💸', 'Cash expiré >36h', cashExpired.length, '#f59e0b');
+      html += _alertBadge('⏰', 'Non collectés >72h', uncollected72.length, '#ef4444');
+      html += _alertBadge('🚢', 'Transit tardif >10j', lateTransit.length, '#dc2626');
     }
-    opContent += '</div>';
+    html += '</div>';
+    html += '</div>'; // end grid
 
-    // ── ÉTAPE ② 🚢 RÉCEPTIONNER (in_transit → available) ──
-    opContent += _stepHeader('2', '🚢', 'Colis arrivés à réceptionner', transitParcels.length, '#7c3aed');
-
-    if (transitParcels.length > 0) {
-      opContent += '<div class="ct-card-grid" style="display:flex;flex-wrap:wrap;gap:12px">';
-      transitParcels.forEach(function(p) {
-        opContent += _actionCard(
-          p.reference,
-          '👤 ' + (p.recipient_name || 'Client'),
-          '<div>🏝️ ' + (p.destination_island || '—') + (p.relais_name ? ' — ' + p.relais_name : '') + '</div>' +
-          '<div>📋 ' + (p.main_order_ref || '—') + ' · ' + (p.nb_items || 0) + ' articles</div>' +
-          '<div>💰 ' + CT.pc.fmt(p.total_kmf) + '</div>',
-          '✈️ Expédié ' + CT.pc.ago(p.shipped_at || p.created_at),
-          '📍 Confirmer réception',
-          'relais-arrived'
-        );
-      });
-      opContent += '</div>';
-    } else {
-      opContent += '<div style="color:#94a3b8;padding:12px;text-align:center;font-size:13px">Aucun colis en attente de réception</div>';
-    }
-    opContent += '</div>';
-
-    // ── ÉTAPE ③ 📍 DISTRIBUER (available → collected) ──
-    opContent += _stepHeader('3', '📍', 'Colis à distribuer', availableParcels.length, '#065f46');
-
-    if (availableParcels.length > 0) {
-      opContent += '<div class="ct-card-grid" style="display:flex;flex-wrap:wrap;gap:12px">';
-      availableParcels.forEach(function(p) {
-        opContent += _actionCard(
-          p.reference,
-          '👤 ' + (p.recipient_name || 'Client'),
-          '<div>🏝️ ' + (p.destination_island || '—') + (p.relais_name ? ' — ' + p.relais_name : '') + '</div>' +
-          (p.pickup_code ? '<div>🔑 Code retrait : <strong style="font-size:16px;color:#16a34a">' + p.pickup_code + '</strong></div>' : '') +
-          '<div>💰 ' + CT.pc.fmt(p.total_kmf) + ' · ' + (p.nb_items || 0) + ' articles</div>',
-          '📍 Dispo depuis ' + CT.pc.ago(p.updated_at || p.created_at),
-          '✅ Remis au client',
-          'relais-collected'
-        );
-      });
-      opContent += '</div>';
-    } else {
-      opContent += '<div style="color:#94a3b8;padding:12px;text-align:center;font-size:13px">Aucun colis à distribuer</div>';
-    }
-    opContent += '</div>';
-
-    html += _section('⚙️', 'Opérationnel — Pipeline relais', '#22c55e', 'relais-op', opContent);
-
-    // ══════════════════════════════════════════
-    // 📋 PRÉVISIONNEL
-    // ══════════════════════════════════════════
-    var prevContent = '';
-
-    var enRoute = shippedParcels;
-    prevContent += '<h4 style="margin:0 0 10px;color:#6366f1">✈️ Colis expédiés en route (' + enRoute.length + ')</h4>';
-    if (enRoute.length > 0) {
-      prevContent += _infoTable(enRoute, [
-        { label: 'Colis', render: function(p) { return '<strong>' + p.reference + '</strong>'; } },
-        { label: 'Client', render: function(p) { return p.recipient_name || '—'; } },
-        { label: 'Destination', render: function(p) { return '🏝️ ' + (p.destination_island || '—'); } },
-        { label: 'Articles', render: function(p) { return p.nb_items || '—'; } },
-        { label: 'Expédié', render: function(p) { return CT.pc.ago(p.shipped_at || p.created_at); } }
-      ]);
-    } else {
-      prevContent += '<div style="color:#94a3b8;font-size:13px;padding:8px">Aucun colis en route</div>';
-    }
-
-    prevContent += '<h4 style="margin:16px 0 10px;color:#6366f1">✅ Dernières distributions (' + collectedParcels.length + ')</h4>';
-    if (collectedParcels.length > 0) {
-      prevContent += _infoTable(collectedParcels.slice(0, 10), [
-        { label: 'Colis', render: function(p) { return '<strong>' + p.reference + '</strong>'; } },
-        { label: 'Client', render: function(p) { return p.recipient_name || '—'; } },
-        { label: 'Destination', render: function(p) { return '🏝️ ' + (p.destination_island || '—'); } },
-        { label: 'Collecté', render: function(p) { return CT.pc.ago(p.updated_at || p.created_at); } }
-      ]);
-    } else {
-      prevContent += '<div style="color:#94a3b8;font-size:13px;padding:8px">Aucune distribution récente</div>';
-    }
-
-    html += _section('📋', 'Prévisionnel — Arrivages', '#8b5cf6', 'relais-prev', prevContent);
-
-    // ══════════════════════════════════════════
-    // 🚨 ALERTING
-    // ══════════════════════════════════════════
-    var alertContent = '';
-
-    alertContent += _alertCard('💸', 'Cash expiré (>36h sans paiement)', cashExpired.map(function(o) {
-      return { reference: o.reference, label: (o.customer_name || 'Client') + ' · ' + CT.pc.fmt(o.total_kmf), badge: CT.pc.ago(o.created_at) };
-    }), '#f59e0b');
-
-    alertContent += _alertCard('⏰', 'Non collectés depuis >72h', uncollected72h.map(function(p) {
-      return { reference: p.reference, label: (p.recipient_name || 'Client') + ' · ' + (p.destination_island || '—'), badge: CT.pc.ago(p.updated_at || p.created_at) };
-    }), '#ef4444');
-
-    alertContent += _alertCard('🚢', 'Transit tardif (>10 jours)', lateTransit.map(function(p) {
-      return { reference: p.reference, label: (p.recipient_name || 'Client') + ' · ' + (p.destination_island || '—'), badge: CT.pc.ago(p.created_at) };
-    }), '#dc2626');
-
-    if (!alertContent) {
-      alertContent = _emptyState('Aucune alerte — tout roule !');
-    }
-
-    html += _section('🚨', 'Alerting', '#ef4444', 'relais-alert', alertContent, true);
-
+    html += '</div>'; // end relais-container
     container.innerHTML = html;
     _wireRelaisActions(container);
 
@@ -610,57 +369,87 @@ CT.views.relais = async function(container) {
   }
 };
 
-// ── Relais Action Handlers ───────────────────────────────────
-function _wireRelaisActions(container) {
-  // ① Confirm cash (pending → confirmed)
-  container.querySelectorAll('[data-action="relais-confirm-cash"]').forEach(function(btn) {
+
+// ── Hub Action Handlers ──────────────────────────────────────
+function _wireHubActions(container) {
+  container.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       var ref = btn.dataset.ref;
-      if (!confirm('Confirmer l\'encaissement cash pour ' + ref + ' ?\n\nStatut: pending → confirmed')) return;
-      btn.disabled = true; btn.textContent = '⏳ Confirmation...';
+      if (!confirm('Commander au sourcing ' + ref + ' ?\nconfirmed → ordered')) return;
+      btn.disabled = true; btn.textContent = '⏳...';
       try {
-        var r = await CT.api.v2ConfirmCash(ref);
-        _toast('✅ ' + (r.message || 'Paiement confirmé') + ' 💰');
-        CT.views.relais(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '💰 Encaisser & Confirmer'; }
+        await CT.api.hubMarkOrdered(ref);
+        _toast('✅ ' + ref + ' → sourcing 🛒');
+        CT.views.hub(document.getElementById('ct-main'));
+      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '🛒 Commander'; }
     });
   });
 
-  // ② Mark arrived (in_transit → available)
-  container.querySelectorAll('[data-action="relais-arrived"]').forEach(function(btn) {
+  container.querySelectorAll('[data-action="hub-create-parcel"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       var ref = btn.dataset.ref;
-      if (!confirm('Confirmer la réception du colis ' + ref + ' au relais ?\n\nStatut: in_transit → available')) return;
-      btn.disabled = true; btn.textContent = '⏳ Réception...';
+      if (!confirm('Créer un colis pour ' + ref + ' ?\nordered → preparation')) return;
+      btn.disabled = true; btn.textContent = '⏳...';
       try {
-        await CT.api.v2Scan(ref, 'arrived', 'Arrivé au relais — Control Tower');
-        _toast('✅ ' + ref + ' réceptionné au relais 📍');
-        CT.views.relais(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '📍 Confirmer réception'; }
+        var r = await CT.api.v2CreateParcel(ref);
+        _toast('✅ Colis ' + (r.parcel ? r.parcel.reference : '') + ' créé 📦');
+        CT.views.hub(document.getElementById('ct-main'));
+      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '📦 Créer colis'; }
     });
   });
 
-  // ③ Mark collected (available → collected)
-  container.querySelectorAll('[data-action="relais-collected"]').forEach(function(btn) {
+  container.querySelectorAll('[data-action="hub-ship"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       var ref = btn.dataset.ref;
-      if (!confirm('Confirmer la remise du colis ' + ref + ' au client ?\n\nStatut: available → collected')) return;
-      btn.disabled = true; btn.textContent = '⏳ Distribution...';
+      if (!confirm('Expédier ' + ref + ' ?\npreparation → shipped')) return;
+      btn.disabled = true; btn.textContent = '⏳...';
       try {
-        await CT.api.v2Scan(ref, 'collected', 'Remis au client — Control Tower');
-        _toast('✅ ' + ref + ' remis au client ✔️');
-        CT.views.relais(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✅ Remis au client'; }
+        await CT.api.v2Scan(ref, 'shipped', 'Expédié Hub — CT');
+        _toast('✅ ' + ref + ' expédié ✈️');
+        CT.views.hub(document.getElementById('ct-main'));
+      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
     });
   });
 }
 
-// ── Toast notification ───────────────────────────────────────
-function _toast(msg) {
-  var el = document.createElement('div');
-  el.style.cssText = 'position:fixed;top:20px;right:20px;background:#065f46;color:white;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);animation:slideIn 0.3s ease';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(function() { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 2500);
-  setTimeout(function() { el.remove(); }, 3000);
+// ── Relais Action Handlers ───────────────────────────────────
+function _wireRelaisActions(container) {
+  container.querySelectorAll('[data-action="relais-confirm-cash"]').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var ref = btn.dataset.ref;
+      if (!confirm('Confirmer cash ' + ref + ' ?\npending → confirmed')) return;
+      btn.disabled = true; btn.textContent = '⏳...';
+      try {
+        var r = await CT.api.v2ConfirmCash(ref);
+        _toast('✅ ' + (r.message || 'Cash confirmé') + ' 💰');
+        CT.views.relais(document.getElementById('ct-main'));
+      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '💰 Encaisser'; }
+    });
+  });
+
+  container.querySelectorAll('[data-action="relais-arrived"]').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var ref = btn.dataset.ref;
+      if (!confirm('Réceptionner ' + ref + ' ?\nin_transit → available')) return;
+      btn.disabled = true; btn.textContent = '⏳...';
+      try {
+        await CT.api.v2Scan(ref, 'arrived', 'Réception relais — CT');
+        _toast('✅ ' + ref + ' réceptionné 📍');
+        CT.views.relais(document.getElementById('ct-main'));
+      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '📍 Réceptionner'; }
+    });
+  });
+
+  container.querySelectorAll('[data-action="relais-collected"]').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var ref = btn.dataset.ref;
+      if (!confirm('Remettre ' + ref + ' au client ?\navailable → collected')) return;
+      btn.disabled = true; btn.textContent = '⏳...';
+      try {
+        await CT.api.v2Scan(ref, 'collected', 'Remis client — CT');
+        _toast('✅ ' + ref + ' remis ✔️');
+        CT.views.relais(document.getElementById('ct-main'));
+      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✅ Remis'; }
+    });
+  });
 }
