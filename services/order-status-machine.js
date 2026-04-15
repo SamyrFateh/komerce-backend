@@ -14,7 +14,7 @@
  * Sources:
  *   'patch'  — Admin/agent manually changes status via PATCH
  *   'scan'   — Scan-triggered via parcelSync (forward-only, no role check)
- *   'system' — Auto-transition (wallet 100%)
+ *   'system' — Auto-transition (wallet 100%, auto-ordered after payment)
  *   'stripe_webhook' — Webhook Stripe (pending → confirmed)
  *   'cash_confirm'   — Agent relais confirme cash (pending → confirmed)
  *
@@ -196,18 +196,14 @@ async function transitionOrderStatus({
       return { success: false, error: "Agent relais: uniquement commandes cash relais" };
     }
 
-  } else if (['stripe_webhook', 'cash_confirm', 'system'].includes(source)) {
-    // Payment sources: only pending → confirmed allowed
-    if (newStatus === 'confirmed' && previousStatus !== 'pending') {
-      // Already confirmed or beyond — no-op
-      return { success: true, previousStatus, newStatus: previousStatus, noop: true };
-    }
-    // For other transitions from these sources, use forward-only logic
-    if (newStatus !== 'confirmed' && !isForwardTransition(previousStatus, newStatus)) {
+  } else if (['stripe_webhook', 'cash_confirm'].includes(source)) {
+    // Payment confirmation sources: STRICTLY pending → confirmed only
+    if (!(previousStatus === 'pending' && newStatus === 'confirmed')) {
+      // Already paid, or wrong transition → graceful no-op
       return { success: true, previousStatus, newStatus: previousStatus, noop: true };
     }
   } else {
-    // scan/system: forward-only, no role check
+    // scan/system/auto: forward-only, no role check
     if (!isForwardTransition(previousStatus, newStatus)) {
       return { success: true, previousStatus, newStatus: previousStatus, noop: true };
     }
@@ -222,12 +218,7 @@ async function transitionOrderStatus({
   const tsCol = STATUS_TIMESTAMP[newStatus];
   if (tsCol) {
     // Check if column exists before using COALESCE (pending_at/confirmed_at may not exist yet)
-    if (['pending_at', 'confirmed_at'].includes(tsCol)) {
-      // These columns may not exist in older schemas — skip silently
-      // TODO: Add these columns in migration
-    } else {
-      setParts.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
-    }
+    setParts.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
   }
 
   // Auto-generate pickup_code when → available
@@ -255,7 +246,7 @@ async function transitionOrderStatus({
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──
   // Ceci remplace la logique qui était dans payments.js
-  if (newStatus === 'confirmed' && ['stripe_webhook', 'cash_confirm', 'system'].includes(source)) {
+  if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'system'].includes(source)) {
     await q.query(
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
       [orderId]

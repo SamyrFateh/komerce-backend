@@ -116,28 +116,36 @@ router.post('/stripe/webhook',
       try {
         await client.query('BEGIN');
 
-        // F18 fix: Machine — confirmed → ordered (D1/D2)
-        const machineResult = await transitionOrderStatus({
+        // Step 1: pending → confirmed (payment received)
+        // State machine auto-sets payment_status = 'paid'
+        const confirmResult = await transitionOrderStatus({
           orderId:  order_id,
-          newStatus: 'ordered',
+          newStatus: 'confirmed',
           actor:    { id: null, role: 'system' },
           source:   'stripe_webhook',
-          note:     'Paiement Stripe confirmé — commande lancée',
+          note:     'Paiement Stripe reçu',
           dbClient: client,
         });
-        if (!machineResult.success) {
-          console.error('[STRIPE] Machine rejected:', machineResult.error);
+        if (!confirmResult.success && !confirmResult.noop) {
+          console.error('[STRIPE] Machine rejected confirm:', confirmResult.error);
           await client.query('ROLLBACK');
           client.release();
           return res.json({ received: true });
         }
 
-        // Machine auto-sets payment_status=paid only for cash_relais
-        // For stripe, set it explicitly
-        await client.query(
-          "UPDATE orders SET payment_status = 'paid' WHERE id = $1",
-          [order_id]
-        );
+        // Step 2: confirmed → ordered (auto-launch purchasing)
+        const orderResult = await transitionOrderStatus({
+          orderId:  order_id,
+          newStatus: 'ordered',
+          actor:    { id: null, role: 'system' },
+          source:   'system',
+          note:     'Commande lancée automatiquement après paiement Stripe',
+          dbClient: client,
+        });
+        if (!orderResult.success && !orderResult.noop) {
+          console.warn('[STRIPE] Machine rejected ordered (non-fatal):', orderResult.error);
+          // Order stays confirmed — hub can manually advance
+        }
 
         // F21 fix: Stock decrement — Stripe orders never decremented before!
         const { rows: stripeItems } = await client.query(
@@ -240,22 +248,36 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     const order = rows[0];
 
-    // F17 fix: Machine — confirmed → ordered (D1/D2)
-    const machineResult = await transitionOrderStatus({
+    // Step 1: pending → confirmed (payment received)
+    // State machine auto-sets payment_status = 'paid'
+    const confirmResult = await transitionOrderStatus({
       orderId:   order.id,
-      newStatus: 'ordered',
+      newStatus: 'confirmed',
       actor:     { id: req.user.id, role: req.user.role },
       source:    'cash_confirm',
-      note:      'Paiement espèces confirmé par agent relais — commande lancée',
+      note:      'Paiement espèces confirmé par agent relais',
       dbClient:  client,
     });
-    if (!machineResult.success) {
+    if (!confirmResult.success && !confirmResult.noop) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ error: machineResult.error });
+      return res.status(409).json({ error: confirmResult.error });
     }
 
     // cash_paid_at — not managed by machine
     await client.query('UPDATE orders SET cash_paid_at = NOW() WHERE id = $1', [order.id]);
+
+    // Step 2: confirmed → ordered (auto-launch purchasing)
+    const orderResult = await transitionOrderStatus({
+      orderId:   order.id,
+      newStatus: 'ordered',
+      actor:     { id: req.user.id, role: req.user.role },
+      source:    'system',
+      note:      'Commande lancée après paiement cash',
+      dbClient:  client,
+    });
+    if (!orderResult.success && !orderResult.noop) {
+      console.warn('[CASH] Machine rejected ordered (non-fatal):', orderResult.error);
+    }
 
     // ── DÉCRÉMENTAGE STOCK — seul point pour cash relais (F19 fix) ───────────
     const { rows: items } = await client.query(

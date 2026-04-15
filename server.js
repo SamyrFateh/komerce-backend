@@ -458,6 +458,11 @@ const server = app.listen(PORT, () => {
         `);
       } catch(e) { console.warn('Pending enum migration (non-fatal):', e.message); }
 
+      // ── Phase 2: Add timestamp columns for pending/confirmed ──
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`);
+      console.log('[MIGRATION] pending_at + confirmed_at columns ensured');
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
