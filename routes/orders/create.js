@@ -40,6 +40,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
       stripe_payment_intent,
       recipient_name,
       recipient_phone,
+	  tracking_phone,
 
       confection_type = 'aucun',
       confection_instructions,
@@ -326,37 +327,40 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     await client.query('COMMIT');
 
     // ── Notifications post-commit (multi-numéros) ──────────────────────────
-    const localPhone = rPhone || null;
-    const diasporaPhone = req.user?.phone || null;
-    const smsPhones = [...new Set([localPhone, diasporaPhone].filter(Boolean))];
 
-    const userEmail = req.user?.email || req.body?.email || null;
+const localPhone = rPhone || null;
+const diasporaPhone = tracking_phone || req.user?.phone || null;
+const smsPhones = [...new Set([localPhone, diasporaPhone].filter(Boolean))];
 
-    let cashSmsText = null;
-    if (payment_mode === 'cash_relais') {
-      const totalStr = Number(order.total_kmf).toLocaleString('fr-FR');
-      cashSmsText = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez ${cashTimeout}h.`;
-    }
+const userEmail = req.user?.email || req.body?.email || null;
 
-    const emailItems = items.map(i => {
-      const p = productMap[i.product_id] || {};
-      const qty = parseInt(i.quantity, 10) || 1;
-      return {
-        name: p.name || 'Produit',
-        qty,
-        price_kmf: (p.price_kmf || 0) * qty,
-      };
-    });
+let cashSmsText = null;
+if (payment_mode === 'cash_relais') {
+  const totalStr = Number(order.total_kmf).toLocaleString('fr-FR');
+  cashSmsText = `Komerce : Commande ${reference} enregistree ! Rendez-vous au ${relais?.name || 'relais'} pour payer ${totalStr} KMF. Code : ${cash_ref_code}. Vous avez ${cashTimeout}h.`;
+}
 
-    console.log('[DEBUG][ORDER-CREATED] localPhone =', localPhone);
-    console.log('[DEBUG][ORDER-CREATED] diasporaPhone =', diasporaPhone);
-    console.log('[DEBUG][ORDER-CREATED] smsPhones =', smsPhones);
-    console.log('[DEBUG][ORDER-CREATED] req.user.id =', req.user?.id);
-    console.log('[DEBUG][ORDER-CREATED] req.user.phone =', req.user?.phone);
-    console.log('[DEBUG][ORDER-CREATED] recipient_phone =', recipient_phone);
+const emailItems = items.map(i => {
+  const p = productMap[i.product_id] || {};
+  const qty = parseInt(i.quantity, 10) || 1;
+  return {
+    name: p.name || 'Produit',
+    qty,
+    price_kmf: (p.price_kmf || 0) * qty,
+  };
+});
 
-    notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
-      .catch(err => console.error('[ORDER-CREATED] ❌', err.message));
+console.log('[DEBUG][ORDER-CREATED] localPhone =', localPhone);
+console.log('[DEBUG][ORDER-CREATED] diasporaPhone =', diasporaPhone);
+console.log('[DEBUG][ORDER-CREATED] tracking_phone =', tracking_phone);
+console.log('[DEBUG][ORDER-CREATED] smsPhones =', smsPhones);
+console.log('[DEBUG][ORDER-CREATED] req.user.id =', req.user?.id);
+console.log('[DEBUG][ORDER-CREATED] req.user.phone =', req.user?.phone);
+console.log('[DEBUG][ORDER-CREATED] recipient_phone =', recipient_phone);
+
+
+notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
+  .catch(err => console.error('[ORDER-CREATED] ❌', err.message));
 
     return res.status(201).json({
       discount_pct: order.discount_pct || 0,
