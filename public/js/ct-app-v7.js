@@ -1,6 +1,6 @@
 /* ===================================================================
    Komerce Control Tower — ct-app-v7.js
-   Router principal + Sidebar 3 sections + Seed/Reset
+   Router principal + Sidebar + Seed/Reset
    =================================================================== */
 window.CT = window.CT || {};
 
@@ -78,8 +78,6 @@ CT.app = {
       'dashboard': CT.views.dashboard,
       'orders': CT.views.orders,
       'parcels': CT.views.parcels,
-      'pending-cash': CT.views.pendingCash,
-      'create-parcel': CT.views.createParcel,
       'finances': CT.views.finances,
       'invoices': CT.views.invoices,
       'alerts': CT.views.alerts,
