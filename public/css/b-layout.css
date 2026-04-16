@@ -251,8 +251,7 @@ body {
   .k-hero {
     height: 380px;
     border-radius: 16px;
-    max-width: 1176px;
-    margin: 56px auto 0;
+    /* Pas de max-width : le hero s'aligne avec le reste du contenu */
   }
 
   .k-hero-title {
