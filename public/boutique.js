@@ -8,7 +8,7 @@
 
   // ── CONSTANTES KOMERCE ──────────────────────────────────
   // Numéro WhatsApp de contact Komerce (format international sans +)
-  const KOMERCE_WA = '269321XXXXX'; // ← Remplacer par le vrai numéro Komerce
+  const KOMERCE_WA = '33699272526'; // Numéro WhatsApp Komerce
   const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
   /* ── HELPERS ───────────────────────────────────────────── */
@@ -32,8 +32,27 @@
     return 'EUR';
   }
 
-  const _rates = { EUR: 495, KMF: 1 };
+  const _rates = { EUR: 495, KMF: 1 }; // EUR fallback, écrasé par /api/payments/rates
   const _currency = detectCurrency();
+
+  // Récupère le taux EUR/KMF dynamique depuis l'API (fallback : 495)
+  async function refreshRates() {
+    try {
+      const data = await apiGet('/api/payments/rates');
+      // Format attendu : { EUR: <kmf_per_eur>, ... } ou { rates: { EUR: ... } }
+      const rates = (data && data.rates) ? data.rates : data;
+      if (rates && typeof rates.EUR === 'number' && rates.EUR > 0) {
+        _rates.EUR = rates.EUR;
+        console.log('[RATES] Taux EUR/KMF mis à jour :', rates.EUR);
+        // Re-render des montants visibles si le panier est ouvert
+        try { if (typeof renderCart === 'function') renderCart(); } catch(e) {}
+      }
+    } catch (e) {
+      console.warn('[RATES] Échec récupération taux, fallback 495 KMF/EUR :', e && e.message);
+    }
+  }
+  // Lance la récup en arrière-plan (non bloquant)
+  setTimeout(refreshRates, 0);
 
   function fmt(kmf, currency) {
     const c = currency || _currency;
