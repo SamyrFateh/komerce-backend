@@ -240,7 +240,8 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
       // Clean all tables that might FK-reference users before deleting
       const userDepTables = [
         "UPDATE sms_log SET user_id = NULL WHERE user_id IS NOT NULL",
-        "DELETE FROM wallet_transactions WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin'))",
+        "DELETE FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
         "DELETE FROM loyalty_points WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
         "DELETE FROM loyalty_history WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
         "DELETE FROM wishlists WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
@@ -1058,7 +1059,8 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
       // Clean all potential FK references to this user before hard-deleting
       const cleanupQueries = [
         'UPDATE sms_log SET user_id = NULL WHERE user_id = $1::uuid',
-        'DELETE FROM wallet_transactions WHERE user_id = $1::uuid',
+        'DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id = $1::uuid)',
+        'DELETE FROM wallets WHERE user_id = $1::uuid',
         'DELETE FROM loyalty_points WHERE user_id = $1::uuid',
         'DELETE FROM loyalty_history WHERE user_id = $1::uuid',
         'DELETE FROM basket_items WHERE basket_id IN (SELECT id FROM baskets WHERE user_id = $1::uuid)',
