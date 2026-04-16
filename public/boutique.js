@@ -8,7 +8,7 @@
 
   // ── CONSTANTES KOMERCE ──────────────────────────────────
   // Numéro WhatsApp de contact Komerce (format international sans +)
-  const KOMERCE_WA = '269321XXXXX'; // ← Remplacer par le vrai numéro Komerce
+  const KOMERCE_WA = '33699272526'; // Numéro WhatsApp Komerce
   const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
   /* ── HELPERS ───────────────────────────────────────────── */
@@ -303,6 +303,9 @@
     showSkeletons(16);
     dom.loading.classList.add('show');
     try {
+      if (!window.K || !K.products || typeof K.products.list !== 'function') {
+        throw new Error('K.products.list indisponible');
+      }
       const data = await K.products.list();
       state.products = (Array.isArray(data) ? data : data.products || [])
         .filter(p => p.is_available);
@@ -312,7 +315,7 @@
       renderGrid();
     } catch (e) {
       showToast('Erreur de chargement', 'error');
-      console.error(e);
+      console.error('[loadProducts]', e);
     } finally {
       dom.loading.classList.remove('show');
     }
@@ -650,8 +653,12 @@
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
   function quickAdd(productId, btnEl) {
-    const product = state.products.find(p => p.id === productId);
-    if (!product) return;
+    const pid = String(productId);
+    const product = state.products.find(p => String(p.id) === pid);
+    if (!product) {
+      console.warn('[cart] Produit introuvable pour quickAdd:', productId);
+      return;
+    }
     addToCart(product, 1, btnEl);
   }
 
