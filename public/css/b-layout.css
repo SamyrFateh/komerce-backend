@@ -213,7 +213,10 @@ body {
 .k-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 40%, rgba(28, 25, 23, 0.55) 100%);
+  /* Coral chaud sur la gauche → transparent vers la droite + assombrissement bas léger */
+  background:
+    linear-gradient(to right, rgba(200, 92, 45, 0.52) 0%, rgba(200, 92, 45, 0.08) 55%, transparent 100%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.30) 0%, transparent 50%);
 }
 
 .k-hero-text {
