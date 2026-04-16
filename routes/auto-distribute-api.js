@@ -1,50 +1,58 @@
 /**
- * KOMERCE — Auto-Distribution API
+ * KOMERCE — Auto-Distribution API v3
  *
- * POST /api/hub/auto-distribute       → Lancer la répartition automatique
- * GET  /api/hub/distribution          → Voir la répartition actuelle
- * POST /api/hub/reassign-order        → Déplacer une commande vers un autre colis
+ * POST /api/hub/auto-distribute        — distribute all unassigned orders
+ * GET  /api/hub/auto-distribute         — get distribution overview
+ * POST /api/hub/auto-distribute/cleanup — delete ghost parcels
  */
 
 'use strict';
 
 const express = require('express');
 const router = express.Router();
-const { authenticate, requireRole } = require('../middleware/auth');
+const { requireRole } = require('../middleware/auth');
 const autoParcel = require('../services/auto-parcel');
 
-const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
-
-// POST /api/hub/auto-distribute — Run auto-distribution
-router.post('/auto-distribute', ...hubAuth, async (req, res, next) => {
+// POST /api/hub/auto-distribute — run distribution
+router.post('/auto-distribute', requireRole('admin', 'agent_hub'), async (req, res) => {
   try {
+    // First cleanup ghost parcels
+    const cleanup = await autoParcel.cleanupGhostParcels();
+
+    // Then distribute
     const result = await autoParcel.distributeAll();
+
     res.json({
-      message: `${result.distributed} commande(s) répartie(s), ${result.already_assigned} déjà assignée(s)`,
-      ...result
+      message: `${result.distributed} commande(s) répartie(s), ${result.queued} en file, ${cleanup.deleted} colis fantômes supprimés`,
+      ...result,
+      cleanup
     });
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('[AUTO-DISTRIBUTE]', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// GET /api/hub/distribution — Current distribution overview
-router.get('/distribution', ...hubAuth, async (req, res, next) => {
+// GET /api/hub/auto-distribute — overview for dashboard
+router.get('/auto-distribute', requireRole('admin', 'agent_hub'), async (req, res) => {
   try {
-    const result = await autoParcel.getDistribution();
-    res.json(result);
-  } catch (e) { next(e); }
+    const data = await autoParcel.getDistribution();
+    res.json(data);
+  } catch (e) {
+    console.error('[AUTO-DISTRIBUTE]', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// POST /api/hub/reassign-order — Move order to a different parcel
-router.post('/reassign-order', ...hubAuth, async (req, res, next) => {
+// POST /api/hub/auto-distribute/cleanup — manual ghost cleanup
+router.post('/auto-distribute/cleanup', requireRole('admin', 'agent_hub'), async (req, res) => {
   try {
-    const { order_id, target_parcel_id } = req.body;
-    if (!order_id || !target_parcel_id) {
-      return res.status(400).json({ error: 'order_id et target_parcel_id requis' });
-    }
-    const result = await autoParcel.reassignOrder(order_id, target_parcel_id);
-    if (!result.success) return res.status(400).json(result);
-    res.json({ message: 'Commande réassignée', ...result });
-  } catch (e) { next(e); }
+    const result = await autoParcel.cleanupGhostParcels();
+    res.json({ message: `${result.deleted} colis fantômes supprimés`, ...result });
+  } catch (e) {
+    console.error('[AUTO-DISTRIBUTE]', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;

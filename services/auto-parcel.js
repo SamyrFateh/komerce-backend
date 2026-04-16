@@ -1,32 +1,50 @@
 /**
- * KOMERCE — Auto-Parcel Distribution Engine v2
+ * KOMERCE — Auto-Parcel Distribution Engine v3 (FIXED)
  *
- * Règles de consolidation :
- *   - MAX 3 colis ouverts par destination (configurable)
- *   - MAX 30 articles / 10 commandes par colis
- *   - Quand tous les colis sont pleins → commande en file d'attente
- *   - Signal "Expédiez les colis en cours" quand saturé
- *   - Ne crée PAS de colis à l'infini
+ * Grouping by relais_id (reliable FK) instead of destination_island text.
+ * Uses actual existing parcel columns only.
+ *
+ * Rules:
+ *   - MAX 3 open parcels per relay
+ *   - MAX 30 articles / 10 orders per parcel
+ *   - Queued orders when saturated
+ *   - Cleanup endpoint for ghost parcels
  */
 
 'use strict';
 
 const db = require('../db');
-const { generateParcelRef } = require('../utils/reference');
 
 // ── Config ──────────────────────────────────────────────────────
 const MAX_ITEMS_PER_PARCEL = 30;
 const MAX_ORDERS_PER_PARCEL = 10;
 const MAX_OPEN_PARCELS_PER_DEST = 3;
 
+// ── Generate parcel reference ───────────────────────────────────
+async function nextParcelRef(client) {
+  const c = client || db;
+  // Find the max numeric suffix from existing refs
+  const { rows } = await c.query(`
+    SELECT reference FROM parcels
+    WHERE reference LIKE 'KOM-P-%'
+    ORDER BY reference DESC LIMIT 1
+  `);
+  let next = 1;
+  if (rows.length > 0) {
+    const match = rows[0].reference.match(/KOM-P-\d+-(\d+)/);
+    if (match) next = parseInt(match[1], 10) + 1;
+  }
+  const year = new Date().getFullYear();
+  return `KOM-P-${year}-${String(next).padStart(6, '0')}`;
+}
+
 // ── Core: distribute one order ──────────────────────────────────
 async function distributeOrder(orderId, dbClient) {
   const client = dbClient || db;
 
-  // Get order details
+  // Get order + relais info
   const { rows: [order] } = await client.query(`
-    SELECT o.id, o.reference, o.status, o.destination_island,
-           o.relais_id, o.user_id, o.total_kmf,
+    SELECT o.id, o.reference, o.status, o.relais_id, o.total_kmf,
            u.full_name AS customer_name, u.phone AS customer_phone,
            r.name AS relais_name, r.island AS relais_island
     FROM orders o
@@ -37,11 +55,11 @@ async function distributeOrder(orderId, dbClient) {
 
   if (!order) return { success: false, error: 'Order not found' };
 
-  // Check if order already assigned
+  // Check if order already has items in active parcels
   const { rows: existingItems } = await client.query(`
     SELECT pi.id FROM parcel_items pi
     JOIN order_items oi ON oi.id = pi.order_item_id
-    JOIN parcels p ON p.id = pi.parcel_id AND p.status != 'cancelled'
+    JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
     WHERE oi.order_id = $1
     LIMIT 1
   `, [orderId]);
@@ -58,27 +76,52 @@ async function distributeOrder(orderId, dbClient) {
   if (items.length === 0) return { success: false, error: 'No items in order' };
 
   const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
-  const destIsland = (order.destination_island || order.relais_island || 'unknown').toUpperCase();
+  const relaisId = order.relais_id;
+  const destLabel = (order.relais_island || 'inconnue').toUpperCase();
 
-  // Find open parcels for this destination
-  const { rows: openParcels } = await client.query(`
-    SELECT p.id, p.reference, p.destination_island,
-           COALESCE(agg.item_count, 0)::int AS item_count,
-           COALESCE(agg.order_count, 0)::int AS order_count
-    FROM parcels p
-    LEFT JOIN LATERAL (
-      SELECT COUNT(pi.id) AS item_count,
-             COUNT(DISTINCT oi.order_id) AS order_count
-      FROM parcel_items pi
-      JOIN order_items oi ON oi.id = pi.order_item_id
-      WHERE pi.parcel_id = p.id
-    ) agg ON true
-    WHERE p.status IN ('draft', 'preparation')
-      AND UPPER(COALESCE(p.destination_island, '')) = $1
-    ORDER BY p.created_at ASC
-  `, [destIsland]);
+  // Find open parcels for same relais (or same island if no relais)
+  let openQuery, openParams;
+  if (relaisId) {
+    openQuery = `
+      SELECT p.id, p.reference,
+             COALESCE(agg.item_count, 0)::int AS item_count,
+             COALESCE(agg.order_count, 0)::int AS order_count
+      FROM parcels p
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pi.id) AS item_count,
+               COUNT(DISTINCT oi.order_id) AS order_count
+        FROM parcel_items pi
+        JOIN order_items oi ON oi.id = pi.order_item_id
+        WHERE pi.parcel_id = p.id
+      ) agg ON true
+      WHERE p.status IN ('draft', 'preparation')
+        AND p.relais_id = $1
+      ORDER BY p.created_at ASC
+    `;
+    openParams = [relaisId];
+  } else {
+    openQuery = `
+      SELECT p.id, p.reference,
+             COALESCE(agg.item_count, 0)::int AS item_count,
+             COALESCE(agg.order_count, 0)::int AS order_count
+      FROM parcels p
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pi.id) AS item_count,
+               COUNT(DISTINCT oi.order_id) AS order_count
+        FROM parcel_items pi
+        JOIN order_items oi ON oi.id = pi.order_item_id
+        WHERE pi.parcel_id = p.id
+      ) agg ON true
+      WHERE p.status IN ('draft', 'preparation')
+        AND p.order_id = $1
+      ORDER BY p.created_at ASC
+    `;
+    openParams = [orderId];
+  }
 
-  // Try to find a parcel with room
+  const { rows: openParcels } = await client.query(openQuery, openParams);
+
+  // Try to find parcel with room
   const suitable = openParcels.find(p =>
     p.item_count + totalQty <= MAX_ITEMS_PER_PARCEL &&
     p.order_count < MAX_ORDERS_PER_PARCEL
@@ -87,40 +130,30 @@ async function distributeOrder(orderId, dbClient) {
   let parcelId, parcelRef, created = false;
 
   if (suitable) {
-    // ✅ Reuse existing parcel
     parcelId = suitable.id;
     parcelRef = suitable.reference;
   } else if (openParcels.length < MAX_OPEN_PARCELS_PER_DEST) {
-    // ✅ Create new parcel (under the limit)
-    const ref = await generateParcelRef(client);
-    try {
-      const { rows: [newP] } = await client.query(`
-        INSERT INTO parcels (reference, destination_island, status, type, recipient_name, recipient_phone)
-        VALUES ($1, $2, 'preparation', 'standard', $3, $4)
-        RETURNING id, reference
-      `, [ref, destIsland, order.customer_name, order.customer_phone]);
-      parcelId = newP.id;
-      parcelRef = newP.reference;
-    } catch (e) {
-      const { rows: [newP] } = await client.query(`
-        INSERT INTO parcels (reference, order_id, status, type)
-        VALUES ($1, $2, 'preparation', 'standard')
-        RETURNING id, reference
-      `, [ref, orderId]);
-      parcelId = newP.id;
-      parcelRef = newP.reference;
-    }
+    // Create new parcel — using ONLY columns that exist
+    const ref = await nextParcelRef(client);
+    const { rows: [newP] } = await client.query(`
+      INSERT INTO parcels (reference, order_id, relais_id, status, type, label)
+      VALUES ($1, $2, $3, 'preparation', 'standard', $4)
+      RETURNING id, reference
+    `, [ref, orderId, relaisId, `Auto-${destLabel}`]);
+
+    parcelId = newP.id;
+    parcelRef = newP.reference;
     created = true;
-    console.log(`[AUTO-PARCEL] New parcel ${parcelRef} for ${destIsland} (${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
+    console.log(`[AUTO-PARCEL] New parcel ${parcelRef} → ${destLabel} (${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
   } else {
-    // 🚫 LIMIT REACHED — don't create more, queue the order
-    console.log(`[AUTO-PARCEL] ⚠️ ${destIsland}: ${openParcels.length} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}) — ${order.reference} en file d'attente`);
+    // SATURATED — queue the order
+    console.log(`[AUTO-PARCEL] ⚠️ ${destLabel}: ${openParcels.length} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}) — ${order.reference} en file`);
     return {
       success: true,
       queued: true,
       order_ref: order.reference,
-      destination: destIsland,
-      reason: `${openParcels.length} colis ouverts vers ${destIsland} (max ${MAX_OPEN_PARCELS_PER_DEST}). Expédiez les colis en cours.`,
+      destination: destLabel,
+      reason: `${openParcels.length} colis ouverts vers ${destLabel} (max ${MAX_OPEN_PARCELS_PER_DEST}). Expédiez !`,
       open_parcels: openParcels.map(p => ({
         ref: p.reference,
         items: p.item_count,
@@ -130,20 +163,19 @@ async function distributeOrder(orderId, dbClient) {
     };
   }
 
-  // Assign items
+  // Assign items — use ONLY columns that exist in parcel_items
   let assigned = 0;
   for (const item of items) {
     try {
+      // parcel_items has: parcel_id, order_item_id, quantity, product_id
       await client.query(`
-        INSERT INTO parcel_items (parcel_id, order_item_id, quantity, product_name)
-        SELECT $1, $2, $3, COALESCE(p.name, 'Produit')
-        FROM order_items oi
-        LEFT JOIN products p ON p.id = oi.product_id
-        WHERE oi.id = $2
+        INSERT INTO parcel_items (parcel_id, order_item_id, quantity, product_id)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT DO NOTHING
-      `, [parcelId, item.id, item.quantity || 1]);
+      `, [parcelId, item.id, item.quantity || 1, item.product_id || null]);
       assigned++;
     } catch (e) {
+      // Minimal fallback — just core columns
       try {
         await client.query(`
           INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
@@ -157,7 +189,7 @@ async function distributeOrder(orderId, dbClient) {
     }
   }
 
-  console.log(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned} items, ${created ? 'new' : 'existing'} parcel)`);
+  console.log(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned}/${items.length} items, ${created ? 'new' : 'existing'})`);
 
   return {
     success: true,
@@ -166,7 +198,7 @@ async function distributeOrder(orderId, dbClient) {
     parcel_id: parcelId,
     items_assigned: assigned,
     parcel_created: created,
-    destination: destIsland
+    destination: destLabel
   };
 }
 
@@ -180,7 +212,7 @@ async function distributeAll() {
       AND NOT EXISTS (
         SELECT 1 FROM parcel_items pi
         JOIN order_items oi ON oi.id = pi.order_item_id
-        JOIN parcels p ON p.id = pi.parcel_id AND p.status != 'cancelled'
+        JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
         WHERE oi.order_id = o.id
       )
       AND EXISTS (
@@ -199,39 +231,12 @@ async function distributeAll() {
     }
   }
 
-  // Distribution summary
-  const { rows: summary } = await db.query(`
-    SELECT
-      p.id AS parcel_id, p.reference AS parcel_ref, p.status AS parcel_status,
-      UPPER(COALESCE(p.destination_island, '')) AS destination,
-      p.created_at AS parcel_created,
-      COUNT(DISTINCT oi.order_id)::int AS orders_count,
-      COUNT(pi.id)::int AS items_count,
-      SUM(COALESCE(oi.quantity, 1))::int AS total_qty,
-      COALESCE(SUM(DISTINCT sub_o.total_kmf), 0)::int AS total_kmf,
-      json_agg(DISTINCT jsonb_build_object(
-        'ref', sub_o.reference,
-        'customer', sub_u.full_name,
-        'items', (SELECT COUNT(*) FROM order_items x WHERE x.order_id = sub_o.id),
-        'total', sub_o.total_kmf
-      )) AS orders
-    FROM parcels p
-    JOIN parcel_items pi ON pi.parcel_id = p.id
-    JOIN order_items oi ON oi.id = pi.order_item_id
-    JOIN orders sub_o ON sub_o.id = oi.order_id
-    LEFT JOIN users sub_u ON sub_u.id = sub_o.user_id
-    WHERE p.status IN ('draft', 'preparation')
-    GROUP BY p.id
-    ORDER BY p.destination_island, p.created_at
-  `);
-
   return {
     distributed: results.filter(r => r.success && !r.already_assigned && !r.queued).length,
     queued: results.filter(r => r.queued).length,
     already_assigned: results.filter(r => r.already_assigned).length,
     errors: results.filter(r => !r.success).length,
-    details: results,
-    parcels: summary
+    details: results
   };
 }
 
@@ -241,8 +246,8 @@ async function getDistribution() {
   // Open parcels with their orders
   const { rows: parcels } = await db.query(`
     SELECT
-      p.id, p.reference, p.status,
-      UPPER(COALESCE(p.destination_island, '')) AS destination,
+      p.id, p.reference, p.status, p.label,
+      p.relais_id, r.name AS relais_name, r.island AS relais_island,
       p.created_at,
       COALESCE(agg.orders_count, 0)::int AS orders_count,
       COALESCE(agg.items_count, 0)::int AS items_count,
@@ -250,11 +255,12 @@ async function getDistribution() {
       COALESCE(agg.total_kmf, 0)::int AS total_kmf,
       COALESCE(agg.orders_json, '[]'::json) AS orders
     FROM parcels p
+    LEFT JOIN relais r ON r.id = p.relais_id
     LEFT JOIN LATERAL (
       SELECT
         COUNT(DISTINCT oi.order_id) AS orders_count,
         COUNT(pi.id) AS items_count,
-        SUM(COALESCE(oi.quantity, 1)) AS total_qty,
+        SUM(COALESCE(pi.quantity, 1)) AS total_qty,
         COALESCE(SUM(DISTINCT sub_o.total_kmf), 0) AS total_kmf,
         json_agg(DISTINCT jsonb_build_object(
           'id', sub_o.id,
@@ -271,31 +277,33 @@ async function getDistribution() {
       WHERE pi.parcel_id = p.id
     ) agg ON true
     WHERE p.status IN ('draft', 'preparation')
-    ORDER BY p.destination_island, p.created_at
+    ORDER BY r.island, p.created_at
   `);
 
-  // Unassigned orders (including queued due to parcel limit)
+  // Unassigned orders
   const { rows: unassigned } = await db.query(`
-    SELECT o.id, o.reference, o.status, o.destination_island,
+    SELECT o.id, o.reference, o.status, o.relais_id,
            o.total_kmf, o.created_at,
            u.full_name AS customer_name,
-           (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count
+           r.name AS relais_name, r.island AS relais_island,
+           (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id)::int AS items_count
     FROM orders o
     LEFT JOIN users u ON u.id = o.user_id
+    LEFT JOIN relais r ON r.id = o.relais_id
     WHERE o.status IN ('ordered', 'preparation')
       AND NOT EXISTS (
         SELECT 1 FROM parcel_items pi
         JOIN order_items oi ON oi.id = pi.order_item_id
-        JOIN parcels p ON p.id = pi.parcel_id AND p.status != 'cancelled'
+        JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
         WHERE oi.order_id = o.id
       )
     ORDER BY o.created_at ASC
   `);
 
-  // Saturation info per destination
+  // Saturation
   const destCounts = {};
   for (const p of parcels) {
-    const d = p.destination || 'UNKNOWN';
+    const d = p.relais_island || 'UNKNOWN';
     if (!destCounts[d]) destCounts[d] = { open: 0, full: 0 };
     destCounts[d].open++;
     if (p.items_count >= MAX_ITEMS_PER_PARCEL || p.orders_count >= MAX_ORDERS_PER_PARCEL) {
@@ -307,7 +315,7 @@ async function getDistribution() {
   for (const [dest, counts] of Object.entries(destCounts)) {
     if (counts.open >= MAX_OPEN_PARCELS_PER_DEST) {
       const queued = unassigned.filter(o =>
-        (o.destination_island || '').toUpperCase() === dest
+        (o.relais_island || '').toUpperCase() === dest.toUpperCase()
       ).length;
       if (queued > 0) {
         saturated.push({
@@ -315,47 +323,53 @@ async function getDistribution() {
           open_parcels: counts.open,
           full_parcels: counts.full,
           queued_orders: queued,
-          message: `🚨 ${dest}: ${counts.open} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}), ${queued} commande(s) en attente. Expédiez !`
+          message: `🚨 ${dest}: ${counts.open} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}), ${queued} commande(s) en file`
         });
       }
     }
   }
 
   return {
-    parcels,
-    unassigned,
-    saturated,
+    parcels, unassigned, saturated,
     limits: { MAX_ITEMS_PER_PARCEL, MAX_ORDERS_PER_PARCEL, MAX_OPEN_PARCELS_PER_DEST }
   };
 }
 
 
-// ── Reassign order to different parcel ──────────────────────────
-async function reassignOrder(orderId, targetParcelId) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-    const { rows: items } = await client.query(
-      'SELECT id, quantity FROM order_items WHERE order_id = $1', [orderId]
-    );
-    for (const item of items) {
-      await client.query('DELETE FROM parcel_items WHERE order_item_id = $1', [item.id]);
-    }
-    for (const item of items) {
-      await client.query(`
-        INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
-        VALUES ($1, $2, $3)
-        ON CONFLICT DO NOTHING
-      `, [targetParcelId, item.id, item.quantity || 1]);
-    }
-    await client.query('COMMIT');
-    return { success: true };
-  } catch (e) {
-    await client.query('ROLLBACK');
-    return { success: false, error: e.message };
-  } finally {
-    client.release();
+// ── Cleanup: delete ghost parcels (0 items, auto-created) ───────
+async function cleanupGhostParcels() {
+  const { rows: ghosts } = await db.query(`
+    SELECT p.id, p.reference, p.status, p.created_at
+    FROM parcels p
+    WHERE p.status IN ('draft', 'preparation')
+      AND p.label LIKE 'Auto-%'
+      AND NOT EXISTS (
+        SELECT 1 FROM parcel_items pi WHERE pi.parcel_id = p.id
+      )
+  `);
+
+  let deleted = 0;
+  for (const g of ghosts) {
+    await db.query('DELETE FROM parcels WHERE id = $1', [g.id]);
+    deleted++;
   }
+
+  // Also delete parcels with no items and no order that look auto-generated
+  const { rows: emptyAuto } = await db.query(`
+    SELECT p.id, p.reference FROM parcels p
+    WHERE p.status IN ('draft', 'preparation')
+      AND p.reference LIKE 'KOM-P-%'
+      AND NOT EXISTS (SELECT 1 FROM parcel_items pi WHERE pi.parcel_id = p.id)
+      AND p.created_at > NOW() - INTERVAL '7 days'
+  `);
+
+  for (const g of emptyAuto) {
+    await db.query('DELETE FROM parcels WHERE id = $1', [g.id]);
+    deleted++;
+  }
+
+  console.log(`[AUTO-PARCEL] Cleanup: ${deleted} ghost parcels deleted`);
+  return { deleted, ghosts: ghosts.concat(emptyAuto).map(g => g.reference) };
 }
 
 
@@ -363,7 +377,7 @@ module.exports = {
   distributeOrder,
   distributeAll,
   getDistribution,
-  reassignOrder,
+  cleanupGhostParcels,
   MAX_ITEMS_PER_PARCEL,
   MAX_ORDERS_PER_PARCEL,
   MAX_OPEN_PARCELS_PER_DEST,

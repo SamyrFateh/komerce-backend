@@ -494,12 +494,12 @@ async function _loadDistribution() {
       html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
       html += '<div style="display:flex;align-items:center;gap:8px">';
       html += '<strong style="color:#1e40af;font-size:14px">📦 ' + p.reference + '</strong>';
-      html += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + (p.destination || '—') + '</span>';
+      html += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + (p.relais_name || p.relais_island || p.destination || '—') + '</span>';
       html += '<span style="color:#64748b;font-size:11px">' + (p.orders_count || 0) + ' cmd · ' + (p.items_count || 0) + ' art. · ' + CT.pc.fmt(p.total_kmf || 0) + '</span>';
       html += '</div>';
       html += '<div style="display:flex;align-items:center;gap:6px">';
-      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + (p.parcel_status === 'draft' ? 'background:#fce4ec;color:#880e4f' : p.parcel_status === 'preparation' ? 'background:#dbeafe;color:#1e40af' : 'background:#d1fae5;color:#065f46') + '">' + (p.parcel_status || 'draft') + '</span>';
-      if (p.parcel_status === 'preparation') {
+      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + ((p.status || p.parcel_status) === 'draft' ? 'background:#fce4ec;color:#880e4f' : (p.status || p.parcel_status) === 'preparation' ? 'background:#dbeafe;color:#1e40af' : 'background:#d1fae5;color:#065f46') + '">' + (p.status || p.parcel_status || 'draft') + '</span>';
+      if ((p.status || p.parcel_status) === 'preparation') {
         html += '<button data-action="dist-ship" data-ref="' + p.reference + '" style="padding:3px 10px;border:none;border-radius:6px;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer">✈️ Expédier</button>';
       }
       html += '</div>';
@@ -541,7 +541,7 @@ async function _loadDistribution() {
       unassigned.forEach(function(o) {
         html += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">';
         html += '<span><strong>' + o.reference + '</strong> — ' + (o.customer_name || '?') + '</span>';
-        html += '<span style="color:#64748b">' + (o.items_count || '?') + ' art. · ' + (o.destination_island || '?') + '</span>';
+        html += '<span style="color:#64748b">' + (o.items_count || '?') + ' art. · ' + (o.relais_name || o.relais_island || '?') + '</span>';
         html += '</div>';
       });
       html += '<div style="margin-top:6px;font-size:11px;color:#880e4f">Cliquez "🤖 Répartir maintenant" pour les assigner automatiquement</div>';
