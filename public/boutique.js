@@ -8,12 +8,8 @@
 
   // ── CONSTANTES KOMERCE ──────────────────────────────────
   // Numéro WhatsApp de contact Komerce (format international sans +)
-const KOMERCE_WA = '33699272526';
-const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
-=======
   const KOMERCE_WA = '33699272526'; // Numéro WhatsApp Komerce
   const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
->>>>>>> d45583f185afd9cd84e51de87f2d3dae425eb491
 
   /* ── HELPERS ───────────────────────────────────────────── */
   function optimizeImgUrl(url, w) {
@@ -304,28 +300,26 @@ const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
   async function loadProducts() {
-  showSkeletons(16);
-  dom.loading.classList.add('show');
-  try {
-    if (!window.K || !K.products || typeof K.products.list !== 'function') {
-      throw new Error('K.products.list indisponible');
+    showSkeletons(16);
+    dom.loading.classList.add('show');
+    try {
+      if (!window.K || !K.products || typeof K.products.list !== 'function') {
+        throw new Error('K.products.list indisponible');
+      }
+      const data = await K.products.list();
+      state.products = (Array.isArray(data) ? data : data.products || [])
+        .filter(p => p.is_available);
+      state.filtered = [...state.products];
+      renderPromos();
+      hideSkeletons();
+      renderGrid();
+    } catch (e) {
+      showToast('Erreur de chargement', 'error');
+      console.error('[loadProducts]', e);
+    } finally {
+      dom.loading.classList.remove('show');
     }
-
-    const data = await K.products.list();
-    state.products = (Array.isArray(data) ? data : data.products || [])
-      .filter(p => p.is_available);
-
-    state.filtered = [...state.products];
-    renderPromos();
-    hideSkeletons();
-    renderGrid();
-  } catch (e) {
-    showToast('Erreur de chargement', 'error');
-    console.error('[loadProducts]', e);
-  } finally {
-    dom.loading.classList.remove('show');
   }
-}
 
   /* ── RENDER PROMOS ──────────────────────────────────────── */
   function renderPromos() {
@@ -658,15 +652,15 @@ const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
   }
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
- function quickAdd(productId, btnEl) {
-  const pid = String(productId);
-  const product = state.products.find(p => String(p.id) === pid);
-  if (!product) {
-    console.warn('[cart] Produit introuvable pour quickAdd:', productId);
-    return;
+  function quickAdd(productId, btnEl) {
+    const pid = String(productId);
+    const product = state.products.find(p => String(p.id) === pid);
+    if (!product) {
+      console.warn('[cart] Produit introuvable pour quickAdd:', productId);
+      return;
+    }
+    addToCart(product, 1, btnEl);
   }
-  addToCart(product, 1, btnEl);
-}
 
   function quickRemove(productId, btnEl) {
     const pid = String(productId);
