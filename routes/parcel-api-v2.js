@@ -1027,28 +1027,54 @@ router.get('/:ref/timeline', async (req, res, next) => {
 
 // ═══════════════════════════════════════════════════════════════════════
 
-// Temporary debug route to find the PG trigger
+// DEBUG: Cleanup ghost parcels + diagnostic (TEMPORARY)
 router.get('/internal/debug-triggers', async (req, res) => {
   try {
-    // List all triggers on parcels table
-    const { rows: triggers } = await db.query(`
-      SELECT tgname, pg_get_triggerdef(oid) AS def
-      FROM pg_trigger
-      WHERE tgrelid = 'parcels'::regclass
-        AND NOT tgisinternal
-    `);
+    const action = req.query.action || 'info';
     
-    // List all functions that mention 'ANTI' or 'destination'
-    const { rows: functions } = await db.query(`
-      SELECT proname, prosrc FROM pg_proc
-      WHERE prosrc ILIKE '%ANTI-ERREUR%' OR prosrc ILIKE '%sans destination%'
-    `);
+    if (action === 'cleanup') {
+      const { rows: ghosts } = await db.query(`
+        SELECT p.id, p.reference FROM parcels p
+        LEFT JOIN parcel_items pi ON pi.parcel_id = p.id
+        WHERE p.relais_id IS NULL AND p.status IN ('draft', 'preparation')
+        GROUP BY p.id, p.reference
+        HAVING COUNT(pi.id) = 0
+      `);
+      for (const g of ghosts) {
+        await db.query('DELETE FROM scan_events WHERE parcel_id = $1', [g.id]);
+        await db.query('DELETE FROM parcel_events WHERE parcel_id = $1', [g.id]);
+        await db.query('DELETE FROM parcel_items WHERE parcel_id = $1', [g.id]);
+        await db.query('DELETE FROM parcels WHERE id = $1', [g.id]);
+      }
+      return res.json({ action: 'cleanup', deleted: ghosts.length, refs: ghosts.map(g => g.reference) });
+    }
     
-    res.json({ triggers, functions });
+    if (action === 'distribute') {
+      const autoParcel = require('../services/auto-parcel');
+      const result = await autoParcel.distributeAll();
+      return res.json({ action: 'distribute', result });
+    }
+    
+    if (action === 'ship') {
+      const ref = req.query.ref;
+      if (!ref) return res.json({ error: 'ref param required' });
+      const { rows: [p] } = await db.query('SELECT id, reference, status, relais_id FROM parcels WHERE reference = $1', [ref]);
+      if (!p) return res.json({ error: 'Not found' });
+      if (!p.relais_id) return res.json({ error: 'No relais_id', parcel: p });
+      await db.query("UPDATE parcels SET status = 'shipped', shipped_at = NOW(), updated_at = NOW() WHERE id = $1", [p.id]);
+      return res.json({ action: 'shipped', ref: p.reference });
+    }
+    
+    // Default: full diagnostic
+    const { rows: triggers } = await db.query("SELECT tgname, pg_get_triggerdef(oid) AS def FROM pg_trigger WHERE tgrelid = 'parcels'::regclass AND NOT tgisinternal");
+    const { rows: parcels } = await db.query("SELECT p.reference, p.status, p.relais_id, p.destination_island, r.name as relais_name, COUNT(pi.id) as items_count FROM parcels p LEFT JOIN relais r ON r.id = p.relais_id LEFT JOIN parcel_items pi ON pi.parcel_id = p.id WHERE p.status NOT IN ('cancelled', 'collected') GROUP BY p.id, r.name ORDER BY p.created_at DESC LIMIT 30");
+    res.json({ triggers, parcels });
   } catch (e) {
-    res.json({ error: e.message });
+    res.json({ error: e.message, stack: e.stack ? e.stack.split('\n').slice(0,3) : null });
   }
 });
+
+
 
 
 // ═══════════════════════════════════════════════════════════════════════
