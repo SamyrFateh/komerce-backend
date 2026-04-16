@@ -1041,10 +1041,7 @@ router.get('/internal/debug-triggers', async (req, res) => {
         HAVING COUNT(pi.id) = 0
       `);
       for (const g of ghosts) {
-        await db.query('DELETE FROM scan_events WHERE parcel_id = $1', [g.id]);
-        await db.query('DELETE FROM parcel_events WHERE parcel_id = $1', [g.id]);
-        await db.query('DELETE FROM parcel_items WHERE parcel_id = $1', [g.id]);
-        await db.query('DELETE FROM parcels WHERE id = $1', [g.id]);
+        await db.query("UPDATE parcels SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW() WHERE id = $1", [g.id]);
       }
       return res.json({ action: 'cleanup', deleted: ghosts.length, refs: ghosts.map(g => g.reference) });
     }
