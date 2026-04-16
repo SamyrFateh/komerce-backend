@@ -1028,7 +1028,7 @@ router.get('/:ref/timeline', async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════════
 
 // Temporary debug route to find the PG trigger
-router.get('/debug-triggers', async (req, res) => {
+router.get('/internal/debug-triggers', async (req, res) => {
   try {
     // List all triggers on parcels table
     const { rows: triggers } = await db.query(`
