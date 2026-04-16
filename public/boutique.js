@@ -1371,32 +1371,7 @@
 
     const od = state.orderData;
 
-    /* ── 1. Mini résumé avec aperçu des articles ── */
-    const summary = document.createElement('div');
-    summary.className = 'ck-summary';
-    const qtyLabel = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
-    summary.innerHTML = '<span class="ck-sum-qty">' + qtyLabel + '</span>'
-      + '<span class="ck-sum-sep">·</span>'
-      + '<span class="ck-sum-total">' + fmt(cartTotal(), 'KMF') + '</span>';
-    body.appendChild(summary);
-
-    /* ── Miniatures articles — compact, visuel, sans noms ── */
-    const itemsPreview = document.createElement('div');
-    itemsPreview.className = 'ck-summary-bar';
-    const qtyLabel2 = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
-    itemsPreview.innerHTML = '<div class="ck-sum-top"><span class="ck-sum-qty">' + qtyLabel2 + '</span><span class="ck-sum-total">' + fmt(cartTotal(), 'KMF') + '</span></div>';
-    const thumbsRow = document.createElement('div');
-    thumbsRow.className = 'ck-thumbs-row';
-    state.cart.forEach(item => {
-      const p = item.product;
-      const thumb = document.createElement('div');
-      thumb.className = 'ck-thumb';
-      const badge = item.qty > 1 ? '<span class="ck-thumb-qty">' + item.qty + '</span>' : '';
-      thumb.innerHTML = '<img src="' + optimizeImgUrl(p.image_url, 80) + '" alt="' + sanitize(p.name) + '" loading="lazy">' + badge;
-      thumbsRow.appendChild(thumb);
-    });
-    itemsPreview.appendChild(thumbsRow);
-    body.appendChild(itemsPreview);
+    /* ── Récap retiré (mini résumé + miniatures) ── */
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
@@ -1431,6 +1406,9 @@
     body.appendChild(payGrid);
 
     // Stripe card wrap : HORS du scroll area pour fix tap iOS/Android
+    // FIX: supprimer tout ancien wrap (sinon doublons => Stripe casse en silence)
+    document.querySelectorAll('#stripe-card-wrap').forEach(el => el.remove());
+    if (_stripeCard) { try { _stripeCard.unmount(); } catch(e){} _stripeCard = null; _stripeElements = null; }
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
     stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
@@ -1472,6 +1450,8 @@
     body.appendChild(walletSection);
 
     /* ── 6. Confirm (sticky) ── */
+    // FIX: supprimer tout ancien bouton confirm
+    document.querySelectorAll('#btn-confirm-order').forEach(el => el.remove());
     const confirmBtn = document.createElement('button');
     confirmBtn.id = 'btn-confirm-order';
     confirmBtn.className = 'ck-confirm-btn';
@@ -1517,7 +1497,7 @@
       }
 
       const btn = document.getElementById('btn-confirm-order');
-      if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'EUR') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+      if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     }
 
     payGrid.addEventListener('change', updatePaymentUI);
@@ -1819,7 +1799,7 @@
       console.error('submitOrder:', e);
       showToast(e.message || 'Erreur lors de la commande.', 'error');
       btn.disabled = false;
-      btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'EUR') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+      btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
       btn.style.opacity = '1';
     }
   }
