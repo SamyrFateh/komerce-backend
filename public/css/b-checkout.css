@@ -3,46 +3,7 @@
    Checkout form, order summary, success screen extras
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Checkout summary bar ── */
-.ck-summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0;
-  font-size: 13px;
-  color: var(--ink-2);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
-}
-.ck-sum-qty    { font-weight: 600; }
-.ck-sum-sep    { color: var(--ink-4); }
-.ck-sum-total  { font-weight: 800; color: var(--terracotta); margin-left: auto; }
-
-/* ── Items preview in checkout ── */
-.ck-items-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  padding: 8px;
-  background: var(--ivoire);
-  border-radius: var(--radius-sm);
-}
-.ck-item-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-.ck-item-img {
-  width: 40px; height: 40px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-}
-.ck-item-name  { flex: 1; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ck-item-qty   { color: var(--ink-3); font-size: 12px; flex-shrink: 0; }
-.ck-item-price { font-weight: 700; color: var(--terracotta); flex-shrink: 0; font-size: 13px; }
+/* ── Checkout summary bar — supprimé, total intégré dans .ck-label ── */
 
 /* ── Section label ── */
 .ck-label {
