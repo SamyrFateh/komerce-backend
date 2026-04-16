@@ -52,6 +52,25 @@
     if (!grid) return;
     K.state.page = 0;
     grid.innerHTML = '';
+    // Event delegation for CTA buttons (attached once)
+    if (!grid._ctaDelegate) {
+      grid._ctaDelegate = true;
+      grid.addEventListener('click', e => {
+        const addBtn = e.target.closest('.k-card-add');
+        const decBtn = e.target.closest('.k-cqb-dec');
+        const incBtn = e.target.closest('.k-cqb-inc');
+        if (addBtn) {
+          e.stopPropagation();
+          K.quickAdd(addBtn.dataset.add, addBtn);
+        } else if (decBtn || incBtn) {
+          e.stopPropagation();
+          const pid = (decBtn || incBtn).dataset.id;
+          const item = K.state.cart.find(i => String(i.product.id) === String(pid));
+          if (!item) return;
+          K.setQty(pid, incBtn ? item.qty + 1 : item.qty - 1);
+        }
+      }, true);
+    }
     K._appendCards(K._getDisplayProducts());
   };
 
@@ -95,22 +114,23 @@
             (hasPromo ? '<span class="k-card-old"> ' + K.fmtPrice(oldPrice) + '</span>' : '') +
             '<div class="k-card-eur">' + K.fmtEur(p.price_kmf) + '</div>' +
           '</div>' +
-          '<button class="k-card-add' + (inCart ? ' in-cart' : '') + '" data-add="' + p.id + '" aria-label="Ajouter au panier">' +
-            (inCart ? '✓' : '+') +
-          '</button>' +
+          '<div class="k-card-cta" data-id="' + p.id + '">' +
+            (inCart ?
+              '<div class="k-card-qty">' +
+                '<button class="k-cqb k-cqb-dec" data-id="' + p.id + '" aria-label="Retirer">−</button>' +
+                '<span class="k-cqv">' + (inCart.qty || 1) + '</span>' +
+                '<button class="k-cqb k-cqb-inc" data-id="' + p.id + '" aria-label="Ajouter">+</button>' +
+              '</div>'
+            : '<button class="k-card-add" data-add="' + p.id + '" aria-label="Ajouter au panier">+</button>') +
+          '</div>' +
         '</div>' +
         '<div class="k-badge-dispo">✓ Dispo</div>' +
+        '<div class="k-card-hover-overlay"><span>VOIR →</span></div>' +
       '</div>';
 
-    // Open modal on card click (not on add button)
+    // Open modal on card click (not on CTA)
     card.addEventListener('click', e => {
-      if (!e.target.closest('.k-card-add')) K.openModal(p.id);
-    });
-
-    // Quick-add
-    card.querySelector('.k-card-add').addEventListener('click', e => {
-      e.stopPropagation();
-      K.quickAdd(p.id, e.currentTarget);
+      if (!e.target.closest('.k-card-cta')) K.openModal(p.id);
     });
 
     return card;
@@ -143,6 +163,7 @@
     rail.querySelectorAll('.k-promo-card').forEach(card => {
       card.addEventListener('click', () => K.openModal(card.dataset.id));
     });
+    K.startSoldesCountdown();
   };
 
   // ── INFINITE SCROLL ───────────────────────────────────────
@@ -254,11 +275,38 @@
 
   // ── MARK CART BUTTONS ────────────────────────────────────
   K.markAllCartButtons = function () {
-    K.$$('.k-card-add').forEach(btn => {
-      const inCart = K.state.cart.find(i => String(i.product.id) === String(btn.dataset.add));
-      btn.classList.toggle('in-cart', !!inCart);
-      btn.textContent = inCart ? '✓' : '+';
+    K.$$('.k-card-cta').forEach(wrap => {
+      const pid  = wrap.dataset.id;
+      const item = K.state.cart.find(i => String(i.product.id) === String(pid));
+      if (item) {
+        wrap.innerHTML =
+          '<div class="k-card-qty">' +
+            '<button class="k-cqb k-cqb-dec" data-id="' + pid + '" aria-label="Retirer">−</button>' +
+            '<span class="k-cqv">' + item.qty + '</span>' +
+            '<button class="k-cqb k-cqb-inc" data-id="' + pid + '" aria-label="Ajouter">+</button>' +
+          '</div>';
+      } else {
+        wrap.innerHTML = '<button class="k-card-add" data-add="' + pid + '" aria-label="Ajouter au panier">+</button>';
+      }
     });
+  };
+
+  // ── SOLDES COUNTDOWN ─────────────────────────────────────
+  K.startSoldesCountdown = function () {
+    const el = K.$('#k-soldes-countdown');
+    if (!el) return;
+    function tick() {
+      const now  = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight - now;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      el.textContent = '⏳ ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
+    }
+    tick();
+    setInterval(tick, 1000);
   };
 
 })(window.K = window.K || {});

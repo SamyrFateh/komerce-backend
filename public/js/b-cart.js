@@ -41,6 +41,7 @@
     item.qty = newQty;
     K.saveCart();
     K.updateCartBadge();
+    K.markAllCartButtons();
     K.emit('cart:updated', K.state.cart);
   };
 
@@ -48,11 +49,6 @@
   K.quickAdd = function (productId, btnEl) {
     const product = K.state.products.find(p => String(p.id) === String(productId));
     if (!product) return;
-    const inCart = K.state.cart.find(i => String(i.product.id) === String(productId));
-    if (inCart) {
-      K.openCart();
-      return;
-    }
     K.addToCart(product, 1, btnEl);
   };
 

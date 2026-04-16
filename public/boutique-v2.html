@@ -18,11 +18,11 @@ if ('serviceWorker' in navigator) {
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- ── Prairie CSS (modulaire) ── -->
-<link rel="stylesheet" href="/css/b-theme.css?v=1">
-<link rel="stylesheet" href="/css/b-layout.css?v=1">
-<link rel="stylesheet" href="/css/b-components.css?v=1">
-<link rel="stylesheet" href="/css/b-animations.css?v=1">
-<link rel="stylesheet" href="/css/b-checkout.css?v=1">
+<link rel="stylesheet" href="/css/b-theme.css?v=2">
+<link rel="stylesheet" href="/css/b-layout.css?v=2">
+<link rel="stylesheet" href="/css/b-components.css?v=2">
+<link rel="stylesheet" href="/css/b-animations.css?v=2">
+<link rel="stylesheet" href="/css/b-checkout.css?v=2">
 
 <script src="https://js.stripe.com/v3/" defer></script>
 </head>
@@ -51,6 +51,11 @@ if ('serviceWorker' in navigator) {
     </button>
   </div>
 </header>
+
+<!-- ═══ URGENCY STRIP ════════════════════════════════════ -->
+<div class="k-urgency-strip" id="k-urgency-strip">
+  <span class="k-urgency-inner">📦 Livraison à domicile · Pas de retour possible — choisissez bien · Paiement sécurisé · Stock limité sur certains articles · 📦 Livraison à domicile · Pas de retour possible — choisissez bien · Paiement sécurisé · Stock limité sur certains articles ·&nbsp;</span>
+</div>
 
 <!-- ═══ HERO BANNER ══════════════════════════════════════ -->
 <section class="k-hero" id="k-hero">
@@ -85,7 +90,10 @@ if ('serviceWorker' in navigator) {
 <!-- ═══ SOLDES ══════════════════════════════════════ -->
 <section class="k-section" id="k-promos-section">
   <div class="k-section-head">
-    <h2>🏷️ Soldes</h2>
+    <div>
+      <h2>🏷️ Soldes</h2>
+      <span class="k-soldes-countdown" id="k-soldes-countdown"></span>
+    </div>
     <button class="k-see-all" id="k-see-all-promos">Voir tout →</button>
   </div>
   <div class="k-promo-rail" id="k-promo-rail"></div>
@@ -252,16 +260,16 @@ if ('serviceWorker' in navigator) {
 </nav>
 
 <!-- ═══ JS MODULES (ordre de chargement strict) ══════════ -->
-<script src="/js/b-config.js?v=1"></script>
-<script src="/js/b-state.js?v=1"></script>
-<script src="/js/b-ui.js?v=1"></script>
-<script src="/js/b-catalog.js?v=1"></script>
-<script src="/js/b-cart.js?v=1"></script>
-<script src="/js/b-modal.js?v=1"></script>
-<script src="/js/b-search.js?v=1"></script>
-<script src="/js/b-checkout.js?v=1"></script>
-<script src="/js/b-track.js?v=1"></script>
-<script src="/js/b-app.js?v=1"></script>
+<script src="/js/b-config.js?v=2"></script>
+<script src="/js/b-state.js?v=2"></script>
+<script src="/js/b-ui.js?v=2"></script>
+<script src="/js/b-catalog.js?v=2"></script>
+<script src="/js/b-cart.js?v=2"></script>
+<script src="/js/b-modal.js?v=2"></script>
+<script src="/js/b-search.js?v=2"></script>
+<script src="/js/b-checkout.js?v=2"></script>
+<script src="/js/b-track.js?v=2"></script>
+<script src="/js/b-app.js?v=2"></script>
 
 </body>
 </html>
