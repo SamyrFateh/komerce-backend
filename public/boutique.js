@@ -86,11 +86,23 @@
   }
 
   /* ── STRIPE ───────────────────────────────────────────── */
+  const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ';
   let _stripe = null, _stripeElements = null, _stripeCard = null;
-  try {
-    _stripe = typeof Stripe !== 'undefined' ?
-      Stripe('pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ') : null;
-  } catch(e) { console.warn('Stripe not loaded:', e); }
+
+  function getStripe() {
+    if (_stripe) return _stripe;
+    if (typeof Stripe === 'undefined') {
+      console.warn('Stripe.js pas encore chargé');
+      return null;
+    }
+    try {
+      _stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+      return _stripe;
+    } catch (e) {
+      console.warn('Stripe init failed:', e);
+      return null;
+    }
+  }
 
   /* ── STATE ─────────────────────────────────────────────── */
   const CART_VERSION = 2;
@@ -1483,8 +1495,17 @@
         if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.style.display = 'block'; }
       }
 
-      if (isStripe && _stripe && !_stripeCard) {
-        _stripeElements = _stripe.elements();
+      if (isStripe && !_stripeCard) {
+        const stripe = getStripe();
+        const errEl = document.getElementById('stripe-card-error');
+        if (!stripe) {
+          if (errEl) {
+            errEl.textContent = 'Le module de paiement n'est pas encore chargé. Réessaie dans une seconde.';
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+        _stripeElements = stripe.elements();
         _stripeCard = _stripeElements.create('card', {
           style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
           hidePostalCode: true
@@ -1760,7 +1781,8 @@
 
       // Step 3: Stripe payment
       if (isStripe) {
-        if (!_stripe || !_stripeCard) throw new Error('Stripe non chargé. Rechargez la page.');
+        const stripe = getStripe();
+        if (!stripe || !_stripeCard) throw new Error('Stripe non chargé. Attends 1 seconde puis réessaie.');
 
         btn.textContent = '🔒 Sécurisation du paiement…';
 
@@ -1770,7 +1792,7 @@
 
         btn.textContent = '💳 Validation en cours…';
 
-        const stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
+        const stripeResult = await stripe.confirmCardPayment(intentResult.client_secret, {
           payment_method: {
             card: _stripeCard,
             billing_details: { name: clientName, email: clientEmail || undefined }
