@@ -39,7 +39,7 @@ ul,ol{list-style:none}
   --radius:12px;
   --radius-sm:8px;
   --radius-lg:20px;
-  --header-h:48px;
+  --header-h:44px;
   --bnav-h:50px;
   --header-h:44px;
   --ease:cubic-bezier(.22,1,.36,1);
@@ -516,6 +516,29 @@ body{
   animation:k-shimmer 1.4s ease-in-out infinite;
 }
 .k-skel-line.short{width:55%;margin-bottom:8px;}
+
+/* JS skeleton aliases */
+.k-card-skeleton{
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--white);
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.k-skeleton-img{
+  width:100%;aspect-ratio:1/1;
+  background:linear-gradient(90deg,#EDE5D8 25%,#F5EDE0 50%,#EDE5D8 75%);
+  background-size:200% 100%;
+  animation:k-shimmer 1.4s ease-in-out infinite;
+}
+.k-skeleton-title,.k-skeleton-price{
+  margin:6px 6px 0;
+  border-radius:4px;height:10px;
+  background:linear-gradient(90deg,#EDE5D8 25%,#F5EDE0 50%,#EDE5D8 75%);
+  background-size:200% 100%;
+  animation:k-shimmer 1.4s ease-in-out infinite;
+}
+.k-skeleton-title{width:72%;}
+.k-skeleton-price{width:40%;margin-bottom:8px;}
 
 /* ── PRODUCT MODAL ─────────────────────────────────────── */
 /* ── MODAL OVERLAY ── */
@@ -1012,7 +1035,8 @@ body{
   .k-section-head h2{font-size:18px}
 
   /* Panier : largeur fixe, pas plein écran */
-  .k-cart-panel{
+  .k-cart-panel,
+  .k-cart-drawer{
     max-width:420px;
     left:auto;
   }
