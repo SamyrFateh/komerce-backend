@@ -521,6 +521,19 @@ async function _loadDistribution() {
       html += '</div>';
     });
     
+    // ── Saturation alerts ──
+    var saturated = data.saturated || [];
+    if (saturated.length > 0) {
+      saturated.forEach(function(s) {
+        html += '<div style="background:#fce4ec;border:2px solid #e91e63;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px">';
+        html += '<span style="font-size:20px">🚨</span>';
+        html += '<div><strong style="color:#880e4f">' + s.destination + ' — Capacité max atteinte</strong>';
+        html += '<div style="font-size:12px;color:#880e4f">' + s.open_parcels + ' colis ouverts (max ' + (data.limits ? data.limits.MAX_OPEN_PARCELS_PER_DEST : 3) + '), ' + s.queued_orders + ' commande(s) en file</div>';
+        html += '<div style="font-size:12px;color:#c62828;font-weight:600;margin-top:2px">✈️ Expédiez les colis en cours pour débloquer</div>';
+        html += '</div></div>';
+      });
+    }
+
     // Unassigned orders
     if (unassigned.length > 0) {
       html += '<div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px;margin-top:8px">';

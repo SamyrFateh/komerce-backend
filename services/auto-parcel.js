@@ -1,19 +1,12 @@
 /**
- * KOMERCE — Auto-Parcel Distribution Engine
+ * KOMERCE — Auto-Parcel Distribution Engine v2
  *
- * Le système répartit automatiquement les articles dans les colis.
- * L'agent voit la répartition et peut ajuster sans bloquer le flux.
- *
- * Logique :
- *   1. Trouver les commandes 'ordered' sans colis assigné
- *   2. Grouper par destination (île + relais)
- *   3. Créer ou réutiliser un colis ouvert par destination
- *   4. Assigner les articles via parcel_items
- *   5. L'agent peut réassigner entre colis sans friction
- *
- * Appelé automatiquement :
- *   - Quand une commande passe à 'ordered' (via state machine hook)
- *   - Manuellement via POST /api/hub/auto-distribute
+ * Règles de consolidation :
+ *   - MAX 3 colis ouverts par destination (configurable)
+ *   - MAX 30 articles / 10 commandes par colis
+ *   - Quand tous les colis sont pleins → commande en file d'attente
+ *   - Signal "Expédiez les colis en cours" quand saturé
+ *   - Ne crée PAS de colis à l'infini
  */
 
 'use strict';
@@ -24,12 +17,9 @@ const { generateParcelRef } = require('../utils/reference');
 // ── Config ──────────────────────────────────────────────────────
 const MAX_ITEMS_PER_PARCEL = 30;
 const MAX_ORDERS_PER_PARCEL = 10;
+const MAX_OPEN_PARCELS_PER_DEST = 3;
 
 // ── Core: distribute one order ──────────────────────────────────
-/**
- * Auto-assign an order's items to a parcel.
- * Reuses existing open parcel for same destination, or creates a new one.
- */
 async function distributeOrder(orderId, dbClient) {
   const client = dbClient || db;
 
@@ -47,7 +37,7 @@ async function distributeOrder(orderId, dbClient) {
 
   if (!order) return { success: false, error: 'Order not found' };
 
-  // Check if order already has items in parcels
+  // Check if order already assigned
   const { rows: existingItems } = await client.query(`
     SELECT pi.id FROM parcel_items pi
     JOIN order_items oi ON oi.id = pi.order_item_id
@@ -70,7 +60,7 @@ async function distributeOrder(orderId, dbClient) {
   const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
   const destIsland = (order.destination_island || order.relais_island || 'unknown').toUpperCase();
 
-  // Find an open parcel for the same destination with room
+  // Find open parcels for this destination
   const { rows: openParcels } = await client.query(`
     SELECT p.id, p.reference, p.destination_island,
            COALESCE(agg.item_count, 0)::int AS item_count,
@@ -88,22 +78,21 @@ async function distributeOrder(orderId, dbClient) {
     ORDER BY p.created_at ASC
   `, [destIsland]);
 
-  let parcelId, parcelRef, created = false;
-
-  // Find a parcel with room
+  // Try to find a parcel with room
   const suitable = openParcels.find(p =>
     p.item_count + totalQty <= MAX_ITEMS_PER_PARCEL &&
     p.order_count < MAX_ORDERS_PER_PARCEL
   );
 
+  let parcelId, parcelRef, created = false;
+
   if (suitable) {
+    // ✅ Reuse existing parcel
     parcelId = suitable.id;
     parcelRef = suitable.reference;
-  } else {
-    // Create new parcel
+  } else if (openParcels.length < MAX_OPEN_PARCELS_PER_DEST) {
+    // ✅ Create new parcel (under the limit)
     const ref = await generateParcelRef(client);
-    
-    // Try with destination_island column
     try {
       const { rows: [newP] } = await client.query(`
         INSERT INTO parcels (reference, destination_island, status, type, recipient_name, recipient_phone)
@@ -113,7 +102,6 @@ async function distributeOrder(orderId, dbClient) {
       parcelId = newP.id;
       parcelRef = newP.reference;
     } catch (e) {
-      // Fallback: use order_id (1:1) if destination_island column doesn't exist
       const { rows: [newP] } = await client.query(`
         INSERT INTO parcels (reference, order_id, status, type)
         VALUES ($1, $2, 'preparation', 'standard')
@@ -123,6 +111,23 @@ async function distributeOrder(orderId, dbClient) {
       parcelRef = newP.reference;
     }
     created = true;
+    console.log(`[AUTO-PARCEL] New parcel ${parcelRef} for ${destIsland} (${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
+  } else {
+    // 🚫 LIMIT REACHED — don't create more, queue the order
+    console.log(`[AUTO-PARCEL] ⚠️ ${destIsland}: ${openParcels.length} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}) — ${order.reference} en file d'attente`);
+    return {
+      success: true,
+      queued: true,
+      order_ref: order.reference,
+      destination: destIsland,
+      reason: `${openParcels.length} colis ouverts vers ${destIsland} (max ${MAX_OPEN_PARCELS_PER_DEST}). Expédiez les colis en cours.`,
+      open_parcels: openParcels.map(p => ({
+        ref: p.reference,
+        items: p.item_count,
+        orders: p.order_count,
+        full: p.item_count >= MAX_ITEMS_PER_PARCEL || p.order_count >= MAX_ORDERS_PER_PARCEL
+      }))
+    };
   }
 
   // Assign items
@@ -139,7 +144,6 @@ async function distributeOrder(orderId, dbClient) {
       `, [parcelId, item.id, item.quantity || 1]);
       assigned++;
     } catch (e) {
-      // product_name column might not exist
       try {
         await client.query(`
           INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
@@ -167,9 +171,8 @@ async function distributeOrder(orderId, dbClient) {
 }
 
 
-// ── Batch: distribute all unassigned ordered orders ─────────────
+// ── Batch: distribute all unassigned ────────────────────────────
 async function distributeAll() {
-  // Find all ordered orders without any parcel assignment
   const { rows: unassigned } = await db.query(`
     SELECT o.id, o.reference
     FROM orders o
@@ -196,7 +199,7 @@ async function distributeAll() {
     }
   }
 
-  // Also get current distribution summary
+  // Distribution summary
   const { rows: summary } = await db.query(`
     SELECT
       p.id AS parcel_id, p.reference AS parcel_ref, p.status AS parcel_status,
@@ -223,7 +226,8 @@ async function distributeAll() {
   `);
 
   return {
-    distributed: results.filter(r => r.success && !r.already_assigned).length,
+    distributed: results.filter(r => r.success && !r.already_assigned && !r.queued).length,
+    queued: results.filter(r => r.queued).length,
     already_assigned: results.filter(r => r.already_assigned).length,
     errors: results.filter(r => !r.success).length,
     details: results,
@@ -270,7 +274,7 @@ async function getDistribution() {
     ORDER BY p.destination_island, p.created_at
   `);
 
-  // Unassigned orders
+  // Unassigned orders (including queued due to parcel limit)
   const { rows: unassigned } = await db.query(`
     SELECT o.id, o.reference, o.status, o.destination_island,
            o.total_kmf, o.created_at,
@@ -288,7 +292,41 @@ async function getDistribution() {
     ORDER BY o.created_at ASC
   `);
 
-  return { parcels, unassigned };
+  // Saturation info per destination
+  const destCounts = {};
+  for (const p of parcels) {
+    const d = p.destination || 'UNKNOWN';
+    if (!destCounts[d]) destCounts[d] = { open: 0, full: 0 };
+    destCounts[d].open++;
+    if (p.items_count >= MAX_ITEMS_PER_PARCEL || p.orders_count >= MAX_ORDERS_PER_PARCEL) {
+      destCounts[d].full++;
+    }
+  }
+
+  const saturated = [];
+  for (const [dest, counts] of Object.entries(destCounts)) {
+    if (counts.open >= MAX_OPEN_PARCELS_PER_DEST) {
+      const queued = unassigned.filter(o =>
+        (o.destination_island || '').toUpperCase() === dest
+      ).length;
+      if (queued > 0) {
+        saturated.push({
+          destination: dest,
+          open_parcels: counts.open,
+          full_parcels: counts.full,
+          queued_orders: queued,
+          message: `🚨 ${dest}: ${counts.open} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}), ${queued} commande(s) en attente. Expédiez !`
+        });
+      }
+    }
+  }
+
+  return {
+    parcels,
+    unassigned,
+    saturated,
+    limits: { MAX_ITEMS_PER_PARCEL, MAX_ORDERS_PER_PARCEL, MAX_OPEN_PARCELS_PER_DEST }
+  };
 }
 
 
@@ -297,20 +335,12 @@ async function reassignOrder(orderId, targetParcelId) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-
-    // Get order items
     const { rows: items } = await client.query(
       'SELECT id, quantity FROM order_items WHERE order_id = $1', [orderId]
     );
-
-    // Remove from current parcels
     for (const item of items) {
-      await client.query(
-        'DELETE FROM parcel_items WHERE order_item_id = $1', [item.id]
-      );
+      await client.query('DELETE FROM parcel_items WHERE order_item_id = $1', [item.id]);
     }
-
-    // Assign to target parcel
     for (const item of items) {
       await client.query(`
         INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
@@ -318,7 +348,6 @@ async function reassignOrder(orderId, targetParcelId) {
         ON CONFLICT DO NOTHING
       `, [targetParcelId, item.id, item.quantity || 1]);
     }
-
     await client.query('COMMIT');
     return { success: true };
   } catch (e) {
@@ -337,4 +366,5 @@ module.exports = {
   reassignOrder,
   MAX_ITEMS_PER_PARCEL,
   MAX_ORDERS_PER_PARCEL,
+  MAX_OPEN_PARCELS_PER_DEST,
 };
