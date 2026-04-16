@@ -196,10 +196,10 @@ body {
    ============================================================ */
 .k-hero {
   position: relative;
-  margin: 56px 12px 0;
-  width: auto;
+  margin-top: 56px;
+  width: 100%;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 0;
   height: 200px;
 }
 
@@ -253,8 +253,6 @@ body {
 @media (min-width: 900px) {
   .k-hero {
     height: 380px;
-    border-radius: 16px;
-    /* Pas de max-width : le hero s'aligne avec le reste du contenu */
   }
 
   .k-hero-title {
