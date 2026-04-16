@@ -1,6 +1,6 @@
 /* ===================================================================
    Komerce Control Tower — ct-views-hub-relais.js v3 COMPACT
-   Hub: 🛒 Sourcing → 📦 Colis → ✈️ Expédition
+   Hub: 📋 À répartir → 📦 Colis → ✈️ Expédition
    Relais: 💰 Cash → 🚢 Réception → 📍 Distribution
    =================================================================== */
 'use strict';
@@ -149,7 +149,7 @@ CT.views.hub = async function(container) {
     html += '</div>';
 
     // ── Tab panels ──
-    // Panel 1: Commander au sourcing
+    // Panel 1: Passer en commande
     var rows1 = '';
     confirmed.forEach(function(o) {
       var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
@@ -194,7 +194,7 @@ CT.views.hub = async function(container) {
       function(o) { return CT.pc.ago(o.created_at); }
     ]);
 
-    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin:8px 0 4px">📬 En sourcing (' + ordered.length + ')</div>';
+    html += '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin:8px 0 4px">📋 À répartir (' + ordered.length + ')</div>';
     html += _miniTable(ordered, [
       function(o) { return '<strong>' + o.reference + '</strong>'; },
       function(o) { return o.customer_name || '—'; },
@@ -219,7 +219,7 @@ CT.views.hub = async function(container) {
       html += '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
     } else {
       html += _alertBadge('💸', 'Paiements expirés >36h', expired36h.length, '#e91e63');
-      html += _alertBadge('🛒', 'Sourcing retard >48h', stuck48h.length, '#ef4444');
+      html += _alertBadge('🛒', 'À répartir >48h', stuck48h.length, '#ef4444');
       html += _alertBadge('⏰', 'Ordered bloqué >48h', stuckOrd48h.length, '#ef4444');
       html += _alertBadge('🔴', 'Critique >7 jours', critical7d.length, '#dc2626');
     }
@@ -377,11 +377,11 @@ function _wireHubActions(container) {
   container.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       var ref = btn.dataset.ref;
-      if (!confirm('Commander au sourcing ' + ref + ' ?\nconfirmed → ordered')) return;
+      if (!confirm('Passer en commande ' + ref + ' ?\nconfirmed → ordered')) return;
       btn.disabled = true; btn.textContent = '⏳...';
       try {
         await CT.api.hubMarkOrdered(ref);
-        _toast('✅ ' + ref + ' → sourcing 🛒');
+        _toast('✅ ' + ref + ' → commandé 📋');
         CT.views.hub(document.getElementById('ct-main'));
       } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '🛒 Commander'; }
     });
