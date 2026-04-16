@@ -346,6 +346,17 @@ body {
   color: white;
 }
 
+/* Desktop: chips ne s'étirent plus */
+@media (min-width: 768px) {
+  .k-cats {
+    justify-content: center;
+  }
+  .k-chip {
+    flex: 0 0 auto;
+    width: 88px;
+  }
+}
+
 /* ============================================================
    SECTIONS
    ============================================================ */

@@ -88,6 +88,7 @@
   font-weight: 800;
   color: var(--terracotta);
   line-height: 1;
+  white-space: nowrap;
 }
 
 .k-card-old {
