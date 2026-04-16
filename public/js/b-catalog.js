@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════
    KOMERCE BOUTIQUE — b-catalog.js
-   Product loading, grid rendering, promo rail, fly-to-cart
+   Product loading, grid rendering, soldes rail, fly-to-cart
    Depends on: b-config.js, b-state.js, b-ui.js
    ═══════════════════════════════════════════════════════════ */
 (function (K) {
