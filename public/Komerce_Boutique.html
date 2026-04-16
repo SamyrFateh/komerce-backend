@@ -11,7 +11,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v10')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v1776302055')===-1) caches.delete(n);
       });
     });
   }
@@ -25,7 +25,7 @@ if('serviceWorker' in navigator){
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/boutique.css?v=1776299695">
+<link rel="stylesheet" href="/boutique.css?v=1776359805">
 <script src="https://js.stripe.com/v3/" defer></script>
 </head>
 <body>
@@ -53,6 +53,19 @@ if('serviceWorker' in navigator){
 <section class="k-hero" id="k-hero">
   <img src="/New_Hero.jpg" alt="Komerce — Livraison diaspora vers les Comores" loading="eager">
   <div class="k-hero-overlay">
+    <div class="k-hero-text-left">
+      <div class="k-hero-eyebrow">🌙 Komerce · Diaspora</div>
+      <div class="k-hero-title">Envoyez ce qui compte<br>à la maison</div>
+      <div class="k-hero-pills">
+        <span class="k-hero-pill">✅ Livraison garantie</span>
+        <span class="k-hero-pill">💬 Support WhatsApp</span>
+        <span class="k-hero-pill">🔒 Paiement sécurisé</span>
+      </div>
+    </div>
+    <button class="k-hero-btn" onclick="document.querySelector('.k-grid')?.scrollIntoView({behavior:'smooth'})">
+      Découvrir
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
   </div>
 </section>
 
@@ -206,7 +219,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<script src="/komerce-api.js?v=1776299695"></script>
-<script src="/boutique.js?v=1776299695"></script>
+<script src="/komerce-api.js?v=1776359805"></script>
+<script src="/boutique.js?v=1776359805"></script>
 </body>
 </html>
