@@ -1,20 +1,15 @@
 /**
- * ═══════════════════════════════════════════════════════════════
  * TRANSITAIRE API — Transit agent endpoints
  * Mounted at /api/transitaire
- * ═══════════════════════════════════════════════════════════════
  *
- * The transitaire receives shipped parcels from the Hub
- * and confirms transit (shipped → in_transit).
- * Uses the scan-engine for the actual transition.
- * ═══════════════════════════════════════════════════════════════
+ * Simplified: direct SQL + state machine (no scan-engine dependency)
  */
 
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { processScan } = require('../services/scan-engine');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_transitaire'])];
 
@@ -23,18 +18,25 @@ router.get('/parcels', ...guard, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT p.id, p.reference, p.status, p.weight_kg,
-             p.created_at, p.shipped_at,
+             p.created_at, p.shipped_at, p.relais_id,
              o.reference AS order_ref, o.destination_island,
              u.full_name AS customer_name,
-             r.name AS relais_name,
-             (SELECT COUNT(*)::int FROM parcel_items pi WHERE pi.parcel_id = p.id) AS nb_items
+             r.name AS relais_name
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
       LEFT JOIN users u ON u.id = o.user_id
-      LEFT JOIN relais r ON r.id = o.relais_id
+      LEFT JOIN relais r ON r.id = COALESCE(p.relais_id, o.relais_id)
       WHERE p.status = 'shipped'
       ORDER BY p.shipped_at ASC
     `);
+
+    // Count items per parcel
+    for (const p of rows) {
+      const { rows: [cnt] } = await db.query(
+        `SELECT COUNT(*)::int AS nb FROM parcel_items WHERE parcel_id = $1`, [p.id]
+      );
+      p.nb_items = cnt.nb;
+    }
 
     res.json({ parcels: rows, count: rows.length });
   } catch (err) { next(err); }
@@ -46,25 +48,59 @@ router.post('/ship', ...guard, async (req, res, next) => {
     const { parcel_id, notes } = req.body;
     if (!parcel_id) return res.status(400).json({ error: 'parcel_id requis' });
 
-    // Use scan-engine with transit_confirmed event
-    const result = await processScan({
-      parcel_id,
-      event_type: 'transit_confirmed',
-      scanned_by: req.user.id,
-      actor_name: req.user.full_name || req.user.email,
-      actor_role: req.user.role || 'agent_transitaire',
-      location: 'transitaire',
-      notes: notes || 'Transit confirmé par transitaire',
-    });
-
-    if (!result.success) {
-      return res.status(400).json({ error: result.error?.message || 'Échec de la transition', details: result });
+    // 1. Load parcel
+    const { rows: [parcel] } = await db.query(
+      `SELECT p.*, o.id AS order_id FROM parcels p LEFT JOIN orders o ON o.id = p.order_id WHERE p.id = $1`,
+      [parcel_id]
+    );
+    if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
+    if (parcel.status !== 'shipped') {
+      return res.status(400).json({ error: `Colis en statut "${parcel.status}" — doit être "shipped" pour confirmer le transit` });
     }
+
+    // 2. Update parcel status: shipped → in_transit
+    await db.query(
+      `UPDATE parcels SET status = 'in_transit', updated_at = NOW() WHERE id = $1`,
+      [parcel_id]
+    );
+
+    // 3. Update order status via state machine
+    if (parcel.order_id) {
+      try {
+        await transitionOrderStatus({
+          orderId: parcel.order_id,
+          newStatus: 'in_transit',
+          actor: { id: req.user.id, role: req.user.role },
+          source: 'transitaire_ship',
+          note: notes || 'Transit confirmé par transitaire',
+        });
+      } catch (e) {
+        console.warn('[TRANSITAIRE] Order transition warning:', e.message);
+        // Non-blocking — parcel status already updated
+      }
+    }
+
+    // 4. Log scan event (best effort — don't fail if table issues)
+    try {
+      await db.query(`
+        INSERT INTO scan_events (parcel_id, order_id, event_type, actor_name, actor_role, location, notes, status)
+        VALUES ($1, $2, 'transit_confirmed', $3, $4, 'transitaire', $5, 'applied')
+      `, [parcel_id, parcel.order_id, req.user.full_name || req.user.email, req.user.role, notes || 'Transit confirmé']);
+    } catch (e) {
+      console.warn('[TRANSITAIRE] Scan event log warning:', e.message);
+    }
+
+    // 5. WhatsApp notification (best effort)
+    try {
+      const { notifyParcelScan } = require('../services/notification-service');
+      notifyParcelScan(parcel_id, parcel.reference, 'in_transit')
+        .catch(err => console.warn('[TRANSITAIRE] Notification error:', err.message));
+    } catch (e) { /* notification service not available */ }
 
     res.json({
       success: true,
-      parcel: result.parcel,
-      message: `Colis ${result.parcel?.reference || parcel_id} en transit ✈️`,
+      parcel: { ...parcel, status: 'in_transit' },
+      message: `Colis ${parcel.reference} en transit ✈️`,
     });
   } catch (err) { next(err); }
 });
@@ -94,10 +130,9 @@ router.get('/history', ...guard, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT se.id, se.event_type, se.created_at, se.actor_name, se.notes,
-             p.reference AS parcel_ref, o.reference AS order_ref
+             p.reference AS parcel_ref
       FROM scan_events se
       JOIN parcels p ON p.id = se.parcel_id
-      LEFT JOIN orders o ON o.id = se.order_id
       WHERE se.event_type = 'transit_confirmed' AND se.status = 'applied'
       ORDER BY se.created_at DESC
       LIMIT 50

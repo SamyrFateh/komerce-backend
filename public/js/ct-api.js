@@ -116,7 +116,7 @@ CT.api = {
 
   // ---- Auto-Distribution ----
   autoDistribute: function() { return this.post('/api/hub/auto-distribute'); },
-  getDistribution: function() { return this.get('/api/hub/distribution'); },
+  getDistribution: function() { return this.get('/api/hub/auto-distribute'); },
   reassignOrder: function(orderId, parcelId) { return this.post('/api/hub/reassign-order', { order_id: orderId, target_parcel_id: parcelId }); },
 
   // ---- Hub Inventory ----
