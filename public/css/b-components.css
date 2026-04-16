@@ -532,15 +532,40 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-top: 10px;
+  align-items: center;
 }
 
-.k-modal-meta span {
-  font-size: 12px;
+/* Category label */
+#k-modal-cat {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: var(--ivoire-dark);
   padding: 3px 10px;
   border-radius: var(--radius-pill);
-  background: var(--ivoire-dark);
-  color: var(--ink-2);
+}
+
+/* Stock badges */
+.k-stock-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  letter-spacing: .02em;
+}
+.k-stock-ok  { background: #dcfce7; color: #16a34a; }
+.k-stock-low { background: #fff7ed; color: #c2410c; }
+.k-stock-out { background: #fee2e2; color: #b91c1c; }
+
+/* EUR price */
+.k-modal-eur {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 /* ── Modal Nav Arrows ───────────────────────────────────────── */

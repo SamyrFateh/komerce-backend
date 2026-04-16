@@ -207,7 +207,7 @@
     K.closeCart();
     K.state.orderData = { payment_mode: 'cash_relais' };
     K.renderCheckout();
-    K.dom.orderModal?.classList.add('open');
+    K.dom.orderModal?.classList.add('active');
     window._savedScrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
   };

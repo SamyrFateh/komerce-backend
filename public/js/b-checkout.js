@@ -8,7 +8,7 @@
 
   // ── CLOSE ORDER MODAL ─────────────────────────────────────
   K.closeOrderModal = function () {
-    K.dom.orderModal?.classList.remove('open');
+    K.dom.orderModal?.classList.remove('active');
     document.body.style.overflow = '';
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);

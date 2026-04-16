@@ -48,8 +48,35 @@
       }
     }
 
-    if (dom.modalCat)   dom.modalCat.textContent   = product.category || '';
-    if (dom.modalStock) dom.modalStock.textContent  = product.stock_status || 'Disponible';
+    // Category badge
+    if (dom.modalCat) {
+      dom.modalCat.textContent = (product.category || '').toUpperCase();
+    }
+
+    // Stock badge — impactful
+    if (dom.modalStock) {
+      const st = (product.stock_status || '').toLowerCase();
+      const stockNum = parseInt(product.stock_qty, 10);
+      if (st.includes('rupture') || st.includes('épuisé')) {
+        dom.modalStock.innerHTML = '<span class="k-stock-badge k-stock-out">✗ Rupture de stock</span>';
+      } else if (!isNaN(stockNum) && stockNum <= 5 && stockNum > 0) {
+        dom.modalStock.innerHTML = '<span class="k-stock-badge k-stock-low">🔥 Plus que ' + stockNum + ' !</span>';
+      } else {
+        dom.modalStock.innerHTML = '<span class="k-stock-badge k-stock-ok">✓ Disponible</span>';
+      }
+    }
+
+    // EUR price equivalent
+    let eurEl = document.getElementById('k-modal-eur');
+    if (!eurEl) {
+      eurEl = document.createElement('div');
+      eurEl.id = 'k-modal-eur';
+      eurEl.className = 'k-modal-eur';
+      const priceRow = document.querySelector('.k-modal-price-row');
+      if (priceRow) priceRow.insertAdjacentElement('afterend', eurEl);
+    }
+    eurEl.textContent = '≈ ' + K.fmtEur(product.price_kmf) + ' · Livraison incluse 🛵';
+    eurEl.style.display = '';
 
     // ── Stars rating ──────────────────────────────────────────
     let starsEl = document.getElementById('k-modal-stars');
