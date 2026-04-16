@@ -714,11 +714,26 @@
   }
 
   /* ── PRODUCT MODAL ──────────────────────────────────────── */
+  // ── Construire la liste complète des images d'un produit
+  function getProductImages(product) {
+    const imgs = [];
+    if (product.image_url) imgs.push(product.image_url);
+    // images peut être un array JSON ou une string JSON
+    let extras = product.images;
+    if (typeof extras === 'string') {
+      try { extras = JSON.parse(extras); } catch(_) { extras = []; }
+    }
+    if (Array.isArray(extras)) {
+      extras.forEach(u => { if (u && !imgs.includes(u)) imgs.push(u); });
+    }
+    return imgs;
+  }
+
   function openModal(id, pushHistory) {
     const product = state.products.find(p => p.id === id);
     if (!product) return;
 
-    // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
+    // Mémoriser la position de scroll du catalogue
     if (!dom.modalOverlay.classList.contains('open')) {
       state._savedCatalogScrollY = window.scrollY;
     }
@@ -729,22 +744,39 @@
 
     state.modalProduct = product;
     state.modalQty = 1;
+    state._modalImgIndex = 0;
 
-    dom.modalImg.src = optimizeImgUrl(product.image_url, 600);
+    // ── Galerie multi-images
+    const allImgs = getProductImages(product);
+    renderModalGallery(allImgs, 0);
+
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);
     dom.modalQtyVal.textContent = '1';
 
     if (product.promo_pct) {
-      const old = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
-      dom.modalOldPrice.textContent = fmtPrice(old);
+      const oldPrice = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
+      dom.modalOldPrice.textContent = fmtPrice(oldPrice);
       dom.modalOldPrice.style.display = '';
       dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
       dom.modalPromoBadge.classList.add('show');
+      // Afficher l'économie réalisée
+      const saving = oldPrice - product.price_kmf;
+      let savingEl = document.getElementById('k-modal-saving');
+      if (!savingEl) {
+        savingEl = document.createElement('span');
+        savingEl.id = 'k-modal-saving';
+        savingEl.style.cssText = 'font-size:11px;font-weight:700;color:#43a047;background:#f0f8f0;padding:2px 8px;border-radius:50px;margin-left:4px;';
+        dom.modalOldPrice.parentNode.appendChild(savingEl);
+      }
+      savingEl.textContent = `Économie ${fmtPrice(saving)}`;
+      savingEl.style.display = '';
     } else {
       dom.modalOldPrice.style.display = 'none';
       dom.modalPromoBadge.classList.remove('show');
+      const savingEl = document.getElementById('k-modal-saving');
+      if (savingEl) savingEl.style.display = 'none';
     }
 
     dom.modalCat.textContent = `${product.emoji || ''} ${product.category || ''}`;
@@ -752,7 +784,7 @@
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
 
-    // Compteur de position dans la liste + boutons ← →
+    // Navigation ← → entre produits
     const list = state.filtered.length ? state.filtered : state.products;
     const currentIdx = list.findIndex(p => p.id === product.id);
     updateModalNavArrows(list, currentIdx);
@@ -765,6 +797,96 @@
     dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+  }
+
+  // ── Rendu de la galerie d'images dans la modal
+  function renderModalGallery(images, activeIdx) {
+    const wrap = document.getElementById('k-modal-img-wrap') || dom.modal.querySelector('.k-modal-img-wrap');
+    if (!wrap) return;
+
+    state._modalImgIndex = activeIdx;
+    state._modalImages = images;
+
+    // Image principale
+    dom.modalImg.src = optimizeImgUrl(images[activeIdx] || '', 800);
+    dom.modalImg.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:opacity .2s;';
+
+    // Miniatures (seulement si plusieurs images)
+    let thumbsEl = document.getElementById('k-modal-thumbs');
+    if (images.length > 1) {
+      if (!thumbsEl) {
+        thumbsEl = document.createElement('div');
+        thumbsEl.id = 'k-modal-thumbs';
+        thumbsEl.style.cssText = [
+          'position:absolute;bottom:10px;left:0;right:0',
+          'display:flex;justify-content:center;gap:6px',
+          'padding:0 12px',
+          'z-index:5',
+        ].join(';');
+        wrap.appendChild(thumbsEl);
+      }
+      thumbsEl.innerHTML = images.map((url, i) => `
+        <div class="k-modal-thumb${i === activeIdx ? ' active' : ''}"
+             data-idx="${i}"
+             style="width:40px;height:40px;border-radius:8px;overflow:hidden;
+                    border:2px solid ${i === activeIdx ? 'var(--ocean)' : 'rgba(255,255,255,.7)'};
+                    box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer;flex-shrink:0;
+                    background:#fff;">
+          <img src="${optimizeImgUrl(url, 80)}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+        </div>
+      `).join('');
+
+      thumbsEl.querySelectorAll('.k-modal-thumb').forEach(thumb => {
+        thumb.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(thumb.dataset.idx, 10);
+          renderModalGallery(images, idx);
+        });
+      });
+    } else if (thumbsEl) {
+      thumbsEl.innerHTML = '';
+    }
+
+    // Compteur d'images si > 1
+    let imgCounter = document.getElementById('k-modal-img-counter');
+    if (images.length > 1) {
+      if (!imgCounter) {
+        imgCounter = document.createElement('div');
+        imgCounter.id = 'k-modal-img-counter';
+        imgCounter.style.cssText = [
+          'position:absolute;top:10px;right:10px',
+          'background:rgba(0,0,0,.45);color:#fff',
+          'font-size:10px;font-weight:700',
+          'padding:3px 8px;border-radius:50px',
+          'z-index:5',
+        ].join(';');
+        wrap.appendChild(imgCounter);
+      }
+      imgCounter.textContent = `${activeIdx + 1} / ${images.length}`;
+    } else if (imgCounter) {
+      imgCounter.remove();
+    }
+
+    // Swipe horizontal sur la zone image pour changer de photo
+    setupImageSwipe(wrap, images);
+  }
+
+  // ── Swipe gauche/droite sur la zone image pour naviguer entre photos
+  function setupImageSwipe(wrap, images) {
+    // Eviter de rebinder plusieurs fois
+    if (wrap._imgSwipeBound) return;
+    wrap._imgSwipeBound = true;
+
+    let startX = 0;
+    wrap.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+    wrap.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) < 40) return;
+      const imgs = state._modalImages || [];
+      const cur = state._modalImgIndex || 0;
+      if (dx < 0 && cur < imgs.length - 1) renderModalGallery(imgs, cur + 1);
+      if (dx > 0 && cur > 0) renderModalGallery(imgs, cur - 1);
+    });
   }
 
   // ── Boutons ← → dans la topbar de la modal
@@ -1338,14 +1460,17 @@
       + '</label>';
     body.appendChild(payGrid);
 
+    // Stripe card wrap : HORS du scroll area (body.parentElement)
+    // Fix bug tap sur iOS/Android : l'iframe Stripe ne répond pas dans overflow:hidden
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;margin-bottom:10px;padding:10px 12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(67,160,71,0.03);';
-    stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div>'
-      + '<div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div>'
-      + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div>'
-      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
-    body.appendChild(stripeCardWrap);
+    stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
+    stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;">🔒 Informations de carte</div>'
+      + '<div id="stripe-card-element" style="padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;min-height:44px;"></div>'
+      + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:5px;display:none;"></div>'
+      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
+    // Insérer dans .k-order-modal (pas dans .k-order-body scroll) — sera placé avant confirmBtn
+    body.parentElement.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
@@ -1387,6 +1512,13 @@
     body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
+    // S'assurer que stripeCardWrap est avant confirmBtn dans le DOM
+    const scw = document.getElementById('stripe-card-wrap');
+    const cb  = document.getElementById('btn-confirm-order');
+    if (scw && cb && scw.nextElementSibling !== cb) {
+      body.parentElement.insertBefore(scw, cb);
+    }
+
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
@@ -1442,18 +1574,29 @@
   function makeInput(id, label, type, placeholder, dataObj, key) {
     const group = document.createElement('div');
     group.style.cssText = 'margin-bottom:8px;';
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
-    lbl.textContent = label;
-    group.appendChild(lbl);
+    if (label) {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:block;font-size:0.75rem;font-weight:600;color:#666;margin-bottom:3px;';
+      lbl.textContent = label;
+      group.appendChild(lbl);
+    }
     const input = document.createElement('input');
     input.type = type;
     input.id = id;
     input.placeholder = placeholder;
     input.value = dataObj[key] || '';
-    input.style.cssText = 'width:100%;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);border-radius:8px;outline:none;font-size:0.9rem;transition:border-color 0.2s;box-sizing:border-box;';
+    input.style.cssText = [
+      'width:100%;height:40px;box-sizing:border-box',
+      'padding:0 12px',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-radius:8px',
+      'outline:none',
+      'font-size:14px;font-family:inherit',
+      'background:#fff;color:var(--text)',
+      'transition:border-color .15s',
+    ].join(';');
     input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
-    input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.12)'; });
     input.addEventListener('input', () => { dataObj[key] = input.value; });
     group.appendChild(input);
     return group;
@@ -1462,34 +1605,47 @@
 
   function makeIntlPhoneInput(id, label, dataObj, key) {
     const COUNTRIES = [
-      { code: '+33',  flag: '🇫🇷', name: 'France',         max: 10, ph: '06 12 34 56 78' },
-      { code: '+269', flag: '🇰🇲', name: 'Comores',        max: 7,  ph: '321 12 34' },
-      { code: '+32',  flag: '🇧🇪', name: 'Belgique',       max: 10, ph: '0470 12 34 56' },
-      { code: '+41',  flag: '🇨🇭', name: 'Suisse',         max: 10, ph: '076 123 45 67' },
-      { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni',    max: 11, ph: '07911 123456' },
-      { code: '+1',   flag: '🇺🇸', name: 'USA / Canada',   max: 11, ph: '202 555 0147' },
-      { code: '+971', flag: '🇦🇪', name: 'Émirats',        max: 9,  ph: '050 123 4567' },
-      { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite',max: 9,  ph: '055 123 4567' },
-      { code: '+60',  flag: '🇲🇾', name: 'Malaisie',       max: 10, ph: '012 345 6789' },
-      { code: '+212', flag: '🇲🇦', name: 'Maroc',          max: 9,  ph: '0612 345678' },
+      { code: '+33',  flag: '🇫🇷', max: 10, ph: '06 12 34 56 78' },
+      { code: '+269', flag: '🇰🇲', max: 7,  ph: '321 12 34' },
+      { code: '+32',  flag: '🇧🇪', max: 10, ph: '0470 12 34 56' },
+      { code: '+41',  flag: '🇨🇭', max: 10, ph: '076 123 45 67' },
+      { code: '+44',  flag: '🇬🇧', max: 11, ph: '07911 123456' },
+      { code: '+1',   flag: '🇺🇸', max: 11, ph: '202 555 0147' },
+      { code: '+971', flag: '🇦🇪', max: 9,  ph: '050 123 4567' },
+      { code: '+966', flag: '🇸🇦', max: 9,  ph: '055 123 4567' },
+      { code: '+60',  flag: '🇲🇾', max: 10, ph: '012 345 6789' },
+      { code: '+212', flag: '🇲🇦', max: 9,  ph: '0612 345678' },
     ];
     let currentCountry = COUNTRIES[0];
 
     const group = document.createElement('div');
     group.style.cssText = 'margin-bottom:8px;';
 
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
-    lbl.textContent = label;
-    group.appendChild(lbl);
+    if (label) {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:block;font-size:0.75rem;font-weight:600;color:#666;margin-bottom:3px;';
+      lbl.textContent = label;
+      group.appendChild(lbl);
+    }
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:0;position:relative;';
+    wrap.style.cssText = 'display:flex;height:40px;';
 
-    /* selector */
     const sel = document.createElement('select');
     sel.id = id + '-country';
-    sel.style.cssText = 'appearance:none;-webkit-appearance:none;background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 8px 9px 10px;font-weight:700;font-size:0.88rem;color:#555;cursor:pointer;outline:none;min-width:72px;text-align:center;';
+    sel.style.cssText = [
+      'height:100%',
+      'background:#f5f5f2',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-right:none',
+      'border-radius:8px 0 0 8px',
+      'padding:0 6px 0 8px',
+      'font-weight:700;font-size:12px;color:#555',
+      'cursor:pointer;outline:none',
+      'min-width:76px;max-width:88px',
+      '-webkit-appearance:none;appearance:none',
+      'text-align:center',
+    ].join(';');
     COUNTRIES.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.code;
@@ -1498,29 +1654,45 @@
     });
     wrap.appendChild(sel);
 
-    /* number input */
     const input = document.createElement('input');
     input.type = 'tel';
     input.id = id;
     input.placeholder = currentCountry.ph;
     input.value = dataObj[key] || '';
-    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;min-width:0;';
+    input.maxLength = currentCountry.max + 4;
+    input.style.cssText = [
+      'flex:1;height:100%;min-width:0',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-left:none',
+      'border-radius:0 8px 8px 0',
+      'padding:0 12px',
+      'font-size:14px;font-family:inherit',
+      'outline:none;background:#fff',
+      'transition:border-color .15s',
+    ].join(';');
 
     const sync = () => {
       dataObj[key] = currentCountry.code + input.value.replace(/\s/g,'');
+    };
+    const focusBorder = () => {
+      input.style.borderColor = 'var(--ocean)';
+      sel.style.borderColor = 'var(--ocean)';
+    };
+    const blurBorder = () => {
+      input.style.borderColor = 'rgba(0,0,0,0.12)';
+      sel.style.borderColor = 'rgba(0,0,0,0.12)';
     };
 
     sel.addEventListener('change', () => {
       currentCountry = COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
       input.placeholder = currentCountry.ph;
-      input.maxLength = currentCountry.max + 4; /* allow spaces */
+      input.maxLength = currentCountry.max + 4;
       sync();
     });
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
-    input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.addEventListener('focus', focusBorder);
+    input.addEventListener('blur',  blurBorder);
     input.addEventListener('input', sync);
 
-    input.maxLength = currentCountry.max + 4;
     wrap.appendChild(input);
     group.appendChild(wrap);
     return group;
@@ -1529,15 +1701,25 @@
   function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
     group.style.cssText = 'margin-bottom:8px;';
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
-    lbl.textContent = label;
-    group.appendChild(lbl);
+    if (label) {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:block;font-size:0.75rem;font-weight:600;color:#666;margin-bottom:3px;';
+      lbl.textContent = label;
+      group.appendChild(lbl);
+    }
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:0;';
+    wrap.style.cssText = 'display:flex;height:40px;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 10px;font-weight:700;color:#888;white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;';
-    prefix.textContent = '+269';
+    prefix.style.cssText = [
+      'display:flex;align-items:center;padding:0 10px',
+      'background:#f5f5f2',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-right:none',
+      'border-radius:8px 0 0 8px',
+      'font-size:12px;font-weight:700;color:#555',
+      'white-space:nowrap;flex-shrink:0;gap:4px',
+    ].join(';');
+    prefix.innerHTML = '🇰🇲 <span style="color:#888">+269</span>';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
     input.type = 'tel';
@@ -1545,9 +1727,28 @@
     input.placeholder = '321 12 34';
     input.value = dataObj[key] || '';
     input.maxLength = 10;
-    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;';
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
-    input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.style.cssText = [
+      'flex:1;height:100%',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-left:none',
+      'border-radius:0 8px 8px 0',
+      'padding:0 12px',
+      'font-size:14px;font-family:inherit',
+      'outline:none;background:#fff',
+      'transition:border-color .15s',
+    ].join(';');
+    const focusBorder = () => {
+      input.style.borderColor = 'var(--ocean)';
+      input.style.borderLeftColor = 'var(--ocean)';
+      prefix.style.borderColor = 'var(--ocean)';
+    };
+    const blurBorder = () => {
+      input.style.borderColor = 'rgba(0,0,0,0.12)';
+      input.style.borderLeftColor = 'transparent';
+      prefix.style.borderColor = 'rgba(0,0,0,0.12)';
+    };
+    input.addEventListener('focus', focusBorder);
+    input.addEventListener('blur', blurBorder);
     input.addEventListener('input', () => {
       let raw = input.value.replace(/[^0-9]/g, '');
       if (raw.length > 7) raw = raw.substring(0, 7);
