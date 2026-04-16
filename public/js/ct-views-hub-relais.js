@@ -228,9 +228,24 @@ CT.views.hub = async function(container) {
     html += '</div>';
     html += '</div>'; // end grid
 
+    // ── Inventory Dashboard Panel ──
+    html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:16px">';
+    html += '<h4 style="margin:0 0 10px;font-size:14px;color:#1565c0;display:flex;align-items:center;justify-content:space-between">';
+    html += '<span>📦 Inventaire — Propositions & Buffer</span>';
+    html += '<button onclick="refreshInventoryDashboard()" style="padding:3px 10px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:11px">🔄</button>';
+    html += '</h4>';
+    html += '<div id="inventory-panel"></div>';
+    html += '</div>';
+
     html += '</div>'; // end hub-container
     container.innerHTML = html;
     _wireHubActions(container);
+
+    // Render inventory dashboard (non-blocking)
+    if (window.renderInventoryDashboard) {
+      var invPanel = document.getElementById('inventory-panel');
+      if (invPanel) window.renderInventoryDashboard(invPanel);
+    }
 
   } catch(err) {
     container.innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center">❌ Erreur Hub: ' + err.message + '</div>';

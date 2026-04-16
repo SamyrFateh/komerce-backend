@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v12.2 (CT v7 — 3 sections)
+ * KOMERCE — Serveur API v12.3 (Inventory proposals + Transitaire)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -269,7 +269,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '12.2',
+      version:       '12.3',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -319,6 +319,16 @@ let cronRunning = false;
   } catch (_) { /* fallback 60min */ }
 
   console.log(`⏰ Cash reminder cron: every ${intervalMin}min`);
+
+  // ── Auto-confirm expired inventory proposals (every 30min) ──
+  setInterval(async () => {
+    try {
+      const inv = require('./services/inventory-service');
+      const result = await inv.autoConfirmExpired();
+      if (result.auto_confirmed > 0)
+        console.log(`[CRON] Auto-confirmed ${result.auto_confirmed} inventory proposals`);
+    } catch (e) { /* non-fatal */ }
+  }, 30 * 60 * 1000);
 
   setInterval(async () => {
     if (cronRunning) return;
@@ -547,6 +557,15 @@ const server = app.listen(PORT, () => {
           ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'agent_transitaire'
         `, [transitHash]);
         console.log('✅ Migration 028: transitaire user seeded');
+
+      // ── Migration 029: inventory_items proposal columns ──
+      try {
+        await db.query(`
+          ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS proposed_parcel_id UUID;
+          ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS proposed_at TIMESTAMPTZ;
+        `);
+        console.log('✅ Migration 029: inventory_items proposal columns ready');
+      } catch(e) { console.warn('Migration 029 (non-fatal):', e.message); }
       } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
