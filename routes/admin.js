@@ -237,6 +237,33 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     }
     
     if (mode === 'users' || mode === 'factory') {
+      // Clean all tables that might FK-reference users before deleting
+      const userDepTables = [
+        "UPDATE sms_log SET user_id = NULL WHERE user_id IS NOT NULL",
+        "DELETE FROM wallet_transactions WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM loyalty_points WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM loyalty_history WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM wishlists WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM favorites WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM notifications WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM user_addresses WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+        "DELETE FROM basket_items WHERE basket_id IN (SELECT id FROM baskets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin'))",
+        "DELETE FROM baskets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
+      ];
+      report.deleted.user_deps_cleaned = 0;
+      for (let i = 0; i < userDepTables.length; i++) {
+        try {
+          await client.query('SAVEPOINT sp_udep_' + i);
+          await client.query(userDepTables[i]);
+          report.deleted.user_deps_cleaned++;
+          await client.query('RELEASE SAVEPOINT sp_udep_' + i);
+        } catch (_) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_udep_' + i);
+        }
+      }
+      
       const users = await client.query("DELETE FROM users WHERE role != 'admin'");
       report.deleted.users_non_admin = users.rowCount;
     }
