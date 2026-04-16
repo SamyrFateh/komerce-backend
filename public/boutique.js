@@ -8,7 +8,7 @@
 
   // ── CONSTANTES KOMERCE ──────────────────────────────────
   // Numéro WhatsApp de contact Komerce (format international sans +)
-  const KOMERCE_WA = '33699272526'; // Numéro WhatsApp Komerce
+  const KOMERCE_WA = '269321XXXXX'; // ← Remplacer par le vrai numéro Komerce
   const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
   /* ── HELPERS ───────────────────────────────────────────── */
@@ -32,27 +32,8 @@
     return 'EUR';
   }
 
-  const _rates = { EUR: 495, KMF: 1 }; // EUR fallback, écrasé par /api/payments/rates
+  const _rates = { EUR: 495, KMF: 1 };
   const _currency = detectCurrency();
-
-  // Récupère le taux EUR/KMF dynamique depuis l'API (fallback : 495)
-  async function refreshRates() {
-    try {
-      const data = await apiGet('/api/payments/rates');
-      // Format attendu : { EUR: <kmf_per_eur>, ... } ou { rates: { EUR: ... } }
-      const rates = (data && data.rates) ? data.rates : data;
-      if (rates && typeof rates.EUR === 'number' && rates.EUR > 0) {
-        _rates.EUR = rates.EUR;
-        console.log('[RATES] Taux EUR/KMF mis à jour :', rates.EUR);
-        // Re-render des montants visibles si le panier est ouvert
-        try { if (typeof renderCart === 'function') renderCart(); } catch(e) {}
-      }
-    } catch (e) {
-      console.warn('[RATES] Échec récupération taux, fallback 495 KMF/EUR :', e && e.message);
-    }
-  }
-  // Lance la récup en arrière-plan (non bloquant)
-  setTimeout(refreshRates, 0);
 
   function fmt(kmf, currency) {
     const c = currency || _currency;
@@ -72,11 +53,6 @@
   }
 
   function productEmoji(p) { return p.emoji || '📦'; }
-
-  function findProductById(id) {
-    const pid = String(id);
-    return state.products.find(p => String(p.id) === pid) || null;
-  }
 
   async function apiGet(path) {
     const ctrl = new AbortController();
@@ -110,24 +86,11 @@
   }
 
   /* ── STRIPE ───────────────────────────────────────────── */
-  let _submitInFlight = false;
-  const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ';
   let _stripe = null, _stripeElements = null, _stripeCard = null;
-
-  function getStripe() {
-    if (_stripe) return _stripe;
-    if (typeof Stripe === 'undefined') {
-      console.warn('Stripe.js pas encore chargé');
-      return null;
-    }
-    try {
-      _stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-      return _stripe;
-    } catch (e) {
-      console.warn('Stripe init failed:', e);
-      return null;
-    }
-  }
+  try {
+    _stripe = typeof Stripe !== 'undefined' ?
+      Stripe('pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ') : null;
+  } catch(e) { console.warn('Stripe not loaded:', e); }
 
   /* ── STATE ─────────────────────────────────────────────── */
   const CART_VERSION = 2;
@@ -340,7 +303,6 @@
     showSkeletons(16);
     dom.loading.classList.add('show');
     try {
-      if (!window.K || !K.products || typeof K.products.list !== 'function') { throw new Error('Komerce API indisponible'); }
       const data = await K.products.list();
       state.products = (Array.isArray(data) ? data : data.products || [])
         .filter(p => p.is_available);
@@ -688,7 +650,7 @@
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
   function quickAdd(productId, btnEl) {
-    const product = findProductById(productId);
+    const product = state.products.find(p => p.id === productId);
     if (!product) return;
     addToCart(product, 1, btnEl);
   }
@@ -802,7 +764,7 @@
 
   /* ── PRODUCT MODAL ──────────────────────────────────────── */
   function openModal(id, pushHistory) {
-    const product = findProductById(id);
+    const product = state.products.find(p => p.id === id);
     if (!product) return;
 
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
@@ -958,7 +920,7 @@
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const product = findProductById(btn.dataset.add);
+        const product = state.products.find(p => p.id === btn.dataset.add);
         if (!product) return;
         addToCart(product, 1, btn);
       });
@@ -1449,13 +1411,12 @@
     if (_stripeCard) { try { _stripeCard.unmount(); } catch(e){} _stripeCard = null; _stripeElements = null; }
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    // FUSION : le bloc carte vit dans la zone "Paiement", juste sous les chips de mode
-    stripeCardWrap.style.cssText = 'display:none;margin-top:10px;padding:12px;background:linear-gradient(180deg,#fffaf3,#fff);border:1.5px solid var(--terracotta);border-radius:10px;';
-    stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;display:flex;align-items:center;gap:6px;">🔒 Informations de carte</div>'
+    stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
+    stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;">🔒 Informations de carte</div>'
       + '<div id="stripe-card-element" style="padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;min-height:44px;cursor:text;"></div>'
       + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:5px;display:none;"></div>'
-      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;"></div>';
-    payGrid.insertAdjacentElement('afterend', stripeCardWrap);
+      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;"></div>';
+    body.parentElement.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
@@ -1499,7 +1460,12 @@
     body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
-    // (le wrap Stripe est maintenant rattaché à payGrid, plus besoin de le déplacer)
+    // S'assurer que stripeCardWrap est avant confirmBtn
+    const _scw = document.getElementById('stripe-card-wrap');
+    const _cb  = document.getElementById('btn-confirm-order');
+    if (_scw && _cb && _scw.nextElementSibling !== _cb) {
+      body.parentElement.insertBefore(_scw, _cb);
+    }
 
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
@@ -1517,25 +1483,8 @@
         if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.style.display = 'block'; }
       }
 
-      // FIX: si on quitte le mode Carte, démonter pour forcer un re-mount propre la prochaine fois
-      if (!isStripe && _stripeCard) {
-        try { _stripeCard.unmount(); } catch(e){}
-        _stripeCard = null;
-        _stripeElements = null;
-      }
-
-      if (isStripe && !_stripeCard) {
-        const stripe = getStripe();
-        const errEl = document.getElementById('stripe-card-error');
-        if (!stripe) {
-          if (errEl) {
-            errEl.textContent = "Le module de paiement n'est pas encore chargé. Réessaie dans une seconde.";
-            errEl.style.display = 'block';
-          }
-          return;
-        }
-        console.log('[STRIPE] mount card element');
-        _stripeElements = stripe.elements();
+      if (isStripe && _stripe && !_stripeCard) {
+        _stripeElements = _stripe.elements();
         _stripeCard = _stripeElements.create('card', {
           style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
           hidePostalCode: true
@@ -1785,17 +1734,11 @@
     console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);    
 	
 
-    if (_submitInFlight) {
-      console.warn('[CHECKOUT] submit déjà en cours, ignoré');
-      return;
-    }
-    _submitInFlight = true;
     btn.disabled = true;
     btn.textContent = isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…';
     btn.style.opacity = '0.7';
 
     try {
-      console.log('[CHECKOUT] start, mode=', od.payment_mode);
       // Créer la commande
       const items = state.cart.map(i => ({
         product_id: String(i.product.id),
@@ -1817,8 +1760,7 @@
 
       // Step 3: Stripe payment
       if (isStripe) {
-        const stripe = getStripe();
-        if (!stripe || !_stripeCard) throw new Error('Stripe non chargé. Attends 1 seconde puis réessaie.');
+        if (!_stripe || !_stripeCard) throw new Error('Stripe non chargé. Rechargez la page.');
 
         btn.textContent = '🔒 Sécurisation du paiement…';
 
@@ -1828,16 +1770,12 @@
 
         btn.textContent = '💳 Validation en cours…';
 
-        const stripeCall = stripe.confirmCardPayment(intentResult.client_secret, {
+        const stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
           payment_method: {
             card: _stripeCard,
             billing_details: { name: clientName, email: clientEmail || undefined }
           }
         });
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout: la banque ne répond pas. Réessaie.')), 45000)
-        );
-        const stripeResult = await Promise.race([stripeCall, timeoutPromise]);
 
         if (stripeResult.error) {
           const errEl = document.getElementById('stripe-card-error');
@@ -1858,13 +1796,11 @@
       showToast('Commande confirmée !', 'success');
 
     } catch (e) {
-      console.error('[CHECKOUT] submitOrder error:', e, e?.data || '');
+      console.error('submitOrder:', e);
       showToast(e.message || 'Erreur lors de la commande.', 'error');
       btn.disabled = false;
       btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
       btn.style.opacity = '1';
-    } finally {
-      _submitInFlight = false;
     }
   }
 
@@ -2327,11 +2263,6 @@
 
   /* ── INIT ───────────────────────────────────────────────── */
   function init() {
-    const waFab = document.getElementById('k-wa-fab');
-    if (waFab) {
-      waFab.href = KOMERCE_WA_URL + '?text=' + encodeURIComponent('Bonjour Komerce ! Je suis intéressé(e) par vos produits 🛍️');
-    }
-
     updateCartBadge();
     setupCats();
     setupSearch();
