@@ -1380,18 +1380,22 @@
       + '<span class="ck-sum-total">' + fmt(cartTotal(), 'KMF') + '</span>';
     body.appendChild(summary);
 
-    /* ── Aperçu visuel des articles (comme Amazon/Noon) ── */
+    /* ── Miniatures articles — compact, visuel, sans noms ── */
     const itemsPreview = document.createElement('div');
-    itemsPreview.className = 'ck-items-preview';
-    itemsPreview.innerHTML = state.cart.map(item => {
+    itemsPreview.className = 'ck-summary-bar';
+    const qtyLabel2 = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
+    itemsPreview.innerHTML = '<div class="ck-sum-top"><span class="ck-sum-qty">' + qtyLabel2 + '</span><span class="ck-sum-total">' + fmt(cartTotal(), 'KMF') + '</span></div>';
+    const thumbsRow = document.createElement('div');
+    thumbsRow.className = 'ck-thumbs-row';
+    state.cart.forEach(item => {
       const p = item.product;
-      return `<div class="ck-item-row">
-        <img class="ck-item-img" src="${optimizeImgUrl(p.image_url, 80)}" alt="${sanitize(p.name)}" loading="lazy">
-        <span class="ck-item-name">${sanitize(p.name)}</span>
-        <span class="ck-item-qty">×${item.qty}</span>
-        <span class="ck-item-price">${fmtPrice(p.price_kmf * item.qty)}</span>
-      </div>`;
-    }).join('');
+      const thumb = document.createElement('div');
+      thumb.className = 'ck-thumb';
+      const badge = item.qty > 1 ? '<span class="ck-thumb-qty">' + item.qty + '</span>' : '';
+      thumb.innerHTML = '<img src="' + optimizeImgUrl(p.image_url, 80) + '" alt="' + sanitize(p.name) + '" loading="lazy">' + badge;
+      thumbsRow.appendChild(thumb);
+    });
+    itemsPreview.appendChild(thumbsRow);
     body.appendChild(itemsPreview);
 
     /* ── 2. Bénéficiaire ── */
@@ -1426,14 +1430,15 @@
       + '</label>';
     body.appendChild(payGrid);
 
+    // Stripe card wrap : HORS du scroll area pour fix tap iOS/Android
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;margin-bottom:10px;padding:10px 12px;border:2px solid var(--ocean);border-radius:8px;background:rgba(67,160,71,0.03);';
-    stripeCardWrap.innerHTML = '<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;">🔒 Informations de carte</div>'
-      + '<div id="stripe-card-element" style="padding:10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;"></div>'
-      + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:6px;display:none;"></div>'
-      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:8px;">≈ ' + fmt(cartTotal(), 'EUR') + ' seront débités</div>';
-    body.appendChild(stripeCardWrap);
+    stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
+    stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;">🔒 Informations de carte</div>'
+      + '<div id="stripe-card-element" style="padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;min-height:44px;cursor:text;"></div>'
+      + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:5px;display:none;"></div>'
+      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;"></div>';
+    body.parentElement.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
@@ -1475,6 +1480,13 @@
     body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
+    // S'assurer que stripeCardWrap est avant confirmBtn
+    const _scw = document.getElementById('stripe-card-wrap');
+    const _cb  = document.getElementById('btn-confirm-order');
+    if (_scw && _cb && _scw.nextElementSibling !== _cb) {
+      body.parentElement.insertBefore(_scw, _cb);
+    }
+
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
@@ -1572,12 +1584,12 @@
     group.appendChild(lbl);
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:0;position:relative;';
+    wrap.style.cssText = 'display:flex;height:40px;';
 
     /* selector */
     const sel = document.createElement('select');
     sel.id = id + '-country';
-    sel.style.cssText = 'appearance:none;-webkit-appearance:none;background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 8px 9px 10px;font-weight:700;font-size:0.88rem;color:#555;cursor:pointer;outline:none;min-width:72px;text-align:center;';
+    sel.style.cssText = 'height:40px;background:#f5f5f2;border:1.5px solid rgba(0,0,0,0.12);border-right:none;border-radius:8px 0 0 8px;padding:0 6px 0 8px;font-weight:700;font-size:12px;color:#555;cursor:pointer;outline:none;min-width:76px;max-width:88px;-webkit-appearance:none;appearance:none;text-align:center;';
     COUNTRIES.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.code;
@@ -1592,7 +1604,7 @@
     input.id = id;
     input.placeholder = currentCountry.ph;
     input.value = dataObj[key] || '';
-    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;min-width:0;';
+    input.style.cssText = 'flex:1;height:40px;border:1.5px solid rgba(0,0,0,0.12);border-left:none;border-radius:0 8px 8px 0;padding:0 12px;font-size:14px;font-family:inherit;outline:none;background:#fff;transition:border-color .15s;min-width:0;';
 
     const sync = () => {
       dataObj[key] = currentCountry.code + input.value.replace(/\s/g,'');
@@ -1617,15 +1629,26 @@
   function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
     group.style.cssText = 'margin-bottom:8px;';
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
-    lbl.textContent = label;
-    group.appendChild(lbl);
+    if (label) {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:block;font-size:0.75rem;font-weight:600;color:#666;margin-bottom:3px;';
+      lbl.textContent = label;
+      group.appendChild(lbl);
+    }
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:0;';
+    wrap.style.cssText = 'display:flex;height:40px;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:0 10px;font-weight:700;color:var(--coral);white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;height:34px;box-sizing:border-box;flex-shrink:0;';
-    prefix.textContent = '+269';
+    prefix.style.cssText = [
+      'display:flex;align-items:center;gap:4px',
+      'padding:0 10px',
+      'background:#f5f5f2',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-right:none',
+      'border-radius:8px 0 0 8px',
+      'font-size:12px;font-weight:700;color:#555',
+      'white-space:nowrap;flex-shrink:0',
+    ].join(';');
+    prefix.innerHTML = '🇰🇲 <span style="color:#888">+269</span>';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
     input.type = 'tel';
@@ -1633,9 +1656,20 @@
     input.placeholder = '321 12 34';
     input.value = dataObj[key] || '';
     input.maxLength = 10;
-    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:0 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;height:34px;box-sizing:border-box;';
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
-    input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.style.cssText = [
+      'flex:1;height:100%',
+      'border:1.5px solid rgba(0,0,0,0.12)',
+      'border-left:none',
+      'border-radius:0 8px 8px 0',
+      'padding:0 12px',
+      'font-size:14px;font-family:inherit',
+      'outline:none;background:#fff',
+      'transition:border-color .15s',
+    ].join(';');
+    const focusBorder = () => { input.style.borderColor = 'var(--ocean)'; prefix.style.borderColor = 'var(--ocean)'; };
+    const blurBorder = () => { input.style.borderColor = 'rgba(0,0,0,0.12)'; prefix.style.borderColor = 'rgba(0,0,0,0.12)'; };
+    input.addEventListener('focus', focusBorder);
+    input.addEventListener('blur', blurBorder);
     input.addEventListener('input', () => {
       let raw = input.value.replace(/[^0-9]/g, '');
       if (raw.length > 7) raw = raw.substring(0, 7);
