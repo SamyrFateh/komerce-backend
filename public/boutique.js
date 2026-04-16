@@ -300,26 +300,36 @@
 
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
   async function loadProducts() {
-    showSkeletons(16);
-    dom.loading.classList.add('show');
-    try {
-      if (!window.K || !K.products || typeof K.products.list !== 'function') {
-        throw new Error('K.products.list indisponible');
-      }
-      const data = await K.products.list();
-      state.products = (Array.isArray(data) ? data : data.products || [])
-        .filter(p => p.is_available);
-      state.filtered = [...state.products];
-      renderPromos();
-      hideSkeletons();
-      renderGrid();
-    } catch (e) {
-      showToast('Erreur de chargement', 'error');
-      console.error('[loadProducts]', e);
-    } finally {
-      dom.loading.classList.remove('show');
+  console.log("[loadProducts] start");
+
+  try {
+    if (typeof K === 'undefined' || !K.products) {
+      throw new Error("K non disponible");
+    }
+
+    const data = await K.products.list();
+
+    state.products = (Array.isArray(data) ? data : data.products || [])
+      .filter(p => p.is_available !== false);
+
+    localStorage.setItem('komerce_products_cache', JSON.stringify(state.products));
+
+  } catch (e) {
+    console.warn("[loadProducts] API KO → fallback cache");
+
+    const cached = localStorage.getItem('komerce_products_cache');
+
+    if (cached) {
+      state.products = JSON.parse(cached);
+    } else {
+      showToast("Pas de connexion", "error");
+      return;
     }
   }
+
+  state.filtered = [...state.products];
+  renderGrid();
+}
 
   /* ── RENDER PROMOS ──────────────────────────────────────── */
   function renderPromos() {
@@ -652,15 +662,25 @@
   }
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
-  function quickAdd(productId, btnEl) {
-    const pid = String(productId);
-    const product = state.products.find(p => String(p.id) === pid);
-    if (!product) {
-      console.warn('[cart] Produit introuvable pour quickAdd:', productId);
-      return;
-    }
-    addToCart(product, 1, btnEl);
+function quickAdd(productId, btnEl) {
+  const pid = String(productId);
+  const product = state.products.find(p => String(p.id) === pid);
+
+  if (!product) {
+    console.warn('[quickAdd] Produit introuvable:', productId);
+    return;
   }
+
+  addToCart(product, 1);
+}
+
+function loadCart() {
+  try {
+    state.cart = JSON.parse(localStorage.getItem('komerce_cart_v1')) || [];
+  } catch {
+    state.cart = [];
+  }
+}
 
   function quickRemove(productId, btnEl) {
     const pid = String(productId);
