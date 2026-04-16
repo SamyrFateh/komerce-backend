@@ -132,7 +132,7 @@ CT.views.hub = async function(container) {
     html += '</div>';
 
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
-    html += _badge(confirmed.length, '#f59e0b', '🛒 Commander');
+    html += _badge(confirmed.length, '#e91e63', '🛒 Commander');
     html += _badge(readyParcel.length, '#3b82f6', '📦 Emballer');
     html += _badge(prepP.length, '#8b5cf6', '✈️ Expédier');
     html += _badge(shippedP.length + transitP.length, '#22c55e', '🚀 En route');
@@ -143,7 +143,7 @@ CT.views.hub = async function(container) {
     // ── Tab bar ──
     var firstActive = confirmed.length > 0 ? 'h1' : (readyParcel.length > 0 ? 'h2' : 'h3');
     html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
-    html += '<button class="ct-tab" data-tab="h1" data-color="#f59e0b" onclick="_switchTab(\'hub-container\',\'h1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h1' ? '#f59e0b' : 'transparent') + ';background:' + (firstActive === 'h1' ? '#f59e0b08' : 'transparent') + ';color:' + (firstActive === 'h1' ? '#f59e0b' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🛒 Commander' + (confirmed.length ? ' <span style="background:#f59e0b;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + confirmed.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h1" data-color="#e91e63" onclick="_switchTab(\'hub-container\',\'h1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h1' ? '#e91e63' : 'transparent') + ';background:' + (firstActive === 'h1' ? '#e91e6308' : 'transparent') + ';color:' + (firstActive === 'h1' ? '#e91e63' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🛒 Commander' + (confirmed.length ? ' <span style="background:#e91e63;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + confirmed.length + '</span>' : '') + '</button>';
     html += '<button class="ct-tab" data-tab="h2" data-color="#3b82f6" onclick="_switchTab(\'hub-container\',\'h2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h2' ? '#3b82f6' : 'transparent') + ';background:' + (firstActive === 'h2' ? '#3b82f608' : 'transparent') + ';color:' + (firstActive === 'h2' ? '#3b82f6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📦 Répartition' + (readyParcel.length ? ' <span style="background:#3b82f6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + readyParcel.length + '</span>' : '') + '</button>';
     html += '<button class="ct-tab" data-tab="h3" data-color="#8b5cf6" onclick="_switchTab(\'hub-container\',\'h3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h3' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'h3' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'h3' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">✈️ Expédier' + (prepP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + prepP.length + '</span>' : '') + '</button>';
     html += '</div>';
@@ -218,7 +218,7 @@ CT.views.hub = async function(container) {
     if (alertCount === 0) {
       html += '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
     } else {
-      html += _alertBadge('💸', 'Paiements expirés >36h', expired36h.length, '#f59e0b');
+      html += _alertBadge('💸', 'Paiements expirés >36h', expired36h.length, '#e91e63');
       html += _alertBadge('🛒', 'Sourcing retard >48h', stuck48h.length, '#ef4444');
       html += _alertBadge('⏰', 'Ordered bloqué >48h', stuckOrd48h.length, '#ef4444');
       html += _alertBadge('🔴', 'Critique >7 jours', critical7d.length, '#dc2626');
@@ -290,7 +290,7 @@ CT.views.relais = async function(container) {
     html += '</div>';
 
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
-    html += _badge(cashPending.length, '#f59e0b', '💰 Cash');
+    html += _badge(cashPending.length, '#e91e63', '💰 Cash');
     html += _badge(transitP.length, '#8b5cf6', '🚢 Transit');
     html += _badge(availableP.length, '#22c55e', '📍 Distribuer');
     html += _badge(collectedP.length, '#16a34a', '✅ Collectés');
@@ -300,7 +300,7 @@ CT.views.relais = async function(container) {
     // ── Tab bar ──
     var firstActive = cashPending.length > 0 ? 'r1' : (transitP.length > 0 ? 'r2' : 'r3');
     html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
-    html += '<button class="ct-tab" data-tab="r1" data-color="#f59e0b" onclick="_switchTab(\'relais-container\',\'r1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r1' ? '#f59e0b' : 'transparent') + ';background:' + (firstActive === 'r1' ? '#f59e0b08' : 'transparent') + ';color:' + (firstActive === 'r1' ? '#f59e0b' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">💰 Encaisser' + (cashPending.length ? ' <span style="background:#f59e0b;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + cashPending.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="r1" data-color="#e91e63" onclick="_switchTab(\'relais-container\',\'r1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r1' ? '#e91e63' : 'transparent') + ';background:' + (firstActive === 'r1' ? '#e91e6308' : 'transparent') + ';color:' + (firstActive === 'r1' ? '#e91e63' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">💰 Encaisser' + (cashPending.length ? ' <span style="background:#e91e63;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + cashPending.length + '</span>' : '') + '</button>';
     html += '<button class="ct-tab" data-tab="r2" data-color="#8b5cf6" onclick="_switchTab(\'relais-container\',\'r2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r2' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'r2' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'r2' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🚢 Réceptionner' + (transitP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + transitP.length + '</span>' : '') + '</button>';
     html += '<button class="ct-tab" data-tab="r3" data-color="#22c55e" onclick="_switchTab(\'relais-container\',\'r3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r3' ? '#22c55e' : 'transparent') + ';background:' + (firstActive === 'r3' ? '#22c55e08' : 'transparent') + ';color:' + (firstActive === 'r3' ? '#22c55e' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📍 Distribuer' + (availableP.length ? ' <span style="background:#22c55e;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + availableP.length + '</span>' : '') + '</button>';
     html += '</div>';
@@ -366,7 +366,7 @@ CT.views.relais = async function(container) {
     if (alertCount === 0) {
       html += '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
     } else {
-      html += _alertBadge('💸', 'Cash expiré >36h', cashExpired.length, '#f59e0b');
+      html += _alertBadge('💸', 'Cash expiré >36h', cashExpired.length, '#e91e63');
       html += _alertBadge('⏰', 'Non collectés >72h', uncollected72.length, '#ef4444');
       html += _alertBadge('🚢', 'Transit tardif >10j', lateTransit.length, '#dc2626');
     }
@@ -489,7 +489,7 @@ async function _loadDistribution() {
     html += _badge(parcels.length, '#3b82f6', '📦 Colis');
     html += _badge(totalOrders, '#8b5cf6', '🛍️ Commandes');
     html += _badge(totalItems, '#22c55e', '📋 Articles');
-    html += _badge(unassigned.length, '#f59e0b', '⏳ Non assignés');
+    html += _badge(unassigned.length, '#e91e63', '⏳ Non assignés');
     html += '</div>';
     
     // Parcels cards
@@ -509,7 +509,7 @@ async function _loadDistribution() {
       html += '<span style="color:#64748b;font-size:11px">' + (p.orders_count || 0) + ' cmd · ' + (p.items_count || 0) + ' art. · ' + CT.pc.fmt(p.total_kmf || 0) + '</span>';
       html += '</div>';
       html += '<div style="display:flex;align-items:center;gap:6px">';
-      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + (p.parcel_status === 'draft' ? 'background:#fef3c7;color:#92400e' : p.parcel_status === 'preparation' ? 'background:#dbeafe;color:#1e40af' : 'background:#d1fae5;color:#065f46') + '">' + (p.parcel_status || 'draft') + '</span>';
+      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + (p.parcel_status === 'draft' ? 'background:#fce4ec;color:#880e4f' : p.parcel_status === 'preparation' ? 'background:#dbeafe;color:#1e40af' : 'background:#d1fae5;color:#065f46') + '">' + (p.parcel_status || 'draft') + '</span>';
       if (p.parcel_status === 'preparation') {
         html += '<button data-action="dist-ship" data-ref="' + p.reference + '" style="padding:3px 10px;border:none;border-radius:6px;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer">✈️ Expédier</button>';
       }
@@ -534,15 +534,15 @@ async function _loadDistribution() {
     
     // Unassigned orders
     if (unassigned.length > 0) {
-      html += '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px;margin-top:8px">';
-      html += '<div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:6px">⏳ ' + unassigned.length + ' commande(s) non assignée(s)</div>';
+      html += '<div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px;margin-top:8px">';
+      html += '<div style="font-size:12px;font-weight:600;color:#880e4f;margin-bottom:6px">⏳ ' + unassigned.length + ' commande(s) non assignée(s)</div>';
       unassigned.forEach(function(o) {
         html += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">';
         html += '<span><strong>' + o.reference + '</strong> — ' + (o.customer_name || '?') + '</span>';
         html += '<span style="color:#64748b">' + (o.items_count || '?') + ' art. · ' + (o.destination_island || '?') + '</span>';
         html += '</div>';
       });
-      html += '<div style="margin-top:6px;font-size:11px;color:#92400e">Cliquez "🤖 Répartir maintenant" pour les assigner automatiquement</div>';
+      html += '<div style="margin-top:6px;font-size:11px;color:#880e4f">Cliquez "🤖 Répartir maintenant" pour les assigner automatiquement</div>';
       html += '</div>';
     }
     
