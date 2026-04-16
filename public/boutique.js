@@ -73,6 +73,11 @@
 
   function productEmoji(p) { return p.emoji || '📦'; }
 
+  function findProductById(id) {
+    const pid = String(id);
+    return state.products.find(p => String(p.id) === pid) || null;
+  }
+
   async function apiGet(path) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 10000);
@@ -335,6 +340,7 @@
     showSkeletons(16);
     dom.loading.classList.add('show');
     try {
+      if (!window.K || !K.products || typeof K.products.list !== 'function') { throw new Error('Komerce API indisponible'); }
       const data = await K.products.list();
       state.products = (Array.isArray(data) ? data : data.products || [])
         .filter(p => p.is_available);
@@ -682,7 +688,7 @@
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
   function quickAdd(productId, btnEl) {
-    const product = state.products.find(p => p.id === productId);
+    const product = findProductById(productId);
     if (!product) return;
     addToCart(product, 1, btnEl);
   }
@@ -796,7 +802,7 @@
 
   /* ── PRODUCT MODAL ──────────────────────────────────────── */
   function openModal(id, pushHistory) {
-    const product = state.products.find(p => p.id === id);
+    const product = findProductById(id);
     if (!product) return;
 
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
@@ -952,7 +958,7 @@
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const product = state.products.find(p => p.id === btn.dataset.add);
+        const product = findProductById(btn.dataset.add);
         if (!product) return;
         addToCart(product, 1, btn);
       });
@@ -2321,6 +2327,11 @@
 
   /* ── INIT ───────────────────────────────────────────────── */
   function init() {
+    const waFab = document.getElementById('k-wa-fab');
+    if (waFab) {
+      waFab.href = KOMERCE_WA_URL + '?text=' + encodeURIComponent('Bonjour Komerce ! Je suis intéressé(e) par vos produits 🛍️');
+    }
+
     updateCartBadge();
     setupCats();
     setupSearch();
