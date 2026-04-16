@@ -6,6 +6,11 @@
 (function () {
   'use strict';
 
+  // ── CONSTANTES KOMERCE ──────────────────────────────────
+  // Numéro WhatsApp de contact Komerce (format international sans +)
+  const KOMERCE_WA = '269321XXXXX'; // ← Remplacer par le vrai numéro Komerce
+  const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
+
   /* ── HELPERS ───────────────────────────────────────────── */
   function optimizeImgUrl(url, w) {
     if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
@@ -177,7 +182,8 @@
   /* ── TOAST ─────────────────────────────────────────────── */
   function showToast(msg, type) {
     type = type || '';
-    dom.toast.textContent = msg;
+    // Wrapper requis pour les styles .k-toast.error/.success
+    dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
     dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
     clearTimeout(dom.toast._t);
     dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 2800);
@@ -232,6 +238,8 @@
   /* ── INFINITE SCROLL — append next page ─────────────────── */
   function appendNextPage() {
     const spinner = document.getElementById('k-load-more-spinner');
+    // Même logique que renderGrid : si activeCat === 'all', on prend filtered tel quel
+    // sinon on filtre filtered par catégorie (cohérent avec renderGrid)
     const list = state.activeCat === 'all'
       ? state.filtered
       : state.filtered.filter(p => p.category === state.activeCat);
@@ -710,6 +718,11 @@
     const product = state.products.find(p => p.id === id);
     if (!product) return;
 
+    // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
+    if (!dom.modalOverlay.classList.contains('open')) {
+      state._savedCatalogScrollY = window.scrollY;
+    }
+
     if (pushHistory !== false && state.modalProduct) {
       state.modalHistory.push(state.modalProduct.id);
     }
@@ -739,6 +752,11 @@
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
 
+    // Compteur de position dans la liste + boutons ← →
+    const list = state.filtered.length ? state.filtered : state.products;
+    const currentIdx = list.findIndex(p => p.id === product.id);
+    updateModalNavArrows(list, currentIdx);
+
     const suggestions = state.products
       .filter(p => p.category === product.category && p.id !== product.id)
       .slice(0, 8);
@@ -747,6 +765,51 @@
     dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+  }
+
+  // ── Boutons ← → dans la topbar de la modal
+  function updateModalNavArrows(list, currentIdx) {
+    let navEl = document.getElementById('k-modal-nav');
+    if (!navEl) {
+      navEl = document.createElement('div');
+      navEl.id = 'k-modal-nav';
+      navEl.style.cssText = 'display:flex;align-items:center;gap:4px;';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.id = 'k-modal-prev';
+      prevBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;background:var(--sand);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;';
+      prevBtn.innerHTML = '←';
+      prevBtn.addEventListener('click', () => navigateModal(-1));
+
+      const counter = document.createElement('span');
+      counter.id = 'k-modal-counter';
+      counter.style.cssText = 'font-size:11px;color:var(--text-muted);font-weight:600;min-width:36px;text-align:center;';
+
+      const nextBtn = document.createElement('button');
+      nextBtn.id = 'k-modal-next';
+      nextBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;background:var(--sand);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;';
+      nextBtn.innerHTML = '→';
+      nextBtn.addEventListener('click', () => navigateModal(1));
+
+      navEl.appendChild(prevBtn);
+      navEl.appendChild(counter);
+      navEl.appendChild(nextBtn);
+
+      // Insérer dans la topbar à droite du bouton back
+      const topbar = dom.modal.querySelector('.k-modal-topbar');
+      if (topbar) {
+        const right = topbar.querySelector('.k-modal-topbar-right');
+        topbar.insertBefore(navEl, right);
+      }
+    }
+
+    const counter = document.getElementById('k-modal-counter');
+    const prevBtn = document.getElementById('k-modal-prev');
+    const nextBtn = document.getElementById('k-modal-next');
+
+    if (counter) counter.textContent = `${currentIdx + 1}/${list.length}`;
+    if (prevBtn) prevBtn.style.opacity = currentIdx <= 0 ? '0.3' : '1';
+    if (nextBtn) nextBtn.style.opacity = currentIdx >= list.length - 1 ? '0.3' : '1';
   }
 
   function modalGoBack() {
@@ -760,20 +823,39 @@
     document.body.style.overflow = '';
     state.modalProduct = null;
     state.modalHistory = [];
+    // Restaurer la position de scroll du catalogue
+    if (typeof state._savedCatalogScrollY === 'number') {
+      requestAnimationFrame(() => window.scrollTo(0, state._savedCatalogScrollY));
+    }
   }
 
   function renderSuggestions(items) {
+    if (!items.length) {
+      const sugSection = document.getElementById('k-modal-suggestions');
+      if (sugSection) sugSection.style.display = 'none';
+      return;
+    }
+    const sugSection = document.getElementById('k-modal-suggestions');
+    if (sugSection) sugSection.style.display = '';
+
     dom.sugRail.innerHTML = items.map(p => `
-      <div class="k-sug-card" data-id="${p.id}">
-        <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${p.name}" loading="lazy">
-        <button class="k-sug-add" data-add="${p.id}">+</button>
-        <div class="k-sug-card-name">${p.name}</div>
+      <div class="k-sug-card" data-id="${p.id}" style="cursor:pointer;">
+        <div style="position:relative;">
+          <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
+          ${p.promo_pct ? `<span style="position:absolute;top:4px;left:4px;background:var(--coral);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:50px;">-${p.promo_pct}%</span>` : ''}
+          <button class="k-sug-add" data-add="${p.id}" aria-label="Ajouter">+</button>
+        </div>
+        <div class="k-sug-card-name">${sanitize(p.name)}</div>
         <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
       </div>
     `).join('');
 
+    // Clic sur toute la carte → ouvrir le produit
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
-      card.querySelector('img').addEventListener('click', () => openModal(card.dataset.id));
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.k-sug-add')) return;
+        openModal(card.dataset.id);
+      });
     });
 
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
@@ -812,7 +894,7 @@
       showToast(`${state.modalProduct.emoji || '✓'} ${state.modalProduct.name} × ${state.modalQty}`);
     });
 
-    // ── Bouton "Acheter" — ajoute au panier et ouvre directement le checkout
+    // ── Bouton "⚡ Acheter" — ajoute + ouvre directement le checkout
     const buyNowBtn = document.getElementById('k-buy-now-btn');
     if (buyNowBtn) {
       buyNowBtn.addEventListener('click', () => {
@@ -821,6 +903,107 @@
         closeModal();
         setTimeout(() => checkoutCart(), 200);
       });
+    }
+
+    // ── Swipe down pour fermer (mobile)
+    setupModalSwipe();
+
+    // ── Navigation clavier ← → entre produits (desktop)
+    document.addEventListener('keydown', (e) => {
+      if (!dom.modalOverlay.classList.contains('open')) return;
+      if (e.key === 'ArrowRight') navigateModal(1);
+      if (e.key === 'ArrowLeft') navigateModal(-1);
+      if (e.key === 'Escape') closeModal();
+    });
+  }
+
+  // ── Swipe down pour fermer + swipe left/right pour naviguer (mobile)
+  function setupModalSwipe() {
+    const modal = dom.modal;
+    let startY = 0, startX = 0, isDragging = false;
+
+    modal.addEventListener('touchstart', (e) => {
+      const scrollEl = modal.querySelector('.k-modal-scroll');
+      if (scrollEl && scrollEl.scrollTop > 10) return;
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      isDragging = true;
+    }, { passive: true });
+
+    modal.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const dy = e.touches[0].clientY - startY;
+      const dx = e.touches[0].clientX - startX;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      // Swipe DOWN pour fermer (si plus vertical qu'horizontal)
+      if (dy > 0 && ady > adx) {
+        modal.style.transform = `translateY(${dy * 0.4}px)`;
+        modal.style.transition = 'none';
+        modal.style.opacity = String(Math.max(0.6, 1 - dy / 500));
+      }
+    }, { passive: true });
+
+    modal.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      const dy = e.changedTouches[0].clientY - startY;
+      const dx = e.changedTouches[0].clientX - startX;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      modal.style.transition = 'transform .25s var(--ease), opacity .25s';
+      modal.style.opacity = '';
+
+      // Swipe down → fermer
+      if (dy > 100 && ady > adx) {
+        modal.style.transform = 'translateY(100%)';
+        setTimeout(() => { modal.style.transform = ''; closeModal(); }, 260);
+      }
+      // Swipe left → produit suivant
+      else if (dx < -60 && adx > ady) {
+        modal.style.transform = '';
+        navigateModal(1);
+      }
+      // Swipe right → produit précédent
+      else if (dx > 60 && adx > ady) {
+        modal.style.transform = '';
+        navigateModal(-1);
+      }
+      else {
+        modal.style.transform = '';
+      }
+    });
+  }
+
+  // ── Navigation ← → entre produits dans la modal
+  function navigateModal(direction) {
+    if (!state.modalProduct) return;
+    const list = state.filtered.length ? state.filtered : state.products;
+    const currentIdx = list.findIndex(p => p.id === state.modalProduct.id);
+    if (currentIdx === -1) return;
+    const nextIdx = currentIdx + direction;
+    if (nextIdx < 0 || nextIdx >= list.length) return;
+
+    const scrollEl = dom.modal.querySelector('.k-modal-scroll');
+    if (scrollEl) {
+      scrollEl.style.transition = 'opacity .12s, transform .12s';
+      scrollEl.style.opacity = '0';
+      scrollEl.style.transform = `translateX(${direction > 0 ? '-24px' : '24px'})`;
+      setTimeout(() => {
+        openModal(list[nextIdx].id, false);
+        scrollEl.style.transition = 'none';
+        scrollEl.style.opacity = '0';
+        scrollEl.style.transform = `translateX(${direction > 0 ? '24px' : '-24px'})`;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          scrollEl.style.transition = 'opacity .18s, transform .18s';
+          scrollEl.style.opacity = '1';
+          scrollEl.style.transform = 'translateX(0)';
+        }));
+      }, 130);
+    } else {
+      openModal(list[nextIdx].id, false);
     }
   }
 
@@ -1015,7 +1198,8 @@
     lines.push(cartURL);
 
     var msg = lines.join('\n');
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    // Partage vers le numéro Komerce directement (pas wa.me générique)
+    window.open(KOMERCE_WA_URL + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
@@ -1099,7 +1283,7 @@
 
     const od = state.orderData;
 
-    /* ── 1. Mini résumé ── */
+    /* ── 1. Mini résumé avec aperçu des articles ── */
     const summary = document.createElement('div');
     summary.className = 'ck-summary';
     const qtyLabel = cartQty() + ' article' + (cartQty() > 1 ? 's' : '');
@@ -1107,6 +1291,20 @@
       + '<span class="ck-sum-sep">·</span>'
       + '<span class="ck-sum-total">' + fmt(cartTotal(), 'KMF') + '</span>';
     body.appendChild(summary);
+
+    /* ── Aperçu visuel des articles (comme Amazon/Noon) ── */
+    const itemsPreview = document.createElement('div');
+    itemsPreview.className = 'ck-items-preview';
+    itemsPreview.innerHTML = state.cart.map(item => {
+      const p = item.product;
+      return `<div class="ck-item-row">
+        <img class="ck-item-img" src="${optimizeImgUrl(p.image_url, 80)}" alt="${sanitize(p.name)}" loading="lazy">
+        <span class="ck-item-name">${sanitize(p.name)}</span>
+        <span class="ck-item-qty">×${item.qty}</span>
+        <span class="ck-item-price">${fmtPrice(p.price_kmf * item.qty)}</span>
+      </div>`;
+    }).join('');
+    body.appendChild(itemsPreview);
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
@@ -1623,10 +1821,58 @@
           <p style="font-size:12px">Appuie sur 🤍 sur un produit pour l'ajouter ici</p>
         </div>`;
     } else {
+      const cardsHTML = favProducts.map(p => {
+        const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+        const qty = inCart ? inCart.qty : 0;
+        return `<div class="k-card" data-id="${p.id}">
+          <div class="k-card-img-wrap">
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy">
+            ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
+            <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
+            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+              ${qty > 0
+                ? `<span class="k-add-minus" data-pid="${p.id}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`
+                : '<span class="k-card-add-plus">+</span>'}
+            </button>
+          </div>
+          <div class="k-card-info">
+            <div class="k-card-name">${sanitize(p.name)}</div>
+            <div class="k-card-bottom">
+              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+              ${p.promo_pct ? `<span class="k-card-old-price">${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
       el.innerHTML = `<h2>❤️ Favoris <span style="font-size:14px;font-weight:400;color:var(--text-muted)">${favProducts.length} produit${favProducts.length > 1 ? 's' : ''}</span></h2>
-        <div class="k-grid" id="k-fav-grid">${favProducts.map(buildCardHTML).join('')}</div>`;
+        <div class="k-grid" id="k-fav-grid">${cardsHTML}</div>`;
+
       const favGrid = document.getElementById('k-fav-grid');
-      if (favGrid) bindCardEvents(favGrid);
+      if (favGrid) {
+        favGrid.querySelectorAll('.k-card').forEach(card => {
+          card.addEventListener('click', (e) => {
+            if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add')) return;
+            openModal(card.dataset.id);
+          });
+        });
+        favGrid.querySelectorAll('.k-card-fav').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFav(btn.dataset.fav, btn);
+            // Rafraîchir la vue après retrait
+            setTimeout(() => renderFavView(), 100);
+          });
+        });
+        favGrid.querySelectorAll('.k-card-add').forEach(btn => {
+          btn.dataset.bound = '1';
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
+            else { quickAdd(btn.dataset.add, btn); }
+          });
+        });
+      }
     }
   }
 

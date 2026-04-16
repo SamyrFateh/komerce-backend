@@ -1084,7 +1084,9 @@ body{
   overflow:hidden;
 }
 .k-toast.show{top:calc(var(--header-h) + 10px)}
-.k-toast.error .k-toast-inner{background:var(--coral)}
+.k-toast.error .k-toast-simple{background:var(--coral);color:#fff}
+.k-toast.success .k-toast-simple{background:#16a34a;color:#fff}
+.k-toast.error,.k-toast.success{background:transparent;box-shadow:none}
 
 /* Simple toast (errors / info) */
 .k-toast-simple{padding:10px 18px;display:flex;align-items:center;justify-content:center;}
@@ -1645,3 +1647,157 @@ body{
 }
 .k-buy-now-btn:active{opacity:.85;transform:scale(.97)}
 
+
+/* ══════════════════════════════════════════════════════════
+   AMÉLIORATIONS UX v3.1 — Navigation modal, swipe, nav arrows
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Boutons navigation ← → dans la modal ── */
+#k-modal-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#k-modal-prev,
+#k-modal-next {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--sand);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s, transform .15s, opacity .2s;
+  flex-shrink: 0;
+}
+#k-modal-prev:hover,
+#k-modal-next:hover {
+  background: var(--ocean);
+  color: #fff;
+  border-color: var(--ocean);
+  transform: scale(1.08);
+}
+#k-modal-prev:active,
+#k-modal-next:active {
+  transform: scale(.92);
+}
+#k-modal-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 36px;
+  text-align: center;
+  user-select: none;
+}
+
+/* ── Swipe indicator sur mobile (barre en haut de la modal) ── */
+.k-modal::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 8px auto 0;
+  flex-shrink: 0;
+}
+@media(min-width: 600px) {
+  .k-modal::before { display: none; }
+}
+
+/* ── Transition scroll area de la modal ── */
+.k-modal-scroll {
+  will-change: opacity, transform;
+}
+
+/* ── Suggestions : masquage si vide ── */
+#k-modal-suggestions {
+  transition: opacity .2s;
+}
+
+/* ── Carte suggestion : hover élégant ── */
+.k-sug-card {
+  transition: transform .18s, box-shadow .18s;
+}
+.k-sug-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Cart drawer : swipe hint sur mobile ── */
+@media(max-width: 767px) {
+  .k-cart-drawer::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,.3);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Checkout : résumé produits enrichi ── */
+.ck-items-preview {
+  background: var(--sand);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.ck-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  font-size: .82rem;
+}
+.ck-item-row:last-child { border: none; }
+.ck-item-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--sand-dark);
+}
+.ck-item-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ck-item-qty {
+  color: var(--text-muted);
+  font-size: .76rem;
+  flex-shrink: 0;
+}
+.ck-item-price {
+  font-weight: 700;
+  color: var(--coral);
+  flex-shrink: 0;
+  font-size: .82rem;
+}
+
+/* ── Modal nav : masqué sur très petits écrans si manque de place ── */
+@media(max-width: 360px) {
+  #k-modal-counter { display: none; }
+  #k-modal-prev, #k-modal-next { width: 26px; height: 26px; font-size: 12px; }
+}
+
+/* ── Scroll snap sur les catégories ── */
+.k-cats {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.k-chip {
+  scroll-snap-align: start;
+}
