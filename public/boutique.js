@@ -8,8 +8,8 @@
 
   // ── CONSTANTES KOMERCE ──────────────────────────────────
   // Numéro WhatsApp de contact Komerce (format international sans +)
-  const KOMERCE_WA = '269321XXXXX'; // ← Remplacer par le vrai numéro Komerce
-  const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
+const KOMERCE_WA = '33699272526';
+const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
   /* ── HELPERS ───────────────────────────────────────────── */
   function optimizeImgUrl(url, w) {
@@ -313,23 +313,29 @@
 
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
   async function loadProducts() {
-    showSkeletons(16);
-    dom.loading.classList.add('show');
-    try {
-      const data = await K.products.list();
-      state.products = (Array.isArray(data) ? data : data.products || [])
-        .filter(p => p.is_available);
-      state.filtered = [...state.products];
-      renderPromos();
-      hideSkeletons();
-      renderGrid();
-    } catch (e) {
-      showToast('Erreur de chargement', 'error');
-      console.error(e);
-    } finally {
-      dom.loading.classList.remove('show');
+    async function loadProducts() {
+  showSkeletons(16);
+  dom.loading.classList.add('show');
+  try {
+    if (!window.K || !K.products || typeof K.products.list !== 'function') {
+      throw new Error('K.products.list indisponible');
     }
+
+    const data = await K.products.list();
+    state.products = (Array.isArray(data) ? data : data.products || [])
+      .filter(p => p.is_available);
+
+    state.filtered = [...state.products];
+    renderPromos();
+    hideSkeletons();
+    renderGrid();
+  } catch (e) {
+    console.error('[loadProducts]', e);
+    showToast('Erreur de chargement', 'error');
+  } finally {
+    dom.loading.classList.remove('show');
   }
+}
 
   /* ── RENDER PROMOS ──────────────────────────────────────── */
   function renderPromos() {
@@ -663,10 +669,14 @@
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
   function quickAdd(productId, btnEl) {
-    const product = state.products.find(p => p.id === productId);
-    if (!product) return;
-    addToCart(product, 1, btnEl);
+  const pid = String(productId);
+  const product = state.products.find(p => String(p.id) === pid);
+  if (!product) {
+    console.warn('[cart] Produit introuvable:', productId);
+    return;
   }
+  addToCart(product, 1, btnEl);
+}
 
   function quickRemove(productId, btnEl) {
     const pid = String(productId);

@@ -41,6 +41,7 @@ ul,ol{list-style:none}
   --radius-lg:20px;
   --header-h:48px;
   --bnav-h:50px;
+  --header-h:44px;
   --ease:cubic-bezier(.22,1,.36,1);
 }
 
