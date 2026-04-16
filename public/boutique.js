@@ -1500,7 +1500,7 @@
         const errEl = document.getElementById('stripe-card-error');
         if (!stripe) {
           if (errEl) {
-            errEl.textContent = 'Le module de paiement n'est pas encore chargé. Réessaie dans une seconde.';
+            errEl.textContent = "Le module de paiement n'est pas encore chargé. Réessaie dans une seconde.";
             errEl.style.display = 'block';
           }
           return;
