@@ -1027,6 +1027,30 @@ router.get('/:ref/timeline', async (req, res, next) => {
 
 // ═══════════════════════════════════════════════════════════════════════
 
+// Temporary debug route to find the PG trigger
+router.get('/debug-triggers', async (req, res) => {
+  try {
+    // List all triggers on parcels table
+    const { rows: triggers } = await db.query(`
+      SELECT tgname, pg_get_triggerdef(oid) AS def
+      FROM pg_trigger
+      WHERE tgrelid = 'parcels'::regclass
+        AND NOT tgisinternal
+    `);
+    
+    // List all functions that mention 'ANTI' or 'destination'
+    const { rows: functions } = await db.query(`
+      SELECT proname, prosrc FROM pg_proc
+      WHERE prosrc ILIKE '%ANTI-ERREUR%' OR prosrc ILIKE '%sans destination%'
+    `);
+    
+    res.json({ triggers, functions });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+
 // ═══════════════════════════════════════════════════════════════════════
 // DEBUG: Test scan step by step (TEMPORARY — REMOVE AFTER FIX)
 // ═══════════════════════════════════════════════════════════════════════
