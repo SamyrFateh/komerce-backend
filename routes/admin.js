@@ -1055,6 +1055,30 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
       console.log(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`, type: 'soft_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     } else {
+      // Clean all potential FK references to this user before hard-deleting
+      const cleanupQueries = [
+        'UPDATE sms_log SET user_id = NULL WHERE user_id = $1::uuid',
+        'DELETE FROM wallet_transactions WHERE user_id = $1::uuid',
+        'DELETE FROM loyalty_points WHERE user_id = $1::uuid',
+        'DELETE FROM loyalty_history WHERE user_id = $1::uuid',
+        'DELETE FROM basket_items WHERE basket_id IN (SELECT id FROM baskets WHERE user_id = $1::uuid)',
+        'DELETE FROM baskets WHERE user_id = $1::uuid',
+        'DELETE FROM recipients WHERE user_id = $1::uuid',
+        'DELETE FROM favorites WHERE user_id = $1::uuid',
+        'DELETE FROM wishlists WHERE user_id = $1::uuid',
+        'DELETE FROM notifications WHERE user_id = $1::uuid',
+        'DELETE FROM sessions WHERE user_id = $1::uuid',
+        'DELETE FROM refresh_tokens WHERE user_id = $1::uuid',
+        'DELETE FROM user_addresses WHERE user_id = $1::uuid',
+        'UPDATE order_status_history SET changed_by = NULL WHERE changed_by = $1::uuid',
+        'UPDATE scans SET scanned_by = NULL WHERE scanned_by = $1::uuid',
+        'UPDATE scan_events SET scanned_by = NULL WHERE scanned_by = $1::uuid',
+        'UPDATE incidents SET detected_by = NULL WHERE detected_by = $1::uuid',
+        'UPDATE incidents SET resolved_by = NULL WHERE resolved_by = $1::uuid',
+      ];
+      for (const q of cleanupQueries) {
+        try { await db.query(q, [id]); } catch (_) { /* table may not exist */ }
+      }
       await db.query('DELETE FROM users WHERE id = $1::uuid', [id]);
       console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
