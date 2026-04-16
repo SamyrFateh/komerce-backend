@@ -547,8 +547,10 @@
 
     saveCart();
 
-    // Mark button feedback
-    if (sourceBtn) {
+    const isModalAdd = sourceBtn === dom.addCartBtn;
+
+    // Mark button feedback (grid / rail buttons only)
+    if (sourceBtn && !isModalAdd) {
       sourceBtn.classList.add('added');
       sourceBtn.disabled = true;
       setTimeout(() => {
@@ -561,8 +563,56 @@
     // Mark all grid buttons for this product
     markAllCartButtons();
 
-    // Open drawer with highlight
-    openCartWithHighlight(product.id);
+    // Fix 7 : ring pulse coral ×2 sur l'icône panier
+    if (dom.cartBtn) {
+      dom.cartBtn.classList.remove('ring-pulse');
+      void dom.cartBtn.offsetWidth;
+      dom.cartBtn.classList.add('ring-pulse');
+      setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+    }
+
+    if (isModalAdd) {
+      // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
+      setTimeout(() => {
+        const count = cartQty();
+        dom.addCartBtn.classList.remove('added');
+        dom.addCartBtn.classList.add('confirmed');
+        dom.addCartBtn.disabled = false;
+        dom.addCartBtn.innerHTML = '<span class="k-btn-done">✓ Dans le panier</span><span class="k-btn-sep"> | </span><span class="k-btn-see">Voir (' + count + ') →</span>';
+        dom.addCartBtn.onclick = function() { closeModal(); setTimeout(openCart, 150); };
+      }, 700);
+    } else if (sourceBtn) {
+      // Fix 6 : rich toast (pas de drawer auto)
+      showRichToast(product);
+    }
+  }
+
+  /* ── RICH TOAST (after quick-add from grid/rail) ────────── */
+  function showRichToast(product) {
+    const count = cartQty();
+    const imgSrc = optimizeImgUrl(product.image_url, 80);
+    dom.toast.innerHTML = '<div class="k-toast-rich">'
+      + (imgSrc ? '<img class="k-toast-thumb" src="' + imgSrc + '" alt="" loading="lazy">' : '<span class="k-toast-emoji">' + (product.emoji || '✓') + '</span>')
+      + '<div class="k-toast-body">'
+      + '<div class="k-toast-label">Ajouté au panier</div>'
+      + '<div class="k-toast-name">' + sanitize(product.name) + '</div>'
+      + '</div>'
+      + '<button class="k-toast-cta" id="k-toast-view-cta">Voir (' + count + ') →</button>'
+      + '</div>';
+    dom.toast.className = 'k-toast show';
+    clearTimeout(dom.toast._t);
+    dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 3000);
+    setTimeout(() => {
+      const cta = document.getElementById('k-toast-view-cta');
+      if (cta) {
+        cta.addEventListener('click', function(e) {
+          e.stopPropagation();
+          dom.toast.classList.remove('show');
+          clearTimeout(dom.toast._t);
+          openCart();
+        });
+      }
+    }, 0);
   }
 
   function removeFromCart(productId) {
@@ -603,7 +653,6 @@
     const product = state.products.find(p => p.id === productId);
     if (!product) return;
     addToCart(product, 1, btnEl);
-    showToast(`${product.emoji || '✓'} ${product.name} ajouté`);
   }
 
   function quickRemove(productId, btnEl) {
@@ -729,6 +778,16 @@
 
     state.modalProduct = product;
     state.modalQty = 1;
+
+    // Fix 1+2: reset "Ajouter" button — disabled, classes, confirmed state
+    if (dom.addCartBtn) {
+      dom.addCartBtn.disabled = false;
+      dom.addCartBtn.onclick = null;
+      if (dom.addCartBtn.classList.contains('confirmed') || dom.addCartBtn.querySelector('.k-btn-done')) {
+        dom.addCartBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Ajouter au panier';
+      }
+      dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
+    }
 
     dom.modalImg.src = optimizeImgUrl(product.image_url, 600);
     dom.modalName.textContent = product.name;
@@ -864,9 +923,40 @@
         const product = state.products.find(p => p.id === btn.dataset.add);
         if (!product) return;
         addToCart(product, 1, btn);
-        showToast(`${product.emoji || '✓'} ${product.name} ajouté`);
       });
     });
+
+    // Fix 4 : flèches ◀▶ coral + masquage aux extrémités
+    const sugSection = document.getElementById('k-modal-suggestions');
+    if (sugSection) {
+      let wrapEl = sugSection.querySelector('.k-sug-wrap');
+      if (!wrapEl) {
+        wrapEl = document.createElement('div');
+        wrapEl.className = 'k-sug-wrap';
+        wrapEl.style.cssText = 'position:relative;';
+        dom.sugRail.parentNode.insertBefore(wrapEl, dom.sugRail);
+        wrapEl.appendChild(dom.sugRail);
+      }
+      wrapEl.querySelectorAll('.k-sug-arrow').forEach(a => a.remove());
+      const prevArrow = document.createElement('button');
+      prevArrow.className = 'k-sug-arrow prev';
+      prevArrow.innerHTML = '◀';
+      prevArrow.setAttribute('aria-label', 'Précédent');
+      const nextArrow = document.createElement('button');
+      nextArrow.className = 'k-sug-arrow next';
+      nextArrow.innerHTML = '▶';
+      nextArrow.setAttribute('aria-label', 'Suivant');
+      wrapEl.appendChild(prevArrow);
+      wrapEl.appendChild(nextArrow);
+      function syncArrows() {
+        prevArrow.hidden = dom.sugRail.scrollLeft <= 2;
+        nextArrow.hidden = dom.sugRail.scrollLeft >= dom.sugRail.scrollWidth - dom.sugRail.clientWidth - 10;
+      }
+      prevArrow.addEventListener('click', () => { dom.sugRail.scrollBy({ left: -240, behavior: 'smooth' }); setTimeout(syncArrows, 350); });
+      nextArrow.addEventListener('click', () => { dom.sugRail.scrollBy({ left: 240, behavior: 'smooth' }); setTimeout(syncArrows, 350); });
+      dom.sugRail.addEventListener('scroll', syncArrows, { passive: true });
+      requestAnimationFrame(syncArrows);
+    }
   }
 
   function setupModal() {
@@ -889,9 +979,8 @@
     });
 
     dom.addCartBtn.addEventListener('click', () => {
-      if (!state.modalProduct) return;
+      if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
       addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
-      showToast(`${state.modalProduct.emoji || '✓'} ${state.modalProduct.name} × ${state.modalQty}`);
     });
 
     // ── Bouton "⚡ Acheter" — ajoute + ouvre directement le checkout
@@ -901,7 +990,7 @@
         if (!state.modalProduct) return;
         addToCart(state.modalProduct, state.modalQty, buyNowBtn);
         closeModal();
-        setTimeout(() => checkoutCart(), 200);
+        setTimeout(() => openCart(), 200);
       });
     }
 
@@ -1452,7 +1541,7 @@
     input.placeholder = placeholder;
     input.value = dataObj[key] || '';
     input.style.cssText = 'width:100%;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);border-radius:8px;outline:none;font-size:0.9rem;transition:border-color 0.2s;box-sizing:border-box;';
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
     input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', () => { dataObj[key] = input.value; });
     group.appendChild(input);
@@ -1516,7 +1605,7 @@
       input.maxLength = currentCountry.max + 4; /* allow spaces */
       sync();
     });
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
     input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', sync);
 
@@ -1536,7 +1625,7 @@
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;gap:0;';
     const prefix = document.createElement('div');
-    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:9px 10px;font-weight:700;color:#888;white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;';
+    prefix.style.cssText = 'background:#eef2e4;border:2px solid rgba(0,0,0,0.1);border-right:none;border-radius:8px 0 0 8px;padding:0 10px;font-weight:700;color:var(--coral);white-space:nowrap;display:flex;align-items:center;font-size:0.88rem;height:34px;box-sizing:border-box;flex-shrink:0;';
     prefix.textContent = '+269';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
@@ -1545,8 +1634,8 @@
     input.placeholder = '321 12 34';
     input.value = dataObj[key] || '';
     input.maxLength = 10;
-    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;';
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--ocean)'; });
+    input.style.cssText = 'flex:1;border-radius:0 8px 8px 0;padding:0 12px;border:2px solid rgba(0,0,0,0.1);outline:none;font-size:0.9rem;transition:border-color 0.2s;height:34px;box-sizing:border-box;';
+    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
     input.addEventListener('blur', () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', () => {
       let raw = input.value.replace(/[^0-9]/g, '');
@@ -1708,49 +1797,101 @@
     body.innerHTML = '';
     dom.orderTitle.textContent = '✅ Commande confirmée';
 
+    // Fix 11 : retirer le bouton Confirmer sticky
+    body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
+
+    // Fix 14 : notice WhatsApp simplifiée
+    const hasDiaspora = state.orderData && (state.orderData.sender_phone || '').trim().length >= 8;
+    const waNotice = hasDiaspora
+      ? '📲 Le bénéficiaire et vous recevrez une confirmation WhatsApp'
+      : '📲 Le bénéficiaire recevra une confirmation WhatsApp';
+
     const wrap = document.createElement('div');
     wrap.style.cssText = 'text-align:center;padding:14px 0;';
 
-    wrap.innerHTML = '<div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>' +
-      '<h3 style="color:var(--ocean);margin-bottom:6px;font-size:1.1rem;">Commande enregistrée !</h3>' +
-      '<p style="color:#888;font-size:0.85rem;margin-bottom:2px;">Votre référence :</p>' +
-      '<div style="display:inline-block;background:rgba(67,160,71,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>';
+    wrap.innerHTML = '<div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>'
+      + '<h3 style="color:var(--ocean);margin-bottom:6px;font-size:1.1rem;">Commande enregistrée !</h3>'
+      + '<p style="color:#888;font-size:0.85rem;margin-bottom:2px;">Votre référence :</p>'
+      + '<div style="display:inline-block;background:rgba(67,160,71,0.08);color:var(--ocean);font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;margin:6px 0;letter-spacing:2px;font-family:monospace;">' + sanitize(order.reference || '—') + '</div>'
+      + '<div><button id="k-copy-ref-btn" style="margin-top:2px;background:none;border:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;">📋 Copier la référence</button></div>';
 
-    // Cash ref code
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
-      wrap.innerHTML += '<p style="margin-top:10px;font-weight:700;font-size:0.88rem;">🏪 Code de paiement au relais :</p>' +
-        '<div style="display:inline-block;background:#fffbeb;color:#92400e;font-weight:800;font-size:1.15rem;padding:8px 22px;border-radius:10px;margin:6px 0;letter-spacing:2px;border:2px solid #fde68a;font-family:monospace;">' + sanitize(order.cash_ref_code) + '</div>';
+      wrap.innerHTML += '<p style="margin-top:10px;font-weight:700;font-size:0.88rem;">🏪 Code de paiement au relais :</p>'
+        + '<div style="display:inline-block;background:#fffbeb;color:#92400e;font-weight:800;font-size:1.15rem;padding:8px 22px;border-radius:10px;margin:6px 0;letter-spacing:2px;border:2px solid #fde68a;font-family:monospace;">' + sanitize(order.cash_ref_code) + '</div>';
     }
 
-    // Discount
     if (fullResult && fullResult.discount_pct > 0) {
       wrap.innerHTML += '<div style="margin-top:10px;padding:8px 12px;background:#ecfdf5;border-radius:8px;border:1px solid #a7f3d0;font-size:0.82rem;color:#065f46;font-weight:600;">🎁 Fidélité ' + sanitize(fullResult.loyalty_label || '') + ' : -' + fullResult.discount_pct + '% (-' + fmt(fullResult.discount_kmf, 'KMF') + ')</div>';
     }
 
-    // Wallet deduction
     if (fullResult && fullResult.credit_applied_kmf > 0) {
       wrap.innerHTML += '<div style="margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);border-radius:8px;font-size:0.85rem;text-align:center;">💰 Crédit boutique appliqué : <strong style="color:var(--ocean)">-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
     }
 
-    // Info block
-    wrap.innerHTML += '<div style="margin-top:12px;padding:10px 12px;background:#eef2e4;border-radius:10px;font-size:0.82rem;color:#888;line-height:1.6;text-align:left;">' +
-      '<div>🏪 Paiement en cash (KMF) au point relais lors du retrait.</div>' +
-      '<div style="margin-top:4px;">📱 ' + sanitize(recipientName || '') + ' recevra un SMS de confirmation.</div>' +
-      (clientEmail ? '<div style="margin-top:4px;">📧 Suivi envoyé à ' + sanitize(clientEmail) + '</div>' : '') +
-      '<div style="margin-top:4px;">📍 Présentez la référence ou le code au point relais.</div></div>';
+    wrap.innerHTML += '<div style="margin-top:12px;padding:10px 12px;background:#eef2e4;border-radius:10px;font-size:0.82rem;color:#555;line-height:1.6;text-align:left;">'
+      + '<div>🏪 Paiement en cash (KMF) au point relais lors du retrait.</div>'
+      + '<div style="margin-top:4px;">' + sanitize(waNotice) + '</div>'
+      + '<div style="margin-top:4px;">📍 Présentez la référence au point relais.</div></div>';
 
-    // Buttons
-    wrap.innerHTML += '<button id="k-order-track-btn" style="margin-top:12px;width:100%;padding:11px;border-radius:8px;font-weight:700;font-size:0.9rem;background:var(--ocean);color:white;border:none;cursor:pointer;">📍 Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#eef2e4;color:var(--ocean);border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer</button>';
+    // Fix 12 : bouton Fermer avec countdown
+    wrap.innerHTML += '<button id="k-order-track-btn" style="margin-top:12px;width:100%;padding:11px;border-radius:8px;font-weight:700;font-size:0.9rem;background:var(--ocean);color:white;border:none;cursor:pointer;">📍 Suivre ma commande</button>'
+      + '<button id="k-order-close-btn" style="margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;font-size:0.85rem;background:#eef2e4;color:var(--text);border:1px solid rgba(0,0,0,0.08);cursor:pointer;">Fermer (7)</button>';
 
     body.appendChild(wrap);
 
-    // Wire button events
     setTimeout(() => {
-      const trackBtn = document.getElementById('k-order-track-btn');
-      if (trackBtn) trackBtn.addEventListener('click', () => { closeOrderModal(); showToast('📦 Suivi bientôt disponible'); });
+      // Copier référence
+      const copyBtn = document.getElementById('k-copy-ref-btn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(order.reference || '').then(() => showToast('📋 Référence copiée !'));
+          }
+        });
+      }
+
+      // Fix 12 : auto-fermeture 7s avec countdown visible
       const closeBtn = document.getElementById('k-order-close-btn');
-      if (closeBtn) closeBtn.addEventListener('click', closeOrderModal);
+      let countdown = 7;
+      const autoTimer = setInterval(() => {
+        countdown--;
+        if (closeBtn) closeBtn.textContent = 'Fermer (' + countdown + ')';
+        if (countdown <= 0) {
+          clearInterval(autoTimer);
+          closeOrderModal();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 1000);
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          clearInterval(autoTimer);
+          closeOrderModal();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+
+      // Fix 13 : "Suivre" → bascule onglet Track + pré-remplit + auto-search
+      const trackBtn = document.getElementById('k-order-track-btn');
+      if (trackBtn) {
+        trackBtn.addEventListener('click', () => {
+          clearInterval(autoTimer);
+          closeOrderModal();
+          renderTrackView();
+          switchView('track');
+          $$('.k-bnav-item').forEach(i => i.classList.remove('active'));
+          const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
+          if (trackNav) trackNav.classList.add('active');
+          setTimeout(() => {
+            const refInput = document.getElementById('k-otp-ref');
+            if (refInput) {
+              refInput.value = order.reference || '';
+              const refBtn = document.getElementById('k-otp-ref-btn');
+              if (refBtn) refBtn.click();
+            }
+          }, 350);
+        });
+      }
     }, 0);
   }
 
