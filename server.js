@@ -205,6 +205,7 @@ const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
 const inventoryApiRouter = require('./routes/inventory-api');
 const transitaireApiRouter = require('./routes/transitaire-api');
+const autoDistributeRouter = require('./routes/auto-distribute-api');
 const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 const transitDashboardRoutes = require('./routes/transit-dashboard');
 
@@ -245,6 +246,7 @@ app.use('/api/hub',        hubRouter);
 app.use('/api/hub',        hubMarkOrderedRouter);
 app.use('/api/hub/inventory', inventoryApiRouter);
 app.use('/api/transitaire', transitaireApiRouter);
+app.use('/api/hub', autoDistributeRouter);
 app.use('/api/carriers',   carriersRouter);
 app.use('/api/wallet',     walletRouter);
 app.use('/api/payments',   paymentsRouter);

@@ -107,7 +107,7 @@ async function distributeOrder(orderId, dbClient) {
     try {
       const { rows: [newP] } = await client.query(`
         INSERT INTO parcels (reference, destination_island, status, type, recipient_name, recipient_phone)
-        VALUES ($1, $2, 'draft', 'standard', $3, $4)
+        VALUES ($1, $2, 'preparation', 'standard', $3, $4)
         RETURNING id, reference
       `, [ref, destIsland, order.customer_name, order.customer_phone]);
       parcelId = newP.id;
@@ -116,7 +116,7 @@ async function distributeOrder(orderId, dbClient) {
       // Fallback: use order_id (1:1) if destination_island column doesn't exist
       const { rows: [newP] } = await client.query(`
         INSERT INTO parcels (reference, order_id, status, type)
-        VALUES ($1, $2, 'draft', 'standard')
+        VALUES ($1, $2, 'preparation', 'standard')
         RETURNING id, reference
       `, [ref, orderId]);
       parcelId = newP.id;
