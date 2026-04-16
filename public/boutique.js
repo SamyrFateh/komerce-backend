@@ -329,6 +329,8 @@
 
   state.filtered = [...state.products];
   renderGrid();
+  if (dom.promoRail) renderPromos();
+  markAllCartButtons();
 }
 
   /* ── RENDER PROMOS ──────────────────────────────────────── */
@@ -612,8 +614,8 @@ function addToCart(product, qty, sourceBtn) {
       dom.addCartBtn.onclick = function() { closeModal(); setTimeout(openCart, 150); };
     }, 700);
   } else if (sourceBtn) {
-    // Fix 6 : rich toast (pas de drawer auto)
-    showRichToast(product);
+    // Toast de confirmation (grid / rail)
+    showToast('✓ ' + (product.name || 'Produit') + ' ajouté', 'success');
   }
 }
 
@@ -630,12 +632,31 @@ function addToCart(product, qty, sourceBtn) {
   }
 
   function markAllCartButtons() {
-    state.cart.forEach(item => {
-      document.querySelectorAll(`.k-card-add[data-add="${item.product.id}"]`).forEach(btn => {
+    // IDs actuellement dans le panier
+    const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
+
+    // Pour chaque bouton "+" de la grille, soit on met le mini-contrôle ±, soit on réinitialise
+    document.querySelectorAll('.k-card-add').forEach(btn => {
+      const pid = String(btn.dataset.add);
+      if (inCartIds.has(pid)) {
+        const item = state.cart.find(i => String(i.product.id) === pid);
         btn.classList.add('in-cart');
-        btn.innerHTML = '<span class="k-add-minus" data-pid="' + item.product.id + '">−</span><span class="k-add-qty">' + item.qty + '</span><span class="k-add-plus-ic">+</span>';
-      });
+        btn.innerHTML = '<span class="k-add-minus" data-pid="' + pid + '">−</span><span class="k-add-qty">' + item.qty + '</span><span class="k-add-plus-ic">+</span>';
+      } else {
+        // Produit plus dans le panier → remettre juste le "+"
+        btn.classList.remove('in-cart');
+        btn.innerHTML = '<span class="k-card-add-plus">+</span>';
+      }
     });
+  }
+
+  /* ── REMOVE FROM CART ───────────────────────────────────── */
+  function removeFromCart(productId) {
+    const pid = String(productId);
+    state.cart = state.cart.filter(i => String(i.product.id) !== pid);
+    saveCart();
+    renderCartBody();
+    markAllCartButtons();
   }
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
@@ -651,15 +672,7 @@ function quickAdd(productId, btnEl) {
   addToCart(product, 1, btnEl);
 }
 
-function loadCart() {
-  try {
-    state.cart = JSON.parse(localStorage.getItem('komerce_cart_v1')) || [];
-  } catch {
-    state.cart = [];
-  }
-}
-
-  function quickRemove(productId, btnEl) {
+function quickRemove(productId, btnEl) {
     const pid = String(productId);
     const item = state.cart.find(i => String(i.product.id) === pid);
     if (!item) return;
@@ -986,14 +999,16 @@ function loadCart() {
       addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
     });
 
-    // ── Bouton "⚡ Acheter" — ajoute + ouvre directement le checkout
+    // ── Bouton "⚡ Acheter" — ajoute + ouvre directement le panier (sans animation fly)
     const buyNowBtn = document.getElementById('k-buy-now-btn');
     if (buyNowBtn) {
       buyNowBtn.addEventListener('click', () => {
         if (!state.modalProduct) return;
-        addToCart(state.modalProduct, state.modalQty, buyNowBtn);
+        // Pas de sourceBtn → pas d'animation fly, pas de setTimeout qui perturbe l'ouverture du panier
+        addToCart(state.modalProduct, state.modalQty, null);
         closeModal();
-        setTimeout(() => openCart(), 200);
+        // Petit délai pour laisser la modal se fermer avant d'ouvrir le drawer
+        setTimeout(openCart, 250);
       });
     }
 
@@ -1725,13 +1740,12 @@ function loadCart() {
     // La valeur est déjà préfixée par l'indicatif pays via makeIntlPhoneInput (ex: +33612345678)
     const senderPhone = (od.sender_phone || '').trim();
     const clientName  = recipName;
-    const clientPhone = '+269' + recipPhone.replace(/\s/g, '');
+    const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const clientEmail = undefined;
 
     if (!recipName)  { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
     if (!recipPhone) { showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error'); return; }
 
-    const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const isStripe = od.payment_mode === 'stripe_eur';
     // tracking_phone = numéro diaspora, envoyé dès qu'il est renseigné (checkbox ou non)
     const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
