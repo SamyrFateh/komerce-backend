@@ -101,34 +101,10 @@
 
     const od = K.state.orderData;
 
-    /* 1. Mini summary */
-    const summary = document.createElement('div');
-    summary.className = 'ck-summary';
-    const qtyLabel = K.cartQty() + ' article' + (K.cartQty() > 1 ? 's' : '');
-    summary.innerHTML =
-      '<span class="ck-sum-qty">' + qtyLabel + '</span>' +
-      '<span class="ck-sum-sep">·</span>' +
-      '<span class="ck-sum-total">' + K.fmt(K.cartTotal(), 'KMF') + '</span>';
-    body.appendChild(summary);
-
-    /* 2. Items preview */
-    const preview = document.createElement('div');
-    preview.className = 'ck-items-preview';
-    preview.innerHTML = K.state.cart.map(item => {
-      const p = item.product;
-      return '<div class="ck-item-row">' +
-        '<img class="ck-item-img" src="' + K.optimizeImgUrl(p.image_url, 80) + '" alt="' + K.sanitize(p.name) + '" loading="lazy">' +
-        '<span class="ck-item-name">' + K.sanitize(p.name) + '</span>' +
-        '<span class="ck-item-qty">×' + item.qty + '</span>' +
-        '<span class="ck-item-price">' + K.fmtPrice(p.price_kmf * item.qty) + '</span>' +
-      '</div>';
-    }).join('');
-    body.appendChild(preview);
-
-    /* 3. Bénéficiaire */
+    /* 1. Bénéficiaire */
     const s1 = document.createElement('div');
     s1.className = 'ck-label';
-    s1.textContent = '📦 Bénéficiaire';
+    s1.innerHTML = '📦 Bénéficiaire &nbsp;<small style="font-weight:400;color:var(--ink-3);font-size:11px;">' + K.cartQty() + ' article' + (K.cartQty() > 1 ? 's' : '') + ' · ' + K.fmt(K.cartTotal(), 'KMF') + '</small>';
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',          'text', 'Prénom Nom', od, 'beneficiary_name'));
     body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. (+269) *', od, 'beneficiary_phone'));
