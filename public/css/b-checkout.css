@@ -1,0 +1,120 @@
+/* ═══════════════════════════════════════════════════════════
+   KOMERCE — b-checkout.css
+   Checkout form, order summary, success screen extras
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Checkout summary bar ── */
+.ck-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.ck-sum-qty    { font-weight: 600; }
+.ck-sum-sep    { color: var(--ink-4); }
+.ck-sum-total  { font-weight: 800; color: var(--terracotta); margin-left: auto; }
+
+/* ── Items preview in checkout ── */
+.ck-items-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: var(--ivoire);
+  border-radius: var(--radius-sm);
+}
+.ck-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.ck-item-img {
+  width: 40px; height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.ck-item-name  { flex: 1; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ck-item-qty   { color: var(--ink-3); font-size: 12px; flex-shrink: 0; }
+.ck-item-price { font-weight: 700; color: var(--terracotta); flex-shrink: 0; font-size: 13px; }
+
+/* ── Section label ── */
+.ck-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+/* ── Payment chip selected state ── */
+.k-payment-chip.selected {
+  border-color: var(--terracotta);
+  background: var(--terracotta-light);
+  color: var(--terracotta);
+}
+.k-payment-chip input[type=radio] { display: none; }
+
+/* ── Order card (track view) ── */
+.k-order-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.k-order-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.k-order-ref {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--terracotta);
+  letter-spacing: 1px;
+  font-family: monospace;
+}
+.k-order-date {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.k-order-card-total {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+/* ── Toast variants ── */
+.k-toast.success { background: var(--prairie); }
+.k-toast.error   { background: #EF4444; }
+.k-toast.rich    { padding: 10px 14px; }
+
+/* ── Cart item highlight ── */
+.k-cart-item.highlighted {
+  background: var(--prairie-light);
+  border-radius: var(--radius-sm);
+  transition: background 1s ease;
+}
+
+/* ── Checkout form helpers ── */
+.k-form-input:focus { border-color: var(--prairie); }
+.k-phone-input:focus { border-color: var(--prairie); outline: none; }
+
+/* ── Sort chip active ── */
+.k-sort-chip.active {
+  border-color: var(--terracotta);
+  background: var(--terracotta-light);
+  color: var(--terracotta);
+}

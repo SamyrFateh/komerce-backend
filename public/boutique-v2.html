@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script>
+// SW cache purge
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.update()));
+  if (window.caches) caches.keys().then(names => names.forEach(n => { if (!n.includes('komerce-v11')) caches.delete(n); }));
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FDFAF5">
+<title>Komerce — Boutique en ligne</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://res.cloudinary.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ── Prairie CSS (modulaire) ── -->
+<link rel="stylesheet" href="/css/b-theme.css?v=1">
+<link rel="stylesheet" href="/css/b-layout.css?v=1">
+<link rel="stylesheet" href="/css/b-components.css?v=1">
+<link rel="stylesheet" href="/css/b-animations.css?v=1">
+<link rel="stylesheet" href="/css/b-checkout.css?v=1">
+
+<script src="https://js.stripe.com/v3/" defer></script>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════ -->
+<header class="k-header" id="k-header">
+  <div class="k-header-inner">
+    <a href="/" class="k-logo">
+      <span class="k-logo-icon">🌙</span>
+      <span class="k-logo-text">Komerce</span>
+    </a>
+    <div class="k-search" id="k-search">
+      <svg class="k-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="search" id="k-search-input" placeholder="Rechercher…" autocomplete="off">
+      <div class="k-search-dropdown" id="k-search-dropdown"></div>
+    </div>
+    <button class="k-cart-btn" id="k-cart-btn" aria-label="Panier">
+      <img src="/images/avatar_panier.png" class="k-cart-avatar" width="38" height="38" alt="Panier">
+      <span class="k-cart-badge" id="k-cart-badge">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ HERO BANNER ══════════════════════════════════════ -->
+<section class="k-hero" id="k-hero">
+  <img src="/New_Hero.jpg" alt="Komerce — Livraison diaspora vers les Comores" loading="eager">
+  <div class="k-hero-overlay"></div>
+  <div class="k-hero-text">
+    <div class="k-hero-title">La boutique des Comores 🌙</div>
+    <div class="k-hero-sub">Envoyez des cadeaux depuis la diaspora</div>
+  </div>
+</section>
+
+<!-- ═══ CATÉGORIES ════════════════════════════════════════ -->
+<nav class="k-cats" id="k-cats">
+  <button class="k-chip active" data-cat="all">🔥 Tout</button>
+  <button class="k-chip" data-cat="Mode">👗 Mode</button>
+  <button class="k-chip" data-cat="Beauté">✨ Beauté</button>
+  <button class="k-chip" data-cat="Tech">📱 Tech</button>
+  <button class="k-chip" data-cat="Enfant">🧸 Enfant</button>
+  <button class="k-chip" data-cat="Sur-mesure">✂️ Couture</button>
+</nav>
+
+<!-- ═══ SORT BAR ══════════════════════════════════════════ -->
+<section id="k-sort-bar-section" style="background:var(--white);border-bottom:1px solid var(--border);">
+  <div class="k-sort-bar" id="k-sort-bar">
+    <button class="k-sort-chip active" data-sort="default">✨ Tendance</button>
+    <button class="k-sort-chip" data-sort="promo">🏷️ Promos</button>
+    <button class="k-sort-chip" data-sort="price_asc">Prix ↑</button>
+    <button class="k-sort-chip" data-sort="price_desc">Prix ↓</button>
+  </div>
+</section>
+
+<!-- ═══ PROMOS FLASH ══════════════════════════════════════ -->
+<section class="k-section" id="k-promos-section">
+  <div class="k-section-head">
+    <h2>🏷️ Soldes</h2>
+    <button class="k-see-all" id="k-see-all-promos">Voir tout →</button>
+  </div>
+  <div class="k-promo-rail" id="k-promo-rail"></div>
+</section>
+
+<!-- ═══ CATALOGUE PRODUITS ═══════════════════════════════ -->
+<section class="k-section" id="k-catalog-section" style="padding-bottom:0;">
+  <div class="k-section-head">
+    <h2>🛍️ Catalogue</h2>
+  </div>
+  <div class="k-grid" id="k-grid"></div>
+  <div id="k-scroll-sentinel" style="height:1px;"></div>
+  <div class="k-loading" id="k-loading"></div>
+</section>
+
+<!-- ═══ PRODUCT MODAL ════════════════════════════════════ -->
+<div class="k-modal-overlay" id="k-modal-overlay">
+  <div class="k-modal" id="k-modal">
+    <div class="k-modal-topbar">
+      <button class="k-modal-back" id="k-modal-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+        </svg>
+        <span id="k-modal-back-label">Catalogue</span>
+      </button>
+      <div class="k-modal-topbar-right">
+        <div class="k-modal-nav-arrows">
+          <button class="k-modal-prev" id="k-modal-prev">◀</button>
+          <button class="k-modal-next" id="k-modal-next">▶</button>
+        </div>
+        <button class="k-modal-cart-btn" id="k-modal-cart-btn">
+          <img src="/images/avatar_panier.png" class="k-cart-avatar" width="28" height="28" alt="Panier">
+          <span class="k-modal-cart-badge" id="k-modal-cart-badge"></span>
+        </button>
+        <button class="k-modal-close" id="k-modal-close">✕</button>
+      </div>
+    </div>
+    <div class="k-modal-scroll">
+      <div class="k-modal-content">
+        <div class="k-modal-img-wrap">
+          <img id="k-modal-img" src="" alt="">
+          <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
+        </div>
+        <div class="k-modal-info">
+          <h2 id="k-modal-name"></h2>
+          <p class="k-modal-desc" id="k-modal-desc"></p>
+          <div class="k-modal-price-row">
+            <span class="k-modal-price" id="k-modal-price"></span>
+            <span class="k-modal-old-price" id="k-modal-old-price"></span>
+          </div>
+          <div class="k-modal-meta">
+            <span id="k-modal-cat"></span>
+            <span id="k-modal-stock"></span>
+          </div>
+        </div>
+      </div>
+      <div class="k-modal-suggestions" id="k-modal-suggestions">
+        <h3>Dans la même collection</h3>
+        <div class="k-sug-rail-wrap">
+          <button class="k-sug-arrow k-sug-arrow-left hidden" id="k-sug-arrow-left">◀</button>
+          <div class="k-sug-rail" id="k-sug-rail"></div>
+          <button class="k-sug-arrow k-sug-arrow-right hidden" id="k-sug-arrow-right">▶</button>
+        </div>
+      </div>
+    </div>
+    <div class="k-modal-actions">
+      <div class="k-qty">
+        <button class="k-qty-btn" id="k-qty-minus">−</button>
+        <span class="k-qty-val" id="k-qty-val">1</span>
+        <button class="k-qty-btn" id="k-qty-plus">+</button>
+      </div>
+      <button class="k-add-cart-btn" id="k-add-cart-btn">
+        <img src="/images/panier_tresse.png" width="20" height="20" alt="" style="vertical-align:middle">
+        Ajouter
+      </button>
+      <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CART DRAWER ══════════════════════════════════════ -->
+<div id="k-cart-overlay" class="k-cart-overlay"></div>
+<div id="k-cart-drawer" class="k-cart-drawer">
+  <div class="k-cart-header" id="k-cart-header">
+    <span id="k-cart-header-title">Mon Panier</span>
+    <button id="k-cart-close" class="k-modal-close">✕</button>
+  </div>
+  <div id="k-cart-body" class="k-cart-body"></div>
+  <div id="k-cart-footer" class="k-cart-footer" style="display:none">
+    <div class="k-cart-total-row">
+      <span>Total</span>
+      <div>
+        <span id="k-cart-total-val" class="k-cart-total-val"></span>
+        <span id="k-cart-total-conv" class="k-cart-total-conv"></span>
+      </div>
+    </div>
+    <div class="k-cart-footer-btns">
+      <button id="k-cart-continue" class="kcf-btn kcf-secondary">← Continuer</button>
+      <button id="k-cart-clear" class="kcf-btn kcf-danger">🗑</button>
+      <button id="k-cart-whatsapp" class="kcf-btn kcf-whatsapp">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:4px">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/>
+        </svg>Partager
+      </button>
+      <button id="k-cart-checkout" class="kcf-btn kcf-primary">✅ Commander</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ORDER MODAL ══════════════════════════════════════ -->
+<div id="k-order-modal" class="k-order-overlay">
+  <div class="k-order-modal">
+    <div class="k-order-header">
+      <span id="k-order-title">Commande</span>
+      <button id="k-order-close" class="k-modal-close">✕</button>
+    </div>
+    <div id="k-order-body" class="k-order-body"></div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ════════════════════════════════════════════ -->
+<div class="k-toast" id="k-toast"></div>
+
+<!-- ═══ SCROLL TO TOP FAB ════════════════════════════════ -->
+<button class="k-scrolltop" id="k-scrolltop" aria-label="Retour en haut">↑</button>
+
+<!-- ═══ WHATSAPP FAB ═════════════════════════════════════ -->
+<a id="k-wa-fab" class="k-wa-fab"
+   href="https://wa.me/269321XXXXX?text=Bonjour%20Komerce%20!%20Je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20vos%20produits%20%F0%9F%9B%8D"
+   target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/>
+  </svg>
+</a>
+
+<!-- ═══ BOTTOM NAV ════════════════════════════════════════ -->
+<nav class="k-bnav" id="k-bnav">
+  <button class="k-bnav-item active" data-tab="shop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <span>Boutique</span>
+  </button>
+  <button class="k-bnav-item" data-tab="track">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+    <span>Suivi</span>
+  </button>
+  <button class="k-bnav-item" data-tab="fav">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+    <span>Favoris</span>
+  </button>
+  <button class="k-bnav-item" data-tab="cart">
+    <img src="/images/panier_tresse.png" class="k-bnav-basket" width="24" height="24" alt="Panier">
+    <span>Panier</span>
+  </button>
+</nav>
+
+<!-- ═══ JS MODULES (ordre de chargement strict) ══════════ -->
+<script src="/js/b-config.js?v=1"></script>
+<script src="/js/b-state.js?v=1"></script>
+<script src="/js/b-ui.js?v=1"></script>
+<script src="/js/b-catalog.js?v=1"></script>
+<script src="/js/b-cart.js?v=1"></script>
+<script src="/js/b-modal.js?v=1"></script>
+<script src="/js/b-search.js?v=1"></script>
+<script src="/js/b-checkout.js?v=1"></script>
+<script src="/js/b-track.js?v=1"></script>
+<script src="/js/b-app.js?v=1"></script>
+
+</body>
+</html>
