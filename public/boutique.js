@@ -86,6 +86,7 @@
   }
 
   /* ── STRIPE ───────────────────────────────────────────── */
+  let _submitInFlight = false;
   const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TKKX3Enc3Ce0auC9CJERH5p4xism4E0MsJzAFFJbacrZ7m3ttvIRY8Uq7A1kHLLxoTWzofgzJNX9AWPlbNOBX5s00nAUjKiyQ';
   let _stripe = null, _stripeElements = null, _stripeCard = null;
 
@@ -1423,12 +1424,13 @@
     if (_stripeCard) { try { _stripeCard.unmount(); } catch(e){} _stripeCard = null; _stripeElements = null; }
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
-    stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;">🔒 Informations de carte</div>'
+    // FUSION : le bloc carte vit dans la zone "Paiement", juste sous les chips de mode
+    stripeCardWrap.style.cssText = 'display:none;margin-top:10px;padding:12px;background:linear-gradient(180deg,#fffaf3,#fff);border:1.5px solid var(--terracotta);border-radius:10px;';
+    stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;display:flex;align-items:center;gap:6px;">🔒 Informations de carte</div>'
       + '<div id="stripe-card-element" style="padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;min-height:44px;cursor:text;"></div>'
       + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:5px;display:none;"></div>'
-      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;"></div>';
-    body.parentElement.appendChild(stripeCardWrap);
+      + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;"></div>';
+    payGrid.insertAdjacentElement('afterend', stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
@@ -1472,12 +1474,7 @@
     body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
-    // S'assurer que stripeCardWrap est avant confirmBtn
-    const _scw = document.getElementById('stripe-card-wrap');
-    const _cb  = document.getElementById('btn-confirm-order');
-    if (_scw && _cb && _scw.nextElementSibling !== _cb) {
-      body.parentElement.insertBefore(_scw, _cb);
-    }
+    // (le wrap Stripe est maintenant rattaché à payGrid, plus besoin de le déplacer)
 
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
@@ -1495,6 +1492,13 @@
         if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.style.display = 'block'; }
       }
 
+      // FIX: si on quitte le mode Carte, démonter pour forcer un re-mount propre la prochaine fois
+      if (!isStripe && _stripeCard) {
+        try { _stripeCard.unmount(); } catch(e){}
+        _stripeCard = null;
+        _stripeElements = null;
+      }
+
       if (isStripe && !_stripeCard) {
         const stripe = getStripe();
         const errEl = document.getElementById('stripe-card-error');
@@ -1505,6 +1509,7 @@
           }
           return;
         }
+        console.log('[STRIPE] mount card element');
         _stripeElements = stripe.elements();
         _stripeCard = _stripeElements.create('card', {
           style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
@@ -1755,11 +1760,17 @@
     console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);    
 	
 
+    if (_submitInFlight) {
+      console.warn('[CHECKOUT] submit déjà en cours, ignoré');
+      return;
+    }
+    _submitInFlight = true;
     btn.disabled = true;
     btn.textContent = isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…';
     btn.style.opacity = '0.7';
 
     try {
+      console.log('[CHECKOUT] start, mode=', od.payment_mode);
       // Créer la commande
       const items = state.cart.map(i => ({
         product_id: String(i.product.id),
@@ -1792,12 +1803,16 @@
 
         btn.textContent = '💳 Validation en cours…';
 
-        const stripeResult = await stripe.confirmCardPayment(intentResult.client_secret, {
+        const stripeCall = stripe.confirmCardPayment(intentResult.client_secret, {
           payment_method: {
             card: _stripeCard,
             billing_details: { name: clientName, email: clientEmail || undefined }
           }
         });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout: la banque ne répond pas. Réessaie.')), 45000)
+        );
+        const stripeResult = await Promise.race([stripeCall, timeoutPromise]);
 
         if (stripeResult.error) {
           const errEl = document.getElementById('stripe-card-error');
@@ -1818,11 +1833,13 @@
       showToast('Commande confirmée !', 'success');
 
     } catch (e) {
-      console.error('submitOrder:', e);
+      console.error('[CHECKOUT] submitOrder error:', e, e?.data || '');
       showToast(e.message || 'Erreur lors de la commande.', 'error');
       btn.disabled = false;
       btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
       btn.style.opacity = '1';
+    } finally {
+      _submitInFlight = false;
     }
   }
 
