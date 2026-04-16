@@ -12,7 +12,7 @@
    - K.parcels.bootstrap(orderId) → POST /api/parcels/bootstrap/:orderId
    ═══════════════════════════════════════════════════════════════ */
 
-const K = (() => {
+window.K = (() => {
   'use strict';
 
   // ── STATE ──────────────────────────────────────────────────
