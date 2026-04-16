@@ -508,7 +508,12 @@ async function _loadDistribution() {
       html += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + (p.destination || '—') + '</span>';
       html += '<span style="color:#64748b;font-size:11px">' + (p.orders_count || 0) + ' cmd · ' + (p.items_count || 0) + ' art. · ' + CT.pc.fmt(p.total_kmf || 0) + '</span>';
       html += '</div>';
-      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + (p.parcel_status === 'draft' ? 'background:#fef3c7;color:#92400e' : 'background:#dbeafe;color:#1e40af') + '">' + (p.parcel_status || 'draft') + '</span>';
+      html += '<div style="display:flex;align-items:center;gap:6px">';
+      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + (p.parcel_status === 'draft' ? 'background:#fef3c7;color:#92400e' : p.parcel_status === 'preparation' ? 'background:#dbeafe;color:#1e40af' : 'background:#d1fae5;color:#065f46') + '">' + (p.parcel_status || 'draft') + '</span>';
+      if (p.parcel_status === 'preparation') {
+        html += '<button data-action="dist-ship" data-ref="' + p.reference + '" style="padding:3px 10px;border:none;border-radius:6px;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer">✈️ Expédier</button>';
+      }
+      html += '</div>';
       html += '</div>';
       
       // Orders inside this parcel
@@ -542,6 +547,20 @@ async function _loadDistribution() {
     }
     
     panel.innerHTML = html;
+    
+    // Wire ship buttons on parcel cards
+    panel.querySelectorAll('[data-action="dist-ship"]').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var ref = btn.dataset.ref;
+        if (!confirm('Fermer & expédier ' + ref + ' ?\nLes commandes restantes seront redistribuées.')) return;
+        btn.disabled = true; btn.textContent = '⏳...';
+        try {
+          await CT.api.v2Scan(ref, 'shipped', 'Expédié Hub — CT');
+          _toast('✅ ' + ref + ' expédié ✈️');
+          CT.views.hub(document.getElementById('ct-main'));
+        } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
+      });
+    });
   } catch(e) {
     panel.innerHTML = '<div style="color:#ef4444;font-size:12px">❌ ' + e.message + '</div>';
   }
