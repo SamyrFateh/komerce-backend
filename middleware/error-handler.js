@@ -59,7 +59,7 @@ function getUserMessage(classification, err) {
     case 'auth':           return 'Authentification requise';
     case 'forbidden':      return 'Accès interdit';
     case 'duplicate':      return 'Cet élément existe déjà';
-    case 'foreign_key':    return 'Référence invalide — élément lié introuvable';
+    case 'foreign_key':    return 'FK: ' + (err.constraint || '?') + ' table=' + (err.table || '?') + ' detail=' + (err.detail || '?');
     case 'not_null':       return 'Champ obligatoire manquant';
     case 'db_constraint':  return 'Contrainte de données violée';
     case 'cors':           return 'Origine non autorisée';
