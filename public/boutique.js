@@ -544,61 +544,29 @@
   }
 
   /* ── ADD TO CART ────────────────────────────────────────── */
-  function addToCart(product, qty, sourceBtn) {
-    qty = qty || 1;
-    const existing = state.cart.find(i => String(i.product.id) === String(product.id));
-    if (existing) {
-      existing.qty += qty;
-    } else {
-      state.cart.push({ product: product, qty: qty });
+  async function loadProducts() {
+  showSkeletons(16);
+  dom.loading.classList.add('show');
+  try {
+    if (typeof K === 'undefined' || !K.products || typeof K.products.list !== 'function') {
+      throw new Error('K.products.list indisponible');
     }
 
-    // Fly animation
-    if (sourceBtn) {
-      flyToCart(sourceBtn, product);
-    }
+    const data = await K.products.list();
+    state.products = (Array.isArray(data) ? data : data.products || [])
+      .filter(p => p.is_available);
 
-    saveCart();
-
-    const isModalAdd = sourceBtn === dom.addCartBtn;
-
-    // Mark button feedback (grid / rail buttons only)
-    if (sourceBtn && !isModalAdd) {
-      sourceBtn.classList.add('added');
-      sourceBtn.disabled = true;
-      setTimeout(() => {
-        sourceBtn.classList.remove('added');
-        sourceBtn.classList.add('in-cart');
-        sourceBtn.disabled = false;
-      }, 800);
-    }
-
-    // Mark all grid buttons for this product
-    markAllCartButtons();
-
-    // Fix 7 : ring pulse coral ×2 sur l'icône panier
-    if (dom.cartBtn) {
-      dom.cartBtn.classList.remove('ring-pulse');
-      void dom.cartBtn.offsetWidth;
-      dom.cartBtn.classList.add('ring-pulse');
-      setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
-    }
-
-    if (isModalAdd) {
-      // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
-      setTimeout(() => {
-        const count = cartQty();
-        dom.addCartBtn.classList.remove('added');
-        dom.addCartBtn.classList.add('confirmed');
-        dom.addCartBtn.disabled = false;
-        dom.addCartBtn.innerHTML = '<span class="k-btn-done">✓ Dans le panier</span><span class="k-btn-sep"> | </span><span class="k-btn-see">Voir (' + count + ') →</span>';
-        dom.addCartBtn.onclick = function() { closeModal(); setTimeout(openCart, 150); };
-      }, 700);
-    } else if (sourceBtn) {
-      // Fix 6 : rich toast (pas de drawer auto)
-      showRichToast(product);
-    }
+    state.filtered = [...state.products];
+    renderPromos();
+    hideSkeletons();
+    renderGrid();
+  } catch (e) {
+    showToast('Erreur de chargement', 'error');
+    console.error('[loadProducts]', e);
+  } finally {
+    dom.loading.classList.remove('show');
   }
+}
 
   /* ── RICH TOAST (after quick-add from grid/rail) ────────── */
   function showRichToast(product) {
