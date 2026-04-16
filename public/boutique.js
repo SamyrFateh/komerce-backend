@@ -544,69 +544,78 @@
   }
 
   /* ── ADD TO CART ────────────────────────────────────────── */
-  async function loadProducts() {
-  showSkeletons(16);
-  dom.loading.classList.add('show');
-  try {
-    if (typeof K === 'undefined' || !K.products || typeof K.products.list !== 'function') {
-      throw new Error('K.products.list indisponible');
-    }
+  /* ── ADD TO CART ────────────────────────────────────────── */
+function addToCart(product, qty, sourceBtn) {
+  qty = qty || 1;
 
-    const data = await K.products.list();
-    state.products = (Array.isArray(data) ? data : data.products || [])
-      .filter(p => p.is_available);
+  const existing = state.cart.find(i =>
+    String(i.product?.id ?? i.id) === String(product.id)
+  );
 
-    state.filtered = [...state.products];
-    renderPromos();
-    hideSkeletons();
-    renderGrid();
-  } catch (e) {
-    showToast('Erreur de chargement', 'error');
-    console.error('[loadProducts]', e);
-  } finally {
-    dom.loading.classList.remove('show');
-  }
-}
-
-  /* ── RICH TOAST (after quick-add from grid/rail) ────────── */
-  function showRichToast(product) {
-    const count = cartQty();
-    const imgSrc = optimizeImgUrl(product.image_url, 80);
-    dom.toast.innerHTML = '<div class="k-toast-rich">'
-      + (imgSrc ? '<img class="k-toast-thumb" src="' + imgSrc + '" alt="" loading="lazy">' : '<span class="k-toast-emoji">' + (product.emoji || '✓') + '</span>')
-      + '<div class="k-toast-body">'
-      + '<div class="k-toast-label">Ajouté au panier</div>'
-      + '<div class="k-toast-name">' + sanitize(product.name) + '</div>'
-      + '</div>'
-      + '<button class="k-toast-cta" id="k-toast-view-cta">Voir (' + count + ') →</button>'
-      + '</div>';
-    dom.toast.className = 'k-toast show';
-    clearTimeout(dom.toast._t);
-    dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 3000);
-    setTimeout(() => {
-      const cta = document.getElementById('k-toast-view-cta');
-      if (cta) {
-        cta.addEventListener('click', function(e) {
-          e.stopPropagation();
-          dom.toast.classList.remove('show');
-          clearTimeout(dom.toast._t);
-          openCart();
-        });
-      }
-    }, 0);
-  }
-
-  function removeFromCart(productId) {
-    const pid = String(productId);
-    state.cart = state.cart.filter(i => String(i.product.id) !== pid);
-    saveCart();
-    renderCartBody();
-    // Un-mark grid buttons
-    document.querySelectorAll(`.k-card-add[data-add="${pid}"]`).forEach(btn => {
-      btn.classList.remove('in-cart');
-      btn.innerHTML = '<span class="k-card-add-plus">+</span>';
+  if (existing) {
+    existing.qty += qty;
+    if (!existing.product) existing.product = product;
+    if (!existing.id) existing.id = product.id;
+    if (!existing.name) existing.name = product.name;
+    if (existing.price == null) existing.price = product.price_kmf ?? product.price ?? 0;
+    if (!existing.image) existing.image = product.image_url || product.image || '';
+  } else {
+    state.cart.push({
+      product: product,
+      id: product.id,
+      name: product.name,
+      price: product.price_kmf ?? product.price ?? 0,
+      image: product.image_url || product.image || '',
+      qty: qty
     });
   }
+
+  // Fly animation
+  if (sourceBtn) {
+    flyToCart(sourceBtn, product);
+  }
+
+  saveCart();
+
+  const isModalAdd = sourceBtn === dom.addCartBtn;
+
+  // Mark button feedback (grid / rail buttons only)
+  if (sourceBtn && !isModalAdd) {
+    sourceBtn.classList.add('added');
+    sourceBtn.disabled = true;
+    setTimeout(() => {
+      sourceBtn.classList.remove('added');
+      sourceBtn.classList.add('in-cart');
+      sourceBtn.disabled = false;
+    }, 800);
+  }
+
+  // Mark all grid buttons for this product
+  markAllCartButtons();
+
+  // Fix 7 : ring pulse coral ×2 sur l'icône panier
+  if (dom.cartBtn) {
+    dom.cartBtn.classList.remove('ring-pulse');
+    void dom.cartBtn.offsetWidth;
+    dom.cartBtn.classList.add('ring-pulse');
+    setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+  }
+
+  if (isModalAdd) {
+    // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
+    setTimeout(() => {
+      const count = cartQty();
+      dom.addCartBtn.classList.remove('added');
+      dom.addCartBtn.classList.add('confirmed');
+      dom.addCartBtn.disabled = false;
+      dom.addCartBtn.innerHTML = '<span class="k-btn-done">✓ Dans le panier</span><span class="k-btn-sep"> | </span><span class="k-btn-see">Voir (' + count + ') →</span>';
+      dom.addCartBtn.onclick = function() { closeModal(); setTimeout(openCart, 150); };
+    }, 700);
+  } else if (sourceBtn) {
+    // Fix 6 : rich toast (pas de drawer auto)
+    showRichToast(product);
+  }
+}
 
   function setQty(productId, newQty) {
     const pid = String(productId);
@@ -639,7 +648,7 @@ function quickAdd(productId, btnEl) {
     return;
   }
 
-  addToCart(product, 1);
+  addToCart(product, 1, btnEl);
 }
 
 function loadCart() {
