@@ -811,6 +811,17 @@
       addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
       showToast(`${state.modalProduct.emoji || '✓'} ${state.modalProduct.name} × ${state.modalQty}`);
     });
+
+    // ── Bouton "Acheter" — ajoute au panier et ouvre directement le checkout
+    const buyNowBtn = document.getElementById('k-buy-now-btn');
+    if (buyNowBtn) {
+      buyNowBtn.addEventListener('click', () => {
+        if (!state.modalProduct) return;
+        addToCart(state.modalProduct, state.modalQty, buyNowBtn);
+        closeModal();
+        setTimeout(() => checkoutCart(), 200);
+      });
+    }
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1141,19 +1152,18 @@
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
     trackRow.className = 'ck-track-row';
-    trackRow.innerHTML = '<label class="ck-track-toggle">'
-      + '<input type="checkbox" id="cb-want-tracking">'
-      + '<span>📲 Recevoir aussi le suivi SMS</span></label>';
+    trackRow.innerHTML = '<label class="ck-track-label" style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:3px;">📲 Votre tél. pour le suivi (optionnel)</label>';
     body.appendChild(trackRow);
 
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-extra';
-    trackExtra.style.display = 'none';
-    const senderGroup = makeIntlPhoneInput('of-sender-phone', 'Votre tél. (pour le suivi)', od, 'sender_phone');
+    // Toujours visible — plus besoin de cocher une case
+    trackExtra.style.display = 'block';
+    const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
-    trkHint.textContent = 'Notifié dès que la commande arrive au relais';
+    trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
     trackExtra.appendChild(senderGroup);
     trackExtra.appendChild(trkHint);
     body.appendChild(trackExtra);
@@ -1216,11 +1226,6 @@
     updatePaymentUI(); // init état chip cash
 
     setTimeout(() => {
-      const cbTrack = document.getElementById('cb-want-tracking');
-      if (cbTrack) cbTrack.addEventListener('change', function() {
-        const extra = document.getElementById('ck-track-extra');
-        if (extra) extra.style.display = this.checked ? 'block' : 'none';
-      });
       const cb = document.getElementById('cb-use-wallet');
       if (cb) cb.addEventListener('change', function() { od.use_wallet = this.checked; updateWalletDisplay(); });
     }, 0);
@@ -1412,7 +1417,9 @@
     const od = state.orderData;
     const recipName   = (document.getElementById('of-beneficiary-name')?.value  || '').trim();
     const recipPhone  = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
-    const senderPhone = (document.getElementById('of-sender-phone')?.value || '').trim();
+    // Lire sender_phone peu importe si la checkbox est cochée ou non
+    // La valeur est déjà préfixée par l'indicatif pays via makeIntlPhoneInput (ex: +33612345678)
+    const senderPhone = (od.sender_phone || '').trim();
     const clientName  = recipName;
     const clientPhone = '+269' + recipPhone.replace(/\s/g, '');
     const clientEmail = undefined;
@@ -1422,8 +1429,9 @@
 
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const isStripe = od.payment_mode === 'stripe_eur';
-	const trackingPhone = senderPhone ? senderPhone : null;
-console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);    
+    // tracking_phone = numéro diaspora, envoyé dès qu'il est renseigné (checkbox ou non)
+    const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
+    console.log('[FRONT][ORDER] trackingPhone =', trackingPhone);    
 	
 
     btn.disabled = true;
