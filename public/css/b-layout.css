@@ -350,7 +350,8 @@ body {
 /* Desktop */
 @media (min-width: 768px) {
   .k-cats {
-    justify-content: center;
+    justify-content: flex-start;
+    padding: 10px 12px 14px;
   }
   .k-chip {
     flex: 0 0 auto;
