@@ -1184,6 +1184,45 @@
 }
 
 /* ── Confirm Bar ────────────────────────────────────────────── */
+/* ═══ STAR RATINGS ══════════════════════════════════════════ */
+.k-card-stars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+.k-card-stars .k-stars-filled { color: #f59e0b; letter-spacing: 0.5px; }
+.k-card-stars .k-card-rating-count { color: var(--ink-3); font-size: 9px; }
+
+.k-modal-stars {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 8px;
+  font-size: 13px;
+}
+.k-modal-stars .k-stars-filled { color: #f59e0b; letter-spacing: 1px; }
+.k-modal-stars .k-stars-count  { color: var(--ink-3); font-size: 11px; }
+.k-modal-stars .k-stars-score  { font-weight: 700; color: var(--ink-1); font-size: 12px; background: #fef3c7; padding: 1px 5px; border-radius: 4px; }
+
+/* ═══ WHATSAPP SHARE BUTTON ════════════════════════════════ */
+.k-success-wa-btn {
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 10px;
+  background: #25D366;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: opacity .2s;
+}
+.k-success-wa-btn:hover { opacity: .85; }
+
 .k-confirm-bar {
   position: sticky;
   bottom: 0;

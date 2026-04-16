@@ -350,6 +350,7 @@
       '</div>' +
       '<div class="k-success-actions">' +
         '<button class="k-success-track-btn" id="k-order-track-btn">📍 Suivre ma commande</button>' +
+        '<button class="k-success-wa-btn" id="k-order-wa-btn">📱 Partager sur WhatsApp</button>' +
         '<button class="k-success-close-btn" id="k-order-close-btn">Fermer (7)</button>' +
       '</div>';
 
@@ -398,6 +399,21 @@
           }
         }, 350);
       });
+
+      // M3 — WhatsApp share button
+      const waBtn = document.getElementById('k-order-wa-btn');
+      if (waBtn) waBtn.addEventListener('click', () => {
+        const ref  = order.reference || '';
+        const name = (document.getElementById('k-recipient-name') || {}).value || '';
+        const msg  = encodeURIComponent(
+          '🛍️ Commande Komerce confirmée !\n' +
+          '📦 Référence : ' + ref + '\n' +
+          (name ? '👤 Pour : ' + name + '\n' : '') +
+          '📍 Suivre : https://komerce-backend-production.up.railway.app/boutique-v2.html'
+        );
+        window.open('https://wa.me/?text=' + msg, '_blank');
+      });
+
     }, 0);
   };
 

@@ -51,6 +51,24 @@
     if (dom.modalCat)   dom.modalCat.textContent   = product.category || '';
     if (dom.modalStock) dom.modalStock.textContent  = product.stock_status || 'Disponible';
 
+    // ── Stars rating ──────────────────────────────────────────
+    let starsEl = document.getElementById('k-modal-stars');
+    if (!starsEl) {
+      starsEl = document.createElement('div');
+      starsEl.id = 'k-modal-stars';
+      starsEl.className = 'k-modal-stars';
+      const nameEl = document.getElementById('k-modal-name');
+      if (nameEl && nameEl.parentNode) nameEl.parentNode.insertBefore(starsEl, nameEl.nextSibling);
+    }
+    if (product.rating > 0) {
+      starsEl.innerHTML = '<span class="k-stars-filled">' + K.renderStars(product.rating) + '</span>' +
+        (product.rating_count > 0 ? '<span class="k-stars-count">(' + product.rating_count + ' avis)</span>' : '') +
+        '<span class="k-stars-score">' + Number(product.rating).toFixed(1) + '</span>';
+      starsEl.style.display = '';
+    } else {
+      starsEl.style.display = 'none';
+    }
+
     // Qty
     if (dom.modalQtyVal) dom.modalQtyVal.textContent = '1';
 

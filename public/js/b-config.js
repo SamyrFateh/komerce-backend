@@ -54,6 +54,14 @@
     return '≈ ' + Math.round(kmf / K.EUR_RATE).toLocaleString('fr-FR') + ' €';
   };
 
+  /* ── STAR RATING ── */
+  K.renderStars = function (rating) {
+    const full  = Math.floor(rating);
+    const half  = rating % 1 >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+    return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
+  };
+
   K.sanitize = function (s) {
     const div = document.createElement('div');
     div.textContent = s;
