@@ -196,11 +196,11 @@ body {
    ============================================================ */
 .k-hero {
   position: relative;
-  margin-top: 56px;
-  width: 100%;
+  margin: 56px 12px 0;
+  width: calc(100% - 24px);
   overflow: hidden;
-  border-radius: 0;
-  height: 200px;
+  border-radius: 14px;
+  height: 210px;
 }
 
 .k-hero-img {
@@ -213,10 +213,7 @@ body {
 .k-hero-overlay {
   position: absolute;
   inset: 0;
-  /* Coral chaud sur la gauche → transparent vers la droite + assombrissement bas léger */
-  background:
-    linear-gradient(to right, rgba(200, 92, 45, 0.52) 0%, rgba(200, 92, 45, 0.08) 55%, transparent 100%),
-    linear-gradient(to top, rgba(0, 0, 0, 0.30) 0%, transparent 50%);
+  background: linear-gradient(to bottom, transparent 30%, rgba(28,25,23,0.55) 100%);
 }
 
 .k-hero-text {
@@ -278,45 +275,42 @@ body {
   display: none;
 }
 
-/* ── Chip : tall-card style ── */
+/* ── Chip : emoji + label compact ── */
 .k-chip {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   flex: 1;
-  min-width: 64px;
-  height: 88px;
-  border-radius: 14px;
+  min-width: 52px;
+  height: 62px;
+  border-radius: 12px;
   background: var(--ivoire);
   border: none;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
-  padding: 0;
+  padding: 12px 6px;
   font-family: var(--font);
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  gap: 3px;
 }
 
-/* Emoji fallback (no image) */
 .k-chip-emoji {
-  font-size: 28px;
+  font-size: 22px;
   line-height: 1;
-  margin-bottom: 4px;
-  z-index: 1;
 }
 
-/* Image plein format */
+/* Image dans la chip (photo catégorie) */
 .k-chip-emoji.has-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   overflow: hidden;
-  display: block;
-  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0;
 }
 .k-chip-emoji.has-img img {
@@ -324,60 +318,33 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.25s ease;
 }
 
-/* Label en overlay sombre en bas */
 .k-chip-label {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  padding: 4px 4px 6px;
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--ink-3);
   text-align: center;
   line-height: 1.1;
-  background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0) 100%);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-
-/* Chip sans image — label normal */
-.k-chip:not(:has(.has-img)) .k-chip-label {
-  position: static;
-  background: none;
-  color: var(--ink-3);
-  text-shadow: none;
-  padding: 2px 4px 6px;
+  white-space: nowrap;
 }
 
 .k-chip:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.16);
-}
-.k-chip:hover .k-chip-emoji.has-img img {
-  transform: scale(1.06);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
 }
 
 .k-chip.active {
+  background: var(--prairie);
   box-shadow: 0 4px 14px rgba(100,175,90,0.45);
-}
-.k-chip.active::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(100,175,90,0.28);
-  border-radius: 14px;
-  z-index: 1;
-  pointer-events: none;
 }
 .k-chip.active .k-chip-label {
   color: #fff;
 }
 .k-chip.active .k-chip-emoji {
-  color: white;
+  filter: brightness(10);
 }
 
 /* Desktop */
@@ -387,8 +354,8 @@ body {
   }
   .k-chip {
     flex: 0 0 auto;
-    width: 96px;
-    height: 96px;
+    width: 88px;
+    height: 62px;
   }
 }
 
