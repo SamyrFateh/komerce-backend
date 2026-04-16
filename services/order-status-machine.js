@@ -73,7 +73,7 @@ const TRANSITION_ROLES = Object.freeze({
   ordered:     ['admin', 'agent_hub'],
   preparation: ['admin', 'agent_hub'],
   shipped:     ['admin', 'agent_hub'],
-  in_transit:  ['admin', 'agent_hub'],
+  in_transit:  ['admin', 'agent_hub', 'agent_transitaire'],
   available:   ['admin', 'agent_relais'],
   collected:   ['admin', 'agent_relais'],
   cancelled:   ['admin'],

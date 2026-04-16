@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v12.1 (CT v7 — 3 sections)
+ * KOMERCE — Serveur API v12.2 (CT v7 — 3 sections)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -203,6 +203,8 @@ const notificationApiRouter = require('./routes/notification-api');
 const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
+const inventoryApiRouter = require('./routes/inventory-api');
+const transitaireApiRouter = require('./routes/transitaire-api');
 const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 const transitDashboardRoutes = require('./routes/transit-dashboard');
 
@@ -241,6 +243,8 @@ app.use('/api/logistics',  logisticsRouter);
 app.use('/api/parcels',    parcelsRouter);
 app.use('/api/hub',        hubRouter);
 app.use('/api/hub',        hubMarkOrderedRouter);
+app.use('/api/hub/inventory', inventoryApiRouter);
+app.use('/api/transitaire', transitaireApiRouter);
 app.use('/api/carriers',   carriersRouter);
 app.use('/api/wallet',     walletRouter);
 app.use('/api/payments',   paymentsRouter);
@@ -265,7 +269,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '12.1',
+      version:       '12.2',
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
@@ -364,7 +368,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v12.1 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v12.2 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
@@ -491,6 +495,59 @@ const server = app.listen(PORT, () => {
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ`);
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`);
       console.log('[MIGRATION] pending_at + confirmed_at columns ensured');
+
+
+      // ── Migration 026: inventory_items table ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS inventory_items (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            order_item_id UUID,
+            order_id UUID,
+            product_id UUID,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'received',
+            parcel_id UUID,
+            received_at TIMESTAMPTZ DEFAULT NOW(),
+            assigned_at TIMESTAMPTZ,
+            buffer_reason TEXT,
+            buffer_until TIMESTAMPTZ,
+            received_by UUID,
+            notes TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_inventory_order ON inventory_items(order_id);
+          CREATE INDEX IF NOT EXISTS idx_inventory_status ON inventory_items(status);
+          CREATE INDEX IF NOT EXISTS idx_inventory_parcel ON inventory_items(parcel_id);
+          CREATE INDEX IF NOT EXISTS idx_inventory_order_item ON inventory_items(order_item_id);
+        `);
+        console.log('✅ Migration 026: inventory_items table ready');
+      } catch(e) { console.warn('Migration 026 (non-fatal):', e.message); }
+
+      // ── Migration 027: orders enrichment columns ──
+      try {
+        await db.query(`
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS completion_ratio FLOAT DEFAULT 0;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS items_received INT DEFAULT 0;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS items_total INT DEFAULT 0;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS deadline_dispatch TIMESTAMPTZ;
+        `);
+        console.log('✅ Migration 027: orders enrichment columns ready');
+      } catch(e) { console.warn('Migration 027 (non-fatal):', e.message); }
+
+      // ── Migration 028: seed transitaire user ──
+      try {
+        const bcrypt = require('bcryptjs');
+        const transitPwd = process.env.TRANSITAIRE_PASSWORD || 'KomTransit2025!';
+        const transitHash = await bcrypt.hash(transitPwd, 10);
+        await db.query(`
+          INSERT INTO users (id, full_name, email, phone, role, password_hash)
+          VALUES (gen_random_uuid(), 'Transitaire Komerce', 'transitaire@komerce.km', '+2690000003', 'agent_transitaire', $1)
+          ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'agent_transitaire'
+        `, [transitHash]);
+        console.log('✅ Migration 028: transitaire user seeded');
+      } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
