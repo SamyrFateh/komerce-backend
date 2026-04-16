@@ -144,7 +144,7 @@ CT.views.hub = async function(container) {
     var firstActive = confirmed.length > 0 ? 'h1' : (readyParcel.length > 0 ? 'h2' : 'h3');
     html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
     html += '<button class="ct-tab" data-tab="h1" data-color="#f59e0b" onclick="_switchTab(\'hub-container\',\'h1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h1' ? '#f59e0b' : 'transparent') + ';background:' + (firstActive === 'h1' ? '#f59e0b08' : 'transparent') + ';color:' + (firstActive === 'h1' ? '#f59e0b' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🛒 Commander' + (confirmed.length ? ' <span style="background:#f59e0b;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + confirmed.length + '</span>' : '') + '</button>';
-    html += '<button class="ct-tab" data-tab="h2" data-color="#3b82f6" onclick="_switchTab(\'hub-container\',\'h2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h2' ? '#3b82f6' : 'transparent') + ';background:' + (firstActive === 'h2' ? '#3b82f608' : 'transparent') + ';color:' + (firstActive === 'h2' ? '#3b82f6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📦 Colis' + (readyParcel.length ? ' <span style="background:#3b82f6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + readyParcel.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h2" data-color="#3b82f6" onclick="_switchTab(\'hub-container\',\'h2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h2' ? '#3b82f6' : 'transparent') + ';background:' + (firstActive === 'h2' ? '#3b82f608' : 'transparent') + ';color:' + (firstActive === 'h2' ? '#3b82f6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📦 Répartition' + (readyParcel.length ? ' <span style="background:#3b82f6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + readyParcel.length + '</span>' : '') + '</button>';
     html += '<button class="ct-tab" data-tab="h3" data-color="#8b5cf6" onclick="_switchTab(\'hub-container\',\'h3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h3' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'h3' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'h3' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">✈️ Expédier' + (prepP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + prepP.length + '</span>' : '') + '</button>';
     html += '</div>';
 
@@ -160,15 +160,13 @@ CT.views.hub = async function(container) {
     html += _compactTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows1);
     html += '</div>';
 
-    // Panel 2: Créer colis
-    var rows2 = '';
-    readyParcel.forEach(function(o) {
-      var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
-      var desc = (items.length || o.nb_items || 0) + ' art. · ' + CT.pc.fmt(o.total_kmf) + ' · ' + (o.relais_island || '—');
-      rows2 += _compactRow(o.reference, o.customer_name || 'Client', desc, CT.pc.ago(o.created_at), '📦 Créer colis', 'hub-create-parcel', '#1d4ed8');
-    });
+    // Panel 2: Répartition auto — le système distribue les articles dans les colis
     html += '<div class="ct-tab-panel" data-panel="h2" style="' + (firstActive !== 'h2' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
-    html += _compactTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows2);
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<span style="font-size:12px;color:#64748b">Le système répartit automatiquement les commandes par destination</span>';
+    html += '<button id="btn-auto-distribute" style="padding:5px 12px;border:none;border-radius:6px;background:#3b82f6;color:#fff;font-size:12px;font-weight:600;cursor:pointer">🤖 Répartir maintenant</button>';
+    html += '</div>';
+    html += '<div id="distribution-panel" style="color:#94a3b8;font-size:13px;text-align:center;padding:12px">⏳ Chargement répartition...</div>';
     html += '</div>';
 
     // Panel 3: Expédier
@@ -400,18 +398,21 @@ function _wireHubActions(container) {
     });
   });
 
-  container.querySelectorAll('[data-action="hub-create-parcel"]').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      var ref = btn.dataset.ref;
-      if (!confirm('Créer un colis pour ' + ref + ' ?\nordered → preparation')) return;
-      btn.disabled = true; btn.textContent = '⏳...';
+  // Auto-distribution loader + button
+  _loadDistribution();
+  var distBtn = container.querySelector('#btn-auto-distribute');
+  if (distBtn) {
+    distBtn.addEventListener('click', async function() {
+      distBtn.disabled = true; distBtn.textContent = '⏳ Répartition...';
       try {
-        var r = await CT.api.v2CreateParcel(ref);
-        _toast('✅ Colis ' + (r.parcel ? r.parcel.reference : '') + ' créé 📦');
+        var r = await CT.api.autoDistribute();
+        _toast('✅ ' + (r.distributed || 0) + ' commande(s) répartie(s) 📦');
+        _loadDistribution();
         CT.views.hub(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '📦 Créer colis'; }
+      } catch(e) { alert('❌ ' + e.message); }
+      distBtn.disabled = false; distBtn.textContent = '🤖 Répartir maintenant';
     });
-  });
+  }
 
   container.querySelectorAll('[data-action="hub-ship"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
@@ -468,6 +469,84 @@ function _wireRelaisActions(container) {
     });
   });
 }
+
+// ── Auto-Distribution Panel Loader ──────────────────────────
+async function _loadDistribution() {
+  var panel = document.getElementById('distribution-panel');
+  if (!panel) return;
+  
+  try {
+    var data = await CT.api.getDistribution();
+    var parcels = data.parcels || [];
+    var unassigned = data.unassigned || [];
+    
+    var html = '';
+    
+    // KPI line
+    var totalOrders = parcels.reduce(function(s,p) { return s + (p.orders_count || 0); }, 0);
+    var totalItems = parcels.reduce(function(s,p) { return s + (p.items_count || 0); }, 0);
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+    html += _badge(parcels.length, '#3b82f6', '📦 Colis');
+    html += _badge(totalOrders, '#8b5cf6', '🛍️ Commandes');
+    html += _badge(totalItems, '#22c55e', '📋 Articles');
+    html += _badge(unassigned.length, '#f59e0b', '⏳ Non assignés');
+    html += '</div>';
+    
+    // Parcels cards
+    if (parcels.length === 0 && unassigned.length === 0) {
+      html += '<div style="text-align:center;padding:16px;color:#94a3b8">✅ Aucune commande à répartir</div>';
+    }
+    
+    parcels.forEach(function(p) {
+      var orders = [];
+      try { orders = typeof p.orders === 'string' ? JSON.parse(p.orders) : (p.orders || []); } catch(e) {}
+      
+      html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<strong style="color:#1e40af;font-size:14px">📦 ' + p.reference + '</strong>';
+      html += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + (p.destination || '—') + '</span>';
+      html += '<span style="color:#64748b;font-size:11px">' + (p.orders_count || 0) + ' cmd · ' + (p.items_count || 0) + ' art. · ' + CT.pc.fmt(p.total_kmf || 0) + '</span>';
+      html += '</div>';
+      html += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;' + (p.parcel_status === 'draft' ? 'background:#fef3c7;color:#92400e' : 'background:#dbeafe;color:#1e40af') + '">' + (p.parcel_status || 'draft') + '</span>';
+      html += '</div>';
+      
+      // Orders inside this parcel
+      var ordHtml = '';
+      orders.forEach(function(o) {
+        ordHtml += '<tr style="border-bottom:1px solid #f1f5f9">';
+        ordHtml += '<td style="padding:4px 8px;font-weight:600;color:#1e40af;font-size:12px">' + (o.ref || '—') + '</td>';
+        ordHtml += '<td style="padding:4px 8px;font-size:12px">' + (o.customer || '—') + '</td>';
+        ordHtml += '<td style="padding:4px 8px;font-size:12px;color:#64748b">' + (o.items_count || o.items || '?') + ' art.</td>';
+        ordHtml += '<td style="padding:4px 8px;font-size:12px;text-align:right">' + CT.pc.fmt(o.total_kmf || o.total || 0) + '</td>';
+        ordHtml += '</tr>';
+      });
+      if (ordHtml) {
+        html += '<table style="width:100%;border-collapse:collapse"><tbody>' + ordHtml + '</tbody></table>';
+      }
+      html += '</div>';
+    });
+    
+    // Unassigned orders
+    if (unassigned.length > 0) {
+      html += '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px;margin-top:8px">';
+      html += '<div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:6px">⏳ ' + unassigned.length + ' commande(s) non assignée(s)</div>';
+      unassigned.forEach(function(o) {
+        html += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">';
+        html += '<span><strong>' + o.reference + '</strong> — ' + (o.customer_name || '?') + '</span>';
+        html += '<span style="color:#64748b">' + (o.items_count || '?') + ' art. · ' + (o.destination_island || '?') + '</span>';
+        html += '</div>';
+      });
+      html += '<div style="margin-top:6px;font-size:11px;color:#92400e">Cliquez "🤖 Répartir maintenant" pour les assigner automatiquement</div>';
+      html += '</div>';
+    }
+    
+    panel.innerHTML = html;
+  } catch(e) {
+    panel.innerHTML = '<div style="color:#ef4444;font-size:12px">❌ ' + e.message + '</div>';
+  }
+}
+
 // ═══════════════════════════════════════════════
 // 🚢 TRANSITAIRE
 // ═══════════════════════════════════════════════

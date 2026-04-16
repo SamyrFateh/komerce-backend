@@ -113,7 +113,17 @@ CT.api = {
   relaisScanArrival: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "available" }); },
   relaisScanCollect: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "collected" }); },
 
-  // ---- Transit Dashboard ----
+
+  // ---- Auto-Distribution ----
+  autoDistribute: function() { return this.post('/api/hub/auto-distribute'); },
+  getDistribution: function() { return this.get('/api/hub/distribution'); },
+  reassignOrder: function(orderId, parcelId) { return this.post('/api/hub/reassign-order', { order_id: orderId, target_parcel_id: parcelId }); },
+
+  // ---- Hub Inventory ----
+  hubInventoryStats: function() { return this.get('/api/hub/inventory/stats'); },
+  hubInventoryProposals: function() { return this.get('/api/hub/inventory/proposals'); },
+
+    // ---- Transit Dashboard ----
   transitParcels: function() { return this.get('/api/transit-dashboard'); },
   markInTransit: function(ref) { return this.post('/api/transit-dashboard/' + ref + '/transit'); }
 };
