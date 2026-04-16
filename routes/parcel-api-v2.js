@@ -1026,6 +1026,113 @@ router.get('/:ref/timeline', async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════
+// DEBUG: Test scan step by step (TEMPORARY — REMOVE AFTER FIX)
+// ═══════════════════════════════════════════════════════════════════════
+
+router.post('/:ref/debug-scan', async (req, res) => {
+  const steps = [];
+  let client;
+  try {
+    client = await db.getClient();
+    steps.push({ step: 'getClient', ok: true });
+    
+    await client.query('BEGIN');
+    steps.push({ step: 'BEGIN', ok: true });
+    
+    const { ref } = req.params;
+    const { rows: [parcel] } = await client.query(
+      `SELECT id, reference, status FROM parcels WHERE reference = $1 OR id::text = $1`, [ref]
+    );
+    steps.push({ step: 'find_parcel', ok: !!parcel, data: parcel ? { id: parcel.id, status: parcel.status } : null });
+    
+    if (!parcel) {
+      await client.query('ROLLBACK');
+      return res.json({ steps, error: 'parcel not found' });
+    }
+    
+    // Test scan_events INSERT
+    try {
+      const { rows: [se] } = await client.query(`
+        INSERT INTO scan_events (parcel_id, event_type, location, notes, scanned_by, actor_name, actor_role, status)
+        VALUES ($1, 'shipped', NULL, 'debug test', NULL, 'Debug', 'system', 'applied')
+        RETURNING id
+      `, [parcel.id]);
+      steps.push({ step: 'insert_scan_event', ok: true, id: se.id });
+    } catch (e) {
+      steps.push({ step: 'insert_scan_event', ok: false, error: e.message, code: e.code });
+    }
+    
+    // Test parcel UPDATE
+    try {
+      await client.query(`UPDATE parcels SET status = 'shipped', updated_at = NOW(), shipped_at = NOW() WHERE id = $1`, [parcel.id]);
+      steps.push({ step: 'update_parcel', ok: true });
+    } catch (e) {
+      steps.push({ step: 'update_parcel', ok: false, error: e.message, code: e.code });
+    }
+    
+    // Test syncParcelToOrders
+    try {
+      const { rows: orderIds } = await client.query(`
+        SELECT DISTINCT o.id FROM orders o
+        WHERE o.id IN (
+          SELECT order_id FROM parcels WHERE id = $1 AND order_id IS NOT NULL
+          UNION
+          SELECT oi.order_id FROM parcel_items pi
+          JOIN order_items oi ON oi.id = pi.order_item_id
+          WHERE pi.parcel_id = $1
+        )
+      `, [parcel.id]);
+      steps.push({ step: 'find_orders', ok: true, count: orderIds.length, ids: orderIds.map(r => r.id) });
+      
+      for (const { id: oid } of orderIds) {
+        try {
+          const { rows: [ord] } = await client.query('SELECT id, status FROM orders WHERE id = $1', [oid]);
+          steps.push({ step: 'order_status', ok: true, orderId: oid, status: ord?.status });
+          
+          // Test the actual UPDATE
+          try {
+            await client.query(`
+              UPDATE orders SET status = 'shipped'::order_status, updated_at = NOW(), shipped_at = COALESCE(shipped_at, NOW())
+              WHERE id = $1
+            `, [oid]);
+            steps.push({ step: 'update_order', ok: true, orderId: oid });
+          } catch (e) {
+            steps.push({ step: 'update_order', ok: false, orderId: oid, error: e.message, code: e.code });
+          }
+        } catch (e) {
+          steps.push({ step: 'order_check', ok: false, orderId: oid, error: e.message });
+        }
+      }
+    } catch (e) {
+      steps.push({ step: 'sync_orders', ok: false, error: e.message, code: e.code });
+    }
+    
+    // Test notification require
+    try {
+      const notif = require('../services/notification-service');
+      steps.push({ step: 'require_notif', ok: true, hasNotifyParcelScan: typeof notif.notifyParcelScan === 'function' });
+    } catch (e) {
+      steps.push({ step: 'require_notif', ok: false, error: e.message });
+    }
+    
+    await client.query('ROLLBACK'); // Always rollback debug
+    steps.push({ step: 'ROLLBACK', ok: true });
+    
+    res.json({ steps });
+  } catch (e) {
+    steps.push({ step: 'fatal', ok: false, error: e.message, stack: e.stack?.split('\n').slice(0, 3) });
+    if (client) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+    }
+    res.json({ steps });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+
 // 8. POST /api/v2/parcels/:ref/scan — Scanner + sync auto
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -1126,3 +1233,4 @@ router.post('/:ref/scan', async (req, res, next) => {
 });
 
 module.exports = router;
+
