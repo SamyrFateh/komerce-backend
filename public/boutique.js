@@ -927,7 +927,6 @@
     });
 
     // Fix 4 : flèches ◀▶ coral + masquage aux extrémités
-    const sugSection = document.getElementById('k-modal-suggestions');
     if (sugSection) {
       let wrapEl = sugSection.querySelector('.k-sug-wrap');
       if (!wrapEl) {
