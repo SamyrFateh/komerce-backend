@@ -1496,12 +1496,7 @@ function quickRemove(productId, btnEl) {
     body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
-    // S'assurer que stripeCardWrap est avant confirmBtn
-    const _scw = document.getElementById('stripe-card-wrap');
-    const _cb  = document.getElementById('btn-confirm-order');
-    if (_scw && _cb && _scw.nextElementSibling !== _cb) {
-      body.parentElement.insertBefore(_scw, _cb);
-    }
+    // stripeCardWrap reste dans body (inline sous les chips)
 
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
