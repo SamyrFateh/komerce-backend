@@ -582,12 +582,18 @@ body{
   min-width:16px;text-align:center;
   pointer-events:none;
 }
-/* Old (strikethrough) price on card */
+/* Old (strikethrough) price on card — le seul endroit où le coral sert
+   sur une card, pour signifier "ancien prix". Le nouveau prix reste sobre. */
 .k-card-old-price{
-  font-size:10px;color:var(--text-light);
+  font-family:var(--font);
+  font-size:12px;
+  font-weight:500;
+  color:var(--text-light);
   text-decoration:line-through;
+  text-decoration-color:rgba(200,92,45,.6);
+  text-decoration-thickness:1.5px;
   line-height:1.2;
-  display:block;
+  display:inline-block;
 }
 
 .k-card-add-count{
@@ -600,38 +606,64 @@ body{
 }
 .k-card-add-count.show{display:flex}
 
-.k-card-info{padding:6px 8px 8px}
+.k-card-info{padding:10px 10px 12px}
 .k-card-name{
-  font-size:12px;font-weight:600;line-height:1.3;color:var(--text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  /* Option Medium : Fraunces serif 2 lignes au lieu de Jakarta bold tronqué */
+  font-family:var(--font-display);
+  font-size:14px;
+  font-weight:400;
+  line-height:1.25;
+  letter-spacing:-.005em;
+  color:var(--text);
+  /* 2 lignes autorisées — fini l'ellipsis "Chemisier..." */
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  min-height:2.5em;
+  font-variation-settings:'opsz' 14;
 }
 .k-card-bottom{
-  display:flex;flex-direction:column;align-items:flex-start;
-  margin-top:2px;gap:0;
+  display:flex;flex-direction:row;align-items:baseline;flex-wrap:wrap;
+  margin-top:6px;gap:6px;
 }
-.k-card-price{font-size:13px;font-weight:800;color:var(--coral);line-height:1.2}
+/* Prix : sobre, pas criard. Le coral ne sert que sur l'ancien prix barré. */
+.k-card-price{
+  font-family:var(--font);
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+  line-height:1.2;
+  letter-spacing:-.01em;
+}
 .k-card-emoji{display:none}
 
 /* ── CARTE : éléments desktop enrichis ─────────────────── */
 /* catégorie, EUR, badge — masqués mobile, visibles ≥600px */
 .k-card-category{
-  font-size:9px;font-weight:700;letter-spacing:.08em;
-  color:#9a9a9a;text-transform:uppercase;
-  margin-bottom:2px;line-height:1;
+  font-family:var(--font);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.1em;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  margin-bottom:4px;
+  line-height:1;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   display:none;
 }
 .k-card-prices{
-  display:flex;flex-direction:column;align-items:flex-start;gap:0;
+  display:flex;flex-direction:row;align-items:baseline;gap:8px;
 }
 .k-card-eur{
-  font-size:10px;color:#aaa;line-height:1.2;
+  font-size:11px;color:var(--text-light);line-height:1.2;
+  font-weight:500;
   display:none;
 }
 .k-card-avail{
-  font-size:9px;font-weight:600;
-  color:#2e7d32;background:#e8f5e9;
-  border-radius:20px;padding:2px 6px;
+  font-size:10px;font-weight:600;
+  color:var(--ocean-dark);background:rgba(130,196,120,.14);
+  border-radius:20px;padding:2px 8px;
   white-space:nowrap;line-height:1.4;
   display:none;
 }
@@ -809,15 +841,30 @@ body{
   flex:1;min-width:0;
   display:flex;flex-direction:column;justify-content:center;
 }
-.k-modal-info h2{font-size:15px;font-weight:700;line-height:1.3;margin:0}
+.k-modal-info h2{
+  font-family:var(--font-display);
+  font-size:18px;
+  font-weight:500;
+  line-height:1.2;
+  letter-spacing:-.01em;
+  margin:0;
+  color:var(--text);
+  font-variation-settings:'opsz' 18;
+}
 .k-modal-desc{
   font-size:12px;color:var(--text-muted);
   margin-top:4px;line-height:1.5;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
   overflow:hidden;
 }
-.k-modal-price-row{display:flex;align-items:baseline;gap:6px;margin-top:8px}
-.k-modal-price{font-size:20px;font-weight:800;color:var(--coral)}
+.k-modal-price-row{display:flex;align-items:baseline;gap:10px;margin-top:12px}
+.k-modal-price{
+  font-family:var(--font);
+  font-size:22px;
+  font-weight:600;
+  color:var(--text);
+  letter-spacing:-.015em;
+}
 .k-modal-old-price{font-size:13px;color:var(--text-light);text-decoration:line-through}
 .k-modal-meta{display:flex;gap:6px;margin-top:6px;font-size:11px;color:var(--text-muted);flex-wrap:wrap}
 .k-modal-meta span{
@@ -870,7 +917,7 @@ body{
   .k-modal{max-width:560px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}
   .k-modal-overlay{align-items:center}
   .k-modal-img-wrap{flex:0 0 220px}
-  .k-modal-info h2{font-size:18px}
+  .k-modal-info h2{font-size:22px;font-variation-settings:'opsz' 22}
   .k-modal-desc{-webkit-line-clamp:4;font-size:13px}
 }
 .k-sug-rail{
@@ -1198,9 +1245,10 @@ body{
   }
   .k-cats{padding-top:12px;padding-bottom:12px}
 
-  /* Cards : textes plus grands */
-  .k-card-name{font-size:13px}
-  .k-card-price{font-size:14px}
+  /* Cards : typographie desktop — nom un peu plus grand, prix aéré */
+  .k-card-name{font-size:15px}
+  .k-card-price{font-size:15px}
+  .k-card-old-price{font-size:13px}
   .k-card-add{width:36px;height:36px}
 
   /* Section titres — taille gérée par clamp() sur .k-section-head h2 */
