@@ -2346,3 +2346,27 @@ body{
 @media(min-width:900px){
   .k-hero-cats-sticky.is-stuck { top: 64px; }
 }
+
+/* ── Desktop : k-hero-overlay est hors de k-hero-inner — recentrage ── */
+/* Les règles min-width:900px du bloc hero original donnaient padding:0 et
+   max-width:480px car .k-hero-overlay était alors une colonne flex.
+   Maintenant il est dans .k-hero-cats-sticky → on recentre. */
+@media(min-width:900px){
+  .k-hero-cats-sticky {
+    position: relative !important;
+  }
+  .k-hero-overlay {
+    flex: unset;
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 16px var(--pad-x);
+    justify-content: flex-start;
+    border-bottom: 1px solid var(--border);
+  }
+  .k-hero-cats-sticky .k-cats {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding-left: var(--pad-x);
+    padding-right: var(--pad-x);
+  }
+}
