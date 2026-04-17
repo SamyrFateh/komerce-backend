@@ -2507,3 +2507,40 @@ body{
   }
 
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   PATCH v7 — Slogan plus grand, Catalogue plus petit, cats compacts
+   ══════════════════════════════════════════════════════════ */
+
+@media(max-width:899px){
+
+  /* Slogan : plus grand */
+  .k-hero-title {
+    font-size: clamp(1.05rem, 4.8vw, 1.25rem) !important;
+    font-weight: 800 !important;
+  }
+
+  /* Bouton Catalogue : plus petit */
+  .k-hero-btn {
+    padding: 4px 9px !important;
+    font-size: 10px !important;
+    gap: 3px !important;
+  }
+  .k-hero-btn svg {
+    width: 9px !important;
+    height: 9px !important;
+  }
+
+  /* Catégories : vraiment compact */
+  nav.k-cats,
+  .k-cats {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    gap: 0 !important;
+    min-height: 0 !important;
+  }
+
+}
