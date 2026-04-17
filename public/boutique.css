@@ -34,13 +34,13 @@ ul,ol{list-style:none}
   --whatsapp:#25d366;
   --red:#e53e3e;
   --white:#ffffff;
-  --text:#2D1F14;
-  --text-muted:#7A6858;
-  --text-light:#B0A090;
-  --border:#E8DDD0;
-  --shadow-sm:0 1px 3px rgba(45,31,20,.07);
-  --shadow-md:0 4px 12px rgba(45,31,20,.09);
-  --shadow-lg:0 8px 30px rgba(45,31,20,.12);
+  --text:#1F3024;          /* sage très foncé (dans la famille ocean) au lieu de brun-noir */
+  --text-muted:#6B7B63;    /* sage-gris chaud au lieu de brun-gris terne */
+  --text-light:#9EAC95;    /* vert-pâle au lieu de beige-gris sans âme */
+  --border:#E3D9C9;        /* légèrement plus chaud, accord avec sand */
+  --shadow-sm:0 1px 3px rgba(31,48,36,.07);
+  --shadow-md:0 4px 12px rgba(31,48,36,.09);
+  --shadow-lg:0 8px 30px rgba(31,48,36,.12);
   --font:'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --font-display:'Fraunces','Plus Jakarta Sans',Georgia,serif;
   --radius:12px;
@@ -424,7 +424,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  box-shadow:0 2px 6px rgba(45,31,20,.08);
+  box-shadow:0 2px 6px rgba(31,48,36,.08);
   /* Ring visuel via border-width qui grossit en actif */
   border:2px solid transparent;
   transition:box-shadow .2s var(--ease), border-color .2s var(--ease), transform .15s var(--ease);
@@ -446,7 +446,7 @@ body{
 /* Hover desktop uniquement */
 @media(hover:hover) and (pointer:fine){
   .k-chip:hover .k-chip-photo{
-    box-shadow:0 4px 14px rgba(45,31,20,.14);
+    box-shadow:0 4px 14px rgba(31,48,36,.14);
     transform:translateY(-2px);
   }
   .k-chip:hover .k-chip-label{ color:var(--text); }
@@ -2048,7 +2048,17 @@ body{
   font-variation-settings:'opsz' 42;
 }
 .k-hero-pills { display:flex; flex-wrap:wrap; gap:6px; }
-.k-hero-pill { background:rgba(100,175,90,.08); color:var(--ocean-dark); border:1px solid rgba(100,175,90,.18); border-radius:50px; padding:4px 11px; font-size:11px; font-weight:600; white-space:nowrap; flex-shrink:0; }
+.k-hero-pill {
+  background:rgba(130,196,120,.14);
+  color:var(--ocean-dark);
+  border:1px solid rgba(130,196,120,.28);
+  border-radius:50px;
+  padding:5px 12px;
+  font-size:11px;
+  font-weight:600;
+  white-space:nowrap;
+  flex-shrink:0;
+}
 .k-hero-btn {
   display:inline-flex; align-items:center; gap:6px;
   background:var(--ocean); color:#fff;

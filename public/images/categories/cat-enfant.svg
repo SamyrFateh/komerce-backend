@@ -2,37 +2,40 @@
   <defs>
     <linearGradient id="gEnfant" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FDFAF5"/>
-      <stop offset="100%" stop-color="#A8D8A0" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#D8EAD2"/>
     </linearGradient>
     <filter id="grainEnfant" x="0" y="0" width="100%" height="100%">
       <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2"/>
-      <feColorMatrix values="0 0 0 0 0.4  0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0.08 0"/>
+      <feColorMatrix values="0 0 0 0 0.3  0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0.06 0"/>
     </filter>
   </defs>
   <rect width="200" height="200" fill="url(#gEnfant)"/>
-  <rect width="200" height="200" filter="url(#grainEnfant)" opacity="0.6"/>
-  <!-- Ourson stylisé doux -->
-  <g stroke="#2D1F14" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85">
+  <rect width="200" height="200" filter="url(#grainEnfant)" opacity="0.5"/>
+  <g stroke="#2A3E2C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85">
     <!-- Oreille gauche -->
     <circle cx="72" cy="62" r="12"/>
-    <circle cx="72" cy="62" r="6" opacity="0.4"/>
+    <circle cx="72" cy="62" r="6" stroke="#C85C2D" opacity="0.55"/>
     <!-- Oreille droite -->
     <circle cx="128" cy="62" r="12"/>
-    <circle cx="128" cy="62" r="6" opacity="0.4"/>
+    <circle cx="128" cy="62" r="6" stroke="#C85C2D" opacity="0.55"/>
     <!-- Tête -->
     <circle cx="100" cy="90" r="34"/>
     <!-- Museau -->
-    <ellipse cx="100" cy="100" rx="14" ry="10" opacity="0.5"/>
+    <ellipse cx="100" cy="100" rx="14" ry="10" stroke="#4A9040" opacity="0.5"/>
     <!-- Yeux -->
-    <circle cx="88" cy="84" r="2.2" fill="#2D1F14" stroke="none"/>
-    <circle cx="112" cy="84" r="2.2" fill="#2D1F14" stroke="none"/>
-    <!-- Nez coral -->
-    <circle cx="100" cy="96" r="2.8" fill="#C85C2D" stroke="none"/>
+    <circle cx="88" cy="84" r="2.4" fill="#2A3E2C" stroke="none"/>
+    <circle cx="112" cy="84" r="2.4" fill="#2A3E2C" stroke="none"/>
+    <!-- Petit reflet dans les yeux (vie) -->
+    <circle cx="89" cy="83" r="0.7" fill="#FDFAF5" stroke="none"/>
+    <circle cx="113" cy="83" r="0.7" fill="#FDFAF5" stroke="none"/>
     <!-- Bouche souriante -->
     <path d="M 93 104 Q 100 110 107 104" stroke-width="1.8"/>
-    <!-- Corps / pattes -->
+    <!-- Corps -->
     <path d="M 70 128 Q 68 160 80 166 L 120 166 Q 132 160 130 128"/>
-    <!-- Nœud papillon -->
-    <path d="M 92 126 L 100 122 L 108 126 L 108 134 L 100 130 L 92 134 Z" fill="#C85C2D" stroke="#2D1F14" opacity="0.9"/>
   </g>
+  <!-- Nez coral -->
+  <circle cx="100" cy="96" r="3" fill="#C85C2D"/>
+  <!-- Noeud papillon rempli (plus joyeux) -->
+  <path d="M 92 126 L 100 122 L 108 126 L 108 134 L 100 130 L 92 134 Z" fill="#C85C2D" stroke="#2A3E2C" stroke-width="1.3" opacity="0.92"/>
+  <circle cx="100" cy="130" r="1.4" fill="#FDFAF5"/>
 </svg>
