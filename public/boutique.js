@@ -1441,18 +1441,18 @@ function quickRemove(productId, btnEl) {
       + '</label>';
     body.appendChild(payGrid);
 
-    // Stripe card wrap : HORS du scroll area pour fix tap iOS/Android
+    // Stripe card wrap : inline dans le scroll, juste sous les chips paiement
     // FIX: supprimer tout ancien wrap (sinon doublons => Stripe casse en silence)
     document.querySelectorAll('#stripe-card-wrap').forEach(el => el.remove());
     if (_stripeCard) { try { _stripeCard.unmount(); } catch(e){} _stripeCard = null; _stripeElements = null; }
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
+    stripeCardWrap.style.cssText = 'display:none;margin-top:8px;padding:10px 14px 10px;background:#fff;border:1px solid var(--sand-dark);border-radius:10px;';
     stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;">🔒 Informations de carte</div>'
       + '<div id="stripe-card-element" style="padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;min-height:44px;cursor:text;"></div>'
       + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:5px;display:none;"></div>'
       + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;"></div>';
-    body.parentElement.appendChild(stripeCardWrap);
+    body.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
