@@ -1420,7 +1420,7 @@ function quickRemove(productId, btnEl) {
             document.body.style.overflow = 'hidden';
             var sharerName = data.sharer_name || data.shared_by || null;
             var msg = sharerName
-              ? '🎁 ' + sharerName + ' t'a partagé son panier !'
+              ? '🎁 ' + sharerName + " t'a partagé son panier !"
               : '🧺 Panier partagé chargé !';
             showToast(msg, 'success');
             if (sharerName && dom.cartHeaderTitle) {
