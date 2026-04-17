@@ -73,7 +73,11 @@ body{
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
   padding-bottom:calc(var(--bnav-h) + 90px);
+  /* overflow-x : on utilise 'clip' qui coupe sans créer un contexte de
+     défilement — indispensable pour que position:sticky fonctionne sur
+     les enfants (catégories sticky). Fallback 'hidden' pour vieux navs. */
   overflow-x:hidden;
+  overflow-x:clip;
 }
 
 /* ── HEADER ────────────────────────────────────────────── */
@@ -388,7 +392,9 @@ body{
 
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
 /* Étape A + Option 3 : scroll horizontal sur mobile,
-   justify-content:center en desktop pour chips bien répartis. */
+   justify-content:center en desktop pour chips bien répartis.
+   STICKY mobile : les chips se collent sous le header dès qu'on scrolle,
+   pour que le catalogue soit toujours filtrable sans remonter en haut. */
 .k-cats{
   display:flex;
   flex-wrap:nowrap;
@@ -396,9 +402,14 @@ body{
   max-width:var(--container);
   margin:8px auto 0;
   padding:12px var(--pad-x) 16px;
-  position:relative;z-index:2;
+  position:sticky;
+  top:var(--header-h);
+  z-index:50;
+  background:var(--sand);
   overflow-x:auto;
   scrollbar-width:none;
+  /* Ombre discrète pour séparer visuellement une fois sticky */
+  box-shadow:0 1px 0 var(--border);
 }
 .k-cats::-webkit-scrollbar{display:none}
 /* Desktop : on centre les chips au lieu de les aligner à gauche */
@@ -1265,7 +1276,9 @@ body{
    ══════════════════════════════════════════════════════════ */
 @media(min-width:768px){
 
-  /* Header plus imposant */
+  /* Header plus imposant — on augmente --header-h pour que tous les sticky
+     s'alignent automatiquement dessous (catégories, toast) */
+  :root{ --header-h:64px; }
   .k-header{height:64px;padding:0 24px;box-shadow:0 1px 0 var(--border)}
   .k-header-inner{gap:20px}
   .k-logo-icon{width:34px;height:34px}
