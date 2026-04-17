@@ -29,7 +29,8 @@ if('serviceWorker' in navigator){
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
 <link rel="stylesheet" href="/boutique.css?v=1776465127">
-<script src="https://js.stripe.com/v3/" defer></script>
+<!-- Stripe: NO defer — must be ready before boutique.js runs -->
+<script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -261,10 +262,6 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<<<<<<< HEAD
-<script src="/komerce-api.js?v=1776465127"></script>
-<script src="/boutique.js?v=1776465127"></script>
-=======
 <script>
 // IntersectionObserver: bar becomes fixed ONLY when scrolled past
 (function(){
@@ -298,8 +295,7 @@ if('serviceWorker' in navigator){
   });
 })();
 </script>
-<script src="/komerce-api.js?v=1776431996"></script>
-<script src="/boutique.js?v=1776431996"></script>
->>>>>>> 3e829d8974277fb576d2531da6be25f42df9dbb0
+<script src="/komerce-api.js?v=1776465127"></script>
+<script src="/boutique.js?v=1776465127"></script>
 </body>
 </html>
