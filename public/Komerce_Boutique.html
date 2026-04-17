@@ -11,7 +11,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v1776426005')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v1776426803')===-1) caches.delete(n);
       });
     });
   }
@@ -28,7 +28,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=1776426005">
+<link rel="stylesheet" href="/boutique.css?v=1776426803">
 <script src="https://js.stripe.com/v3/" defer></script>
 </head>
 <body>
@@ -244,7 +244,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<script src="/komerce-api.js?v=1776426005"></script>
-<script src="/boutique.js?v=1776426005"></script>
+<script src="/komerce-api.js?v=1776426803"></script>
+<script src="/boutique.js?v=1776426803"></script>
 </body>
 </html>
