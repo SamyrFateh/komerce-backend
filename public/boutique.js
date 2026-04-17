@@ -1287,18 +1287,38 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── SHARE CART WHATSAPP ────────────────────────────────── */
-  function buildCartShareURL() {
-    // Encode cart as URL: ?cart=id1:qty1,id2:qty2
+  /* ── SHARED CART — API v2 ──────────────────────────────────── */
+
+  async function buildCartShareURL() {
+    // Appel API → POST /api/shares → retourne share_url courte
+    const items = state.cart.map(function(item) {
+      return { product_id: item.product.id, qty: item.qty };
+    });
+    const res = await apiPost('/api/shares', { items: items });
+    if (res && res.share_url) return res.share_url;
+    throw new Error('share_url manquante');
+  }
+
+  function _buildFallbackCartURL() {
+    // Fallback legacy URL si l'API échoue
     const items = state.cart.map(function(item) {
       return item.product.id + ':' + item.qty;
     });
     return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
-  function shareCartWhatsApp() {
+  async function shareCartWhatsApp() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
 
-    var cartURL = buildCartShareURL();
+    showToast('⏳ Génération du lien…', 'info');
+    var cartURL;
+    try {
+      cartURL = await buildCartShareURL();
+    } catch(e) {
+      console.warn('share API error, using fallback URL:', e);
+      cartURL = _buildFallbackCartURL();
+    }
+
     var lines = [];
     lines.push('🧺 *Mon panier Komerce*');
     lines.push('━━━━━━━━━━━━━━━━');
@@ -1322,17 +1342,25 @@ function quickRemove(productId, btnEl) {
     lines.push(cartURL);
 
     var msg = lines.join('\n');
-    // Partage vers le numéro Komerce directement (pas wa.me générique)
     window.open(KOMERCE_WA_URL + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
   function loadSharedCart() {
     var params = new URLSearchParams(window.location.search);
+
+    // Nouveau : ?share=token → API
+    var shareToken = params.get('share');
+    if (shareToken) {
+      state.shareToken = shareToken;
+      _loadSharedCartFromAPI(shareToken);
+      return;
+    }
+
+    // Legacy : ?cart=id1:qty1,id2:qty2
     var cartParam = params.get('cart');
     if (!cartParam) return;
 
-    // Parse cart=id1:qty1,id2:qty2
     var entries = cartParam.split(',').map(function(e) {
       var parts = e.split(':');
       return { id: parts[0], qty: parseInt(parts[1]) || 1 };
@@ -1340,25 +1368,19 @@ function quickRemove(productId, btnEl) {
 
     if (entries.length === 0) return;
 
-    // Wait for products to load, then populate cart
     var checkProducts = setInterval(function() {
       if (!state.products || state.products.length === 0) return;
       clearInterval(checkProducts);
 
-      // Clear existing cart
       state.cart = [];
-
       entries.forEach(function(entry) {
         var product = state.products.find(function(p) { return p.id === entry.id; });
-        if (product) {
-          state.cart.push({ product: product, qty: entry.qty });
-        }
+        if (product) state.cart.push({ product: product, qty: entry.qty });
       });
 
       if (state.cart.length > 0) {
         saveCart();
         renderCartBody();
-        // Open the cart drawer automatically
         setTimeout(function() {
           dom.cartDrawer.classList.add('open');
           dom.cartOverlay.classList.add('open');
@@ -1366,13 +1388,52 @@ function quickRemove(productId, btnEl) {
           showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
       }
-
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }, 200);
-
-    // Timeout after 10s
     setTimeout(function() { clearInterval(checkProducts); }, 10000);
+  }
+
+  async function _loadSharedCartFromAPI(token) {
+    // GET /api/shares/:token → { sharer_name, items:[{product_id,qty,product:{...}}] }
+    try {
+      const data = await apiGet('/api/shares/' + encodeURIComponent(token));
+
+      var checkProducts = setInterval(function() {
+        if (!state.products || state.products.length === 0) return;
+        clearInterval(checkProducts);
+
+        state.cart = [];
+        var items = data.items || data.cart_items || [];
+        items.forEach(function(item) {
+          // Le back peut retourner product_id ou product.id
+          var pid = item.product_id || (item.product && item.product.id);
+          var product = state.products.find(function(p) { return p.id === pid; });
+          if (product) state.cart.push({ product: product, qty: item.qty || 1 });
+        });
+
+        if (state.cart.length > 0) {
+          saveCart();
+          renderCartBody();
+          setTimeout(function() {
+            dom.cartDrawer.classList.add('open');
+            dom.cartOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            var sharerName = data.sharer_name || data.shared_by || null;
+            var msg = sharerName
+              ? '🎁 ' + sharerName + ' t'a partagé son panier !'
+              : '🧺 Panier partagé chargé !';
+            showToast(msg, 'success');
+            if (sharerName && dom.cartHeaderTitle) {
+              dom.cartHeaderTitle.textContent = '🎁 Panier de ' + sharerName;
+            }
+          }, 500);
+        }
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 200);
+      setTimeout(function() { clearInterval(checkProducts); }, 10000);
+    } catch(e) {
+      console.warn('[share] API error:', e);
+    }
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1783,7 +1844,8 @@ function quickRemove(productId, btnEl) {
         recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false,
-        tracking_phone: trackingPhone || undefined
+        tracking_phone: trackingPhone || undefined,
+        share_token: state.shareToken || undefined
       });
 
       const orderData = apiResult.order || apiResult;
