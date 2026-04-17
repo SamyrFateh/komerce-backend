@@ -204,7 +204,7 @@ body{
   width:100%;
   height:clamp(180px, 32vw, 360px);
   object-fit:cover;
-  object-position:center 15%;
+  object-position:center 5%;
   display:block;
 }
 
