@@ -2431,3 +2431,79 @@ body{
   }
 
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   PATCH v6 — Slogan+Catalogue 1 ligne, pills sticky, cats compacts
+   ══════════════════════════════════════════════════════════ */
+
+@media(max-width:899px){
+
+  /* ── Hero overlay : layout grid ── */
+  .k-hero-text-left {
+    display: grid !important;
+    grid-template-areas:
+      "title btn"
+      "pills pills" !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+    gap: 5px 8px !important;
+    width: 100% !important;
+  }
+
+  .k-hero-title {
+    grid-area: title !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(0.82rem, 3.8vw, 1rem) !important;
+    line-height: 1.2 !important;
+    max-width: 100% !important;
+  }
+
+  .k-hero-sub { display: none !important; }
+
+  .k-hero-pills {
+    grid-area: pills !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 5px !important;
+    padding-bottom: 2px !important;
+  }
+  .k-hero-pills::-webkit-scrollbar { display: none !important; }
+
+  .k-hero-btn {
+    grid-area: btn !important;
+    padding: 5px 11px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    align-self: center !important;
+  }
+
+  .k-hero-overlay {
+    padding: 7px 12px 8px !important;
+    gap: 0 !important;
+  }
+
+  /* ── Catégories : container plus serré ── */
+  .k-cats {
+    padding: 5px 10px 6px !important;
+    gap: 0px !important;
+  }
+  .k-chip {
+    min-width: 50px !important;
+    gap: 3px !important;
+    padding: 3px 2px !important;
+  }
+  .k-chip-photo {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .k-chip-label {
+    font-size: 9.5px !important;
+  }
+
+}
