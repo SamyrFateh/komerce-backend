@@ -2380,3 +2380,54 @@ body{
   padding-right: var(--pad-x) !important;
   background: var(--sand);
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   PATCH v5 — Chips mini, pills mini, slogan 1 ligne
+   ══════════════════════════════════════════════════════════ */
+
+@media(max-width:899px){
+
+  /* ── Catégories : chips ultra-compacts ── */
+  .k-chip {
+    min-width: 52px !important;
+    gap: 4px !important;
+    padding: 4px 2px !important;
+  }
+  .k-chip-photo {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .k-chip-label {
+    font-size: 10px !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* ── Barre catégories : padding réduit ── */
+  .k-cats {
+    padding: 8px 12px !important;
+    gap: 2px !important;
+  }
+
+  /* ── Pills : compactes, 1 ligne forcée ── */
+  .k-hero-pill {
+    padding: 3px 9px !important;
+    font-size: 10px !important;
+  }
+
+  /* ── Slogan 1 ligne, taille adaptée ── */
+  .k-hero-title {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(1rem, 5.5vw, 1.4rem) !important;
+    width: 100% !important;
+  }
+
+  /* ── Hero overlay encore plus serré ── */
+  .k-hero-overlay {
+    padding: 6px 12px 6px !important;
+    gap: 6px !important;
+  }
+
+}
