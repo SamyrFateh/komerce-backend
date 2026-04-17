@@ -262,49 +262,6 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<!-- ═══ STICKY BAR JS (bulletproof, no CSS sticky needed) ═══ -->
-<script>
-(function(){
-  var bar = document.querySelector('.k-hero-cats-sticky');
-  if(!bar) return;
-  var spacer = document.createElement('div');
-  spacer.style.display = 'none';
-  bar.parentNode.insertBefore(spacer, bar.nextSibling);
-  var headerH = 44;
-  var fixed = false;
-  function onScroll(){
-    var trigger = spacer.style.display === 'none'
-      ? bar.getBoundingClientRect().top
-      : spacer.getBoundingClientRect().top;
-    if(!fixed && trigger <= headerH){
-      var h = bar.offsetHeight;
-      var w = bar.offsetWidth;
-      spacer.style.height = h + 'px';
-      spacer.style.display = 'block';
-      bar.style.position = 'fixed';
-      bar.style.top = headerH + 'px';
-      bar.style.left = '0';
-      bar.style.right = '0';
-      bar.style.width = w + 'px';
-      bar.style.zIndex = '90';
-      bar.style.boxShadow = '0 2px 6px rgba(0,0,0,.08)';
-      fixed = true;
-    } else if(fixed && spacer.getBoundingClientRect().top > headerH){
-      spacer.style.display = 'none';
-      bar.style.position = '';
-      bar.style.top = '';
-      bar.style.left = '';
-      bar.style.right = '';
-      bar.style.width = '';
-      bar.style.zIndex = '';
-      bar.style.boxShadow = '';
-      fixed = false;
-    }
-  }
-  window.addEventListener('scroll', onScroll, {passive:true});
-  window.addEventListener('resize', function(){ if(fixed){ bar.style.width = spacer.offsetWidth + 'px'; }});
-})();
-</script>
 <script src="/komerce-api.js?v=1776431996"></script>
 <script src="/boutique.js?v=1776431996"></script>
 </body>
