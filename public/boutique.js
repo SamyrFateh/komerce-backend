@@ -2354,35 +2354,8 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── INIT ───────────────────────────────────────────────── */
-  /**
-   * Sticky bar : quand le sentinel (#k-bar-sentinel) sort du viewport vers
-   * le haut, on ajoute .is-stuck à #k-sticky-bar pour le coller en haut,
-   * et on affiche le spacer (#k-bar-spacer) pour compenser la hauteur.
-   * Le reverse quand le sentinel repasse dans le viewport.
-   */
-  function setupStickyBar() {
-    var sentinel = document.getElementById('k-bar-sentinel');
-    var bar      = document.getElementById('k-sticky-bar');
-    var spacer   = document.getElementById('k-bar-spacer');
-    if (!sentinel || !bar || !spacer) return;
-
-    var observer = new IntersectionObserver(function(entries) {
-      var entry = entries[0];
-      if (entry.isIntersecting) {
-        // Sentinel visible → hero normal
-        bar.classList.remove('is-stuck');
-        spacer.style.display = 'none';
-      } else {
-        // Sentinel sorti par le haut → hero sticky
-        // On fixe le spacer à la hauteur actuelle de la bar pour éviter le saut
-        spacer.style.height = bar.offsetHeight + 'px';
-        spacer.style.display = 'block';
-        bar.classList.add('is-stuck');
-      }
-    }, { threshold: 0, rootMargin: '-44px 0px 0px 0px' });
-
-    observer.observe(sentinel);
-  }
+  // Note: setupStickyBar est géré par le script inline dans le HTML
+  // pour éviter le double IntersectionObserver (scintillement).
 
   function init() {
     updateCartBadge();
@@ -2393,7 +2366,6 @@ function quickRemove(productId, btnEl) {
     setupBnav();
     setupSeeAll();
     setupInfiniteScroll();
-    setupStickyBar();
     loadProducts();
     loadRelais();
   }
