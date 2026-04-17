@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="gTech" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0E8DD"/>
+      <stop offset="100%" stop-color="#82C478" stop-opacity="0.28"/>
+    </linearGradient>
+    <filter id="grainTech" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2"/>
+      <feColorMatrix values="0 0 0 0 0.4  0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0.08 0"/>
+    </filter>
+  </defs>
+  <rect width="200" height="200" fill="url(#gTech)"/>
+  <rect width="200" height="200" filter="url(#grainTech)" opacity="0.6"/>
+  <!-- Smartphone épuré -->
+  <g stroke="#2D1F14" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85">
+    <!-- Corps téléphone -->
+    <rect x="68" y="42" width="64" height="116" rx="10"/>
+    <!-- Écran intérieur -->
+    <rect x="74" y="56" width="52" height="92" rx="3" opacity="0.5"/>
+    <!-- Encoche caméra frontale -->
+    <circle cx="100" cy="50" r="1.5" fill="#2D1F14" stroke="none"/>
+    <!-- Bouton home / barre bas -->
+    <rect x="90" y="152" width="20" height="1.5" fill="#2D1F14" stroke="none" opacity="0.4"/>
+    <!-- Wi-fi waves décoratives -->
+    <g transform="translate(100 100)" opacity="0.6">
+      <path d="M -18 0 Q 0 -10 18 0" stroke-width="1.5"/>
+      <path d="M -10 6 Q 0 0 10 6" stroke-width="1.5"/>
+      <circle r="1.8" fill="#64AF5A" stroke="none"/>
+    </g>
+    <!-- Petit accent coral -->
+    <circle cx="150" cy="70" r="2.5" fill="#C85C2D" stroke="none" opacity="0.7"/>
+  </g>
+</svg>

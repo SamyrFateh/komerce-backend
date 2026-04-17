@@ -157,39 +157,105 @@ body{
 }
 
 /* ── HERO ──────────────────────────────────────────────── */
-/* Étape A + C : image full-bleed, bandeau texte sur le rail global.
-   Hauteurs responsives avec clamp() : pas de sauts brutaux aux BP. */
+/* Option 3 — pattern "split premium" :
+   · Mobile (< 900px) : image dessus, texte dessous (stack vertical)
+     L'image garde le full-bleed sauf le bandeau texte qui suit le rail.
+   · Desktop (>= 900px) : image à GAUCHE, texte à DROITE, tout dans
+     le container 1400px centré. Plus d'effet cassé entre "full-bleed"
+     image et "contenu dans rail".
+*/
 .k-hero{
-  position:relative;overflow:hidden;
+  position:relative;
   background:var(--sand);
+  overflow:hidden;
 }
-.k-hero img{
-  width:100%;
-  height:clamp(180px, 32vw, 460px);
-  max-height:460px;
-  object-fit:cover;object-position:center 15%;
-  opacity:1;display:block;
-}
-/* Bandeau ivoire dessous, aligné sur le rail global */
-.k-hero-overlay{
-  position:static;
-  background:var(--sand);
-  display:flex;flex-direction:row;
-  align-items:center;justify-content:space-between;
-  gap:16px;
-  /* Même rail que les sections */
+
+/* Wrapper : c'est lui qui porte le rail container + le centrage */
+.k-hero-inner{
+  display:flex;
+  flex-direction:column;
   max-width:var(--container);
   margin:0 auto;
+}
+
+/* ── MOBILE (défaut) ── image full-bleed + texte en dessous ── */
+.k-hero-media{
+  /* Étend l'image au-delà du padding container pour rester bord-à-bord
+     uniquement sur mobile. Sur desktop on retire cet étirement. */
+  margin:0 calc(-1 * var(--pad-x));
+}
+.k-hero-img{
+  width:100%;
+  height:clamp(180px, 32vw, 360px);
+  object-fit:cover;
+  object-position:center 15%;
+  display:block;
+}
+
+.k-hero-overlay{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
   padding:18px var(--pad-x) 22px;
   border-bottom:1px solid var(--border);
 }
-.k-hero-tag{display:none}
-/* Desktop : padding vertical accru, titre peut prendre la place */
-@media(min-width:768px){
-  .k-hero-overlay{padding:28px var(--pad-x) 32px; gap:32px;}
+.k-hero-text-left{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:0;
 }
+.k-hero-tag{display:none}
+
+/* ── DESKTOP (>= 900px) ── split 2 colonnes + image NON full-bleed ── */
+@media(min-width:900px){
+  .k-hero{
+    /* Discret séparateur visuel sous le hero */
+    border-bottom:1px solid var(--border);
+  }
+  .k-hero-inner{
+    flex-direction:row;
+    align-items:stretch;
+    gap:48px;
+    padding:40px var(--pad-x);
+    min-height:420px;
+  }
+  .k-hero-media{
+    flex:1 1 58%;
+    margin:0; /* fin du full-bleed */
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+    background:#f5ede0;
+  }
+  .k-hero-img{
+    width:100%;
+    height:100%;
+    min-height:360px;
+    object-position:center center;
+    border-radius:var(--radius-lg);
+  }
+  .k-hero-overlay{
+    flex:1 1 42%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:20px;
+    padding:0;
+    border-bottom:none;
+    max-width:520px;
+  }
+  .k-hero-text-left{
+    gap:18px;
+  }
+}
+
 @media(min-width:1200px){
-  .k-hero-overlay{padding:40px var(--pad-x) 44px;}
+  .k-hero-inner{
+    padding:56px var(--pad-x);
+    gap:64px;
+    min-height:500px;
+  }
+  .k-hero-media, .k-hero-img{min-height:440px}
 }
 
 /* ── SECTIONS ──────────────────────────────────────────── */
@@ -305,64 +371,102 @@ body{
 }
 
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
-/* Étape A : aligné sur le rail global. Sur mobile, overflow auto
-   pour scroll horizontal si trop de catégories. Sur desktop le flex
-   garde les chips bien répartis. */
+/* Étape A + Option 3 : scroll horizontal sur mobile,
+   justify-content:center en desktop pour chips bien répartis. */
 .k-cats{
-  display:flex;flex-wrap:nowrap;gap:7px;
+  display:flex;
+  flex-wrap:nowrap;
+  gap:16px;
   max-width:var(--container);
-  margin:-10px auto 0;
-  padding:10px var(--pad-x) 8px;
+  margin:8px auto 0;
+  padding:12px var(--pad-x) 16px;
   position:relative;z-index:2;
   overflow-x:auto;
   scrollbar-width:none;
 }
 .k-cats::-webkit-scrollbar{display:none}
+/* Desktop : on centre les chips au lieu de les aligner à gauche */
+@media(min-width:900px){
+  .k-cats{
+    gap:32px;
+    justify-content:center;
+    padding:24px var(--pad-x);
+  }
+}
+/* ── CATEGORY CHIPS — Option 3 "photo ronde + label" ──────
+   Pattern Instagram Stories adapté shopping.
+   Image circulaire avec ring coloré en actif, label en dessous. */
 .k-chip{
-  flex:1;
-  min-width:0;
-  height:62px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:5px;
-  padding:0 4px;
-  border-radius:12px;
-  text-align:center;
-  background:var(--white);
-  color:var(--text);
-  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  flex:0 0 auto;
+  min-width:72px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  padding:4px 0;
+  background:transparent;
   border:none;
   cursor:pointer;
-  transition:transform .15s, box-shadow .15s, background .15s;
-  line-height:1;
+  transition:transform .15s var(--ease);
 }
-.k-chip:hover{
-  transform:translateY(-2px);
-  box-shadow:0 4px 12px rgba(0,0,0,.11);
-}
-.k-chip .k-chip-emoji{
-  font-size:22px;
-  line-height:1;
-}
-.k-chip .k-chip-label{
-  font-size:9px;font-weight:700;
-  letter-spacing:.3px;
-  text-transform:uppercase;
-  white-space:nowrap;
+.k-chip-photo{
+  position:relative;
+  width:64px;
+  height:64px;
+  border-radius:50%;
   overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:100%;
-  padding:0 2px;
-  color:var(--text-light);
-}
-.k-chip.active{
-  background:var(--ocean);
-  box-shadow:0 3px 10px rgba(58,125,68,.3);
-}
-.k-chip.active .k-chip-emoji{ filter:brightness(10); }
-.k-chip.active .k-chip-label{ color:rgba(255,255,255,.85); }
-.k-chip:not(.active):active{
-  transform:scale(.96);
   background:var(--sand);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 6px rgba(45,31,20,.08);
+  /* Ring visuel via border-width qui grossit en actif */
+  border:2px solid transparent;
+  transition:box-shadow .2s var(--ease), border-color .2s var(--ease), transform .15s var(--ease);
+}
+.k-chip-photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.k-chip-label{
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.02em;
+  color:var(--text-muted);
+  white-space:nowrap;
+  transition:color .15s var(--ease);
+}
+/* Hover desktop uniquement */
+@media(hover:hover) and (pointer:fine){
+  .k-chip:hover .k-chip-photo{
+    box-shadow:0 4px 14px rgba(45,31,20,.14);
+    transform:translateY(-2px);
+  }
+  .k-chip:hover .k-chip-label{ color:var(--text); }
+}
+/* État actif : ring coral, label foncé */
+.k-chip.active .k-chip-photo{
+  border-color:var(--coral);
+  box-shadow:0 0 0 3px rgba(200,92,45,.15), 0 3px 10px rgba(200,92,45,.18);
+}
+.k-chip.active .k-chip-label{
+  color:var(--text);
+  font-weight:700;
+}
+.k-chip:active{ transform:scale(.95); }
+
+/* Desktop : chips plus grands */
+@media(min-width:900px){
+  .k-chip{ min-width:96px; gap:10px; }
+  .k-chip-photo{ width:84px; height:84px; }
+  .k-chip-label{ font-size:12px; }
+}
+@media(min-width:1200px){
+  .k-chip-photo{ width:96px; height:96px; }
+  .k-chip-label{ font-size:13px; }
 }
 
 /* ── PRODUCT GRID ──────────────────────────────────────── */
@@ -1920,26 +2024,46 @@ body{
 .k-toast { border-radius: 50px; }
 .k-toast-simple { padding: 11px 20px; border-radius: 50px; }
 
-/* Hero texte — Étape B : Fraunces pour le titre, hiérarchie responsive */
-.k-hero-eyebrow { font-size:10px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--ocean-dark); margin-bottom:8px; display:block; font-family:var(--font); }
+/* Hero texte — Étape B : Fraunces pour le titre, hiérarchie responsive.
+   Le gap entre eyebrow/title/pills/btn est géré par .k-hero-text-left (flex column). */
+.k-hero-eyebrow {
+  font-size:10px; font-weight:700;
+  letter-spacing:.15em; text-transform:uppercase;
+  color:var(--ocean-dark);
+  display:block;
+  font-family:var(--font);
+}
 .k-hero-title {
   font-family:var(--font-display);
-  font-size:clamp(22px, 4vw, 44px);
+  font-size:clamp(26px, 4.5vw, 52px);
   font-weight:500;
   color:var(--text);
-  line-height:1.1;
-  letter-spacing:-.01em;
-  margin-bottom:12px;
+  line-height:1.05;
+  letter-spacing:-.015em;
   /* opsz de Fraunces : optical size plus "display" pour les gros titres */
-  font-variation-settings:'opsz' 36;
+  font-variation-settings:'opsz' 48;
 }
-.k-hero-pills { display:flex; flex-wrap:nowrap; gap:6px; overflow-x:auto; scrollbar-width:none; }
-.k-hero-pills::-webkit-scrollbar { display:none; }
+.k-hero-pills { display:flex; flex-wrap:wrap; gap:6px; }
 .k-hero-pill { background:rgba(100,175,90,.08); color:var(--ocean-dark); border:1px solid rgba(100,175,90,.18); border-radius:50px; padding:4px 11px; font-size:11px; font-weight:600; white-space:nowrap; flex-shrink:0; }
-.k-hero-btn { background:var(--ocean); color:#fff; border-radius:50px; padding:12px 22px; font-size:13px; font-weight:700; border:none; cursor:pointer; flex-shrink:0; white-space:nowrap; align-self:center; letter-spacing:.01em; transition:background .2s, transform .15s; }
+.k-hero-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--ocean); color:#fff;
+  border-radius:50px; padding:12px 22px;
+  font-size:13px; font-weight:700; border:none; cursor:pointer;
+  flex-shrink:0; white-space:nowrap;
+  align-self:flex-start; /* colle à gauche dans le stack */
+  letter-spacing:.01em;
+  transition:background .2s, transform .15s;
+  margin-top:4px;
+}
 .k-hero-btn:hover { background:var(--ocean-dark); }
 .k-hero-btn:active { transform:scale(.96); }
-.k-hero-text-left { flex:1; min-width:0; }
+
+/* Desktop : bouton légèrement plus grand pour équilibre visuel */
+@media(min-width:900px){
+  .k-hero-btn { padding:14px 26px; font-size:14px; }
+}
+/* .k-hero-text-left : flex column géré dans le bloc hero au début */
 
 /* Checkout */
 .ck-sum-total { color: var(--coral); }

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="gAll" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDFAF5"/>
+      <stop offset="100%" stop-color="#E8DDD0"/>
+    </linearGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2"/>
+      <feColorMatrix values="0 0 0 0 0.4  0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0.08 0"/>
+    </filter>
+  </defs>
+  <rect width="200" height="200" fill="url(#gAll)"/>
+  <rect width="200" height="200" filter="url(#grain)" opacity="0.6"/>
+  <!-- Rosette / étoile à 8 branches (motif oriental comorien) -->
+  <g transform="translate(100 100)" stroke="#64AF5A" stroke-width="1.8" fill="none" opacity="0.85">
+    <circle r="42"/>
+    <circle r="28" stroke-dasharray="3 3"/>
+    <g>
+      <line x1="-52" y1="0" x2="52" y2="0"/>
+      <line x1="0" y1="-52" x2="0" y2="52"/>
+      <line x1="-37" y1="-37" x2="37" y2="37"/>
+      <line x1="-37" y1="37" x2="37" y2="-37"/>
+    </g>
+    <circle r="6" fill="#C85C2D" stroke="none"/>
+  </g>
+</svg>
