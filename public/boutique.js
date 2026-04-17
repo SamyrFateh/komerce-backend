@@ -64,13 +64,28 @@
     } finally { clearTimeout(t); }
   }
 
+  /** UUID v4 pour Idempotency-Key (compat navigateurs anciens) */
+  function genIdempotencyKey() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      var v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   async function apiPost(path, body) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 15000);
     try {
+      // Idempotency-Key sur /api/orders (patch audit #7) → protège du double-clic
+      const headers = { 'Content-Type': 'application/json' };
+      if (path === '/api/orders') {
+        headers['Idempotency-Key'] = genIdempotencyKey();
+      }
       const res = await fetch(path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         credentials: 'include',
         signal: ctrl.signal,
         body: JSON.stringify(body)
@@ -721,6 +736,8 @@ function quickRemove(productId, btnEl) {
         chip.classList.add('active');
         state.activeCat = chip.dataset.cat;
         renderGrid();
+        // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
   }
@@ -2280,6 +2297,36 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── INIT ───────────────────────────────────────────────── */
+  /**
+   * Sticky bar : quand le sentinel (#k-bar-sentinel) sort du viewport vers
+   * le haut, on ajoute .is-stuck à #k-sticky-bar pour le coller en haut,
+   * et on affiche le spacer (#k-bar-spacer) pour compenser la hauteur.
+   * Le reverse quand le sentinel repasse dans le viewport.
+   */
+  function setupStickyBar() {
+    var sentinel = document.getElementById('k-bar-sentinel');
+    var bar      = document.getElementById('k-sticky-bar');
+    var spacer   = document.getElementById('k-bar-spacer');
+    if (!sentinel || !bar || !spacer) return;
+
+    var observer = new IntersectionObserver(function(entries) {
+      var entry = entries[0];
+      if (entry.isIntersecting) {
+        // Sentinel visible → hero normal
+        bar.classList.remove('is-stuck');
+        spacer.style.display = 'none';
+      } else {
+        // Sentinel sorti par le haut → hero sticky
+        // On fixe le spacer à la hauteur actuelle de la bar pour éviter le saut
+        spacer.style.height = bar.offsetHeight + 'px';
+        spacer.style.display = 'block';
+        bar.classList.add('is-stuck');
+      }
+    }, { threshold: 0, rootMargin: '-44px 0px 0px 0px' });
+
+    observer.observe(sentinel);
+  }
+
   function init() {
     updateCartBadge();
     setupCats();
@@ -2289,6 +2336,7 @@ function quickRemove(productId, btnEl) {
     setupBnav();
     setupSeeAll();
     setupInfiniteScroll();
+    setupStickyBar();
     loadProducts();
     loadRelais();
   }
