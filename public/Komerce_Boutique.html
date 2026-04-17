@@ -11,7 +11,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v1776428128')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v1776431996')===-1) caches.delete(n);
       });
     });
   }
@@ -28,7 +28,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=1776428128">
+<link rel="stylesheet" href="/boutique.css?v=1776431996">
 <script src="https://js.stripe.com/v3/" defer></script>
 </head>
 <body>
@@ -36,8 +36,20 @@ if('serviceWorker' in navigator){
 <!-- ═══ HEADER ═══ -->
 <header class="k-header" id="k-header">
   <div class="k-header-inner">
-    <a href="/" class="k-logo">
-      <span class="k-logo-icon">🌙</span>
+    <a href="/" class="k-logo" aria-label="Komerce — accueil">
+      <span class="k-logo-icon" aria-hidden="true">
+        <!-- Logo V3 — Médaille drapeau comorien : disque sage + croissant + 4 étoiles blanches.
+             Inspiration directe du drapeau des Comores : croissant représente l'islam/union,
+             4 étoiles = les 4 îles (Grande Comore, Anjouan, Mohéli, Mayotte). -->
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="16" fill="#2A3E2C"/>
+          <path d="M 26 20 A 8 8 0 1 1 20 12 A 6 6 0 1 0 26 20 Z" fill="#FDFAF5"/>
+          <circle cx="21.5" cy="14.5" r="0.8" fill="#FDFAF5"/>
+          <circle cx="24.5" cy="17" r="0.8" fill="#FDFAF5"/>
+          <circle cx="24.5" cy="23" r="0.8" fill="#FDFAF5"/>
+          <circle cx="21.5" cy="25.5" r="0.8" fill="#FDFAF5"/>
+        </svg>
+      </span>
       <span class="k-logo-text">Komerce</span>
     </a>
     <div class="k-search" id="k-search">
@@ -45,10 +57,13 @@ if('serviceWorker' in navigator){
       <input type="search" id="k-search-input" placeholder="Rechercher un produit..." autocomplete="off">
       <div class="k-search-dropdown" id="k-search-dropdown"></div>
     </div>
-    <button class="k-cart-btn" id="k-cart-btn" aria-label="Panier">
-      <img src="/images/avatar_panier.png" class="k-cart-avatar" width="38" height="38" alt="Panier">
-      <span class="k-cart-badge" id="k-cart-badge">0</span>
-    </button>
+    <div class="k-header-actions">
+      <button class="k-cart-btn k-header-action" id="k-cart-btn" aria-label="Panier">
+        <img src="/images/avatar_panier.png" class="k-cart-avatar" width="28" height="28" alt="">
+        <span class="k-header-action-label">Panier</span>
+        <span class="k-cart-badge" id="k-cart-badge">0</span>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -56,19 +71,20 @@ if('serviceWorker' in navigator){
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
-      <img class="k-hero-img" src="/New_Hero.jpg" alt="Komerce — Livraison diaspora vers les Comores" loading="eager" fetchpriority="high">
+      <img class="k-hero-img" src="/New_Hero.jpg" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
     </div>
     <div class="k-hero-overlay">
       <div class="k-hero-text-left">
-        <div class="k-hero-eyebrow">🌙 Komerce · Diaspora</div>
-        <div class="k-hero-title">Envoyez ce qui compte<br>à la maison</div>
+        <div class="k-hero-eyebrow">KOMERCE · COMORES</div>
+        <div class="k-hero-title">Trouvez ce que<br>vous voulez.</div>
+        <div class="k-hero-sub">Mode, beauté, tech, sur-mesure : la boutique qui vous ressemble, livrée à votre relais.</div>
         <div class="k-hero-pills">
-          <span class="k-hero-pill">✅ Livraison garantie</span>
-          <span class="k-hero-pill">💬 Support WhatsApp</span>
-          <span class="k-hero-pill">🔒 Paiement sécurisé</span>
+          <span class="k-hero-pill">Retrait au relais</span>
+          <span class="k-hero-pill">Paiement cash ou carte</span>
+          <span class="k-hero-pill">Support WhatsApp</span>
         </div>
         <button class="k-hero-btn" onclick="document.querySelector('.k-grid')?.scrollIntoView({behavior:'smooth'})">
-          Découvrir
+          Explorer le catalogue
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
@@ -244,7 +260,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<script src="/komerce-api.js?v=1776428128"></script>
-<script src="/boutique.js?v=1776428128"></script>
+<script src="/komerce-api.js?v=1776431996"></script>
+<script src="/boutique.js?v=1776431996"></script>
 </body>
 </html>

@@ -88,9 +88,21 @@ body{
   display:flex;align-items:center;gap:10px;
   height:100%;max-width:var(--container);margin:0 auto;
 }
-.k-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(230,74,25,.35))}
-.k-logo-text{font-size:16px;font-weight:800;color:var(--ocean);letter-spacing:-.5px}
+.k-logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.k-logo-icon{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  flex-shrink:0;
+}
+.k-logo-icon svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+.k-logo-text{font-size:16px;font-weight:800;color:var(--ocean-dark);letter-spacing:-.5px}
 
 /* Search */
 .k-search{
@@ -522,51 +534,80 @@ body{
   box-shadow:0 2px 6px rgba(200,92,45,.25);
 }
 .k-card-fav{
-  position:absolute;top:6px;right:6px;
-  width:24px;height:24px;
-  background:rgba(255,255,255,.85);border:none;
+  position:absolute;top:8px;right:8px;
+  width:30px;height:30px;
+  background:var(--white);
+  border:none;
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:12px;
-  transition:transform .2s;
-  backdrop-filter:blur(6px);
+  font-size:13px;
+  color:var(--ocean-dark);
+  box-shadow:0 2px 8px rgba(31,48,36,.12);
+  transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  cursor:pointer;
+  z-index:3;
 }
-.k-card-fav:active{transform:scale(1.2)}
+@media(hover:hover) and (pointer:fine){
+  .k-card-fav:hover{
+    transform:scale(1.08);
+    box-shadow:0 3px 12px rgba(31,48,36,.18);
+  }
+}
+.k-card-fav:active{transform:scale(1.12)}
 .k-card-fav.liked{color:var(--coral)}
 
 
 
 
 
-/* ── CARD ADD BUTTON — clean "+" circle ── */
+/* ── CARD ADD BUTTON — Panier tressé comorien (image background) ──
+   Le <span class="k-card-add-plus">+</span> du JS reste dans le DOM mais
+   est masqué visuellement. L'image panier est appliquée en background.
+   Le bouton agrandit un peu (40px mobile) pour laisser place au panier.
+*/
 .k-card-add{
-  position:absolute;bottom:8px;right:8px;
-  width:36px;height:36px;
-  background:var(--coral);
+  position:absolute;bottom:6px;right:6px;
+  width:40px;height:40px;
+  background:var(--white) url('/images/panier_tresse.png') center/78% no-repeat;
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.22);
-  transition:background .15s,transform .15s,width .2s,border-radius .2s,padding .2s;
+  box-shadow:0 2px 8px rgba(31,48,36,.14), 0 0 0 1px rgba(31,48,36,.06);
+  transition:transform .15s var(--ease), box-shadow .2s var(--ease), width .25s var(--ease), border-radius .25s var(--ease), padding .25s var(--ease), background-color .2s var(--ease);
   border:none;
   padding:0;
   z-index:5;
   cursor:pointer;
   overflow:hidden;
 }
-/* Stepper pill quand produit déjà dans le panier */
+@media(hover:hover) and (pointer:fine){
+  .k-card-add:hover{
+    transform:scale(1.05);
+    box-shadow:0 4px 14px rgba(31,48,36,.22), 0 0 0 1px rgba(74,144,64,.25);
+  }
+}
+/* Stepper pill quand produit déjà dans le panier : on reprend le sage
+   (pas d'image panier) avec les contrôles -/+/qty bien visibles */
 .k-card-add.in-cart{
-  background:var(--coral);
+  background:var(--ocean) none;
+  background-image:none !important;
   border-radius:14px;
-  width:68px;
-  padding:0 4px;
+  width:76px;
+  padding:0 6px;
   justify-content:space-between;
   gap:0;
+  box-shadow:0 2px 8px rgba(74,144,64,.3);
 }
-.k-card-add:active{transform:scale(.88)}
+.k-card-add.in-cart:hover{ background:var(--ocean-dark); }
+.k-card-add:active{transform:scale(.9)}
+
+/* Le "+" textuel est masqué visuellement mais reste pour les lecteurs d'écran */
 .k-card-add-plus{
-  font-size:18px;font-weight:400;
-  color:var(--white);line-height:1;
+  font-size:0;
+  color:transparent;
+  line-height:1;
   pointer-events:none;
+  width:0;
+  height:0;
 }
 /* Stepper parts */
 .k-add-minus,.k-add-plus-ic{
@@ -1227,6 +1268,7 @@ body{
   /* Header plus imposant */
   .k-header{height:64px;padding:0 24px;box-shadow:0 1px 0 var(--border)}
   .k-header-inner{gap:20px}
+  .k-logo-icon{width:34px;height:34px}
   .k-logo-text{font-size:20px}
 
   /* Search : centrée, max-width */
@@ -1249,7 +1291,7 @@ body{
   .k-card-name{font-size:15px}
   .k-card-price{font-size:15px}
   .k-card-old-price{font-size:13px}
-  .k-card-add{width:36px;height:36px}
+  /* .k-card-add : taille géré par 900px+ breakpoint (pas d'override ici) */
 
   /* Section titres — taille gérée par clamp() sur .k-section-head h2 */
 
@@ -1409,7 +1451,7 @@ body{
 @media(min-width:480px){
   .k-promo-card{flex: 0 0 120px}
   .k-card-basket-icon{width:32px;height:32px}
-  .k-card-fav{width:28px;height:28px;top:8px;right:8px;font-size:13px}
+  .k-card-fav{width:30px;height:30px;top:8px;right:8px;font-size:14px}
 }
 @media(min-width:600px){
   .k-grid{grid-template-columns:repeat(3,1fr);gap:12px}
@@ -1418,9 +1460,10 @@ body{
   .k-grid{grid-template-columns:repeat(4,1fr);gap:16px}
   .k-bnav{display:none}
   body{padding-bottom:0}
-  .k-card-add{width:44px;height:44px;bottom:10px;right:10px}
+  .k-card-add{width:46px;height:46px;bottom:10px;right:10px}
+  .k-card-add.in-cart{width:88px}
   .k-card-basket-icon{width:40px;height:40px}
-  .k-card-fav{width:34px;height:34px;top:10px;right:10px;font-size:16px}
+  .k-card-fav{width:32px;height:32px;top:10px;right:10px;font-size:15px}
 }
 @media(min-width:1200px){
   .k-grid{grid-template-columns:repeat(5,1fr);gap:18px}
@@ -2094,6 +2137,16 @@ body{
   letter-spacing:-.015em;
   /* opsz de Fraunces : optical size plus "display" pour les gros titres */
   font-variation-settings:'opsz' 42;
+}
+/* Sous-titre hero — phrase d'accroche qui explique concrètement l'offre */
+.k-hero-sub {
+  font-family:var(--font);
+  font-size:clamp(13px, 1.3vw, 15px);
+  font-weight:400;
+  line-height:1.5;
+  color:var(--text-muted);
+  max-width:440px;
+  letter-spacing:.005em;
 }
 .k-hero-pills { display:flex; flex-wrap:wrap; gap:6px; }
 .k-hero-pill {
