@@ -2208,508 +2208,122 @@ body{
 .ck-thumb-qty { position:absolute; bottom:2px; right:2px; background:var(--coral); color:#fff; font-size:9px; font-weight:800; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
 
 
+
 /* ══════════════════════════════════════════════════════════
-   OPTIMISATIONS MOBILE — Hero sticky + compact  (patch v2)
+   MOBILE OPTIMISATION — SINGLE CLEAN PATCH
+   Bar fixe (slogan + pills + catégories) sous le header
    ══════════════════════════════════════════════════════════ */
 
-/* 1. Hero sticky — reste visible pendant que le catalogue défile */
-.k-hero {
-  position: sticky;
-  top: 44px;   /* = hauteur du header mobile */
-  z-index: 5;
+/* ── Bar fixe : slogan + pills + catégories ── */
+.k-hero-cats-sticky {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 90;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  padding: 0;
 }
-@media(min-width:900px){
-  .k-hero { top: 64px; } /* header desktop = 64px */
+#k-bar-spacer { display: block; }
+
+/* ── Slogan + Catalogue sur 1 ligne ── */
+.k-hero-overlay {
+  padding: 6px 12px 2px;
+}
+.k-hero-text-left {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 10px;
+}
+.k-hero-title {
+  grid-column: 1;
+  grid-row: 1;
+  white-space: nowrap;
+  font-size: clamp(0.95rem, 3.8vw, 1.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.k-hero-btn {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 10px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+.k-hero-pills {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+.k-hero-pills::-webkit-scrollbar { display: none; }
+.k-hero-pill {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 3px 9px;
+  white-space: nowrap;
 }
 
-/* Le catalogue défile par-dessus le hero sticky */
-.k-cats {
-  position: relative;
-  z-index: 10;
-  background: var(--sand);
+/* ── Catégories : compactes, centrées, 1 ligne ── */
+.k-hero-cats-sticky .k-cats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 3px 8px 4px;
+  gap: 2px;
+  margin: 0;
+  border-top: 1px solid rgba(0,0,0,.05);
 }
-.k-section {
-  position: relative;
-  z-index: 10;
-  background: var(--sand);
+.k-hero-cats-sticky .k-cats::-webkit-scrollbar { display: none; }
+.k-hero-cats-sticky .k-chip {
+  min-width: 44px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.k-hero-cats-sticky .k-chip-photo {
+  width: 34px;
+  height: 34px;
+}
+.k-hero-cats-sticky .k-chip-label {
+  font-size: 9px;
 }
 
-/* 2. Hero compact sur mobile — gain de place vers le catalogue */
+/* ── Hero image compact ── */
 .k-hero-img {
   height: clamp(140px, 24vw, 240px);
 }
-.k-hero-overlay {
-  padding: 10px var(--pad-x) 12px;
-  gap: 6px;
-}
-.k-hero-text-left {
-  gap: 6px;
-}
-/* Sous-titre descriptif masqué sur mobile pour gagner de la hauteur */
+
+/* ── Sous-titre masqué sur mobile ── */
 @media(max-width:899px){
   .k-hero-sub { display: none; }
 }
 
-/* 3. Pills sur 1 seule ligne défilable (plus de wrap) */
-.k-hero-pills {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  padding-bottom: 2px; /* évite le clip du scroll */
-}
-.k-hero-pills::-webkit-scrollbar { display: none; }
-
-/* 4. Padding-right sur les catégories → évite chevauchement FAB WhatsApp */
-@media(max-width:899px){
-  .k-cats { padding-right: 76px; }
-}
-
-/* 5. Label "Panier" masqué sur mobile → barre de recherche plus large */
+/* ── Label "Panier" masqué sur mobile → barre recherche plus large ── */
 @media(max-width:899px){
   .k-header-action-label { display: none; }
 }
 
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v3 — Fix sticky hero visible + slogan impactant
-   ══════════════════════════════════════════════════════════ */
-
-/* Fix : catalogue défile EN DESSOUS du hero (plus de masquage) */
-.k-cats {
-  position: relative;
-  z-index: auto;
-  background: var(--sand);
-  padding-right: 76px; /* FAB fix conservé */
-}
+/* ── Catalogue et sections au-dessus du hero image ── */
 .k-section {
   position: relative;
-  z-index: auto;
+  z-index: 10;
   background: var(--sand);
 }
 
-/* Hero sticky au-dessus de tout */
-.k-hero {
-  position: sticky;
-  top: 44px;
-  z-index: 20;
-}
-@media(min-width:900px){
-  .k-hero { top: 64px; }
-}
-
-/* Slogan plus grand et plus impactant maintenant que eyebrow est supprimé */
-@media(max-width:899px){
-  .k-hero-title {
-    font-size: clamp(1.6rem, 7vw, 2.2rem);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-  }
-  /* Retrait top padding inutile (l'eyebrow n'existe plus) */
-  .k-hero-text-left {
-    padding-top: 2px;
-  }
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v4 — Hero+Cats sticky wrapper + hero ultra-compact
-   ══════════════════════════════════════════════════════════ */
-
-/* ── Wrapper sticky : hero + catégories collés ensemble ── */
-.k-hero-cats-sticky {
-  position: sticky;
-  top: 44px;          /* hauteur du header mobile */
-  z-index: 20;
-  background: var(--sand);
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
+/* ── Desktop : header plus haut ── */
 @media(min-width:900px){
   .k-hero-cats-sticky { top: 64px; }
-}
-
-/* ── Neutralise les anciens sticky individuels ── */
-.k-hero {
-  position: relative !important;
-  top: auto !important;
-  z-index: auto !important;
-}
-
-/* ── Hero ultra-compact sur mobile ── */
-@media(max-width:899px){
-  .k-hero-img {
-    height: clamp(100px, 22vw, 150px);
-    object-fit: cover;
-  }
-  .k-hero-overlay {
-    padding: 8px var(--pad-x) 8px;
-    gap: 4px;
-  }
-  .k-hero-text-left {
-    gap: 4px;
-  }
-  .k-hero-title {
-    font-size: clamp(1.25rem, 6vw, 1.6rem);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-  .k-hero-btn {
-    padding: 9px 18px;
-    font-size: 12px;
-    margin-top: 2px;
-  }
-}
-
-/* ── Pills 1 ligne forcée ── */
-.k-hero-pills {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  gap: 6px;
-}
-.k-hero-pills::-webkit-scrollbar { display: none; }
-
-/* ── Catégories 1 ligne, sans padding-right excessif ── */
-.k-cats {
-  flex-wrap: nowrap !important;
-  overflow-x: auto;
-  position: relative !important;
-  z-index: auto !important;
-  padding-right: var(--pad-x) !important;
-  background: var(--sand);
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v5 — Chips mini, pills mini, slogan 1 ligne
-   ══════════════════════════════════════════════════════════ */
-
-@media(max-width:899px){
-
-  /* ── Catégories : chips ultra-compacts ── */
-  .k-chip {
-    min-width: 52px !important;
-    gap: 4px !important;
-    padding: 4px 2px !important;
-  }
-  .k-chip-photo {
-    width: 44px !important;
-    height: 44px !important;
-  }
-  .k-chip-label {
-    font-size: 10px !important;
-    letter-spacing: 0 !important;
-  }
-
-  /* ── Barre catégories : padding réduit ── */
-  .k-cats {
-    padding: 8px 12px !important;
-    gap: 2px !important;
-  }
-
-  /* ── Pills : compactes, 1 ligne forcée ── */
-  .k-hero-pill {
-    padding: 3px 9px !important;
-    font-size: 10px !important;
-  }
-
-  /* ── Slogan 1 ligne, taille adaptée ── */
-  .k-hero-title {
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    font-size: clamp(1rem, 5.5vw, 1.4rem) !important;
-    width: 100% !important;
-  }
-
-  /* ── Hero overlay encore plus serré ── */
-  .k-hero-overlay {
-    padding: 6px 12px 6px !important;
-    gap: 6px !important;
-  }
-
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v6 — Slogan+Catalogue 1 ligne, pills sticky, cats compacts
-   ══════════════════════════════════════════════════════════ */
-
-@media(max-width:899px){
-
-  /* ── Hero overlay : layout grid ── */
-  .k-hero-text-left {
-    display: grid !important;
-    grid-template-areas:
-      "title btn"
-      "pills pills" !important;
-    grid-template-columns: 1fr auto !important;
-    align-items: center !important;
-    gap: 5px 8px !important;
-    width: 100% !important;
-  }
-
-  .k-hero-title {
-    grid-area: title !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    font-size: clamp(0.82rem, 3.8vw, 1rem) !important;
-    line-height: 1.2 !important;
-    max-width: 100% !important;
-  }
-
-  .k-hero-sub { display: none !important; }
-
-  .k-hero-pills {
-    grid-area: pills !important;
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    gap: 5px !important;
-    padding-bottom: 2px !important;
-  }
-  .k-hero-pills::-webkit-scrollbar { display: none !important; }
-
-  .k-hero-btn {
-    grid-area: btn !important;
-    padding: 5px 11px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    align-self: center !important;
-  }
-
-  .k-hero-overlay {
-    padding: 7px 12px 8px !important;
-    gap: 0 !important;
-  }
-
-  /* ── Catégories : container plus serré ── */
-  .k-cats {
-    padding: 5px 10px 6px !important;
-    gap: 0px !important;
-  }
-  .k-chip {
-    min-width: 50px !important;
-    gap: 3px !important;
-    padding: 3px 2px !important;
-  }
-  .k-chip-photo {
-    width: 40px !important;
-    height: 40px !important;
-  }
-  .k-chip-label {
-    font-size: 9.5px !important;
-  }
-
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v7 — Slogan plus grand, Catalogue plus petit, cats compacts
-   ══════════════════════════════════════════════════════════ */
-
-@media(max-width:899px){
-
-  /* Slogan : plus grand */
-  .k-hero-title {
-    font-size: clamp(1.05rem, 4.8vw, 1.25rem) !important;
-    font-weight: 800 !important;
-  }
-
-  /* Bouton Catalogue : plus petit */
-  .k-hero-btn {
-    padding: 4px 9px !important;
-    font-size: 10px !important;
-    gap: 3px !important;
-  }
-  .k-hero-btn svg {
-    width: 9px !important;
-    height: 9px !important;
-  }
-
-  /* Catégories : vraiment compact */
-  nav.k-cats,
-  .k-cats {
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-    gap: 0 !important;
-    min-height: 0 !important;
-  }
-
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v8 — Sticky sans image, cats centrées, cadre réduit
-   ══════════════════════════════════════════════════════════ */
-
-/* Le sticky wrapper ne contient PLUS l'image */
-.k-hero-cats-sticky {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 20 !important;
-  background: #fff !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
-}
-
-/* L'overlay est maintenant hors du hero-inner, style autonome */
-.k-hero-cats-sticky > .k-hero-overlay {
-  padding: 7px 12px 6px !important;
-  background: #fff !important;
-}
-
-@media(max-width:899px){
-
-  /* Catégories : centrées, cadre ultra-réduit */
-  nav.k-cats,
-  .k-cats {
-    justify-content: center !important;
-    padding: 3px 6px 4px !important;
-    gap: 0 !important;
-    background: #fff !important;
-    border-top: 1px solid rgba(0,0,0,.05) !important;
-  }
-
-  /* Chips encore plus compacts */
-  .k-chip {
-    min-width: 48px !important;
-    padding: 2px 1px !important;
-    gap: 2px !important;
-  }
-  .k-chip-photo {
-    width: 36px !important;
-    height: 36px !important;
-  }
-  .k-chip-label {
-    font-size: 9px !important;
-  }
-
-}
-
-@media(min-width:900px){
-  .k-hero-cats-sticky {
-    top: 64px !important; /* header desktop */
-  }
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v9 — FIX STICKY: body overflow-x:clip + cadre cats réduit
-   ══════════════════════════════════════════════════════════ */
-
-/* Force sticky même si d'autres overflow trainent */
-.k-hero-cats-sticky {
-  position: -webkit-sticky !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 50 !important;
-  background: #fff !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
-}
-
-@media(max-width:899px){
-
-  /* Catégories : cadre VRAIMENT réduit + centrées */
-  nav.k-cats,
-  .k-cats {
-    justify-content: center !important;
-    padding: 2px 6px 3px !important;
-    gap: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
-    border-top: 1px solid rgba(0,0,0,.04) !important;
-    min-height: auto !important;
-    max-height: none !important;
-  }
-
-  /* Chips mini */
-  .k-cats .k-chip {
-    min-width: 46px !important;
-    padding: 2px 1px !important;
-    gap: 2px !important;
-  }
-  .k-cats .k-chip-photo {
-    width: 34px !important;
-    height: 34px !important;
-    border-width: 1.5px !important;
-  }
-  .k-cats .k-chip-label {
-    font-size: 8.5px !important;
-    margin: 0 !important;
-  }
-
-}
-
-@media(min-width:900px){
-  .k-hero-cats-sticky {
-    top: 64px !important;
-  }
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   PATCH v12 — position:fixed (nuclear option, 100% reliable)
-   No sticky, no overflow issues, no JS scroll listeners
-   ══════════════════════════════════════════════════════════ */
-
-.k-hero-cats-sticky {
-  position: fixed !important;
-  top: 44px !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  z-index: 90 !important;
-  background: #fff !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06) !important;
-  padding: 0 !important;
-}
-
-#k-bar-spacer {
-  display: block;
-}
-
-@media(max-width:899px){
-
-  .k-hero-cats-sticky > .k-hero-overlay {
-    padding: 6px 12px 2px !important;
-  }
-
-  .k-hero-cats-sticky nav.k-cats,
-  .k-hero-cats-sticky .k-cats {
-    justify-content: center !important;
-    padding: 3px 8px 4px !important;
-    gap: 2px !important;
-    margin: 0 !important;
-    border-top: 1px solid rgba(0,0,0,.05) !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .k-hero-cats-sticky .k-cats::-webkit-scrollbar { display: none; }
-
-  .k-hero-cats-sticky .k-chip {
-    min-width: 44px !important;
-    padding: 2px 2px !important;
-    gap: 2px !important;
-    flex-shrink: 0 !important;
-  }
-  .k-hero-cats-sticky .k-chip-photo {
-    width: 34px !important;
-    height: 34px !important;
-  }
-  .k-hero-cats-sticky .k-chip-label {
-    font-size: 9px !important;
-  }
-}
-
-@media(min-width:900px){
-  .k-hero-cats-sticky { top: 64px !important; }
 }
