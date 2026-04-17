@@ -2249,7 +2249,8 @@ body{
   z-index: 90;
 }
 
-/* ── Slogan + Catalogue sur 1 ligne ── */
+/* ── Slogan + Catalogue sur 1 ligne (MOBILE ONLY) ── */
+@media(max-width:899px){
 .k-hero-overlay {
   padding: 6px 12px 2px;
 }
@@ -2293,6 +2294,7 @@ body{
   padding: 3px 9px;
   white-space: nowrap;
 }
+}
 
 /* ── Catégories : compactes, centrées, 1 ligne ── */
 .k-hero-cats-sticky .k-cats {
@@ -2322,9 +2324,11 @@ body{
   font-size: 9px;
 }
 
-/* ── Hero image compact ── */
+/* ── Hero image compact (MOBILE ONLY) ── */
+@media(max-width:899px){
 .k-hero-img {
   height: clamp(140px, 24vw, 240px);
+}
 }
 
 /* ── Sous-titre masqué sur mobile ── */
