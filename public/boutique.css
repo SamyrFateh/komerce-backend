@@ -2269,3 +2269,44 @@ body{
 @media(max-width:899px){
   .k-header-action-label { display: none; }
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   PATCH v3 — Fix sticky hero visible + slogan impactant
+   ══════════════════════════════════════════════════════════ */
+
+/* Fix : catalogue défile EN DESSOUS du hero (plus de masquage) */
+.k-cats {
+  position: relative;
+  z-index: auto;
+  background: var(--sand);
+  padding-right: 76px; /* FAB fix conservé */
+}
+.k-section {
+  position: relative;
+  z-index: auto;
+  background: var(--sand);
+}
+
+/* Hero sticky au-dessus de tout */
+.k-hero {
+  position: sticky;
+  top: 44px;
+  z-index: 20;
+}
+@media(min-width:900px){
+  .k-hero { top: 64px; }
+}
+
+/* Slogan plus grand et plus impactant maintenant que eyebrow est supprimé */
+@media(max-width:899px){
+  .k-hero-title {
+    font-size: clamp(1.6rem, 7vw, 2.2rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  /* Retrait top padding inutile (l'eyebrow n'existe plus) */
+  .k-hero-text-left {
+    padding-top: 2px;
+  }
+}
