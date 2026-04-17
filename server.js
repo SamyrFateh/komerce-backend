@@ -208,6 +208,7 @@ const transitaireApiRouter = require('./routes/transitaire-api');
 const autoDistributeRouter = require('./routes/auto-distribute-api');
 const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 const transitDashboardRoutes = require('./routes/transit-dashboard');
+const sharesRouter = require('./routes/shares');
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
 app.use('/api/auth',       authRouter);
@@ -261,6 +262,7 @@ app.use('/api/finance', (req, res) => {
 app.use('/api/purchasing', purchasingRouter);
 app.use('/api/loyalty',    loyaltyRouter);
 app.use('/api/unsold',     unsoldRouter);
+app.use('/api/shares',     sharesRouter);
 app.use('/health',         healthRouter);
 
 // ── Healthcheck ─────────────────────────────────────────────────────────────
@@ -569,6 +571,33 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 029: inventory_items proposal columns ready');
       } catch(e) { console.warn('Migration 029 (non-fatal):', e.message); }
       } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
+
+      // ── Migration 030: cart_shares table (panier partagé) ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS cart_shares (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            share_token VARCHAR(16) NOT NULL,
+            cart_items JSONB NOT NULL,
+            cart_total_kmf BIGINT NOT NULL,
+            items_count SMALLINT NOT NULL,
+            sharer_name VARCHAR(50),
+            sharer_ip_hash VARCHAR(64),
+            sharer_ua_hash VARCHAR(64),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            first_opened_at TIMESTAMPTZ,
+            open_count INT NOT NULL DEFAULT 0,
+            converted_order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+            converted_at TIMESTAMPTZ,
+            CONSTRAINT unique_share_token UNIQUE (share_token)
+          );
+          CREATE INDEX IF NOT EXISTS idx_cart_shares_token ON cart_shares(share_token);
+          CREATE INDEX IF NOT EXISTS idx_cart_shares_created ON cart_shares(created_at DESC);
+          CREATE INDEX IF NOT EXISTS idx_cart_shares_converted ON cart_shares(converted_order_id)
+            WHERE converted_order_id IS NOT NULL;
+        `);
+        console.log('✅ Migration 030: cart_shares table ready');
+      } catch(e) { console.warn('Migration 030 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
