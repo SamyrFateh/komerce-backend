@@ -11,7 +11,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v1776454857')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v1776458882')===-1) caches.delete(n);
       });
     });
   }
@@ -28,10 +28,23 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=1776454857">
+<link rel="stylesheet" href="/boutique.css?v=1776458882">
 <script src="https://js.stripe.com/v3/" defer></script>
 </head>
 <body>
+
+<!-- ═══ BANDEAU PANIER PARTAGÉ (affiché si ?share=token) ═══ -->
+<div id="k-share-banner" class="k-share-banner" role="status" aria-live="polite">
+  <div class="k-share-banner-inner">
+    <span class="k-share-banner-icon" aria-hidden="true">🧺</span>
+    <div class="k-share-banner-text">
+      <strong><span data-share-name>Quelqu'un</span> t'a partagé son panier !</strong>
+      <small><span data-share-count>0 article</span> · <span data-share-total>0 KMF</span></small>
+    </div>
+    <button class="k-share-banner-view" data-share-view type="button">Voir</button>
+    <button class="k-share-banner-close" data-share-close type="button" aria-label="Fermer">×</button>
+  </div>
+</div>
 
 <!-- ═══ HEADER ═══ -->
 <header class="k-header" id="k-header">
@@ -67,34 +80,30 @@ if('serviceWorker' in navigator){
   </div>
 </header>
 
-<!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
+<!-- ═══ HERO BANNER ═══ -->
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
       <img class="k-hero-img" src="/New_Hero.jpg" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
     </div>
-  </div>
-</section>
-
-<!-- ═══ SENTINEL (invisible marker for IntersectionObserver) ═══ -->
-<div id="k-bar-sentinel" style="height:0;margin:0;padding:0;"></div>
-
-<!-- ═══ SLOGAN + PILLS + CATÉGORIES (sticks on scroll) ═══ -->
-<div class="k-hero-cats-sticky" id="k-sticky-bar">
-  <div class="k-hero-overlay">
-    <div class="k-hero-text-left">
-      <div class="k-hero-title">Trouvez ce que vous cherchez !</div>
-      <div class="k-hero-pills">
-        <span class="k-hero-pill">Retrait au relais</span>
-        <span class="k-hero-pill">Paiement cash ou carte</span>
-        <span class="k-hero-pill">Support WhatsApp</span>
+    <div class="k-hero-overlay">
+      <div class="k-hero-text-left">
+        <div class="k-hero-eyebrow">KOMERCE · COMORES</div>
+        <div class="k-hero-title">Trouvez ce que<br>vous voulez.</div>
+        <div class="k-hero-sub">Mode, beauté, tech, sur-mesure : la boutique qui vous ressemble, livrée à votre relais.</div>
+        <div class="k-hero-pills">
+          <span class="k-hero-pill">Retrait au relais</span>
+          <span class="k-hero-pill">Paiement cash ou carte</span>
+          <span class="k-hero-pill">Support WhatsApp</span>
+        </div>
+        <button class="k-hero-btn" onclick="document.querySelector('.k-grid')?.scrollIntoView({behavior:'smooth'})">
+          Explorer le catalogue
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
       </div>
-      <button class="k-hero-btn" onclick="document.querySelector('.k-grid')?.scrollIntoView({behavior:'smooth'})">
-        Catalogue
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
     </div>
   </div>
+</section>
 
 <!-- ═══ CATÉGORIES ═══ -->
 <nav class="k-cats" id="k-cats">
@@ -123,8 +132,6 @@ if('serviceWorker' in navigator){
     <span class="k-chip-label">Couture</span>
   </button>
 </nav>
-</div><!-- /k-hero-cats-sticky -->
-<div id="k-bar-spacer" style="display:none;"></div>
 
 <!-- ═══ PROMOS FLASH ═══ -->
 <section class="k-section" id="k-promos-section">
@@ -220,8 +227,9 @@ if('serviceWorker' in navigator){
     </div>
     <div class="k-cart-footer-btns">
       <button id="k-cart-continue" class="kcf-btn kcf-secondary">← Continuer</button>
-      <button id="k-cart-clear" class="kcf-btn kcf-danger">🗑</button>
-      <button id="k-cart-whatsapp" class="kcf-btn kcf-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>Partager à un proche</button>
+      <button id="k-cart-clear" class="kcf-btn kcf-danger" title="Vider le panier">🗑</button>
+      <button id="k-cart-whatsapp" class="kcf-btn kcf-whatsapp" title="Partager le panier via WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>WhatsApp</button>
+      <button id="k-cart-copy" class="kcf-btn kcf-copy" title="Copier le lien à partager partout (SMS, Messenger...)">🔗 Copier</button>
       <button id="k-cart-checkout" class="kcf-btn kcf-primary">✅ Commander</button>
     </div>
   </div>
@@ -266,45 +274,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<<<<<<< HEAD
-<script src="/komerce-api.js?v=1776454857"></script>
-<script src="/boutique.js?v=1776454857"></script>
-=======
-<script>
-// IntersectionObserver: bar becomes fixed ONLY when scrolled past
-(function(){
-  var sentinel = document.getElementById('k-bar-sentinel');
-  var bar = document.getElementById('k-sticky-bar');
-  var spacer = document.getElementById('k-bar-spacer');
-  if(!sentinel || !bar || !spacer) return;
-
-  // Pre-calculate spacer height
-  spacer.style.height = bar.offsetHeight + 'px';
-
-  var observer = new IntersectionObserver(function(entries){
-    if(entries[0].isIntersecting){
-      // Sentinel visible → bar in normal document flow
-      bar.classList.remove('is-stuck');
-      spacer.style.display = 'none';
-    } else {
-      // Sentinel scrolled out → bar becomes fixed
-      bar.classList.add('is-stuck');
-      spacer.style.display = 'block';
-    }
-  }, {
-    rootMargin: '-44px 0px 0px 0px' // offset = header height
-  });
-
-  observer.observe(sentinel);
-
-  // Update spacer on resize
-  window.addEventListener('resize', function(){
-    spacer.style.height = bar.offsetHeight + 'px';
-  });
-})();
-</script>
-<script src="/komerce-api.js?v=1776431996"></script>
-<script src="/boutique.js?v=1776431996"></script>
->>>>>>> 3e829d8974277fb576d2531da6be25f42df9dbb0
+<script src="/komerce-api.js?v=1776458882"></script>
+<script src="/boutique.js?v=1776458882"></script>
 </body>
 </html>
