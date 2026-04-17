@@ -2210,23 +2210,27 @@ body{
 
 
 /* ══════════════════════════════════════════════════════════
-   MOBILE OPTIMISATION — SINGLE CLEAN PATCH
-   Bar fixe (slogan + pills + catégories) sous le header
+   MOBILE OPTIMISATION — CLEAN PATCH (IntersectionObserver)
+   Bar normal in flow → becomes fixed when scrolled past hero
    ══════════════════════════════════════════════════════════ */
 
-/* ── Bar fixe : slogan + pills + catégories ── */
+/* ── Bar : normal state (in document flow, below hero image) ── */
 .k-hero-cats-sticky {
+  position: relative;
+  z-index: 90;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  width: 100%;
+}
+
+/* ── Bar : stuck state (JS adds .is-stuck via IntersectionObserver) ── */
+.k-hero-cats-sticky.is-stuck {
   position: fixed;
   top: 44px;
   left: 0;
   right: 0;
-  width: 100%;
   z-index: 90;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
-  padding: 0;
 }
-#k-bar-spacer { display: block; }
 
 /* ── Slogan + Catalogue sur 1 ligne ── */
 .k-hero-overlay {
@@ -2316,7 +2320,7 @@ body{
   .k-header-action-label { display: none; }
 }
 
-/* ── Catalogue et sections au-dessus du hero image ── */
+/* ── Sections: ensure they sit above hero when scrolling ── */
 .k-section {
   position: relative;
   z-index: 10;
@@ -2325,5 +2329,5 @@ body{
 
 /* ── Desktop : header plus haut ── */
 @media(min-width:900px){
-  .k-hero-cats-sticky { top: 64px; }
+  .k-hero-cats-sticky.is-stuck { top: 64px; }
 }
