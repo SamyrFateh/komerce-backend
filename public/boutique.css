@@ -2310,3 +2310,73 @@ body{
     padding-top: 2px;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   PATCH v4 — Hero+Cats sticky wrapper + hero ultra-compact
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Wrapper sticky : hero + catégories collés ensemble ── */
+.k-hero-cats-sticky {
+  position: sticky;
+  top: 44px;          /* hauteur du header mobile */
+  z-index: 20;
+  background: var(--sand);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+@media(min-width:900px){
+  .k-hero-cats-sticky { top: 64px; }
+}
+
+/* ── Neutralise les anciens sticky individuels ── */
+.k-hero {
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+/* ── Hero ultra-compact sur mobile ── */
+@media(max-width:899px){
+  .k-hero-img {
+    height: clamp(100px, 22vw, 150px);
+    object-fit: cover;
+  }
+  .k-hero-overlay {
+    padding: 8px var(--pad-x) 8px;
+    gap: 4px;
+  }
+  .k-hero-text-left {
+    gap: 4px;
+  }
+  .k-hero-title {
+    font-size: clamp(1.25rem, 6vw, 1.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .k-hero-btn {
+    padding: 9px 18px;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+}
+
+/* ── Pills 1 ligne forcée ── */
+.k-hero-pills {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  gap: 6px;
+}
+.k-hero-pills::-webkit-scrollbar { display: none; }
+
+/* ── Catégories 1 ligne, sans padding-right excessif ── */
+.k-cats {
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  position: relative !important;
+  z-index: auto !important;
+  padding-right: var(--pad-x) !important;
+  background: var(--sand);
+}
