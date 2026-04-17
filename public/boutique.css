@@ -11,7 +11,7 @@
 
 /* ── RESET ─────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:hidden}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 button{font:inherit;border:none;background:none;cursor:pointer}
 input{font:inherit;border:none;outline:none}
 img{display:block;max-width:100%}
@@ -73,6 +73,7 @@ body{
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
   padding-bottom:calc(var(--bnav-h) + 90px);
+  overflow-x:hidden;
 }
 
 /* ── HEADER ────────────────────────────────────────────── */
@@ -2654,32 +2655,32 @@ body{
 
 
 /* ══════════════════════════════════════════════════════════
-   PATCH v11 — CSS sticky CLEAN (no JS)
-   body: overflow-x:clip ✓  — ne casse pas sticky
-   .k-hero-cats-sticky: direct child of <body> ✓ — aucun parent overflow
+   PATCH v12 — position:fixed (nuclear option, 100% reliable)
+   No sticky, no overflow issues, no JS scroll listeners
    ══════════════════════════════════════════════════════════ */
 
-/* The bar — sticky under the header */
 .k-hero-cats-sticky {
-  position: -webkit-sticky !important;
-  position: sticky !important;
+  position: fixed !important;
   top: 44px !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
   z-index: 90 !important;
   background: #fff !important;
   box-shadow: 0 1px 4px rgba(0,0,0,.06) !important;
+  padding: 0 !important;
+}
+
+#k-bar-spacer {
+  display: block;
 }
 
 @media(max-width:899px){
-
-  .k-hero-cats-sticky {
-    padding: 0 !important;
-  }
 
   .k-hero-cats-sticky > .k-hero-overlay {
     padding: 6px 12px 2px !important;
   }
 
-  /* Catégories : cadre compact centré */
   .k-hero-cats-sticky nav.k-cats,
   .k-hero-cats-sticky .k-cats {
     justify-content: center !important;

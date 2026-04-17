@@ -121,6 +121,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 </div><!-- /k-hero-cats-sticky -->
+<div id="k-bar-spacer"></div>
 
 <!-- ═══ PROMOS FLASH ═══ -->
 <section class="k-section" id="k-promos-section">
@@ -262,6 +263,17 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
+<script>
+// Set spacer height to match fixed bar (runs once, no scroll listener)
+(function(){
+  var bar = document.querySelector('.k-hero-cats-sticky');
+  var spacer = document.getElementById('k-bar-spacer');
+  if(bar && spacer) spacer.style.height = bar.offsetHeight + 'px';
+  window.addEventListener('resize', function(){
+    if(bar && spacer) spacer.style.height = bar.offsetHeight + 'px';
+  });
+})();
+</script>
 <script src="/komerce-api.js?v=1776431996"></script>
 <script src="/boutique.js?v=1776431996"></script>
 </body>
