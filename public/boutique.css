@@ -1208,17 +1208,6 @@ body{
 .kcf-primary:hover{background:#e05a48;transform:translateY(-1px)}
 .kcf-whatsapp{background:var(--whatsapp);color:#fff;flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;font-size:0.78rem;font-weight:700;padding:8px 12px;white-space:nowrap}
 .kcf-whatsapp:hover{background:#20bd5a}
-
-/* Bouton "Copier le lien" — palette sage Komerce, plus discret que WhatsApp
-   car c'est une action secondaire (WhatsApp est le canal principal de partage). */
-.kcf-copy{
-  background:var(--ocean);color:#fff;
-  flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;
-  font-size:0.78rem;font-weight:700;padding:8px 12px;white-space:nowrap;
-  transition:background .15s var(--ease), transform .15s var(--ease);
-}
-.kcf-copy:hover{background:var(--ocean-dark)}
-.kcf-copy:active{transform:scale(.97)}
 .kcf-danger{
   background:transparent;color:var(--red);
   border:1.5px solid var(--red);flex:0 0 auto;
@@ -2354,79 +2343,4 @@ body{
 /* ── Desktop : header plus haut ── */
 @media(min-width:900px){
   .k-hero-cats-sticky.is-stuck { top: 64px; }
-}
-
-/* ══════════════════════════════════════════════════════════
-   BANDEAU PANIER PARTAGÉ
-   Affiché quand on arrive avec ?share=token → hydrate cart
-   Placement : tout en haut, au-dessus du header (il se push down)
-   Animation douce entrée + bouton "Voir" pour ouvrir le drawer.
-   ══════════════════════════════════════════════════════════ */
-.k-share-banner{
-  /* Caché par défaut, révélé via .show en JS */
-  display:none;
-  position:relative;
-  background:linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%);
-  color:#fff;
-  padding:10px var(--pad-x);
-  z-index:110;
-  box-shadow:0 2px 8px rgba(74,144,64,.25);
-  animation:kShareSlide .35s var(--ease);
-}
-.k-share-banner.show{
-  display:block;
-}
-@keyframes kShareSlide{
-  from{transform:translateY(-100%); opacity:0}
-  to{transform:translateY(0); opacity:1}
-}
-.k-share-banner-inner{
-  max-width:var(--container);
-  margin:0 auto;
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.k-share-banner-icon{
-  font-size:22px;
-  flex:0 0 auto;
-}
-.k-share-banner-text{
-  flex:1;min-width:0;
-  display:flex;flex-direction:column;
-  line-height:1.3;
-}
-.k-share-banner-text strong{
-  font-size:13px;font-weight:700;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.k-share-banner-text small{
-  font-size:11px;opacity:.9;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.k-share-banner-view{
-  background:#fff;color:var(--ocean-dark);
-  border:none;border-radius:var(--radius-sm);
-  padding:6px 12px;font-size:12px;font-weight:700;
-  cursor:pointer;flex:0 0 auto;
-  transition:transform .12s var(--ease);
-}
-.k-share-banner-view:hover{transform:scale(1.04)}
-.k-share-banner-view:active{transform:scale(.96)}
-.k-share-banner-close{
-  background:transparent;color:#fff;
-  border:none;font-size:20px;line-height:1;
-  cursor:pointer;padding:4px 8px;
-  opacity:.7;transition:opacity .12s var(--ease);
-  flex:0 0 auto;
-}
-.k-share-banner-close:hover{opacity:1}
-
-/* Desktop : plus d'espace, texte plus grand */
-@media(min-width:768px){
-  .k-share-banner{padding:12px 24px}
-  .k-share-banner-icon{font-size:26px}
-  .k-share-banner-text strong{font-size:14px}
-  .k-share-banner-text small{font-size:12px}
-  .k-share-banner-view{padding:8px 16px;font-size:13px}
 }

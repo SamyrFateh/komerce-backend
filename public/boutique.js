@@ -169,7 +169,6 @@
     cartContinue: $('#k-cart-continue'),
     cartClear: $('#k-cart-clear'),
     cartWhatsapp: $('#k-cart-whatsapp'),
-    cartCopy: $('#k-cart-copy'),
     cartCheckout: $('#k-cart-checkout'),
     // Order Modal
     orderModal: $('#k-order-modal'),
@@ -1271,51 +1270,20 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── SHARE CART WHATSAPP ────────────────────────────────── */
-  /* ══════════════════════════════════════════════════════════
-     PARTAGE PANIER — backed by /api/shares
-     Flux :
-       - Click "Partager à un proche" → POST /api/shares → WhatsApp
-       - Click "Copier le lien"        → POST /api/shares → clipboard
-       - Arrive avec ?share=token      → GET /api/shares/:token → hydrate
-     ══════════════════════════════════════════════════════════ */
-
-  /** Appel API pour créer un partage. Retourne {share_token, share_url}. */
-  async function createShareOnServer(sharerName) {
-    if (state.cart.length === 0) {
-      showToast('Votre panier est vide.', 'error');
-      return null;
-    }
-
-    var cart_items = state.cart.map(function(item) {
-      return { product_id: item.product.id, qty: item.qty };
+  function buildCartShareURL() {
+    // Encode cart as URL: ?cart=id1:qty1,id2:qty2
+    const items = state.cart.map(function(item) {
+      return item.product.id + ':' + item.qty;
     });
-
-    var body = { cart_items: cart_items };
-    if (sharerName && sharerName.trim()) body.sharer_name = sharerName.trim().slice(0, 50);
-
-    try {
-      var res = await fetch('/api/shares', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        var errData = await res.json().catch(function(){ return {}; });
-        showToast(errData.error || 'Erreur lors du partage', 'error');
-        return null;
-      }
-      return await res.json(); // {share_token, share_url, created_at}
-    } catch (err) {
-      console.error('[SHARES] createShareOnServer error:', err);
-      showToast('Erreur réseau, réessayez', 'error');
-      return null;
-    }
+    return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
-  /** Construit le message WhatsApp texte pour un URL donné. */
-  function buildShareMessage(shareUrl) {
+  function shareCartWhatsApp() {
+    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+
+    var cartURL = buildCartShareURL();
     var lines = [];
-    lines.push('🧺 *Regarde mon panier Komerce*');
+    lines.push('🧺 *Mon panier Komerce*');
     lines.push('━━━━━━━━━━━━━━━━');
     lines.push('');
 
@@ -1331,148 +1299,23 @@ function quickRemove(productId, btnEl) {
     lines.push('');
     lines.push('━━━━━━━━━━━━━━━━');
     lines.push('💰 *Total : ' + fmt(cartTotal(), 'KMF') + '* (≈ ' + fmt(cartTotal(), 'EUR') + ')');
-    lines.push('📦 Retrait au relais');
+    lines.push('📦 Livraison incluse · 3-5 semaines');
     lines.push('');
-    lines.push('Qu\'en penses-tu ? 😊');
-    lines.push('👉 Voir sur Komerce :');
-    lines.push(shareUrl);
+    lines.push('👉 Voir le panier et commander :');
+    lines.push(cartURL);
 
-    return lines.join('\n');
+    var msg = lines.join('\n');
+    // Partage vers le numéro Komerce directement (pas wa.me générique)
+    window.open(KOMERCE_WA_URL + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
-  /** Partage via WhatsApp — ouvre la liste de contacts. */
-  async function shareCartWhatsApp() {
-    var share = await createShareOnServer(state.sharerName || null);
-    if (!share) return;
-
-    var msg = buildShareMessage(share.share_url);
-    // URL partagée courte : https://.../Komerce_Boutique.html?share=x7k2n9mq
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-  }
-
-  /** Copie le lien partagé dans le presse-papier. */
-  async function copyCartLink() {
-    var share = await createShareOnServer(state.sharerName || null);
-    if (!share) return;
-
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(share.share_url);
-        showToast('🔗 Lien copié !', 'success');
-      } else {
-        // Fallback vieux navigateurs
-        var ta = document.createElement('textarea');
-        ta.value = share.share_url;
-        ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-          document.execCommand('copy');
-          showToast('🔗 Lien copié !', 'success');
-        } catch (e) {
-          showToast('Copie impossible — longue pression pour copier : ' + share.share_url, 'info');
-        }
-        document.body.removeChild(ta);
-      }
-    } catch (err) {
-      console.error('[SHARES] copy error:', err);
-      showToast('Erreur de copie', 'error');
-    }
-  }
-
-  /** Au chargement, si ?share=token dans l'URL → hydrate le panier. */
-  async function loadSharedCart() {
+  /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
+  function loadSharedCart() {
     var params = new URLSearchParams(window.location.search);
-    var shareToken = params.get('share');
+    var cartParam = params.get('cart');
+    if (!cartParam) return;
 
-    // Legacy: ancien format ?cart=id1:qty1,id2:qty2 (rétrocompat)
-    if (!shareToken) {
-      var cartParam = params.get('cart');
-      if (cartParam) return loadSharedCartLegacy(cartParam);
-      return;
-    }
-
-    // Nouveau format ?share=token
-    try {
-      var res = await fetch('/api/shares/' + encodeURIComponent(shareToken));
-      if (!res.ok) {
-        if (res.status === 404) {
-          showToast('Panier partagé introuvable ou expiré', 'error');
-        }
-        return;
-      }
-      var data = await res.json();
-      // data = {cart_items, total_kmf, sharer_name, items_count}
-
-      // Attend que les produits soient chargés
-      var waitProducts = setInterval(function() {
-        if (!state.products || state.products.length === 0) return;
-        clearInterval(waitProducts);
-
-        // Vide le panier actuel et charge le partagé
-        state.cart = [];
-        data.cart_items.forEach(function(item) {
-          var product = state.products.find(function(p) { return p.id === item.product_id; });
-          if (product) state.cart.push({ product: product, qty: item.qty });
-        });
-
-        if (state.cart.length > 0) {
-          // Mémorise le token pour linking commande
-          state.sharedFromToken = shareToken;
-          saveCart();
-          renderCartBody();
-          showShareBanner(data.sharer_name, data.items_count, data.total_kmf);
-        }
-
-        // Nettoie l'URL sans recharger
-        var cleanUrl = window.location.pathname;
-        window.history.replaceState({}, '', cleanUrl);
-      }, 200);
-      setTimeout(function() { clearInterval(waitProducts); }, 10000);
-
-    } catch (err) {
-      console.error('[SHARES] loadSharedCart error:', err);
-    }
-  }
-
-  /** Affiche le bandeau "X t'a partagé son panier". */
-  function showShareBanner(sharerName, itemsCount, totalKmf) {
-    var banner = document.getElementById('k-share-banner');
-    if (!banner) return;
-
-    var who = sharerName ? sharerName : 'Quelqu\'un';
-    var nameEl = banner.querySelector('[data-share-name]');
-    var countEl = banner.querySelector('[data-share-count]');
-    var totalEl = banner.querySelector('[data-share-total]');
-
-    if (nameEl) nameEl.textContent = who;
-    if (countEl) countEl.textContent = itemsCount + (itemsCount > 1 ? ' articles' : ' article');
-    if (totalEl) totalEl.textContent = fmt(totalKmf, 'KMF');
-
-    banner.classList.add('show');
-
-    // Bouton fermer
-    var closeBtn = banner.querySelector('[data-share-close]');
-    if (closeBtn) {
-      closeBtn.onclick = function() {
-        banner.classList.remove('show');
-      };
-    }
-
-    // Bouton voir le panier
-    var viewBtn = banner.querySelector('[data-share-view]');
-    if (viewBtn) {
-      viewBtn.onclick = function() {
-        banner.classList.remove('show');
-        dom.cartDrawer.classList.add('open');
-        dom.cartOverlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-      };
-    }
-  }
-
-  /** Legacy format ?cart=id1:qty1 (anciens liens partagés) */
-  function loadSharedCartLegacy(cartParam) {
+    // Parse cart=id1:qty1,id2:qty2
     var entries = cartParam.split(',').map(function(e) {
       var parts = e.split(':');
       return { id: parts[0], qty: parseInt(parts[1]) || 1 };
@@ -1480,19 +1323,25 @@ function quickRemove(productId, btnEl) {
 
     if (entries.length === 0) return;
 
+    // Wait for products to load, then populate cart
     var checkProducts = setInterval(function() {
       if (!state.products || state.products.length === 0) return;
       clearInterval(checkProducts);
 
+      // Clear existing cart
       state.cart = [];
+
       entries.forEach(function(entry) {
         var product = state.products.find(function(p) { return p.id === entry.id; });
-        if (product) state.cart.push({ product: product, qty: entry.qty });
+        if (product) {
+          state.cart.push({ product: product, qty: entry.qty });
+        }
       });
 
       if (state.cart.length > 0) {
         saveCart();
         renderCartBody();
+        // Open the cart drawer automatically
         setTimeout(function() {
           dom.cartDrawer.classList.add('open');
           dom.cartOverlay.classList.add('open');
@@ -1500,8 +1349,12 @@ function quickRemove(productId, btnEl) {
           showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
       }
+
+      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }, 200);
+
+    // Timeout after 10s
     setTimeout(function() { clearInterval(checkProducts); }, 10000);
   }
 
@@ -1918,9 +1771,7 @@ function quickRemove(productId, btnEl) {
         recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false,
-        tracking_phone: trackingPhone || undefined,
-        // Linking panier partagé → commande (pour stats conversion)
-        share_token: state.sharedFromToken || undefined
+        tracking_phone: trackingPhone || undefined
       });
 
       const orderData = apiResult.order || apiResult;
@@ -2089,7 +1940,6 @@ function quickRemove(productId, btnEl) {
       showToast('🗑 Panier vidé');
     });
     dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
-    if (dom.cartCopy) dom.cartCopy.addEventListener('click', copyCartLink);
     loadSharedCart();
     dom.cartCheckout.addEventListener('click', checkoutCart);
 
