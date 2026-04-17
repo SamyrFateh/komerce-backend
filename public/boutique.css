@@ -41,8 +41,21 @@ ul,ol{list-style:none}
   --radius-lg:20px;
   --header-h:44px;
   --bnav-h:50px;
-  --header-h:44px;
   --ease:cubic-bezier(.22,1,.36,1);
+
+  /* ── Container & rythme horizontal (étape A) ─────────────
+     Un seul rail vertical pour tout le site. Toutes les sections
+     (hero, catégories, promos, catalogue) partagent le même
+     max-width et le même padding horizontal pour un alignement
+     parfait à tous les breakpoints. */
+  --container: 1400px;
+  --pad-x: 16px;       /* mobile */
+}
+@media (min-width: 768px) {
+  :root { --pad-x: 24px; }
+}
+@media (min-width: 1200px) {
+  :root { --pad-x: 32px; }
 }
 
 /* ── BODY ──────────────────────────────────────────────── */
@@ -60,13 +73,13 @@ body{
 .k-header{
   position:sticky;top:0;z-index:100;
   background:var(--white);
-  padding:0 12px;
+  padding:0 var(--pad-x);
   height:44px;
   box-shadow:0 2px 8px rgba(0,0,0,.06);
 }
 .k-header-inner{
   display:flex;align-items:center;gap:10px;
-  height:100%;max-width:1200px;margin:0 auto;
+  height:100%;max-width:var(--container);margin:0 auto;
 }
 .k-logo{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .k-logo-icon{font-size:22px;filter:drop-shadow(0 0 4px rgba(230,74,25,.35))}
@@ -137,6 +150,9 @@ body{
 }
 
 /* ── HERO ──────────────────────────────────────────────── */
+/* Étape A : l'IMAGE reste full-bleed (bord à bord) pour l'impact,
+   mais le BANDEAU TEXTE dessous partage le padding et le max-width
+   des autres sections → alignement parfait avec cats / promos / grid. */
 .k-hero{
   position:relative;overflow:hidden;
   background:var(--sand);
@@ -146,20 +162,24 @@ body{
   object-fit:cover;object-position:center 15%;
   opacity:1;display:block;
 }
-/* Mobile : bandeau ivoire dessous */
+/* Mobile : bandeau ivoire dessous, aligné sur le rail global */
 .k-hero-overlay{
   position:static;
   background:var(--sand);
   display:flex;flex-direction:row;
   align-items:flex-start;justify-content:space-between;
-  padding:14px 16px 16px;gap:12px;
+  gap:12px;
+  /* Clé de l'alignement : même rail que les sections */
+  max-width:var(--container);
+  margin:0 auto;
+  padding:14px var(--pad-x) 16px;
   border-bottom:1px solid var(--border);
 }
 .k-hero-tag{display:none}
-/* Desktop : image plus haute */
+/* Desktop : image plus haute, mais toujours max-width container */
 @media(min-width:768px){
   .k-hero img{max-height:320px;object-position:center 20%;}
-  .k-hero-overlay{padding:18px 32px 20px;}
+  .k-hero-overlay{padding:18px var(--pad-x) 20px;}
   .k-hero-title{font-size:24px;}
 }
 @media(min-width:1200px){
@@ -167,7 +187,14 @@ body{
 }
 
 /* ── SECTIONS ──────────────────────────────────────────── */
-.k-section{padding:4px 12px;margin-bottom:8px;}
+/* Étape A : toutes les sections partagent le même rail que le hero.
+   Le padding vertical reste 4px (compact), l'horizontal est piloté
+   par --pad-x, et max-width plafonne sur grands écrans. */
+.k-section{
+  max-width:var(--container);
+  margin:0 auto 8px;
+  padding:4px var(--pad-x);
+}
 .k-section-head{
   display:flex;align-items:center;justify-content:space-between;width:100%;
 }
@@ -260,12 +287,19 @@ body{
 }
 
 /* ── CATEGORIES CHIPS ──────────────────────────────────── */
+/* Étape A : aligné sur le rail global. Sur mobile, overflow auto
+   pour scroll horizontal si trop de catégories. Sur desktop le flex
+   garde les chips bien répartis. */
 .k-cats{
   display:flex;flex-wrap:nowrap;gap:7px;
-  padding:10px 12px 8px;
-  margin-top:-10px;
+  max-width:var(--container);
+  margin:-10px auto 0;
+  padding:10px var(--pad-x) 8px;
   position:relative;z-index:2;
+  overflow-x:auto;
+  scrollbar-width:none;
 }
+.k-cats::-webkit-scrollbar{display:none}
 .k-chip{
   flex:1;
   min-width:0;
@@ -314,11 +348,13 @@ body{
 }
 
 /* ── PRODUCT GRID ──────────────────────────────────────── */
+/* Étape A : la grille hérite du padding horizontal de .k-section
+   (donc alignée sur le rail). On ne garde que le padding vertical. */
 .k-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(2,1fr);
   gap:8px;
-  padding:4px 8px 12px;
+  padding:4px 0 12px;
 }
 
 .k-card{
@@ -1183,15 +1219,20 @@ body{
 .k-bnav-item.active svg{stroke-width:2.5}
 
 /* ── RESPONSIVE ────────────────────────────────────────── */
+/* Étape A : progression 2 → 3 → 4 → 5 → 6 colonnes.
+   Mobile 2 cols (iPhone SE OK), 480px+ reste 2, 600px+ passe à 3,
+   900px+ à 4, 1200px+ à 5, 1600px+ à 6. Fini les cards étirées sur 1920. */
 @media(min-width:480px){
-  .k-grid{grid-template-columns:repeat(3,1fr);gap:8px}
   .k-promo-card{flex: 0 0 110px}
   .k-hero img{height:160px}
   .k-card-add{width:36px;height:36px}
   .k-card-basket-icon{width:32px;height:32px}
   .k-card-fav{width:26px;height:26px;top:6px;right:6px;font-size:13px}
 }
-@media(min-width:768px){
+@media(min-width:600px){
+  .k-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+}
+@media(min-width:900px){
   .k-grid{grid-template-columns:repeat(4,1fr);gap:14px}
   .k-bnav{display:none}
   body{padding-bottom:0}
@@ -1199,6 +1240,12 @@ body{
   .k-card-add{width:44px;height:44px;bottom:6px;right:6px}
   .k-card-basket-icon{width:40px;height:40px}
   .k-card-fav{width:32px;height:32px;top:8px;right:8px;font-size:16px}
+}
+@media(min-width:1200px){
+  .k-grid{grid-template-columns:repeat(5,1fr);gap:16px}
+}
+@media(min-width:1600px){
+  .k-grid{grid-template-columns:repeat(6,1fr);gap:18px}
 }
 
 /* ── ANIMATIONS ────────────────────────────────────────── */
