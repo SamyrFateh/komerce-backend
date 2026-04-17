@@ -2206,3 +2206,66 @@ body{
 .ck-thumb { position:relative; width:48px; height:48px; border-radius:8px; overflow:hidden; background:#fff; border:1.5px solid var(--border); flex-shrink:0; }
 .ck-thumb img { width:100%; height:100%; object-fit:cover; }
 .ck-thumb-qty { position:absolute; bottom:2px; right:2px; background:var(--coral); color:#fff; font-size:9px; font-weight:800; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+
+
+/* ══════════════════════════════════════════════════════════
+   OPTIMISATIONS MOBILE — Hero sticky + compact  (patch v2)
+   ══════════════════════════════════════════════════════════ */
+
+/* 1. Hero sticky — reste visible pendant que le catalogue défile */
+.k-hero {
+  position: sticky;
+  top: 44px;   /* = hauteur du header mobile */
+  z-index: 5;
+}
+@media(min-width:900px){
+  .k-hero { top: 64px; } /* header desktop = 64px */
+}
+
+/* Le catalogue défile par-dessus le hero sticky */
+.k-cats {
+  position: relative;
+  z-index: 10;
+  background: var(--sand);
+}
+.k-section {
+  position: relative;
+  z-index: 10;
+  background: var(--sand);
+}
+
+/* 2. Hero compact sur mobile — gain de place vers le catalogue */
+.k-hero-img {
+  height: clamp(140px, 24vw, 240px);
+}
+.k-hero-overlay {
+  padding: 10px var(--pad-x) 12px;
+  gap: 6px;
+}
+.k-hero-text-left {
+  gap: 6px;
+}
+/* Sous-titre descriptif masqué sur mobile pour gagner de la hauteur */
+@media(max-width:899px){
+  .k-hero-sub { display: none; }
+}
+
+/* 3. Pills sur 1 seule ligne défilable (plus de wrap) */
+.k-hero-pills {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding-bottom: 2px; /* évite le clip du scroll */
+}
+.k-hero-pills::-webkit-scrollbar { display: none; }
+
+/* 4. Padding-right sur les catégories → évite chevauchement FAB WhatsApp */
+@media(max-width:899px){
+  .k-cats { padding-right: 76px; }
+}
+
+/* 5. Label "Panier" masqué sur mobile → barre de recherche plus large */
+@media(max-width:899px){
+  .k-header-action-label { display: none; }
+}
