@@ -2544,3 +2544,57 @@ body{
   }
 
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   PATCH v8 — Sticky sans image, cats centrées, cadre réduit
+   ══════════════════════════════════════════════════════════ */
+
+/* Le sticky wrapper ne contient PLUS l'image */
+.k-hero-cats-sticky {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+  background: #fff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
+}
+
+/* L'overlay est maintenant hors du hero-inner, style autonome */
+.k-hero-cats-sticky > .k-hero-overlay {
+  padding: 7px 12px 6px !important;
+  background: #fff !important;
+}
+
+@media(max-width:899px){
+
+  /* Catégories : centrées, cadre ultra-réduit */
+  nav.k-cats,
+  .k-cats {
+    justify-content: center !important;
+    padding: 3px 6px 4px !important;
+    gap: 0 !important;
+    background: #fff !important;
+    border-top: 1px solid rgba(0,0,0,.05) !important;
+  }
+
+  /* Chips encore plus compacts */
+  .k-chip {
+    min-width: 48px !important;
+    padding: 2px 1px !important;
+    gap: 2px !important;
+  }
+  .k-chip-photo {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .k-chip-label {
+    font-size: 9px !important;
+  }
+
+}
+
+@media(min-width:900px){
+  .k-hero-cats-sticky {
+    top: 64px !important; /* header desktop */
+  }
+}
