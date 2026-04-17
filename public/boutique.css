@@ -206,7 +206,7 @@ body{
 }
 .k-hero-img{
   width:100%;
-  height:clamp(140px, 25vw, 260px);
+  height:clamp(120px, 22vw, 220px);
   object-fit:cover;
   object-position:center 15%;
   display:block;
@@ -242,7 +242,7 @@ body{
     align-items:stretch;
     gap:40px;
     padding:28px var(--pad-x);
-    min-height:220px;
+    min-height:200px;
   }
   .k-hero-media{
     flex:1 1 58%;
@@ -277,9 +277,9 @@ body{
   .k-hero-inner{
     padding:36px var(--pad-x);
     gap:56px;
-    min-height:260px;
+    min-height:220px;
   }
-  .k-hero-media, .k-hero-img{min-height:220px}
+  .k-hero-media, .k-hero-img{min-height:180px}
 }
 
 /* ── SECTIONS ──────────────────────────────────────────── */
@@ -2325,7 +2325,7 @@ body{
 
   /* ── Hero image compact ── */
   .k-hero-img {
-    height: clamp(140px, 24vw, 240px);
+    height: clamp(120px, 22vw, 220px);
   }
 
   /* ── Sous-titre masqué sur mobile ── */
