@@ -67,30 +67,34 @@ if('serviceWorker' in navigator){
   </div>
 </header>
 
-<!-- ═══ HERO BANNER ═══ -->
+<!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
       <img class="k-hero-img" src="/New_Hero.jpg" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
     </div>
-    <div class="k-hero-overlay">
-      <div class="k-hero-text-left">
-        <div class="k-hero-eyebrow">KOMERCE · COMORES</div>
-        <div class="k-hero-title">Trouvez ce que<br>vous voulez.</div>
-        <div class="k-hero-sub">Mode, beauté, tech, sur-mesure : la boutique qui vous ressemble, livrée à votre relais.</div>
-        <div class="k-hero-pills">
-          <span class="k-hero-pill">Retrait au relais</span>
-          <span class="k-hero-pill">Paiement cash ou carte</span>
-          <span class="k-hero-pill">Support WhatsApp</span>
-        </div>
-        <button class="k-hero-btn" onclick="document.querySelector('.k-grid')?.scrollIntoView({behavior:'smooth'})">
-          Explorer le catalogue
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </div>
-    </div>
   </div>
 </section>
+
+<!-- ═══ SENTINEL (invisible marker for IntersectionObserver) ═══ -->
+<div id="k-bar-sentinel" style="height:0;margin:0;padding:0;"></div>
+
+<!-- ═══ SLOGAN + PILLS + CATÉGORIES (sticks on scroll) ═══ -->
+<div class="k-hero-cats-sticky" id="k-sticky-bar">
+  <div class="k-hero-overlay">
+    <div class="k-hero-text-left">
+      <div class="k-hero-title">Trouvez ce que vous cherchez !</div>
+      <div class="k-hero-pills">
+        <span class="k-hero-pill">Retrait au relais</span>
+        <span class="k-hero-pill">Paiement cash ou carte</span>
+        <span class="k-hero-pill">Support WhatsApp</span>
+      </div>
+      <button class="k-hero-btn" onclick="document.querySelector('.k-grid')?.scrollIntoView({behavior:'smooth'})">
+        Catalogue
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
 
 <!-- ═══ CATÉGORIES ═══ -->
 <nav class="k-cats" id="k-cats">
@@ -119,6 +123,8 @@ if('serviceWorker' in navigator){
     <span class="k-chip-label">Couture</span>
   </button>
 </nav>
+</div><!-- /k-hero-cats-sticky -->
+<div id="k-bar-spacer" style="display:none;"></div>
 
 <!-- ═══ PROMOS FLASH ═══ -->
 <section class="k-section" id="k-promos-section">
@@ -260,7 +266,45 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
+<<<<<<< HEAD
 <script src="/komerce-api.js?v=1776454857"></script>
 <script src="/boutique.js?v=1776454857"></script>
+=======
+<script>
+// IntersectionObserver: bar becomes fixed ONLY when scrolled past
+(function(){
+  var sentinel = document.getElementById('k-bar-sentinel');
+  var bar = document.getElementById('k-sticky-bar');
+  var spacer = document.getElementById('k-bar-spacer');
+  if(!sentinel || !bar || !spacer) return;
+
+  // Pre-calculate spacer height
+  spacer.style.height = bar.offsetHeight + 'px';
+
+  var observer = new IntersectionObserver(function(entries){
+    if(entries[0].isIntersecting){
+      // Sentinel visible → bar in normal document flow
+      bar.classList.remove('is-stuck');
+      spacer.style.display = 'none';
+    } else {
+      // Sentinel scrolled out → bar becomes fixed
+      bar.classList.add('is-stuck');
+      spacer.style.display = 'block';
+    }
+  }, {
+    rootMargin: '-44px 0px 0px 0px' // offset = header height
+  });
+
+  observer.observe(sentinel);
+
+  // Update spacer on resize
+  window.addEventListener('resize', function(){
+    spacer.style.height = bar.offsetHeight + 'px';
+  });
+})();
+</script>
+<script src="/komerce-api.js?v=1776431996"></script>
+<script src="/boutique.js?v=1776431996"></script>
+>>>>>>> 3e829d8974277fb576d2531da6be25f42df9dbb0
 </body>
 </html>

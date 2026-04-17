@@ -57,6 +57,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
 
       order_occasion = null,
       use_wallet = false,
+      share_token,
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -325,6 +326,18 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     }
 
     await client.query('COMMIT');
+
+    // ── Lier le partage à la commande si share_token présent (fire-and-forget) ──
+    if (share_token) {
+      db.query(
+        `UPDATE cart_shares
+         SET converted_order_id = $1,
+             converted_at       = NOW()
+         WHERE share_token = $2
+           AND converted_order_id IS NULL`,
+        [order.id, share_token]
+      ).catch(e => console.error('[SHARES] linkShareToOrder error:', e.message));
+    }
 
     // ── Notifications post-commit (multi-numéros) ──────────────────────────
 
