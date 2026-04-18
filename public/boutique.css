@@ -735,6 +735,11 @@ body{
     flex-direction:row;align-items:center;
     justify-content:space-between;gap:4px;
   }
+  /* Cartes produits compactes sur mobile */
+  .k-card-info{padding:6px 8px 8px}
+  .k-card-name{font-size:12px;min-height:2em}
+  .k-card-bottom{margin-top:3px}
+  .k-card-price{font-size:12px}
 }
 
 /* ── LOADING ───────────────────────────────────────────── */
