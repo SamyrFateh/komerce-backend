@@ -2252,7 +2252,7 @@ body{
 @media(max-width:899px){
   /* ── Slogan + Catalogue sur 1 ligne ── */
   .k-hero-overlay {
-    padding: 6px 12px 2px;
+    padding: 4px 10px 1px;
   }
   .k-hero-text-left {
     display: grid;
@@ -2303,7 +2303,7 @@ body{
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding: 3px 8px 4px;
+    padding: 2px 6px 2px;
     gap: 2px;
     margin: 0;
     border-top: 1px solid rgba(0,0,0,.05);
@@ -2316,8 +2316,8 @@ body{
     flex-shrink: 0;
   }
   .k-hero-cats-sticky .k-chip-photo {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
   }
   .k-hero-cats-sticky .k-chip-label {
     font-size: 9px;
@@ -2325,7 +2325,7 @@ body{
 
   /* ── Hero image compact ── */
   .k-hero-img {
-    height: clamp(120px, 22vw, 220px);
+    height: clamp(80px, 16vw, 130px);
   }
 
   /* ── Sous-titre masqué sur mobile ── */
