@@ -581,22 +581,25 @@ const server = app.listen(PORT, () => {
       } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
 	  
 	        // ── Migration 033: table audit matrices pricing ──
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS pricing_matrices_audit (
-          id             SERIAL PRIMARY KEY,
-          matrix_type    VARCHAR(20) NOT NULL CHECK (matrix_type IN ('taxes', 'dims')),
-          category       VARCHAR(50) NOT NULL,
-          old_value      JSONB NOT NULL,
-          new_value      JSONB NOT NULL,
-          changed_by     UUID REFERENCES users(id) ON DELETE SET NULL,
-          change_reason  TEXT,
-          created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_pma_created ON pricing_matrices_audit(created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_pma_matrix_cat ON pricing_matrices_audit(matrix_type, category);
-      `);
-
-      // ── Migration 030: cart_shares table (panier partagé) ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS pricing_matrices_audit (
+            id             SERIAL PRIMARY KEY,
+            matrix_type    VARCHAR(20) NOT NULL CHECK (matrix_type IN ('taxes', 'dims')),
+            category       VARCHAR(50) NOT NULL,
+            old_value      JSONB NOT NULL,
+            new_value      JSONB NOT NULL,
+            changed_by     UUID REFERENCES users(id) ON DELETE SET NULL,
+            change_reason  TEXT,
+            created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_pma_created ON pricing_matrices_audit(created_at DESC);
+          CREATE INDEX IF NOT EXISTS idx_pma_matrix_cat ON pricing_matrices_audit(matrix_type, category);
+        `);
+        console.log('✅ Migration 033: pricing_matrices_audit table ready');
+      } catch(e) { console.warn('Migration 033 (non-fatal):', e.message); }
+	  
+	        // ── Migration 030: cart_shares table (panier partagé) ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS cart_shares (
