@@ -3236,3 +3236,28 @@ body{
     top: 2px;
   }
 }
+@media (max-width: 899px){
+
+  .k-section#k-promos-section{
+    padding-top: 6px;
+  }
+
+  .k-promo-rail{
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .k-promo-card{
+    padding-top: 0;
+  }
+
+  .k-promo-card-img{
+    height: 90px;
+    object-fit: cover;
+    object-position: center center;
+  }
+
+  .k-promo-badge{
+    top: 6px;
+  }
+}
