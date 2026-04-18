@@ -411,15 +411,18 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
   try {
     const { rows: [order] } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.payment_mode,
-        u.full_name AS customer_name,
-        u.phone AS local_phone,
-        u.whatsapp_phone AS diaspora_phone,
-        u.email AS customer_email,
-        r.name AS relais_name
-      FROM orders o
-      LEFT JOIN users u ON u.id = o.user_id
-      LEFT JOIN relais r ON r.id = o.relais_id
-      WHERE o.id = $1::uuid
+  o.tracking_phone,
+  rec.phone AS recipient_phone,
+  u.full_name AS customer_name,
+  u.phone AS user_phone,
+  u.whatsapp_phone AS user_whatsapp_phone,
+  u.email AS customer_email,
+  r.name AS relais_name
+FROM orders o
+LEFT JOIN users u ON u.id = o.user_id
+LEFT JOIN recipients rec ON rec.id = o.recipient_id
+LEFT JOIN relais r ON r.id = o.relais_id
+WHERE o.id = $1::uuid
     `, [orderId]);
 
     if (!order) {
@@ -427,7 +430,13 @@ async function notifyPaymentConfirmed(orderId, orderRef) {
       return null;
     }
 
-    const allPhones = resolvePhones(order.local_phone, order.diaspora_phone, 'payment_confirmed');
+    const allPhones = [...new Set([
+  order.recipient_phone || order.user_phone || null,
+  order.tracking_phone || order.user_whatsapp_phone || null,
+].filter(Boolean))];
+console.log('[DEBUG][PAYMENT-CONFIRMED] recipient_phone =', order.recipient_phone);
+console.log('[DEBUG][PAYMENT-CONFIRMED] tracking_phone =', order.tracking_phone);
+console.log('[DEBUG][PAYMENT-CONFIRMED] allPhones =', allPhones);
 
     const { rows: items } = await db.query(`
       SELECT oi.quantity, oi.price_kmf, p.name AS product_name
