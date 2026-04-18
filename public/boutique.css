@@ -1187,7 +1187,7 @@ body{
   background:var(--white);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   box-shadow:0 -4px 16px rgba(0,0,0,.06);flex-shrink:0;
-  padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  padding-bottom:calc(var(--bnav-h) + 20px + env(safe-area-inset-bottom));
 }
 .k-cart-total-row{
   display:flex;justify-content:space-between;align-items:baseline;
