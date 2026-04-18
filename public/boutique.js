@@ -1689,7 +1689,7 @@ function quickRemove(productId, btnEl) {
       sync();
     });
     input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
-    input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.addEventListener('blur',  () => { sync(); input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', sync);
 
     input.maxLength = currentCountry.max + 4;
@@ -1809,9 +1809,16 @@ function quickRemove(productId, btnEl) {
     const od = state.orderData;
     const recipName   = (document.getElementById('of-beneficiary-name')?.value  || '').trim();
     const recipPhone  = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
-    // Lire sender_phone peu importe si la checkbox est cochée ou non
-    // La valeur est déjà préfixée par l'indicatif pays via makeIntlPhoneInput (ex: +33612345678)
-    const senderPhone = (od.sender_phone || '').trim();
+    // Lire sender_phone — priorité à od.sender_phone (mis à jour par sync() à chaque input/blur)
+    // Fallback DOM : lecture directe de l'input au cas où sync() n'a pas été déclenché (autofill mobile, paste)
+    let senderPhone = (od.sender_phone || '').trim();
+    if (senderPhone.length < 8) {
+      const _phoneInput  = document.getElementById('of-sender-phone');
+      const _countrySel  = document.getElementById('of-sender-phone-country');
+      const _digits      = (_phoneInput?.value || '').trim().replace(/\s/g, '');
+      const _code        = _countrySel?.value || '+33';
+      if (_digits.length >= 6) senderPhone = _code + _digits;
+    }
     const clientName  = recipName;
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const clientEmail = undefined;
