@@ -1,3 +1,6 @@
+
+/* Mobile hero image — desktop masqué */
+.k-hero-media-mobile { display: none; }
 /* ═══════════════════════════════════════════════════════════
    KOMERCE — Boutique CSS v3.0 "Sage & Green" + Full Cart
    Mobile-first · Comorian identity · Fast & clean
@@ -206,7 +209,7 @@ body{
 }
 .k-hero-img{
   width:100%;
-  height:clamp(180px, 32vw, 360px);
+  height:clamp(120px, 22vw, 220px);
   object-fit:cover;
   object-position:center 15%;
   display:block;
@@ -242,7 +245,7 @@ body{
     align-items:stretch;
     gap:40px;
     padding:28px var(--pad-x);
-    min-height:320px;
+    min-height:200px;
   }
   .k-hero-media{
     flex:1 1 58%;
@@ -254,7 +257,7 @@ body{
   .k-hero-img{
     width:100%;
     height:100%;
-    min-height:280px;
+    min-height:200px;
     object-position:center center;
     border-radius:var(--radius-lg);
   }
@@ -277,9 +280,9 @@ body{
   .k-hero-inner{
     padding:36px var(--pad-x);
     gap:56px;
-    min-height:360px;
+    min-height:220px;
   }
-  .k-hero-media, .k-hero-img{min-height:320px}
+  .k-hero-media, .k-hero-img{min-height:180px}
 }
 
 /* ── SECTIONS ──────────────────────────────────────────── */
@@ -732,6 +735,11 @@ body{
     flex-direction:row;align-items:center;
     justify-content:space-between;gap:4px;
   }
+  /* Cartes produits compactes sur mobile */
+  .k-card-info{padding:6px 8px 8px}
+  .k-card-name{font-size:12px;min-height:2em}
+  .k-card-bottom{margin-top:3px}
+  .k-card-price{font-size:12px}
 }
 
 /* ── LOADING ───────────────────────────────────────────── */
@@ -2249,91 +2257,169 @@ body{
   z-index: 90;
 }
 
-/* ── Slogan + Catalogue sur 1 ligne ── */
-.k-hero-overlay {
-  padding: 6px 12px 2px;
-}
-.k-hero-text-left {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 2px 10px;
-}
-.k-hero-title {
-  grid-column: 1;
-  grid-row: 1;
-  white-space: nowrap;
-  font-size: clamp(0.95rem, 3.8vw, 1.25rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.k-hero-btn {
-  grid-column: 2;
-  grid-row: 1;
-  font-size: 10px;
-  padding: 4px 9px;
-  white-space: nowrap;
-}
-.k-hero-pills {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  gap: 6px;
-  padding-bottom: 2px;
-}
-.k-hero-pills::-webkit-scrollbar { display: none; }
-.k-hero-pill {
-  flex-shrink: 0;
-  font-size: 10px;
-  padding: 3px 9px;
-  white-space: nowrap;
-}
-
-/* ── Catégories : compactes, centrées, 1 ligne ── */
-.k-hero-cats-sticky .k-cats {
-  display: flex;
-  justify-content: center;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 3px 8px 4px;
-  gap: 2px;
-  margin: 0;
-  border-top: 1px solid rgba(0,0,0,.05);
-}
-.k-hero-cats-sticky .k-cats::-webkit-scrollbar { display: none; }
-.k-hero-cats-sticky .k-chip {
-  min-width: 44px;
-  padding: 2px;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.k-hero-cats-sticky .k-chip-photo {
-  width: 34px;
-  height: 34px;
-}
-.k-hero-cats-sticky .k-chip-label {
-  font-size: 9px;
-}
-
-/* ── Hero image compact ── */
-.k-hero-img {
-  height: clamp(140px, 24vw, 240px);
-}
-
-/* ── Sous-titre masqué sur mobile ── */
 @media(max-width:899px){
+  /* ── Slogan + Catalogue sur 1 ligne ── */
+  .k-hero-overlay {
+    padding: 4px 10px 1px;
+  }
+  .k-hero-text-left {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto;
+    align-items: center;
+    justify-content: center;
+    gap: 2px 10px;
+  }
+  .k-hero-title {
+    grid-column: 1;
+    grid-row: 1;
+    white-space: nowrap;
+    font-size: clamp(1.25rem, 5vw, 1.6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(120deg, #1a1a1a 30%, #2d7a56 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .k-hero-btn {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 10px;
+    padding: 4px 9px;
+    white-space: nowrap;
+  }
+  .k-hero-pills {
+    display: none;
+  }
+  /* Drawer panier s'arrête au-dessus de la nav bar */
+  .k-cart-drawer{
+    bottom: var(--bnav-h);
+    border-radius: 16px 0 0 16px;
+  }
+
+  /* ── Titres sections + cartes plus hautes ── */
+  .k-section-head h2{
+    font-size: 14px;
+  }
+  .k-section{
+    padding-top: 0;
+    margin-bottom: 4px;
+  }
+  .k-promo-card-img{
+    height: 70px;
+  }
+  .k-hero-pills::-webkit-scrollbar { display: none; }
+  .k-hero-pill {
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 3px 9px;
+    white-space: nowrap;
+  }
+
+  /* ── Catégories : compactes, centrées, 1 ligne ── */
+  .k-hero-cats-sticky .k-cats {
+    display: flex;
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 6px 2px;
+    gap: 2px;
+    margin: 0;
+    border-top: 1px solid rgba(0,0,0,.05);
+  }
+  .k-hero-cats-sticky .k-cats::-webkit-scrollbar { display: none; }
+  .k-hero-cats-sticky .k-chip {
+    min-width: 44px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .k-hero-cats-sticky .k-chip-photo {
+    width: 28px;
+    height: 28px;
+  }
+  .k-hero-cats-sticky .k-chip-label {
+    font-size: 9px;
+  }
+
+  /* ── Hero image compact ── */
+  /* Hero image — compact sur mobile */
+  .k-hero {
+    display: block !important;
+    height: 100px;
+    overflow: hidden;
+  }
+  .k-hero-inner {
+    height: 100%;
+    padding: 0;
+  }
+  .k-hero-media {
+    height: 100%;
+    width: 100%;
+  }
+  .k-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+  }
+
+  /* Layout 2 colonnes : slogan gauche + pills/proverbe droite */
+  .k-hero-overlay {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    padding: 5px 10px 4px;
+    width: 100%;
+  }
+  .k-hero-text-left {
+    flex: 1;
+    text-align: left;
+    padding: 0 8px 0 0;
+    overflow: hidden;
+  }
+  /* Colonne droite : pills + proverbe */
+  .k-hero-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+    max-width: 46%;
+  }
+  .k-hero-pills {
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .k-hero-pill {
+    font-size: 9px !important;
+    padding: 2px 7px !important;
+    white-space: nowrap;
+  }
+  .k-hero-proverb-inline {
+    font-size: 8.5px;
+    font-style: italic;
+    font-weight: 400;
+    color: #333;
+    text-align: right;
+    line-height: 1.3;
+    max-width: 100%;
+    display: block;
+  }
+  /* Image mobile cachée dans le sticky bar */
+  .k-hero-media-mobile { display: none; }
+  .k-hero-img-mobile   { display: none; }
+
+  /* ── Sous-titre masqué sur mobile ── */
   .k-hero-sub { display: none; }
-}
 
-/* ── Label "Panier" masqué sur mobile → barre recherche plus large ── */
-@media(max-width:899px){
+  /* ── Label "Panier" masqué sur mobile ── */
   .k-header-action-label { display: none; }
 }
 
@@ -2348,3 +2434,82 @@ body{
 @media(min-width:900px){
   .k-hero-cats-sticky.is-stuck { top: 64px; }
 }
+
+/* ── Desktop : k-hero-overlay est hors de k-hero-inner — recentrage ── */
+/* Les règles min-width:900px du bloc hero original donnaient padding:0 et
+   max-width:480px car .k-hero-overlay était alors une colonne flex.
+   Maintenant il est dans .k-hero-cats-sticky → on recentre. */
+@media(min-width:900px){
+  .k-hero-cats-sticky {
+    position: relative !important;
+  }
+  .k-hero-overlay {
+    flex: unset;
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 16px var(--pad-x);
+    justify-content: flex-start;
+    border-bottom: 1px solid var(--border);
+  }
+  .k-hero-cats-sticky .k-cats {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding-left: var(--pad-x);
+    padding-right: var(--pad-x);
+  }
+}
+
+/* ── Hero fixed wrap (mobile only) ─────────────────────────────────────────── */
+@media (max-width:899px){
+  #k-hero-fixed-wrap{
+    position:fixed;
+    top:var(--header-h);
+    left:0;
+    right:0;
+    z-index:200;
+    background:var(--surface,#fff);
+  }
+  /* Désactiver le sticky de la bar à l'intérieur du wrap fixe */
+  #k-hero-fixed-wrap .k-hero-cats-sticky,
+  #k-hero-fixed-wrap .k-hero-cats-sticky.is-stuck{
+    position:static !important;
+    top:auto !important;
+    width:auto !important;
+    left:auto !important;
+    right:auto !important;
+    box-shadow:none;
+  }
+}
+
+/* ── Mobile scroll lock: only #k-page-scroll scrolls ── */
+@media (max-width: 899px) {
+  body { overflow: hidden; height: 100dvh; }
+  #k-page-scroll {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    /* top set by JS */
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* ══ Bande proverbe rotatif ══ */
+/* ══ Proverbe séparateur de section ══ */
+.k-proverb-sep {
+  display: none; /* caché sur desktop */
+}
+
+@media (max-width: 899px) {
+  .k-proverb-sep {
+    display: block;
+    width: calc(100% - 32px);
+    margin: 4px auto 6px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(0,0,0,0.10), transparent);
+  }
+  .k-proverb-sep::before,
+  .k-proverb-sep::after { display: none; 
+  }
+}
+

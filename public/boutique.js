@@ -1287,18 +1287,38 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── SHARE CART WHATSAPP ────────────────────────────────── */
-  function buildCartShareURL() {
-    // Encode cart as URL: ?cart=id1:qty1,id2:qty2
+  /* ── SHARED CART — API v2 ──────────────────────────────────── */
+
+  async function buildCartShareURL() {
+    // Appel API → POST /api/shares → retourne share_url courte
+    const items = state.cart.map(function(item) {
+      return { product_id: item.product.id, qty: item.qty };
+    });
+    const res = await apiPost('/api/shares', { items: items });
+    if (res && res.share_url) return res.share_url;
+    throw new Error('share_url manquante');
+  }
+
+  function _buildFallbackCartURL() {
+    // Fallback legacy URL si l'API échoue
     const items = state.cart.map(function(item) {
       return item.product.id + ':' + item.qty;
     });
     return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
-  function shareCartWhatsApp() {
+  async function shareCartWhatsApp() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
 
-    var cartURL = buildCartShareURL();
+    showToast('⏳ Génération du lien…', 'info');
+    var cartURL;
+    try {
+      cartURL = await buildCartShareURL();
+    } catch(e) {
+      console.warn('share API error, using fallback URL:', e);
+      cartURL = _buildFallbackCartURL();
+    }
+
     var lines = [];
     lines.push('🧺 *Mon panier Komerce*');
     lines.push('━━━━━━━━━━━━━━━━');
@@ -1322,17 +1342,25 @@ function quickRemove(productId, btnEl) {
     lines.push(cartURL);
 
     var msg = lines.join('\n');
-    // Partage vers le numéro Komerce directement (pas wa.me générique)
     window.open(KOMERCE_WA_URL + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
   function loadSharedCart() {
     var params = new URLSearchParams(window.location.search);
+
+    // Nouveau : ?share=token → API
+    var shareToken = params.get('share');
+    if (shareToken) {
+      state.shareToken = shareToken;
+      _loadSharedCartFromAPI(shareToken);
+      return;
+    }
+
+    // Legacy : ?cart=id1:qty1,id2:qty2
     var cartParam = params.get('cart');
     if (!cartParam) return;
 
-    // Parse cart=id1:qty1,id2:qty2
     var entries = cartParam.split(',').map(function(e) {
       var parts = e.split(':');
       return { id: parts[0], qty: parseInt(parts[1]) || 1 };
@@ -1340,25 +1368,19 @@ function quickRemove(productId, btnEl) {
 
     if (entries.length === 0) return;
 
-    // Wait for products to load, then populate cart
     var checkProducts = setInterval(function() {
       if (!state.products || state.products.length === 0) return;
       clearInterval(checkProducts);
 
-      // Clear existing cart
       state.cart = [];
-
       entries.forEach(function(entry) {
         var product = state.products.find(function(p) { return p.id === entry.id; });
-        if (product) {
-          state.cart.push({ product: product, qty: entry.qty });
-        }
+        if (product) state.cart.push({ product: product, qty: entry.qty });
       });
 
       if (state.cart.length > 0) {
         saveCart();
         renderCartBody();
-        // Open the cart drawer automatically
         setTimeout(function() {
           dom.cartDrawer.classList.add('open');
           dom.cartOverlay.classList.add('open');
@@ -1366,13 +1388,52 @@ function quickRemove(productId, btnEl) {
           showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
       }
-
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }, 200);
-
-    // Timeout after 10s
     setTimeout(function() { clearInterval(checkProducts); }, 10000);
+  }
+
+  async function _loadSharedCartFromAPI(token) {
+    // GET /api/shares/:token → { sharer_name, items:[{product_id,qty,product:{...}}] }
+    try {
+      const data = await apiGet('/api/shares/' + encodeURIComponent(token));
+
+      var checkProducts = setInterval(function() {
+        if (!state.products || state.products.length === 0) return;
+        clearInterval(checkProducts);
+
+        state.cart = [];
+        var items = data.items || data.cart_items || [];
+        items.forEach(function(item) {
+          // Le back peut retourner product_id ou product.id
+          var pid = item.product_id || (item.product && item.product.id);
+          var product = state.products.find(function(p) { return p.id === pid; });
+          if (product) state.cart.push({ product: product, qty: item.qty || 1 });
+        });
+
+        if (state.cart.length > 0) {
+          saveCart();
+          renderCartBody();
+          setTimeout(function() {
+            dom.cartDrawer.classList.add('open');
+            dom.cartOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            var sharerName = data.sharer_name || data.shared_by || null;
+            var msg = sharerName
+              ? '🎁 ' + sharerName + " t'a partagé son panier !"
+              : '🧺 Panier partagé chargé !';
+            showToast(msg, 'success');
+            if (sharerName && dom.cartHeaderTitle) {
+              dom.cartHeaderTitle.textContent = '🎁 Panier de ' + sharerName;
+            }
+          }, 500);
+        }
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 200);
+      setTimeout(function() { clearInterval(checkProducts); }, 10000);
+    } catch(e) {
+      console.warn('[share] API error:', e);
+    }
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1441,18 +1502,18 @@ function quickRemove(productId, btnEl) {
       + '</label>';
     body.appendChild(payGrid);
 
-    // Stripe card wrap : HORS du scroll area pour fix tap iOS/Android
+    // Stripe card wrap : inline dans le scroll, juste sous les chips paiement
     // FIX: supprimer tout ancien wrap (sinon doublons => Stripe casse en silence)
     document.querySelectorAll('#stripe-card-wrap').forEach(el => el.remove());
     if (_stripeCard) { try { _stripeCard.unmount(); } catch(e){} _stripeCard = null; _stripeElements = null; }
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
-    stripeCardWrap.style.cssText = 'display:none;padding:10px 14px 0;background:#fff;border-top:1px solid var(--sand-dark);flex-shrink:0;';
+    stripeCardWrap.style.cssText = 'display:none;margin-top:8px;padding:10px 14px 10px;background:#fff;border:1px solid var(--sand-dark);border-radius:10px;';
     stripeCardWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px;">🔒 Informations de carte</div>'
       + '<div id="stripe-card-element" style="padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);border-radius:8px;background:#fff;min-height:44px;cursor:text;"></div>'
       + '<div id="stripe-card-error" style="color:#dc2626;font-size:0.75rem;margin-top:5px;display:none;"></div>'
       + '<div id="stripe-eur-display" style="display:none;text-align:center;font-size:0.82rem;color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;"></div>';
-    body.parentElement.appendChild(stripeCardWrap);
+    body.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
@@ -1496,12 +1557,7 @@ function quickRemove(productId, btnEl) {
     body.parentElement.appendChild(confirmBtn);
 
     /* ── Payment switching ── */
-    // S'assurer que stripeCardWrap est avant confirmBtn
-    const _scw = document.getElementById('stripe-card-wrap');
-    const _cb  = document.getElementById('btn-confirm-order');
-    if (_scw && _cb && _scw.nextElementSibling !== _cb) {
-      body.parentElement.insertBefore(_scw, _cb);
-    }
+    // stripeCardWrap reste dans body (inline sous les chips)
 
     function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
@@ -1633,7 +1689,7 @@ function quickRemove(productId, btnEl) {
       sync();
     });
     input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
-    input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; });
+    input.addEventListener('blur',  () => { sync(); input.style.borderColor = 'rgba(0,0,0,0.1)'; });
     input.addEventListener('input', sync);
 
     input.maxLength = currentCountry.max + 4;
@@ -1753,9 +1809,16 @@ function quickRemove(productId, btnEl) {
     const od = state.orderData;
     const recipName   = (document.getElementById('of-beneficiary-name')?.value  || '').trim();
     const recipPhone  = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
-    // Lire sender_phone peu importe si la checkbox est cochée ou non
-    // La valeur est déjà préfixée par l'indicatif pays via makeIntlPhoneInput (ex: +33612345678)
-    const senderPhone = (od.sender_phone || '').trim();
+    // Lire sender_phone — priorité à od.sender_phone (mis à jour par sync() à chaque input/blur)
+    // Fallback DOM : lecture directe de l'input au cas où sync() n'a pas été déclenché (autofill mobile, paste)
+    let senderPhone = (od.sender_phone || '').trim();
+    if (senderPhone.length < 8) {
+      const _phoneInput  = document.getElementById('of-sender-phone');
+      const _countrySel  = document.getElementById('of-sender-phone-country');
+      const _digits      = (_phoneInput?.value || '').trim().replace(/\s/g, '');
+      const _code        = _countrySel?.value || '+33';
+      if (_digits.length >= 6) senderPhone = _code + _digits;
+    }
     const clientName  = recipName;
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const clientEmail = undefined;
@@ -1788,7 +1851,8 @@ function quickRemove(productId, btnEl) {
         recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode,
         use_wallet: od.use_wallet || false,
-        tracking_phone: trackingPhone || undefined
+        tracking_phone: trackingPhone || undefined,
+        share_token: state.shareToken || undefined
       });
 
       const orderData = apiResult.order || apiResult;
@@ -2283,7 +2347,7 @@ function quickRemove(productId, btnEl) {
         $$('.k-chip').forEach(c => c.classList.remove('active'));
         $$('.k-chip')[0].classList.add('active');
         renderGrid();
-        document.querySelector('.k-grid')?.scrollIntoView({ behavior: 'smooth' });
+        (function(){ var s=document.getElementById('k-page-scroll'); var g=document.querySelector('.k-grid'); if(s&&g){ s.scrollTo({top:g.offsetTop-8,behavior:'smooth'}); } else if(g){ g.scrollIntoView({behavior:'smooth'}); } })();
       });
     }
   }
@@ -2297,35 +2361,8 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── INIT ───────────────────────────────────────────────── */
-  /**
-   * Sticky bar : quand le sentinel (#k-bar-sentinel) sort du viewport vers
-   * le haut, on ajoute .is-stuck à #k-sticky-bar pour le coller en haut,
-   * et on affiche le spacer (#k-bar-spacer) pour compenser la hauteur.
-   * Le reverse quand le sentinel repasse dans le viewport.
-   */
-  function setupStickyBar() {
-    var sentinel = document.getElementById('k-bar-sentinel');
-    var bar      = document.getElementById('k-sticky-bar');
-    var spacer   = document.getElementById('k-bar-spacer');
-    if (!sentinel || !bar || !spacer) return;
-
-    var observer = new IntersectionObserver(function(entries) {
-      var entry = entries[0];
-      if (entry.isIntersecting) {
-        // Sentinel visible → hero normal
-        bar.classList.remove('is-stuck');
-        spacer.style.display = 'none';
-      } else {
-        // Sentinel sorti par le haut → hero sticky
-        // On fixe le spacer à la hauteur actuelle de la bar pour éviter le saut
-        spacer.style.height = bar.offsetHeight + 'px';
-        spacer.style.display = 'block';
-        bar.classList.add('is-stuck');
-      }
-    }, { threshold: 0, rootMargin: '-44px 0px 0px 0px' });
-
-    observer.observe(sentinel);
-  }
+  // Note: setupStickyBar est géré par le script inline dans le HTML
+  // pour éviter le double IntersectionObserver (scintillement).
 
   function init() {
     updateCartBadge();
@@ -2336,7 +2373,6 @@ function quickRemove(productId, btnEl) {
     setupBnav();
     setupSeeAll();
     setupInfiniteScroll();
-    setupStickyBar();
     loadProducts();
     loadRelais();
   }
