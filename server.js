@@ -168,6 +168,8 @@ const productsRouter   = require('./routes/products');
 const ordersRouter     = require('./routes/orders');
 const relaisRouter     = require('./routes/relais');
 const adminRouter      = require('./routes/admin');
+const adminRulesRouter = require('./routes/admin-rules');
+const adminPricingMatricesRouter = require('./routes/admin-pricing-matrices');
 const dashboardRouter  = require('./routes/dashboard');
 const pricingRouter    = require('./routes/pricing');
 const modulesRouter    = require('./routes/modules');
@@ -209,6 +211,8 @@ const autoDistributeRouter = require('./routes/auto-distribute-api');
 const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 const transitDashboardRoutes = require('./routes/transit-dashboard');
 const sharesRouter = require('./routes/shares');
+const metaWhatsAppRoutes = require('./routes/meta-whatsapp');
+
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
 app.use('/api/auth',       authRouter);
@@ -219,6 +223,8 @@ app.use('/api/admin/finance',  financeRouter);
 app.use('/api/admin/pilotage', dashboardRouter);
 app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin',      adminRouter);
+app.use('/api/admin/rules', adminRulesRouter);
+app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
 app.use('/api/hub-dash',   hubDashRouter);
@@ -264,6 +270,8 @@ app.use('/api/loyalty',    loyaltyRouter);
 app.use('/api/unsold',     unsoldRouter);
 app.use('/api/shares',     sharesRouter);
 app.use('/health',         healthRouter);
+app.use(metaWhatsAppRoutes);
+
 
 // ── Healthcheck ─────────────────────────────────────────────────────────────
 
@@ -571,6 +579,22 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 029: inventory_items proposal columns ready');
       } catch(e) { console.warn('Migration 029 (non-fatal):', e.message); }
       } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
+	  
+	        // ── Migration 033: table audit matrices pricing ──
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS pricing_matrices_audit (
+          id             SERIAL PRIMARY KEY,
+          matrix_type    VARCHAR(20) NOT NULL CHECK (matrix_type IN ('taxes', 'dims')),
+          category       VARCHAR(50) NOT NULL,
+          old_value      JSONB NOT NULL,
+          new_value      JSONB NOT NULL,
+          changed_by     UUID REFERENCES users(id) ON DELETE SET NULL,
+          change_reason  TEXT,
+          created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_pma_created ON pricing_matrices_audit(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_pma_matrix_cat ON pricing_matrices_audit(matrix_type, category);
+      `);
 
       // ── Migration 030: cart_shares table (panier partagé) ──
       try {

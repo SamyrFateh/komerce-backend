@@ -37,6 +37,9 @@ const TWILIO_SID     = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_TOKEN   = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_WA_FROM = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
 const BASE_URL       = process.env.BASE_URL || 'https://komerce-backend-production.up.railway.app';
+const META_WA_TOKEN           = process.env.META_WA_TOKEN || '';
+const META_WA_PHONE_NUMBER_ID = process.env.META_WA_PHONE_NUMBER_ID || '';
+const META_WA_GRAPH_VERSION   = process.env.META_WA_GRAPH_VERSION || 'v23.0';
 
 // Statuts qui déclenchent un email (en complément du WhatsApp)
 const EMAIL_STATUSES = new Set(['shipped', 'available', 'cancelled']);
@@ -108,6 +111,14 @@ function filterTestPhones(phones, context = 'unknown') {
   }
 
   return kept;
+}
+function getMetaWhatsAppUrl() {
+  return `https://graph.facebook.com/${META_WA_GRAPH_VERSION}/${META_WA_PHONE_NUMBER_ID}/messages`;
+}
+
+function normalizeMetaPhone(phone) {
+  if (!phone) return null;
+  return String(phone).replace(/[^\d]/g, '');
 }
 
 // ─── WhatsApp message templates ─────────────────────────────
@@ -181,45 +192,70 @@ function getWhatsAppLink(phone, text) {
   return `https://wa.me/${clean}?text=${encodeURIComponent(text)}`;
 }
 
-// ─── WhatsApp send via TWILIO (PRINCIPAL) ───────────────────
+// ─── WhatsApp send via META(PRINCIPAL) ───────────────────
 
-async function sendWhatsAppTwilio(phone, text) {
-  if (!TWILIO_SID || !TWILIO_TOKEN) {
-    return { success: false, provider: 'twilio', reason: 'no_config' };
+async function sendWhatsAppMeta(phone, text) {
+  if (!META_WA_TOKEN || !META_WA_PHONE_NUMBER_ID) {
+    return { success: false, provider: 'meta', reason: 'no_config' };
   }
-  if (!phone) return { success: false, provider: 'twilio', reason: 'no_phone' };
+  if (!phone) {
+    return { success: false, provider: 'meta', reason: 'no_phone' };
+  }
 
-  const cleanPhone = phone.replace(/[^0-9+]/g, '');
-  const withPlus = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
-  const to = cleanPhone.startsWith('whatsapp:') ? cleanPhone : `whatsapp:${withPlus}`;
+  const to = normalizeMetaPhone(phone);
+  if (!to) {
+    return { success: false, provider: 'meta', reason: 'invalid_phone' };
+  }
 
   try {
-    const resp = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64'),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          From: TWILIO_WA_FROM,
-          To: to,
-          Body: text,
-        }),
-      }
-    );
-    const data = await resp.json();
-    if (data.sid) {
-      console.log(`[WA-TWILIO] ✅ → ${phone} (SID: ${data.sid})`);
-      return { success: true, provider: 'twilio', sid: data.sid, status: data.status };
+    const resp = await fetch(getMetaWhatsAppUrl(), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${META_WA_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: to,
+        type: 'text',
+        text: {
+          preview_url: false,
+          body: text
+        }
+      })
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (resp.ok && data?.messages?.[0]?.id) {
+      const msgId = data.messages[0].id;
+      console.log(`[WA-META] ✅ → ${phone} (ID: ${msgId})`);
+      return {
+        success: true,
+        provider: 'meta',
+        message_id: msgId,
+        raw: data
+      };
     }
-    console.error(`[WA-TWILIO] ❌ ${resp.status}:`, data.message || JSON.stringify(data).substring(0, 200));
-    return { success: false, provider: 'twilio', reason: data.message || 'api_error', code: data.code };
+
+    console.error(`[WA-META] ❌ ${resp.status}:`, data?.error?.message || JSON.stringify(data).substring(0, 300));
+    return {
+      success: false,
+      provider: 'meta',
+      reason: data?.error?.message || 'api_error',
+      code: data?.error?.code || null,
+      raw: data
+    };
   } catch (err) {
-    console.error('[WA-TWILIO] ❌', err.message);
-    return { success: false, provider: 'twilio', reason: 'exception', detail: err.message };
-  }
+    console.error('[WA-META] ❌', err.message);
+    return {
+      success: false,
+      provider: 'meta',
+      reason: 'exception',
+      detail: err.message
+    };
+  
+}
 }
 
 // ─── WhatsApp send via Brevo API (fallback) ─────────────────
@@ -259,21 +295,18 @@ async function sendWhatsAppBrevo(phone, text) {
 async function sendWhatsApp(phone, text) {
   if (!phone) return { success: false, reason: 'no_phone' };
 
-  let result = await sendWhatsAppTwilio(phone, text);
-
-  if (!result.success) {
-    result = await sendWhatsAppBrevo(phone, text);
-  }
+  let result = await sendWhatsAppMeta(phone, text);
 
   const waLink = getWhatsAppLink(phone, text);
 
   if (!result.success) {
-    console.log(`[WA] ⚠️ APIs failed — wa.me link: ${waLink?.substring(0, 60)}...`);
+    console.log(`[WA] ⚠️ Meta failed — wa.me link: ${waLink?.substring(0, 60)}...`);
     return { success: false, provider: 'link', link: waLink, apiResult: result };
   }
 
   result.link = waLink;
   return result;
+
 }
 
 // ─── Get unique phone numbers (local + diaspora) ────────────
