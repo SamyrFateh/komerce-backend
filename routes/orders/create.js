@@ -1,4 +1,4 @@
-/**
+//**
  * KOMERCE — POST /api/orders
  *
  * Créer une commande (client authentifié).
@@ -217,65 +217,69 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     const reference = await getUniqueRef(db);
 
     const { rows: [order] } = await client.query(
-      `INSERT INTO orders (
-         id, reference, user_id, recipient_id, relais_id,
-         total_kmf, total_eur,
-         payment_mode, payment_status, stripe_payment_id,
-         cash_ref_code, pickup_code,
-         status,
-         confection_type, confection_instructions,
-         confection_delay_days, confection_artisan_id,
-         module_type, module_fabric_id, module_fabric_type,
-         module_size, module_retouche, module_qty_meters, module_accessories,
-         order_occasion,
-         cost_estimated_kmf, margin_estimated_pct,
-         discount_pct, discount_kmf, loyalty_label,
-         destination_island, routing_mode, transit_hub
-       ) VALUES (
-         $1,$2,$3,$4,$5,
-         $6,$7,
-         $8,$9,$10,
-         $11,$12,
-         'pending',
-         $13,$14,
-         $15,$16,
-         $17,$18,$19,
-         $20,$21,$22,$23,
-         $24,
-         $25,$26,
-         $27,$28,$29,
-         $30,$31,$32
-       ) RETURNING *`,
-      [
-        uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
-        total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
-        payment_mode,
-        creditApplied > 0 && total_kmf === 0 ? 'paid' : 'pending',
-        stripe_payment_intent || null,
-        cash_ref_code,
-        pickup_code,
-        confection_type,
-        confection_instructions || null,
-        confection_delay_days,
-        confection_artisan_id || null,
-        module_type || null,
-        module_fabric_id || null,
-        module_fabric_type || null,
-        module_size || null,
-        module_retouche,
-        module_qty_meters || null,
-        module_accessories ? JSON.stringify(module_accessories) : null,
-        order_occasion || null,
-        Math.round(cost_estimated),
-        Number(margin_est),
-        discountPct,
-        discountKmf,
-        loyaltyLabel,
-        routing.destination_island,
-        routing.routing_mode,
-        routing.transit_hub,
-      ]
-    );
+      `const { rows: [order] } = await client.query(
+  `INSERT INTO orders (
+     id, reference, user_id, recipient_id, relais_id,
+     tracking_phone,
+     total_kmf, total_eur,
+     payment_mode, payment_status, stripe_payment_id,
+     cash_ref_code, pickup_code,
+     status,
+     confection_type, confection_instructions,
+     confection_delay_days, confection_artisan_id,
+     module_type, module_fabric_id, module_fabric_type,
+     module_size, module_retouche, module_qty_meters, module_accessories,
+     order_occasion,
+     cost_estimated_kmf, margin_estimated_pct,
+     discount_pct, discount_kmf, loyalty_label,
+     destination_island, routing_mode, transit_hub
+   ) VALUES (
+     $1,$2,$3,$4,$5,
+     $6,
+     $7,$8,
+     $9,$10,$11,
+     $12,$13,
+     'pending',
+     $14,$15,
+     $16,$17,
+     $18,$19,$20,
+     $21,$22,$23,$24,
+     $25,
+     $26,$27,
+     $28,$29,$30,
+     $31,$32,$33
+   ) RETURNING *`,
+  [
+    uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
+    tracking_phone || null,
+    total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
+    payment_mode,
+    creditApplied > 0 && total_kmf === 0 ? 'paid' : 'pending',
+    stripe_payment_intent || null,
+    cash_ref_code,
+    pickup_code,
+    confection_type,
+    confection_instructions || null,
+    confection_delay_days,
+    confection_artisan_id || null,
+    module_type || null,
+    module_fabric_id || null,
+    module_fabric_type || null,
+    module_size || null,
+    module_retouche,
+    module_qty_meters || null,
+    module_accessories ? JSON.stringify(module_accessories) : null,
+    order_occasion || null,
+    Math.round(cost_estimated),
+    Number(margin_est),
+    discountPct,
+    discountKmf,
+    loyaltyLabel,
+    routing.destination_island,
+    routing.routing_mode,
+    routing.transit_hub,
+  ]
+);
 
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
@@ -370,6 +374,7 @@ console.log('[DEBUG][ORDER-CREATED] smsPhones =', smsPhones);
 console.log('[DEBUG][ORDER-CREATED] req.user.id =', req.user?.id);
 console.log('[DEBUG][ORDER-CREATED] req.user.phone =', req.user?.phone);
 console.log('[DEBUG][ORDER-CREATED] recipient_phone =', recipient_phone);
+console.log('[DEBUG][ORDER-SAVED] order.tracking_phone =', order.tracking_phone);
 
 
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
