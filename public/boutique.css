@@ -2325,8 +2325,10 @@ body{
 
   /* ── Hero image compact ── */
   .k-hero-img {
-    height: clamp(100px, 20vw, 160px);
-    object-position: top center;
+    height: auto;
+    max-height: 160px;
+    object-fit: contain;
+    object-position: center center;
   }
 
   /* ── Sous-titre masqué sur mobile ── */
