@@ -1843,7 +1843,7 @@ function quickRemove(productId, btnEl) {
         quantity: i.qty,
         confection_type: 'aucun'
       }));
-
+      alert('trackingPhone=' + trackingPhone);
       const apiResult = await apiPost('/api/orders', {
         items: items,
         relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
