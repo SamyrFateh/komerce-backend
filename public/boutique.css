@@ -1,3 +1,6 @@
+
+/* Mobile hero image — desktop masqué */
+.k-hero-media-mobile { display: none; }
 /* ═══════════════════════════════════════════════════════════
    KOMERCE — Boutique CSS v3.0 "Sage & Green" + Full Cart
    Mobile-first · Comorian identity · Fast & clean
@@ -2324,9 +2327,30 @@ body{
   }
 
   /* ── Hero image compact ── */
-  .k-hero-img {
+  /* Desktop hero masqué sur mobile */
+  .k-hero { display: none !important; }
+
+  /* Layout 2 colonnes : slogan gauche + image droite */
+  .k-hero-overlay {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .k-hero-text-left { flex: 1; min-width: 0; }
+
+  /* Image mobile droite */
+  .k-hero-media-mobile {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 42%;
+  }
+  .k-hero-img-mobile {
+    width: 100%;
     height: auto;
-    max-height: 120px;
+    max-height: 90px;
     object-fit: contain;
     object-position: center center;
   }
