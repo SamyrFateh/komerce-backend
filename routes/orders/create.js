@@ -217,7 +217,7 @@ router.post('/', authenticate, validate(orders.create), async (req, res, next) =
     const reference = await getUniqueRef(db);
 
     const { rows: [order] } = await client.query(
-      const { rows: [order] } = await client.query(
+     
   `INSERT INTO orders (
      id, reference, user_id, recipient_id, relais_id,
      tracking_phone,
