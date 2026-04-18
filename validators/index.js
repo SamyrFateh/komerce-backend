@@ -168,6 +168,7 @@ const orders = {
       stripe_payment_intent: safeStr(200),
       recipient_name:        safeStr(100),
       recipient_phone:       phone,
+	  tracking_phone:        phone.allow(null, ''),
       confection_type:           Joi.string().valid(...CONFECTION_TYPES).default('aucun'),
       confection_instructions:   safeStr(1000),
       confection_delay_days:     Joi.number().integer().min(0).max(365).default(0),
