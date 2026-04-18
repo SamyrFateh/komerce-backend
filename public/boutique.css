@@ -2584,3 +2584,66 @@ body{
     font-size: 10px;
   }
 }
+@media (max-width: 899px){
+
+  .k-hero-overlay{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 4px 10px 2px;
+    gap: 8px;
+  }
+
+  .k-hero-text-left{
+    min-width: 0;
+  }
+
+  .k-hero-title{
+    font-size: clamp(0.98rem, 4.1vw, 1.2rem);
+    line-height: 1;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .k-hero-right-col{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .k-hero-pills{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .k-hero-pill{
+    font-size: 8.5px;
+    padding: 2px 6px;
+    line-height: 1.1;
+  }
+
+  .k-cats{
+    margin-top: 0;
+    padding-top: 4px;
+    padding-bottom: 6px;
+    gap: 8px;
+  }
+
+  .k-chip{
+    min-width: 54px;
+    gap: 4px;
+  }
+
+  .k-chip-photo{
+    width: 42px;
+    height: 42px;
+  }
+
+  .k-chip-label{
+    font-size: 9.5px;
+    line-height: 1;
+  }
+}
