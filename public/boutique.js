@@ -2340,7 +2340,7 @@ function quickRemove(productId, btnEl) {
         $$('.k-chip').forEach(c => c.classList.remove('active'));
         $$('.k-chip')[0].classList.add('active');
         renderGrid();
-        document.querySelector('.k-grid')?.scrollIntoView({ behavior: 'smooth' });
+        (function(){ var s=document.getElementById('k-page-scroll'); var g=document.querySelector('.k-grid'); if(s&&g){ s.scrollTo({top:g.offsetTop-8,behavior:'smooth'}); } else if(g){ g.scrollIntoView({behavior:'smooth'}); } })();
       });
     }
   }

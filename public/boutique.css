@@ -2392,3 +2392,16 @@ body{
     box-shadow:none;
   }
 }
+
+/* ── Mobile scroll lock: only #k-page-scroll scrolls ── */
+@media (max-width: 899px) {
+  body { overflow: hidden; height: 100dvh; }
+  #k-page-scroll {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    /* top set by JS */
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}

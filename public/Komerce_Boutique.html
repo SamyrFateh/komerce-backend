@@ -126,6 +126,7 @@ if('serviceWorker' in navigator){
 </div><!-- /k-hero-fixed-wrap -->
 <div id="k-bar-spacer" style="display:none;"></div>
 
+<div id="k-page-scroll">
 <!-- ═══ PROMOS FLASH ═══ -->
 <section class="k-section" id="k-promos-section">
   <div class="k-section-head">
@@ -146,6 +147,7 @@ if('serviceWorker' in navigator){
     <div class="k-spinner"></div>
   </div>
 </section>
+</div><!-- /k-page-scroll -->
 
 <!-- ═══ PRODUCT MODAL ═══ -->
 <div class="k-modal-overlay" id="k-modal-overlay">
@@ -280,8 +282,9 @@ if('serviceWorker' in navigator){
     if (!wrap) return;
     function update(){
       var h = wrap.offsetHeight;
-      spacer.style.height = h + 'px';
-      spacer.style.display = 'block';
+      spacer.style.display = 'none'; // spacer not needed with fixed scroll
+      var scroll = document.getElementById('k-page-scroll');
+      if (scroll) scroll.style.top = h + 'px';
     }
     update();
     // Re-mesure après chargement de l'image hero
@@ -311,7 +314,25 @@ if('serviceWorker' in navigator){
     });
   }
 
-  if (isMobile()) { setupMobile(); } else { setupDesktop(); }
+  if (isMobile()) {
+    setupMobile();
+    // Proxy window.scrollY and window.scrollTo → #k-page-scroll
+    try {
+      Object.defineProperty(window, 'scrollY', {
+        get: function(){ var s=document.getElementById('k-page-scroll'); return s?s.scrollTop:0; },
+        configurable: true
+      });
+      window.scrollTo = function(x, y){
+        var s = document.getElementById('k-page-scroll');
+        if (!s) return;
+        if (x !== null && typeof x === 'object') {
+          s.scrollTo({ top: x.top||0, behavior: x.behavior||'auto' });
+        } else {
+          s.scrollTop = (typeof y === 'number') ? y : 0;
+        }
+      };
+    } catch(e) {}
+  } else { setupDesktop(); }
 })();
 </script>
 <script src="/komerce-api.js?v=1776465127"></script>
