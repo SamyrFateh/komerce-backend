@@ -3463,3 +3463,23 @@ body{
     height: 20px;
   }
 }
+@media (min-width: 900px){
+  .k-header-action-label{
+    display: none;
+  }
+
+  .k-cart-btn{
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (min-width: 900px){
+  .k-header-actions{
+    gap: 8px;
+  }
+
+  .k-cart-avatar{
+    width: 30px;
+    height: 30px;
+  }
+}
