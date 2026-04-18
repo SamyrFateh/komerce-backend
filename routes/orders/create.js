@@ -1,10 +1,10 @@
-//**
+'use strict';
+
+/**
  * KOMERCE — POST /api/orders
  *
  * Créer une commande (client authentifié).
  */
-
-'use strict';
 
 const express = require('express');
 const router  = express.Router();
