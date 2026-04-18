@@ -3312,3 +3312,7 @@ body{
     font-size: 18px;
   }
 }
+.k-sug-wrap::before,
+.k-sug-wrap::after{
+  display: none !important;
+}
