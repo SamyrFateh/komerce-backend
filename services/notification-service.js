@@ -741,7 +741,7 @@ module.exports = {
   notifyPaymentConfirmed,
   notifyOrderCreated,
   sendWhatsApp,
-  sendWhatsAppTwilio,
+  sendWhatsAppMeta,
   logNotification,
   WA_MESSAGES,
 
