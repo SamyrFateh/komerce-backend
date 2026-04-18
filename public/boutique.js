@@ -1633,70 +1633,144 @@ function quickRemove(productId, btnEl) {
 
 
   function makeIntlPhoneInput(id, label, dataObj, key) {
-    const COUNTRIES = [
-      { code: '+33',  flag: '🇫🇷', name: 'France',         max: 10, ph: '06 12 34 56 78' },
-      { code: '+269', flag: '🇰🇲', name: 'Comores',        max: 7,  ph: '321 12 34' },
-      { code: '+32',  flag: '🇧🇪', name: 'Belgique',       max: 10, ph: '0470 12 34 56' },
-      { code: '+41',  flag: '🇨🇭', name: 'Suisse',         max: 10, ph: '076 123 45 67' },
-      { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni',    max: 11, ph: '07911 123456' },
-      { code: '+1',   flag: '🇺🇸', name: 'USA / Canada',   max: 11, ph: '202 555 0147' },
-      { code: '+971', flag: '🇦🇪', name: 'Émirats',        max: 9,  ph: '050 123 4567' },
-      { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite',max: 9,  ph: '055 123 4567' },
-      { code: '+60',  flag: '🇲🇾', name: 'Malaisie',       max: 10, ph: '012 345 6789' },
-      { code: '+212', flag: '🇲🇦', name: 'Maroc',          max: 9,  ph: '0612 345678' },
-    ];
-    let currentCountry = COUNTRIES[0];
+  const COUNTRIES = [
+    { code: '+33',  flag: '🇫🇷', name: 'France',          digits: 9,  max: 10, ph: '06 12 34 56 78' },
+    { code: '+269', flag: '🇰🇲', name: 'Comores',         digits: 7,  max: 7,  ph: '321 12 34' },
+    { code: '+262', flag: '🇷🇪', name: 'Réunion',         digits: 9,  max: 10, ph: '0692 12 34 56' },
+    { code: '+32',  flag: '🇧🇪', name: 'Belgique',        digits: 9,  max: 10, ph: '0470 12 34 56' },
+    { code: '+41',  flag: '🇨🇭', name: 'Suisse',          digits: 9,  max: 10, ph: '076 123 45 67' },
+    { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni',     digits: 10, max: 11, ph: '07911 123456' },
+    { code: '+1',   flag: '🇺🇸', name: 'USA / Canada',    digits: 10, max: 10, ph: '202 555 0147' },
+    { code: '+971', flag: '🇦🇪', name: 'Émirats',         digits: 9,  max: 10, ph: '050 123 4567' },
+    { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite', digits: 9,  max: 10, ph: '055 123 4567' },
+    { code: '+60',  flag: '🇲🇾', name: 'Malaisie',        digits: 9,  max: 10, ph: '012 345 6789' },
+    { code: '+212', flag: '🇲🇦', name: 'Maroc',           digits: 9,  max: 10, ph: '0612 345678' },
+  ];
 
-    const group = document.createElement('div');
-    group.style.cssText = 'margin-bottom:8px;';
-
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
-    lbl.textContent = label;
-    group.appendChild(lbl);
-
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;height:40px;';
-
-    /* selector */
-    const sel = document.createElement('select');
-    sel.id = id + '-country';
-    sel.style.cssText = 'height:40px;background:#f5f5f2;border:1.5px solid rgba(0,0,0,0.12);border-right:none;border-radius:8px 0 0 8px;padding:0 6px 0 8px;font-weight:700;font-size:12px;color:#555;cursor:pointer;outline:none;min-width:76px;max-width:88px;-webkit-appearance:none;appearance:none;text-align:center;';
-    COUNTRIES.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.code;
-      opt.textContent = c.flag + ' ' + c.code;
-      sel.appendChild(opt);
-    });
-    wrap.appendChild(sel);
-
-    /* number input */
-    const input = document.createElement('input');
-    input.type = 'tel';
-    input.id = id;
-    input.placeholder = currentCountry.ph;
-    input.value = dataObj[key] || '';
-    input.style.cssText = 'flex:1;height:40px;border:1.5px solid rgba(0,0,0,0.12);border-left:none;border-radius:0 8px 8px 0;padding:0 12px;font-size:14px;font-family:inherit;outline:none;background:#fff;transition:border-color .15s;min-width:0;';
-
-    const sync = () => {
-      dataObj[key] = currentCountry.code + input.value.replace(/\s/g,'');
-    };
-
-    sel.addEventListener('change', () => {
-      currentCountry = COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
-      input.placeholder = currentCountry.ph;
-      input.maxLength = currentCountry.max + 4; /* allow spaces */
-      sync();
-    });
-    input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; });
-    input.addEventListener('blur',  () => { sync(); input.style.borderColor = 'rgba(0,0,0,0.1)'; });
-    input.addEventListener('input', sync);
-
-    input.maxLength = currentCountry.max + 4;
-    wrap.appendChild(input);
-    group.appendChild(wrap);
-    return group;
+  function digitsOnly(v) {
+    return String(v || '').replace(/\D+/g, '');
   }
+
+  function normalizeLocal(code, digits) {
+    // On accepte le 0 national saisi par l'utilisateur pour certains pays
+    if (
+      ['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(code) &&
+      digits.startsWith('0')
+    ) {
+      return digits.slice(1);
+    }
+    return digits;
+  }
+
+  function prettifyLocal(raw, country) {
+    const d = digitsOnly(raw).slice(0, country.max);
+    if (!d) return '';
+    // formatage léger visuel seulement
+    if (country.code === '+33' || country.code === '+262' || country.code === '+32' || country.code === '+41') {
+      return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+    }
+    if (country.code === '+44') {
+      return d.replace(/(\d{5})(\d{0,6})/, function(_, a, b){ return b ? a + ' ' + b : a; }).trim();
+    }
+    if (country.code === '+1') {
+      return d.replace(/(\d{3})(\d{0,3})(\d{0,4})/, function(_, a, b, c){
+        return [a, b, c].filter(Boolean).join(' ');
+      }).trim();
+    }
+    return d.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+  }
+
+  function buildE164(code, raw) {
+    let digits = digitsOnly(raw);
+    if (!digits) return '';
+    digits = normalizeLocal(code, digits);
+    return code + digits;
+  }
+
+  const group = document.createElement('div');
+  group.style.cssText = 'margin-bottom:8px;';
+
+  const lbl = document.createElement('label');
+  lbl.style.cssText = 'display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px;';
+  lbl.textContent = label;
+  group.appendChild(lbl);
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;height:40px;gap:6px;';
+
+  const sel = document.createElement('select');
+  sel.id = id + '-country';
+  sel.style.cssText =
+    'height:40px;flex:0 0 112px;border:2px solid rgba(0,0,0,0.1);border-radius:8px;' +
+    'background:#fff;padding:0 8px;font-size:0.9rem;outline:none;';
+  COUNTRIES.forEach(function(c) {
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = c.flag + ' ' + c.code;
+    if (c.code === '+33') opt.selected = true; // défaut FR
+    sel.appendChild(opt);
+  });
+
+  const input = document.createElement('input');
+  input.type = 'tel';
+  input.id = id;
+  input.inputMode = 'numeric';
+  input.autocomplete = 'tel';
+  input.placeholder = '06 12 34 56 78';
+  input.style.cssText =
+    'height:40px;flex:1;border:2px solid rgba(0,0,0,0.1);border-radius:8px;' +
+    'padding:0 12px;outline:none;font-size:0.9rem;box-sizing:border-box;background:#fff;';
+
+  const help = document.createElement('div');
+  help.style.cssText = 'font-size:0.72rem;color:#777;margin-top:4px;';
+  help.textContent = 'Exemple France : 06 12 34 56 78';
+
+  function currentCountry() {
+    return COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
+  }
+
+  function sync() {
+    const country = currentCountry();
+    input.placeholder = country.ph;
+
+    let rawDigits = digitsOnly(input.value).slice(0, country.max);
+    input.value = prettifyLocal(rawDigits, country);
+
+    const e164 = buildE164(country.code, rawDigits);
+    dataObj[key] = e164 || '';
+  }
+
+  sel.addEventListener('change', function() {
+    const c = currentCountry();
+    help.textContent = 'Exemple ' + c.name + ' : ' + c.ph;
+    sync();
+  });
+
+  input.addEventListener('focus', () => { input.style.borderColor = 'var(--coral)'; sel.style.borderColor = 'var(--coral)'; });
+  input.addEventListener('blur',  () => { input.style.borderColor = 'rgba(0,0,0,0.1)'; sel.style.borderColor = 'rgba(0,0,0,0.1)'; sync(); });
+  input.addEventListener('input', sync);
+
+  // Pré-remplissage depuis dataObj si déjà existant
+  if (dataObj[key]) {
+    const existing = String(dataObj[key]).trim();
+    const found = COUNTRIES.find(c => existing.startsWith(c.code));
+    if (found) {
+      sel.value = found.code;
+      const local = existing.slice(found.code.length);
+      input.value = prettifyLocal(local, found);
+    }
+  }
+
+  wrap.appendChild(sel);
+  wrap.appendChild(input);
+  group.appendChild(wrap);
+  group.appendChild(help);
+
+  // Sync initial
+  sync();
+
+  return group;
+}
 
   function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
@@ -1812,13 +1886,41 @@ function quickRemove(productId, btnEl) {
     // Lire sender_phone — priorité à od.sender_phone (mis à jour par sync() à chaque input/blur)
     // Fallback DOM : lecture directe de l'input au cas où sync() n'a pas été déclenché (autofill mobile, paste)
     let senderPhone = (od.sender_phone || '').trim();
-    if (senderPhone.length < 8) {
-      const _phoneInput  = document.getElementById('of-sender-phone');
-      const _countrySel  = document.getElementById('of-sender-phone-country');
-      const _digits      = (_phoneInput?.value || '').trim().replace(/\s/g, '');
-      const _code        = _countrySel?.value || '+33';
-      if (_digits.length >= 6) senderPhone = _code + _digits;
+
+if (!senderPhone) {
+  const _phoneInput = document.getElementById('of-sender-phone');
+  const _countrySel = document.getElementById('of-sender-phone-country');
+  const _code = _countrySel?.value || '+33';
+
+  const RULES = {
+    '+33':  9,
+    '+269': 7,
+    '+262': 9,
+    '+32':  9,
+    '+41':  9,
+    '+44':  10,
+    '+1':   10,
+    '+971': 9,
+    '+966': 9,
+    '+60':  9,
+    '+212': 9
+  };
+
+  let _digits = String(_phoneInput?.value || '').replace(/\D/g, '');
+
+  if (['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(_code) && _digits.startsWith('0')) {
+    _digits = _digits.slice(1);
+  }
+
+  if (_digits.length > 0) {
+    const expected = RULES[_code] || 9;
+    if (_digits.length !== expected) {
+      showToast(`Numéro invalide pour ${_code}. ${expected} chiffres attendus.`, 'error');
+      return;
     }
+    senderPhone = _code + _digits;
+  }
+}
     const clientName  = recipName;
     const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
     const clientEmail = undefined;
@@ -1843,7 +1945,7 @@ function quickRemove(productId, btnEl) {
         quantity: i.qty,
         confection_type: 'aucun'
       }));
-      alert('trackingPhone=' + trackingPhone);
+    
       const apiResult = await apiPost('/api/orders', {
         items: items,
         relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
