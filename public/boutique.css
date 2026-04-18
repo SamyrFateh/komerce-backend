@@ -3316,3 +3316,76 @@ body{
 .k-sug-wrap::after{
   display: none !important;
 }
+@media (max-width: 899px){
+
+  /* Texte intro plus compact */
+  .k-track-intro,
+  .track-intro,
+  .k-follow-intro{
+    font-size: 13px;
+    line-height: 1.35;
+    margin-bottom: 10px;
+  }
+
+  /* Cartes/formulaires moins hautes */
+  .k-track-card,
+  .track-card,
+  .k-follow-card{
+    padding: 14px 14px 12px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+  }
+
+  /* Champs plus bas */
+  .k-track-card input,
+  .track-card input,
+  .k-follow-card input,
+  .k-track-card select,
+  .track-card select,
+  .k-follow-card select{
+    height: 54px;
+    font-size: 15px;
+    padding: 0 16px;
+    border-radius: 14px;
+  }
+
+  /* Bouton principal plus compact */
+  .k-track-card button,
+  .track-card button,
+  .k-follow-card button{
+    height: 54px;
+    font-size: 15px;
+    border-radius: 16px;
+    margin-top: 10px;
+  }
+
+  /* Séparateur "ou" plus serré */
+  .k-track-divider,
+  .track-divider,
+  .k-follow-divider{
+    margin: 10px 0;
+  }
+
+  .k-track-divider span,
+  .track-divider span,
+  .k-follow-divider span{
+    font-size: 14px;
+  }
+
+  /* Espace vertical global plus serré */
+  .k-section,
+  .track-section,
+  .k-follow-section{
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  /* FAB WhatsApp moins envahissant dans Suivi */
+  body[data-tab="track"] .k-wa-fab,
+  .track-open .k-wa-fab{
+    transform: scale(.88);
+    right: 8px;
+    bottom: calc(var(--bnav-h) + 8px);
+    opacity: .82;
+  }
+}
