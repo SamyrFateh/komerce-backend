@@ -125,6 +125,10 @@ if('serviceWorker' in navigator){
     <span class="k-chip-label">Couture</span>
   </button>
 </nav>
+  <!-- ═══ PROVERBE AFRICAIN ROTATIF ═══ -->
+  <div class="k-hero-proverb" id="k-hero-proverb" aria-live="polite">
+    <span class="k-proverb-text" id="k-proverb-text"></span>
+  </div>
 </div><!-- /k-hero-cats-sticky -->
 </div><!-- /k-hero-fixed-wrap -->
 <div id="k-bar-spacer" style="display:none;"></div>
@@ -337,6 +341,33 @@ if('serviceWorker' in navigator){
     } catch(e) {}
   } else { setupDesktop(); }
 })();
+
+  /* ══ Proverbe africain rotatif ══ */
+  (function() {
+    var proverbes = [
+      "« Haba na haba hujaza kibaba. » — Grain à grain, on remplit la mesure.",
+      "« Usiku wa giza, nyota huonekana. » — Dans la nuit noire, les étoiles brillent.",
+      "« Umoja ni nguvu, utengano ni udhaifu. » — L'union est force, la division est faiblesse.",
+      "« Haraka haraka haina baraka. » — La précipitation n'apporte pas de bénédiction.",
+      "« Asante sana humaliza hasira. » — Un grand merci éteint la colère.",
+      "« Mti hauendi ila upepo ukivuma. » — L'arbre ne bouge que si le vent souffle.",
+      "« Damu nzito kuliko maji. » — Le sang est plus épais que l'eau.",
+      "« Akili ni nywele, kila mtu ana zake. » — L'intelligence est comme les cheveux, chacun a les siens.",
+    ];
+    var el = document.getElementById('k-proverb-text');
+    if (!el) return;
+    var idx = Math.floor(Math.random() * proverbes.length);
+    el.textContent = proverbes[idx];
+
+    setInterval(function() {
+      el.classList.add('fade-out');
+      setTimeout(function() {
+        idx = (idx + 1) % proverbes.length;
+        el.textContent = proverbes[idx];
+        el.classList.remove('fade-out');
+      }, 650);
+    }, 6000);
+  })();
 </script>
 <script src="/komerce-api.js?v=1776465127"></script>
 <script src="/boutique.js?v=1776465127"></script>
