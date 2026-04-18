@@ -2512,4 +2512,75 @@ body{
   .k-proverb-sep::after { display: none; 
   }
 }
+@media (max-width: 899px){
 
+  .k-hero-img{
+    height: clamp(88px, 17vw, 136px);
+    object-fit: cover;
+    object-position: center 18%;
+  }
+
+  .k-hero-overlay{
+    padding: 6px 12px 4px;
+    gap: 6px;
+    border-bottom: none;
+  }
+
+  .k-hero-text-left{
+    gap: 4px;
+  }
+
+  .k-hero-title{
+    font-size: clamp(1.05rem, 4.5vw, 1.35rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+
+  .k-hero-right-col{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .k-hero-pills{
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .k-hero-pill{
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .k-hero-proverb-inline{
+    display: none;
+  }
+
+  .k-cats{
+    gap: 10px;
+    padding: 6px 10px 8px;
+    box-shadow: none;
+    background: rgba(253,250,245,.96);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .k-chip{
+    min-width: 58px;
+    gap: 5px;
+  }
+
+  .k-chip-photo{
+    width: 48px;
+    height: 48px;
+  }
+
+  .k-chip-label{
+    font-size: 10px;
+  }
+}
