@@ -2921,3 +2921,85 @@ body{
     padding: 2px 6px;
   }
 }
+@media (max-width: 899px){
+
+  .k-hero{
+    position: relative;
+  }
+
+  .k-hero-media{
+    overflow: hidden;
+    position: relative;
+  }
+
+  .k-hero-img{
+    height: clamp(82px, 14.5vw, 116px);
+    object-fit: cover;
+    object-position: center 24%;
+    transform: scale(1.02);
+    transform-origin: center;
+  }
+
+  .k-hero-overlay{
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 6px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(31,48,36,.08);
+  }
+
+  .k-hero-text-left{
+    gap: 0;
+    min-width: 0;
+  }
+
+  .k-hero-title{
+    font-size: clamp(0.92rem, 3.9vw, 1.08rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .k-hero-right-col{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .k-hero-pills{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
+  .k-hero-pill{
+    font-size: 8px;
+    line-height: 1.1;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
+  .k-hero-proverb-inline{
+    display: none;
+  }
+
+  .k-cats{
+    margin-top: 2px;
+    padding: 4px 8px 6px;
+  }
+}
