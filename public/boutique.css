@@ -1192,7 +1192,7 @@ body{
   background:var(--white);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   box-shadow:0 -4px 16px rgba(0,0,0,.06);flex-shrink:0;
-  padding-bottom:calc(var(--bnav-h) + 20px + env(safe-area-inset-bottom));
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));
 }
 .k-cart-total-row{
   display:flex;justify-content:space-between;align-items:baseline;
@@ -2286,6 +2286,11 @@ body{
   }
   .k-hero-pills {
     display: none;
+  }
+  /* Drawer panier s'arrête au-dessus de la nav bar */
+  .k-cart-drawer{
+    bottom: var(--bnav-h);
+    border-radius: 16px 0 0 16px;
   }
   .k-hero-pills::-webkit-scrollbar { display: none; }
   .k-hero-pill {
