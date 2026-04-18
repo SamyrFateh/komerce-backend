@@ -2790,3 +2790,101 @@ body{
     height: 38px;
   }
 }
+@media (max-width: 899px){
+
+  /* HERO : garder l'image mais la rendre plus bandeau */
+  .k-hero-img{
+    height: clamp(76px, 14vw, 112px);
+    object-fit: cover;
+    object-position: center 20%;
+  }
+
+  .k-hero-overlay{
+    padding: 2px 10px 2px;
+    gap: 6px;
+  }
+
+  .k-hero-title{
+    font-size: clamp(0.95rem, 4vw, 1.15rem);
+    line-height: 1;
+  }
+
+  .k-cats{
+    padding: 4px 8px 6px;
+    gap: 8px;
+  }
+
+  .k-chip-photo{
+    width: 40px;
+    height: 40px;
+  }
+
+  .k-chip-label{
+    font-size: 9px;
+  }
+
+  /* PROMOS : rail plus compact, plus éditorial */
+  .k-promo-rail{
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding: 0 12px 4px;
+    margin: 0 -12px;
+  }
+
+  .k-promo-rail::before,
+  .k-promo-rail::after{
+    display: none;
+  }
+
+  .k-promo-rail-inner{
+    animation: none !important;
+    width: max-content;
+    gap: 8px;
+  }
+
+  .k-promo-card{
+    flex: 0 0 124px;
+    scroll-snap-align: start;
+  }
+
+  .k-promo-card-img{
+    height: 82px;
+    border-radius: 8px;
+    filter: drop-shadow(0 2px 7px rgba(0,0,0,.12));
+  }
+
+  .k-promo-badge{
+    top: 6px;
+    left: 6px;
+    font-size: 9px;
+    padding: 2px 7px;
+  }
+
+  .k-promo-card-info{
+    padding: 4px 2px 0;
+  }
+
+  .k-promo-card-name{
+    font-size: 10.5px;
+    line-height: 1.15;
+    min-height: 2.1em;
+  }
+
+  .k-promo-card-price{
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .k-promo-card-old{
+    font-size: 9.5px;
+    margin-top: 0;
+  }
+
+  .k-section-head{
+    margin-bottom: 4px;
+  }
+
+  .k-section-head h2{
+    font-size: 16px;
+  }
+}
