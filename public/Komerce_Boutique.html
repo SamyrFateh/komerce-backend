@@ -358,15 +358,6 @@ if('serviceWorker' in navigator){
     if (!el) return;
     var idx = Math.floor(Math.random() * proverbes.length);
     el.textContent = proverbes[idx];
-
-    setInterval(function() {
-      el.classList.add('fade-out');
-      setTimeout(function() {
-        idx = (idx + 1) % proverbes.length;
-        el.textContent = proverbes[idx];
-        el.classList.remove('fade-out');
-      }, 650);
-    }, 6000);
   })();
 </script>
 <script src="/komerce-api.js?v=1776465127"></script>
