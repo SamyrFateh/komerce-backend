@@ -3003,3 +3003,61 @@ body{
     padding: 4px 8px 6px;
   }
 }
+@media (max-width: 899px){
+  .k-hero{
+    position: relative;
+  }
+
+  .k-hero-inner{
+    position: relative;
+  }
+
+  .k-hero-media{
+    position: relative;
+    overflow: hidden;
+  }
+
+  .k-hero-overlay{
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 6px;
+    z-index: 5;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,.84);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.55);
+    box-shadow: 0 4px 14px rgba(31,48,36,.08);
+  }
+
+  .k-hero-text-left{
+    display: flex !important;
+    min-width: 0;
+  }
+
+  .k-hero-title{
+    display: block !important;
+    font-size: clamp(0.88rem, 3.7vw, 1.04rem);
+    line-height: .96;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .k-hero-right-col{
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
+  .k-hero-pill{
+    font-size: 7.5px;
+    padding: 2px 5px;
+  }
+}
