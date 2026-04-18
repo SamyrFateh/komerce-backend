@@ -2701,3 +2701,32 @@ body{
     margin-top: 1px;
   }
 }
+@media (max-width: 899px){
+
+  .k-promo-rail{
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding: 0 12px 8px;
+    margin: 0 -12px;
+    scrollbar-width: none;
+  }
+
+  .k-promo-rail::-webkit-scrollbar{
+    display: none;
+  }
+
+  .k-promo-rail::before,
+  .k-promo-rail::after{
+    display: none;
+  }
+
+  .k-promo-rail-inner{
+    animation: none;
+    gap: 10px;
+    width: max-content;
+  }
+
+  .k-promo-card{
+    scroll-snap-align: start;
+  }
+}
