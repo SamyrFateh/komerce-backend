@@ -2894,11 +2894,11 @@ body{
   }
 
   .k-hero-img{
-    height: clamp(72px, 13vw, 102px);
-    object-fit: cover;
-    object-position: center 32%;
-    transform: scale(1.08);
-    transform-origin: center;
+  height: clamp(76px, 13.8vw, 108px);
+  object-fit: cover;
+  object-position: center 26%;
+  transform: scale(1.03);
+  transform-origin: center;
   }
 
   .k-hero-overlay{
