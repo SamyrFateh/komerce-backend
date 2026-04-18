@@ -3220,3 +3220,19 @@ body{
     height: 22px;
   }
 }
+@media (max-width: 899px){
+
+  .k-promo-card{
+    padding-top: 4px;
+  }
+
+  .k-promo-card-img{
+    height: 86px;
+    object-fit: contain;
+    object-position: center top;
+  }
+
+  .k-promo-badge{
+    top: 2px;
+  }
+}
