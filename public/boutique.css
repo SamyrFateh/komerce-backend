@@ -3061,3 +3061,33 @@ body{
     padding: 2px 5px;
   }
 }
+.k-hero-mini-slogan{
+  display:none;
+}
+
+@media (max-width: 899px){
+  .k-hero-mini-slogan{
+    display:block;
+    text-align:center;
+    font-weight:800;
+    color:var(--text);
+    letter-spacing:-0.02em;
+    font-size:clamp(.88rem,3.7vw,1.04rem);
+    line-height:.96;
+    margin:2px 0 2px;
+  }
+
+  .k-hero-mini-slogan span{
+    color:var(--ocean-dark);
+  }
+
+  .k-hero-overlay{
+    display:none !important;
+  }
+}
+
+@media (min-width: 900px){
+  .k-hero-mini-slogan{
+    display:none;
+  }
+}
