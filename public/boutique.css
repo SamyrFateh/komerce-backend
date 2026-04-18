@@ -3483,3 +3483,78 @@ body{
     height: 30px;
   }
 }
+@media (max-width: 899px){
+
+  /* Intro */
+  .k-track-intro,
+  .track-intro,
+  .k-follow-intro{
+    font-size: 12px;
+    line-height: 1.28;
+    margin: 2px 0 6px;
+  }
+
+  /* Cartes quasi fusionnées */
+  .k-track-card,
+  .track-card,
+  .k-follow-card{
+    padding: 8px 8px 6px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    box-shadow: none;
+  }
+
+  /* Champs plus bas */
+  .k-track-card input,
+  .track-card input,
+  .k-follow-card input{
+    height: 42px;
+    font-size: 14px;
+    padding: 0 12px;
+    border-radius: 10px;
+  }
+
+  /* Boutons plus bas */
+  .k-track-card button,
+  .track-card button,
+  .k-follow-card button{
+    height: 42px;
+    font-size: 14px;
+    border-radius: 12px;
+    margin-top: 6px;
+  }
+
+  /* Séparateur très compact */
+  .k-track-divider,
+  .track-divider,
+  .k-follow-divider{
+    margin: 4px 0;
+  }
+
+  .k-track-divider span,
+  .track-divider span,
+  .k-follow-divider span{
+    font-size: 12px;
+  }
+
+  /* Resserre toute la zone */
+  .track-section,
+  .k-follow-section{
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* WhatsApp moins agressif */
+  .k-wa-fab{
+    width: 46px;
+    height: 46px;
+    right: 8px;
+    bottom: calc(var(--bnav-h) + 8px);
+    opacity: .78;
+  }
+
+  .k-wa-fab svg{
+    width: 18px;
+    height: 18px;
+  }
+}
