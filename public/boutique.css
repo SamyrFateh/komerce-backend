@@ -2292,6 +2292,18 @@ body{
     bottom: var(--bnav-h);
     border-radius: 16px 0 0 16px;
   }
+
+  /* ── Titres sections + cartes plus hautes ── */
+  .k-section-head h2{
+    font-size: 14px;
+  }
+  .k-section{
+    padding-top: 0;
+    margin-bottom: 4px;
+  }
+  .k-promo-card-img{
+    height: 70px;
+  }
   .k-hero-pills::-webkit-scrollbar { display: none; }
   .k-hero-pill {
     flex-shrink: 0;
