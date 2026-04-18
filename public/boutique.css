@@ -2280,13 +2280,7 @@ body{
     white-space: nowrap;
   }
   .k-hero-pills {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    display: flex;
-    flex-wrap: nowrap;
-    overflow: hidden;
-    gap: 6px;
-    padding-bottom: 2px;
+    display: none;
   }
   .k-hero-pills::-webkit-scrollbar { display: none; }
   .k-hero-pill {
