@@ -2888,3 +2888,36 @@ body{
     font-size: 16px;
   }
 }
+@media (max-width: 899px){
+  .k-hero-media{
+    overflow: hidden;
+  }
+
+  .k-hero-img{
+    height: clamp(72px, 13vw, 102px);
+    object-fit: cover;
+    object-position: center 32%;
+    transform: scale(1.08);
+    transform-origin: center;
+  }
+
+  .k-hero-overlay{
+    padding: 0 10px 2px;
+    gap: 4px;
+  }
+
+  .k-hero-title{
+    font-size: clamp(0.9rem, 3.8vw, 1.08rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+  }
+
+  .k-hero-right-col{
+    gap: 3px;
+  }
+
+  .k-hero-pill{
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+}
