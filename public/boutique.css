@@ -2370,3 +2370,25 @@ body{
     padding-right: var(--pad-x);
   }
 }
+
+/* ── Hero fixed wrap (mobile only) ─────────────────────────────────────────── */
+@media (max-width:899px){
+  #k-hero-fixed-wrap{
+    position:fixed;
+    top:var(--header-h);
+    left:0;
+    right:0;
+    z-index:200;
+    background:var(--surface,#fff);
+  }
+  /* Désactiver le sticky de la bar à l'intérieur du wrap fixe */
+  #k-hero-fixed-wrap .k-hero-cats-sticky,
+  #k-hero-fixed-wrap .k-hero-cats-sticky.is-stuck{
+    position:static !important;
+    top:auto !important;
+    width:auto !important;
+    left:auto !important;
+    right:auto !important;
+    box-shadow:none;
+  }
+}

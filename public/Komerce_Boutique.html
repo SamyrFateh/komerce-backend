@@ -68,6 +68,9 @@ if('serviceWorker' in navigator){
   </div>
 </header>
 
+<!-- ═══ HERO FIXED WRAP (mobile: fixed; desktop: normal flow) ═══ -->
+<div id="k-hero-fixed-wrap">
+
 <!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
@@ -120,6 +123,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 </div><!-- /k-hero-cats-sticky -->
+</div><!-- /k-hero-fixed-wrap -->
 <div id="k-bar-spacer" style="display:none;"></div>
 
 <!-- ═══ PROMOS FLASH ═══ -->
@@ -263,36 +267,51 @@ if('serviceWorker' in navigator){
 </nav>
 
 <script>
-// IntersectionObserver: bar becomes fixed ONLY when scrolled past
+// Hero sticky logic: fixed wrap on mobile, IntersectionObserver on desktop
 (function(){
-  var sentinel = document.getElementById('k-bar-sentinel');
-  var bar = document.getElementById('k-sticky-bar');
   var spacer = document.getElementById('k-bar-spacer');
-  if(!sentinel || !bar || !spacer) return;
+  if (!spacer) return;
 
-  // Pre-calculate spacer height
-  spacer.style.height = bar.offsetHeight + 'px';
+  function isMobile(){ return window.innerWidth <= 899; }
 
-  var observer = new IntersectionObserver(function(entries){
-    if(entries[0].isIntersecting){
-      // Sentinel visible → bar in normal document flow
-      bar.classList.remove('is-stuck');
-      spacer.style.display = 'none';
-    } else {
-      // Sentinel scrolled out → bar becomes fixed
-      bar.classList.add('is-stuck');
+  // ── MOBILE : tout le wrap est fixe, on mesure sa hauteur ──────────────────
+  function setupMobile(){
+    var wrap = document.getElementById('k-hero-fixed-wrap');
+    if (!wrap) return;
+    function update(){
+      var h = wrap.offsetHeight;
+      spacer.style.height = h + 'px';
       spacer.style.display = 'block';
     }
-  }, {
-    rootMargin: '-44px 0px 0px 0px' // offset = header height
-  });
+    update();
+    // Re-mesure après chargement de l'image hero
+    var img = wrap.querySelector('.k-hero-img');
+    if (img && !img.complete) img.addEventListener('load', update);
+    window.addEventListener('resize', update);
+  }
 
-  observer.observe(sentinel);
-
-  // Update spacer on resize
-  window.addEventListener('resize', function(){
+  // ── DESKTOP : IntersectionObserver sticky bar ─────────────────────────────
+  function setupDesktop(){
+    var sentinel = document.getElementById('k-bar-sentinel');
+    var bar = document.getElementById('k-sticky-bar');
+    if(!sentinel || !bar) return;
     spacer.style.height = bar.offsetHeight + 'px';
-  });
+    var observer = new IntersectionObserver(function(entries){
+      if(entries[0].isIntersecting){
+        bar.classList.remove('is-stuck');
+        spacer.style.display = 'none';
+      } else {
+        bar.classList.add('is-stuck');
+        spacer.style.display = 'block';
+      }
+    }, { rootMargin: '-44px 0px 0px 0px' });
+    observer.observe(sentinel);
+    window.addEventListener('resize', function(){
+      spacer.style.height = bar.offsetHeight + 'px';
+    });
+  }
+
+  if (isMobile()) { setupMobile(); } else { setupDesktop(); }
 })();
 </script>
 <script src="/komerce-api.js?v=1776465127"></script>
