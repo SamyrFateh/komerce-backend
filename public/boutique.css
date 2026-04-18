@@ -2647,3 +2647,52 @@ body{
     line-height: 1;
   }
 }
+@media (max-width: 899px){
+
+  .k-promo-rail{
+    gap: 12px;
+    padding-bottom: 6px;
+  }
+
+  .k-promo-rail-inner{
+    gap: 10px;
+    animation: promo-scroll 34s linear infinite;
+  }
+
+  .k-promo-card{
+    flex: 0 0 152px;
+  }
+
+  .k-promo-card-img{
+    height: 108px;
+    border-radius: 10px;
+    filter: drop-shadow(0 3px 10px rgba(0,0,0,.16)) drop-shadow(0 1px 2px rgba(0,0,0,.08));
+  }
+
+  .k-promo-badge{
+    top: 8px;
+    left: 8px;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .k-promo-card-info{
+    padding: 6px 4px 0;
+  }
+
+  .k-promo-card-name{
+    font-size: 12px;
+    line-height: 1.22;
+    min-height: 2.4em;
+  }
+
+  .k-promo-card-price{
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .k-promo-card-old{
+    font-size: 11px;
+    margin-top: 1px;
+  }
+}
