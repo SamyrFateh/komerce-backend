@@ -134,13 +134,14 @@ router.get('/alerts', authenticate, requireAdmin, async (req, res, next) => {
       }
 
       // ── B. Paiements Stripe échoués > seuil 24h ─────────────────────────
+      // payment_status est une colonne séparée de status : 'paid' / 'pending' / 'failed'
       const { rows: stripeFailed } = await db.query(`
         SELECT COUNT(*) AS cnt
         FROM orders
         WHERE payment_mode = 'stripe_eur'
-          AND status = 'payment_failed'
+          AND payment_status = 'failed'
           AND created_at > NOW() - INTERVAL '24 hours'
-      `);
+      `).catch(() => ({ rows: [{ cnt: 0 }] }));
       if (Number(stripeFailed[0].cnt) >= paymentFailedCt) {
         alerts.push({
           level: 'critical',
@@ -150,7 +151,7 @@ router.get('/alerts', authenticate, requireAdmin, async (req, res, next) => {
           count: Number(stripeFailed[0].cnt),
           action: 'Vérifier Stripe dashboard',
           target_view: 'orders',
-          target_filter: { status: 'payment_failed' },
+          target_filter: { payment_status: 'failed' },
         });
       }
 
@@ -405,7 +406,7 @@ router.get('/money', authenticate, requireAdmin, async (req, res, next) => {
           COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE) AS orders_today,
           COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE - INTERVAL '1 day') AS orders_yesterday
         FROM orders
-        WHERE status NOT IN ('pending', 'cancelled', 'refunded', 'payment_failed')
+        WHERE status NOT IN ('pending', 'cancelled', 'refunded')
       `);
 
       const caToday = Number(caJour[0].ca_today_kmf);
@@ -427,7 +428,7 @@ router.get('/money', authenticate, requireAdmin, async (req, res, next) => {
           COALESCE(SUM(o.total_kmf) FILTER (WHERE o.created_at >= b.start_current AND o.created_at <= b.end_current), 0) AS ca_mtd_kmf,
           COALESCE(SUM(o.total_kmf) FILTER (WHERE o.created_at >= b.start_previous AND o.created_at <= b.end_previous), 0) AS ca_prev_mtd_kmf
         FROM orders o, bounds b
-        WHERE o.status NOT IN ('pending', 'cancelled', 'refunded', 'payment_failed')
+        WHERE o.status NOT IN ('pending', 'cancelled', 'refunded')
       `);
       const caMtd = Number(caMois[0].ca_mtd_kmf);
       const caPrevMtd = Number(caMois[0].ca_prev_mtd_kmf);
@@ -574,7 +575,7 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
       const { rows: orders } = await db.query(`
         SELECT
           o.id, o.reference, o.total_kmf, o.status AS order_status, o.created_at,
-          o.recipient_name, o.recipient_phone,
+          o.client_name AS recipient_name, o.client_phone AS recipient_phone,
           array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
         FROM orders o
         LEFT JOIN parcels p ON p.order_id = o.id
@@ -663,7 +664,8 @@ router.get('/orders-by-detail/:detail', authenticate, requireAdmin, async (req, 
     const { rows: orders } = await db.query(`
       SELECT
         o.id, o.reference, o.total_kmf, o.status AS order_status,
-        o.created_at, o.recipient_name, o.recipient_phone, o.payment_mode,
+        o.created_at, o.client_name AS recipient_name, o.client_phone AS recipient_phone,
+        o.payment_mode,
         array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
       FROM orders o
       LEFT JOIN parcels p ON p.order_id = o.id
