@@ -2296,11 +2296,24 @@ body{
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  MOBILE — BLOC UNIQUE REFONDU (v6.2)                                      */
+/*  MOBILE — BLOC UNIQUE REFONDU (v6.3)                                      */
 /*  Tout le responsive mobile est ici et nulle part ailleurs.                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 899px) {
+  /* ── PROMOS SECTION ─────────────────────────────────────────────── */
+  #k-promos-section {
+    padding: 8px 0 4px !important;
+    margin: 0 !important;
+  }
+  #k-promos-section .k-section-head {
+    padding: 0 12px 6px !important;
+    margin: 0 !important;
+  }
+  #k-promos-section .k-section-head h2 {
+    font-size: 15px !important;
+  }
+
 
   /* ── HERO : bandeau image avec slogan overlaid ──────────────────── */
   .k-hero {
@@ -2452,18 +2465,20 @@ body{
     padding: 6px 0 10px !important;
   }
 
-  .k-promo-rail {
+  #k-promo-rail {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     scroll-snap-type: x proximity;
     padding: 4px 0 8px !important;
     scrollbar-width: none;
   }
-  .k-promo-rail::-webkit-scrollbar { display: none; }
-  .k-promo-rail::before,
-  .k-promo-rail::after { display: none !important; }
+  #k-promo-rail::-webkit-scrollbar { display: none; }
+  #k-promo-rail::before,
+  #k-promo-rail::after { display: none !important; }
 
-  .k-promo-rail-inner {
+  #k-promo-rail .k-promo-rail-inner {
     display: flex !important;
     flex-wrap: nowrap !important;
     gap: 10px !important;
@@ -2472,7 +2487,8 @@ body{
     padding: 0 14px !important;
   }
 
-  .k-promo-card {
+  #k-promo-rail .k-promo-card {
+    position: relative !important;
     flex: 0 0 110px !important;
     width: 110px !important;
     min-width: 110px !important;
@@ -2480,7 +2496,7 @@ body{
     scroll-snap-align: start;
   }
 
-  .k-promo-card-img {
+  #k-promo-rail .k-promo-card-img {
     width: 110px !important;
     height: 100px !important;
     max-height: 100px !important;
@@ -2492,19 +2508,19 @@ body{
     display: block !important;
   }
 
-  .k-promo-badge {
+  #k-promo-rail .k-promo-badge {
     top: 5px !important;
     left: 5px !important;
     font-size: 8px !important;
     padding: 2px 5px !important;
   }
 
-  .k-promo-card-info {
+  #k-promo-rail .k-promo-card-info {
     padding: 4px 2px 0 !important;
     min-height: 0 !important;
   }
 
-  .k-promo-card-name {
+  #k-promo-rail .k-promo-card-name {
     font-size: 10px !important;
     line-height: 1.2 !important;
     -webkit-line-clamp: 1 !important;
@@ -2513,12 +2529,12 @@ body{
     overflow: hidden !important;
   }
 
-  .k-promo-card-price {
+  #k-promo-rail .k-promo-card-price {
     font-size: 11px !important;
     margin-top: 1px !important;
   }
 
-  .k-promo-card-old {
+  #k-promo-rail .k-promo-card-old {
     display: none !important;
   }
 
