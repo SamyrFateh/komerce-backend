@@ -12,20 +12,37 @@
  * ║  - computeOrderStatus() retourne désormais des statuts ENUM valides ║
  * ║  - fullSync() passe par transitionOrderStatus() (SSOT)              ║
  * ║  - Plus de UPDATE orders SET status = direct                        ║
+ * ╠══════════════════════════════════════════════════════════════════════╣
+ * ║  PATCH P0.3 (normalisation canonique):                             ║
+ * ║  - Contrat aligné : computeOrderStatus() retourne toujours un      ║
+ * ║    statut ENUM valide dès qu'au moins un colis existe.             ║
+ * ║  - null est réservé au cas technique "aucun colis" (skip sync).    ║
+ * ║  - Plus d'ambiguïté "ENUM valide ou null" côté métier.             ║
  * ╚══════════════════════════════════════════════════════════════════════╝
  */
 
 const pool = require('../db');
 const { transitionOrderStatus } = require('../services/order-status-machine');
-// ── S2 FIX: Utilise la version CANONIQUE de computeOrderStatus ──
-// Une seule source de vérité pour le calcul du statut agrégé.
+// ── CANONIQUE: source de vérité unique pour le calcul du statut agrégé ──
+// Toute modification de la logique doit se faire dans utils/parcels.js.
 const { computeOrderStatus: computeOrderStatusFromParcels } = require('./parcels');
 
 /**
  * Recalcule le statut d'une commande depuis ses colis.
- * Délègue à la version canonique dans utils/parcels.js.
+ * Délègue entièrement à la fonction canonique dans utils/parcels.js.
  *
- * Retourne un statut ENUM valide ou null si non-déterminable.
+ * ─── CONTRAT ────────────────────────────────────────────────────────────
+ *  • Aucun colis pour cette commande
+ *      → null  (cas technique — fullSync() retournera { skipped: true })
+ *  • Au moins un colis (quel que soit le statut)
+ *      → statut order_status ENUM valide, jamais null
+ *        ex: 'preparation', 'shipped', 'in_transit', 'available',
+ *            'collected', 'cancelled'
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * @param {string}      orderId   UUID de la commande
+ * @param {object|null} client    Client pg de transaction (optionnel)
+ * @returns {Promise<string|null>}
  */
 async function computeOrderStatus(orderId, client = null) {
   const db = client || pool;
@@ -35,10 +52,12 @@ async function computeOrderStatus(orderId, client = null) {
     [orderId]
   );
 
-  // Pas de colis du tout → null (skip, pas de sync nécessaire)
+  // Aucun colis → null (skip technique, pas de sync nécessaire)
+  // La commande conserve son statut actuel (ex: confirmed, pending).
   if (parcels.length === 0) return null;
 
-  // Délègue à la version canonique (gère cancelled, partial collected, etc.)
+  // Délègue à la fonction canonique.
+  // Garantie : retourne toujours un statut ENUM valide si des colis existent.
   return computeOrderStatusFromParcels(parcels);
 }
 
@@ -77,6 +96,9 @@ async function syncOrderItemQuantities(orderId, client = null) {
  *
  * PATCH P0.2a: Remplace le UPDATE direct par transitionOrderStatus().
  * La state machine gère: validation, historique, timestamps, side-effects.
+ *
+ * Si aucun colis n'existe pour la commande, le sync est skippé (newStatus = null).
+ * Sinon, computeOrderStatus garantit un statut ENUM valide → transition tentée.
  */
 async function fullSync(orderId) {
   const client = await pool.connect();
@@ -107,6 +129,7 @@ async function fullSync(orderId) {
       return { orderId, newStatus: result.noop ? result.previousStatus : newStatus, noop: result.noop };
     }
 
+    // Aucun colis → skip technique (la commande garde son statut actuel)
     await client.query('COMMIT');
     return { orderId, newStatus: null, skipped: true };
   } catch (err) {

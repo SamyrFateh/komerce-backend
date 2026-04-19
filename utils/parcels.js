@@ -72,59 +72,96 @@ const STATUS_WEIGHT = Object.freeze({
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 2. computeOrderStatus(parcels)
+// 2. computeOrderStatus(parcels)  — FONCTION CANONIQUE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
  * Calcule le statut agrégé d'une commande à partir de ses colis.
  *
- * ⚠️  FIX-001 (7 avril 2026) — Toutes les valeurs retournées sont maintenant
- *     des valeurs valides de l'ENUM order_status :
- *     confirmed, ordered, preparation, shipped, in_transit, available,
- *     collected, cancelled, refunded.
+ * ─── CONTRAT ───────────────────────────────────────────────────────────────────
+ *  • Entrée  : tableau de colis (tous statuts confondus, y compris cancelled)
+ *  • Sortie  : statut order_status ENUM valide
+ *              OU null si le tableau est vide (cas technique — skip sync)
  *
- * Règles :
- *   1. Si aucun colis actif → 'confirmed' (commande pas encore traitée)
- *   2. Si TOUS collected    → 'collected'
- *   3. Si TOUS cancelled    → 'cancelled'
- *   4. Si AU MOINS UN available et aucun en mouvement → 'available'
- *   5. Sinon → statut du colis LE MOINS AVANCÉ (hors cancelled)
- *      → Garantit que le client voit le "pire cas" de sa commande
+ *  ⚠️  Cette fonction ne doit PAS être appelée avec un tableau vide si l'on
+ *      veut un vrai statut métier. L'appelant est responsable de ce garde
+ *      (ex: parcelSync-v2 retourne { skipped: true } si aucun colis).
+ *      Un tableau vide ici = absence de contexte logistique → null = skip.
  *
- * @param {Array<{status: string, type: string}>} parcels - Les colis de la commande
- * @returns {string} Statut agrégé compatible avec orders.status (ENUM order_status)
+ * ─── RÈGLES MÉTIER (par ordre de priorité) ─────────────────────────────────────
+ *  A. Aucun colis            → null  (cas technique, traité par l'appelant)
+ *  B. Tous cancelled         → 'cancelled'
+ *  C. Tous collected         → 'collected'
+ *  F. Tous draft             → 'preparation'  (jamais 'pending')
+ *     └─ 'pending' = commande créée/non payée, avant toute logistique.
+ *        Si des colis existent, la mécanique logistique a démarré
+ *        → 'preparation' est le seul statut métier correct.
+ *  E. Partiellement collected (≥1 collected, pas tous)
+ *                            → 'available'   (jamais null)
+ *     └─ Au moins une partie a été retirée ou est disponible.
+ *        Un vrai statut exploitable > silence ambigu.
+ *  D. Au moins un available et aucun colis en mouvement
+ *     (shipped / in_transit / arrived)
+ *                            → 'available'
+ *  G. Sinon → "pire cas visible client" parmi les colis actifs :
+ *        draft / preparation → 'preparation'
+ *        shipped             → 'shipped'
+ *        in_transit / arrived→ 'in_transit'
+ *        available           → 'available'
+ *        collected           → 'collected'
+ *
+ * ─── SÉMANTIQUE DES STATUTS COMMANDE ──────────────────────────────────────────
+ *  pending     = commande créée, en attente de paiement          (avant colis)
+ *  confirmed   = paiement reçu, pas encore de matérialisation     (avant colis)
+ *  preparation = colis existants, encore en draft / préparation
+ *  shipped     = en cours d'expédition
+ *  in_transit  = en transit / arrivé au port, pas encore dispo relais
+ *  available   = disponible au retrait (partiellement ou totalement)
+ *  collected   = tout récupéré
+ *  cancelled   = tout annulé
+ *
+ * @param {Array<{status: string, type?: string}>} parcels  Colis de la commande
+ * @returns {string|null}  Statut order_status ENUM, ou null si aucun colis
  */
 function computeOrderStatus(parcels) {
-  // Aucun colis → commande pas encore traitée logistiquement
-  if (!parcels || parcels.length === 0) return 'confirmed';
+  // ── A. Cas technique : aucun colis ──────────────────────────────────────────
+  // null = "aucun contexte logistique" → l'appelant gère ce cas (skip sync).
+  // La commande conserve son statut actuel (ex: confirmed, pending).
+  if (!parcels || parcels.length === 0) return null;
 
+  // Colis actifs = tous sauf annulés
   const active = parcels.filter(p => p.status !== PARCEL_STATUSES.CANCELLED);
 
-  // Tous annulés → commande annulée
+  // ── B. Tous annulés → cancelled ─────────────────────────────────────────────
   if (active.length === 0) return 'cancelled';
 
-  // Tous collectés → commande terminée
+  // ── C. Tous collectés → collected ───────────────────────────────────────────
   if (active.every(p => p.status === PARCEL_STATUSES.COLLECTED)) return 'collected';
 
-  // ── FIX S2: Partiellement collecté → ambiguïté, on ne touche pas ──
-  // Certains colis récupérés mais pas tous → la state machine décidera
-  const someCollected = active.some(p => p.status === PARCEL_STATUSES.COLLECTED);
-  if (someCollected) return null;
+  // ── F. Tous en draft → preparation (jamais pending) ────────────────────────
+  // Si des colis existent, la logistique a démarré même si rien n'est encore packed.
+  // 'pending' est réservé aux commandes sans colis (en attente de paiement).
+  if (active.every(p => p.status === PARCEL_STATUSES.DRAFT)) return 'preparation';
 
-  // Au moins un disponible, aucun en mouvement → commande dispo
+  // ── E. Partiellement collecté → available (jamais null) ─────────────────────
+  // Au moins un colis récupéré = au moins une partie est disponible/retirée.
+  // On préfère un vrai statut exploitable à une absence de décision.
+  const someCollected = active.some(p => p.status === PARCEL_STATUSES.COLLECTED);
+  if (someCollected) return 'available';
+
+  // ── D. Au moins un dispo, aucun en mouvement → available ────────────────────
   const inMovement = active.some(p =>
     [PARCEL_STATUSES.SHIPPED, PARCEL_STATUSES.IN_TRANSIT, PARCEL_STATUSES.ARRIVED].includes(p.status)
   );
   const someAvailable = active.some(p => p.status === PARCEL_STATUSES.AVAILABLE);
   if (someAvailable && !inMovement) return 'available';
 
-  // ── FIX S2: Tous en draft → pending (pas preparation) ──
-  if (active.every(p => p.status === PARCEL_STATUSES.DRAFT)) return 'pending';
-
-  // Sinon : le statut du colis le moins avancé (pire cas)
+  // ── G. Pire cas visible client ───────────────────────────────────────────────
+  // Parmi tous les colis actifs, on prend le statut le moins avancé.
+  // Garantit que le client voit l'état le plus défavorable de sa commande.
   const lowestStatus = active.reduce((lowest, p) => {
-    const w = STATUS_WEIGHT[p.status] ?? 0;
-    const lw = STATUS_WEIGHT[lowest] ?? 0;
+    const w  = STATUS_WEIGHT[p.status] ?? 0;
+    const lw = STATUS_WEIGHT[lowest]   ?? 0;
     return w < lw ? p.status : lowest;
   }, active[0].status);
 
@@ -134,13 +171,54 @@ function computeOrderStatus(parcels) {
     [PARCEL_STATUSES.PREPARATION]: 'preparation',
     [PARCEL_STATUSES.SHIPPED]:     'shipped',
     [PARCEL_STATUSES.IN_TRANSIT]:  'in_transit',
-    [PARCEL_STATUSES.ARRIVED]:     'in_transit',   // arrived au port ≠ available au relais
+    [PARCEL_STATUSES.ARRIVED]:     'in_transit',  // arrived port ≠ available relais
     [PARCEL_STATUSES.AVAILABLE]:   'available',
     [PARCEL_STATUSES.COLLECTED]:   'collected',
   };
 
-  return PARCEL_TO_ORDER[lowestStatus] || 'preparation';
+  return PARCEL_TO_ORDER[lowestStatus] ?? 'preparation';
 }
+
+/*
+ * ─── MINI TESTS UNITAIRES (cas commentés) ──────────────────────────────────────
+ *
+ * Pour exécuter manuellement : copier-coller dans un REPL Node.js avec
+ * les constantes PARCEL_STATUSES / STATUS_WEIGHT disponibles.
+ *
+ * computeOrderStatus([])
+ *   → null  (cas technique, aucun colis)
+ *
+ * computeOrderStatus([{ status: 'cancelled' }, { status: 'cancelled' }])
+ *   → 'cancelled'  (B: tous annulés)
+ *
+ * computeOrderStatus([{ status: 'collected' }, { status: 'collected' }])
+ *   → 'collected'  (C: tous collectés)
+ *
+ * computeOrderStatus([{ status: 'collected' }, { status: 'available' }])
+ *   → 'available'  (E: partiellement collecté → jamais null)
+ *
+ * computeOrderStatus([{ status: 'collected' }, { status: 'shipped' }])
+ *   → 'available'  (E: someCollected = true → prioritaire)
+ *
+ * computeOrderStatus([{ status: 'draft' }, { status: 'draft' }])
+ *   → 'preparation'  (F: tous draft → preparation, jamais pending)
+ *
+ * computeOrderStatus([{ status: 'draft' }, { status: 'cancelled' }])
+ *   → 'preparation'  (F: seul actif est draft)
+ *
+ * computeOrderStatus([{ status: 'shipped' }, { status: 'available' }])
+ *   → 'shipped'  (G: inMovement=true, someCollected=false → pire cas = shipped)
+ *
+ * computeOrderStatus([{ status: 'available' }])
+ *   → 'available'  (D: someAvailable=true, inMovement=false)
+ *
+ * computeOrderStatus([{ status: 'arrived' }, { status: 'preparation' }])
+ *   → 'preparation'  (G: pire cas = preparation, poids 1 < arrived poids 4)
+ *
+ * computeOrderStatus([{ status: 'in_transit' }, { status: 'available' }])
+ *   → 'in_transit'  (G: inMovement=true, pire cas = in_transit)
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -327,7 +405,7 @@ module.exports = {
   PARCEL_STATUSES,
   STATUS_WEIGHT,
 
-  // Calcul statut agrégé
+  // Calcul statut agrégé (FONCTION CANONIQUE — source de vérité unique)
   computeOrderStatus,
 
   // Split commande → colis
