@@ -408,7 +408,7 @@ body{
   gap:2px;
   max-width:var(--container);
   margin:8px auto 0;
-  padding:10px 8px 14px;
+  padding:8px 6px 12px;
   position:sticky;
   top:var(--header-h);
   z-index:50;
@@ -4767,20 +4767,20 @@ body{
 
 /* ── 2. CHIPS CATÉGORIES — taille équilibrée ───────────────────────────── */
 
-/* Mobile : 42px — 6 chips tiennent sans scroller */
+/* Mobile : 38px — 7 chips tiennent sans scroller */
 .k-chip-photo {
-  width: 42px !important;
-  height: 42px !important;
-  box-shadow: 0 2px 8px rgba(31,48,36,.10) !important;
+  width: 38px !important;
+  height: 38px !important;
+  box-shadow: 0 2px 6px rgba(31,48,36,.10) !important;
 }
 
 .k-chip-label {
-  font-size: 9.5px !important;
+  font-size: 9px !important;
   font-weight: 600 !important;
   color: var(--text-muted) !important;
   white-space: normal !important;
   text-align: center !important;
-  max-width: 50px !important;
+  max-width: 48px !important;
   line-height: 1.15 !important;
 }
 
@@ -5022,3 +5022,30 @@ body{
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH — barre de recherche plus compacte (mobile)                       */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px) {
+  .k-search input {
+    height: 30px !important;
+    font-size: 12.5px !important;
+    padding: 0 10px 0 30px !important;
+  }
+
+  .k-search-icon {
+    width: 15px !important;
+    height: 15px !important;
+    left: 9px !important;
+  }
+
+  /* Header un poil plus compact aussi */
+  .k-header {
+    height: 42px !important;
+  }
+  .k-header-inner {
+    gap: 8px !important;
+  }
+}
