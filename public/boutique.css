@@ -3753,3 +3753,57 @@ body{
     font-size:14px;
   }
 }
+.k-promo-card{
+  flex: 0 0 120px;
+  display:flex;
+  flex-direction:column;
+}
+
+.k-promo-card-img{
+  width:100%;
+  height:90px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+.k-promo-card-info{
+  min-height:52px;
+}
+.k-card{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+
+.k-card-img-wrap{
+  aspect-ratio:1/1;
+  overflow:hidden;
+}
+
+.k-card-img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  padding:0;
+}
+
+.k-card-info{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:96px;
+}
+
+.k-card-name{
+  min-height:2.6em;
+}
+
+.k-card-bottom{
+  margin-top:auto;
+}
+.k-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  align-items:start;
+}
