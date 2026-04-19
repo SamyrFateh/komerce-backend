@@ -405,16 +405,17 @@ body{
 .k-cats{
   display:flex;
   flex-wrap:nowrap;
-  gap:16px;
+  gap:4px;
   max-width:var(--container);
   margin:8px auto 0;
-  padding:12px var(--pad-x) 16px;
+  padding:10px var(--pad-x) 14px;
   position:sticky;
   top:var(--header-h);
   z-index:50;
   background:var(--sand);
-  overflow-x:auto;
+  overflow-x:hidden;
   scrollbar-width:none;
+  justify-content:space-between;
   /* Ombre discrète pour séparer visuellement une fois sticky */
   box-shadow:0 1px 0 var(--border);
 }
@@ -431,8 +432,8 @@ body{
    Pattern Instagram Stories adapté shopping.
    Image circulaire avec ring coloré en actif, label en dessous. */
 .k-chip{
-  flex:0 0 auto;
-  min-width:72px;
+  flex:1 1 0;
+  min-width:0;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -4764,46 +4765,52 @@ body{
 }
 
 
-/* ── 2. CHIPS CATÉGORIES — plus grandes et plus mises en valeur ────────── */
+/* ── 2. CHIPS CATÉGORIES — taille équilibrée ───────────────────────────── */
 
-/* Mobile : on passe de 64px à 72px + label plus lisible */
+/* Mobile : 42px — 6 chips tiennent sans scroller */
 .k-chip-photo {
-  width: 72px !important;
-  height: 72px !important;
-  box-shadow: 0 3px 10px rgba(31,48,36,.12) !important;
+  width: 42px !important;
+  height: 42px !important;
+  box-shadow: 0 2px 8px rgba(31,48,36,.10) !important;
 }
 
 .k-chip-label {
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  color: var(--text) !important;
-  /* Permettre le retour à la ligne pour les labels longs */
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
   white-space: normal !important;
   text-align: center !important;
-  max-width: 72px !important;
-  line-height: 1.2 !important;
+  max-width: 50px !important;
+  line-height: 1.15 !important;
 }
 
-/* Active : ring plus visible */
+/* Active : ring vert bien visible */
 .k-chip.active .k-chip-photo {
   box-shadow:
-    0 0 0 3px var(--ocean),
-    0 4px 16px rgba(74,144,64,.28) !important;
+    0 0 0 2.5px var(--ocean),
+    0 3px 12px rgba(74,144,64,.22) !important;
   border-color: var(--ocean) !important;
 }
 
 .k-chip.active .k-chip-label {
   color: var(--ocean-dark) !important;
+  font-weight: 700 !important;
 }
 
-/* Desktop : encore plus grandes */
+/* Chip "Tout" : cercle sans image, texte stylisé à l'intérieur */
+.k-chip[data-cat="all"] .k-chip-photo {
+  background: var(--sand-dark) !important;
+  overflow: hidden !important;
+}
+
+/* Desktop */
 @media (min-width: 900px) {
-  .k-chip-photo { width: 84px !important; height: 84px !important; }
-  .k-chip-label { font-size: 13px !important; max-width: 84px !important; }
+  .k-chip-photo { width: 62px !important; height: 62px !important; }
+  .k-chip-label { font-size: 11.5px !important; max-width: 66px !important; }
 }
 @media (min-width: 1200px) {
-  .k-chip-photo { width: 92px !important; height: 92px !important; }
-  .k-chip-label { font-size: 14px !important; max-width: 92px !important; }
+  .k-chip-photo { width: 70px !important; height: 70px !important; }
+  .k-chip-label { font-size: 12px !important; max-width: 74px !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */
