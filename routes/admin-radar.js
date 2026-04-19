@@ -575,7 +575,7 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
       const { rows: orders } = await db.query(`
         SELECT
           o.id, o.reference, o.total_kmf, o.status AS order_status, o.created_at,
-          o.client_name AS recipient_name, o.client_phone AS recipient_phone,
+          o.recipient_name AS recipient_name, o.recipient_phone AS recipient_phone,
           array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
         FROM orders o
         LEFT JOIN parcels p ON p.order_id = o.id
@@ -664,7 +664,7 @@ router.get('/orders-by-detail/:detail', authenticate, requireAdmin, async (req, 
     const { rows: orders } = await db.query(`
       SELECT
         o.id, o.reference, o.total_kmf, o.status AS order_status,
-        o.created_at, o.client_name AS recipient_name, o.client_phone AS recipient_phone,
+        o.created_at, o.recipient_name, o.recipient_phone,
         o.payment_mode,
         array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
       FROM orders o
