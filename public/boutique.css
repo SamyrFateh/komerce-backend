@@ -4410,3 +4410,189 @@ body{
 /*       avec l'élément sélectionné dans DevTools.                          */
 /*                                                                           */
 /* ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  KOMERCE BOUTIQUE — FANTAISIE v2.1                                       */
+/*  À coller JUSTE APRÈS le bloc "REFONTE MOBILE v2.0" à la fin de         */
+/*  boutique.css.                                                           */
+/*                                                                           */
+/*  Ajoute le raffinement final :                                           */
+/*    ✦ Rayons 20px (soft UI premium)                                      */
+/*    ✦ Double ombre flottante                                             */
+/*    ✦ Transitions plus soyeuses (400ms)                                  */
+/*    ✦ Gradient subtil en bas d'image (lisibilité + profondeur)          */
+/*    ✦ Scale image au hover desktop                                       */
+/*                                                                           */
+/*  Objectif : élégance mobile-first, sensation "app premium".             */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ── 1. RAYONS 20px — cartes promo + catalogue ────────────────────────── */
+
+.k-promo-card{
+  border-radius: 20px !important;
+}
+
+.k-card{
+  border-radius: 20px !important;
+}
+
+/* L'image doit suivre le rayon de la carte en haut uniquement
+   (le bas est coupé par la zone info). overflow:hidden de la carte
+   suffit déjà, mais on s'assure que le wrap image n'ajoute pas de
+   rayon en bas qui créerait un "trait" visible. */
+.k-card-img-wrap,
+.k-promo-card-img{
+  border-radius: 0 !important;  /* laissé à la carte parent */
+}
+
+
+/* ── 2. DOUBLE OMBRE FLOTTANTE ────────────────────────────────────────── */
+
+/* Ombre plus riche : une ombre proche (définition) + une ombre lointaine
+   (profondeur). Sensation "carte flottante" sans exagérer. */
+
+.k-card{
+  box-shadow:
+    0 1px 2px rgba(31, 48, 36, .05),
+    0 8px 24px rgba(31, 48, 36, .06) !important;
+}
+
+.k-promo-card{
+  box-shadow:
+    0 1px 2px rgba(31, 48, 36, .04),
+    0 6px 16px rgba(31, 48, 36, .05) !important;
+  border: none !important;  /* la border était redondante avec la nouvelle ombre */
+}
+
+/* Hover desktop : ombre plus prononcée + légère élévation */
+@media (hover:hover) and (pointer:fine){
+  .k-card:hover{
+    box-shadow:
+      0 2px 4px rgba(31, 48, 36, .06),
+      0 16px 40px rgba(31, 48, 36, .10) !important;
+    transform: translateY(-4px) !important;
+  }
+  .k-promo-card:hover{
+    box-shadow:
+      0 2px 4px rgba(31, 48, 36, .05),
+      0 12px 28px rgba(31, 48, 36, .08) !important;
+    transform: translateY(-3px) !important;
+  }
+}
+
+
+/* ── 3. TRANSITIONS SOYEUSES (400ms) ──────────────────────────────────── */
+
+.k-card,
+.k-promo-card{
+  transition:
+    transform .4s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .4s cubic-bezier(.22, 1, .36, 1) !important;
+}
+
+.k-card-img{
+  transition: transform .5s cubic-bezier(.22, 1, .36, 1) !important;
+}
+
+
+/* ── 4. GRADIENT SUBTIL EN BAS D'IMAGE (catalogue uniquement) ────────── */
+
+/* Un voile très doux sur le bas de l'image pour renforcer la lisibilité
+   du titre si l'image a un fond clair, et pour créer une transition
+   visuelle plus douce entre image et zone info. */
+
+.k-card-img-wrap{
+  position: relative;
+}
+
+.k-card-img-wrap::after{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 70%,
+    rgba(31, 48, 36, .04) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+
+/* ── 5. SCALE IMAGE AU HOVER DESKTOP (plus prononcé) ──────────────────── */
+
+@media (hover:hover) and (pointer:fine){
+  .k-card:hover .k-card-img{
+    transform: scale(1.06) !important;
+  }
+}
+
+
+/* ── 6. BADGE PROMO — arrondi cohérent avec les cartes ────────────────── */
+
+/* Les badges "-15%" étaient déjà en pill (border-radius: 50px).
+   On les conserve, mais on ajoute une ombre plus raffinée. */
+
+.k-promo-badge,
+.k-card-promo{
+  box-shadow:
+    0 2px 6px rgba(200, 92, 45, .25),
+    0 1px 2px rgba(200, 92, 45, .15) !important;
+}
+
+
+/* ── 7. CHIPS CATÉGORIES — photo en rayon continu ────────────────────── */
+
+/* Les photos des chips sont déjà rondes (50%). On adoucit juste
+   l'ombre active pour qu'elle s'aligne avec le nouveau style. */
+
+.k-chip.active .k-chip-photo{
+  box-shadow:
+    0 0 0 3px rgba(74, 144, 64, .18),
+    0 4px 14px rgba(74, 144, 64, .22) !important;
+}
+
+
+/* ── 8. MINI-SLOGAN HERO — cohérence rayon plus généreux ─────────────── */
+
+/* Le slogan est à 14px, on le passe à 18px pour s'aligner avec le
+   nouveau style soft UI. Reste en transparence, juste plus doux. */
+
+@media (max-width: 899px){
+  .k-hero-mini-slogan--premium{
+    border-radius: 18px !important;
+    box-shadow:
+      0 2px 6px rgba(31, 48, 36, .06),
+      0 12px 30px rgba(31, 48, 36, .10) !important;
+  }
+}
+
+
+/* ── 9. RAYON INTERNE DES DISQUES FAV + PANIER ───────────────────────── */
+
+/* Ces 2 disques étaient déjà à 50% (parfaitement ronds).
+   On raffine juste l'ombre pour l'harmoniser. */
+
+.k-card-fav,
+.k-card-add{
+  box-shadow:
+    0 2px 6px rgba(31, 48, 36, .10),
+    0 1px 2px rgba(31, 48, 36, .06),
+    0 0 0 1px rgba(31, 48, 36, .04) !important;
+}
+
+@media (hover:hover) and (pointer:fine){
+  .k-card-add:hover{
+    box-shadow:
+      0 4px 14px rgba(74, 144, 64, .25),
+      0 2px 4px rgba(31, 48, 36, .08),
+      0 0 0 1px rgba(74, 144, 64, .20) !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIN FANTAISIE v2.1                                                       */
+/*  Si tu veux doser : réduis les valeurs 20px → 16px dans la zone 1.      */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
