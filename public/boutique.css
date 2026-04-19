@@ -4729,3 +4729,83 @@ body{
 /*    toutes les cartes d'une même ligne de la grille.                    */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  KOMERCE — PATCH v2.4                                                    */
+/*  1. Bulle slogan : plus petite, ne touche plus les personnages         */
+/*  2. Chips catégories : plus grandes, plus en valeur                    */
+/*  3. Label "Couture" renommé côté HTML → "Spécialement pour vous…"     */
+/*     + wrapping activé pour ce label long                               */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ── 1. BULLE SLOGAN — plus compacte (mobile uniquement) ──────────────── */
+
+@media (max-width: 899px) {
+
+  /* Padding réduit : bulle plus étroite */
+  .k-hero-mini-slogan--premium {
+    padding: 5px 10px !important;
+    border-radius: 12px !important;
+    /* Réduit encore la largeur max pour qu'elle reste bien centrée */
+    max-width: 42% !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.07) !important;
+  }
+
+  /* Texte plus petit dans la bulle */
+  .k-hero-mini-slogan--premium .k-line-1 {
+    font-size: 10px !important;
+  }
+
+  .k-hero-mini-slogan--premium .k-line-2 {
+    font-size: 12px !important;
+  }
+}
+
+
+/* ── 2. CHIPS CATÉGORIES — plus grandes et plus mises en valeur ────────── */
+
+/* Mobile : on passe de 64px à 72px + label plus lisible */
+.k-chip-photo {
+  width: 72px !important;
+  height: 72px !important;
+  box-shadow: 0 3px 10px rgba(31,48,36,.12) !important;
+}
+
+.k-chip-label {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  /* Permettre le retour à la ligne pour les labels longs */
+  white-space: normal !important;
+  text-align: center !important;
+  max-width: 72px !important;
+  line-height: 1.2 !important;
+}
+
+/* Active : ring plus visible */
+.k-chip.active .k-chip-photo {
+  box-shadow:
+    0 0 0 3px var(--ocean),
+    0 4px 16px rgba(74,144,64,.28) !important;
+  border-color: var(--ocean) !important;
+}
+
+.k-chip.active .k-chip-label {
+  color: var(--ocean-dark) !important;
+}
+
+/* Desktop : encore plus grandes */
+@media (min-width: 900px) {
+  .k-chip-photo { width: 84px !important; height: 84px !important; }
+  .k-chip-label { font-size: 13px !important; max-width: 84px !important; }
+}
+@media (min-width: 1200px) {
+  .k-chip-photo { width: 92px !important; height: 92px !important; }
+  .k-chip-label { font-size: 14px !important; max-width: 92px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIN PATCH v2.4                                                          */
+/* ═══════════════════════════════════════════════════════════════════════ */
