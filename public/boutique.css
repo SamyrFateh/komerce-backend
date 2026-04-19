@@ -2554,6 +2554,18 @@ body{
     padding-bottom: env(safe-area-inset-bottom, 0) !important;
   }
 
+  
+  /* ── BOTTOM NAV BAR ────────────────────────────────────────── */
+  .k-bnav {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    background: #fff !important;
+    box-shadow: 0 -1px 6px rgba(0,0,0,.08) !important;
+  }
+
   /* ── UTILITAIRES ────────────────────────────────────────────── */
   body { padding-bottom: 60px !important; }
 }
