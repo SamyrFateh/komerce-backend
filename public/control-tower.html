@@ -177,11 +177,10 @@
   <!-- Sidebar -->
   <nav class="ct-sidebar">
     <div class="ct-logo">🗼 Control Tower</div>
-
+     <a class="ct-nav-item" data-view="inventory" onclick="CT.app.navigate('inventory')">📦 Inventaire</a>
     <div class="ct-section-title">📊 Vue d'ensemble</div>
     <a class="ct-nav-item" data-view="dashboard" onclick="CT.app.navigate('dashboard')">🎯 Dashboard</a>
     <a class="ct-nav-item" data-view="orders" onclick="CT.app.navigate('orders')">📋 Commandes &amp; Colis</a>
-    <a class="ct-nav-item" data-view="previsions" onclick="CT.app.navigate('previsions')">🔮 Prévisions</a>
 
     <div class="ct-nav-divider"></div>
     <div class="ct-section-title">🏭 Opérations</div>
@@ -233,7 +232,6 @@
 <script src="/js/ct-views-transitaire.js"></script>
 <script src="/js/ct-views-settings.js"></script>
 <script src="/js/ct-views-dashboard-radar.js"></script>
-<script src="/js/ct-views-previsions.js"></script>
 <script src="/js/ct-app-v7.js"></script>
 <script src="/js/auth-guard.js"></script>
 </body>

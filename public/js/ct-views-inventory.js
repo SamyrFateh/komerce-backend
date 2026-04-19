@@ -185,3 +185,11 @@ window.CTInventory = {
     }
   }
 };
+window.CT = window.CT || {};
+CT.views = CT.views || {};
+
+CT.views.inventory = async function(container) {
+  return window.CTInventory.render(container);
+};
+
+console.log('[CT] ct-views-inventory.js chargé (v1.0)');
