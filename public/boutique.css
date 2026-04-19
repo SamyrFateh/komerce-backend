@@ -4595,4 +4595,68 @@ body{
 /*  FIN FANTAISIE v2.1                                                       */
 /*  Si tu veux doser : réduis les valeurs 20px → 16px dans la zone 1.      */
 /* ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  KOMERCE BOUTIQUE — MICRO-PATCH v2.3                                     */
+/*  À coller JUSTE APRÈS le bloc v2.2.                                      */
+/*                                                                           */
+/*  Objectif : uniformiser la hauteur des cartes que le produit soit       */
+/*  en promo (prix + ancien prix barré) ou non (prix seul).                */
+/*                                                                           */
+/*  Principe : on RÉSERVE toujours l'espace pour une éventuelle 2e ligne   */
+/*  de prix, même si elle n'existe pas — via min-height sur .k-card-bottom.*/
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ── Zone bas de carte : hauteur minimum garantie pour 2 lignes de prix ─ */
+
+.k-card-bottom{
+  /* 2 lignes de prix × line-height 1.15 × font-size ~15px = ~35px
+     + petit padding haut = ~40px
+     Cette valeur est la même que le produit soit en promo ou non. */
+  min-height: 40px !important;
+
+  /* On garde flex column mais on justifie en haut pour que le prix
+     principal reste collé au titre et la 2e ligne (ancien prix)
+     vienne en dessous si elle existe, sans créer de trou. */
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  gap: 1px !important;
+  padding-top: 6px !important;
+}
+
+/* Prix principal : toujours même taille, même ligne de base */
+.k-card-price{
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: var(--text) !important;
+  margin: 0 !important;
+  display: block;
+}
+
+/* Ancien prix (absent si pas de promo) : on le rend invisible par
+   défaut en réservant sa place via min-height sur le parent —
+   ce qui garantit que les deux types de cartes ont la même hauteur. */
+.k-card-old-price{
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  color: var(--text-light) !important;
+  text-decoration: line-through !important;
+  margin: 0 !important;
+  opacity: .75;
+  display: block;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Vérification :                                                           */
+/*  - Carte sans promo : 1 ligne de prix, mais .k-card-bottom a           */
+/*    min-height:40px donc reserve la place → même hauteur totale.        */
+/*  - Carte avec promo : 2 lignes, remplit les 40px naturellement.        */
+/*  - Les prix sont TOUJOURS alignés à la même position verticale dans    */
+/*    toutes les cartes d'une même ligne de la grille.                    */
+/* ═══════════════════════════════════════════════════════════════════════ */
 
