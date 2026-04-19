@@ -4747,20 +4747,22 @@ body{
 
   /* Padding réduit : bulle plus étroite */
   .k-hero-mini-slogan--premium {
-    padding: 5px 10px !important;
-    border-radius: 12px !important;
-    /* Réduit encore la largeur max pour qu'elle reste bien centrée */
-    max-width: 42% !important;
-    box-shadow: 0 4px 14px rgba(0,0,0,.07) !important;
+    padding: 4px 8px !important;
+    border-radius: 10px !important;
+    max-width: 34% !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.06) !important;
+    /* Décalage vers la gauche */
+    position: relative !important;
+    left: -6% !important;
   }
 
-  /* Texte plus petit dans la bulle */
+  /* Texte encore plus petit */
   .k-hero-mini-slogan--premium .k-line-1 {
-    font-size: 10px !important;
+    font-size: 9px !important;
   }
 
   .k-hero-mini-slogan--premium .k-line-2 {
-    font-size: 12px !important;
+    font-size: 11px !important;
   }
 }
 
@@ -4799,8 +4801,12 @@ body{
 
 /* Chip "Tout" : cercle sans image, texte stylisé à l'intérieur */
 .k-chip[data-cat="all"] .k-chip-photo {
-  background: var(--sand-dark) !important;
+  background: var(--ocean-dark) !important;
   overflow: hidden !important;
+}
+/* Cacher l'image si elle existe encore dans le DOM */
+.k-chip[data-cat="all"] .k-chip-photo img {
+  display: none !important;
 }
 
 /* Desktop */
