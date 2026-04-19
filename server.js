@@ -56,6 +56,23 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+app.get('/webhook/authkey-whatsapp', async (req, res) => {
+  try {
+    console.log('[AUTHKEY-WA][WEBHOOK]', req.query);
+
+    const mobile = req.query.Mobile || null;
+    const email = req.query.Email || null;
+    const status = req.query.Status || null;
+    const logId = req.query['Log ID'] || req.query.LogID || req.query.log_id || null;
+    const time = req.query.Time || null;
+
+    return res.status(200).send('OK');
+  } catch (e) {
+    console.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
+    return res.status(500).send('ERROR');
+  }
+});
+
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
