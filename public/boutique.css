@@ -3728,7 +3728,7 @@ body{
 .k-hero-mini-slogan{
   position:absolute;
   left:50%;
-  top:8px;
+  top:2px;
   transform:translateX(-50%);
   z-index:3;
 }
