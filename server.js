@@ -213,6 +213,7 @@ const clientAuthRouter = require('./routes/client-auth');
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
+const adminRadarRouter = require('./routes/admin-radar');
 
 // ── NEW: Parcel-First API v2 (COLIS-FIRST) ──────────────────────────────────
 const parcelApiV2Router = require('./routes/parcel-api-v2');
@@ -241,6 +242,7 @@ app.use('/api/admin/pilotage', dashboardRouter);
 app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
+app.use('/api/admin/radar', adminRadarRouter);
 app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
