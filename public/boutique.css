@@ -405,10 +405,10 @@ body{
 .k-cats{
   display:flex;
   flex-wrap:nowrap;
-  gap:4px;
+  gap:2px;
   max-width:var(--container);
   margin:8px auto 0;
-  padding:10px var(--pad-x) 14px;
+  padding:10px 8px 14px;
   position:sticky;
   top:var(--header-h);
   z-index:50;
@@ -3727,7 +3727,7 @@ body{
 }
 .k-hero-mini-slogan{
   position:absolute;
-  left:12px;
+  left:8px;
   bottom:10px;
   z-index:3;
 }
@@ -4749,11 +4749,8 @@ body{
   .k-hero-mini-slogan--premium {
     padding: 5px 10px !important;
     border-radius: 12px !important;
-    max-width: 38% !important;
+    max-width: 36% !important;
     box-shadow: 0 3px 10px rgba(0,0,0,.07) !important;
-    position: relative !important;
-    left: -4% !important;
-    transform: translateX(-4%) !important;
   }
 
   .k-hero-mini-slogan--premium .k-line-1 {
