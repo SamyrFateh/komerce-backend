@@ -4747,22 +4747,21 @@ body{
 
   /* Padding réduit : bulle plus étroite */
   .k-hero-mini-slogan--premium {
-    padding: 4px 8px !important;
-    border-radius: 10px !important;
-    max-width: 34% !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,.06) !important;
-    /* Décalage vers la gauche */
+    padding: 5px 10px !important;
+    border-radius: 12px !important;
+    max-width: 38% !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.07) !important;
     position: relative !important;
-    left: -6% !important;
+    left: -4% !important;
+    transform: translateX(-4%) !important;
   }
 
-  /* Texte encore plus petit */
   .k-hero-mini-slogan--premium .k-line-1 {
-    font-size: 9px !important;
+    font-size: 10px !important;
   }
 
   .k-hero-mini-slogan--premium .k-line-2 {
-    font-size: 11px !important;
+    font-size: 12.5px !important;
   }
 }
 
