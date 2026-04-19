@@ -5143,3 +5143,207 @@ body{
     display: none !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH FINAL — visuel équilibré mobile                                  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px){
+
+  /* ── Section Soldes : force le rail horizontal compact ─────────────── */
+  #k-promos-section{
+    padding: 6px 10px 10px !important;
+  }
+
+  #k-promo-rail,
+  .k-promo-rail{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 10px !important;
+    padding: 4px 0 8px !important;
+    scroll-snap-type: x mandatory !important;
+    scrollbar-width: none !important;
+  }
+  #k-promo-rail::-webkit-scrollbar,
+  .k-promo-rail::-webkit-scrollbar{ display: none !important; }
+
+  /* Chaque carte dans le rail promo : taille fixe compacte */
+  #k-promo-rail > *,
+  .k-promo-rail > *,
+  #k-promo-rail .k-card,
+  .k-promo-rail .k-card{
+    flex: 0 0 140px !important;
+    width: 140px !important;
+    max-width: 140px !important;
+    min-width: 140px !important;
+    scroll-snap-align: start !important;
+  }
+
+  /* Image dans la carte promo : hauteur fixe 120px, aspect cover */
+  #k-promo-rail .k-card-img,
+  .k-promo-rail .k-card-img,
+  #k-promo-rail .k-promo-card-img,
+  .k-promo-rail .k-promo-card-img{
+    height: 120px !important;
+    max-height: 120px !important;
+    aspect-ratio: unset !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    padding: 0 !important;
+  }
+
+  #k-promo-rail .k-card-img-wrap,
+  .k-promo-rail .k-card-img-wrap{
+    height: 120px !important;
+    max-height: 120px !important;
+    padding: 0 !important;
+  }
+
+  /* Infos compactes dans le rail promo */
+  #k-promo-rail .k-card-info,
+  .k-promo-rail .k-card-info{
+    padding: 6px 8px 8px !important;
+    min-height: 0 !important;
+  }
+  #k-promo-rail .k-card-name,
+  .k-promo-rail .k-card-name{
+    font-size: 11.5px !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+  #k-promo-rail .k-card-price,
+  .k-promo-rail .k-card-price{
+    font-size: 12.5px !important;
+  }
+  #k-promo-rail .k-card-old-price,
+  .k-promo-rail .k-card-old-price{
+    font-size: 10px !important;
+  }
+  #k-promo-rail .k-card-bottom,
+  .k-promo-rail .k-card-bottom{
+    min-height: 0 !important;
+    padding-top: 2px !important;
+  }
+  #k-promo-rail .k-card-fav,
+  #k-promo-rail .k-card-add,
+  .k-promo-rail .k-card-fav,
+  .k-promo-rail .k-card-add{
+    display: none !important;
+  }
+  #k-promo-rail .k-card-promo,
+  .k-promo-rail .k-card-promo{
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    top: 4px !important;
+    left: 4px !important;
+  }
+
+  /* ── Cartes catalogue principal : compactes aussi ─────────────────── */
+  #k-grid .k-card-img{
+    aspect-ratio: 4/3 !important;
+    padding: 6px !important;
+  }
+
+  #k-grid .k-card-info{
+    padding: 8px 10px 10px !important;
+  }
+
+  #k-grid .k-card-name{
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH ULTIME — ciblage exact de la structure JS                        */
+/*  Le JS génère : <div class="k-promo-rail"><div class="k-promo-rail-inner"> */
+/*    <div class="k-promo-card">...</div> (x N, dupliqué pour scroll auto) */
+/*  </div></div>                                                            */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px){
+  /* Section Soldes : padding compact */
+  #k-promos-section{
+    padding: 6px 10px 10px !important;
+  }
+
+  /* Wrapper rail : largeur full, overflow caché (l'animation se charge du scroll) */
+  #k-promo-rail,
+  .k-promo-rail{
+    overflow: hidden !important;
+    padding: 4px 0 !important;
+  }
+
+  /* Inner : flex horizontal animé */
+  .k-promo-rail-inner{
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    width: max-content !important;
+  }
+
+  /* CHAQUE carte promo : 140px fixe */
+  .k-promo-rail-inner .k-promo-card,
+  .k-promo-rail .k-promo-card{
+    flex: 0 0 140px !important;
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Image de la carte promo */
+  .k-promo-rail-inner .k-promo-card-img,
+  .k-promo-rail .k-promo-card-img{
+    width: 140px !important;
+    height: 120px !important;
+    max-height: 120px !important;
+    object-fit: cover !important;
+    border-radius: 10px !important;
+    padding: 0 !important;
+    filter: none !important;
+    animation: none !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08) !important;
+  }
+
+  /* Info bloc sous l'image */
+  .k-promo-rail-inner .k-promo-card-info,
+  .k-promo-rail .k-promo-card-info{
+    padding: 6px 4px 0 !important;
+    min-height: 0 !important;
+  }
+
+  .k-promo-rail-inner .k-promo-card-name,
+  .k-promo-rail .k-promo-card-name{
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .k-promo-rail-inner .k-promo-card-price,
+  .k-promo-rail .k-promo-card-price{
+    font-size: 12px !important;
+    margin-top: 2px !important;
+  }
+
+  .k-promo-rail-inner .k-promo-card-old,
+  .k-promo-rail .k-promo-card-old{
+    font-size: 10px !important;
+  }
+
+  /* Badge promo */
+  .k-promo-rail-inner .k-promo-badge,
+  .k-promo-rail .k-promo-badge{
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    top: 4px !important;
+    left: 4px !important;
+  }
+}
