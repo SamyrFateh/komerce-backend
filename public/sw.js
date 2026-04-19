@@ -1,6 +1,5 @@
-/* Komerce Service Worker v12 — Force cache refresh */
-const CACHE = 'komerce-v12';
-
+/* Komerce Service Worker v13 — mobile-first CSS */
+const CACHE = 'komerce-v13';
 const SHELL = [
   '/Komerce_Boutique.html',
   '/boutique.css',
@@ -8,95 +7,34 @@ const SHELL = [
   '/manifest.json'
 ];
 
-self.addEventListener('install', (e) => {
+self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      Promise.all(
-        SHELL.map((url) =>
-          cache.add(url).catch((err) => {
-            console.warn('[SW v12] Cache skip:', url, err.message || err);
-          })
-        )
-      )
-    ).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(SHELL))
   );
 });
 
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then((keys) =>
+    caches.keys().then(names =>
       Promise.all(
-        keys.filter((k) => k !== CACHE).map((k) => {
-          console.log('[SW v12] Purging old cache:', k);
-          return caches.delete(k);
-        })
+        names.filter(n => n !== CACHE).map(n => caches.delete(n))
       )
     ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  const request = e.request;
-  if (request.method !== 'GET') return;
-  
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api/')) return;
-
-  const isHTML = request.mode === 'navigate'
-    || url.pathname === '/'
-    || url.pathname.endsWith('.html')
-    || (request.headers.get('accept') || '').includes('text/html');
-
-  if (isHTML) {
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  if (SHELL.includes(url.pathname)) {
     e.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const rc = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, rc).catch(() => {}));
-          }
-          return response;
+      fetch(e.request)
+        .then(r => {
+          const clone = r.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return r;
         })
-        .catch(() =>
-          caches.match(request)
-            .then((cached) => cached || caches.match('/Komerce_Boutique.html'))
-            .then((fb) => fb || new Response('<h1>Hors ligne</h1>', {
-              status: 503,
-              headers: { 'Content-Type': 'text/html; charset=utf-8' }
-            }))
-        )
+        .catch(() => caches.match(e.request))
     );
-    return;
   }
-
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    e.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const rc = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, rc).catch(() => {}));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request).then((c) => c || new Response('', { status: 503 })))
-    );
-    return;
-  }
-
-  e.respondWith(
-    caches.match(request)
-      .then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response.ok) {
-            const rc = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, rc).catch(() => {}));
-          }
-          return response;
-        });
-      })
-      .catch(() => new Response('', { status: 503 }))
-  );
 });

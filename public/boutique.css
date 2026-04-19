@@ -316,8 +316,10 @@ body{
 /* ── PROMO RAIL ────────────────────────────────────────── */
 .k-promo-rail{
   display:flex;gap:10px;
-  overflow-x:hidden;
+  overflow-x:auto;
   padding-bottom:4px;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
   background:transparent;
   isolation:isolate;
@@ -332,8 +334,9 @@ body{
 .k-promo-rail::before{left:0;background:linear-gradient(to right,var(--sand) 40%,transparent)}
 .k-promo-rail::after{right:0;background:linear-gradient(to left,var(--sand) 40%,transparent)}
 .k-promo-rail-inner{
-  display:flex;gap:6px;
-  animation:promo-scroll 25s linear infinite;
+  display:flex;gap:8px;
+  width:max-content;
+  animation:none;
 }
 .k-promo-rail-inner:hover,
 .k-promo-rail-inner:active{
@@ -345,7 +348,7 @@ body{
 }
 
 .k-promo-card{
-  flex: 0 0 120px;scroll-snap-align:start;
+  flex: 0 0 110px;scroll-snap-align:start;
   background:transparent !important;
   border:none !important;
   border-radius:0;
@@ -358,7 +361,7 @@ body{
 }
 .k-promo-card:active{transform:scale(.97)}
 .k-promo-card-img{
-  width:100%;height:90px;
+  width:100%;height:100px;border-radius:14px;
   border-radius:4px;
   box-shadow:none;
   object-fit:contain;
@@ -432,14 +435,14 @@ body{
    Pattern Instagram Stories adapté shopping.
    Image circulaire avec ring coloré en actif, label en dessous. */
 .k-chip{
-  flex:1 1 0;
-  min-width:0;
+  flex:0 0 auto;
+  min-width:44px; max-width:56px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
-  gap:8px;
-  padding:4px 0;
+  gap:3px;
+  padding:2px 0;
   background:transparent;
   border:none;
   cursor:pointer;
@@ -447,8 +450,8 @@ body{
 }
 .k-chip-photo{
   position:relative;
-  width:64px;
-  height:64px;
+  width:36px;
+  height:36px;
   border-radius:50%;
   overflow:hidden;
   background:var(--sand);
@@ -467,7 +470,7 @@ body{
   display:block;
 }
 .k-chip-label{
-  font-size:11px;
+  font-size:8px;
   font-weight:600;
   letter-spacing:.02em;
   color:var(--text-muted);
@@ -495,9 +498,9 @@ body{
 
 /* Desktop : chips légèrement plus grands (mais pas trop pour garder la densité) */
 @media(min-width:900px){
-  .k-chip{ min-width:88px; gap:10px; }
+  .k-chip{ min-width:88px; max-width:none; gap:10px; flex:1 1 0; padding:4px 0; }
   .k-chip-photo{ width:76px; height:76px; }
-  .k-chip-label{ font-size:12px; }
+  .k-chip-label{ font-size:12px; white-space:nowrap; }
 }
 @media(min-width:1200px){
   .k-chip-photo{ width:84px; height:84px; }
@@ -2300,17 +2303,31 @@ body{
 /*  Tout le responsive mobile est ici et nulle part ailleurs.                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+
+
+/* Desktop promo restoration */
+@media(min-width:900px){
+  .k-promo-card{flex: 0 0 120px}
+  .k-promo-card-img{height:90px; border-radius:4px;}
+  .k-promo-rail{overflow-x:hidden; scroll-snap-type:none;}
+  .k-promo-rail-inner{animation:promo-scroll 25s linear infinite; width:auto;}
+  .k-chip-label{font-size:12px; line-height:1.3;}
+}
+
+/* Mobile styles now in base CSS — mobile-first approach */
+ (max-width: 899px) */
+
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE MOBILE v6.4 — BLOC UNIQUE — Ne pas toucher
+   MOBILE ESSENTIALS — v10.0 mobile-first
+   Only styles that MUST be different on mobile (not chip/promo sizing)
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
-
-  /* ── HEADER ─────────────────────────────────────────────────── */
+  /* Header */
   .k-header { height: 48px !important; padding: 0 10px !important; }
   .k-logo   { font-size: 18px !important; }
   .k-search { height: 32px !important; font-size: 13px !important; }
 
-  /* ── HERO BANNER ────────────────────────────────────────────── */
+  /* Hero */
   .k-hero-banner {
     position: relative !important;
     overflow: hidden !important;
@@ -2320,253 +2337,60 @@ body{
     border-radius: 0 !important;
     margin: 0 !important;
   }
-  .k-hero-banner img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-  }
+  .k-hero-banner img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
 
-  /* ── SLOGAN (overlaid sur hero) ─────────────────────────────── */
+  /* Slogan overlaid */
   .k-hero-mini-slogan {
-    position: absolute !important;
-    bottom: 10px !important;
-    left: 14px !important;
-    z-index: 10 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-    pointer-events: none !important;
+    position: absolute !important; bottom: 10px !important; left: 14px !important;
+    z-index: 10 !important; display: flex !important; flex-direction: column !important;
+    gap: 0 !important; pointer-events: none !important;
   }
   .k-hero-mini-slogan .k-line-1 {
     font-size: clamp(0.9rem, 4vw, 1.2rem) !important;
-    font-weight: 800 !important;
-    color: #1a1a1a !important;
-    line-height: 1.15 !important;
-    text-shadow: 0 1px 4px rgba(255,255,255,.7) !important;
+    font-weight: 800 !important; color: #1a1a1a !important;
+    line-height: 1.15 !important; text-shadow: 0 1px 4px rgba(255,255,255,.7) !important;
   }
   .k-hero-mini-slogan .k-line-2 {
     font-size: clamp(0.9rem, 4vw, 1.2rem) !important;
-    font-weight: 800 !important;
-    color: #2d7a56 !important;
-    line-height: 1.15 !important;
-    text-shadow: 0 1px 4px rgba(255,255,255,.7) !important;
+    font-weight: 800 !important; color: #2d7a56 !important;
+    line-height: 1.15 !important; text-shadow: 0 1px 4px rgba(255,255,255,.7) !important;
   }
 
-  /* ── HIDE OVERLAY (doublon slogan + badges) ─────────────────── */
+  /* Hide overlay + badges */
   .k-hero-overlay { display: none !important; }
   .k-hero-pills  { display: none !important; }
 
-  /* ── CATÉGORIES (compact chips) ─────────────────────────────── */
+  /* Cats scrollable */
   .k-cats {
-    display: flex !important;
-    justify-content: flex-start !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
+    display: flex !important; justify-content: flex-start !important;
+    flex-wrap: nowrap !important; overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
-    padding: 6px 12px !important;
-    gap: 6px !important;
+    padding: 6px 12px !important; gap: 6px !important;
     margin: 0 !important;
     background: rgba(253,250,245,.96) !important;
-    box-shadow: none !important;
-    border-top: 1px solid rgba(0,0,0,.05) !important;
   }
   .k-cats::-webkit-scrollbar { display: none !important; }
 
-  .k-chip {
-    min-width: 44px !important;
-    max-width: 56px !important;
-    gap: 3px !important;
-    flex-shrink: 0 !important;
-    padding: 2px 0 !important;
-  }
-  .k-chip-photo {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 50% !important;
-  }
-  .k-chip-label {
-    font-size: 8px !important;
-    line-height: 1 !important;
-    white-space: nowrap !important;
-  }
+  /* Promos section */
+  #k-promos-section { padding: 6px 0 4px !important; margin: 0 !important; }
+  #k-promos-section .k-section-head { padding: 0 12px 4px !important; }
+  #k-promos-section .k-section-head h2 { font-size: 14px !important; }
 
-  /* ── PROMOS SECTION ─────────────────────────────────────────── */
-  #k-promos-section {
-    padding: 6px 0 4px !important;
-    margin: 0 !important;
-  }
-  #k-promos-section .k-section-head {
-    padding: 0 12px 4px !important;
-    margin: 0 !important;
-  }
-  #k-promos-section .k-section-head h2 {
-    font-size: 14px !important;
-  }
+  /* Grid */
+  .k-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; padding: 0 10px !important; }
+  .k-card { border-radius: 14px !important; }
+  .k-card-img { height: 140px !important; }
+  .k-card-body { padding: 8px 10px !important; }
+  .k-card-name { font-size: 12px !important; -webkit-line-clamp: 2 !important; }
+  .k-card-price { font-size: 14px !important; font-weight: 700 !important; }
 
-  /* ── PROMO RAIL (horizontal swipe) ──────────────────────────── */
-  #k-promo-rail {
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: x mandatory !important;
-    scrollbar-width: none !important;
-    padding: 2px 0 6px !important;
-    display: flex !important;
-    gap: 0 !important;
-  }
-  #k-promo-rail::-webkit-scrollbar { display: none !important; }
-
-  #k-promo-rail .k-promo-rail-inner {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    width: max-content !important;
-    animation: none !important;
-    transform: none !important;
-    padding: 0 12px !important;
-  }
-
-  /* ── PROMO CARDS (110×100 carrées arrondies) ────────────────── */
-  #k-promo-rail .k-promo-card {
-    position: relative !important;
-    flex: 0 0 110px !important;
-    width: 110px !important;
-    min-width: 110px !important;
-    max-width: 110px !important;
-    scroll-snap-align: start !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-  }
-  #k-promo-rail .k-promo-card-img {
-    width: 110px !important;
-    height: 100px !important;
-    max-height: 100px !important;
-    object-fit: cover !important;
-    border-radius: 14px !important;
-    filter: none !important;
-    animation: none !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,.08) !important;
-    display: block !important;
-  }
-  #k-promo-rail .k-promo-badge {
-    position: absolute !important;
-    top: 5px !important;
-    left: 5px !important;
-    font-size: 8px !important;
-    padding: 2px 5px !important;
-    z-index: 2 !important;
-  }
-  #k-promo-rail .k-promo-card-info {
-    padding: 3px 2px 0 !important;
-    min-height: 0 !important;
-  }
-  #k-promo-rail .k-promo-card-name {
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-    -webkit-line-clamp: 1 !important;
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-  }
-  #k-promo-rail .k-promo-card-price {
-    font-size: 11px !important;
-    margin-top: 1px !important;
-  }
-  #k-promo-rail .k-promo-card-old {
-    display: none !important;
-  }
-
-  /* ── PROVERBE ───────────────────────────────────────────────── */
-  .k-proverb-sep { display: none !important; }
-
-  /* ── CATALOGUE (grille compacte) ────────────────────────────── */
-  .k-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
-    padding: 6px 12px 12px !important;
-  }
-
-  .k-card {
-    border-radius: 12px !important;
-    overflow: hidden !important;
-  }
-  .k-card-img-wrap {
-    aspect-ratio: 4/3 !important;
-    max-height: 140px !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-  }
-  .k-card-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    padding: 0 !important;
-  }
-  .k-card-info {
-    padding: 6px 8px 8px !important;
-  }
-  .k-card-name {
-    font-size: 12px !important;
-    -webkit-line-clamp: 2 !important;
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    word-break: break-word !important;
-    line-height: 1.3 !important;
-  }
-  .k-card-price {
-    font-size: 13px !important;
-  }
-  .k-card-old-price {
-    font-size: 10px !important;
-  }
-  .k-card-add {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 16px !important;
-  }
-  .k-card-basket-icon {
-    width: 28px !important;
-    height: 28px !important;
-  }
-  .k-card-promo {
-    font-size: 9px !important;
-    padding: 2px 6px !important;
-    top: 4px !important;
-    left: 4px !important;
-  }
-
-  /* ── SECTION HEADS ──────────────────────────────────────────── */
-  .k-section-head {
-    padding: 4px 12px 4px !important;
-  }
-  .k-section-head h2 {
-    font-size: 15px !important;
-  }
-
-  /* ── FOOTER / NAV ───────────────────────────────────────────── */
-  .k-footer-nav {
-    height: 52px !important;
-    padding-bottom: env(safe-area-inset-bottom, 0) !important;
-  }
-
-  
-  /* ── BOTTOM NAV BAR ────────────────────────────────────────── */
+  /* Bottom nav */
   .k-bnav {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 1000 !important;
-    background: #fff !important;
-    box-shadow: 0 -1px 6px rgba(0,0,0,.08) !important;
+    position: fixed !important; bottom: 0 !important; left: 0 !important;
+    right: 0 !important; z-index: 9999 !important;
+    height: 56px !important; padding-bottom: env(safe-area-inset-bottom) !important;
   }
-
-  /* ── UTILITAIRES ────────────────────────────────────────────── */
   body { padding-bottom: 60px !important; }
+  .k-bnav-label { font-size: 9px !important; }
 }
-/* fin @media (max-width: 899px) */
