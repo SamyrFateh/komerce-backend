@@ -2168,7 +2168,7 @@ body{
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(110px, 28vw, 150px);
+    height: clamp(90px, 24vw, 130px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -2322,10 +2322,10 @@ body{
     align-items: stretch;
   }
   .k-promo-card {
-    flex: 0 0 140px;
-    width: 140px;
-    min-width: 140px;
-    max-width: 140px;
+    flex: 0 0 135px;
+    width: 135px;
+    min-width: 135px;
+    max-width: 135px;
     scroll-snap-align: start;
     border-radius: 10px;
     overflow: hidden;
@@ -2335,7 +2335,7 @@ body{
   }
   .k-promo-card-img {
     width: 100%;
-    height: 95px;
+    height: 75px;
     object-fit: cover;
     border-radius: 10px 10px 0 0;
     display: block;
@@ -2364,7 +2364,7 @@ body{
     margin-bottom: 2px;
   }
   .k-promo-card-price {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 700;
     margin-top: 2px;
     color: var(--coral, #e64a19);
@@ -2397,7 +2397,7 @@ body{
     background: #fff;
   }
   .k-card-img-wrap {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 3 / 2;
     overflow: hidden;
     padding: 0;
   }
@@ -2409,7 +2409,20 @@ body{
     border-radius: 0;
   }
   .k-card-info {
-    padding: 4px 6px 6px;
+    padding: 3px 5px 5px;
+  }
+  .k-card-name {
+    font-size: 11px;
+    line-height: 1.2;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .k-card-price {
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 2px;
   }
   .k-card-name {
     font-size: 12px;
