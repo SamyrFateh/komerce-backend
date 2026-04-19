@@ -432,8 +432,8 @@ body{
   display:inline-flex !important;
   flex-direction:row !important;
   align-items:center !important;
-  gap:5px !important;
-  padding:5px 10px !important;
+  gap:6px !important;
+  padding:8px 14px !important;
   min-width:auto !important;
   max-width:none !important;
   background:var(--mint-light, #f0f7f2) !important;
@@ -446,8 +446,8 @@ body{
 }
 .k-chip-photo{
   position:relative;
-  width:20px !important;
-  height:20px !important;
+  width:26px !important;
+  height:26px !important;
   border-radius:50% !important;
   overflow:hidden;
   flex-shrink:0 !important;
@@ -465,17 +465,17 @@ body{
 /* JS replaces .k-chip-photo with .k-chip-emoji + .k-chip-label
    so we must style BOTH for pills to work */
 .k-chip-emoji {
-  font-size: 16px !important;
+  font-size: 20px !important;
   line-height: 1 !important;
   flex-shrink: 0 !important;
-  width: 20px !important;
-  height: 20px !important;
+  width: 26px !important;
+  height: 26px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
 .k-chip-label{
-  font-size:11px !important;
+  font-size:13px !important;
   font-weight:600;
   letter-spacing:.02em;
   color:var(--text) !important;
