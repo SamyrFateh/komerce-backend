@@ -2109,10 +2109,14 @@ body{
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
 
-  /* ── HEADER — compact ─────────────────────────────────── */
+  /* ── HEADER — compact + sticky ─────────────────────────── */
   .k-header {
     height: 48px;
     padding: 0 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #fff;
   }
   .k-logo { font-size: 18px; }
   .k-search { height: 32px; font-size: 13px; }
@@ -2182,19 +2186,14 @@ body{
   .k-hero-btn { display: none; }
   .k-proverb-sep { display: none; }
 
-  /* ── STICKY CATS BAR ───────────────────────────────────── */
+  /* ── STICKY CATS BAR — pure CSS sticky ─────────────────── */
   .k-hero-cats-sticky {
-    position: relative;
+    position: sticky;
+    top: 48px;
     z-index: 90;
     background: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
     width: 100%;
-  }
-  .k-hero-cats-sticky.is-stuck {
-    position: fixed;
-    top: 48px;
-    left: 0;
-    right: 0;
   }
   .k-cats {
     background: rgba(253,250,245,.96);
@@ -2229,6 +2228,7 @@ body{
     width: max-content;
     animation: none;
     transform: none;
+    align-items: stretch;
   }
   .k-promo-card {
     flex: 0 0 165px;
@@ -2243,13 +2243,14 @@ body{
     position: relative;
   }
   .k-promo-card-img {
-    width: 165px;
+    width: 100%;
     height: 140px;
     max-height: 140px;
     object-fit: cover;
     border-radius: 14px 14px 0 0;
     display: block;
     animation: none;
+    background: #f0f0f0;
   }
   .k-promo-badge {
     position: absolute;
@@ -2276,14 +2277,17 @@ body{
 
   /* ── CATALOGUE GRID — 2 columns ────────────────────────── */
   #k-catalog-section {
-    padding: 8px 0;
+    padding: 8px 0 0;
     margin: 0;
+  }
+  #k-catalog-section .k-section-head {
+    padding: 0 12px 6px;
   }
   .k-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    padding: 0 10px 12px;
+    padding: 0 12px 12px;
   }
   .k-card {
     border-radius: 14px;
