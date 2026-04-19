@@ -1,5 +1,5 @@
 /* Komerce Service Worker v12 — Force cache refresh */
-const CACHE = 'komerce-v20';
+const CACHE = 'komerce-v21';
 
 const SHELL = [
   '/Komerce_Boutique.html',
