@@ -2168,7 +2168,7 @@ body{
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(130px, 35vw, 180px);
+    height: clamp(110px, 28vw, 150px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -2244,8 +2244,8 @@ body{
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    gap: 6px;
-    padding: 6px 10px;
+    gap: 4px;
+    padding: 4px 8px;
     background: rgba(253,250,245,.96);
     align-items: flex-start;
   }
@@ -2256,19 +2256,19 @@ body{
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 3px 2px;
-    min-width: 48px;
-    max-width: 62px;
+    gap: 2px;
+    padding: 2px 1px;
+    min-width: 44px;
+    max-width: 56px;
     scroll-snap-align: start;
   }
   .k-chip-photo,
   .k-chip-emoji {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
     border-radius: 50%;
-    font-size: 20px;
+    font-size: 18px;
   }
   .k-chip-photo > span {
     font-size: 11px;
@@ -2285,7 +2285,7 @@ body{
 
   /* ── G. PROMOS — horizontal scroll, compact cards ──── */
   #k-promos-section {
-    padding: 6px 0 4px;
+    padding: 4px 0 2px;
     margin: 0;
     overflow: visible;
   }
@@ -2322,12 +2322,12 @@ body{
     align-items: stretch;
   }
   .k-promo-card {
-    flex: 0 0 150px;
-    width: 150px;
-    min-width: 150px;
-    max-width: 150px;
+    flex: 0 0 140px;
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
     scroll-snap-align: start;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     background: #fff;
     box-shadow: 0 1px 4px rgba(0,0,0,.08);
@@ -2335,9 +2335,9 @@ body{
   }
   .k-promo-card-img {
     width: 100%;
-    height: 120px;
+    height: 95px;
     object-fit: cover;
-    border-radius: 12px 12px 0 0;
+    border-radius: 10px 10px 0 0;
     display: block;
     animation: none;
     background: #f0f0f0;
@@ -2352,7 +2352,7 @@ body{
     z-index: 2;
   }
   .k-promo-card-info {
-    padding: 6px 8px 8px;
+    padding: 4px 6px 6px;
   }
   .k-promo-card-name {
     font-size: 12px;
@@ -2377,7 +2377,7 @@ body{
 
   /* ── H. CATALOGUE GRID — 2 columns, full info ─────── */
   #k-catalog-section {
-    padding: 6px 0 0;
+    padding: 2px 0 0;
     margin: 0;
     overflow: visible;
   }
@@ -2397,7 +2397,7 @@ body{
     background: #fff;
   }
   .k-card-img-wrap {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
     padding: 0;
   }
@@ -2409,7 +2409,7 @@ body{
     border-radius: 0;
   }
   .k-card-info {
-    padding: 6px 8px 8px;
+    padding: 4px 6px 6px;
   }
   .k-card-name {
     font-size: 12px;
