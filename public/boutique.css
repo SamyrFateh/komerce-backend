@@ -4989,3 +4989,36 @@ body{
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*  FIN PATCH DESKTOP                                                       */
 /* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH — cartes catalogue mobile plus compactes pour voir plus de produits */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px) {
+  /* Image des cartes : ratio rectangle au lieu de carré
+     → gain de hauteur sans sacrifier la lisibilité */
+  .k-card-img{
+    aspect-ratio: 4/3 !important;
+    padding: 6px 8px !important;
+  }
+
+  /* Zone info resserrée */
+  .k-card-info{
+    padding: 8px 10px 10px !important;
+    min-height: 0 !important;
+  }
+
+  .k-card-name{
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .k-card-bottom{
+    min-height: 32px !important;
+    padding-top: 2px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
