@@ -2296,7 +2296,7 @@ body{
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  MOBILE — BLOC UNIQUE REFONDU (v6.0)                                      */
+/*  MOBILE — BLOC UNIQUE REFONDU (v6.1)                                      */
 /*  Tout le responsive mobile est ici et nulle part ailleurs.                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -2405,12 +2405,12 @@ body{
   .k-hero-cats-sticky .k-cats,
   .k-cats {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding: 4px 8px 6px;
+    padding: 4px 14px 6px;
     gap: 8px;
     margin: 0;
     background: rgba(253,250,245,.96);
@@ -2464,7 +2464,7 @@ body{
 
   /* ── PROMOS : rail horizontal scrollable, cartes carrées ───────── */
   #k-promos-section {
-    padding: 6px 10px 10px !important;
+    padding: 6px 0 10px !important;
   }
 
   .k-promo-rail {
@@ -2484,6 +2484,7 @@ body{
     gap: 10px !important;
     width: max-content !important;
     animation: none !important;
+    padding: 0 14px !important;
   }
 
   .k-promo-card {
@@ -2503,6 +2504,7 @@ body{
     filter: none !important;
     animation: none !important;
     box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    display: block !important;
   }
 
   .k-promo-badge {
@@ -2594,7 +2596,7 @@ body{
   /* ── CATALOGUE : cartes alignées proprement ────────────────────── */
   .k-grid {
     gap: 10px;
-    padding: 6px 0 14px;
+    padding: 6px 14px 14px;
   }
   .k-card {
     border-radius: 14px;
