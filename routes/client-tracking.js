@@ -4,6 +4,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
+const { computeOrderStatusDetail, getOrderStatusDetailMessage } = require('../utils/parcels');
 
 const STATUS_LABELS = {
   pending: 'En attente de paiement',
@@ -161,7 +162,8 @@ router.get('/', requireClientAuth, async (req, res) => {
       }));
 
       // Parcels with events
-      const parcels = (parcelsByOrder[order.id] || []).map(p => ({
+      const orderParcels = parcelsByOrder[order.id] || [];
+      const parcels = orderParcels.map(p => ({
         reference: p.reference,
         status: p.status,
         statusLabel: STATUS_LABELS[p.status] || p.status,
@@ -183,10 +185,16 @@ router.get('/', requireClientAuth, async (req, res) => {
         createdAt: inv.created_at
       }));
 
+      // Status detail — second niveau UX, dérivé des colis à la volée
+      const statusDetail = computeOrderStatusDetail(orderParcels);
+      const statusMessage = getOrderStatusDetailMessage(statusDetail);
+
       return {
         reference: order.reference,
         status: order.status,
         statusLabel: STATUS_LABELS[order.status] || order.status,
+        statusDetail,
+        statusMessage,
         totalKmf: order.total_kmf,
         paymentMode: order.payment_mode,
         paymentStatus: order.payment_status,

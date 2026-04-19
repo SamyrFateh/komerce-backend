@@ -4,6 +4,7 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const pool = require('../db');
+const { computeOrderStatusDetail, getOrderStatusDetailMessage } = require('../utils/parcels');
 
 /**
  * Status labels in French for client-facing display
@@ -157,10 +158,16 @@ router.get('/:token', async (req, res) => {
     // IMPORTANT: pickup_code is ONLY visible when order is at relay or later
     const isAtRelay = ['available', 'collected', 'delivered'].includes(order.status);
 
+    // Compute status detail from parcels (second-level UX info — derived, not stored)
+    const statusDetail = computeOrderStatusDetail(parcelsResult.rows);
+    const statusMessage = getOrderStatusDetailMessage(statusDetail);
+
     res.json({
       reference: order.reference,
       status: order.status,
       statusLabel: STATUS_LABELS[order.status] || order.status,
+      statusDetail,
+      statusMessage,
       totalKmf: order.total_kmf,
       paymentMode: order.payment_mode,
       paymentStatus: order.payment_status,

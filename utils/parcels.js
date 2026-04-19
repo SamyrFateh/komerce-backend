@@ -9,6 +9,13 @@
  *     → Calcule le statut agrégé d'une commande à partir de ses colis.
  *       Remplacera le trigger trg_scan_sync_status en Phase 3.
  *
+ *   computeOrderStatusDetail(parcels)
+ *     → Calcule un détail UX client dérivé des colis.
+ *       Ne modifie pas orders.status — lecture seule, calcul pur.
+ *
+ *   getOrderStatusDetailMessage(detail)
+ *     → Retourne le message client français pour un status_detail donné.
+ *
  *   splitOrderIntoParcels(orderItems, availabilityMap, options)
  *     → Découpe les articles d'une commande en colis selon la stratégie
  *       par défaut. Extensible via le registre STRATEGIES.
@@ -185,7 +192,7 @@ function computeOrderStatus(parcels) {
  * Pour exécuter manuellement : copier-coller dans un REPL Node.js avec
  * les constantes PARCEL_STATUSES / STATUS_WEIGHT disponibles.
  *
- * computeOrderStatus([])
+ * computeOrderStatus([])\
  *   → null  (cas technique, aucun colis)
  *
  * computeOrderStatus([{ status: 'cancelled' }, { status: 'cancelled' }])
@@ -219,6 +226,155 @@ function computeOrderStatus(parcels) {
  *   → 'in_transit'  (G: inMovement=true, pire cas = in_transit)
  * ─────────────────────────────────────────────────────────────────────────────
  */
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2b. computeOrderStatusDetail(parcels)  — SECOND NIVEAU UX CLIENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Calcule un détail UX client dérivé des colis pour affiner l'information
+ * au-delà du statut global orders.status.
+ *
+ * ─── CONTRAT ───────────────────────────────────────────────────────────────────
+ *  • Entrée  : tableau de colis (tous statuts confondus, y compris cancelled)
+ *  • Sortie  : string parmi les valeurs STATUS_DETAIL — jamais null
+ *  • Ne modifie RIEN — fonction pure, sans effet de bord
+ *  • Ne remplace PAS orders.status — information complémentaire seulement
+ *
+ * ─── VALEURS POSSIBLES ─────────────────────────────────────────────────────────
+ *  full_available       Toute la commande est disponible au relais
+ *  partial_available    Une partie dispo, le reste en mouvement
+ *  partial_collected    Une partie retirée, le reste suit son cours
+ *  remaining_in_transit Une partie traitée/retirée, le reste en transit
+ *  awaiting_stock       Tout en attente de prépa / stock
+ *  fully_collected      Toute la commande récupérée
+ *  fully_cancelled      Toute la commande annulée
+ *  none                 Aucun détail utile supplémentaire
+ *
+ * ─── RÈGLES MÉTIER (par ordre de priorité) ─────────────────────────────────────
+ *  1. Aucun colis                                        → 'none'
+ *  2. Tous cancelled                                     → 'fully_cancelled'
+ *  3. Tous collected                                     → 'fully_collected'
+ *  4. ≥1 collected + ≥1 en mouvement (shipped/in_transit/arrived)
+ *                                                        → 'remaining_in_transit'
+ *  5. ≥1 collected + ≥1 available                       → 'partial_collected'
+ *  6. ≥1 collected (sans tous collected)                 → 'partial_collected'
+ *  7. ≥1 available + ≥1 en mouvement                    → 'partial_available'
+ *  8. Tous les actifs sont available                     → 'full_available'
+ *  9. Tous les actifs en draft/preparation/backorder/awaiting_stock
+ *                                                        → 'awaiting_stock'
+ * 10. Sinon                                              → 'none'
+ *
+ * @param {Array<{status: string}>} parcels  Colis de la commande
+ * @returns {string}  Valeur de détail UX — jamais null
+ */
+function computeOrderStatusDetail(parcels) {
+  // ── 1. Aucun colis ──────────────────────────────────────────────────────────
+  if (!parcels || parcels.length === 0) return 'none';
+
+  // Colis actifs = tous sauf annulés
+  const active = parcels.filter(p => p.status !== PARCEL_STATUSES.CANCELLED);
+
+  // ── 2. Tous annulés ─────────────────────────────────────────────────────────
+  if (active.length === 0) return 'fully_cancelled';
+
+  // ── 3. Tous collectés ───────────────────────────────────────────────────────
+  if (active.every(p => p.status === PARCEL_STATUSES.COLLECTED)) return 'fully_collected';
+
+  const someCollected = active.some(p => p.status === PARCEL_STATUSES.COLLECTED);
+  const someAvailable = active.some(p => p.status === PARCEL_STATUSES.AVAILABLE);
+  const inMovement    = active.some(p =>
+    [PARCEL_STATUSES.SHIPPED, PARCEL_STATUSES.IN_TRANSIT, PARCEL_STATUSES.ARRIVED].includes(p.status)
+  );
+
+  // ── 4. Au moins un collecté + en mouvement ──────────────────────────────────
+  if (someCollected && inMovement) return 'remaining_in_transit';
+
+  // ── 5+6. Au moins un collecté (pas tous) ────────────────────────────────────
+  // Qu'il reste du available ou non, c'est une collecte partielle.
+  if (someCollected) return 'partial_collected';
+
+  // ── 7. Au moins un dispo + encore en mouvement ──────────────────────────────
+  if (someAvailable && inMovement) return 'partial_available';
+
+  // ── 8. Tous les actifs sont available ───────────────────────────────────────
+  if (active.every(p => p.status === PARCEL_STATUSES.AVAILABLE)) return 'full_available';
+
+  // ── 9. Tout en attente de stock / prépa ─────────────────────────────────────
+  const AWAITING = [
+    PARCEL_STATUSES.DRAFT,
+    PARCEL_STATUSES.PREPARATION,
+    'backorder',
+    'awaiting_stock',
+  ];
+  if (active.every(p => AWAITING.includes(p.status))) return 'awaiting_stock';
+
+  // ── 10. Pas de détail significatif ──────────────────────────────────────────
+  return 'none';
+}
+
+/*
+ * ─── MINI TESTS — computeOrderStatusDetail ─────────────────────────────────────
+ *
+ * computeOrderStatusDetail([])
+ *   → 'none'
+ *
+ * computeOrderStatusDetail([{status:'cancelled'},{status:'cancelled'}])
+ *   → 'fully_cancelled'
+ *
+ * computeOrderStatusDetail([{status:'collected'},{status:'collected'}])
+ *   → 'fully_collected'
+ *
+ * computeOrderStatusDetail([{status:'available'},{status:'shipped'}])
+ *   → 'partial_available'
+ *
+ * computeOrderStatusDetail([{status:'collected'},{status:'in_transit'}])
+ *   → 'remaining_in_transit'
+ *
+ * computeOrderStatusDetail([{status:'collected'},{status:'available'}])
+ *   → 'partial_collected'
+ *
+ * computeOrderStatusDetail([{status:'draft'},{status:'preparation'}])
+ *   → 'awaiting_stock'
+ *
+ * computeOrderStatusDetail([{status:'available'},{status:'available'}])
+ *   → 'full_available'
+ *
+ * computeOrderStatusDetail([{status:'collected'},{status:'shipped'}])
+ *   → 'remaining_in_transit'  (collected + mouvement → remaining)
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2c. getOrderStatusDetailMessage(detail)  — MESSAGES CLIENT FRANÇAIS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Mapping status_detail → message client en français.
+ * Retourne null pour 'none' (pas de message à afficher côté UI).
+ */
+const STATUS_DETAIL_MESSAGES = Object.freeze({
+  full_available:       'Votre commande est disponible au relais.',
+  partial_available:    'Une partie de votre commande est disponible. Le reste arrive bientôt.',
+  partial_collected:    'Vous avez déjà récupéré une partie de votre commande. Le reste suit son cours.',
+  remaining_in_transit: 'Une partie de votre commande est déjà traitée. Le reste est encore en transit.',
+  awaiting_stock:       'Une partie de votre commande est encore en attente de préparation ou de stock.',
+  fully_collected:      'Votre commande a été entièrement récupérée.',
+  fully_cancelled:      'Votre commande a été annulée.',
+  none:                 null,
+});
+
+/**
+ * Retourne le message client pour un status_detail donné.
+ *
+ * @param {string} detail  Valeur retournée par computeOrderStatusDetail()
+ * @returns {string|null}  Message FR, ou null si aucun message utile
+ */
+function getOrderStatusDetailMessage(detail) {
+  return STATUS_DETAIL_MESSAGES[detail] ?? null;
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -407,6 +563,11 @@ module.exports = {
 
   // Calcul statut agrégé (FONCTION CANONIQUE — source de vérité unique)
   computeOrderStatus,
+
+  // Second niveau UX client (détail dérivé des colis — lecture seule)
+  computeOrderStatusDetail,
+  getOrderStatusDetailMessage,
+  STATUS_DETAIL_MESSAGES,
 
   // Split commande → colis
   splitOrderIntoParcels,
