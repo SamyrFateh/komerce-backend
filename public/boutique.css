@@ -434,6 +434,8 @@ body{
   align-items:center !important;
   gap:5px !important;
   padding:5px 10px !important;
+  min-width:auto !important;
+  max-width:none !important;
   background:var(--mint-light, #f0f7f2) !important;
   border:1.5px solid var(--ocean-dark, #1f3024) !important;
   border-radius:20px !important;

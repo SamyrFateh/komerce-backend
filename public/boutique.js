@@ -367,6 +367,11 @@
      Runs after every render to guarantee mobile layout
      ═══════════════════════════════════════════════════════════════ */
   function applyMobileStyles() {
+    /* v12: CSS is the single source of truth for mobile layout.
+       All mobile styles are in boutique.css @media(max-width:899px).
+       This function is intentionally empty to avoid inline style conflicts. */
+    return;
+    // ── LEGACY CODE BELOW (kept for reference, never executes) ──
     if (window.innerWidth >= 900) return;
 
     // ── CATEGORIES (chips) ──
