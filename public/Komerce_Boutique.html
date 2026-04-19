@@ -11,7 +11,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v1776465127')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v1776596400')===-1) caches.delete(n);
       });
     });
   }
@@ -110,27 +110,27 @@ if('serviceWorker' in navigator){
   <!-- ═══ CATÉGORIES ═══ -->
   <nav class="k-cats" id="k-cats">
     <button class="k-chip active" data-cat="all">
-      <span class="k-chip-photo"><img src="/images/categories/cat-tout.svg" alt="" loading="lazy"></span>
+      <span class="k-chip-photo"><img src="/images/categories/cat-tout.jpg" alt="" loading="lazy"></span>
       <span class="k-chip-label">Tout</span>
     </button>
     <button class="k-chip" data-cat="Mode">
-      <span class="k-chip-photo"><img src="/images/categories/cat-mode.svg" alt="" loading="lazy"></span>
+      <span class="k-chip-photo"><img src="/images/categories/cat-mode.jpg" alt="" loading="lazy"></span>
       <span class="k-chip-label">Mode</span>
     </button>
     <button class="k-chip" data-cat="Beauté">
-      <span class="k-chip-photo"><img src="/images/categories/cat-beaute.svg" alt="" loading="lazy"></span>
+      <span class="k-chip-photo"><img src="/images/categories/cat-beaute.jpg" alt="" loading="lazy"></span>
       <span class="k-chip-label">Beauté</span>
     </button>
     <button class="k-chip" data-cat="Tech">
-      <span class="k-chip-photo"><img src="/images/categories/cat-tech.svg" alt="" loading="lazy"></span>
+      <span class="k-chip-photo"><img src="/images/categories/cat-tech.jpg" alt="" loading="lazy"></span>
       <span class="k-chip-label">Tech</span>
     </button>
     <button class="k-chip" data-cat="Enfant">
-      <span class="k-chip-photo"><img src="/images/categories/cat-enfant.svg" alt="" loading="lazy"></span>
+      <span class="k-chip-photo"><img src="/images/categories/cat-enfant.jpg" alt="" loading="lazy"></span>
       <span class="k-chip-label">Enfant</span>
     </button>
     <button class="k-chip" data-cat="Sur-mesure">
-      <span class="k-chip-photo"><img src="/images/categories/cat-couture.svg" alt="" loading="lazy"></span>
+      <span class="k-chip-photo"><img src="/images/categories/cat-couture.jpg" alt="" loading="lazy"></span>
       <span class="k-chip-label">Couture</span>
     </button>
   </nav>

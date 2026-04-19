@@ -4596,6 +4596,75 @@ body{
 /*  Si tu veux doser : réduis les valeurs 20px → 16px dans la zone 1.      */
 /* ═══════════════════════════════════════════════════════════════════════ */
 /* ═══════════════════════════════════════════════════════════════════════ */
+/*  KOMERCE BOUTIQUE — MICRO-PATCH v2.2                                     */
+/*  Ajustements :                                                            */
+/*    ✦ Slogan hero : encore plus étroit (ne touche plus les perso)        */
+/*    ✦ Cartes catalogue : espacement titre/prix/prix barré resserré       */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ── 1. SLOGAN HERO : largeur réduite pour rester entre les persos ───── */
+
+@media (max-width: 899px){
+  .k-hero-mini-slogan{
+    /* 58% → 48% : plus étroit, tient dans la zone centrale uniquement */
+    max-width: 48% !important;
+  }
+
+  /* Taille légèrement réduite pour garder la lisibilité dans cet espace */
+  .k-hero-mini-slogan--premium{
+    padding: 6px 12px !important;
+  }
+  .k-hero-mini-slogan--premium .k-line-1{
+    font-size: 11.5px !important;
+  }
+  .k-hero-mini-slogan--premium .k-line-2{
+    font-size: 13.5px !important;
+  }
+}
+
+
+/* ── 2. CARTES CATALOGUE : prix resserrés ─────────────────────────────── */
+
+.k-card-info{
+  padding: 10px 12px 12px !important;
+  min-height: 76px !important;
+  gap: 2px;
+}
+
+.k-card-name{
+  line-height: 1.2 !important;
+  margin-bottom: 0 !important;
+}
+
+.k-card-bottom{
+  padding-top: 4px !important;
+  gap: 2px !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+}
+
+.k-card-price{
+  font-size: 15px !important;
+  line-height: 1.15 !important;
+  margin: 0 !important;
+}
+
+.k-card-old-price{
+  font-size: 11.5px !important;
+  line-height: 1.15 !important;
+  margin: 0 !important;
+  opacity: .75;
+}
+
+.k-card-prices{
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 1px !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
 /*  KOMERCE BOUTIQUE — MICRO-PATCH v2.3                                     */
 /*  À coller JUSTE APRÈS le bloc v2.2.                                      */
 /*                                                                           */
