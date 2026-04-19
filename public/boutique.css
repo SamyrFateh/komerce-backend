@@ -4842,3 +4842,80 @@ body{
       0 0 12px rgba(255,255,255,.5) !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH DESKTOP — hero compact + slogan visible et bien placé            */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px){
+
+  /* 1. HERO : on limite la hauteur pour que l'image ne dévore plus l'écran */
+  .k-hero-media{
+    max-height: 320px !important;
+  }
+  .k-hero-img{
+    max-height: 320px !important;
+    object-fit: cover !important;
+    object-position: center 30% !important;
+  }
+  .k-hero-inner{
+    padding: 20px var(--pad-x) !important;
+    min-height: 0 !important;
+  }
+
+  /* 2. SLOGAN : on affiche la mini-bulle aussi sur desktop (elle est
+        cachée par défaut via display:none sur >=900px). On la remplace
+        au centre-haut de l'image, transparente avec halo — même logique
+        que mobile, pour la cohérence. */
+  .k-hero-mini-slogan{
+    display: block !important;
+    position: absolute !important;
+    top: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 3 !important;
+    max-width: 50% !important;
+  }
+
+  .k-hero-mini-slogan--premium{
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    padding: 4px 12px !important;
+    text-align: center !important;
+  }
+
+  .k-hero-mini-slogan--premium .k-line-1{
+    font-size: 18px !important;
+    text-shadow:
+      0 1px 2px rgba(255,255,255,.95),
+      0 0 8px rgba(255,255,255,.8),
+      0 0 16px rgba(255,255,255,.6) !important;
+  }
+
+  .k-hero-mini-slogan--premium .k-line-2{
+    font-size: 22px !important;
+    text-shadow:
+      0 1px 2px rgba(255,255,255,.95),
+      0 0 8px rgba(255,255,255,.8),
+      0 0 16px rgba(255,255,255,.6) !important;
+  }
+
+  /* 3. OVERLAY à droite : on le cache car le slogan suffit, on garde
+        juste les pills (retrait relais / paiement cash) si on veut */
+  .k-hero-overlay .k-hero-text-left{
+    display: none !important;
+  }
+
+  /* L'overlay devient plus léger et centré */
+  .k-hero-overlay{
+    justify-content: center !important;
+    gap: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIN PATCH DESKTOP                                                       */
+/* ═══════════════════════════════════════════════════════════════════════ */
