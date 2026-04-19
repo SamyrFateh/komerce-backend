@@ -123,7 +123,9 @@ CT.app = {
       'hub':            CT.views.hub,
       'transitaire':    CT.views.transitaire,
       'relais':         CT.views.relais,
-      'simulator':      CT.views.simulator
+      'simulator':      CT.views.simulator,
+      'settings':       CT.views.settings,
+      'previsions':     CT.views.previsions
     }[view];
 
     if (viewFn) {
