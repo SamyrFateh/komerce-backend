@@ -405,21 +405,15 @@ body{
    STICKY mobile : les chips se collent sous le header dès qu'on scrolle,
    pour que le catalogue soit toujours filtrable sans remonter en haut. */
 .k-cats{
-  display:flex;
-  flex-wrap:nowrap;
-  gap:2px;
-  max-width:var(--container);
-  margin:8px auto 0;
-  padding:8px 6px 12px;
-  position:sticky;
-  top:var(--header-h);
-  z-index:50;
-  background:var(--sand);
-  overflow-x:hidden;
+  display:flex !important;
+  gap:8px !important;
+  overflow-x:auto !important;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:x mandatory;
+  flex-wrap:nowrap !important;
+  padding:8px 12px !important;
   scrollbar-width:none;
-  justify-content:space-between;
-  /* Ombre discrète pour séparer visuellement une fois sticky */
-  box-shadow:0 1px 0 var(--border);
+  align-items:center !important;
 }
 .k-cats::-webkit-scrollbar{display:none}
 /* Desktop : on centre les chips au lieu de les aligner à gauche */
@@ -435,32 +429,28 @@ body{
    Image circulaire avec ring coloré en actif, label en dessous. */
 .k-chip{
   flex:0 0 auto !important;
-  min-width:44px !important; max-width:56px !important;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  gap:3px;
-  padding:2px 0;
-  background:transparent;
-  border:none;
+  display:inline-flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  gap:5px !important;
+  padding:5px 10px !important;
+  background:var(--mint-light, #f0f7f2) !important;
+  border:1.5px solid var(--ocean-dark, #1f3024) !important;
+  border-radius:20px !important;
   cursor:pointer;
-  transition:transform .15s var(--ease);
+  white-space:nowrap !important;
+  transition:transform .15s ease, background .15s ease;
+  scroll-snap-align:start;
 }
 .k-chip-photo{
   position:relative;
-  width:36px !important;
-  height:36px !important;
-  border-radius:50%;
+  width:20px !important;
+  height:20px !important;
+  border-radius:50% !important;
   overflow:hidden;
-  background:var(--sand);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 2px 6px rgba(31,48,36,.08);
-  /* Ring visuel via border-width qui grossit en actif */
-  border:2px solid transparent;
-  transition:box-shadow .2s var(--ease), border-color .2s var(--ease), transform .15s var(--ease);
+  flex-shrink:0 !important;
+  box-shadow:none !important;
+  border:none !important;
 }
 .k-chip-photo img{
   width:100%;
@@ -469,12 +459,12 @@ body{
   display:block;
 }
 .k-chip-label{
-  font-size:8px !important;
+  font-size:11px !important;
   font-weight:600;
   letter-spacing:.02em;
-  color:var(--text-muted);
-  white-space:nowrap;
-  transition:color .15s var(--ease);
+  color:var(--text) !important;
+  white-space:nowrap !important;
+  line-height:1 !important;
 }
 /* Hover desktop uniquement */
 @media(hover:hover) and (pointer:fine){
@@ -485,9 +475,17 @@ body{
   .k-chip:hover .k-chip-label{ color:var(--text); }
 }
 /* État actif : ring coral, label foncé */
+.k-chip.active{
+  background:var(--ocean-dark, #1f3024) !important;
+  color:white !important;
+  border-color:var(--ocean-dark, #1f3024) !important;
+}
+.k-chip.active .k-chip-label{
+  color:white !important;
+}
 .k-chip.active .k-chip-photo{
-  border-color:var(--coral);
-  box-shadow:0 0 0 3px rgba(200,92,45,.15), 0 3px 10px rgba(200,92,45,.18);
+  border:none;
+  box-shadow:none;
 }
 .k-chip.active .k-chip-label{
   color:var(--text);
@@ -497,12 +495,12 @@ body{
 
 /* Desktop : chips légèrement plus grands (mais pas trop pour garder la densité) */
 @media(min-width:900px){
-  .k-chip{ min-width:88px; max-width:none; gap:10px; flex:1 1 0; padding:4px 0; }
-  .k-chip-photo{ width:76px; height:76px; }
+  .k-chip{ min-width:88px !important; max-width:none !important; gap:10px !important; flex:1 1 0 !important; padding:4px 0 !important; flex-direction:column !important; border-radius:0 !important; background:transparent !important; border:none !important; }
+  .k-chip-photo{ width:76px !important; height:76px !important; border:2px solid var(--cream) !important; box-shadow:0 2px 8px rgba(31,48,36,.10) !important; }
   .k-chip-label{ font-size:12px; white-space:nowrap; }
 }
 @media(min-width:1200px){
-  .k-chip-photo{ width:84px; height:84px; }
+  .k-chip-photo{ width:84px !important; height:84px !important; }
   .k-chip-label{ font-size:13px; }
 }
 
