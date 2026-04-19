@@ -2258,172 +2258,6 @@ body{
   z-index: 90;
 }
 
-@media(max-width:899px){
-  /* ── Slogan + Catalogue sur 1 ligne ── */
-  .k-hero-overlay {
-    padding: 4px 10px 1px;
-  }
-  .k-hero-text-left {
-    display: grid;
-    grid-template-columns: auto auto;
-    grid-template-rows: auto;
-    align-items: center;
-    justify-content: center;
-    gap: 2px 10px;
-  }
-  .k-hero-title {
-    grid-column: 1;
-    grid-row: 1;
-    white-space: nowrap;
-    font-size: clamp(1.25rem, 5vw, 1.6rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    background: linear-gradient(120deg, #1a1a1a 30%, #2d7a56 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .k-hero-btn {
-    grid-column: 2;
-    grid-row: 1;
-    font-size: 10px;
-    padding: 4px 9px;
-    white-space: nowrap;
-  }
-  .k-hero-pills {
-    display: none;
-  }
-  /* Drawer panier s'arrête au-dessus de la nav bar */
-  .k-cart-drawer{
-    bottom: var(--bnav-h);
-    border-radius: 16px 0 0 16px;
-  }
-
-  /* ── Titres sections + cartes plus hautes ── */
-  .k-section-head h2{
-    font-size: 14px;
-  }
-  .k-section{
-    padding-top: 0;
-    margin-bottom: 4px;
-  }
-  .k-promo-card-img{
-    height: 70px;
-  }
-  .k-hero-pills::-webkit-scrollbar { display: none; }
-  .k-hero-pill {
-    flex-shrink: 0;
-    font-size: 10px;
-    padding: 3px 9px;
-    white-space: nowrap;
-  }
-
-  /* ── Catégories : compactes, centrées, 1 ligne ── */
-  .k-hero-cats-sticky .k-cats {
-    display: flex;
-    justify-content: center;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 2px 6px 2px;
-    gap: 2px;
-    margin: 0;
-    border-top: 1px solid rgba(0,0,0,.05);
-  }
-  .k-hero-cats-sticky .k-cats::-webkit-scrollbar { display: none; }
-  .k-hero-cats-sticky .k-chip {
-    min-width: 44px;
-    padding: 2px;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-  .k-hero-cats-sticky .k-chip-photo {
-    width: 28px;
-    height: 28px;
-  }
-  .k-hero-cats-sticky .k-chip-label {
-    font-size: 9px;
-  }
-
-  /* ── Hero image compact ── */
-  /* Hero image — compact sur mobile */
-  .k-hero {
-    display: block !important;
-    height: 100px;
-    overflow: hidden;
-  }
-  .k-hero-inner {
-    height: 100%;
-    padding: 0;
-  }
-  .k-hero-media {
-    height: 100%;
-    width: 100%;
-  }
-  .k-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 20%;
-  }
-
-  /* Layout 2 colonnes : slogan gauche + pills/proverbe droite */
-  .k-hero-overlay {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0;
-    padding: 5px 10px 4px;
-    width: 100%;
-  }
-  .k-hero-text-left {
-    flex: 1;
-    text-align: left;
-    padding: 0 8px 0 0;
-    overflow: hidden;
-  }
-  /* Colonne droite : pills + proverbe */
-  .k-hero-right-col {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-    flex-shrink: 0;
-    max-width: 46%;
-  }
-  .k-hero-pills {
-    display: flex !important;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-  }
-  .k-hero-pill {
-    font-size: 9px !important;
-    padding: 2px 7px !important;
-    white-space: nowrap;
-  }
-  .k-hero-proverb-inline {
-    font-size: 8.5px;
-    font-style: italic;
-    font-weight: 400;
-    color: #333;
-    text-align: right;
-    line-height: 1.3;
-    max-width: 100%;
-    display: block;
-  }
-  /* Image mobile cachée dans le sticky bar */
-  .k-hero-media-mobile { display: none; }
-  .k-hero-img-mobile   { display: none; }
-
-  /* ── Sous-titre masqué sur mobile ── */
-  .k-hero-sub { display: none; }
-
-  /* ── Label "Panier" masqué sur mobile ── */
-  .k-header-action-label { display: none; }
-}
-
 /* ── Sections: ensure they sit above hero when scrolling ── */
 .k-section {
   position: relative;
@@ -2436,10 +2270,6 @@ body{
   .k-hero-cats-sticky.is-stuck { top: 64px; }
 }
 
-/* ── Desktop : k-hero-overlay est hors de k-hero-inner — recentrage ── */
-/* Les règles min-width:900px du bloc hero original donnaient padding:0 et
-   max-width:480px car .k-hero-overlay était alors une colonne flex.
-   Maintenant il est dans .k-hero-cats-sticky → on recentre. */
 @media(min-width:900px){
   .k-hero-cats-sticky {
     position: relative !important;
@@ -2460,2895 +2290,376 @@ body{
   }
 }
 
-/* ── Hero fixed wrap (mobile only) ─────────────────────────────────────────── */
-@media (max-width:899px){
-  #k-hero-fixed-wrap{
-    position:fixed;
-    top:var(--header-h);
-    left:0;
-    right:0;
-    z-index:200;
-    background:var(--surface,#fff);
-  }
-  /* Désactiver le sticky de la bar à l'intérieur du wrap fixe */
-  #k-hero-fixed-wrap .k-hero-cats-sticky,
-  #k-hero-fixed-wrap .k-hero-cats-sticky.is-stuck{
-    position:static !important;
-    top:auto !important;
-    width:auto !important;
-    left:auto !important;
-    right:auto !important;
-    box-shadow:none;
-  }
-}
-
-/* ── Mobile scroll lock: only #k-page-scroll scrolls ── */
-@media (max-width: 899px) {
-  body { overflow: hidden; height: 100dvh; }
-  #k-page-scroll {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    /* top set by JS */
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
-}
-
-/* ══ Bande proverbe rotatif ══ */
 /* ══ Proverbe séparateur de section ══ */
 .k-proverb-sep {
-  display: none; /* caché sur desktop */
+  display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  MOBILE — BLOC UNIQUE REFONDU (v6.0)                                      */
+/*  Tout le responsive mobile est ici et nulle part ailleurs.                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 899px) {
-  .k-proverb-sep {
-    display: block;
-    width: calc(100% - 32px);
-    margin: 4px auto 6px;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(0,0,0,0.10), transparent);
-  }
-  .k-proverb-sep::before,
-  .k-proverb-sep::after { display: none; 
-  }
-}
-@media (max-width: 899px){
 
-  .k-hero-img{
-    height: clamp(88px, 17vw, 136px);
+  /* ── HERO : bandeau image compact ─────────────────────────────────── */
+  .k-hero {
+    display: block !important;
+    overflow: hidden;
+  }
+  .k-hero-inner {
+    height: 100%;
+    padding: 0;
+  }
+  .k-hero-media {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  .k-hero-img {
+    width: 100%;
+    height: clamp(76px, 14vw, 112px);
     object-fit: cover;
-    object-position: center 18%;
+    object-position: center 22%;
   }
-
-  .k-hero-overlay{
-    padding: 6px 12px 4px;
-    gap: 6px;
-    border-bottom: none;
-  }
-
-  .k-hero-text-left{
-    gap: 4px;
-  }
-
-  .k-hero-title{
-    font-size: clamp(1.05rem, 4.5vw, 1.35rem);
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-  }
-
-  .k-hero-right-col{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .k-hero-pills{
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-  }
-
-  .k-hero-pill{
-    font-size: 9px;
-    padding: 3px 7px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-
-  .k-hero-proverb-inline{
+  .k-hero-media-mobile,
+  .k-hero-img-mobile {
     display: none;
   }
 
-  .k-cats{
-    gap: 10px;
-    padding: 6px 10px 8px;
-    box-shadow: none;
-    background: rgba(253,250,245,.96);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-
-  .k-chip{
-    min-width: 58px;
-    gap: 5px;
-  }
-
-  .k-chip-photo{
-    width: 48px;
-    height: 48px;
-  }
-
-  .k-chip-label{
-    font-size: 10px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-hero-overlay{
+  /* ── HERO OVERLAY : slogan à gauche, pills à droite ────────────── */
+  .k-hero-overlay {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
     padding: 4px 10px 2px;
     gap: 8px;
+    border-bottom: none;
   }
-
-  .k-hero-text-left{
+  .k-hero-text-left {
     min-width: 0;
+    flex: 1;
+    text-align: left;
+    padding: 0;
   }
-
-  .k-hero-title{
-    font-size: clamp(0.98rem, 4.1vw, 1.2rem);
+  .k-hero-title {
+    font-size: clamp(0.95rem, 4vw, 1.15rem);
+    font-weight: 800;
     line-height: 1;
     margin: 0;
     white-space: nowrap;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #1a1a1a 30%, #2d7a56 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-
-  .k-hero-right-col{
+  .k-hero-sub { display: none; }
+  .k-hero-btn {
+    font-size: 10px;
+    padding: 4px 9px;
+    white-space: nowrap;
+  }
+  .k-hero-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .k-hero-pills {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
   }
-
-  .k-hero-pills{
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
-  .k-hero-pill{
+  .k-hero-pill {
     font-size: 8.5px;
     padding: 2px 6px;
+    border-radius: 999px;
+    white-space: nowrap;
     line-height: 1.1;
   }
+  .k-hero-proverb-inline { display: none; }
 
-  .k-cats{
-    margin-top: 0;
-    padding-top: 4px;
-    padding-bottom: 6px;
+  /* ── HERO FIXED WRAP ───────────────────────────────────────────── */
+  #k-hero-fixed-wrap {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--surface, #fff);
+  }
+  #k-hero-fixed-wrap .k-hero-cats-sticky,
+  #k-hero-fixed-wrap .k-hero-cats-sticky.is-stuck {
+    position: static !important;
+    top: auto !important;
+    width: auto !important;
+    left: auto !important;
+    right: auto !important;
+    box-shadow: none;
+  }
+
+  /* ── CATÉGORIES : compactes, scrollables ────────────────────────── */
+  .k-hero-cats-sticky .k-cats,
+  .k-cats {
+    display: flex;
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 4px 8px 6px;
     gap: 8px;
+    margin: 0;
+    background: rgba(253,250,245,.96);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: none;
+    border-top: 1px solid rgba(0,0,0,.05);
   }
-
-  .k-chip{
-    min-width: 54px;
+  .k-cats::-webkit-scrollbar,
+  .k-hero-cats-sticky .k-cats::-webkit-scrollbar { display: none; }
+  .k-chip {
+    min-width: 50px;
     gap: 4px;
+    flex-shrink: 0;
   }
-
-  .k-chip-photo{
-    width: 42px;
-    height: 42px;
+  .k-chip-photo {
+    width: 40px;
+    height: 40px;
   }
-
-  .k-chip-label{
-    font-size: 9.5px;
+  .k-chip-label {
+    font-size: 9px;
     line-height: 1;
   }
-}
-@media (max-width: 899px){
 
-  .k-promo-rail{
-    gap: 12px;
-    padding: 0 2px 6px;
+  /* ── SCROLL LOCK ───────────────────────────────────────────────── */
+  body { overflow: hidden; height: 100dvh; }
+  #k-page-scroll {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 
-  .k-promo-rail::before,
-  .k-promo-rail::after{
-    width: 10px;
+  /* ── SECTIONS : titres compacts ────────────────────────────────── */
+  .k-section-head {
+    margin-bottom: 4px;
+  }
+  .k-section-head h2 {
+    font-size: 15px;
+  }
+  .k-section {
+    padding-top: 0;
+    margin-bottom: 4px;
   }
 
-  .k-promo-rail-inner{
-    gap: 8px;
-    animation: promo-scroll 38s linear infinite;
+  /* ── PROVERBE SÉPARATEUR : caché ───────────────────────────────── */
+  .k-proverb-sep {
+    display: none !important;
   }
 
-  .k-promo-card{
-    flex: 0 0 138px;
+  /* ── PROMOS : rail horizontal scrollable, cartes carrées ───────── */
+  #k-promos-section {
+    padding: 6px 10px 10px !important;
   }
 
-  .k-promo-card-img{
-    height: 96px;
-    border-radius: 10px;
-    filter: drop-shadow(0 3px 10px rgba(0,0,0,.16)) drop-shadow(0 1px 2px rgba(0,0,0,.08));
-  }
-
-  .k-promo-badge{
-    top: 8px;
-    left: 8px;
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-
-  .k-promo-card-info{
-    padding: 5px 3px 0;
-  }
-
-  .k-promo-card-name{
-    font-size: 11px;
-    line-height: 1.18;
-    min-height: 2.2em;
-  }
-
-  .k-promo-card-price{
-    font-size: 13px;
-    margin-top: 3px;
-  }
-
-  .k-promo-card-old{
-    font-size: 10px;
-    margin-top: 1px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-promo-rail{
-    overflow-x: auto;
+  .k-promo-rail {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
     scroll-snap-type: x proximity;
-    padding: 0 12px 8px;
-    margin: 0 -12px;
+    padding: 4px 0 8px !important;
     scrollbar-width: none;
   }
-
-  .k-promo-rail::-webkit-scrollbar{
-    display: none;
-  }
-
+  .k-promo-rail::-webkit-scrollbar { display: none; }
   .k-promo-rail::before,
-  .k-promo-rail::after{
-    display: none;
+  .k-promo-rail::after { display: none !important; }
+
+  .k-promo-rail-inner {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    width: max-content !important;
+    animation: none !important;
   }
 
-  .k-promo-rail-inner{
-    animation: none;
-    gap: 10px;
-    width: max-content;
-  }
-
-  .k-promo-card{
+  .k-promo-card {
+    flex: 0 0 110px !important;
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
     scroll-snap-align: start;
   }
-}
-@media (max-width: 899px){
 
-  .k-grid{
+  .k-promo-card-img {
+    width: 110px !important;
+    height: 100px !important;
+    max-height: 100px !important;
+    object-fit: cover !important;
+    border-radius: 14px !important;
+    filter: none !important;
+    animation: none !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  }
+
+  .k-promo-badge {
+    top: 5px !important;
+    left: 5px !important;
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+  }
+
+  .k-promo-card-info {
+    padding: 4px 2px 0 !important;
+    min-height: 0 !important;
+  }
+
+  .k-promo-card-name {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 1 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .k-promo-card-price {
+    font-size: 11px !important;
+    margin-top: 1px !important;
+  }
+
+  .k-promo-card-old {
+    display: none !important;
+  }
+
+  /* ── PROMOS en format k-card (quand JS utilise le template catalogue) ── */
+  #k-promo-rail .k-card,
+  .k-promo-rail .k-card {
+    flex: 0 0 110px !important;
+    width: 110px !important;
+    max-width: 110px !important;
+    min-width: 110px !important;
+    scroll-snap-align: start;
+  }
+  #k-promo-rail .k-card-img-wrap,
+  .k-promo-rail .k-card-img-wrap {
+    height: 100px !important;
+    max-height: 100px !important;
+    padding: 0 !important;
+  }
+  #k-promo-rail .k-card-img,
+  .k-promo-rail .k-card-img {
+    height: 100px !important;
+    max-height: 100px !important;
+    object-fit: cover !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+  }
+  #k-promo-rail .k-card-info,
+  .k-promo-rail .k-card-info {
+    padding: 4px 4px 6px !important;
+    min-height: 0 !important;
+  }
+  #k-promo-rail .k-card-name,
+  .k-promo-rail .k-card-name {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 1 !important;
+  }
+  #k-promo-rail .k-card-price,
+  .k-promo-rail .k-card-price {
+    font-size: 11px !important;
+  }
+  #k-promo-rail .k-card-old-price,
+  .k-promo-rail .k-card-old-price {
+    display: none !important;
+  }
+  #k-promo-rail .k-card-fav,
+  #k-promo-rail .k-card-add,
+  .k-promo-rail .k-card-fav,
+  .k-promo-rail .k-card-add {
+    display: none !important;
+  }
+  #k-promo-rail .k-card-promo,
+  .k-promo-rail .k-card-promo {
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+    top: 4px !important;
+    left: 4px !important;
+  }
+
+  /* ── CATALOGUE : cartes alignées proprement ────────────────────── */
+  .k-grid {
     gap: 10px;
     padding: 6px 0 14px;
   }
-
-  .k-card{
+  .k-card {
     border-radius: 14px;
     overflow: hidden;
   }
-
-  .k-card-img-wrap{
+  .k-card-img-wrap {
     background: #fbf9f5;
     padding-top: 6px;
   }
-
-  .k-card-img{
+  .k-card-img {
     padding: 10px 10px 8px;
   }
-
-  .k-card-fav{
+  #k-grid .k-card-img {
+    aspect-ratio: 4/3 !important;
+    padding: 6px !important;
+  }
+  .k-card-fav {
     top: 10px;
     right: 10px;
     width: 34px;
     height: 34px;
     box-shadow: 0 3px 10px rgba(31,48,36,.10);
   }
-
-  .k-card-info{
+  .k-card-info {
     padding: 8px 10px 10px;
   }
-
-  .k-card-name{
+  #k-grid .k-card-info {
+    padding: 8px 10px 10px !important;
+  }
+  .k-card-name {
     font-size: 13px;
     line-height: 1.22;
     min-height: 2.45em;
   }
-
-  .k-card-bottom{
+  #k-grid .k-card-name {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+  .k-card-bottom {
     margin-top: 5px;
     gap: 4px;
   }
-
-  .k-card-price{
+  .k-card-price {
     font-size: 13px;
     font-weight: 700;
   }
-
-  .k-card-old-price{
+  .k-card-old-price {
     font-size: 11px;
   }
-
-  .k-card-add{
+  .k-card-add {
     bottom: 8px;
     right: 8px;
     width: 38px;
     height: 38px;
   }
-}
-@media (max-width: 899px){
 
-  /* HERO : garder l'image mais la rendre plus bandeau */
-  .k-hero-img{
-    height: clamp(76px, 14vw, 112px);
-    object-fit: cover;
-    object-position: center 20%;
+  /* ── DRAWER PANIER ─────────────────────────────────────────────── */
+  .k-cart-drawer {
+    bottom: var(--bnav-h);
+    border-radius: 16px 0 0 16px;
   }
 
-  .k-hero-overlay{
-    padding: 2px 10px 2px;
-    gap: 6px;
-  }
-
-  .k-hero-title{
-    font-size: clamp(0.95rem, 4vw, 1.15rem);
-    line-height: 1;
-  }
-
-  .k-cats{
-    padding: 4px 8px 6px;
-    gap: 8px;
-  }
-
-  .k-chip-photo{
-    width: 40px;
-    height: 40px;
-  }
-
-  .k-chip-label{
-    font-size: 9px;
-  }
-
-  /* PROMOS : rail plus compact, plus éditorial */
-  .k-promo-rail{
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    padding: 0 12px 4px;
-    margin: 0 -12px;
-  }
-
-  .k-promo-rail::before,
-  .k-promo-rail::after{
-    display: none;
-  }
-
-  .k-promo-rail-inner{
-    animation: none !important;
-    width: max-content;
-    gap: 8px;
-  }
-
-  .k-promo-card{
-    flex: 0 0 124px;
-    scroll-snap-align: start;
-  }
-
-  .k-promo-card-img{
-    height: 82px;
-    border-radius: 8px;
-    filter: drop-shadow(0 2px 7px rgba(0,0,0,.12));
-  }
-
-  .k-promo-badge{
-    top: 6px;
-    left: 6px;
-    font-size: 9px;
-    padding: 2px 7px;
-  }
-
-  .k-promo-card-info{
-    padding: 4px 2px 0;
-  }
-
-  .k-promo-card-name{
-    font-size: 10.5px;
-    line-height: 1.15;
-    min-height: 2.1em;
-  }
-
-  .k-promo-card-price{
-    font-size: 12px;
-    margin-top: 2px;
-  }
-
-  .k-promo-card-old{
-    font-size: 9.5px;
-    margin-top: 0;
-  }
-
-  .k-section-head{
-    margin-bottom: 4px;
-  }
-
-  .k-section-head h2{
-    font-size: 16px;
-  }
-}
-@media (max-width: 899px){
-  .k-hero-media{
-    overflow: hidden;
-  }
-
-  .k-hero-img{
-  height: clamp(76px, 13.8vw, 108px);
-  object-fit: cover;
-  object-position: center 26%;
-  transform: scale(1.03);
-  transform-origin: center;
-  }
-
-  .k-hero-overlay{
-    padding: 0 10px 2px;
-    gap: 4px;
-  }
-
-  .k-hero-title{
-    font-size: clamp(0.9rem, 3.8vw, 1.08rem);
-    line-height: 0.98;
-    letter-spacing: -0.02em;
-  }
-
-  .k-hero-right-col{
-    gap: 3px;
-  }
-
-  .k-hero-pill{
-    font-size: 8px;
-    padding: 2px 6px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-hero{
-    position: relative;
-  }
-
-  .k-hero-media{
-    overflow: hidden;
-    position: relative;
-  }
-
-  .k-hero-img{
-    height: clamp(82px, 14.5vw, 116px);
-    object-fit: cover;
-    object-position: center 24%;
-    transform: scale(1.02);
-    transform-origin: center;
-  }
-
-  .k-hero-overlay{
-    position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: 6px;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-    background: rgba(255,255,255,.82);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,.55);
-    border-radius: 14px;
-    box-shadow: 0 4px 14px rgba(31,48,36,.08);
-  }
-
-  .k-hero-text-left{
-    gap: 0;
-    min-width: 0;
-  }
-
-  .k-hero-title{
-    font-size: clamp(0.92rem, 3.9vw, 1.08rem);
-    line-height: 1;
-    letter-spacing: -0.02em;
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  .k-hero-right-col{
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  .k-hero-pills{
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-  }
-
-  .k-hero-pill{
-    font-size: 8px;
-    line-height: 1.1;
-    padding: 2px 6px;
-    white-space: nowrap;
-  }
-
-  .k-hero-proverb-inline{
-    display: none;
-  }
-
-  .k-cats{
-    margin-top: 2px;
-    padding: 4px 8px 6px;
-  }
-}
-@media (max-width: 899px){
-  .k-hero{
-    position: relative;
-  }
-
-  .k-hero-inner{
-    position: relative;
-  }
-
-  .k-hero-media{
-    position: relative;
-    overflow: hidden;
-  }
-
-  .k-hero-overlay{
-    position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: 6px;
-    z-index: 5;
-    display: flex !important;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-    background: rgba(255,255,255,.84);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,.55);
-    box-shadow: 0 4px 14px rgba(31,48,36,.08);
-  }
-
-  .k-hero-text-left{
-    display: flex !important;
-    min-width: 0;
-  }
-
-  .k-hero-title{
-    display: block !important;
-    font-size: clamp(0.88rem, 3.7vw, 1.04rem);
-    line-height: .96;
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  .k-hero-right-col{
-    display: flex !important;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-  }
-
-  .k-hero-pill{
-    font-size: 7.5px;
-    padding: 2px 5px;
-  }
-}
-.k-hero-mini-slogan{
-  display:none;
-}
-
-@media (max-width: 899px){
-  .k-hero-mini-slogan{
-    display:block;
-    text-align:center;
-    font-weight:800;
-    color:var(--text);
-    letter-spacing:-0.02em;
-    font-size:clamp(.88rem,3.7vw,1.04rem);
-    line-height:.96;
-    margin:2px 0 2px;
-  }
-
-  .k-hero-mini-slogan span{
-    color:var(--ocean-dark);
-  }
-
-  .k-hero-overlay{
-    display:none !important;
-  }
-}
-
-@media (min-width: 900px){
-  .k-hero-mini-slogan{
-    display:none;
-  }
-}
-@media (max-width: 899px){
-  .k-wa-fab{
-    width: 58px;
-    height: 58px;
-    right: 10px;
-    bottom: calc(var(--bnav-h) + 14px);
-    box-shadow: 0 6px 18px rgba(37,211,102,.22);
-  }
-
-  .k-wa-fab svg{
-    width: 24px;
-    height: 24px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-grid{
-    gap: 10px;
-    padding: 8px 0 14px;
-  }
-
-  .k-card{
-    border-radius: 14px;
-    box-shadow: 0 1px 6px rgba(31,48,36,.06);
-    border: 1px solid rgba(31,48,36,.04);
-  }
-
-  .k-card-img-wrap{
-    background: #fcfaf6;
-    padding-top: 8px;
-  }
-
-  .k-card-img{
-    padding: 10px 10px 6px;
-  }
-
-  .k-card-fav{
-    top: 8px;
-    right: 8px;
-    width: 30px;
-    height: 30px;
-    font-size: 12px;
-    box-shadow: 0 2px 8px rgba(31,48,36,.08);
-  }
-
-  .k-card-info{
-    padding: 8px 10px 10px;
-  }
-
-  .k-card-name{
-    font-size: 12.5px;
-    line-height: 1.2;
-    min-height: 2.35em;
-  }
-
-  .k-card-bottom{
-    margin-top: 4px;
-    gap: 4px;
-    align-items: baseline;
-  }
-
-  .k-card-price{
-    font-size: 13px;
-    font-weight: 700;
-  }
-
-  .k-card-old-price{
-    font-size: 10.5px;
-  }
-
-  .k-card-add{
-    right: 8px;
-    bottom: 8px;
-    width: 36px;
-    height: 36px;
-    background-size: 74%;
-  }
-}
-@media (max-width: 899px){
-
-  .k-section{
-    margin: 0 auto 4px;
-    padding: 2px var(--pad-x);
-  }
-
-  .k-section-head{
-    margin-bottom: 2px;
-  }
-
-  .k-promo-rail{
-    padding-bottom: 2px;
-  }
-
-  .k-grid{
-    padding: 4px 0 10px;
-    gap: 8px;
-  }
-
-  .k-card-img-wrap{
-    padding-top: 4px;
-  }
-
-  .k-card-img{
-    padding: 8px 8px 4px;
-  }
-
-  .k-card-info{
-    padding: 6px 8px 8px;
-  }
-
-  .k-card-bottom{
-    margin-top: 3px;
-  }
-}
-@media (max-width: 899px){
-  .k-wa-fab{
-    width: 54px;
-    height: 54px;
-    right: 10px;
-    bottom: calc(var(--bnav-h) + 10px);
-    box-shadow: 0 5px 14px rgba(37,211,102,.18);
-    opacity: .92;
-  }
-
-  .k-wa-fab svg{
-    width: 22px;
-    height: 22px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-promo-card{
-    padding-top: 4px;
-  }
-
-  .k-promo-card-img{
-    height: 86px;
-    object-fit: contain;
-    object-position: center top;
-  }
-
-  .k-promo-badge{
-    top: 2px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-section#k-promos-section{
-    padding-top: 6px;
-  }
-
-  .k-promo-rail{
-    padding-top: 4px;
-    padding-bottom: 4px;
-  }
-
-  .k-promo-card{
-    padding-top: 0;
-  }
-
-  .k-promo-card-img{
-    height: 90px;
-    object-fit: cover;
-    object-position: center center;
-  }
-
-  .k-promo-badge{
-    top: 6px;
-  }
-}
-@media (max-width: 899px){
-
-  .k-cart-drawer{
-    max-width: 100%;
-    border-radius: 18px 18px 0 0;
-  }
-
-  .k-cart-header{
-    padding: 14px 16px;
-    font-size: 1rem;
-    min-height: 64px;
-    border-radius: 18px 18px 0 0;
-  }
-
-  .k-cart-header #k-cart-header-title{
-    line-height: 1.1;
-  }
-
-  .k-cart-body{
-    padding: 18px 16px 14px;
-  }
-
-  .k-cart-empty{
-    padding: 24px 0 18px;
-    min-height: 42vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-  }
-
-  .k-cart-empty .k-cart-empty-icon{
-    font-size: 3.6rem;
-    margin-bottom: 10px;
-    opacity: .72;
-  }
-
-  .k-cart-empty p,
-  .k-cart-empty-text{
-    font-size: 1rem;
-    line-height: 1.35;
-    color: var(--text-muted);
-    text-align: center;
-  }
-
-  #k-cart-close{
-    width: 42px;
-    height: 42px;
-    font-size: 18px;
-  }
-}
-.k-sug-wrap::before,
-.k-sug-wrap::after{
-  display: none !important;
-}
-@media (max-width: 899px){
-
-  /* Texte intro plus compact */
-  .k-track-intro,
-  .track-intro,
-  .k-follow-intro{
-    font-size: 13px;
-    line-height: 1.35;
-    margin-bottom: 10px;
-  }
-
-  /* Cartes/formulaires moins hautes */
-  .k-track-card,
-  .track-card,
-  .k-follow-card{
-    padding: 14px 14px 12px;
-    border-radius: 16px;
-    margin-bottom: 10px;
-  }
-
-  /* Champs plus bas */
-  .k-track-card input,
-  .track-card input,
-  .k-follow-card input,
-  .k-track-card select,
-  .track-card select,
-  .k-follow-card select{
-    height: 54px;
-    font-size: 15px;
-    padding: 0 16px;
-    border-radius: 14px;
-  }
-
-  /* Bouton principal plus compact */
-  .k-track-card button,
-  .track-card button,
-  .k-follow-card button{
-    height: 54px;
-    font-size: 15px;
-    border-radius: 16px;
-    margin-top: 10px;
-  }
-
-  /* Séparateur "ou" plus serré */
-  .k-track-divider,
-  .track-divider,
-  .k-follow-divider{
-    margin: 10px 0;
-  }
-
-  .k-track-divider span,
-  .track-divider span,
-  .k-follow-divider span{
-    font-size: 14px;
-  }
-
-  /* Espace vertical global plus serré */
-  .k-section,
-  .track-section,
-  .k-follow-section{
-    padding-top: 2px;
-    padding-bottom: 2px;
-  }
-
-  /* FAB WhatsApp moins envahissant dans Suivi */
-  body[data-tab="track"] .k-wa-fab,
-  .track-open .k-wa-fab{
-    transform: scale(.88);
-    right: 8px;
-    bottom: calc(var(--bnav-h) + 8px);
-    opacity: .82;
-  }
-}
-@media (max-width: 899px){
-
-  /* Intro */
-  .k-track-intro,
-  .track-intro,
-  .k-follow-intro{
-    font-size: 12.5px;
-    line-height: 1.3;
-    margin: 4px 0 8px;
-  }
-
-  /* Blocs de suivi */
-  .k-track-card,
-  .track-card,
-  .k-follow-card{
-    padding: 10px 10px 8px;
-    border-radius: 14px;
-    margin-bottom: 8px;
-  }
-
-  /* Inputs */
-  .k-track-card input,
-  .track-card input,
-  .k-follow-card input{
-    height: 46px;
-    font-size: 14px;
-    padding: 0 14px;
-    border-radius: 12px;
-  }
-
-  /* Boutons */
-  .k-track-card button,
-  .track-card button,
-  .k-follow-card button{
-    height: 46px;
-    font-size: 14px;
-    border-radius: 14px;
-    margin-top: 8px;
-  }
-
-  /* Séparateur */
-  .k-track-divider,
-  .track-divider,
-  .k-follow-divider{
-    margin: 6px 0;
-  }
-
-  .k-track-divider span,
-  .track-divider span,
-  .k-follow-divider span{
-    font-size: 13px;
-  }
-
-  /* Réduire l’espace global dans la zone suivi */
-  .track-section,
-  .k-follow-section,
-  .k-section{
-    padding-top: 2px;
-    padding-bottom: 2px;
-  }
-
-  /* FAB WhatsApp encore moins envahissant dans Suivi */
-  .k-wa-fab{
-    width: 50px;
-    height: 50px;
-    right: 8px;
-    bottom: calc(var(--bnav-h) + 8px);
-  }
-
-  .k-wa-fab svg{
-    width: 20px;
-    height: 20px;
-  }
-}
-@media (min-width: 900px){
-  .k-header-action-label{
-    display: none;
-  }
-
-  .k-cart-btn{
-    width: 44px;
-    height: 44px;
-  }
-}
-@media (min-width: 900px){
-  .k-header-actions{
-    gap: 8px;
-  }
-
-  .k-cart-avatar{
-    width: 30px;
-    height: 30px;
-  }
-}
-@media (max-width: 899px){
-
-  /* Intro */
-  .k-track-intro,
-  .track-intro,
-  .k-follow-intro{
-    font-size: 12px;
-    line-height: 1.28;
-    margin: 2px 0 6px;
-  }
-
-  /* Cartes quasi fusionnées */
-  .k-track-card,
-  .track-card,
-  .k-follow-card{
-    padding: 8px 8px 6px;
-    border-radius: 12px;
-    margin-bottom: 6px;
-    box-shadow: none;
-  }
-
-  /* Champs plus bas */
-  .k-track-card input,
-  .track-card input,
-  .k-follow-card input{
-    height: 42px;
-    font-size: 14px;
-    padding: 0 12px;
-    border-radius: 10px;
-  }
-
-  /* Boutons plus bas */
-  .k-track-card button,
-  .track-card button,
-  .k-follow-card button{
-    height: 42px;
-    font-size: 14px;
-    border-radius: 12px;
-    margin-top: 6px;
-  }
-
-  /* Séparateur très compact */
-  .k-track-divider,
-  .track-divider,
-  .k-follow-divider{
-    margin: 4px 0;
-  }
-
-  .k-track-divider span,
-  .track-divider span,
-  .k-follow-divider span{
-    font-size: 12px;
-  }
-
-  /* Resserre toute la zone */
-  .track-section,
-  .k-follow-section{
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-
-  /* WhatsApp moins agressif */
-  .k-wa-fab{
-    width: 46px;
-    height: 46px;
-    right: 8px;
-    bottom: calc(var(--bnav-h) + 8px);
-    opacity: .78;
-  }
-
-  .k-wa-fab svg{
-    width: 18px;
-    height: 18px;
-  }
-}
-/* ═══ HERO SLOGAN PREMIUM ═══ */
-
-.k-hero-media{
-  position: relative;
-}
-
-.k-hero-mini-slogan--premium,
-.k-hero-title--premium{
-  display: flex;
-  flex-direction: column;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-}
-
-.k-hero-mini-slogan--premium .k-line-1,
-.k-hero-title--premium .k-hero-title-top{
-  font-weight: 800;
-  color: #1b1f1c;
-}
-
-.k-hero-mini-slogan--premium .k-line-2,
-.k-hero-title--premium .k-hero-title-bottom{
-  font-weight: 900;
-  color: #2f6b43;
-  position: relative;
-}
-
-.k-hero-title--premium .k-hero-title-bottom::after,
-.k-hero-mini-slogan--premium .k-line-2::after{
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -4px;
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(244,151,63,0) 0%,
-    rgba(244,151,63,.35) 20%,
-    rgba(244,151,63,.6) 50%,
-    rgba(244,151,63,.2) 100%
-  );
-  transform-origin: left center;
-  animation: kUnderlinePulse 2.8s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes kUnderlinePulse{
-  0%,100%{ transform: scaleX(.88); opacity: .75; }
-  50%{ transform: scaleX(1); opacity: 1; }
-}
-
-.k-hero-mini-slogan--premium{
-  gap: 2px;
-  padding: 10px 14px;
-  border-radius: 16px;
-  background: rgba(253,250,245,.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.08);
-}
-
-.k-hero-mini-slogan--premium .k-line-1{
-  font-size: 15px;
-}
-
-.k-hero-mini-slogan--premium .k-line-2{
-  font-size: 18px;
-}
-
-.k-hero-title--premium{
-  gap: 3px;
-}
-
-.k-hero-title--premium .k-hero-title-top{
-  font-size: clamp(17px, 2.5vw, 24px);
-}
-
-.k-hero-title--premium .k-hero-title-bottom{
-  font-size: clamp(20px, 3vw, 30px);
-}
-
-.k-hero-title--premium,
-.k-hero-mini-slogan--premium{
-  animation: kHeroFloat 5.2s ease-in-out infinite;
-}
-
-@keyframes kHeroFloat{
-  0%,100%{ transform: translateY(0); }
-  50%{ transform: translateY(-1px); }
-}
-
-/* petite bulle humour */
-.k-hero-bubble{
-  position: absolute;
-  right: 14px;
-  bottom: 16px;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(253,250,245,.82);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,.08);
-  font-size: 18px;
-  animation: kBubblePeek 3.6s ease-in-out infinite;
-}
-
-@keyframes kBubblePeek{
-  0%,100%{ transform: translateY(0) rotate(0deg); }
-  15%{ transform: translateY(-2px) rotate(-8deg); }
-  30%{ transform: translateY(0) rotate(6deg); }
-  45%{ transform: translateY(-1px) rotate(-4deg); }
-  60%{ transform: translateY(0) rotate(0deg); }
-}
-
-@media (max-width: 899px){
-  .k-hero-mini-slogan--premium{
-    padding: 8px 12px;
-    border-radius: 14px;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-1{
-    font-size: 13px;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-2{
-    font-size: 16px;
-  }
-
-  .k-hero-title--premium .k-hero-title-top{
-    font-size: 16px;
-  }
-
-  .k-hero-title--premium .k-hero-title-bottom{
-    font-size: 20px;
-  }
-
-  .k-hero-title--premium .k-hero-title-bottom::after,
-  .k-hero-mini-slogan--premium .k-line-2::after{
-    height: 6px;
-    bottom: -3px;
-  }
-
-  .k-hero-bubble{
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
-    right: 10px;
-    bottom: 10px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce){
-  .k-hero-title--premium,
-  .k-hero-mini-slogan--premium,
-  .k-hero-title--premium .k-hero-title-bottom::after,
-  .k-hero-mini-slogan--premium .k-line-2::after,
-  .k-hero-bubble{
-    animation: none;
-  }
-}
-.k-hero-mini-slogan{
-  position:absolute;
-  left:30%;
-  top:-6px;
-  transform:translateX(-50%);
-  z-index:3;
-}
-
-.k-hero-mini-slogan--premium{
-  max-width:45%;
-  padding:7px 10px;
-}
-
-.k-hero-cats-sticky{
-  position:relative;
-  z-index:5;
-}
-@media (max-width: 899px){
-  .k-hero-mini-slogan--premium{
-    padding:6px 10px;
-    border-radius:12px;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-1{
-    font-size:12px;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-2{
-    font-size:14px;
-  }
-}
-.k-promo-card{
-  flex: 0 0 120px;
-  display:flex;
-  flex-direction:column;
-}
-
-.k-promo-card-img{
-  width:100%;
-  height:90px;
-  object-fit:cover;
-  border-radius:10px;
-}
-
-.k-promo-card-info{
-  min-height:52px;
-}
-.k-card{
-  display:flex;
-  flex-direction:column;
-  height:100%;
-}
-
-.k-card-img-wrap{
-  aspect-ratio:1/1;
-  overflow:hidden;
-}
-
-.k-card-img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  padding:0;
-}
-
-.k-card-info{
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  min-height:96px;
-}
-
-.k-card-name{
-  min-height:2.6em;
-}
-
-.k-card-bottom{
-  margin-top:auto;
-}
-.k-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-  align-items:start;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH UNIFORMISATION CARTES — v1.0 (19 avril 2026)                      */
-/*  À coller à la toute fin de boutique.css.                                 */
-/*  Objectif : cartes promo et catalogue de même hauteur, base alignée.     */
-/*  Aucune refonte, aucun reset destructif. Uniquement des consolidations.  */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-/* ── 1. PROMO RAIL ─────────────────────────────────────────────────────── */
-/* Chaque carte du rail = structure figée, indépendamment du texte          */
-
-.k-promo-card{
-  /* Largeur + hauteur totale verrouillées → fini l'effet escalier */
-  flex: 0 0 120px;
-  display: flex;
-  flex-direction: column;
-  min-height: 172px;           /* image 90 + info ~72 + padding */
-  align-self: flex-start;      /* même base d'alignement */
-}
-
-.k-promo-card-img{
-  /* height déjà à 90px : on le garde.
-     On désactive l'animation float qui créait l'effet d'entonnoir :
-     ou on la conserve mais contenue pour ne pas décaler les cartes.
-     Ici : conservée mais sans décaler les voisins (transform sur l'image
-     uniquement, pas sur la carte) — déjà le cas, rien à modifier.          */
-  /* Rappel : le décalage visuel vient des delays différents (0s, .5s, 1s).
-     Si l'effet te gêne encore, tu peux mettre : animation: none;           */
-  flex-shrink: 0;
-}
-
-.k-promo-card-info{
-  /* Bloc texte : hauteur fixe = pas de cartes plus hautes que d'autres */
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 60px;            /* 2 lignes titre + 1 prix + 1 ancien prix  */
-  padding: 6px 2px 0;
-}
-
-.k-promo-card-name{
-  /* 2 lignes réservées même si le nom fait 1 ligne → alignement prix OK */
-  min-height: 2.6em;
-  line-height: 1.3;
-}
-
-.k-promo-card-price,
-.k-promo-card-old{
-  /* Hauteur ligne garantie même si valeur manquante (visibility hidden JS) */
-  min-height: 1.2em;
-}
-
-/* ── 2. GRILLE CATALOGUE ──────────────────────────────────────────────── */
-/* On utilise grid-auto-rows pour que toutes les lignes aient la même hauteur */
-
-.k-grid{
-  grid-auto-rows: 1fr;         /* toutes les lignes = même hauteur */
-  align-items: stretch;        /* cartes étirées à la ligne        */
-}
-
-/* ── 3. CARTE CATALOGUE : hauteur totale + image cadrée ──────────────── */
-
-.k-card{
-  /* Carte = flex column qui remplit la cellule grid */
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.k-card-img-wrap{
-  /* Image : ratio figé 1:1, pas de conflit avec d'autres ratios */
-  aspect-ratio: 1 / 1;
-  width: 100%;
-  flex-shrink: 0;              /* ne se déforme pas si le nom est long */
-  overflow: hidden;
-  background: #faf8f5;
-}
-
-.k-card-img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;           /* image toujours cadrée, jamais déformée */
-  padding: 0;
-}
-
-/* Si tu préfères l'ancien comportement "contain + padding 8px" (produits
-   avec fond transparent), décommente le bloc ci-dessous et commente le
-   object-fit: cover ci-dessus :
-
-.k-card-img{
-  object-fit: contain;
-  padding: 8px;
-  background: #faf8f5;
-}
-*/
-
-.k-card-info{
-  /* Partie texte : occupe tout l'espace restant, pousse le prix en bas */
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  padding: 10px 10px 12px;
-  min-height: 92px;            /* valeur suffisante pour 2 lignes + prix */
-}
-
-.k-card-name{
-  /* 2 lignes verrouillées quelle que soit la longueur du titre */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.5em;           /* réserve toujours 2 lignes */
-  line-height: 1.25;
-  margin: 0;
-}
-
-.k-card-bottom{
-  /* Prix : toujours collé au bas de la carte, base d'alignement commune */
-  margin-top: auto;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 1.4em;           /* hauteur ligne prix garantie */
-}
-
-/* ── 4. GARDE-FOU : neutralise les ratios hérités d'autres règles ────── */
-/* Certaines règles plus haut dans le fichier (l. 2140 : aspect-ratio 3/4)
-   peuvent s'appliquer en cascade. On s'assure que rien ne surcharge la
-   nouvelle structure — uniquement si on est en vue grid catalogue.       */
-
-.k-grid .k-card-img-wrap{ aspect-ratio: 1 / 1 !important; }
-.k-grid .k-card-img{ aspect-ratio: auto !important; }
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/* FIN DU PATCH — si tu retrouves un cas non couvert, envoie une capture.  */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-}
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  KOMERCE BOUTIQUE — REFONTE MOBILE v2.0                                   */
-/*  Date : 19 avril 2026                                                    */
-/*                                                                           */
-/*  Scope :                                                                  */
-/*    1. Hero (slogan recentré + transparence préservée)                   */
-/*    2. Chips catégories (active sage au lieu de coral)                   */
-/*    3. Rail promo (vrai scroll horizontal, cartes 130px uniformes)       */
-/*    4. Grille catalogue (cartes uniformes, image 1:1, prix en bas)       */
-/*                                                                           */
-/*  Ce qui ne bouge pas : header, modals, cart drawer, bottom nav,         */
-/*  search, hero sticky bar, proverbe séparateur, toasts, etc.             */
-/*                                                                           */
-/*  ╔════════════════════════════════════════════════════════════════════╗ */
-/*  ║ MODE D'EMPLOI                                                       ║ */
-/*  ║                                                                     ║ */
-/*  ║ Colle CE fichier À LA TOUTE FIN de boutique.css.                   ║ */
-/*  ║ La spécificité CSS + quelques !important ciblés court-circuitent   ║ */
-/*  ║ les blocs précédents qui créaient les conflits.                    ║ */
-/*  ║                                                                     ║ */
-/*  ║ Hard refresh (Ctrl+Shift+R / mobile : vider cache) après push.     ║ */
-/*  ║                                                                     ║ */
-/*  ║ Pour rollback : supprimer ce bloc et rebuild.                      ║ */
-/*  ╚════════════════════════════════════════════════════════════════════╝ */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  ZONE 1 — HERO : slogan recentré, transparence conservée                 */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-/* Le hero garde son image cover + sa bulle 👀.
-   Le mini-slogan mobile (actuellement bottom-left) est recentré au
-   centre-bas pour ne plus couvrir le personnage de gauche (l'afro).
-   L'effet verre dépoli (blur + transparence sand) est CONSERVÉ. */
-
-/* Image : recentrée un peu plus haut pour dégager le centre-bas */
-.k-hero-img{
-  object-position: center 30% !important;
-}
-
-/* Mini-slogan mobile : CENTRE-BAS au lieu de bottom-left */
-@media (max-width: 899px){
-  .k-hero-mini-slogan{
-    /* Reset position gauche actuelle */
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%);
-
-    /* Position verticale : bien en bas mais pas collé */
-    bottom: 14px !important;
-
-    /* Largeur : contrainte pour rester dans la zone "vide"
-       entre les 2 personnages (gauche + droite) */
-    max-width: 58% !important;
-    width: auto;
-
-    /* Texte centré dans le rectangle de verre */
-    text-align: center;
-    z-index: 3;
-  }
-
-  /* On neutralise l'animation float pour que le slogan reste stable
-     (c'était une source d'imprécision visuelle).
-     Si tu veux la garder, supprime les 3 lignes ci-dessous. */
-  .k-hero-mini-slogan--premium,
-  .k-hero-title--premium{
-    animation: none !important;
-  }
-
-  /* Slogan premium : on garde transparence + blur, on ajuste juste
-     la lisibilité sur l'image (ombre texte très légère). */
-  .k-hero-mini-slogan--premium{
-    padding: 8px 14px !important;
-    border-radius: 14px !important;
-    background: rgba(253,250,245,.78) !important;
-    backdrop-filter: blur(8px) saturate(1.1) !important;
-    -webkit-backdrop-filter: blur(8px) saturate(1.1) !important;
-    box-shadow: 0 4px 16px rgba(31,48,36,.10);
-  }
-
-  /* Tailles lignes : légèrement réduites pour que ça tienne bien
-     dans les 58% de largeur sans dépasser */
-  .k-hero-mini-slogan--premium .k-line-1{
-    font-size: 12.5px !important;
-    line-height: 1.2;
-  }
-  .k-hero-mini-slogan--premium .k-line-2{
-    font-size: 15px !important;
-    line-height: 1.2;
-  }
-}
-
-/* Bulle 👀 : on s'assure qu'elle reste bien dans la zone hero
-   (pas de débordement sur la section suivante) */
-.k-hero-bubble{
-  right: 12px !important;
-  bottom: 12px !important;
-  width: 34px;
-  height: 34px;
-  font-size: 16px;
-  z-index: 3;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  ZONE 2 — CHIPS CATÉGORIES : état actif passe de coral à sage           */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-/* Cohérence palette : le reste de la page est sage (--ocean),
-   l'état actif doit suivre pour ne pas créer de rupture visuelle. */
-
-.k-chip.active .k-chip-photo{
-  border-color: var(--ocean) !important;
-  box-shadow:
-    0 0 0 3px rgba(74, 144, 64, .15),
-    0 3px 10px rgba(74, 144, 64, .18) !important;
-}
-.k-chip.active .k-chip-label{
-  color: var(--ocean-dark) !important;
-  font-weight: 700;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  ZONE 3 — RAIL PROMO : vrai scroll horizontal, cartes uniformes         */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-/* On supprime l'animation auto-scroll (promo-scroll) et l'animation float
-   sur les images (promo-float) qui créaient l'effet "escalier" entre
-   cartes voisines.
-   Comportement nouveau : scroll manuel horizontal au doigt, snap sur
-   chaque carte, toutes cartes strictement de la même hauteur. */
+  /* ── HEADER ────────────────────────────────────────────────────── */
+  .k-header-action-label { display: none; }
 
-.k-promo-rail{
-  display: flex !important;
-  gap: 10px !important;
-  overflow-x: auto !important;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 4px var(--pad-x) 12px !important;
-  background: transparent;
-  isolation: isolate;
-  position: relative;
-}
-.k-promo-rail::-webkit-scrollbar{ display: none; }
-
-/* Dégradés gauche/droite : indiquent qu'il y a d'autres cartes à scroller */
-.k-promo-rail::before,
-.k-promo-rail::after{
-  content: '';
-  position: absolute;
-  top: 0; bottom: 4px;
-  width: 20px;
-  z-index: 3;
-  pointer-events: none;
-}
-.k-promo-rail::before{
-  left: 0;
-  background: linear-gradient(to right, var(--sand) 30%, transparent);
-}
-.k-promo-rail::after{
-  right: 0;
-  background: linear-gradient(to left, var(--sand) 30%, transparent);
-}
-
-/* Wrapper interne : si le HTML utilise .k-promo-rail-inner pour héberger
-   l'animation auto-scroll, on le neutralise en display:contents
-   pour que le scroll manuel marche directement sur le rail.
-   Animation supprimée. */
-.k-promo-rail-inner{
-  display: contents !important;
-  animation: none !important;
-}
-
-/* ── Carte promo individuelle ─────────────────────────────────────────── */
-
-.k-promo-card{
-  flex: 0 0 130px !important;
-  scroll-snap-align: start;
-  display: flex !important;
-  flex-direction: column;
-  background: var(--white) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 0 1px 3px rgba(31,48,36,.06) !important;
-  cursor: pointer;
-  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
-  position: relative;
-  min-width: 0;
-}
-.k-promo-card:active{ transform: scale(.97); }
-@media (hover:hover) and (pointer:fine){
-  .k-promo-card:hover{
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(31,48,36,.10) !important;
-  }
-}
-
-/* Image : carrée, cover, taille fixe — pas d'animation float */
-.k-promo-card-img{
-  width: 100% !important;
-  height: 130px !important;
-  object-fit: cover !important;
-  background: #faf8f5;
-  display: block;
-  border-radius: 0 !important;
-  filter: none !important;
-  animation: none !important;
-  flex-shrink: 0;
-}
-
-/* Badge -XX% : coin haut-gauche */
-.k-promo-badge{
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 2;
-  background: var(--coral);
-  color: var(--white);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 50px;
-  box-shadow: 0 2px 6px rgba(200,92,45,.25);
-  letter-spacing: .01em;
-}
-
-/* Zone texte : flex column, hauteur minimum fixée pour uniformité */
-.k-promo-card-info{
-  display: flex !important;
-  flex-direction: column;
-  gap: 3px;
-  padding: 8px 10px 10px !important;
-  background: none !important;
-  min-height: 72px;
-  min-width: 0;
-}
-
-/* Nom : 2 lignes max TOUJOURS réservées (line-clamp + min-height) */
-.k-promo-card-name{
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  line-height: 1.3 !important;
-  color: var(--text) !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  min-height: 2.6em !important;
-  margin: 0 !important;
-  word-wrap: break-word;
-}
-
-/* Prix actuel : sage foncé, gras — pas coral
-   (coral était un peu criard sur fond blanc pour un petit format) */
-.k-promo-card-price{
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  color: var(--text) !important;
-  line-height: 1.2 !important;
-  margin-top: auto !important;
-  display: block !important;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Ancien prix barré : discret en dessous */
-.k-promo-card-old{
-  font-size: 10px !important;
-  color: var(--text-light) !important;
-  text-decoration: line-through;
-  line-height: 1.2 !important;
-  display: block !important;
-  margin: 0 !important;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* On annule explicitement les delays d'animation float des enfants
-   qui créaient l'effet escalier (c'était la cause principale) */
-.k-promo-card:nth-child(2) .k-promo-card-img,
-.k-promo-card:nth-child(3) .k-promo-card-img,
-.k-promo-card:nth-child(4) .k-promo-card-img,
-.k-promo-card:nth-child(5) .k-promo-card-img,
-.k-promo-card:nth-child(6) .k-promo-card-img,
-.k-promo-card:nth-child(7) .k-promo-card-img,
-.k-promo-card:nth-child(8) .k-promo-card-img{
-  animation: none !important;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  ZONE 4 — GRILLE CATALOGUE : cartes uniformes, image 1:1, prix en bas   */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-/* Grille : 2 colonnes mobile, toutes les cartes d'une ligne sont
-   strictement de la même hauteur grâce à grid-auto-rows:1fr + stretch */
-
-.k-grid{
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 10px !important;
-  grid-auto-rows: 1fr !important;
-  align-items: stretch !important;
-  padding: 4px 0 16px !important;
-}
-
-/* ── Carte catalogue : flex column qui remplit sa cellule grid ──────── */
-
-.k-card{
-  display: flex !important;
-  flex-direction: column;
-  height: 100% !important;
-  background: var(--white);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
-  position: relative;
-}
-.k-card:active{ transform: scale(.98); }
-@media (hover:hover) and (pointer:fine){
-  .k-card:hover{
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-}
-
-/* Image wrap : ratio 1:1 forcé pour neutraliser les cascades qui
-   définissaient 3/4 ailleurs dans le fichier (l. 2140 notamment) */
-.k-card-img-wrap{
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1 !important;
-  flex-shrink: 0;
-  overflow: hidden;
-  background: #faf8f5;
-}
-
-/* Image : cover, sans padding — remplit tout le cadre
-   (style e-commerce moderne, pas de blanc autour) */
-.k-card-img{
-  width: 100% !important;
-  height: 100% !important;
-  aspect-ratio: auto !important;
-  object-fit: cover !important;
-  padding: 0 !important;
-  display: block;
-  transition: transform .4s var(--ease);
-}
-@media (hover:hover) and (pointer:fine){
-  .k-card:hover .k-card-img{ transform: scale(1.04); }
-}
-
-/* Zone info : flex column, remplit tout l'espace restant,
-   prix toujours poussé en bas via margin-top:auto */
-.k-card-info{
-  display: flex !important;
-  flex-direction: column;
-  flex: 1 1 auto !important;
-  padding: 10px 10px 12px !important;
-  min-height: 82px !important;
-}
-
-/* Nom produit : 2 lignes max toujours réservées — hauteur constante
-   qu'il y ait 1 ligne ou 2 lignes (évite l'effet escalier) */
-.k-card-name{
-  font-family: var(--font-display) !important;
-  font-size: 13.5px !important;
-  font-weight: 400 !important;
-  line-height: 1.25 !important;
-  color: var(--text) !important;
-  letter-spacing: -.005em;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  min-height: 2.5em !important;
-  margin: 0 !important;
-  font-variation-settings: 'opsz' 14;
-}
-
-/* Ligne bas : prix + badges, collée au bas de la carte */
-.k-card-bottom{
-  margin-top: auto !important;
-  display: flex !important;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 6px;
-  min-height: 1.4em;
-}
-
-/* Prix : lisible, sobre — sage foncé (pas coral criard) */
-.k-card-price{
-  font-family: var(--font);
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  color: var(--text) !important;
-  line-height: 1.2;
-  letter-spacing: -.01em;
-}
-
-/* Ancien prix barré (si présent dans le HTML) : petit, discret */
-.k-card-old-price{
-  font-size: 11px !important;
-  color: var(--text-light) !important;
-  text-decoration: line-through;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-/* Block .k-card-prices (desktop enrichi) : on garde son comportement
-   flex mais on s'assure qu'il reste en bas */
-.k-card-prices{
-  display: flex !important;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 8px;
-}
-
-/* Disques fav (cœur) et add (panier tressé) : gardés tels quels
-   (leurs blocs .k-card-fav et .k-card-add plus haut dans le fichier
-    sont déjà corrects — position absolue, bien placés).
-   On s'assure juste qu'ils restent visibles au-dessus de l'image
-   et pas coupés par overflow:hidden de la carte. */
-.k-card-fav,
-.k-card-add{
-  z-index: 5;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  NOTES TECHNIQUES                                                         */
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*                                                                           */
-/*  Pourquoi des !important partout ?                                        */
-/*  Parce que le CSS source a ~700 lignes de règles sur les cartes avec      */
-/*  des doublons et des surcharges en cascade (l. 516-724 puis 2140 puis    */
-/*  3772-3808). Plutôt que de tout réécrire au risque de casser quelque     */
-/*  chose, on court-circuite en fin de cascade avec des !important ciblés.  */
-/*                                                                           */
-/*  Comportement attendu après application :                                 */
-/*    ✓ Slogan centré bas du hero, ne couvre aucun personnage               */
-/*    ✓ Transparence + blur du slogan conservés                             */
-/*    ✓ Chip "Tout" ring sage au lieu d'orange                              */
-/*    ✓ Rail promo = scroll horizontal au doigt, 4-5 cartes visibles       */
-/*    ✓ Cartes promo TOUTES de la même hauteur (130px img + 72px info)     */
-/*    ✓ Catalogue grille 2 col, cartes toutes de la même hauteur           */
-/*    ✓ Prix toujours collé en bas, quelle que soit la longueur du titre   */
-/*    ✓ Images produits toujours cadrées correctement (cover 1:1)          */
-/*                                                                           */
-/*  Si tu vois un problème après déploiement :                              */
-/*    1. Hard refresh (Ctrl+Shift+R, ou purge cache mobile)                 */
-/*    2. Vérifie avec DevTools que le CSS est bien chargé                   */
-/*    3. Si un élément garde l'ancien style, le nom de sa classe n'est     */
-/*       probablement pas celui que je vise → envoie-moi une capture       */
-/*       avec l'élément sélectionné dans DevTools.                          */
-/*                                                                           */
-/* ═══════════════════════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  KOMERCE BOUTIQUE — FANTAISIE v2.1                                       */
-/*  À coller JUSTE APRÈS le bloc "REFONTE MOBILE v2.0" à la fin de         */
-/*  boutique.css.                                                           */
-/*                                                                           */
-/*  Ajoute le raffinement final :                                           */
-/*    ✦ Rayons 20px (soft UI premium)                                      */
-/*    ✦ Double ombre flottante                                             */
-/*    ✦ Transitions plus soyeuses (400ms)                                  */
-/*    ✦ Gradient subtil en bas d'image (lisibilité + profondeur)          */
-/*    ✦ Scale image au hover desktop                                       */
-/*                                                                           */
-/*  Objectif : élégance mobile-first, sensation "app premium".             */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ── 1. RAYONS 20px — cartes promo + catalogue ────────────────────────── */
-
-.k-promo-card{
-  border-radius: 20px !important;
-}
-
-.k-card{
-  border-radius: 20px !important;
-}
-
-/* L'image doit suivre le rayon de la carte en haut uniquement
-   (le bas est coupé par la zone info). overflow:hidden de la carte
-   suffit déjà, mais on s'assure que le wrap image n'ajoute pas de
-   rayon en bas qui créerait un "trait" visible. */
-.k-card-img-wrap,
-.k-promo-card-img{
-  border-radius: 0 !important;  /* laissé à la carte parent */
-}
-
-
-/* ── 2. DOUBLE OMBRE FLOTTANTE ────────────────────────────────────────── */
-
-/* Ombre plus riche : une ombre proche (définition) + une ombre lointaine
-   (profondeur). Sensation "carte flottante" sans exagérer. */
-
-.k-card{
-  box-shadow:
-    0 1px 2px rgba(31, 48, 36, .05),
-    0 8px 24px rgba(31, 48, 36, .06) !important;
-}
-
-.k-promo-card{
-  box-shadow:
-    0 1px 2px rgba(31, 48, 36, .04),
-    0 6px 16px rgba(31, 48, 36, .05) !important;
-  border: none !important;  /* la border était redondante avec la nouvelle ombre */
-}
-
-/* Hover desktop : ombre plus prononcée + légère élévation */
-@media (hover:hover) and (pointer:fine){
-  .k-card:hover{
-    box-shadow:
-      0 2px 4px rgba(31, 48, 36, .06),
-      0 16px 40px rgba(31, 48, 36, .10) !important;
-    transform: translateY(-4px) !important;
-  }
-  .k-promo-card:hover{
-    box-shadow:
-      0 2px 4px rgba(31, 48, 36, .05),
-      0 12px 28px rgba(31, 48, 36, .08) !important;
-    transform: translateY(-3px) !important;
-  }
-}
-
-
-/* ── 3. TRANSITIONS SOYEUSES (400ms) ──────────────────────────────────── */
-
-.k-card,
-.k-promo-card{
-  transition:
-    transform .4s cubic-bezier(.22, 1, .36, 1),
-    box-shadow .4s cubic-bezier(.22, 1, .36, 1) !important;
-}
-
-.k-card-img{
-  transition: transform .5s cubic-bezier(.22, 1, .36, 1) !important;
-}
-
-
-/* ── 4. GRADIENT SUBTIL EN BAS D'IMAGE (catalogue uniquement) ────────── */
-
-/* Un voile très doux sur le bas de l'image pour renforcer la lisibilité
-   du titre si l'image a un fond clair, et pour créer une transition
-   visuelle plus douce entre image et zone info. */
-
-.k-card-img-wrap{
-  position: relative;
-}
-
-.k-card-img-wrap::after{
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent 70%,
-    rgba(31, 48, 36, .04) 100%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-
-/* ── 5. SCALE IMAGE AU HOVER DESKTOP (plus prononcé) ──────────────────── */
-
-@media (hover:hover) and (pointer:fine){
-  .k-card:hover .k-card-img{
-    transform: scale(1.06) !important;
-  }
-}
-
-
-/* ── 6. BADGE PROMO — arrondi cohérent avec les cartes ────────────────── */
-
-/* Les badges "-15%" étaient déjà en pill (border-radius: 50px).
-   On les conserve, mais on ajoute une ombre plus raffinée. */
-
-.k-promo-badge,
-.k-card-promo{
-  box-shadow:
-    0 2px 6px rgba(200, 92, 45, .25),
-    0 1px 2px rgba(200, 92, 45, .15) !important;
-}
-
-
-/* ── 7. CHIPS CATÉGORIES — photo en rayon continu ────────────────────── */
-
-/* Les photos des chips sont déjà rondes (50%). On adoucit juste
-   l'ombre active pour qu'elle s'aligne avec le nouveau style. */
-
-.k-chip.active .k-chip-photo{
-  box-shadow:
-    0 0 0 3px rgba(74, 144, 64, .18),
-    0 4px 14px rgba(74, 144, 64, .22) !important;
-}
-
-
-/* ── 8. MINI-SLOGAN HERO — cohérence rayon plus généreux ─────────────── */
-
-/* Le slogan est à 14px, on le passe à 18px pour s'aligner avec le
-   nouveau style soft UI. Reste en transparence, juste plus doux. */
-
-@media (max-width: 899px){
-  .k-hero-mini-slogan--premium{
-    border-radius: 18px !important;
-    box-shadow:
-      0 2px 6px rgba(31, 48, 36, .06),
-      0 12px 30px rgba(31, 48, 36, .10) !important;
-  }
-}
-
-
-/* ── 9. RAYON INTERNE DES DISQUES FAV + PANIER ───────────────────────── */
-
-/* Ces 2 disques étaient déjà à 50% (parfaitement ronds).
-   On raffine juste l'ombre pour l'harmoniser. */
-
-.k-card-fav,
-.k-card-add{
-  box-shadow:
-    0 2px 6px rgba(31, 48, 36, .10),
-    0 1px 2px rgba(31, 48, 36, .06),
-    0 0 0 1px rgba(31, 48, 36, .04) !important;
-}
-
-@media (hover:hover) and (pointer:fine){
-  .k-card-add:hover{
-    box-shadow:
-      0 4px 14px rgba(74, 144, 64, .25),
-      0 2px 4px rgba(31, 48, 36, .08),
-      0 0 0 1px rgba(74, 144, 64, .20) !important;
-  }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  FIN FANTAISIE v2.1                                                       */
-/*  Si tu veux doser : réduis les valeurs 20px → 16px dans la zone 1.      */
-/* ═══════════════════════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  KOMERCE BOUTIQUE — MICRO-PATCH v2.2                                     */
-/*  Ajustements :                                                            */
-/*    ✦ Slogan hero : encore plus étroit (ne touche plus les perso)        */
-/*    ✦ Cartes catalogue : espacement titre/prix/prix barré resserré       */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ── 1. SLOGAN HERO : largeur réduite pour rester entre les persos ───── */
-
-@media (max-width: 899px){
-  .k-hero-mini-slogan{
-    /* 58% → 48% : plus étroit, tient dans la zone centrale uniquement */
-    max-width: 48% !important;
-  }
-
-  /* Taille légèrement réduite pour garder la lisibilité dans cet espace */
-  .k-hero-mini-slogan--premium{
-    padding: 6px 12px !important;
-  }
-  .k-hero-mini-slogan--premium .k-line-1{
-    font-size: 11.5px !important;
-  }
-  .k-hero-mini-slogan--premium .k-line-2{
-    font-size: 13.5px !important;
-  }
-}
-
-
-/* ── 2. CARTES CATALOGUE : prix resserrés ─────────────────────────────── */
-
-.k-card-info{
-  padding: 10px 12px 12px !important;
-  min-height: 76px !important;
-  gap: 2px;
-}
-
-.k-card-name{
-  line-height: 1.2 !important;
-  margin-bottom: 0 !important;
-}
-
-.k-card-bottom{
-  padding-top: 4px !important;
-  gap: 2px !important;
-  flex-direction: column;
-  align-items: flex-start !important;
-}
-
-.k-card-price{
-  font-size: 15px !important;
-  line-height: 1.15 !important;
-  margin: 0 !important;
-}
-
-.k-card-old-price{
-  font-size: 11.5px !important;
-  line-height: 1.15 !important;
-  margin: 0 !important;
-  opacity: .75;
-}
-
-.k-card-prices{
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 1px !important;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  KOMERCE BOUTIQUE — MICRO-PATCH v2.3                                     */
-/*  À coller JUSTE APRÈS le bloc v2.2.                                      */
-/*                                                                           */
-/*  Objectif : uniformiser la hauteur des cartes que le produit soit       */
-/*  en promo (prix + ancien prix barré) ou non (prix seul).                */
-/*                                                                           */
-/*  Principe : on RÉSERVE toujours l'espace pour une éventuelle 2e ligne   */
-/*  de prix, même si elle n'existe pas — via min-height sur .k-card-bottom.*/
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ── Zone bas de carte : hauteur minimum garantie pour 2 lignes de prix ─ */
-
-.k-card-bottom{
-  /* 2 lignes de prix × line-height 1.15 × font-size ~15px = ~35px
-     + petit padding haut = ~40px
-     Cette valeur est la même que le produit soit en promo ou non. */
-  min-height: 40px !important;
-
-  /* On garde flex column mais on justifie en haut pour que le prix
-     principal reste collé au titre et la 2e ligne (ancien prix)
-     vienne en dessous si elle existe, sans créer de trou. */
-  display: flex !important;
-  flex-direction: column;
-  justify-content: flex-start !important;
-  align-items: flex-start !important;
-  gap: 1px !important;
-  padding-top: 6px !important;
-}
-
-/* Prix principal : toujours même taille, même ligne de base */
-.k-card-price{
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  color: var(--text) !important;
-  margin: 0 !important;
-  display: block;
-}
-
-/* Ancien prix (absent si pas de promo) : on le rend invisible par
-   défaut en réservant sa place via min-height sur le parent —
-   ce qui garantit que les deux types de cartes ont la même hauteur. */
-.k-card-old-price{
-  font-size: 11.5px !important;
-  font-weight: 500 !important;
-  line-height: 1.2 !important;
-  color: var(--text-light) !important;
-  text-decoration: line-through !important;
-  margin: 0 !important;
-  opacity: .75;
-  display: block;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  Vérification :                                                           */
-/*  - Carte sans promo : 1 ligne de prix, mais .k-card-bottom a           */
-/*    min-height:40px donc reserve la place → même hauteur totale.        */
-/*  - Carte avec promo : 2 lignes, remplit les 40px naturellement.        */
-/*  - Les prix sont TOUJOURS alignés à la même position verticale dans    */
-/*    toutes les cartes d'une même ligne de la grille.                    */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  KOMERCE — PATCH v2.4                                                    */
-/*  1. Bulle slogan : plus petite, ne touche plus les personnages         */
-/*  2. Chips catégories : plus grandes, plus en valeur                    */
-/*  3. Label "Couture" renommé côté HTML → "Spécialement pour vous…"     */
-/*     + wrapping activé pour ce label long                               */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ── 1. BULLE SLOGAN — plus compacte (mobile uniquement) ──────────────── */
-
-@media (max-width: 899px) {
-
-  /* Padding réduit : bulle plus étroite */
-  .k-hero-mini-slogan--premium {
-    padding: 5px 10px !important;
-    border-radius: 12px !important;
-    max-width: 36% !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,.07) !important;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-1 {
-    font-size: 10px !important;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-2 {
-    font-size: 12.5px !important;
-  }
-}
-
-
-/* ── 2. CHIPS CATÉGORIES — taille équilibrée ───────────────────────────── */
-
-/* Mobile : 38px — 7 chips tiennent sans scroller */
-.k-chip-photo {
-  width: 38px !important;
-  height: 38px !important;
-  box-shadow: 0 2px 6px rgba(31,48,36,.10) !important;
-}
-
-.k-chip-label {
-  font-size: 9px !important;
-  font-weight: 600 !important;
-  color: var(--text-muted) !important;
-  white-space: normal !important;
-  text-align: center !important;
-  max-width: 48px !important;
-  line-height: 1.15 !important;
-}
-
-/* Active : ring vert bien visible */
-.k-chip.active .k-chip-photo {
-  box-shadow:
-    0 0 0 2.5px var(--ocean),
-    0 3px 12px rgba(74,144,64,.22) !important;
-  border-color: var(--ocean) !important;
-}
-
-.k-chip.active .k-chip-label {
-  color: var(--ocean-dark) !important;
-  font-weight: 700 !important;
-}
-
-/* Chip "Tout" : cercle sans image, texte stylisé à l'intérieur */
-.k-chip[data-cat="all"] .k-chip-photo {
-  background: var(--ocean-dark) !important;
-  overflow: hidden !important;
-}
-/* Cacher l'image si elle existe encore dans le DOM */
-.k-chip[data-cat="all"] .k-chip-photo img {
-  display: none !important;
-}
-
-/* Desktop */
-@media (min-width: 900px) {
-  .k-chip-photo { width: 62px !important; height: 62px !important; }
-  .k-chip-label { font-size: 11.5px !important; max-width: 66px !important; }
-}
-@media (min-width: 1200px) {
-  .k-chip-photo { width: 70px !important; height: 70px !important; }
-  .k-chip-label { font-size: 12px !important; max-width: 74px !important; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  FIN PATCH v2.4                                                          */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH : slogan transparent (mobile) — ne masque plus le fond           */
-/* ═══════════════════════════════════════════════════════════════════════ */
-@media (max-width: 899px){
-  .k-hero-mini-slogan--premium{
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    padding: 2px 6px !important;
-  }
-  /* Taille agrandie */
-  .k-hero-mini-slogan--premium .k-line-1{
-    font-size: 14px !important;
-    color: var(--text) !important;
-    text-shadow:
-      0 1px 2px rgba(255,255,255,.95),
-      0 0 6px rgba(255,255,255,.8),
-      0 0 12px rgba(255,255,255,.6) !important;
-  }
-  /* "trouve bien !" en coral — couleur de la palette, fait écho aux promos */
-  .k-hero-mini-slogan--premium .k-line-2{
-    font-size: 17px !important;
-    color: var(--coral) !important;
-    font-weight: 900 !important;
-    text-shadow:
-      0 1px 2px rgba(255,255,255,.95),
-      0 0 6px rgba(255,255,255,.85),
-      0 0 14px rgba(255,255,255,.6) !important;
-  }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH DESKTOP — hero compact, slogan centré, chips équilibrées         */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-@media (min-width: 900px){
-
-  /* 1. HERO : hauteur raisonnable */
-  .k-hero-media{
-    max-height: 340px !important;
-  }
-  .k-hero-img{
-    max-height: 340px !important;
-    object-fit: cover !important;
-    object-position: center 30% !important;
-  }
-  .k-hero-inner{
-    padding: 20px var(--pad-x) !important;
-    min-height: 0 !important;
-  }
-
-  /* 2. SLOGAN : centré horizontalement sur l'image, plus présent */
-  .k-hero-mini-slogan{
-    display: block !important;
-    position: absolute !important;
-    top: 20px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 3 !important;
-    max-width: 60% !important;
-    text-align: center !important;
-  }
-
-  .k-hero-mini-slogan--premium{
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    padding: 6px 16px !important;
-    text-align: center !important;
-    align-items: center !important;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-1{
-    font-size: 22px !important;
-    color: var(--text) !important;
-    font-weight: 800 !important;
-    text-shadow:
-      0 1px 2px rgba(255,255,255,.95),
-      0 0 10px rgba(255,255,255,.85),
-      0 0 20px rgba(255,255,255,.6) !important;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-2{
-    font-size: 28px !important;
-    color: var(--coral) !important;
-    font-weight: 900 !important;
-    text-shadow:
-      0 1px 2px rgba(255,255,255,.95),
-      0 0 10px rgba(255,255,255,.9),
-      0 0 22px rgba(255,255,255,.6) !important;
-  }
-
-  /* Retirer le trait orange sous "trouve bien" sur desktop (redondant) */
-  .k-hero-mini-slogan--premium .k-line-2::after{
-    display: none !important;
-  }
-
-  /* 3. OVERLAY : on cache le titre doublon, on centre pills + proverbe */
-  .k-hero-overlay .k-hero-text-left{
-    display: none !important;
-  }
-  .k-hero-overlay{
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 10px !important;
-    padding: 14px var(--pad-x) !important;
-    max-width: 100% !important;
-  }
-  .k-hero-right-col{
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 8px !important;
-    width: 100% !important;
-  }
-  .k-hero-pills{
-    justify-content: center !important;
-  }
-  .k-hero-proverb-inline{
-    text-align: center !important;
-    font-style: italic !important;
-    color: var(--text-muted) !important;
-    font-size: 13px !important;
-  }
-
-  /* 4. CHIPS : centrées avec gap cohérent, taille raisonnable */
-  .k-cats{
-    justify-content: center !important;
-    gap: 28px !important;
-    padding: 14px var(--pad-x) 18px !important;
-    overflow-x: hidden !important;
-  }
-  .k-chip{
-    flex: 0 0 auto !important;
-    min-width: 90px !important;
-  }
-  .k-chip-photo{
-    width: 72px !important;
-    height: 72px !important;
-  }
-  .k-chip-label{
-    font-size: 13px !important;
-    max-width: 100px !important;
-    white-space: normal !important;
-  }
-}
-
-@media (min-width: 1200px){
-  .k-chip-photo{
-    width: 84px !important;
-    height: 84px !important;
-  }
-  .k-chip-label{
-    font-size: 14px !important;
-  }
-  .k-cats{
-    gap: 36px !important;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  FIN PATCH DESKTOP                                                       */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH — cartes catalogue mobile plus compactes pour voir plus de produits */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-@media (max-width: 899px) {
-  /* Image des cartes : ratio rectangle au lieu de carré
-     → gain de hauteur sans sacrifier la lisibilité */
-  .k-card-img{
-    aspect-ratio: 4/3 !important;
-    padding: 6px 8px !important;
-  }
-
-  /* Zone info resserrée */
-  .k-card-info{
-    padding: 8px 10px 10px !important;
-    min-height: 0 !important;
-  }
-
-  .k-card-name{
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-    -webkit-line-clamp: 2 !important;
-  }
-
-  .k-card-bottom{
-    min-height: 32px !important;
-    padding-top: 2px !important;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH — barre de recherche plus compacte (mobile)                       */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-@media (max-width: 899px) {
-  .k-search input {
-    height: 30px !important;
-    font-size: 12.5px !important;
-    padding: 0 10px 0 30px !important;
-  }
-
-  .k-search-icon {
-    width: 15px !important;
-    height: 15px !important;
-    left: 9px !important;
-  }
-
-  /* Header un poil plus compact aussi */
-  .k-header {
-    height: 42px !important;
-  }
-  .k-header-inner {
-    gap: 8px !important;
-  }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH — Rail Soldes compact (carrousel horizontal teaser)              */
-/*  Les cartes promo doivent être de petits teasers, pas des cartes pleine */
-/*  taille. Force la hauteur et largeur.                                   */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-@media (max-width: 899px){
-  /* Section Soldes : padding compact */
-  #k-promos-section{
-    padding: 4px 10px 8px !important;
-  }
-
-  #k-promos-section .k-section-head{
-    margin-bottom: 4px !important;
-  }
-
-  #k-promos-section .k-section-head h2{
-    font-size: 15px !important;
-    font-weight: 700 !important;
-  }
-
-  /* Rail horizontal : scroll, hauteur limitée */
-  #k-promo-rail{
-    display: flex !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    gap: 10px !important;
-    padding: 4px 0 8px !important;
-    scroll-snap-type: x mandatory !important;
-    scrollbar-width: none !important;
-  }
-  #k-promo-rail::-webkit-scrollbar{ display: none !important; }
-
-  /* CHAQUE enfant du rail : petit teaser ~140px large */
-  #k-promo-rail > *{
-    flex: 0 0 140px !important;
-    max-width: 140px !important;
-    scroll-snap-align: start !important;
-  }
-
-  /* Image compacte à l'intérieur */
-  #k-promo-rail > * img,
-  #k-promo-rail .k-card-img,
-  #k-promo-rail .k-promo-card-img{
-    width: 100% !important;
-    height: 120px !important;
-    object-fit: cover !important;
-    border-radius: 10px !important;
-  }
-
-  /* Infos (nom, prix) compactes */
-  #k-promo-rail .k-card-info,
-  #k-promo-rail .k-promo-card-info{
-    padding: 6px 4px !important;
-    min-height: 0 !important;
-  }
-
-  #k-promo-rail .k-card-name,
-  #k-promo-rail .k-promo-card-name{
-    font-size: 11.5px !important;
-    line-height: 1.2 !important;
-    -webkit-line-clamp: 2 !important;
-    margin: 0 !important;
-  }
-
-  #k-promo-rail .k-card-price,
-  #k-promo-rail .k-promo-card-price{
-    font-size: 12.5px !important;
-    font-weight: 700 !important;
-    line-height: 1.2 !important;
-  }
-
-  #k-promo-rail .k-card-old-price,
-  #k-promo-rail .k-promo-card-old{
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-  }
-
-  /* Badge promo plus petit */
-  #k-promo-rail .k-card-promo,
-  #k-promo-rail .k-promo-badge{
-    font-size: 9px !important;
-    padding: 2px 6px !important;
-    top: 4px !important;
-    left: 4px !important;
-  }
-
-  /* Cœur favoris caché dans le rail pour économiser l'espace */
-  #k-promo-rail .k-card-fav{
-    display: none !important;
-  }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH FINAL — visuel équilibré mobile                                  */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-@media (max-width: 899px){
-
-  /* ── Section Soldes : force le rail horizontal compact ─────────────── */
-  #k-promos-section{
-    padding: 6px 10px 10px !important;
-  }
-
-  #k-promo-rail,
-  .k-promo-rail{
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    gap: 10px !important;
-    padding: 4px 0 8px !important;
-    scroll-snap-type: x mandatory !important;
-    scrollbar-width: none !important;
-  }
-  #k-promo-rail::-webkit-scrollbar,
-  .k-promo-rail::-webkit-scrollbar{ display: none !important; }
-
-  /* Chaque carte dans le rail promo : taille fixe compacte */
-  #k-promo-rail > *,
-  .k-promo-rail > *,
-  #k-promo-rail .k-card,
-  .k-promo-rail .k-card{
-    flex: 0 0 140px !important;
-    width: 140px !important;
-    max-width: 140px !important;
-    min-width: 140px !important;
-    scroll-snap-align: start !important;
-  }
-
-  /* Image dans la carte promo : hauteur fixe 120px, aspect cover */
-  #k-promo-rail .k-card-img,
-  .k-promo-rail .k-card-img,
-  #k-promo-rail .k-promo-card-img,
-  .k-promo-rail .k-promo-card-img{
-    height: 120px !important;
-    max-height: 120px !important;
-    aspect-ratio: unset !important;
-    width: 100% !important;
-    object-fit: cover !important;
-    padding: 0 !important;
-  }
-
-  #k-promo-rail .k-card-img-wrap,
-  .k-promo-rail .k-card-img-wrap{
-    height: 120px !important;
-    max-height: 120px !important;
-    padding: 0 !important;
-  }
-
-  /* Infos compactes dans le rail promo */
-  #k-promo-rail .k-card-info,
-  .k-promo-rail .k-card-info{
-    padding: 6px 8px 8px !important;
-    min-height: 0 !important;
-  }
-  #k-promo-rail .k-card-name,
-  .k-promo-rail .k-card-name{
-    font-size: 11.5px !important;
-    line-height: 1.2 !important;
-    -webkit-line-clamp: 2 !important;
-  }
-  #k-promo-rail .k-card-price,
-  .k-promo-rail .k-card-price{
-    font-size: 12.5px !important;
-  }
-  #k-promo-rail .k-card-old-price,
-  .k-promo-rail .k-card-old-price{
-    font-size: 10px !important;
-  }
-  #k-promo-rail .k-card-bottom,
-  .k-promo-rail .k-card-bottom{
-    min-height: 0 !important;
-    padding-top: 2px !important;
-  }
-  #k-promo-rail .k-card-fav,
-  #k-promo-rail .k-card-add,
-  .k-promo-rail .k-card-fav,
-  .k-promo-rail .k-card-add{
-    display: none !important;
-  }
-  #k-promo-rail .k-card-promo,
-  .k-promo-rail .k-card-promo{
-    font-size: 9px !important;
-    padding: 2px 6px !important;
-    top: 4px !important;
-    left: 4px !important;
-  }
-
-  /* ── Cartes catalogue principal : compactes aussi ─────────────────── */
-  #k-grid .k-card-img{
-    aspect-ratio: 4/3 !important;
-    padding: 6px !important;
-  }
-
-  #k-grid .k-card-info{
-    padding: 8px 10px 10px !important;
-  }
-
-  #k-grid .k-card-name{
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-  }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH ULTIME — ciblage exact de la structure JS                        */
-/*  Le JS génère : <div class="k-promo-rail"><div class="k-promo-rail-inner"> */
-/*    <div class="k-promo-card">...</div> (x N, dupliqué pour scroll auto) */
-/*  </div></div>                                                            */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-@media (max-width: 899px){
-  /* Section Soldes : padding compact */
-  #k-promos-section{
-    padding: 6px 10px 10px !important;
-  }
-
-  /* Wrapper rail : largeur full, overflow caché (l'animation se charge du scroll) */
-  #k-promo-rail,
-  .k-promo-rail{
-    overflow: hidden !important;
-    padding: 4px 0 !important;
-  }
-
-  /* Inner : flex horizontal animé */
-  .k-promo-rail-inner{
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 10px !important;
-    width: max-content !important;
-  }
-
-  /* CHAQUE carte promo : 140px fixe */
-  .k-promo-rail-inner .k-promo-card,
-  .k-promo-rail .k-promo-card{
-    flex: 0 0 140px !important;
-    width: 140px !important;
-    min-width: 140px !important;
-    max-width: 140px !important;
-    height: auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Image de la carte promo */
-  .k-promo-rail-inner .k-promo-card-img,
-  .k-promo-rail .k-promo-card-img{
-    width: 140px !important;
-    height: 120px !important;
-    max-height: 120px !important;
-    object-fit: cover !important;
-    border-radius: 10px !important;
-    padding: 0 !important;
-    filter: none !important;
-    animation: none !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,.08) !important;
-  }
-
-  /* Info bloc sous l'image */
-  .k-promo-rail-inner .k-promo-card-info,
-  .k-promo-rail .k-promo-card-info{
-    padding: 6px 4px 0 !important;
-    min-height: 0 !important;
-  }
-
-  .k-promo-rail-inner .k-promo-card-name,
-  .k-promo-rail .k-promo-card-name{
-    font-size: 11px !important;
-    line-height: 1.2 !important;
-    -webkit-line-clamp: 2 !important;
-  }
-
-  .k-promo-rail-inner .k-promo-card-price,
-  .k-promo-rail .k-promo-card-price{
-    font-size: 12px !important;
-    margin-top: 2px !important;
-  }
-
-  .k-promo-rail-inner .k-promo-card-old,
-  .k-promo-rail .k-promo-card-old{
-    font-size: 10px !important;
-  }
-
-  /* Badge promo */
-  .k-promo-rail-inner .k-promo-badge,
-  .k-promo-rail .k-promo-badge{
-    font-size: 9px !important;
-    padding: 2px 6px !important;
-    top: 4px !important;
-    left: 4px !important;
-  }
-}
+  .k-hero-pills::-webkit-scrollbar { display: none; }
 
-/* ═══════════════════════════════════════════════════════════════════════ */
+} /* fin @media (max-width: 899px) */
