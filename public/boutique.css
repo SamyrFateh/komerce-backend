@@ -5477,3 +5477,198 @@ body{
     gap: 8px !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  KOMERCE — PATCH FINAL v3.0                                             */
+/*  Promos : scrollable + cartes carrées arrondies compactes               */
+/*  Objectif : promos + catalogue tous deux visibles dès l'accueil         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px) {
+
+/* ── SECTION PROMOS : ultra-compact ──────────────────────────────────── */
+#k-promos-section {
+  padding: 4px 0 2px !important;
+  margin-bottom: 0 !important;
+}
+
+#k-promos-section .k-section-head {
+  margin-bottom: 4px !important;
+  padding: 0 12px !important;
+}
+
+#k-promos-section .k-section-head h2 {
+  font-size: 14px !important;
+}
+
+/* ── RAIL PROMO : SCROLLABLE ─────────────────────────────────────────── */
+/* Overrides the overflow:hidden that was blocking scroll */
+#k-promo-rail,
+.k-promo-rail {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overflow: visible !important;
+  overflow-x: auto !important;
+  gap: 10px !important;
+  padding: 4px 12px 8px !important;
+  max-height: none !important;
+  scroll-snap-type: x proximity !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+}
+
+#k-promo-rail::-webkit-scrollbar,
+.k-promo-rail::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Fade edges removed */
+#k-promo-rail::before,
+#k-promo-rail::after,
+.k-promo-rail::before,
+.k-promo-rail::after {
+  display: none !important;
+}
+
+/* Inner wrapper : flatten so scroll works on the rail itself */
+.k-promo-rail-inner {
+  display: contents !important;
+  animation: none !important;
+}
+
+/* ── CARTES PROMO : CARRÉES ARRONDIES COMPACTES ──────────────────────── */
+.k-promo-card,
+.k-promo-rail .k-promo-card,
+.k-promo-rail-inner .k-promo-card,
+#k-promo-rail .k-promo-card,
+#k-promo-rail > * {
+  flex: 0 0 100px !important;
+  width: 100px !important;
+  min-width: 100px !important;
+  max-width: 100px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  scroll-snap-align: start !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  background: var(--white) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08) !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Image : carrée, arrondie en haut */
+.k-promo-card-img,
+.k-promo-rail .k-promo-card-img,
+.k-promo-rail-inner .k-promo-card-img,
+#k-promo-rail .k-promo-card-img,
+#k-promo-rail .k-card-img,
+#k-promo-rail > * img {
+  width: 100px !important;
+  height: 100px !important;
+  max-height: 100px !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  filter: none !important;
+  animation: none !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+}
+
+#k-promo-rail .k-card-img-wrap,
+.k-promo-rail .k-card-img-wrap {
+  height: 100px !important;
+  max-height: 100px !important;
+  padding: 0 !important;
+}
+
+/* Info : très compact sous l'image */
+.k-promo-card-info,
+.k-promo-rail .k-promo-card-info,
+.k-promo-rail-inner .k-promo-card-info,
+#k-promo-rail .k-promo-card-info,
+#k-promo-rail .k-card-info {
+  padding: 4px 6px 6px !important;
+  min-height: 0 !important;
+  gap: 1px !important;
+}
+
+/* Nom : 1 ligne max */
+.k-promo-card-name,
+.k-promo-rail .k-promo-card-name,
+#k-promo-rail .k-promo-card-name,
+#k-promo-rail .k-card-name {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  min-height: 0 !important;
+  -webkit-line-clamp: 1 !important;
+  margin: 0 !important;
+  font-weight: 600 !important;
+}
+
+/* Prix : compact */
+.k-promo-card-price,
+.k-promo-rail .k-promo-card-price,
+#k-promo-rail .k-promo-card-price,
+#k-promo-rail .k-card-price {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  margin-top: 1px !important;
+  color: var(--coral) !important;
+}
+
+/* Ancien prix : caché pour gagner de la place */
+.k-promo-card-old,
+.k-promo-rail .k-promo-card-old,
+#k-promo-rail .k-promo-card-old,
+#k-promo-rail .k-card-old-price {
+  display: none !important;
+}
+
+/* Badge promo : petit, en haut à gauche */
+.k-promo-badge,
+.k-promo-rail .k-promo-badge,
+#k-promo-rail .k-promo-badge,
+#k-promo-rail .k-card-promo {
+  font-size: 8px !important;
+  padding: 2px 5px !important;
+  top: 4px !important;
+  left: 4px !important;
+  border-radius: 50px !important;
+}
+
+/* Cacher favoris/panier dans les promos */
+#k-promo-rail .k-card-fav,
+#k-promo-rail .k-card-add,
+.k-promo-rail .k-card-fav,
+.k-promo-rail .k-card-add {
+  display: none !important;
+}
+
+/* ── SÉPARATEUR PROVERBE : caché ─────────────────────────────────────── */
+.k-editorial-sep,
+.k-proverbe,
+[class*="proverbe"],
+[class*="editorial-sep"] {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ── GRILLE CATALOGUE : commence tout de suite ───────────────────────── */
+#k-grid-section {
+  padding-top: 4px !important;
+  margin-top: 0 !important;
+}
+
+} /* end @media max-width 899px */
