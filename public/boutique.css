@@ -2116,7 +2116,7 @@ body{
 
   /* ── A. GLOBAL — prevent sticky-breaking overflow ──── */
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip; /* clip doesn't break fixed positioning, hidden does */
   }
   body {
     padding-bottom: 64px; /* space for fixed bottom nav */
@@ -2126,8 +2126,11 @@ body{
   .k-header {
     height: 44px;
     padding: 0 8px;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     z-index: 100;
     background: #fff;
     box-shadow: 0 1px 2px rgba(0,0,0,.06);
@@ -2224,8 +2227,7 @@ body{
 
   /* ── E. STICKY CATEGORY BAR ────────────────────────── */
   .k-hero-cats-sticky {
-    position: sticky;
-    top: 44px; /* matches header height */
+    position: relative; /* inside fixed wrap, no need for sticky */
     z-index: 90;
     background: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
@@ -2445,6 +2447,37 @@ body{
     padding-bottom: env(safe-area-inset-bottom);
   }
   .k-bnav-label { font-size: 9px; }
+
+  /* ── FIXED LAYOUT — header + hero/cats fixed, content scrolls ── */
+  #k-hero-fixed-wrap {
+    position: fixed;
+    top: 44px; /* below header */
+    left: 0;
+    right: 0;
+    z-index: 90;
+    background: #fff;
+  }
+
+  #k-page-scroll {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 1;
+    padding-bottom: 56px; /* space for bottom nav */
+    /* top is set dynamically by JS based on wrap height */
+  }
+
+  #k-bar-spacer {
+    display: none; /* not needed with fixed layout */
+  }
+
+  /* Hide "Panier" text overflow in header */
+  .k-header-action-label {
+    display: none !important;
+  }
 
   /* ── J. MISC ───────────────────────────────────────── */
   #k-bar-spacer { height: 52px; }

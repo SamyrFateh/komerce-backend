@@ -4,8 +4,8 @@
 <script>
 /* Nuclear SW reset v100 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v100'))return;
-  localStorage.setItem('sw_reset_v100','1');
+  if(localStorage.getItem('sw_reset_v19'))return;
+  localStorage.setItem('sw_reset_v19','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     if(!regs.length){location.reload(true);return;}
@@ -47,7 +47,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=1776637998">
+<link rel="stylesheet" href="/boutique.css?v=1776638396">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -339,7 +339,7 @@ if('serviceWorker' in navigator){
       var h = wrap.offsetHeight;
       spacer.style.display = 'none'; // spacer not needed with fixed scroll
       var scroll = document.getElementById('k-page-scroll');
-      if (scroll) scroll.style.top = h + 'px';
+      if (scroll) scroll.style.top = (h + 44) + 'px'; // 44px = header height
     }
     update();
     // Re-mesure après chargement de l'image hero
@@ -441,122 +441,8 @@ if('serviceWorker' in navigator){
   })();
 </script>
 <script src="/komerce-api.js?v=1776626686"></script>
-<script src="/boutique.js?v=1776637998"></script>
+<script src="/boutique.js?v=1776638396"></script>
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
-<script>
-(function(){
-  if(window.innerWidth>=900) return;
-  function sp(el,prop,val){el.style.setProperty(prop,val,'important');}
-  function fixMobile(){
-    // CHIPS
-    document.querySelectorAll('.k-chip').forEach(function(el){
-      sp(el,'min-width','44px');sp(el,'max-width','56px');sp(el,'flex','0 0 auto');
-      sp(el,'gap','3px');sp(el,'padding','2px 0');
-    });
-    document.querySelectorAll('.k-chip-photo').forEach(function(el){
-      sp(el,'width','36px');sp(el,'height','36px');sp(el,'border-radius','50%');
-    });
-    document.querySelectorAll('.k-chip-label').forEach(function(el){
-      sp(el,'font-size','8px');sp(el,'line-height','1');sp(el,'white-space','nowrap');
-    });
-    // CATS container
-    var cats=document.querySelector('.k-cats');
-    if(cats){
-      sp(cats,'display','flex');sp(cats,'flex-wrap','nowrap');sp(cats,'overflow-x','auto');
-      sp(cats,'justify-content','flex-start');sp(cats,'gap','6px');sp(cats,'padding','6px 12px');
-      sp(cats,'overflow-y','hidden');sp(cats,'scrollbar-width','none');
-      sp(cats,'-webkit-overflow-scrolling','touch');
-    }
-    // PROMO RAIL
-    var rail=document.getElementById('k-promo-rail');
-    if(rail){
-      sp(rail,'overflow-x','auto');sp(rail,'overflow-y','hidden');
-      sp(rail,'scroll-snap-type','x mandatory');sp(rail,'display','flex');
-      sp(rail,'padding','2px 0 6px');
-    }
-    document.querySelectorAll('.k-promo-rail-inner').forEach(function(el){
-      sp(el,'display','flex');sp(el,'flex-wrap','nowrap');sp(el,'gap','8px');
-      sp(el,'width','max-content');sp(el,'animation','none');sp(el,'transform','none');
-    });
-    document.querySelectorAll('.k-promo-card').forEach(function(el){
-      sp(el,'flex','0 0 110px');sp(el,'width','110px');sp(el,'min-width','110px');
-      sp(el,'max-width','110px');sp(el,'scroll-snap-align','start');
-    });
-    document.querySelectorAll('.k-promo-card-img').forEach(function(el){
-      sp(el,'width','110px');sp(el,'height','100px');sp(el,'max-height','100px');
-      sp(el,'object-fit','cover');sp(el,'border-radius','14px');sp(el,'animation','none');
-    });
-    document.querySelectorAll('.k-promo-badge').forEach(function(el){
-      sp(el,'position','absolute');sp(el,'top','5px');sp(el,'left','5px');
-      sp(el,'font-size','8px');sp(el,'padding','2px 5px');sp(el,'z-index','2');
-    });
-    document.querySelectorAll('.k-promo-card-info').forEach(function(el){
-      sp(el,'padding','3px 2px 0');sp(el,'min-height','0');
-    });
-    document.querySelectorAll('.k-promo-card-name').forEach(function(el){
-      sp(el,'font-size','10px');sp(el,'line-height','1.2');sp(el,'overflow','hidden');
-      sp(el,'display','-webkit-box');sp(el,'-webkit-line-clamp','1');sp(el,'-webkit-box-orient','vertical');
-    });
-    document.querySelectorAll('.k-promo-card-price').forEach(function(el){
-      sp(el,'font-size','11px');sp(el,'margin-top','1px');
-    });
-    document.querySelectorAll('.k-promo-card-old').forEach(function(el){
-      sp(el,'display','none');
-    });
-    // CATALOG GRID
-    var grid=document.querySelector('.k-grid');
-    if(grid){
-      sp(grid,'display','grid');sp(grid,'grid-template-columns','repeat(2, 1fr)');
-      sp(grid,'gap','8px');sp(grid,'padding','6px 12px 12px');
-    }
-    document.querySelectorAll('.k-card').forEach(function(el){
-      sp(el,'border-radius','12px');sp(el,'overflow','hidden');
-    });
-    document.querySelectorAll('.k-card-img-wrap').forEach(function(el){
-      sp(el,'aspect-ratio','4/3');sp(el,'max-height','140px');sp(el,'overflow','hidden');sp(el,'padding','0');
-    });
-    document.querySelectorAll('.k-card-img').forEach(function(el){
-      sp(el,'width','100%');sp(el,'height','100%');sp(el,'object-fit','cover');sp(el,'padding','0');
-    });
-    document.querySelectorAll('.k-card-info').forEach(function(el){sp(el,'padding','6px 8px 8px');});
-    document.querySelectorAll('.k-card-name').forEach(function(el){
-      sp(el,'font-size','12px');sp(el,'overflow','hidden');sp(el,'display','-webkit-box');
-      sp(el,'-webkit-line-clamp','2');sp(el,'-webkit-box-orient','vertical');
-    });
-    document.querySelectorAll('.k-card-price').forEach(function(el){sp(el,'font-size','13px');});
-    document.querySelectorAll('.k-card-add').forEach(function(el){
-      sp(el,'width','32px');sp(el,'height','32px');sp(el,'font-size','16px');
-    });
-    // BOTTOM NAV
-    var bnav=document.querySelector('.k-bnav');
-    if(bnav){
-      sp(bnav,'position','fixed');sp(bnav,'bottom','0');sp(bnav,'left','0');
-      sp(bnav,'right','0');sp(bnav,'z-index','1000');sp(bnav,'background','#fff');
-      sp(bnav,'box-shadow','0 -1px 6px rgba(0,0,0,.08)');
-    }
-    // HIDE BADGES
-    document.querySelectorAll('.k-hero-badge,.k-hero-overlay,.k-hero-pills').forEach(function(el){
-      sp(el,'display','none');
-    });
-    // BODY
-    document.body.style.setProperty('padding-bottom','60px','important');
-  }
-  // Run after DOM is ready
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){setTimeout(fixMobile,100);});
-  } else {
-    setTimeout(fixMobile,100);
-  }
-  // Re-run after JS renders content
-  setTimeout(fixMobile,500);
-  setTimeout(fixMobile,1500);
-  setTimeout(fixMobile,3000);
-  // MutationObserver to catch dynamic content
-  var obs=new MutationObserver(function(){fixMobile();});
-  obs.observe(document.body||document.documentElement,{childList:true,subtree:true});
-  // Also on resize
-  window.addEventListener('resize',function(){if(window.innerWidth<900)fixMobile();});
-})();
-</script>
+<!-- fixMobile removed v19 -->
 </html>
