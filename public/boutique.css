@@ -348,7 +348,7 @@ body{
 }
 
 .k-promo-card{
-  flex: 0 0 110px;scroll-snap-align:start;
+  flex: 0 0 110px !important;scroll-snap-align:start;
   background:transparent !important;
   border:none !important;
   border-radius:0;
@@ -361,8 +361,7 @@ body{
 }
 .k-promo-card:active{transform:scale(.97)}
 .k-promo-card-img{
-  width:100%;height:100px;border-radius:14px;
-  border-radius:4px;
+  width:100% !important;height:100px !important;border-radius:4px !important;
   box-shadow:none;
   object-fit:contain;
   background:transparent;
@@ -435,8 +434,8 @@ body{
    Pattern Instagram Stories adapté shopping.
    Image circulaire avec ring coloré en actif, label en dessous. */
 .k-chip{
-  flex:0 0 auto;
-  min-width:44px; max-width:56px;
+  flex:0 0 auto !important;
+  min-width:44px !important; max-width:56px !important;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -450,8 +449,8 @@ body{
 }
 .k-chip-photo{
   position:relative;
-  width:36px;
-  height:36px;
+  width:36px !important;
+  height:36px !important;
   border-radius:50%;
   overflow:hidden;
   background:var(--sand);
@@ -470,7 +469,7 @@ body{
   display:block;
 }
 .k-chip-label{
-  font-size:8px;
+  font-size:8px !important;
   font-weight:600;
   letter-spacing:.02em;
   color:var(--text-muted);
@@ -1478,7 +1477,7 @@ body{
    1200px+ à 5, 1600px+ à 6. Fini les cards étirées sur 1920.
    Hero height géré par clamp() sur .k-hero img (pas d'override ici). */
 @media(min-width:480px){
-  .k-promo-card{flex: 0 0 120px}
+  .k-promo-card{/* removed — base handles mobile */}
   .k-card-basket-icon{width:32px;height:32px}
   .k-card-fav{width:30px;height:30px;top:8px;right:8px;font-size:14px}
 }
@@ -1605,7 +1604,7 @@ body{
 /* Very small screens */
 @media(max-width:380px){
   .k-logo-text{display:block;font-size:14px}
-  .k-promo-card{flex: 0 0 110px}
+  .k-promo-card{/* base handles this */}
   .k-grid{gap:6px;padding:4px 0 12px}
 }
 
