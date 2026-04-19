@@ -3943,3 +3943,470 @@ body{
 /* ═══════════════════════════════════════════════════════════════════════ */
 
 }
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  KOMERCE BOUTIQUE — REFONTE MOBILE v2.0                                   */
+/*  Date : 19 avril 2026                                                    */
+/*                                                                           */
+/*  Scope :                                                                  */
+/*    1. Hero (slogan recentré + transparence préservée)                   */
+/*    2. Chips catégories (active sage au lieu de coral)                   */
+/*    3. Rail promo (vrai scroll horizontal, cartes 130px uniformes)       */
+/*    4. Grille catalogue (cartes uniformes, image 1:1, prix en bas)       */
+/*                                                                           */
+/*  Ce qui ne bouge pas : header, modals, cart drawer, bottom nav,         */
+/*  search, hero sticky bar, proverbe séparateur, toasts, etc.             */
+/*                                                                           */
+/*  ╔════════════════════════════════════════════════════════════════════╗ */
+/*  ║ MODE D'EMPLOI                                                       ║ */
+/*  ║                                                                     ║ */
+/*  ║ Colle CE fichier À LA TOUTE FIN de boutique.css.                   ║ */
+/*  ║ La spécificité CSS + quelques !important ciblés court-circuitent   ║ */
+/*  ║ les blocs précédents qui créaient les conflits.                    ║ */
+/*  ║                                                                     ║ */
+/*  ║ Hard refresh (Ctrl+Shift+R / mobile : vider cache) après push.     ║ */
+/*  ║                                                                     ║ */
+/*  ║ Pour rollback : supprimer ce bloc et rebuild.                      ║ */
+/*  ╚════════════════════════════════════════════════════════════════════╝ */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ZONE 1 — HERO : slogan recentré, transparence conservée                 */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Le hero garde son image cover + sa bulle 👀.
+   Le mini-slogan mobile (actuellement bottom-left) est recentré au
+   centre-bas pour ne plus couvrir le personnage de gauche (l'afro).
+   L'effet verre dépoli (blur + transparence sand) est CONSERVÉ. */
+
+/* Image : recentrée un peu plus haut pour dégager le centre-bas */
+.k-hero-img{
+  object-position: center 30% !important;
+}
+
+/* Mini-slogan mobile : CENTRE-BAS au lieu de bottom-left */
+@media (max-width: 899px){
+  .k-hero-mini-slogan{
+    /* Reset position gauche actuelle */
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+
+    /* Position verticale : bien en bas mais pas collé */
+    bottom: 14px !important;
+
+    /* Largeur : contrainte pour rester dans la zone "vide"
+       entre les 2 personnages (gauche + droite) */
+    max-width: 58% !important;
+    width: auto;
+
+    /* Texte centré dans le rectangle de verre */
+    text-align: center;
+    z-index: 3;
+  }
+
+  /* On neutralise l'animation float pour que le slogan reste stable
+     (c'était une source d'imprécision visuelle).
+     Si tu veux la garder, supprime les 3 lignes ci-dessous. */
+  .k-hero-mini-slogan--premium,
+  .k-hero-title--premium{
+    animation: none !important;
+  }
+
+  /* Slogan premium : on garde transparence + blur, on ajuste juste
+     la lisibilité sur l'image (ombre texte très légère). */
+  .k-hero-mini-slogan--premium{
+    padding: 8px 14px !important;
+    border-radius: 14px !important;
+    background: rgba(253,250,245,.78) !important;
+    backdrop-filter: blur(8px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(1.1) !important;
+    box-shadow: 0 4px 16px rgba(31,48,36,.10);
+  }
+
+  /* Tailles lignes : légèrement réduites pour que ça tienne bien
+     dans les 58% de largeur sans dépasser */
+  .k-hero-mini-slogan--premium .k-line-1{
+    font-size: 12.5px !important;
+    line-height: 1.2;
+  }
+  .k-hero-mini-slogan--premium .k-line-2{
+    font-size: 15px !important;
+    line-height: 1.2;
+  }
+}
+
+/* Bulle 👀 : on s'assure qu'elle reste bien dans la zone hero
+   (pas de débordement sur la section suivante) */
+.k-hero-bubble{
+  right: 12px !important;
+  bottom: 12px !important;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  z-index: 3;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ZONE 2 — CHIPS CATÉGORIES : état actif passe de coral à sage           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Cohérence palette : le reste de la page est sage (--ocean),
+   l'état actif doit suivre pour ne pas créer de rupture visuelle. */
+
+.k-chip.active .k-chip-photo{
+  border-color: var(--ocean) !important;
+  box-shadow:
+    0 0 0 3px rgba(74, 144, 64, .15),
+    0 3px 10px rgba(74, 144, 64, .18) !important;
+}
+.k-chip.active .k-chip-label{
+  color: var(--ocean-dark) !important;
+  font-weight: 700;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ZONE 3 — RAIL PROMO : vrai scroll horizontal, cartes uniformes         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* On supprime l'animation auto-scroll (promo-scroll) et l'animation float
+   sur les images (promo-float) qui créaient l'effet "escalier" entre
+   cartes voisines.
+   Comportement nouveau : scroll manuel horizontal au doigt, snap sur
+   chaque carte, toutes cartes strictement de la même hauteur. */
+
+.k-promo-rail{
+  display: flex !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 4px var(--pad-x) 12px !important;
+  background: transparent;
+  isolation: isolate;
+  position: relative;
+}
+.k-promo-rail::-webkit-scrollbar{ display: none; }
+
+/* Dégradés gauche/droite : indiquent qu'il y a d'autres cartes à scroller */
+.k-promo-rail::before,
+.k-promo-rail::after{
+  content: '';
+  position: absolute;
+  top: 0; bottom: 4px;
+  width: 20px;
+  z-index: 3;
+  pointer-events: none;
+}
+.k-promo-rail::before{
+  left: 0;
+  background: linear-gradient(to right, var(--sand) 30%, transparent);
+}
+.k-promo-rail::after{
+  right: 0;
+  background: linear-gradient(to left, var(--sand) 30%, transparent);
+}
+
+/* Wrapper interne : si le HTML utilise .k-promo-rail-inner pour héberger
+   l'animation auto-scroll, on le neutralise en display:contents
+   pour que le scroll manuel marche directement sur le rail.
+   Animation supprimée. */
+.k-promo-rail-inner{
+  display: contents !important;
+  animation: none !important;
+}
+
+/* ── Carte promo individuelle ─────────────────────────────────────────── */
+
+.k-promo-card{
+  flex: 0 0 130px !important;
+  scroll-snap-align: start;
+  display: flex !important;
+  flex-direction: column;
+  background: var(--white) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(31,48,36,.06) !important;
+  cursor: pointer;
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+  position: relative;
+  min-width: 0;
+}
+.k-promo-card:active{ transform: scale(.97); }
+@media (hover:hover) and (pointer:fine){
+  .k-promo-card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(31,48,36,.10) !important;
+  }
+}
+
+/* Image : carrée, cover, taille fixe — pas d'animation float */
+.k-promo-card-img{
+  width: 100% !important;
+  height: 130px !important;
+  object-fit: cover !important;
+  background: #faf8f5;
+  display: block;
+  border-radius: 0 !important;
+  filter: none !important;
+  animation: none !important;
+  flex-shrink: 0;
+}
+
+/* Badge -XX% : coin haut-gauche */
+.k-promo-badge{
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 50px;
+  box-shadow: 0 2px 6px rgba(200,92,45,.25);
+  letter-spacing: .01em;
+}
+
+/* Zone texte : flex column, hauteur minimum fixée pour uniformité */
+.k-promo-card-info{
+  display: flex !important;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px 10px !important;
+  background: none !important;
+  min-height: 72px;
+  min-width: 0;
+}
+
+/* Nom : 2 lignes max TOUJOURS réservées (line-clamp + min-height) */
+.k-promo-card-name{
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: var(--text) !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  min-height: 2.6em !important;
+  margin: 0 !important;
+  word-wrap: break-word;
+}
+
+/* Prix actuel : sage foncé, gras — pas coral
+   (coral était un peu criard sur fond blanc pour un petit format) */
+.k-promo-card-price{
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  line-height: 1.2 !important;
+  margin-top: auto !important;
+  display: block !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ancien prix barré : discret en dessous */
+.k-promo-card-old{
+  font-size: 10px !important;
+  color: var(--text-light) !important;
+  text-decoration: line-through;
+  line-height: 1.2 !important;
+  display: block !important;
+  margin: 0 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On annule explicitement les delays d'animation float des enfants
+   qui créaient l'effet escalier (c'était la cause principale) */
+.k-promo-card:nth-child(2) .k-promo-card-img,
+.k-promo-card:nth-child(3) .k-promo-card-img,
+.k-promo-card:nth-child(4) .k-promo-card-img,
+.k-promo-card:nth-child(5) .k-promo-card-img,
+.k-promo-card:nth-child(6) .k-promo-card-img,
+.k-promo-card:nth-child(7) .k-promo-card-img,
+.k-promo-card:nth-child(8) .k-promo-card-img{
+  animation: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ZONE 4 — GRILLE CATALOGUE : cartes uniformes, image 1:1, prix en bas   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Grille : 2 colonnes mobile, toutes les cartes d'une ligne sont
+   strictement de la même hauteur grâce à grid-auto-rows:1fr + stretch */
+
+.k-grid{
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  grid-auto-rows: 1fr !important;
+  align-items: stretch !important;
+  padding: 4px 0 16px !important;
+}
+
+/* ── Carte catalogue : flex column qui remplit sa cellule grid ──────── */
+
+.k-card{
+  display: flex !important;
+  flex-direction: column;
+  height: 100% !important;
+  background: var(--white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+  position: relative;
+}
+.k-card:active{ transform: scale(.98); }
+@media (hover:hover) and (pointer:fine){
+  .k-card:hover{
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+/* Image wrap : ratio 1:1 forcé pour neutraliser les cascades qui
+   définissaient 3/4 ailleurs dans le fichier (l. 2140 notamment) */
+.k-card-img-wrap{
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1 !important;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #faf8f5;
+}
+
+/* Image : cover, sans padding — remplit tout le cadre
+   (style e-commerce moderne, pas de blanc autour) */
+.k-card-img{
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: cover !important;
+  padding: 0 !important;
+  display: block;
+  transition: transform .4s var(--ease);
+}
+@media (hover:hover) and (pointer:fine){
+  .k-card:hover .k-card-img{ transform: scale(1.04); }
+}
+
+/* Zone info : flex column, remplit tout l'espace restant,
+   prix toujours poussé en bas via margin-top:auto */
+.k-card-info{
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto !important;
+  padding: 10px 10px 12px !important;
+  min-height: 82px !important;
+}
+
+/* Nom produit : 2 lignes max toujours réservées — hauteur constante
+   qu'il y ait 1 ligne ou 2 lignes (évite l'effet escalier) */
+.k-card-name{
+  font-family: var(--font-display) !important;
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  line-height: 1.25 !important;
+  color: var(--text) !important;
+  letter-spacing: -.005em;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  min-height: 2.5em !important;
+  margin: 0 !important;
+  font-variation-settings: 'opsz' 14;
+}
+
+/* Ligne bas : prix + badges, collée au bas de la carte */
+.k-card-bottom{
+  margin-top: auto !important;
+  display: flex !important;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 6px;
+  min-height: 1.4em;
+}
+
+/* Prix : lisible, sobre — sage foncé (pas coral criard) */
+.k-card-price{
+  font-family: var(--font);
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+
+/* Ancien prix barré (si présent dans le HTML) : petit, discret */
+.k-card-old-price{
+  font-size: 11px !important;
+  color: var(--text-light) !important;
+  text-decoration: line-through;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Block .k-card-prices (desktop enrichi) : on garde son comportement
+   flex mais on s'assure qu'il reste en bas */
+.k-card-prices{
+  display: flex !important;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+/* Disques fav (cœur) et add (panier tressé) : gardés tels quels
+   (leurs blocs .k-card-fav et .k-card-add plus haut dans le fichier
+    sont déjà corrects — position absolue, bien placés).
+   On s'assure juste qu'ils restent visibles au-dessus de l'image
+   et pas coupés par overflow:hidden de la carte. */
+.k-card-fav,
+.k-card-add{
+  z-index: 5;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  NOTES TECHNIQUES                                                         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                                                                           */
+/*  Pourquoi des !important partout ?                                        */
+/*  Parce que le CSS source a ~700 lignes de règles sur les cartes avec      */
+/*  des doublons et des surcharges en cascade (l. 516-724 puis 2140 puis    */
+/*  3772-3808). Plutôt que de tout réécrire au risque de casser quelque     */
+/*  chose, on court-circuite en fin de cascade avec des !important ciblés.  */
+/*                                                                           */
+/*  Comportement attendu après application :                                 */
+/*    ✓ Slogan centré bas du hero, ne couvre aucun personnage               */
+/*    ✓ Transparence + blur du slogan conservés                             */
+/*    ✓ Chip "Tout" ring sage au lieu d'orange                              */
+/*    ✓ Rail promo = scroll horizontal au doigt, 4-5 cartes visibles       */
+/*    ✓ Cartes promo TOUTES de la même hauteur (130px img + 72px info)     */
+/*    ✓ Catalogue grille 2 col, cartes toutes de la même hauteur           */
+/*    ✓ Prix toujours collé en bas, quelle que soit la longueur du titre   */
+/*    ✓ Images produits toujours cadrées correctement (cover 1:1)          */
+/*                                                                           */
+/*  Si tu vois un problème après déploiement :                              */
+/*    1. Hard refresh (Ctrl+Shift+R, ou purge cache mobile)                 */
+/*    2. Vérifie avec DevTools que le CSS est bien chargé                   */
+/*    3. Si un élément garde l'ancien style, le nom de sa classe n'est     */
+/*       probablement pas celui que je vise → envoie-moi une capture       */
+/*       avec l'élément sélectionné dans DevTools.                          */
+/*                                                                           */
+/* ═══════════════════════════════════════════════════════════════════════ */
