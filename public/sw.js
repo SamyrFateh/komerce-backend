@@ -1,7 +1,6 @@
-/* Komerce Service Worker v9.0 — Refacto tri-fichiers (HTML + CSS + JS) */
-const CACHE = 'komerce-v11';
+/* Komerce Service Worker v12 — Force cache refresh */
+const CACHE = 'komerce-v12';
 
-/* Fichiers à pré-cacher au install */
 const SHELL = [
   '/Komerce_Boutique.html',
   '/boutique.css',
@@ -9,14 +8,13 @@ const SHELL = [
   '/manifest.json'
 ];
 
-/* ── Install: précache le SHELL — tolérant ── */
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then((cache) =>
       Promise.all(
         SHELL.map((url) =>
           cache.add(url).catch((err) => {
-            console.warn('[SW v10] Cache skip:', url, err.message || err);
+            console.warn('[SW v12] Cache skip:', url, err.message || err);
           })
         )
       )
@@ -24,13 +22,12 @@ self.addEventListener('install', (e) => {
   );
 });
 
-/* ── Activate: purge toutes les anciennes caches ── */
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys.filter((k) => k !== CACHE).map((k) => {
-          console.log('[SW v10] Purging old cache:', k);
+          console.log('[SW v12] Purging old cache:', k);
           return caches.delete(k);
         })
       )
@@ -38,21 +35,14 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-/* ── Fetch strategy ── */
 self.addEventListener('fetch', (e) => {
   const request = e.request;
-
-  /* Skip non-GET */
   if (request.method !== 'GET') return;
-
-  /* Skip cross-origin (Google Fonts, Cloudinary, CDN…) */
+  
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-
-  /* API → réseau pur, jamais de cache */
   if (url.pathname.startsWith('/api/')) return;
 
-  /* HTML → Network-first (toujours la version la plus récente) */
   const isHTML = request.mode === 'navigate'
     || url.pathname === '/'
     || url.pathname.endsWith('.html')
@@ -63,15 +53,15 @@ self.addEventListener('fetch', (e) => {
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, responseClone).catch(() => {}));
+            const rc = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, rc).catch(() => {}));
           }
           return response;
         })
         .catch(() =>
           caches.match(request)
             .then((cached) => cached || caches.match('/Komerce_Boutique.html'))
-            .then((fallback) => fallback || new Response('<h1>Hors ligne</h1>', {
+            .then((fb) => fb || new Response('<h1>Hors ligne</h1>', {
               status: 503,
               headers: { 'Content-Type': 'text/html; charset=utf-8' }
             }))
@@ -80,14 +70,13 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* JS / CSS → Network-first (déploiements fréquents, toujours fresh) */
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     e.respondWith(
       fetch(request)
         .then((response) => {
           if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, responseClone).catch(() => {}));
+            const rc = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, rc).catch(() => {}));
           }
           return response;
         })
@@ -96,15 +85,14 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* Autres assets statiques (images, icons…) → Cache-first */
   e.respondWith(
     caches.match(request)
       .then((cached) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
           if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE).then((c) => c.put(request, responseClone).catch(() => {}));
+            const rc = response.clone();
+            caches.open(CACHE).then((c) => c.put(request, rc).catch(() => {}));
           }
           return response;
         });
