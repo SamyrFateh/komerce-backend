@@ -595,23 +595,30 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
         no_parcels:           { count: 0, value_kmf: 0, orders: [] },
       };
 
-      for (const o of orders) {
-        const parcels = (o.parcel_statuses || []).map(s => ({ status: s }));
-        const detail = getDetail(parcels) || 'no_parcels';
-        if (!distribution[detail]) continue;
-        distribution[detail].count++;
-        distribution[detail].value_kmf += Number(o.total_kmf || 0);
-        if (distribution[detail].orders.length < 5) {
-          // On ne charge que les 5 premières par bucket pour la preview
-          distribution[detail].orders.push({
-            id: o.id,
-            reference: o.reference,
-            total_kmf: Number(o.total_kmf || 0),
-            recipient_name: o.recipient_name,
-            created_at: o.created_at,
-            order_status: o.order_status,
-          });
-        }
+      const { rows: orders } = await db.query(`
+  SELECT
+    o.id,
+    o.reference,
+    o.total_kmf,
+    o.status AS order_status,
+    o.created_at,
+    rc.name AS recipient_name,
+    rc.phone AS recipient_phone,
+    array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
+  FROM orders o
+  LEFT JOIN recipients rc ON rc.id = o.recipient_id
+  LEFT JOIN parcels p ON p.order_id = o.id
+  WHERE o.status NOT IN ('refunded')
+  GROUP BY
+    o.id,
+    o.reference,
+    o.total_kmf,
+    o.status,
+    o.created_at,
+    rc.name,
+    rc.phone
+`);
+        
       }
 
       // Métadonnées par bucket (label FR, icône, priorité d'alerte)
