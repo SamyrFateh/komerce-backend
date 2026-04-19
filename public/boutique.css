@@ -3808,7 +3808,10 @@ body{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:12px;
-  align-items:start;/* ═══════════════════════════════════════════════════════════════════════ */
+  align-items:start;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
 /*  PATCH UNIFORMISATION CARTES — v1.0 (19 avril 2026)                      */
 /*  À coller à la toute fin de boutique.css.                                 */
 /*  Objectif : cartes promo et catalogue de même hauteur, base alignée.     */
