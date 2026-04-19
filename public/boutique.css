@@ -4820,3 +4820,25 @@ body{
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*  FIN PATCH v2.4                                                          */
 /* ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH : slogan transparent (mobile) — ne masque plus le fond           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 899px){
+  .k-hero-mini-slogan--premium{
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    padding: 2px 6px !important;
+  }
+  /* Lisibilité : ombre douce sur le texte pour qu'il reste visible sur l'illustration */
+  .k-hero-mini-slogan--premium .k-line-1,
+  .k-hero-mini-slogan--premium .k-line-2{
+    text-shadow:
+      0 1px 2px rgba(255,255,255,.9),
+      0 0 6px rgba(255,255,255,.7),
+      0 0 12px rgba(255,255,255,.5) !important;
+  }
+}
