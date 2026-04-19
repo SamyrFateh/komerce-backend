@@ -5049,3 +5049,97 @@ body{
     gap: 8px !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH — Rail Soldes compact (carrousel horizontal teaser)              */
+/*  Les cartes promo doivent être de petits teasers, pas des cartes pleine */
+/*  taille. Force la hauteur et largeur.                                   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px){
+  /* Section Soldes : padding compact */
+  #k-promos-section{
+    padding: 4px 10px 8px !important;
+  }
+
+  #k-promos-section .k-section-head{
+    margin-bottom: 4px !important;
+  }
+
+  #k-promos-section .k-section-head h2{
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Rail horizontal : scroll, hauteur limitée */
+  #k-promo-rail{
+    display: flex !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 10px !important;
+    padding: 4px 0 8px !important;
+    scroll-snap-type: x mandatory !important;
+    scrollbar-width: none !important;
+  }
+  #k-promo-rail::-webkit-scrollbar{ display: none !important; }
+
+  /* CHAQUE enfant du rail : petit teaser ~140px large */
+  #k-promo-rail > *{
+    flex: 0 0 140px !important;
+    max-width: 140px !important;
+    scroll-snap-align: start !important;
+  }
+
+  /* Image compacte à l'intérieur */
+  #k-promo-rail > * img,
+  #k-promo-rail .k-card-img,
+  #k-promo-rail .k-promo-card-img{
+    width: 100% !important;
+    height: 120px !important;
+    object-fit: cover !important;
+    border-radius: 10px !important;
+  }
+
+  /* Infos (nom, prix) compactes */
+  #k-promo-rail .k-card-info,
+  #k-promo-rail .k-promo-card-info{
+    padding: 6px 4px !important;
+    min-height: 0 !important;
+  }
+
+  #k-promo-rail .k-card-name,
+  #k-promo-rail .k-promo-card-name{
+    font-size: 11.5px !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 2 !important;
+    margin: 0 !important;
+  }
+
+  #k-promo-rail .k-card-price,
+  #k-promo-rail .k-promo-card-price{
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+
+  #k-promo-rail .k-card-old-price,
+  #k-promo-rail .k-promo-card-old{
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Badge promo plus petit */
+  #k-promo-rail .k-card-promo,
+  #k-promo-rail .k-promo-badge{
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    top: 4px !important;
+    left: 4px !important;
+  }
+
+  /* Cœur favoris caché dans le rail pour économiser l'espace */
+  #k-promo-rail .k-card-fav{
+    display: none !important;
+  }
+}
