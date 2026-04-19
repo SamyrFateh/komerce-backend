@@ -3805,5 +3805,141 @@ body{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:12px;
-  align-items:start;
+  align-items:start;/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH UNIFORMISATION CARTES — v1.0 (19 avril 2026)                      */
+/*  À coller à la toute fin de boutique.css.                                 */
+/*  Objectif : cartes promo et catalogue de même hauteur, base alignée.     */
+/*  Aucune refonte, aucun reset destructif. Uniquement des consolidations.  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. PROMO RAIL ─────────────────────────────────────────────────────── */
+/* Chaque carte du rail = structure figée, indépendamment du texte          */
+
+.k-promo-card{
+  /* Largeur + hauteur totale verrouillées → fini l'effet escalier */
+  flex: 0 0 120px;
+  display: flex;
+  flex-direction: column;
+  min-height: 172px;           /* image 90 + info ~72 + padding */
+  align-self: flex-start;      /* même base d'alignement */
+}
+
+.k-promo-card-img{
+  /* height déjà à 90px : on le garde.
+     On désactive l'animation float qui créait l'effet d'entonnoir :
+     ou on la conserve mais contenue pour ne pas décaler les cartes.
+     Ici : conservée mais sans décaler les voisins (transform sur l'image
+     uniquement, pas sur la carte) — déjà le cas, rien à modifier.          */
+  /* Rappel : le décalage visuel vient des delays différents (0s, .5s, 1s).
+     Si l'effet te gêne encore, tu peux mettre : animation: none;           */
+  flex-shrink: 0;
+}
+
+.k-promo-card-info{
+  /* Bloc texte : hauteur fixe = pas de cartes plus hautes que d'autres */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 60px;            /* 2 lignes titre + 1 prix + 1 ancien prix  */
+  padding: 6px 2px 0;
+}
+
+.k-promo-card-name{
+  /* 2 lignes réservées même si le nom fait 1 ligne → alignement prix OK */
+  min-height: 2.6em;
+  line-height: 1.3;
+}
+
+.k-promo-card-price,
+.k-promo-card-old{
+  /* Hauteur ligne garantie même si valeur manquante (visibility hidden JS) */
+  min-height: 1.2em;
+}
+
+/* ── 2. GRILLE CATALOGUE ──────────────────────────────────────────────── */
+/* On utilise grid-auto-rows pour que toutes les lignes aient la même hauteur */
+
+.k-grid{
+  grid-auto-rows: 1fr;         /* toutes les lignes = même hauteur */
+  align-items: stretch;        /* cartes étirées à la ligne        */
+}
+
+/* ── 3. CARTE CATALOGUE : hauteur totale + image cadrée ──────────────── */
+
+.k-card{
+  /* Carte = flex column qui remplit la cellule grid */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.k-card-img-wrap{
+  /* Image : ratio figé 1:1, pas de conflit avec d'autres ratios */
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  flex-shrink: 0;              /* ne se déforme pas si le nom est long */
+  overflow: hidden;
+  background: #faf8f5;
+}
+
+.k-card-img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;           /* image toujours cadrée, jamais déformée */
+  padding: 0;
+}
+
+/* Si tu préfères l'ancien comportement "contain + padding 8px" (produits
+   avec fond transparent), décommente le bloc ci-dessous et commente le
+   object-fit: cover ci-dessus :
+
+.k-card-img{
+  object-fit: contain;
+  padding: 8px;
+  background: #faf8f5;
+}
+*/
+
+.k-card-info{
+  /* Partie texte : occupe tout l'espace restant, pousse le prix en bas */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  padding: 10px 10px 12px;
+  min-height: 92px;            /* valeur suffisante pour 2 lignes + prix */
+}
+
+.k-card-name{
+  /* 2 lignes verrouillées quelle que soit la longueur du titre */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;           /* réserve toujours 2 lignes */
+  line-height: 1.25;
+  margin: 0;
+}
+
+.k-card-bottom{
+  /* Prix : toujours collé au bas de la carte, base d'alignement commune */
+  margin-top: auto;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 1.4em;           /* hauteur ligne prix garantie */
+}
+
+/* ── 4. GARDE-FOU : neutralise les ratios hérités d'autres règles ────── */
+/* Certaines règles plus haut dans le fichier (l. 2140 : aspect-ratio 3/4)
+   peuvent s'appliquer en cascade. On s'assure que rien ne surcharge la
+   nouvelle structure — uniquement si on est en vue grid catalogue.       */
+
+.k-grid .k-card-img-wrap{ aspect-ratio: 1 / 1 !important; }
+.k-grid .k-card-img{ aspect-ratio: auto !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* FIN DU PATCH — si tu retrouves un cas non couvert, envoie une capture.  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
 }
