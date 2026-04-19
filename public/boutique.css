@@ -2109,20 +2109,54 @@ body{
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
 
-  /* ── HEADER — compact + sticky ─────────────────────────── */
+  /* ══════════════════════════════════════════════════════
+     MOBILE OVERRIDE — SINGLE SOURCE OF TRUTH
+     Target: 390px phone, all components
+     ══════════════════════════════════════════════════════ */
+
+  /* ── A. GLOBAL — prevent sticky-breaking overflow ──── */
+  html, body {
+    overflow-x: hidden;
+  }
+  body {
+    padding-bottom: 64px; /* space for fixed bottom nav */
+  }
+
+  /* ── B. HEADER — compact + sticky top ──────────────── */
   .k-header {
-    height: 48px;
-    padding: 0 10px;
+    height: 44px;
+    padding: 0 8px;
     position: sticky;
     top: 0;
     z-index: 100;
     background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
   }
-  .k-logo { font-size: 18px; }
-  .k-search { height: 32px; font-size: 13px; }
+  .k-logo { font-size: 16px; }
+  .k-search {
+    height: 28px;
+    font-size: 12px;
+    max-width: 200px;
+    border-radius: 14px;
+  }
+  .k-search input {
+    height: 28px;
+    font-size: 12px;
+    padding: 0 8px 0 28px;
+  }
+  .k-search-icon {
+    width: 16px;
+    height: 16px;
+    left: 8px;
+  }
+  .k-header-actions .k-cart-label { font-size: 11px; }
 
-  /* ── HERO — full-bleed image + slogan overlaid ─────────── */
-  .k-hero { padding: 0; margin: 0; }
+  /* ── C. HERO — full-bleed + slogan overlaid ────────── */
+  .k-hero {
+    padding: 0;
+    margin: 0;
+    overflow: visible; /* allow sticky children after */
+  }
   .k-hero-inner {
     flex-direction: column;
     padding: 0;
@@ -2131,7 +2165,7 @@ body{
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(140px, 38vw, 200px);
+    height: clamp(130px, 35vw, 180px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -2144,10 +2178,10 @@ body{
     border-radius: 0;
   }
 
-  /* Slogan overlaid on hero image — top center */
+  /* Slogan overlaid on hero — top center */
   .k-hero-mini-slogan {
     position: absolute;
-    top: 10px;
+    top: 8px;
     left: 0;
     right: 0;
     z-index: 10;
@@ -2159,7 +2193,7 @@ body{
   }
   .k-hero-mini-slogan .k-line-1,
   .k-hero-mini-slogan .k-line-2 {
-    font-size: clamp(0.95rem, 4.2vw, 1.2rem);
+    font-size: clamp(0.85rem, 3.8vw, 1.1rem);
     font-weight: 800;
     line-height: 1.2;
     text-shadow: 0 1px 6px rgba(255,255,255,.9);
@@ -2170,60 +2204,115 @@ body{
   /* Bubble emoji on hero */
   .k-hero-bubble {
     position: absolute;
-    bottom: 8px;
-    right: 12px;
-    font-size: 28px;
+    bottom: 6px;
+    right: 10px;
+    font-size: 24px;
   }
 
-  /* ── HIDE desktop-only elements ────────────────────────── */
-  .k-hero-overlay { display: none; }
-  .k-hero-pills { display: none; }
-  .k-hero-pill { display: none; }
-  .k-hero-text-left { display: none; }
-  .k-hero-title { display: none; }
-  .k-hero-right-col { display: none; }
-  .k-hero-proverb-inline { display: none; }
-  .k-hero-btn { display: none; }
-  .k-proverb-sep { display: none; }
+  /* ── D. HIDE desktop-only elements ─────────────────── */
+  .k-hero-overlay,
+  .k-hero-pills,
+  .k-hero-pill,
+  .k-hero-text-left,
+  .k-hero-title,
+  .k-hero-right-col,
+  .k-hero-proverb-inline,
+  .k-hero-btn,
+  .k-proverb-sep {
+    display: none !important;
+  }
 
-  /* ── STICKY CATS BAR — pure CSS sticky ─────────────────── */
+  /* ── E. STICKY CATEGORY BAR ────────────────────────── */
   .k-hero-cats-sticky {
     position: sticky;
-    top: 48px;
+    top: 44px; /* matches header height */
     z-index: 90;
     background: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
     width: 100%;
-  }
-  .k-cats {
-    background: rgba(253,250,245,.96);
-    gap: 4px;
-    padding: 8px 10px;
-    align-items: flex-start;
+    overflow: visible;
   }
 
-  /* ── PROMOS — horizontal scroll, compact cards ─────────── */
+  /* ── F. CHIPS — small circles, horizontal scroll ───── */
+  .k-cats {
+    display: flex;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(253,250,245,.96);
+    align-items: flex-start;
+  }
+  .k-cats::-webkit-scrollbar { display: none; }
+
+  .k-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 2px;
+    min-width: 48px;
+    max-width: 62px;
+    scroll-snap-align: start;
+  }
+  .k-chip-photo,
+  .k-chip-emoji {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 50%;
+    font-size: 20px;
+  }
+  .k-chip-photo > span {
+    font-size: 11px;
+  }
+  .k-chip-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* ── G. PROMOS — horizontal scroll, compact cards ──── */
   #k-promos-section {
-    padding: 8px 0 6px;
+    padding: 6px 0 4px;
     margin: 0;
+    overflow: visible;
   }
   #k-promos-section .k-section-head {
-    padding: 0 12px 6px;
+    padding: 0 12px 4px;
     margin: 0;
   }
-  #k-promos-section .k-section-head h2 { font-size: 15px; }
+  #k-promos-section .k-section-head h2 { font-size: 14px; }
 
   #k-promo-rail {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    padding: 0 0 8px;
+    scrollbar-width: none;
+    padding: 0 0 6px;
   }
+  #k-promo-rail::-webkit-scrollbar { display: none; }
+
+  /* Kill desktop gradient overlays */
+  .k-promo-rail::before,
+  .k-promo-rail::after {
+    display: none;
+  }
+
   .k-promo-rail-inner {
     display: flex;
     flex-wrap: nowrap;
-    gap: 10px;
+    gap: 8px;
     padding: 0 12px;
     width: max-content;
     animation: none;
@@ -2231,12 +2320,12 @@ body{
     align-items: stretch;
   }
   .k-promo-card {
-    flex: 0 0 165px;
-    width: 165px;
-    min-width: 165px;
-    max-width: 165px;
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
     scroll-snap-align: start;
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     background: #fff;
     box-shadow: 0 1px 4px rgba(0,0,0,.08);
@@ -2244,59 +2333,69 @@ body{
   }
   .k-promo-card-img {
     width: 100%;
-    height: 140px;
-    max-height: 140px;
+    height: 120px;
     object-fit: cover;
-    border-radius: 14px 14px 0 0;
+    border-radius: 12px 12px 0 0;
     display: block;
     animation: none;
     background: #f0f0f0;
   }
   .k-promo-badge {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    font-size: 11px;
-    padding: 3px 8px;
+    top: 6px;
+    left: 6px;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 6px;
     z-index: 2;
   }
   .k-promo-card-info {
-    padding: 8px 8px 10px;
-    min-height: 0;
+    padding: 6px 8px 8px;
   }
   .k-promo-card-name {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.3;
     -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    margin-bottom: 2px;
   }
-  .k-promo-card-price { font-size: 14px; font-weight: 700; margin-top: 3px; }
-  .k-promo-card-old { font-size: 11px; }
+  .k-promo-card-price {
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 2px;
+    color: var(--coral, #e64a19);
+  }
+  .k-promo-card-old {
+    font-size: 10px;
+    text-decoration: line-through;
+    color: #999;
+  }
 
-  /* ── CATALOGUE GRID — 2 columns ────────────────────────── */
+  /* ── H. CATALOGUE GRID — 2 columns, full info ─────── */
   #k-catalog-section {
-    padding: 8px 0 0;
+    padding: 6px 0 0;
     margin: 0;
+    overflow: visible;
   }
   #k-catalog-section .k-section-head {
-    padding: 0 12px 6px;
+    padding: 0 12px 4px;
   }
   .k-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
     padding: 0 12px 12px;
   }
   .k-card {
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    background: #fff;
   }
   .k-card-img-wrap {
     aspect-ratio: 1 / 1;
-    max-height: 200px;
     overflow: hidden;
     padding: 0;
   }
@@ -2307,21 +2406,33 @@ body{
     padding: 0;
     border-radius: 0;
   }
-  .k-card-info { padding: 6px 8px 8px; }
+  .k-card-info {
+    padding: 6px 8px 8px;
+  }
   .k-card-name {
     font-size: 12px;
+    font-weight: 600;
     line-height: 1.3;
     -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    margin-bottom: 2px;
   }
-  .k-card-price { font-size: 13px; font-weight: 700; }
-  .k-card-old-price { font-size: 10px; }
-  .k-card-add { width: 32px; height: 32px; font-size: 16px; }
-  .k-card-fav { width: 28px; height: 28px; font-size: 13px; }
+  .k-card-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--coral, #e64a19);
+  }
+  .k-card-old-price {
+    font-size: 10px;
+    text-decoration: line-through;
+    color: #999;
+  }
+  .k-card-add { width: 30px; height: 30px; font-size: 14px; }
+  .k-card-fav { width: 26px; height: 26px; font-size: 12px; }
 
-  /* ── BOTTOM NAV — fixed ────────────────────────────────── */
+  /* ── I. BOTTOM NAV — fixed ─────────────────────────── */
   .k-bnav {
     position: fixed;
     bottom: 0;
@@ -2330,20 +2441,20 @@ body{
     z-index: 9999;
     background: #fff;
     box-shadow: 0 -1px 6px rgba(0,0,0,.08);
-    height: 56px;
+    height: 52px;
     padding-bottom: env(safe-area-inset-bottom);
   }
   .k-bnav-label { font-size: 9px; }
-  body { padding-bottom: 64px; }
 
-  /* ── MISC ───────────────────────────────────────────────── */
-  #k-bar-spacer { height: 56px; }
+  /* ── J. MISC ───────────────────────────────────────── */
+  #k-bar-spacer { height: 52px; }
   .k-load-more {
     font-size: 13px;
     padding: 10px 20px;
     margin: 8px auto 16px;
   }
-  .k-section-head h2 { font-size: 15px; }
-  .k-see-all { font-size: 12px; }
+  .k-section-head h2 { font-size: 14px; }
+  .k-see-all { font-size: 11px; }
+
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
