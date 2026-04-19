@@ -5347,3 +5347,130 @@ body{
     left: 4px !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH ALIGNEMENT ACCUEIL — anti-entonnoir v1.0 (19 avril 2026)        */
+/*  Objectif : promos + catalogue TOUS DEUX visibles dès l'accueil mobile */
+/*  Sans scroll nécessaire pour voir les deux sections.                    */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px) {
+
+  /* ── 1. Section Promos : plus compacte ──────────────────────────────── */
+  #k-promos-section {
+    padding: 4px 10px 4px !important;
+    margin-bottom: 0 !important;
+  }
+
+  #k-promos-section .k-section-head {
+    margin-bottom: 2px !important;
+  }
+
+  #k-promos-section .k-section-head h2 {
+    font-size: 14px !important;
+  }
+
+  /* ── 2. Rail promo : hauteur réduite ───────────────────────────────── */
+  #k-promo-rail,
+  .k-promo-rail {
+    padding: 2px 0 4px !important;
+    max-height: 160px !important;
+    overflow: hidden !important;
+  }
+
+  /* ── 3. Cartes promo : compactes (image 80px au lieu de 120px) ────── */
+  .k-promo-card,
+  .k-promo-rail .k-promo-card,
+  .k-promo-rail-inner .k-promo-card,
+  #k-promo-rail .k-promo-card,
+  #k-promo-rail > * {
+    flex: 0 0 110px !important;
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
+    min-height: 0 !important;
+  }
+
+  .k-promo-card-img,
+  .k-promo-rail .k-promo-card-img,
+  .k-promo-rail-inner .k-promo-card-img,
+  #k-promo-rail .k-promo-card-img,
+  #k-promo-rail .k-card-img,
+  #k-promo-rail > * img {
+    height: 80px !important;
+    max-height: 80px !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    border-radius: 10px !important;
+  }
+
+  /* Image wrap aussi */
+  #k-promo-rail .k-card-img-wrap,
+  .k-promo-rail .k-card-img-wrap {
+    height: 80px !important;
+    max-height: 80px !important;
+    padding: 0 !important;
+  }
+
+  /* Info sous l'image : ultra-compact */
+  .k-promo-card-info,
+  .k-promo-rail .k-promo-card-info,
+  .k-promo-rail-inner .k-promo-card-info,
+  #k-promo-rail .k-promo-card-info,
+  #k-promo-rail .k-card-info {
+    padding: 3px 2px 0 !important;
+    min-height: 0 !important;
+    gap: 1px !important;
+  }
+
+  .k-promo-card-name,
+  .k-promo-rail .k-promo-card-name,
+  #k-promo-rail .k-promo-card-name,
+  #k-promo-rail .k-card-name {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+    min-height: 0 !important;
+    -webkit-line-clamp: 1 !important;
+    margin: 0 !important;
+  }
+
+  .k-promo-card-price,
+  .k-promo-rail .k-promo-card-price,
+  #k-promo-rail .k-promo-card-price,
+  #k-promo-rail .k-card-price {
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    margin-top: 1px !important;
+  }
+
+  .k-promo-card-old,
+  .k-promo-rail .k-promo-card-old,
+  #k-promo-rail .k-promo-card-old,
+  #k-promo-rail .k-card-old-price {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    display: none !important; /* cacher l'ancien prix pour gagner de la place */
+  }
+
+  /* ── 4. Séparateur proverbe : minimal ──────────────────────────────── */
+  .k-proverb-sep {
+    margin: 2px auto 2px !important;
+    height: 0 !important;
+    display: none !important;
+  }
+
+  /* ── 5. Section catalogue : commence plus haut ─────────────────────── */
+  #k-catalog-section {
+    padding-top: 4px !important;
+    margin-top: 0 !important;
+  }
+
+  #k-catalog-section .k-section-head {
+    display: none !important; /* pas de titre « catalogue » nécessaire */
+  }
+
+  .k-grid {
+    padding-top: 0 !important;
+    gap: 8px !important;
+  }
+}
