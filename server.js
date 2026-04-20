@@ -645,6 +645,17 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 030: cart_shares table ready');
       } catch(e) { console.warn('Migration 030 (non-fatal):', e.message); }
 
+
+      // ── Migration 031: products.subcategory column ──
+      try {
+        await db.query(`
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS subcategory TEXT;
+          CREATE INDEX IF NOT EXISTS idx_products_category_subcategory 
+            ON products(category, subcategory) WHERE is_available = TRUE;
+        `);
+        console.log('✅ Migration 031: products.subcategory column ready');
+      } catch(e) { console.warn('Migration 031 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
