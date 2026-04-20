@@ -2527,7 +2527,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(150px, 38vw, 200px);
+    height: clamp(110px, 28vw, 150px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -2537,7 +2537,7 @@ body.cart-open{overflow:hidden}
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center 15%;
+    object-position: center top;
     border-radius: 0;
   }
 
@@ -2680,44 +2680,44 @@ body.cart-open{overflow:hidden}
     transform: none;
     align-items: stretch;
   }
-  /* Promo cards: ~2.5 visible, 3:2 landscape images.
-     Width = (100vw - 16px - 2×6px) / 2.5 ≈ 144px on 390px phone.
-     3:2 ratio → image ~96px high (vs 144px square). Saves ~48px vertical. */
+  /* Promo cards: 4 visible vignettes, square images.
+     Width = (100vw - 16px padding - 3×6px gaps) / 4 ≈ 89px on 390px.
+     1:1 ratio → compact thumbnails. Scrollable for more. */
   .k-promo-card {
-    flex: 0 0 calc((100vw - 28px) / 2.5);
-    width: calc((100vw - 28px) / 2.5);
-    min-width: calc((100vw - 28px) / 2.5);
-    max-width: calc((100vw - 28px) / 2.5);
+    flex: 0 0 calc((100vw - 34px) / 4);
+    width: calc((100vw - 34px) / 4);
+    min-width: calc((100vw - 34px) / 4);
+    max-width: calc((100vw - 34px) / 4);
     scroll-snap-align: start;
-    border-radius: 10px;
+    border-radius: 8px;
     overflow: hidden;
     background: #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
     position: relative;
   }
   .k-promo-card-img {
     width: 100%;
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 10px 10px 0 0;
+    border-radius: 8px 8px 0 0;
     display: block;
     animation: none;
     background: #faf8f5;
   }
   .k-promo-badge {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    font-size: 9px;
-    padding: 2px 5px;
+    top: 3px;
+    left: 3px;
+    font-size: 8px;
+    padding: 1px 4px;
     border-radius: 50px;
     z-index: 2;
   }
   .k-promo-card-info {
-    padding: 3px 5px 5px;
+    padding: 2px 4px 4px;
   }
   .k-promo-card-name {
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1.2;
     -webkit-line-clamp: 1;
     display: -webkit-box;
@@ -2728,17 +2728,17 @@ body.cart-open{overflow:hidden}
   .k-promo-card-prices {
     display: flex;
     align-items: baseline;
-    gap: 3px;
+    gap: 2px;
     margin-top: 1px;
   }
   .k-promo-card-price {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--coral, #e64a19);
     line-height: 1.1;
   }
   .k-promo-card-old {
-    font-size: 8px;
+    font-size: 7px;
     text-decoration: line-through;
     color: #aaa;
     line-height: 1.1;
