@@ -584,97 +584,87 @@ body{
 
 
 /* ── SUBCATEGORIES — Horizontal scrollable rail ────────── */
+/* ── SUBCATEGORIES — ultra-compact single-line pills ───────── */
 #k-subcats-wrap {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  transition: max-height .35s cubic-bezier(.22,1,.36,1), opacity .25s ease;
+  transition: max-height .3s cubic-bezier(.22,1,.36,1), opacity .2s ease;
 }
 #k-subcats-wrap.k-subcats-visible {
-  max-height: 56px;
+  max-height: 40px;
   opacity: 1;
 }
 .k-subcats-rail {
   display: flex;
-  gap: 8px;
-  padding: 6px 14px 8px;
+  gap: 6px;
+  padding: 4px 10px 6px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background: linear-gradient(to bottom, rgba(255,255,255,.95), rgba(253,250,245,.92));
-  border-top: 1px solid rgba(0,0,0,.04);
+  background: linear-gradient(to bottom, rgba(255,255,255,.92), rgba(253,250,245,.88));
+  border-top: 1px solid rgba(0,0,0,.03);
 }
 .k-subcats-rail::-webkit-scrollbar { display: none; }
 .k-subchip {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px 5px 6px;
-  background: rgba(245,243,238,.6);
-  border: 1.5px solid rgba(0,0,0,.06);
-  border-radius: 20px;
+  gap: 3px;
+  padding: 3px 8px 3px 5px;
+  background: rgba(245,243,238,.55);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 14px;
   cursor: pointer;
-  transition: all .2s ease;
+  transition: all .18s ease;
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
   flex-shrink: 0;
 }
-.k-subchip:active { transform: scale(.95); }
+.k-subchip:active { transform: scale(.94); }
 .k-subchip-icon {
-  width: 26px; height: 26px; min-width: 26px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  font-size: 13px;
-  background: rgba(240,245,230,.8);
-  border: 1px solid rgba(0,0,0,.05);
-  transition: all .2s ease;
+  font-size: 12px;
+  line-height: 1;
 }
 .k-subchip-label {
-  font-size: 11px; font-weight: 600;
+  font-size: 10px; font-weight: 600;
   color: var(--text-muted);
-  transition: color .2s ease;
+  transition: color .18s ease;
 }
 .k-subchip.active {
-  background: rgba(74,144,64,.1);
+  background: rgba(74,144,64,.12);
   border-color: var(--ocean-dark);
-  box-shadow: 0 1px 6px rgba(74,144,64,.15);
-}
-.k-subchip.active .k-subchip-icon {
-  background: var(--ocean-dark);
-  border-color: var(--ocean-dark);
-  box-shadow: 0 1px 3px rgba(74,144,64,.3);
+  box-shadow: 0 1px 4px rgba(74,144,64,.12);
 }
 .k-subchip.active .k-subchip-label {
   color: var(--ocean-dark);
   font-weight: 700;
 }
 @keyframes k-subchip-in {
-  from { opacity: 0; transform: translateX(-8px) scale(.92); }
+  from { opacity: 0; transform: translateX(-6px) scale(.94); }
   to { opacity: 1; transform: translateX(0) scale(1); }
 }
-.k-subcats-visible .k-subchip { animation: k-subchip-in .2s ease both; }
+.k-subcats-visible .k-subchip { animation: k-subchip-in .18s ease both; }
 .k-subcats-visible .k-subchip:nth-child(2) { animation-delay: .03s; }
 .k-subcats-visible .k-subchip:nth-child(3) { animation-delay: .06s; }
 .k-subcats-visible .k-subchip:nth-child(4) { animation-delay: .09s; }
 .k-subcats-visible .k-subchip:nth-child(5) { animation-delay: .12s; }
-.k-subcats-visible .k-subchip:nth-child(6) { animation-delay: .15s; }
-/* Desktop — centered */
+/* Desktop — centered, slightly bigger */
 @media (min-width: 900px) {
   .k-subcats-rail {
     justify-content: center;
-    padding: 8px 20px 10px;
-    gap: 10px;
+    padding: 6px 20px 8px;
+    gap: 8px;
   }
-  .k-subchip { padding: 6px 12px 6px 8px; }
-  .k-subchip-icon { width: 30px; height: 30px; min-width: 30px; font-size: 15px; }
-  .k-subchip-label { font-size: 12px; }
+  .k-subchip { padding: 4px 10px 4px 7px; gap: 4px; }
+  .k-subchip-icon { font-size: 14px; }
+  .k-subchip-label { font-size: 11px; }
 }
 @media (hover: hover) and (pointer: fine) {
   .k-subchip:hover {
     background: rgba(100,175,90,.08);
     border-color: var(--ocean);
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    box-shadow: 0 2px 5px rgba(0,0,0,.05);
   }
   .k-subchip:hover .k-subchip-label { color: var(--text); }
 }
@@ -2429,14 +2419,14 @@ body{
     transform: none;
     align-items: stretch;
   }
-  /* Promo cards: 3 fill viewport exactly, no 4th peek.
-     In scroll container only left-pad counts for initial view:
-     left-pad(8) + 3×card + 2×gap(6) = 100vw → card = (100vw - 20px) / 3 */
+  /* Promo cards: same width as product grid cards.
+     Both = (100vw - 24px) / 3.
+     Rail: 8px left-pad + 3×card + 2×6px gap = 100vw - 4px (no peek) */
   .k-promo-card {
-    flex: 0 0 calc((100vw - 20px) / 3);
-    width: calc((100vw - 20px) / 3);
-    min-width: calc((100vw - 20px) / 3);
-    max-width: calc((100vw - 20px) / 3);
+    flex: 0 0 calc((100vw - 24px) / 3);
+    width: calc((100vw - 24px) / 3);
+    min-width: calc((100vw - 24px) / 3);
+    max-width: calc((100vw - 24px) / 3);
     scroll-snap-align: start;
     border-radius: 10px;
     overflow: hidden;
@@ -2499,7 +2489,7 @@ body{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-    padding: 0 8px 12px;
+    padding: 0 4px 12px 8px;  /* left 8 = aligns with promo rail, right 4 → card = (100vw-24)/3 */
   }
   .k-card {
     border-radius: 10px;
@@ -2533,7 +2523,7 @@ body{
     margin-bottom: 1px;
   }
   .k-card-price {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: var(--text);
     margin-top: 1px;
