@@ -2937,6 +2937,11 @@ body.cart-open{overflow:hidden}
   /* Image zone: compact on mobile — see full product + details without scroll */
   .k-modal-img-wrap {
     flex: 0 0 22vh;
+    background: var(--sand);
+  }
+  .k-modal-slide {
+    object-fit: contain;
+    object-position: center center;
   }
   /* Description: 1 ligne à côté du nom, pas un bloc qui pousse le prix */
   .k-modal-desc {
