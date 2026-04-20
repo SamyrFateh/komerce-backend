@@ -906,6 +906,11 @@ function quickRemove(productId, btnEl) {
       }
       chip.addEventListener('click', () => {
         const cat = chip.dataset.cat;
+        const fromSwipe = !!state._fromSwipe;
+        const swipeDir = state._swipeDir || 0; // -1 = gauche (next), +1 = droite (prev)
+        state._fromSwipe = false;
+        state._swipeDir = 0;
+
         /* Toggle: re-click same category → back to "Tout" + hide subcats */
         if (cat === state.activeCat && cat !== 'all') {
           $$('.k-chip').forEach(c => c.classList.remove('active'));
@@ -921,8 +926,31 @@ function quickRemove(productId, btnEl) {
         chip.classList.add('active');
         state.activeCat = cat;
         renderSubcats(state.activeCat);
+
+        if (fromSwipe) {
+          // Animation slide : grille actuelle sort, nouvelle rentre depuis l'autre côté
+          const grid = dom.grid;
+          if (grid) {
+            const outClass = swipeDir < 0 ? 'k-grid-slide-out-left' : 'k-grid-slide-out-right';
+            const inClass  = swipeDir < 0 ? 'k-grid-slide-in-right' : 'k-grid-slide-in-left';
+            grid.classList.add(outClass);
+            setTimeout(() => {
+              grid.classList.remove(outClass);
+              renderGrid();
+              grid.classList.add(inClass);
+              // force reflow pour que l'animation démarre proprement
+              void grid.offsetWidth;
+              setTimeout(() => grid.classList.remove(inClass), 260);
+            }, 160);
+          } else {
+            renderGrid();
+          }
+          // PAS de scrollTo : on garde la position verticale actuelle
+          return;
+        }
+
         renderGrid();
-        // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
+        // Scroll vers le haut uniquement pour clic direct sur chip
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
@@ -959,33 +987,28 @@ function quickRemove(productId, btnEl) {
   /* ── CATALOG SWIPE NAV (mobile) ─────────────────────────── */
   /* Swipe horizontal gauche/droite sur le catalogue → change catégorie */
   function setupCatalogSwipeNav() {
-    if (window.innerWidth > 899) {
-      console.log('[swipe] désactivé (desktop)');
-      return;
-    }
-    console.log('[swipe] setup OK');
+    if (window.innerWidth > 899) return;
 
     var startX = 0, startY = 0, startT = 0;
     var tracking = false;
-    var SWIPE_MIN_DIST = 50;          // px minimum horizontal
-    var SWIPE_MAX_VERTICAL = 80;      // px max vertical
-    var SWIPE_MAX_DURATION = 1000;    // ms max
+    var SWIPE_MIN_DIST = 50;
+    var SWIPE_MAX_VERTICAL = 80;
+    var SWIPE_MAX_DURATION = 1000;
 
-    // Écoute globale (capture phase) pour ne rater aucun touch
     document.addEventListener('touchstart', function(e) {
       if (e.touches.length !== 1) { tracking = false; return; }
       var t = e.target;
-      // Zones à ignorer : chips, sous-catégories, header, modal, panier, bottom nav, bouton fav/add/tab
       if (t.closest && t.closest(
         '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal, ' +
         '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
         '.k-card-fav, .k-card-add, .k-card-tab, ' +
+        '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
+        '.k-sug-rail, .k-modal-carousel, ' +
         'input, textarea, select'
       )) {
         tracking = false;
         return;
       }
-      // Doit démarrer dans le catalogue ou le scroll principal
       if (t.closest && !t.closest('#k-page-scroll, #k-catalog-section, .k-grid, .k-card, .k-section')) {
         tracking = false;
         return;
@@ -1005,22 +1028,21 @@ function quickRemove(productId, btnEl) {
       var dy = touch.clientY - startY;
       var dt = Date.now() - startT;
 
-      console.log('[swipe] dx=' + Math.round(dx) + ' dy=' + Math.round(dy) + ' dt=' + dt + 'ms');
-
-      if (dt > SWIPE_MAX_DURATION) { console.log('[swipe] ignoré: trop lent'); return; }
-      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) { console.log('[swipe] ignoré: trop vertical'); return; }
-      if (Math.abs(dx) < SWIPE_MIN_DIST) { console.log('[swipe] ignoré: trop court'); return; }
-      if (Math.abs(dx) < Math.abs(dy) * 1.2) { console.log('[swipe] ignoré: dx pas dominant'); return; }
+      if (dt > SWIPE_MAX_DURATION) return;
+      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) return;
+      if (Math.abs(dx) < SWIPE_MIN_DIST) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.2) return;
 
       var chips = Array.prototype.slice.call(document.querySelectorAll('#k-cats .k-chip'));
-      if (chips.length < 2) { console.log('[swipe] pas assez de chips'); return; }
+      if (chips.length < 2) return;
       var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
       if (currentIdx === -1) currentIdx = 0;
-      // dx < 0 = doigt va vers la gauche → cat suivante (à droite dans le rail)
-      // dx > 0 = doigt va vers la droite → cat précédente (à gauche dans le rail)
       var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-      if (nextIdx < 0 || nextIdx >= chips.length) { console.log('[swipe] bord atteint'); return; }
-      console.log('[swipe] → chip ' + nextIdx + ' (' + chips[nextIdx].dataset.cat + ')');
+      if (nextIdx < 0 || nextIdx >= chips.length) return;
+
+      // Flag pour que le click handler reconnaisse un swipe (pas de scrollTo + animation)
+      state._fromSwipe = true;
+      state._swipeDir = dx < 0 ? -1 : 1;
       chips[nextIdx].click();
     }, { passive: true, capture: true });
   }
