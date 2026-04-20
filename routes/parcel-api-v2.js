@@ -19,6 +19,8 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 
+const { generatePickupCode } = require('../utils/pickup');
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -1089,6 +1091,26 @@ router.post('/:ref/scan', async (req, res, next) => {
     const params = [parcel.id, newStatus];
     if (timestampCol) {
       setClauses.push(`${timestampCol} = NOW()`);
+    }
+
+    // ── PICKUP CODE — généré automatiquement quand un colis passe "available" ──
+    // Le code est envoyé au client par WhatsApp via notifyParcelScan().
+    // La colonne pickup_code existe depuis la migration 010 mais n'était jamais remplie.
+    let generatedPickupCode = null;
+    if (newStatus === 'available') {
+      // Re-fetch pour vérifier si un code existe déjà (idempotent)
+      const { rows: [existing] } = await client.query(
+        'SELECT pickup_code FROM parcels WHERE id = $1', [parcel.id]
+      );
+      if (!existing?.pickup_code) {
+        generatedPickupCode = generatePickupCode();
+        setClauses.push('pickup_code = $' + (params.length + 1));
+        setClauses.push('pickup_code_sent_at = NOW()');
+        params.push(generatedPickupCode);
+        console.log(`[PICKUP] 🔑 Code généré pour colis ${parcel.reference}: ${generatedPickupCode}`);
+      } else {
+        console.log(`[PICKUP] Code déjà existant pour ${parcel.reference}: ${existing.pickup_code}`);
+      }
     }
 
     await client.query(`UPDATE parcels SET ${setClauses.join(', ')} WHERE id = $1`, params);
