@@ -50,22 +50,60 @@
     return `<div class="k-card-carousel">${slides}</div>${dots}`;
   }
 
-  /* ── Binder handler scroll → met à jour les dots actifs ────── */
+  /* ── Binder handler scroll → met à jour les dots actifs
+     ET détecte tap vs swipe pour l'ouverture de la modale produit ────── */
   function bindCarouselDots(card) {
     const carousel = card.querySelector('.k-card-carousel');
     const dots     = card.querySelectorAll('.k-card-dot');
-    if (!carousel || dots.length <= 1) return;
+    if (!carousel) return;
     if (carousel.dataset.bound) return;
     carousel.dataset.bound = '1';
-    let raf = null;
-    carousel.addEventListener('scroll', () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = null;
-        const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-      });
-    }, { passive: true });
+
+    // Dots : mise à jour par scroll (si plus d'1 slide)
+    if (dots.length > 1) {
+      let raf = null;
+      carousel.addEventListener('scroll', () => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = null;
+          const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+          dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+        });
+      }, { passive: true });
+    }
+
+    // Détection tap vs swipe :
+    // - touchstart : on enregistre la position initiale
+    // - touchend/pointerup : si on a bougé > 10px horizontalement, c'était un swipe
+    //   → on marque la carte temporairement pour que le handler click l'ignore
+    let startX = 0, startY = 0, moved = false;
+
+    function onStart(e) {
+      const t = e.touches ? e.touches[0] : e;
+      startX = t.clientX;
+      startY = t.clientY;
+      moved = false;
+    }
+    function onMove(e) {
+      const t = e.touches ? e.touches[0] : e;
+      const dx = Math.abs(t.clientX - startX);
+      const dy = Math.abs(t.clientY - startY);
+      if (dx > 10 || dy > 10) moved = true;
+    }
+    function onEnd() {
+      if (moved) {
+        card.dataset.justSwiped = '1';
+        // Reset après 200ms pour laisser passer l'event click qui suit le touchend
+        setTimeout(() => { delete card.dataset.justSwiped; }, 250);
+      }
+    }
+    carousel.addEventListener('touchstart', onStart, { passive: true });
+    carousel.addEventListener('touchmove',  onMove,  { passive: true });
+    carousel.addEventListener('touchend',   onEnd,   { passive: true });
+    // Support souris (desktop)
+    carousel.addEventListener('mousedown', onStart);
+    carousel.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
+    carousel.addEventListener('mouseup',   onEnd);
   }
 
 
@@ -490,7 +528,9 @@
       card.dataset.bound = '1';
       bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-carousel') || e.target.closest('.k-card-dots')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+        // Si on vient juste de swiper le carrousel, ne pas ouvrir la modale
+        if (card.dataset.justSwiped === '1') return;
         openModal(card.dataset.id);
       });
     });
@@ -644,7 +684,9 @@
     dom.grid.querySelectorAll('.k-card').forEach(card => {
       bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-carousel') || e.target.closest('.k-card-dots')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+        // Si on vient juste de swiper le carrousel, ne pas ouvrir la modale
+        if (card.dataset.justSwiped === '1') return;
         openModal(card.dataset.id);
       });
     });
@@ -1862,6 +1904,13 @@ function quickRemove(productId, btnEl) {
 
   function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+    // Garde-fou : toujours passer par le panier (vérifier qu'il est bien ouvert)
+    const cartDrawer = document.getElementById('k-cart-drawer');
+    const fromCart = cartDrawer && cartDrawer.classList.contains('open');
+    if (!fromCart) {
+      // Si appelé hors contexte panier, rediriger vers l'ouverture du panier
+      if (typeof openCart === 'function') { openCart(); return; }
+    }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
     renderCheckout();
@@ -1899,33 +1948,7 @@ function quickRemove(productId, btnEl) {
     });
     body.appendChild(backBtn);
 
-    /* ── 1. Mini récap panier ── */
-    const recap = document.createElement('div');
-    recap.className = 'ck-recap';
-    const itemCount = state.cart.reduce((n, i) => n + i.qty, 0);
-    const itemsList = state.cart.slice(0, 3).map(i => {
-      const imgHTML = i.product.image_url
-        ? `<img class="ck-recap-thumb" src="${optimizeImgUrl(i.product.image_url, 80)}" alt="">`
-        : `<div class="ck-recap-thumb ck-recap-thumb--empty"></div>`;
-      return `<div class="ck-recap-item">
-        ${imgHTML}
-        <div class="ck-recap-info">
-          <div class="ck-recap-name">${sanitize(i.product.name)}</div>
-          <div class="ck-recap-qty">× ${i.qty}</div>
-        </div>
-      </div>`;
-    }).join('');
-    const extraCount = state.cart.length - 3;
-    recap.innerHTML = `
-      <div class="ck-recap-head">
-        <span class="ck-recap-title">📦 ${itemCount} article${itemCount > 1 ? 's' : ''}</span>
-        <span class="ck-recap-total">${fmt(cartTotal(), 'KMF')}</span>
-      </div>
-      <div class="ck-recap-list">${itemsList}
-        ${extraCount > 0 ? `<div class="ck-recap-more">+ ${extraCount} autre${extraCount > 1 ? 's' : ''}</div>` : ''}
-      </div>
-    `;
-    body.appendChild(recap);
+    /* ── Récap retiré : passage obligatoire par le panier ── */
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
