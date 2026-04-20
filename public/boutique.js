@@ -403,7 +403,7 @@
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${p.name}</div>
-            <div class="k-card-bottom">
+            <div class="k-card-bottom k-card-prices-row">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
@@ -494,7 +494,7 @@
           <span class="k-promo-badge">-${p.promo_pct}%</span>
           <div class="k-promo-card-info">
             <div class="k-promo-card-name">${p.name}</div>
-            <div>
+            <div class="k-promo-card-prices">
               <span class="k-promo-card-price">${fmtPrice(p.price_kmf)}</span>
               <span class="k-promo-card-old">${fmtPrice(oldPrice)}</span>
             </div>
@@ -547,7 +547,7 @@
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${p.name}</div>
-            <div class="k-card-bottom">
+            <div class="k-card-bottom k-card-prices-row">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
@@ -2402,7 +2402,7 @@ async function submitOrder(btn) {
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${sanitize(p.name)}</div>
-            <div class="k-card-bottom">
+            <div class="k-card-bottom k-card-prices-row">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? `<span class="k-card-old-price">${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>` : ''}
             </div>
