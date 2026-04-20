@@ -135,6 +135,7 @@
   cart: initialCart,
   favs: JSON.parse(localStorage.getItem('k_favs') || '[]'),
   activeCat: 'all',
+    activeSubcat: null,
   modalProduct: null,
   modalQty: 1,
   modalHistory: [],
@@ -147,6 +148,115 @@
   checkoutAttemptKey: null,
   pendingStripeOrderRef: null,
 };
+
+
+  /* ── SUBCATEGORIES MAP ───────────────────────────────── */
+  const SUBCATS = {
+    'Mode': [
+      { key: 'femme', label: 'Femme', icon: '👗' },
+      { key: 'homme', label: 'Homme', icon: '👔' },
+      { key: 'hijab', label: 'Hijab', icon: '🧕' },
+      { key: 'boubou', label: 'Boubou', icon: '👘' },
+      { key: 'chaussures', label: 'Chaussures', icon: '👟' },
+      { key: 'sacs', label: 'Sacs', icon: '👜' },
+    ],
+    'Beauté': [
+      { key: 'parfum', label: 'Parfum', icon: '🌸' },
+      { key: 'soin', label: 'Soin', icon: '🧴' },
+      { key: 'cheveux', label: 'Cheveux', icon: '💇' },
+      { key: 'maquillage', label: 'Maquillage', icon: '💄' },
+      { key: 'savon', label: 'Savon', icon: '🧼' },
+    ],
+    'Tech': [
+      { key: 'telephones', label: 'Téléphones', icon: '📱' },
+      { key: 'accessoires', label: 'Accessoires', icon: '🔌' },
+      { key: 'chargeurs', label: 'Chargeurs', icon: '🔋' },
+      { key: 'audio', label: 'Audio', icon: '🎧' },
+      { key: 'maison-tech', label: 'Maison', icon: '💡' },
+    ],
+    'Enfant': [
+      { key: 'bebe', label: 'Bébé', icon: '🍼' },
+      { key: 'garcon', label: 'Garçon', icon: '👦' },
+      { key: 'fille', label: 'Fille', icon: '👧' },
+      { key: 'ecole', label: 'École', icon: '🎒' },
+      { key: 'jouets', label: 'Jouets', icon: '🧸' },
+    ],
+    'Maison': [
+      { key: 'cuisine', label: 'Cuisine', icon: '🍳' },
+      { key: 'salon', label: 'Salon', icon: '🛋' },
+      { key: 'chambre', label: 'Chambre', icon: '🛏' },
+      { key: 'rangement', label: 'Rangement', icon: '📦' },
+      { key: 'deco', label: 'Déco', icon: '🖼' },
+    ],
+    'Sport': [
+      { key: 'fitness', label: 'Fitness', icon: '💪' },
+      { key: 'running', label: 'Running', icon: '🏃' },
+      { key: 'ballons', label: 'Ballons', icon: '⚽' },
+      { key: 'yoga', label: 'Yoga', icon: '🧘' },
+      { key: 'outdoor', label: 'Outdoor', icon: '⛰' },
+    ],
+    'Sur-mesure': [
+      { key: 'couture', label: 'Couture', icon: '🧵' },
+      { key: 'tissus', label: 'Tissus', icon: '🪡' },
+      { key: 'cadeaux', label: 'Cadeaux', icon: '🎁' },
+      { key: 'idees', label: 'Idées', icon: '💡' },
+      { key: 'commande-speciale', label: 'Spécial', icon: '⭐' },
+    ],
+  };
+
+  /* ── RENDER SUBCATEGORIES ────────────────────────────── */
+  function renderSubcats(category) {
+    var wrap = document.getElementById('k-subcats-wrap');
+    if (!wrap) return;
+
+    state.activeSubcat = null;
+
+    if (category === 'all' || !SUBCATS[category]) {
+      wrap.innerHTML = '';
+      wrap.classList.remove('k-subcats-visible');
+      _updateMobileScrollTop();
+      return;
+    }
+
+    var subs = SUBCATS[category];
+    var allChip = '<button class="k-subchip active" data-subcat="all">'
+      + '<span class="k-subchip-icon">✦</span>'
+      + '<span class="k-subchip-label">Tout</span></button>';
+
+    var chips = subs.map(function(s) {
+      return '<button class="k-subchip" data-subcat="' + s.key + '">'
+        + '<span class="k-subchip-icon">' + s.icon + '</span>'
+        + '<span class="k-subchip-label">' + s.label + '</span></button>';
+    }).join('');
+
+    wrap.innerHTML = '<div class="k-subcats-rail">' + allChip + chips + '</div>';
+    wrap.classList.add('k-subcats-visible');
+
+    wrap.querySelectorAll('.k-subchip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        wrap.querySelectorAll('.k-subchip').forEach(function(c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        var sub = chip.dataset.subcat;
+        state.activeSubcat = (sub === 'all') ? null : sub;
+        renderGrid();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    _updateMobileScrollTop();
+  }
+
+  /* ── MOBILE SCROLL TOP RECALC ────────────────────────── */
+  function _updateMobileScrollTop() {
+    if (window.innerWidth > 899) return;
+    var doUpdate = function() {
+      var w = document.getElementById('k-hero-fixed-wrap');
+      var s = document.getElementById('k-page-scroll');
+      if (w && s) s.style.top = (w.offsetHeight + 44) + 'px';
+    };
+    requestAnimationFrame(doUpdate);
+    setTimeout(doUpdate, 400);
+  }
 
   /* ── DOM REFS ──────────────────────────────────────────── */
   const $ = (s) => document.querySelector(s);
@@ -265,9 +375,14 @@
     const spinner = document.getElementById('k-load-more-spinner');
     // Même logique que renderGrid : si activeCat === 'all', on prend filtered tel quel
     // sinon on filtre filtered par catégorie (cohérent avec renderGrid)
-    const list = state.activeCat === 'all'
+    let list = state.activeCat === 'all'
       ? state.filtered
       : state.filtered.filter(p => p.category === state.activeCat);
+    // Subcategory filter
+    if (state.activeSubcat) {
+      const subF = list.filter(p => p.subcategory === state.activeSubcat);
+      if (subF.length > 0) list = subF;
+    }
     const start = (state.page + 1) * state.pageSize;
     if (start >= list.length) {
       if (spinner) spinner.classList.remove('show');
@@ -409,9 +524,14 @@
   /* ── RENDER GRID ────────────────────────────────────────── */
   function renderGrid() {
     state.page = 0;
-    const list = state.activeCat === 'all'
+    let list = state.activeCat === 'all'
       ? state.filtered
       : state.filtered.filter(p => p.category === state.activeCat);
+    // Subcategory filter
+    if (state.activeSubcat) {
+      const subF = list.filter(p => p.subcategory === state.activeSubcat);
+      if (subF.length > 0) list = subF;
+    }
     const pageItems = list.slice(0, state.pageSize);
 
     dom.grid.innerHTML = pageItems.map(p => {
@@ -759,6 +879,7 @@ function quickRemove(productId, btnEl) {
         $$('.k-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         state.activeCat = chip.dataset.cat;
+        renderSubcats(state.activeCat);
         renderGrid();
         // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
         window.scrollTo({ top: 0, behavior: 'smooth' });
