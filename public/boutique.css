@@ -2291,18 +2291,15 @@ body{
     align-items: center;
     gap: 0;
     pointer-events: none;
-    background: rgba(255,255,255,.3);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    padding: 2px 12px 3px;
-    border-radius: 8px;
+    background: none;
+    padding: 0 6px;
   }
   .k-hero-mini-slogan .k-line-1,
   .k-hero-mini-slogan .k-line-2 {
     font-size: clamp(0.82rem, 3.6vw, 1.05rem);
     font-weight: 800;
     line-height: 1.25;
-    text-shadow: none;
+    text-shadow: 0 0 6px rgba(255,255,255,.85), 0 0 12px rgba(255,255,255,.6);
   }
   .k-hero-mini-slogan .k-line-1 { color: #1a1a1a; }
   .k-hero-mini-slogan .k-line-2 { color: #2d7a56; }
