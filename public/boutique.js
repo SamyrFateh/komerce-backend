@@ -1366,7 +1366,7 @@ function quickRemove(productId, btnEl) {
     lines.push(cartURL);
 
     var msg = lines.join('\n');
-    window.open(KOMERCE_WA_URL + '?text=' + encodeURIComponent(msg), '_blank');
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
