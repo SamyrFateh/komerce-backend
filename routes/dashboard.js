@@ -1343,6 +1343,7 @@ router.get('/payments', async (req, res, next) => {
     `);
 
     // ── Stripe failed récents (détails pour action) ───────────────────────────
+    // Inclus aussi dans reconciliation.stripe_failed_active
     const { rows: failedOrders } = await db.query(`
       SELECT
         o.reference,
@@ -1360,11 +1361,126 @@ router.get('/payments', async (req, res, next) => {
       LIMIT 10
     `, [period]);
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // RÉCONCILIATION : Vendu / Commandé / Sourcé vs Encaissé
+    // Détecte les écarts entre ce qui est engagé et ce qui est effectivement payé
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // GAP 1 — Livré sans encaissé
+    // Commandes disponibles ou récupérées mais paiement non confirmé.
+    // C'est la divergence la plus critique : marchandise partie, argent non reçu.
+    const { rows: deliveredUnpaid } = await db.query(`
+      SELECT
+        o.reference,
+        o.payment_mode,
+        o.payment_status,
+        o.status        AS order_status,
+        o.total_kmf,
+        o.total_eur,
+        o.created_at,
+        u.full_name     AS client_name,
+        u.phone         AS client_phone,
+        r.name          AS relais_name
+      FROM orders o
+      LEFT JOIN users  u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.status          IN ('available', 'collected')
+        AND o.payment_status  != 'paid'
+        AND o.status          != 'cancelled'
+      ORDER BY o.created_at ASC
+    `);
+
+    // GAP 2 — Sourcé sans payé
+    // Des colis sont en cours de traitement (preparation/shipped/in_transit/arrived/available)
+    // pour des commandes dont le paiement n'est pas encore confirmé.
+    // Exposition financière : l'achat a été engagé mais l'encaissement n'est pas garanti.
+    const { rows: sourcedUnpaid } = await db.query(`
+      SELECT
+        o.reference,
+        o.payment_mode,
+        o.payment_status,
+        o.total_kmf,
+        o.total_eur,
+        o.cost_real_kmf,
+        o.created_at,
+        COUNT(p.id)             AS nb_parcels_actifs,
+        ARRAY_AGG(p.status)     AS parcel_statuses,
+        u.full_name             AS client_name,
+        u.phone                 AS client_phone
+      FROM orders o
+      JOIN parcels p  ON p.order_id = o.id
+                     AND p.status NOT IN ('draft', 'cancelled')
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.payment_status = 'pending'
+        AND o.status NOT IN ('cancelled')
+      GROUP BY o.id, u.full_name, u.phone
+      ORDER BY o.created_at ASC
+    `);
+
+    // GAP 3a — Stripe : payé sans stripe_payment_id (incohérence comptable)
+    // Le flag payment_status = 'paid' a été posé mais aucun PaymentIntent tracé.
+    const { rows: stripeNoproof } = await db.query(`
+      SELECT o.reference, o.total_eur, o.total_kmf, o.created_at,
+             u.full_name AS client_name
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.payment_mode   = 'stripe_eur'
+        AND o.payment_status = 'paid'
+        AND (o.stripe_payment_id IS NULL OR o.stripe_payment_id = '')
+      ORDER BY o.created_at DESC
+    `);
+
+    // GAP 3b — Cash : payé sans cash_paid_at (traçabilité manquante)
+    // L'agent a confirmé le paiement mais l'horodatage de réception n'a pas été enregistré.
+    const { rows: cashNoproof } = await db.query(`
+      SELECT o.reference, o.total_kmf, o.created_at,
+             o.cash_ref_code,
+             u.full_name AS client_name
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.payment_mode   = 'cash_relais'
+        AND o.payment_status = 'paid'
+        AND o.cash_paid_at   IS NULL
+      ORDER BY o.created_at DESC
+    `);
+
+    // GAP 4 — Écart global commandé vs encaissé
+    // Vision macro : argent théorique engagé vs argent réellement rentré en caisse.
+    const { rows: [ecart] } = await db.query(`
+      SELECT
+        -- Commandé = toutes commandes non annulées
+        COALESCE(SUM(total_kmf) FILTER (
+          WHERE status != 'cancelled'
+        ), 0) AS total_commande_kmf,
+
+        -- Encaissé = paiements confirmés
+        COALESCE(SUM(total_kmf) FILTER (
+          WHERE payment_status = 'paid'
+        ), 0) AS total_encaisse_kmf,
+
+        -- Sourcé = coût réel des commandes non annulées avec colis engagés
+        COALESCE(SUM(cost_real_kmf) FILTER (
+          WHERE cost_real_kmf IS NOT NULL
+            AND status NOT IN ('cancelled')
+        ), 0) AS total_source_kmf,
+
+        -- Écart brut non encaissé (commandé - encaissé, sur non-annulé)
+        COALESCE(SUM(total_kmf) FILTER (
+          WHERE payment_status != 'paid'
+            AND status NOT IN ('cancelled')
+        ), 0) AS gap_non_encaisse_kmf
+
+      FROM orders
+    `);
+
     // ── Calculs résumé ────────────────────────────────────────────────────────
     const cashPendingKmf   = Math.round(Number(agg.cash_pending_kmf));
     const stripePendingEur = +Number(agg.stripe_pending_eur).toFixed(2);
     const totalPendingKmf  = cashPendingKmf + Math.round(stripePendingEur * rates.eur_kmf);
-    const alertCount       = Number(agg.cash_overdue_36h) + Number(agg.stripe_failed_count);
+
+    // alert_count inclut maintenant les anomalies de réconciliation critiques
+    const reconciAlerts = deliveredUnpaid.length + stripeNoproof.length;
+    const alertCount    = Number(agg.cash_overdue_36h) + Number(agg.stripe_failed_count) + reconciAlerts;
 
     res.json({
       period,
@@ -1415,6 +1531,93 @@ router.get('/payments', async (req, res, next) => {
         // Nombre d'actions requises (annulation + stripe failed)
         alert_count:       alertCount,
         needs_action:      alertCount > 0,
+      },
+
+      // ── Réconciliation : Vendu / Commandé / Sourcé vs Encaissé ───────────
+      reconciliation: {
+
+        // Vue macro — écarts globaux en KMF
+        ecart_global: {
+          total_commande_kmf:    Math.round(Number(ecart.total_commande_kmf)),
+          total_encaisse_kmf:    Math.round(Number(ecart.total_encaisse_kmf)),
+          total_source_kmf:      Math.round(Number(ecart.total_source_kmf)),
+          gap_non_encaisse_kmf:  Math.round(Number(ecart.gap_non_encaisse_kmf)),
+          // Alerte si argent non encaissé > 0
+          has_gap:               Number(ecart.gap_non_encaisse_kmf) > 0,
+        },
+
+        // GAP 1 — Livré sans encaissé (critique)
+        // Marchandise partie, argent non reçu
+        delivered_unpaid: {
+          count:  deliveredUnpaid.length,
+          total_kmf: Math.round(deliveredUnpaid.reduce((s, o) => s + Number(o.total_kmf), 0)),
+          orders: deliveredUnpaid.map(o => ({
+            reference:    o.reference,
+            mode:         o.payment_mode === 'cash_relais' ? 'cash' : 'stripe',
+            order_status: o.order_status,
+            payment_status: o.payment_status,
+            total_kmf:    Math.round(Number(o.total_kmf)),
+            total_eur:    o.total_eur ? +Number(o.total_eur).toFixed(2) : null,
+            client:       o.client_name,
+            phone:        o.client_phone,
+            relais:       o.relais_name,
+            created_at:   o.created_at,
+          })),
+        },
+
+        // GAP 2 — Sourcé sans payé (exposition financière)
+        // Colis engagés pour commandes dont le paiement n'est pas confirmé
+        sourced_unpaid: {
+          count:  sourcedUnpaid.length,
+          total_kmf: Math.round(sourcedUnpaid.reduce((s, o) => s + Number(o.total_kmf || 0), 0)),
+          cost_source_kmf: Math.round(sourcedUnpaid.reduce((s, o) => s + Number(o.cost_real_kmf || 0), 0)),
+          orders: sourcedUnpaid.map(o => ({
+            reference:       o.reference,
+            mode:            o.payment_mode === 'cash_relais' ? 'cash' : 'stripe',
+            payment_status:  o.payment_status,
+            total_kmf:       Math.round(Number(o.total_kmf || 0)),
+            cost_real_kmf:   o.cost_real_kmf ? Math.round(Number(o.cost_real_kmf)) : null,
+            nb_parcels:      Number(o.nb_parcels_actifs),
+            parcel_statuses: o.parcel_statuses,
+            client:          o.client_name,
+            phone:           o.client_phone,
+            created_at:      o.created_at,
+          })),
+        },
+
+        // GAP 3 — Payé sans preuve (incohérence comptable)
+        paid_no_proof: {
+          stripe_no_payment_id: {
+            count:  stripeNoproof.length,
+            orders: stripeNoproof.map(o => ({
+              reference:  o.reference,
+              total_eur:  +Number(o.total_eur).toFixed(2),
+              total_kmf:  Math.round(Number(o.total_kmf)),
+              client:     o.client_name,
+              created_at: o.created_at,
+            })),
+          },
+          cash_no_timestamp: {
+            count:  cashNoproof.length,
+            orders: cashNoproof.map(o => ({
+              reference:     o.reference,
+              cash_ref_code: o.cash_ref_code,
+              total_kmf:     Math.round(Number(o.total_kmf)),
+              client:        o.client_name,
+              created_at:    o.created_at,
+            })),
+          },
+        },
+
+        // Niveau d'alerte réconciliation : ok | warning | critical
+        // critical → marchandise livrée non payée ou paiement sans preuve
+        // warning  → sourcing engagé sans paiement confirmé
+        // ok       → pas d'anomalie détectée
+        alert_level: deliveredUnpaid.length > 0 || stripeNoproof.length > 0
+          ? 'critical'
+          : sourcedUnpaid.length > 0
+            ? 'warning'
+            : 'ok',
       },
 
       // ── Liste opérationnelle des commandes en attente ──────────────────────
