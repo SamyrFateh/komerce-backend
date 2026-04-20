@@ -3450,3 +3450,138 @@ input#of-client-email {
   /* Hérite déjà de k-ck-input, juste un rappel de style */
   font-family: var(--font);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MODALE PRODUIT — scroll vertical + suggestions en grille (Shein-like)  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Le conteneur principal doit scroller verticalement */
+.k-modal-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* La zone image reste fixe en haut (carrousel horizontal) */
+.k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 450px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sand);
+}
+
+/* Info produit après l'image */
+.k-modal-info {
+  padding: 16px 14px 12px;
+  background: var(--white);
+}
+
+/* ── SUGGESTIONS : passer de rail horizontal à grille verticale ──────── */
+.k-modal-suggestions {
+  flex-shrink: 1 !important;
+  padding: 16px 12px 20px !important;
+  border-top: 8px solid var(--sand) !important;
+  background: var(--white);
+}
+
+.k-modal-suggestions h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  color: var(--text) !important;
+}
+
+/* Grille verticale 2 colonnes mobile — scroll haut/bas naturel */
+.k-sug-rail {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  scroll-snap-type: none !important;
+  padding: 0 !important;
+}
+
+.k-sug-card {
+  flex: unset !important;
+  width: 100% !important;
+  scroll-snap-align: unset !important;
+}
+
+.k-sug-card img {
+  aspect-ratio: 4/3 !important;
+}
+
+/* Desktop : 4 colonnes */
+@media (min-width: 900px) {
+  .k-sug-rail {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  .k-modal-img-wrap {
+    height: 60vh !important;
+    max-height: 600px;
+  }
+}
+
+/* Assurer que la modale garde les actions (quantité + ajout panier) en bas fixe */
+.k-modal-actions {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--white);
+  border-top: 1px solid var(--sand-dark);
+  z-index: 3;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX — Bouton "Payer/Confirmer" toujours visible dans modal paiement    */
+/*  Garantit que .k-order-modal garde bien sa structure flex même quand    */
+/*  d'autres règles CSS interfèrent.                                        */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Renforcer la modal d'ordre : flex column garanti, hauteur stable */
+.k-order-overlay.open {
+  display: flex !important;
+}
+.k-order-overlay.open .k-order-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+/* Le body garde son flex:1 et scrolle */
+.k-order-overlay.open .k-order-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+}
+
+/* Le bouton Payer est toujours visible en bas */
+.k-order-overlay.open .ck-confirm-btn {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 10 !important;
+  /* Protection contre les claviers virtuels mobiles */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 600px) {
+  .k-order-overlay.open .k-order-modal {
+    height: auto !important;
+    max-height: 92vh !important;
+  }
+}
