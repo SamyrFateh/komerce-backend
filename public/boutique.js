@@ -956,6 +956,63 @@ function quickRemove(productId, btnEl) {
     // Scroll horizontal = visuel uniquement, pas de changement auto de catégorie
   }
 
+  /* ── CATALOG SWIPE NAV (mobile) ─────────────────────────── */
+  /* Swipe horizontal gauche/droite sur le catalogue → change catégorie */
+  function setupCatalogSwipeNav() {
+    if (window.innerWidth > 899) return;
+    var scroller = document.getElementById('k-page-scroll') || document.getElementById('k-catalog-section') || document.body;
+    if (!scroller) return;
+
+    var startX = 0, startY = 0, startT = 0;
+    var tracking = false;
+    var SWIPE_MIN_DIST = 60;          // px minimum horizontal
+    var SWIPE_MAX_VERTICAL = 40;      // px max vertical (sinon c'est un scroll vertical)
+    var SWIPE_MAX_DURATION = 600;     // ms max (sinon c'est un drag lent = pas un swipe)
+
+    scroller.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) { tracking = false; return; }
+      // Ignore si touch démarré sur un élément interactif
+      var t = e.target;
+      if (t.closest('.k-card-fav, .k-card-add, .k-card-tab, .k-cats, .k-subcats-rail, .k-header, .k-modal, .k-cart-drawer, button, input, a')) {
+        tracking = false;
+        return;
+      }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startT = Date.now();
+      tracking = true;
+    }, { passive: true });
+
+    scroller.addEventListener('touchend', function(e) {
+      if (!tracking) return;
+      tracking = false;
+      var touch = e.changedTouches[0];
+      if (!touch) return;
+      var dx = touch.clientX - startX;
+      var dy = touch.clientY - startY;
+      var dt = Date.now() - startT;
+      if (dt > SWIPE_MAX_DURATION) return;
+      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) return;
+      if (Math.abs(dx) < SWIPE_MIN_DIST) return;
+      // Doit être dominant horizontal
+      if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+      // dx > 0 = swipe vers la droite → catégorie précédente
+      // dx < 0 = swipe vers la gauche → catégorie suivante
+      var chips = Array.prototype.slice.call(document.querySelectorAll('#k-cats .k-chip'));
+      if (chips.length < 2) return;
+      var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
+      if (currentIdx === -1) currentIdx = 0;
+      var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
+      if (nextIdx < 0 || nextIdx >= chips.length) return; // bords : pas de wrap
+      var nextChip = chips[nextIdx];
+      if (nextChip) {
+        nextChip.click();
+        // Le click handler fait déjà centerActiveChip + renderGrid + scrollTo(top)
+      }
+    }, { passive: true });
+  }
+
   /* ── SEARCH ─────────────────────────────────────────────── */
   function setupSearch() {
     dom.searchInput.addEventListener('input', () => {
@@ -2869,6 +2926,7 @@ async function submitOrder(btn) {
     updateCartBadge();
     setupCats();
     setupCatSwipeNav();
+    setupCatalogSwipeNav();
 
     /* ── Card mini-tabs (Shein-style, event delegation) ── */
     document.addEventListener('click', function(e) {
