@@ -1718,6 +1718,18 @@ body{
   box-sizing:border-box;outline:none;transition:border-color .2s;
 }
 .k-track-input:focus{border-color:var(--coral)}
+.k-track-phone-wrap{
+  display:flex;gap:6px;width:100%;
+}
+.k-track-country{
+  flex:0 0 auto;padding:10px 6px;border:1.5px solid var(--sand-dark);
+  border-radius:8px;font-size:14px;background:var(--white);
+  font-family:inherit;outline:none;cursor:pointer;
+}
+.k-track-country:focus{border-color:var(--coral)}
+.k-track-input--phone{
+  flex:1;min-width:0;
+}
 .k-track-btn{
   width:100%;margin-top:12px;padding:13px;
   background:var(--text);color:white;border:none;

@@ -2504,30 +2504,43 @@ async function submitOrder(btn) {
       favEl.after(el);
     }
 
-    const otpState = { email: '' };
+    const otpState = { phone: '' };
 
     el.innerHTML = `
       <h2>📦 Suivi & Historique</h2>
 
-      <!-- Étape 1 : identification -->
+      <!-- Étape 1 : identification par téléphone -->
       <div id="k-otp-step1">
-        <p class="k-otp-hint">Entrez l'email utilisé lors de votre commande pour accéder à votre historique et recevoir un code gratuit.</p>
+        <p class="k-otp-hint">Entrez votre numéro de téléphone pour recevoir un code par WhatsApp et accéder à vos commandes.</p>
         <div class="k-track-form">
-          <input class="k-track-input" id="k-otp-email" type="email" placeholder="votre@email.com" autocomplete="email" inputmode="email">
-          <button class="k-track-btn" id="k-otp-request-btn">Envoyer le code</button>
+          <div class="k-track-phone-wrap">
+            <select id="k-otp-country" class="k-track-country">
+              <option value="+269">🇰🇲 +269</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+262">🇷🇪 +262</option>
+              <option value="+32">🇧🇪 +32</option>
+              <option value="+41">🇨🇭 +41</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+971">🇦🇪 +971</option>
+              <option value="+212">🇲🇦 +212</option>
+            </select>
+            <input class="k-track-input k-track-input--phone" id="k-otp-phone" type="tel" placeholder="321 12 34" autocomplete="tel" inputmode="tel">
+          </div>
+          <button class="k-track-btn" id="k-otp-request-btn">📲 Envoyer le code</button>
         </div>
         <div class="k-otp-divider"><span>ou</span></div>
         <div class="k-track-form">
-          <input class="k-track-input" id="k-otp-ref" type="text" placeholder="Référence commande : KMR-2025-0042" autocomplete="off" style="text-transform:uppercase">
+          <input class="k-track-input" id="k-otp-ref" type="text" placeholder="Référence : KMR-2025-0042" autocomplete="off" style="text-transform:uppercase">
           <button class="k-track-btn k-track-btn--ghost" id="k-otp-ref-btn">Suivre sans code</button>
         </div>
       </div>
 
-      <!-- Étape 2 : saisie OTP -->
+      <!-- Étape 2 : saisie OTP WhatsApp -->
       <div id="k-otp-step2" style="display:none">
         <div class="k-otp-sent-banner">
-          📧 Code envoyé à <strong id="k-otp-email-display"></strong><br>
-          <small>Vérifiez vos spams si vous ne le recevez pas dans 1 minute.</small>
+          📲 Code WhatsApp envoyé au <strong id="k-otp-phone-display"></strong><br>
+          <small>Vérifiez vos messages WhatsApp. Code valable 10 min.</small>
         </div>
         <input class="k-otp-code-input" id="k-otp-code" type="text" inputmode="numeric" placeholder="_ _ _ _ _ _" maxlength="6" autocomplete="one-time-code">
         <button class="k-track-btn" id="k-otp-verify-btn">Vérifier</button>
@@ -2540,22 +2553,35 @@ async function submitOrder(btn) {
         <button class="k-otp-resend-btn" id="k-otp-back-btn" style="margin-top:16px">← Nouvelle recherche</button>
       </div>`;
 
-    /* ── Step 1a : request OTP by email ── */
+    /* Helper: build full E.164 phone from inputs */
+    function getFullPhone() {
+      const countryCode = el.querySelector('#k-otp-country').value;
+      let digits = (el.querySelector('#k-otp-phone').value || '').replace(/\D/g, '');
+      // Strip leading 0 for countries that use it
+      if (['+33','+262','+32','+41','+44','+971','+212'].includes(countryCode) && digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+      return countryCode + digits;
+    }
+
+    /* ── Step 1a : request OTP by phone (WhatsApp) ── */
     el.querySelector('#k-otp-request-btn').addEventListener('click', async () => {
-      const email = el.querySelector('#k-otp-email').value.trim();
-      if (!email || !email.includes('@')) { showToast('Entrez une adresse email valide.', 'error'); return; }
+      const phone = getFullPhone();
+      const digits = phone.replace(/^\+\d+/, '');
+      if (!digits || digits.length < 6) { showToast('Entrez un numéro de téléphone valide.', 'error'); return; }
       const btn = el.querySelector('#k-otp-request-btn');
       btn.disabled = true; btn.textContent = '⏳ Envoi…';
       try {
-        await apiPost('/api/auth/otp/request', { email });
-        otpState.email = email;
-        el.querySelector('#k-otp-email-display').textContent = email;
+        await apiPost('/api/auth/otp/request', { phone });
+        otpState.phone = phone;
+        el.querySelector('#k-otp-phone-display').textContent = phone;
         el.querySelector('#k-otp-step1').style.display = 'none';
         el.querySelector('#k-otp-step2').style.display = 'block';
-        showToast('📧 Code envoyé !', 'success');
+        showToast('📲 Code WhatsApp envoyé !', 'success');
       } catch(e) {
-        showToast('Erreur lors de l\'envoi. Réessayez.', 'error');
-        btn.disabled = false; btn.textContent = 'Envoyer le code';
+        const msg = e?.message || 'Erreur lors de l\'envoi.';
+        showToast(msg, 'error');
+        btn.disabled = false; btn.textContent = '📲 Envoyer le code';
       }
     });
 
@@ -2576,19 +2602,41 @@ async function submitOrder(btn) {
       }
     });
 
-    /* ── Step 2 : verify OTP ── */
+    /* ── Step 2 : verify OTP → then fetch orders from /client/tracking ── */
     el.querySelector('#k-otp-verify-btn').addEventListener('click', async () => {
       const code = el.querySelector('#k-otp-code').value.replace(/\s/g, '');
       if (code.length < 4) { showToast('Entrez le code complet.', 'error'); return; }
       const btn = el.querySelector('#k-otp-verify-btn');
       btn.disabled = true; btn.textContent = '⏳ Vérification…';
       try {
-        const result = await apiPost('/api/auth/otp/verify', { email: otpState.email, code });
-        el.querySelector('#k-otp-step2').style.display = 'none';
-        el.querySelector('#k-otp-step3').style.display = 'block';
-        renderOrdersHistory(result.orders || [], el.querySelector('#k-orders-list'));
+        // Verify OTP — sets kmrc_client cookie
+        const verifyResult = await apiPost('/api/auth/otp/verify', { phone: otpState.phone, code });
+        showToast('✅ Vérifié — chargement de vos commandes…', 'success');
+
+        // Fetch orders using the JWT cookie
+        try {
+          const trackingData = await apiGet('/api/client/tracking');
+          el.querySelector('#k-otp-step2').style.display = 'none';
+          el.querySelector('#k-otp-step3').style.display = 'block';
+          const orders = (trackingData.orders || []).map(o => ({
+            ...o,
+            total_amount: o.totalKmf || o.total_kmf || o.total_amount || 0,
+            created_at: o.createdAt || o.created_at
+          }));
+          renderOrdersHistory(orders, el.querySelector('#k-orders-list'));
+        } catch(trackErr) {
+          // Fallback: show verification success even if tracking fails
+          el.querySelector('#k-otp-step2').style.display = 'none';
+          el.querySelector('#k-otp-step3').style.display = 'block';
+          el.querySelector('#k-orders-list').innerHTML = `
+            <div style="text-align:center;padding:24px;color:var(--text-muted);">
+              <p>✅ Numéro vérifié ! Bienvenue <strong>${verifyResult.user?.name || ''}</strong></p>
+              <p style="margin-top:8px;">Aucune commande trouvée pour ce numéro.</p>
+            </div>`;
+        }
       } catch(e) {
-        showToast('Code incorrect ou expiré.', 'error');
+        const msg = e?.message || 'Code incorrect ou expiré.';
+        showToast(msg, 'error');
         btn.disabled = false; btn.textContent = 'Vérifier';
       }
     });
@@ -2600,8 +2648,8 @@ async function submitOrder(btn) {
       if (resendTimer) return;
       btn.disabled = true; btn.textContent = '⏳ Renvoi…';
       try {
-        await apiPost('/api/auth/otp/request', { email: otpState.email });
-        showToast('📧 Nouveau code envoyé !', 'success');
+        await apiPost('/api/auth/otp/request', { phone: otpState.phone });
+        showToast('📲 Nouveau code WhatsApp envoyé !', 'success');
         let countdown = 30;
         resendTimer = setInterval(() => {
           countdown--;
