@@ -2527,7 +2527,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(80px, 20vw, 110px);
+    height: clamp(150px, 38vw, 200px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -2537,6 +2537,7 @@ body.cart-open{overflow:hidden}
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 15%;
     border-radius: 0;
   }
 
