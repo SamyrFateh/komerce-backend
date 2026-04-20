@@ -1627,22 +1627,69 @@ body.cart-open{overflow:hidden}
     0%,100%{transform:translateX(0);opacity:.6}
     50%{transform:translateX(6px);opacity:1}
   }
+  /* ── Shein-style: 2-col vertical grid for suggestions ── */
+  .k-modal-suggestions{
+    padding:12px;
+    border-top:none;
+    background:var(--sand);
+  }
+  .k-modal-suggestions h3{
+    font-size:15px;
+    font-weight:700;
+    color:var(--text);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .k-modal-suggestions h3::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--sand-dark);
+  }
+  .k-sug-rail{
+    display:grid !important;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    overflow:visible;
+    scroll-snap-type:none;
+    max-height:none;
+  }
   .k-sug-card{
-    flex:0 0 130px;
+    flex:none;
+    width:100%;
+    scroll-snap-align:unset;
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+    background:var(--white);
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
   }
   .k-sug-card img{
     aspect-ratio:1;
-    border-radius:var(--radius) var(--radius) 0 0;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    object-fit:cover;
   }
   .k-sug-card-name{
     font-size:12px;
-    padding:6px 8px 2px;
+    font-weight:600;
+    padding:8px 10px 2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
   .k-sug-card-price{
-    font-size:13px;
-    padding:2px 8px 8px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--coral);
+    padding:2px 10px 10px;
   }
-  /* Hide desktop arrows on mobile */
+  .k-sug-add{
+    width:28px;
+    height:28px;
+    font-size:16px;
+  }
+  /* Hide desktop arrows + fades on mobile */
   .k-sug-arrow{display:none!important}
   .k-sug-wrap::before,.k-sug-wrap::after{display:none}
 }

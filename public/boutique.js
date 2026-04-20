@@ -1102,9 +1102,13 @@ function quickRemove(productId, btnEl) {
     const currentIdx = list.findIndex(p => p.id === product.id);
     updateModalNavArrows(list, currentIdx);
 
-    const suggestions = state.products
-      .filter(p => p.category === product.category && p.id !== product.id)
-      .slice(0, 8);
+    // Shein-style: same category first, then complementary, up to 20
+    const sameCat = state.products
+      .filter(p => p.category === product.category && p.id !== product.id);
+    const otherCat = state.products
+      .filter(p => p.category !== product.category && p.id !== product.id)
+      .sort(() => Math.random() - 0.5);
+    const suggestions = [...sameCat, ...otherCat].slice(0, 20);
     renderSuggestions(suggestions);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
