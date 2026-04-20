@@ -61,6 +61,17 @@ ul,ol{list-style:none}
   --container: 1400px;
   --pad-x: 16px;       /* mobile */
 }
+
+/* ── BUY NOW BUTTON ── */
+.k-buy-now-btn{
+  height:42px;padding:0 18px;
+  background:var(--coral);color:var(--white);
+  border-radius:50px;font-weight:600;font-size:14px;
+  white-space:nowrap;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.k-buy-now-btn:active{transform:scale(.97);opacity:.9}
+
 @media (min-width: 768px) {
   :root { --pad-x: 24px; }
 }
@@ -2509,6 +2520,45 @@ body{
   }
   .k-cart-overlay.open {
     bottom: 52px !important;
+  }
+
+  /* Modal above bottom nav on mobile */
+  .k-modal-overlay {
+    z-index: 10000;
+  }
+  .k-modal {
+    z-index: 10001;
+    padding-bottom: 0;
+  }
+  /* Modal actions always visible at bottom */
+  .k-modal-actions {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    z-index: 2;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  /* Buy button styling (was missing) */
+  .k-buy-now-btn {
+    height: 42px;
+    padding: 0 16px;
+    background: var(--coral);
+    color: #fff;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+  }
+  .k-buy-now-btn:active {
+    transform: scale(.97);
+    opacity: .9;
+  }
+  /* Image sharper — remove any blur on modal */
+  .k-modal-img-wrap img {
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
   }
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
