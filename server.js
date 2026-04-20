@@ -729,6 +729,14 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 036: cash_reconciliation table ready');
       } catch(e) { console.warn('Migration 036 (non-fatal):', e.message); }
 
+
+      // ── Migration 037: fix products is_active + subcategory + promo_pct ──
+      try {
+        const migration037 = require('./scripts/migration-037-fix-products');
+        await migration037(db);
+        console.log('✅ Migration 037: products is_active + subcategory fixed');
+      } catch(e) { console.warn('Migration 037 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
