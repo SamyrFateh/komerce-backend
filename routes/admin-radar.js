@@ -579,11 +579,11 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
           o.total_kmf,
           o.status AS order_status,
           o.created_at,
-          rc.name AS recipient_name,
-          rc.phone AS recipient_phone,
+          u.full_name AS recipient_name,
+          u.phone AS recipient_phone,
           array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
         FROM orders o
-        LEFT JOIN recipients rc ON rc.id = o.recipient_id
+        LEFT JOIN users u ON u.id = o.user_id
         LEFT JOIN parcels p ON p.order_id = o.id
         WHERE o.status NOT IN ('refunded')
         GROUP BY
@@ -592,8 +592,8 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
           o.total_kmf,
           o.status,
           o.created_at,
-          rc.name,
-          rc.phone
+          u.full_name,
+          u.phone
       `);
 
       // Distribution par status_detail
@@ -680,13 +680,14 @@ router.get('/orders-by-detail/:detail', authenticate, requireAdmin, async (req, 
     const { rows: orders } = await db.query(`
       SELECT
         o.id, o.reference, o.total_kmf, o.status AS order_status,
-        o.created_at, o.recipient_name, o.recipient_phone,
+        o.created_at, u.full_name AS recipient_name, u.phone AS recipient_phone,
         o.payment_mode,
         array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
       FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN parcels p ON p.order_id = o.id
       WHERE o.status NOT IN ('refunded')
-      GROUP BY o.id
+      GROUP BY o.id, u.full_name, u.phone
       ORDER BY o.created_at DESC
     `);
 

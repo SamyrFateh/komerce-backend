@@ -32,6 +32,7 @@ router.get('/', async (req, res, next) => {
   try {
     const {
       category,
+      subcategory,
       search,
       min_price,
       max_price,
@@ -47,6 +48,10 @@ router.get('/', async (req, res, next) => {
     if (category) {
       conditions.push(`p.category = $${pi++}`);
       params.push(category);
+    }
+    if (subcategory) {
+      conditions.push(`p.subcategory = $${pi++}`);
+      params.push(subcategory);
     }
     if (search) {
       conditions.push(`(p.name ILIKE $${pi} OR p.description ILIKE $${pi})`);
@@ -74,6 +79,7 @@ router.get('/', async (req, res, next) => {
          p.name,
          p.description,
          p.category,
+         p.subcategory,
          p.price_aed,
          p.price_kmf,
          p.price_eur,
@@ -122,11 +128,41 @@ router.get('/', async (req, res, next) => {
 router.get('/categories', async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT category, COUNT(*) AS count
+      `SELECT category, COUNT(*) AS count,
+              array_agg(DISTINCT subcategory) FILTER (WHERE subcategory IS NOT NULL) AS subcategories
        FROM products
        WHERE is_active = TRUE
        GROUP BY category
        ORDER BY category`
+    );
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+// ─── GET /api/products/subcategories ────────────────────────────────────────
+
+router.get('/subcategories', async (req, res, next) => {
+  try {
+    const { category } = req.query;
+    const conditions = ['is_active = TRUE', 'subcategory IS NOT NULL'];
+    const params = [];
+    let pi = 1;
+
+    if (category) {
+      conditions.push(`category = $${pi++}`);
+      params.push(category);
+    }
+
+    const { rows } = await db.query(
+      `SELECT category, subcategory, COUNT(*) AS count
+       FROM products
+       WHERE ${conditions.join(' AND ')}
+       GROUP BY category, subcategory
+       ORDER BY category, subcategory`,
+      params
     );
     res.json(rows);
   } catch (err) {
@@ -158,6 +194,7 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
       name,
       description,
       category,
+      subcategory,
       price_aed,
       price_kmf,
       price_eur,
@@ -193,13 +230,13 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
 
     const { rows: [product] } = await db.query(
       `INSERT INTO products
-         (name, description, category, price_aed, price_kmf, price_eur,
+         (name, description, category, subcategory, price_aed, price_kmf, price_eur,
           weight_kg, dimensions_cm, stock, image_url, images, badge,
           has_couture, customs_risk_coeff, sourcing_source, sort_order,
           requires_secure_transport, unsold_price_kmf, unsold_channel)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING *`,
-      [name, description, category, price_aed, price_kmf, price_eur,
+      [name, description, category, subcategory || null, price_aed, price_kmf, price_eur,
        weight_kg, dimensions_cm, stock, image_url, images ? JSON.stringify(images) : null,
        badge, has_couture, customs_risk_coeff, sourcing_source, sort_order,
        requires_secure_transport, unsold_price_kmf || null, unsold_channel]
@@ -216,7 +253,7 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
 router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(products.update), async (req, res, next) => {
   try {
     const fields = [
-      'name', 'description', 'category', 'price_aed', 'price_kmf', 'price_eur',
+      'name', 'description', 'category', 'subcategory', 'price_aed', 'price_kmf', 'price_eur',
       'weight_kg', 'dimensions_cm', 'stock', 'image_url', 'images', 'badge',
       'has_couture', 'customs_risk_coeff', 'sourcing_source', 'sort_order',
       'is_active', 'is_available',
