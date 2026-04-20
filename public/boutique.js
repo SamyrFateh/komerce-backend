@@ -959,21 +959,34 @@ function quickRemove(productId, btnEl) {
   /* ── CATALOG SWIPE NAV (mobile) ─────────────────────────── */
   /* Swipe horizontal gauche/droite sur le catalogue → change catégorie */
   function setupCatalogSwipeNav() {
-    if (window.innerWidth > 899) return;
-    var scroller = document.getElementById('k-page-scroll') || document.getElementById('k-catalog-section') || document.body;
-    if (!scroller) return;
+    if (window.innerWidth > 899) {
+      console.log('[swipe] désactivé (desktop)');
+      return;
+    }
+    console.log('[swipe] setup OK');
 
     var startX = 0, startY = 0, startT = 0;
     var tracking = false;
-    var SWIPE_MIN_DIST = 60;          // px minimum horizontal
-    var SWIPE_MAX_VERTICAL = 40;      // px max vertical (sinon c'est un scroll vertical)
-    var SWIPE_MAX_DURATION = 600;     // ms max (sinon c'est un drag lent = pas un swipe)
+    var SWIPE_MIN_DIST = 50;          // px minimum horizontal
+    var SWIPE_MAX_VERTICAL = 80;      // px max vertical
+    var SWIPE_MAX_DURATION = 1000;    // ms max
 
-    scroller.addEventListener('touchstart', function(e) {
+    // Écoute globale (capture phase) pour ne rater aucun touch
+    document.addEventListener('touchstart', function(e) {
       if (e.touches.length !== 1) { tracking = false; return; }
-      // Ignore si touch démarré sur un élément interactif
       var t = e.target;
-      if (t.closest('.k-card-fav, .k-card-add, .k-card-tab, .k-cats, .k-subcats-rail, .k-header, .k-modal, .k-cart-drawer, button, input, a')) {
+      // Zones à ignorer : chips, sous-catégories, header, modal, panier, bottom nav, bouton fav/add/tab
+      if (t.closest && t.closest(
+        '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal, ' +
+        '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
+        '.k-card-fav, .k-card-add, .k-card-tab, ' +
+        'input, textarea, select'
+      )) {
+        tracking = false;
+        return;
+      }
+      // Doit démarrer dans le catalogue ou le scroll principal
+      if (t.closest && !t.closest('#k-page-scroll, #k-catalog-section, .k-grid, .k-card, .k-section')) {
         tracking = false;
         return;
       }
@@ -981,9 +994,9 @@ function quickRemove(productId, btnEl) {
       startY = e.touches[0].clientY;
       startT = Date.now();
       tracking = true;
-    }, { passive: true });
+    }, { passive: true, capture: true });
 
-    scroller.addEventListener('touchend', function(e) {
+    document.addEventListener('touchend', function(e) {
       if (!tracking) return;
       tracking = false;
       var touch = e.changedTouches[0];
@@ -991,26 +1004,25 @@ function quickRemove(productId, btnEl) {
       var dx = touch.clientX - startX;
       var dy = touch.clientY - startY;
       var dt = Date.now() - startT;
-      if (dt > SWIPE_MAX_DURATION) return;
-      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) return;
-      if (Math.abs(dx) < SWIPE_MIN_DIST) return;
-      // Doit être dominant horizontal
-      if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
 
-      // dx > 0 = swipe vers la droite → catégorie précédente
-      // dx < 0 = swipe vers la gauche → catégorie suivante
+      console.log('[swipe] dx=' + Math.round(dx) + ' dy=' + Math.round(dy) + ' dt=' + dt + 'ms');
+
+      if (dt > SWIPE_MAX_DURATION) { console.log('[swipe] ignoré: trop lent'); return; }
+      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) { console.log('[swipe] ignoré: trop vertical'); return; }
+      if (Math.abs(dx) < SWIPE_MIN_DIST) { console.log('[swipe] ignoré: trop court'); return; }
+      if (Math.abs(dx) < Math.abs(dy) * 1.2) { console.log('[swipe] ignoré: dx pas dominant'); return; }
+
       var chips = Array.prototype.slice.call(document.querySelectorAll('#k-cats .k-chip'));
-      if (chips.length < 2) return;
+      if (chips.length < 2) { console.log('[swipe] pas assez de chips'); return; }
       var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
       if (currentIdx === -1) currentIdx = 0;
+      // dx < 0 = doigt va vers la gauche → cat suivante (à droite dans le rail)
+      // dx > 0 = doigt va vers la droite → cat précédente (à gauche dans le rail)
       var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-      if (nextIdx < 0 || nextIdx >= chips.length) return; // bords : pas de wrap
-      var nextChip = chips[nextIdx];
-      if (nextChip) {
-        nextChip.click();
-        // Le click handler fait déjà centerActiveChip + renderGrid + scrollTo(top)
-      }
-    }, { passive: true });
+      if (nextIdx < 0 || nextIdx >= chips.length) { console.log('[swipe] bord atteint'); return; }
+      console.log('[swipe] → chip ' + nextIdx + ' (' + chips[nextIdx].dataset.cat + ')');
+      chips[nextIdx].click();
+    }, { passive: true, capture: true });
   }
 
   /* ── SEARCH ─────────────────────────────────────────────── */
