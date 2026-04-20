@@ -2527,7 +2527,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(90px, 24vw, 130px);
+    height: clamp(80px, 20vw, 110px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -2602,8 +2602,8 @@ body.cart-open{overflow:hidden}
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    gap: 4px;
-    padding: 4px 8px;
+    gap: 2px;
+    padding: 3px 6px;
     background: rgba(253,250,245,.96);
     align-items: flex-start;
   }
@@ -2614,25 +2614,25 @@ body.cart-open{overflow:hidden}
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 2px 1px;
-    min-width: 44px;
-    max-width: 56px;
+    gap: 1px;
+    padding: 1px 1px;
+    min-width: 42px;
+    max-width: 52px;
     scroll-snap-align: start;
   }
   .k-chip-photo,
   .k-chip-emoji {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
     border-radius: 50%;
-    font-size: 18px;
+    font-size: 16px;
   }
   .k-chip-photo > span {
-    font-size: 11px;
+    font-size: 10px;
   }
   .k-chip-label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1.1;
     white-space: nowrap;
@@ -2641,17 +2641,17 @@ body.cart-open{overflow:hidden}
     max-width: 100%;
   }
 
-  /* ── G. PROMOS — horizontal scroll, compact cards ──── */
+  /* ── G. PROMOS — horizontal scroll, landscape cards ─── */
   #k-promos-section {
-    padding: 4px 0 2px;
+    padding: 2px 0 0;
     margin: 0;
     overflow: visible;
   }
   #k-promos-section .k-section-head {
-    padding: 0 12px 4px;
+    padding: 0 8px 2px;
     margin: 0;
   }
-  #k-promos-section .k-section-head h2 { font-size: 14px; }
+  #k-promos-section .k-section-head h2 { font-size: 13px; }
 
   #k-promo-rail {
     overflow-x: auto;
@@ -2659,7 +2659,7 @@ body.cart-open{overflow:hidden}
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
-    padding: 0 0 6px;
+    padding: 0 0 4px;
   }
   #k-promo-rail::-webkit-scrollbar { display: none; }
 
@@ -2672,23 +2672,23 @@ body.cart-open{overflow:hidden}
   .k-promo-rail-inner {
     display: flex;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: 6px;
     padding: 0 8px;
     width: max-content;
     animation: none;
     transform: none;
     align-items: stretch;
   }
-  /* Promo cards: ~2.5 visible → hints at scroll.
-     Width = (100vw - 16px - 2×8px) / 2.5 ≈ 144px on 390px phone.
-     Bigger than 3-col, readable text, premium feel. */
+  /* Promo cards: ~2.5 visible, 3:2 landscape images.
+     Width = (100vw - 16px - 2×6px) / 2.5 ≈ 144px on 390px phone.
+     3:2 ratio → image ~96px high (vs 144px square). Saves ~48px vertical. */
   .k-promo-card {
-    flex: 0 0 calc((100vw - 32px) / 2.5);
-    width: calc((100vw - 32px) / 2.5);
-    min-width: calc((100vw - 32px) / 2.5);
-    max-width: calc((100vw - 32px) / 2.5);
+    flex: 0 0 calc((100vw - 28px) / 2.5);
+    width: calc((100vw - 28px) / 2.5);
+    min-width: calc((100vw - 28px) / 2.5);
+    max-width: calc((100vw - 28px) / 2.5);
     scroll-snap-align: start;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     background: #fff;
     box-shadow: 0 1px 4px rgba(0,0,0,.07);
@@ -2696,61 +2696,61 @@ body.cart-open{overflow:hidden}
   }
   .k-promo-card-img {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 3 / 2;
     object-fit: cover;
-    border-radius: 12px 12px 0 0;
+    border-radius: 10px 10px 0 0;
     display: block;
     animation: none;
     background: #faf8f5;
   }
   .k-promo-badge {
     position: absolute;
-    top: 6px;
-    left: 6px;
+    top: 4px;
+    left: 4px;
     font-size: 9px;
-    padding: 2px 6px;
+    padding: 2px 5px;
     border-radius: 50px;
     z-index: 2;
   }
   .k-promo-card-info {
-    padding: 4px 6px 6px;
+    padding: 3px 5px 5px;
   }
   .k-promo-card-name {
-    font-size: 11px;
-    line-height: 1.25;
-    -webkit-line-clamp: 2;
+    font-size: 10px;
+    line-height: 1.2;
+    -webkit-line-clamp: 1;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
   .k-promo-card-prices {
     display: flex;
     align-items: baseline;
-    gap: 4px;
-    margin-top: 2px;
+    gap: 3px;
+    margin-top: 1px;
   }
   .k-promo-card-price {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--coral, #e64a19);
-    line-height: 1.2;
+    line-height: 1.1;
   }
   .k-promo-card-old {
-    font-size: 9px;
+    font-size: 8px;
     text-decoration: line-through;
     color: #aaa;
-    line-height: 1.2;
+    line-height: 1.1;
   }
 
   /* ── H. CATALOGUE GRID — 2 columns premium (desktop harmony) ── */
   #k-catalog-section {
-    padding: 4px 0 0;
+    padding: 2px 0 0;
     margin: 0;
     overflow: visible;
   }
   #k-catalog-section .k-section-head {
-    padding: 0 12px 6px;
+    padding: 0 8px 3px;
   }
   .k-grid {
     display: grid;
@@ -2900,8 +2900,8 @@ body.cart-open{overflow:hidden}
     padding: 10px 20px;
     margin: 8px auto 16px;
   }
-  .k-section-head h2 { font-size: 16px; }
-  .k-see-all { font-size: 12px; }
+  .k-section-head h2 { font-size: 14px; }
+  .k-see-all { font-size: 11px; }
 
 
   /* Cart drawer: leave room for bottom nav */
