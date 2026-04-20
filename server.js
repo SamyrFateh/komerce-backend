@@ -751,6 +751,16 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 039: descriptions updated to French');
       } catch(e) { console.warn('Migration 039 (non-fatal):', e.message); }
 
+      // ── Migration 040: users phone_payer + phone_beneficiary columns ──
+      try {
+        await pool.query(`
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_payer VARCHAR(30);
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_beneficiary VARCHAR(30);
+          CREATE INDEX IF NOT EXISTS idx_users_phone_payer ON users(phone_payer);
+        `);
+        console.log('✅ Migration 040: phone_payer + phone_beneficiary columns added');
+      } catch(e) { console.warn('Migration 040 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
