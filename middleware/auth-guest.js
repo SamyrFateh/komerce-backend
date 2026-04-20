@@ -159,7 +159,7 @@ async function findOrCreateUser({ payerPhone, beneficiaryPhone, fullName }) {
 
   const { rows: created } = await db.query(
     `INSERT INTO users (id, full_name, phone, phone_payer, phone_beneficiary, role, created_at)
-     VALUES ($1, $2, $3, $4, $5, 'customer', NOW())
+     VALUES ($1, $2, $3, $4, $5, 'client', NOW())
      RETURNING id, full_name, email, phone, phone_payer, phone_beneficiary, role, currency_pref`,
     [newId, name, payerNorm || benefNorm, payerNorm, benefNorm]
   );
