@@ -2667,15 +2667,20 @@ body{
   /* Modal above bottom nav on mobile */
   .k-modal-overlay {
     z-index: 10000;
+    background: none;          /* ← kill voilé effect on mobile */
   }
   .k-modal {
     z-index: 10001;
     padding-bottom: 0;
   }
+  /* Prevent scroll from bleeding through to body */
+  .k-modal-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
   /* Modal actions always visible at bottom */
   .k-modal-actions {
-    position: sticky;
-    bottom: 0;
+    flex-shrink: 0;
     background: #fff;
     z-index: 2;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));

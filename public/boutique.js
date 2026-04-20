@@ -1017,7 +1017,12 @@ function quickRemove(productId, btnEl) {
 
     dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
     dom.modalOverlay.classList.add('open');
+    // Lock body scroll (iOS needs position:fixed)
+    state._savedCatalogScrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${state._savedCatalogScrollY}px`;
   }
 
   // ── Boutons ← → dans la topbar de la modal
@@ -1073,13 +1078,15 @@ function quickRemove(productId, btnEl) {
 
   function closeModal() {
     dom.modalOverlay.classList.remove('open');
+    // Unlock body scroll (reverse iOS fix)
+    const scrollY = state._savedCatalogScrollY || 0;
     document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
-    // Restaurer la position de scroll du catalogue
-    if (typeof state._savedCatalogScrollY === 'number') {
-      requestAnimationFrame(() => window.scrollTo(0, state._savedCatalogScrollY));
-    }
   }
 
   function renderSuggestions(items) {
