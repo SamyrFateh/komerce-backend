@@ -1473,6 +1473,133 @@ router.get('/payments', async (req, res, next) => {
       FROM orders
     `);
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // ANTI-FRAUDE RELAIS CASH
+    // Détecte les comportements suspects des agents relais sur les paiements cash
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // FRAUDE 1 — Collected sans reverse (critique)
+    // Le relais a remis la marchandise au client mais l'argent n'est pas rentré.
+    // C'est le signal le plus fort : la livraison est confirmée, le paiement non.
+    const { rows: fraudCollectedUnpaid } = await db.query(`
+      SELECT
+        o.id,
+        o.reference,
+        o.total_kmf,
+        o.cash_ref_code,
+        o.collected_at,
+        o.available_at,
+        o.payment_status,
+        EXTRACT(EPOCH FROM (NOW() - o.collected_at)) / 3600  AS heures_depuis_collected,
+        u.full_name   AS client_name,
+        u.phone       AS client_phone,
+        r.id          AS relais_id,
+        r.name        AS relais_name,
+        r.agent_name,
+        r.phone       AS relais_phone,
+        r.island
+      FROM orders o
+      LEFT JOIN users  u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.payment_mode   = 'cash_relais'
+        AND o.status         = 'collected'
+        AND o.payment_status != 'paid'
+        AND o.collected_at   IS NOT NULL
+      ORDER BY o.collected_at ASC
+    `);
+
+    // FRAUDE 2 — Délai de reverse anormal (> 3 jours entre collected et cash_paid_at)
+    // Le reverse a bien eu lieu mais avec un délai suspect.
+    // Seuil paramétrable : 3 jours = warning, 7 jours = critique.
+    const { rows: fraudDelayedReverse } = await db.query(`
+      SELECT
+        o.reference,
+        o.total_kmf,
+        o.cash_ref_code,
+        o.collected_at,
+        o.cash_paid_at,
+        EXTRACT(DAY FROM (o.cash_paid_at - o.collected_at))  AS jours_delai_reverse,
+        r.id          AS relais_id,
+        r.name        AS relais_name,
+        r.agent_name,
+        r.phone       AS relais_phone,
+        r.island,
+        u.full_name   AS client_name
+      FROM orders o
+      LEFT JOIN users  u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.payment_mode   = 'cash_relais'
+        AND o.payment_status = 'paid'
+        AND o.collected_at   IS NOT NULL
+        AND o.cash_paid_at   IS NOT NULL
+        AND (o.cash_paid_at - o.collected_at) > INTERVAL '3 days'
+      ORDER BY (o.cash_paid_at - o.collected_at) DESC
+    `);
+
+    // FRAUDE 3 — Colis bloqué au relais depuis > 14 jours (rétention)
+    // La marchandise est disponible depuis trop longtemps.
+    // Peut indiquer que le relais retient les colis (pour accumuler du cash).
+    const { rows: fraudStaleParcels } = await db.query(`
+      SELECT
+        o.reference,
+        o.total_kmf,
+        o.cash_ref_code,
+        o.available_at,
+        EXTRACT(DAY FROM (NOW() - o.available_at))  AS jours_au_relais,
+        r.id          AS relais_id,
+        r.name        AS relais_name,
+        r.agent_name,
+        r.phone       AS relais_phone,
+        r.island,
+        u.full_name   AS client_name,
+        u.phone       AS client_phone
+      FROM orders o
+      LEFT JOIN users  u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.payment_mode = 'cash_relais'
+        AND o.status       = 'available'
+        AND o.available_at < NOW() - INTERVAL '14 days'
+      ORDER BY o.available_at ASC
+    `);
+
+    // SCORE PAR RELAIS — agrégation de toutes les anomalies détectées
+    // risk_score = (collected_unpaid × 3) + (delayed_reverse × 2) + (stale_parcels × 1)
+    // risk_level : critical ≥ 6 | warning ≥ 2 | ok < 2
+    const relaisRiskMap = {};
+
+    const addRelaisAnomaly = (row, type, weight) => {
+      if (!row.relais_id) return;
+      const key = row.relais_id;
+      if (!relaisRiskMap[key]) {
+        relaisRiskMap[key] = {
+          relais_id:    row.relais_id,
+          relais_name:  row.relais_name,
+          agent_name:   row.agent_name,
+          relais_phone: row.relais_phone,
+          island:       row.island,
+          risk_score:   0,
+          collected_unpaid_count:  0,
+          delayed_reverse_count:   0,
+          stale_parcels_count:     0,
+          total_kmf_at_risk:       0,
+        };
+      }
+      relaisRiskMap[key].risk_score         += weight;
+      relaisRiskMap[key][type + '_count']   += 1;
+      relaisRiskMap[key].total_kmf_at_risk  += Math.round(Number(row.total_kmf || 0));
+    };
+
+    fraudCollectedUnpaid.forEach(r => addRelaisAnomaly(r, 'collected_unpaid',  3));
+    fraudDelayedReverse.forEach(r  => addRelaisAnomaly(r, 'delayed_reverse',   2));
+    fraudStaleParcels.forEach(r    => addRelaisAnomaly(r, 'stale_parcels',     1));
+
+    const relaisRiskList = Object.values(relaisRiskMap)
+      .map(r => ({
+        ...r,
+        risk_level: r.risk_score >= 6 ? 'critical' : r.risk_score >= 2 ? 'warning' : 'ok',
+      }))
+      .sort((a, b) => b.risk_score - a.risk_score);
+
     // ── Calculs résumé ────────────────────────────────────────────────────────
     const cashPendingKmf   = Math.round(Number(agg.cash_pending_kmf));
     const stripePendingEur = +Number(agg.stripe_pending_eur).toFixed(2);
@@ -1616,6 +1743,84 @@ router.get('/payments', async (req, res, next) => {
         alert_level: deliveredUnpaid.length > 0 || stripeNoproof.length > 0
           ? 'critical'
           : sourcedUnpaid.length > 0
+            ? 'warning'
+            : 'ok',
+      },
+
+      // ── Anti-fraude relais cash ──────────────────────────────────────────
+      fraud_relais: {
+
+        // SIGNAL 1 — Collected sans reverse (risque maximal)
+        // Marchandise remise, argent non reçu. Action immédiate requise.
+        collected_unpaid: {
+          count:     fraudCollectedUnpaid.length,
+          total_kmf: Math.round(fraudCollectedUnpaid.reduce((s, o) => s + Number(o.total_kmf || 0), 0)),
+          orders: fraudCollectedUnpaid.map(o => ({
+            reference:             o.reference,
+            relais:                o.relais_name,
+            agent:                 o.agent_name,
+            relais_phone:          o.relais_phone,
+            island:                o.island,
+            client:                o.client_name,
+            client_phone:          o.client_phone,
+            total_kmf:             Math.round(Number(o.total_kmf)),
+            cash_ref_code:         o.cash_ref_code,
+            collected_at:          o.collected_at,
+            heures_depuis_collected: o.heures_depuis_collected != null
+              ? Math.round(Number(o.heures_depuis_collected))
+              : null,
+          })),
+        },
+
+        // SIGNAL 2 — Délai de reverse anormal (> 3 jours)
+        // Le reverse a eu lieu mais trop tard. Pattern suspect.
+        delayed_reverse: {
+          count: fraudDelayedReverse.length,
+          orders: fraudDelayedReverse.map(o => ({
+            reference:           o.reference,
+            relais:              o.relais_name,
+            agent:               o.agent_name,
+            relais_phone:        o.relais_phone,
+            island:              o.island,
+            client:              o.client_name,
+            total_kmf:           Math.round(Number(o.total_kmf)),
+            collected_at:        o.collected_at,
+            cash_paid_at:        o.cash_paid_at,
+            jours_delai_reverse: Math.round(Number(o.jours_delai_reverse)),
+            urgency:             Number(o.jours_delai_reverse) >= 7 ? 'critical' : 'warning',
+          })),
+        },
+
+        // SIGNAL 3 — Colis bloqué au relais depuis > 14 jours (rétention)
+        // Marchandise retenue. Peut cacher une collecte non déclarée.
+        stale_parcels: {
+          count: fraudStaleParcels.length,
+          orders: fraudStaleParcels.map(o => ({
+            reference:      o.reference,
+            relais:         o.relais_name,
+            agent:          o.agent_name,
+            relais_phone:   o.relais_phone,
+            island:         o.island,
+            client:         o.client_name,
+            client_phone:   o.client_phone,
+            total_kmf:      Math.round(Number(o.total_kmf)),
+            available_at:   o.available_at,
+            jours_au_relais: Math.round(Number(o.jours_au_relais)),
+          })),
+        },
+
+        // SCORE PAR RELAIS — classement des agents par niveau de risque
+        // risk_score = collected_unpaid×3 + delayed_reverse×2 + stale_parcels×1
+        // Permet d'identifier rapidement quel agent surveiller en priorité.
+        relais_risk_scores: relaisRiskList,
+
+        // Niveau d'alerte global anti-fraude
+        // critical → au moins 1 collected non reversé
+        // warning  → délais suspects ou rétention colis
+        // ok       → aucun signal détecté
+        alert_level: fraudCollectedUnpaid.length > 0
+          ? 'critical'
+          : fraudDelayedReverse.length > 0 || fraudStaleParcels.length > 0
             ? 'warning'
             : 'ok',
       },
