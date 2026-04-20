@@ -753,13 +753,13 @@ const server = app.listen(PORT, () => {
 
       // ── Migration 041: make email nullable for guest checkout ──
       try {
-        await pool.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL;`);
+        await db.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL;`);
         console.log('✅ Migration 041: users.email now nullable (guest checkout)');
       } catch(e) { console.warn('Migration 041 (non-fatal):', e.message); }
 
       // ── Migration 040: users phone_payer + phone_beneficiary columns ──
       try {
-        await pool.query(`
+        await db.query(`
           ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_payer VARCHAR(30);
           ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_beneficiary VARCHAR(30);
           CREATE INDEX IF NOT EXISTS idx_users_phone_payer ON users(phone_payer);
