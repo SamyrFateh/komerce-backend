@@ -1070,9 +1070,9 @@ body.cart-open{overflow:hidden}
   display:flex;flex-direction:column;
 }
 
-/* ── IMAGE ZONE — fixed height on mobile ── */
+/* ── IMAGE ZONE — compact on mobile, expands on desktop ── */
 .k-modal-img-wrap{
-  position:relative;flex:0 0 45vh;
+  position:relative;flex:0 0 35vh;
   background:var(--sand);
   overflow:hidden;
 }
