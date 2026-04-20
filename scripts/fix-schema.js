@@ -325,6 +325,20 @@ await run('customs_taux_mensuel view', `
   await run('users.magic_token_expires_at',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS magic_token_expires_at TIMESTAMPTZ');
 
+  // ── Migration 038 : Dualité payeur / bénéficiaire ────────────────────────
+  // Un user Komerce peut avoir DEUX téléphones :
+  //   - phone_payer : celui qui clique "Payer" (diaspora +33 OU local +269)
+  //   - phone_beneficiary : dernier téléphone bénéficiaire connu (+269 usuel)
+  // La colonne `phone` historique reste comme tél principal (= phone_payer par défaut).
+  await run('users.phone_payer',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_payer VARCHAR(20)');
+  await run('users.phone_beneficiary',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_beneficiary VARCHAR(20)');
+  await run('users.idx_phone_payer',
+    'CREATE INDEX IF NOT EXISTS idx_users_phone_payer ON users(phone_payer)');
+  await run('users.idx_phone_beneficiary',
+    'CREATE INDEX IF NOT EXISTS idx_users_phone_beneficiary ON users(phone_beneficiary)');
+
   // Generate qr_token for orders without one (6-char base62)
   try {
     const ordersNoToken = await db.query('SELECT id FROM orders WHERE qr_token IS NULL');

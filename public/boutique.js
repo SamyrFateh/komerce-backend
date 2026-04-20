@@ -2042,25 +2042,6 @@ function quickRemove(productId, btnEl) {
       }
     }, 50);
     trackExtra.appendChild(senderGroup);
-
-    // Email optionnel (reçu Stripe + confirmation commande)
-    const emailGroup = document.createElement('div');
-    emailGroup.className = 'k-ck-group';
-    const emailLbl = document.createElement('label');
-    emailLbl.className = 'k-ck-label';
-    emailLbl.textContent = '📧 Email (optionnel, pour le reçu)';
-    emailGroup.appendChild(emailLbl);
-    const emailInput = document.createElement('input');
-    emailInput.type = 'email';
-    emailInput.id = 'of-client-email';
-    emailInput.className = 'k-ck-input';
-    emailInput.placeholder = 'votre@email.com';
-    emailInput.value = od.client_email || '';
-    emailInput.autocomplete = 'email';
-    emailInput.addEventListener('input', () => { od.client_email = emailInput.value.trim(); });
-    emailGroup.appendChild(emailInput);
-    trackExtra.appendChild(emailGroup);
-
     trackExtra.appendChild(trkHint);
     body.appendChild(trackExtra);
 
@@ -2426,8 +2407,7 @@ async function submitOrder(btn) {
   // FIX : nettoyer le tél pour ne garder que les chiffres et valider longueur
   const recipDigits = recipPhone.replace(/\D/g, '');
   const fullRecipPhone = '+269' + recipDigits;
-  // FIX : récupérer l'email du champ optionnel
-  const clientEmail = (document.getElementById('of-client-email')?.value || '').trim() || undefined;
+  const clientEmail = undefined;
 
   if (!recipName) {
     showToast('Indiquez le nom de la personne qui récupère.', 'error');
@@ -2442,12 +2422,6 @@ async function submitOrder(btn) {
     showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
     return;
   }
-  // FIX : validation email si renseigné
-  if (clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
-    showToast('Email invalide — laissez vide ou corrigez.', 'error');
-    return;
-  }
-
   const isStripe = od.payment_mode === 'stripe_eur';
 
   // FIX : si Stripe, vérifier que la carte est prête avant submit

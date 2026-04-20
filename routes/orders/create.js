@@ -11,6 +11,7 @@ const router  = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db      = require('../../db');
 const { authenticate }                   = require('../../middleware/auth');
+const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest');
 const { getLoyaltyDiscount }             = require('../loyalty');
 const { getRule }                        = require('../../utils/rules');
 const { getRates }                       = require('../../utils/rates');
@@ -24,7 +25,7 @@ const { notifyOrderCreated }             = require('../../services/notification-
 // MODULE_TYPES — sous-types pour le module couture uniquement
 const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
 
-router.post('/', authenticate, validate(orders.create), async (req, res, next) => {
+router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req, res, next) => {
   const client = await db.getClient();
 
   try {
