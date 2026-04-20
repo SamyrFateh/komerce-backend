@@ -908,6 +908,45 @@ function quickRemove(productId, btnEl) {
     });
   }
 
+  /* ── CATEGORY SWIPE NAV (mobile) ────────────────────────── */
+  /* Scroll horizontal sur les chips → auto-switch catégorie  */
+  function setupCatSwipeNav() {
+    if (window.innerWidth > 899) return;
+    var catsEl = document.getElementById('k-cats');
+    if (!catsEl) return;
+
+    var scrollTimer = null;
+    var isUserScroll = true; // flag to skip programmatic scroll
+
+    catsEl.addEventListener('scroll', function() {
+      if (!isUserScroll) return;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        var containerRect = catsEl.getBoundingClientRect();
+        var centerX = containerRect.left + containerRect.width / 2;
+        var closestChip = null;
+        var closestDist = Infinity;
+
+        catsEl.querySelectorAll('.k-chip').forEach(function(chip) {
+          var chipRect = chip.getBoundingClientRect();
+          var chipCenterX = chipRect.left + chipRect.width / 2;
+          var dist = Math.abs(chipCenterX - centerX);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestChip = chip;
+          }
+        });
+
+        if (closestChip && !closestChip.classList.contains('active')) {
+          /* Prevent the click handler's scrollTo from re-triggering */
+          isUserScroll = false;
+          closestChip.click();
+          setTimeout(function() { isUserScroll = true; }, 400);
+        }
+      }, 200);
+    }, { passive: true });
+  }
+
   /* ── SEARCH ─────────────────────────────────────────────── */
   function setupSearch() {
     dom.searchInput.addEventListener('input', () => {
@@ -2806,6 +2845,7 @@ async function submitOrder(btn) {
   function init() {
     updateCartBadge();
     setupCats();
+    setupCatSwipeNav();
     setupSearch();
     setupModal();
     setupDrawer();
