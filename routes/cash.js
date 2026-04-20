@@ -48,7 +48,7 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
 
     // 1. Vérifier que la commande existe et est cash
     const { rows: [order] } = await db.query(`
-      SELECT id, total_kmf, payment_mode, status, relay_point_id
+      SELECT id, total_kmf, payment_mode, status
       FROM orders WHERE id = $1
     `, [orderId]);
 
@@ -78,7 +78,7 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       INSERT INTO cash_collections (order_id, amount_kmf, collected_by, relais_id)
       VALUES ($1, $2, $3, $4)
       RETURNING *
-    `, [orderId, amountKmf, agentId, order.relay_point_id || null]);
+    `, [orderId, amountKmf, agentId, null]);
 
     res.status(201).json({
       success: true,
@@ -329,29 +329,21 @@ router.get('/reconciliation', authenticate, requireAdmin, async (req, res, next)
     }
 
     // ── Attendu : commandes cash livrées/collectées dans la période ──
+    // Expected: total cash orders delivered in period
+    // We don't track which relay agent is assigned to which order,
+    // so we aggregate all cash orders and compare globally.
+    // Per-agent breakdown comes from cash_collections (who actually collected).
     const expectedQuery = `
       SELECT
-        COALESCE(sub.agent_id, '00000000-0000-0000-0000-000000000000') AS agent_id,
-        sub.agent_name,
-        sub.agent_phone,
-        SUM(sub.total_kmf) AS expected_kmf,
+        '00000000-0000-0000-0000-000000000000'::uuid AS agent_id,
+        'Tous agents' AS agent_name,
+        NULL AS agent_phone,
+        COALESCE(SUM(o.total_kmf), 0) AS expected_kmf,
         COUNT(*) AS expected_count
-      FROM (
-        SELECT
-          o.id,
-          o.total_kmf,
-          COALESCE(r.managed_by, o.user_id) AS agent_id,
-          u.full_name AS agent_name,
-          u.phone AS agent_phone
-        FROM orders o
-        LEFT JOIN relais r ON r.id = o.relay_point_id
-        LEFT JOIN users u ON u.id = COALESCE(r.managed_by, o.user_id)
-        WHERE o.payment_mode = 'cash_relais'
-          AND o.status IN ('available', 'collected')
-          AND o.created_at::date BETWEEN $1 AND $2
-      ) sub
-      ${agent_id ? 'WHERE sub.agent_id = $3' : ''}
-      GROUP BY sub.agent_id, sub.agent_name, sub.agent_phone
+      FROM orders o
+      WHERE o.payment_mode = 'cash_relais'
+        AND o.status IN ('available', 'collected')
+        AND o.created_at::date BETWEEN $1 AND $2
     `;
 
     // ── Déclaré : cash_collections dans la période ──
@@ -533,7 +525,7 @@ router.get('/uncollected', authenticate, requireAdmin, async (req, res, next) =>
 
     const { rows } = await db.query(`
       SELECT o.id, o.reference, o.total_kmf, o.status, o.created_at,
-             o.payment_mode, o.relay_point_id,
+             o.payment_mode,
              u.full_name AS client_name,
              u.phone AS client_phone
       FROM orders o
