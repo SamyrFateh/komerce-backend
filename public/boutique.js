@@ -257,10 +257,15 @@
     var doUpdate = function() {
       var w = document.getElementById('k-hero-fixed-wrap');
       var s = document.getElementById('k-page-scroll');
-      if (w && s) s.style.top = (w.offsetHeight + 44) + 'px';
+      if (w && s) {
+        var top = w.offsetHeight + 44;
+        if (top > 44) s.style.top = top + 'px'; // only set if wrap has real height
+      }
     };
     requestAnimationFrame(doUpdate);
-    setTimeout(doUpdate, 400);
+    setTimeout(doUpdate, 300);
+    setTimeout(doUpdate, 800);  // extra delay for slow image loads
+    setTimeout(doUpdate, 1500); // safety net
   }
 
   /* ── DOM REFS ──────────────────────────────────────────── */
@@ -1188,6 +1193,7 @@ function quickRemove(productId, btnEl) {
     window.scrollTo(0, scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
+    _updateMobileScrollTop(); // recalc scroll area after modal close
   }
 
   function renderSuggestions(items) {

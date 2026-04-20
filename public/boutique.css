@@ -3002,11 +3002,11 @@ body.cart-open{overflow:hidden}
     left: 0;
     right: 0;
     bottom: 0;
+    top: 280px; /* CSS fallback — JS overrides with exact measurement */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 1;
     padding-bottom: 56px; /* space for bottom nav */
-    /* top is set dynamically by JS based on wrap height */
   }
 
   #k-bar-spacer {
