@@ -37,7 +37,7 @@
     /* ── Actions ────────────────────────────── */
     .relais-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
       margin-bottom: 20px;
     }
@@ -152,6 +152,54 @@
       color: #9ca3af;
       font-size: 14px;
     }
+
+    /* ── Reverse cash ──────────────────────── */
+    .reverse-section {
+      background: #fff;
+      border: 2px solid #f59e0b;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .reverse-section h3 { margin-bottom: 14px; font-size: 16px; color: #92400e; }
+    .reverse-field { margin-bottom: 10px; }
+    .reverse-field label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+    .reverse-field input, .reverse-field select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+    .reverse-field input:focus, .reverse-field select:focus {
+      outline: none;
+      border-color: #f59e0b;
+    }
+    .reverse-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 4px;
+      background: #f59e0b;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .reverse-btn:hover { background: #d97706; }
+    .reverse-btn:disabled { background: #9ca3af; }
+    .commitment-box {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      color: #92400e;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -171,6 +219,10 @@
       <button class="relais-action-btn" onclick="Relais.showScan('collected')">
         <span class="emoji">🤝</span>
         Remise client
+      </button>
+      <button class="relais-action-btn" onclick="Relais.showReverse()">
+        <span class="emoji">💰</span>
+        Reverser cash
       </button>
     </div>
 
@@ -194,6 +246,41 @@
       
       <button class="scan-btn" id="scan-btn" onclick="Relais.doScan()">✅ Confirmer</button>
       <div id="scan-result" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Reverse cash section -->
+    <div class="reverse-section" id="reverse-section" style="display:none">
+      <h3>💰 Déclarer un reversement cash</h3>
+      <div class="commitment-box" id="reverse-commitment">
+        Remplissez les champs — votre déclaration sera horodatée et engagera votre responsabilité.
+      </div>
+      <div class="reverse-field">
+        <label>Référence colis (PCL-…) ou commande (KOM-…)</label>
+        <input type="text" id="reverse-ref" placeholder="PCL-2026-00042" style="text-transform:uppercase"
+          oninput="Relais.updateCommitment()">
+      </div>
+      <div class="reverse-field">
+        <label>Montant reversé (KMF)</label>
+        <input type="number" id="reverse-amount" placeholder="15000" min="1"
+          oninput="Relais.updateCommitment()">
+      </div>
+      <div class="reverse-field">
+        <label>Moyen de reversement</label>
+        <select id="reverse-method" onchange="Relais.updateCommitment()">
+          <option value="">— Choisir —</option>
+          <option value="mvola">Mvola</option>
+          <option value="orange">Orange Money</option>
+          <option value="cash">Especes</option>
+          <option value="virement">Virement bancaire</option>
+        </select>
+      </div>
+      <div class="reverse-field">
+        <label>Reference du transfert (optionnel)</label>
+        <input type="text" id="reverse-notes" placeholder="Ex : MVL-20260420-8847"
+          oninput="Relais.updateCommitment()">
+      </div>
+      <button class="reverse-btn" id="reverse-btn" onclick="Relais.doReverse()">Confirmer le reversement</button>
+      <div id="reverse-result" style="margin-top:12px"></div>
     </div>
 
     <!-- Parcels tabs -->
@@ -340,6 +427,70 @@
     document.getElementById('scan-input').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') Relais.doScan();
     });
+
+    Relais.showReverse = function() {
+      document.getElementById('scan-section').style.display = 'none';
+      const s = document.getElementById('reverse-section');
+      s.style.display = s.style.display === 'none' ? '' : 'none';
+      if (s.style.display !== 'none') document.getElementById('reverse-ref').focus();
+    };
+
+    Relais.updateCommitment = function() {
+      const ref    = document.getElementById('reverse-ref').value.trim();
+      const amount = document.getElementById('reverse-amount').value.trim();
+      const method = document.getElementById('reverse-method').value;
+      const notes  = document.getElementById('reverse-notes').value.trim();
+      const labels = { mvola: 'Mvola', orange: 'Orange Money', cash: 'Especes', virement: 'Virement bancaire' };
+      if (ref && amount && method) {
+        const now = new Date().toLocaleString('fr-FR');
+        const refPart = notes ? ' — ref. ' + notes : '';
+        document.getElementById('reverse-commitment').textContent =
+          'Je declare avoir reverse ' + parseInt(amount).toLocaleString() + ' KMF via ' + labels[method] + refPart +
+          ' pour le colis/commande ' + ref.toUpperCase() + '. Declaration : ' + now + '.';
+      } else {
+        document.getElementById('reverse-commitment').textContent =
+          'Remplissez les champs — votre declaration sera horodatee et engagera votre responsabilite.';
+      }
+    };
+
+    Relais.doReverse = async function() {
+      const ref    = document.getElementById('reverse-ref').value.trim().toUpperCase();
+      const amount = parseInt(document.getElementById('reverse-amount').value.trim());
+      const method = document.getElementById('reverse-method').value;
+      const notes  = document.getElementById('reverse-notes').value.trim();
+
+      if (!ref || !amount || !method) {
+        document.getElementById('reverse-result').innerHTML =
+          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">Reference, montant et moyen requis.</div>';
+        return;
+      }
+
+      const btn = document.getElementById('reverse-btn');
+      const result = document.getElementById('reverse-result');
+      btn.disabled = true;
+      result.innerHTML = '<div style="color:#92400e">Enregistrement...</div>';
+
+      try {
+        const body = { ref, amount_kmf: amount, method };
+        if (notes) body.notes = notes;
+        const res = await CT.api.post('/api/relais/declare-reverse', body);
+        result.innerHTML =
+          '<div style="background:#d1fae5;padding:14px;border-radius:10px">' +
+          '<strong>Reversement enregistre</strong><br>' +
+          '<span style="font-size:13px;color:#065f46">' + (res.commitment || '') + '</span></div>';
+        setTimeout(() => {
+          ['reverse-ref','reverse-amount','reverse-notes'].forEach(id => document.getElementById(id).value = '');
+          document.getElementById('reverse-method').value = '';
+          Relais.updateCommitment();
+          result.innerHTML = '';
+          btn.disabled = false;
+        }, 4000);
+      } catch (err) {
+        result.innerHTML =
+          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">' + err.message + '</div>';
+        btn.disabled = false;
+      }
+    };
 
     // Init on load
     Relais.init();

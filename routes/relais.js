@@ -217,13 +217,15 @@ router.post('/handover', authenticate, requireRole(['admin', 'agent_relais']), a
 //
 router.post('/declare-reverse', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
-    const { order_id, amount_kmf, method, notes } = req.body;
+    const { order_id, ref, amount_kmf, method, notes } = req.body;
 
-    if (!order_id)   return res.status(400).json({ error: 'order_id requis' });
+    if (!order_id && !ref) return res.status(400).json({ error: 'order_id ou ref (KOM-... ou PCL-...) requis' });
     if (!amount_kmf) return res.status(400).json({ error: 'amount_kmf requis' });
 
+    // Normalise method : 'orange' alias -> 'orange_money'
+    const normalizedMethod = method === 'orange' ? 'orange_money' : method;
     const VALID_METHODS = ['mvola', 'orange_money', 'cash', 'virement'];
-    if (!method || !VALID_METHODS.includes(method)) {
+    if (!normalizedMethod || !VALID_METHODS.includes(normalizedMethod)) {
       return res.status(400).json({
         error: 'method requis',
         accepted_values: VALID_METHODS,
@@ -231,13 +233,25 @@ router.post('/declare-reverse', authenticate, requireRole(['admin', 'agent_relai
       });
     }
 
-    // Charger la commande + infos relais
+    // Charger la commande + infos relais (via order_id, référence commande ou référence colis)
+    let orderQuery, orderParam;
+    if (order_id) {
+      orderQuery = 'WHERE o.id = $1';
+      orderParam = order_id;
+    } else if (ref.startsWith('PCL-')) {
+      orderQuery = 'JOIN parcels p ON p.order_id = o.id WHERE p.reference = $1';
+      orderParam = ref;
+    } else {
+      orderQuery = 'WHERE o.reference = $1';
+      orderParam = ref;
+    }
     const { rows: [order] } = await db.query(`
       SELECT o.*, r.agent_name AS relais_agent, r.name AS relais_name
       FROM orders o
       LEFT JOIN relais r ON r.id = o.relais_id
-      WHERE o.id = $1
-    `, [order_id]);
+      ${orderQuery}
+      LIMIT 1
+    `, [orderParam]);
 
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
@@ -289,9 +303,9 @@ router.post('/declare-reverse', authenticate, requireRole(['admin', 'agent_relai
         cash_reverse_notes        = $5,
         updated_at                = NOW()
       WHERE id = $1
-    `, [order_id, req.user.id, amount_kmf, method, notes || null]);
+    `, [order.id, req.user.id, amount_kmf, normalizedMethod, notes || null]);
 
-    console.log(`[REVERSE] ✅ ${order.reference} — ${amount_kmf} KMF via ${method} — ${req.user.full_name} (${order.relais_name})`);
+    console.log(`[REVERSE] ✅ ${order.reference} — ${amount_kmf} KMF via ${normalizedMethod} — ${req.user.full_name} (${order.relais_name})`);
 
     res.json({
       success:      true,
@@ -301,7 +315,7 @@ router.post('/declare-reverse', authenticate, requireRole(['admin', 'agent_relai
       method,
       confirmed_at: confirmedAt,
       confirmed_by: req.user.full_name,
-      commitment:   `${req.user.full_name} (${order.relais_name || 'relais'}) déclare avoir reversé ${amount_kmf} KMF via ${method} — commande ${order.reference}`,
+      commitment:   `${req.user.full_name} (${order.relais_name || 'relais'}) déclare avoir reversé ${amount_kmf} KMF via ${normalizedMethod} — commande ${order.reference}`,
     });
 
   } catch (err) { next(err); }
