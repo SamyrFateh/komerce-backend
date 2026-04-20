@@ -2291,11 +2291,11 @@ body{
     align-items: center;
     gap: 0;
     pointer-events: none;
-    background: rgba(255,255,255,.55);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    padding: 3px 14px 4px;
-    border-radius: 10px;
+    background: rgba(255,255,255,.3);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    padding: 2px 12px 3px;
+    border-radius: 8px;
   }
   .k-hero-mini-slogan .k-line-1,
   .k-hero-mini-slogan .k-line-2 {
