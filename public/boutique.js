@@ -18,95 +18,6 @@
     return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
   }
 
-  /* ── Carousel produit (Shein-like) ──────────────────────────
-     Retourne le HTML du carrousel images swipeable + dots.
-     - Utilise p.images (array JSON) si disponible, sinon duplique p.image_url 4×
-     - Chaque image = 1 slide scroll-snap
-     - Dots positionnés en bas, mis à jour par handler onscroll
-     - Le carrousel ne bloque pas le scroll vertical (touch-action: pan-y)
-  */
-  function renderProductCarousel(p, width) {
-    width = width || 400;
-    let imgs = [];
-    if (p.images) {
-      try {
-        imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
-      } catch (_) { imgs = []; }
-    }
-    if (!Array.isArray(imgs) || imgs.length === 0) {
-      // FAKE : duplique l'image principale 4× pour voir le rendu carrousel
-      imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
-    }
-    if (!imgs.length) {
-      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy">`;
-    }
-    const slides = imgs.map((src, i) => `
-      <div class="k-card-slide">
-        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy">
-      </div>`).join('');
-    const dots = imgs.length > 1
-      ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i===0?' active':''}"></span>`).join('')}</div>`
-      : '';
-    return `<div class="k-card-carousel">${slides}</div>${dots}`;
-  }
-
-  /* ── Binder handler scroll → met à jour les dots actifs
-     ET détecte tap vs swipe pour l'ouverture de la modale produit ────── */
-  function bindCarouselDots(card) {
-    const carousel = card.querySelector('.k-card-carousel');
-    const dots     = card.querySelectorAll('.k-card-dot');
-    if (!carousel) return;
-    if (carousel.dataset.bound) return;
-    carousel.dataset.bound = '1';
-
-    // Dots : mise à jour par scroll (si plus d'1 slide)
-    if (dots.length > 1) {
-      let raf = null;
-      carousel.addEventListener('scroll', () => {
-        if (raf) return;
-        raf = requestAnimationFrame(() => {
-          raf = null;
-          const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-          dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-        });
-      }, { passive: true });
-    }
-
-    // Détection tap vs swipe :
-    // - touchstart : on enregistre la position initiale
-    // - touchend/pointerup : si on a bougé > 10px horizontalement, c'était un swipe
-    //   → on marque la carte temporairement pour que le handler click l'ignore
-    let startX = 0, startY = 0, moved = false;
-
-    function onStart(e) {
-      const t = e.touches ? e.touches[0] : e;
-      startX = t.clientX;
-      startY = t.clientY;
-      moved = false;
-    }
-    function onMove(e) {
-      const t = e.touches ? e.touches[0] : e;
-      const dx = Math.abs(t.clientX - startX);
-      const dy = Math.abs(t.clientY - startY);
-      if (dx > 10 || dy > 10) moved = true;
-    }
-    function onEnd() {
-      if (moved) {
-        card.dataset.justSwiped = '1';
-        // Reset après 200ms pour laisser passer l'event click qui suit le touchend
-        setTimeout(() => { delete card.dataset.justSwiped; }, 250);
-      }
-    }
-    carousel.addEventListener('touchstart', onStart, { passive: true });
-    carousel.addEventListener('touchmove',  onMove,  { passive: true });
-    carousel.addEventListener('touchend',   onEnd,   { passive: true });
-    // Support souris (desktop)
-    carousel.addEventListener('mousedown', onStart);
-    carousel.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
-    carousel.addEventListener('mouseup',   onEnd);
-  }
-
-
   function promoImgUrl(url, w) {
     // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
     // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
@@ -205,7 +116,7 @@
   } catch(e) { console.warn('Stripe not loaded:', e); }
 
   /* ── STATE ─────────────────────────────────────────────── */
-  const CART_VERSION = 2;
+  const CART_VERSION = 3; // bumped: clear carts with old (deactivated) product UUIDs
   let savedCartV;
   try { savedCartV = parseInt(localStorage.getItem('kmrc_cart_v') || '0', 10); } catch(e) { savedCartV = 0; }
 
@@ -494,7 +405,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            ${renderProductCarousel(p, 400)}
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -526,11 +437,8 @@
     // Re-bind events on new cards
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
       card.dataset.bound = '1';
-      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-        // Si on vient juste de swiper le carrousel, ne pas ouvrir la modale
-        if (card.dataset.justSwiped === '1') return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
         openModal(card.dataset.id);
       });
     });
@@ -651,7 +559,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            ${renderProductCarousel(p, 400)}
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -682,11 +590,8 @@
 
     // Events
     dom.grid.querySelectorAll('.k-card').forEach(card => {
-      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-        // Si on vient juste de swiper le carrousel, ne pas ouvrir la modale
-        if (card.dataset.justSwiped === '1') return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
         openModal(card.dataset.id);
       });
     });
@@ -1001,11 +906,6 @@ function quickRemove(productId, btnEl) {
       }
       chip.addEventListener('click', () => {
         const cat = chip.dataset.cat;
-        const fromSwipe = !!state._fromSwipe;
-        const swipeDir = state._swipeDir || 0; // -1 = gauche (next), +1 = droite (prev)
-        state._fromSwipe = false;
-        state._swipeDir = 0;
-
         /* Toggle: re-click same category → back to "Tout" + hide subcats */
         if (cat === state.activeCat && cat !== 'all') {
           $$('.k-chip').forEach(c => c.classList.remove('active'));
@@ -1021,31 +921,8 @@ function quickRemove(productId, btnEl) {
         chip.classList.add('active');
         state.activeCat = cat;
         renderSubcats(state.activeCat);
-
-        if (fromSwipe) {
-          // Animation slide : grille actuelle sort, nouvelle rentre depuis l'autre côté
-          const grid = dom.grid;
-          if (grid) {
-            const outClass = swipeDir < 0 ? 'k-grid-slide-out-left' : 'k-grid-slide-out-right';
-            const inClass  = swipeDir < 0 ? 'k-grid-slide-in-right' : 'k-grid-slide-in-left';
-            grid.classList.add(outClass);
-            setTimeout(() => {
-              grid.classList.remove(outClass);
-              renderGrid();
-              grid.classList.add(inClass);
-              // force reflow pour que l'animation démarre proprement
-              void grid.offsetWidth;
-              setTimeout(() => grid.classList.remove(inClass), 260);
-            }, 160);
-          } else {
-            renderGrid();
-          }
-          // PAS de scrollTo : on garde la position verticale actuelle
-          return;
-        }
-
         renderGrid();
-        // Scroll vers le haut uniquement pour clic direct sur chip
+        // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
@@ -1077,69 +954,6 @@ function quickRemove(productId, btnEl) {
     var activeChip = catsEl.querySelector('.k-chip.active');
     if (activeChip) centerActiveChip(activeChip);
     // Scroll horizontal = visuel uniquement, pas de changement auto de catégorie
-  }
-
-  /* ── CATALOG SWIPE NAV (mobile) ─────────────────────────── */
-  /* Swipe horizontal gauche/droite sur le catalogue → change catégorie */
-  function setupCatalogSwipeNav() {
-    if (window.innerWidth > 899) return;
-
-    var startX = 0, startY = 0, startT = 0;
-    var tracking = false;
-    var SWIPE_MIN_DIST = 50;
-    var SWIPE_MAX_VERTICAL = 80;
-    var SWIPE_MAX_DURATION = 1000;
-
-    document.addEventListener('touchstart', function(e) {
-      if (e.touches.length !== 1) { tracking = false; return; }
-      var t = e.target;
-      if (t.closest && t.closest(
-        '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal, ' +
-        '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
-        '.k-card-fav, .k-card-add, .k-card-tab, ' +
-        '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
-        '.k-sug-rail, .k-modal-carousel, ' +
-        'input, textarea, select'
-      )) {
-        tracking = false;
-        return;
-      }
-      if (t.closest && !t.closest('#k-page-scroll, #k-catalog-section, .k-grid, .k-card, .k-section')) {
-        tracking = false;
-        return;
-      }
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      startT = Date.now();
-      tracking = true;
-    }, { passive: true, capture: true });
-
-    document.addEventListener('touchend', function(e) {
-      if (!tracking) return;
-      tracking = false;
-      var touch = e.changedTouches[0];
-      if (!touch) return;
-      var dx = touch.clientX - startX;
-      var dy = touch.clientY - startY;
-      var dt = Date.now() - startT;
-
-      if (dt > SWIPE_MAX_DURATION) return;
-      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) return;
-      if (Math.abs(dx) < SWIPE_MIN_DIST) return;
-      if (Math.abs(dx) < Math.abs(dy) * 1.2) return;
-
-      var chips = Array.prototype.slice.call(document.querySelectorAll('#k-cats .k-chip'));
-      if (chips.length < 2) return;
-      var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
-      if (currentIdx === -1) currentIdx = 0;
-      var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-      if (nextIdx < 0 || nextIdx >= chips.length) return;
-
-      // Flag pour que le click handler reconnaisse un swipe (pas de scrollTo + animation)
-      state._fromSwipe = true;
-      state._swipeDir = dx < 0 ? -1 : 1;
-      chips[nextIdx].click();
-    }, { passive: true, capture: true });
   }
 
   /* ── SEARCH ─────────────────────────────────────────────── */
@@ -1904,36 +1718,17 @@ function quickRemove(productId, btnEl) {
 
   function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
-    // Garde-fou : toujours passer par le panier (vérifier qu'il est bien ouvert)
-    const cartDrawer = document.getElementById('k-cart-drawer');
-    const fromCart = cartDrawer && cartDrawer.classList.contains('open');
-    if (!fromCart) {
-      // Si appelé hors contexte panier, rediriger vers l'ouverture du panier
-      if (typeof openCart === 'function') { openCart(); return; }
-    }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
     renderCheckout();
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
-    // FIX CRITIQUE : masquer la bottom nav en inline (sans dépendre du CSS)
-    const bnav = document.getElementById('k-bnav');
-    if (bnav) {
-      bnav.dataset.savedDisplay = bnav.style.display || '';
-      bnav.style.display = 'none';
-    }
   }
 
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
     document.body.classList.remove('cart-open');
-    // FIX : restaurer la bottom nav
-    const bnav = document.getElementById('k-bnav');
-    if (bnav) {
-      bnav.style.display = bnav.dataset.savedDisplay || '';
-      delete bnav.dataset.savedDisplay;
-    }
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -1949,18 +1744,7 @@ function quickRemove(productId, btnEl) {
 
     const od = state.orderData;
 
-    /* ── 0. Bouton retour panier ── */
-    const backBtn = document.createElement('button');
-    backBtn.className = 'ck-back-btn';
-    backBtn.type = 'button';
-    backBtn.innerHTML = '← Retour au panier';
-    backBtn.addEventListener('click', () => {
-      closeOrderModal();
-      setTimeout(() => openCart(), 150);
-    });
-    body.appendChild(backBtn);
-
-    /* ── Récap retiré : passage obligatoire par le panier ── */
+    /* ── Récap retiré (mini résumé + miniatures) ── */
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
@@ -2020,27 +1804,7 @@ function quickRemove(productId, btnEl) {
     const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
-    trkHint.textContent = '💡 Renseignez un numéro pour recevoir les notifications WhatsApp';
-    trkHint.dataset.noNum = '1';
-    // Met à jour le message selon si un numéro est rempli
-    setTimeout(() => {
-      const _tel = document.getElementById('of-sender-phone');
-      if (_tel) {
-        const _update = () => {
-          const hasNum = (od.sender_phone || _tel.value || '').replace(/\D/g, '').length >= 7;
-          if (hasNum) {
-            trkHint.textContent = '📲 Notifié(e) par WhatsApp dès que la commande arrive au relais';
-            trkHint.dataset.noNum = '0';
-          } else {
-            trkHint.textContent = '💡 Renseignez un numéro pour recevoir les notifications WhatsApp';
-            trkHint.dataset.noNum = '1';
-          }
-        };
-        _tel.addEventListener('input', _update);
-        _tel.addEventListener('change', _update);
-        _update();
-      }
-    }, 50);
+    trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
     trackExtra.appendChild(senderGroup);
     trackExtra.appendChild(trkHint);
     body.appendChild(trackExtra);
@@ -2404,9 +2168,7 @@ async function submitOrder(btn) {
   }
 
   const clientName = recipName;
-  // FIX : nettoyer le tél pour ne garder que les chiffres et valider longueur
-  const recipDigits = recipPhone.replace(/\D/g, '');
-  const fullRecipPhone = '+269' + recipDigits;
+  const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
   const clientEmail = undefined;
 
   if (!recipName) {
@@ -2417,26 +2179,8 @@ async function submitOrder(btn) {
     showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error');
     return;
   }
-  // FIX : un numéro comorien valide a 7 chiffres
-  if (recipDigits.length !== 7) {
-    showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
-    return;
-  }
-  const isStripe = od.payment_mode === 'stripe_eur';
 
-  // FIX : si Stripe, vérifier que la carte est prête avant submit
-  if (isStripe) {
-    if (!_stripe || !_stripeCard) {
-      showToast('Paiement par carte non chargé. Rechargez la page.', 'error');
-      return;
-    }
-    // Vérifier qu'il n'y a pas d'erreur courante visible
-    const errEl = document.getElementById('stripe-card-error');
-    if (errEl && errEl.textContent && errEl.textContent.trim().length > 0) {
-      showToast('Corrigez les informations de carte avant de payer.', 'error');
-      return;
-    }
-  }
+  const isStripe = od.payment_mode === 'stripe_eur';
   const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
 
   // Anti double-clic / anti race
@@ -2740,7 +2484,7 @@ async function submitOrder(btn) {
         const qty = inCart ? inCart.qty : 0;
         return `<div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            ${renderProductCarousel(p, 400)}
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy">
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
@@ -2775,7 +2519,6 @@ async function submitOrder(btn) {
       const favGrid = document.getElementById('k-fav-grid');
       if (favGrid) {
         favGrid.querySelectorAll('.k-card').forEach(card => {
-        bindCarouselDots(card);
           card.addEventListener('click', (e) => {
             if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
             openModal(card.dataset.id);
@@ -3126,7 +2869,6 @@ async function submitOrder(btn) {
     updateCartBadge();
     setupCats();
     setupCatSwipeNav();
-    setupCatalogSwipeNav();
 
     /* ── Card mini-tabs (Shein-style, event delegation) ── */
     document.addEventListener('click', function(e) {
