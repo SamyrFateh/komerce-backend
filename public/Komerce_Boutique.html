@@ -229,16 +229,11 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="k-modal-scroll">
-      <!-- IMAGE ZONE — horizontal carousel (swipe between views/colors) -->
-      <div class="k-modal-img-zone" id="k-modal-img-zone">
-        <div class="k-modal-img-wrap" id="k-modal-img-wrap">
+      <div class="k-modal-content">
+        <div class="k-modal-img-wrap">
           <img id="k-modal-img" src="" alt="">
+          <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
         </div>
-        <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
-        <div class="k-modal-dots" id="k-modal-dots"></div>
-      </div>
-      <!-- DETAIL ZONE — scrolls independently -->
-      <div class="k-modal-detail" id="k-modal-detail">
         <div class="k-modal-info">
           <h2 id="k-modal-name"></h2>
           <p class="k-modal-desc" id="k-modal-desc"></p>
@@ -251,10 +246,10 @@ if('serviceWorker' in navigator){
             <span id="k-modal-stock"></span>
           </div>
         </div>
-        <div class="k-modal-suggestions" id="k-modal-suggestions">
-          <h3>Dans la même collection</h3>
-          <div class="k-sug-rail" id="k-sug-rail"></div>
-        </div>
+      </div>
+      <div class="k-modal-suggestions" id="k-modal-suggestions">
+        <h3>Dans la même collection</h3>
+        <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
     </div>
     <div class="k-modal-actions">

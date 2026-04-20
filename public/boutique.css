@@ -1038,63 +1038,35 @@ body{
 }
 .k-modal-close:active{background:var(--sand)}
 
-/* ── MODAL LAYOUT — Temu/Shein split-screen ── */
+/* ── MODAL CONTENT — HORIZONTAL LAYOUT ── */
 .k-modal-scroll{
-  flex:1;overflow:hidden;min-height:0;
+  flex:1;overflow-y:auto;min-height:0;
   display:flex;flex-direction:column;
 }
-
-/* IMAGE ZONE — carousel horizontal */
-.k-modal-img-zone{
-  position:relative;flex-shrink:0;
-  height:50vh;
-  background:var(--sand);
-  overflow:hidden;
+.k-modal-content{
+  display:flex;gap:12px;
+  padding:12px;
 }
 .k-modal-img-wrap{
-  display:flex;height:100%;
-  overflow-x:auto;scroll-snap-type:x mandatory;
-  scrollbar-width:none;-ms-overflow-style:none;
+  position:relative;flex:0 0 42%;
+  background:var(--sand);border-radius:var(--radius);
+  overflow:hidden;align-self:flex-start;
 }
-.k-modal-img-wrap::-webkit-scrollbar{display:none}
 .k-modal-img-wrap img{
-  flex:0 0 100%;width:100%;height:100%;
-  object-fit:cover;object-position:top center;
-  scroll-snap-align:start;display:block;
+  width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top center;display:block;
 }
 .k-modal-promo-badge{
   display:none;
-  position:absolute;top:10px;left:10px;
+  position:absolute;top:6px;left:6px;
   background:var(--coral);color:var(--white);
-  font-size:12px;font-weight:700;
-  padding:4px 10px;border-radius:50px;
-  z-index:2;
+  font-size:11px;font-weight:700;
+  padding:3px 8px;border-radius:50px;
 }
 .k-modal-promo-badge.show{display:inline-block}
 
-/* Dots indicator */
-.k-modal-dots{
-  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
-  display:flex;gap:6px;z-index:2;
-}
-.k-modal-dots .dot{
-  width:7px;height:7px;border-radius:50%;
-  background:rgba(255,255,255,.5);
-  transition:all .2s;
-}
-.k-modal-dots .dot.active{
-  background:#fff;width:20px;border-radius:4px;
-}
-
-/* DETAIL ZONE — independent vertical scroll */
-.k-modal-detail{
-  flex:1;min-height:0;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
-}
 .k-modal-info{
-  padding:14px 16px 8px;
+  flex:1;min-width:0;
+  display:flex;flex-direction:column;justify-content:center;
 }
 .k-modal-info h2{
   font-family:var(--font-display);
@@ -1167,16 +1139,11 @@ body{
 .k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark);flex-shrink:0}
 .k-modal-suggestions h3{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-muted)}
 
-/* ── DESKTOP: wider modal, side-by-side ── */
+/* ── DESKTOP: wider modal ── */
 @media(min-width:600px){
-  .k-modal{max-width:680px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}
+  .k-modal{max-width:560px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}
   .k-modal-overlay{align-items:center}
-  .k-modal-scroll{flex-direction:row;overflow-y:auto}
-  .k-modal-img-zone{flex:0 0 320px;height:auto;min-height:420px}
-  .k-modal-img-wrap img{object-fit:contain;object-position:center;padding:12px;box-sizing:border-box}
-  .k-modal-dots{display:none}
-  .k-modal-detail{overflow-y:visible}
-  .k-modal-info{padding:20px 16px}
+  .k-modal-img-wrap{flex:0 0 220px}
   .k-modal-info h2{font-size:22px;font-variation-settings:'opsz' 22}
   .k-modal-desc{-webkit-line-clamp:4;font-size:13px}
 }
@@ -1523,10 +1490,38 @@ body{
     left:auto;
   }
 
-  /* Modal produit : popup centrée — inherits desktop @media(min-width:600px) */
+  /* Modal produit : popup centrée 2 colonnes */
   .k-modal{
     width:680px;
     max-width:95vw;
+  }
+  .k-modal-content{
+    flex-direction:row;
+    padding:0;
+    gap:0;
+    align-items:stretch;
+    min-height:0;
+  }
+  .k-modal-img-wrap{
+    flex:0 0 320px;
+    border-radius:0;
+    align-self:stretch;
+    background:var(--sand);
+    min-height:420px;
+  }
+  .k-modal-img-wrap img{
+    aspect-ratio:unset;
+    height:100%;
+    min-height:420px;
+    object-fit:contain;
+    object-position:center center;
+    padding:12px;
+    box-sizing:border-box;
+  }
+  .k-modal-info{
+    padding:20px 16px;
+    overflow-y:visible;
+    justify-content:flex-start;
   }
   .k-modal-suggestions{
     border-top:none;
@@ -2220,7 +2215,17 @@ body{
   user-select: none;
 }
 
-/* k-modal::before swipe bar — removed, replaced by dots carousel */
+/* ── Swipe indicator sur mobile (barre en haut de la modal) ── */
+.k-modal::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 8px auto 0;
+  flex-shrink: 0;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MOBILE OVERRIDES — Single source of truth
@@ -2675,83 +2680,28 @@ body{
     bottom: 52px !important;
   }
 
-  /* ── MODAL SPLIT-SCREEN (Temu/Shein style) ── */
+  /* Modal above bottom nav on mobile */
   .k-modal-overlay {
     z-index: 10000;
-    background: none;
+    background: none;          /* ← kill voilé effect on mobile */
   }
   .k-modal {
     z-index: 10001;
     padding-bottom: 0;
   }
-  .k-modal::before { display: none; }  /* hide swipe bar */
-  .k-modal-topbar {
-    padding: 8px 12px;
-    padding-top: calc(8px + env(safe-area-inset-top));
-    border-bottom: none;
-    background: transparent;
-    position: absolute; top: 0; left: 0; right: 0;
-    z-index: 5;
+  /* Prevent scroll from bleeding through to body */
+  .k-modal-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
-  .k-modal-back {
-    background: rgba(255,255,255,.85);
-    border-radius: 50px;
-    padding: 5px 10px;
-    font-size: 13px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  .k-modal-topbar-right button {
-    background: rgba(255,255,255,.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  /* Image zone — half screen */
-  .k-modal-img-zone {
-    height: 50vh;
-  }
-  .k-modal-img-wrap img {
-    image-rendering: auto;
-    -webkit-image-rendering: auto;
-  }
-  /* Detail zone — fills remaining space */
-  .k-modal-detail {
-    flex: 1;
-    min-height: 0;
-    border-radius: 16px 16px 0 0;
-    margin-top: -12px;
-    background: var(--white);
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 -4px 20px rgba(0,0,0,.06);
-  }
-  .k-modal-info {
-    padding: 16px 16px 8px;
-  }
-  .k-modal-info h2 { font-size: 17px; }
-  .k-modal-price { font-size: 24px; font-weight: 700; color: var(--coral); }
-  .k-modal-price-row { margin-top: 8px; }
-  .k-modal-desc {
-    margin-top: 6px;
-    -webkit-line-clamp: 2;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .k-modal-meta { margin-top: 6px; }
-  /* Suggestions pushed down in scroll */
-  .k-modal-suggestions {
-    padding: 12px 16px;
-    border-top: 1px solid var(--sand-dark);
-  }
-  /* Actions bar — always visible */
+  /* Modal actions always visible at bottom */
   .k-modal-actions {
     flex-shrink: 0;
     background: #fff;
     z-index: 2;
-    border-top: 1px solid var(--sand-dark);
-    padding: 8px 12px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
+  /* Buy button styling (was missing) */
   .k-buy-now-btn {
     height: 42px;
     padding: 0 16px;
@@ -2768,14 +2718,10 @@ body{
     transform: scale(.97);
     opacity: .9;
   }
-  /* Hide prev/next product arrows on mobile (Temu-style: swipe images, not products) */
-  #k-modal-nav { display: none !important; }
-  /* Topbar close button — glass pill */
-  .k-modal-close {
-    background: rgba(255,255,255,.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: none;
+  /* Image sharper — remove any blur on modal */
+  .k-modal-img-wrap img {
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
   }
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */

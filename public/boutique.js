@@ -983,41 +983,7 @@ function quickRemove(productId, btnEl) {
       dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
     }
 
-    // ── CAROUSEL — multi-images (future: colors/variants/videos)
-    const imgWrap = document.getElementById('k-modal-img-wrap');
-    const dotsWrap = document.getElementById('k-modal-dots');
-    // Build image list: main + extras (product.images array or just main)
-    const images = product.images && product.images.length
-      ? product.images
-      : [product.image_url];
-    imgWrap.innerHTML = images.map((url, i) =>
-      `<img src="${optimizeImgUrl(url, 800)}" alt="${sanitize(product.name)} - vue ${i+1}" loading="${i===0?'eager':'lazy'}">`
-    ).join('');
-    // Dots
-    if (images.length > 1) {
-      dotsWrap.innerHTML = images.map((_, i) =>
-        `<span class="dot${i===0?' active':''}" data-idx="${i}"></span>`
-      ).join('');
-      dotsWrap.style.display = 'flex';
-      // Scroll-snap dot sync
-      imgWrap.addEventListener('scroll', function onCarouselScroll() {
-        const idx = Math.round(imgWrap.scrollLeft / imgWrap.offsetWidth);
-        dotsWrap.querySelectorAll('.dot').forEach((d, j) =>
-          d.classList.toggle('active', j === idx)
-        );
-      });
-      // Tap dot → scroll to image
-      dotsWrap.addEventListener('click', (e) => {
-        const dot = e.target.closest('.dot');
-        if (!dot) return;
-        const idx = parseInt(dot.dataset.idx);
-        imgWrap.scrollTo({ left: idx * imgWrap.offsetWidth, behavior: 'smooth' });
-      });
-    } else {
-      dotsWrap.innerHTML = '';
-      dotsWrap.style.display = 'none';
-    }
-
+    dom.modalImg.src = optimizeImgUrl(product.image_url, 600);
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);
@@ -1049,10 +1015,7 @@ function quickRemove(productId, btnEl) {
       .slice(0, 8);
     renderSuggestions(suggestions);
 
-    // Reset scroll positions
-    imgWrap.scrollLeft = 0;
-    const detail = document.getElementById('k-modal-detail');
-    if (detail) detail.scrollTop = 0;
+    dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     // Lock body scroll (iOS needs position:fixed)
     state._savedCatalogScrollY = window.scrollY;
