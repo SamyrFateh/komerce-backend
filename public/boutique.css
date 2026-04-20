@@ -3338,3 +3338,115 @@ body.cart-open{overflow:hidden}
 .k-card-panels {
   display: none !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MODAL PAIEMENT — nouveaux éléments (v2.5)                              */
+/*  - bouton retour panier                                                  */
+/*  - récap articles                                                        */
+/*  - champ email                                                           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Bouton retour panier ───────────────────────────────────────────── */
+.ck-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 0 0 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.ck-back-btn:hover {
+  background: var(--sand-dark);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.ck-back-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Récap panier (mini) ────────────────────────────────────────────── */
+.ck-recap {
+  background: var(--sand);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.ck-recap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ck-recap-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ck-recap-total {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--coral);
+}
+.ck-recap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ck-recap-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ck-recap-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--sand-dark);
+  flex-shrink: 0;
+}
+.ck-recap-thumb--empty {
+  background: var(--sand-dark);
+}
+.ck-recap-info {
+  flex: 1;
+  min-width: 0;
+}
+.ck-recap-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ck-recap-qty {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.ck-recap-more {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+/* ── Champ email (type=email) ─────────────────────────────────────────── */
+input#of-client-email {
+  /* Hérite déjà de k-ck-input, juste un rappel de style */
+  font-family: var(--font);
+}

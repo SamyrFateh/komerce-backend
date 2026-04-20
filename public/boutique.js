@@ -1888,7 +1888,44 @@ function quickRemove(productId, btnEl) {
 
     const od = state.orderData;
 
-    /* ── Récap retiré (mini résumé + miniatures) ── */
+    /* ── 0. Bouton retour panier ── */
+    const backBtn = document.createElement('button');
+    backBtn.className = 'ck-back-btn';
+    backBtn.type = 'button';
+    backBtn.innerHTML = '← Retour au panier';
+    backBtn.addEventListener('click', () => {
+      closeOrderModal();
+      setTimeout(() => openCart(), 150);
+    });
+    body.appendChild(backBtn);
+
+    /* ── 1. Mini récap panier ── */
+    const recap = document.createElement('div');
+    recap.className = 'ck-recap';
+    const itemCount = state.cart.reduce((n, i) => n + i.qty, 0);
+    const itemsList = state.cart.slice(0, 3).map(i => {
+      const imgHTML = i.product.image_url
+        ? `<img class="ck-recap-thumb" src="${optimizeImgUrl(i.product.image_url, 80)}" alt="">`
+        : `<div class="ck-recap-thumb ck-recap-thumb--empty"></div>`;
+      return `<div class="ck-recap-item">
+        ${imgHTML}
+        <div class="ck-recap-info">
+          <div class="ck-recap-name">${sanitize(i.product.name)}</div>
+          <div class="ck-recap-qty">× ${i.qty}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const extraCount = state.cart.length - 3;
+    recap.innerHTML = `
+      <div class="ck-recap-head">
+        <span class="ck-recap-title">📦 ${itemCount} article${itemCount > 1 ? 's' : ''}</span>
+        <span class="ck-recap-total">${fmt(cartTotal(), 'KMF')}</span>
+      </div>
+      <div class="ck-recap-list">${itemsList}
+        ${extraCount > 0 ? `<div class="ck-recap-more">+ ${extraCount} autre${extraCount > 1 ? 's' : ''}</div>` : ''}
+      </div>
+    `;
+    body.appendChild(recap);
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
@@ -1948,8 +1985,47 @@ function quickRemove(productId, btnEl) {
     const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
-    trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
+    trkHint.textContent = '💡 Renseignez un numéro pour recevoir les notifications WhatsApp';
+    trkHint.dataset.noNum = '1';
+    // Met à jour le message selon si un numéro est rempli
+    setTimeout(() => {
+      const _tel = document.getElementById('of-sender-phone');
+      if (_tel) {
+        const _update = () => {
+          const hasNum = (od.sender_phone || _tel.value || '').replace(/\D/g, '').length >= 7;
+          if (hasNum) {
+            trkHint.textContent = '📲 Notifié(e) par WhatsApp dès que la commande arrive au relais';
+            trkHint.dataset.noNum = '0';
+          } else {
+            trkHint.textContent = '💡 Renseignez un numéro pour recevoir les notifications WhatsApp';
+            trkHint.dataset.noNum = '1';
+          }
+        };
+        _tel.addEventListener('input', _update);
+        _tel.addEventListener('change', _update);
+        _update();
+      }
+    }, 50);
     trackExtra.appendChild(senderGroup);
+
+    // Email optionnel (reçu Stripe + confirmation commande)
+    const emailGroup = document.createElement('div');
+    emailGroup.className = 'k-ck-group';
+    const emailLbl = document.createElement('label');
+    emailLbl.className = 'k-ck-label';
+    emailLbl.textContent = '📧 Email (optionnel, pour le reçu)';
+    emailGroup.appendChild(emailLbl);
+    const emailInput = document.createElement('input');
+    emailInput.type = 'email';
+    emailInput.id = 'of-client-email';
+    emailInput.className = 'k-ck-input';
+    emailInput.placeholder = 'votre@email.com';
+    emailInput.value = od.client_email || '';
+    emailInput.autocomplete = 'email';
+    emailInput.addEventListener('input', () => { od.client_email = emailInput.value.trim(); });
+    emailGroup.appendChild(emailInput);
+    trackExtra.appendChild(emailGroup);
+
     trackExtra.appendChild(trkHint);
     body.appendChild(trackExtra);
 
@@ -2312,8 +2388,11 @@ async function submitOrder(btn) {
   }
 
   const clientName = recipName;
-  const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
-  const clientEmail = undefined;
+  // FIX : nettoyer le tél pour ne garder que les chiffres et valider longueur
+  const recipDigits = recipPhone.replace(/\D/g, '');
+  const fullRecipPhone = '+269' + recipDigits;
+  // FIX : récupérer l'email du champ optionnel
+  const clientEmail = (document.getElementById('of-client-email')?.value || '').trim() || undefined;
 
   if (!recipName) {
     showToast('Indiquez le nom de la personne qui récupère.', 'error');
@@ -2323,8 +2402,32 @@ async function submitOrder(btn) {
     showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error');
     return;
   }
+  // FIX : un numéro comorien valide a 7 chiffres
+  if (recipDigits.length !== 7) {
+    showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
+    return;
+  }
+  // FIX : validation email si renseigné
+  if (clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
+    showToast('Email invalide — laissez vide ou corrigez.', 'error');
+    return;
+  }
 
   const isStripe = od.payment_mode === 'stripe_eur';
+
+  // FIX : si Stripe, vérifier que la carte est prête avant submit
+  if (isStripe) {
+    if (!_stripe || !_stripeCard) {
+      showToast('Paiement par carte non chargé. Rechargez la page.', 'error');
+      return;
+    }
+    // Vérifier qu'il n'y a pas d'erreur courante visible
+    const errEl = document.getElementById('stripe-card-error');
+    if (errEl && errEl.textContent && errEl.textContent.trim().length > 0) {
+      showToast('Corrigez les informations de carte avant de payer.', 'error');
+      return;
+    }
+  }
   const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
 
   // Anti double-clic / anti race
