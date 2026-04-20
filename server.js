@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v12.3 (Inventory proposals + Transitaire)
+ * KOMERCE — Serveur API v12.4 (Cash reconciliation + Inventory proposals + Transitaire)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -223,6 +223,7 @@ const notificationApiRouter = require('./routes/notification-api');
 const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
+const cashRouter = require('./routes/cash');
 const inventoryApiRouter = require('./routes/inventory-api');
 const transitaireApiRouter = require('./routes/transitaire-api');
 const autoDistributeRouter = require('./routes/auto-distribute-api');
@@ -259,7 +260,8 @@ app.use('/api/v2', opsApiRouter);
 app.use('/api/tracking', trackingRouter);
 app.use('/api/auth/otp', otpRouter);      // WhatsApp OTP auth
 app.use('/api/client/tracking', clientTrackingRouter);
-app.use('/api/simulator', simulatorRouter); // Authenticated client tracking
+app.use('/api/simulator', simulatorRouter);
+app.use('/api/cash', cashRouter); // Authenticated client tracking
 app.use('/api/auth', clientAuthRouter);   // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);
@@ -409,7 +411,7 @@ routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init e
 parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
 
 const server = app.listen(PORT, () => {
-  console.log(`KOMERCE API v12.2 — port ${PORT} — démarrage immédiat — migrations en background`);
+  console.log(`KOMERCE API v12.4 — port ${PORT} — démarrage immédiat — migrations en background`);
 
   setImmediate(async () => {
     try {
@@ -655,6 +657,77 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 031: products.subcategory column ready');
       } catch(e) { console.warn('Migration 031 (non-fatal):', e.message); }
+
+      // ── Migration 034: cash_collections table (réconciliation Option C) ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS cash_collections (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            order_id UUID NOT NULL REFERENCES orders(id),
+            amount_kmf INTEGER NOT NULL,
+            collected_by UUID NOT NULL,
+            relais_id UUID,
+            confirmed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_coll_order ON cash_collections(order_id);
+          CREATE INDEX IF NOT EXISTS idx_cash_coll_agent ON cash_collections(collected_by);
+          CREATE INDEX IF NOT EXISTS idx_cash_coll_date ON cash_collections(confirmed_at DESC);
+        `);
+        console.log('✅ Migration 034: cash_collections table ready');
+      } catch(e) { console.warn('Migration 034 (non-fatal):', e.message); }
+
+      // ── Migration 035: cash_deposits table ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS cash_deposits (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            agent_id UUID NOT NULL,
+            amount_kmf INTEGER NOT NULL,
+            deposit_method TEXT NOT NULL,
+            reference TEXT,
+            proof_url TEXT,
+            period_start DATE NOT NULL,
+            period_end DATE NOT NULL,
+            deposited_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            verified_by UUID,
+            verified_at TIMESTAMPTZ,
+            status TEXT NOT NULL DEFAULT 'pending',
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_cash_dep_agent ON cash_deposits(agent_id);
+          CREATE INDEX IF NOT EXISTS idx_cash_dep_status ON cash_deposits(status);
+          CREATE INDEX IF NOT EXISTS idx_cash_dep_period ON cash_deposits(period_start, period_end);
+        `);
+        console.log('✅ Migration 035: cash_deposits table ready');
+      } catch(e) { console.warn('Migration 035 (non-fatal):', e.message); }
+
+      // ── Migration 036: cash_reconciliation table ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS cash_reconciliation (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            agent_id UUID NOT NULL,
+            period_start DATE NOT NULL,
+            period_end DATE NOT NULL,
+            expected_kmf INTEGER NOT NULL DEFAULT 0,
+            declared_kmf INTEGER NOT NULL DEFAULT 0,
+            deposited_kmf INTEGER NOT NULL DEFAULT 0,
+            gap_collection INTEGER NOT NULL DEFAULT 0,
+            gap_deposit INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'pending',
+            reviewed_by UUID,
+            reviewed_at TIMESTAMPTZ,
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_cash_recon_agent ON cash_reconciliation(agent_id);
+          CREATE INDEX IF NOT EXISTS idx_cash_recon_status ON cash_reconciliation(status);
+          CREATE INDEX IF NOT EXISTS idx_cash_recon_period ON cash_reconciliation(period_start, period_end);
+        `);
+        console.log('✅ Migration 036: cash_reconciliation table ready');
+      } catch(e) { console.warn('Migration 036 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
