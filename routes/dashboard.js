@@ -15,6 +15,7 @@
  * GET /api/dashboard/history     
  * GET /api/dashboard/hub-dubai   
  * GET /api/dashboard/relais      → historique mensuel (graphiques)
+ * GET /api/dashboard/payments    → suivi des paiements Cash + Stripe (pending/paid/failed/urgency)
  *
  * Auth : JWT (cookie httpOnly ou Bearer) + rôle admin
  * Rate limit : dashboardLimiter (60 req/min)
@@ -1208,6 +1209,240 @@ router.get('/global', async (req, res, next) => {
 router.get('/hub', (req, res, next) => {
   req.url = '/hub-dubai';
   router.handle(req, res, next);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 11. GET /payments — Suivi des paiements Cash relais + Stripe
+// ═══════════════════════════════════════════════════════════════════════════════
+// Indicateur temps-réel du statut de paiement des commandes.
+//
+// Cash relais :
+//   · pending       = commandes non encore confirmées par l'agent relais
+//   · overdue_12h   = pending depuis > 12h → rappel client à planifier
+//   · overdue_36h   = pending depuis > 36h → annulation à déclencher
+//
+// Stripe :
+//   · pending       = PaymentIntent créé, paiement pas encore confirmé
+//   · failed        = paiement échoué (stripe webhook payment_intent.payment_failed)
+//
+// summary.alert_count = nb d'actions requises (overdue_36h + stripe_failed)
+//
+// Query params : ?period=30  → fenêtre historique pour les stats paid/failed (défaut: 30j)
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/payments', async (req, res, next) => {
+  try {
+    const period = Math.max(1, Math.min(365, parseInt(req.query.period) || 30));
+    const rates  = await getEurKmf();
+
+    // ── Agrégats globaux ─────────────────────────────────────────────────────
+    // pending : pas de filtre de période (on veut TOUS les pending actifs)
+    // paid/failed : limités à la fenêtre `period`
+    const { rows: [agg] } = await db.query(`
+      SELECT
+        -- Cash relais — pending (tous actifs)
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'cash_relais'
+            AND payment_status = 'pending'
+            AND status NOT IN ('cancelled')
+        ) AS cash_pending_count,
+        COALESCE(SUM(total_kmf) FILTER (
+          WHERE payment_mode = 'cash_relais'
+            AND payment_status = 'pending'
+            AND status NOT IN ('cancelled')
+        ), 0) AS cash_pending_kmf,
+
+        -- Cash relais — retards
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'cash_relais'
+            AND payment_status = 'pending'
+            AND status NOT IN ('cancelled')
+            AND created_at <= NOW() - INTERVAL '12 hours'
+        ) AS cash_overdue_12h,
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'cash_relais'
+            AND payment_status = 'pending'
+            AND status NOT IN ('cancelled')
+            AND created_at <= NOW() - INTERVAL '36 hours'
+        ) AS cash_overdue_36h,
+
+        -- Cash relais — confirmés sur la période
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'cash_relais'
+            AND payment_status = 'paid'
+            AND created_at >= NOW() - INTERVAL '1 day' * $1
+        ) AS cash_paid_count,
+        COALESCE(SUM(total_kmf) FILTER (
+          WHERE payment_mode = 'cash_relais'
+            AND payment_status = 'paid'
+            AND created_at >= NOW() - INTERVAL '1 day' * $1
+        ), 0) AS cash_paid_kmf,
+
+        -- Stripe — pending (tous actifs)
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'stripe_eur'
+            AND payment_status = 'pending'
+            AND status NOT IN ('cancelled')
+        ) AS stripe_pending_count,
+        COALESCE(SUM(total_eur) FILTER (
+          WHERE payment_mode = 'stripe_eur'
+            AND payment_status = 'pending'
+            AND status NOT IN ('cancelled')
+        ), 0) AS stripe_pending_eur,
+
+        -- Stripe — payés sur la période
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'stripe_eur'
+            AND payment_status = 'paid'
+            AND created_at >= NOW() - INTERVAL '1 day' * $1
+        ) AS stripe_paid_count,
+        COALESCE(SUM(total_eur) FILTER (
+          WHERE payment_mode = 'stripe_eur'
+            AND payment_status = 'paid'
+            AND created_at >= NOW() - INTERVAL '1 day' * $1
+        ), 0) AS stripe_paid_eur,
+
+        -- Stripe — échoués sur la période
+        COUNT(*) FILTER (
+          WHERE payment_mode = 'stripe_eur'
+            AND payment_status = 'failed'
+            AND created_at >= NOW() - INTERVAL '1 day' * $1
+        ) AS stripe_failed_count,
+        COALESCE(SUM(total_eur) FILTER (
+          WHERE payment_mode = 'stripe_eur'
+            AND payment_status = 'failed'
+            AND created_at >= NOW() - INTERVAL '1 day' * $1
+        ), 0) AS stripe_failed_eur
+
+      FROM orders
+    `, [period]);
+
+    // ── Liste commandes en attente de paiement (cash + stripe, max 40) ───────
+    const { rows: pendingOrders } = await db.query(`
+      SELECT
+        o.id,
+        o.reference,
+        o.payment_mode,
+        o.payment_status,
+        o.status         AS order_status,
+        o.total_kmf,
+        o.total_eur,
+        o.cash_ref_code,
+        o.created_at,
+        EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 3600.0 AS age_hours,
+        u.full_name  AS client_name,
+        u.phone      AS client_phone,
+        r.name       AS relais_name
+      FROM orders o
+      LEFT JOIN users  u ON u.id = o.user_id
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.payment_status = 'pending'
+        AND o.status NOT IN ('cancelled')
+      ORDER BY o.created_at ASC
+      LIMIT 40
+    `);
+
+    // ── Stripe failed récents (détails pour action) ───────────────────────────
+    const { rows: failedOrders } = await db.query(`
+      SELECT
+        o.reference,
+        o.stripe_payment_id,
+        o.total_eur,
+        o.created_at,
+        u.full_name  AS client_name,
+        u.phone      AS client_phone
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.payment_mode   = 'stripe_eur'
+        AND o.payment_status = 'failed'
+        AND o.created_at    >= NOW() - INTERVAL '1 day' * $1
+      ORDER BY o.created_at DESC
+      LIMIT 10
+    `, [period]);
+
+    // ── Calculs résumé ────────────────────────────────────────────────────────
+    const cashPendingKmf   = Math.round(Number(agg.cash_pending_kmf));
+    const stripePendingEur = +Number(agg.stripe_pending_eur).toFixed(2);
+    const totalPendingKmf  = cashPendingKmf + Math.round(stripePendingEur * rates.eur_kmf);
+    const alertCount       = Number(agg.cash_overdue_36h) + Number(agg.stripe_failed_count);
+
+    res.json({
+      period,
+      taux: rates,
+
+      cash: {
+        pending: {
+          count:     Number(agg.cash_pending_count),
+          total_kmf: cashPendingKmf,
+        },
+        paid: {
+          count:     Number(agg.cash_paid_count),
+          total_kmf: Math.round(Number(agg.cash_paid_kmf)),
+        },
+        // Rappel H+12 : à notifier (info)
+        overdue_12h: Number(agg.cash_overdue_12h),
+        // Rappel H+36 : à annuler (alerte critique)
+        overdue_36h: Number(agg.cash_overdue_36h),
+      },
+
+      stripe: {
+        pending: {
+          count:     Number(agg.stripe_pending_count),
+          total_eur: stripePendingEur,
+        },
+        paid: {
+          count:     Number(agg.stripe_paid_count),
+          total_eur: +Number(agg.stripe_paid_eur).toFixed(2),
+        },
+        failed: {
+          count:     Number(agg.stripe_failed_count),
+          total_eur: +Number(agg.stripe_failed_eur).toFixed(2),
+          orders: failedOrders.map(f => ({
+            reference:         f.reference,
+            stripe_payment_id: f.stripe_payment_id,
+            total_eur:         +Number(f.total_eur).toFixed(2),
+            client:            f.client_name,
+            phone:             f.client_phone,
+            created_at:        f.created_at,
+          })),
+        },
+      },
+
+      // ── Résumé : chiffre clé pour le widget dashboard ──────────────────────
+      summary: {
+        // Argent bloqué en attente de paiement (toutes modes confondus)
+        total_pending_kmf: totalPendingKmf,
+        // Nombre d'actions requises (annulation + stripe failed)
+        alert_count:       alertCount,
+        needs_action:      alertCount > 0,
+      },
+
+      // ── Liste opérationnelle des commandes en attente ──────────────────────
+      pending_orders: pendingOrders.map(o => {
+        const ageH = +Number(o.age_hours).toFixed(1);
+        return {
+          id:            o.id,
+          reference:     o.reference,
+          mode:          o.payment_mode === 'cash_relais' ? 'cash' : 'stripe',
+          order_status:  o.order_status,
+          total_kmf:     Math.round(Number(o.total_kmf)),
+          total_eur:     o.total_eur ? +Number(o.total_eur).toFixed(2) : null,
+          cash_ref_code: o.cash_ref_code || null,
+          client:        o.client_name,
+          phone:         o.client_phone,
+          relais:        o.relais_name,
+          created_at:    o.created_at,
+          age_hours:     ageH,
+          // Urgency : pour coloration dans le dashboard
+          //   ok       → < 12h
+          //   warning  → 12h–36h  (rappel à envoyer)
+          //   critical → > 36h    (annulation à déclencher)
+          urgency: ageH >= 36 ? 'critical' : ageH >= 12 ? 'warning' : 'ok',
+        };
+      }),
+    });
+
+  } catch(err) { next(err); }
 });
 
 module.exports = router;
