@@ -1,6 +1,8 @@
 /**
- * Simulator Engine — moteur autonome avec setInterval
+ * Simulator Engine v2 — moteur autonome avec setInterval
  * Tourne dans le process Railway, piloté via API admin
+ *
+ * v2: Chaos actions impactantes (duplicate_scan, desync, waits, incidents)
  */
 'use strict';
 
@@ -31,16 +33,19 @@ async function start(cfg) {
   trackedOrders.clear();
   journal.clear();
 
+  // Build scenario stats for journal
+  const scenarioNames = config.scenarios.map(s => {
+    const sc = scenarios.SCENARIOS[s];
+    return sc ? (sc.icon || '') + ' ' + s : s;
+  }).join(', ');
+
   journal.log(null, null, null,
     '🚀 Simulation démarrée — cadence ' + config.cadence_minutes + 'min, max ' +
-    config.max_orders + ' cmds, chaos ' + (config.chaos_level * 100) + '%');
+    config.max_orders + ' cmds, chaos ' + (config.chaos_level * 100) + '% — scénarios: ' + scenarioNames);
 
   await enrollOrders();
-
-  // First tick immediate
   await tick();
 
-  // Then interval
   intervalId = setInterval(async () => {
     try { await tick(); } catch(e) { console.error('[SIM] Tick error:', e.message); }
   }, config.cadence_minutes * 60 * 1000);
@@ -52,7 +57,13 @@ async function stop() {
   running = false;
   global.__SIMULATION_ACTIVE = false;
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
-  journal.log(null, null, null, '⏹️ Simulation arrêtée — ' + tickCount + ' ticks, ' + trackedOrders.size + ' commandes');
+
+  // Stats summary
+  const stats = getStats();
+  journal.log(null, null, null,
+    '⏹️ Simulation arrêtée — ' + tickCount + ' ticks, ' + trackedOrders.size + ' commandes, ' +
+    stats.completed + ' terminées, ' + stats.chaos_events + ' chaos');
+
   return getStatus();
 }
 
@@ -76,7 +87,6 @@ async function enrollOrders() {
       const statusOrder = ['pending', 'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit', 'available'];
       const currentIdx = statusOrder.indexOf(order.status);
 
-      // Skip steps already completed
       for (let i = 0; i < scenario.steps.length; i++) {
         const step = scenario.steps[i];
         if (step.targetStatus) {
@@ -97,6 +107,8 @@ async function enrollOrders() {
         completed: false,
         errors: [],
         _waitCounter: 0,
+        _chaosWait: 0,
+        _chaosCount: 0,
       });
 
       journal.log(order.id, order.reference, scenario.name,
@@ -126,20 +138,38 @@ async function tick() {
         continue;
       }
 
-      // Chaos?
-      if (config.chaos_level > 0 && Math.random() < config.chaos_level && nextAction.action !== 'wait' && nextAction.action !== 'log_only') {
-        const chaos = scenarios.getChaosAction(tracked);
+      // ── Chaos v2: impactful actions ──
+      if (config.chaos_level > 0 && Math.random() < config.chaos_level &&
+          nextAction.action !== 'wait' && nextAction.action !== 'log_only') {
+        const chaos = scenarios.getChaosAction(tracked, config.chaos_level);
         if (chaos) {
-          journal.log(orderId, tracked.ref, tracked.scenario, '🎲 ' + chaos.description);
+          tracked._chaosCount++;
+
+          // Execute chaos impact (v2: actually does something)
+          if (advancer.executeChaosImpact) {
+            try {
+              const impact = await advancer.executeChaosImpact(orderId, tracked, chaos);
+              const severityIcon = chaos.severity === 'high' ? '🔴' : chaos.severity === 'medium' ? '🟡' : '⚪';
+              journal.log(orderId, tracked.ref, tracked.scenario,
+                '🎲 ' + severityIcon + ' ' + (impact.message || chaos.description), true);
+            } catch(ce) {
+              journal.log(orderId, tracked.ref, tracked.scenario,
+                '🎲 ' + chaos.description + ' (impact error: ' + ce.message + ')', false);
+            }
+          } else {
+            journal.log(orderId, tracked.ref, tracked.scenario, '🎲 ' + chaos.description);
+          }
           continue;
         }
       }
 
-      // Execute
+      // ── Execute normal action ──
       const result = await advancer.execute(orderId, tracked, nextAction);
 
       if (result.success) {
         if (nextAction.action !== 'wait') tracked.currentStep++;
+        if (result.to) tracked.currentStatus = result.to;
+
         journal.log(orderId, tracked.ref, tracked.scenario,
           (nextAction.action === 'wait' ? '⏳ ' : '✅ ') + nextAction.description +
           (result.from !== result.to ? ' (' + result.from + ' → ' + result.to + ')' : ''),
@@ -162,21 +192,50 @@ async function tick() {
   }
 }
 
-function getStatus() {
-  let transitions_ok = 0, errors = 0, completed = 0;
+function getStats() {
+  let transitions_ok = 0, errors = 0, completed = 0, chaos_events = 0;
+  const scenarioBreakdown = {};
+
   for (const [, t] of trackedOrders) {
     if (t.completed) completed++;
     errors += t.errors.length;
+    chaos_events += (t._chaosCount || 0);
+
+    // Track per-scenario stats
+    if (!scenarioBreakdown[t.scenario]) {
+      scenarioBreakdown[t.scenario] = { total: 0, completed: 0, errors: 0, chaos: 0 };
+    }
+    scenarioBreakdown[t.scenario].total++;
+    if (t.completed) scenarioBreakdown[t.scenario].completed++;
+    scenarioBreakdown[t.scenario].errors += t.errors.length;
+    scenarioBreakdown[t.scenario].chaos += (t._chaosCount || 0);
   }
+
   transitions_ok = journal.countSuccess();
+  chaos_events = Math.max(chaos_events, journal.countChaos());
+
+  return { transitions_ok, errors, completed, chaos_events, scenarioBreakdown };
+}
+
+function getStatus() {
+  const stats = getStats();
 
   return {
     running,
     tick_count: tickCount,
     orders_tracked: trackedOrders.size,
     config: running ? config : null,
-    stats: { transitions_ok, errors, completed, chaos_events: journal.countChaos() },
-    recent_journal: journal.getRecent(30)
+    stats,
+    recent_journal: journal.getRecent(30),
+    // v2: available scenarios list for UI
+    available_scenarios: Object.entries(scenarios.SCENARIOS).map(([key, s]) => ({
+      key,
+      icon: s.icon || '',
+      name: s.name,
+      category: s.category || 'happy',
+      description: s.description,
+      steps: s.steps.length,
+    })),
   };
 }
 
