@@ -744,6 +744,13 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 038: product catalog replaced');
       } catch(e) { console.warn('Migration 038 (non-fatal):', e.message); }
 
+      // ── Migration 039: French descriptions ──
+      try {
+        const migration039 = require('./scripts/migration-039-french-descriptions');
+        await migration039();
+        console.log('✅ Migration 039: descriptions updated to French');
+      } catch(e) { console.warn('Migration 039 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);

@@ -2934,21 +2934,45 @@ body.cart-open{overflow:hidden}
   }
   .k-modal-details::-webkit-scrollbar { width: 3px; }
   .k-modal-details::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
-  /* Image zone: compact on mobile — see full product + details without scroll */
+  /* Image zone: GRANDE sur mobile — produit bien visible pour achat */
   .k-modal-img-wrap {
-    flex: 0 0 22vh;
+    flex: 0 0 40vh;
     background: var(--sand);
   }
   .k-modal-slide {
     object-fit: contain;
     object-position: center center;
   }
-  /* Description: 1 ligne à côté du nom, pas un bloc qui pousse le prix */
+  /* Name + description côte à côte sur mobile */
+  .k-modal-info {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 8px;
+    align-items: baseline;
+    padding: 10px 16px 0;
+  }
+  #k-modal-name {
+    grid-column: 1;
+    font-size: 17px;
+  }
   .k-modal-desc {
+    grid-column: 2;
     -webkit-line-clamp: 1;
     font-size: 11px;
-    margin-top: 2px;
+    margin-top: 0;
     line-height: 1.3;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+  .k-modal-price-row {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+  }
+  .k-modal-meta {
+    grid-column: 1 / -1;
   }
   /* Modal actions always visible at bottom */
   .k-modal-actions {
