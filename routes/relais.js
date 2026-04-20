@@ -294,6 +294,11 @@ router.post('/validate-payment', authenticate, requireRole(['admin', 'agent_rela
 
     console.log(`[CASH] ✅ Paiement validé — ${order.reference} — ${amount_kmf} KMF — ${req.user.full_name} (${order.relais_name})`);
 
+    // Envoyer facture WhatsApp au client
+    notif.notifyPaymentConfirmed(order.id, order.reference).catch(err =>
+      console.error(`[CASH] ⚠️ WhatsApp facture non envoyée — ${order.reference}:`, err.message)
+    );
+
     res.json({
       success:     true,
       message:     'Paiement cash validé — commande confirmée et transmise au sourcing',

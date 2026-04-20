@@ -251,9 +251,8 @@
     <!-- Reverse cash section -->
     <div class="reverse-section" id="reverse-section" style="display:none">
       <h3>💳 Valider paiement cash client</h3>
-      <div class="commitment-box" id="reverse-commitment">Renseignez la référence et le montant pour générer l'engagement.</div>
-        Remplissez les champs — votre déclaration sera horodatée et engagera votre responsabilité.
-      </div>
+      <div class="commitment-box" id="reverse-commitment">Renseignez la référence et le montant ci-dessous.</div>
+      <p style="font-size:13px;color:#92400e;margin:6px 0 14px">⚠️ Un WhatsApp de confirmation + facture sera automatiquement envoyé au client.</p>
       <div class="reverse-field">
         <label>Référence colis (PCL-…) ou commande (KOM-…)</label>
         <input type="text" id="reverse-ref" placeholder="KOM-2026-0041 ou PCL-2026-00042" style="text-transform:uppercase"
@@ -269,7 +268,21 @@
         <input type="text" id="reverse-notes" placeholder="Ex : nom du porteur, note de remise..."
           oninput="Relais.updateCommitment()">
       </div>
-      <button class="reverse-btn" id="reverse-btn" onclick="Relais.doReverse()">✅ Valider l'encaissement</button>
+      <button class="reverse-btn" id="reverse-preview-btn" onclick="Relais.previewPayment()" style="background:#f59e0b">👁 Générer l'engagement</button>
+
+    <!-- Modal confirmation engagement -->
+    <div id="payment-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:14px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+        <h3 style="margin:0 0 14px;font-size:17px;color:#1f2937">✍️ Confirmation d'encaissement</h3>
+        <div id="payment-engagement-text" style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px;font-size:14px;line-height:1.6;color:#92400e;margin-bottom:18px"></div>
+        <p style="font-size:13px;color:#6b7280;margin:0 0 18px">En confirmant, vous attestez avoir encaissé cette somme et déclenchez l'envoi de la facture WhatsApp au client.</p>
+        <div style="display:flex;gap:10px">
+          <button onclick="Relais.cancelPayment()" style="flex:1;padding:12px;border:1.5px solid #d1d5db;border-radius:8px;background:#fff;font-size:15px;cursor:pointer;color:#374151">❌ Annuler</button>
+          <button id="payment-confirm-btn" onclick="Relais.doReverse()" style="flex:2;padding:12px;border:none;border-radius:8px;background:#10b981;color:#fff;font-size:15px;font-weight:700;cursor:pointer">✅ Je confirme</button>
+        </div>
+  
+      </div>
+    </div>
       <div id="reverse-result" style="margin-top:12px"></div>
     </div>
 
@@ -428,53 +441,70 @@
     Relais.updateCommitment = function() {
       const ref    = document.getElementById('reverse-ref').value.trim();
       const amount = document.getElementById('reverse-amount').value.trim();
-      const notes  = document.getElementById('reverse-notes').value.trim();
       if (ref && amount) {
         const now = new Date().toLocaleString('fr-FR');
-        const notePart = notes ? ' (' + notes + ')' : '';
         document.getElementById('reverse-commitment').textContent =
-          'Je declare avoir remis en especes ' + parseInt(amount).toLocaleString() + ' KMF' + notePart +
-          ' pour le colis/commande ' + ref.toUpperCase() + '. Declaration : ' + now + '.';
+          'Je confirme avoir encaissé ' + parseInt(amount).toLocaleString('fr-FR') + ' KMF du client pour la commande/colis ' +
+          ref.toUpperCase() + '. Déclaration horodatée : ' + now + '.';
       } else {
         document.getElementById('reverse-commitment').textContent =
-          'Remplissez les champs — votre declaration sera horodatee et engagera votre responsabilite.';
+          'Renseignez la référence et le montant ci-dessous.';
       }
+    };
+
+    Relais.previewPayment = function() {
+      const ref    = document.getElementById('reverse-ref').value.trim().toUpperCase();
+      const amount = document.getElementById('reverse-amount').value.trim();
+      if (!ref || !amount) {
+        document.getElementById('reverse-commitment').textContent = '⚠️ Référence et montant requis.';
+        document.getElementById('reverse-commitment').style.color = '#dc2626';
+        return;
+      }
+      document.getElementById('reverse-commitment').style.color = '';
+      const now = new Date().toLocaleString('fr-FR');
+      const engagementText = 'Je confirme avoir encaissé ' + parseInt(amount).toLocaleString('fr-FR') +
+        ' KMF en cash du client pour la commande/colis ' + ref + '. Déclaration horodatée : ' + now + '.';
+      document.getElementById('payment-engagement-text').textContent = engagementText;
+      const modal = document.getElementById('payment-confirm-modal');
+      modal.style.display = 'flex';
+    };
+
+    Relais.cancelPayment = function() {
+      document.getElementById('payment-confirm-modal').style.display = 'none';
+      document.getElementById('reverse-result').innerHTML = '';
     };
 
     Relais.doReverse = async function() {
       const ref    = document.getElementById('reverse-ref').value.trim().toUpperCase();
       const amount = parseInt(document.getElementById('reverse-amount').value.trim());
-      const method = 'cash';
-      const notes  = document.getElementById('reverse-notes').value.trim();
+      if (!ref || !amount) return;
 
-      if (!ref || !amount) {
-        document.getElementById('reverse-result').innerHTML =
-          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">Reference et montant requis.</div>';
-        return;
-      }
-
-      const btn = document.getElementById('reverse-btn');
+      const btn = document.getElementById('payment-confirm-btn');
       const result = document.getElementById('reverse-result');
       btn.disabled = true;
-      result.innerHTML = '<div style="color:#92400e">Enregistrement...</div>';
+      result.innerHTML = '<div style="color:#065f46;font-size:13px">⏳ Enregistrement...</div>';
 
       try {
-        const body = { ref, amount_kmf: amount, method };
-        if (notes) body.notes = notes;
-        const res = await CT.api.post('/api/relais/validate-payment', body);
+        const res = await CT.api.post('/api/relais/validate-payment', { ref, amount_kmf: amount });
         result.innerHTML =
-          '<div style="background:#d1fae5;padding:14px;border-radius:10px">' +
-          '<strong>✅ Paiement validé</strong><br>' +
-          '<span style="font-size:13px;color:#065f46">' + (res.commitment || '') + '</span></div>';
+          '<div style="background:#d1fae5;padding:14px;border-radius:10px;margin-top:8px">' +
+          '<strong>✅ Paiement validé — commande confirmée</strong><br>' +
+          '<span style="font-size:13px;color:#065f46">' + (res.commitment || '') + '</span><br><br>' +
+          '<span style="font-size:12px;color:#059669">📱 Facture WhatsApp envoyée au client.</span></div>';
         setTimeout(() => {
-          ['reverse-ref','reverse-amount'].forEach(id => document.getElementById(id).value = '');
+          document.getElementById('payment-confirm-modal').style.display = 'none';
+          ['reverse-ref','reverse-amount','reverse-notes'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
           Relais.updateCommitment();
           result.innerHTML = '';
           btn.disabled = false;
-        }, 4000);
+          Relais.init();
+        }, 5000);
       } catch (err) {
         result.innerHTML =
-          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">' + err.message + '</div>';
+          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626;font-size:13px">❌ ' + err.message + '</div>';
         btn.disabled = false;
       }
     };
