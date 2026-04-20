@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
-const { sendWhatsAppTwilio } = require('../services/notification-service');
+const { sendOtpMessage } = require('../services/notification-service');
 
 // ─── Config ─────────────────────────────────────────────────
 const OTP_LENGTH = 6;
@@ -86,13 +86,16 @@ router.post('/request', async (req, res) => {
       [phone, code, expiresAt]
     );
 
-    // Send via WhatsApp Twilio
+    // [P0-1] Envoi OTP via canal générique (WhatsApp Meta + fallback SMS)
     const customerName = userCheck.rows[0].full_name || 'Client';
-    const waMessage = `🔑 *Komerce — Code de vérification*\n\nBonjour ${customerName},\nVotre code de suivi est :\n\n*${code}*\n\n⏰ Valable ${OTP_EXPIRY_MIN} minutes.\nNe partagez ce code avec personne.\n\n— Komerce 🛒`;
+    const waResult = await sendOtpMessage({
+      phone,
+      code,
+      name: customerName,
+      expiryMin: OTP_EXPIRY_MIN,
+    });
 
-    const waResult = await sendWhatsAppTwilio(phone, waMessage);
-
-    console.log(`[OTP] 📱 Code envoyé → ${phone} (${waResult.success ? '✅' : '❌'})`);
+    console.log(`[OTP] 📱 Code envoyé → ${phone} (${waResult.success ? `✅ via ${waResult.channel}` : `❌ ${waResult.reason || waResult.error}`})`);
 
     res.json({
       success: true,

@@ -12,7 +12,7 @@
  *   - notifyCancellation(order, smsRefundInfo)
  *   - notifyParcelCreated(parcelRef, orderId, orderReference)       ← [P0-2] ajouté
  *   - notifyParcelScan(parcelId, parcelRef, parcelStatus)           ← [P0-2] ajouté
- *   - sendWhatsAppTwilio(phone, message)                            ← [P0-1] ajouté (OTP auth)
+ *   - sendOtpMessage({ phone, code, name, expiryMin })              ← [P0-1] ajouté (OTP auth, canal agnostique)
  *
  * Toutes les notifications sont non-bloquantes et loggées en DB (notification_log).
  * ═══════════════════════════════════════════════════════════════════════
@@ -377,20 +377,26 @@ async function notifyParcelScan(parcelId, parcelRef, parcelStatus) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  7. [P0-1] OTP via WhatsApp — nom historique "Twilio", utilise Meta WA + fallback SMS
+//  7. [P0-1] OTP — envoi générique du code par WhatsApp (template Meta) + fallback SMS
 // ═══════════════════════════════════════════════════════════════════════
 /**
- * sendWhatsAppTwilio(phone, message)
+ * sendOtpMessage({ phone, code, name, expiryMin })
  *
- * Nom historique préservé pour ne pas casser routes/otp.js:8.
- * Implémentation réelle :
- *   1. Essaie Meta WhatsApp (template "authentication_code" si configuré)
+ * API générique qui abstrait le canal d'envoi (WhatsApp Meta ou SMS).
+ * L'appelant passe les données brutes — c'est ici qu'on choisit le canal et formate.
+ *
+ * Stratégie :
+ *   1. Essaie Meta WhatsApp (template "authentication_code" configurable)
  *   2. Fallback SMS Africa's Talking
- *   3. Si les deux indisponibles → return { success:false, reason:'no_channel' } (pas de crash)
+ *   3. Si aucun canal disponible → return { success:false, reason:'no_channel' } (pas de crash)
  *
- * Retourne toujours un objet { success, ... } — jamais throw.
+ * Retourne toujours un objet { success, channel?, messageId?, error?, reason? } — jamais throw.
  */
-async function sendWhatsAppTwilio(phone, message) {
+async function sendOtpMessage({ phone, code, name = 'Client', expiryMin = 10 }) {
+  if (!phone || !code) {
+    return { success: false, reason: 'missing_params' };
+  }
+
   // ── 1. Tentative Meta WhatsApp via template ──────────────────────────
   // Nécessite un template approuvé nommé via META_WA_OTP_TEMPLATE (défaut: 'otp_komerce')
   // Le template doit accepter 1 paramètre body = le code OTP.
@@ -399,49 +405,44 @@ async function sendWhatsAppTwilio(phone, message) {
 
   if (sendTemplateWhatsApp && process.env.META_WA_TOKEN) {
     try {
-      // Extraire le code OTP du message (6 chiffres entre deux *)
-      const codeMatch = String(message).match(/\*(\d{4,8})\*/);
-      const otpCode = codeMatch ? codeMatch[1] : null;
+      const result = await sendTemplateWhatsApp({
+        to: phone,
+        templateName: OTP_TEMPLATE,
+        lang: OTP_LANG,
+        components: [
+          {
+            type: 'body',
+            parameters: [{ type: 'text', text: String(code) }]
+          }
+        ]
+      });
 
-      if (otpCode) {
-        const result = await sendTemplateWhatsApp({
-          to: phone,
-          templateName: OTP_TEMPLATE,
-          lang: OTP_LANG,
-          components: [
-            {
-              type: 'body',
-              parameters: [{ type: 'text', text: otpCode }]
-            }
-          ]
-        });
-
-        if (result.success) {
-          return { success: true, channel: 'whatsapp_meta', messageId: result.message_id };
-        }
-        console.warn('[sendWhatsAppTwilio] Meta failed, trying SMS fallback:', result.error);
+      if (result.success) {
+        return { success: true, channel: 'whatsapp_meta', messageId: result.message_id };
       }
+      console.warn('[sendOtpMessage] Meta failed, trying SMS fallback:', result.error);
     } catch (err) {
-      console.warn('[sendWhatsAppTwilio] Meta error, trying SMS fallback:', err.message);
+      console.warn('[sendOtpMessage] Meta error, trying SMS fallback:', err.message);
     }
   }
 
   // ── 2. Fallback SMS (Africa's Talking) ───────────────────────────────
   if (sendSMS) {
     try {
-      const smsResult = await sendSMS(phone, message, 'otp', null);
+      const smsMessage = `Komerce — Code de verification\n\nBonjour ${name},\nVotre code : ${code}\n\nValable ${expiryMin} minutes. Ne partagez pas ce code.`;
+      const smsResult = await sendSMS(phone, smsMessage, 'otp', null);
       if (smsResult.success) {
         return { success: true, channel: 'sms' };
       }
       return { success: false, channel: 'sms', error: smsResult.error };
     } catch (err) {
-      console.error('[sendWhatsAppTwilio] SMS fallback error:', err.message);
+      console.error('[sendOtpMessage] SMS fallback error:', err.message);
       return { success: false, error: err.message };
     }
   }
 
   // ── 3. Aucun canal disponible — return graceful (pas de crash) ──────
-  console.warn('[sendWhatsAppTwilio] No WhatsApp nor SMS channel configured');
+  console.warn('[sendOtpMessage] No WhatsApp nor SMS channel configured');
   return { success: false, reason: 'no_channel' };
 }
 
@@ -452,5 +453,5 @@ module.exports = {
   notifyCancellation,
   notifyParcelCreated,   // [P0-2]
   notifyParcelScan,      // [P0-2]
-  sendWhatsAppTwilio,    // [P0-1]
+  sendOtpMessage,        // [P0-1] envoi OTP canal-agnostique (WhatsApp Meta → SMS fallback)
 };
