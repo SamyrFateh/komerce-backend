@@ -6,7 +6,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 4000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0000.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703464/komerce/products/prod_0000.jpg",
     "sort_order": 0
   },
   {
@@ -16,7 +16,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 4000,
     "promo_pct": 11,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0001.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703465/komerce/products/prod_0001.png",
     "sort_order": 1
   },
   {
@@ -26,7 +26,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 10000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0002.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703466/komerce/products/prod_0002.jpg",
     "sort_order": 2
   },
   {
@@ -36,7 +36,7 @@
     "subcategory": "Jouets",
     "price_kmf": 6500,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0003.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703467/komerce/products/prod_0003.jpg",
     "sort_order": 3
   },
   {
@@ -46,7 +46,7 @@
     "subcategory": "Fitness",
     "price_kmf": 6000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0004.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703467/komerce/products/prod_0004.jpg",
     "sort_order": 4
   },
   {
@@ -56,7 +56,7 @@
     "subcategory": "Fitness",
     "price_kmf": 22500,
     "promo_pct": 6,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0005.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703468/komerce/products/prod_0005.png",
     "sort_order": 5
   },
   {
@@ -66,7 +66,7 @@
     "subcategory": "Robes",
     "price_kmf": 40500,
     "promo_pct": 16,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0006.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703470/komerce/products/prod_0006.png",
     "sort_order": 6
   },
   {
@@ -76,7 +76,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 15000,
     "promo_pct": 36,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0007.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703471/komerce/products/prod_0007.jpg",
     "sort_order": 7
   },
   {
@@ -86,7 +86,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 10500,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0008.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703472/komerce/products/prod_0008.jpg",
     "sort_order": 8
   },
   {
@@ -96,7 +96,7 @@
     "subcategory": "Parfums",
     "price_kmf": 4000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0009.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703473/komerce/products/prod_0009.jpg",
     "sort_order": 9
   },
   {
@@ -106,7 +106,7 @@
     "subcategory": "Jouets",
     "price_kmf": 11000,
     "promo_pct": 45,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0010.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703474/komerce/products/prod_0010.jpg",
     "sort_order": 10
   },
   {
@@ -116,7 +116,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 7500,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0011.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703474/komerce/products/prod_0011.jpg",
     "sort_order": 11
   },
   {
@@ -126,7 +126,7 @@
     "subcategory": "Fitness",
     "price_kmf": 7000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0012.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703475/komerce/products/prod_0012.jpg",
     "sort_order": 12
   },
   {
@@ -136,7 +136,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0013.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703476/komerce/products/prod_0013.jpg",
     "sort_order": 13
   },
   {
@@ -146,7 +146,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0014.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703477/komerce/products/prod_0014.jpg",
     "sort_order": 14
   },
   {
@@ -156,7 +156,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 12000,
     "promo_pct": 73,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0015.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703478/komerce/products/prod_0015.jpg",
     "sort_order": 15
   },
   {
@@ -166,7 +166,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 5000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0016.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703479/komerce/products/prod_0016.png",
     "sort_order": 16
   },
   {
@@ -176,7 +176,7 @@
     "subcategory": "Fitness",
     "price_kmf": 10500,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0017.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703480/komerce/products/prod_0017.jpg",
     "sort_order": 17
   },
   {
@@ -186,7 +186,7 @@
     "subcategory": "Gadgets",
     "price_kmf": 21500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0018.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703481/komerce/products/prod_0018.jpg",
     "sort_order": 18
   },
   {
@@ -196,7 +196,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 5500,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0019.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703482/komerce/products/prod_0019.jpg",
     "sort_order": 19
   },
   {
@@ -206,7 +206,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 22500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703797/komerce/products/prod_0020.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703483/komerce/products/prod_0020.jpg",
     "sort_order": 20
   },
   {
@@ -216,7 +216,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 6500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0021.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703484/komerce/products/prod_0021.jpg",
     "sort_order": 21
   },
   {
@@ -226,7 +226,7 @@
     "subcategory": "Jouets",
     "price_kmf": 11500,
     "promo_pct": 34,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0022.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703485/komerce/products/prod_0022.jpg",
     "sort_order": 22
   },
   {
@@ -236,7 +236,7 @@
     "subcategory": "Jouets",
     "price_kmf": 9000,
     "promo_pct": 22,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0023.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703485/komerce/products/prod_0023.jpg",
     "sort_order": 23
   },
   {
@@ -246,7 +246,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 2500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0024.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703486/komerce/products/prod_0024.jpg",
     "sort_order": 24
   },
   {
@@ -256,7 +256,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 16000,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0025.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703487/komerce/products/prod_0025.jpg",
     "sort_order": 25
   },
   {
@@ -266,7 +266,7 @@
     "subcategory": "Soin",
     "price_kmf": 12000,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0026.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703487/komerce/products/prod_0026.jpg",
     "sort_order": 26
   },
   {
@@ -276,7 +276,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0027.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703488/komerce/products/prod_0027.jpg",
     "sort_order": 27
   },
   {
@@ -286,7 +286,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0028.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703489/komerce/products/prod_0028.jpg",
     "sort_order": 28
   },
   {
@@ -296,7 +296,7 @@
     "subcategory": "Parfums",
     "price_kmf": 2500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0029.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703490/komerce/products/prod_0029.jpg",
     "sort_order": 29
   },
   {
@@ -306,7 +306,7 @@
     "subcategory": "Soin",
     "price_kmf": 5000,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0030.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703490/komerce/products/prod_0030.jpg",
     "sort_order": 30
   },
   {
@@ -316,7 +316,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 2000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0031.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703491/komerce/products/prod_0031.jpg",
     "sort_order": 31
   },
   {
@@ -326,7 +326,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 225000,
     "promo_pct": 19,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0032.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703492/komerce/products/prod_0032.png",
     "sort_order": 32
   },
   {
@@ -336,7 +336,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 13500,
     "promo_pct": 58,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0033.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703492/komerce/products/prod_0033.jpg",
     "sort_order": 33
   },
   {
@@ -346,7 +346,7 @@
     "subcategory": "Montres",
     "price_kmf": 40500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0034.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703493/komerce/products/prod_0034.png",
     "sort_order": 34
   },
   {
@@ -356,7 +356,7 @@
     "subcategory": "Jouets",
     "price_kmf": 2000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0035.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703494/komerce/products/prod_0035.jpg",
     "sort_order": 35
   },
   {
@@ -366,7 +366,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 3000,
     "promo_pct": 25,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0036.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703495/komerce/products/prod_0036.jpg",
     "sort_order": 36
   },
   {
@@ -376,7 +376,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 33000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0037.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703495/komerce/products/prod_0037.jpg",
     "sort_order": 37
   },
   {
@@ -386,7 +386,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0038.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703496/komerce/products/prod_0038.jpg",
     "sort_order": 38
   },
   {
@@ -396,7 +396,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 495000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0039.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703497/komerce/products/prod_0039.png",
     "sort_order": 39
   },
   {
@@ -406,7 +406,7 @@
     "subcategory": "Fitness",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0040.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703497/komerce/products/prod_0040.jpg",
     "sort_order": 40
   },
   {
@@ -416,7 +416,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 1000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0041.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703498/komerce/products/prod_0041.jpg",
     "sort_order": 41
   },
   {
@@ -426,7 +426,7 @@
     "subcategory": "Sacs",
     "price_kmf": 2000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0042.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703499/komerce/products/prod_0042.jpg",
     "sort_order": 42
   },
   {
@@ -436,7 +436,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 32500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0043.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703500/komerce/products/prod_0043.jpg",
     "sort_order": 43
   },
   {
@@ -446,7 +446,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 27500,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0044.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703501/komerce/products/prod_0044.png",
     "sort_order": 44
   },
   {
@@ -456,7 +456,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 1000,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0045.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703501/komerce/products/prod_0045.jpg",
     "sort_order": 45
   },
   {
@@ -466,7 +466,7 @@
     "subcategory": "Soin",
     "price_kmf": 3500,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0046.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703502/komerce/products/prod_0046.jpg",
     "sort_order": 46
   },
   {
@@ -476,7 +476,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 6000,
     "promo_pct": 8,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0047.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703503/komerce/products/prod_0047.png",
     "sort_order": 47
   },
   {
@@ -486,7 +486,7 @@
     "subcategory": "Jouets",
     "price_kmf": 8500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0048.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703504/komerce/products/prod_0048.jpg",
     "sort_order": 48
   },
   {
@@ -496,7 +496,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 6000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0049.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703505/komerce/products/prod_0049.png",
     "sort_order": 49
   },
   {
@@ -506,7 +506,7 @@
     "subcategory": "Jouets",
     "price_kmf": 14000,
     "promo_pct": 49,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0050.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703506/komerce/products/prod_0050.jpg",
     "sort_order": 50
   },
   {
@@ -516,7 +516,7 @@
     "subcategory": "Véhicules",
     "price_kmf": 22000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0051.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703507/komerce/products/prod_0051.png",
     "sort_order": 51
   },
   {
@@ -526,7 +526,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 14500,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0052.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703508/komerce/products/prod_0052.jpg",
     "sort_order": 52
   },
   {
@@ -536,7 +536,7 @@
     "subcategory": "Fitness",
     "price_kmf": 4500,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703798/komerce/products/prod_0053.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703508/komerce/products/prod_0053.jpg",
     "sort_order": 53
   },
   {
@@ -546,7 +546,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 19000,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0054.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703509/komerce/products/prod_0054.jpg",
     "sort_order": 54
   },
   {
@@ -556,7 +556,7 @@
     "subcategory": "Fitness",
     "price_kmf": 12000,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0055.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703510/komerce/products/prod_0055.jpg",
     "sort_order": 55
   },
   {
@@ -566,7 +566,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 12500,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0056.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703511/komerce/products/prod_0056.jpg",
     "sort_order": 56
   },
   {
@@ -576,7 +576,7 @@
     "subcategory": "Décoration",
     "price_kmf": 3500,
     "promo_pct": 65,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0057.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703512/komerce/products/prod_0057.jpg",
     "sort_order": 57
   },
   {
@@ -586,7 +586,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 15000,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0058.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703513/komerce/products/prod_0058.jpg",
     "sort_order": 58
   },
   {
@@ -596,7 +596,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 1000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0059.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703513/komerce/products/prod_0059.jpg",
     "sort_order": 59
   },
   {
@@ -606,7 +606,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 22500,
     "promo_pct": 15,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0060.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703514/komerce/products/prod_0060.jpg",
     "sort_order": 60
   },
   {
@@ -616,7 +616,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 14500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0061.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703515/komerce/products/prod_0061.jpg",
     "sort_order": 61
   },
   {
@@ -626,7 +626,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 4000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0062.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703516/komerce/products/prod_0062.jpg",
     "sort_order": 62
   },
   {
@@ -636,7 +636,7 @@
     "subcategory": "Soin",
     "price_kmf": 4500,
     "promo_pct": 10,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0063.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703516/komerce/products/prod_0063.png",
     "sort_order": 63
   },
   {
@@ -646,7 +646,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 9000,
     "promo_pct": 18,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0064.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703517/komerce/products/prod_0064.png",
     "sort_order": 64
   },
   {
@@ -656,7 +656,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 12500,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0065.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703518/komerce/products/prod_0065.jpg",
     "sort_order": 65
   },
   {
@@ -666,7 +666,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 58500,
     "promo_pct": 16,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0066.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703520/komerce/products/prod_0066.png",
     "sort_order": 66
   },
   {
@@ -676,7 +676,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 11000,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0067.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703520/komerce/products/prod_0067.jpg",
     "sort_order": 67
   },
   {
@@ -686,7 +686,7 @@
     "subcategory": "Décoration",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0068.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703521/komerce/products/prod_0068.jpg",
     "sort_order": 68
   },
   {
@@ -696,7 +696,7 @@
     "subcategory": "Parfums",
     "price_kmf": 4000,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0069.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703521/komerce/products/prod_0069.jpg",
     "sort_order": 69
   },
   {
@@ -706,7 +706,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 18500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0070.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703522/komerce/products/prod_0070.jpg",
     "sort_order": 70
   },
   {
@@ -716,7 +716,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0071.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703523/komerce/products/prod_0071.jpg",
     "sort_order": 71
   },
   {
@@ -726,7 +726,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 1500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0072.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703523/komerce/products/prod_0072.jpg",
     "sort_order": 72
   },
   {
@@ -736,7 +736,7 @@
     "subcategory": "Sacs",
     "price_kmf": 14500,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0073.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703524/komerce/products/prod_0073.jpg",
     "sort_order": 73
   },
   {
@@ -746,7 +746,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 1000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0074.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703533/komerce/products/prod_0074.png",
     "sort_order": 74
   },
   {
@@ -756,7 +756,7 @@
     "subcategory": "Sacs",
     "price_kmf": 8500,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0075.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703534/komerce/products/prod_0075.jpg",
     "sort_order": 75
   },
   {
@@ -766,7 +766,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 16000,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0076.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703535/komerce/products/prod_0076.jpg",
     "sort_order": 76
   },
   {
@@ -776,7 +776,7 @@
     "subcategory": "Parfums",
     "price_kmf": 22500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0077.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703535/komerce/products/prod_0077.png",
     "sort_order": 77
   },
   {
@@ -786,7 +786,7 @@
     "subcategory": "Soin",
     "price_kmf": 15000,
     "promo_pct": 39,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0078.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703536/komerce/products/prod_0078.jpg",
     "sort_order": 78
   },
   {
@@ -796,7 +796,7 @@
     "subcategory": "Robes",
     "price_kmf": 7500,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0079.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703537/komerce/products/prod_0079.jpg",
     "sort_order": 79
   },
   {
@@ -806,7 +806,7 @@
     "subcategory": "Véhicules",
     "price_kmf": 44000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703799/komerce/products/prod_0080.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703538/komerce/products/prod_0080.png",
     "sort_order": 80
   },
   {
@@ -816,7 +816,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 7000,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0081.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703539/komerce/products/prod_0081.jpg",
     "sort_order": 81
   },
   {
@@ -826,7 +826,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 23000,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0082.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703539/komerce/products/prod_0082.jpg",
     "sort_order": 82
   },
   {
@@ -836,7 +836,7 @@
     "subcategory": "Fitness",
     "price_kmf": 3000,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0083.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703540/komerce/products/prod_0083.jpg",
     "sort_order": 83
   },
   {
@@ -846,7 +846,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 1500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0084.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703541/komerce/products/prod_0084.jpg",
     "sort_order": 84
   },
   {
@@ -856,7 +856,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 7000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0085.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703542/komerce/products/prod_0085.jpg",
     "sort_order": 85
   },
   {
@@ -866,7 +866,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 4500,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0086.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703542/komerce/products/prod_0086.jpg",
     "sort_order": 86
   },
   {
@@ -876,7 +876,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 6500,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0087.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703543/komerce/products/prod_0087.jpg",
     "sort_order": 87
   },
   {
@@ -886,7 +886,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 4000,
     "promo_pct": 11,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0088.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703544/komerce/products/prod_0088.png",
     "sort_order": 88
   },
   {
@@ -896,7 +896,7 @@
     "subcategory": "Soin",
     "price_kmf": 1000,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0089.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703545/komerce/products/prod_0089.jpg",
     "sort_order": 89
   },
   {
@@ -906,7 +906,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 3000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0090.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703546/komerce/products/prod_0090.png",
     "sort_order": 90
   },
   {
@@ -916,7 +916,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 253000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0091.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703546/komerce/products/prod_0091.jpg",
     "sort_order": 91
   },
   {
@@ -926,7 +926,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 3500,
     "promo_pct": 22,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0092.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703547/komerce/products/prod_0092.png",
     "sort_order": 92
   },
   {
@@ -936,7 +936,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 13500,
     "promo_pct": 13,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0093.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703548/komerce/products/prod_0093.png",
     "sort_order": 93
   },
   {
@@ -946,7 +946,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 11000,
     "promo_pct": 35,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0094.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703549/komerce/products/prod_0094.jpg",
     "sort_order": 94
   },
   {
@@ -956,7 +956,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0095.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703550/komerce/products/prod_0095.jpg",
     "sort_order": 95
   },
   {
@@ -966,7 +966,7 @@
     "subcategory": "Jouets",
     "price_kmf": 11000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0096.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703550/komerce/products/prod_0096.jpg",
     "sort_order": 96
   },
   {
@@ -976,7 +976,7 @@
     "subcategory": "Véhicules",
     "price_kmf": 29500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0097.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703551/komerce/products/prod_0097.png",
     "sort_order": 97
   },
   {
@@ -986,7 +986,7 @@
     "subcategory": "Fitness",
     "price_kmf": 7000,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0098.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703552/komerce/products/prod_0098.jpg",
     "sort_order": 98
   },
   {
@@ -996,7 +996,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 3500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0099.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703552/komerce/products/prod_0099.png",
     "sort_order": 99
   },
   {
@@ -1006,7 +1006,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 32000,
     "promo_pct": 10,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0100.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703554/komerce/products/prod_0100.jpg",
     "sort_order": 100
   },
   {
@@ -1016,7 +1016,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 3000,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0101.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703555/komerce/products/prod_0101.jpg",
     "sort_order": 101
   },
   {
@@ -1026,7 +1026,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 135000,
     "promo_pct": 7,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0102.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703556/komerce/products/prod_0102.png",
     "sort_order": 102
   },
   {
@@ -1036,7 +1036,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 3500,
     "promo_pct": 59,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0103.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703556/komerce/products/prod_0103.jpg",
     "sort_order": 103
   },
   {
@@ -1046,7 +1046,7 @@
     "subcategory": "Divers",
     "price_kmf": 10000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703800/komerce/products/prod_0104.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703557/komerce/products/prod_0104.jpg",
     "sort_order": 104
   },
   {
@@ -1056,7 +1056,7 @@
     "subcategory": "Décoration",
     "price_kmf": 12000,
     "promo_pct": 37,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0105.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703558/komerce/products/prod_0105.jpg",
     "sort_order": 105
   },
   {
@@ -1076,7 +1076,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 1500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0107.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703559/komerce/products/prod_0107.jpg",
     "sort_order": 107
   },
   {
@@ -1086,7 +1086,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 15500,
     "promo_pct": 16,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0108.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703560/komerce/products/prod_0108.png",
     "sort_order": 108
   },
   {
@@ -1096,7 +1096,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 82000,
     "promo_pct": 64,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0109.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703561/komerce/products/prod_0109.jpg",
     "sort_order": 109
   },
   {
@@ -1106,7 +1106,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 1500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0110.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703562/komerce/products/prod_0110.png",
     "sort_order": 110
   },
   {
@@ -1116,7 +1116,7 @@
     "subcategory": "Gadgets",
     "price_kmf": 12000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0111.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703564/komerce/products/prod_0111.jpg",
     "sort_order": 111
   },
   {
@@ -1126,7 +1126,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0112.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703564/komerce/products/prod_0112.png",
     "sort_order": 112
   },
   {
@@ -1136,7 +1136,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 7000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0113.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703565/komerce/products/prod_0113.jpg",
     "sort_order": 113
   },
   {
@@ -1146,7 +1146,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 2500,
     "promo_pct": 55,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0114.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703566/komerce/products/prod_0114.jpg",
     "sort_order": 114
   },
   {
@@ -1156,7 +1156,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 75,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0115.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703567/komerce/products/prod_0115.jpg",
     "sort_order": 115
   },
   {
@@ -1166,7 +1166,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 1000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0116.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703568/komerce/products/prod_0116.png",
     "sort_order": 116
   },
   {
@@ -1176,7 +1176,7 @@
     "subcategory": "Fitness",
     "price_kmf": 13500,
     "promo_pct": 18,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0117.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703569/komerce/products/prod_0117.png",
     "sort_order": 117
   },
   {
@@ -1186,7 +1186,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 4500,
     "promo_pct": 10,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0118.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703570/komerce/products/prod_0118.png",
     "sort_order": 118
   },
   {
@@ -1196,7 +1196,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0119.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703571/komerce/products/prod_0119.jpg",
     "sort_order": 119
   },
   {
@@ -1206,7 +1206,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0120.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703571/komerce/products/prod_0120.jpg",
     "sort_order": 120
   },
   {
@@ -1216,7 +1216,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 2000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0121.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703572/komerce/products/prod_0121.jpg",
     "sort_order": 121
   },
   {
@@ -1226,7 +1226,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 8000,
     "promo_pct": 47,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0122.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703573/komerce/products/prod_0122.jpg",
     "sort_order": 122
   },
   {
@@ -1236,7 +1236,7 @@
     "subcategory": "Soin",
     "price_kmf": 2000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0123.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703574/komerce/products/prod_0123.jpg",
     "sort_order": 123
   },
   {
@@ -1246,7 +1246,7 @@
     "subcategory": "Décoration",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0124.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703575/komerce/products/prod_0124.jpg",
     "sort_order": 124
   },
   {
@@ -1256,7 +1256,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 11000,
     "promo_pct": 58,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0125.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703575/komerce/products/prod_0125.jpg",
     "sort_order": 125
   },
   {
@@ -1276,7 +1276,7 @@
     "subcategory": "Décoration",
     "price_kmf": 11500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0127.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703576/komerce/products/prod_0127.jpg",
     "sort_order": 127
   },
   {
@@ -1286,7 +1286,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 14000,
     "promo_pct": 26,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0128.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703577/komerce/products/prod_0128.jpg",
     "sort_order": 128
   },
   {
@@ -1296,7 +1296,7 @@
     "subcategory": "Divers",
     "price_kmf": 22500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703801/komerce/products/prod_0129.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703578/komerce/products/prod_0129.jpg",
     "sort_order": 129
   },
   {
@@ -1306,7 +1306,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0130.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703579/komerce/products/prod_0130.jpg",
     "sort_order": 130
   },
   {
@@ -1316,7 +1316,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 8000,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0131.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703579/komerce/products/prod_0131.jpg",
     "sort_order": 131
   },
   {
@@ -1326,7 +1326,7 @@
     "subcategory": "Divers",
     "price_kmf": 33000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0132.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703580/komerce/products/prod_0132.jpg",
     "sort_order": 132
   },
   {
@@ -1336,7 +1336,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 6500,
     "promo_pct": 19,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0133.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703580/komerce/products/prod_0133.png",
     "sort_order": 133
   },
   {
@@ -1346,7 +1346,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 15000,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0134.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703581/komerce/products/prod_0134.jpg",
     "sort_order": 134
   },
   {
@@ -1356,7 +1356,7 @@
     "subcategory": "Jouets",
     "price_kmf": 8000,
     "promo_pct": 30,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0135.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703582/komerce/products/prod_0135.jpg",
     "sort_order": 135
   },
   {
@@ -1366,7 +1366,7 @@
     "subcategory": "Fitness",
     "price_kmf": 6500,
     "promo_pct": 7,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0136.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703583/komerce/products/prod_0136.png",
     "sort_order": 136
   },
   {
@@ -1376,7 +1376,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 152000,
     "promo_pct": 61,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0137.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703583/komerce/products/prod_0137.jpg",
     "sort_order": 137
   },
   {
@@ -1386,7 +1386,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 14500,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0138.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703584/komerce/products/prod_0138.jpg",
     "sort_order": 138
   },
   {
@@ -1396,7 +1396,7 @@
     "subcategory": "Montres",
     "price_kmf": 21000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0139.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703585/komerce/products/prod_0139.png",
     "sort_order": 139
   },
   {
@@ -1406,7 +1406,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 45000,
     "promo_pct": 17,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0140.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703586/komerce/products/prod_0140.png",
     "sort_order": 140
   },
   {
@@ -1416,7 +1416,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 30500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0141.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703586/komerce/products/prod_0141.jpg",
     "sort_order": 141
   },
   {
@@ -1426,7 +1426,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 45000,
     "promo_pct": 18,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0142.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703587/komerce/products/prod_0142.png",
     "sort_order": 142
   },
   {
@@ -1436,7 +1436,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 5000,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0143.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703588/komerce/products/prod_0143.jpg",
     "sort_order": 143
   },
   {
@@ -1446,7 +1446,7 @@
     "subcategory": "Fitness",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0144.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703588/komerce/products/prod_0144.jpg",
     "sort_order": 144
   },
   {
@@ -1456,7 +1456,7 @@
     "subcategory": "Jouets",
     "price_kmf": 14500,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0145.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703589/komerce/products/prod_0145.jpg",
     "sort_order": 145
   },
   {
@@ -1466,7 +1466,7 @@
     "subcategory": "Jouets",
     "price_kmf": 12500,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0146.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703590/komerce/products/prod_0146.jpg",
     "sort_order": 146
   },
   {
@@ -1476,7 +1476,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 21500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0147.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703591/komerce/products/prod_0147.png",
     "sort_order": 147
   },
   {
@@ -1486,7 +1486,7 @@
     "subcategory": "Robes",
     "price_kmf": 3500,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0148.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703591/komerce/products/prod_0148.jpg",
     "sort_order": 148
   },
   {
@@ -1496,7 +1496,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 9500,
     "promo_pct": 61,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0149.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703592/komerce/products/prod_0149.jpg",
     "sort_order": 149
   },
   {
@@ -1506,7 +1506,7 @@
     "subcategory": "Sacs",
     "price_kmf": 8000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0150.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703594/komerce/products/prod_0150.jpg",
     "sort_order": 150
   },
   {
@@ -1516,7 +1516,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 7500,
     "promo_pct": 25,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0151.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703595/komerce/products/prod_0151.jpg",
     "sort_order": 151
   },
   {
@@ -1526,7 +1526,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 14500,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703802/komerce/products/prod_0152.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703595/komerce/products/prod_0152.jpg",
     "sort_order": 152
   },
   {
@@ -1536,7 +1536,7 @@
     "subcategory": "Décoration",
     "price_kmf": 22500,
     "promo_pct": 6,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0153.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703596/komerce/products/prod_0153.png",
     "sort_order": 153
   },
   {
@@ -1546,7 +1546,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 90500,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0154.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703596/komerce/products/prod_0154.jpg",
     "sort_order": 154
   },
   {
@@ -1556,7 +1556,7 @@
     "subcategory": "Soin",
     "price_kmf": 6000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0155.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703597/komerce/products/prod_0155.png",
     "sort_order": 155
   },
   {
@@ -1566,7 +1566,7 @@
     "subcategory": "Robes",
     "price_kmf": 10500,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0156.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703598/komerce/products/prod_0156.jpg",
     "sort_order": 156
   },
   {
@@ -1576,7 +1576,7 @@
     "subcategory": "Gadgets",
     "price_kmf": 4500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0157.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703598/komerce/products/prod_0157.jpg",
     "sort_order": 157
   },
   {
@@ -1586,7 +1586,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 11000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0158.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703599/komerce/products/prod_0158.png",
     "sort_order": 158
   },
   {
@@ -1596,7 +1596,7 @@
     "subcategory": "Jouets",
     "price_kmf": 1500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0159.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703600/komerce/products/prod_0159.jpg",
     "sort_order": 159
   },
   {
@@ -1606,7 +1606,7 @@
     "subcategory": "Divers",
     "price_kmf": 27500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0160.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703600/komerce/products/prod_0160.jpg",
     "sort_order": 160
   },
   {
@@ -1616,7 +1616,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 38500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0161.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703601/komerce/products/prod_0161.jpg",
     "sort_order": 161
   },
   {
@@ -1626,7 +1626,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 15000,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0162.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703602/komerce/products/prod_0162.jpg",
     "sort_order": 162
   },
   {
@@ -1636,7 +1636,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 7000,
     "promo_pct": 73,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0163.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703602/komerce/products/prod_0163.jpg",
     "sort_order": 163
   },
   {
@@ -1646,7 +1646,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 15000,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0164.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703603/komerce/products/prod_0164.jpg",
     "sort_order": 164
   },
   {
@@ -1656,7 +1656,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0165.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703624/komerce/products/prod_0165.png",
     "sort_order": 165
   },
   {
@@ -1666,7 +1666,7 @@
     "subcategory": "Soin",
     "price_kmf": 15000,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0166.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703625/komerce/products/prod_0166.jpg",
     "sort_order": 166
   },
   {
@@ -1676,7 +1676,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0167.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703626/komerce/products/prod_0167.jpg",
     "sort_order": 167
   },
   {
@@ -1686,7 +1686,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 27500,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0168.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703627/komerce/products/prod_0168.jpg",
     "sort_order": 168
   },
   {
@@ -1696,7 +1696,7 @@
     "subcategory": "Soin",
     "price_kmf": 15000,
     "promo_pct": 45,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0169.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703628/komerce/products/prod_0169.jpg",
     "sort_order": 169
   },
   {
@@ -1706,7 +1706,7 @@
     "subcategory": "Sacs",
     "price_kmf": 270000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0170.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703628/komerce/products/prod_0170.png",
     "sort_order": 170
   },
   {
@@ -1716,7 +1716,7 @@
     "subcategory": "Sacs",
     "price_kmf": 2500,
     "promo_pct": 55,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0171.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703629/komerce/products/prod_0171.jpg",
     "sort_order": 171
   },
   {
@@ -1726,7 +1726,7 @@
     "subcategory": "Homme",
     "price_kmf": 2500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703803/komerce/products/prod_0172.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703630/komerce/products/prod_0172.jpg",
     "sort_order": 172
   },
   {
@@ -1736,7 +1736,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 8000,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0173.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703630/komerce/products/prod_0173.jpg",
     "sort_order": 173
   },
   {
@@ -1746,7 +1746,7 @@
     "subcategory": "Homme",
     "price_kmf": 5000,
     "promo_pct": 76,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0174.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703631/komerce/products/prod_0174.jpg",
     "sort_order": 174
   },
   {
@@ -1756,7 +1756,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 29500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0175.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703632/komerce/products/prod_0175.jpg",
     "sort_order": 175
   },
   {
@@ -1766,7 +1766,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 10000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0176.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703632/komerce/products/prod_0176.jpg",
     "sort_order": 176
   },
   {
@@ -1776,7 +1776,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 135000,
     "promo_pct": 7,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0177.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703633/komerce/products/prod_0177.png",
     "sort_order": 177
   },
   {
@@ -1786,7 +1786,7 @@
     "subcategory": "Fitness",
     "price_kmf": 8000,
     "promo_pct": 6,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0178.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703634/komerce/products/prod_0178.png",
     "sort_order": 178
   },
   {
@@ -1796,7 +1796,7 @@
     "subcategory": "Soin",
     "price_kmf": 10000,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0179.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703635/komerce/products/prod_0179.jpg",
     "sort_order": 179
   },
   {
@@ -1806,7 +1806,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 1000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0180.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703635/komerce/products/prod_0180.png",
     "sort_order": 180
   },
   {
@@ -1816,7 +1816,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 5000,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0181.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703636/komerce/products/prod_0181.jpg",
     "sort_order": 181
   },
   {
@@ -1826,7 +1826,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 315000,
     "promo_pct": 6,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0182.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703637/komerce/products/prod_0182.png",
     "sort_order": 182
   },
   {
@@ -1836,7 +1836,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 1000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0183.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703638/komerce/products/prod_0183.png",
     "sort_order": 183
   },
   {
@@ -1846,7 +1846,7 @@
     "subcategory": "Jouets",
     "price_kmf": 3000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0184.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703638/komerce/products/prod_0184.jpg",
     "sort_order": 184
   },
   {
@@ -1856,7 +1856,7 @@
     "subcategory": "Jouets",
     "price_kmf": 7000,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0185.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703639/komerce/products/prod_0185.jpg",
     "sort_order": 185
   },
   {
@@ -1866,7 +1866,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 135000,
     "promo_pct": 18,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0186.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703639/komerce/products/prod_0186.png",
     "sort_order": 186
   },
   {
@@ -1876,7 +1876,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 33500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0187.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703640/komerce/products/prod_0187.png",
     "sort_order": 187
   },
   {
@@ -1886,7 +1886,7 @@
     "subcategory": "Fitness",
     "price_kmf": 13500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0188.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703641/komerce/products/prod_0188.png",
     "sort_order": 188
   },
   {
@@ -1896,7 +1896,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 11500,
     "promo_pct": 26,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0189.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703642/komerce/products/prod_0189.jpg",
     "sort_order": 189
   },
   {
@@ -1906,7 +1906,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 2500,
     "promo_pct": 17,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0190.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703642/komerce/products/prod_0190.png",
     "sort_order": 190
   },
   {
@@ -1916,7 +1916,7 @@
     "subcategory": "Fitness",
     "price_kmf": 4000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0191.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703643/komerce/products/prod_0191.png",
     "sort_order": 191
   },
   {
@@ -1926,7 +1926,7 @@
     "subcategory": "Décoration",
     "price_kmf": 1000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0192.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703644/komerce/products/prod_0192.jpg",
     "sort_order": 192
   },
   {
@@ -1936,7 +1936,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 43000,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0193.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703644/komerce/products/prod_0193.jpg",
     "sort_order": 193
   },
   {
@@ -1946,7 +1946,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 6500,
     "promo_pct": 7,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0194.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703645/komerce/products/prod_0194.png",
     "sort_order": 194
   },
   {
@@ -1956,7 +1956,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 38000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0195.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703645/komerce/products/prod_0195.jpg",
     "sort_order": 195
   },
   {
@@ -1966,7 +1966,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 10000,
     "promo_pct": 74,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0196.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703646/komerce/products/prod_0196.jpg",
     "sort_order": 196
   },
   {
@@ -1976,7 +1976,7 @@
     "subcategory": "Jouets",
     "price_kmf": 6500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0197.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703646/komerce/products/prod_0197.jpg",
     "sort_order": 197
   },
   {
@@ -1986,7 +1986,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 2000,
     "promo_pct": 64,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0198.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703647/komerce/products/prod_0198.jpg",
     "sort_order": 198
   },
   {
@@ -1996,7 +1996,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 3000,
     "promo_pct": 25,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703804/komerce/products/prod_0199.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703648/komerce/products/prod_0199.jpg",
     "sort_order": 199
   },
   {
@@ -2006,7 +2006,7 @@
     "subcategory": "Parfums",
     "price_kmf": 31500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0200.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703648/komerce/products/prod_0200.png",
     "sort_order": 200
   },
   {
@@ -2016,7 +2016,7 @@
     "subcategory": "Décoration",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0201.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703649/komerce/products/prod_0201.jpg",
     "sort_order": 201
   },
   {
@@ -2026,7 +2026,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 22500,
     "promo_pct": 6,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0202.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703650/komerce/products/prod_0202.png",
     "sort_order": 202
   },
   {
@@ -2036,7 +2036,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 112500,
     "promo_pct": 10,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0203.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703650/komerce/products/prod_0203.png",
     "sort_order": 203
   },
   {
@@ -2046,7 +2046,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 1500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0204.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703651/komerce/products/prod_0204.jpg",
     "sort_order": 204
   },
   {
@@ -2056,7 +2056,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 8000,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0205.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703652/komerce/products/prod_0205.jpg",
     "sort_order": 205
   },
   {
@@ -2066,7 +2066,7 @@
     "subcategory": "Fitness",
     "price_kmf": 6000,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0206.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703653/komerce/products/prod_0206.jpg",
     "sort_order": 206
   },
   {
@@ -2076,7 +2076,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 15500,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0207.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703653/komerce/products/prod_0207.jpg",
     "sort_order": 207
   },
   {
@@ -2086,7 +2086,7 @@
     "subcategory": "Homme",
     "price_kmf": 4500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0208.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703655/komerce/products/prod_0208.png",
     "sort_order": 208
   },
   {
@@ -2096,7 +2096,7 @@
     "subcategory": "Fitness",
     "price_kmf": 6500,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0209.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703655/komerce/products/prod_0209.jpg",
     "sort_order": 209
   },
   {
@@ -2106,7 +2106,7 @@
     "subcategory": "Homme",
     "price_kmf": 5500,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0210.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703656/komerce/products/prod_0210.jpg",
     "sort_order": 210
   },
   {
@@ -2116,7 +2116,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 40500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0211.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703657/komerce/products/prod_0211.png",
     "sort_order": 211
   },
   {
@@ -2126,7 +2126,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1000,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0212.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703658/komerce/products/prod_0212.jpg",
     "sort_order": 212
   },
   {
@@ -2136,7 +2136,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 13500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0213.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703658/komerce/products/prod_0213.png",
     "sort_order": 213
   },
   {
@@ -2146,7 +2146,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 1500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0214.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703659/komerce/products/prod_0214.jpg",
     "sort_order": 214
   },
   {
@@ -2156,7 +2156,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 4000,
     "promo_pct": 11,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0215.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703660/komerce/products/prod_0215.png",
     "sort_order": 215
   },
   {
@@ -2166,7 +2166,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0216.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703661/komerce/products/prod_0216.jpg",
     "sort_order": 216
   },
   {
@@ -2176,7 +2176,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 2500,
     "promo_pct": 69,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0217.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703661/komerce/products/prod_0217.jpg",
     "sort_order": 217
   },
   {
@@ -2186,7 +2186,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 135000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0218.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703662/komerce/products/prod_0218.png",
     "sort_order": 218
   },
   {
@@ -2196,7 +2196,7 @@
     "subcategory": "Soin",
     "price_kmf": 500,
     "promo_pct": 80,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703805/komerce/products/prod_0219.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703663/komerce/products/prod_0219.jpg",
     "sort_order": 219
   },
   {
@@ -2206,7 +2206,7 @@
     "subcategory": "Parfums",
     "price_kmf": 40500,
     "promo_pct": 15,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0220.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703663/komerce/products/prod_0220.png",
     "sort_order": 220
   },
   {
@@ -2216,7 +2216,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 16000,
     "promo_pct": 68,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0221.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703664/komerce/products/prod_0221.jpg",
     "sort_order": 221
   },
   {
@@ -2226,7 +2226,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 9000,
     "promo_pct": 10,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0222.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703665/komerce/products/prod_0222.png",
     "sort_order": 222
   },
   {
@@ -2236,7 +2236,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 10000,
     "promo_pct": 74,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0223.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703665/komerce/products/prod_0223.jpg",
     "sort_order": 223
   },
   {
@@ -2246,7 +2246,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 9500,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0224.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703666/komerce/products/prod_0224.jpg",
     "sort_order": 224
   },
   {
@@ -2256,7 +2256,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 6500,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0225.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703667/komerce/products/prod_0225.jpg",
     "sort_order": 225
   },
   {
@@ -2266,7 +2266,7 @@
     "subcategory": "Sacs",
     "price_kmf": 6000,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0226.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703667/komerce/products/prod_0226.jpg",
     "sort_order": 226
   },
   {
@@ -2276,7 +2276,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 17500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0227.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703668/komerce/products/prod_0227.jpg",
     "sort_order": 227
   },
   {
@@ -2286,7 +2286,7 @@
     "subcategory": "Parfums",
     "price_kmf": 3500,
     "promo_pct": 74,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0228.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703668/komerce/products/prod_0228.jpg",
     "sort_order": 228
   },
   {
@@ -2296,7 +2296,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 5000,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0229.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703669/komerce/products/prod_0229.jpg",
     "sort_order": 229
   },
   {
@@ -2306,7 +2306,7 @@
     "subcategory": "Fitness",
     "price_kmf": 2500,
     "promo_pct": 58,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0230.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703669/komerce/products/prod_0230.jpg",
     "sort_order": 230
   },
   {
@@ -2316,7 +2316,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 360000,
     "promo_pct": 9,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0231.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703670/komerce/products/prod_0231.png",
     "sort_order": 231
   },
   {
@@ -2326,7 +2326,7 @@
     "subcategory": "Véhicules",
     "price_kmf": 39500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0232.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703670/komerce/products/prod_0232.png",
     "sort_order": 232
   },
   {
@@ -2336,7 +2336,7 @@
     "subcategory": "Jouets",
     "price_kmf": 5500,
     "promo_pct": 21,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0233.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703671/komerce/products/prod_0233.jpg",
     "sort_order": 233
   },
   {
@@ -2346,7 +2346,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 12000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0234.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703672/komerce/products/prod_0234.jpg",
     "sort_order": 234
   },
   {
@@ -2356,7 +2356,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0235.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703672/komerce/products/prod_0235.jpg",
     "sort_order": 235
   },
   {
@@ -2366,7 +2366,7 @@
     "subcategory": "Soin",
     "price_kmf": 4500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0236.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703673/komerce/products/prod_0236.jpg",
     "sort_order": 236
   },
   {
@@ -2376,7 +2376,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0237.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703673/komerce/products/prod_0237.jpg",
     "sort_order": 237
   },
   {
@@ -2386,7 +2386,7 @@
     "subcategory": "Homme",
     "price_kmf": 11500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703806/komerce/products/prod_0238.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703674/komerce/products/prod_0238.jpg",
     "sort_order": 238
   },
   {
@@ -2396,7 +2396,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 11000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0239.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703675/komerce/products/prod_0239.jpg",
     "sort_order": 239
   },
   {
@@ -2406,7 +2406,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 6000,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0240.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703675/komerce/products/prod_0240.jpg",
     "sort_order": 240
   },
   {
@@ -2416,7 +2416,7 @@
     "subcategory": "Fitness",
     "price_kmf": 9000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0241.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703676/komerce/products/prod_0241.png",
     "sort_order": 241
   },
   {
@@ -2426,7 +2426,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 161500,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0242.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703677/komerce/products/prod_0242.jpg",
     "sort_order": 242
   },
   {
@@ -2436,7 +2436,7 @@
     "subcategory": "Fitness",
     "price_kmf": 13000,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0243.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703677/komerce/products/prod_0243.jpg",
     "sort_order": 243
   },
   {
@@ -2446,7 +2446,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0244.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703678/komerce/products/prod_0244.jpg",
     "sort_order": 244
   },
   {
@@ -2456,7 +2456,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 10500,
     "promo_pct": 22,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0245.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703678/komerce/products/prod_0245.png",
     "sort_order": 245
   },
   {
@@ -2466,7 +2466,7 @@
     "subcategory": "Parfums",
     "price_kmf": 7500,
     "promo_pct": 55,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0246.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703679/komerce/products/prod_0246.jpg",
     "sort_order": 246
   },
   {
@@ -2476,7 +2476,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0247.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703680/komerce/products/prod_0247.png",
     "sort_order": 247
   },
   {
@@ -2486,7 +2486,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 40500,
     "promo_pct": 12,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0248.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703681/komerce/products/prod_0248.png",
     "sort_order": 248
   },
   {
@@ -2496,7 +2496,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 2500,
     "promo_pct": 62,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703807/komerce/products/prod_0249.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703682/komerce/products/prod_0249.jpg",
     "sort_order": 249
   },
   {
@@ -2506,7 +2506,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 180500,
     "promo_pct": 32,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0250.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703682/komerce/products/prod_0250.jpg",
     "sort_order": 250
   },
   {
@@ -2516,7 +2516,7 @@
     "subcategory": "Fitness",
     "price_kmf": 4500,
     "promo_pct": 18,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0251.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703683/komerce/products/prod_0251.png",
     "sort_order": 251
   },
   {
@@ -2526,7 +2526,7 @@
     "subcategory": "Divers",
     "price_kmf": 17000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0252.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703684/komerce/products/prod_0252.jpg",
     "sort_order": 252
   },
   {
@@ -2536,7 +2536,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 4000,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0253.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703684/komerce/products/prod_0253.jpg",
     "sort_order": 253
   },
   {
@@ -2546,7 +2546,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0254.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703685/komerce/products/prod_0254.jpg",
     "sort_order": 254
   },
   {
@@ -2556,7 +2556,7 @@
     "subcategory": "Parfums",
     "price_kmf": 37000,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0255.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703686/komerce/products/prod_0255.jpg",
     "sort_order": 255
   },
   {
@@ -2566,7 +2566,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 7000,
     "promo_pct": 7,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0256.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703687/komerce/products/prod_0256.png",
     "sort_order": 256
   },
   {
@@ -2576,7 +2576,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 12000,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0257.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703688/komerce/products/prod_0257.jpg",
     "sort_order": 257
   },
   {
@@ -2586,7 +2586,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 4500,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0258.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703689/komerce/products/prod_0258.jpg",
     "sort_order": 258
   },
   {
@@ -2596,7 +2596,7 @@
     "subcategory": "Fitness",
     "price_kmf": 5500,
     "promo_pct": 15,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0259.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703689/komerce/products/prod_0259.png",
     "sort_order": 259
   },
   {
@@ -2606,7 +2606,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 36000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0260.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703690/komerce/products/prod_0260.png",
     "sort_order": 260
   },
   {
@@ -2616,7 +2616,7 @@
     "subcategory": "Divers",
     "price_kmf": 21500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0261.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703691/komerce/products/prod_0261.jpg",
     "sort_order": 261
   },
   {
@@ -2626,7 +2626,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 4500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0262.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703692/komerce/products/prod_0262.jpg",
     "sort_order": 262
   },
   {
@@ -2636,7 +2636,7 @@
     "subcategory": "Décoration",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0263.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703692/komerce/products/prod_0263.jpg",
     "sort_order": 263
   },
   {
@@ -2646,7 +2646,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 25000,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0264.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703693/komerce/products/prod_0264.jpg",
     "sort_order": 264
   },
   {
@@ -2656,7 +2656,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 5500,
     "promo_pct": 35,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0265.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703694/komerce/products/prod_0265.jpg",
     "sort_order": 265
   },
   {
@@ -2666,7 +2666,7 @@
     "subcategory": "Femme",
     "price_kmf": 11000,
     "promo_pct": 12,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0266.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703694/komerce/products/prod_0266.png",
     "sort_order": 266
   },
   {
@@ -2676,7 +2676,7 @@
     "subcategory": "Fitness",
     "price_kmf": 6000,
     "promo_pct": 8,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0267.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703695/komerce/products/prod_0267.png",
     "sort_order": 267
   },
   {
@@ -2686,7 +2686,7 @@
     "subcategory": "Robes",
     "price_kmf": 7000,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703827/komerce/products/prod_0268.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703696/komerce/products/prod_0268.jpg",
     "sort_order": 268
   },
   {
@@ -2696,7 +2696,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 2000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0269.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703696/komerce/products/prod_0269.png",
     "sort_order": 269
   },
   {
@@ -2706,7 +2706,7 @@
     "subcategory": "Gadgets",
     "price_kmf": 7000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0270.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703697/komerce/products/prod_0270.jpg",
     "sort_order": 270
   },
   {
@@ -2716,7 +2716,7 @@
     "subcategory": "Décoration",
     "price_kmf": 2000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0271.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703698/komerce/products/prod_0271.jpg",
     "sort_order": 271
   },
   {
@@ -2726,7 +2726,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 12500,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0272.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703698/komerce/products/prod_0272.jpg",
     "sort_order": 272
   },
   {
@@ -2736,7 +2736,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0273.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703699/komerce/products/prod_0273.jpg",
     "sort_order": 273
   },
   {
@@ -2746,7 +2746,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0274.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703700/komerce/products/prod_0274.jpg",
     "sort_order": 274
   },
   {
@@ -2756,7 +2756,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 2500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0275.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703700/komerce/products/prod_0275.jpg",
     "sort_order": 275
   },
   {
@@ -2766,7 +2766,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 11000,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0276.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703701/komerce/products/prod_0276.jpg",
     "sort_order": 276
   },
   {
@@ -2776,7 +2776,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 8000,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0277.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703702/komerce/products/prod_0277.jpg",
     "sort_order": 277
   },
   {
@@ -2786,7 +2786,7 @@
     "subcategory": "Fitness",
     "price_kmf": 2500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0278.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703702/komerce/products/prod_0278.png",
     "sort_order": 278
   },
   {
@@ -2796,7 +2796,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 32000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0279.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703703/komerce/products/prod_0279.jpg",
     "sort_order": 279
   },
   {
@@ -2806,7 +2806,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 5000,
     "promo_pct": 76,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0280.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703703/komerce/products/prod_0280.jpg",
     "sort_order": 280
   },
   {
@@ -2816,7 +2816,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 9000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0281.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703704/komerce/products/prod_0281.png",
     "sort_order": 281
   },
   {
@@ -2826,7 +2826,7 @@
     "subcategory": "Homme",
     "price_kmf": 7500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0282.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703705/komerce/products/prod_0282.jpg",
     "sort_order": 282
   },
   {
@@ -2836,7 +2836,7 @@
     "subcategory": "Parfums",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0283.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703705/komerce/products/prod_0283.jpg",
     "sort_order": 283
   },
   {
@@ -2846,7 +2846,7 @@
     "subcategory": "Robes",
     "price_kmf": 15000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0284.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703706/komerce/products/prod_0284.jpg",
     "sort_order": 284
   },
   {
@@ -2856,7 +2856,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0285.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703707/komerce/products/prod_0285.png",
     "sort_order": 285
   },
   {
@@ -2866,7 +2866,7 @@
     "subcategory": "Parfums",
     "price_kmf": 1500,
     "promo_pct": 70,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703828/komerce/products/prod_0286.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703707/komerce/products/prod_0286.jpg",
     "sort_order": 286
   },
   {
@@ -2876,7 +2876,7 @@
     "subcategory": "Soin",
     "price_kmf": 5500,
     "promo_pct": 35,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0287.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703708/komerce/products/prod_0287.jpg",
     "sort_order": 287
   },
   {
@@ -2886,7 +2886,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 90500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0288.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703709/komerce/products/prod_0288.jpg",
     "sort_order": 288
   },
   {
@@ -2896,7 +2896,7 @@
     "subcategory": "Fitness",
     "price_kmf": 8500,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0289.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703709/komerce/products/prod_0289.jpg",
     "sort_order": 289
   },
   {
@@ -2906,7 +2906,7 @@
     "subcategory": "Robes",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0290.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703710/komerce/products/prod_0290.jpg",
     "sort_order": 290
   },
   {
@@ -2916,7 +2916,7 @@
     "subcategory": "Divers",
     "price_kmf": 16500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0291.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703710/komerce/products/prod_0291.jpg",
     "sort_order": 291
   },
   {
@@ -2926,7 +2926,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 12000,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0292.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703711/komerce/products/prod_0292.jpg",
     "sort_order": 292
   },
   {
@@ -2936,7 +2936,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 14000,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0293.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703712/komerce/products/prod_0293.jpg",
     "sort_order": 293
   },
   {
@@ -2946,7 +2946,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 157500,
     "promo_pct": 12,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0294.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703712/komerce/products/prod_0294.png",
     "sort_order": 294
   },
   {
@@ -2956,7 +2956,7 @@
     "subcategory": "Jouets",
     "price_kmf": 12500,
     "promo_pct": 32,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0295.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703713/komerce/products/prod_0295.jpg",
     "sort_order": 295
   },
   {
@@ -2966,7 +2966,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 7000,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0296.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703714/komerce/products/prod_0296.jpg",
     "sort_order": 296
   },
   {
@@ -2976,7 +2976,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 7500,
     "promo_pct": 35,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0297.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703715/komerce/products/prod_0297.jpg",
     "sort_order": 297
   },
   {
@@ -2986,7 +2986,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 9500,
     "promo_pct": 64,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0298.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703715/komerce/products/prod_0298.jpg",
     "sort_order": 298
   },
   {
@@ -2996,7 +2996,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 9000,
     "promo_pct": 18,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0299.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703716/komerce/products/prod_0299.png",
     "sort_order": 299
   },
   {
@@ -3006,7 +3006,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 17000,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0300.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703717/komerce/products/prod_0300.jpg",
     "sort_order": 300
   },
   {
@@ -3016,7 +3016,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 26000,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0301.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703717/komerce/products/prod_0301.jpg",
     "sort_order": 301
   },
   {
@@ -3026,7 +3026,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 54000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0302.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703718/komerce/products/prod_0302.png",
     "sort_order": 302
   },
   {
@@ -3036,7 +3036,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 4500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0303.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703719/komerce/products/prod_0303.jpg",
     "sort_order": 303
   },
   {
@@ -3046,7 +3046,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0304.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703719/komerce/products/prod_0304.jpg",
     "sort_order": 304
   },
   {
@@ -3056,7 +3056,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 91000,
     "promo_pct": 32,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0305.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703720/komerce/products/prod_0305.jpg",
     "sort_order": 305
   },
   {
@@ -3066,7 +3066,7 @@
     "subcategory": "Parfums",
     "price_kmf": 3000,
     "promo_pct": 78,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0306.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703721/komerce/products/prod_0306.jpg",
     "sort_order": 306
   },
   {
@@ -3076,7 +3076,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 9500,
     "promo_pct": 30,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0307.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703721/komerce/products/prod_0307.jpg",
     "sort_order": 307
   },
   {
@@ -3086,7 +3086,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 9500,
     "promo_pct": 59,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0308.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703722/komerce/products/prod_0308.jpg",
     "sort_order": 308
   },
   {
@@ -3096,7 +3096,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 18000,
     "promo_pct": 5,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0309.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703722/komerce/products/prod_0309.png",
     "sort_order": 309
   },
   {
@@ -3106,7 +3106,7 @@
     "subcategory": "Robes",
     "price_kmf": 6500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0310.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703723/komerce/products/prod_0310.jpg",
     "sort_order": 310
   },
   {
@@ -3116,7 +3116,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 2500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0311.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703724/komerce/products/prod_0311.jpg",
     "sort_order": 311
   },
   {
@@ -3126,7 +3126,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 12500,
     "promo_pct": 34,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703829/komerce/products/prod_0312.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703725/komerce/products/prod_0312.jpg",
     "sort_order": 312
   },
   {
@@ -3136,7 +3136,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 11000,
     "promo_pct": 15,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0313.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703725/komerce/products/prod_0313.png",
     "sort_order": 313
   },
   {
@@ -3146,7 +3146,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 1500,
     "promo_pct": 62,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0314.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703726/komerce/products/prod_0314.jpg",
     "sort_order": 314
   },
   {
@@ -3156,7 +3156,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 2000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0315.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703727/komerce/products/prod_0315.jpg",
     "sort_order": 315
   },
   {
@@ -3166,7 +3166,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 12500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0316.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703727/komerce/products/prod_0316.jpg",
     "sort_order": 316
   },
   {
@@ -3176,7 +3176,7 @@
     "subcategory": "Sacs",
     "price_kmf": 9000,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0317.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703728/komerce/products/prod_0317.jpg",
     "sort_order": 317
   },
   {
@@ -3186,7 +3186,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 2000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0318.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703729/komerce/products/prod_0318.png",
     "sort_order": 318
   },
   {
@@ -3196,7 +3196,7 @@
     "subcategory": "Fitness",
     "price_kmf": 11000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0319.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703729/komerce/products/prod_0319.png",
     "sort_order": 319
   },
   {
@@ -3206,7 +3206,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 7500,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0320.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703730/komerce/products/prod_0320.jpg",
     "sort_order": 320
   },
   {
@@ -3216,7 +3216,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 14000,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0321.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703731/komerce/products/prod_0321.jpg",
     "sort_order": 321
   },
   {
@@ -3226,7 +3226,7 @@
     "subcategory": "Fitness",
     "price_kmf": 12500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0322.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703731/komerce/products/prod_0322.jpg",
     "sort_order": 322
   },
   {
@@ -3236,7 +3236,7 @@
     "subcategory": "Homme",
     "price_kmf": 4000,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0323.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703732/komerce/products/prod_0323.png",
     "sort_order": 323
   },
   {
@@ -3246,7 +3246,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 11000,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0324.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703733/komerce/products/prod_0324.jpg",
     "sort_order": 324
   },
   {
@@ -3256,7 +3256,7 @@
     "subcategory": "Jouets",
     "price_kmf": 9000,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0325.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703734/komerce/products/prod_0325.jpg",
     "sort_order": 325
   },
   {
@@ -3266,7 +3266,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 143500,
     "promo_pct": 63,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0326.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703734/komerce/products/prod_0326.jpg",
     "sort_order": 326
   },
   {
@@ -3276,7 +3276,7 @@
     "subcategory": "Montres",
     "price_kmf": 32500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0327.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703735/komerce/products/prod_0327.png",
     "sort_order": 327
   },
   {
@@ -3286,7 +3286,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 4000,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0328.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703736/komerce/products/prod_0328.jpg",
     "sort_order": 328
   },
   {
@@ -3296,7 +3296,7 @@
     "subcategory": "Fitness",
     "price_kmf": 13500,
     "promo_pct": 21,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0329.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703757/komerce/products/prod_0329.png",
     "sort_order": 329
   },
   {
@@ -3306,7 +3306,7 @@
     "subcategory": "Jouets",
     "price_kmf": 10500,
     "promo_pct": 22,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0330.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703757/komerce/products/prod_0330.jpg",
     "sort_order": 330
   },
   {
@@ -3316,7 +3316,7 @@
     "subcategory": "Parfums",
     "price_kmf": 7500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0331.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703758/komerce/products/prod_0331.jpg",
     "sort_order": 331
   },
   {
@@ -3326,7 +3326,7 @@
     "subcategory": "Parfums",
     "price_kmf": 2500,
     "promo_pct": 55,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0332.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703758/komerce/products/prod_0332.jpg",
     "sort_order": 332
   },
   {
@@ -3336,7 +3336,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 12000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0333.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703759/komerce/products/prod_0333.jpg",
     "sort_order": 333
   },
   {
@@ -3346,7 +3346,7 @@
     "subcategory": "Décoration",
     "price_kmf": 9000,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0334.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703760/komerce/products/prod_0334.jpg",
     "sort_order": 334
   },
   {
@@ -3356,7 +3356,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 7500,
     "promo_pct": 76,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0335.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703760/komerce/products/prod_0335.jpg",
     "sort_order": 335
   },
   {
@@ -3366,7 +3366,7 @@
     "subcategory": "Robes",
     "price_kmf": 13500,
     "promo_pct": 45,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0336.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703761/komerce/products/prod_0336.jpg",
     "sort_order": 336
   },
   {
@@ -3376,7 +3376,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 5000,
     "promo_pct": 47,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0337.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703761/komerce/products/prod_0337.jpg",
     "sort_order": 337
   },
   {
@@ -3386,7 +3386,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0338.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703762/komerce/products/prod_0338.jpg",
     "sort_order": 338
   },
   {
@@ -3396,7 +3396,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 35500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0339.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703763/komerce/products/prod_0339.jpg",
     "sort_order": 339
   },
   {
@@ -3406,7 +3406,7 @@
     "subcategory": "Homme",
     "price_kmf": 8000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0340.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703763/komerce/products/prod_0340.jpg",
     "sort_order": 340
   },
   {
@@ -3416,7 +3416,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 3500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703830/komerce/products/prod_0341.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703764/komerce/products/prod_0341.jpg",
     "sort_order": 341
   },
   {
@@ -3426,7 +3426,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 5000,
     "promo_pct": 9,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0342.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703764/komerce/products/prod_0342.png",
     "sort_order": 342
   },
   {
@@ -3436,7 +3436,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 5000,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0343.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703765/komerce/products/prod_0343.jpg",
     "sort_order": 343
   },
   {
@@ -3446,7 +3446,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 3000,
     "promo_pct": 25,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0344.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703766/komerce/products/prod_0344.jpg",
     "sort_order": 344
   },
   {
@@ -3456,7 +3456,7 @@
     "subcategory": "Fitness",
     "price_kmf": 3000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0345.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703767/komerce/products/prod_0345.png",
     "sort_order": 345
   },
   {
@@ -3466,7 +3466,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0346.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703767/komerce/products/prod_0346.jpg",
     "sort_order": 346
   },
   {
@@ -3476,7 +3476,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0347.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703768/komerce/products/prod_0347.jpg",
     "sort_order": 347
   },
   {
@@ -3486,7 +3486,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 11500,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0348.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703769/komerce/products/prod_0348.jpg",
     "sort_order": 348
   },
   {
@@ -3496,7 +3496,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 14000,
     "promo_pct": 30,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0349.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703769/komerce/products/prod_0349.jpg",
     "sort_order": 349
   },
   {
@@ -3506,7 +3506,7 @@
     "subcategory": "Parfums",
     "price_kmf": 58500,
     "promo_pct": 16,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0350.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703770/komerce/products/prod_0350.png",
     "sort_order": 350
   },
   {
@@ -3516,7 +3516,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 67500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0351.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703771/komerce/products/prod_0351.png",
     "sort_order": 351
   },
   {
@@ -3526,7 +3526,7 @@
     "subcategory": "Robes",
     "price_kmf": 11500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0352.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703772/komerce/products/prod_0352.jpg",
     "sort_order": 352
   },
   {
@@ -3536,7 +3536,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 8000,
     "promo_pct": 76,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0353.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703772/komerce/products/prod_0353.jpg",
     "sort_order": 353
   },
   {
@@ -3546,7 +3546,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 6000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0354.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703773/komerce/products/prod_0354.jpg",
     "sort_order": 354
   },
   {
@@ -3556,7 +3556,7 @@
     "subcategory": "Fitness",
     "price_kmf": 18000,
     "promo_pct": 8,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0355.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703774/komerce/products/prod_0355.png",
     "sort_order": 355
   },
   {
@@ -3566,7 +3566,7 @@
     "subcategory": "Parfums",
     "price_kmf": 8000,
     "promo_pct": 43,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0356.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703775/komerce/products/prod_0356.jpg",
     "sort_order": 356
   },
   {
@@ -3576,7 +3576,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 10000,
     "promo_pct": 47,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0357.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703775/komerce/products/prod_0357.jpg",
     "sort_order": 357
   },
   {
@@ -3586,7 +3586,7 @@
     "subcategory": "Femme",
     "price_kmf": 18000,
     "promo_pct": 12,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0358.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703776/komerce/products/prod_0358.png",
     "sort_order": 358
   },
   {
@@ -3596,7 +3596,7 @@
     "subcategory": "Décoration",
     "price_kmf": 7000,
     "promo_pct": 22,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0359.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703777/komerce/products/prod_0359.jpg",
     "sort_order": 359
   },
   {
@@ -3606,7 +3606,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 22000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0360.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703777/komerce/products/prod_0360.jpg",
     "sort_order": 360
   },
   {
@@ -3616,7 +3616,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 5000,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0361.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703778/komerce/products/prod_0361.jpg",
     "sort_order": 361
   },
   {
@@ -3626,7 +3626,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 13500,
     "promo_pct": 7,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0362.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703778/komerce/products/prod_0362.png",
     "sort_order": 362
   },
   {
@@ -3636,7 +3636,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 168500,
     "promo_pct": 53,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0363.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703779/komerce/products/prod_0363.jpg",
     "sort_order": 363
   },
   {
@@ -3646,7 +3646,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 14000,
     "promo_pct": 36,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0364.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703780/komerce/products/prod_0364.jpg",
     "sort_order": 364
   },
   {
@@ -3656,7 +3656,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 500,
     "promo_pct": 80,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0365.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703780/komerce/products/prod_0365.jpg",
     "sort_order": 365
   },
   {
@@ -3666,7 +3666,7 @@
     "subcategory": "Jouets",
     "price_kmf": 6500,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0366.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703781/komerce/products/prod_0366.jpg",
     "sort_order": 366
   },
   {
@@ -3676,7 +3676,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 1500,
     "promo_pct": 57,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703831/komerce/products/prod_0367.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703781/komerce/products/prod_0367.jpg",
     "sort_order": 367
   },
   {
@@ -3686,7 +3686,7 @@
     "subcategory": "Parfums",
     "price_kmf": 8000,
     "promo_pct": 58,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0368.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703782/komerce/products/prod_0368.jpg",
     "sort_order": 368
   },
   {
@@ -3696,7 +3696,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0369.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703783/komerce/products/prod_0369.jpg",
     "sort_order": 369
   },
   {
@@ -3706,7 +3706,7 @@
     "subcategory": "Robes",
     "price_kmf": 8500,
     "promo_pct": 35,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0370.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703783/komerce/products/prod_0370.jpg",
     "sort_order": 370
   },
   {
@@ -3716,7 +3716,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 2000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0371.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703784/komerce/products/prod_0371.png",
     "sort_order": 371
   },
   {
@@ -3726,7 +3726,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 40500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0372.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703785/komerce/products/prod_0372.jpg",
     "sort_order": 372
   },
   {
@@ -3736,7 +3736,7 @@
     "subcategory": "Homme",
     "price_kmf": 3000,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0373.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703786/komerce/products/prod_0373.jpg",
     "sort_order": 373
   },
   {
@@ -3746,7 +3746,7 @@
     "subcategory": "Fitness",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0374.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703787/komerce/products/prod_0374.jpg",
     "sort_order": 374
   },
   {
@@ -3756,7 +3756,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 13000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0375.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703787/komerce/products/prod_0375.jpg",
     "sort_order": 375
   },
   {
@@ -3766,7 +3766,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 13500,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0376.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703788/komerce/products/prod_0376.jpg",
     "sort_order": 376
   },
   {
@@ -3776,7 +3776,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 6000,
     "promo_pct": 29,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0377.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703789/komerce/products/prod_0377.jpg",
     "sort_order": 377
   },
   {
@@ -3786,7 +3786,7 @@
     "subcategory": "Parfums",
     "price_kmf": 2500,
     "promo_pct": 55,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0378.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703789/komerce/products/prod_0378.jpg",
     "sort_order": 378
   },
   {
@@ -3796,7 +3796,7 @@
     "subcategory": "Gadgets",
     "price_kmf": 43500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0379.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703790/komerce/products/prod_0379.jpg",
     "sort_order": 379
   },
   {
@@ -3806,7 +3806,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 11000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0380.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703790/komerce/products/prod_0380.png",
     "sort_order": 380
   },
   {
@@ -3816,7 +3816,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 13500,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0381.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703795/komerce/products/prod_0381.jpg",
     "sort_order": 381
   },
   {
@@ -3826,7 +3826,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 330000,
     "promo_pct": 32,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0382.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703795/komerce/products/prod_0382.jpg",
     "sort_order": 382
   },
   {
@@ -3836,7 +3836,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 60500,
     "promo_pct": 58,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0383.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703796/komerce/products/prod_0383.jpg",
     "sort_order": 383
   },
   {
@@ -3846,7 +3846,7 @@
     "subcategory": "Véhicules",
     "price_kmf": 28000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0384.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703797/komerce/products/prod_0384.png",
     "sort_order": 384
   },
   {
@@ -3856,7 +3856,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 11500,
     "promo_pct": 47,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0385.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703798/komerce/products/prod_0385.jpg",
     "sort_order": 385
   },
   {
@@ -3866,7 +3866,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 1000,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0386.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703798/komerce/products/prod_0386.jpg",
     "sort_order": 386
   },
   {
@@ -3876,7 +3876,7 @@
     "subcategory": "Soin",
     "price_kmf": 15000,
     "promo_pct": 41,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0387.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703799/komerce/products/prod_0387.jpg",
     "sort_order": 387
   },
   {
@@ -3886,7 +3886,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 11500,
     "promo_pct": 45,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0388.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703799/komerce/products/prod_0388.jpg",
     "sort_order": 388
   },
   {
@@ -3896,7 +3896,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 9000,
     "promo_pct": 65,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0389.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703800/komerce/products/prod_0389.jpg",
     "sort_order": 389
   },
   {
@@ -3906,7 +3906,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 5500,
     "promo_pct": 39,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0390.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703801/komerce/products/prod_0390.jpg",
     "sort_order": 390
   },
   {
@@ -3916,7 +3916,7 @@
     "subcategory": "Décoration",
     "price_kmf": 13500,
     "promo_pct": 16,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0391.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703802/komerce/products/prod_0391.png",
     "sort_order": 391
   },
   {
@@ -3926,7 +3926,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 15000,
     "promo_pct": 27,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0392.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703802/komerce/products/prod_0392.jpg",
     "sort_order": 392
   },
   {
@@ -3936,7 +3936,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 2500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0393.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703804/komerce/products/prod_0393.jpg",
     "sort_order": 393
   },
   {
@@ -3946,7 +3946,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 6000,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703832/komerce/products/prod_0394.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703805/komerce/products/prod_0394.jpg",
     "sort_order": 394
   },
   {
@@ -3956,7 +3956,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 9000,
     "promo_pct": 5,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0395.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703806/komerce/products/prod_0395.png",
     "sort_order": 395
   },
   {
@@ -3966,7 +3966,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 3500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0396.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703806/komerce/products/prod_0396.png",
     "sort_order": 396
   },
   {
@@ -3976,7 +3976,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 10000,
     "promo_pct": 74,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0397.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703807/komerce/products/prod_0397.jpg",
     "sort_order": 397
   },
   {
@@ -3986,7 +3986,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 6500,
     "promo_pct": 19,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0398.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703808/komerce/products/prod_0398.png",
     "sort_order": 398
   },
   {
@@ -3996,7 +3996,7 @@
     "subcategory": "Fitness",
     "price_kmf": 20000,
     "promo_pct": 9,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0399.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703809/komerce/products/prod_0399.png",
     "sort_order": 399
   },
   {
@@ -4006,7 +4006,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 9000,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0400.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703810/komerce/products/prod_0400.jpg",
     "sort_order": 400
   },
   {
@@ -4016,7 +4016,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 4000,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0401.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703810/komerce/products/prod_0401.jpg",
     "sort_order": 401
   },
   {
@@ -4026,7 +4026,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 225000,
     "promo_pct": 8,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0402.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703811/komerce/products/prod_0402.png",
     "sort_order": 402
   },
   {
@@ -4036,7 +4036,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 2000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0403.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703812/komerce/products/prod_0403.jpg",
     "sort_order": 403
   },
   {
@@ -4046,7 +4046,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0404.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703812/komerce/products/prod_0404.png",
     "sort_order": 404
   },
   {
@@ -4056,7 +4056,7 @@
     "subcategory": "Soin",
     "price_kmf": 7500,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0405.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703813/komerce/products/prod_0405.jpg",
     "sort_order": 405
   },
   {
@@ -4066,7 +4066,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 67500,
     "promo_pct": 15,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0406.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703814/komerce/products/prod_0406.png",
     "sort_order": 406
   },
   {
@@ -4076,7 +4076,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 14500,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0407.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703815/komerce/products/prod_0407.jpg",
     "sort_order": 407
   },
   {
@@ -4086,7 +4086,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 382500,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0408.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703815/komerce/products/prod_0408.jpg",
     "sort_order": 408
   },
   {
@@ -4096,7 +4096,7 @@
     "subcategory": "Soin",
     "price_kmf": 6000,
     "promo_pct": 48,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0409.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703816/komerce/products/prod_0409.jpg",
     "sort_order": 409
   },
   {
@@ -4106,7 +4106,7 @@
     "subcategory": "Parfums",
     "price_kmf": 4000,
     "promo_pct": 58,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0410.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703816/komerce/products/prod_0410.jpg",
     "sort_order": 410
   },
   {
@@ -4116,7 +4116,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 63000,
     "promo_pct": 33,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0411.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703817/komerce/products/prod_0411.png",
     "sort_order": 411
   },
   {
@@ -4126,7 +4126,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 157500,
     "promo_pct": 12,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0412.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703818/komerce/products/prod_0412.png",
     "sort_order": 412
   },
   {
@@ -4136,7 +4136,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 6500,
     "promo_pct": 35,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0413.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703819/komerce/products/prod_0413.jpg",
     "sort_order": 413
   },
   {
@@ -4146,7 +4146,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 45000,
     "promo_pct": 12,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0414.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703819/komerce/products/prod_0414.png",
     "sort_order": 414
   },
   {
@@ -4156,7 +4156,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 22500,
     "promo_pct": 13,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0415.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703820/komerce/products/prod_0415.png",
     "sort_order": 415
   },
   {
@@ -4166,7 +4166,7 @@
     "subcategory": "Jouets",
     "price_kmf": 1000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0416.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703821/komerce/products/prod_0416.jpg",
     "sort_order": 416
   },
   {
@@ -4176,7 +4176,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0417.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703822/komerce/products/prod_0417.jpg",
     "sort_order": 417
   },
   {
@@ -4186,7 +4186,7 @@
     "subcategory": "Robes",
     "price_kmf": 11500,
     "promo_pct": 28,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0418.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703823/komerce/products/prod_0418.jpg",
     "sort_order": 418
   },
   {
@@ -4196,7 +4196,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 11000,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703833/komerce/products/prod_0419.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703823/komerce/products/prod_0419.jpg",
     "sort_order": 419
   },
   {
@@ -4206,7 +4206,7 @@
     "subcategory": "Bijoux",
     "price_kmf": 7500,
     "promo_pct": 42,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0420.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703824/komerce/products/prod_0420.jpg",
     "sort_order": 420
   },
   {
@@ -4216,7 +4216,7 @@
     "subcategory": "Soin",
     "price_kmf": 2000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0421.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703824/komerce/products/prod_0421.jpg",
     "sort_order": 421
   },
   {
@@ -4226,7 +4226,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 18000,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0422.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703825/komerce/products/prod_0422.jpg",
     "sort_order": 422
   },
   {
@@ -4236,7 +4236,7 @@
     "subcategory": "Tablettes",
     "price_kmf": 270000,
     "promo_pct": 13,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0423.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703826/komerce/products/prod_0423.png",
     "sort_order": 423
   },
   {
@@ -4246,7 +4246,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 9500,
     "promo_pct": 5,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0424.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703827/komerce/products/prod_0424.jpg",
     "sort_order": 424
   },
   {
@@ -4256,7 +4256,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 135000,
     "promo_pct": 19,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0425.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703828/komerce/products/prod_0425.png",
     "sort_order": 425
   },
   {
@@ -4266,7 +4266,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1500,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0426.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703828/komerce/products/prod_0426.jpg",
     "sort_order": 426
   },
   {
@@ -4276,7 +4276,7 @@
     "subcategory": "Mobilier",
     "price_kmf": 30000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0427.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703829/komerce/products/prod_0427.jpg",
     "sort_order": 427
   },
   {
@@ -4286,7 +4286,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 67,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0428.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703829/komerce/products/prod_0428.jpg",
     "sort_order": 428
   },
   {
@@ -4296,7 +4296,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 30500,
     "promo_pct": 39,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0429.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703830/komerce/products/prod_0429.jpg",
     "sort_order": 429
   },
   {
@@ -4306,7 +4306,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 10500,
     "promo_pct": 32,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0430.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703831/komerce/products/prod_0430.jpg",
     "sort_order": 430
   },
   {
@@ -4316,7 +4316,7 @@
     "subcategory": "Cuisine",
     "price_kmf": 3000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0431.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703831/komerce/products/prod_0431.png",
     "sort_order": 431
   },
   {
@@ -4326,7 +4326,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 1000,
     "promo_pct": 60,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0432.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703832/komerce/products/prod_0432.jpg",
     "sort_order": 432
   },
   {
@@ -4336,7 +4336,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 6500,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0433.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703833/komerce/products/prod_0433.jpg",
     "sort_order": 433
   },
   {
@@ -4346,7 +4346,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 9500,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0434.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703833/komerce/products/prod_0434.jpg",
     "sort_order": 434
   },
   {
@@ -4356,7 +4356,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 25000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1/komerce/products/placeholder",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/fetch/w_400,h_400,c_fill,q_auto,f_auto/https://ibb.co/dJ0qyzRP",
     "sort_order": 435
   },
   {
@@ -4366,7 +4366,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 26500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0436.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703835/komerce/products/prod_0436.jpg",
     "sort_order": 436
   },
   {
@@ -4376,7 +4376,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 7500,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0437.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703835/komerce/products/prod_0437.jpg",
     "sort_order": 437
   },
   {
@@ -4386,7 +4386,7 @@
     "subcategory": "Maquillage",
     "price_kmf": 11500,
     "promo_pct": 44,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0438.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703836/komerce/products/prod_0438.jpg",
     "sort_order": 438
   },
   {
@@ -4396,7 +4396,7 @@
     "subcategory": "Sacs",
     "price_kmf": 58500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0439.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703837/komerce/products/prod_0439.png",
     "sort_order": 439
   },
   {
@@ -4406,7 +4406,7 @@
     "subcategory": "Décoration",
     "price_kmf": 14500,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0440.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703838/komerce/products/prod_0440.jpg",
     "sort_order": 440
   },
   {
@@ -4416,7 +4416,7 @@
     "subcategory": "Parfums",
     "price_kmf": 6500,
     "promo_pct": 63,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0441.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703839/komerce/products/prod_0441.jpg",
     "sort_order": 441
   },
   {
@@ -4426,7 +4426,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 166500,
     "promo_pct": 54,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0442.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703840/komerce/products/prod_0442.jpg",
     "sort_order": 442
   },
   {
@@ -4436,7 +4436,7 @@
     "subcategory": "Fitness",
     "price_kmf": 3500,
     "promo_pct": 56,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0443.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703841/komerce/products/prod_0443.jpg",
     "sort_order": 443
   },
   {
@@ -4446,7 +4446,7 @@
     "subcategory": "Soin",
     "price_kmf": 11000,
     "promo_pct": 31,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0444.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703841/komerce/products/prod_0444.jpg",
     "sort_order": 444
   },
   {
@@ -4456,7 +4456,7 @@
     "subcategory": "Soin",
     "price_kmf": 9000,
     "promo_pct": 40,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0445.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703842/komerce/products/prod_0445.jpg",
     "sort_order": 445
   },
   {
@@ -4466,7 +4466,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 3000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0446.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703843/komerce/products/prod_0446.jpg",
     "sort_order": 446
   },
   {
@@ -4476,7 +4476,7 @@
     "subcategory": "Épicerie",
     "price_kmf": 2000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0447.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703844/komerce/products/prod_0447.png",
     "sort_order": 447
   },
   {
@@ -4486,7 +4486,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 13000,
     "promo_pct": 46,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0448.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703845/komerce/products/prod_0448.jpg",
     "sort_order": 448
   },
   {
@@ -4496,7 +4496,7 @@
     "subcategory": "Parfums",
     "price_kmf": 36000,
     "promo_pct": 14,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0449.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703845/komerce/products/prod_0449.png",
     "sort_order": 449
   },
   {
@@ -4506,7 +4506,7 @@
     "subcategory": "Soin",
     "price_kmf": 7500,
     "promo_pct": 38,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703834/komerce/products/prod_0450.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703846/komerce/products/prod_0450.jpg",
     "sort_order": 450
   },
   {
@@ -4516,7 +4516,7 @@
     "subcategory": "Parfums",
     "price_kmf": 4500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0451.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703847/komerce/products/prod_0451.jpg",
     "sort_order": 451
   },
   {
@@ -4526,7 +4526,7 @@
     "subcategory": "Parfums",
     "price_kmf": 500,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0452.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703848/komerce/products/prod_0452.jpg",
     "sort_order": 452
   },
   {
@@ -4536,7 +4536,7 @@
     "subcategory": "Ordinateurs",
     "price_kmf": 129000,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0453.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703848/komerce/products/prod_0453.jpg",
     "sort_order": 453
   },
   {
@@ -4546,7 +4546,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 10500,
     "promo_pct": 51,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0454.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703849/komerce/products/prod_0454.jpg",
     "sort_order": 454
   },
   {
@@ -4556,7 +4556,7 @@
     "subcategory": "Parfums",
     "price_kmf": 6500,
     "promo_pct": 52,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0455.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703850/komerce/products/prod_0455.jpg",
     "sort_order": 455
   },
   {
@@ -4566,7 +4566,7 @@
     "subcategory": "Fitness",
     "price_kmf": 22500,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0456.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703851/komerce/products/prod_0456.png",
     "sort_order": 456
   },
   {
@@ -4576,7 +4576,7 @@
     "subcategory": "Accessoires",
     "price_kmf": 11000,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0457.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776703852/komerce/products/prod_0457.jpg",
     "sort_order": 457
   },
   {
@@ -4586,7 +4586,7 @@
     "subcategory": "Homme",
     "price_kmf": 13500,
     "promo_pct": 16,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0458.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/fetch/w_400,h_400,c_fill,q_auto,f_auto/https://cdn.dummyjson.com/product-images/mens-shirts/blue-&-black-check-shirt/1.webp",
     "sort_order": 458
   },
   {
@@ -4596,7 +4596,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 1000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0459.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704200/komerce/products/prod_0459.jpg",
     "sort_order": 459
   },
   {
@@ -4606,7 +4606,7 @@
     "subcategory": "Artisanat",
     "price_kmf": 500,
     "promo_pct": 50,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0460.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704201/komerce/products/prod_0460.jpg",
     "sort_order": 460
   },
   {
@@ -4616,7 +4616,7 @@
     "subcategory": "Téléphones",
     "price_kmf": 12000,
     "promo_pct": 23,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0461.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704202/komerce/products/prod_0461.jpg",
     "sort_order": 461
   },
   {
@@ -4626,7 +4626,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 13500,
     "promo_pct": 13,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0462.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704203/komerce/products/prod_0462.png",
     "sort_order": 462
   },
   {
@@ -4636,7 +4636,7 @@
     "subcategory": "Chaussures",
     "price_kmf": 15000,
     "promo_pct": null,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0463.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704204/komerce/products/prod_0463.jpg",
     "sort_order": 463
   },
   {
@@ -4646,7 +4646,7 @@
     "subcategory": "Jouets",
     "price_kmf": 6500,
     "promo_pct": 28,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0464.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704205/komerce/products/prod_0464.jpg",
     "sort_order": 464
   },
   {
@@ -4656,7 +4656,7 @@
     "subcategory": "Soin",
     "price_kmf": 4000,
     "promo_pct": 20,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0465.webp",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704205/komerce/products/prod_0465.png",
     "sort_order": 465
   },
   {
@@ -4666,7 +4666,7 @@
     "subcategory": "Vêtements",
     "price_kmf": 17500,
     "promo_pct": 24,
-    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/w_400,h_400,c_fill,q_auto,f_auto/v1776703835/komerce/products/prod_0466.jpg",
+    "image_url": "https://res.cloudinary.com/dloffvvdz/image/upload/v1776704206/komerce/products/prod_0466.jpg",
     "sort_order": 466
   }
 ]
