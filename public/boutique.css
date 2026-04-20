@@ -971,6 +971,18 @@ body{
 .k-skeleton-title{width:72%;}
 .k-skeleton-price{width:40%;margin-bottom:8px;}
 
+/* ── UTILITY CLASSES ───────────────────────────────────── */
+.u-hidden{display:none!important}
+
+/* ── BODY SCROLL LOCK (modal + cart) ──────────────────── */
+body.modal-open{
+  overflow:hidden;
+  position:fixed;
+  width:100%;
+  top:var(--modal-scroll-y,0);
+}
+body.cart-open{overflow:hidden}
+
 /* ── PRODUCT MODAL ─────────────────────────────────────── */
 /* ── MODAL OVERLAY ── */
 .k-modal-overlay{
@@ -1008,6 +1020,20 @@ body{
 }
 .k-modal-back svg{width:18px;height:18px}
 .k-modal-back:active{opacity:.7}
+
+/* ── MODAL NAV ARROWS (← 3/492 →) ── */
+#k-modal-nav{display:flex;align-items:center;gap:4px}
+.k-modal-nav-btn{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--sand);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all .15s;cursor:pointer;
+}
+.k-modal-nav-btn.is-disabled{opacity:.3;pointer-events:none}
+.k-modal-nav-counter{
+  font-size:11px;color:var(--text-muted);font-weight:600;
+  min-width:36px;text-align:center;
+}
 .k-modal-topbar-right{display:flex;align-items:center;gap:8px}
 .k-modal-cart-btn{
   position:relative;
@@ -1163,6 +1189,13 @@ body{
 }
 .k-sug-card:active{transform:scale(.96)}
 .k-sug-card img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--sand-dark)}
+.k-sug-card-img{position:relative}
+.k-sug-promo-badge{
+  position:absolute;top:4px;left:4px;
+  background:var(--coral);color:#fff;
+  font-size:9px;font-weight:700;
+  padding:2px 5px;border-radius:50px;
+}
 .k-sug-card-name{padding:6px 8px;font-size:11px;font-weight:600;line-height:1.2;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .k-sug-card-price{padding:0 8px 6px;font-size:12px;font-weight:700;color:var(--coral)}

@@ -992,11 +992,11 @@ function quickRemove(productId, btnEl) {
     if (product.promo_pct) {
       const old = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
       dom.modalOldPrice.textContent = fmtPrice(old);
-      dom.modalOldPrice.style.display = '';
+      dom.modalOldPrice.classList.remove('u-hidden');
       dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
       dom.modalPromoBadge.classList.add('show');
     } else {
-      dom.modalOldPrice.style.display = 'none';
+      dom.modalOldPrice.classList.add('u-hidden');
       dom.modalPromoBadge.classList.remove('show');
     }
 
@@ -1017,12 +1017,10 @@ function quickRemove(productId, btnEl) {
 
     dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
     dom.modalOverlay.classList.add('open');
-    // Lock body scroll (iOS needs position:fixed)
+    // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = `-${state._savedCatalogScrollY}px`;
+    document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
+    document.body.classList.add('modal-open');
   }
 
   // ── Boutons ← → dans la topbar de la modal
@@ -1031,21 +1029,21 @@ function quickRemove(productId, btnEl) {
     if (!navEl) {
       navEl = document.createElement('div');
       navEl.id = 'k-modal-nav';
-      navEl.style.cssText = 'display:flex;align-items:center;gap:4px;';
+      // Styles in CSS: #k-modal-nav
 
       const prevBtn = document.createElement('button');
       prevBtn.id = 'k-modal-prev';
-      prevBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;background:var(--sand);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;';
+      prevBtn.className = 'k-modal-nav-btn';
       prevBtn.innerHTML = '←';
       prevBtn.addEventListener('click', () => navigateModal(-1));
 
       const counter = document.createElement('span');
       counter.id = 'k-modal-counter';
-      counter.style.cssText = 'font-size:11px;color:var(--text-muted);font-weight:600;min-width:36px;text-align:center;';
+      counter.className = 'k-modal-nav-counter';
 
       const nextBtn = document.createElement('button');
       nextBtn.id = 'k-modal-next';
-      nextBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;background:var(--sand);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;';
+      nextBtn.className = 'k-modal-nav-btn';
       nextBtn.innerHTML = '→';
       nextBtn.addEventListener('click', () => navigateModal(1));
 
@@ -1066,8 +1064,8 @@ function quickRemove(productId, btnEl) {
     const nextBtn = document.getElementById('k-modal-next');
 
     if (counter) counter.textContent = `${currentIdx + 1}/${list.length}`;
-    if (prevBtn) prevBtn.style.opacity = currentIdx <= 0 ? '0.3' : '1';
-    if (nextBtn) nextBtn.style.opacity = currentIdx >= list.length - 1 ? '0.3' : '1';
+    if (prevBtn) prevBtn.classList.toggle('is-disabled', currentIdx <= 0);
+    if (nextBtn) nextBtn.classList.toggle('is-disabled', currentIdx >= list.length - 1);
   }
 
   function modalGoBack() {
@@ -1078,12 +1076,10 @@ function quickRemove(productId, btnEl) {
 
   function closeModal() {
     dom.modalOverlay.classList.remove('open');
-    // Unlock body scroll (reverse iOS fix)
+    // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.top = '';
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('--modal-scroll-y');
     window.scrollTo(0, scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
@@ -1092,17 +1088,17 @@ function quickRemove(productId, btnEl) {
   function renderSuggestions(items) {
     if (!items.length) {
       const sugSection = document.getElementById('k-modal-suggestions');
-      if (sugSection) sugSection.style.display = 'none';
+      if (sugSection) sugSection.classList.add('u-hidden');
       return;
     }
     const sugSection = document.getElementById('k-modal-suggestions');
-    if (sugSection) sugSection.style.display = '';
+    if (sugSection) sugSection.classList.remove('u-hidden');
 
     dom.sugRail.innerHTML = items.map(p => `
-      <div class="k-sug-card" data-id="${p.id}" style="cursor:pointer;">
-        <div style="position:relative;">
+      <div class="k-sug-card" data-id="${p.id}">
+        <div class="k-sug-card-img">
           <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
-          ${p.promo_pct ? `<span style="position:absolute;top:4px;left:4px;background:var(--coral);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:50px;">-${p.promo_pct}%</span>` : ''}
+          ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
           <button class="k-sug-add" data-add="${p.id}" aria-label="Ajouter">+</button>
         </div>
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
@@ -1133,7 +1129,7 @@ function quickRemove(productId, btnEl) {
       if (!wrapEl) {
         wrapEl = document.createElement('div');
         wrapEl.className = 'k-sug-wrap';
-        wrapEl.style.cssText = 'position:relative;';
+        // position:relative is in CSS (.k-sug-wrap)
         dom.sugRail.parentNode.insertBefore(wrapEl, dom.sugRail);
         wrapEl.appendChild(dom.sugRail);
       }
@@ -1308,13 +1304,13 @@ function quickRemove(productId, btnEl) {
     dom.cartOverlay.classList.add('open');
     dom.cartDrawer.classList.add('open');
     window._savedScrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add('cart-open');
   }
 
   function closeCart() {
     dom.cartOverlay.classList.remove('open');
     dom.cartDrawer.classList.remove('open');
-    document.body.style.overflow = '';
+    document.body.classList.remove('cart-open');
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -1334,7 +1330,7 @@ function quickRemove(productId, btnEl) {
     dom.cartOverlay.classList.add('open');
     dom.cartDrawer.classList.add('open');
     window._savedScrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add('cart-open');
 
     setTimeout(() => {
       const newItem = dom.cartBody.querySelector('.k-cart-item.new-item');
@@ -1551,7 +1547,7 @@ function quickRemove(productId, btnEl) {
         setTimeout(function() {
           dom.cartDrawer.classList.add('open');
           dom.cartOverlay.classList.add('open');
-          document.body.style.overflow = 'hidden';
+          document.body.classList.add('cart-open');
           showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
       }
@@ -1584,7 +1580,7 @@ function quickRemove(productId, btnEl) {
           setTimeout(function() {
             dom.cartDrawer.classList.add('open');
             dom.cartOverlay.classList.add('open');
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('cart-open');
             var sharerName = data.sharer_name || data.shared_by || null;
             var msg = sharerName
               ? '🎁 ' + sharerName + " t'a partagé son panier !"
@@ -1614,12 +1610,12 @@ function quickRemove(productId, btnEl) {
     renderCheckout();
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add('cart-open');
   }
 
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
-    document.body.style.overflow = '';
+    document.body.classList.remove('cart-open');
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -2729,7 +2725,7 @@ async function submitOrder(btn) {
     const cartDrawer = document.getElementById('k-cart-drawer');
     if (cartOverlay) cartOverlay.classList.remove('open');
     if (cartDrawer) cartDrawer.classList.remove('open');
-    document.body.style.overflow = '';
+    document.body.classList.remove('cart-open');
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
