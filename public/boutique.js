@@ -282,6 +282,10 @@
     modalCartBtn: $('#k-modal-cart-btn'),
     modalCartBadge: $('#k-modal-cart-badge'),
     modalImg: $('#k-modal-img'),
+    modalCarousel: $('#k-modal-carousel'),
+    modalCarouselTrack: $('#k-modal-carousel-track'),
+    modalDots: $('#k-modal-dots'),
+    modalDetails: $('#k-modal-details'),
     modalPromoBadge: $('#k-modal-promo-badge'),
     modalName: $('#k-modal-name'),
     modalDesc: $('#k-modal-desc'),
@@ -1015,7 +1019,7 @@ function quickRemove(productId, btnEl) {
       .slice(0, 8);
     renderSuggestions(suggestions);
 
-    dom.modal.querySelector('.k-modal-scroll').scrollTop = 0;
+    if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = window.scrollY;
@@ -1210,8 +1214,10 @@ function quickRemove(productId, btnEl) {
     let startY = 0, startX = 0, isDragging = false;
 
     modal.addEventListener('touchstart', (e) => {
-      const scrollEl = modal.querySelector('.k-modal-scroll');
-      if (scrollEl && scrollEl.scrollTop > 10) return;
+      const detailsEl = dom.modalDetails;
+      const isInDetails = detailsEl && detailsEl.contains(e.target);
+      // Only block swipe if touch started in scrolled details zone
+      if (isInDetails && detailsEl.scrollTop > 10) return;
       startY = e.touches[0].clientY;
       startX = e.touches[0].clientX;
       isDragging = true;

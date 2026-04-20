@@ -229,11 +229,16 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="k-modal-scroll">
-      <div class="k-modal-content">
-        <div class="k-modal-img-wrap">
-          <img id="k-modal-img" src="" alt="">
-          <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
+      <div class="k-modal-img-wrap">
+        <div class="k-modal-carousel" id="k-modal-carousel">
+          <div class="k-modal-carousel-track" id="k-modal-carousel-track">
+            <img id="k-modal-img" src="" alt="" class="k-modal-slide">
+          </div>
         </div>
+        <div class="k-modal-dots" id="k-modal-dots"></div>
+        <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
+      </div>
+      <div class="k-modal-details" id="k-modal-details">
         <div class="k-modal-info">
           <h2 id="k-modal-name"></h2>
           <p class="k-modal-desc" id="k-modal-desc"></p>
@@ -246,10 +251,10 @@ if('serviceWorker' in navigator){
             <span id="k-modal-stock"></span>
           </div>
         </div>
-      </div>
-      <div class="k-modal-suggestions" id="k-modal-suggestions">
-        <h3>Dans la même collection</h3>
-        <div class="k-sug-rail" id="k-sug-rail"></div>
+        <div class="k-modal-suggestions" id="k-modal-suggestions">
+          <h3>Dans la même collection</h3>
+          <div class="k-sug-rail" id="k-sug-rail"></div>
+        </div>
       </div>
     </div>
     <div class="k-modal-actions">
