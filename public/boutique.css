@@ -2429,13 +2429,14 @@ body{
     transform: none;
     align-items: stretch;
   }
-  /* Promo cards = same width as product grid columns:
-     (100vw - 16px padding - 12px gaps) / 3 */
+  /* Promo cards: 3 fill viewport exactly, no 4th peek.
+     In scroll container only left-pad counts for initial view:
+     left-pad(8) + 3×card + 2×gap(6) = 100vw → card = (100vw - 20px) / 3 */
   .k-promo-card {
-    flex: 0 0 calc((100vw - 28px) / 3);
-    width: calc((100vw - 28px) / 3);
-    min-width: calc((100vw - 28px) / 3);
-    max-width: calc((100vw - 28px) / 3);
+    flex: 0 0 calc((100vw - 20px) / 3);
+    width: calc((100vw - 20px) / 3);
+    min-width: calc((100vw - 20px) / 3);
+    max-width: calc((100vw - 20px) / 3);
     scroll-snap-align: start;
     border-radius: 10px;
     overflow: hidden;
