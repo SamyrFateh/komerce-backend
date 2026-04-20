@@ -3223,3 +3223,15 @@ body.cart-open{overflow:hidden}
     animation: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH — masquer les onglets Détails/Couleurs/Livraison sur les cartes  */
+/*  Ils bloquent le scroll vertical et font doublon avec la modale produit */
+/*  qui s'ouvre au clic sur la carte.                                       */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-card-tabs,
+.k-card-panels {
+  display: none !important;
+}
