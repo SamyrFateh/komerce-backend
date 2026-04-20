@@ -37,7 +37,7 @@ router.get('/', async (req, res, next) => {
       min_price,
       max_price,
       in_stock,
-      limit  = 300,
+      limit  = 1000,
       offset = 0,
     } = req.query;
 

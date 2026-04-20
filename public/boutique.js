@@ -450,7 +450,7 @@
       throw new Error("K non disponible");
     }
 
-    const data = await K.products.list();
+    const data = await K.products.list({ limit: 1000 });
 
     state.products = (Array.isArray(data) ? data : data.products || [])
       .filter(p => p.is_available !== false);
