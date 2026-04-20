@@ -253,8 +253,14 @@
 
   /* ── MOBILE SCROLL TOP RECALC ────────────────────────── */
   function _updateMobileScrollTop() {
-    // Layout is 100% CSS flex — no JS top override needed
-    // Function kept as no-op so existing calls don't error
+    if (window.innerWidth > 899) return;
+    var doUpdate = function() {
+      var w = document.getElementById('k-hero-fixed-wrap');
+      var s = document.getElementById('k-page-scroll');
+      if (w && s) s.style.top = (w.offsetHeight + 44) + 'px';
+    };
+    requestAnimationFrame(doUpdate);
+    setTimeout(doUpdate, 400);
   }
 
   /* ── DOM REFS ──────────────────────────────────────────── */
@@ -1182,7 +1188,6 @@ function quickRemove(productId, btnEl) {
     window.scrollTo(0, scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
-    _updateMobileScrollTop(); // recalc scroll area after modal close
   }
 
   function renderSuggestions(items) {

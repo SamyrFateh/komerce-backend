@@ -2598,39 +2598,21 @@ body.cart-open{overflow:hidden}
      ══════════════════════════════════════════════════════ */
 
   /* ── A. GLOBAL — prevent sticky-breaking overflow ──── */
-  /* CRITICAL: html must own the viewport box so body overflow
-     doesn't propagate and break flex containment */
-  html {
-    height: 100vh; height: 100dvh;  /* dvh fallback */
-    overflow: hidden;
-    overscroll-behavior: none;
+  html, body {
+    overflow-x: clip; /* clip doesn't break fixed positioning, hidden does */
   }
   body {
-    display: flex;
-    flex-direction: column;
-    height: 100%;           /* fill html, not viewport directly */
-    min-height: 0;          /* allow flex children to shrink */
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    padding-bottom: 0 !important;  /* kill desktop padding-bottom */
-  }
-  /* Neutralize desktop body overrides that break flex on mobile */
-  body.modal-open,
-  body.cart-open {
-    position: static !important;
-    top: auto !important;
-    width: auto !important;
-    height: 100% !important;
-    overflow: hidden !important;
+    padding-bottom: 64px; /* space for fixed bottom nav */
   }
 
   /* ── B. HEADER — compact + sticky top ──────────────── */
   .k-header {
-    flex: 0 0 auto;
     height: 44px;
     padding: 0 8px;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     width: 100%;
     z-index: 100;
     background: #fff;
@@ -2991,11 +2973,13 @@ body.cart-open{overflow:hidden}
     gap: 5px;
   }
 
-  /* ── I. BOTTOM NAV — flex child, stays at bottom ──── */
+  /* ── I. BOTTOM NAV — fixed ─────────────────────────── */
   .k-bnav {
-    flex: 0 0 auto;
-    position: relative;
-    z-index: 20;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
     background: #fff;
     box-shadow: 0 -1px 6px rgba(0,0,0,.08);
     height: 52px;
@@ -3003,31 +2987,30 @@ body.cart-open{overflow:hidden}
   }
   .k-bnav-label { font-size: 9px; }
 
-  /* ── FLEX LAYOUT — body is flex column, page-scroll takes remaining space ── */
+  /* ── FIXED LAYOUT — header + hero/cats fixed, content scrolls ── */
   #k-hero-fixed-wrap {
-    flex: 0 0 auto;
-    position: relative;
-    z-index: 10;
+    position: fixed;
+    top: 44px; /* below header */
+    left: 0;
+    right: 0;
+    z-index: 90;
     background: #fff;
   }
 
   #k-page-scroll {
-    flex: 1 1 0;
-    min-height: 0; /* critical for flex overflow to work */
-    position: relative;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 1;
-    padding-bottom: 0;
-  }
-
-  /* Neutralize desktop data-tab top rules on mobile */
-  #k-page-scroll[data-tab] {
-    top: auto;
+    padding-bottom: 56px; /* space for bottom nav */
+    /* top is set dynamically by JS based on wrap height */
   }
 
   #k-bar-spacer {
-    display: none; /* not needed with flex layout */
+    display: none; /* not needed with fixed layout */
   }
 
   /* Hide "Panier" text overflow in header */
