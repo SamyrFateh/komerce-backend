@@ -2049,15 +2049,169 @@ body.cart-open{overflow:hidden}
   margin-bottom:6px !important;
 }
 
-/* makeSection override: tighter */
-.k-order-body > div[style*="font-weight:700;font-size:0.85rem"]{
-  margin-top:8px !important;margin-bottom:4px !important;
+/* ── P2 CLEANUP — CHECKOUT FORM/CONFIRM/SUIVI CLASSES ─── */
+
+/* Form builder: section heading */
+.k-ck-section{font-weight:700;font-size:0.85rem;margin-bottom:6px;margin-top:10px}
+.k-order-body .k-ck-section{margin-top:8px;margin-bottom:4px}
+
+/* Form builder: group + label + input */
+.k-ck-group{margin-bottom:8px}
+.k-ck-label{display:block;font-size:0.8rem;font-weight:600;margin-bottom:3px}
+.k-ck-label--sm{font-size:0.75rem;color:#666}
+.k-ck-input{
+  width:100%;padding:9px 12px;border:2px solid rgba(0,0,0,0.1);border-radius:8px;
+  outline:none;font-size:0.9rem;transition:border-color 0.2s;box-sizing:border-box;
+}
+.k-ck-input:focus{border-color:var(--coral)}
+
+/* Intl phone input (country selector + input) */
+.k-ck-phone-wrap{display:flex;height:40px;gap:6px}
+.k-ck-phone-select{
+  height:40px;flex:0 0 112px;border:2px solid rgba(0,0,0,0.1);border-radius:8px;
+  background:#fff;padding:0 8px;font-size:0.9rem;outline:none;transition:border-color .2s;
+}
+.k-ck-phone-input{
+  height:40px;flex:1;border:2px solid rgba(0,0,0,0.1);border-radius:8px;
+  padding:0 12px;outline:none;font-size:0.9rem;box-sizing:border-box;
+  background:#fff;transition:border-color .2s;
+}
+.k-ck-phone-wrap:focus-within .k-ck-phone-select,
+.k-ck-phone-wrap:focus-within .k-ck-phone-input{border-color:var(--coral)}
+.k-ck-phone-help{font-size:0.72rem;color:#777;margin-top:4px}
+
+/* Comores +269 phone (prefix + input) */
+.k-ck-km-wrap{display:flex;height:40px}
+.k-ck-km-prefix{
+  display:flex;align-items:center;gap:4px;padding:0 10px;
+  background:#f5f5f2;border:1.5px solid rgba(0,0,0,0.12);border-right:none;
+  border-radius:8px 0 0 8px;font-size:12px;font-weight:700;color:#555;
+  white-space:nowrap;flex-shrink:0;transition:border-color .15s;
+}
+.k-ck-km-code{color:#888}
+.k-ck-km-input{
+  flex:1;height:100%;border:1.5px solid rgba(0,0,0,0.12);border-left:none;
+  border-radius:0 8px 8px 0;padding:0 12px;font-size:14px;font-family:inherit;
+  outline:none;background:#fff;transition:border-color .15s;
+}
+.k-ck-km-wrap:focus-within .k-ck-km-prefix,
+.k-ck-km-wrap:focus-within .k-ck-km-input{border-color:var(--ocean)}
+
+/* Stripe card section */
+.k-stripe-wrap{
+  display:none;margin-top:8px;padding:10px 14px;
+  background:#fff;border:1px solid var(--sand-dark);border-radius:10px;
+}
+.k-stripe-wrap.is-visible{display:block}
+.k-stripe-title{font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px}
+.k-stripe-element{
+  padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);
+  border-radius:8px;background:#fff;min-height:44px;cursor:text;
+}
+.k-stripe-error{color:#dc2626;font-size:0.75rem;margin-top:5px;display:none}
+.k-stripe-error.is-visible{display:block}
+.k-stripe-eur{
+  display:none;text-align:center;font-size:0.82rem;
+  color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;
+}
+.k-stripe-eur.is-visible{display:block}
+
+/* Wallet section */
+.k-wallet-section{
+  margin-top:8px;padding:10px 12px;border:2px dashed var(--ocean);border-radius:8px;
+  background:linear-gradient(135deg,#f0f5e6,#e8eddb);display:none;
+}
+.k-wallet-section.is-visible{display:block}
+.k-wallet-label{display:flex;align-items:center;gap:10px;cursor:pointer}
+.k-wallet-cb{width:18px;height:18px;accent-color:var(--ocean);flex-shrink:0}
+.k-wallet-info{flex:1}
+.k-wallet-title{font-weight:700;font-size:0.85rem;color:var(--ocean)}
+.k-wallet-balance{font-size:0.72rem;color:#888;margin-top:1px}
+.k-wallet-ded{
+  margin-top:6px;padding:6px 8px;background:white;
+  border-radius:6px;font-size:0.82rem;display:none;
+}
+.k-wallet-ded.is-visible{display:block}
+
+/* Payment option radio */
+.k-pay-option{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border:2px solid rgba(0,0,0,0.08);border-radius:8px;
+  margin-bottom:6px;cursor:pointer;background:white;
+}
+.k-pay-option.is-selected{border-color:var(--ocean);background:rgba(67,160,71,0.06)}
+.k-order-body .k-pay-option{padding:8px 11px;margin-bottom:4px}
+.k-pay-radio{width:16px;height:16px;accent-color:var(--ocean);flex-shrink:0}
+.k-pay-title{font-weight:700;font-size:0.88rem}
+.k-pay-subtitle{font-size:0.75rem;color:#888;margin-top:1px}
+
+/* Wallet deduction rows */
+.k-wal-row{display:flex;justify-content:space-between}
+.k-wal-row+.k-wal-row{margin-top:4px}
+.k-wal-value{font-weight:700;color:var(--ocean)}
+.k-wal-bold{font-weight:700}
+.k-wal-success{margin-top:4px;text-align:center;font-weight:700;color:#16a34a}
+
+/* Order confirmation */
+.k-confirm-wrap{text-align:center;padding:14px 0}
+.k-confirm-emoji{font-size:3.2rem;margin-bottom:8px}
+.k-confirm-title{color:var(--ocean);margin-bottom:6px;font-size:1.1rem}
+.k-confirm-sub{color:#888;font-size:0.85rem;margin-bottom:2px}
+.k-confirm-ref{
+  display:inline-block;background:rgba(67,160,71,0.08);color:var(--ocean);
+  font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;
+  margin:6px 0;letter-spacing:2px;font-family:monospace;
+}
+.k-confirm-copy{
+  margin-top:2px;background:none;border:none;color:var(--text-muted);
+  font-size:0.75rem;cursor:pointer;text-decoration:underline;
+}
+.k-confirm-cash-lbl{margin-top:10px;font-weight:700;font-size:0.88rem}
+.k-confirm-cash-ref{
+  display:inline-block;background:#fffbeb;color:#92400e;
+  font-weight:800;font-size:1.15rem;padding:8px 22px;border-radius:10px;
+  margin:6px 0;letter-spacing:2px;border:2px solid #fde68a;font-family:monospace;
+}
+.k-confirm-loyalty{
+  margin-top:10px;padding:8px 12px;background:#ecfdf5;border-radius:8px;
+  border:1px solid #a7f3d0;font-size:0.82rem;color:#065f46;font-weight:600;
+}
+.k-confirm-credit{
+  margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);
+  border-radius:8px;font-size:0.85rem;text-align:center;
+}
+.k-confirm-credit strong{color:var(--ocean)}
+.k-confirm-notice{
+  margin-top:12px;padding:10px 12px;background:#eef2e4;border-radius:10px;
+  font-size:0.82rem;color:#555;line-height:1.6;text-align:left;
+}
+.k-confirm-notice-item{margin-top:4px}
+.k-confirm-track{
+  margin-top:12px;width:100%;padding:11px;border-radius:8px;
+  font-weight:700;font-size:0.9rem;background:var(--ocean);
+  color:white;border:none;cursor:pointer;
+}
+.k-confirm-close{
+  margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;
+  font-size:0.85rem;background:#eef2e4;color:var(--text);
+  border:1px solid rgba(0,0,0,0.08);cursor:pointer;
 }
 
-/* makePaymentOption override: less padding */
-.k-order-body > label[style*="padding:10px 14px"]{
-  padding:8px 11px !important;margin-bottom:4px !important;
-}
+/* Checkout track label */
+.k-ck-track-label{font-size:0.8rem;font-weight:600;display:block;margin-bottom:3px}
+
+/* Misc: search empty, fav hint/count, spinner size */
+.k-search-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:14px}
+.k-fav-hint{font-size:12px}
+.k-fav-count{font-size:14px;font-weight:400;color:var(--text-muted)}
+.k-track-btn--mt{margin-top:8px}
+.k-otp-back-btn{margin-top:16px}
+.k-spinner--sm{width:22px;height:22px}
+
+/* pageScroll position: shop = default, other tabs = below header only */
+#k-page-scroll[data-tab="fav"],
+#k-page-scroll[data-tab="track"],
+#k-page-scroll[data-tab="cart"]{top:44px}
 
 /* MVola compact */
 .ck-pay-mvola{
