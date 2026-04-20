@@ -211,6 +211,7 @@
 
     state.activeSubcat = null;
 
+    /* "Tout" or no subcats → hide rail */
     if (category === 'all' || !SUBCATS[category]) {
       wrap.innerHTML = '';
       wrap.classList.remove('k-subcats-visible');
@@ -219,27 +220,29 @@
     }
 
     var subs = SUBCATS[category];
-    var allChip = '<button class="k-subchip active" data-subcat="all">'
-      + '<span class="k-subchip-icon">✦</span>'
-      + '<span class="k-subchip-label">Tout</span></button>';
 
+    /* No "Tout" chip — first chip auto-selected or none */
     var chips = subs.map(function(s) {
       return '<button class="k-subchip" data-subcat="' + s.key + '">'
         + '<span class="k-subchip-icon">' + s.icon + '</span>'
         + '<span class="k-subchip-label">' + s.label + '</span></button>';
     }).join('');
 
-    wrap.innerHTML = '<div class="k-subcats-grid">' + allChip + chips + '</div>';
+    wrap.innerHTML = '<div class="k-subcats-rail">' + chips + '</div>';
     wrap.classList.add('k-subcats-visible');
 
     wrap.querySelectorAll('.k-subchip').forEach(function(chip) {
       chip.addEventListener('click', function() {
+        var wasActive = chip.classList.contains('active');
         wrap.querySelectorAll('.k-subchip').forEach(function(c) { c.classList.remove('active'); });
-        chip.classList.add('active');
-        var sub = chip.dataset.subcat;
-        state.activeSubcat = (sub === 'all') ? null : sub;
+        if (wasActive) {
+          /* Toggle off — show all products in this category */
+          state.activeSubcat = null;
+        } else {
+          chip.classList.add('active');
+          state.activeSubcat = chip.dataset.subcat;
+        }
         renderGrid();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
 
@@ -876,9 +879,21 @@ function quickRemove(productId, btnEl) {
           `<span class="k-chip-label">${label}</span>`;
       }
       chip.addEventListener('click', () => {
+        const cat = chip.dataset.cat;
+        /* Toggle: re-click same category → back to "Tout" + hide subcats */
+        if (cat === state.activeCat && cat !== 'all') {
+          $$('.k-chip').forEach(c => c.classList.remove('active'));
+          const allChip = document.querySelector('.k-chip[data-cat="all"]');
+          if (allChip) allChip.classList.add('active');
+          state.activeCat = 'all';
+          state.activeSubcat = null;
+          renderSubcats('all');
+          renderGrid();
+          return;
+        }
         $$('.k-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
-        state.activeCat = chip.dataset.cat;
+        state.activeCat = cat;
         renderSubcats(state.activeCat);
         renderGrid();
         // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
