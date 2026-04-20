@@ -2502,5 +2502,13 @@ body{
   .k-section-head h2 { font-size: 14px; }
   .k-see-all { font-size: 11px; }
 
+
+  /* Cart drawer: leave room for bottom nav */
+  .k-cart-drawer.open {
+    bottom: 52px !important;
+  }
+  .k-cart-overlay.open {
+    bottom: 52px !important;
+  }
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */

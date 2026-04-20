@@ -2494,6 +2494,8 @@ async function submitOrder(btn) {
     const catalog = document.getElementById('k-catalog-section');
     const favView = document.getElementById('k-fav-view');
     const trackView = document.getElementById('k-track-view');
+    const heroWrap = document.getElementById('k-hero-fixed-wrap');
+    const pageScroll = document.getElementById('k-page-scroll');
     // Show catalog by default
     if (catalog) catalog.style.display = tab === 'shop' ? '' : 'none';
     if (favView) favView.classList.toggle('show', tab === 'fav');
@@ -2501,6 +2503,16 @@ async function submitOrder(btn) {
     // Also hide promo section when not on shop
     const promoSec = document.getElementById('k-promos-section');
     if (promoSec) promoSec.style.display = tab === 'shop' ? '' : 'none';
+    // Hide hero+categories on non-shop tabs
+    if (heroWrap) heroWrap.style.display = tab === 'shop' ? '' : 'none';
+    // Adjust scroll container: on shop = below hero, on other tabs = below header only
+    if (pageScroll) pageScroll.style.top = tab === 'shop' ? '' : '44px';
+    // Close cart drawer if open
+    const cartOverlay = document.getElementById('k-cart-overlay');
+    const cartDrawer = document.getElementById('k-cart-drawer');
+    if (cartOverlay) cartOverlay.classList.remove('open');
+    if (cartDrawer) cartDrawer.classList.remove('open');
+    document.body.style.overflow = '';
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
