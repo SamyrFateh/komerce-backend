@@ -264,15 +264,62 @@ router.post('/logout', (req, res) => {
 });
 
 // ─── POST /api/auth/admin-reset ─────────────────────────────────────────────────
+// [P0-3] Sécurisé v2 :
+//   · Bloqué en production sauf si ADMIN_RESET_KEY explicitement définie ET ≥ 32 chars
+//   · Plus de fallback 'komerce-dev-2026' — la variable d'env est OBLIGATOIRE
+//   · Log chaque tentative (succès ou échec) pour audit
 router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) => {
   try {
-    // Clé depuis env ou fallback dev (retirer en production)
-    const resetKey = process.env.ADMIN_RESET_KEY || 'komerce-dev-2026';
+    const resetKey = process.env.ADMIN_RESET_KEY;
+
+    // Sécurité 1 : pas de clé configurée → route désactivée
+    if (!resetKey) {
+      console.warn(`[admin-reset] ⛔ ADMIN_RESET_KEY non définie — tentative refusée (IP: ${req.ip})`);
+      return res.status(503).json({
+        error: 'Route de reset désactivée (ADMIN_RESET_KEY non configurée)'
+      });
+    }
+
+    // Sécurité 2 : clé trop faible (< 32 chars) → route désactivée
+    if (resetKey.length < 32) {
+      console.warn(`[admin-reset] ⛔ ADMIN_RESET_KEY trop faible (< 32 chars) — tentative refusée (IP: ${req.ip})`);
+      return res.status(503).json({
+        error: 'Route de reset désactivée (ADMIN_RESET_KEY doit faire au moins 32 caractères)'
+      });
+    }
+
+    // Sécurité 3 : bloqué en production sauf si ALLOW_ADMIN_RESET=true explicitement
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_ADMIN_RESET !== 'true') {
+      console.warn(`[admin-reset] ⛔ Tentative en production sans ALLOW_ADMIN_RESET=true (IP: ${req.ip})`);
+      return res.status(403).json({
+        error: 'Route désactivée en production',
+        hint: 'Définir ALLOW_ADMIN_RESET=true pour autoriser temporairement'
+      });
+    }
+
     const { key, new_password } = req.body;
-    if (!key || key !== resetKey) return res.status(403).json({ error: 'Clé de reset invalide' });
-    if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Mot de passe minimum 6 caractères' });
-    const hash = await bcrypt.hash(new_password, 10);
-    const { rowCount } = await db.query("UPDATE users SET password_hash = $1 WHERE email = 'admin@komerce.km'", [hash]);
+
+    // Comparaison constante pour éviter le timing attack
+    const crypto = require('crypto');
+    const keyBuf      = Buffer.from(String(key || ''));
+    const resetKeyBuf = Buffer.from(resetKey);
+    const keysMatch   = keyBuf.length === resetKeyBuf.length &&
+                        crypto.timingSafeEqual(keyBuf, resetKeyBuf);
+
+    if (!keysMatch) {
+      console.warn(`[admin-reset] ⛔ Clé invalide (IP: ${req.ip})`);
+      return res.status(403).json({ error: 'Clé de reset invalide' });
+    }
+
+    if (!new_password || new_password.length < 12) {
+      return res.status(400).json({ error: 'Mot de passe minimum 12 caractères' });
+    }
+
+    const hash = await bcrypt.hash(new_password, 12);
+    const { rowCount } = await db.query(
+      "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = 'admin@komerce.km'",
+      [hash]
+    );
     if (rowCount === 0) {
       await db.query(
         `INSERT INTO users (full_name, email, phone, role, currency_pref, country, password_hash)
@@ -280,6 +327,8 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
          ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'admin'`, [hash]
       );
     }
+
+    console.log(`[admin-reset] ✅ Admin password reset OK (IP: ${req.ip}, UA: ${req.get('user-agent')})`);
     res.json({ success: true, message: 'Mot de passe admin réinitialisé avec succès' });
   } catch(err) { next(err); }
 });

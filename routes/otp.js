@@ -98,8 +98,12 @@ router.post('/request', async (req, res) => {
       success: true,
       message: 'Code envoyé par WhatsApp !',
       expiresIn: OTP_EXPIRY_MIN * 60,
-      // DEV ONLY — remove in production:
-      _dev: process.env.NODE_ENV !== 'production' ? { code, waResult: waResult.success } : undefined
+      // [P0-4] Sécurisé v2 : uniquement en NODE_ENV === 'development' (pas staging ni autre)
+      // ET seulement si la variable explicite OTP_DEV_ECHO=true est aussi définie.
+      // Ça évite qu'un staging accessible publiquement expose les codes.
+      _dev: (process.env.NODE_ENV === 'development' && process.env.OTP_DEV_ECHO === 'true')
+        ? { code, waResult: waResult.success }
+        : undefined
     });
   } catch (err) {
     console.error('[OTP] ❌ request error:', err.message);
