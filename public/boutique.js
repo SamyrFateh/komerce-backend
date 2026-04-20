@@ -229,7 +229,7 @@
         + '<span class="k-subchip-label">' + s.label + '</span></button>';
     }).join('');
 
-    wrap.innerHTML = '<div class="k-subcats-rail">' + allChip + chips + '</div>';
+    wrap.innerHTML = '<div class="k-subcats-grid">' + allChip + chips + '</div>';
     wrap.classList.add('k-subcats-visible');
 
     wrap.querySelectorAll('.k-subchip').forEach(function(chip) {
