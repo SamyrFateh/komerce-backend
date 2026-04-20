@@ -18,6 +18,57 @@
     return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
   }
 
+  /* ── Carousel produit (Shein-like) ──────────────────────────
+     Retourne le HTML du carrousel images swipeable + dots.
+     - Utilise p.images (array JSON) si disponible, sinon duplique p.image_url 4×
+     - Chaque image = 1 slide scroll-snap
+     - Dots positionnés en bas, mis à jour par handler onscroll
+     - Le carrousel ne bloque pas le scroll vertical (touch-action: pan-y)
+  */
+  function renderProductCarousel(p, width) {
+    width = width || 400;
+    let imgs = [];
+    if (p.images) {
+      try {
+        imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+      } catch (_) { imgs = []; }
+    }
+    if (!Array.isArray(imgs) || imgs.length === 0) {
+      // FAKE : duplique l'image principale 4× pour voir le rendu carrousel
+      imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
+    }
+    if (!imgs.length) {
+      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy">`;
+    }
+    const slides = imgs.map((src, i) => `
+      <div class="k-card-slide">
+        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy">
+      </div>`).join('');
+    const dots = imgs.length > 1
+      ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i===0?' active':''}"></span>`).join('')}</div>`
+      : '';
+    return `<div class="k-card-carousel">${slides}</div>${dots}`;
+  }
+
+  /* ── Binder handler scroll → met à jour les dots actifs ────── */
+  function bindCarouselDots(card) {
+    const carousel = card.querySelector('.k-card-carousel');
+    const dots     = card.querySelectorAll('.k-card-dot');
+    if (!carousel || dots.length <= 1) return;
+    if (carousel.dataset.bound) return;
+    carousel.dataset.bound = '1';
+    let raf = null;
+    carousel.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      });
+    }, { passive: true });
+  }
+
+
   function promoImgUrl(url, w) {
     // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
     // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
@@ -405,7 +456,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+            ${renderProductCarousel(p, 400)}
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -437,8 +488,9 @@
     // Re-bind events on new cards
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
       card.dataset.bound = '1';
+      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-carousel') || e.target.closest('.k-card-dots')) return;
         openModal(card.dataset.id);
       });
     });
@@ -559,7 +611,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+            ${renderProductCarousel(p, 400)}
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -590,8 +642,9 @@
 
     // Events
     dom.grid.querySelectorAll('.k-card').forEach(card => {
+      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-carousel') || e.target.closest('.k-card-dots')) return;
         openModal(card.dataset.id);
       });
     });
@@ -2575,7 +2628,7 @@ async function submitOrder(btn) {
         const qty = inCart ? inCart.qty : 0;
         return `<div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy">
+            ${renderProductCarousel(p, 400)}
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
@@ -2610,6 +2663,7 @@ async function submitOrder(btn) {
       const favGrid = document.getElementById('k-fav-grid');
       if (favGrid) {
         favGrid.querySelectorAll('.k-card').forEach(card => {
+        bindCarouselDots(card);
           card.addEventListener('click', (e) => {
             if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
             openModal(card.dataset.id);

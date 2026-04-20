@@ -3226,11 +3226,114 @@ body.cart-open{overflow:hidden}
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */
-/*  PATCH — masquer les onglets Détails/Couleurs/Livraison sur les cartes  */
-/*  Ils bloquent le scroll vertical et font doublon avec la modale produit */
-/*  qui s'ouvre au clic sur la carte.                                       */
+/*  CARROUSEL PRODUIT SHEIN-LIKE — swipe horizontal + dots                 */
+/*  - scroll-snap horizontal dans la carte                                 */
+/*  - touch-action: pan-y → le scroll vertical global reste fluide         */
+/*  - dots en bas pour indiquer la position                                */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
+.k-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.k-card-carousel {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  aspect-ratio: 4/3;
+  /* pan-y : réserve le geste vertical au scroll global, horizontal au carrousel */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  background: #faf8f5;
+}
+
+.k-card-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.k-card-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-card-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  display: block;
+}
+
+/* Dots ronds en bas du carrousel */
+.k-card-dots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.k-card-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: all 0.25s ease;
+}
+
+.k-card-dot.active {
+  background: white;
+  width: 16px;
+  border-radius: 3px;
+}
+
+/* Sur desktop, carrousel légèrement plus grand */
+@media (min-width: 900px) {
+  .k-card-carousel {
+    aspect-ratio: 1/1;
+  }
+  .k-card-slide-img {
+    padding: 12px;
+  }
+  .k-card-dots {
+    bottom: 8px;
+    padding: 4px 10px;
+  }
+  .k-card-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .k-card-dot.active {
+    width: 18px;
+  }
+}
+
+/* Masquer l'image statique originale si elle coexiste avec un carrousel */
+.k-card-img-wrap > .k-card-img:not(:only-child) {
+  display: none;
+}
+
+/* Masquer les onglets (on garde la règle précédente) */
 .k-card-tabs,
 .k-card-panels {
   display: none !important;
