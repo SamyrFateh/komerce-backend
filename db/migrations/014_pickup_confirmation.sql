@@ -10,12 +10,12 @@
 --    parcels.pickup_confirmed_by UUID         — quel agent relais a confirmé
 --
 -- 2. DOUBLE CONFIRMATION CASH REVERSE
---    orders.cash_reverse_status        TEXT    — pending | declared | confirmed
---    orders.cash_reverse_declared_at   TIMESTAMPTZ — relais déclare avoir envoyé l'argent
+--    orders.cash_reverse_status        TEXT    — pending | confirmed
+--    orders.cash_reverse_confirmed_at  TIMESTAMPTZ — relais déclare = confirme (auto-engagement)
+--    orders.cash_reverse_confirmed_by  UUID    — id du relais qui a déclaré
 --    orders.cash_reverse_amount_kmf    INTEGER — montant déclaré
---    orders.cash_reverse_notes         TEXT    — référence virement, photo, etc.
---    orders.cash_reverse_confirmed_at  TIMESTAMPTZ — admin valide
---    orders.cash_reverse_confirmed_by  UUID    — quel admin a validé
+--    orders.cash_reverse_method        TEXT    — mvola | orange_money | cash | virement
+--    orders.cash_reverse_notes         TEXT    — référence transaction, numéro, etc.
 --
 -- IMPACT : ZÉRO breaking change. Toutes les colonnes sont nullable avec défaut.
 -- Le flow cash/confirm existant continue à fonctionner (backward compat).
@@ -35,12 +35,13 @@ CREATE INDEX IF NOT EXISTS idx_parcels_pickup_code ON parcels(pickup_code) WHERE
 
 ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS cash_reverse_status       TEXT DEFAULT 'pending'
-    CHECK (cash_reverse_status IN ('pending', 'declared', 'confirmed')),
-  ADD COLUMN IF NOT EXISTS cash_reverse_declared_at  TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS cash_reverse_amount_kmf   INTEGER,
-  ADD COLUMN IF NOT EXISTS cash_reverse_notes        TEXT,
+    CHECK (cash_reverse_status IN ('pending', 'confirmed')),
   ADD COLUMN IF NOT EXISTS cash_reverse_confirmed_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS cash_reverse_confirmed_by UUID REFERENCES users(id);
+  ADD COLUMN IF NOT EXISTS cash_reverse_confirmed_by UUID REFERENCES users(id),
+  ADD COLUMN IF NOT EXISTS cash_reverse_amount_kmf   INTEGER,
+  ADD COLUMN IF NOT EXISTS cash_reverse_method       TEXT
+    CHECK (cash_reverse_method IN ('mvola', 'orange_money', 'cash', 'virement')),
+  ADD COLUMN IF NOT EXISTS cash_reverse_notes        TEXT;
 
 -- Index dashboard — retrouver les reverses en attente de validation
 CREATE INDEX IF NOT EXISTS idx_orders_cash_reverse ON orders(cash_reverse_status)

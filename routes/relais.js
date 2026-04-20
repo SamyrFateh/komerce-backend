@@ -198,28 +198,42 @@ router.post('/handover', authenticate, requireRole(['admin', 'agent_relais']), a
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ② POST /api/relais/declare-reverse — Relais déclare avoir envoyé l'argent
+// ② POST /api/relais/declare-reverse — Relais déclare et confirme le reversement
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// Body : { order_id, amount_kmf, notes }
-//        notes : référence virement, numéro Orange Money, etc.
+// Body : { order_id, amount_kmf, method, notes }
+//   method : 'mvola' | 'orange_money' | 'cash' | 'virement'
+//   notes  : référence transaction, numéro Orange Money, etc.
+//
+// Principe : la déclaration du relais EST la confirmation.
+//   En déclarant, l'agent s'auto-engage et se rend responsable si l'argent
+//   n'arrive pas chez Komerce. Pas de validation admin supplémentaire.
 //
 // Flux :
 //   1. Vérifie que la commande est cash_relais + payment_status = paid
-//   2. Vérifie que le colis est bien collected (sinon erreur)
+//   2. Vérifie que tous les colis sont bien collected
 //   3. Vérifie que le relais est bien celui de la commande
-//   4. cash_reverse_status → 'declared', cash_reverse_declared_at = NOW()
+//   4. cash_reverse_status → 'confirmed' — cycle cash clôturé immédiatement
 //
 router.post('/declare-reverse', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
-    const { order_id, amount_kmf, notes } = req.body;
+    const { order_id, amount_kmf, method, notes } = req.body;
 
-    if (!order_id)    return res.status(400).json({ error: 'order_id requis' });
-    if (!amount_kmf)  return res.status(400).json({ error: 'amount_kmf requis' });
+    if (!order_id)   return res.status(400).json({ error: 'order_id requis' });
+    if (!amount_kmf) return res.status(400).json({ error: 'amount_kmf requis' });
 
-    // Charger la commande
+    const VALID_METHODS = ['mvola', 'orange_money', 'cash', 'virement'];
+    if (!method || !VALID_METHODS.includes(method)) {
+      return res.status(400).json({
+        error: 'method requis',
+        accepted_values: VALID_METHODS,
+        hint: 'Ex: { "method": "mvola" } — comment l\'argent a été envoyé à Komerce',
+      });
+    }
+
+    // Charger la commande + infos relais
     const { rows: [order] } = await db.query(`
-      SELECT o.*, r.agent_name AS relais_agent
+      SELECT o.*, r.agent_name AS relais_agent, r.name AS relais_name
       FROM orders o
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.id = $1
@@ -233,130 +247,67 @@ router.post('/declare-reverse', authenticate, requireRole(['admin', 'agent_relai
 
     if (order.payment_status !== 'paid') {
       return res.status(422).json({
-        error: 'Le paiement du client n\'a pas encore été confirmé (payment_status != paid)',
+        error: 'Le paiement client n\'a pas encore été confirmé (payment_status != paid)',
       });
     }
 
+    // Idempotent — déjà clôturé
     if (order.cash_reverse_status === 'confirmed') {
-      return res.status(409).json({ error: 'Reverse déjà confirmé par l\'admin — doublon ignoré' });
-    }
-
-    if (order.cash_reverse_status === 'declared') {
       return res.status(409).json({
-        error: 'Reverse déjà déclaré — en attente de validation admin',
-        declared_at: order.cash_reverse_declared_at,
+        error: 'Reversement déjà enregistré pour cette commande',
+        confirmed_at: order.cash_reverse_confirmed_at,
       });
     }
 
-    // Vérification relais
+    // Vérification appartenance relais
     if (req.user.role === 'agent_relais' && req.user.relais_id && order.relais_id !== req.user.relais_id) {
       return res.status(403).json({ error: 'Cette commande n\'appartient pas à votre point relais' });
     }
 
-    // Vérifier que le colis a bien été collecté avant de déclarer le reverse
+    // Tous les colis doivent être collected
     const { rows: parcels } = await db.query(
       `SELECT id, status FROM parcels WHERE order_id = $1`, [order_id]
     );
     const allCollected = parcels.length > 0 && parcels.every(p => p.status === 'collected');
     if (!allCollected && parcels.length > 0) {
       return res.status(422).json({
-        error: 'Impossible de déclarer le reverse : au moins un colis n\'est pas encore collecté',
+        error: 'Impossible de clôturer : au moins un colis n\'est pas encore collecté',
         parcels: parcels.map(p => ({ id: p.id, status: p.status })),
       });
     }
 
-    // Mettre à jour
-    await db.query(`
-      UPDATE orders SET
-        cash_reverse_status      = 'declared',
-        cash_reverse_declared_at = NOW(),
-        cash_reverse_amount_kmf  = $2,
-        cash_reverse_notes       = $3,
-        updated_at               = NOW()
-      WHERE id = $1
-    `, [order_id, amount_kmf, notes || null]);
+    const confirmedAt = new Date().toISOString();
 
-    console.log(`[REVERSE] 📣 Reverse déclaré — commande ${order.reference} — ${amount_kmf} KMF — agent: ${req.user.full_name}`);
-
-    res.json({
-      success:      true,
-      message:      'Reverse déclaré — en attente de validation admin',
-      order_ref:    order.reference,
-      amount_kmf:   Number(amount_kmf),
-      declared_at:  new Date().toISOString(),
-      next_step:    'Un admin Komerce va valider la réception de l\'argent sous 48h',
-    });
-
-  } catch (err) { next(err); }
-});
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ③ POST /api/relais/validate-reverse/:orderId — Admin valide la réception du cash
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Deuxième confirmation : un admin Komerce confirme que l'argent est bien arrivé.
-// cash_reverse_status → 'confirmed', cash_reverse_confirmed_at = NOW()
-//
-router.post('/validate-reverse/:orderId', authenticate, requireRole(['admin']), async (req, res, next) => {
-  try {
-    const { orderId } = req.params;
-    const { admin_notes } = req.body;
-
-    const { rows: [order] } = await db.query(
-      `SELECT id, reference, payment_mode, payment_status, cash_reverse_status,
-              cash_reverse_declared_at, cash_reverse_amount_kmf, cash_reverse_notes,
-              relais_id
-       FROM orders WHERE id = $1`,
-      [orderId]
-    );
-
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
-    if (order.payment_mode !== 'cash_relais') {
-      return res.status(422).json({ error: 'Cette commande n\'est pas un paiement cash relais' });
-    }
-
-    if (order.cash_reverse_status !== 'declared') {
-      return res.status(409).json({
-        error: `Impossible de valider : statut reverse = "${order.cash_reverse_status}" (attendu: "declared")`,
-        current_status: order.cash_reverse_status,
-      });
-    }
-
-    // Validation admin
-    const finalNotes = [
-      order.cash_reverse_notes,
-      admin_notes ? `Admin: ${admin_notes}` : null,
-    ].filter(Boolean).join(' | ');
-
+    // Déclaration = confirmation — une seule étape
     await db.query(`
       UPDATE orders SET
         cash_reverse_status       = 'confirmed',
         cash_reverse_confirmed_at = NOW(),
         cash_reverse_confirmed_by = $2,
-        cash_reverse_notes        = $3,
+        cash_reverse_amount_kmf   = $3,
+        cash_reverse_method       = $4,
+        cash_reverse_notes        = $5,
         updated_at                = NOW()
       WHERE id = $1
-    `, [orderId, req.user.id, finalNotes]);
+    `, [order_id, req.user.id, amount_kmf, method, notes || null]);
 
-    console.log(`[REVERSE] ✅ Reverse confirmé — commande ${order.reference} — admin: ${req.user.full_name}`);
+    console.log(`[REVERSE] ✅ ${order.reference} — ${amount_kmf} KMF via ${method} — ${req.user.full_name} (${order.relais_name})`);
 
     res.json({
-      success:          true,
-      message:          'Reverse confirmé — cycle cash relais clôturé',
-      order_ref:        order.reference,
-      amount_kmf:       order.cash_reverse_amount_kmf,
-      declared_at:      order.cash_reverse_declared_at,
-      confirmed_at:     new Date().toISOString(),
-      confirmed_by:     req.user.full_name,
+      success:      true,
+      message:      'Reversement enregistré — cycle cash relais clôturé',
+      order_ref:    order.reference,
+      amount_kmf:   Number(amount_kmf),
+      method,
+      confirmed_at: confirmedAt,
+      confirmed_by: req.user.full_name,
+      commitment:   `${req.user.full_name} (${order.relais_name || 'relais'}) déclare avoir reversé ${amount_kmf} KMF via ${method} — commande ${order.reference}`,
     });
 
   } catch (err) { next(err); }
 });
 
 
-// ═══════════════════════════════════════════════════════════════════════════════
 // ④ POST /api/relais/regenerate-code/:parcelRef — Admin régénère un code expiré
 // ═══════════════════════════════════════════════════════════════════════════════
 //
