@@ -2598,22 +2598,31 @@ body.cart-open{overflow:hidden}
      ══════════════════════════════════════════════════════ */
 
   /* ── A. GLOBAL — prevent sticky-breaking overflow ──── */
-  html, body {
-    overflow-x: clip; /* clip doesn't break fixed positioning, hidden does */
+  /* CRITICAL: html must own the viewport box so body overflow
+     doesn't propagate and break flex containment */
+  html {
+    height: 100vh; height: 100dvh;  /* dvh fallback */
+    overflow: hidden;
+    overscroll-behavior: none;
   }
   body {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    height: 100%;           /* fill html, not viewport directly */
+    min-height: 0;          /* allow flex children to shrink */
     overflow: hidden;
-    padding-bottom: 0;
+    margin: 0;
+    padding: 0;
+    padding-bottom: 0 !important;  /* kill desktop padding-bottom */
   }
   /* Neutralize desktop body overrides that break flex on mobile */
   body.modal-open,
   body.cart-open {
     position: static !important;
     top: auto !important;
-    height: 100dvh;
+    width: auto !important;
+    height: 100% !important;
+    overflow: hidden !important;
   }
 
   /* ── B. HEADER — compact + sticky top ──────────────── */
