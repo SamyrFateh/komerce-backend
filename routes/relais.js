@@ -198,6 +198,117 @@ router.post('/handover', authenticate, requireRole(['admin', 'agent_relais']), a
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// ③ POST /api/relais/validate-payment — Relais confirme l'encaissement cash client
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Body : { ref, amount_kmf }
+//   ref        : référence commande (KOM-...) ou colis (PCL-...)
+//   amount_kmf : montant encaissé par le relais
+//
+// Principe : le relais a reçu l'argent du client en main propre.
+//   En validant, il s'engage sur le montant et débloque la commande.
+//   La commande passe de 'pending' → 'confirmed' → sourcing démarre.
+//
+// Flux :
+//   1. Vérifie payment_mode = 'cash_relais' + status = 'pending'
+//   2. Vérifie appartenance relais (agent ne peut valider que ses commandes)
+//   3. Vérifie cohérence montant (±5% tolérance)
+//   4. payment_status → 'paid', cash_paid_at → NOW(), status → 'confirmed'
+//
+router.post('/validate-payment', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
+  try {
+    const { ref, amount_kmf } = req.body;
+
+    if (!ref)        return res.status(400).json({ error: 'ref (KOM-... ou PCL-...) requis' });
+    if (!amount_kmf) return res.status(400).json({ error: 'amount_kmf requis' });
+
+    // Charger la commande via ref commande ou ref colis
+    let orderQuery, orderParam;
+    if (ref.startsWith('PCL-')) {
+      orderQuery = 'JOIN parcels p ON p.order_id = o.id WHERE p.reference = $1';
+      orderParam = ref;
+    } else {
+      orderQuery = 'WHERE o.reference = $1';
+      orderParam = ref;
+    }
+
+    const { rows: [order] } = await db.query(`
+      SELECT o.*, r.agent_name AS relais_agent, r.name AS relais_name
+      FROM orders o
+      LEFT JOIN relais r ON r.id = o.relais_id
+      ${orderQuery}
+      LIMIT 1
+    `, [orderParam]);
+
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    if (order.payment_mode !== 'cash_relais') {
+      return res.status(422).json({ error: 'Cette commande n\'est pas un paiement cash relais' });
+    }
+
+    // Idempotent — déjà validé
+    if (order.payment_status === 'paid') {
+      return res.status(409).json({
+        error: 'Paiement déjà validé pour cette commande',
+        cash_paid_at: order.cash_paid_at,
+      });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(422).json({
+        error: `Commande non pending (statut actuel : ${order.status})`,
+      });
+    }
+
+    // Vérification appartenance relais
+    if (req.user.role === 'agent_relais' && req.user.relais_id && order.relais_id !== req.user.relais_id) {
+      return res.status(403).json({ error: 'Cette commande n\'appartient pas à votre point relais' });
+    }
+
+    // Tolérance montant ±5%
+    const expected = Number(order.total_kmf);
+    const received = Number(amount_kmf);
+    if (expected > 0) {
+      const diff = Math.abs(received - expected) / expected;
+      if (diff > 0.05) {
+        return res.status(422).json({
+          error: `Montant incohérent : attendu ${expected} KMF, déclaré ${received} KMF (écart > 5%)`,
+          expected_kmf: expected,
+          received_kmf: received,
+        });
+      }
+    }
+
+    const paidAt = new Date().toISOString();
+
+    await db.query(`
+      UPDATE orders SET
+        payment_status          = 'paid',
+        cash_paid_at            = NOW(),
+        cash_reverse_amount_kmf = $2,
+        status                  = 'confirmed',
+        updated_at              = NOW()
+      WHERE id = $1
+    `, [order.id, amount_kmf]);
+
+    console.log(`[CASH] ✅ Paiement validé — ${order.reference} — ${amount_kmf} KMF — ${req.user.full_name} (${order.relais_name})`);
+
+    res.json({
+      success:     true,
+      message:     'Paiement cash validé — commande confirmée et transmise au sourcing',
+      order_ref:   order.reference,
+      amount_kmf:  received,
+      status:      'confirmed',
+      paid_at:     paidAt,
+      validated_by: req.user.full_name,
+      commitment:  `${req.user.full_name} (${order.relais_name || 'relais'}) confirme avoir encaissé ${amount_kmf} KMF en cash du client pour la commande ${order.reference} le ${new Date(paidAt).toLocaleDateString('fr-FR')} à ${new Date(paidAt).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}.`,
+    });
+
+  } catch (err) { next(err); }
+});
+
+
 // ② POST /api/relais/declare-reverse — Relais déclare et confirme le reversement
 // ═══════════════════════════════════════════════════════════════════════════════
 //

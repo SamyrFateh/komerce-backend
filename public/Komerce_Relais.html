@@ -222,7 +222,7 @@
       </button>
       <button class="relais-action-btn" onclick="Relais.showReverse()">
         <span class="emoji">💰</span>
-        Reverser cash
+        💳 Valider paiement
       </button>
     </div>
 
@@ -250,36 +250,26 @@
 
     <!-- Reverse cash section -->
     <div class="reverse-section" id="reverse-section" style="display:none">
-      <h3>💰 Déclarer un reversement cash</h3>
-      <div class="commitment-box" id="reverse-commitment">
+      <h3>💳 Valider paiement cash client</h3>
+      <div class="commitment-box" id="reverse-commitment">Renseignez la référence et le montant pour générer l'engagement.</div>
         Remplissez les champs — votre déclaration sera horodatée et engagera votre responsabilité.
       </div>
       <div class="reverse-field">
         <label>Référence colis (PCL-…) ou commande (KOM-…)</label>
-        <input type="text" id="reverse-ref" placeholder="PCL-2026-00042" style="text-transform:uppercase"
+        <input type="text" id="reverse-ref" placeholder="KOM-2026-0041 ou PCL-2026-00042" style="text-transform:uppercase"
           oninput="Relais.updateCommitment()">
       </div>
       <div class="reverse-field">
         <label>Montant reversé (KMF)</label>
-        <input type="number" id="reverse-amount" placeholder="15000" min="1"
+        <input type="number" id="reverse-amount" placeholder="15000" min="1" step="50"
           oninput="Relais.updateCommitment()">
-      </div>
-      <div class="reverse-field">
-        <label>Moyen de reversement</label>
-        <select id="reverse-method" onchange="Relais.updateCommitment()">
-          <option value="">— Choisir —</option>
-          <option value="mvola">Mvola</option>
-          <option value="orange">Orange Money</option>
-          <option value="cash">Especes</option>
-          <option value="virement">Virement bancaire</option>
-        </select>
       </div>
       <div class="reverse-field">
         <label>Reference du transfert (optionnel)</label>
-        <input type="text" id="reverse-notes" placeholder="Ex : MVL-20260420-8847"
+        <input type="text" id="reverse-notes" placeholder="Ex : nom du porteur, note de remise..."
           oninput="Relais.updateCommitment()">
       </div>
-      <button class="reverse-btn" id="reverse-btn" onclick="Relais.doReverse()">Confirmer le reversement</button>
+      <button class="reverse-btn" id="reverse-btn" onclick="Relais.doReverse()">✅ Valider l'encaissement</button>
       <div id="reverse-result" style="margin-top:12px"></div>
     </div>
 
@@ -438,14 +428,12 @@
     Relais.updateCommitment = function() {
       const ref    = document.getElementById('reverse-ref').value.trim();
       const amount = document.getElementById('reverse-amount').value.trim();
-      const method = document.getElementById('reverse-method').value;
       const notes  = document.getElementById('reverse-notes').value.trim();
-      const labels = { mvola: 'Mvola', orange: 'Orange Money', cash: 'Especes', virement: 'Virement bancaire' };
-      if (ref && amount && method) {
+      if (ref && amount) {
         const now = new Date().toLocaleString('fr-FR');
-        const refPart = notes ? ' — ref. ' + notes : '';
+        const notePart = notes ? ' (' + notes + ')' : '';
         document.getElementById('reverse-commitment').textContent =
-          'Je declare avoir reverse ' + parseInt(amount).toLocaleString() + ' KMF via ' + labels[method] + refPart +
+          'Je declare avoir remis en especes ' + parseInt(amount).toLocaleString() + ' KMF' + notePart +
           ' pour le colis/commande ' + ref.toUpperCase() + '. Declaration : ' + now + '.';
       } else {
         document.getElementById('reverse-commitment').textContent =
@@ -456,12 +444,12 @@
     Relais.doReverse = async function() {
       const ref    = document.getElementById('reverse-ref').value.trim().toUpperCase();
       const amount = parseInt(document.getElementById('reverse-amount').value.trim());
-      const method = document.getElementById('reverse-method').value;
+      const method = 'cash';
       const notes  = document.getElementById('reverse-notes').value.trim();
 
-      if (!ref || !amount || !method) {
+      if (!ref || !amount) {
         document.getElementById('reverse-result').innerHTML =
-          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">Reference, montant et moyen requis.</div>';
+          '<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">Reference et montant requis.</div>';
         return;
       }
 
@@ -473,14 +461,13 @@
       try {
         const body = { ref, amount_kmf: amount, method };
         if (notes) body.notes = notes;
-        const res = await CT.api.post('/api/relais/declare-reverse', body);
+        const res = await CT.api.post('/api/relais/validate-payment', body);
         result.innerHTML =
           '<div style="background:#d1fae5;padding:14px;border-radius:10px">' +
-          '<strong>Reversement enregistre</strong><br>' +
+          '<strong>✅ Paiement validé</strong><br>' +
           '<span style="font-size:13px;color:#065f46">' + (res.commitment || '') + '</span></div>';
         setTimeout(() => {
-          ['reverse-ref','reverse-amount','reverse-notes'].forEach(id => document.getElementById(id).value = '');
-          document.getElementById('reverse-method').value = '';
+          ['reverse-ref','reverse-amount'].forEach(id => document.getElementById(id).value = '');
           Relais.updateCommitment();
           result.innerHTML = '';
           btn.disabled = false;
