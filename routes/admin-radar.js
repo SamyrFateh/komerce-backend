@@ -223,8 +223,8 @@ router.get('/alerts', authenticate, requireAdmin, async (req, res, next) => {
       // mais risque d'abandonner le reste.
       const { rows: partialOrders } = await db.query(`
         SELECT o.id, o.reference, o.created_at, o.total_kmf,
-               array_agg(p.status) AS parcel_statuses,
-               array_agg(p.id) AS parcel_ids
+               COALESCE(json_agg(p.status), '[]'::json) AS parcel_statuses,
+               COALESCE(json_agg(p.id), '[]'::json) AS parcel_ids
         FROM orders o
         JOIN parcels p ON p.order_id = o.id
         WHERE o.status NOT IN ('cancelled', 'refunded')
@@ -581,7 +581,7 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
           o.created_at,
           u.full_name AS recipient_name,
           u.phone AS recipient_phone,
-          array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
+          COALESCE(json_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL), '[]'::json) AS parcel_statuses
         FROM orders o
         LEFT JOIN users u ON u.id = o.user_id
         LEFT JOIN parcels p ON p.order_id = o.id
@@ -682,7 +682,7 @@ router.get('/orders-by-detail/:detail', authenticate, requireAdmin, async (req, 
         o.id, o.reference, o.total_kmf, o.status AS order_status,
         o.created_at, u.full_name AS recipient_name, u.phone AS recipient_phone,
         o.payment_mode,
-        array_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL) AS parcel_statuses
+        COALESCE(json_agg(p.status ORDER BY p.status) FILTER (WHERE p.id IS NOT NULL), '[]'::json) AS parcel_statuses
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN parcels p ON p.order_id = o.id
