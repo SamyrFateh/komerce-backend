@@ -1205,11 +1205,6 @@ body.cart-open{overflow:hidden}
 .k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark);flex-shrink:0}
 .k-modal-suggestions h3{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-muted)}
 
-/* ── MOBILE: full-screen modal, no overlay dim (Temu-style) ── */
-@media(max-width:599px){
-  .k-modal-overlay{background:none}
-}
-
 /* ── DESKTOP 600+: 2-column grid ── */
 @media(min-width:600px){
   .k-modal{max-width:560px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}
@@ -2677,181 +2672,180 @@ body.cart-open{overflow:hidden}
   .k-promo-rail-inner {
     display: flex;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 8px;
     padding: 0 8px;
     width: max-content;
     animation: none;
     transform: none;
     align-items: stretch;
   }
-  /* Promo cards: same width as product grid cards.
-     Both = (100vw - 24px) / 3.
-     Rail: 8px left-pad + 3×card + 2×6px gap = 100vw - 4px (no peek) */
+  /* Promo cards: ~2.5 visible → hints at scroll.
+     Width = (100vw - 16px - 2×8px) / 2.5 ≈ 144px on 390px phone.
+     Bigger than 3-col, readable text, premium feel. */
   .k-promo-card {
-    flex: 0 0 calc((100vw - 24px) / 3);
-    width: calc((100vw - 24px) / 3);
-    min-width: calc((100vw - 24px) / 3);
-    max-width: calc((100vw - 24px) / 3);
+    flex: 0 0 calc((100vw - 32px) / 2.5);
+    width: calc((100vw - 32px) / 2.5);
+    min-width: calc((100vw - 32px) / 2.5);
+    max-width: calc((100vw - 32px) / 2.5);
     scroll-snap-align: start;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     background: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
     position: relative;
   }
   .k-promo-card-img {
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 10px 10px 0 0;
+    border-radius: 12px 12px 0 0;
     display: block;
     animation: none;
-    background: #f0f0f0;
+    background: #faf8f5;
   }
   .k-promo-badge {
     position: absolute;
-    top: 4px;
-    left: 4px;
+    top: 6px;
+    left: 6px;
     font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 50px;
     z-index: 2;
   }
   .k-promo-card-info {
-    padding: 2px 3px 3px;
+    padding: 4px 6px 6px;
   }
   .k-promo-card-name {
-    font-size: 9px;
-    line-height: 1.2;
-    -webkit-line-clamp: 1;
+    font-size: 11px;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
   }
   .k-promo-card-prices {
     display: flex;
     align-items: baseline;
-    gap: 3px;
-    margin-top: 1px;
+    gap: 4px;
+    margin-top: 2px;
   }
   .k-promo-card-price {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--coral, #e64a19);
-    line-height: 1;
+    line-height: 1.2;
   }
   .k-promo-card-old {
-    font-size: 8px;
+    font-size: 9px;
     text-decoration: line-through;
     color: #aaa;
-    line-height: 1;
+    line-height: 1.2;
   }
 
-  /* ── H. CATALOGUE GRID — 3 columns compact (matches promo rhythm) ── */
+  /* ── H. CATALOGUE GRID — 2 columns premium (desktop harmony) ── */
   #k-catalog-section {
-    padding: 2px 0 0;
+    padding: 4px 0 0;
     margin: 0;
     overflow: visible;
   }
   #k-catalog-section .k-section-head {
-    padding: 0 12px 4px;
+    padding: 0 12px 6px;
   }
   .k-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 0 4px 12px 8px;  /* left 8 = aligns with promo rail, right 4 → card = (100vw-24)/3 */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 0 8px 12px;
   }
   .k-card {
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
     background: #fff;
   }
   .k-card-img-wrap {
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    padding: 0;
+    background: #faf8f5;
   }
   .k-card-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    padding: 0;
-    border-radius: 0;
+    object-fit: contain;
+    padding: 6px;
   }
   .k-card-info {
-    padding: 2px 3px 3px;
+    padding: 6px 8px 8px;
   }
   .k-card-name {
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 600;
-    line-height: 1.2;
-    -webkit-line-clamp: 1;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 1px;
+    min-height: 2.5em;
   }
   .k-card-prices-row {
     display: flex;
     align-items: baseline;
-    gap: 3px;
-    margin-top: 1px;
+    gap: 4px;
+    margin-top: 3px;
   }
   .k-card-price {
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--text);
-    line-height: 1;
+    line-height: 1.2;
   }
   .k-card-old-price {
-    font-size: 8px;
+    font-size: 10px;
     text-decoration: line-through;
     color: #aaa;
-    line-height: 1;
+    line-height: 1.2;
   }
   .k-card-promo {
-    font-size: 8px;
-    padding: 1px 5px;
-    top: 4px;
-    left: 4px;
+    font-size: 9px;
+    padding: 2px 6px;
+    top: 6px;
+    left: 6px;
   }
   .k-card-add {
-    width: 26px;
-    height: 26px;
-    bottom: 4px;
-    right: 4px;
-    background-size: 70%;
+    width: 34px;
+    height: 34px;
+    bottom: 6px;
+    right: 6px;
+    background-size: 72%;
   }
   .k-card-add.in-cart {
-    width: 64px;
-    border-radius: 12px;
-    padding: 0 4px;
+    width: 72px;
+    border-radius: 14px;
+    padding: 0 5px;
   }
   .k-add-minus, .k-add-plus-ic {
-    width: 18px;
-    height: 18px;
-    font-size: 13px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
   }
   .k-add-qty {
-    font-size: 9px;
-    min-width: 14px;
+    font-size: 10px;
+    min-width: 16px;
   }
   .k-card-fav {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
-    top: 4px;
-    right: 4px;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    top: 6px;
+    right: 6px;
   }
   .k-card-bottom {
-    gap: 3px;
-    margin-top: 1px;
+    gap: 4px;
+    margin-top: 3px;
   }
   .k-card-prices {
-    gap: 4px;
+    gap: 5px;
   }
 
   /* ── I. BOTTOM NAV — fixed ─────────────────────────── */
@@ -2906,8 +2900,8 @@ body.cart-open{overflow:hidden}
     padding: 10px 20px;
     margin: 8px auto 16px;
   }
-  .k-section-head h2 { font-size: 14px; }
-  .k-see-all { font-size: 11px; }
+  .k-section-head h2 { font-size: 16px; }
+  .k-see-all { font-size: 12px; }
 
 
   /* Cart drawer: leave room for bottom nav */
