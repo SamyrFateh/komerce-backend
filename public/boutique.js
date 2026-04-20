@@ -2518,14 +2518,28 @@ async function submitOrder(btn) {
       favEl.after(el);
     }
 
-    const otpState = { phone: '' };
+    const otpState = { phone: '', mode: 'quick' };
 
     el.innerHTML = `
-      <h2>📦 Suivi & Historique</h2>
+      <h2>📦 Suivi de commande</h2>
 
-      <!-- Étape 1 : identification par téléphone -->
-      <div id="k-otp-step1">
-        <p class="k-otp-hint">Entrez votre numéro de téléphone pour recevoir un code par WhatsApp et accéder à vos commandes.</p>
+      <!-- Mode 1 : Tracking rapide (4 derniers chiffres) -->
+      <div id="k-track-quick">
+        <p class="k-otp-hint">Entrez les 4 derniers chiffres de votre commande</p>
+        <div class="k-track-form">
+          <div class="k-track-ref-wrap">
+            <span class="k-track-ref-prefix">KMR-2025-</span>
+            <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="numeric" placeholder="0042" maxlength="4" autocomplete="off">
+          </div>
+          <button class="k-track-btn" id="k-track-quick-btn">🔍 Suivre</button>
+        </div>
+        <div class="k-otp-divider"><span>ou</span></div>
+        <button class="k-track-btn k-track-btn--ghost" id="k-track-history-toggle">📋 Voir tout mon historique</button>
+      </div>
+
+      <!-- Mode 2 : Historique complet (OTP WhatsApp) -->
+      <div id="k-track-otp" style="display:none">
+        <p class="k-otp-hint">Entrez votre numéro pour recevoir un code WhatsApp et voir toutes vos commandes.</p>
         <div class="k-track-form">
           <div class="k-track-phone-wrap">
             <select id="k-otp-country" class="k-track-country">
@@ -2543,14 +2557,10 @@ async function submitOrder(btn) {
           </div>
           <button class="k-track-btn" id="k-otp-request-btn">📲 Envoyer le code</button>
         </div>
-        <div class="k-otp-divider"><span>ou</span></div>
-        <div class="k-track-form">
-          <input class="k-track-input" id="k-otp-ref" type="text" placeholder="Référence : KMR-2025-0042" autocomplete="off" style="text-transform:uppercase">
-          <button class="k-track-btn k-track-btn--ghost" id="k-otp-ref-btn">Suivre sans code</button>
-        </div>
+        <button class="k-track-btn k-track-btn--ghost" id="k-track-back-quick" style="margin-top:8px">← Suivi rapide</button>
       </div>
 
-      <!-- Étape 2 : saisie OTP WhatsApp -->
+      <!-- OTP Step 2 : saisie code -->
       <div id="k-otp-step2" style="display:none">
         <div class="k-otp-sent-banner">
           📲 Code WhatsApp envoyé au <strong id="k-otp-phone-display"></strong><br>
@@ -2561,24 +2571,61 @@ async function submitOrder(btn) {
         <button class="k-otp-resend-btn" id="k-otp-resend-btn">Renvoyer le code</button>
       </div>
 
-      <!-- Étape 3 : résultats -->
+      <!-- Résultats -->
       <div id="k-otp-step3" style="display:none">
         <div id="k-orders-list"></div>
         <button class="k-otp-resend-btn" id="k-otp-back-btn" style="margin-top:16px">← Nouvelle recherche</button>
       </div>`;
 
-    /* Helper: build full E.164 phone from inputs */
+    /* ── Tracking rapide : lookup par référence ── */
+    const digitsInput = el.querySelector('#k-track-digits');
+
+    // Auto-submit on 4 digits
+    digitsInput.addEventListener('input', () => {
+      digitsInput.value = digitsInput.value.replace(/\D/g, '').slice(0, 4);
+      if (digitsInput.value.length === 4) {
+        el.querySelector('#k-track-quick-btn').click();
+      }
+    });
+
+    el.querySelector('#k-track-quick-btn').addEventListener('click', async () => {
+      const digits = digitsInput.value.replace(/\D/g, '');
+      if (digits.length !== 4) { showToast('Entrez 4 chiffres.', 'error'); return; }
+      const ref = 'KMR-2025-' + digits.padStart(4, '0');
+      const btn = el.querySelector('#k-track-quick-btn');
+      btn.disabled = true; btn.textContent = '⏳ Recherche…';
+      try {
+        const data = await apiGet('/api/orders/' + encodeURIComponent(ref));
+        el.querySelector('#k-track-quick').style.display = 'none';
+        el.querySelector('#k-otp-step3').style.display = 'block';
+        renderOrderDetail(data.order || data, el.querySelector('#k-orders-list'));
+      } catch(e) {
+        showToast('Commande introuvable. Vérifiez les 4 chiffres.', 'error');
+        btn.disabled = false; btn.textContent = '🔍 Suivre';
+      }
+    });
+
+    /* ── Toggle entre tracking rapide et historique OTP ── */
+    el.querySelector('#k-track-history-toggle').addEventListener('click', () => {
+      el.querySelector('#k-track-quick').style.display = 'none';
+      el.querySelector('#k-track-otp').style.display = 'block';
+    });
+
+    el.querySelector('#k-track-back-quick').addEventListener('click', () => {
+      el.querySelector('#k-track-otp').style.display = 'none';
+      el.querySelector('#k-track-quick').style.display = 'block';
+    });
+
+    /* ── OTP : request code ── */
     function getFullPhone() {
       const countryCode = el.querySelector('#k-otp-country').value;
       let digits = (el.querySelector('#k-otp-phone').value || '').replace(/\D/g, '');
-      // Strip leading 0 for countries that use it
       if (['+33','+262','+32','+41','+44','+971','+212'].includes(countryCode) && digits.startsWith('0')) {
         digits = digits.slice(1);
       }
       return countryCode + digits;
     }
 
-    /* ── Step 1a : request OTP by phone (WhatsApp) ── */
     el.querySelector('#k-otp-request-btn').addEventListener('click', async () => {
       const phone = getFullPhone();
       const digits = phone.replace(/^\+\d+/, '');
@@ -2589,7 +2636,7 @@ async function submitOrder(btn) {
         await apiPost('/api/auth/otp/request', { phone });
         otpState.phone = phone;
         el.querySelector('#k-otp-phone-display').textContent = phone;
-        el.querySelector('#k-otp-step1').style.display = 'none';
+        el.querySelector('#k-track-otp').style.display = 'none';
         el.querySelector('#k-otp-step2').style.display = 'block';
         showToast('📲 Code WhatsApp envoyé !', 'success');
       } catch(e) {
@@ -2599,35 +2646,15 @@ async function submitOrder(btn) {
       }
     });
 
-    /* ── Step 1b : direct reference lookup (no auth) ── */
-    el.querySelector('#k-otp-ref-btn').addEventListener('click', async () => {
-      const ref = el.querySelector('#k-otp-ref').value.trim().toUpperCase();
-      if (!ref) { showToast('Entrez une référence de commande.', 'error'); return; }
-      const btn = el.querySelector('#k-otp-ref-btn');
-      btn.disabled = true; btn.textContent = '⏳ Recherche…';
-      try {
-        const data = await apiGet('/api/orders/public/' + encodeURIComponent(ref));
-        el.querySelector('#k-otp-step1').style.display = 'none';
-        el.querySelector('#k-otp-step3').style.display = 'block';
-        renderOrderDetail(data.order || data, el.querySelector('#k-orders-list'));
-      } catch(e) {
-        showToast('Référence introuvable.', 'error');
-        btn.disabled = false; btn.textContent = 'Suivre sans code';
-      }
-    });
-
-    /* ── Step 2 : verify OTP → then fetch orders from /client/tracking ── */
+    /* ── OTP : verify code ── */
     el.querySelector('#k-otp-verify-btn').addEventListener('click', async () => {
       const code = el.querySelector('#k-otp-code').value.replace(/\s/g, '');
       if (code.length < 4) { showToast('Entrez le code complet.', 'error'); return; }
       const btn = el.querySelector('#k-otp-verify-btn');
       btn.disabled = true; btn.textContent = '⏳ Vérification…';
       try {
-        // Verify OTP — sets kmrc_client cookie
         const verifyResult = await apiPost('/api/auth/otp/verify', { phone: otpState.phone, code });
         showToast('✅ Vérifié — chargement de vos commandes…', 'success');
-
-        // Fetch orders using the JWT cookie
         try {
           const trackingData = await apiGet('/api/client/tracking');
           el.querySelector('#k-otp-step2').style.display = 'none';
@@ -2639,7 +2666,6 @@ async function submitOrder(btn) {
           }));
           renderOrdersHistory(orders, el.querySelector('#k-orders-list'));
         } catch(trackErr) {
-          // Fallback: show verification success even if tracking fails
           el.querySelector('#k-otp-step2').style.display = 'none';
           el.querySelector('#k-otp-step3').style.display = 'block';
           el.querySelector('#k-orders-list').innerHTML = `
@@ -2655,7 +2681,7 @@ async function submitOrder(btn) {
       }
     });
 
-    /* ── Step 2 : resend ── */
+    /* ── OTP : resend ── */
     let resendTimer = null;
     el.querySelector('#k-otp-resend-btn').addEventListener('click', async () => {
       const btn = el.querySelector('#k-otp-resend-btn');
@@ -2676,7 +2702,7 @@ async function submitOrder(btn) {
       }
     });
 
-    /* ── Step 3 : back ── */
+    /* ── Back button ── */
     el.querySelector('#k-otp-back-btn').addEventListener('click', () => renderTrackView());
   }
 

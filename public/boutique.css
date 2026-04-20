@@ -1730,6 +1730,22 @@ body{
 .k-track-input--phone{
   flex:1;min-width:0;
 }
+.k-track-ref-wrap{
+  display:flex;align-items:center;gap:0;width:100%;
+  border:1.5px solid var(--sand-dark);border-radius:8px;
+  overflow:hidden;background:var(--white);transition:border-color .2s;
+}
+.k-track-ref-wrap:focus-within{border-color:var(--coral)}
+.k-track-ref-prefix{
+  flex:0 0 auto;padding:12px 2px 12px 14px;
+  font-size:15px;font-weight:600;color:var(--text);
+  white-space:nowrap;user-select:none;
+}
+.k-track-input--ref{
+  flex:1;min-width:0;border:none;outline:none;
+  padding:12px 14px 12px 0;font-size:18px;font-weight:700;
+  letter-spacing:4px;font-family:inherit;background:transparent;
+}
 .k-track-btn{
   width:100%;margin-top:12px;padding:13px;
   background:var(--text);color:white;border:none;
