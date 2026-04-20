@@ -248,6 +248,36 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     const order = rows[0];
 
+    // [P1-5] Check cross-relais défensif.
+    // Un agent_relais ne peut valider que les paiements de SON relais.
+    // Admin = exempté (peut valider n'importe quelle commande).
+    // Si users.relais_id n'existe pas en DB (BUG-016), on log un warning mais on laisse passer
+    // — à durcir quand la colonne sera ajoutée.
+    if (req.user.role === 'agent_relais') {
+      try {
+        const { rows: [agent] } = await client.query(
+          'SELECT relais_id FROM users WHERE id = $1',
+          [req.user.id]
+        );
+        if (agent && agent.relais_id) {
+          if (String(agent.relais_id) !== String(order.relais_id)) {
+            await client.query('ROLLBACK');
+            console.warn(`[CASH-CONFIRM] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agent.relais_id}) a tenté de valider commande ${order.reference} (relais ${order.relais_id})`);
+            return res.status(403).json({
+              error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
+            });
+          }
+        } else {
+          // Colonne users.relais_id absente ou user sans relais_id → on log mais on laisse passer
+          console.warn(`[CASH-CONFIRM] ⚠️  Agent ${req.user.id} sans relais_id — check cross-relais désactivé (colonne absente ou user non configuré)`);
+        }
+      } catch (e) {
+        // Si la colonne users.relais_id n'existe pas, la query throw "column does not exist"
+        // On log et on continue (comportement actuel) — à activer en strict quand la colonne existera.
+        console.warn(`[CASH-CONFIRM] ⚠️  Check cross-relais impossible : ${e.message}`);
+      }
+    }
+
     // Step 1: pending → confirmed (payment received)
     // State machine auto-sets payment_status = 'paid'
     const confirmResult = await transitionOrderStatus({

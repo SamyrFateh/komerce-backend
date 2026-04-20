@@ -67,13 +67,14 @@ const WEAK_PASSWORDS = new Set([
 // ── Parsing des arguments ──────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const opts = { email: DEFAULT_ADMIN_EMAIL, password: null, create: false, check: false };
+  const opts = { email: DEFAULT_ADMIN_EMAIL, password: null, create: false, check: false, insecureSsl: false };
   for (let i = 2; i < argv.length; i++) {
     switch (argv[i]) {
-      case '--email':    opts.email    = argv[++i]; break;
-      case '--password': opts.password = argv[++i]; break;
-      case '--create':   opts.create   = true;      break;
-      case '--check':    opts.check    = true;      break;
+      case '--email':        opts.email       = argv[++i]; break;
+      case '--password':     opts.password    = argv[++i]; break;
+      case '--create':       opts.create      = true;      break;
+      case '--check':        opts.check       = true;      break;
+      case '--insecure-ssl': opts.insecureSsl = true;      break;   // [P1-4]
       case '--help':
       case '-h':
         printUsage();
@@ -97,6 +98,7 @@ Options:
   --password <pwd>     Nouveau mot de passe (sinon saisie interactive)
   --create             Crée l'admin s'il n'existe pas
   --check              Vérifie l'existence sans modifier
+  --insecure-ssl       Skip la vérification TLS (dépannage uniquement)
   --help, -h           Affiche cette aide
 
 Exemples:
@@ -225,11 +227,25 @@ async function main() {
     process.exit(1);
   }
 
+  // [P1-4] SSL strict par défaut. Les providers cloud (Railway, Neon, Supabase, AWS RDS)
+  // utilisent des CAs valides — pas besoin de skip la vérification en temps normal.
+  // Si un certificat self-signed est nécessaire (rare), passer --insecure-ssl explicitement.
+  const isCloudDb = /amazonaws|railway|neon|supabase/i.test(process.env.DATABASE_URL || '');
+  const insecureSsl = opts.insecureSsl || process.env.DB_INSECURE_SSL === 'true';
+
+  let sslConfig = false;
+  if (isCloudDb) {
+    sslConfig = insecureSsl
+      ? { rejectUnauthorized: false }       // explicite, sur demande
+      : { rejectUnauthorized: true };       // strict (défaut)
+    if (insecureSsl) {
+      console.warn(`[${ts}] ⚠️  SSL en mode insecure (rejectUnauthorized: false) — à n'utiliser qu'en dépannage.`);
+    }
+  }
+
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: /amazonaws|railway|neon|supabase/i.test(process.env.DATABASE_URL)
-      ? { rejectUnauthorized: false }
-      : false,
+    ssl: sslConfig,
   });
 
   try {

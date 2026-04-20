@@ -58,39 +58,56 @@ router.post('/ship', ...guard, async (req, res, next) => {
       return res.status(400).json({ error: `Colis en statut "${parcel.status}" — doit être "shipped" pour confirmer le transit` });
     }
 
-    // 2. Update parcel status: shipped → in_transit
-    await db.query(
-      `UPDATE parcels SET status = 'in_transit', updated_at = NOW() WHERE id = $1`,
-      [parcel_id]
-    );
+    // [P1-2] Cohérence transactionnelle parcel + order.
+    // Avant : UPDATE parcel direct puis try/catch order (non-bloquant) → divergence possible
+    //         (parcel en in_transit avec order encore shipped si state machine order refuse)
+    // Après : transaction atomique. Si l'order ne peut pas transiter, le parcel reste shipped.
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
 
-    // 3. Update order status via state machine
-    if (parcel.order_id) {
-      try {
-        await transitionOrderStatus({
+      // 2. Transition order via state machine EN PREMIER (source of truth)
+      //    Si elle refuse, on rollback et on n'a rien touché.
+      if (parcel.order_id) {
+        const orderResult = await transitionOrderStatus({
           orderId: parcel.order_id,
           newStatus: 'in_transit',
           actor: { id: req.user.id, role: req.user.role },
           source: 'transitaire_ship',
           note: notes || 'Transit confirmé par transitaire',
+          dbClient: client,
         });
-      } catch (e) {
-        console.warn('[TRANSITAIRE] Order transition warning:', e.message);
-        // Non-blocking — parcel status already updated
-      }
-    }
 
-    // 4. Log scan event (best effort — don't fail if table issues)
-    try {
-      await db.query(`
+        if (!orderResult.success && !orderResult.noop) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: `Transition order refusée : ${orderResult.error}`,
+            current_status: orderResult.previousStatus,
+          });
+        }
+      }
+
+      // 3. Update parcel status: shipped → in_transit (dans la même transaction)
+      await client.query(
+        `UPDATE parcels SET status = 'in_transit', updated_at = NOW() WHERE id = $1`,
+        [parcel_id]
+      );
+
+      // 4. Log scan event (dans la transaction — pas "best effort" séparé)
+      await client.query(`
         INSERT INTO scan_events (parcel_id, order_id, event_type, actor_name, actor_role, location, notes, status)
         VALUES ($1, $2, 'transit_confirmed', $3, $4, 'transitaire', $5, 'applied')
       `, [parcel_id, parcel.order_id, req.user.full_name || req.user.email, req.user.role, notes || 'Transit confirmé']);
-    } catch (e) {
-      console.warn('[TRANSITAIRE] Scan event log warning:', e.message);
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
 
-    // 5. WhatsApp notification (best effort)
+    // 5. WhatsApp notification (après COMMIT, fire-and-forget)
     try {
       const { notifyParcelScan } = require('../services/notification-service');
       notifyParcelScan(parcel_id, parcel.reference, 'in_transit')

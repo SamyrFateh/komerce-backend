@@ -2,6 +2,7 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');          // [P1-3] Hash des codes OTP
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
@@ -12,6 +13,7 @@ const OTP_LENGTH = 6;
 const OTP_EXPIRY_MIN = 10;
 const MAX_ATTEMPTS = 5;       // Max verify attempts per OTP
 const RATE_LIMIT_MIN = 2;     // Min interval between OTP requests
+const OTP_BCRYPT_ROUNDS = 8;  // [P1-3] 8 rounds = équilibre sécu/perf (OTP expire en 10min)
 
 /**
  * POST /api/auth/otp/request
@@ -79,11 +81,16 @@ router.post('/request', async (req, res) => {
       [phone]
     );
 
-    // Store OTP
+    // [P1-3] Hash du code avant stockage DB (ne jamais stocker en clair)
+    // La colonne `code` en DB continue d'être utilisée, mais contient désormais le hash bcrypt.
+    // La migration DB n'est pas requise : bcrypt hash fait ~60 chars, VARCHAR(64) ou TEXT supporte.
+    const codeHash = await bcrypt.hash(code, OTP_BCRYPT_ROUNDS);
+
+    // Store OTP (code hashé)
     await pool.query(
       `INSERT INTO otp_codes (phone, code, expires_at, attempts, created_at)
        VALUES ($1, $2, $3, 0, NOW())`,
-      [phone, code, expiresAt]
+      [phone, codeHash, expiresAt]
     );
 
     // [P0-1] Envoi OTP via canal générique (WhatsApp Meta + fallback SMS)
@@ -160,8 +167,9 @@ router.post('/verify', async (req, res) => {
     // Increment attempts
     await pool.query(`UPDATE otp_codes SET attempts = attempts + 1 WHERE id = $1`, [otp.id]);
 
-    // Verify code
-    if (otp.code !== code) {
+    // [P1-3] Verify code via bcrypt.compare (code stocké en DB est un hash)
+    const codeMatches = await bcrypt.compare(code, otp.code);
+    if (!codeMatches) {
       const remaining = MAX_ATTEMPTS - otp.attempts - 1;
       return res.status(401).json({
         success: false,
