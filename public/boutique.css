@@ -423,52 +423,81 @@ body{
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Container ── */
+/* ── Categories shell (fades) ── */
+.k-cats-shell {
+  position: relative;
+}
+.k-cats-wrap-fade-left,
+.k-cats-wrap-fade-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 2;
+}
+.k-cats-wrap-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--sand) 35%, transparent);
+}
+.k-cats-wrap-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--sand) 35%, transparent);
+}
+
 .k-cats {
   display: flex;
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
-  padding: 10px 12px;
-  align-items: center;
+  padding: 10px 16px 12px;
+  align-items: stretch;
   justify-content: flex-start;
+  overscroll-behavior-x: contain;
 }
 .k-cats::-webkit-scrollbar { display: none; }
+.k-cats::before,
+.k-cats::after {
+  content: "";
+  flex: 0 0 2px;
+}
 
-/* ── Chip: circle layout (base = mobile) ── */
+/* ── Chip: mobile-first (Temu-style) ── */
 .k-chip {
   flex: 0 0 auto;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 4px 2px;
-  min-width: 56px;
-  max-width: 72px;
+  min-width: 78px;
+  max-width: 78px;
+  padding: 0;
+  gap: 6px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 16px;
   cursor: pointer;
   white-space: normal;
   text-align: center;
-  transition: transform .15s ease;
+  transition: transform .18s ease, opacity .18s ease;
   scroll-snap-align: start;
 }
 
 /* ── Photo circle ── */
 .k-chip-photo {
   position: relative;
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
-  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  margin: 0 auto;
+  border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1.5px solid #d4d4d4;
+  border: 1px solid rgba(0,0,0,.06);
   background: #f8f8f8;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -478,6 +507,7 @@ body{
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 18px;
 }
 .k-chip-photo > span {
   display: flex;
@@ -528,26 +558,30 @@ body{
 /* ── Label ── */
 .k-chip-label {
   font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-weight: 700;
+  line-height: 1.15;
+  max-width: 74px;
+  margin: 0 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
   color: var(--text-muted, #666);
 }
 
-/* ── Active state (mobile: only circle changes) ── */
+/* ── Active state (mobile) ── */
+.k-chip.active {
+  transform: translateY(-1px) scale(1.02);
+}
 .k-chip.active .k-chip-photo {
-  background: var(--ocean-dark, #1f3024);
-  border-color: var(--ocean-dark, #1f3024);
+  border-color: var(--ocean-dark);
+  box-shadow: 0 6px 14px rgba(74,144,64,.18);
 }
 .k-chip.active .k-chip-emoji {
   background: var(--ocean-dark, #1f3024);
   border-color: var(--ocean-dark, #1f3024);
   color: #fff;
 }
-.k-chip.active .k-chip-label { color: var(--ocean-dark, #1f3024); font-weight: 700; }
+.k-chip.active .k-chip-label { color: var(--ocean-dark); font-weight: 700; }
 .k-chip:active { transform: scale(.95); }
 
 /* ── Desktop: circle layout ── */
@@ -614,17 +648,19 @@ body{
   transition: max-height .3s cubic-bezier(.22,1,.36,1), opacity .2s ease;
 }
 #k-subcats-wrap.k-subcats-visible {
-  max-height: 40px;
+  max-height: 46px;
   opacity: 1;
 }
 .k-subcats-rail {
   display: flex;
-  gap: 6px;
-  padding: 4px 10px 6px;
+  gap: 8px;
+  padding: 6px 16px 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
-  background: linear-gradient(to bottom, rgba(255,255,255,.92), rgba(253,250,245,.88));
+  overscroll-behavior-x: contain;
+  background: linear-gradient(to bottom, rgba(255,255,255,.98), rgba(253,250,245,.96));
   border-top: 1px solid rgba(0,0,0,.03);
 }
 .k-subcats-rail::-webkit-scrollbar { display: none; }
@@ -632,10 +668,12 @@ body{
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 3px 8px 3px 5px;
-  background: rgba(245,243,238,.55);
+  scroll-snap-align: start;
+  padding: 6px 10px;
+  background: #fff;
   border: 1px solid rgba(0,0,0,.06);
-  border-radius: 14px;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
   cursor: pointer;
   transition: all .18s ease;
   -webkit-tap-highlight-color: transparent;
@@ -648,17 +686,17 @@ body{
   line-height: 1;
 }
 .k-subchip-label {
-  font-size: 10px; font-weight: 600;
+  font-size: 11px; font-weight: 700;
   color: var(--text-muted);
   transition: color .18s ease;
 }
 .k-subchip.active {
-  background: rgba(74,144,64,.12);
+  background: var(--ocean-dark);
   border-color: var(--ocean-dark);
   box-shadow: 0 1px 4px rgba(74,144,64,.12);
 }
 .k-subchip.active .k-subchip-label {
-  color: var(--ocean-dark);
+  color: #fff;
   font-weight: 700;
 }
 @keyframes k-subchip-in {
@@ -3088,5 +3126,53 @@ body.cart-open{overflow:hidden}
     image-rendering: auto;
     -webkit-image-rendering: auto;
   }
+}
+/* ── Card mini tabs (Shein-style) ── */
+.k-card-info {
+  display: flex;
+  flex-direction: column;
+}
+.k-card-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.k-card-tabs::-webkit-scrollbar { display: none; }
+.k-card-tab {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f7f6f2;
+  border: 1px solid rgba(0,0,0,.06);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.k-card-tab.active {
+  background: var(--ocean-dark);
+  color: #fff;
+  border-color: var(--ocean-dark);
+}
+.k-card-panels {
+  margin-top: 7px;
+  min-height: 28px;
+  max-width: 100%;
+}
+.k-card-panel {
+  display: none;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.k-card-panel.active {
+  display: -webkit-box;
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
