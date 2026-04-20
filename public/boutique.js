@@ -1917,11 +1917,23 @@ function quickRemove(productId, btnEl) {
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
+    // FIX CRITIQUE : masquer la bottom nav en inline (sans dépendre du CSS)
+    const bnav = document.getElementById('k-bnav');
+    if (bnav) {
+      bnav.dataset.savedDisplay = bnav.style.display || '';
+      bnav.style.display = 'none';
+    }
   }
 
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
     document.body.classList.remove('cart-open');
+    // FIX : restaurer la bottom nav
+    const bnav = document.getElementById('k-bnav');
+    if (bnav) {
+      bnav.style.display = bnav.dataset.savedDisplay || '';
+      delete bnav.dataset.savedDisplay;
+    }
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
