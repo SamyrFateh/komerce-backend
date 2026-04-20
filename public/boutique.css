@@ -2999,6 +2999,7 @@ body.cart-open{overflow:hidden}
 
   #k-page-scroll {
     position: fixed;
+    top: calc(44px + clamp(110px, 28vw, 150px) + 52px);
     left: 0;
     right: 0;
     bottom: 0;
@@ -3006,7 +3007,7 @@ body.cart-open{overflow:hidden}
     -webkit-overflow-scrolling: touch;
     z-index: 1;
     padding-bottom: 56px; /* space for bottom nav */
-    /* top is set dynamically by JS based on wrap height */
+    /* JS may refine top after measuring actual wrap height */
   }
 
   #k-bar-spacer {
