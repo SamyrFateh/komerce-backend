@@ -751,6 +751,12 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 039: descriptions updated to French');
       } catch(e) { console.warn('Migration 039 (non-fatal):', e.message); }
 
+      // ── Migration 041: make email nullable for guest checkout ──
+      try {
+        await pool.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL;`);
+        console.log('✅ Migration 041: users.email now nullable (guest checkout)');
+      } catch(e) { console.warn('Migration 041 (non-fatal):', e.message); }
+
       // ── Migration 040: users phone_payer + phone_beneficiary columns ──
       try {
         await pool.query(`
