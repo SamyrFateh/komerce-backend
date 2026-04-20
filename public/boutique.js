@@ -253,19 +253,8 @@
 
   /* ── MOBILE SCROLL TOP RECALC ────────────────────────── */
   function _updateMobileScrollTop() {
-    if (window.innerWidth > 899) return;
-    var doUpdate = function() {
-      var w = document.getElementById('k-hero-fixed-wrap');
-      var s = document.getElementById('k-page-scroll');
-      if (w && s) {
-        var top = w.offsetHeight + 44;
-        if (top > 44) s.style.top = top + 'px'; // only set if wrap has real height
-      }
-    };
-    requestAnimationFrame(doUpdate);
-    setTimeout(doUpdate, 300);
-    setTimeout(doUpdate, 800);  // extra delay for slow image loads
-    setTimeout(doUpdate, 1500); // safety net
+    // Layout is 100% CSS flex — no JS top override needed
+    // Function kept as no-op so existing calls don't error
   }
 
   /* ── DOM REFS ──────────────────────────────────────────── */

@@ -2602,17 +2602,26 @@ body.cart-open{overflow:hidden}
     overflow-x: clip; /* clip doesn't break fixed positioning, hidden does */
   }
   body {
-    padding-bottom: 64px; /* space for fixed bottom nav */
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+  /* Neutralize desktop body overrides that break flex on mobile */
+  body.modal-open,
+  body.cart-open {
+    position: static !important;
+    top: auto !important;
+    height: 100dvh;
   }
 
   /* ── B. HEADER — compact + sticky top ──────────────── */
   .k-header {
+    flex: 0 0 auto;
     height: 44px;
     padding: 0 8px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     width: 100%;
     z-index: 100;
     background: #fff;
@@ -2973,13 +2982,11 @@ body.cart-open{overflow:hidden}
     gap: 5px;
   }
 
-  /* ── I. BOTTOM NAV — fixed ─────────────────────────── */
+  /* ── I. BOTTOM NAV — flex child, stays at bottom ──── */
   .k-bnav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 9999;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 20;
     background: #fff;
     box-shadow: 0 -1px 6px rgba(0,0,0,.08);
     height: 52px;
@@ -2987,30 +2994,31 @@ body.cart-open{overflow:hidden}
   }
   .k-bnav-label { font-size: 9px; }
 
-  /* ── FIXED LAYOUT — header + hero/cats fixed, content scrolls ── */
+  /* ── FLEX LAYOUT — body is flex column, page-scroll takes remaining space ── */
   #k-hero-fixed-wrap {
-    position: fixed;
-    top: 44px; /* below header */
-    left: 0;
-    right: 0;
-    z-index: 90;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 10;
     background: #fff;
   }
 
   #k-page-scroll {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 280px; /* CSS fallback — JS overrides with exact measurement */
+    flex: 1 1 0;
+    min-height: 0; /* critical for flex overflow to work */
+    position: relative;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 1;
-    padding-bottom: 56px; /* space for bottom nav */
+    padding-bottom: 0;
+  }
+
+  /* Neutralize desktop data-tab top rules on mobile */
+  #k-page-scroll[data-tab] {
+    top: auto;
   }
 
   #k-bar-spacer {
-    display: none; /* not needed with fixed layout */
+    display: none; /* not needed with flex layout */
   }
 
   /* Hide "Panier" text overflow in header */
