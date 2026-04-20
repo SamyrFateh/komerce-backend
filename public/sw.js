@@ -1,5 +1,5 @@
 /* Komerce SW v100 — Nuclear cache reset */
-const CACHE = 'komerce-v128';
+const CACHE = 'komerce-v129';
 
 self.addEventListener('install', () => self.skipWaiting());
 

@@ -2934,9 +2934,9 @@ body.cart-open{overflow:hidden}
   }
   .k-modal-details::-webkit-scrollbar { width: 3px; }
   .k-modal-details::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
-  /* Image zone: more compact on mobile for more details room */
+  /* Image zone: compact on mobile — see full product + details without scroll */
   .k-modal-img-wrap {
-    flex: 0 0 28vh;
+    flex: 0 0 22vh;
   }
   /* Modal actions always visible at bottom */
   .k-modal-actions {
