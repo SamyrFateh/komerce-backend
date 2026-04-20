@@ -1205,6 +1205,11 @@ body.cart-open{overflow:hidden}
 .k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark);flex-shrink:0}
 .k-modal-suggestions h3{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-muted)}
 
+/* ── MOBILE: full-screen modal, no overlay dim (Temu-style) ── */
+@media(max-width:599px){
+  .k-modal-overlay{background:none}
+}
+
 /* ── DESKTOP 600+: 2-column grid ── */
 @media(min-width:600px){
   .k-modal{max-width:560px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}

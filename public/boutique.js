@@ -139,6 +139,8 @@
   modalProduct: null,
   modalQty: 1,
   modalHistory: [],
+  carouselIndex: 0,
+  carouselCount: 1,
   searchTimeout: null,
   relais: [],
   orderData: { payment_mode: 'cash_relais' },
@@ -960,7 +962,54 @@ function quickRemove(productId, btnEl) {
     });
   }
 
-  /* ── PRODUCT MODAL ──────────────────────────────────────── */
+  /* ── PRODUCT MODAL — Carousel (Temu-style with Komerce spirit) ────── */
+
+  // Build carousel slides dynamically (1 or N images)
+  function buildCarouselSlides(product) {
+    var track = dom.modalCarouselTrack;
+    var dots = dom.modalDots;
+    var images = product.images || [product.image_url];
+
+    track.innerHTML = '';
+    images.forEach(function(url, i) {
+      var img = document.createElement('img');
+      img.className = 'k-modal-slide';
+      img.src = optimizeImgUrl(url, 600);
+      img.alt = product.name || '';
+      img.draggable = false;
+      track.appendChild(img);
+    });
+    dom.modalImg = track.querySelector('.k-modal-slide');
+
+    dots.innerHTML = '';
+    if (images.length > 1) {
+      images.forEach(function(_, i) {
+        var dot = document.createElement('span');
+        dot.className = 'k-modal-dot' + (i === 0 ? ' is-active' : '');
+        dot.addEventListener('click', function() { goToSlide(i); });
+        dots.appendChild(dot);
+      });
+    }
+
+    state.carouselIndex = 0;
+    state.carouselCount = images.length;
+    track.style.transition = 'none';
+    track.style.transform = 'translateX(0)';
+  }
+
+  // Navigate to a specific slide
+  function goToSlide(index) {
+    if (index < 0 || index >= state.carouselCount) return;
+    state.carouselIndex = index;
+    var track = dom.modalCarouselTrack;
+    track.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
+    track.style.transform = 'translateX(-' + (index * 100) + '%)';
+    var allDots = dom.modalDots.querySelectorAll('.k-modal-dot');
+    allDots.forEach(function(d, i) {
+      d.classList.toggle('is-active', i === index);
+    });
+  }
+
   function openModal(id, pushHistory) {
     const product = state.products.find(p => p.id === id);
     if (!product) return;
@@ -987,7 +1036,7 @@ function quickRemove(productId, btnEl) {
       dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
     }
 
-    dom.modalImg.src = optimizeImgUrl(product.image_url, 600);
+    buildCarouselSlides(product);
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);
@@ -1196,8 +1245,8 @@ function quickRemove(productId, btnEl) {
       });
     }
 
-    // ── Swipe down pour fermer (mobile)
-    setupModalSwipe();
+    // ── Image zone: carousel swipe + pull-to-close (Temu-style)
+    setupImageZoneTouch();
 
     // ── Navigation clavier ← → entre produits (desktop)
     document.addEventListener('keydown', (e) => {
@@ -1208,64 +1257,70 @@ function quickRemove(productId, btnEl) {
     });
   }
 
-  // ── Swipe down pour fermer + swipe left/right pour naviguer (mobile)
-  function setupModalSwipe() {
-    const modal = dom.modal;
-    let startY = 0, startX = 0, isDragging = false;
+  // ── Image zone: swipe ↔ carousel + swipe ↓ close (Temu-style) ──
+  // Details zone: native ↕ scroll only — no gesture interference
+  function setupImageZoneTouch() {
+    var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
+    var track = dom.modalCarouselTrack;
+    var modal = dom.modal;
+    var startX, startY, isDragging, direction; // 'h' | 'v' | null
 
-    modal.addEventListener('touchstart', (e) => {
-      const detailsEl = dom.modalDetails;
-      const isInDetails = detailsEl && detailsEl.contains(e.target);
-      // Only block swipe if touch started in scrolled details zone
-      if (isInDetails && detailsEl.scrollTop > 10) return;
-      startY = e.touches[0].clientY;
+    imgWrap.addEventListener('touchstart', function(e) {
       startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
       isDragging = true;
+      direction = null;
     }, { passive: true });
 
-    modal.addEventListener('touchmove', (e) => {
+    imgWrap.addEventListener('touchmove', function(e) {
       if (!isDragging) return;
-      const dy = e.touches[0].clientY - startY;
-      const dx = e.touches[0].clientX - startX;
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
 
-      // Swipe DOWN pour fermer (si plus vertical qu'horizontal)
-      if (dy > 0 && ady > adx) {
-        modal.style.transform = `translateY(${dy * 0.4}px)`;
+      // Lock direction on first 8px movement
+      if (!direction && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+        direction = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+
+      // Horizontal → carousel (only if multi-image)
+      if (direction === 'h' && state.carouselCount > 1) {
+        e.preventDefault();
+        track.style.transition = 'none';
+        var offset = -state.carouselIndex * 100 + (dx / imgWrap.offsetWidth) * 100;
+        track.style.transform = 'translateX(' + offset + '%)';
+      }
+      // Vertical down → pull-to-close
+      else if (direction === 'v' && dy > 0) {
+        modal.style.transform = 'translateY(' + (dy * 0.4) + 'px)';
         modal.style.transition = 'none';
         modal.style.opacity = String(Math.max(0.6, 1 - dy / 500));
       }
-    }, { passive: true });
+    }, { passive: false });
 
-    modal.addEventListener('touchend', (e) => {
+    imgWrap.addEventListener('touchend', function(e) {
       if (!isDragging) return;
       isDragging = false;
-      const dy = e.changedTouches[0].clientY - startY;
-      const dx = e.changedTouches[0].clientX - startX;
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
+      var dx = e.changedTouches[0].clientX - startX;
+      var dy = e.changedTouches[0].clientY - startY;
 
-      modal.style.transition = 'transform .25s var(--ease), opacity .25s';
-      modal.style.opacity = '';
-
-      // Swipe down → fermer
-      if (dy > 100 && ady > adx) {
-        modal.style.transform = 'translateY(100%)';
-        setTimeout(() => { modal.style.transform = ''; closeModal(); }, 260);
-      }
-      // Swipe left → produit suivant
-      else if (dx < -60 && adx > ady) {
-        modal.style.transform = '';
-        navigateModal(1);
-      }
-      // Swipe right → produit précédent
-      else if (dx > 60 && adx > ady) {
-        modal.style.transform = '';
-        navigateModal(-1);
-      }
-      else {
-        modal.style.transform = '';
+      if (direction === 'h' && state.carouselCount > 1) {
+        // Carousel snap
+        if (dx < -40 && state.carouselIndex < state.carouselCount - 1) {
+          goToSlide(state.carouselIndex + 1);
+        } else if (dx > 40 && state.carouselIndex > 0) {
+          goToSlide(state.carouselIndex - 1);
+        } else {
+          goToSlide(state.carouselIndex); // snap back
+        }
+      } else if (direction === 'v') {
+        modal.style.transition = 'transform .25s var(--ease), opacity .25s';
+        modal.style.opacity = '';
+        if (dy > 100) {
+          modal.style.transform = 'translateY(100%)';
+          setTimeout(function() { modal.style.transform = ''; closeModal(); }, 260);
+        } else {
+          modal.style.transform = '';
+        }
       }
     });
   }
