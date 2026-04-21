@@ -18,6 +18,77 @@
     return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
   }
 
+  /* ── Carousel produit (Shein-like) ──────────────────────────
+     Swipeable gauche/droite sur les cartes grille.
+     Utilise p.images (JSON array) si dispo, sinon duplique image_url × 4.
+  */
+  function renderProductCarousel(p, width) {
+    width = width || 400;
+    let imgs = [];
+    if (p.images) {
+      try {
+        imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+      } catch (_) { imgs = []; }
+    }
+    if (!Array.isArray(imgs) || imgs.length === 0) {
+      imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
+    }
+    if (!imgs.length) {
+      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy">`;
+    }
+    const slides = imgs.map((src, i) => `
+      <div class="k-card-slide">
+        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy">
+      </div>`).join('');
+    const dots = imgs.length > 1
+      ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i===0?' active':''}"></span>`).join('')}</div>`
+      : '';
+    return `<div class="k-card-carousel">${slides}</div>${dots}`;
+  }
+
+  /* ── Bind scroll dots + tap vs swipe (pour ouvrir modale au tap) ── */
+  function bindCarouselDots(card) {
+    const carousel = card.querySelector('.k-card-carousel');
+    const dots = card.querySelectorAll('.k-card-dot');
+    if (!carousel || carousel.dataset.bound) return;
+    carousel.dataset.bound = '1';
+
+    if (dots.length > 1) {
+      let raf = null;
+      carousel.addEventListener('scroll', () => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = null;
+          const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+          dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+        });
+      }, { passive: true });
+    }
+
+    // Tap vs swipe : si bouge > 10px, on marque pour bloquer ouverture modale
+    let sx = 0, sy = 0, moved = false;
+    function onStart(e) {
+      const t = e.touches ? e.touches[0] : e;
+      sx = t.clientX; sy = t.clientY; moved = false;
+    }
+    function onMove(e) {
+      const t = e.touches ? e.touches[0] : e;
+      if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) moved = true;
+    }
+    function onEnd() {
+      if (moved) {
+        card.dataset.justSwiped = '1';
+        setTimeout(() => { delete card.dataset.justSwiped; }, 250);
+      }
+    }
+    carousel.addEventListener('touchstart', onStart, { passive: true });
+    carousel.addEventListener('touchmove', onMove, { passive: true });
+    carousel.addEventListener('touchend', onEnd, { passive: true });
+    carousel.addEventListener('mousedown', onStart);
+    carousel.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
+    carousel.addEventListener('mouseup', onEnd);
+  }
+
   function promoImgUrl(url, w) {
     // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
     // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
@@ -405,7 +476,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+            ${renderProductCarousel(p, 400)}
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -437,8 +508,10 @@
     // Re-bind events on new cards
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
       card.dataset.bound = '1';
+      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+        if (card.dataset.justSwiped === '1') return;
         openModal(card.dataset.id);
       });
     });
@@ -559,7 +632,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+            ${renderProductCarousel(p, 400)}
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -590,8 +663,10 @@
 
     // Events
     dom.grid.querySelectorAll('.k-card').forEach(card => {
+      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+        if (card.dataset.justSwiped === '1') return;
         openModal(card.dataset.id);
       });
     });
@@ -1724,11 +1799,23 @@ function quickRemove(productId, btnEl) {
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
+    // FIX : masquer bnav pour voir bouton Payer
+    const bnav = document.getElementById('k-bnav');
+    if (bnav) {
+      bnav.dataset.savedDisplay = bnav.style.display || '';
+      bnav.style.display = 'none';
+    }
   }
 
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
     document.body.classList.remove('cart-open');
+    // FIX : restaurer bnav
+    const bnav = document.getElementById('k-bnav');
+    if (bnav) {
+      bnav.style.display = bnav.dataset.savedDisplay || '';
+      delete bnav.dataset.savedDisplay;
+    }
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -1738,13 +1825,21 @@ function quickRemove(productId, btnEl) {
   function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
-    // Supprimer tout bouton confirm précédent hors scroll area
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     dom.orderTitle.textContent = '🛒 Commander';
 
     const od = state.orderData;
 
-    /* ── Récap retiré (mini résumé + miniatures) ── */
+    /* ── Bouton retour panier ── */
+    const backBtn = document.createElement('button');
+    backBtn.className = 'ck-back-btn';
+    backBtn.type = 'button';
+    backBtn.innerHTML = '← Retour au panier';
+    backBtn.addEventListener('click', () => {
+      closeOrderModal();
+      setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
+    });
+    body.appendChild(backBtn);
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
@@ -2168,7 +2263,8 @@ async function submitOrder(btn) {
   }
 
   const clientName = recipName;
-  const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
+  const recipDigits = recipPhone.replace(/\D/g, '');
+  const fullRecipPhone = '+269' + recipDigits;
   const clientEmail = undefined;
 
   if (!recipName) {
@@ -2177,6 +2273,10 @@ async function submitOrder(btn) {
   }
   if (!recipPhone) {
     showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error');
+    return;
+  }
+  if (recipDigits.length !== 7) {
+    showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
     return;
   }
 
@@ -2484,7 +2584,7 @@ async function submitOrder(btn) {
         const qty = inCart ? inCart.qty : 0;
         return `<div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy">
+            ${renderProductCarousel(p, 400)}
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
@@ -2519,6 +2619,7 @@ async function submitOrder(btn) {
       const favGrid = document.getElementById('k-fav-grid');
       if (favGrid) {
         favGrid.querySelectorAll('.k-card').forEach(card => {
+        bindCarouselDots(card);
           card.addEventListener('click', (e) => {
             if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
             openModal(card.dataset.id);

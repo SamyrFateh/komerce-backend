@@ -3585,3 +3585,200 @@ input#of-client-email {
     max-height: 92vh !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH MODAL PAIEMENT + CARROUSEL + BNAV (consolidé)                    */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Masquer bottom nav quand modal paiement/panier ouvert ────────── */
+body.cart-open .k-bnav,
+body.modal-open .k-bnav {
+  display: none !important;
+}
+
+/* ── Modal paiement : layout garanti ────────────────────────────── */
+.k-order-overlay.open {
+  display: flex !important;
+  z-index: 1200 !important;
+}
+.k-order-overlay.open .k-order-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+.k-order-overlay.open .k-order-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  padding-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.k-order-overlay.open .ck-confirm-btn {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 1300 !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 600px) {
+  .k-order-overlay.open .k-order-modal {
+    height: auto !important;
+    max-height: 92vh !important;
+  }
+}
+
+/* ── Modale produit : scroll vertical + suggestions en grille ───── */
+.k-modal-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+.k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 450px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sand);
+}
+.k-modal-suggestions {
+  flex-shrink: 1 !important;
+  padding: 16px 12px 20px !important;
+  border-top: 8px solid var(--sand) !important;
+  background: var(--white);
+}
+.k-modal-suggestions h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  color: var(--text) !important;
+}
+.k-sug-rail {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  scroll-snap-type: none !important;
+  padding: 0 !important;
+}
+.k-sug-card {
+  flex: unset !important;
+  width: 100% !important;
+  scroll-snap-align: unset !important;
+}
+.k-sug-card img {
+  aspect-ratio: 4/3 !important;
+}
+.k-modal-actions {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--white);
+  border-top: 1px solid var(--sand-dark);
+  z-index: 3;
+}
+@media (min-width: 900px) {
+  .k-sug-rail { grid-template-columns: repeat(4, 1fr) !important; }
+  .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
+}
+
+/* ── Carrousel produit sur cartes grille (Shein-like) ───────────── */
+.k-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.k-card-carousel {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  width: 100%;
+  aspect-ratio: 4/3;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  background: #faf8f5;
+}
+.k-card-carousel::-webkit-scrollbar { display: none; }
+.k-card-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.k-card-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+}
+.k-card-dots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+.k-card-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: all 0.25s ease;
+}
+.k-card-dot.active {
+  background: white;
+  width: 16px;
+  border-radius: 3px;
+}
+.k-card-img-wrap > .k-card-img:not(:only-child) {
+  display: none;
+}
+
+/* ── Masquer onglets Détails/Couleurs/Livraison ─────────────────── */
+.k-card-tabs,
+.k-card-panels {
+  display: none !important;
+}
+
+/* ── Bouton retour panier dans modal paiement ──────────────────── */
+.ck-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 0 0 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ck-back-btn:hover {
+  background: var(--sand-dark);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.ck-back-btn:active { transform: scale(0.97); }
