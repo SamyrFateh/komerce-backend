@@ -887,6 +887,12 @@ function addToCart(product, qty, sourceBtn) {
     void dom.cartBtn.offsetWidth;
     dom.cartBtn.classList.add('ring-pulse');
     setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+
+    // Animation "coucou" de l'avatar (la petite dame se présente)
+    dom.cartBtn.classList.remove('avatar-wave');
+    void dom.cartBtn.offsetWidth;
+    dom.cartBtn.classList.add('avatar-wave');
+    setTimeout(() => dom.cartBtn.classList.remove('avatar-wave'), 900);
   }
 
   if (isModalAdd) {
@@ -1837,7 +1843,7 @@ function quickRemove(productId, btnEl) {
         <div class="k-cart-empty">
           <div class="k-cart-empty-icon">🧺</div>
           <p class="k-cart-empty-title">Votre panier est vide</p>
-          <p class="k-cart-empty-sub">Découvrez notre sélection de produits livrés depuis Dubaï aux Comores.</p>
+          <p class="k-cart-empty-sub">Découvrez notre sélection de produits livrés aux Comores.</p>
           <button type="button" class="k-cart-empty-cta" id="k-cart-empty-shop">
             🛍️ Découvrir la boutique
           </button>
