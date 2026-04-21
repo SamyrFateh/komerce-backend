@@ -5049,3 +5049,29 @@ body.cart-open #k-page-scroll {
     bottom:max(20px, env(safe-area-inset-bottom));
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX : écran de succès — garantir que les 2 boutons (Suivre + Continuer)*/
+/*  soient toujours visibles, sans être coupés par un overflow parent.     */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-confirm-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}
+.k-confirm-actions .k-confirm-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  position: static !important; /* override le sticky du modal paiement */
+}
+
+/* S'assurer que la modale scrolle si le contenu dépasse */
+.k-order-overlay.open .k-order-body {
+  padding-bottom: 32px !important;
+}
