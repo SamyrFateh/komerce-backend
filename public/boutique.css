@@ -5684,3 +5684,75 @@ button,
   object-position: center !important;
   padding: 6px !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  BUG 1 FIX : pills catégories qui "bougent" au chargement              */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cats {
+  /* Bloquer le layout shift quand les images des chips chargent */
+  min-height: 80px !important;
+  contain: layout !important;
+  /* Empêcher scroll-snap de jumper */
+  scroll-snap-type: x mandatory !important;
+}
+.k-cat-chip {
+  /* Taille fixe pour éviter le layout shift */
+  flex: 0 0 auto !important;
+  scroll-snap-align: start;
+  /* Anti-wobble : pas de transform sur base */
+  will-change: auto;
+}
+
+/* Sous-cats : idem */
+.k-subcats-rail {
+  min-height: 40px !important;
+  contain: layout !important;
+  scroll-snap-type: x mandatory !important;
+}
+.k-subchip {
+  flex: 0 0 auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  BUG 2 FIX : favoris + panier bien positionnés dans la carte           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* Réaffirmer les positions au cas où un override a cassé */
+.k-card-img-wrap {
+  position: relative !important;
+  display: block !important;  /* bloc, PAS flex */
+  overflow: hidden;
+  aspect-ratio: 1 / 1;  /* carré uniforme */
+}
+
+.k-card-img-wrap > .k-card-fav {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 3;
+}
+
+.k-card-img-wrap > .k-card-add {
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 8px !important;
+  z-index: 5;
+}
+
+.k-card-img-wrap > .k-card-promo {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 3;
+}
+
+/* S'assurer que l'image remplit bien le wrap (sinon les icônes n'ont pas
+   de repère visuel cohérent) */
+.k-card-img-wrap > img,
+.k-card-img-wrap .k-card-img,
+.k-card-img-wrap .k-card-carousel {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute;
+  inset: 0;
+}

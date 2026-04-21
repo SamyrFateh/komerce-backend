@@ -1682,7 +1682,9 @@ function quickRemove(productId, btnEl) {
         // 2. Ajout au panier (déclenche l'animation coucou de la dame)
         addToCart(state.modalProduct, state.modalQty, buyNowBtn);
 
-        // 3. Transition douce : 800ms pour voir le feedback + coucou dame, puis vers le panier
+        // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
+        //    puis fermeture douce et ouverture panier avec 400ms entre les 2
+        //    (le user a le temps de voir le confirm vert + la dame coucou)
         setTimeout(() => {
           // Restaurer le bouton pour la prochaine ouverture
           buyNowBtn.innerHTML = originalContent;
@@ -1690,8 +1692,8 @@ function quickRemove(productId, btnEl) {
           buyNowBtn.classList.remove('buy-confirmed');
           // Fermer la modale et ouvrir le panier avec fluidité
           closeModal();
-          setTimeout(openCart, 250);
-        }, 800);
+          setTimeout(openCart, 400);  // augmenté de 250 → 400ms
+        }, 1200);  // augmenté de 800 → 1200ms
       });
     }
 
