@@ -4877,9 +4877,21 @@ body.cart-open #k-page-scroll {
 /* Image pas trop imposante au 1er coup d'œil pour inciter au scroll */
 @media (max-width:600px){
   .k-modal-img-wrap{
-    height:42vh !important;
-    max-height:420px;
+    height:40vh !important;
+    max-height:380px;
   }
+}
+
+/* Actions produit : bien visibles, avec petit séparateur + fond blanc */
+.k-modal-scroll > .k-modal-actions{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:5;
+  background:#fff;
+  border-top:1px solid var(--sand-dark);
+  box-shadow:0 -4px 12px rgba(0,0,0,.06);
+  padding:12px !important;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom)) !important;
 }
 
 /* Uniformisation des hauteurs de cartes suggestions (évite les trous) */
@@ -5093,4 +5105,13 @@ body.cart-open #k-page-scroll {
 /* S'assurer que la modale scrolle si le contenu dépasse */
 .k-order-overlay.open .k-order-body {
   padding-bottom: 32px !important;
+}
+
+
+/* Quand la topbar enrichie est active, on cache le sticky bottom 
+   pour éviter la redondance visuelle. La topbar prend le relais. */
+.k-modal.is-scrolled .k-modal-scroll > .k-modal-actions{
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease;
 }
