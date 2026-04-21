@@ -1352,6 +1352,13 @@ function quickRemove(productId, btnEl) {
     setupEnrichedTopbar();
   }
 
+  function scrollModalToTop() {
+    const scrollEl = document.querySelector('.k-modal-scroll');
+    if (scrollEl) {
+      scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   function setupEnrichedTopbar() {
     const modal = document.getElementById('k-modal');
     const topbar = modal ? modal.querySelector('.k-modal-topbar') : null;
@@ -1364,7 +1371,7 @@ function quickRemove(productId, btnEl) {
       productEl = document.createElement('div');
       productEl.className = 'k-modal-topbar-product';
       productEl.innerHTML = `
-        <div class="k-topbar-thumb">
+        <div class="k-topbar-thumb" role="button" aria-label="Revenir en haut">
           <img class="k-topbar-thumb-img" src="" alt="">
         </div>
         <div class="k-topbar-info">
@@ -1388,6 +1395,25 @@ function quickRemove(productId, btnEl) {
       productEl.querySelector('.k-topbar-buy').addEventListener('click', () => {
         const buyBtn = document.getElementById('k-buy-now-btn');
         if (buyBtn) buyBtn.click();
+      });
+
+      // Wire click sur thumbnail → scroll smooth vers le haut
+      productEl.querySelector('.k-topbar-thumb').addEventListener('click', () => {
+        scrollModalToTop();
+      });
+    }
+
+    // Créer le FAB "retour en haut" s'il n'existe pas
+    let backTopFab = document.getElementById('k-modal-back-top');
+    if (!backTopFab) {
+      backTopFab = document.createElement('button');
+      backTopFab.id = 'k-modal-back-top';
+      backTopFab.className = 'k-modal-back-top';
+      backTopFab.setAttribute('aria-label', 'Retour au produit');
+      backTopFab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
+      document.body.appendChild(backTopFab);
+      backTopFab.addEventListener('click', () => {
+        scrollModalToTop();
       });
     }
 
@@ -1421,10 +1447,13 @@ function quickRemove(productId, btnEl) {
       state._topbarObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach(entry => {
+            const backTopFab = document.getElementById('k-modal-back-top');
             if (entry.intersectionRatio < 0.3) {
               modal.classList.add('is-scrolled');
+              if (backTopFab) backTopFab.classList.add('visible');
             } else {
               modal.classList.remove('is-scrolled');
+              if (backTopFab) backTopFab.classList.remove('visible');
             }
           });
         },
@@ -1438,6 +1467,9 @@ function quickRemove(productId, btnEl) {
     // Reset topbar mode
     const modal = document.getElementById('k-modal');
     if (modal) modal.classList.remove('is-scrolled');
+    // Cacher le FAB back-to-top
+    const backTopFab = document.getElementById('k-modal-back-top');
+    if (backTopFab) backTopFab.classList.remove('visible');
     // Cleanup observers
     if (state._fabObserver) {
       state._fabObserver.disconnect();
