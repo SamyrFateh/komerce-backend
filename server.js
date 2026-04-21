@@ -56,22 +56,79 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+// ══════════════════════════════════════════════════════════════════════════════
+// WEBHOOK AUTHKEY — réception des statuts de delivery WhatsApp
+// ──────────────────────────────────────────────────────────────────────────────
+// AuthKey ping ce endpoint à chaque changement de statut d'un message :
+//   sent → delivered → read   (ou failed à n'importe quelle étape)
+//
+// URL configurée dans AuthKey : /webhook/authkey-whatsapp (GET)
+// Params query : Mobile, Email, Status, Log ID, Time
+//
+// Stratégie : répondre 200 IMMÉDIATEMENT (sinon AuthKey retry), 
+//             puis stocker en DB en arrière-plan (fire-and-forget).
+// ══════════════════════════════════════════════════════════════════════════════
 app.get('/webhook/authkey-whatsapp', async (req, res) => {
+  // 1. Réponse rapide à AuthKey (évite les retries)
+  res.status(200).send('OK');
+
   try {
-    console.log('[AUTHKEY-WA][WEBHOOK]', req.query);
+    const params = req.query || {};
+    const mobile = params.Mobile || params.mobile || null;
+    const email  = params.Email || params.email || null;
+    const status = params.Status || params.status || null;  // 'sent', 'delivered', 'read', 'failed'
+    const logId  = params['Log ID'] || params.LogID || params.log_id || params.logid || null;
+    const time   = params.Time || params.time || null;
+    const wid    = params.WID || params.wid || null;
 
-    const mobile = req.query.Mobile || null;
-    const email = req.query.Email || null;
-    const status = req.query.Status || null;
-    const logId = req.query['Log ID'] || req.query.LogID || req.query.log_id || null;
-    const time = req.query.Time || null;
+    console.log('[AUTHKEY-WA][WEBHOOK]', { mobile, status, logId, time, wid });
 
-    return res.status(200).send('OK');
+    // 2. Persistance en arrière-plan (fire-and-forget)
+    if (status || logId) {
+      handleAuthkeyWebhook({ mobile, email, status, logId, time, wid })
+        .catch(err => console.error('[AUTHKEY-WA][WEBHOOK][BG]', err.message));
+    }
   } catch (e) {
     console.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
-    return res.status(500).send('ERROR');
+    // Déjà répondu 200, on ne fait rien de plus
   }
 });
+
+// Handler DB séparé pour que le webhook réponde toujours vite
+async function handleAuthkeyWebhook({ mobile, email, status, logId, time, wid }) {
+  // 1. Log brut du webhook (trace complète pour debug)
+  try {
+    await db.query(
+      `INSERT INTO notification_log
+         (order_ref, parcel_ref, channel, event, recipient, status, detail, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [
+        null,
+        null,
+        'whatsapp_delivery',
+        'delivery_status_' + (status || 'unknown').toLowerCase(),
+        mobile,
+        status || 'unknown',
+        JSON.stringify({ logId, time, wid, email }),
+      ]
+    );
+  } catch (err) {
+    if (err.code !== '42P01') {
+      console.warn('[AUTHKEY-WA][WEBHOOK][LOG]', err.message);
+    }
+    // Si la table n'existe pas encore, on skip silencieusement
+  }
+
+  // 2. Si FAILED, on log un warning plus visible pour le monitoring
+  if (status && /^fail/i.test(status)) {
+    console.warn(`[AUTHKEY-WA][FAILED] mobile=${mobile} logId=${logId} time=${time}`);
+  }
+
+  // 3. Si DELIVERED ou READ, pas d'action — juste la trace
+  //    (on pourrait ici update notification_log.status de la notif originale
+  //     si on matchait via logId, mais ça demande de stocker logId au moment 
+  //     de l'envoi, ce qu'AuthKey ne renvoie pas toujours)
+}
 
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
