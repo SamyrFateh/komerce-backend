@@ -4309,3 +4309,279 @@ body.modal-open .k-bnav {
   pointer-events: none;
 }
 .k-bnav-item { position: relative; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PANIER VIDE — empty state chaleureux                                   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-cart-empty {
+  text-align: center;
+  padding: 48px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.k-cart-empty-icon {
+  font-size: 72px;
+  line-height: 1;
+  margin-bottom: 4px;
+  animation: cart-empty-float 3s ease-in-out infinite;
+}
+@keyframes cart-empty-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.k-cart-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text, #2a2a2a);
+  margin: 0;
+}
+
+.k-cart-empty-sub {
+  font-size: 14px;
+  color: var(--text-muted, #888);
+  line-height: 1.5;
+  max-width: 280px;
+  margin: 0 auto 12px;
+}
+
+.k-cart-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #2a7a3e 0%, #1d5b2a 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(42, 122, 62, 0.3);
+  transition: all 0.15s;
+}
+.k-cart-empty-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(42, 122, 62, 0.4);
+}
+.k-cart-empty-cta:active {
+  transform: scale(0.97);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FOOTER PANIER REFONDU — récap détaillé + CTA vert Komerce              */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Conteneur récap (nb articles, livraison, total) */
+.k-cart-recap {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: none;
+}
+
+.k-cart-recap-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.k-cart-recap-label {
+  color: var(--text-muted, #666);
+  font-weight: 500;
+}
+
+.k-cart-recap-val {
+  color: var(--text, #2a2a2a);
+  font-weight: 600;
+}
+
+.k-cart-recap-free {
+  color: #2a7a3e !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.k-cart-recap-divider {
+  border-top: 1px dashed var(--sand-dark, #e4d9c7);
+  margin: 8px 0 8px;
+}
+
+/* Total row redesigné */
+.k-cart-footer .k-cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0;
+  padding: 4px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.k-cart-footer .k-cart-total-label {
+  font-size: 15px;
+  color: var(--text, #2a2a2a);
+}
+.k-cart-footer .k-cart-total-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2a7a3e !important;   /* Vert Komerce, plus le coral */
+}
+.k-cart-footer .k-cart-total-conv {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted, #999);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* CTA principal pleine largeur */
+.kcf-full {
+  width: 100%;
+  padding: 14px 20px !important;
+  border-radius: 50px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin: 6px 0 12px;
+  background: linear-gradient(135deg, #2a7a3e 0%, #1d5b2a 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(42, 122, 62, 0.3) !important;
+}
+.kcf-full:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(42, 122, 62, 0.4) !important;
+}
+.kcf-full:active {
+  transform: scale(0.98);
+}
+
+/* Actions secondaires */
+.k-cart-footer-secondary {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.kcf-whatsapp-mini {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: transparent;
+  color: #128c7e;
+  border: 1.5px solid #25d366;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.kcf-whatsapp-mini:hover {
+  background: #f0fdf4;
+  color: #128c7e;
+  transform: translateY(-1px);
+}
+.kcf-whatsapp-mini svg path {
+  fill: #128c7e !important;
+}
+
+.kcf-danger-mini {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  background: transparent;
+  color: #999;
+  border: 1.5px solid var(--sand-dark, #e4d9c7);
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.kcf-danger-mini:hover {
+  background: #fef5f5;
+  color: #c73a3a;
+  border-color: #e8a0a0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ÉCRAN DE SUCCÈS — ligne récap articles + montant                       */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-confirm-recap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 4px 16px;
+  padding: 10px 16px;
+  background: #f8f5ed;
+  border-radius: 50px;
+  font-size: 13px;
+  color: var(--text-muted, #666);
+  animation: confirm-recap-fade 0.5s ease-out 0.15s both;
+}
+@keyframes confirm-recap-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.k-confirm-recap-qty {
+  font-weight: 600;
+  color: var(--text, #2a2a2a);
+}
+.k-confirm-recap-sep {
+  color: #ccc;
+  font-size: 10px;
+}
+.k-confirm-recap-amount {
+  font-weight: 700;
+  color: #2a7a3e;
+  font-size: 14px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX PANIER — bloquer scroll page derrière + overlay fiable             */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Bloquer TOUS les scrolls quand panier ouvert — pas seulement body */
+body.cart-open,
+body.cart-open #k-page-scroll {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* S'assurer que l'overlay couvre tout et est opaque */
+.k-cart-overlay.open {
+  display: block !important;
+  opacity: 1 !important;
+  /* Assurer qu'on est bien au-dessus de tout */
+  z-index: 1100 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Drawer panier plein écran sur mobile, fond opaque garanti */
+.k-cart-drawer {
+  background: #ffffff !important;
+  z-index: 1150 !important;
+}
+
+/* Sur mobile : drawer prend toute la largeur (pas de max-width) */
+@media (max-width: 768px) {
+  .k-cart-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+}

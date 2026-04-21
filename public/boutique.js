@@ -1648,9 +1648,26 @@ function quickRemove(productId, btnEl) {
       dom.cartBody.innerHTML = `
         <div class="k-cart-empty">
           <div class="k-cart-empty-icon">🧺</div>
-          <p>Votre panier est vide</p>
+          <p class="k-cart-empty-title">Votre panier est vide</p>
+          <p class="k-cart-empty-sub">Découvrez notre sélection de produits livrés depuis Dubaï aux Comores.</p>
+          <button type="button" class="k-cart-empty-cta" id="k-cart-empty-shop">
+            🛍️ Découvrir la boutique
+          </button>
         </div>`;
       dom.cartFooter.classList.add('u-hidden');
+
+      // Binding bouton découvrir
+      const shopBtn = document.getElementById('k-cart-empty-shop');
+      if (shopBtn) {
+        shopBtn.addEventListener('click', () => {
+          closeCart();
+          if (typeof switchView === 'function') switchView('shop');
+          // Marquer l'onglet Boutique actif dans la bnav
+          document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
+          const shopNav = document.querySelector('.k-bnav-item[data-tab="shop"]');
+          if (shopNav) shopNav.classList.add('active');
+        });
+      }
       return;
     }
 
@@ -1744,9 +1761,21 @@ function quickRemove(productId, btnEl) {
 
     // Footer
     dom.cartFooter.classList.remove('u-hidden');
-    dom.cartTotalVal.textContent = fmt(cartTotal(), 'KMF');
+    const qty = cartQty();
+    const total = cartTotal();
+
+    // Récap détaillé : nombre d'articles + sous-total
+    const itemCountEl = document.getElementById('k-cart-item-count');
+    const itemPluralEl = document.getElementById('k-cart-item-plural');
+    const subtotalEl = document.getElementById('k-cart-subtotal-val');
+    if (itemCountEl) itemCountEl.textContent = qty;
+    if (itemPluralEl) itemPluralEl.textContent = qty > 1 ? 's' : '';
+    if (subtotalEl) subtotalEl.textContent = fmt(total, 'KMF');
+
+    // Total
+    dom.cartTotalVal.textContent = fmt(total, 'KMF');
     if (_currency === 'EUR') {
-      dom.cartTotalConv.textContent = '≈ ' + fmt(cartTotal(), 'EUR');
+      dom.cartTotalConv.textContent = '≈ ' + fmt(total, 'EUR');
     } else {
       dom.cartTotalConv.textContent = '';
     }
@@ -2557,6 +2586,20 @@ async function submitOrder(btn) {
       '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>' +
       '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
     wrap.appendChild(refBlock);
+
+    // NOUVEAU : ligne récap "N articles — XXX KMF"
+    // On lit depuis order (renvoyé par l'API) ou depuis l'état sauvegardé
+    const orderQty = order.items_count || (order.items && order.items.length) || null;
+    const orderTotal = order.total_kmf != null ? order.total_kmf : null;
+    if (orderQty && orderTotal) {
+      const recapLine = document.createElement('div');
+      recapLine.className = 'k-confirm-recap';
+      recapLine.innerHTML =
+        '<span class="k-confirm-recap-qty">' + orderQty + ' article' + (orderQty > 1 ? 's' : '') + '</span>' +
+        '<span class="k-confirm-recap-sep">•</span>' +
+        '<span class="k-confirm-recap-amount">' + fmt(orderTotal, 'KMF') + '</span>';
+      wrap.appendChild(recapLine);
+    }
 
     // Code cash (seulement si paiement cash)
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
