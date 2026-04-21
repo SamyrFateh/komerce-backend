@@ -1139,13 +1139,19 @@ body.cart-open{overflow:hidden}
 
 /* ── MODAL LAYOUT — mobile: stacked split, desktop: 2-column grid ── */
 .k-modal-scroll{
-  flex:1;overflow:hidden;min-height:0;
-  display:flex;flex-direction:column;
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
 }
 
 /* ── IMAGE ZONE — compact on mobile, expands on desktop ── */
 .k-modal-img-wrap{
-  position:relative;flex:0 0 35vh;
+  position:relative;
+  flex:0 0 auto;
+  height:45vh;
   background:var(--sand);
   overflow:hidden;
 }
@@ -1170,7 +1176,9 @@ body.cart-open{overflow:hidden}
 
 /* ── DETAILS — independent scroll on mobile ── */
 .k-modal-details{
-  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;
+  flex:0 0 auto;
+  overflow:visible;
+  min-height:0;
 }
 .k-modal-promo-badge{
   display:none;
@@ -4885,3 +4893,23 @@ body.cart-open #k-page-scroll {
 }
 .k-modal-fab-buy:active{transform:scale(.97)}
 
+
+
+/* ── Scroll unifié : padding pour éviter que le FAB masque le contenu ── */
+.k-modal-scroll{
+  padding-bottom:80px;
+  scroll-behavior:smooth;
+}
+/* Actions intégrées dans le scroll : reset des résidus sticky */
+.k-modal-scroll > .k-modal-actions{
+  position:static !important;
+  flex-shrink:0;
+  margin-top:0;
+}
+/* Image pas trop imposante au 1er coup d'œil pour inciter au scroll */
+@media (max-width:600px){
+  .k-modal-img-wrap{
+    height:42vh !important;
+    max-height:420px;
+  }
+}

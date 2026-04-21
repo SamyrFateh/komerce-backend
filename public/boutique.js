@@ -1327,11 +1327,20 @@ function quickRemove(productId, btnEl) {
     renderSuggestions(sameCat, otherCat, product.category);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
+    const _scrollEl = document.querySelector('.k-modal-scroll');
+    if (_scrollEl) _scrollEl.scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = window.scrollY;
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
+
+    // ── Déplacer les actions DANS le scroll pour un flux unifié ──
+    const modalScroll = document.querySelector('.k-modal-scroll');
+    const modalActions = document.querySelector('.k-modal-actions');
+    if (modalScroll && modalActions && modalActions.parentElement !== modalScroll) {
+      modalScroll.appendChild(modalActions);
+    }
 
     // ── FAB flottant : apparaît quand les vrais boutons sortent du viewport ──
     setupModalFAB();
@@ -1380,6 +1389,7 @@ function quickRemove(productId, btnEl) {
     if (state._fabObserver) state._fabObserver.disconnect();
     const actions = document.querySelector('.k-modal-actions');
     if (actions && 'IntersectionObserver' in window) {
+      const scrollRoot = document.querySelector('.k-modal-scroll');
       state._fabObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach(entry => {
@@ -1390,7 +1400,7 @@ function quickRemove(productId, btnEl) {
             }
           });
         },
-        { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+        { root: scrollRoot, threshold: 0.1, rootMargin: '0px 0px -20px 0px' }
       );
       state._fabObserver.observe(actions);
     }
