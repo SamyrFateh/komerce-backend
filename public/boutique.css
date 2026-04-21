@@ -5115,3 +5115,465 @@ body.cart-open #k-page-scroll {
   pointer-events:none;
   transition:opacity .2s ease;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                    PACK PREMIUM VISUEL — FINITIONS                      */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. GLASSMORPHISM : blur sur les surfaces "flottantes" ────────────── */
+
+/* Topbar modale : fond blur élégant */
+.k-modal-topbar{
+  background:rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter:blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(16px) saturate(180%) !important;
+  border-bottom:1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* Actions modale sticky : glass light */
+.k-modal-scroll > .k-modal-actions{
+  background:rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter:blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(180%) !important;
+  border-top:1px solid rgba(0,0,0,0.04) !important;
+}
+
+/* Overlay panier : blur subtil du background */
+.k-cart-overlay.open{
+  background:rgba(0,0,0,0.35) !important;
+  backdrop-filter:blur(4px) !important;
+  -webkit-backdrop-filter:blur(4px) !important;
+}
+
+/* Bottom nav : effet frosted glass */
+.k-bnav{
+  background:rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter:blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(200%) !important;
+  border-top:1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* Header catalogue : glass au scroll */
+.k-header{
+  background:rgba(250, 249, 247, 0.85) !important;
+  backdrop-filter:blur(18px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(180%) !important;
+}
+
+/* ── 2. OMBRES RÉALISTES multi-couches (style Apple/Stripe) ─────────── */
+
+/* Cartes produits : ombre douce multi-couches */
+.k-card{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 4px 12px rgba(0,0,0,0.05) !important;
+  transition:box-shadow .3s ease, transform .3s ease !important;
+}
+.k-card:hover{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 40px rgba(0,0,0,0.04) !important;
+  transform:translateY(-2px);
+}
+
+/* Suggestions cards */
+.k-sug-card{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.03),
+    0 2px 8px rgba(0,0,0,0.04) !important;
+  transition:box-shadow .25s ease, transform .2s ease !important;
+}
+.k-sug-card:hover{
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.04),
+    0 6px 20px rgba(0,0,0,0.08) !important;
+  transform:translateY(-1px);
+}
+
+/* Bouton Acheter — ombre colorée orange */
+.k-buy-now-btn{
+  box-shadow:
+    0 2px 8px rgba(224, 90, 72, 0.25),
+    0 4px 16px rgba(224, 90, 72, 0.15) !important;
+  transition:all .25s ease !important;
+}
+.k-buy-now-btn:hover{
+  box-shadow:
+    0 4px 12px rgba(224, 90, 72, 0.35),
+    0 8px 24px rgba(224, 90, 72, 0.2) !important;
+  transform:translateY(-1px);
+}
+.k-buy-now-btn:active{
+  transform:translateY(0) scale(0.98);
+  transition:all .1s ease;
+}
+
+/* Bouton Ajouter panier */
+.k-add-cart-btn{
+  transition:all .25s ease !important;
+}
+.k-add-cart-btn:hover{
+  box-shadow:0 4px 14px rgba(0,0,0,0.08) !important;
+  transform:translateY(-1px);
+}
+.k-add-cart-btn:active{
+  transform:translateY(0) scale(0.98);
+  transition:all .1s ease;
+}
+
+/* ── 3. MICRO-ANIMATIONS : feedback tactile premium ─────────────────── */
+
+/* Ripple effect sur les boutons ronds */
+.k-cart-btn, .k-modal-back, .k-modal-close, .k-modal-nav-btn{
+  position:relative;
+  overflow:hidden;
+}
+.k-cart-btn::after,
+.k-modal-close::after,
+.k-modal-back::after{
+  content:'';
+  position:absolute;
+  top:50%; left:50%;
+  width:0; height:0;
+  border-radius:50%;
+  background:rgba(224,90,72,0.15);
+  transform:translate(-50%, -50%);
+  transition:width .4s ease, height .4s ease;
+  pointer-events:none;
+}
+.k-cart-btn:active::after,
+.k-modal-close:active::after,
+.k-modal-back:active::after{
+  width:80px;
+  height:80px;
+  transition:width 0s, height 0s;
+}
+
+/* Bouton + des cartes produits : scale + ombre au tap */
+.k-card-add{
+  transition:transform .15s ease, box-shadow .2s ease !important;
+}
+.k-card-add:active{
+  transform:scale(0.85);
+  box-shadow:0 0 0 4px rgba(224,90,72,0.15) !important;
+}
+
+/* Favoris heart : bounce au clic */
+.k-card-fav{
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1) !important;
+}
+.k-card-fav.active{
+  animation:heartBounce .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes heartBounce{
+  0%   {transform:scale(1)}
+  40%  {transform:scale(1.4)}
+  70%  {transform:scale(0.9)}
+  100% {transform:scale(1)}
+}
+
+/* Transition smooth sur les catégories chips */
+.k-cat-chip{
+  transition:background .2s ease, color .2s ease, transform .15s ease !important;
+}
+.k-cat-chip:active{
+  transform:scale(0.95);
+}
+
+/* Entrée de la modale : slide + fade (plus raffiné) */
+.k-modal{
+  animation:modalEnter .35s cubic-bezier(.22,1,.36,1) !important;
+}
+@keyframes modalEnter{
+  from{
+    transform:translateY(20px);
+    opacity:0;
+  }
+  to{
+    transform:translateY(0);
+    opacity:1;
+  }
+}
+
+/* Panier drawer : slide from right avec easing Apple */
+.k-cart-drawer{
+  transition:transform .4s cubic-bezier(.32,.72,0,1) !important;
+}
+
+/* ── 4. SKELETON LOADERS ANIMÉS (shimmer effect) ────────────────────── */
+
+.k-skeleton,
+.k-card-skeleton{
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size:200% 100%;
+  animation:skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius:var(--radius, 12px);
+}
+@keyframes skeletonShimmer{
+  0%   {background-position:200% 0}
+  100% {background-position:-200% 0}
+}
+
+/* Skeleton card full structure */
+.k-card-skeleton{
+  aspect-ratio:3/4;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  padding:0;
+  overflow:hidden;
+  position:relative;
+}
+.k-card-skeleton::before{
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  aspect-ratio:1;
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size:200% 100%;
+  animation:skeletonShimmer 1.5s ease-in-out infinite;
+}
+.k-card-skeleton::after{
+  content:'';
+  position:absolute;
+  left:12px; right:12px; bottom:16px;
+  height:14px;
+  background:rgba(0,0,0,0.06);
+  border-radius:4px;
+  animation:skeletonShimmer 1.5s ease-in-out infinite;
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size:200% 100%;
+}
+
+/* ── 5. TOUCHES FINALES ─────────────────────────────────────────────── */
+
+/* Scrollbar discrète et élégante sur desktop */
+@media(min-width:768px){
+  *::-webkit-scrollbar{
+    width:8px;
+    height:8px;
+  }
+  *::-webkit-scrollbar-track{
+    background:transparent;
+  }
+  *::-webkit-scrollbar-thumb{
+    background:rgba(0,0,0,0.15);
+    border-radius:4px;
+    transition:background .2s ease;
+  }
+  *::-webkit-scrollbar-thumb:hover{
+    background:rgba(0,0,0,0.25);
+  }
+}
+
+/* Smooth focus rings pour accessibilité (keyboard nav) */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible{
+  outline:2px solid rgba(224,90,72,0.5);
+  outline-offset:2px;
+  border-radius:8px;
+}
+
+/* Image produit : subtle zoom au hover (desktop only) */
+@media(hover:hover){
+  .k-card-img-wrap img{
+    transition:transform .5s ease !important;
+  }
+  .k-card:hover .k-card-img-wrap img{
+    transform:scale(1.05);
+  }
+}
+
+/* Badge promo : pulsation douce */
+.k-modal-promo-badge.show,
+.k-sug-promo-badge{
+  animation:promoPulse 2.5s ease-in-out infinite;
+}
+@keyframes promoPulse{
+  0%, 100% {transform:scale(1); opacity:1}
+  50%      {transform:scale(1.05); opacity:0.95}
+}
+
+/* Respect preferences utilisateur : désactiver les animations si demandé */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                    FIX SAFARI iOS — Responsive premium                  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── FIX 1 : Empêcher le zoom auto iOS sur focus des inputs ────────── */
+/* iOS zoome si font-size < 16px. Solution : 16px forcé sur mobile,   */
+/* puis visuellement réduit par transform-origin stable.               */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* ── FIX 2 : Touch targets 44×44 minimum (iOS HIG) ─────────────────── */
+/* Les petits boutons gardent leur apparence visuelle mais ont une     */
+/* zone de tap invisible plus grande via ::before (padding virtuel).   */
+.k-card-fav,
+.k-card-add,
+.k-sug-add,
+.k-cart-badge,
+.k-modal-dot,
+.k-modal-nav-btn,
+.k-qty-btn,
+button[class*="-btn"]:not(.k-cart-btn):not(.k-modal-back):not(.k-modal-close) {
+  position: relative;
+}
+
+.k-card-fav::before,
+.k-card-add::before,
+.k-sug-add::before,
+.k-modal-nav-btn::before,
+.k-qty-btn::before {
+  content: '';
+  position: absolute;
+  inset: -8px; /* étend la zone cliquable de 8px de chaque côté */
+  pointer-events: auto;
+}
+
+/* ── FIX 3 : dvh au lieu de vh pour éviter les sauts barre Safari ─── */
+/* La barre URL iOS apparait/disparait au scroll → 100vh change de    */
+/* taille brutalement. 100dvh s'adapte dynamiquement.                  */
+@supports (height: 100dvh) {
+  .k-modal,
+  .k-cart-drawer,
+  .k-modal-overlay,
+  .k-order-overlay.open .k-order-modal {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+  .k-modal-img-wrap {
+    /* Adapter aussi les hauteurs vh en dvh */
+    height: 40dvh !important;
+  }
+  @media (max-width: 600px) {
+    .k-modal-img-wrap {
+      height: 40dvh !important;
+      max-height: 380px;
+    }
+  }
+}
+
+/* ── FIX 4 : Désactiver long-press menu iOS sur les images produits ─ */
+.k-modal-img-wrap img,
+.k-card-img-wrap img,
+.k-sug-card-img img,
+.k-modal-slide,
+.k-cart-avatar,
+.k-topbar-thumb img,
+.k-card-fav img,
+.k-card-add img,
+.k-add-cart-btn img {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+/* ── FIX 5 : user-select: none avec le préfixe webkit partout ──────── */
+button,
+.k-card,
+.k-sug-card,
+.k-bnav-item,
+.k-cat-chip,
+.k-subcat-chip,
+.k-modal-dot,
+.k-modal-cart-btn,
+.k-cart-btn,
+.k-modal-back,
+.k-modal-close,
+.k-modal-nav-btn {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* ── FIX 6 : Safari momentum scrolling partout où il y a un scroll ── */
+.k-modal-scroll,
+.k-modal-details,
+.k-cart-body,
+.k-order-body,
+.k-cats,
+.k-subcats-rail,
+.k-promo-rail,
+.k-sug-rail,
+.k-search-dropdown,
+#k-page-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain; /* empêche le bounce de propager au parent */
+}
+
+/* ── FIX 7 : Désactiver le highlight bleu iOS sur les liens/boutons ─ */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── FIX 8 : Position fixed iOS keyboard — les inputs ne passent pas */
+/* derrière le clavier virtuel sur iOS                                */
+@supports (-webkit-touch-callout: none) {
+  /* Safari iOS only */
+  .k-modal-overlay.open {
+    /* Permettre à iOS de gérer correctement le clavier */
+    position: fixed;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* iOS : les boutons n'activent pas le focus à l'infini */
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ── FIX 9 : safe-area pour les iPhone avec notch (Dynamic Island) ── */
+.k-header {
+  padding-top: calc(10px + env(safe-area-inset-top, 0)) !important;
+}
+.k-bnav {
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0)) !important;
+}
+.k-modal-topbar {
+  padding-top: calc(10px + env(safe-area-inset-top, 0)) !important;
+}
+
+/* ── FIX 10 : hover iOS (tap = hover collé), donc on différencie ──── */
+/* Si on a un hover, on l'applique uniquement sur device qui peuvent   */
+/* VRAIMENT hover (pas les écrans tactiles)                            */
+@media (hover: none) and (pointer: coarse) {
+  /* Appareil tactile : pas de hover */
+  .k-card:hover,
+  .k-sug-card:hover,
+  .k-buy-now-btn:hover,
+  .k-add-cart-btn:hover {
+    transform: none !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05) !important;
+  }
+}
