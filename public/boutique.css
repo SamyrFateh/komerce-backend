@@ -1367,12 +1367,21 @@ body.cart-open{overflow:hidden}
   background:var(--coral);color:#fff;
 }
 
-/* Desktop : 3 colonnes quand on a de la place */
-@media(min-width:600px){
-  .k-sug-grid{grid-template-columns:repeat(3, 1fr)}
+/* Mobile d'abord : 2 colonnes par défaut (forcé) */
+.k-sug-grid{
+  grid-template-columns:repeat(2, 1fr) !important;
 }
-@media(min-width:900px){
-  .k-sug-grid{grid-template-columns:repeat(4, 1fr)}
+/* Tablette : 3 colonnes seulement à partir de 768px */
+@media(min-width:768px){
+  .k-sug-grid{
+    grid-template-columns:repeat(3, 1fr) !important;
+  }
+}
+/* Desktop : 4 colonnes à partir de 1100px (vraie taille desktop) */
+@media(min-width:1100px){
+  .k-sug-grid{
+    grid-template-columns:repeat(4, 1fr) !important;
+  }
 }
 
 /* ── STICKY BOTTOM RENFORCÉ pour les actions ── */
@@ -3623,7 +3632,7 @@ input#of-client-email {
 }
 
 /* Grille verticale 2 colonnes mobile — scroll haut/bas naturel */
-.k-sug-grid, .k-sug-rail {
+.k-sug-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 10px !important;
@@ -3787,7 +3796,7 @@ body.modal-open .k-bnav {
   margin-bottom: 12px !important;
   color: var(--text) !important;
 }
-.k-sug-grid, .k-sug-rail {
+.k-sug-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 10px !important;
@@ -3809,7 +3818,7 @@ body.modal-open .k-bnav {
   border-top: 1px solid var(--sand-dark);
 }
 @media (min-width: 900px) {
-  .k-sug-grid, .k-sug-rail { grid-template-columns: repeat(4, 1fr) !important; }
+  .k-sug-grid { grid-template-columns: repeat(4, 1fr) !important; }
   .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
 }
 
@@ -3989,7 +3998,7 @@ body.modal-open .k-bnav {
   margin: 0 0 12px;
   color: var(--text, #2a2a2a);
 }
-.k-sug-grid, .k-sug-rail {
+.k-sug-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 10px !important;
@@ -4010,7 +4019,7 @@ body.modal-open .k-bnav {
 }
 
 @media (min-width: 900px) {
-  .k-sug-grid, .k-sug-rail { grid-template-columns: repeat(4, 1fr) !important; }
+  .k-sug-grid { grid-template-columns: repeat(4, 1fr) !important; }
   .k-modal-overlay.open .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
 }
 
@@ -4833,68 +4842,6 @@ body.cart-open #k-page-scroll {
 }
 .k-modal-actions .k-buy-now-btn:active { transform: scale(0.98); }
 
-/* ── MINI FAB FLOTTANT (revient quand les boutons sortent du viewport) ── */
-.k-modal-fab{
-  position:fixed;
-  bottom:16px;
-  left:50%;
-  transform:translateX(-50%) translateY(120%);
-  z-index:1200;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:0;
-  background:transparent;
-  opacity:0;
-  pointer-events:none;
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s ease;
-  width:calc(100% - 32px);
-  max-width:420px;
-}
-.k-modal-fab.visible{
-  transform:translateX(-50%) translateY(0);
-  opacity:1;
-  pointer-events:auto;
-}
-.k-modal-fab-cart{
-  flex:0 0 52px;
-  width:52px;height:52px;
-  border-radius:50%;
-  background:#fff;
-  color:var(--coral);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,0,0,.18);
-  font-size:22px;
-  transition:transform .15s,background .2s;
-  position:relative;
-}
-.k-modal-fab-cart:active{transform:scale(.9)}
-.k-modal-fab-cart img{width:24px;height:24px}
-.k-modal-fab-cart-badge{
-  position:absolute;top:-2px;right:-2px;
-  min-width:20px;height:20px;
-  background:var(--coral);color:#fff;
-  border-radius:50%;font-size:11px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-  padding:0 5px;border:2px solid #fff;
-}
-.k-modal-fab-cart-badge.u-hidden{display:none}
-.k-modal-fab-buy{
-  flex:1;
-  height:52px;
-  border-radius:26px;
-  background:linear-gradient(135deg, #e05a48 0%, #c53927 100%);
-  color:#fff;
-  font-weight:700;
-  font-size:15px;
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  box-shadow:0 4px 16px rgba(224,90,72,.35);
-  transition:transform .15s;
-}
-.k-modal-fab-buy:active{transform:scale(.97)}
-
-
-
 /* ── Scroll unifié : padding pour éviter que le FAB masque le contenu ── */
 .k-modal-scroll{
   padding-bottom:80px;
@@ -4912,4 +4859,136 @@ body.cart-open #k-page-scroll {
     height:42vh !important;
     max-height:420px;
   }
+}
+
+/* Uniformisation des hauteurs de cartes suggestions (évite les trous) */
+.k-sug-grid .k-sug-card{
+  display:flex;
+  flex-direction:column;
+  height:auto;
+}
+.k-sug-grid .k-sug-card-name{
+  flex:1 0 auto;
+}
+/* Prix toujours aligné en bas de carte */
+.k-sug-grid .k-sug-card-price{
+  margin-top:auto;
+}
+
+/* ── FIX : #k-sug-rail est maintenant un conteneur de sections, pas une grille ── */
+#k-sug-rail{
+  display:block !important;
+  grid-template-columns:unset !important;
+  gap:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   TOPBAR ENRICHIE — apparaît au scroll
+   Le user garde toujours vue sur son produit sélectionné
+   ═══════════════════════════════════════════════════ */
+
+/* Conteneur de la vue enrichie (caché par défaut) */
+.k-modal-topbar-product{
+  display:none;
+  align-items:center;
+  gap:10px;
+  flex:1;
+  min-width:0;
+  opacity:0;
+  transform:translateY(-6px);
+  transition:opacity .25s ease, transform .25s ease;
+}
+
+/* Quand on est en mode "scrolled" : swap les contenus */
+.k-modal.is-scrolled .k-modal-back,
+.k-modal.is-scrolled .k-modal-nav {
+  display:none !important;
+}
+.k-modal.is-scrolled .k-modal-topbar-product{
+  display:flex;
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* Thumbnail du produit en topbar */
+.k-topbar-thumb{
+  flex:0 0 40px;
+  width:40px;height:40px;
+  border-radius:8px;
+  overflow:hidden;
+  background:var(--sand);
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.k-topbar-thumb img{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* Nom + prix */
+.k-topbar-info{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.k-topbar-name{
+  font-size:13px;
+  font-weight:600;
+  line-height:1.2;
+  color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.k-topbar-price{
+  font-size:12px;
+  font-weight:700;
+  color:var(--coral);
+  line-height:1.2;
+  margin-top:2px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.k-topbar-price-promo{
+  font-size:10px;
+  background:var(--coral);
+  color:#fff;
+  padding:1px 5px;
+  border-radius:8px;
+  font-weight:700;
+}
+
+/* Bouton Acheter compact */
+.k-topbar-buy{
+  flex:0 0 auto;
+  height:34px;
+  padding:0 14px;
+  border-radius:17px;
+  background:linear-gradient(135deg, #e05a48 0%, #c53927 100%);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  display:flex;align-items:center;gap:4px;
+  box-shadow:0 2px 8px rgba(224,90,72,.3);
+  transition:transform .15s;
+  white-space:nowrap;
+}
+.k-topbar-buy:active{transform:scale(.95)}
+
+/* Topbar : sticky top au scroll du modal */
+.k-modal-topbar{
+  position:sticky !important;
+  top:0;
+  z-index:20;
+  flex-shrink:0;
+}
+
+/* Le topbar-right se rétrécit quand en mode scrolled (pour laisser place au produit) */
+.k-modal.is-scrolled .k-modal-topbar-right .k-modal-cart-btn{
+  display:none;
 }

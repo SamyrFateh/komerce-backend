@@ -1346,73 +1346,110 @@ function quickRemove(productId, btnEl) {
     setupModalFAB();
   }
 
-  /* ── FAB flottant : mini barre Acheter qui apparaît au scroll ── */
+  /* ── TOPBAR ENRICHIE : produit visible quand on scroll ── */
   function setupModalFAB() {
-    let fab = document.getElementById('k-modal-fab');
-    if (!fab) {
-      fab = document.createElement('div');
-      fab.id = 'k-modal-fab';
-      fab.className = 'k-modal-fab';
-      fab.innerHTML = `
-        <button class="k-modal-fab-cart" aria-label="Voir le panier">
-          <img src="/images/panier_tresse.png" alt="">
-          <span class="k-modal-fab-cart-badge u-hidden" id="k-modal-fab-cart-badge">0</span>
-        </button>
-        <button class="k-modal-fab-buy" aria-label="Acheter maintenant">⚡ Acheter</button>
-      `;
-      document.body.appendChild(fab);
+    // Nouvelle version : topbar enrichie au lieu d'un FAB
+    setupEnrichedTopbar();
+  }
 
-      // Wire clicks
-      fab.querySelector('.k-modal-fab-cart').addEventListener('click', () => {
-        closeModal();
-        openCart();
-      });
-      fab.querySelector('.k-modal-fab-buy').addEventListener('click', () => {
+  function setupEnrichedTopbar() {
+    const modal = document.getElementById('k-modal');
+    const topbar = modal ? modal.querySelector('.k-modal-topbar') : null;
+    const product = state.modalProduct;
+    if (!topbar || !product) return;
+
+    // 1. Créer le bloc produit dans la topbar s'il n'existe pas encore
+    let productEl = topbar.querySelector('.k-modal-topbar-product');
+    if (!productEl) {
+      productEl = document.createElement('div');
+      productEl.className = 'k-modal-topbar-product';
+      productEl.innerHTML = `
+        <div class="k-topbar-thumb">
+          <img class="k-topbar-thumb-img" src="" alt="">
+        </div>
+        <div class="k-topbar-info">
+          <div class="k-topbar-name"></div>
+          <div class="k-topbar-price">
+            <span class="k-topbar-price-val"></span>
+            <span class="k-topbar-price-promo u-hidden"></span>
+          </div>
+        </div>
+        <button class="k-topbar-buy" aria-label="Acheter">⚡ Acheter</button>
+      `;
+      // Insérer avant .k-modal-topbar-right
+      const rightBar = topbar.querySelector('.k-modal-topbar-right');
+      if (rightBar) {
+        topbar.insertBefore(productEl, rightBar);
+      } else {
+        topbar.appendChild(productEl);
+      }
+
+      // Wire click sur Acheter
+      productEl.querySelector('.k-topbar-buy').addEventListener('click', () => {
         const buyBtn = document.getElementById('k-buy-now-btn');
         if (buyBtn) buyBtn.click();
       });
     }
 
-    // Sync badge panier
-    const badge = document.getElementById('k-modal-fab-cart-badge');
-    if (badge) {
-      const qty = cartQty();
-      if (qty > 0) {
-        badge.textContent = qty;
-        badge.classList.remove('u-hidden');
+    // 2. Mettre à jour le contenu avec le produit actuel
+    const thumb = productEl.querySelector('.k-topbar-thumb-img');
+    const name = productEl.querySelector('.k-topbar-name');
+    const priceVal = productEl.querySelector('.k-topbar-price-val');
+    const pricePromo = productEl.querySelector('.k-topbar-price-promo');
+    if (thumb) thumb.src = optimizeImgUrl(product.image_url, 80);
+    if (name) name.textContent = product.name || '';
+    if (priceVal) priceVal.textContent = fmtPrice(product.price_kmf);
+    if (pricePromo) {
+      if (product.promo_pct && product.promo_pct > 0) {
+        pricePromo.textContent = '-' + product.promo_pct + '%';
+        pricePromo.classList.remove('u-hidden');
       } else {
-        badge.classList.add('u-hidden');
+        pricePromo.classList.add('u-hidden');
       }
     }
 
-    // Observer : FAB visible quand les vrais boutons sont hors du viewport
-    if (state._fabObserver) state._fabObserver.disconnect();
-    const actions = document.querySelector('.k-modal-actions');
-    if (actions && 'IntersectionObserver' in window) {
-      const scrollRoot = document.querySelector('.k-modal-scroll');
-      state._fabObserver = new IntersectionObserver(
+    // 3. Observer le scroll : toggle .is-scrolled sur .k-modal
+    // Créer un sentinel élément en haut du scroll
+    const scrollEl = document.querySelector('.k-modal-scroll');
+    if (!scrollEl) return;
+
+    if (state._topbarObserver) state._topbarObserver.disconnect();
+
+    // On observe l'image wrap : dès qu'elle n'est quasi plus visible → scrolled
+    const imgWrap = scrollEl.querySelector('.k-modal-img-wrap');
+    if (imgWrap && 'IntersectionObserver' in window) {
+      state._topbarObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              fab.classList.remove('visible');
+            if (entry.intersectionRatio < 0.3) {
+              modal.classList.add('is-scrolled');
             } else {
-              fab.classList.add('visible');
+              modal.classList.remove('is-scrolled');
             }
           });
         },
-        { root: scrollRoot, threshold: 0.1, rootMargin: '0px 0px -20px 0px' }
+        { root: scrollEl, threshold: [0, 0.3, 0.7, 1] }
       );
-      state._fabObserver.observe(actions);
+      state._topbarObserver.observe(imgWrap);
     }
   }
 
   function hideModalFAB() {
-    const fab = document.getElementById('k-modal-fab');
-    if (fab) fab.classList.remove('visible');
+    // Reset topbar mode
+    const modal = document.getElementById('k-modal');
+    if (modal) modal.classList.remove('is-scrolled');
+    // Cleanup observers
     if (state._fabObserver) {
       state._fabObserver.disconnect();
       state._fabObserver = null;
     }
+    if (state._topbarObserver) {
+      state._topbarObserver.disconnect();
+      state._topbarObserver = null;
+    }
+    // Hide legacy FAB if present
+    const fab = document.getElementById('k-modal-fab');
+    if (fab) fab.classList.remove('visible');
   }
 
   // ── Boutons ← → dans la topbar de la modal
