@@ -1323,6 +1323,7 @@ function quickRemove(productId, btnEl) {
       .filter(p => p.category !== product.category && p.id !== product.id)
       .sort(() => Math.random() - 0.5)
       .slice(0, 16);
+    console.log('[KMRC SUG] calling with sameCat=' + sameCat.length + ' otherCat=' + otherCat.length + ' cat=' + product.category);
     renderSuggestions(sameCat, otherCat, product.category);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
@@ -1331,6 +1332,77 @@ function quickRemove(productId, btnEl) {
     state._savedCatalogScrollY = window.scrollY;
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
+
+    // ── FAB flottant : apparaît quand les vrais boutons sortent du viewport ──
+    setupModalFAB();
+  }
+
+  /* ── FAB flottant : mini barre Acheter qui apparaît au scroll ── */
+  function setupModalFAB() {
+    let fab = document.getElementById('k-modal-fab');
+    if (!fab) {
+      fab = document.createElement('div');
+      fab.id = 'k-modal-fab';
+      fab.className = 'k-modal-fab';
+      fab.innerHTML = `
+        <button class="k-modal-fab-cart" aria-label="Voir le panier">
+          <img src="/images/panier_tresse.png" alt="">
+          <span class="k-modal-fab-cart-badge u-hidden" id="k-modal-fab-cart-badge">0</span>
+        </button>
+        <button class="k-modal-fab-buy" aria-label="Acheter maintenant">⚡ Acheter</button>
+      `;
+      document.body.appendChild(fab);
+
+      // Wire clicks
+      fab.querySelector('.k-modal-fab-cart').addEventListener('click', () => {
+        closeModal();
+        openCart();
+      });
+      fab.querySelector('.k-modal-fab-buy').addEventListener('click', () => {
+        const buyBtn = document.getElementById('k-buy-now-btn');
+        if (buyBtn) buyBtn.click();
+      });
+    }
+
+    // Sync badge panier
+    const badge = document.getElementById('k-modal-fab-cart-badge');
+    if (badge) {
+      const qty = cartQty();
+      if (qty > 0) {
+        badge.textContent = qty;
+        badge.classList.remove('u-hidden');
+      } else {
+        badge.classList.add('u-hidden');
+      }
+    }
+
+    // Observer : FAB visible quand les vrais boutons sont hors du viewport
+    if (state._fabObserver) state._fabObserver.disconnect();
+    const actions = document.querySelector('.k-modal-actions');
+    if (actions && 'IntersectionObserver' in window) {
+      state._fabObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              fab.classList.remove('visible');
+            } else {
+              fab.classList.add('visible');
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      );
+      state._fabObserver.observe(actions);
+    }
+  }
+
+  function hideModalFAB() {
+    const fab = document.getElementById('k-modal-fab');
+    if (fab) fab.classList.remove('visible');
+    if (state._fabObserver) {
+      state._fabObserver.disconnect();
+      state._fabObserver = null;
+    }
   }
 
   // ── Boutons ← → dans la topbar de la modal
@@ -1385,6 +1457,7 @@ function quickRemove(productId, btnEl) {
   }
 
   function closeModal() {
+    hideModalFAB();
     dom.modalOverlay.classList.remove('open');
     // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
@@ -1396,16 +1469,20 @@ function quickRemove(productId, btnEl) {
   }
 
   function renderSuggestions(sameCat, otherCat, categoryName) {
+    console.log('[KMRC SUG] called with', {sameCat: sameCat?.length, otherCat: otherCat?.length, cat: categoryName});
     sameCat = sameCat || [];
     otherCat = otherCat || [];
     const sugSection = document.getElementById('k-modal-suggestions');
+    console.log('[KMRC SUG] sugSection found:', !!sugSection);
     if (!sugSection) return;
 
     if (sameCat.length === 0 && otherCat.length === 0) {
+      console.log('[KMRC SUG] HIDING (both empty)');
       sugSection.classList.add('u-hidden');
       return;
     }
     sugSection.classList.remove('u-hidden');
+    console.log('[KMRC SUG] rendering', sameCat.length + otherCat.length, 'products');
 
     // Template carte suggestion (factoring)
     const cardHTML = (p) => `

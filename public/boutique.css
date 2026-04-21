@@ -1369,10 +1369,6 @@ body.cart-open{overflow:hidden}
 
 /* ── STICKY BOTTOM RENFORCÉ pour les actions ── */
 .k-modal-actions{
-  position:sticky;
-  bottom:0;
-  z-index:10;
-  box-shadow:0 -2px 12px rgba(0,0,0,.06);
 }
 /* Laisse l'espace nécessaire pour que la dernière ligne de la grille ne soit pas cachée derrière */
 .k-modal-suggestions{
@@ -3237,7 +3233,6 @@ body.cart-open{overflow:hidden}
   .k-modal-actions {
     flex-shrink: 0;
     background: #fff;
-    z-index: 2;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
   /* Buy button styling (was missing) */
@@ -3653,11 +3648,8 @@ input#of-client-email {
 /* Assurer que la modale garde les actions (quantité + ajout panier) en bas fixe */
 .k-modal-actions {
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
   background: var(--white);
   border-top: 1px solid var(--sand-dark);
-  z-index: 3;
 }
 
 
@@ -3805,11 +3797,8 @@ body.modal-open .k-bnav {
 }
 .k-modal-actions {
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
   background: var(--white);
   border-top: 1px solid var(--sand-dark);
-  z-index: 3;
 }
 @media (min-width: 900px) {
   .k-sug-grid, .k-sug-rail { grid-template-columns: repeat(4, 1fr) !important; }
@@ -4019,11 +4008,8 @@ body.modal-open .k-bnav {
 
 /* Actions sticky en bas modale */
 .k-modal-actions {
-  position: sticky;
-  bottom: 0;
   background: var(--white, white);
   border-top: 1px solid var(--sand-dark, #e4d9c7);
-  z-index: 3;
   padding: 12px;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
@@ -4838,3 +4824,64 @@ body.cart-open #k-page-scroll {
   box-shadow: 0 5px 14px rgba(224, 90, 72, 0.4);
 }
 .k-modal-actions .k-buy-now-btn:active { transform: scale(0.98); }
+
+/* ── MINI FAB FLOTTANT (revient quand les boutons sortent du viewport) ── */
+.k-modal-fab{
+  position:fixed;
+  bottom:16px;
+  left:50%;
+  transform:translateX(-50%) translateY(120%);
+  z-index:1200;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0;
+  background:transparent;
+  opacity:0;
+  pointer-events:none;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s ease;
+  width:calc(100% - 32px);
+  max-width:420px;
+}
+.k-modal-fab.visible{
+  transform:translateX(-50%) translateY(0);
+  opacity:1;
+  pointer-events:auto;
+}
+.k-modal-fab-cart{
+  flex:0 0 52px;
+  width:52px;height:52px;
+  border-radius:50%;
+  background:#fff;
+  color:var(--coral);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.18);
+  font-size:22px;
+  transition:transform .15s,background .2s;
+  position:relative;
+}
+.k-modal-fab-cart:active{transform:scale(.9)}
+.k-modal-fab-cart img{width:24px;height:24px}
+.k-modal-fab-cart-badge{
+  position:absolute;top:-2px;right:-2px;
+  min-width:20px;height:20px;
+  background:var(--coral);color:#fff;
+  border-radius:50%;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 5px;border:2px solid #fff;
+}
+.k-modal-fab-cart-badge.u-hidden{display:none}
+.k-modal-fab-buy{
+  flex:1;
+  height:52px;
+  border-radius:26px;
+  background:linear-gradient(135deg, #e05a48 0%, #c53927 100%);
+  color:#fff;
+  font-weight:700;
+  font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 4px 16px rgba(224,90,72,.35);
+  transition:transform .15s;
+}
+.k-modal-fab-buy:active{transform:scale(.97)}
+
