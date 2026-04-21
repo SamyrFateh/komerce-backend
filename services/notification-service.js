@@ -68,10 +68,11 @@ function formatAmount(kmf) {
 }
 
 function pickPhone(order, fallback) {
-  // [LEGACY] Priorité : tracking_phone > recipient_phone > user_phone > fallback
+  // [LEGACY] Priorité : tracking_phone > recipient_phone > phone_payer > user_phone > fallback
   // Conservée pour rétro-compat. Les nouvelles fonctions utilisent pickRecipients().
   return order.tracking_phone
-      || order.recipient_phone
+      || order.recipient_phone        // via JOIN users r ON r.id = o.recipient_id
+      || order.phone_payer            // via JOIN users u ON u.id = o.user_id
       || order.user_phone
       || (Array.isArray(fallback) ? fallback[0] : fallback)
       || null;
@@ -91,8 +92,15 @@ function pickPhone(order, fallback) {
  * Dédoublonne automatiquement : si payeur === bénéficiaire (achat local), on envoie 1 seule fois.
  */
 function pickRecipients(order, event) {
-  const payer = order.tracking_phone || order.user_phone || null;
-  const benef = order.recipient_phone || null;
+  // payeur : tracking_phone (prioritaire) > phone_payer (migration 040) > user_phone
+  // bénéficiaire : recipient_phone (via JOIN users r) > phone_beneficiary > user_phone si pas de recipient distinct
+  const payer = order.tracking_phone
+             || order.phone_payer
+             || order.user_phone
+             || null;
+  const benef = order.recipient_phone
+             || order.phone_beneficiary
+             || null;
 
   const result = [];
   const seen = new Set();
@@ -193,11 +201,20 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
   try {
     // Récupère le contact depuis la DB car la signature n'a pas l'objet complet
     const { rows: [order] } = await db.query(
-      `SELECT o.id, o.reference, o.tracking_phone, o.recipient_phone, o.recipient_name,
-              u.phone AS user_phone, u.full_name AS user_full_name
-         FROM orders o
-         LEFT JOIN users u ON u.id = o.user_id
-        WHERE o.id = $1`,
+      `SELECT
+         o.id, o.reference,
+         o.tracking_phone,
+         o.user_id, o.recipient_id,
+         u.phone         AS user_phone,
+         u.full_name     AS user_full_name,
+         u.phone_payer,
+         u.phone_beneficiary,
+         r.phone         AS recipient_phone,
+         r.full_name     AS recipient_name
+       FROM orders o
+       LEFT JOIN users u ON u.id = o.user_id
+       LEFT JOIN users r ON r.id = o.recipient_id
+       WHERE o.id = $1`,
       [orderId]
     );
 
@@ -350,15 +367,21 @@ async function _loadOrderFromParcel(parcelId) {
          o.id,
          o.reference,
          o.tracking_phone,
-         o.recipient_phone,
-         o.recipient_name,
-         o.user_phone,
-         o.user_full_name,
+         o.user_id, o.recipient_id,
+         u.phone       AS user_phone,
+         u.full_name   AS user_full_name,
+         u.phone_payer,
+         u.phone_beneficiary,
+         r.phone       AS recipient_phone,
+         r.full_name   AS recipient_name,
          o.total_kmf,
-         o.relais_name,
+         rel.name      AS relais_name,
          p.reference AS parcel_reference
        FROM parcels p
-       LEFT JOIN orders o ON o.id = p.order_id
+       LEFT JOIN orders o   ON o.id = p.order_id
+       LEFT JOIN users u    ON u.id = o.user_id
+       LEFT JOIN users r    ON r.id = o.recipient_id
+       LEFT JOIN relais rel ON rel.id = o.relais_id
        WHERE p.id = $1
        LIMIT 1`,
       [parcelId]
@@ -548,10 +571,22 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
   try {
     // Charge l'order complet pour bénéficier de pickRecipients
     const { rows: [order] } = await db.query(
-      `SELECT o.id, o.reference, o.tracking_phone, o.recipient_phone, o.recipient_name,
-              o.user_phone, o.user_full_name, o.total_kmf, o.relais_name
-         FROM orders o
-        WHERE o.id = $1`,
+      `SELECT
+         o.id, o.reference, o.tracking_phone,
+         o.user_id, o.recipient_id,
+         u.phone       AS user_phone,
+         u.full_name   AS user_full_name,
+         u.phone_payer,
+         u.phone_beneficiary,
+         r.phone       AS recipient_phone,
+         r.full_name   AS recipient_name,
+         o.total_kmf,
+         rel.name      AS relais_name
+       FROM orders o
+       LEFT JOIN users u    ON u.id = o.user_id
+       LEFT JOIN users r    ON r.id = o.recipient_id
+       LEFT JOIN relais rel ON rel.id = o.relais_id
+       WHERE o.id = $1`,
       [orderId]
     );
 
