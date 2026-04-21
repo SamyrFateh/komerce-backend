@@ -2522,89 +2522,94 @@ async function submitOrder(btn) {
     body.innerHTML = '';
     dom.orderTitle.textContent = '✅ Commande confirmée';
 
-    // Fix 11 : retirer le bouton Confirmer sticky
+    // Retirer tout bouton Confirmer sticky résiduel
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
 
-    // Fix 14 : notice WhatsApp simplifiée
-    const hasDiaspora = state.orderData && (state.orderData.sender_phone || '').trim().length >= 8;
-    const waNotice = hasDiaspora
-      ? '📲 Le bénéficiaire et vous recevrez une confirmation WhatsApp'
-      : '📲 Le bénéficiaire recevra une confirmation WhatsApp';
+    // Masquer le bouton retour panier s'il existe encore
+    body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
 
     const wrap = document.createElement('div');
-    wrap.className = 'k-confirm-wrap';
+    wrap.className = 'k-confirm-wrap k-confirm-simple';
 
-    wrap.innerHTML = '<div class="k-confirm-emoji">🎉</div>'
-      + '<h3 class="k-confirm-title">Commande enregistrée !</h3>'
-      + '<p class="k-confirm-sub">Votre référence :</p>'
-      + '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>'
-      + '<div><button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier la référence</button></div>';
+    // Émoji + titre
+    const emoji = document.createElement('div');
+    emoji.className = 'k-confirm-emoji';
+    emoji.textContent = '🎉';
+    wrap.appendChild(emoji);
 
+    const title = document.createElement('h3');
+    title.className = 'k-confirm-title';
+    title.textContent = 'Commande confirmée !';
+    wrap.appendChild(title);
+
+    // Référence (élément central de l'écran)
+    const refBlock = document.createElement('div');
+    refBlock.className = 'k-confirm-ref-block';
+    refBlock.innerHTML =
+      '<div class="k-confirm-ref-label">Votre référence</div>' +
+      '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>' +
+      '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
+    wrap.appendChild(refBlock);
+
+    // Code cash (seulement si paiement cash)
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
-      wrap.innerHTML += '<p class="k-confirm-cash-lbl">🏪 Code de paiement au relais :</p>'
-        + '<div class="k-confirm-cash-ref">' + sanitize(order.cash_ref_code) + '</div>';
+      const cashBlock = document.createElement('div');
+      cashBlock.className = 'k-confirm-cash-block';
+      cashBlock.innerHTML =
+        '<div class="k-confirm-cash-label">🏪 Code à présenter au relais</div>' +
+        '<div class="k-confirm-cash-code">' + sanitize(order.cash_ref_code) + '</div>';
+      wrap.appendChild(cashBlock);
     }
 
-    if (fullResult && fullResult.discount_pct > 0) {
-      wrap.innerHTML += '<div class="k-confirm-loyalty">🎁 Fidélité ' + sanitize(fullResult.loyalty_label || '') + ' : -' + fullResult.discount_pct + '% (-' + fmt(fullResult.discount_kmf, 'KMF') + ')</div>';
-    }
+    // 2 consignes courtes
+    const notices = document.createElement('div');
+    notices.className = 'k-confirm-notices';
+    notices.innerHTML =
+      '<div class="k-confirm-notice-row">📲 Vous allez recevoir un WhatsApp de confirmation</div>' +
+      '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
+    wrap.appendChild(notices);
 
-    if (fullResult && fullResult.credit_applied_kmf > 0) {
-      wrap.innerHTML += '<div class="k-confirm-credit">💰 Crédit boutique appliqué : <strong>-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
-    }
-
-    wrap.innerHTML += '<div class="k-confirm-notice">'
-      + '<div>🏪 Paiement en cash (KMF) au point relais lors du retrait.</div>'
-      + '<div class="k-confirm-notice-item">' + sanitize(waNotice) + '</div>'
-      + '<div class="k-confirm-notice-item">📍 Présentez la référence au point relais.</div></div>';
-
-    // Fix 12 : bouton Fermer avec countdown
-    wrap.innerHTML += '<button id="k-order-track-btn" class="k-confirm-track">📍 Suivre ma commande</button>'
-      + '<button id="k-order-close-btn" class="k-confirm-close">Fermer (7)</button>';
+    // Actions : Suivre + Continuer
+    const actions = document.createElement('div');
+    actions.className = 'k-confirm-actions';
+    actions.innerHTML =
+      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">📍 Suivre ma commande</button>' +
+      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">🛍️ Continuer mes achats</button>';
+    wrap.appendChild(actions);
 
     body.appendChild(wrap);
 
+    // Bindings
     setTimeout(() => {
-      // Copier référence
       const copyBtn = document.getElementById('k-copy-ref-btn');
       if (copyBtn) {
         copyBtn.addEventListener('click', () => {
           if (navigator.clipboard) {
-            navigator.clipboard.writeText(order.reference || '').then(() => showToast('📋 Référence copiée !'));
+            navigator.clipboard.writeText(order.reference || '').then(() => {
+              showToast('📋 Référence copiée !', 'success');
+              copyBtn.textContent = '✓ Copié';
+              setTimeout(() => { copyBtn.textContent = '📋 Copier'; }, 2000);
+            });
           }
         });
       }
 
-      // Fix 12 : auto-fermeture 7s avec countdown visible
       const closeBtn = document.getElementById('k-order-close-btn');
-      let countdown = 7;
-      const autoTimer = setInterval(() => {
-        countdown--;
-        if (closeBtn) closeBtn.textContent = 'Fermer (' + countdown + ')';
-        if (countdown <= 0) {
-          clearInterval(autoTimer);
-          closeOrderModal();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 1000);
-
       if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-          clearInterval(autoTimer);
           closeOrderModal();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       }
 
-      // Fix 13 : "Suivre" → bascule onglet Track + pré-remplit + auto-search
       const trackBtn = document.getElementById('k-order-track-btn');
       if (trackBtn) {
         trackBtn.addEventListener('click', () => {
-          clearInterval(autoTimer);
           closeOrderModal();
-          renderTrackView();
-          switchView('track');
-          $$('.k-bnav-item').forEach(i => i.classList.remove('active'));
+          if (typeof renderTrackView === 'function') renderTrackView();
+          if (typeof switchView === 'function') switchView('track');
+          const navItems = document.querySelectorAll('.k-bnav-item');
+          navItems.forEach(i => i.classList.remove('active'));
           const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
           if (trackNav) trackNav.classList.add('active');
           setTimeout(() => {
@@ -2620,7 +2625,7 @@ async function submitOrder(btn) {
     }, 0);
   }
 
-  /* ── SETUP CART DRAWER ──────────────────────────────────── */
+    /* ── SETUP CART DRAWER ──────────────────────────────────── */
   function setupDrawer() {
     dom.cartBtn.addEventListener('click', openCart);
     dom.cartClose.addEventListener('click', closeCart);

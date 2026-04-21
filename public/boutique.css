@@ -3782,3 +3782,269 @@ body.modal-open .k-bnav {
   border-color: var(--text-muted);
 }
 .ck-back-btn:active { transform: scale(0.97); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH FLUIDITÉ - v1                                                    */
+/*  Amélioration : scroll plus doux sur chips catégories + modale produit  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Scroll chips catégories — fluide et snappy ───────────────────── */
+.k-cats {
+  /* Snap plus net que proximity : on s'arrête toujours sur une chip */
+  scroll-snap-type: x proximity !important;
+  /* Évite que le swipe sur les chips fasse scroller la page verticalement */
+  overscroll-behavior-x: contain !important;
+  /* Inertie iOS + accélération hardware */
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+  /* Padding pour que les chips de bord soient bien visibles au snap */
+  scroll-padding-left: 16px;
+  scroll-padding-right: 16px;
+  /* Force hardware acceleration */
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+.k-chip {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* ── Sous-catégories : même traitement ───────────────────────────── */
+.k-subcats-rail {
+  overscroll-behavior-x: contain !important;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+/* ── Rail promos (Soldes) : momentum fluide ─────────────────────── */
+.k-promo-rail {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.k-promo-rail-inner {
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  MODALE PRODUIT — scroll vertical fluide                            */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+/* Le conteneur scroll est le modal-scroll lui-même (pas ses enfants) */
+.k-modal-overlay.open .k-modal-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  will-change: scroll-position;
+}
+
+/* Image zone : ne pas écraser le flex mais fluidifier */
+.k-modal-overlay.open .k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 460px;
+}
+
+/* Les détails prennent le reste, pas de overflow bloquant */
+.k-modal-overlay.open .k-modal-details {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Suggestions dans la modale : grille fluide ─────────────────── */
+.k-modal-suggestions {
+  padding: 16px 14px 24px;
+  background: var(--white, white);
+  border-top: 8px solid var(--sand, #faf6ed);
+}
+.k-modal-suggestions h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--text, #2a2a2a);
+}
+.k-sug-rail {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+.k-sug-card {
+  flex: unset !important;
+  width: 100% !important;
+  scroll-snap-align: unset !important;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.k-sug-card:active { transform: scale(0.97); }
+.k-sug-card img {
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+
+@media (min-width: 900px) {
+  .k-sug-rail { grid-template-columns: repeat(4, 1fr) !important; }
+  .k-modal-overlay.open .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
+}
+
+/* Actions sticky en bas modale */
+.k-modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--white, white);
+  border-top: 1px solid var(--sand-dark, #e4d9c7);
+  z-index: 3;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ÉCRAN DE SUCCÈS — version simplifiée                                   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-confirm-simple {
+  padding: 20px 16px 40px;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.k-confirm-simple .k-confirm-emoji {
+  font-size: 64px;
+  line-height: 1;
+  margin: 20px 0 14px;
+  animation: confirm-pop 0.45s ease-out;
+}
+
+@keyframes confirm-pop {
+  0%   { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.k-confirm-simple .k-confirm-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 28px;
+  color: var(--text, #2a2a2a);
+}
+
+/* Bloc référence — le héro de l'écran */
+.k-confirm-ref-block {
+  background: linear-gradient(135deg, #fff8ed 0%, #fef3df 100%);
+  border: 1.5px solid #f4c77a;
+  border-radius: 16px;
+  padding: 18px 14px 16px;
+  margin: 0 4px 18px;
+}
+.k-confirm-ref-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a06a1f;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.k-confirm-ref-block .k-confirm-ref {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'SF Mono', Menlo, monospace;
+  color: #6b3e0e;
+  margin: 4px 0 12px;
+  word-break: break-all;
+}
+.k-confirm-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: white;
+  border: 1.5px solid #e8c78a;
+  border-radius: 50px;
+  color: #6b3e0e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.k-confirm-copy:hover  { background: #fff8ed; transform: translateY(-1px); }
+.k-confirm-copy:active { transform: scale(0.97); }
+
+/* Bloc code cash (si paiement cash) */
+.k-confirm-cash-block {
+  background: #fdf4e8;
+  border: 2px dashed #e8a13a;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 0 4px 18px;
+}
+.k-confirm-cash-label {
+  font-size: 12px;
+  color: #8b5a1a;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.k-confirm-cash-code {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #6b3e0e;
+  font-family: 'SF Mono', Menlo, monospace;
+}
+
+/* Avis simples */
+.k-confirm-notices {
+  margin: 24px 4px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.k-confirm-notice-row {
+  font-size: 14px;
+  color: var(--text-muted, #666);
+  line-height: 1.5;
+  padding: 4px 0;
+}
+
+/* Actions */
+.k-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.k-confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-radius: 50px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+}
+.k-confirm-btn-primary {
+  background: linear-gradient(135deg, #2a7a3e 0%, #1d5b2a 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(42, 122, 62, 0.3);
+}
+.k-confirm-btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(42,122,62,0.4); }
+.k-confirm-btn-primary:active { transform: scale(0.98); }
+
+.k-confirm-btn-secondary {
+  background: white;
+  color: var(--text, #2a2a2a);
+  border: 1.5px solid var(--border, #e4d9c7);
+}
+.k-confirm-btn-secondary:hover  { background: #faf6ed; border-color: #d4b87a; }
+.k-confirm-btn-secondary:active { transform: scale(0.98); }
