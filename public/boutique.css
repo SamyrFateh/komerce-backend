@@ -347,7 +347,7 @@ body{
 .k-promo-rail-inner{
   display:flex;gap:8px;
   width:max-content;
-  animation:none;
+  animation:promo-scroll 40s linear infinite;
 }
 .k-promo-rail-inner:hover,
 .k-promo-rail-inner:active{

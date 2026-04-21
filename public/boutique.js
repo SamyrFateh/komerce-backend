@@ -565,6 +565,22 @@
     applyMobileStyles();
   markAllCartButtons();
   applyMobileStyles();
+
+  // FIX : nettoyer le panier des produits qui n'existent plus en DB
+  const validIds = new Set(state.products.map(p => String(p.id)));
+  const before = state.cart.length;
+  state.cart = state.cart.filter(item => {
+    const ok = validIds.has(String(item.product.id));
+    if (!ok) console.warn('[cart] Produit obsolète retiré :', item.product.id, item.product.name);
+    return ok;
+  });
+  if (state.cart.length !== before) {
+    saveCart();
+    if (typeof renderCartBody === 'function') renderCartBody();
+    if (typeof updateCartBadge === 'function') updateCartBadge();
+    const removed = before - state.cart.length;
+    showToast(`${removed} produit${removed > 1 ? 's' : ''} obsolète${removed > 1 ? 's' : ''} retiré${removed > 1 ? 's' : ''} du panier`, 'info');
+  }
 }
 
   /* ── RENDER PROMOS ──────────────────────────────────────── */
