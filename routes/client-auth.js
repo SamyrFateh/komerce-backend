@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
+const { sendMagicLink } = require('../services/notification-service');
 
 /**
  * POST /api/auth/magic-link
@@ -41,16 +42,32 @@ router.post('/magic-link', async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const magicLink = `${baseUrl}/mon-compte?token=${magicToken}`;
 
-    console.log(`📱 Magic link generated for ${user.full_name}: ${magicLink}`);
+    console.log(`[magic-link] Generated for ${user.full_name} (${user.phone})`);
 
-    // TODO: Send via WhatsApp API or SMS
-    // For now, log it and return success
-    
-    res.json({ 
-      success: true, 
-      message: 'Lien de connexion envoyé !',
-      // DEV ONLY — remove in production:
-      _dev_link: process.env.NODE_ENV !== 'production' ? magicLink : undefined
+    // Envoyer le lien via WhatsApp (AuthKey)
+    const waResult = await sendMagicLink({
+      phone: user.phone,
+      name: user.full_name,
+      magicLink,
+      expiryMin: 15,
+    });
+
+    console.log(`[magic-link] Send result:`, {
+      phone: user.phone,
+      success: waResult.success,
+      channel: waResult.channel,
+      reason: waResult.reason,
+    });
+
+    res.json({
+      success: true,
+      message: waResult.success
+        ? 'Lien de connexion envoyé par WhatsApp !'
+        : 'Si ce numéro est enregistré, vous recevrez un lien de connexion.',
+      // DEV ONLY : exposé uniquement en dev local explicite
+      _dev_link: (process.env.NODE_ENV === 'development' && process.env.MAGIC_LINK_DEV_ECHO === 'true')
+        ? magicLink
+        : undefined,
     });
   } catch (err) {
     console.error('Magic link request error:', err);
