@@ -566,6 +566,13 @@
   markAllCartButtons();
   applyMobileStyles();
 
+  // FEATURE 2 : vérifier si des favoris sont en promo et màj badge bnav
+  try {
+    const favProducts = state.products.filter(p => state.favs.includes(p.id));
+    const promoFavs = favProducts.filter(p => (p.promo_pct || 0) > 0);
+    if (typeof updateFavPromoBadge === 'function') updateFavPromoBadge(promoFavs.length);
+  } catch(e) { console.warn('[fav-promo-badge]', e.message); }
+
   // FIX : nettoyer le panier des produits qui n'existent plus en DB
   const validIds = new Set(state.products.map(p => String(p.id)));
   const before = state.cart.length;
@@ -2682,6 +2689,13 @@ async function submitOrder(btn) {
       document.getElementById('k-catalog-section').after(el);
     }
     const favProducts = state.products.filter(p => state.favs.includes(p.id));
+
+    // FEATURE 1 : Détecter les produits en promo parmi les favoris
+    const promoFavs = favProducts.filter(p => (p.promo_pct || 0) > 0);
+
+    // FEATURE 2 : Mettre à jour le badge "🎉" sur l'icône Favoris de la bnav
+    updateFavPromoBadge(promoFavs.length);
+
     if (!favProducts.length) {
       el.innerHTML = `<h2>❤️ Favoris</h2>
         <div class="k-fav-empty">
@@ -2698,7 +2712,7 @@ async function submitOrder(btn) {
         return `<div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
             ${renderProductCarousel(p, 400)}
-            ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
+            ${p.promo_pct ? `<span class="k-card-promo k-card-promo-fav">🎉 -${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
               ${qty > 0
@@ -2726,7 +2740,26 @@ async function submitOrder(btn) {
         </div>`;
       }).join('');
 
+      // FEATURE 1 bis : Banner "X produits en promo !" si applicable
+      const promoBanner = promoFavs.length > 0
+        ? `<div class="k-fav-promo-banner">
+             <span class="k-fav-promo-icon">🎉</span>
+             <div class="k-fav-promo-text">
+               <strong>${promoFavs.length} de vos favori${promoFavs.length > 1 ? 's sont' : ' est'} en promo !</strong>
+               <span>Profitez des réductions avant qu'elles disparaissent</span>
+             </div>
+           </div>`
+        : '';
+
+      // FEATURE 3 : Bouton partager la wishlist
+      const shareBtn = `<button class="k-fav-share-btn" id="k-fav-share-btn">
+        <span class="k-fav-share-icon">📲</span>
+        <span>Envoyer ma liste de souhaits</span>
+      </button>`;
+
       el.innerHTML = `<h2>❤️ Favoris <span class="k-fav-count">${favProducts.length} produit${favProducts.length > 1 ? 's' : ''}</span></h2>
+        ${promoBanner}
+        ${shareBtn}
         <div class="k-grid" id="k-fav-grid">${cardsHTML}</div>`;
 
       const favGrid = document.getElementById('k-fav-grid');
@@ -2755,7 +2788,84 @@ async function submitOrder(btn) {
           });
         });
       }
+
+      // FEATURE 3 : Click sur "Envoyer ma liste de souhaits"
+      const shareWishlistBtn = document.getElementById('k-fav-share-btn');
+      if (shareWishlistBtn) {
+        shareWishlistBtn.addEventListener('click', shareWishlistWhatsApp);
+      }
     }
+  }
+
+  // FEATURE 2 : Badge "🎉" sur l'icône Favoris de la bnav quand promos actives
+  function updateFavPromoBadge(promoCount) {
+    const favNavItem = document.querySelector('.k-bnav-item[data-tab="fav"]');
+    if (!favNavItem) return;
+    let badge = favNavItem.querySelector('.k-bnav-promo-badge');
+    if (promoCount > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'k-bnav-promo-badge';
+        favNavItem.appendChild(badge);
+      }
+      badge.textContent = '🎉';
+      badge.title = promoCount + ' favori' + (promoCount > 1 ? 's' : '') + ' en promo !';
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+
+  // FEATURE 3 : Partage wishlist via WhatsApp
+  async function shareWishlistWhatsApp() {
+    const favProducts = state.products.filter(p => state.favs.includes(p.id));
+    if (favProducts.length === 0) {
+      showToast('Aucun favori à partager.', 'error');
+      return;
+    }
+
+    showToast('⏳ Génération du lien…', 'info');
+
+    // Utilise l'API /api/shares existante pour créer un lien court partageable
+    // (comme le partage panier mais avec qty=1 pour chaque favori)
+    let shareURL;
+    try {
+      const items = favProducts.map(p => ({ product_id: p.id, qty: 1 }));
+      const res = await apiPost('/api/shares', { items: items });
+      shareURL = (res && res.share_url) || (window.location.origin + '/Komerce_Boutique.html');
+    } catch (e) {
+      console.warn('[wishlist] share API error:', e);
+      // Fallback : URL simple de la boutique
+      shareURL = window.location.origin + '/Komerce_Boutique.html';
+    }
+
+    // Construire le message WhatsApp
+    const lines = [];
+    lines.push('💝 *Ma liste de souhaits Komerce*');
+    lines.push('━━━━━━━━━━━━━━━━');
+    lines.push('');
+
+    favProducts.slice(0, 10).forEach((p, idx) => {
+      const priceStr = fmt(p.price_kmf || 0, 'KMF');
+      let line = (idx + 1) + '. ' + (p.name || 'Produit') + ' — ' + priceStr;
+      if (p.promo_pct > 0) {
+        line += ' 🎉 (-' + p.promo_pct + '%)';
+      }
+      lines.push(line);
+    });
+
+    if (favProducts.length > 10) {
+      lines.push('');
+      lines.push('... et ' + (favProducts.length - 10) + ' autre' + (favProducts.length > 11 ? 's' : ''));
+    }
+
+    lines.push('');
+    lines.push('━━━━━━━━━━━━━━━━');
+    lines.push('Tu peux m\'offrir l\'un d\'eux ? 🥰');
+    lines.push('👉 Voir la liste :');
+    lines.push(shareURL);
+
+    const msg = lines.join('\n');
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── VUE SUIVI ───────────────────────────────────────────── */
