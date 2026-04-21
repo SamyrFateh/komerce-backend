@@ -1292,7 +1292,21 @@ function quickRemove(productId, btnEl) {
     }
 
     dom.modalCat.textContent = `${product.emoji || ''} ${product.category || ''}`;
-    dom.modalStock.textContent = product.stock > 0 ? `✓ En stock (${product.stock})` : '✗ Rupture';
+    // Affichage stock intelligent : 3 états seulement
+    // - Stock > 10 : "✓ Disponible"
+    // - Stock 1-10 : "🔥 Plus que X en stock !"
+    // - Stock 0 : "✗ Rupture"
+    const stockVal = Number(product.stock || 0);
+    if (stockVal === 0) {
+      dom.modalStock.textContent = '✗ Rupture';
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--out';
+    } else if (stockVal <= 10) {
+      dom.modalStock.textContent = '🔥 Plus que ' + stockVal + ' en stock';
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--low';
+    } else {
+      dom.modalStock.textContent = '✓ Disponible';
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
+    }
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
 
@@ -1301,14 +1315,15 @@ function quickRemove(productId, btnEl) {
     const currentIdx = list.findIndex(p => p.id === product.id);
     updateModalNavArrows(list, currentIdx);
 
-    // Shein-style: same category first, then complementary, up to 20
+    // Séparer clairement : même catégorie (jusqu'à 8) puis autres (jusqu'à 12)
     const sameCat = state.products
-      .filter(p => p.category === product.category && p.id !== product.id);
+      .filter(p => p.category === product.category && p.id !== product.id)
+      .slice(0, 8);
     const otherCat = state.products
       .filter(p => p.category !== product.category && p.id !== product.id)
-      .sort(() => Math.random() - 0.5);
-    const suggestions = [...sameCat, ...otherCat].slice(0, 20);
-    renderSuggestions(suggestions);
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 12);
+    renderSuggestions(sameCat, otherCat, product.category);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
     dom.modalOverlay.classList.add('open');
@@ -1380,16 +1395,20 @@ function quickRemove(productId, btnEl) {
     state.modalHistory = [];
   }
 
-  function renderSuggestions(items) {
-    if (!items.length) {
-      const sugSection = document.getElementById('k-modal-suggestions');
-      if (sugSection) sugSection.classList.add('u-hidden');
+  function renderSuggestions(sameCat, otherCat, categoryName) {
+    sameCat = sameCat || [];
+    otherCat = otherCat || [];
+    const sugSection = document.getElementById('k-modal-suggestions');
+    if (!sugSection) return;
+
+    if (sameCat.length === 0 && otherCat.length === 0) {
+      sugSection.classList.add('u-hidden');
       return;
     }
-    const sugSection = document.getElementById('k-modal-suggestions');
-    if (sugSection) sugSection.classList.remove('u-hidden');
+    sugSection.classList.remove('u-hidden');
 
-    dom.sugRail.innerHTML = items.map(p => `
+    // Template carte suggestion (factoring)
+    const cardHTML = (p) => `
       <div class="k-sug-card" data-id="${p.id}">
         <div class="k-sug-card-img">
           <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
@@ -1399,7 +1418,39 @@ function quickRemove(productId, btnEl) {
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
         <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
       </div>
-    `).join('');
+    `;
+
+    // Construire 2 sections distinctes avec titres contextuels
+    let html = '';
+
+    if (sameCat.length > 0) {
+      const catLabel = categoryName ? categoryName.toLowerCase() : 'même catégorie';
+      html += `
+        <div class="k-sug-section">
+          <div class="k-sug-title">
+            <span class="k-sug-title-icon">🔍</span>
+            <span class="k-sug-title-text">Dans la catégorie ${sanitize(catLabel)}</span>
+          </div>
+          <div class="k-sug-rail k-sug-rail--same">${sameCat.map(cardHTML).join('')}</div>
+        </div>`;
+    }
+
+    if (otherCat.length > 0) {
+      html += `
+        <div class="k-sug-section">
+          <div class="k-sug-title">
+            <span class="k-sug-title-icon">✨</span>
+            <span class="k-sug-title-text">Vous aimerez peut-être aussi</span>
+          </div>
+          <div class="k-sug-rail k-sug-rail--other">${otherCat.map(cardHTML).join('')}</div>
+        </div>`;
+    }
+
+    // Replacer tout le contenu (remplace le vieux <div class="k-sug-rail">)
+    dom.sugRail.innerHTML = html;
+    // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
+    const oldH3 = sugSection.querySelector('h3');
+    if (oldH3) oldH3.style.display = 'none';
 
     // Clic sur toute la carte → ouvrir le produit
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
@@ -1418,36 +1469,8 @@ function quickRemove(productId, btnEl) {
       });
     });
 
-    // Fix 4 : flèches ◀▶ coral + masquage aux extrémités
-    if (sugSection) {
-      let wrapEl = sugSection.querySelector('.k-sug-wrap');
-      if (!wrapEl) {
-        wrapEl = document.createElement('div');
-        wrapEl.className = 'k-sug-wrap';
-        // position:relative is in CSS (.k-sug-wrap)
-        dom.sugRail.parentNode.insertBefore(wrapEl, dom.sugRail);
-        wrapEl.appendChild(dom.sugRail);
-      }
-      wrapEl.querySelectorAll('.k-sug-arrow').forEach(a => a.remove());
-      const prevArrow = document.createElement('button');
-      prevArrow.className = 'k-sug-arrow prev';
-      prevArrow.innerHTML = '◀';
-      prevArrow.setAttribute('aria-label', 'Précédent');
-      const nextArrow = document.createElement('button');
-      nextArrow.className = 'k-sug-arrow next';
-      nextArrow.innerHTML = '▶';
-      nextArrow.setAttribute('aria-label', 'Suivant');
-      wrapEl.appendChild(prevArrow);
-      wrapEl.appendChild(nextArrow);
-      function syncArrows() {
-        prevArrow.hidden = dom.sugRail.scrollLeft <= 2;
-        nextArrow.hidden = dom.sugRail.scrollLeft >= dom.sugRail.scrollWidth - dom.sugRail.clientWidth - 10;
-      }
-      prevArrow.addEventListener('click', () => { dom.sugRail.scrollBy({ left: -240, behavior: 'smooth' }); setTimeout(syncArrows, 350); });
-      nextArrow.addEventListener('click', () => { dom.sugRail.scrollBy({ left: 240, behavior: 'smooth' }); setTimeout(syncArrows, 350); });
-      dom.sugRail.addEventListener('scroll', syncArrows, { passive: true });
-      requestAnimationFrame(syncArrows);
-    }
+    // Note : les flèches ◀▶ sont désactivées car on a maintenant 2 sections distinctes.
+    // Le scroll horizontal reste disponible sur chaque .k-sug-rail (CSS).
   }
 
   function setupModal() {
