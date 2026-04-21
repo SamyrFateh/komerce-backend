@@ -1886,27 +1886,29 @@ body.cart-open{overflow:hidden}
    ══════════════════════════════════════════════════════════ */
 .k-wa-fab{
   position:fixed;
-  bottom:calc(var(--bnav-h) + 14px);right:20px;
-  width:56px;height:56px;
+  bottom:calc(var(--bnav-h) + 8px);
+  right:10px;
+  width:44px;height:44px;
   border-radius:50%;
   background:var(--whatsapp);
   color:#fff;
   display:flex;align-items:center;justify-content:center;
   z-index:100;
-  box-shadow:0 4px 14px rgba(37,211,102,.4);
+  box-shadow:0 3px 10px rgba(37,211,102,.35);
   transition:transform .2s var(--ease);
-  animation:waPulse 2s ease-in-out infinite;
+  animation:waPulse 2.5s ease-in-out infinite;
   text-decoration:none;
 }
-.k-wa-fab:hover{transform:scale(1.1)}
-.k-wa-fab svg{width:28px;height:28px}
+.k-wa-fab:hover{transform:scale(1.08)}
+.k-wa-fab:active{transform:scale(.92)}
+.k-wa-fab svg{width:22px;height:22px}
 
 @media(min-width:1024px){
-  .k-wa-fab{bottom:24px;right:24px}
+  .k-wa-fab{bottom:18px;right:18px}
 }
 @keyframes waPulse{
-  0%,100%{box-shadow:0 4px 14px rgba(37,211,102,.4)}
-  50%{box-shadow:0 4px 24px rgba(37,211,102,.7)}
+  0%,100%{box-shadow:0 3px 10px rgba(37,211,102,.35)}
+  50%{box-shadow:0 3px 18px rgba(37,211,102,.55)}
 }
 
 /* ── TOAST ─────────────────────────────────────────────── */
