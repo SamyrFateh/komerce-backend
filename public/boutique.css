@@ -4048,3 +4048,157 @@ body.modal-open .k-bnav {
 }
 .k-confirm-btn-secondary:hover  { background: #faf6ed; border-color: #d4b87a; }
 .k-confirm-btn-secondary:active { transform: scale(0.98); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PAGE "MES COMMANDES" - liste du user connecté                          */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-track-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted, #888);
+}
+.k-track-loading-spin {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #f0e6d0;
+  border-top-color: #2a7a3e;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  animation: k-track-spin 0.8s linear infinite;
+}
+@keyframes k-track-spin {
+  to { transform: rotate(360deg); }
+}
+
+.k-track-sub-hint {
+  color: var(--text-muted, #888);
+  font-size: 13px;
+  margin: 4px 0 18px;
+}
+
+.k-myorders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.k-myorder-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--sand-dark, #e4d9c7);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  font: inherit;
+}
+.k-myorder-card:hover {
+  border-color: #d4b87a;
+  background: #faf6ed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.k-myorder-card:active  { transform: scale(0.99); }
+.k-myorder-card.k-myorder-loading  { opacity: 0.5; pointer-events: none; }
+
+.k-myorder-img {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: var(--sand, #faf6ed);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.k-myorder-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.k-myorder-emoji {
+  font-size: 28px;
+}
+
+.k-myorder-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.k-myorder-ref {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #2a2a2a);
+  font-family: 'SF Mono', Menlo, monospace;
+}
+
+.k-myorder-items {
+  font-size: 13px;
+  color: var(--text-muted, #666);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-myorder-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.k-myorder-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.k-myorder-status--pending    { background: #fff8ed; color: #a06a1f; }
+.k-myorder-status--confirmed  { background: #e8f5ee; color: #1d5b2a; }
+.k-myorder-status--processing { background: #eaf2fd; color: #1d4f9e; }
+.k-myorder-status--shipped    { background: #f0eafd; color: #4f2b9e; }
+.k-myorder-status--available  { background: #fef0e8; color: #8b3a0f; }
+.k-myorder-status--delivered  { background: #e8f5ee; color: #1d5b2a; }
+.k-myorder-status--cancelled  { background: #fce8e8; color: #9e1d1d; }
+
+.k-myorder-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a7a3e;
+  white-space: nowrap;
+}
+
+.k-myorder-date {
+  font-size: 11px;
+  color: var(--text-muted, #999);
+  margin-top: 2px;
+}
+
+.k-myorder-arrow {
+  flex: 0 0 auto;
+  font-size: 24px;
+  color: var(--text-muted, #bbb);
+  font-weight: 300;
+  margin-right: 4px;
+}
+
+.k-myorders-new-search {
+  margin-top: 20px;
+  width: 100%;
+}

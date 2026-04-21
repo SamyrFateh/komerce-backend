@@ -2821,6 +2821,138 @@ async function submitOrder(btn) {
       favEl.after(el);
     }
 
+    // ── NOUVEAU : Tentative auto-chargement via cookie JWT ──
+    // Si le user a un cookie valide (= a déjà commandé), on affiche ses commandes directement
+    el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
+
+    (async () => {
+      try {
+        const data = await apiGet('/api/orders?limit=20');
+        const orders = (data && data.orders) || [];
+        if (orders.length > 0) {
+          renderMyOrdersList(el, orders);
+          return;
+        }
+        // 0 commande → on reste en mode recherche classique
+        renderTrackViewSearchMode(el);
+      } catch (err) {
+        // 401 / 403 / erreur → mode recherche classique
+        console.log('[track] pas de session, mode recherche :', err && err.message);
+        renderTrackViewSearchMode(el);
+      }
+    })();
+  }
+
+  /* ── NOUVEAU : Affichage liste "Mes commandes" ──
+     Si le user est connu via cookie JWT, on lui montre ses commandes
+     directement, triées par date (plus récentes en premier).
+  */
+  function renderMyOrdersList(el, orders) {
+    const header = '<h2>📦 Mes commandes</h2>' +
+      '<p class="k-track-sub-hint">' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') + ' trouvée' + (orders.length > 1 ? 's' : '') + '</p>';
+
+    const cards = orders.map(function(o) {
+      const statusInfo = getStatusDisplay(o.status || 'pending', o.payment_status);
+      const totalStr = fmt(o.total_kmf || 0, 'KMF');
+      const dateStr = formatOrderDate(o.created_at);
+      const firstItem = (o.items && o.items[0]) || {};
+      const imgHtml = firstItem.image_url
+        ? '<img src="' + sanitize(optimizeImgUrl(firstItem.image_url, 100)) + '" alt="" loading="lazy">'
+        : '<div class="k-myorder-emoji">📦</div>';
+      const itemsSummary = (o.items && o.items.length > 1)
+        ? (firstItem.product_name || 'Produit') + ' + ' + (o.items.length - 1) + ' autre' + (o.items.length > 2 ? 's' : '')
+        : (firstItem.product_name || 'Commande');
+
+      return '<button class="k-myorder-card" data-ref="' + sanitize(o.reference || '') + '">' +
+        '<div class="k-myorder-img">' + imgHtml + '</div>' +
+        '<div class="k-myorder-body">' +
+          '<div class="k-myorder-ref">' + sanitize(o.reference || '—') + '</div>' +
+          '<div class="k-myorder-items">' + sanitize(itemsSummary) + '</div>' +
+          '<div class="k-myorder-bottom">' +
+            '<span class="k-myorder-status k-myorder-status--' + statusInfo.cls + '">' + statusInfo.emoji + ' ' + statusInfo.label + '</span>' +
+            '<span class="k-myorder-total">' + totalStr + '</span>' +
+          '</div>' +
+          '<div class="k-myorder-date">' + dateStr + '</div>' +
+        '</div>' +
+        '<span class="k-myorder-arrow">›</span>' +
+      '</button>';
+    }).join('');
+
+    el.innerHTML = header +
+      '<div class="k-myorders-list">' + cards + '</div>' +
+      '<button class="k-track-btn k-track-btn--ghost k-myorders-new-search" id="k-myorders-search-other">🔍 Chercher une autre commande</button>';
+
+    // Clic sur une carte → ouvrir le détail
+    el.querySelectorAll('.k-myorder-card').forEach(function(card) {
+      card.addEventListener('click', async function() {
+        const ref = card.dataset.ref;
+        if (!ref) return;
+        card.classList.add('k-myorder-loading');
+        try {
+          const data = await apiGet('/api/orders/' + encodeURIComponent(ref));
+          const order = (data && data.order) || data;
+          // On affiche le détail dans le même conteneur
+          el.innerHTML = '';
+          const backBtn = document.createElement('button');
+          backBtn.className = 'k-track-btn k-track-btn--ghost';
+          backBtn.innerHTML = '← Retour à mes commandes';
+          backBtn.style.marginBottom = '12px';
+          backBtn.addEventListener('click', function() { renderTrackView(); });
+          el.appendChild(backBtn);
+          const box = document.createElement('div');
+          el.appendChild(box);
+          renderOrderDetail(order, box);
+        } catch (e) {
+          showToast('Impossible de charger cette commande.', 'error');
+          card.classList.remove('k-myorder-loading');
+        }
+      });
+    });
+
+    // Bouton "chercher une autre" → mode recherche classique
+    const searchBtn = el.querySelector('#k-myorders-search-other');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', function() {
+        renderTrackViewSearchMode(el);
+      });
+    }
+  }
+
+  /* ── Helpers pour affichage liste commandes ── */
+  function getStatusDisplay(status, paymentStatus) {
+    // Map status → {emoji, label, cls}
+    const map = {
+      pending:     { emoji: '⏳', label: 'En attente',      cls: 'pending' },
+      confirmed:   { emoji: '✅', label: 'Confirmée',       cls: 'confirmed' },
+      paid:        { emoji: '💰', label: 'Payée',           cls: 'confirmed' },
+      ordered:     { emoji: '🛒', label: 'En préparation',  cls: 'processing' },
+      preparation: { emoji: '📦', label: 'En préparation',  cls: 'processing' },
+      shipped:     { emoji: '🚢', label: 'Expédiée',        cls: 'shipped' },
+      in_transit:  { emoji: '🚚', label: 'En transit',      cls: 'shipped' },
+      available:   { emoji: '🏪', label: 'Au relais',       cls: 'available' },
+      collected:   { emoji: '✅', label: 'Retirée',         cls: 'delivered' },
+      delivered:   { emoji: '✅', label: 'Livrée',          cls: 'delivered' },
+      cancelled:   { emoji: '❌', label: 'Annulée',         cls: 'cancelled' },
+    };
+    return map[status] || { emoji: '📦', label: status || 'Inconnu', cls: 'pending' };
+  }
+
+  function formatOrderDate(isoDate) {
+    if (!isoDate) return '';
+    try {
+      const d = new Date(isoDate);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return "Aujourd'hui";
+      if (diffDays === 1) return 'Hier';
+      if (diffDays < 7) return 'Il y a ' + diffDays + ' jours';
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch(e) { return ''; }
+  }
+
+  /* ── Mode recherche classique (renommé de l'ancien renderTrackView) ── */
+  function renderTrackViewSearchMode(el) {
     const otpState = { phone: '', mode: 'quick' };
 
     el.innerHTML = `
