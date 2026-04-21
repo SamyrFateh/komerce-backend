@@ -2828,7 +2828,8 @@ async function submitOrder(btn) {
     (async () => {
       try {
         const data = await apiGet('/api/orders?limit=20');
-        const orders = (data && data.orders) || [];
+        // L'API retourne un tableau direct [{...}, {...}] ou parfois {orders:[...]}
+        const orders = Array.isArray(data) ? data : ((data && data.orders) || []);
         if (orders.length > 0) {
           renderMyOrdersList(el, orders);
           return;
@@ -2855,13 +2856,16 @@ async function submitOrder(btn) {
       const statusInfo = getStatusDisplay(o.status || 'pending', o.payment_status);
       const totalStr = fmt(o.total_kmf || 0, 'KMF');
       const dateStr = formatOrderDate(o.created_at);
-      const firstItem = (o.items && o.items[0]) || {};
-      const imgHtml = firstItem.image_url
-        ? '<img src="' + sanitize(optimizeImgUrl(firstItem.image_url, 100)) + '" alt="" loading="lazy">'
+      // L'API liste retourne : product_name, product_image_url, items_count
+      const productName = o.product_name || 'Commande';
+      const productImg = o.product_image_url || null;
+      const itemsCount = parseInt(o.items_count, 10) || 1;
+      const imgHtml = productImg
+        ? '<img src="' + sanitize(optimizeImgUrl(productImg, 100)) + '" alt="" loading="lazy">'
         : '<div class="k-myorder-emoji">📦</div>';
-      const itemsSummary = (o.items && o.items.length > 1)
-        ? (firstItem.product_name || 'Produit') + ' + ' + (o.items.length - 1) + ' autre' + (o.items.length > 2 ? 's' : '')
-        : (firstItem.product_name || 'Commande');
+      const itemsSummary = itemsCount > 1
+        ? productName + ' + ' + (itemsCount - 1) + ' autre' + (itemsCount > 2 ? 's' : '')
+        : productName;
 
       return '<button class="k-myorder-card" data-ref="' + sanitize(o.reference || '') + '">' +
         '<div class="k-myorder-img">' + imgHtml + '</div>' +
@@ -3158,7 +3162,17 @@ async function submitOrder(btn) {
     // Hide hero+categories on non-shop tabs
     if (heroWrap) heroWrap.classList.toggle('u-hidden', tab !== 'shop');
     // Adjust scroll container: on shop = below hero, on other tabs = below header only
-    if (pageScroll) pageScroll.dataset.tab = tab;
+    if (pageScroll) {
+      pageScroll.dataset.tab = tab;
+      // FIX : sur vues non-shop, effacer le top inline mis par _updateMobileScrollTop
+      // pour que la règle CSS #k-page-scroll[data-tab="track"]{top:44px} prenne effet
+      if (tab !== 'shop') {
+        pageScroll.style.top = '';
+      } else {
+        // Retour sur shop : re-calculer le top selon la hauteur du hero
+        if (typeof _updateMobileScrollTop === 'function') _updateMobileScrollTop();
+      }
+    }
     // Close cart drawer if open
     const cartOverlay = document.getElementById('k-cart-overlay');
     const cartDrawer = document.getElementById('k-cart-drawer');
