@@ -1179,8 +1179,14 @@ body.cart-open{overflow:hidden}
 .k-modal-carousel{width:100%;height:100%;overflow:hidden}
 .k-modal-carousel-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.22,1,.36,1)}
 .k-modal-slide{
-  flex:0 0 100%;width:100%;height:100%;
-  object-fit:cover;object-position:top center;display:block;
+  flex:0 0 100%;
+  width:100%;
+  height:100%;
+  object-fit:contain !important;      /* IMAGE ENTIÈRE, jamais coupée */
+  object-position:center center;
+  display:block;
+  background:#fff;                     /* fond blanc pour bandes éventuelles */
+  padding:12px;                        /* petit padding pour respirer */
 }
 .k-modal-dots{
   position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
@@ -5603,4 +5609,78 @@ button,
 @keyframes confirmSlide {
   0%   { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  IMAGE PRODUIT MODALE — responsive peu importe le ratio natif           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Fond subtil crème derrière l'image (plus élégant que blanc pur) */
+.k-modal-img-wrap {
+  background: linear-gradient(135deg, 
+    #faf9f7 0%, 
+    #f4f1ec 100%) !important;
+  position: relative;
+}
+
+/* Image entièrement visible, centrée, avec petit padding */
+.k-modal-slide,
+.k-modal-carousel-track img {
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: transparent !important;
+  padding: 16px !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Pour les très petites images (< 300px), on ne les étire pas trop */
+.k-modal-slide[src] {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ajustement mobile : un peu moins de padding pour maximiser l'espace */
+@media (max-width: 600px) {
+  .k-modal-slide,
+  .k-modal-carousel-track img {
+    padding: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MÊME FIX pour les images de cartes catalogue + suggestions             */
+/*  (éviter les crops brutaux quand le ratio ne matche pas)                */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Cartes catalogue */
+.k-card-img-wrap {
+  background: linear-gradient(135deg, 
+    #faf9f7 0%, 
+    #f4f1ec 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-card-img-wrap img {
+  object-fit: contain !important;
+  object-position: center !important;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+}
+
+/* Suggestions grille */
+.k-sug-grid .k-sug-card-img {
+  background: linear-gradient(135deg, 
+    #faf9f7 0%, 
+    #f4f1ec 100%) !important;
+}
+
+.k-sug-grid .k-sug-card-img img {
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 6px !important;
 }
