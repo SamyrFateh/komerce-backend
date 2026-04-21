@@ -1102,7 +1102,7 @@ function quickRemove(productId, btnEl) {
         '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
         '.k-card-fav, .k-card-add, .k-card-tab, ' +
         '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
-        '.k-sug-rail, .k-modal-carousel, ' +
+        '.k-sug-rail, .k-sug-grid, .k-modal-carousel, ' +
         'input, textarea, select'
       )) {
         tracking = false;
@@ -1318,11 +1318,11 @@ function quickRemove(productId, btnEl) {
     // Séparer clairement : même catégorie (jusqu'à 8) puis autres (jusqu'à 12)
     const sameCat = state.products
       .filter(p => p.category === product.category && p.id !== product.id)
-      .slice(0, 8);
+      .slice(0, 10);
     const otherCat = state.products
       .filter(p => p.category !== product.category && p.id !== product.id)
       .sort(() => Math.random() - 0.5)
-      .slice(0, 12);
+      .slice(0, 16);
     renderSuggestions(sameCat, otherCat, product.category);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
@@ -1431,7 +1431,7 @@ function quickRemove(productId, btnEl) {
             <span class="k-sug-title-icon">🔍</span>
             <span class="k-sug-title-text">Dans la catégorie ${sanitize(catLabel)}</span>
           </div>
-          <div class="k-sug-rail k-sug-rail--same">${sameCat.map(cardHTML).join('')}</div>
+          <div class="k-sug-grid k-sug-grid--same">${sameCat.map(cardHTML).join('')}</div>
         </div>`;
     }
 
@@ -1442,7 +1442,7 @@ function quickRemove(productId, btnEl) {
             <span class="k-sug-title-icon">✨</span>
             <span class="k-sug-title-text">Vous aimerez peut-être aussi</span>
           </div>
-          <div class="k-sug-rail k-sug-rail--other">${otherCat.map(cardHTML).join('')}</div>
+          <div class="k-sug-grid k-sug-grid--other">${otherCat.map(cardHTML).join('')}</div>
         </div>`;
     }
 
