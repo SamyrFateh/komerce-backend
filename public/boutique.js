@@ -881,19 +881,27 @@ function addToCart(product, qty, sourceBtn) {
   // Mark all grid buttons for this product
   markAllCartButtons();
 
-  // Fix 7 : ring pulse coral ×2 sur l'icône panier
-  if (dom.cartBtn) {
-    dom.cartBtn.classList.remove('ring-pulse');
-    void dom.cartBtn.offsetWidth;
-    dom.cartBtn.classList.add('ring-pulse');
-    setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+  // Animation "coucou" : la petite dame fait signe
+  // On cible LES DEUX dames (header catalogue + topbar modale) pour que
+  // l'animation soit toujours visible quel que soit le contexte.
+  const cartBtns = [
+    document.getElementById('k-cart-btn'),
+    document.getElementById('k-modal-cart-btn'),
+  ].filter(Boolean);
 
-    // Animation "coucou" de l'avatar (la petite dame se présente)
-    dom.cartBtn.classList.remove('avatar-wave');
-    void dom.cartBtn.offsetWidth;
-    dom.cartBtn.classList.add('avatar-wave');
-    setTimeout(() => dom.cartBtn.classList.remove('avatar-wave'), 900);
-  }
+  cartBtns.forEach(btn => {
+    // Ring pulse coral
+    btn.classList.remove('ring-pulse');
+    void btn.offsetWidth;
+    btn.classList.add('ring-pulse');
+    setTimeout(() => btn.classList.remove('ring-pulse'), 1500);
+
+    // Animation "coucou" de l'avatar
+    btn.classList.remove('avatar-wave');
+    void btn.offsetWidth;
+    btn.classList.add('avatar-wave');
+    setTimeout(() => btn.classList.remove('avatar-wave'), 900);
+  });
 
   if (isModalAdd) {
     // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
@@ -1659,16 +1667,31 @@ function quickRemove(productId, btnEl) {
       addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
     });
 
-    // ── Bouton "⚡ Acheter" — ajoute + ouvre directement le panier (sans animation fly)
+    // ── Bouton "⚡ Acheter" — ajout + transition douce vers le panier
     const buyNowBtn = document.getElementById('k-buy-now-btn');
     if (buyNowBtn) {
       buyNowBtn.addEventListener('click', () => {
         if (!state.modalProduct) return;
-        // Pas de sourceBtn → pas d'animation fly, pas de setTimeout qui perturbe l'ouverture du panier
-        addToCart(state.modalProduct, state.modalQty, null);
-        closeModal();
-        // Petit délai pour laisser la modal se fermer avant d'ouvrir le drawer
-        setTimeout(openCart, 250);
+
+        // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
+        const originalContent = buyNowBtn.innerHTML;
+        buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>✓</span><span>Ajouté au panier !</span></span>';
+        buyNowBtn.disabled = true;
+        buyNowBtn.classList.add('buy-confirmed');
+
+        // 2. Ajout au panier (déclenche l'animation coucou de la dame)
+        addToCart(state.modalProduct, state.modalQty, buyNowBtn);
+
+        // 3. Transition douce : 800ms pour voir le feedback + coucou dame, puis vers le panier
+        setTimeout(() => {
+          // Restaurer le bouton pour la prochaine ouverture
+          buyNowBtn.innerHTML = originalContent;
+          buyNowBtn.disabled = false;
+          buyNowBtn.classList.remove('buy-confirmed');
+          // Fermer la modale et ouvrir le panier avec fluidité
+          closeModal();
+          setTimeout(openCart, 250);
+        }, 800);
       });
     }
 
