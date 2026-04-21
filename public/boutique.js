@@ -1614,6 +1614,7 @@ function quickRemove(productId, btnEl) {
     dom.cartOverlay.classList.remove('open');
     dom.cartDrawer.classList.remove('open');
     document.body.classList.remove('cart-open');
+    document.body.classList.remove('cart-empty');
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -1643,6 +1644,14 @@ function quickRemove(productId, btnEl) {
 
   function renderCartBody(highlightId) {
     dom.cartBody.innerHTML = '';
+
+    // FIX UX : marquer le body avec 'cart-empty' si panier vide
+    // → permet au CSS de garder la bnav visible pour naviguer
+    if (state.cart.length === 0) {
+      document.body.classList.add('cart-empty');
+    } else {
+      document.body.classList.remove('cart-empty');
+    }
 
     if (state.cart.length === 0) {
       dom.cartBody.innerHTML = `

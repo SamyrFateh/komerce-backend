@@ -3591,8 +3591,11 @@ input#of-client-email {
 /*  PATCH MODAL PAIEMENT + CARROUSEL + BNAV (consolidé)                    */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Masquer bottom nav quand modal paiement/panier ouvert ────────── */
-body.cart-open .k-bnav,
+/* ── Masquer bottom nav quand modal paiement/panier AVEC items ─────
+   Si panier vide (classe cart-empty), on GARDE la bnav pour que 
+   l'utilisateur puisse naviguer librement (UX plus ouverte).
+   ────────────────────────────────────────────────────────────────── */
+body.cart-open:not(.cart-empty) .k-bnav,
 body.modal-open .k-bnav {
   display: none !important;
 }
