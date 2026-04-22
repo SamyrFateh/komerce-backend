@@ -18,77 +18,6 @@
     return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
   }
 
-  /* ── Carousel produit (Shein-like) ──────────────────────────
-     Swipeable gauche/droite sur les cartes grille.
-     Utilise p.images (JSON array) si dispo, sinon duplique image_url × 4.
-  */
-  function renderProductCarousel(p, width) {
-    width = width || 400;
-    let imgs = [];
-    if (p.images) {
-      try {
-        imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
-      } catch (_) { imgs = []; }
-    }
-    if (!Array.isArray(imgs) || imgs.length === 0) {
-      imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
-    }
-    if (!imgs.length) {
-      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy">`;
-    }
-    const slides = imgs.map((src, i) => `
-      <div class="k-card-slide">
-        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy">
-      </div>`).join('');
-    const dots = imgs.length > 1
-      ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i===0?' active':''}"></span>`).join('')}</div>`
-      : '';
-    return `<div class="k-card-carousel">${slides}</div>${dots}`;
-  }
-
-  /* ── Bind scroll dots + tap vs swipe (pour ouvrir modale au tap) ── */
-  function bindCarouselDots(card) {
-    const carousel = card.querySelector('.k-card-carousel');
-    const dots = card.querySelectorAll('.k-card-dot');
-    if (!carousel || carousel.dataset.bound) return;
-    carousel.dataset.bound = '1';
-
-    if (dots.length > 1) {
-      let raf = null;
-      carousel.addEventListener('scroll', () => {
-        if (raf) return;
-        raf = requestAnimationFrame(() => {
-          raf = null;
-          const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-          dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-        });
-      }, { passive: true });
-    }
-
-    // Tap vs swipe : si bouge > 10px, on marque pour bloquer ouverture modale
-    let sx = 0, sy = 0, moved = false;
-    function onStart(e) {
-      const t = e.touches ? e.touches[0] : e;
-      sx = t.clientX; sy = t.clientY; moved = false;
-    }
-    function onMove(e) {
-      const t = e.touches ? e.touches[0] : e;
-      if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) moved = true;
-    }
-    function onEnd() {
-      if (moved) {
-        card.dataset.justSwiped = '1';
-        setTimeout(() => { delete card.dataset.justSwiped; }, 250);
-      }
-    }
-    carousel.addEventListener('touchstart', onStart, { passive: true });
-    carousel.addEventListener('touchmove', onMove, { passive: true });
-    carousel.addEventListener('touchend', onEnd, { passive: true });
-    carousel.addEventListener('mousedown', onStart);
-    carousel.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
-    carousel.addEventListener('mouseup', onEnd);
-  }
-
   function promoImgUrl(url, w) {
     // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
     // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
@@ -187,7 +116,7 @@
   } catch(e) { console.warn('Stripe not loaded:', e); }
 
   /* ── STATE ─────────────────────────────────────────────── */
-  const CART_VERSION = 3; // bumped: clear carts with old (deactivated) product UUIDs
+  const CART_VERSION = 2;
   let savedCartV;
   try { savedCartV = parseInt(localStorage.getItem('kmrc_cart_v') || '0', 10); } catch(e) { savedCartV = 0; }
 
@@ -221,9 +150,6 @@
   checkoutAttemptKey: null,
   pendingStripeOrderRef: null,
 };
-  // Expose state (read-only) pour les modules externes (long-press stepper)
-  if (typeof window !== "undefined") window.state = state;
-
 
 
   /* ── SUBCATEGORIES MAP ───────────────────────────────── */
@@ -479,7 +405,7 @@
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            ${renderProductCarousel(p, 400)}
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -511,10 +437,8 @@
     // Re-bind events on new cards
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
       card.dataset.bound = '1';
-      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-        if (card.dataset.justSwiped === '1') return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
         openModal(card.dataset.id);
       });
     });
@@ -568,29 +492,6 @@
     applyMobileStyles();
   markAllCartButtons();
   applyMobileStyles();
-
-  // FEATURE 2 : vérifier si des favoris sont en promo et màj badge bnav
-  try {
-    const favProducts = state.products.filter(p => state.favs.includes(p.id));
-    const promoFavs = favProducts.filter(p => (p.promo_pct || 0) > 0);
-    if (typeof updateFavPromoBadge === 'function') updateFavPromoBadge(promoFavs.length);
-  } catch(e) { console.warn('[fav-promo-badge]', e.message); }
-
-  // FIX : nettoyer le panier des produits qui n'existent plus en DB
-  const validIds = new Set(state.products.map(p => String(p.id)));
-  const before = state.cart.length;
-  state.cart = state.cart.filter(item => {
-    const ok = validIds.has(String(item.product.id));
-    if (!ok) console.warn('[cart] Produit obsolète retiré :', item.product.id, item.product.name);
-    return ok;
-  });
-  if (state.cart.length !== before) {
-    saveCart();
-    if (typeof renderCartBody === 'function') renderCartBody();
-    if (typeof updateCartBadge === 'function') updateCartBadge();
-    const removed = before - state.cart.length;
-    showToast(`${removed} produit${removed > 1 ? 's' : ''} obsolète${removed > 1 ? 's' : ''} retiré${removed > 1 ? 's' : ''} du panier`, 'info');
-  }
 }
 
   /* ── RENDER PROMOS ──────────────────────────────────────── */
@@ -652,25 +553,13 @@
     }
     const pageItems = list.slice(0, state.pageSize);
 
-    // ── BAZAR vertical : en mode "Tout", on groupe par catégorie avec en-têtes ──
-    // (catégorie active autre que 'all' = comportement classique sans sections)
-    const useSections = state.activeCat === 'all' && !state.activeSubcat;
-    if (useSections) {
-      dom.grid.classList.add('k-grid-has-sections');
-      dom.grid.innerHTML = _renderGridWithSections(pageItems);
-      _bindGridEvents();
-      return;
-    }
-    // Sinon : mode grille classique, s'assurer qu'on n'a pas la classe sections
-    dom.grid.classList.remove('k-grid-has-sections');
-
     dom.grid.innerHTML = pageItems.map(p => {
       const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
       const qty = inCart ? inCart.qty : 0;
       return `
         <div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            ${renderProductCarousel(p, 400)}
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
             ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
@@ -701,10 +590,8 @@
 
     // Events
     dom.grid.querySelectorAll('.k-card').forEach(card => {
-      bindCarouselDots(card);
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-        if (card.dataset.justSwiped === '1') return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
         openModal(card.dataset.id);
       });
     });
@@ -725,132 +612,6 @@
       });
     });
   }
-
-
-  // ── HELPERS pour rendu sections catégorie en mode "Tout" ────────────
-  function _renderCard(p) {
-    const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
-    const qty = inCart ? inCart.qty : 0;
-    return `
-      <div class="k-card" data-id="${p.id}">
-        <div class="k-card-img-wrap">
-          ${renderProductCarousel(p, 400)}
-          ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
-          <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
-            ${isFav(p.id) ? '❤️' : '🤍'}
-          </button>
-          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
-          </button>
-        </div>
-        <div class="k-card-info">
-          <div class="k-card-name">${p.name}</div>
-          <div class="k-card-bottom k-card-prices-row">
-            <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-            ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
-          </div>
-          <div class="k-card-tabs">
-            <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-            <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-            <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-          </div>
-          <div class="k-card-panels">
-            <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-            <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-            <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  function _renderGridWithSections(items) {
-    // Grouper par catégorie en préservant l'ordre d'apparition
-    const order = [];
-    const byCat = {};
-    for (const p of items) {
-      const cat = p.category || 'Autres';
-      if (!byCat[cat]) { byCat[cat] = []; order.push(cat); }
-      byCat[cat].push(p);
-    }
-    // Emoji par catégorie (doit matcher les data-cat des chips du header)
-    const EMOJI_CAT = {
-      'Mode': '👕',
-      'Beauté': '🌸',
-      'Tech': '📱',
-      'Enfant': '🧒',
-      'Maison': '🏠',
-      'Sport': '⚽',
-      'Sur-mesure': '✨',
-      'Autres': '📦',
-    };
-
-    // Construire le HTML : pour chaque cat, en-tête + grille de ses produits
-    const parts = [];
-    for (const cat of order) {
-      const emoji = EMOJI_CAT[cat] || '📦';
-      const prods = byCat[cat];
-      const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
-      parts.push(
-        '<div class="k-sec-header" id="' + anchorId + '" data-cat="' + sanitize(cat) + '">' +
-          '<span class="k-sec-header-emoji">' + emoji + '</span>' +
-          '<span class="k-sec-header-name">' + sanitize(cat) + '</span>' +
-          '<span class="k-sec-header-count">' + prods.length + '</span>' +
-        '</div>'
-      );
-      // Les cartes, enveloppées dans un wrapper grille pour cette section
-      parts.push('<div class="k-sec-grid">');
-      for (const p of prods) parts.push(_renderCard(p));
-      parts.push('</div>');
-    }
-    return parts.join('');
-  }
-
-  function _bindGridEvents() {
-    // Cartes : ouvrir modal
-    dom.grid.querySelectorAll('.k-card').forEach(card => {
-      bindCarouselDots(card);
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-        if (card.dataset.justSwiped === '1') return;
-        openModal(card.dataset.id);
-      });
-    });
-    // Favoris
-    dom.grid.querySelectorAll('.k-card-fav').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleFav(btn.dataset.fav, btn);
-      });
-    });
-    // Ajout panier
-    dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
-        else { quickAdd(btn.dataset.add, btn); }
-      });
-    });
-    // Afficher/mettre à jour l'index flottant si on est en mode sections
-    if (typeof _renderFloatingIndex === 'function') _renderFloatingIndex();
-  }
-
-  // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
-  window.scrollToCategorySection = function(cat) {
-    if (!cat || cat === 'all') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
-    const el = document.getElementById(anchorId);
-    if (el) {
-      // Décaler du header sticky pour que l'en-tête soit visible, pas caché dessous
-      const headerH = (document.querySelector('.k-header')?.offsetHeight || 60) + 10;
-      const y = el.getBoundingClientRect().top + window.scrollY - headerH;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
-  };
-
 
   /* ── FLY TO CART ANIMATION ──────────────────────────────── */
   function flyToCart(sourceEl, product) {
@@ -1022,27 +783,13 @@ function addToCart(product, qty, sourceBtn) {
   // Mark all grid buttons for this product
   markAllCartButtons();
 
-  // Animation "coucou" : la petite dame fait signe
-  // On cible LES DEUX dames (header catalogue + topbar modale) pour que
-  // l'animation soit toujours visible quel que soit le contexte.
-  const cartBtns = [
-    document.getElementById('k-cart-btn'),
-    document.getElementById('k-modal-cart-btn'),
-  ].filter(Boolean);
-
-  cartBtns.forEach(btn => {
-    // Ring pulse coral
-    btn.classList.remove('ring-pulse');
-    void btn.offsetWidth;
-    btn.classList.add('ring-pulse');
-    setTimeout(() => btn.classList.remove('ring-pulse'), 1500);
-
-    // Animation "coucou" de l'avatar
-    btn.classList.remove('avatar-wave');
-    void btn.offsetWidth;
-    btn.classList.add('avatar-wave');
-    setTimeout(() => btn.classList.remove('avatar-wave'), 900);
-  });
+  // Fix 7 : ring pulse coral ×2 sur l'icône panier
+  if (dom.cartBtn) {
+    dom.cartBtn.classList.remove('ring-pulse');
+    void dom.cartBtn.offsetWidth;
+    dom.cartBtn.classList.add('ring-pulse');
+    setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+  }
 
   if (isModalAdd) {
     // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
@@ -1063,22 +810,10 @@ function addToCart(product, qty, sourceBtn) {
   function setQty(productId, newQty) {
     const pid = String(productId);
     if (newQty < 1) { removeFromCart(pid); return; }
-    
-  // Écoute les événements du stepper flottant (module externe long-press)
-  document.addEventListener('cart:setqty', function(e) {
-    const { pid, qty } = e.detail || {};
-    if (pid !== undefined && qty !== undefined) {
-      setQty(pid, qty);
-    }
-  });
-const item = state.cart.find(i => String(i.product.id) === pid);
+    const item = state.cart.find(i => String(i.product.id) === pid);
     if (item) {
       item.qty = newQty;
       saveCart();
-      // FIX 1.3 : rafraîchit À LA FOIS le panier drawer ET tous les steppers catalogue/suggestions
-      if (typeof renderCartBody === 'function') renderCartBody();
-      if (typeof markAllCartButtons === 'function') markAllCartButtons();
-      if (typeof updateCartBadge === 'function') updateCartBadge();
       renderCartBody();
       markAllCartButtons();
     }
@@ -1088,15 +823,13 @@ const item = state.cart.find(i => String(i.product.id) === pid);
     // IDs actuellement dans le panier
     const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
 
-    // OPTION C : on garde le panier tressé visuel, on ajoute juste un badge quantité
-    //           Le stepper s'affichera au long-press uniquement (via JS bindLongPressSteppers)
+    // Pour chaque bouton "+" de la grille, soit on met le mini-contrôle ±, soit on réinitialise
     document.querySelectorAll('.k-card-add').forEach(btn => {
       const pid = String(btn.dataset.add);
       if (inCartIds.has(pid)) {
         const item = state.cart.find(i => String(i.product.id) === pid);
         btn.classList.add('in-cart');
-        // Affichage = panier tressé + badge quantité en haut-droite
-        btn.innerHTML = '<span class="k-card-add-qty-badge">' + item.qty + '</span>';
+        btn.innerHTML = '<span class="k-add-minus" data-pid="' + pid + '">−</span><span class="k-add-qty">' + item.qty + '</span><span class="k-add-plus-ic">+</span>';
       } else {
         // Produit plus dans le panier → remettre juste le "+"
         btn.classList.remove('in-cart');
@@ -1217,7 +950,7 @@ function quickRemove(productId, btnEl) {
         }
 
         renderGrid();
-        // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
+        // Scroll vers le haut uniquement pour clic direct sur chip
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
@@ -1251,9 +984,8 @@ function quickRemove(productId, btnEl) {
     // Scroll horizontal = visuel uniquement, pas de changement auto de catégorie
   }
 
-  /* ── CATALOG SWIPE NAV (mobile) ──────────────────────────
-     Swipe horizontal gauche/droite sur le catalogue → change catégorie
-     avec animation slide (grille sort d'un côté, rentre de l'autre) */
+  /* ── CATALOG SWIPE NAV (mobile) ─────────────────────────── */
+  /* Swipe horizontal gauche/droite sur le catalogue → change catégorie */
   function setupCatalogSwipeNav() {
     if (window.innerWidth > 899) return;
 
@@ -1271,7 +1003,7 @@ function quickRemove(productId, btnEl) {
         '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
         '.k-card-fav, .k-card-add, .k-card-tab, ' +
         '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
-        '.k-sug-rail, .k-sug-grid, .k-modal-carousel, ' +
+        '.k-sug-rail, .k-modal-carousel, ' +
         'input, textarea, select'
       )) {
         tracking = false;
@@ -1461,21 +1193,7 @@ function quickRemove(productId, btnEl) {
     }
 
     dom.modalCat.textContent = `${product.emoji || ''} ${product.category || ''}`;
-    // Affichage stock intelligent : 3 états seulement
-    // - Stock > 10 : "✓ Disponible"
-    // - Stock 1-10 : "🔥 Plus que X en stock !"
-    // - Stock 0 : "✗ Rupture"
-    const stockVal = Number(product.stock || 0);
-    if (stockVal === 0) {
-      dom.modalStock.textContent = '✗ Rupture';
-      dom.modalStock.className = 'k-modal-stock k-modal-stock--out';
-    } else if (stockVal <= 10) {
-      dom.modalStock.textContent = '🔥 Plus que ' + stockVal + ' en stock';
-      dom.modalStock.className = 'k-modal-stock k-modal-stock--low';
-    } else {
-      dom.modalStock.textContent = '✓ Disponible';
-      dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
-    }
+    dom.modalStock.textContent = product.stock > 0 ? `✓ En stock (${product.stock})` : '✗ Rupture';
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
 
@@ -1484,173 +1202,21 @@ function quickRemove(productId, btnEl) {
     const currentIdx = list.findIndex(p => p.id === product.id);
     updateModalNavArrows(list, currentIdx);
 
-    // Séparer clairement : même catégorie (jusqu'à 8) puis autres (jusqu'à 12)
+    // Shein-style: same category first, then complementary, up to 20
     const sameCat = state.products
-      .filter(p => p.category === product.category && p.id !== product.id)
-      .slice(0, 10);
+      .filter(p => p.category === product.category && p.id !== product.id);
     const otherCat = state.products
       .filter(p => p.category !== product.category && p.id !== product.id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 16);
-    console.log('[KMRC SUG] calling with sameCat=' + sameCat.length + ' otherCat=' + otherCat.length + ' cat=' + product.category);
-    renderSuggestions(sameCat, otherCat, product.category);
+      .sort(() => Math.random() - 0.5);
+    const suggestions = [...sameCat, ...otherCat].slice(0, 20);
+    renderSuggestions(suggestions);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
-    const _scrollEl = document.querySelector('.k-modal-scroll');
-    if (_scrollEl) _scrollEl.scrollTop = 0;
     dom.modalOverlay.classList.add('open');
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = window.scrollY;
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
-
-    // ── Déplacer les actions DANS le scroll pour un flux unifié ──
-    const modalScroll = document.querySelector('.k-modal-scroll');
-    const modalActions = document.querySelector('.k-modal-actions');
-    if (modalScroll && modalActions && modalActions.parentElement !== modalScroll) {
-      modalScroll.appendChild(modalActions);
-    }
-
-    // ── FAB flottant : apparaît quand les vrais boutons sortent du viewport ──
-    setupModalFAB();
-  }
-
-  /* ── TOPBAR ENRICHIE : produit visible quand on scroll ── */
-  function setupModalFAB() {
-    // Nouvelle version : topbar enrichie au lieu d'un FAB
-    setupEnrichedTopbar();
-  }
-
-  function scrollModalToTop() {
-    const scrollEl = document.querySelector('.k-modal-scroll');
-    if (scrollEl) {
-      scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  function setupEnrichedTopbar() {
-    const modal = document.getElementById('k-modal');
-    const topbar = modal ? modal.querySelector('.k-modal-topbar') : null;
-    const product = state.modalProduct;
-    if (!topbar || !product) return;
-
-    // 1. Créer le bloc produit dans la topbar s'il n'existe pas encore
-    let productEl = topbar.querySelector('.k-modal-topbar-product');
-    if (!productEl) {
-      productEl = document.createElement('div');
-      productEl.className = 'k-modal-topbar-product';
-      productEl.innerHTML = `
-        <div class="k-topbar-thumb" role="button" aria-label="Revenir en haut">
-          <img class="k-topbar-thumb-img" src="" alt="">
-        </div>
-        <div class="k-topbar-info">
-          <div class="k-topbar-name"></div>
-          <div class="k-topbar-price">
-            <span class="k-topbar-price-val"></span>
-            <span class="k-topbar-price-promo u-hidden"></span>
-          </div>
-        </div>
-        <button class="k-topbar-buy" aria-label="Acheter">⚡ Acheter</button>
-      `;
-      // Insérer avant .k-modal-topbar-right
-      const rightBar = topbar.querySelector('.k-modal-topbar-right');
-      if (rightBar) {
-        topbar.insertBefore(productEl, rightBar);
-      } else {
-        topbar.appendChild(productEl);
-      }
-
-      // Wire click sur Acheter
-      productEl.querySelector('.k-topbar-buy').addEventListener('click', () => {
-        const buyBtn = document.getElementById('k-buy-now-btn');
-        if (buyBtn) buyBtn.click();
-      });
-
-      // Wire click sur thumbnail → scroll smooth vers le haut
-      productEl.querySelector('.k-topbar-thumb').addEventListener('click', () => {
-        scrollModalToTop();
-      });
-    }
-
-    // Créer le FAB "retour en haut" s'il n'existe pas
-    let backTopFab = document.getElementById('k-modal-back-top');
-    if (!backTopFab) {
-      backTopFab = document.createElement('button');
-      backTopFab.id = 'k-modal-back-top';
-      backTopFab.className = 'k-modal-back-top';
-      backTopFab.setAttribute('aria-label', 'Retour au produit');
-      backTopFab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
-      document.body.appendChild(backTopFab);
-      backTopFab.addEventListener('click', () => {
-        scrollModalToTop();
-      });
-    }
-
-    // 2. Mettre à jour le contenu avec le produit actuel
-    const thumb = productEl.querySelector('.k-topbar-thumb-img');
-    const name = productEl.querySelector('.k-topbar-name');
-    const priceVal = productEl.querySelector('.k-topbar-price-val');
-    const pricePromo = productEl.querySelector('.k-topbar-price-promo');
-    if (thumb) thumb.src = optimizeImgUrl(product.image_url, 80);
-    if (name) name.textContent = product.name || '';
-    if (priceVal) priceVal.textContent = fmtPrice(product.price_kmf);
-    if (pricePromo) {
-      if (product.promo_pct && product.promo_pct > 0) {
-        pricePromo.textContent = '-' + product.promo_pct + '%';
-        pricePromo.classList.remove('u-hidden');
-      } else {
-        pricePromo.classList.add('u-hidden');
-      }
-    }
-
-    // 3. Observer le scroll : toggle .is-scrolled sur .k-modal
-    // Créer un sentinel élément en haut du scroll
-    const scrollEl = document.querySelector('.k-modal-scroll');
-    if (!scrollEl) return;
-
-    if (state._topbarObserver) state._topbarObserver.disconnect();
-
-    // On observe l'image wrap : dès qu'elle n'est quasi plus visible → scrolled
-    const imgWrap = scrollEl.querySelector('.k-modal-img-wrap');
-    if (imgWrap && 'IntersectionObserver' in window) {
-      state._topbarObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach(entry => {
-            const backTopFab = document.getElementById('k-modal-back-top');
-            if (entry.intersectionRatio < 0.3) {
-              modal.classList.add('is-scrolled');
-              if (backTopFab) backTopFab.classList.add('visible');
-            } else {
-              modal.classList.remove('is-scrolled');
-              if (backTopFab) backTopFab.classList.remove('visible');
-            }
-          });
-        },
-        { root: scrollEl, threshold: [0, 0.3, 0.7, 1] }
-      );
-      state._topbarObserver.observe(imgWrap);
-    }
-  }
-
-  function hideModalFAB() {
-    // Reset topbar mode
-    const modal = document.getElementById('k-modal');
-    if (modal) modal.classList.remove('is-scrolled');
-    // Cacher le FAB back-to-top
-    const backTopFab = document.getElementById('k-modal-back-top');
-    if (backTopFab) backTopFab.classList.remove('visible');
-    // Cleanup observers
-    if (state._fabObserver) {
-      state._fabObserver.disconnect();
-      state._fabObserver = null;
-    }
-    if (state._topbarObserver) {
-      state._topbarObserver.disconnect();
-      state._topbarObserver = null;
-    }
-    // Hide legacy FAB if present
-    const fab = document.getElementById('k-modal-fab');
-    if (fab) fab.classList.remove('visible');
   }
 
   // ── Boutons ← → dans la topbar de la modal
@@ -1705,7 +1271,6 @@ function quickRemove(productId, btnEl) {
   }
 
   function closeModal() {
-    hideModalFAB();
     dom.modalOverlay.classList.remove('open');
     // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
@@ -1716,24 +1281,16 @@ function quickRemove(productId, btnEl) {
     state.modalHistory = [];
   }
 
-  function renderSuggestions(sameCat, otherCat, categoryName) {
-    console.log('[KMRC SUG] called with', {sameCat: sameCat?.length, otherCat: otherCat?.length, cat: categoryName});
-    sameCat = sameCat || [];
-    otherCat = otherCat || [];
-    const sugSection = document.getElementById('k-modal-suggestions');
-    console.log('[KMRC SUG] sugSection found:', !!sugSection);
-    if (!sugSection) return;
-
-    if (sameCat.length === 0 && otherCat.length === 0) {
-      console.log('[KMRC SUG] HIDING (both empty)');
-      sugSection.classList.add('u-hidden');
+  function renderSuggestions(items) {
+    if (!items.length) {
+      const sugSection = document.getElementById('k-modal-suggestions');
+      if (sugSection) sugSection.classList.add('u-hidden');
       return;
     }
-    sugSection.classList.remove('u-hidden');
-    console.log('[KMRC SUG] rendering', sameCat.length + otherCat.length, 'products');
+    const sugSection = document.getElementById('k-modal-suggestions');
+    if (sugSection) sugSection.classList.remove('u-hidden');
 
-    // Template carte suggestion (factoring)
-    const cardHTML = (p) => `
+    dom.sugRail.innerHTML = items.map(p => `
       <div class="k-sug-card" data-id="${p.id}">
         <div class="k-sug-card-img">
           <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
@@ -1743,39 +1300,7 @@ function quickRemove(productId, btnEl) {
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
         <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
       </div>
-    `;
-
-    // Construire 2 sections distinctes avec titres contextuels
-    let html = '';
-
-    if (sameCat.length > 0) {
-      const catLabel = categoryName ? categoryName.toLowerCase() : 'même catégorie';
-      html += `
-        <div class="k-sug-section">
-          <div class="k-sug-title">
-            <span class="k-sug-title-icon">🔍</span>
-            <span class="k-sug-title-text">Dans la catégorie ${sanitize(catLabel)}</span>
-          </div>
-          <div class="k-sug-grid k-sug-grid--same">${sameCat.map(cardHTML).join('')}</div>
-        </div>`;
-    }
-
-    if (otherCat.length > 0) {
-      html += `
-        <div class="k-sug-section">
-          <div class="k-sug-title">
-            <span class="k-sug-title-icon">✨</span>
-            <span class="k-sug-title-text">Vous aimerez peut-être aussi</span>
-          </div>
-          <div class="k-sug-grid k-sug-grid--other">${otherCat.map(cardHTML).join('')}</div>
-        </div>`;
-    }
-
-    // Replacer tout le contenu (remplace le vieux <div class="k-sug-rail">)
-    dom.sugRail.innerHTML = html;
-    // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
-    const oldH3 = sugSection.querySelector('h3');
-    if (oldH3) oldH3.style.display = 'none';
+    `).join('');
 
     // Clic sur toute la carte → ouvrir le produit
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
@@ -1794,8 +1319,36 @@ function quickRemove(productId, btnEl) {
       });
     });
 
-    // Note : les flèches ◀▶ sont désactivées car on a maintenant 2 sections distinctes.
-    // Le scroll horizontal reste disponible sur chaque .k-sug-rail (CSS).
+    // Fix 4 : flèches ◀▶ coral + masquage aux extrémités
+    if (sugSection) {
+      let wrapEl = sugSection.querySelector('.k-sug-wrap');
+      if (!wrapEl) {
+        wrapEl = document.createElement('div');
+        wrapEl.className = 'k-sug-wrap';
+        // position:relative is in CSS (.k-sug-wrap)
+        dom.sugRail.parentNode.insertBefore(wrapEl, dom.sugRail);
+        wrapEl.appendChild(dom.sugRail);
+      }
+      wrapEl.querySelectorAll('.k-sug-arrow').forEach(a => a.remove());
+      const prevArrow = document.createElement('button');
+      prevArrow.className = 'k-sug-arrow prev';
+      prevArrow.innerHTML = '◀';
+      prevArrow.setAttribute('aria-label', 'Précédent');
+      const nextArrow = document.createElement('button');
+      nextArrow.className = 'k-sug-arrow next';
+      nextArrow.innerHTML = '▶';
+      nextArrow.setAttribute('aria-label', 'Suivant');
+      wrapEl.appendChild(prevArrow);
+      wrapEl.appendChild(nextArrow);
+      function syncArrows() {
+        prevArrow.hidden = dom.sugRail.scrollLeft <= 2;
+        nextArrow.hidden = dom.sugRail.scrollLeft >= dom.sugRail.scrollWidth - dom.sugRail.clientWidth - 10;
+      }
+      prevArrow.addEventListener('click', () => { dom.sugRail.scrollBy({ left: -240, behavior: 'smooth' }); setTimeout(syncArrows, 350); });
+      nextArrow.addEventListener('click', () => { dom.sugRail.scrollBy({ left: 240, behavior: 'smooth' }); setTimeout(syncArrows, 350); });
+      dom.sugRail.addEventListener('scroll', syncArrows, { passive: true });
+      requestAnimationFrame(syncArrows);
+    }
   }
 
   function setupModal() {
@@ -1822,33 +1375,16 @@ function quickRemove(productId, btnEl) {
       addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
     });
 
-    // ── Bouton "⚡ Acheter" — ajout + transition douce vers le panier
+    // ── Bouton "⚡ Acheter" — ajoute + ouvre directement le panier (sans animation fly)
     const buyNowBtn = document.getElementById('k-buy-now-btn');
     if (buyNowBtn) {
       buyNowBtn.addEventListener('click', () => {
         if (!state.modalProduct) return;
-
-        // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
-        const originalContent = buyNowBtn.innerHTML;
-        buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>✓</span><span>Ajouté au panier !</span></span>';
-        buyNowBtn.disabled = true;
-        buyNowBtn.classList.add('buy-confirmed');
-
-        // 2. Ajout au panier (déclenche l'animation coucou de la dame)
-        addToCart(state.modalProduct, state.modalQty, buyNowBtn);
-
-        // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
-        //    puis fermeture douce et ouverture panier avec 400ms entre les 2
-        //    (le user a le temps de voir le confirm vert + la dame coucou)
-        setTimeout(() => {
-          // Restaurer le bouton pour la prochaine ouverture
-          buyNowBtn.innerHTML = originalContent;
-          buyNowBtn.disabled = false;
-          buyNowBtn.classList.remove('buy-confirmed');
-          // Fermer la modale et ouvrir le panier avec fluidité
-          closeModal();
-          setTimeout(openCart, 400);  // augmenté de 250 → 400ms
-        }, 1200);  // augmenté de 800 → 1200ms
+        // Pas de sourceBtn → pas d'animation fly, pas de setTimeout qui perturbe l'ouverture du panier
+        addToCart(state.modalProduct, state.modalQty, null);
+        closeModal();
+        // Petit délai pour laisser la modal se fermer avant d'ouvrir le drawer
+        setTimeout(openCart, 250);
       });
     }
 
@@ -1979,7 +1515,6 @@ function quickRemove(productId, btnEl) {
     dom.cartOverlay.classList.remove('open');
     dom.cartDrawer.classList.remove('open');
     document.body.classList.remove('cart-open');
-    document.body.classList.remove('cart-empty');
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -2010,38 +1545,13 @@ function quickRemove(productId, btnEl) {
   function renderCartBody(highlightId) {
     dom.cartBody.innerHTML = '';
 
-    // FIX UX : marquer le body avec 'cart-empty' si panier vide
-    // → permet au CSS de garder la bnav visible pour naviguer
-    if (state.cart.length === 0) {
-      document.body.classList.add('cart-empty');
-    } else {
-      document.body.classList.remove('cart-empty');
-    }
-
     if (state.cart.length === 0) {
       dom.cartBody.innerHTML = `
         <div class="k-cart-empty">
           <div class="k-cart-empty-icon">🧺</div>
-          <p class="k-cart-empty-title">Votre panier est vide</p>
-          <p class="k-cart-empty-sub">Découvrez notre sélection de produits livrés aux Comores.</p>
-          <button type="button" class="k-cart-empty-cta" id="k-cart-empty-shop">
-            🛍️ Découvrir la boutique
-          </button>
+          <p>Votre panier est vide</p>
         </div>`;
       dom.cartFooter.classList.add('u-hidden');
-
-      // Binding bouton découvrir
-      const shopBtn = document.getElementById('k-cart-empty-shop');
-      if (shopBtn) {
-        shopBtn.addEventListener('click', () => {
-          closeCart();
-          if (typeof switchView === 'function') switchView('shop');
-          // Marquer l'onglet Boutique actif dans la bnav
-          document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
-          const shopNav = document.querySelector('.k-bnav-item[data-tab="shop"]');
-          if (shopNav) shopNav.classList.add('active');
-        });
-      }
       return;
     }
 
@@ -2135,21 +1645,9 @@ function quickRemove(productId, btnEl) {
 
     // Footer
     dom.cartFooter.classList.remove('u-hidden');
-    const qty = cartQty();
-    const total = cartTotal();
-
-    // Récap détaillé : nombre d'articles + sous-total
-    const itemCountEl = document.getElementById('k-cart-item-count');
-    const itemPluralEl = document.getElementById('k-cart-item-plural');
-    const subtotalEl = document.getElementById('k-cart-subtotal-val');
-    if (itemCountEl) itemCountEl.textContent = qty;
-    if (itemPluralEl) itemPluralEl.textContent = qty > 1 ? 's' : '';
-    if (subtotalEl) subtotalEl.textContent = fmt(total, 'KMF');
-
-    // Total
-    dom.cartTotalVal.textContent = fmt(total, 'KMF');
+    dom.cartTotalVal.textContent = fmt(cartTotal(), 'KMF');
     if (_currency === 'EUR') {
-      dom.cartTotalConv.textContent = '≈ ' + fmt(total, 'EUR');
+      dom.cartTotalConv.textContent = '≈ ' + fmt(cartTotal(), 'EUR');
     } else {
       dom.cartTotalConv.textContent = '';
     }
@@ -2317,23 +1815,11 @@ function quickRemove(productId, btnEl) {
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
-    // FIX : masquer bnav pour voir bouton Payer
-    const bnav = document.getElementById('k-bnav');
-    if (bnav) {
-      bnav.dataset.savedDisplay = bnav.style.display || '';
-      bnav.style.display = 'none';
-    }
   }
 
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
     document.body.classList.remove('cart-open');
-    // FIX : restaurer bnav
-    const bnav = document.getElementById('k-bnav');
-    if (bnav) {
-      bnav.style.display = bnav.dataset.savedDisplay || '';
-      delete bnav.dataset.savedDisplay;
-    }
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -2343,21 +1829,13 @@ function quickRemove(productId, btnEl) {
   function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
+    // Supprimer tout bouton confirm précédent hors scroll area
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     dom.orderTitle.textContent = '🛒 Commander';
 
     const od = state.orderData;
 
-    /* ── Bouton retour panier ── */
-    const backBtn = document.createElement('button');
-    backBtn.className = 'ck-back-btn';
-    backBtn.type = 'button';
-    backBtn.innerHTML = '← Retour au panier';
-    backBtn.addEventListener('click', () => {
-      closeOrderModal();
-      setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
-    });
-    body.appendChild(backBtn);
+    /* ── Récap retiré (mini résumé + miniatures) ── */
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
@@ -2781,8 +2259,7 @@ async function submitOrder(btn) {
   }
 
   const clientName = recipName;
-  const recipDigits = recipPhone.replace(/\D/g, '');
-  const fullRecipPhone = '+269' + recipDigits;
+  const fullRecipPhone = '+269' + recipPhone.replace(/\s/g, '');
   const clientEmail = undefined;
 
   if (!recipName) {
@@ -2791,10 +2268,6 @@ async function submitOrder(btn) {
   }
   if (!recipPhone) {
     showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error');
-    return;
-  }
-  if (recipDigits.length !== 7) {
-    showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
     return;
   }
 
@@ -2932,108 +2405,89 @@ async function submitOrder(btn) {
     body.innerHTML = '';
     dom.orderTitle.textContent = '✅ Commande confirmée';
 
-    // Retirer tout bouton Confirmer sticky résiduel
+    // Fix 11 : retirer le bouton Confirmer sticky
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
 
-    // Masquer le bouton retour panier s'il existe encore
-    body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
+    // Fix 14 : notice WhatsApp simplifiée
+    const hasDiaspora = state.orderData && (state.orderData.sender_phone || '').trim().length >= 8;
+    const waNotice = hasDiaspora
+      ? '📲 Le bénéficiaire et vous recevrez une confirmation WhatsApp'
+      : '📲 Le bénéficiaire recevra une confirmation WhatsApp';
 
     const wrap = document.createElement('div');
-    wrap.className = 'k-confirm-wrap k-confirm-simple';
+    wrap.className = 'k-confirm-wrap';
 
-    // Émoji + titre
-    const emoji = document.createElement('div');
-    emoji.className = 'k-confirm-emoji';
-    emoji.textContent = '🎉';
-    wrap.appendChild(emoji);
+    wrap.innerHTML = '<div class="k-confirm-emoji">🎉</div>'
+      + '<h3 class="k-confirm-title">Commande enregistrée !</h3>'
+      + '<p class="k-confirm-sub">Votre référence :</p>'
+      + '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>'
+      + '<div><button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier la référence</button></div>';
 
-    const title = document.createElement('h3');
-    title.className = 'k-confirm-title';
-    title.textContent = 'Commande confirmée !';
-    wrap.appendChild(title);
-
-    // Référence (élément central de l'écran)
-    const refBlock = document.createElement('div');
-    refBlock.className = 'k-confirm-ref-block';
-    refBlock.innerHTML =
-      '<div class="k-confirm-ref-label">Votre référence</div>' +
-      '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>' +
-      '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
-    wrap.appendChild(refBlock);
-
-    // NOUVEAU : ligne récap "N articles — XXX KMF"
-    // On lit depuis order (renvoyé par l'API) ou depuis l'état sauvegardé
-    const orderQty = order.items_count || (order.items && order.items.length) || null;
-    const orderTotal = order.total_kmf != null ? order.total_kmf : null;
-    if (orderQty && orderTotal) {
-      const recapLine = document.createElement('div');
-      recapLine.className = 'k-confirm-recap';
-      recapLine.innerHTML =
-        '<span class="k-confirm-recap-qty">' + orderQty + ' article' + (orderQty > 1 ? 's' : '') + '</span>' +
-        '<span class="k-confirm-recap-sep">•</span>' +
-        '<span class="k-confirm-recap-amount">' + fmt(orderTotal, 'KMF') + '</span>';
-      wrap.appendChild(recapLine);
-    }
-
-    // Code cash (seulement si paiement cash)
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
-      const cashBlock = document.createElement('div');
-      cashBlock.className = 'k-confirm-cash-block';
-      cashBlock.innerHTML =
-        '<div class="k-confirm-cash-label">🏪 Code à présenter au relais</div>' +
-        '<div class="k-confirm-cash-code">' + sanitize(order.cash_ref_code) + '</div>';
-      wrap.appendChild(cashBlock);
+      wrap.innerHTML += '<p class="k-confirm-cash-lbl">🏪 Code de paiement au relais :</p>'
+        + '<div class="k-confirm-cash-ref">' + sanitize(order.cash_ref_code) + '</div>';
     }
 
-    // 2 consignes courtes
-    const notices = document.createElement('div');
-    notices.className = 'k-confirm-notices';
-    notices.innerHTML =
-      '<div class="k-confirm-notice-row">📲 Vous allez recevoir un WhatsApp de confirmation</div>' +
-      '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
-    wrap.appendChild(notices);
+    if (fullResult && fullResult.discount_pct > 0) {
+      wrap.innerHTML += '<div class="k-confirm-loyalty">🎁 Fidélité ' + sanitize(fullResult.loyalty_label || '') + ' : -' + fullResult.discount_pct + '% (-' + fmt(fullResult.discount_kmf, 'KMF') + ')</div>';
+    }
 
-    // Actions : Suivre + Continuer
-    const actions = document.createElement('div');
-    actions.className = 'k-confirm-actions';
-    actions.innerHTML =
-      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">📍 Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">🛍️ Continuer mes achats</button>';
-    wrap.appendChild(actions);
+    if (fullResult && fullResult.credit_applied_kmf > 0) {
+      wrap.innerHTML += '<div class="k-confirm-credit">💰 Crédit boutique appliqué : <strong>-' + fmt(fullResult.credit_applied_kmf, 'KMF') + '</strong></div>';
+    }
+
+    wrap.innerHTML += '<div class="k-confirm-notice">'
+      + '<div>🏪 Paiement en cash (KMF) au point relais lors du retrait.</div>'
+      + '<div class="k-confirm-notice-item">' + sanitize(waNotice) + '</div>'
+      + '<div class="k-confirm-notice-item">📍 Présentez la référence au point relais.</div></div>';
+
+    // Fix 12 : bouton Fermer avec countdown
+    wrap.innerHTML += '<button id="k-order-track-btn" class="k-confirm-track">📍 Suivre ma commande</button>'
+      + '<button id="k-order-close-btn" class="k-confirm-close">Fermer (7)</button>';
 
     body.appendChild(wrap);
 
-    // Bindings
     setTimeout(() => {
+      // Copier référence
       const copyBtn = document.getElementById('k-copy-ref-btn');
       if (copyBtn) {
         copyBtn.addEventListener('click', () => {
           if (navigator.clipboard) {
-            navigator.clipboard.writeText(order.reference || '').then(() => {
-              showToast('📋 Référence copiée !', 'success');
-              copyBtn.textContent = '✓ Copié';
-              setTimeout(() => { copyBtn.textContent = '📋 Copier'; }, 2000);
-            });
+            navigator.clipboard.writeText(order.reference || '').then(() => showToast('📋 Référence copiée !'));
           }
         });
       }
 
+      // Fix 12 : auto-fermeture 7s avec countdown visible
       const closeBtn = document.getElementById('k-order-close-btn');
+      let countdown = 7;
+      const autoTimer = setInterval(() => {
+        countdown--;
+        if (closeBtn) closeBtn.textContent = 'Fermer (' + countdown + ')';
+        if (countdown <= 0) {
+          clearInterval(autoTimer);
+          closeOrderModal();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 1000);
+
       if (closeBtn) {
         closeBtn.addEventListener('click', () => {
+          clearInterval(autoTimer);
           closeOrderModal();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       }
 
+      // Fix 13 : "Suivre" → bascule onglet Track + pré-remplit + auto-search
       const trackBtn = document.getElementById('k-order-track-btn');
       if (trackBtn) {
         trackBtn.addEventListener('click', () => {
+          clearInterval(autoTimer);
           closeOrderModal();
-          if (typeof renderTrackView === 'function') renderTrackView();
-          if (typeof switchView === 'function') switchView('track');
-          const navItems = document.querySelectorAll('.k-bnav-item');
-          navItems.forEach(i => i.classList.remove('active'));
+          renderTrackView();
+          switchView('track');
+          $$('.k-bnav-item').forEach(i => i.classList.remove('active'));
           const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
           if (trackNav) trackNav.classList.add('active');
           setTimeout(() => {
@@ -3049,7 +2503,7 @@ async function submitOrder(btn) {
     }, 0);
   }
 
-    /* ── SETUP CART DRAWER ──────────────────────────────────── */
+  /* ── SETUP CART DRAWER ──────────────────────────────────── */
   function setupDrawer() {
     dom.cartBtn.addEventListener('click', openCart);
     dom.cartClose.addEventListener('click', closeCart);
@@ -3106,13 +2560,6 @@ async function submitOrder(btn) {
       document.getElementById('k-catalog-section').after(el);
     }
     const favProducts = state.products.filter(p => state.favs.includes(p.id));
-
-    // FEATURE 1 : Détecter les produits en promo parmi les favoris
-    const promoFavs = favProducts.filter(p => (p.promo_pct || 0) > 0);
-
-    // FEATURE 2 : Mettre à jour le badge "🎉" sur l'icône Favoris de la bnav
-    updateFavPromoBadge(promoFavs.length);
-
     if (!favProducts.length) {
       el.innerHTML = `<h2>❤️ Favoris</h2>
         <div class="k-fav-empty">
@@ -3128,8 +2575,8 @@ async function submitOrder(btn) {
         const qty = inCart ? inCart.qty : 0;
         return `<div class="k-card" data-id="${p.id}">
           <div class="k-card-img-wrap">
-            ${renderProductCarousel(p, 400)}
-            ${p.promo_pct ? `<span class="k-card-promo k-card-promo-fav">🎉 -${p.promo_pct}%</span>` : ''}
+            <img class="k-card-img" src="${optimizeImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy">
+            ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
             <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
               ${qty > 0
@@ -3157,32 +2604,12 @@ async function submitOrder(btn) {
         </div>`;
       }).join('');
 
-      // FEATURE 1 bis : Banner "X produits en promo !" si applicable
-      const promoBanner = promoFavs.length > 0
-        ? `<div class="k-fav-promo-banner">
-             <span class="k-fav-promo-icon">🎉</span>
-             <div class="k-fav-promo-text">
-               <strong>${promoFavs.length} de vos favori${promoFavs.length > 1 ? 's sont' : ' est'} en promo !</strong>
-               <span>Profitez des réductions avant qu'elles disparaissent</span>
-             </div>
-           </div>`
-        : '';
-
-      // FEATURE 3 : Bouton partager la wishlist
-      const shareBtn = `<button class="k-fav-share-btn" id="k-fav-share-btn">
-        <span class="k-fav-share-icon">📲</span>
-        <span>Envoyer ma liste de souhaits</span>
-      </button>`;
-
       el.innerHTML = `<h2>❤️ Favoris <span class="k-fav-count">${favProducts.length} produit${favProducts.length > 1 ? 's' : ''}</span></h2>
-        ${promoBanner}
-        ${shareBtn}
         <div class="k-grid" id="k-fav-grid">${cardsHTML}</div>`;
 
       const favGrid = document.getElementById('k-fav-grid');
       if (favGrid) {
         favGrid.querySelectorAll('.k-card').forEach(card => {
-        bindCarouselDots(card);
           card.addEventListener('click', (e) => {
             if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
             openModal(card.dataset.id);
@@ -3205,84 +2632,7 @@ async function submitOrder(btn) {
           });
         });
       }
-
-      // FEATURE 3 : Click sur "Envoyer ma liste de souhaits"
-      const shareWishlistBtn = document.getElementById('k-fav-share-btn');
-      if (shareWishlistBtn) {
-        shareWishlistBtn.addEventListener('click', shareWishlistWhatsApp);
-      }
     }
-  }
-
-  // FEATURE 2 : Badge "🎉" sur l'icône Favoris de la bnav quand promos actives
-  function updateFavPromoBadge(promoCount) {
-    const favNavItem = document.querySelector('.k-bnav-item[data-tab="fav"]');
-    if (!favNavItem) return;
-    let badge = favNavItem.querySelector('.k-bnav-promo-badge');
-    if (promoCount > 0) {
-      if (!badge) {
-        badge = document.createElement('span');
-        badge.className = 'k-bnav-promo-badge';
-        favNavItem.appendChild(badge);
-      }
-      badge.textContent = '🎉';
-      badge.title = promoCount + ' favori' + (promoCount > 1 ? 's' : '') + ' en promo !';
-    } else if (badge) {
-      badge.remove();
-    }
-  }
-
-  // FEATURE 3 : Partage wishlist via WhatsApp
-  async function shareWishlistWhatsApp() {
-    const favProducts = state.products.filter(p => state.favs.includes(p.id));
-    if (favProducts.length === 0) {
-      showToast('Aucun favori à partager.', 'error');
-      return;
-    }
-
-    showToast('⏳ Génération du lien…', 'info');
-
-    // Utilise l'API /api/shares existante pour créer un lien court partageable
-    // (comme le partage panier mais avec qty=1 pour chaque favori)
-    let shareURL;
-    try {
-      const items = favProducts.map(p => ({ product_id: p.id, qty: 1 }));
-      const res = await apiPost('/api/shares', { items: items });
-      shareURL = (res && res.share_url) || (window.location.origin + '/Komerce_Boutique.html');
-    } catch (e) {
-      console.warn('[wishlist] share API error:', e);
-      // Fallback : URL simple de la boutique
-      shareURL = window.location.origin + '/Komerce_Boutique.html';
-    }
-
-    // Construire le message WhatsApp
-    const lines = [];
-    lines.push('💝 *Ma liste de souhaits Komerce*');
-    lines.push('━━━━━━━━━━━━━━━━');
-    lines.push('');
-
-    favProducts.slice(0, 10).forEach((p, idx) => {
-      const priceStr = fmt(p.price_kmf || 0, 'KMF');
-      let line = (idx + 1) + '. ' + (p.name || 'Produit') + ' — ' + priceStr;
-      if (p.promo_pct > 0) {
-        line += ' 🎉 (-' + p.promo_pct + '%)';
-      }
-      lines.push(line);
-    });
-
-    if (favProducts.length > 10) {
-      lines.push('');
-      lines.push('... et ' + (favProducts.length - 10) + ' autre' + (favProducts.length > 11 ? 's' : ''));
-    }
-
-    lines.push('');
-    lines.push('━━━━━━━━━━━━━━━━');
-    lines.push('Tu peux m\'offrir l\'un d\'eux ? 🥰');
-    lines.push('👉 Voir la liste :');
-    lines.push(shareURL);
-
-    const msg = lines.join('\n');
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── VUE SUIVI ───────────────────────────────────────────── */
@@ -3348,142 +2698,6 @@ async function submitOrder(btn) {
       favEl.after(el);
     }
 
-    // ── NOUVEAU : Tentative auto-chargement via cookie JWT ──
-    // Si le user a un cookie valide (= a déjà commandé), on affiche ses commandes directement
-    el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
-
-    (async () => {
-      try {
-        const data = await apiGet('/api/orders?limit=20');
-        // L'API retourne un tableau direct [{...}, {...}] ou parfois {orders:[...]}
-        const orders = Array.isArray(data) ? data : ((data && data.orders) || []);
-        if (orders.length > 0) {
-          renderMyOrdersList(el, orders);
-          return;
-        }
-        // 0 commande → on reste en mode recherche classique
-        renderTrackViewSearchMode(el);
-      } catch (err) {
-        // 401 / 403 / erreur → mode recherche classique
-        console.log('[track] pas de session, mode recherche :', err && err.message);
-        renderTrackViewSearchMode(el);
-      }
-    })();
-  }
-
-  /* ── NOUVEAU : Affichage liste "Mes commandes" ──
-     Si le user est connu via cookie JWT, on lui montre ses commandes
-     directement, triées par date (plus récentes en premier).
-  */
-  function renderMyOrdersList(el, orders) {
-    const header = '<h2>📦 Mes commandes</h2>' +
-      '<p class="k-track-sub-hint">' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') + ' trouvée' + (orders.length > 1 ? 's' : '') + '</p>';
-
-    const cards = orders.map(function(o) {
-      const statusInfo = getStatusDisplay(o.status || 'pending', o.payment_status);
-      const totalStr = fmt(o.total_kmf || 0, 'KMF');
-      const dateStr = formatOrderDate(o.created_at);
-      // L'API liste retourne : product_name, product_image_url, items_count
-      const productName = o.product_name || 'Commande';
-      const productImg = o.product_image_url || null;
-      const itemsCount = parseInt(o.items_count, 10) || 1;
-      const imgHtml = productImg
-        ? '<img src="' + sanitize(optimizeImgUrl(productImg, 100)) + '" alt="" loading="lazy">'
-        : '<div class="k-myorder-emoji">📦</div>';
-      const itemsSummary = itemsCount > 1
-        ? productName + ' + ' + (itemsCount - 1) + ' autre' + (itemsCount > 2 ? 's' : '')
-        : productName;
-
-      return '<button class="k-myorder-card" data-ref="' + sanitize(o.reference || '') + '">' +
-        '<div class="k-myorder-img">' + imgHtml + '</div>' +
-        '<div class="k-myorder-body">' +
-          '<div class="k-myorder-ref">' + sanitize(o.reference || '—') + '</div>' +
-          '<div class="k-myorder-items">' + sanitize(itemsSummary) + '</div>' +
-          '<div class="k-myorder-bottom">' +
-            '<span class="k-myorder-status k-myorder-status--' + statusInfo.cls + '">' + statusInfo.emoji + ' ' + statusInfo.label + '</span>' +
-            '<span class="k-myorder-total">' + totalStr + '</span>' +
-          '</div>' +
-          '<div class="k-myorder-date">' + dateStr + '</div>' +
-        '</div>' +
-        '<span class="k-myorder-arrow">›</span>' +
-      '</button>';
-    }).join('');
-
-    el.innerHTML = header +
-      '<div class="k-myorders-list">' + cards + '</div>' +
-      '<button class="k-track-btn k-track-btn--ghost k-myorders-new-search" id="k-myorders-search-other">🔍 Chercher une autre commande</button>';
-
-    // Clic sur une carte → ouvrir le détail
-    el.querySelectorAll('.k-myorder-card').forEach(function(card) {
-      card.addEventListener('click', async function() {
-        const ref = card.dataset.ref;
-        if (!ref) return;
-        card.classList.add('k-myorder-loading');
-        try {
-          const data = await apiGet('/api/orders/' + encodeURIComponent(ref));
-          const order = (data && data.order) || data;
-          // On affiche le détail dans le même conteneur
-          el.innerHTML = '';
-          const backBtn = document.createElement('button');
-          backBtn.className = 'k-track-btn k-track-btn--ghost';
-          backBtn.innerHTML = '← Retour à mes commandes';
-          backBtn.style.marginBottom = '12px';
-          backBtn.addEventListener('click', function() { renderTrackView(); });
-          el.appendChild(backBtn);
-          const box = document.createElement('div');
-          el.appendChild(box);
-          renderOrderDetail(order, box);
-        } catch (e) {
-          showToast('Impossible de charger cette commande.', 'error');
-          card.classList.remove('k-myorder-loading');
-        }
-      });
-    });
-
-    // Bouton "chercher une autre" → mode recherche classique
-    const searchBtn = el.querySelector('#k-myorders-search-other');
-    if (searchBtn) {
-      searchBtn.addEventListener('click', function() {
-        renderTrackViewSearchMode(el);
-      });
-    }
-  }
-
-  /* ── Helpers pour affichage liste commandes ── */
-  function getStatusDisplay(status, paymentStatus) {
-    // Map status → {emoji, label, cls}
-    const map = {
-      pending:     { emoji: '⏳', label: 'En attente',      cls: 'pending' },
-      confirmed:   { emoji: '✅', label: 'Confirmée',       cls: 'confirmed' },
-      paid:        { emoji: '💰', label: 'Payée',           cls: 'confirmed' },
-      ordered:     { emoji: '🛒', label: 'En préparation',  cls: 'processing' },
-      preparation: { emoji: '📦', label: 'En préparation',  cls: 'processing' },
-      shipped:     { emoji: '🚢', label: 'Expédiée',        cls: 'shipped' },
-      in_transit:  { emoji: '🚚', label: 'En transit',      cls: 'shipped' },
-      available:   { emoji: '🏪', label: 'Au relais',       cls: 'available' },
-      collected:   { emoji: '✅', label: 'Retirée',         cls: 'delivered' },
-      delivered:   { emoji: '✅', label: 'Livrée',          cls: 'delivered' },
-      cancelled:   { emoji: '❌', label: 'Annulée',         cls: 'cancelled' },
-    };
-    return map[status] || { emoji: '📦', label: status || 'Inconnu', cls: 'pending' };
-  }
-
-  function formatOrderDate(isoDate) {
-    if (!isoDate) return '';
-    try {
-      const d = new Date(isoDate);
-      const now = new Date();
-      const diffMs = now - d;
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      if (diffDays === 0) return "Aujourd'hui";
-      if (diffDays === 1) return 'Hier';
-      if (diffDays < 7) return 'Il y a ' + diffDays + ' jours';
-      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-    } catch(e) { return ''; }
-  }
-
-  /* ── Mode recherche classique (renommé de l'ancien renderTrackView) ── */
-  function renderTrackViewSearchMode(el) {
     const otpState = { phone: '', mode: 'quick' };
 
     el.innerHTML = `
@@ -3689,17 +2903,7 @@ async function submitOrder(btn) {
     // Hide hero+categories on non-shop tabs
     if (heroWrap) heroWrap.classList.toggle('u-hidden', tab !== 'shop');
     // Adjust scroll container: on shop = below hero, on other tabs = below header only
-    if (pageScroll) {
-      pageScroll.dataset.tab = tab;
-      // FIX : sur vues non-shop, effacer le top inline mis par _updateMobileScrollTop
-      // pour que la règle CSS #k-page-scroll[data-tab="track"]{top:44px} prenne effet
-      if (tab !== 'shop') {
-        pageScroll.style.top = '';
-      } else {
-        // Retour sur shop : re-calculer le top selon la hauteur du hero
-        if (typeof _updateMobileScrollTop === 'function') _updateMobileScrollTop();
-      }
-    }
+    if (pageScroll) pageScroll.dataset.tab = tab;
     // Close cart drawer if open
     const cartOverlay = document.getElementById('k-cart-overlay');
     const cartDrawer = document.getElementById('k-cart-drawer');
@@ -3788,335 +2992,4 @@ async function submitOrder(btn) {
   } else {
     init();
   }
-
-
-// FIX 2.3 : Rendre les carousel dots de la modal cliquables
-// (si ce n'est pas déjà fait ailleurs)
-document.addEventListener('click', function(e) {
-  const dot = e.target.closest('.k-modal-dot');
-  if (!dot) return;
-  e.preventDefault();
-  e.stopPropagation();
-  const idx = parseInt(dot.dataset.index || dot.getAttribute('data-index') || '0', 10);
-  const track = document.querySelector('.k-modal-carousel-track');
-  if (!track) return;
-  // Largeur d'une slide = largeur du track / nb slides
-  const slides = track.querySelectorAll('.k-modal-slide');
-  if (!slides.length) return;
-  track.style.transform = 'translateX(-' + (idx * 100) + '%)';
-  // Mettre à jour les dots actifs
-  document.querySelectorAll('.k-modal-dot').forEach((d, i) => {
-    d.classList.toggle('active', i === idx);
-  });
-});
-
-
-
-// ═══════════════════════════════════════════════════════════════════════
-//  OPTION C : Long-press sur panier tressé → stepper flottant
-//  - Tap court : +1 au panier (comportement normal)
-//  - Long-press (400ms) : ouvre un stepper flottant [- qty +] au-dessus
-//  - Tap ailleurs : ferme le stepper
-//  - Pas d'activité 3s : ferme le stepper automatiquement
-// ═══════════════════════════════════════════════════════════════════════
-(function setupLongPressSteppers() {
-  const LONG_PRESS_MS = 400;
-  const STEPPER_AUTOCLOSE_MS = 3000;
-  let pressTimer = null;
-  let activeStepperBtn = null;
-  let autoCloseTimer = null;
-  let isLongPress = false;
-
-  function closeActiveStepper() {
-    if (!activeStepperBtn) return;
-    const stepper = activeStepperBtn.querySelector('.k-card-add-stepper');
-    if (stepper) {
-      stepper.classList.add('k-stepper-closing');
-      setTimeout(() => stepper.remove(), 250);
-    }
-    activeStepperBtn.classList.remove('stepper-open');
-    activeStepperBtn = null;
-    if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
-  }
-
-  function resetAutoClose() {
-    if (autoCloseTimer) clearTimeout(autoCloseTimer);
-    autoCloseTimer = setTimeout(closeActiveStepper, STEPPER_AUTOCLOSE_MS);
-  }
-
-  function openStepper(btn) {
-    // Fermer tout autre stepper ouvert
-    closeActiveStepper();
-
-    const pid = btn.dataset.add;
-    if (!pid) return;
-    const item = window.state?.cart?.find(i => String(i.product.id) === String(pid));
-    if (!item) return;
-
-    // Vibration haptic sur iOS/Android si disponible
-    if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e){} }
-
-    // Construire le stepper flottant
-    const stepper = document.createElement('div');
-    stepper.className = 'k-card-add-stepper';
-    stepper.innerHTML =
-      '<button class="k-stepper-minus" aria-label="Moins">−</button>' +
-      '<span class="k-stepper-qty">' + item.qty + '</span>' +
-      '<button class="k-stepper-plus" aria-label="Plus">+</button>';
-
-    // Positionner au-dessus du panier tressé
-    btn.appendChild(stepper);
-    btn.classList.add('stepper-open');
-    activeStepperBtn = btn;
-
-    // Bind les +/- du stepper
-    stepper.querySelector('.k-stepper-minus').addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      const curItem = window.state?.cart?.find(i => String(i.product.id) === String(pid));
-      if (!curItem) return closeActiveStepper();
-      if (curItem.qty <= 1) {
-        // Retirer du panier → ferme le stepper
-        document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: 0 } }));
-        closeActiveStepper();
-      } else {
-        document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty - 1 } }));
-        stepper.querySelector('.k-stepper-qty').textContent = curItem.qty - 1;
-        resetAutoClose();
-      }
-    });
-
-    stepper.querySelector('.k-stepper-plus').addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      const curItem = window.state?.cart?.find(i => String(i.product.id) === String(pid));
-      if (!curItem) return;
-      document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty + 1 } }));
-      stepper.querySelector('.k-stepper-qty').textContent = curItem.qty + 1;
-      resetAutoClose();
-    });
-
-    resetAutoClose();
-  }
-
-  function startPress(e) {
-    const btn = e.target.closest('.k-card-add.in-cart');
-    if (!btn) return;
-
-    isLongPress = false;
-    btn.classList.add('is-long-pressing');
-
-    pressTimer = setTimeout(() => {
-      isLongPress = true;
-      btn.classList.remove('is-long-pressing');
-      openStepper(btn);
-    }, LONG_PRESS_MS);
-  }
-
-  function endPress(e) {
-    const btn = e.target.closest('.k-card-add.in-cart');
-    if (btn) btn.classList.remove('is-long-pressing');
-
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
-    }
-    // Si long-press déclenché, on bloque le click normal (qui ferait +1)
-    if (isLongPress) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    isLongPress = false;
-  }
-
-  function cancelPress() {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    document.querySelectorAll('.k-card-add.is-long-pressing').forEach(b => {
-      b.classList.remove('is-long-pressing');
-    });
-    isLongPress = false;
-  }
-
-  // Bindings globaux (delegation car les cartes sont dynamiques)
-  document.addEventListener('mousedown', startPress);
-  document.addEventListener('touchstart', startPress, { passive: true });
-
-  document.addEventListener('mouseup', endPress);
-  document.addEventListener('touchend', endPress);
-
-  document.addEventListener('mouseleave', cancelPress);
-  document.addEventListener('touchcancel', cancelPress);
-
-  // Click ailleurs → ferme le stepper
-  document.addEventListener('click', function(e) {
-    if (!activeStepperBtn) return;
-    // Si on tape DANS le stepper, on ne ferme pas
-    if (e.target.closest('.k-card-add-stepper')) return;
-    // Si on tape sur le panier tressé qui a le stepper, on ne ferme pas (géré par le bouton lui-même)
-    if (e.target.closest('.k-card-add.stepper-open')) return;
-    closeActiveStepper();
-  });
-
-  // Si un click normal sur .k-card-add se déclenche ET qu'un long-press vient de finir,
-  // on bloque (sinon le +1 s'ajoute en plus du stepper ouvert)
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.k-card-add');
-    if (btn && btn.classList.contains('stepper-open')) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }, true);  // capture phase pour intercepter avant le handler normal
-
-  // Exposer closeActiveStepper pour que d'autres parties du code (ouvrir modal, etc.) puissent fermer
-  window.closeCartStepper = closeActiveStepper;
-})();
-
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// Placeholder adaptatif sur la barre de recherche (évite troncature)
-// ═══════════════════════════════════════════════════════════════════════
-(function adaptivePlaceholder() {
-  const updatePlaceholder = () => {
-    const input = document.getElementById('k-search-input');
-    if (!input) return;
-    const w = window.innerWidth;
-    if (w < 380) {
-      input.placeholder = 'Rechercher...';
-    } else if (w < 768) {
-      input.placeholder = 'Rechercher un produit...';
-    } else {
-      input.placeholder = 'Rechercher un produit dans le catalogue...';
-    }
-  };
-  // À l'init et au redimensionnement
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updatePlaceholder);
-  } else {
-    updatePlaceholder();
-  }
-  window.addEventListener('resize', updatePlaceholder);
-})();
-
-
-
-  // ── Chips = saut vers section (mode "Tout" = sections verticales) ──
-  // Quand state.activeCat === 'all' et qu'on tape sur une catégorie, on scroll
-  // vers la section au lieu de filtrer (car la home "Tout" affiche déjà toutes
-  // les catégories en sections groupées).
-  // Taper sur "Tout" scroll tout en haut.
-  // Si on est DÉJÀ sur une cat spécifique (Mode actif), taper sur une autre
-  // cat la filtre normalement (comportement historique de setupCats).
-  document.addEventListener('click', function(e) {
-    const chip = e.target.closest('.k-chip[data-cat]');
-    if (!chip) return;
-    // Uniquement en mode sections (home "Tout")
-    if (state.activeCat !== 'all') return;
-    const cat = chip.getAttribute('data-cat');
-    if (!cat) return;
-    // Tap sur "Tout" quand on est déjà sur "all" → scroll top
-    if (cat === 'all') {
-      // stopImmediatePropagation : empêche setupCats de re-render la grille
-      // (pas de re-render inutile, juste scroll)
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    // Tap sur "Mode" quand on est sur "Tout" → scroll vers la section Mode
-    // sans changer activeCat (on reste en mode sections)
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    // Marquer visuellement le chip actif temporairement (effet feedback)
-    document.querySelectorAll('.k-chip').forEach(function(c) { c.classList.remove('active'); });
-    chip.classList.add('active');
-    // Puis remettre "Tout" actif après 600ms (le temps du scroll smooth)
-    setTimeout(function() {
-      document.querySelectorAll('.k-chip').forEach(function(c) { c.classList.remove('active'); });
-      const allChip = document.querySelector('.k-chip[data-cat="all"]');
-      if (allChip) allChip.classList.add('active');
-    }, 700);
-    if (typeof window.scrollToCategorySection === 'function') {
-      window.scrollToCategorySection(cat);
-    }
-  }, true);  // capture phase + stopImmediatePropagation : bloque setupCats
-
-
-
-
-  // ── Index flottant vertical à droite (sauts rapides entre sections) ──
-  // Apparaît uniquement en mode "Tout" (sections verticales actives).
-  // Se met à jour à chaque re-render de la grille sectionnée.
-  function _renderFloatingIndex() {
-    const existing = document.getElementById('k-section-index');
-    if (existing) existing.remove();
-
-    // Uniquement en mode sections
-    if (state.activeCat !== 'all' || state.activeSubcat) return;
-
-    // Récupérer toutes les sections actuellement dans le DOM
-    const headers = document.querySelectorAll('.k-sec-header');
-    if (headers.length < 2) return; // inutile s'il n'y a qu'une section
-
-    const EMOJI_CAT = {
-      'Mode': '👕',
-      'Beauté': '🌸',
-      'Tech': '📱',
-      'Enfant': '🧒',
-      'Maison': '🏠',
-      'Sport': '⚽',
-      'Sur-mesure': '✨',
-      'Autres': '📦',
-    };
-
-    const nav = document.createElement('nav');
-    nav.id = 'k-section-index';
-    nav.setAttribute('aria-label', 'Index des catégories');
-
-    headers.forEach(function(h) {
-      const cat = h.getAttribute('data-cat');
-      const emoji = EMOJI_CAT[cat] || '📦';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'k-section-index-btn';
-      btn.setAttribute('data-cat', cat);
-      btn.setAttribute('aria-label', cat);
-      btn.title = cat;
-      btn.innerHTML = '<span class="k-section-index-emoji">' + emoji + '</span><span class="k-section-index-label">' + cat + '</span>';
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof window.scrollToCategorySection === 'function') {
-          window.scrollToCategorySection(cat);
-        }
-      });
-      nav.appendChild(btn);
-    });
-
-    document.body.appendChild(nav);
-
-    // Observer : highlight le chip actif selon la section visible à l'écran
-    if (_sectionObserver) _sectionObserver.disconnect();
-    _sectionObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          const cat = entry.target.getAttribute('data-cat');
-          document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
-            b.classList.toggle('active', b.getAttribute('data-cat') === cat);
-          });
-        }
-      });
-    }, {
-      rootMargin: '-20% 0% -60% 0%',  // zone centrale-haute de l'écran
-      threshold: 0,
-    });
-    headers.forEach(function(h) { _sectionObserver.observe(h); });
-  }
-  let _sectionObserver = null;
-
-  // Appeler _renderFloatingIndex après chaque render de la grille en mode sections
-  // On enveloppe _bindGridEvents pour appeler _renderFloatingIndex à la suite
-  const __origBindGridEvents = (typeof _bindGridEvents === 'function') ? _bindGridEvents : null;
-
-
 })();
