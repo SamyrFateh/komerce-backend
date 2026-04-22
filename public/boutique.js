@@ -650,11 +650,20 @@
       const subF = list.filter(p => p.subcategory === state.activeSubcat);
       if (subF.length > 0) list = subF;
     }
-    const pageItems = list.slice(0, state.pageSize);
 
     // ── BAZAR vertical : en mode "Tout", on groupe par catégorie avec en-têtes ──
     // (catégorie active autre que 'all' = comportement classique sans sections)
     const useSections = state.activeCat === 'all' && !state.activeSubcat;
+
+    let pageItems;
+    if (useSections) {
+      // Piochage équilibré : garantir min 3 produits par section visible
+      // pour éviter les cartes orphelines dans une grille 3-cols
+      pageItems = _balancedPick(list, state.pageSize);
+    } else {
+      pageItems = list.slice(0, state.pageSize);
+    }
+
     if (useSections) {
       dom.grid.classList.add('k-grid-has-sections');
       dom.grid.innerHTML = _renderGridWithSections(pageItems);
@@ -761,6 +770,62 @@
           </div>
         </div>
       </div>`;
+  }
+
+  /**
+   * Piochage équilibré par catégorie :
+   *   - Parcourt `list` en ordre d'apparition pour grouper par catégorie
+   *   - Garde seulement les catégories qui ont >= MIN_PER_SECTION produits
+   *   - Les catégories "maigres" (< MIN) sont fusionnées en une section "Autres" à la fin
+   *   - Résultat : jamais de cartes orphelines dans la grille 3-cols
+   */
+  function _balancedPick(list, pageSize) {
+    const MIN_PER_SECTION = 3;
+
+    // Grouper par cat dans l'ordre d'apparition
+    const byCat = new Map();
+    const order = [];
+    for (const p of list) {
+      const cat = p.category || 'Autres';
+      if (!byCat.has(cat)) { byCat.set(cat, []); order.push(cat); }
+      byCat.get(cat).push(p);
+    }
+
+    const rich = [];   // catégories qui ont >= MIN
+    const thin = [];   // produits des catégories maigres à regrouper en "Autres"
+
+    for (const cat of order) {
+      const prods = byCat.get(cat);
+      if (prods.length >= MIN_PER_SECTION) {
+        rich.push({ cat, prods });
+      } else {
+        // Sauf si "Autres" existe déjà en catégorie riche — dans ce cas on ajoute au groupe dédié
+        thin.push(...prods);
+      }
+    }
+
+    // Si on a des produits "maigres", les regrouper dans une section "Autres" (ou fusionner avec existante)
+    if (thin.length > 0) {
+      const existingAutres = rich.find(s => s.cat === 'Autres');
+      if (existingAutres) {
+        existingAutres.prods.push(...thin);
+      } else if (thin.length >= MIN_PER_SECTION) {
+        rich.push({ cat: 'Autres', prods: thin });
+      }
+      // Si moins de MIN_PER_SECTION et pas de section "Autres" existante,
+      // ces produits sont simplement masqués (acceptable : on préfère pas de section qu'une section cassée)
+    }
+
+    // Aplatir dans l'ordre (en respectant la limite pageSize)
+    const flat = [];
+    for (const section of rich) {
+      for (const p of section.prods) {
+        if (flat.length >= pageSize) break;
+        flat.push(p);
+      }
+      if (flat.length >= pageSize) break;
+    }
+    return flat;
   }
 
   function _renderGridWithSections(items) {
@@ -1088,15 +1153,18 @@ const item = state.cart.find(i => String(i.product.id) === pid);
     // IDs actuellement dans le panier
     const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
 
-    // OPTION C : on garde le panier tressé visuel, on ajoute juste un badge quantité
-    //           Le stepper s'affichera au long-press uniquement (via JS bindLongPressSteppers)
+    // OPTION C : panier tressé visuel + stepper "− qty +" visible dès ajout
+    //            (plus besoin de long-press, le stepper est directement accessible)
     document.querySelectorAll('.k-card-add').forEach(btn => {
       const pid = String(btn.dataset.add);
       if (inCartIds.has(pid)) {
         const item = state.cart.find(i => String(i.product.id) === pid);
         btn.classList.add('in-cart');
-        // Affichage = panier tressé + badge quantité en haut-droite
-        btn.innerHTML = '<span class="k-card-add-qty-badge">' + item.qty + '</span>';
+        // Stepper compact : − quantité + (tous cliquables indépendamment)
+        btn.innerHTML =
+          '<span class="k-add-minus" data-pid="' + pid + '">−</span>' +
+          '<span class="k-add-qty">' + item.qty + '</span>' +
+          '<span class="k-add-plus-ic">+</span>';
       } else {
         // Produit plus dans le panier → remettre juste le "+"
         btn.classList.remove('in-cart');
