@@ -1324,14 +1324,43 @@ body.cart-open{overflow:hidden}
 .k-sug-arrow[hidden]{display:none}
 .k-sug-add{
   position:absolute;top:6px;right:6px;
-  width:24px;height:24px;
+  width:26px;height:26px;
   background:var(--coral);color:var(--white);
+  border:none;
   border-radius:50%;font-size:14px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
   box-shadow:var(--shadow-sm);
-  transition:transform .2s,background .2s;
+  transition:transform .2s ease, background .2s ease, width .25s ease, border-radius .25s ease, padding .25s ease;
+  cursor:pointer;
+  padding:0;
+  overflow:hidden;
 }
-.k-sug-add:active{transform:scale(1.2);background:var(--coral-dark,#e64a19)}
+.k-sug-add:active{transform:scale(1.1);background:var(--coral-dark,#e64a19)}
+/* Stepper pill quand produit déjà dans le panier */
+.k-sug-add.in-cart{
+  width:62px;
+  height:26px;
+  border-radius:13px;
+  padding:0 4px;
+  justify-content:space-between;
+  background:var(--ocean);
+}
+.k-sug-add.in-cart:active{background:var(--ocean-dark)}
+.k-sug-minus,.k-sug-plus-ic{
+  color:#fff;font-size:14px;font-weight:700;
+  width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  pointer-events:none;
+  line-height:1;
+}
+.k-sug-minus{ pointer-events:auto; }
+.k-sug-qty{
+  color:#fff;font-size:11px;font-weight:800;
+  min-width:14px;text-align:center;
+  pointer-events:none;
+  line-height:1;
+}
 
 /* ══════════════════════════════════════════════════════════
    FULL CART DRAWER — Archipel palette
@@ -3073,12 +3102,15 @@ body.cart-open{overflow:hidden}
   .k-modal-details::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
   /* ── Modal Temu-style: image plein écran + carte info overlay ── */
   .k-modal-img-wrap {
-    flex: 0 0 40vh;
+    flex: 0 0 48vh;
     position: relative;
+    background: var(--sand);
   }
   .k-modal-slide {
-    object-fit: contain;
-    object-position: center center;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 8px;
+    box-sizing: border-box;
   }
   /* Carte info qui chevauche le bas de l'image */
   .k-modal-details {

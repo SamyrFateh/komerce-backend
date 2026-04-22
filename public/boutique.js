@@ -836,6 +836,19 @@ function addToCart(product, qty, sourceBtn) {
         btn.innerHTML = '<span class="k-card-add-plus">+</span>';
       }
     });
+
+    // Même logique pour les boutons des suggestions du modal
+    document.querySelectorAll('.k-sug-add').forEach(btn => {
+      const pid = String(btn.dataset.add);
+      if (inCartIds.has(pid)) {
+        const item = state.cart.find(i => String(i.product.id) === pid);
+        btn.classList.add('in-cart');
+        btn.innerHTML = '<span class="k-sug-minus" data-pid="' + pid + '">−</span><span class="k-sug-qty">' + item.qty + '</span><span class="k-sug-plus-ic">+</span>';
+      } else {
+        btn.classList.remove('in-cart');
+        btn.innerHTML = '+';
+      }
+    });
   }
 
   /* ── REMOVE FROM CART ───────────────────────────────────── */
@@ -1290,17 +1303,23 @@ function quickRemove(productId, btnEl) {
     const sugSection = document.getElementById('k-modal-suggestions');
     if (sugSection) sugSection.classList.remove('u-hidden');
 
-    dom.sugRail.innerHTML = items.map(p => `
+    dom.sugRail.innerHTML = items.map(p => {
+      const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+      const qty = inCart ? inCart.qty : 0;
+      return `
       <div class="k-sug-card" data-id="${p.id}">
         <div class="k-sug-card-img">
           <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
           ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
-          <button class="k-sug-add" data-add="${p.id}" aria-label="Ajouter">+</button>
+          <button class="k-sug-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+            ${qty > 0 ? '<span class="k-sug-minus" data-pid="' + p.id + '">−</span><span class="k-sug-qty">' + qty + '</span><span class="k-sug-plus-ic">+</span>' : '+'}
+          </button>
         </div>
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
         <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
       </div>
-    `).join('');
+      `;
+    }).join('');
 
     // Clic sur toute la carte → ouvrir le produit
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
@@ -1319,6 +1338,12 @@ function quickRemove(productId, btnEl) {
         e.stopPropagation();
         e.preventDefault();
         const pid = btn.dataset.add;
+        // Click sur "−" → retire (ou décrémente)
+        if (e.target.closest('.k-sug-minus')) {
+          quickRemove(pid, btn);
+          return;
+        }
+        // Click sur "+" ou fond du bouton → ajoute
         const product = state.products.find(p => String(p.id) === String(pid));
         if (!product) return;
         addToCart(product, 1, btn);
