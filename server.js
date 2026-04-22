@@ -281,6 +281,7 @@ const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
 const cashRouter = require('./routes/cash');
+const pickupSecretRouter = require('./routes/pickup-secret'); // Western Union model
 const inventoryApiRouter = require('./routes/inventory-api');
 const transitaireApiRouter = require('./routes/transitaire-api');
 const autoDistributeRouter = require('./routes/auto-distribute-api');
@@ -319,6 +320,7 @@ app.use('/api/auth/otp', otpRouter);      // WhatsApp OTP auth
 app.use('/api/client/tracking', clientTrackingRouter);
 app.use('/api/simulator', simulatorRouter);
 app.use('/api/cash', cashRouter); // Authenticated client tracking
+app.use('/api/pickup', pickupSecretRouter); // Western Union model : code secret au paiement
 app.use('/api/auth', clientAuthRouter);   // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);
@@ -823,6 +825,42 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 040: phone_payer + phone_beneficiary columns added');
       } catch(e) { console.warn('Migration 040 (non-fatal):', e.message); }
+
+      // ── Migration 042: pickup_secret system (Western Union model) ──
+      // Voir /docs/SECURITY-MODEL.md pour la doctrine complète.
+      try {
+        await db.query(`
+          -- Code secret hashé (jamais en clair en DB)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_hash TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_salt TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_created_at TIMESTAMPTZ;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_expires_at TIMESTAMPTZ;
+
+          -- Rate limiting au retrait (visite 2)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_attempts INT DEFAULT 0;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_blocked_until TIMESTAMPTZ;
+
+          -- Régénération admin (perte de reçu)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_regen_count INT DEFAULT 0;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_regen_reason TEXT;
+
+          -- Traçabilité visite 1 (paiement cash)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_received_at TIMESTAMPTZ;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_received_by_agent_id UUID REFERENCES users(id);
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_name TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_id_type TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_id_number TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_note TEXT;
+
+          -- Traçabilité visite 2 (retrait)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS collected_by_name TEXT;
+
+          -- Index utiles
+          CREATE INDEX IF NOT EXISTS idx_orders_pickup_created ON orders(pickup_secret_created_at);
+          CREATE INDEX IF NOT EXISTS idx_orders_payment_received ON orders(payment_received_at);
+        `);
+        console.log('✅ Migration 042: pickup_secret system (Western Union model)');
+      } catch(e) { console.warn('Migration 042 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
