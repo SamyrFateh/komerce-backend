@@ -2449,7 +2449,9 @@ body.cart-open{overflow:hidden}
   margin-top:0;
   box-shadow:0 -4px 16px rgba(0,0,0,0.10),0 -1px 0 rgba(0,0,0,0.06);
   transition:filter .2s,transform .15s;
-  z-index:5;
+  position:sticky;
+  bottom:0;
+  z-index:10;
 }
 .ck-confirm-btn:active{transform:scale(.97);filter:brightness(.95)}
 .ck-confirm-btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
@@ -3346,4 +3348,17 @@ body.cart-open{overflow:hidden}
   .k-modal-suggestions h3::after {
     display: none !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ORDER MODAL — bottom nav masquée quand la commande est ouverte
+   (sinon elle cache le bouton Commander + brouille l'UX)
+   ═══════════════════════════════════════════════════════════ */
+body:has(.k-order-overlay.open) .k-bnav,
+body:has(#k-order-modal.open) .k-bnav {
+  display: none !important;
+}
+/* Fallback sans :has() — si une classe sur <body> est posée par JS */
+body.order-open .k-bnav {
+  display: none !important;
 }

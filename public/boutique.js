@@ -420,16 +420,6 @@
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
-            <div class="k-card-tabs">
-              <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-              <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-              <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-            </div>
-            <div class="k-card-panels">
-              <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-              <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-              <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-            </div>
           </div>
         </div>`;
     }).join('');
@@ -438,7 +428,7 @@
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
       card.dataset.bound = '1';
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add')) return;
         openModal(card.dataset.id);
       });
     });
@@ -574,16 +564,6 @@
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
-            <div class="k-card-tabs">
-              <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-              <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-              <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-            </div>
-            <div class="k-card-panels">
-              <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-              <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-              <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-            </div>
           </div>
         </div>`;
     }).join('');
@@ -591,7 +571,7 @@
     // Events
     dom.grid.querySelectorAll('.k-card').forEach(card => {
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add')) return;
         openModal(card.dataset.id);
       });
     });
@@ -1014,7 +994,7 @@ function quickRemove(productId, btnEl) {
       if (t.closest && t.closest(
         '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal, ' +
         '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
-        '.k-card-fav, .k-card-add, .k-card-tab, ' +
+        '.k-card-fav, .k-card-add, ' +
         '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
         '.k-sug-rail, .k-modal-carousel, ' +
         'input, textarea, select'
@@ -1846,11 +1826,13 @@ function quickRemove(productId, btnEl) {
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
+    document.body.classList.add('order-open');
   }
 
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
     document.body.classList.remove('cart-open');
+    document.body.classList.remove('order-open');
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
       window._savedScrollY = 0;
@@ -2621,16 +2603,6 @@ async function submitOrder(btn) {
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? `<span class="k-card-old-price">${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>` : ''}
             </div>
-            <div class="k-card-tabs">
-              <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-              <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-              <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-            </div>
-            <div class="k-card-panels">
-              <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-              <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-              <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-            </div>
           </div>
         </div>`;
       }).join('');
@@ -2642,7 +2614,7 @@ async function submitOrder(btn) {
       if (favGrid) {
         favGrid.querySelectorAll('.k-card').forEach(card => {
           card.addEventListener('click', (e) => {
-            if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
+            if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add')) return;
             openModal(card.dataset.id);
           });
         });
@@ -2993,20 +2965,6 @@ async function submitOrder(btn) {
     setupCatSwipeNav();
     setupCatalogSwipeNav();
 
-    /* ── Card mini-tabs (Shein-style, event delegation) ── */
-    document.addEventListener('click', function(e) {
-      var tab = e.target.closest('.k-card-tab');
-      if (!tab) return;
-      e.stopPropagation(); // don't open modal
-      var card = tab.closest('.k-card');
-      if (!card) return;
-      card.querySelectorAll('.k-card-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      card.querySelectorAll('.k-card-panel').forEach(p => p.classList.remove('active'));
-      var target = tab.dataset.tab;
-      var panel = card.querySelector('.k-card-panel[data-panel="' + target + '"]');
-      if (panel) panel.classList.add('active');
-    });
     setupSearch();
     setupModal();
     setupDrawer();
