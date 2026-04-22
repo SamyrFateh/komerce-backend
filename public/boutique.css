@@ -1665,14 +1665,47 @@ body.cart-open{overflow:hidden}
   display:block;text-align:right;margin-bottom:12px;
 }
 
-.k-cart-footer-btns{display:flex;gap:8px;flex-wrap:wrap}
+/* Footer panier : grille 2 lignes organisée pour mobile
+   LIGNE 1 : [Continuer] [🗑] [Partager]  (3 boutons secondaires sur 1 ligne)
+   LIGNE 2 : [✅ Commander]                  (1 bouton primaire pleine largeur) */
+.k-cart-footer-btns{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;   /* Continuer (1fr) | 🗑 (auto) | Partager (1fr) */
+  grid-template-rows:auto auto;
+  gap:8px;
+  width:100%;
+}
 
 .kcf-btn{
-  padding:10px 16px;border-radius:12px;
+  padding:10px 14px;border-radius:12px;
   font-weight:700;font-size:.88rem;
   transition:all .2s var(--ease);
   display:flex;align-items:center;justify-content:center;gap:6px;
   cursor:pointer;border:none;
+  min-height:44px;  /* iOS touch target */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Disposition en grille : chaque bouton dans sa cellule */
+#k-cart-continue { grid-column: 1; grid-row: 1; }
+#k-cart-clear    { grid-column: 2; grid-row: 1; min-width:44px; padding:10px 12px; }
+#k-cart-whatsapp { grid-column: 3; grid-row: 1; }
+#k-cart-checkout { grid-column: 1 / -1; grid-row: 2; }  /* pleine largeur */
+
+/* Gestion texte WhatsApp selon largeur */
+@media (max-width: 380px) {
+  /* iPhone SE et très petits écrans : on simplifie le texte de Partager */
+  #k-cart-whatsapp {
+    font-size: 0.72rem;
+    padding: 10px 6px;
+    gap: 4px;
+  }
+  #k-cart-whatsapp svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 .kcf-primary{
   flex:2;background:var(--coral);color:#fff;
@@ -5755,4 +5788,50 @@ button,
   height: 100% !important;
   position: absolute;
   inset: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Override : en mode grille, flex:N n'a plus de sens                     */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cart-footer-btns .kcf-primary,
+.k-cart-footer-btns .kcf-secondary,
+.k-cart-footer-btns .kcf-whatsapp,
+.k-cart-footer-btns .kcf-danger {
+  flex: unset !important;
+  width: 100%;
+}
+
+/* Raccourcir le texte Partager sur mobile pour économiser l'espace */
+@media (max-width: 420px) {
+  #k-cart-whatsapp {
+    font-size: 0.78rem;
+  }
+  /* Cacher "à un proche" et ne garder que "Partager" sur mobile étroit */
+  #k-cart-whatsapp::after {
+    content: '';
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Texte du bouton Partager : ajusté selon la largeur écran               */
+/* ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  /* Astuce : on masque le texte original et on met un texte court via data */
+  #k-cart-whatsapp {
+    font-size: 0;  /* masque tous les enfants texte */
+  }
+  #k-cart-whatsapp svg {
+    font-size: initial;  /* restaure la taille du SVG */
+    width: 16px;
+    height: 16px;
+  }
+  #k-cart-whatsapp::after {
+    content: 'Partager';
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fff;
+    margin-left: 4px;
+  }
 }
