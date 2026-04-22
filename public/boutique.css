@@ -3101,16 +3101,33 @@ body.cart-open{overflow:hidden}
   .k-modal-details::-webkit-scrollbar { width: 3px; }
   .k-modal-details::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
   /* ── Modal Temu-style: image plein écran + carte info overlay ── */
+  /* Mobile : on SORT l'image de la zone "fixe" — elle scrolle avec le reste */
+  .k-modal-scroll {
+    display: block !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
   .k-modal-img-wrap {
-    flex: 0 0 48vh;
+    flex: none !important;
+    height: 55vh;
+    max-height: 55vh;
     position: relative;
     background: var(--sand);
+    overflow: hidden;
   }
   .k-modal-slide {
     object-fit: contain !important;
     object-position: center center !important;
     padding: 8px;
     box-sizing: border-box;
+  }
+  /* Details : plus de scroll indépendant, flow naturel */
+  .k-modal-details {
+    flex: none !important;
+    overflow: visible !important;
+    min-height: 0;
   }
   /* Carte info qui chevauche le bas de l'image */
   .k-modal-details {
@@ -3269,7 +3286,8 @@ body.cart-open{overflow:hidden}
    Passe du rail horizontal → grille verticale 2 colonnes (Shein-style)
    ═══════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
-  .k-sug-rail {
+  #k-modal .k-sug-rail,
+  .k-modal .k-sug-rail {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 10px !important;
@@ -3279,22 +3297,28 @@ body.cart-open{overflow:hidden}
     scroll-snap-type: none !important;
     max-height: none !important;
     padding: 0 0 12px !important;
+    width: 100% !important;
   }
-  .k-sug-card {
+  #k-modal .k-sug-card,
+  .k-modal .k-sug-card {
     flex: none !important;
     width: 100% !important;
+    min-width: 0 !important;
     scroll-snap-align: unset !important;
     border-radius: var(--radius-lg, 14px);
     overflow: hidden;
     background: var(--white);
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
   }
-  .k-sug-card img {
+  #k-modal .k-sug-card img,
+  .k-modal .k-sug-card img {
     aspect-ratio: 1;
     border-radius: var(--radius-lg, 14px) var(--radius-lg, 14px) 0 0;
     object-fit: cover;
+    width: 100% !important;
   }
-  .k-sug-card-name {
+  #k-modal .k-sug-card-name,
+  .k-modal .k-sug-card-name {
     font-size: 12px;
     font-weight: 600;
     padding: 8px 10px 2px;
@@ -3302,7 +3326,8 @@ body.cart-open{overflow:hidden}
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .k-sug-card-price {
+  #k-modal .k-sug-card-price,
+  .k-modal .k-sug-card-price {
     font-size: 14px;
     font-weight: 700;
     color: var(--coral);
