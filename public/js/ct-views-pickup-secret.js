@@ -141,11 +141,10 @@
   // ══════════════════════════════════════════════════════════════════════════
 
   async function openCashPaymentFlow(orderRef, orderId) {
-    // Étape 1 : récupérer les infos de la commande
+    // Étape 1 : récupérer les infos de la commande (via /status qui renvoie tout)
     var order;
     try {
-      var data = await apiFetch('/api/pickup/status/' + orderId);
-      order = data;
+      order = await apiFetch('/api/pickup/status/' + orderId);
     } catch(e) {
       return toast('❌ Impossible de charger la commande : ' + e.message, 'error');
     }
@@ -155,69 +154,127 @@
       return toast('⚠ Code déjà généré pour cette commande. Utilisez la procédure admin pour régénérer.', 'error');
     }
 
-    // Récupérer le montant via v2Orders (ou via status si dispo)
-    var totalKmf = 0;
-    try {
-      var ordersResp = await apiFetch('/api/orders/v2?limit=200');
-      var found = (ordersResp.orders || []).find(function(o) { return o.reference === orderRef; });
-      if (found) totalKmf = Number(found.total_kmf || 0);
-    } catch(_) {}
+    var totalKmf       = Number(order.total_kmf || 0);
+    var clientName     = order.client_name || '';
+    var currentPhone   = (order.tracking && order.tracking.primary)   || '';
+    var currentPhone2  = (order.tracking && order.tracking.secondary) || '';
 
     var idRequired = totalKmf >= ID_THRESHOLD_REQUIRED;
     var adminAlert = totalKmf >= ID_THRESHOLD_ADMIN;
 
     var html =
-      '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">' +
-        '<strong>💰 Encaissement cash — ' + escapeHTML(orderRef) + '</strong><br>' +
-        'Montant à encaisser : <strong>' + fmtKmf(totalKmf) + '</strong>' +
-        (adminAlert ? '<br><span style="color:#dc2626">⚠ Montant > 100k : validation admin requise + photo CNI</span>' :
-         idRequired ? '<br><span style="color:#b45309">⚠ Pièce d\'identité obligatoire</span>' :
-                      '<br><span style="color:#059669">✓ Pas de pièce requise (< 10k KMF)</span>') +
+      // ── Récapitulatif de la commande ─────────────────────────────
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.6">' +
+        '<div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px;margin-bottom:6px">COMMANDE</div>' +
+        '<div style="font-size:15px;font-weight:700;color:#1e293b">' + escapeHTML(orderRef) +
+          (clientName ? ' · ' + escapeHTML(clientName) : '') +
+        '</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#dc2626;margin-top:4px">' + fmtKmf(totalKmf) + ' à encaisser</div>' +
+        (adminAlert ? '<div style="margin-top:6px;color:#dc2626;font-size:12px">⚠ Montant > 100k : validation admin requise</div>' :
+         idRequired ? '<div style="margin-top:6px;color:#b45309;font-size:12px">⚠ Pièce d\'identité obligatoire</div>' :
+                      '<div style="margin-top:6px;color:#059669;font-size:12px">✓ Pas de pièce requise (< 10k KMF)</div>') +
       '</div>' +
 
       '<form id="pickup-pay-form">' +
 
-        '<label style="display:block;margin-bottom:14px">' +
-          '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Nom du payeur *</span>' +
-          '<input type="text" name="payer_name" required placeholder="Ex: Fatima Moussa" ' +
-                 'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
-        '</label>' +
+        // ── SECTION 1 : Numéros de suivi (confirmer/ajouter) ────────
+        '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:14px">' +
+          '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:10px">📞 Numéros de suivi</div>' +
 
-        (idRequired ?
-          '<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:14px">' +
-            '<label>' +
-              '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Type pièce *</span>' +
-              '<select name="payer_id_type" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
-                '<option value="">—</option>' +
-                '<option value="CNI">CNI</option>' +
-                '<option value="passport">Passeport</option>' +
-                '<option value="permis">Permis</option>' +
-                '<option value="autre">Autre</option>' +
-              '</select>' +
-            '</label>' +
-            '<label>' +
-              '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">N° pièce *</span>' +
-              '<input type="text" name="payer_id_number" required placeholder="Ex: 123456789" ' +
-                     'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
-            '</label>' +
-          '</div>'
-          : '') +
+          // Numéro principal
+          '<label style="display:block;margin-bottom:10px">' +
+            '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">Numéro principal (notifs colis)</span>' +
+            '<input type="tel" name="tracking_phone_primary" value="' + escapeHTML(currentPhone) + '" ' +
+                   'placeholder="+269 333 44 88" ' +
+                   'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+            (currentPhone ? '<span style="display:block;font-size:11px;color:#16a34a;margin-top:3px">✓ Confirmez ou corrigez avec le client</span>' :
+                            '<span style="display:block;font-size:11px;color:#dc2626;margin-top:3px">⚠ Aucun numéro enregistré, à saisir</span>') +
+          '</label>' +
 
+          // Bouton ajouter un 2e numéro (personne de confiance)
+          '<div id="pickup-secondary-wrap">' +
+            (currentPhone2 ?
+              '<label style="display:block">' +
+                '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">📞 Personne de confiance (optionnel)</span>' +
+                '<input type="tel" name="tracking_phone_secondary" value="' + escapeHTML(currentPhone2) + '" ' +
+                       'placeholder="+269 333 11 22" ' +
+                       'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+              '</label>'
+              :
+              '<button type="button" id="pickup-add-secondary" ' +
+                      'style="width:100%;padding:8px;background:transparent;border:1px dashed #60a5fa;border-radius:6px;color:#1e40af;font-size:12px;font-weight:600;cursor:pointer">' +
+                '+ Ajouter une personne de confiance (recevra aussi les notifs)' +
+              '</button>'
+            ) +
+          '</div>' +
+        '</div>' +
+
+        // ── SECTION 2 : Identité du payeur ──────────────────────────
+        '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:14px">' +
+          '<div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:10px">👤 Identité du payeur présent</div>' +
+
+          '<label style="display:block;margin-bottom:' + (idRequired ? '10px' : '4px') + '">' +
+            '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">Nom du payeur *</span>' +
+            '<input type="text" name="payer_name" required placeholder="Ex: Fatima Moussa" ' +
+                   'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+          '</label>' +
+
+          (idRequired ?
+            '<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px">' +
+              '<label>' +
+                '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">Type pièce *</span>' +
+                '<select name="payer_id_type" required style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+                  '<option value="">—</option>' +
+                  '<option value="CNI">CNI</option>' +
+                  '<option value="passport">Passeport</option>' +
+                  '<option value="permis">Permis</option>' +
+                  '<option value="autre">Autre</option>' +
+                '</select>' +
+              '</label>' +
+              '<label>' +
+                '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">N° pièce *</span>' +
+                '<input type="text" name="payer_id_number" required placeholder="Ex: 123456789" ' +
+                       'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+              '</label>' +
+            '</div>'
+            : '') +
+        '</div>' +
+
+        // ── SECTION 3 : Note libre ──────────────────────────────────
         '<label style="display:block;margin-bottom:20px">' +
-          '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Note (optionnel)</span>' +
-          '<input type="text" name="payer_note" placeholder="Ex: c\'est la tante d\'Ahmed" ' +
+          '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">Note (optionnel)</span>' +
+          '<input type="text" name="payer_note" placeholder="Ex: c\'est la tante d\'Ahmed, commande pour sa nièce" ' +
                  'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
         '</label>' +
 
+        // ── Bouton valider ──────────────────────────────────────────
         '<button type="submit" id="pickup-pay-submit" ' +
-                'style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:8px;' +
-                'font-size:15px;font-weight:700;cursor:pointer">' +
+                'style="width:100%;padding:16px;background:#16a34a;color:#fff;border:none;border-radius:8px;' +
+                'font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(22,163,74,0.3)">' +
           '💰 Confirmer encaissement ' + fmtKmf(totalKmf) +
         '</button>' +
 
       '</form>';
 
     var modal = createModal('Encaisser paiement cash', html);
+
+    // Handler : bouton "+ Ajouter une personne de confiance"
+    var addBtn = document.getElementById('pickup-add-secondary');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() {
+        var wrap = document.getElementById('pickup-secondary-wrap');
+        wrap.innerHTML =
+          '<label style="display:block">' +
+            '<span style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">📞 Personne de confiance (optionnel)</span>' +
+            '<input type="tel" name="tracking_phone_secondary" autofocus ' +
+                   'placeholder="+269 333 11 22" ' +
+                   'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+            '<span style="display:block;font-size:11px;color:#64748b;margin-top:3px">Cette personne recevra aussi les notifs de suivi du colis.</span>' +
+          '</label>';
+        var newInput = wrap.querySelector('input[type="tel"]');
+        if (newInput) newInput.focus();
+      });
+    }
 
     var form = document.getElementById('pickup-pay-form');
     form.addEventListener('submit', async function(e) {
@@ -228,10 +285,12 @@
 
       var formData = new FormData(form);
       var payload = {
-        payer_name:      formData.get('payer_name'),
-        payer_id_type:   formData.get('payer_id_type') || null,
-        payer_id_number: formData.get('payer_id_number') || null,
-        payer_note:      formData.get('payer_note') || null,
+        payer_name:                formData.get('payer_name'),
+        payer_id_type:             formData.get('payer_id_type') || null,
+        payer_id_number:           formData.get('payer_id_number') || null,
+        payer_note:                formData.get('payer_note') || null,
+        tracking_phone_primary:    formData.get('tracking_phone_primary') || null,
+        tracking_phone_secondary:  formData.get('tracking_phone_secondary') || null,
       };
 
       try {
@@ -328,89 +387,262 @@
 
     var attempts = order.secret.attempts || 0;
     var remaining = Math.max(0, 3 - attempts);
+    var masked = order.secret.masked || '•••-•••-••';
 
+    // Deux modes : scan QR (principal) ou saisie 4 chars (fallback)
     var html =
       '<div style="background:#dbeafe;border:1px solid #60a5fa;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">' +
         '<strong>📦 Retrait — ' + escapeHTML(orderRef) + '</strong><br>' +
-        'Demandez au client de lire son code secret imprimé sur son reçu.' +
-        (attempts > 0 ? '<br><span style="color:#dc2626">⚠ ' + attempts + ' tentative(s) échouée(s) — ' + remaining + ' restante(s)</span>' : '') +
+        'Scannez le QR code imprimé sur le reçu du client.' +
+        '<div style="font-size:11px;color:#64748b;margin-top:4px">Code attendu : ' + escapeHTML(masked) + ' (masqué côté agent)</div>' +
+        (attempts > 0 ? '<div style="color:#dc2626;margin-top:4px">⚠ ' + attempts + ' tentative(s) échouée(s) — ' + remaining + ' restante(s)</div>' : '') +
       '</div>' +
 
-      '<form id="pickup-verify-form">' +
-
-        '<label style="display:block;margin-bottom:20px">' +
-          '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Code secret (format A7K-3M9-P2)</span>' +
-          '<input type="text" id="pickup-code-input" name="code" required ' +
-                 'placeholder="___-___-__" maxlength="10" autocomplete="off" ' +
-                 'style="width:100%;padding:14px;border:2px solid #cbd5e1;border-radius:8px;' +
-                 'font-size:22px;font-weight:700;letter-spacing:4px;text-align:center;' +
-                 'font-family:\'Courier New\',monospace;text-transform:uppercase">' +
-        '</label>' +
-
-        '<button type="submit" id="pickup-verify-submit" ' +
-                'style="width:100%;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:8px;' +
-                'font-size:15px;font-weight:700;cursor:pointer">' +
-          '🔐 Vérifier le code' +
+      // ── MODE A : Scan QR (par défaut) ───────────────────────────
+      '<div id="pickup-mode-scan">' +
+        '<div id="pickup-scan-wrap" style="position:relative;border:2px solid #2563eb;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1;max-height:320px;margin:0 auto 12px">' +
+          '<video id="pickup-scan-video" autoplay playsinline muted ' +
+                 'style="width:100%;height:100%;object-fit:cover;display:block"></video>' +
+          '<div style="position:absolute;inset:0;border:3px solid rgba(255,255,255,0.8);border-radius:12px;pointer-events:none;' +
+               'box-shadow:0 0 0 9999px rgba(0,0,0,0.3)"></div>' +
+          '<div id="pickup-scan-status" ' +
+               'style="position:absolute;bottom:0;left:0;right:0;padding:8px;background:rgba(0,0,0,0.65);color:#fff;font-size:12px;text-align:center">' +
+            '🔍 Pointez la caméra sur le QR du reçu' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" id="pickup-switch-manual" ' +
+                'style="width:100%;padding:12px;background:transparent;border:1px dashed #94a3b8;border-radius:8px;color:#475569;font-size:13px;cursor:pointer">' +
+          '⌨ Saisir les 4 derniers caractères à la place' +
         '</button>' +
+      '</div>' +
 
-      '</form>' +
+      // ── MODE B : Saisie 4 chars (caché par défaut) ──────────────
+      '<div id="pickup-mode-manual" style="display:none">' +
+        '<form id="pickup-verify-form">' +
+          '<label style="display:block;margin-bottom:16px">' +
+            '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Les 4 derniers caractères du code</span>' +
+            '<input type="text" id="pickup-code-input" name="code" required ' +
+                   'placeholder="____" maxlength="4" autocomplete="off" ' +
+                   'style="width:100%;padding:18px;border:2px solid #cbd5e1;border-radius:8px;' +
+                   'font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;' +
+                   'font-family:\'Courier New\',monospace;text-transform:uppercase">' +
+            '<span style="display:block;font-size:11px;color:#64748b;margin-top:6px;text-align:center">Le code complet (8 chars) est aussi accepté si le client le donne entier</span>' +
+          '</label>' +
+          '<button type="submit" id="pickup-verify-submit" ' +
+                  'style="width:100%;padding:14px;background:#2563eb;color:#fff;border:none;border-radius:8px;' +
+                  'font-size:15px;font-weight:700;cursor:pointer">' +
+            '🔐 Vérifier le code' +
+          '</button>' +
+        '</form>' +
+        '<button type="button" id="pickup-back-scan" ' +
+                'style="width:100%;padding:10px;margin-top:10px;background:transparent;border:none;color:#2563eb;font-size:13px;cursor:pointer">' +
+          '← Retour au scan QR' +
+        '</button>' +
+      '</div>' +
 
       '<div style="text-align:center;margin-top:14px;font-size:12px;color:#64748b">' +
-        'Code oublié ? <a href="#" id="pickup-lost-link" style="color:#2563eb">Procédure de perte</a>' +
+        'Code perdu ? <a href="#" id="pickup-lost-link" style="color:#2563eb">Procédure de perte</a>' +
       '</div>';
 
-    var modal = createModal('Remettre un colis', html);
-
-    // Auto-formatage du code saisi : majuscules + ajout auto des tirets
-    var input = document.getElementById('pickup-code-input');
-    input.addEventListener('input', function() {
-      var raw = input.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8);
-      if (raw.length > 6) raw = raw.slice(0, 3) + '-' + raw.slice(3, 6) + '-' + raw.slice(6);
-      else if (raw.length > 3) raw = raw.slice(0, 3) + '-' + raw.slice(3);
-      input.value = raw;
-    });
-    input.focus();
-
-    // Procédure de perte
-    document.getElementById('pickup-lost-link').addEventListener('click', function(e) {
-      e.preventDefault();
-      openLostCodeDialog(orderRef, orderId);
+    var modal = createModal('Remettre un colis', html, {
+      onClose: function() { stopScanning(); }
     });
 
-    var form = document.getElementById('pickup-verify-form');
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      var submitBtn = document.getElementById('pickup-verify-submit');
-      submitBtn.disabled = true;
-      submitBtn.textContent = '⏳ Vérification...';
+    // ── Scan QR logic ────────────────────────────────────────────
+    var videoEl     = document.getElementById('pickup-scan-video');
+    var statusEl    = document.getElementById('pickup-scan-status');
+    var scanStream  = null;
+    var scanLoopId  = null;
+    var jsQRLoaded  = false;
+    var lastScanAt  = 0;
+    var barcodeDetector = null;
 
-      var code = input.value;
+    async function startScanning() {
+      try {
+        // Préférer caméra arrière sur mobile
+        scanStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        });
+        videoEl.srcObject = scanStream;
+        await videoEl.play();
 
+        // Tenter BarcodeDetector (Chromium)
+        if ('BarcodeDetector' in window) {
+          try {
+            barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          } catch(_) { barcodeDetector = null; }
+        }
+
+        // Si pas de BarcodeDetector, charger jsQR en CDN
+        if (!barcodeDetector && !window.jsQR) {
+          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js');
+          jsQRLoaded = true;
+        }
+
+        statusEl.textContent = '🔍 Pointez la caméra sur le QR du reçu';
+        scanLoop();
+      } catch(err) {
+        statusEl.textContent = '❌ Caméra inaccessible — utilisez la saisie manuelle';
+        statusEl.style.background = 'rgba(220,38,38,0.9)';
+        console.warn('[PICKUP-SCAN] getUserMedia error:', err);
+      }
+    }
+
+    function stopScanning() {
+      if (scanLoopId) { cancelAnimationFrame(scanLoopId); scanLoopId = null; }
+      if (scanStream) {
+        scanStream.getTracks().forEach(function(t) { t.stop(); });
+        scanStream = null;
+      }
+    }
+
+    function loadScript(src) {
+      return new Promise(function(res, rej) {
+        var s = document.createElement('script');
+        s.src = src; s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function scanLoop() {
+      if (!scanStream) return;
+      var now = Date.now();
+      // Throttle : 1 scan / 200ms
+      if (now - lastScanAt < 200) {
+        scanLoopId = requestAnimationFrame(scanLoop);
+        return;
+      }
+      lastScanAt = now;
+
+      try {
+        var qrData = null;
+        if (barcodeDetector) {
+          // Path Chromium : BarcodeDetector (rapide)
+          var codes = await barcodeDetector.detect(videoEl);
+          if (codes && codes.length > 0) qrData = codes[0].rawValue;
+        } else if (window.jsQR && videoEl.readyState === 4) {
+          // Path jsQR : copie frame → canvas → décodage
+          var canvas = document.createElement('canvas');
+          canvas.width  = videoEl.videoWidth;
+          canvas.height = videoEl.videoHeight;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+          var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var result = window.jsQR(imgData.data, imgData.width, imgData.height, {
+            inversionAttempts: 'dontInvert',
+          });
+          if (result) qrData = result.data;
+        }
+
+        if (qrData) {
+          stopScanning();
+          statusEl.textContent = '✅ QR détecté, vérification...';
+          statusEl.style.background = 'rgba(22,163,74,0.9)';
+          await processQrPayload(qrData);
+          return;
+        }
+      } catch(err) {
+        console.warn('[PICKUP-SCAN] scan error:', err);
+      }
+
+      scanLoopId = requestAnimationFrame(scanLoop);
+    }
+
+    async function processQrPayload(raw) {
+      var payload, code;
+      try {
+        payload = JSON.parse(raw);
+        code = payload.c;
+      } catch(_) {
+        // Si pas JSON, peut-être que le QR encode directement le code
+        code = String(raw).trim();
+      }
+
+      if (!code) {
+        toast('❌ QR invalide : code introuvable', 'error');
+        modal.close();
+        return;
+      }
+
+      await verifyAndCollect(code);
+    }
+
+    async function verifyAndCollect(code) {
       try {
         await apiFetch('/api/pickup/verify/' + orderId, {
           method: 'POST',
           body: JSON.stringify({ code: code }),
         });
-        // Code valide : passer à l'étape collect
         modal.close();
         openCollectConfirmation(orderRef, orderId);
       } catch(err) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '🔐 Vérifier le code';
         if (err.status === 401) {
           var d = err.data || {};
-          input.style.border = '2px solid #ef4444';
-          input.value = '';
           toast('❌ Code incorrect — ' + (d.remaining || 0) + ' tentative(s) restante(s)', 'error');
-          setTimeout(function() { input.style.border = '2px solid #cbd5e1'; }, 1500);
-        } else if (err.status === 429) {
           modal.close();
+        } else if (err.status === 429) {
           toast('🚫 ' + err.message, 'error');
+          modal.close();
         } else {
           toast('❌ ' + err.message, 'error');
+          modal.close();
         }
       }
+    }
+
+    // ── Switch scan ↔ saisie manuelle ────────────────────────────
+    document.getElementById('pickup-switch-manual').addEventListener('click', function() {
+      stopScanning();
+      document.getElementById('pickup-mode-scan').style.display = 'none';
+      document.getElementById('pickup-mode-manual').style.display = 'block';
+      var input = document.getElementById('pickup-code-input');
+      if (input) {
+        input.focus();
+        // Auto-formatage : uppercase + max 8 chars (4 ou 8 acceptés)
+        input.addEventListener('input', function() {
+          var raw = input.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+          // Si <= 4 chars : pas de tiret. Si 5-8 chars : format A7K-3M9-P2
+          if (raw.length > 4) {
+            raw = raw.slice(0, 8);
+            input.maxLength = 10;
+            if (raw.length > 6) raw = raw.slice(0, 3) + '-' + raw.slice(3, 6) + '-' + raw.slice(6);
+            else if (raw.length > 3) raw = raw.slice(0, 3) + '-' + raw.slice(3);
+          } else {
+            input.maxLength = 8;
+          }
+          input.value = raw;
+        });
+      }
     });
+
+    document.getElementById('pickup-back-scan').addEventListener('click', function() {
+      document.getElementById('pickup-mode-manual').style.display = 'none';
+      document.getElementById('pickup-mode-scan').style.display = 'block';
+      startScanning();
+    });
+
+    // ── Form submit (mode manuel) ────────────────────────────────
+    document.getElementById('pickup-verify-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var submitBtn = document.getElementById('pickup-verify-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Vérification...';
+      var input = document.getElementById('pickup-code-input');
+      await verifyAndCollect(input.value);
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🔐 Vérifier le code';
+    });
+
+    // ── Procédure de perte ───────────────────────────────────────
+    document.getElementById('pickup-lost-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      stopScanning();
+      openLostCodeDialog(orderRef, orderId);
+    });
+
+    // ── Démarrer le scan automatiquement ─────────────────────────
+    startScanning();
   }
 
   function openCollectConfirmation(orderRef, orderId) {

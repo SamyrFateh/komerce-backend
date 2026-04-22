@@ -85,19 +85,31 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
     const { orderId } = req.params;
     const agentId     = req.user.id;
     const {
-      payer_name,          // obligatoire : nom du payeur qui paie physiquement
-      payer_id_type,       // optionnel : 'CNI' | 'passport' | 'permis' | ...
-      payer_id_number,     // optionnel : numéro de la pièce
-      payer_note,          // optionnel : note libre agent ("c'est la tante")
+      payer_name,                 // obligatoire : nom du payeur qui paie physiquement
+      payer_id_type,              // optionnel : 'CNI' | 'passport' | 'permis' | ...
+      payer_id_number,            // optionnel : numéro de la pièce
+      payer_note,                 // optionnel : note libre agent ("c'est la tante")
+      tracking_phone_primary,     // optionnel : confirmer/corriger le numéro de suivi principal
+      tracking_phone_secondary,   // optionnel : second numéro "personne de confiance"
     } = req.body;
 
     if (!payer_name || !payer_name.trim()) {
       return res.status(400).json({ error: 'Le nom du payeur est obligatoire' });
     }
 
+    // Validation légère du format des numéros (si fournis)
+    const phoneRx = /^[+]?[0-9\s().-]{6,20}$/;
+    if (tracking_phone_primary && !phoneRx.test(tracking_phone_primary)) {
+      return res.status(400).json({ error: 'Numéro principal invalide' });
+    }
+    if (tracking_phone_secondary && !phoneRx.test(tracking_phone_secondary)) {
+      return res.status(400).json({ error: 'Numéro secondaire invalide' });
+    }
+
     // 1. Vérifier que la commande existe et est en pending_payment
     const { rows: [order] } = await db.query(`
-      SELECT id, reference, total_kmf, payment_mode, status, pickup_secret_hash
+      SELECT id, reference, total_kmf, payment_mode, status, pickup_secret_hash,
+             tracking_phone, tracking_phone_secondary, relais_id
       FROM orders WHERE id = $1
     `, [orderId]);
 
@@ -113,33 +125,72 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
       });
     }
 
-    // 2. Générer le code secret + salt
-    const code     = generatePickupCode();
-    const salt     = crypto.randomBytes(16).toString('hex');
-    const hash     = hashCode(code, salt);
-    const now      = new Date();
-    const expires  = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // +60 jours
+    // 2. Générer le code secret + salt (avec anti-collision sur last4 du relais)
+    // Les 4 derniers caractères alphanumériques servent de "short code" que
+    // l'agent saisira au guichet. On s'assure qu'aucun autre code ACTIF du
+    // même relais n'a les mêmes 4 derniers chars.
+    let code, last4, hash;
+    const salt = crypto.randomBytes(16).toString('hex');
+    let attempts = 0;
+    const MAX_GEN_ATTEMPTS = 50;
+    while (attempts < MAX_GEN_ATTEMPTS) {
+      code  = generatePickupCode();
+      last4 = code.replace(/-/g, '').slice(-4);
+      // Vérifier qu'aucune commande ACTIVE du même relais n'a le même last4
+      const { rows: [dup] } = await db.query(`
+        SELECT id FROM orders
+        WHERE pickup_secret_last4 = $1
+          AND relais_id IS NOT DISTINCT FROM $2
+          AND status NOT IN ('collected', 'cancelled', 'refunded')
+          AND (pickup_secret_expires_at IS NULL OR pickup_secret_expires_at > NOW())
+        LIMIT 1
+      `, [last4, order.relais_id || null]);
+      if (!dup) break;
+      attempts++;
+    }
+    if (attempts >= MAX_GEN_ATTEMPTS) {
+      console.error('[PICKUP-SECRET] Impossible de générer un code unique pour le relais ' + order.relais_id);
+      return res.status(500).json({ error: 'Génération du code impossible (saturation) — contactez un admin' });
+    }
+    hash = hashCode(code, salt);
+    const now     = new Date();
+    const expires = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // +60 jours
 
-    // 3. Enregistrer en DB + log d'audit
+    // Déterminer les numéros finaux : si agent corrige → utiliser valeur agent,
+    // sinon conserver celle déjà en DB
+    const finalPhonePrimary   = (tracking_phone_primary && tracking_phone_primary.trim())
+                                  ? tracking_phone_primary.trim()
+                                  : (order.tracking_phone || null);
+    const finalPhoneSecondary = (tracking_phone_secondary && tracking_phone_secondary.trim())
+                                  ? tracking_phone_secondary.trim()
+                                  : null;
+
+    // 3. Enregistrer en DB
     await db.query(`
       UPDATE orders
-      SET pickup_secret_hash       = $1,
-          pickup_secret_salt       = $2,
-          pickup_secret_created_at = $3,
-          pickup_secret_expires_at = $4,
-          payment_received_at      = $3,
-          payment_received_by_agent_id = $5,
-          payer_name               = $6,
-          payer_id_type            = $7,
-          payer_id_number          = $8,
-          payer_note               = $9,
-          payment_status           = 'paid',
-          status                   = 'confirmed',
-          confirmed_at             = $3,
-          updated_at               = NOW()
-      WHERE id = $10
+      SET pickup_secret_hash              = $1,
+          pickup_secret_salt              = $2,
+          pickup_secret_last4             = $13,
+          pickup_secret_created_at        = $3,
+          pickup_secret_expires_at        = $4,
+          payment_received_at             = $3,
+          payment_received_by_agent_id    = $5,
+          payer_name                      = $6,
+          payer_id_type                   = $7,
+          payer_id_number                 = $8,
+          payer_note                      = $9,
+          tracking_phone                  = $10,
+          tracking_phone_secondary        = $11,
+          tracking_phone_confirmed_at     = $3,
+          tracking_phone_confirmed_by_agent_id = $5,
+          payment_status                  = 'paid',
+          status                          = 'confirmed',
+          confirmed_at                    = $3,
+          updated_at                      = NOW()
+      WHERE id = $12
     `, [hash, salt, now, expires, agentId, payer_name.trim(),
-        payer_id_type || null, payer_id_number || null, payer_note || null, orderId]);
+        payer_id_type || null, payer_id_number || null, payer_note || null,
+        finalPhonePrimary, finalPhoneSecondary, orderId, last4]);
 
     // 4. Log d'audit (en cash_collections pour rester cohérent avec l'existant)
     await db.query(`
@@ -342,6 +393,27 @@ function buildReceiptHTML({ code, order, items }) {
     letter-spacing: 4px;
     font-family: 'Courier New', monospace;
   }
+  .qr-wrap {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .qr-wrap canvas {
+    display: block;
+    width: 160px;
+    height: 160px;
+    background: #fff;
+  }
+  .qr-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #000;
+    margin-top: 4px;
+  }
   .warning {
     font-size: 10px;
     text-align: center;
@@ -409,12 +481,16 @@ function buildReceiptHTML({ code, order, items }) {
   <div class="code-box">
     <div class="code-label">CODE SECRET DE RETRAIT</div>
     <div class="code-value">${escapeHTML(code)}</div>
+    <div class="qr-wrap">
+      <canvas id="pickup-qr" width="160" height="160"></canvas>
+      <div class="qr-label">Scannez au relais</div>
+    </div>
   </div>
 
   <div class="warning">
     ⚠ CONSERVEZ CE REÇU PRÉCIEUSEMENT<br>
-    Ce code est nécessaire pour retirer<br>
-    le colis quand il arrivera (3 à 4 semaines).<br>
+    Présentez le QR code au relais pour retirer<br>
+    votre colis (3 à 4 semaines).<br>
     En cas de perte, présentez-vous<br>
     avec une pièce d'identité.
   </div>
@@ -433,11 +509,43 @@ function buildReceiptHTML({ code, order, items }) {
 
 <button class="print-btn" onclick="window.print()">🖨 Imprimer maintenant</button>
 
+<!-- QR generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
-  // Auto-print à l'ouverture (peut être bloqué par le navigateur, d'où le bouton manuel)
+  // Payload du QR : JSON compact { c: code, o: orderRef }
+  // Le relais scanne → JSON parsé → verify avec le code complet
+  var qrPayload = JSON.stringify({
+    c: ${JSON.stringify(code)},
+    o: ${JSON.stringify(order.reference)}
+  });
+
+  function renderQR() {
+    if (typeof QRious === 'undefined') {
+      // Fallback API externe si la lib n'a pas chargé (offline relais)
+      var img = document.createElement('img');
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' +
+                encodeURIComponent(qrPayload);
+      img.width = 160; img.height = 160;
+      var canvas = document.getElementById('pickup-qr');
+      canvas.parentNode.replaceChild(img, canvas);
+      return;
+    }
+    new QRious({
+      element: document.getElementById('pickup-qr'),
+      value: qrPayload,
+      size: 160,
+      level: 'M',
+      background: '#ffffff',
+      foreground: '#000000',
+    });
+  }
+
+  renderQR();
+
+  // Auto-print après avoir rendu le QR (léger delay pour laisser le canvas peindre)
   setTimeout(function() {
     try { window.print(); } catch(_) {}
-  }, 500);
+  }, 800);
 </script>
 
 </body>
@@ -467,7 +575,8 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
 
     const { rows: [order] } = await db.query(`
       SELECT id, reference, status,
-             pickup_secret_hash, pickup_secret_salt, pickup_secret_expires_at,
+             pickup_secret_hash, pickup_secret_salt, pickup_secret_last4,
+             pickup_secret_expires_at,
              pickup_secret_attempts, pickup_secret_blocked_until
       FROM orders WHERE id = $1
     `, [orderId]);
@@ -494,11 +603,24 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
       return res.status(410).json({ error: 'Code expiré. Escalade admin nécessaire.' });
     }
 
-    // Vérifier le hash
+    // Vérifier le code : 2 modes selon la longueur saisie
+    // - 4 chars : compare avec pickup_secret_last4 (saisie rapide au guichet)
+    // - 8 chars (code complet) : compare avec le hash salé
     const normalized = normalizeCode(code);
-    const testHash   = hashCode(normalized, order.pickup_secret_salt);
+    let matched = false;
 
-    if (testHash !== order.pickup_secret_hash) {
+    if (normalized.length === 4) {
+      // Mode court : comparaison directe du last4 (non-sensible, unique par relais actif)
+      matched = !!(order.pickup_secret_last4 && normalized === order.pickup_secret_last4);
+    } else if (normalized.length === 8) {
+      // Mode complet : comparaison du hash
+      const testHash = hashCode(normalized, order.pickup_secret_salt);
+      matched = (testHash === order.pickup_secret_hash);
+    } else {
+      return res.status(400).json({ error: 'Code attendu : 4 caractères (raccourci) ou 8 caractères (complet)' });
+    }
+
+    if (!matched) {
       // Incrémenter le compteur de tentatives
       const attempts = (order.pickup_secret_attempts || 0) + 1;
       let blockUntil = null;
@@ -601,16 +723,37 @@ router.post('/regenerate/:orderId', authenticate, requireAdmin, async (req, res,
     }
 
     const { rows: [order] } = await db.query(`
-      SELECT id, reference, pickup_secret_hash FROM orders WHERE id = $1
+      SELECT id, reference, pickup_secret_hash, relais_id FROM orders WHERE id = $1
     `, [orderId]);
 
     if (!order) {
       return res.status(404).json({ error: 'Commande introuvable' });
     }
 
-    const code    = generatePickupCode();
-    const salt    = crypto.randomBytes(16).toString('hex');
-    const hash    = hashCode(code, salt);
+    // Génération anti-collision last4 (même logique que pay-cash)
+    let code, last4, hash;
+    const salt = crypto.randomBytes(16).toString('hex');
+    let attempts = 0;
+    const MAX_GEN_ATTEMPTS = 50;
+    while (attempts < MAX_GEN_ATTEMPTS) {
+      code  = generatePickupCode();
+      last4 = code.replace(/-/g, '').slice(-4);
+      const { rows: [dup] } = await db.query(`
+        SELECT id FROM orders
+        WHERE pickup_secret_last4 = $1
+          AND relais_id IS NOT DISTINCT FROM $2
+          AND id <> $3
+          AND status NOT IN ('collected', 'cancelled', 'refunded')
+          AND (pickup_secret_expires_at IS NULL OR pickup_secret_expires_at > NOW())
+        LIMIT 1
+      `, [last4, order.relais_id || null, orderId]);
+      if (!dup) break;
+      attempts++;
+    }
+    if (attempts >= MAX_GEN_ATTEMPTS) {
+      return res.status(500).json({ error: 'Génération du code impossible (saturation)' });
+    }
+    hash = hashCode(code, salt);
     const now     = new Date();
     const expires = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
 
@@ -618,6 +761,7 @@ router.post('/regenerate/:orderId', authenticate, requireAdmin, async (req, res,
       UPDATE orders
       SET pickup_secret_hash        = $1,
           pickup_secret_salt        = $2,
+          pickup_secret_last4       = $7,
           pickup_secret_created_at  = $3,
           pickup_secret_expires_at  = $4,
           pickup_secret_attempts    = 0,
@@ -626,7 +770,7 @@ router.post('/regenerate/:orderId', authenticate, requireAdmin, async (req, res,
           pickup_secret_regen_reason = $5,
           updated_at = NOW()
       WHERE id = $6
-    `, [hash, salt, now, expires, reason.trim(), orderId]);
+    `, [hash, salt, now, expires, reason.trim(), orderId, last4]);
 
     console.log(`[PICKUP-SECRET] 🔄 Régénéré pour ${order.reference} par admin ${adminId} motif="${reason}"`);
 
@@ -652,15 +796,23 @@ router.get('/status/:orderId', authenticate, requireRelaisOrAdmin, async (req, r
     const { orderId } = req.params;
 
     const { rows: [order] } = await db.query(`
-      SELECT id, reference, status, payment_status,
-             payer_name,
-             pickup_secret_created_at,
-             pickup_secret_expires_at,
-             pickup_secret_attempts,
-             pickup_secret_blocked_until,
-             pickup_secret_regen_count,
-             collected_at, collected_by_name
-      FROM orders WHERE id = $1
+      SELECT o.id, o.reference, o.status, o.payment_status, o.total_kmf,
+             o.payer_name,
+             o.tracking_phone,
+             o.tracking_phone_secondary,
+             o.tracking_phone_confirmed_at,
+             o.pickup_secret_created_at,
+             o.pickup_secret_expires_at,
+             o.pickup_secret_attempts,
+             o.pickup_secret_blocked_until,
+             o.pickup_secret_regen_count,
+             o.pickup_secret_last4,
+             o.collected_at, o.collected_by_name,
+             u.full_name AS client_name,
+             u.phone     AS client_phone
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.id = $1
     `, [orderId]);
 
     if (!order) {
@@ -671,7 +823,15 @@ router.get('/status/:orderId', authenticate, requireRelaisOrAdmin, async (req, r
       order_ref: order.reference,
       status: order.status,
       payment_status: order.payment_status,
+      total_kmf: Number(order.total_kmf || 0),
+      client_name: order.client_name,
       payer_name: order.payer_name,
+      tracking: {
+        // Numéro principal : priorité à tracking_phone, fallback sur phone user
+        primary:   order.tracking_phone || order.client_phone || null,
+        secondary: order.tracking_phone_secondary || null,
+        confirmed_at: order.tracking_phone_confirmed_at,
+      },
       secret: {
         exists: !!order.pickup_secret_created_at,
         created_at: order.pickup_secret_created_at,
@@ -679,6 +839,12 @@ router.get('/status/:orderId', authenticate, requireRelaisOrAdmin, async (req, r
         attempts: order.pickup_secret_attempts || 0,
         blocked_until: order.pickup_secret_blocked_until,
         regen_count: order.pickup_secret_regen_count || 0,
+        // Affichage masqué à l'agent : "•••-•••-XX" (les 4 derniers chars visibles)
+        // L'agent n'a jamais accès au code complet via l'API, c'est voulu.
+        last4:  order.pickup_secret_last4 || null,
+        masked: order.pickup_secret_last4
+                  ? ('•••-•' + order.pickup_secret_last4.slice(0, 2) + '-' + order.pickup_secret_last4.slice(2))
+                  : null,
       },
       collected: {
         at: order.collected_at,

@@ -862,6 +862,33 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 042: pickup_secret system (Western Union model)');
       } catch(e) { console.warn('Migration 042 (non-fatal):', e.message); }
 
+      // ── Migration 043: tracking multi-numéros (paiement au relais) ──
+      // Permet un second numéro "personne de confiance" qui reçoit aussi les
+      // notifs de tracking. Le numéro principal peut être confirmé/corrigé au
+      // comptoir par l'agent.
+      try {
+        await db.query(`
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_phone_secondary VARCHAR(30);
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_phone_confirmed_at TIMESTAMPTZ;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_phone_confirmed_by_agent_id UUID REFERENCES users(id);
+        `);
+        console.log('✅ Migration 043: tracking multi-numéros (personne de confiance)');
+      } catch(e) { console.warn('Migration 043 (non-fatal):', e.message); }
+
+      // ── Migration 044: pickup_secret_last4 (saisie 4 chars au guichet) ──
+      // L'agent relais saisit uniquement les 4 derniers caractères du code pour
+      // simplifier l'UX et limiter l'exposition du code complet.
+      // Unicité garantie au niveau du relais parmi les codes actifs.
+      try {
+        await db.query(`
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_last4 VARCHAR(4);
+          CREATE INDEX IF NOT EXISTS idx_orders_pickup_last4_relais
+            ON orders(relais_id, pickup_secret_last4)
+            WHERE pickup_secret_last4 IS NOT NULL;
+        `);
+        console.log('✅ Migration 044: pickup_secret_last4 (saisie 4 chars au guichet)');
+      } catch(e) { console.warn('Migration 044 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);
