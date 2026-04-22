@@ -165,7 +165,7 @@ body{
 /* Cart button */
 .k-cart-btn{
   position:relative;flex-shrink:0;
-  width:40px;height:40px;
+  width:48px;height:48px;
   display:flex;align-items:center;justify-content:center;
   border-radius:50%;
   transition:background .2s;
@@ -173,21 +173,40 @@ body{
 .k-cart-btn svg{width:22px;height:22px;color:var(--coral)}
 .k-cart-btn:active{background:rgba(255,107,53,.1)}
 .k-cart-badge{
-  position:absolute;top:0;right:0;
-  min-width:18px;height:18px;
+  position:absolute;top:-2px;right:-2px;
+  min-width:20px;height:20px;
   background:var(--coral);color:var(--white);
-  font-size:10px;font-weight:700;
+  font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
-  border-radius:50px;padding:0 4px;
+  border-radius:50px;padding:0 5px;
+  border:2px solid var(--white);
   transform:scale(0);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 2px 4px rgba(0,0,0,.15);
 }
 .k-cart-badge.show{transform:scale(1)}
 
 /* Cart avatar */
 .k-cart-avatar{
+  width:36px !important;
+  height:36px !important;
   border-radius:50%;
   object-fit:cover;
-  border:2px solid rgba(255,255,255,.3);
+  border:2px solid rgba(255,255,255,.5);
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Animation "coucou" quand le panier est déclenché */
+.k-cart-btn.avatar-wave .k-cart-avatar{
+  animation:avatarWave .9s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes avatarWave{
+  0%   {transform:scale(1) rotate(0deg)}
+  20%  {transform:scale(1.25) rotate(-10deg)}
+  40%  {transform:scale(1.2) rotate(12deg)}
+  60%  {transform:scale(1.22) rotate(-8deg)}
+  80%  {transform:scale(1.18) rotate(6deg)}
+  100% {transform:scale(1) rotate(0deg)}
 }
 
 /* ── HERO ──────────────────────────────────────────────── */
@@ -347,7 +366,7 @@ body{
 .k-promo-rail-inner{
   display:flex;gap:8px;
   width:max-content;
-  animation:none;
+  animation:promo-scroll 40s linear infinite;
 }
 .k-promo-rail-inner:hover,
 .k-promo-rail-inner:active{
@@ -839,20 +858,138 @@ body{
     box-shadow:0 4px 14px rgba(31,48,36,.22), 0 0 0 1px rgba(74,144,64,.25);
   }
 }
-/* Stepper pill quand produit déjà dans le panier : on reprend le sage
-   (pas d'image panier) avec les contrôles -/+/qty bien visibles */
-.k-card-add.in-cart{
-  background:var(--ocean) none;
-  background-image:none !important;
-  border-radius:14px;
-  width:76px;
-  padding:0 6px;
-  justify-content:space-between;
-  gap:0;
-  box-shadow:0 2px 8px rgba(74,144,64,.3);
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  OPTION C — Panier tressé TOUJOURS visible + badge qty + stepper      */
+/*             au long-press                                               */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Quand produit dans panier : le panier tressé reste (signature Komerce)   */
+/*                             mais on ajoute un cercle vert avec qty       */
+.k-card-add.in-cart {
+  /* Garde le panier tressé en background */
+  background: var(--white) url('/images/panier_tresse.png') center/78% no-repeat !important;
+  /* Petit ring vert autour pour indiquer "actif" */
+  box-shadow:
+    0 0 0 2px var(--ocean, #4a9040),
+    0 2px 8px rgba(74,144,64,.25) !important;
+  animation: cartAddPulse .5s cubic-bezier(.34,1.56,.64,1);
 }
-.k-card-add.in-cart:hover{ background:var(--ocean-dark); }
-.k-card-add:active{transform:scale(.9)}
+
+@keyframes cartAddPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* Badge quantité en haut-droite du panier tressé */
+.k-card-add-qty-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--ocean, #4a9040);
+  color: #fff;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  pointer-events: none;
+  z-index: 2;
+  animation: qtyBadgeBounce .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes qtyBadgeBounce {
+  0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg);    opacity: 1; }
+}
+
+/* Stepper qui apparaît au long-press — flottant au-dessus du panier tressé */
+.k-card-add-stepper {
+  position: absolute;
+  bottom: 52px;  /* Juste au-dessus du panier tressé */
+  right: 0;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid var(--ocean, #4a9040);
+  border-radius: 24px;
+  padding: 4px 6px;
+  gap: 4px;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,.15),
+    0 2px 6px rgba(74,144,64,.2);
+  z-index: 10;
+  animation: stepperSlideDown .3s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes stepperSlideDown {
+  0%   { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+.k-card-add-stepper.k-stepper-closing {
+  animation: stepperSlideUp .25s ease-in forwards;
+}
+
+@keyframes stepperSlideUp {
+  0%   { transform: translateY(0);    opacity: 1; }
+  100% { transform: translateY(12px); opacity: 0; }
+}
+
+.k-card-add-stepper button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--ocean, #4a9040);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background .15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.k-card-add-stepper button:active {
+  background: rgba(74,144,64,.12);
+  transform: scale(.9);
+}
+
+.k-card-add-stepper .k-stepper-qty {
+  min-width: 28px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #1f3024);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Indicateur visuel pendant le long-press (avant que le stepper apparaisse) */
+.k-card-add.is-long-pressing {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 3px var(--ocean, #4a9040),
+    0 4px 14px rgba(74,144,64,.3) !important;
+  transition: all .2s ease;
+}
+
+.k-card-add:active { transform: scale(.9); }
+
+/* En mode stepper ouvert, le panier tressé garde son style "in-cart" */
+.k-card-add.stepper-open {
+  opacity: 0.7;
+}
 
 /* Le "+" textuel est masqué visuellement mais reste pour les lecteurs d'écran */
 .k-card-add-plus{
@@ -1117,7 +1254,7 @@ body.cart-open{overflow:hidden}
 }
 .k-modal-cart-btn:active{background:var(--sand)}
 .k-modal-cart-btn svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:2}
-.k-modal-cart-btn .k-cart-avatar{width:28px;height:28px}
+.k-modal-cart-btn .k-cart-avatar{width:32px !important;height:32px !important}
 .k-modal-cart-badge{
   position:absolute;top:-2px;right:-2px;
   min-width:16px;height:16px;
@@ -1139,13 +1276,19 @@ body.cart-open{overflow:hidden}
 
 /* ── MODAL LAYOUT — mobile: stacked split, desktop: 2-column grid ── */
 .k-modal-scroll{
-  flex:1;overflow:hidden;min-height:0;
-  display:flex;flex-direction:column;
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
 }
 
 /* ── IMAGE ZONE — compact on mobile, expands on desktop ── */
 .k-modal-img-wrap{
-  position:relative;flex:0 0 35vh;
+  position:relative;
+  flex:0 0 auto;
+  height:45vh;
   background:var(--sand);
   overflow:hidden;
 }
@@ -1154,8 +1297,14 @@ body.cart-open{overflow:hidden}
 .k-modal-carousel{width:100%;height:100%;overflow:hidden}
 .k-modal-carousel-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.22,1,.36,1)}
 .k-modal-slide{
-  flex:0 0 100%;width:100%;height:100%;
-  object-fit:cover;object-position:top center;display:block;
+  flex:0 0 100%;
+  width:100%;
+  height:100%;
+  object-fit:contain !important;      /* IMAGE ENTIÈRE, jamais coupée */
+  object-position:center center;
+  display:block;
+  background:#fff;                     /* fond blanc pour bandes éventuelles */
+  padding:12px;                        /* petit padding pour respirer */
 }
 .k-modal-dots{
   position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
@@ -1170,7 +1319,9 @@ body.cart-open{overflow:hidden}
 
 /* ── DETAILS — independent scroll on mobile ── */
 .k-modal-details{
-  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;
+  flex:0 0 auto;
+  overflow:visible;
+  min-height:0;
 }
 .k-modal-promo-badge{
   display:none;
@@ -1256,6 +1407,134 @@ body.cart-open{overflow:hidden}
 .k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark);flex-shrink:0}
 .k-modal-suggestions h3{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-muted)}
 
+/* ── 2 SECTIONS DISTINCTES (même catégorie vs complémentaires) ── */
+.k-sug-section{
+  padding:14px 0 6px;
+}
+.k-sug-section + .k-sug-section{
+  margin-top:6px;
+  border-top:1px solid var(--sand);
+  padding-top:16px;
+}
+.k-sug-title{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:12px;padding:0 2px;
+}
+.k-sug-title-icon{
+  font-size:15px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg, rgba(224,90,72,.12), rgba(224,90,72,.06));
+  flex-shrink:0;
+}
+.k-sug-section:has(.k-sug-grid--other) .k-sug-title-icon{
+  background:linear-gradient(135deg, rgba(45,160,130,.12), rgba(45,160,130,.06));
+}
+.k-sug-title-text{
+  font-size:11px;font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text-muted);
+}
+/* Ligne décorative après le titre pour la transition */
+.k-sug-title::after{
+  content:'';
+  flex:1;height:1px;
+  background:linear-gradient(to right, var(--sand-dark), transparent);
+}
+
+/* ── GRILLE 2 COLONNES (style Shein/Temu) ── */
+.k-sug-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:10px;
+  padding:0 2px;
+}
+.k-sug-grid .k-sug-card{
+  flex:none;                    /* annule flex des anciens styles */
+  width:100%;
+  scroll-snap-align:unset;
+}
+.k-sug-grid .k-sug-card-img{
+  aspect-ratio:1 !important;
+  position:relative;
+  overflow:hidden;
+  background:var(--sand);
+  border-radius:10px 10px 0 0;
+}
+.k-sug-grid .k-sug-card-img img{
+  width:100% !important;height:100% !important;
+  aspect-ratio:1 !important;
+  object-fit:cover !important;
+  display:block;
+}
+.k-sug-grid .k-sug-card-name{
+  font-size:13px;
+  line-height:1.3;
+  padding:6px 8px 2px;
+  color:var(--text-primary);
+  font-weight:500;
+  /* 2 lignes max, ellipsis */
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  min-height:34px;
+}
+.k-sug-grid .k-sug-card-price{
+  padding:0 8px 8px;
+  font-size:14px;
+  font-weight:700;
+  color:var(--coral);
+}
+.k-sug-grid .k-sug-promo-badge{
+  position:absolute;top:6px;left:6px;
+  background:var(--coral);color:#fff;
+  font-size:10px;font-weight:700;
+  padding:2px 6px;border-radius:10px;
+  z-index:2;
+}
+.k-sug-grid .k-sug-add{
+  position:absolute;bottom:6px;right:6px;
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(255,255,255,.95);
+  color:var(--coral);
+  font-size:18px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  z-index:2;
+  transition:transform .15s,background .2s;
+}
+.k-sug-grid .k-sug-add:active{
+  transform:scale(.88);
+  background:var(--coral);color:#fff;
+}
+
+/* Mobile d'abord : 2 colonnes par défaut (forcé) */
+.k-sug-grid{
+  grid-template-columns:repeat(2, 1fr) !important;
+}
+/* Tablette : 3 colonnes seulement à partir de 768px */
+@media(min-width:768px){
+  .k-sug-grid{
+    grid-template-columns:repeat(3, 1fr) !important;
+  }
+}
+/* Desktop : 4 colonnes à partir de 1100px (vraie taille desktop) */
+@media(min-width:1100px){
+  .k-sug-grid{
+    grid-template-columns:repeat(4, 1fr) !important;
+  }
+}
+
+/* ── STICKY BOTTOM RENFORCÉ pour les actions ── */
+.k-modal-actions{
+}
+/* Laisse l'espace nécessaire pour que la dernière ligne de la grille ne soit pas cachée derrière */
+.k-modal-suggestions{
+  padding-bottom:16px !important;
+}
+
 /* ── DESKTOP 600+: 2-column grid ── */
 @media(min-width:600px){
   .k-modal{max-width:560px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}
@@ -1324,43 +1603,14 @@ body.cart-open{overflow:hidden}
 .k-sug-arrow[hidden]{display:none}
 .k-sug-add{
   position:absolute;top:6px;right:6px;
-  width:26px;height:26px;
+  width:24px;height:24px;
   background:var(--coral);color:var(--white);
-  border:none;
   border-radius:50%;font-size:14px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
   box-shadow:var(--shadow-sm);
-  transition:transform .2s ease, background .2s ease, width .25s ease, border-radius .25s ease, padding .25s ease;
-  cursor:pointer;
-  padding:0;
-  overflow:hidden;
+  transition:transform .2s,background .2s;
 }
-.k-sug-add:active{transform:scale(1.1);background:var(--coral-dark,#e64a19)}
-/* Stepper pill quand produit déjà dans le panier */
-.k-sug-add.in-cart{
-  width:62px;
-  height:26px;
-  border-radius:13px;
-  padding:0 4px;
-  justify-content:space-between;
-  background:var(--ocean);
-}
-.k-sug-add.in-cart:active{background:var(--ocean-dark)}
-.k-sug-minus,.k-sug-plus-ic{
-  color:#fff;font-size:14px;font-weight:700;
-  width:18px;height:18px;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  pointer-events:none;
-  line-height:1;
-}
-.k-sug-minus{ pointer-events:auto; }
-.k-sug-qty{
-  color:#fff;font-size:11px;font-weight:800;
-  min-width:14px;text-align:center;
-  pointer-events:none;
-  line-height:1;
-}
+.k-sug-add:active{transform:scale(1.2);background:var(--coral-dark,#e64a19)}
 
 /* ══════════════════════════════════════════════════════════
    FULL CART DRAWER — Archipel palette
@@ -1533,14 +1783,47 @@ body.cart-open{overflow:hidden}
   display:block;text-align:right;margin-bottom:12px;
 }
 
-.k-cart-footer-btns{display:flex;gap:8px;flex-wrap:wrap}
+/* Footer panier : grille 2 lignes organisée pour mobile
+   LIGNE 1 : [Continuer] [🗑] [Partager]  (3 boutons secondaires sur 1 ligne)
+   LIGNE 2 : [✅ Commander]                  (1 bouton primaire pleine largeur) */
+.k-cart-footer-btns{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;   /* Continuer (1fr) | 🗑 (auto) | Partager (1fr) */
+  grid-template-rows:auto auto;
+  gap:8px;
+  width:100%;
+}
 
 .kcf-btn{
-  padding:10px 16px;border-radius:12px;
+  padding:10px 14px;border-radius:12px;
   font-weight:700;font-size:.88rem;
   transition:all .2s var(--ease);
   display:flex;align-items:center;justify-content:center;gap:6px;
   cursor:pointer;border:none;
+  min-height:44px;  /* iOS touch target */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Disposition en grille : chaque bouton dans sa cellule */
+#k-cart-continue { grid-column: 1; grid-row: 1; }
+#k-cart-clear    { grid-column: 2; grid-row: 1; min-width:44px; padding:10px 12px; }
+#k-cart-whatsapp { grid-column: 3; grid-row: 1; }
+#k-cart-checkout { grid-column: 1 / -1; grid-row: 2; }  /* pleine largeur */
+
+/* Gestion texte WhatsApp selon largeur */
+@media (max-width: 380px) {
+  /* iPhone SE et très petits écrans : on simplifie le texte de Partager */
+  #k-cart-whatsapp {
+    font-size: 0.72rem;
+    padding: 10px 6px;
+    gap: 4px;
+  }
+  #k-cart-whatsapp svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 .kcf-primary{
   flex:2;background:var(--coral);color:#fff;
@@ -1779,27 +2062,29 @@ body.cart-open{overflow:hidden}
    ══════════════════════════════════════════════════════════ */
 .k-wa-fab{
   position:fixed;
-  bottom:calc(var(--bnav-h) + 14px);right:20px;
-  width:56px;height:56px;
+  bottom:calc(var(--bnav-h) + 8px);
+  right:10px;
+  width:44px;height:44px;
   border-radius:50%;
   background:var(--whatsapp);
   color:#fff;
   display:flex;align-items:center;justify-content:center;
   z-index:100;
-  box-shadow:0 4px 14px rgba(37,211,102,.4);
+  box-shadow:0 3px 10px rgba(37,211,102,.35);
   transition:transform .2s var(--ease);
-  animation:waPulse 2s ease-in-out infinite;
+  animation:waPulse 2.5s ease-in-out infinite;
   text-decoration:none;
 }
-.k-wa-fab:hover{transform:scale(1.1)}
-.k-wa-fab svg{width:28px;height:28px}
+.k-wa-fab:hover{transform:scale(1.08)}
+.k-wa-fab:active{transform:scale(.92)}
+.k-wa-fab svg{width:22px;height:22px}
 
 @media(min-width:1024px){
-  .k-wa-fab{bottom:24px;right:24px}
+  .k-wa-fab{bottom:18px;right:18px}
 }
 @keyframes waPulse{
-  0%,100%{box-shadow:0 4px 14px rgba(37,211,102,.4)}
-  50%{box-shadow:0 4px 24px rgba(37,211,102,.7)}
+  0%,100%{box-shadow:0 3px 10px rgba(37,211,102,.35)}
+  50%{box-shadow:0 3px 18px rgba(37,211,102,.55)}
 }
 
 /* ── TOAST ─────────────────────────────────────────────── */
@@ -3102,15 +3387,12 @@ body.cart-open{overflow:hidden}
   .k-modal-details::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
   /* ── Modal Temu-style: image plein écran + carte info overlay ── */
   .k-modal-img-wrap {
-    flex: 0 0 48vh;
+    flex: 0 0 40vh;
     position: relative;
-    background: var(--sand);
   }
   .k-modal-slide {
-    object-fit: contain !important;
-    object-position: center center !important;
-    padding: 8px;
-    box-sizing: border-box;
+    object-fit: cover;
+    object-position: center center;
   }
   /* Carte info qui chevauche le bas de l'image */
   .k-modal-details {
@@ -3122,7 +3404,7 @@ body.cart-open{overflow:hidden}
     box-shadow: 0 -2px 12px rgba(0,0,0,.06);
   }
   .k-modal-info {
-    padding: 18px 16px 0;
+    padding: 14px 16px 0;
   }
   /* Nom + description sur la même ligne */
   #k-modal-name {
@@ -3140,21 +3422,12 @@ body.cart-open{overflow:hidden}
     text-overflow: ellipsis;
   }
   .k-modal-price-row {
-    margin-top: 10px;
-    padding-top: 4px;
-    line-height: 1.3;
-  }
-  .k-modal-price {
-    line-height: 1.2;
-  }
-  .k-modal-old-price {
-    line-height: 1.2;
+    margin-top: 8px;
   }
   /* Modal actions always visible at bottom */
   .k-modal-actions {
     flex-shrink: 0;
     background: #fff;
-    z-index: 2;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
   /* Buy button styling (was missing) */
@@ -3261,5 +3534,2831 @@ body.cart-open{overflow:hidden}
   .k-grid.k-grid-slide-in-left,
   .k-grid.k-grid-slide-in-right {
     animation: none;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  CARROUSEL PRODUIT SHEIN-LIKE — swipe horizontal + dots                 */
+/*  - scroll-snap horizontal dans la carte                                 */
+/*  - touch-action: pan-y → le scroll vertical global reste fluide         */
+/*  - dots en bas pour indiquer la position                                */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.k-card-carousel {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  aspect-ratio: 4/3;
+  /* pan-y : réserve le geste vertical au scroll global, horizontal au carrousel */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  background: #faf8f5;
+}
+
+.k-card-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.k-card-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-card-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  display: block;
+}
+
+/* Dots ronds en bas du carrousel */
+.k-card-dots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.k-card-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: all 0.25s ease;
+}
+
+.k-card-dot.active {
+  background: white;
+  width: 16px;
+  border-radius: 3px;
+}
+
+/* Sur desktop, carrousel légèrement plus grand */
+@media (min-width: 900px) {
+  .k-card-carousel {
+    aspect-ratio: 1/1;
+  }
+  .k-card-slide-img {
+    padding: 12px;
+  }
+  .k-card-dots {
+    bottom: 8px;
+    padding: 4px 10px;
+  }
+  .k-card-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .k-card-dot.active {
+    width: 18px;
+  }
+}
+
+/* Masquer l'image statique originale si elle coexiste avec un carrousel */
+.k-card-img-wrap > .k-card-img:not(:only-child) {
+  display: none;
+}
+
+/* Masquer les onglets (on garde la règle précédente) */
+.k-card-tabs,
+.k-card-panels {
+  display: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MODAL PAIEMENT — nouveaux éléments (v2.5)                              */
+/*  - bouton retour panier                                                  */
+/*  - récap articles                                                        */
+/*  - champ email                                                           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Bouton retour panier ───────────────────────────────────────────── */
+.ck-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 0 0 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.ck-back-btn:hover {
+  background: var(--sand-dark);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.ck-back-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Récap panier (mini) ────────────────────────────────────────────── */
+.ck-recap {
+  background: var(--sand);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.ck-recap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ck-recap-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ck-recap-total {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--coral);
+}
+.ck-recap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ck-recap-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ck-recap-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--sand-dark);
+  flex-shrink: 0;
+}
+.ck-recap-thumb--empty {
+  background: var(--sand-dark);
+}
+.ck-recap-info {
+  flex: 1;
+  min-width: 0;
+}
+.ck-recap-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ck-recap-qty {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.ck-recap-more {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+/* ── Champ email (type=email) ─────────────────────────────────────────── */
+input#of-client-email {
+  /* Hérite déjà de k-ck-input, juste un rappel de style */
+  font-family: var(--font);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MODALE PRODUIT — scroll vertical + suggestions en grille (Shein-like)  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Le conteneur principal doit scroller verticalement */
+.k-modal-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* La zone image reste fixe en haut (carrousel horizontal) */
+.k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 450px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sand);
+}
+
+/* Info produit après l'image */
+.k-modal-info {
+  padding: 16px 14px 12px;
+  background: var(--white);
+}
+
+/* ── SUGGESTIONS : passer de rail horizontal à grille verticale ──────── */
+.k-modal-suggestions {
+  flex-shrink: 1 !important;
+  padding: 16px 12px 20px !important;
+  border-top: 8px solid var(--sand) !important;
+  background: var(--white);
+}
+
+.k-modal-suggestions h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  color: var(--text) !important;
+}
+
+/* Grille verticale 2 colonnes mobile — scroll haut/bas naturel */
+.k-sug-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  scroll-snap-type: none !important;
+  padding: 0 !important;
+}
+
+.k-sug-card {
+  flex: unset !important;
+  width: 100% !important;
+  scroll-snap-align: unset !important;
+}
+
+.k-sug-card img {
+  aspect-ratio: 4/3 !important;
+}
+
+/* Desktop : 4 colonnes */
+@media (min-width: 900px) {
+  .k-sug-rail {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+  .k-modal-img-wrap {
+    height: 60vh !important;
+    max-height: 600px;
+  }
+}
+
+/* Assurer que la modale garde les actions (quantité + ajout panier) en bas fixe */
+.k-modal-actions {
+  flex-shrink: 0;
+  background: var(--white);
+  border-top: 1px solid var(--sand-dark);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX — Bouton "Payer/Confirmer" toujours visible dans modal paiement    */
+/*  Garantit que .k-order-modal garde bien sa structure flex même quand    */
+/*  d'autres règles CSS interfèrent.                                        */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Renforcer la modal d'ordre : flex column garanti, hauteur stable */
+.k-order-overlay.open {
+  display: flex !important;
+}
+.k-order-overlay.open .k-order-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+/* Le body garde son flex:1 et scrolle */
+.k-order-overlay.open .k-order-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+}
+
+/* Le bouton Payer est toujours visible en bas */
+.k-order-overlay.open .ck-confirm-btn {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 10 !important;
+  /* Protection contre les claviers virtuels mobiles */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 600px) {
+  .k-order-overlay.open .k-order-modal {
+    height: auto !important;
+    max-height: 92vh !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH MODAL PAIEMENT + CARROUSEL + BNAV (consolidé)                    */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Masquer bottom nav quand modal paiement/panier AVEC items ─────
+   Si panier vide (classe cart-empty), on GARDE la bnav pour que 
+   l'utilisateur puisse naviguer librement (UX plus ouverte).
+   ────────────────────────────────────────────────────────────────── */
+/* FIX 1.1 : bottom nav reste visible pendant la modal produit
+   (seul le panier ouvert avec items cache la bnav, la modal non) */
+body.cart-open:not(.cart-empty) .k-bnav {
+  display: none !important;
+}
+/* La modal produit garde la bnav visible en dessous, z-index gère la superposition */
+body.modal-open .k-bnav {
+  z-index: 100 !important;
+  /* On atténue un peu pour indiquer que la modal est dessus */
+  opacity: 0.6;
+  pointer-events: none; /* Pas cliquable tant que la modal est ouverte,
+                           mais le user voit ses options */
+  transition: opacity .25s ease;
+}
+
+/* ── Modal paiement : layout garanti ────────────────────────────── */
+.k-order-overlay.open {
+  display: flex !important;
+  z-index: 1200 !important;
+}
+.k-order-overlay.open .k-order-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+.k-order-overlay.open .k-order-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  padding-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.k-order-overlay.open .ck-confirm-btn {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 1300 !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 600px) {
+  .k-order-overlay.open .k-order-modal {
+    height: auto !important;
+    max-height: 92vh !important;
+  }
+}
+
+/* ── Modale produit : scroll vertical + suggestions en grille ───── */
+.k-modal-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+.k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 450px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sand);
+}
+.k-modal-suggestions {
+  flex-shrink: 1 !important;
+  padding: 16px 12px 20px !important;
+  border-top: 8px solid var(--sand) !important;
+  background: var(--white);
+}
+.k-modal-suggestions h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  color: var(--text) !important;
+}
+.k-sug-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  scroll-snap-type: none !important;
+  padding: 0 !important;
+}
+.k-sug-card {
+  flex: unset !important;
+  width: 100% !important;
+  scroll-snap-align: unset !important;
+}
+.k-sug-card img {
+  aspect-ratio: 4/3 !important;
+}
+.k-modal-actions {
+  flex-shrink: 0;
+  background: var(--white);
+  border-top: 1px solid var(--sand-dark);
+}
+@media (min-width: 900px) {
+  .k-sug-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
+}
+
+/* ── Carrousel produit sur cartes grille (Shein-like) ───────────── */
+.k-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.k-card-carousel {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  width: 100%;
+  aspect-ratio: 4/3;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  background: #faf8f5;
+}
+.k-card-carousel::-webkit-scrollbar { display: none; }
+.k-card-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.k-card-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+}
+.k-card-dots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+.k-card-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: all 0.25s ease;
+}
+.k-card-dot.active {
+  background: white;
+  width: 16px;
+  border-radius: 3px;
+}
+.k-card-img-wrap > .k-card-img:not(:only-child) {
+  display: none;
+}
+
+/* ── Masquer onglets Détails/Couleurs/Livraison ─────────────────── */
+.k-card-tabs,
+.k-card-panels {
+  display: none !important;
+}
+
+/* ── Bouton retour panier dans modal paiement ──────────────────── */
+.ck-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 0 0 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ck-back-btn:hover {
+  background: var(--sand-dark);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.ck-back-btn:active { transform: scale(0.97); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PATCH FLUIDITÉ - v1                                                    */
+/*  Amélioration : scroll plus doux sur chips catégories + modale produit  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Scroll chips catégories — fluide et snappy ───────────────────── */
+.k-cats {
+  /* Snap plus net que proximity : on s'arrête toujours sur une chip */
+  scroll-snap-type: x proximity !important;
+  /* Évite que le swipe sur les chips fasse scroller la page verticalement */
+  overscroll-behavior-x: contain !important;
+  /* Inertie iOS + accélération hardware */
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+  /* Padding pour que les chips de bord soient bien visibles au snap */
+  scroll-padding-left: 16px;
+  scroll-padding-right: 16px;
+  /* Force hardware acceleration */
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+.k-chip {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* ── Sous-catégories : même traitement ───────────────────────────── */
+.k-subcats-rail {
+  overscroll-behavior-x: contain !important;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+/* ── Rail promos (Soldes) : momentum fluide ─────────────────────── */
+.k-promo-rail {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.k-promo-rail-inner {
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  MODALE PRODUIT — scroll vertical fluide                            */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+/* Le conteneur scroll est le modal-scroll lui-même (pas ses enfants) */
+.k-modal-overlay.open .k-modal-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  will-change: scroll-position;
+}
+
+/* Image zone : ne pas écraser le flex mais fluidifier */
+.k-modal-overlay.open .k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 460px;
+}
+
+/* Les détails prennent le reste, pas de overflow bloquant */
+.k-modal-overlay.open .k-modal-details {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Suggestions dans la modale : grille fluide ─────────────────── */
+.k-modal-suggestions {
+  padding: 16px 14px 24px;
+  background: var(--white, white);
+  border-top: 8px solid var(--sand, #faf6ed);
+}
+.k-modal-suggestions h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--text, #2a2a2a);
+}
+.k-sug-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+.k-sug-card {
+  flex: unset !important;
+  width: 100% !important;
+  scroll-snap-align: unset !important;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.k-sug-card:active { transform: scale(0.97); }
+.k-sug-card img {
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+
+@media (min-width: 900px) {
+  .k-sug-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .k-modal-overlay.open .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
+}
+
+/* Actions sticky en bas modale */
+.k-modal-actions {
+  background: var(--white, white);
+  border-top: 1px solid var(--sand-dark, #e4d9c7);
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ÉCRAN DE SUCCÈS — version simplifiée                                   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-confirm-simple {
+  padding: 20px 16px 40px;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.k-confirm-simple .k-confirm-emoji {
+  font-size: 64px;
+  line-height: 1;
+  margin: 20px 0 14px;
+  animation: confirm-pop 0.45s ease-out;
+}
+
+@keyframes confirm-pop {
+  0%   { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.k-confirm-simple .k-confirm-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 28px;
+  color: var(--text, #2a2a2a);
+}
+
+/* Bloc référence — le héro de l'écran */
+.k-confirm-ref-block {
+  background: linear-gradient(135deg, #fff8ed 0%, #fef3df 100%);
+  border: 1.5px solid #f4c77a;
+  border-radius: 16px;
+  padding: 18px 14px 16px;
+  margin: 0 4px 18px;
+}
+.k-confirm-ref-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a06a1f;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.k-confirm-ref-block .k-confirm-ref {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'SF Mono', Menlo, monospace;
+  color: #6b3e0e;
+  margin: 4px 0 12px;
+  word-break: break-all;
+}
+.k-confirm-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: white;
+  border: 1.5px solid #e8c78a;
+  border-radius: 50px;
+  color: #6b3e0e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.k-confirm-copy:hover  { background: #fff8ed; transform: translateY(-1px); }
+.k-confirm-copy:active { transform: scale(0.97); }
+
+/* Bloc code cash (si paiement cash) */
+.k-confirm-cash-block {
+  background: #fdf4e8;
+  border: 2px dashed #e8a13a;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 0 4px 18px;
+}
+.k-confirm-cash-label {
+  font-size: 12px;
+  color: #8b5a1a;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.k-confirm-cash-code {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #6b3e0e;
+  font-family: 'SF Mono', Menlo, monospace;
+}
+
+/* Avis simples */
+.k-confirm-notices {
+  margin: 24px 4px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.k-confirm-notice-row {
+  font-size: 14px;
+  color: var(--text-muted, #666);
+  line-height: 1.5;
+  padding: 4px 0;
+}
+
+/* Actions */
+.k-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.k-confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-radius: 50px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+}
+.k-confirm-btn-primary {
+  background: linear-gradient(135deg, #2a7a3e 0%, #1d5b2a 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(42, 122, 62, 0.3);
+}
+.k-confirm-btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(42,122,62,0.4); }
+.k-confirm-btn-primary:active { transform: scale(0.98); }
+
+.k-confirm-btn-secondary {
+  background: white;
+  color: var(--text, #2a2a2a);
+  border: 1.5px solid var(--border, #e4d9c7);
+}
+.k-confirm-btn-secondary:hover  { background: #faf6ed; border-color: #d4b87a; }
+.k-confirm-btn-secondary:active { transform: scale(0.98); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PAGE "MES COMMANDES" - liste du user connecté                          */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-track-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted, #888);
+}
+.k-track-loading-spin {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #f0e6d0;
+  border-top-color: #2a7a3e;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  animation: k-track-spin 0.8s linear infinite;
+}
+@keyframes k-track-spin {
+  to { transform: rotate(360deg); }
+}
+
+.k-track-sub-hint {
+  color: var(--text-muted, #888);
+  font-size: 13px;
+  margin: 4px 0 18px;
+}
+
+.k-myorders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.k-myorder-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--sand-dark, #e4d9c7);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  font: inherit;
+}
+.k-myorder-card:hover {
+  border-color: #d4b87a;
+  background: #faf6ed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.k-myorder-card:active  { transform: scale(0.99); }
+.k-myorder-card.k-myorder-loading  { opacity: 0.5; pointer-events: none; }
+
+.k-myorder-img {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: var(--sand, #faf6ed);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.k-myorder-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.k-myorder-emoji {
+  font-size: 28px;
+}
+
+.k-myorder-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.k-myorder-ref {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #2a2a2a);
+  font-family: 'SF Mono', Menlo, monospace;
+}
+
+.k-myorder-items {
+  font-size: 13px;
+  color: var(--text-muted, #666);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-myorder-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.k-myorder-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.k-myorder-status--pending    { background: #fff8ed; color: #a06a1f; }
+.k-myorder-status--confirmed  { background: #e8f5ee; color: #1d5b2a; }
+.k-myorder-status--processing { background: #eaf2fd; color: #1d4f9e; }
+.k-myorder-status--shipped    { background: #f0eafd; color: #4f2b9e; }
+.k-myorder-status--available  { background: #fef0e8; color: #8b3a0f; }
+.k-myorder-status--delivered  { background: #e8f5ee; color: #1d5b2a; }
+.k-myorder-status--cancelled  { background: #fce8e8; color: #9e1d1d; }
+
+.k-myorder-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a7a3e;
+  white-space: nowrap;
+}
+
+.k-myorder-date {
+  font-size: 11px;
+  color: var(--text-muted, #999);
+  margin-top: 2px;
+}
+
+.k-myorder-arrow {
+  flex: 0 0 auto;
+  font-size: 24px;
+  color: var(--text-muted, #bbb);
+  font-weight: 300;
+  margin-right: 4px;
+}
+
+.k-myorders-new-search {
+  margin-top: 20px;
+  width: 100%;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FAVORIS — badges promo + partage wishlist                              */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Bannière "X favoris en promo" en haut de la vue Favoris */
+.k-fav-promo-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin: 0 0 14px;
+  background: linear-gradient(135deg, #fff8ed 0%, #ffe8c2 100%);
+  border: 1.5px solid #f4c77a;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(240, 175, 80, 0.15);
+  animation: fav-banner-slide 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes fav-banner-slide {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.k-fav-promo-icon {
+  font-size: 32px;
+  line-height: 1;
+  animation: fav-icon-bounce 2s ease-in-out infinite;
+}
+@keyframes fav-icon-bounce {
+  0%, 100% { transform: scale(1) rotate(0); }
+  20%      { transform: scale(1.15) rotate(-8deg); }
+  40%      { transform: scale(1.15) rotate(8deg); }
+  60%      { transform: scale(1) rotate(0); }
+}
+.k-fav-promo-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.k-fav-promo-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6b3e0e;
+}
+.k-fav-promo-text span {
+  font-size: 12px;
+  color: #a06a1f;
+}
+
+/* Bouton "Envoyer ma liste de souhaits" */
+.k-fav-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  margin: 0 0 18px;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+  transition: all 0.15s;
+}
+.k-fav-share-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(37, 211, 102, 0.4);
+}
+.k-fav-share-btn:active {
+  transform: scale(0.98);
+}
+.k-fav-share-icon {
+  font-size: 16px;
+}
+
+/* Badge promo mis en valeur sur les cartes favoris */
+.k-card-promo-fav {
+  background: linear-gradient(135deg, #ff5e5e 0%, #c73a3a 100%) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  padding: 4px 9px !important;
+  border-radius: 50px !important;
+  box-shadow: 0 2px 6px rgba(199, 58, 58, 0.4) !important;
+  animation: fav-promo-pulse 2.5s ease-in-out infinite;
+}
+@keyframes fav-promo-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+/* Badge "🎉" sur l'icône Favoris de la bottom nav */
+.k-bnav-promo-badge {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 20px);
+  font-size: 13px;
+  line-height: 1;
+  animation: fav-icon-bounce 2s ease-in-out infinite;
+  pointer-events: none;
+}
+.k-bnav-item { position: relative; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  PANIER VIDE — empty state chaleureux                                   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-cart-empty {
+  text-align: center;
+  padding: 48px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.k-cart-empty-icon {
+  font-size: 72px;
+  line-height: 1;
+  margin-bottom: 4px;
+  animation: cart-empty-float 3s ease-in-out infinite;
+}
+@keyframes cart-empty-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.k-cart-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text, #2a2a2a);
+  margin: 0;
+}
+
+.k-cart-empty-sub {
+  font-size: 14px;
+  color: var(--text-muted, #888);
+  line-height: 1.5;
+  max-width: 280px;
+  margin: 0 auto 12px;
+}
+
+.k-cart-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #2a7a3e 0%, #1d5b2a 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(42, 122, 62, 0.3);
+  transition: all 0.15s;
+}
+.k-cart-empty-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(42, 122, 62, 0.4);
+}
+.k-cart-empty-cta:active {
+  transform: scale(0.97);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FOOTER PANIER REFONDU — récap détaillé + CTA vert Komerce              */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Conteneur récap (nb articles, livraison, total) */
+.k-cart-recap {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: none;
+}
+
+.k-cart-recap-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.k-cart-recap-label {
+  color: var(--text-muted, #666);
+  font-weight: 500;
+}
+
+.k-cart-recap-val {
+  color: var(--text, #2a2a2a);
+  font-weight: 600;
+}
+
+.k-cart-recap-free {
+  color: #2a7a3e !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.k-cart-recap-divider {
+  border-top: 1px dashed var(--sand-dark, #e4d9c7);
+  margin: 8px 0 8px;
+}
+
+/* Total row redesigné */
+.k-cart-footer .k-cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0;
+  padding: 4px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.k-cart-footer .k-cart-total-label {
+  font-size: 15px;
+  color: var(--text, #2a2a2a);
+}
+.k-cart-footer .k-cart-total-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2a7a3e !important;   /* Vert Komerce, plus le coral */
+}
+.k-cart-footer .k-cart-total-conv {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted, #999);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* CTA principal pleine largeur */
+.kcf-full {
+  width: 100%;
+  padding: 14px 20px !important;
+  border-radius: 50px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin: 6px 0 12px;
+  background: linear-gradient(135deg, #2a7a3e 0%, #1d5b2a 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(42, 122, 62, 0.3) !important;
+}
+.kcf-full:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(42, 122, 62, 0.4) !important;
+}
+.kcf-full:active {
+  transform: scale(0.98);
+}
+
+/* Actions secondaires */
+.k-cart-footer-secondary {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.kcf-whatsapp-mini {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: transparent;
+  color: #128c7e;
+  border: 1.5px solid #25d366;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.kcf-whatsapp-mini:hover {
+  background: #f0fdf4;
+  color: #128c7e;
+  transform: translateY(-1px);
+}
+.kcf-whatsapp-mini svg path {
+  fill: #128c7e !important;
+}
+
+.kcf-danger-mini {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  background: transparent;
+  color: #999;
+  border: 1.5px solid var(--sand-dark, #e4d9c7);
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.kcf-danger-mini:hover {
+  background: #fef5f5;
+  color: #c73a3a;
+  border-color: #e8a0a0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  ÉCRAN DE SUCCÈS — ligne récap articles + montant                       */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.k-confirm-recap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 4px 16px;
+  padding: 10px 16px;
+  background: #f8f5ed;
+  border-radius: 50px;
+  font-size: 13px;
+  color: var(--text-muted, #666);
+  animation: confirm-recap-fade 0.5s ease-out 0.15s both;
+}
+@keyframes confirm-recap-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.k-confirm-recap-qty {
+  font-weight: 600;
+  color: var(--text, #2a2a2a);
+}
+.k-confirm-recap-sep {
+  color: #ccc;
+  font-size: 10px;
+}
+.k-confirm-recap-amount {
+  font-weight: 700;
+  color: #2a7a3e;
+  font-size: 14px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX PANIER — bloquer scroll page derrière + overlay fiable             */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Bloquer TOUS les scrolls quand panier ouvert — pas seulement body */
+body.cart-open,
+body.cart-open #k-page-scroll {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* S'assurer que l'overlay couvre tout et est opaque */
+.k-cart-overlay.open {
+  display: block !important;
+  opacity: 1 !important;
+  /* Assurer qu'on est bien au-dessus de tout */
+  z-index: 1100 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Drawer panier plein écran sur mobile, fond opaque garanti */
+.k-cart-drawer {
+  background: #ffffff !important;
+  z-index: 1150 !important;
+}
+
+/* Sur mobile : drawer prend toute la largeur (pas de max-width) */
+@media (max-width: 768px) {
+  .k-cart-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MODALE PRODUIT — actions 2 lignes pour plus de lisibilité              */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* 
+  Passer de 1 ligne (3 boutons serrés) à 2 lignes :
+  Ligne 1 : [Quantité] + [Ajouter au panier]
+  Ligne 2 : [⚡ Acheter] pleine largeur
+*/
+
+.k-modal-actions {
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  grid-template-rows: auto auto !important;
+  gap: 10px !important;
+  align-items: center;
+  padding: 12px 14px !important;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+  background: var(--white, white) !important;
+  border-top: 1px solid var(--sand-dark, #e4d9c7);
+  flex-shrink: 0;
+}
+
+/* Ligne 1 : Quantité à gauche */
+.k-modal-actions .k-qty {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  background: var(--sand, #faf6ed);
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  height: 44px;
+  flex-shrink: 0;
+}
+.k-modal-actions .k-qty-btn {
+  width: 38px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  color: var(--text, #2a2a2a);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.k-modal-actions .k-qty-btn:hover  { background: rgba(0, 0, 0, 0.05); }
+.k-modal-actions .k-qty-btn:active { transform: scale(0.92); }
+.k-modal-actions .k-qty-val {
+  min-width: 34px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #2a2a2a);
+}
+
+/* Ligne 1 : Ajouter au panier à droite */
+.k-modal-actions .k-add-cart-btn {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px !important;
+  padding: 0 14px !important;
+  background: white !important;
+  color: var(--text, #2a2a2a) !important;
+  border: 1.5px solid var(--sand-dark, #e4d9c7) !important;
+  border-radius: 50px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-modal-actions .k-add-cart-btn:hover {
+  background: var(--sand, #faf6ed) !important;
+  border-color: #d4b87a !important;
+}
+.k-modal-actions .k-add-cart-btn:active { transform: scale(0.98); }
+.k-modal-actions .k-add-cart-btn img { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* Quand le produit est dans le panier (état "confirmed") */
+.k-modal-actions .k-add-cart-btn.confirmed {
+  background: #e8f5ee !important;
+  border-color: #2a7a3e !important;
+  color: #1d5b2a !important;
+}
+.k-modal-actions .k-btn-done    { font-weight: 700; }
+.k-modal-actions .k-btn-sep     { opacity: 0.4; margin: 0 4px; }
+.k-modal-actions .k-btn-see     { font-weight: 600; }
+
+/* Ligne 2 : Acheter pleine largeur */
+.k-modal-actions .k-buy-now-btn {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100% !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  background: linear-gradient(135deg, #e05a48 0%, #c53927 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 50px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(224, 90, 72, 0.3);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.k-modal-actions .k-buy-now-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(224, 90, 72, 0.4);
+}
+.k-modal-actions .k-buy-now-btn:active { transform: scale(0.98); }
+
+/* ── Scroll unifié : padding pour éviter que le FAB masque le contenu ── */
+.k-modal-scroll{
+  padding-bottom:80px;
+  scroll-behavior:smooth;
+}
+/* Actions intégrées dans le scroll : reset des résidus sticky */
+.k-modal-scroll > .k-modal-actions{
+  position:static !important;
+  flex-shrink:0;
+  margin-top:0;
+}
+/* Image pas trop imposante au 1er coup d'œil pour inciter au scroll */
+@media (max-width:600px){
+  .k-modal-img-wrap{
+    height:40vh !important;
+    max-height:380px;
+  }
+}
+
+/* Actions produit : bien visibles, avec petit séparateur + fond blanc */
+.k-modal-scroll > .k-modal-actions{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:5;
+  background:#fff;
+  border-top:1px solid var(--sand-dark);
+  box-shadow:0 -4px 12px rgba(0,0,0,.06);
+  padding:12px !important;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom)) !important;
+}
+
+/* Uniformisation des hauteurs de cartes suggestions (évite les trous) */
+.k-sug-grid .k-sug-card{
+  display:flex;
+  flex-direction:column;
+  height:auto;
+}
+.k-sug-grid .k-sug-card-name{
+  flex:1 0 auto;
+}
+/* Prix toujours aligné en bas de carte */
+.k-sug-grid .k-sug-card-price{
+  margin-top:auto;
+}
+
+/* ── FIX : #k-sug-rail est maintenant un conteneur de sections, pas une grille ── */
+#k-sug-rail{
+  display:block !important;
+  grid-template-columns:unset !important;
+  gap:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   TOPBAR ENRICHIE — apparaît au scroll
+   Le user garde toujours vue sur son produit sélectionné
+   ═══════════════════════════════════════════════════ */
+
+/* Conteneur de la vue enrichie (caché par défaut) */
+.k-modal-topbar-product{
+  display:none;
+  align-items:center;
+  gap:10px;
+  flex:1;
+  min-width:0;
+  opacity:0;
+  transform:translateY(-6px);
+  transition:opacity .25s ease, transform .25s ease;
+}
+
+/* Quand on est en mode "scrolled" : swap les contenus */
+.k-modal.is-scrolled .k-modal-back,
+.k-modal.is-scrolled .k-modal-nav {
+  display:none !important;
+}
+.k-modal.is-scrolled .k-modal-topbar-product{
+  display:flex;
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* Thumbnail du produit en topbar */
+.k-topbar-thumb{
+  flex:0 0 40px;
+  width:40px;height:40px;
+  border-radius:8px;
+  overflow:hidden;
+  background:var(--sand);
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.k-topbar-thumb img{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* Nom + prix */
+.k-topbar-info{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.k-topbar-name{
+  font-size:13px;
+  font-weight:600;
+  line-height:1.2;
+  color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.k-topbar-price{
+  font-size:12px;
+  font-weight:700;
+  color:var(--coral);
+  line-height:1.2;
+  margin-top:2px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.k-topbar-price-promo{
+  font-size:10px;
+  background:var(--coral);
+  color:#fff;
+  padding:1px 5px;
+  border-radius:8px;
+  font-weight:700;
+}
+
+/* Bouton Acheter compact */
+.k-topbar-buy{
+  flex:0 0 auto;
+  height:34px;
+  padding:0 14px;
+  border-radius:17px;
+  background:linear-gradient(135deg, #e05a48 0%, #c53927 100%);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  display:flex;align-items:center;gap:4px;
+  box-shadow:0 2px 8px rgba(224,90,72,.3);
+  transition:transform .15s;
+  white-space:nowrap;
+}
+.k-topbar-buy:active{transform:scale(.95)}
+
+/* Topbar : sticky top au scroll du modal */
+.k-modal-topbar{
+  position:sticky !important;
+  top:0;
+  z-index:20;
+  flex-shrink:0;
+}
+
+/* Le topbar-right se rétrécit quand en mode scrolled (pour laisser place au produit) */
+.k-modal.is-scrolled .k-modal-topbar-right .k-modal-cart-btn{
+  display:none;
+}
+
+
+/* ── Thumbnail cliquable (cursor + feedback tactile) ── */
+.k-topbar-thumb{
+  cursor:pointer;
+  transition:transform .15s;
+}
+.k-topbar-thumb:active{
+  transform:scale(.92);
+}
+
+/* ── FAB "retour en haut" ── */
+.k-modal-back-top{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:#fff;
+  color:var(--coral);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  font-weight:700;
+  box-shadow:0 4px 14px rgba(0,0,0,.18);
+  z-index:1200;
+  opacity:0;
+  transform:translateY(20px) scale(.8);
+  pointer-events:none;
+  transition:opacity .25s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+  padding:0;
+  border:1px solid rgba(0,0,0,.05);
+}
+.k-modal-back-top.visible{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  pointer-events:auto;
+}
+.k-modal-back-top:active{
+  transform:translateY(0) scale(.92);
+  background:var(--coral);
+  color:#fff;
+}
+.k-modal-back-top svg{
+  width:22px;
+  height:22px;
+}
+/* Safe-area bottom sur mobiles avec encoches */
+@supports (padding: max(0px)){
+  .k-modal-back-top{
+    bottom:max(20px, env(safe-area-inset-bottom));
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX : écran de succès — garantir que les 2 boutons (Suivre + Continuer)*/
+/*  soient toujours visibles, sans être coupés par un overflow parent.     */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-confirm-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}
+.k-confirm-actions .k-confirm-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  min-height: 52px !important;
+  position: static !important; /* override le sticky du modal paiement */
+}
+
+/* S'assurer que la modale scrolle si le contenu dépasse */
+.k-order-overlay.open .k-order-body {
+  padding-bottom: 32px !important;
+}
+
+
+/* Quand la topbar enrichie est active, on cache le sticky bottom 
+   pour éviter la redondance visuelle. La topbar prend le relais. */
+.k-modal.is-scrolled .k-modal-scroll > .k-modal-actions{
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                    PACK PREMIUM VISUEL — FINITIONS                      */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. GLASSMORPHISM : blur sur les surfaces "flottantes" ────────────── */
+
+/* Topbar modale : fond blur élégant */
+.k-modal-topbar{
+  background:rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter:blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(16px) saturate(180%) !important;
+  border-bottom:1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* Actions modale sticky : glass light */
+.k-modal-scroll > .k-modal-actions{
+  background:rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter:blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(180%) !important;
+  border-top:1px solid rgba(0,0,0,0.04) !important;
+}
+
+/* Overlay panier : blur subtil du background */
+.k-cart-overlay.open{
+  background:rgba(0,0,0,0.35) !important;
+  backdrop-filter:blur(4px) !important;
+  -webkit-backdrop-filter:blur(4px) !important;
+}
+
+/* Bottom nav : effet frosted glass */
+.k-bnav{
+  background:rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter:blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(200%) !important;
+  border-top:1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* Header catalogue : glass au scroll */
+.k-header{
+  background:rgba(250, 249, 247, 0.85) !important;
+  backdrop-filter:blur(18px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(180%) !important;
+}
+
+/* ── 2. OMBRES RÉALISTES multi-couches (style Apple/Stripe) ─────────── */
+
+/* Cartes produits : ombre douce multi-couches */
+.k-card{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 4px 12px rgba(0,0,0,0.05) !important;
+  transition:box-shadow .3s ease, transform .3s ease !important;
+}
+.k-card:hover{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.08),
+    0 16px 40px rgba(0,0,0,0.04) !important;
+  transform:translateY(-2px);
+}
+
+/* Suggestions cards */
+.k-sug-card{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.03),
+    0 2px 8px rgba(0,0,0,0.04) !important;
+  transition:box-shadow .25s ease, transform .2s ease !important;
+}
+.k-sug-card:hover{
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.04),
+    0 6px 20px rgba(0,0,0,0.08) !important;
+  transform:translateY(-1px);
+}
+
+/* Bouton Acheter — ombre colorée orange */
+.k-buy-now-btn{
+  box-shadow:
+    0 2px 8px rgba(224, 90, 72, 0.25),
+    0 4px 16px rgba(224, 90, 72, 0.15) !important;
+  transition:all .25s ease !important;
+}
+.k-buy-now-btn:hover{
+  box-shadow:
+    0 4px 12px rgba(224, 90, 72, 0.35),
+    0 8px 24px rgba(224, 90, 72, 0.2) !important;
+  transform:translateY(-1px);
+}
+.k-buy-now-btn:active{
+  transform:translateY(0) scale(0.98);
+  transition:all .1s ease;
+}
+
+/* Bouton Ajouter panier */
+.k-add-cart-btn{
+  transition:all .25s ease !important;
+}
+.k-add-cart-btn:hover{
+  box-shadow:0 4px 14px rgba(0,0,0,0.08) !important;
+  transform:translateY(-1px);
+}
+.k-add-cart-btn:active{
+  transform:translateY(0) scale(0.98);
+  transition:all .1s ease;
+}
+
+/* ── 3. MICRO-ANIMATIONS : feedback tactile premium ─────────────────── */
+
+/* Ripple effect sur les boutons ronds */
+.k-cart-btn, .k-modal-back, .k-modal-close, .k-modal-nav-btn{
+  position:relative;
+  overflow:hidden;
+}
+.k-cart-btn::after,
+.k-modal-close::after,
+.k-modal-back::after{
+  content:'';
+  position:absolute;
+  top:50%; left:50%;
+  width:0; height:0;
+  border-radius:50%;
+  background:rgba(224,90,72,0.15);
+  transform:translate(-50%, -50%);
+  transition:width .4s ease, height .4s ease;
+  pointer-events:none;
+}
+.k-cart-btn:active::after,
+.k-modal-close:active::after,
+.k-modal-back:active::after{
+  width:80px;
+  height:80px;
+  transition:width 0s, height 0s;
+}
+
+/* Bouton + des cartes produits : scale + ombre au tap */
+.k-card-add{
+  transition:transform .15s ease, box-shadow .2s ease !important;
+}
+.k-card-add:active{
+  transform:scale(0.85);
+  box-shadow:0 0 0 4px rgba(224,90,72,0.15) !important;
+}
+
+/* Favoris heart : bounce au clic */
+.k-card-fav{
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1) !important;
+}
+.k-card-fav.active{
+  animation:heartBounce .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes heartBounce{
+  0%   {transform:scale(1)}
+  40%  {transform:scale(1.4)}
+  70%  {transform:scale(0.9)}
+  100% {transform:scale(1)}
+}
+
+/* Transition smooth sur les catégories chips */
+.k-cat-chip{
+  transition:background .2s ease, color .2s ease, transform .15s ease !important;
+}
+.k-cat-chip:active{
+  transform:scale(0.95);
+}
+
+/* Entrée de la modale : slide + fade (plus raffiné) */
+.k-modal{
+  animation:modalEnter .35s cubic-bezier(.22,1,.36,1) !important;
+}
+@keyframes modalEnter{
+  from{
+    transform:translateY(20px);
+    opacity:0;
+  }
+  to{
+    transform:translateY(0);
+    opacity:1;
+  }
+}
+
+/* Panier drawer : slide from right avec easing Apple */
+.k-cart-drawer{
+  transition:transform .4s cubic-bezier(.32,.72,0,1) !important;
+}
+
+/* ── 4. SKELETON LOADERS ANIMÉS (shimmer effect) ────────────────────── */
+
+.k-skeleton,
+.k-card-skeleton{
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size:200% 100%;
+  animation:skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius:var(--radius, 12px);
+}
+@keyframes skeletonShimmer{
+  0%   {background-position:200% 0}
+  100% {background-position:-200% 0}
+}
+
+/* Skeleton card full structure */
+.k-card-skeleton{
+  aspect-ratio:3/4;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  padding:0;
+  overflow:hidden;
+  position:relative;
+}
+.k-card-skeleton::before{
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  aspect-ratio:1;
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size:200% 100%;
+  animation:skeletonShimmer 1.5s ease-in-out infinite;
+}
+.k-card-skeleton::after{
+  content:'';
+  position:absolute;
+  left:12px; right:12px; bottom:16px;
+  height:14px;
+  background:rgba(0,0,0,0.06);
+  border-radius:4px;
+  animation:skeletonShimmer 1.5s ease-in-out infinite;
+  background:linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size:200% 100%;
+}
+
+/* ── 5. TOUCHES FINALES ─────────────────────────────────────────────── */
+
+/* Scrollbar discrète et élégante sur desktop */
+@media(min-width:768px){
+  *::-webkit-scrollbar{
+    width:8px;
+    height:8px;
+  }
+  *::-webkit-scrollbar-track{
+    background:transparent;
+  }
+  *::-webkit-scrollbar-thumb{
+    background:rgba(0,0,0,0.15);
+    border-radius:4px;
+    transition:background .2s ease;
+  }
+  *::-webkit-scrollbar-thumb:hover{
+    background:rgba(0,0,0,0.25);
+  }
+}
+
+/* Smooth focus rings pour accessibilité (keyboard nav) */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible{
+  outline:2px solid rgba(224,90,72,0.5);
+  outline-offset:2px;
+  border-radius:8px;
+}
+
+/* Image produit : subtle zoom au hover (desktop only) */
+@media(hover:hover){
+  .k-card-img-wrap img{
+    transition:transform .5s ease !important;
+  }
+  .k-card:hover .k-card-img-wrap img{
+    transform:scale(1.05);
+  }
+}
+
+/* Badge promo : pulsation douce */
+.k-modal-promo-badge.show,
+.k-sug-promo-badge{
+  animation:promoPulse 2.5s ease-in-out infinite;
+}
+@keyframes promoPulse{
+  0%, 100% {transform:scale(1); opacity:1}
+  50%      {transform:scale(1.05); opacity:0.95}
+}
+
+/* Respect preferences utilisateur : désactiver les animations si demandé */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                    FIX SAFARI iOS — Responsive premium                  */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── FIX 1 : Empêcher le zoom auto iOS sur focus des inputs ────────── */
+/* iOS zoome si font-size < 16px. Solution : 16px forcé sur mobile,   */
+/* puis visuellement réduit par transform-origin stable.               */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* ── FIX 2 : Touch targets 44×44 minimum (iOS HIG) ─────────────────── */
+/* Les petits boutons gardent leur apparence visuelle mais ont une     */
+/* zone de tap invisible plus grande via ::before (padding virtuel).   */
+.k-card-fav,
+.k-card-add,
+.k-sug-add,
+.k-cart-badge,
+.k-modal-dot,
+.k-modal-nav-btn,
+.k-qty-btn,
+button[class*="-btn"]:not(.k-cart-btn):not(.k-modal-back):not(.k-modal-close) {
+  position: relative;
+}
+
+.k-card-fav::before,
+.k-card-add::before,
+.k-sug-add::before,
+.k-modal-nav-btn::before,
+.k-qty-btn::before {
+  content: '';
+  position: absolute;
+  inset: -8px; /* étend la zone cliquable de 8px de chaque côté */
+  pointer-events: auto;
+}
+
+/* ── FIX 3 : dvh au lieu de vh pour éviter les sauts barre Safari ─── */
+/* La barre URL iOS apparait/disparait au scroll → 100vh change de    */
+/* taille brutalement. 100dvh s'adapte dynamiquement.                  */
+@supports (height: 100dvh) {
+  .k-modal,
+  .k-cart-drawer,
+  .k-modal-overlay,
+  .k-order-overlay.open .k-order-modal {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+  .k-modal-img-wrap {
+    /* Adapter aussi les hauteurs vh en dvh */
+    height: 40dvh !important;
+  }
+  @media (max-width: 600px) {
+    .k-modal-img-wrap {
+      height: 40dvh !important;
+      max-height: 380px;
+    }
+  }
+}
+
+/* ── FIX 4 : Désactiver long-press menu iOS sur les images produits ─ */
+.k-modal-img-wrap img,
+.k-card-img-wrap img,
+.k-sug-card-img img,
+.k-modal-slide,
+.k-cart-avatar,
+.k-topbar-thumb img,
+.k-card-fav img,
+.k-card-add img,
+.k-add-cart-btn img {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+/* ── FIX 5 : user-select: none avec le préfixe webkit partout ──────── */
+button,
+.k-card,
+.k-sug-card,
+.k-bnav-item,
+.k-cat-chip,
+.k-subcat-chip,
+.k-modal-dot,
+.k-modal-cart-btn,
+.k-cart-btn,
+.k-modal-back,
+.k-modal-close,
+.k-modal-nav-btn {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* ── FIX 6 : Safari momentum scrolling partout où il y a un scroll ── */
+.k-modal-scroll,
+.k-modal-details,
+.k-cart-body,
+.k-order-body,
+.k-cats,
+.k-subcats-rail,
+.k-promo-rail,
+.k-sug-rail,
+.k-search-dropdown,
+#k-page-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain; /* empêche le bounce de propager au parent */
+}
+
+/* ── FIX 7 : Désactiver le highlight bleu iOS sur les liens/boutons ─ */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── FIX 8 : Position fixed iOS keyboard — les inputs ne passent pas */
+/* derrière le clavier virtuel sur iOS                                */
+@supports (-webkit-touch-callout: none) {
+  /* Safari iOS only */
+  .k-modal-overlay.open {
+    /* Permettre à iOS de gérer correctement le clavier */
+    position: fixed;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* iOS : les boutons n'activent pas le focus à l'infini */
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ── FIX 9 : safe-area pour les iPhone avec notch (Dynamic Island) ── */
+.k-header {
+  padding-top: calc(10px + env(safe-area-inset-top, 0)) !important;
+}
+.k-bnav {
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0)) !important;
+}
+.k-modal-topbar {
+  padding-top: calc(10px + env(safe-area-inset-top, 0)) !important;
+}
+
+/* ── FIX 10 : hover iOS (tap = hover collé), donc on différencie ──── */
+/* Si on a un hover, on l'applique uniquement sur device qui peuvent   */
+/* VRAIMENT hover (pas les écrans tactiles)                            */
+@media (hover: none) and (pointer: coarse) {
+  /* Appareil tactile : pas de hover */
+  .k-card:hover,
+  .k-sug-card:hover,
+  .k-buy-now-btn:hover,
+  .k-add-cart-btn:hover {
+    transform: none !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05) !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Bouton Acheter : état "confirmé" après tap (transition douce)          */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-buy-now-btn.buy-confirmed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow:
+    0 2px 8px rgba(16, 185, 129, 0.3),
+    0 4px 16px rgba(16, 185, 129, 0.2) !important;
+  transform: scale(1.02);
+  transition: all 0.25s cubic-bezier(.34,1.56,.64,1) !important;
+  cursor: default;
+}
+.k-buy-now-btn.buy-confirmed:hover,
+.k-buy-now-btn.buy-confirmed:active {
+  transform: scale(1.02) !important;
+}
+
+/* Animation subtile du "✓" qui apparaît */
+.k-buy-now-btn.buy-confirmed span {
+  animation: confirmSlide 0.35s ease-out;
+}
+@keyframes confirmSlide {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  IMAGE PRODUIT MODALE — responsive peu importe le ratio natif           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Fond subtil crème derrière l'image (plus élégant que blanc pur) */
+.k-modal-img-wrap {
+  background: linear-gradient(135deg, 
+    #faf9f7 0%, 
+    #f4f1ec 100%) !important;
+  position: relative;
+}
+
+/* Image entièrement visible, centrée, avec petit padding */
+.k-modal-slide,
+.k-modal-carousel-track img {
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: transparent !important;
+  padding: 16px !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Pour les très petites images (< 300px), on ne les étire pas trop */
+.k-modal-slide[src] {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ajustement mobile : un peu moins de padding pour maximiser l'espace */
+@media (max-width: 600px) {
+  .k-modal-slide,
+  .k-modal-carousel-track img {
+    padding: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  MÊME FIX pour les images de cartes catalogue + suggestions             */
+/*  (éviter les crops brutaux quand le ratio ne matche pas)                */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Cartes catalogue */
+.k-card-img-wrap {
+  background: linear-gradient(135deg, 
+    #faf9f7 0%, 
+    #f4f1ec 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-card-img-wrap img {
+  object-fit: contain !important;
+  object-position: center !important;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+}
+
+/* Suggestions grille */
+.k-sug-grid .k-sug-card-img {
+  background: linear-gradient(135deg, 
+    #faf9f7 0%, 
+    #f4f1ec 100%) !important;
+}
+
+.k-sug-grid .k-sug-card-img img {
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 6px !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  BUG 1 FIX : pills catégories qui "bougent" au chargement              */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cats {
+  /* Bloquer le layout shift quand les images des chips chargent */
+  min-height: 80px !important;
+  contain: layout !important;
+  /* Empêcher scroll-snap de jumper */
+  scroll-snap-type: x mandatory !important;
+}
+.k-cat-chip {
+  /* Taille fixe pour éviter le layout shift */
+  flex: 0 0 auto !important;
+  scroll-snap-align: start;
+  /* Anti-wobble : pas de transform sur base */
+  will-change: auto;
+}
+
+/* Sous-cats : idem */
+.k-subcats-rail {
+  min-height: 40px !important;
+  contain: layout !important;
+  scroll-snap-type: x mandatory !important;
+}
+.k-subchip {
+  flex: 0 0 auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  BUG 2 FIX : favoris + panier bien positionnés dans la carte           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* Réaffirmer les positions au cas où un override a cassé */
+.k-card-img-wrap {
+  position: relative !important;
+  display: block !important;  /* bloc, PAS flex */
+  overflow: hidden;
+  aspect-ratio: 1 / 1;  /* carré uniforme */
+}
+
+.k-card-img-wrap > .k-card-fav {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 3;
+}
+
+.k-card-img-wrap > .k-card-add {
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 8px !important;
+  z-index: 5;
+}
+
+.k-card-img-wrap > .k-card-promo {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 3;
+}
+
+/* S'assurer que l'image remplit bien le wrap (sinon les icônes n'ont pas
+   de repère visuel cohérent) */
+.k-card-img-wrap > img,
+.k-card-img-wrap .k-card-img,
+.k-card-img-wrap .k-card-carousel {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute;
+  inset: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Override : en mode grille, flex:N n'a plus de sens                     */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cart-footer-btns .kcf-primary,
+.k-cart-footer-btns .kcf-secondary,
+.k-cart-footer-btns .kcf-whatsapp,
+.k-cart-footer-btns .kcf-danger {
+  flex: unset !important;
+  width: 100%;
+}
+
+/* Raccourcir le texte Partager sur mobile pour économiser l'espace */
+@media (max-width: 420px) {
+  #k-cart-whatsapp {
+    font-size: 0.78rem;
+  }
+  /* Cacher "à un proche" et ne garder que "Partager" sur mobile étroit */
+  #k-cart-whatsapp::after {
+    content: '';
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Texte du bouton Partager : ajusté selon la largeur écran               */
+/* ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  /* Astuce : on masque le texte original et on met un texte court via data */
+  #k-cart-whatsapp {
+    font-size: 0;  /* masque tous les enfants texte */
+  }
+  #k-cart-whatsapp svg {
+    font-size: initial;  /* restaure la taille du SVG */
+    width: 16px;
+    height: 16px;
+  }
+  #k-cart-whatsapp::after {
+    content: 'Partager';
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fff;
+    margin-left: 4px;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 1.4 : Topbar enrichie compact mobile (évite tronquage)             */
+/* ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Sur mobile, on cache le nom + description qui prennent trop de place,
+     on garde juste thumbnail + prix + bouton action */
+  .k-modal.is-scrolled .k-modal-topbar-product-name {
+    display: none !important;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-product {
+    max-width: 60%;
+    gap: 6px;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-product-price {
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-buy {
+    font-size: 12px;
+    padding: 8px 12px;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-buy-text {
+    /* Sur très petit écran, ne garder que l'icône ⚡ */
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  /* iPhone SE : encore plus compact */
+  .k-modal.is-scrolled .k-modal-topbar-thumb {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-buy {
+    padding: 6px 10px;
+    min-width: 36px;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 2.1 : Touch targets iOS - extension virtuelle 44×44 via ::before   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Liste complète des petits boutons qui méritent une zone tactile étendue */
+.k-card-fav,
+.k-card-add,
+.k-sug-add,
+.k-modal-nav-btn,
+.k-qty-btn,
+.k-add-minus,
+.k-add-plus-ic,
+.k-modal-dot,
+.k-cart-badge,
+.k-cart-avatar {
+  position: relative;
+}
+
+.k-card-fav::before,
+.k-card-add::before,
+.k-sug-add::before,
+.k-modal-nav-btn::before,
+.k-qty-btn::before,
+.k-add-minus::before,
+.k-add-plus-ic::before,
+.k-modal-dot::before {
+  content: '';
+  position: absolute;
+  inset: -8px;  /* étend la zone de 8px tout autour */
+  pointer-events: auto;
+  /* Les 22×22 passent virtuellement à 38×38
+     Les 30×30 passent virtuellement à 46×46 (OK iOS) */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 2.2 : Pills catégories avec min-width fixe (évite layout shift)   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cat-chip {
+  min-width: 72px !important;
+  flex: 0 0 auto !important;
+}
+.k-chip-photo {
+  /* Taille fixe des photos de chip pour éviter le shift pendant le chargement */
+  width: 48px !important;
+  height: 48px !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 2.4 : Scroll catégories — fade + hint scroll horizontal            */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cats-wrap-fade-right {
+  /* Renforcer le fade pour qu'il soit bien visible */
+  width: 32px !important;
+  background: linear-gradient(to left,
+    var(--sand, #faf6ee) 0%,
+    var(--sand, #faf6ee) 25%,
+    rgba(250, 246, 238, 0) 100%) !important;
+}
+
+.k-cats-wrap-fade-left {
+  width: 32px !important;
+  background: linear-gradient(to right,
+    var(--sand, #faf6ee) 0%,
+    var(--sand, #faf6ee) 25%,
+    rgba(250, 246, 238, 0) 100%) !important;
+}
+
+/* Animation subtile sur le fade pour suggérer le scroll */
+@keyframes fadeHint {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+.k-cats-wrap-fade-right::after {
+  content: '›';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: rgba(0,0,0,0.25);
+  animation: fadeHint 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                                                                         */
+/*        🏠 HOME PAGE OPTIMISATION v2 — densité + clarté + identité       */
+/*                                                                         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  1. HEADER COMPACT MOBILE (< 600px)                                 */
+/*     - Logo sans texte "Komerce" (gagne 50px)                        */
+/*     - Barre de recherche élargie                                    */
+/*     - Badge dame repositionné proprement                            */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-header-inner {
+    gap: 8px !important;
+    padding: 0 12px;
+  }
+  /* Cacher le texte "Komerce" sur mobile, garder juste l'icône */
+  .k-logo-text {
+    display: none !important;
+  }
+  .k-logo-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  /* Barre recherche qui prend toute la place dispo */
+  .k-search {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  .k-search input {
+    font-size: 16px !important;  /* iOS : évite zoom */
+    height: 38px !important;
+  }
+  .k-search input::placeholder {
+    /* Placeholder plus court sur mobile pour éviter troncature */
+    font-size: 14px;
+  }
+  /* Badge dame : position ajustée pour ne pas déborder */
+  .k-cart-btn {
+    flex: 0 0 auto !important;
+    margin-right: 0 !important;
+  }
+  .k-cart-badge {
+    top: -2px !important;
+    right: -2px !important;
+  }
+}
+
+/* Placeholder raccourci sur très petit écran */
+@media (max-width: 400px) {
+  .k-search input::placeholder {
+    content: 'Rechercher...';
+  }
+  /* Technique : on met le placeholder directement dans l'input via JS
+     Ou on force via ::placeholder mais CSS seul ne peut pas changer le text */
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  2. HERO BANNER COMPACT (mobile)                                    */
+/*     - Hauteur 200px → 140px                                         */
+/*     - Garde les 2 dames (identité !)                                */
+/*     - Slogan toujours visible mais mieux intégré                    */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-hero,
+  .k-hero-img,
+  .k-hero-wrap {
+    max-height: 150px !important;
+    height: auto !important;
+  }
+  .k-hero img {
+    object-fit: cover !important;
+    object-position: center !important;
+    max-height: 150px !important;
+  }
+  /* Slogan plus compact */
+  .k-hero-title,
+  .k-hero-text h1 {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    padding: 0 12px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  3. CHIPS CATÉGORIES PLUS PETITES (mobile)                          */
+/*     - Photo : 48px → 40px                                           */
+/*     - Hauteur totale : 100px → 72px                                 */
+/*     - Mieux défilables et plus claires                              */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-cats {
+    padding: 8px 12px !important;
+    min-height: 64px !important;
+    gap: 6px !important;
+  }
+  .k-cat-chip {
+    min-width: 56px !important;
+    padding: 4px !important;
+    gap: 3px !important;
+  }
+  .k-chip-photo {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .k-cat-chip .k-cat-label,
+  .k-cat-chip span:not(.k-chip-photo) {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+  }
+  /* Cats active : ring plus subtil */
+  .k-cat-chip.active .k-chip-photo {
+    box-shadow: 0 0 0 2px var(--coral, #e64a19) !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  4. RAIL HORIZONTAL CLAIR + INDICATEUR SCROLL                       */
+/*     - Les produits sont clairement en rail (pas en grille confuse)  */
+/*     - Chip "Voir tout →" à la fin du rail                           */
+/*     - Dégradé fade + flèche pour indiquer le scroll                 */
+/* ─────────────────────────────────────────────────────────────────── */
+.k-promo-rail-wrap {
+  position: relative;
+  /* Fade à droite qui indique "il y a plus à droite" */
+}
+.k-promo-rail-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 10px;
+  width: 40px;
+  background: linear-gradient(to left, 
+    var(--sand, #faf6ee) 0%, 
+    var(--sand, #faf6ee) 20%,
+    rgba(250, 246, 238, 0) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Cartes dans le rail : largeur fixe pour montrer qu'il y a du scroll */
+.k-promo-rail .k-card {
+  flex: 0 0 160px !important;  /* largeur fixe = rail clair */
+  scroll-snap-align: start;
+}
+
+@media (min-width: 600px) {
+  .k-promo-rail .k-card {
+    flex: 0 0 200px !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .k-promo-rail .k-card {
+    flex: 0 0 220px !important;
+  }
+}
+
+/* Bouton "Voir tout" en fin de rail (CTA clair) */
+.k-promo-rail-more {
+  flex: 0 0 80px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #faf6ee 0%, #f0e8d5 100%);
+  border: 2px dashed rgba(74, 144, 64, 0.3);
+  border-radius: 12px;
+  color: var(--ocean, #4a9040);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .25s ease;
+  scroll-snap-align: start;
+}
+.k-promo-rail-more:hover {
+  background: linear-gradient(135deg, #f0e8d5 0%, #e6dab8 100%);
+  border-color: var(--ocean, #4a9040);
+  transform: scale(1.02);
+}
+.k-promo-rail-more::before {
+  content: '→';
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  5. TITRES DE SECTION PLUS RAMASSÉS                                 */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-section-title,
+  .k-promo-title {
+    font-size: 15px !important;
+    padding: 10px 12px 6px !important;
+    margin: 0 !important;
+  }
+  .k-view-all,
+  .k-see-all {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  6. DENSITÉ VERTICALE GLOBALE (gagner du pixel précieux)            */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Moins de padding entre les sections */
+  .k-section {
+    margin-bottom: 12px !important;
+  }
+  /* Plus de produits visibles dans les grilles */
+  .k-grid {
+    gap: 8px !important;
+    padding: 0 12px 12px !important;
+  }
+  /* Cartes plus compactes en hauteur */
+  .k-card-info {
+    padding: 8px 10px !important;
+  }
+  .k-card-name {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .k-card-price {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+  .k-card-old-price {
+    font-size: 11px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  7. BONUS : Animation scroll-in des cartes                          */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .k-card {
+    animation: cardFadeIn .4s ease-out backwards;
+  }
+  .k-grid .k-card:nth-child(1) { animation-delay: 0.05s; }
+  .k-grid .k-card:nth-child(2) { animation-delay: 0.1s; }
+  .k-grid .k-card:nth-child(3) { animation-delay: 0.15s; }
+  .k-grid .k-card:nth-child(4) { animation-delay: 0.2s; }
+  .k-grid .k-card:nth-child(5) { animation-delay: 0.25s; }
+  .k-grid .k-card:nth-child(n+6) { animation-delay: 0.3s; }
+}
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
