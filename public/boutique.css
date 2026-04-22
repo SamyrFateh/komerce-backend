@@ -5835,3 +5835,57 @@ button,
     margin-left: 4px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   FIX 1 — Zone tactile du "−" et "+" du stepper carte
+   Le bouton visuel reste 20×20px mais on élargit la zone tactile
+   via padding + margin négatif pour ne pas déplacer le layout
+   ═══════════════════════════════════════════════════════════ */
+.k-card-add.in-cart .k-add-minus,
+.k-card-add.in-cart .k-add-plus-ic {
+  position: relative;
+}
+/* Zone tactile élargie (invisible) autour du "−" et "+" */
+.k-card-add.in-cart .k-add-minus::before,
+.k-card-add.in-cart .k-add-plus-ic::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  /* Padding invisible qui capte les taps un peu à côté */
+}
+/* Le "+" du stepper doit aussi recevoir les clics (pas juste le parent) */
+.k-card-add.in-cart .k-add-plus-ic {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FIX 2 — Badge compteur panier recentré sur la dame (avatar)
+   Avant : badge en haut-droite du bouton wrapper (48×48)
+   Après : badge en haut-droite de l'avatar (36×36) = plus près de la dame
+   ═══════════════════════════════════════════════════════════ */
+#k-cart-btn {
+  position: relative;
+}
+#k-cart-btn .k-cart-avatar {
+  position: relative;
+  z-index: 1;
+}
+#k-cart-btn .k-cart-badge {
+  /* Position calculée pour être juste au coin de l'avatar 36×36 */
+  /* Bouton 48×48 centre avatar 36×36 → décalage (48-36)/2 = 6px de chaque côté */
+  top: 4px !important;
+  right: 4px !important;
+  z-index: 2;
+}
+/* Mobile : avatar légèrement plus petit, badge ajusté en conséquence */
+@media (max-width: 899px) {
+  #k-cart-btn .k-cart-badge {
+    top: 2px !important;
+    right: 2px !important;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    padding: 0 4px;
+  }
+}
