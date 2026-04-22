@@ -1310,15 +1310,20 @@ function quickRemove(productId, btnEl) {
       });
     });
 
-    dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    // Délégation robuste : un seul handler sur le rail, survit aux re-renders
+    if (!dom.sugRail.dataset.addDelegated) {
+      dom.sugRail.dataset.addDelegated = '1';
+      dom.sugRail.addEventListener('click', (e) => {
+        const btn = e.target.closest('.k-sug-add');
+        if (!btn) return;
         e.stopPropagation();
+        e.preventDefault();
         const pid = btn.dataset.add;
         const product = state.products.find(p => String(p.id) === String(pid));
         if (!product) return;
         addToCart(product, 1, btn);
       });
-    });
+    }
 
     // Fix 4 : flèches ◀▶ coral + masquage aux extrémités
     if (sugSection) {
