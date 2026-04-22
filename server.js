@@ -889,6 +889,37 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 044: pickup_secret_last4 (saisie 4 chars au guichet)');
       } catch(e) { console.warn('Migration 044 (non-fatal):', e.message); }
 
+      // ── Migration 045: multi-canal émission code (Stripe, MVola, Wallet) ──
+      // Trace le canal de paiement qui a déclenché l'émission du code, et
+      // stocke les métadonnées nécessaires pour la procédure de perte
+      // différenciée selon le canal (nom CB, MSISDN, email, etc.)
+      try {
+        await db.query(`
+          -- Canal de paiement qui a déclenché l'émission du code
+          -- ('cash_relais' | 'stripe' | 'mobile_money' | 'wallet')
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_channel TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_emitted_at TIMESTAMPTZ;
+
+          -- Horodatage de la révélation one-shot du code (Stripe/Wallet/MM)
+          -- Une fois posé, le code ne peut plus être affiché via l'API
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_revealed_at TIMESTAMPTZ;
+
+          -- Métadonnées Stripe (procédure de perte : nom CB + last4)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_billing_name TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_card_last4 VARCHAR(4);
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_receipt_email TEXT;
+
+          -- Métadonnées Mobile Money (procédure de perte : MSISDN + nom)
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS mobile_money_msisdn VARCHAR(30);
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS mobile_money_operator TEXT;
+          ALTER TABLE orders ADD COLUMN IF NOT EXISTS mobile_money_payer_name TEXT;
+
+          -- Index pour la recherche par canal
+          CREATE INDEX IF NOT EXISTS idx_orders_pickup_channel ON orders(pickup_secret_channel);
+        `);
+        console.log('✅ Migration 045: multi-canal émission code (Stripe, MVola, Wallet)');
+      } catch(e) { console.warn('Migration 045 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);

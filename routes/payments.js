@@ -23,6 +23,9 @@ const { validate } = require('../middleware/validate');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { payments } = require('../validators');
 
+// Western Union model : émission du code secret au moment du paiement Stripe
+const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret');
+
 // ── POST /api/payments/stripe/intent ─────────────────────────────────────────
 // Crée un Stripe PaymentIntent pour une commande.
 // Le client utilise le client_secret retourné pour finaliser le paiement côté front.
@@ -160,6 +163,50 @@ router.post('/stripe/webhook',
             'UPDATE products SET stock = stock - $1 WHERE id = $2',
             [si.quantity, si.product_id]
           );
+        }
+
+        // ── Western Union : émission du code secret de retrait ───────────────
+        // Le code est généré dans la même transaction que la confirmation paiement.
+        // Il sera affiché à l'écran payeur UNE SEULE FOIS via l'écran de succès
+        // (le frontend polle /api/orders/v2/:ref?include_secret=stripe_once).
+        // Les métadonnées Stripe (nom CB, last4, email) permettent la procédure
+        // de perte différenciée plus tard.
+        const { rows: [orderRow] } = await client.query(
+          'SELECT relais_id FROM orders WHERE id = $1', [order_id]
+        );
+
+        // Extraire les métadonnées Stripe utiles pour la procédure de perte
+        let stripeBillingName = null;
+        let stripeCardLast4   = null;
+        let stripeEmail       = intent.receipt_email || null;
+        try {
+          if (intent.charges && intent.charges.data && intent.charges.data[0]) {
+            const charge = intent.charges.data[0];
+            stripeBillingName = charge.billing_details?.name || null;
+            stripeCardLast4   = charge.payment_method_details?.card?.last4 || null;
+            stripeEmail       = charge.billing_details?.email || stripeEmail;
+          }
+        } catch(_) { /* non-bloquant */ }
+
+        try {
+          const genResult = await generateAndStoreSecret({
+            orderId:   order_id,
+            relaisId:  orderRow?.relais_id || null,
+            channel:   'stripe',
+            dbClient:  client,
+            extraUpdates: {
+              stripe_billing_name:  stripeBillingName,
+              stripe_card_last4:    stripeCardLast4,
+              stripe_receipt_email: stripeEmail,
+            },
+          });
+          // Placer le code clair en cache mémoire pour révélation one-shot
+          // via GET /api/pickup/reveal-once/:orderId (TTL 30 min)
+          cacheCodeForReveal(order_id, genResult.code);
+        } catch(genErr) {
+          // Non-bloquant : si la génération échoue, on ne bloque pas le paiement
+          // (la procédure de perte permettra de régénérer plus tard)
+          console.error('[STRIPE-WEBHOOK] ⚠ génération code échouée :', genErr.message);
         }
 
         await client.query('COMMIT');

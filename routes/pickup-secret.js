@@ -75,6 +75,104 @@ function requireRelaisOrAdmin(req, res, next) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// FONCTION UTILITAIRE PARTAGÉE — Génération anti-collision + stockage DB
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Utilisée par tous les canaux d'émission du code :
+//   • POST /pay-cash (agent relais)       → channel = 'cash_relais'
+//   • Webhook Stripe (payment_intent OK)  → channel = 'stripe'
+//   • Callback Mobile Money               → channel = 'mobile_money'
+//   • Validation Wallet                   → channel = 'wallet'
+//   • Regenerate admin (perte)            → channel = passé en paramètre
+//
+// Renvoie { code, last4 } — le code CLAIR ne doit être utilisé qu'UNE FOIS
+// (affichage écran ou impression), jamais stocké ailleurs que dans le hash.
+//
+// dbClient : optionnel, si fourni utilise cette connexion (pour transaction)
+//            sinon utilise le pool global
+// excludeOrderId : pour regenerate, ignore la commande elle-même dans l'anti-collision
+
+async function generateAndStoreSecret({
+  orderId,
+  relaisId = null,
+  channel,
+  dbClient = null,
+  excludeOrderId = null,
+  extraUpdates = {},  // colonnes additionnelles à updater au même moment (métadonnées canal)
+}) {
+  if (!orderId) throw new Error('generateAndStoreSecret: orderId requis');
+  if (!channel) throw new Error('generateAndStoreSecret: channel requis');
+
+  const dbHandle = dbClient || db;
+
+  // Génération anti-collision au niveau du relais
+  let code, last4, hash;
+  const salt = crypto.randomBytes(16).toString('hex');
+  const MAX_GEN_ATTEMPTS = 50;
+  let attempts = 0;
+
+  while (attempts < MAX_GEN_ATTEMPTS) {
+    code  = generatePickupCode();
+    last4 = code.replace(/-/g, '').slice(-4);
+
+    // Vérifier unicité du last4 parmi les codes ACTIFS du même relais
+    const params = [last4, relaisId];
+    let query = `
+      SELECT id FROM orders
+      WHERE pickup_secret_last4 = $1
+        AND relais_id IS NOT DISTINCT FROM $2
+        AND status NOT IN ('collected', 'cancelled', 'refunded')
+        AND (pickup_secret_expires_at IS NULL OR pickup_secret_expires_at > NOW())
+    `;
+    if (excludeOrderId) {
+      query += ` AND id <> $3`;
+      params.push(excludeOrderId);
+    }
+    query += ` LIMIT 1`;
+
+    const { rows: [dup] } = await dbHandle.query(query, params);
+    if (!dup) break;
+    attempts++;
+  }
+
+  if (attempts >= MAX_GEN_ATTEMPTS) {
+    console.error(`[PICKUP-SECRET] Saturation anti-collision relais=${relaisId} channel=${channel}`);
+    throw new Error('Génération du code impossible (saturation)');
+  }
+
+  hash = hashCode(code, salt);
+  const now     = new Date();
+  const expires = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // +60 jours
+
+  // Construire l'UPDATE avec les colonnes de base + extras (stripe metadata, etc.)
+  const baseCols = {
+    pickup_secret_hash:            hash,
+    pickup_secret_salt:            salt,
+    pickup_secret_last4:           last4,
+    pickup_secret_created_at:      now,
+    pickup_secret_expires_at:      expires,
+    pickup_secret_attempts:        0,
+    pickup_secret_blocked_until:   null,
+    pickup_secret_channel:         channel,
+    pickup_secret_emitted_at:      now,
+  };
+  const allCols = Object.assign({}, baseCols, extraUpdates || {});
+  const colNames = Object.keys(allCols);
+  const setClauses = colNames.map((c, i) => `${c} = $${i + 1}`).join(', ');
+  const values = colNames.map(c => allCols[c]);
+  values.push(orderId);
+
+  await dbHandle.query(
+    `UPDATE orders SET ${setClauses}, updated_at = NOW() WHERE id = $${values.length}`,
+    values
+  );
+
+  console.log(`[PICKUP-SECRET] ✅ Code généré channel=${channel} order=${orderId} last4=${last4}`);
+
+  return { code, last4 };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // 1. POST /pay-cash/:orderId — Encaissement cash, génère le code secret
 // ══════════════════════════════════════════════════════════════════════════════
 // L'agent encaisse le cash. Le backend génère le code. Le code clair est renvoyé
@@ -859,4 +957,148 @@ router.get('/status/:orderId', authenticate, requireRelaisOrAdmin, async (req, r
   } catch (err) { next(err); }
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// 7. GET /reveal-once/:orderId — Révélation du code au payeur (UNE FOIS)
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Utilisé par la boutique après paiement Stripe / Wallet pour afficher le code
+// au PAYEUR (pas à un agent) UNE SEULE FOIS.
+//
+// Contraintes de sécurité :
+//   • Le code ne peut être révélé qu'à l'utilisateur authentifié qui est le
+//     propriétaire de la commande (user_id match)
+//   • Le code n'est renvoyé QU'UNE FOIS — au premier appel réussi on marque
+//     pickup_secret_revealed_at, les appels suivants renvoient un 410 Gone
+//   • Fenêtre serrée : doit être appelé dans les 30 minutes après émission
+//   • Si déjà révélé → 410 Gone avec procédure de perte comme message
+//
+// Ce endpoint est le seul moyen d'obtenir le code clair pour Stripe/Wallet/MM.
+// Cash utilise /receipt/:orderId qui est côté agent.
+
+router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const userId      = req.user.id;
+
+    // 1. Vérifier que l'utilisateur est bien propriétaire de la commande
+    const { rows: [order] } = await db.query(`
+      SELECT id, reference, user_id,
+             pickup_secret_channel,
+             pickup_secret_emitted_at,
+             pickup_secret_revealed_at,
+             pickup_secret_last4,
+             pickup_secret_hash,
+             pickup_secret_salt,
+             total_kmf
+      FROM orders WHERE id = $1
+    `, [orderId]);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    if (order.user_id && order.user_id !== userId) {
+      return res.status(403).json({ error: 'Cette commande ne vous appartient pas' });
+    }
+
+    // 2. Pas de code = paiement pas encore validé par Stripe/MM (webhook en retard)
+    if (!order.pickup_secret_hash) {
+      return res.status(202).json({
+        status: 'pending',
+        message: 'Paiement en cours de validation, réessayez dans quelques secondes',
+      });
+    }
+
+    // 3. Code déjà révélé → 410 Gone (procédure de perte)
+    if (order.pickup_secret_revealed_at) {
+      return res.status(410).json({
+        error: 'Code déjà révélé une fois',
+        already_revealed_at: order.pickup_secret_revealed_at,
+        message: 'Pour retrouver votre code, utilisez la procédure de perte.',
+        // Pour aider l'UI à afficher la preuve masquée
+        masked: order.pickup_secret_last4
+                  ? ('•••-•••-' + order.pickup_secret_last4.slice(-2))
+                  : null,
+      });
+    }
+
+    // 4. Fenêtre temporelle : 30 minutes max après émission
+    const emittedAt = new Date(order.pickup_secret_emitted_at);
+    const windowEnd = new Date(emittedAt.getTime() + 30 * 60 * 1000);
+    if (new Date() > windowEnd) {
+      return res.status(410).json({
+        error: 'Fenêtre de révélation expirée',
+        message: 'Le code ne peut plus être affiché. Utilisez la procédure de perte.',
+        masked: order.pickup_secret_last4
+                  ? ('•••-•••-' + order.pickup_secret_last4.slice(-2))
+                  : null,
+      });
+    }
+
+    // 5. Révélation : on ne peut PAS reconstruire le code depuis le hash (c'est
+    //    le principe du hash). Donc on stocke temporairement le code clair en
+    //    mémoire au moment de la génération, indexé par orderId, avec TTL 30min.
+    //    Voir REVEAL_CACHE en bas du fichier.
+    const cached = REVEAL_CACHE.get(orderId);
+    if (!cached) {
+      // Cache expiré ou serveur redémarré entre-temps → 410
+      return res.status(410).json({
+        error: 'Code non disponible',
+        message: 'Le code n\'est plus disponible (redémarrage serveur ou expiration). Utilisez la procédure de perte.',
+        masked: order.pickup_secret_last4
+                  ? ('•••-•••-' + order.pickup_secret_last4.slice(-2))
+                  : null,
+      });
+    }
+
+    // 6. Marquer comme révélé + supprimer du cache immédiatement
+    await db.query(
+      'UPDATE orders SET pickup_secret_revealed_at = NOW() WHERE id = $1',
+      [orderId]
+    );
+    REVEAL_CACHE.delete(orderId);
+
+    console.log(`[PICKUP-SECRET] 👁 Code révélé (one-shot) order=${orderId} channel=${order.pickup_secret_channel}`);
+
+    // 7. Générer le payload QR (format KMR1.base64url)
+    const qrPayloadRaw = JSON.stringify({ c: cached.code, o: order.reference });
+    const qrPayload = 'KMR1.' + Buffer.from(qrPayloadRaw)
+      .toString('base64')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    return res.json({
+      order_ref:   order.reference,
+      code:        cached.code,
+      qr_payload:  qrPayload,
+      channel:     order.pickup_secret_channel,
+      total_kmf:   Number(order.total_kmf || 0),
+      expires_in_days: 60,
+      warning:     'Ce code ne s\'affichera qu\'une seule fois. Notez-le ou prenez une capture d\'écran maintenant.',
+    });
+
+  } catch (err) { next(err); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REVEAL_CACHE — stockage mémoire court (30 min) des codes en attente de révélation
+// ══════════════════════════════════════════════════════════════════════════════
+// Pourquoi en mémoire : le hash est irréversible, on ne peut pas reconstruire
+// le code clair depuis la DB. Donc pour Stripe/Wallet/MM, après génération,
+// le code est placé ici en attendant que le client le récupère via reveal-once.
+//
+// TTL 30 min garantit que si le client ne revient pas (navigateur fermé), le
+// code disparaît de la mémoire → procédure de perte obligatoire.
+//
+// TODO prod : remplacer par Redis avec TTL natif pour survivre aux restarts.
+
+const REVEAL_CACHE = new Map();
+const REVEAL_TTL_MS = 30 * 60 * 1000;
+
+function cacheCodeForReveal(orderId, code) {
+  REVEAL_CACHE.set(orderId, { code, expiresAt: Date.now() + REVEAL_TTL_MS });
+  setTimeout(() => REVEAL_CACHE.delete(orderId), REVEAL_TTL_MS);
+}
+
 module.exports = router;
+module.exports.generateAndStoreSecret = generateAndStoreSecret;
+module.exports.cacheCodeForReveal = cacheCodeForReveal;
