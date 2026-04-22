@@ -1313,7 +1313,8 @@ function quickRemove(productId, btnEl) {
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const product = state.products.find(p => p.id === btn.dataset.add);
+        const pid = btn.dataset.add;
+        const product = state.products.find(p => String(p.id) === String(pid));
         if (!product) return;
         addToCart(product, 1, btn);
       });
