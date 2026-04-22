@@ -1282,6 +1282,10 @@ body.cart-open{overflow:hidden}
   min-height:0;
   display:flex;
   flex-direction:column;
+  /* Espace en bas pour que le dernier contenu ne soit pas masqué
+     par le footer sticky (.k-modal-actions) : ~140px (qty+ajouter 44px
+     + acheter 44px + paddings 24px + safe-area) */
+  padding-bottom: 20px;
 }
 
 /* ── IMAGE ZONE — compact on mobile, expands on desktop ── */
@@ -1349,8 +1353,8 @@ body.cart-open{overflow:hidden}
 .k-modal-desc{
   font-size:12px;color:var(--text-muted);
   margin-top:4px;line-height:1.5;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
-  overflow:hidden;
+  /* Plus de line-clamp : on montre toute la description
+     (le modal-scroll gère le scroll vertical si nécessaire) */
 }
 .k-modal-price-row{display:flex;align-items:baseline;gap:10px;margin-top:12px}
 .k-modal-price{
