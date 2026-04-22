@@ -5720,15 +5720,17 @@ button,
   }
 }
 
-/* ── FIX 9 : safe-area pour les iPhone avec notch (Dynamic Island) ── */
+/* ── FIX 9 (v2) : safe-area pour iPhone avec notch, SANS padding excessif ── */
+/* On respecte UNIQUEMENT l'encoche réelle (0 sur Android, ~47px iPhone notch).
+   Pas de padding fixe en plus qui crée un effet tunnel blanc inutile. */
 .k-header {
-  padding-top: calc(10px + env(safe-area-inset-top, 0)) !important;
+  padding-top: env(safe-area-inset-top, 0) !important;
 }
 .k-bnav {
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0)) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0) !important;
 }
 .k-modal-topbar {
-  padding-top: calc(10px + env(safe-area-inset-top, 0)) !important;
+  padding-top: env(safe-area-inset-top, 0) !important;
 }
 
 /* ── FIX 10 : hover iOS (tap = hover collé), donc on différencie ──── */
@@ -6125,6 +6127,14 @@ button,
   .k-search {
     flex: 1 1 auto !important;
     min-width: 0 !important;
+    max-width: none !important;  /* Annule le max-width:200px de la règle 899px */
+    height: 38px !important;
+  }
+  .k-search-icon {
+    left: 12px !important;
+  }
+  .k-search input {
+    padding: 0 12px 0 36px !important;
   }
   .k-search input {
     font-size: 16px !important;  /* iOS : évite zoom */
@@ -6140,8 +6150,18 @@ button,
     margin-right: 0 !important;
   }
   .k-cart-badge {
-    top: -2px !important;
-    right: -2px !important;
+    /* Badge À L'INTÉRIEUR du bouton pour ne pas déborder sur Samsung/iPhone */
+    top: 0 !important;
+    right: 0 !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    font-size: 10px !important;
+    padding: 0 4px !important;
+    border: 1.5px solid #fff !important;
+  }
+  /* Respiration à droite pour que la dame ne touche pas le bord écran */
+  .k-header-inner {
+    padding-right: 14px !important;
   }
 }
 
