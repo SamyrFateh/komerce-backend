@@ -6094,3 +6094,271 @@ button,
   animation: fadeHint 2s ease-in-out infinite;
   pointer-events: none;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                                                                         */
+/*        🏠 HOME PAGE OPTIMISATION v2 — densité + clarté + identité       */
+/*                                                                         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  1. HEADER COMPACT MOBILE (< 600px)                                 */
+/*     - Logo sans texte "Komerce" (gagne 50px)                        */
+/*     - Barre de recherche élargie                                    */
+/*     - Badge dame repositionné proprement                            */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-header-inner {
+    gap: 8px !important;
+    padding: 0 12px;
+  }
+  /* Cacher le texte "Komerce" sur mobile, garder juste l'icône */
+  .k-logo-text {
+    display: none !important;
+  }
+  .k-logo-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  /* Barre recherche qui prend toute la place dispo */
+  .k-search {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  .k-search input {
+    font-size: 16px !important;  /* iOS : évite zoom */
+    height: 38px !important;
+  }
+  .k-search input::placeholder {
+    /* Placeholder plus court sur mobile pour éviter troncature */
+    font-size: 14px;
+  }
+  /* Badge dame : position ajustée pour ne pas déborder */
+  .k-cart-btn {
+    flex: 0 0 auto !important;
+    margin-right: 0 !important;
+  }
+  .k-cart-badge {
+    top: -2px !important;
+    right: -2px !important;
+  }
+}
+
+/* Placeholder raccourci sur très petit écran */
+@media (max-width: 400px) {
+  .k-search input::placeholder {
+    content: 'Rechercher...';
+  }
+  /* Technique : on met le placeholder directement dans l'input via JS
+     Ou on force via ::placeholder mais CSS seul ne peut pas changer le text */
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  2. HERO BANNER COMPACT (mobile)                                    */
+/*     - Hauteur 200px → 140px                                         */
+/*     - Garde les 2 dames (identité !)                                */
+/*     - Slogan toujours visible mais mieux intégré                    */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-hero,
+  .k-hero-img,
+  .k-hero-wrap {
+    max-height: 150px !important;
+    height: auto !important;
+  }
+  .k-hero img {
+    object-fit: cover !important;
+    object-position: center !important;
+    max-height: 150px !important;
+  }
+  /* Slogan plus compact */
+  .k-hero-title,
+  .k-hero-text h1 {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    padding: 0 12px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  3. CHIPS CATÉGORIES PLUS PETITES (mobile)                          */
+/*     - Photo : 48px → 40px                                           */
+/*     - Hauteur totale : 100px → 72px                                 */
+/*     - Mieux défilables et plus claires                              */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-cats {
+    padding: 8px 12px !important;
+    min-height: 64px !important;
+    gap: 6px !important;
+  }
+  .k-cat-chip {
+    min-width: 56px !important;
+    padding: 4px !important;
+    gap: 3px !important;
+  }
+  .k-chip-photo {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .k-cat-chip .k-cat-label,
+  .k-cat-chip span:not(.k-chip-photo) {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+  }
+  /* Cats active : ring plus subtil */
+  .k-cat-chip.active .k-chip-photo {
+    box-shadow: 0 0 0 2px var(--coral, #e64a19) !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  4. RAIL HORIZONTAL CLAIR + INDICATEUR SCROLL                       */
+/*     - Les produits sont clairement en rail (pas en grille confuse)  */
+/*     - Chip "Voir tout →" à la fin du rail                           */
+/*     - Dégradé fade + flèche pour indiquer le scroll                 */
+/* ─────────────────────────────────────────────────────────────────── */
+.k-promo-rail-wrap {
+  position: relative;
+  /* Fade à droite qui indique "il y a plus à droite" */
+}
+.k-promo-rail-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 10px;
+  width: 40px;
+  background: linear-gradient(to left, 
+    var(--sand, #faf6ee) 0%, 
+    var(--sand, #faf6ee) 20%,
+    rgba(250, 246, 238, 0) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Cartes dans le rail : largeur fixe pour montrer qu'il y a du scroll */
+.k-promo-rail .k-card {
+  flex: 0 0 160px !important;  /* largeur fixe = rail clair */
+  scroll-snap-align: start;
+}
+
+@media (min-width: 600px) {
+  .k-promo-rail .k-card {
+    flex: 0 0 200px !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .k-promo-rail .k-card {
+    flex: 0 0 220px !important;
+  }
+}
+
+/* Bouton "Voir tout" en fin de rail (CTA clair) */
+.k-promo-rail-more {
+  flex: 0 0 80px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #faf6ee 0%, #f0e8d5 100%);
+  border: 2px dashed rgba(74, 144, 64, 0.3);
+  border-radius: 12px;
+  color: var(--ocean, #4a9040);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .25s ease;
+  scroll-snap-align: start;
+}
+.k-promo-rail-more:hover {
+  background: linear-gradient(135deg, #f0e8d5 0%, #e6dab8 100%);
+  border-color: var(--ocean, #4a9040);
+  transform: scale(1.02);
+}
+.k-promo-rail-more::before {
+  content: '→';
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  5. TITRES DE SECTION PLUS RAMASSÉS                                 */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .k-section-title,
+  .k-promo-title {
+    font-size: 15px !important;
+    padding: 10px 12px 6px !important;
+    margin: 0 !important;
+  }
+  .k-view-all,
+  .k-see-all {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  6. DENSITÉ VERTICALE GLOBALE (gagner du pixel précieux)            */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Moins de padding entre les sections */
+  .k-section {
+    margin-bottom: 12px !important;
+  }
+  /* Plus de produits visibles dans les grilles */
+  .k-grid {
+    gap: 8px !important;
+    padding: 0 12px 12px !important;
+  }
+  /* Cartes plus compactes en hauteur */
+  .k-card-info {
+    padding: 8px 10px !important;
+  }
+  .k-card-name {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .k-card-price {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+  .k-card-old-price {
+    font-size: 11px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  7. BONUS : Animation scroll-in des cartes                          */
+/* ─────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .k-card {
+    animation: cardFadeIn .4s ease-out backwards;
+  }
+  .k-grid .k-card:nth-child(1) { animation-delay: 0.05s; }
+  .k-grid .k-card:nth-child(2) { animation-delay: 0.1s; }
+  .k-grid .k-card:nth-child(3) { animation-delay: 0.15s; }
+  .k-grid .k-card:nth-child(4) { animation-delay: 0.2s; }
+  .k-grid .k-card:nth-child(5) { animation-delay: 0.25s; }
+  .k-grid .k-card:nth-child(n+6) { animation-delay: 0.3s; }
+}
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

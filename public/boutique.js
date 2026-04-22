@@ -3833,4 +3833,31 @@ document.addEventListener('click', function(e) {
   window.closeCartStepper = closeActiveStepper;
 })();
 
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// Placeholder adaptatif sur la barre de recherche (évite troncature)
+// ═══════════════════════════════════════════════════════════════════════
+(function adaptivePlaceholder() {
+  const updatePlaceholder = () => {
+    const input = document.getElementById('k-search-input');
+    if (!input) return;
+    const w = window.innerWidth;
+    if (w < 380) {
+      input.placeholder = 'Rechercher...';
+    } else if (w < 768) {
+      input.placeholder = 'Rechercher un produit...';
+    } else {
+      input.placeholder = 'Rechercher un produit dans le catalogue...';
+    }
+  };
+  // À l'init et au redimensionnement
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updatePlaceholder);
+  } else {
+    updatePlaceholder();
+  }
+  window.addEventListener('resize', updatePlaceholder);
+})();
+
 })();
