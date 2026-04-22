@@ -3263,3 +3263,62 @@ body.cart-open{overflow:hidden}
     animation: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SUGGESTIONS "Vous aimerez aussi" — mobile uniquement
+   Passe du rail horizontal → grille verticale 2 colonnes (Shein-style)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 899px) {
+  .k-sug-rail {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    scroll-snap-type: none !important;
+    max-height: none !important;
+    padding: 0 0 12px !important;
+  }
+  .k-sug-card {
+    flex: none !important;
+    width: 100% !important;
+    scroll-snap-align: unset !important;
+    border-radius: var(--radius-lg, 14px);
+    overflow: hidden;
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .k-sug-card img {
+    aspect-ratio: 1;
+    border-radius: var(--radius-lg, 14px) var(--radius-lg, 14px) 0 0;
+    object-fit: cover;
+  }
+  .k-sug-card-name {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 10px 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .k-sug-card-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--coral);
+    padding: 2px 10px 10px;
+  }
+  /* En grille verticale, les fade-edges latéraux n'ont aucun sens */
+  .k-sug-wrap::before,
+  .k-sug-wrap::after {
+    display: none !important;
+  }
+  /* Les flèches horizontales ◀ ▶ non plus */
+  .k-sug-arrow {
+    display: none !important;
+  }
+  /* Le h3 "Vous aimerez aussi" : on retire l'indicateur de swipe horizontal */
+  .k-modal-suggestions h3::after {
+    display: none !important;
+  }
+}
