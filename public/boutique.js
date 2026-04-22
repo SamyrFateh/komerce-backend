@@ -221,6 +221,9 @@
   checkoutAttemptKey: null,
   pendingStripeOrderRef: null,
 };
+  // Expose state (read-only) pour les modules externes (long-press stepper)
+  if (typeof window !== "undefined") window.state = state;
+
 
 
   /* ── SUBCATEGORIES MAP ───────────────────────────────── */
@@ -922,10 +925,22 @@ function addToCart(product, qty, sourceBtn) {
   function setQty(productId, newQty) {
     const pid = String(productId);
     if (newQty < 1) { removeFromCart(pid); return; }
-    const item = state.cart.find(i => String(i.product.id) === pid);
+    
+  // Écoute les événements du stepper flottant (module externe long-press)
+  document.addEventListener('cart:setqty', function(e) {
+    const { pid, qty } = e.detail || {};
+    if (pid !== undefined && qty !== undefined) {
+      setQty(pid, qty);
+    }
+  });
+const item = state.cart.find(i => String(i.product.id) === pid);
     if (item) {
       item.qty = newQty;
       saveCart();
+      // FIX 1.3 : rafraîchit À LA FOIS le panier drawer ET tous les steppers catalogue/suggestions
+      if (typeof renderCartBody === 'function') renderCartBody();
+      if (typeof markAllCartButtons === 'function') markAllCartButtons();
+      if (typeof updateCartBadge === 'function') updateCartBadge();
       renderCartBody();
       markAllCartButtons();
     }
@@ -935,13 +950,15 @@ function addToCart(product, qty, sourceBtn) {
     // IDs actuellement dans le panier
     const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
 
-    // Pour chaque bouton "+" de la grille, soit on met le mini-contrôle ±, soit on réinitialise
+    // OPTION C : on garde le panier tressé visuel, on ajoute juste un badge quantité
+    //           Le stepper s'affichera au long-press uniquement (via JS bindLongPressSteppers)
     document.querySelectorAll('.k-card-add').forEach(btn => {
       const pid = String(btn.dataset.add);
       if (inCartIds.has(pid)) {
         const item = state.cart.find(i => String(i.product.id) === pid);
         btn.classList.add('in-cart');
-        btn.innerHTML = '<span class="k-add-minus" data-pid="' + pid + '">−</span><span class="k-add-qty">' + item.qty + '</span><span class="k-add-plus-ic">+</span>';
+        // Affichage = panier tressé + badge quantité en haut-droite
+        btn.innerHTML = '<span class="k-card-add-qty-badge">' + item.qty + '</span>';
       } else {
         // Produit plus dans le panier → remettre juste le "+"
         btn.classList.remove('in-cart');
@@ -3633,4 +3650,187 @@ async function submitOrder(btn) {
   } else {
     init();
   }
+
+
+// FIX 2.3 : Rendre les carousel dots de la modal cliquables
+// (si ce n'est pas déjà fait ailleurs)
+document.addEventListener('click', function(e) {
+  const dot = e.target.closest('.k-modal-dot');
+  if (!dot) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const idx = parseInt(dot.dataset.index || dot.getAttribute('data-index') || '0', 10);
+  const track = document.querySelector('.k-modal-carousel-track');
+  if (!track) return;
+  // Largeur d'une slide = largeur du track / nb slides
+  const slides = track.querySelectorAll('.k-modal-slide');
+  if (!slides.length) return;
+  track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+  // Mettre à jour les dots actifs
+  document.querySelectorAll('.k-modal-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+});
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  OPTION C : Long-press sur panier tressé → stepper flottant
+//  - Tap court : +1 au panier (comportement normal)
+//  - Long-press (400ms) : ouvre un stepper flottant [- qty +] au-dessus
+//  - Tap ailleurs : ferme le stepper
+//  - Pas d'activité 3s : ferme le stepper automatiquement
+// ═══════════════════════════════════════════════════════════════════════
+(function setupLongPressSteppers() {
+  const LONG_PRESS_MS = 400;
+  const STEPPER_AUTOCLOSE_MS = 3000;
+  let pressTimer = null;
+  let activeStepperBtn = null;
+  let autoCloseTimer = null;
+  let isLongPress = false;
+
+  function closeActiveStepper() {
+    if (!activeStepperBtn) return;
+    const stepper = activeStepperBtn.querySelector('.k-card-add-stepper');
+    if (stepper) {
+      stepper.classList.add('k-stepper-closing');
+      setTimeout(() => stepper.remove(), 250);
+    }
+    activeStepperBtn.classList.remove('stepper-open');
+    activeStepperBtn = null;
+    if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+  }
+
+  function resetAutoClose() {
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+    autoCloseTimer = setTimeout(closeActiveStepper, STEPPER_AUTOCLOSE_MS);
+  }
+
+  function openStepper(btn) {
+    // Fermer tout autre stepper ouvert
+    closeActiveStepper();
+
+    const pid = btn.dataset.add;
+    if (!pid) return;
+    const item = window.state?.cart?.find(i => String(i.product.id) === String(pid));
+    if (!item) return;
+
+    // Vibration haptic sur iOS/Android si disponible
+    if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e){} }
+
+    // Construire le stepper flottant
+    const stepper = document.createElement('div');
+    stepper.className = 'k-card-add-stepper';
+    stepper.innerHTML =
+      '<button class="k-stepper-minus" aria-label="Moins">−</button>' +
+      '<span class="k-stepper-qty">' + item.qty + '</span>' +
+      '<button class="k-stepper-plus" aria-label="Plus">+</button>';
+
+    // Positionner au-dessus du panier tressé
+    btn.appendChild(stepper);
+    btn.classList.add('stepper-open');
+    activeStepperBtn = btn;
+
+    // Bind les +/- du stepper
+    stepper.querySelector('.k-stepper-minus').addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      const curItem = window.state?.cart?.find(i => String(i.product.id) === String(pid));
+      if (!curItem) return closeActiveStepper();
+      if (curItem.qty <= 1) {
+        // Retirer du panier → ferme le stepper
+        document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: 0 } }));
+        closeActiveStepper();
+      } else {
+        document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty - 1 } }));
+        stepper.querySelector('.k-stepper-qty').textContent = curItem.qty - 1;
+        resetAutoClose();
+      }
+    });
+
+    stepper.querySelector('.k-stepper-plus').addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      const curItem = window.state?.cart?.find(i => String(i.product.id) === String(pid));
+      if (!curItem) return;
+      document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty + 1 } }));
+      stepper.querySelector('.k-stepper-qty').textContent = curItem.qty + 1;
+      resetAutoClose();
+    });
+
+    resetAutoClose();
+  }
+
+  function startPress(e) {
+    const btn = e.target.closest('.k-card-add.in-cart');
+    if (!btn) return;
+
+    isLongPress = false;
+    btn.classList.add('is-long-pressing');
+
+    pressTimer = setTimeout(() => {
+      isLongPress = true;
+      btn.classList.remove('is-long-pressing');
+      openStepper(btn);
+    }, LONG_PRESS_MS);
+  }
+
+  function endPress(e) {
+    const btn = e.target.closest('.k-card-add.in-cart');
+    if (btn) btn.classList.remove('is-long-pressing');
+
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+    // Si long-press déclenché, on bloque le click normal (qui ferait +1)
+    if (isLongPress) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    isLongPress = false;
+  }
+
+  function cancelPress() {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    document.querySelectorAll('.k-card-add.is-long-pressing').forEach(b => {
+      b.classList.remove('is-long-pressing');
+    });
+    isLongPress = false;
+  }
+
+  // Bindings globaux (delegation car les cartes sont dynamiques)
+  document.addEventListener('mousedown', startPress);
+  document.addEventListener('touchstart', startPress, { passive: true });
+
+  document.addEventListener('mouseup', endPress);
+  document.addEventListener('touchend', endPress);
+
+  document.addEventListener('mouseleave', cancelPress);
+  document.addEventListener('touchcancel', cancelPress);
+
+  // Click ailleurs → ferme le stepper
+  document.addEventListener('click', function(e) {
+    if (!activeStepperBtn) return;
+    // Si on tape DANS le stepper, on ne ferme pas
+    if (e.target.closest('.k-card-add-stepper')) return;
+    // Si on tape sur le panier tressé qui a le stepper, on ne ferme pas (géré par le bouton lui-même)
+    if (e.target.closest('.k-card-add.stepper-open')) return;
+    closeActiveStepper();
+  });
+
+  // Si un click normal sur .k-card-add se déclenche ET qu'un long-press vient de finir,
+  // on bloque (sinon le +1 s'ajoute en plus du stepper ouvert)
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.k-card-add');
+    if (btn && btn.classList.contains('stepper-open')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);  // capture phase pour intercepter avant le handler normal
+
+  // Exposer closeActiveStepper pour que d'autres parties du code (ouvrir modal, etc.) puissent fermer
+  window.closeCartStepper = closeActiveStepper;
+})();
+
 })();

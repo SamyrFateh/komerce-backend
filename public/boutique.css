@@ -858,20 +858,138 @@ body{
     box-shadow:0 4px 14px rgba(31,48,36,.22), 0 0 0 1px rgba(74,144,64,.25);
   }
 }
-/* Stepper pill quand produit déjà dans le panier : on reprend le sage
-   (pas d'image panier) avec les contrôles -/+/qty bien visibles */
-.k-card-add.in-cart{
-  background:var(--ocean) none;
-  background-image:none !important;
-  border-radius:14px;
-  width:76px;
-  padding:0 6px;
-  justify-content:space-between;
-  gap:0;
-  box-shadow:0 2px 8px rgba(74,144,64,.3);
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  OPTION C — Panier tressé TOUJOURS visible + badge qty + stepper      */
+/*             au long-press                                               */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Quand produit dans panier : le panier tressé reste (signature Komerce)   */
+/*                             mais on ajoute un cercle vert avec qty       */
+.k-card-add.in-cart {
+  /* Garde le panier tressé en background */
+  background: var(--white) url('/images/panier_tresse.png') center/78% no-repeat !important;
+  /* Petit ring vert autour pour indiquer "actif" */
+  box-shadow:
+    0 0 0 2px var(--ocean, #4a9040),
+    0 2px 8px rgba(74,144,64,.25) !important;
+  animation: cartAddPulse .5s cubic-bezier(.34,1.56,.64,1);
 }
-.k-card-add.in-cart:hover{ background:var(--ocean-dark); }
-.k-card-add:active{transform:scale(.9)}
+
+@keyframes cartAddPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* Badge quantité en haut-droite du panier tressé */
+.k-card-add-qty-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--ocean, #4a9040);
+  color: #fff;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  pointer-events: none;
+  z-index: 2;
+  animation: qtyBadgeBounce .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes qtyBadgeBounce {
+  0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg);    opacity: 1; }
+}
+
+/* Stepper qui apparaît au long-press — flottant au-dessus du panier tressé */
+.k-card-add-stepper {
+  position: absolute;
+  bottom: 52px;  /* Juste au-dessus du panier tressé */
+  right: 0;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid var(--ocean, #4a9040);
+  border-radius: 24px;
+  padding: 4px 6px;
+  gap: 4px;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,.15),
+    0 2px 6px rgba(74,144,64,.2);
+  z-index: 10;
+  animation: stepperSlideDown .3s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes stepperSlideDown {
+  0%   { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+.k-card-add-stepper.k-stepper-closing {
+  animation: stepperSlideUp .25s ease-in forwards;
+}
+
+@keyframes stepperSlideUp {
+  0%   { transform: translateY(0);    opacity: 1; }
+  100% { transform: translateY(12px); opacity: 0; }
+}
+
+.k-card-add-stepper button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--ocean, #4a9040);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background .15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.k-card-add-stepper button:active {
+  background: rgba(74,144,64,.12);
+  transform: scale(.9);
+}
+
+.k-card-add-stepper .k-stepper-qty {
+  min-width: 28px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #1f3024);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Indicateur visuel pendant le long-press (avant que le stepper apparaisse) */
+.k-card-add.is-long-pressing {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 3px var(--ocean, #4a9040),
+    0 4px 14px rgba(74,144,64,.3) !important;
+  transition: all .2s ease;
+}
+
+.k-card-add:active { transform: scale(.9); }
+
+/* En mode stepper ouvert, le panier tressé garde son style "in-cart" */
+.k-card-add.stepper-open {
+  opacity: 0.7;
+}
 
 /* Le "+" textuel est masqué visuellement mais reste pour les lecteurs d'écran */
 .k-card-add-plus{
@@ -3787,9 +3905,19 @@ input#of-client-email {
    Si panier vide (classe cart-empty), on GARDE la bnav pour que 
    l'utilisateur puisse naviguer librement (UX plus ouverte).
    ────────────────────────────────────────────────────────────────── */
-body.cart-open:not(.cart-empty) .k-bnav,
-body.modal-open .k-bnav {
+/* FIX 1.1 : bottom nav reste visible pendant la modal produit
+   (seul le panier ouvert avec items cache la bnav, la modal non) */
+body.cart-open:not(.cart-empty) .k-bnav {
   display: none !important;
+}
+/* La modal produit garde la bnav visible en dessous, z-index gère la superposition */
+body.modal-open .k-bnav {
+  z-index: 100 !important;
+  /* On atténue un peu pour indiquer que la modal est dessus */
+  opacity: 0.6;
+  pointer-events: none; /* Pas cliquable tant que la modal est ouverte,
+                           mais le user voit ses options */
+  transition: opacity .25s ease;
 }
 
 /* ── Modal paiement : layout garanti ────────────────────────────── */
@@ -5834,4 +5962,135 @@ button,
     color: #fff;
     margin-left: 4px;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 1.4 : Topbar enrichie compact mobile (évite tronquage)             */
+/* ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Sur mobile, on cache le nom + description qui prennent trop de place,
+     on garde juste thumbnail + prix + bouton action */
+  .k-modal.is-scrolled .k-modal-topbar-product-name {
+    display: none !important;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-product {
+    max-width: 60%;
+    gap: 6px;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-product-price {
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-buy {
+    font-size: 12px;
+    padding: 8px 12px;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-buy-text {
+    /* Sur très petit écran, ne garder que l'icône ⚡ */
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  /* iPhone SE : encore plus compact */
+  .k-modal.is-scrolled .k-modal-topbar-thumb {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .k-modal.is-scrolled .k-modal-topbar-buy {
+    padding: 6px 10px;
+    min-width: 36px;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 2.1 : Touch targets iOS - extension virtuelle 44×44 via ::before   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Liste complète des petits boutons qui méritent une zone tactile étendue */
+.k-card-fav,
+.k-card-add,
+.k-sug-add,
+.k-modal-nav-btn,
+.k-qty-btn,
+.k-add-minus,
+.k-add-plus-ic,
+.k-modal-dot,
+.k-cart-badge,
+.k-cart-avatar {
+  position: relative;
+}
+
+.k-card-fav::before,
+.k-card-add::before,
+.k-sug-add::before,
+.k-modal-nav-btn::before,
+.k-qty-btn::before,
+.k-add-minus::before,
+.k-add-plus-ic::before,
+.k-modal-dot::before {
+  content: '';
+  position: absolute;
+  inset: -8px;  /* étend la zone de 8px tout autour */
+  pointer-events: auto;
+  /* Les 22×22 passent virtuellement à 38×38
+     Les 30×30 passent virtuellement à 46×46 (OK iOS) */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 2.2 : Pills catégories avec min-width fixe (évite layout shift)   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cat-chip {
+  min-width: 72px !important;
+  flex: 0 0 auto !important;
+}
+.k-chip-photo {
+  /* Taille fixe des photos de chip pour éviter le shift pendant le chargement */
+  width: 48px !important;
+  height: 48px !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  FIX 2.4 : Scroll catégories — fade + hint scroll horizontal            */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.k-cats-wrap-fade-right {
+  /* Renforcer le fade pour qu'il soit bien visible */
+  width: 32px !important;
+  background: linear-gradient(to left,
+    var(--sand, #faf6ee) 0%,
+    var(--sand, #faf6ee) 25%,
+    rgba(250, 246, 238, 0) 100%) !important;
+}
+
+.k-cats-wrap-fade-left {
+  width: 32px !important;
+  background: linear-gradient(to right,
+    var(--sand, #faf6ee) 0%,
+    var(--sand, #faf6ee) 25%,
+    rgba(250, 246, 238, 0) 100%) !important;
+}
+
+/* Animation subtile sur le fade pour suggérer le scroll */
+@keyframes fadeHint {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+.k-cats-wrap-fade-right::after {
+  content: '›';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: rgba(0,0,0,0.25);
+  animation: fadeHint 2s ease-in-out infinite;
+  pointer-events: none;
 }
