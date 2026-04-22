@@ -1,18 +1,26 @@
-/* Komerce SW v100 — Nuclear cache reset */
-const CACHE = 'komerce-v171';
+/* Komerce SW v172 — purge agressive + reload forcé aux clients */
+const CACHE = 'komerce-v172';
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => {
-          console.log('[SW v100] Purging:', k);
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => {
+        if (k !== CACHE) {
+          console.log('[SW v172] Purge ancien cache :', k);
           return caches.delete(k);
-        })
-      ))
-      .then(() => self.clients.claim())
+        }
+      }));
+      await self.clients.claim();
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach(client => {
+        client.postMessage({ type: 'sw-updated', version: 'v172' });
+      });
+    })()
   );
 });
 
@@ -22,7 +30,6 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  // Network-first for EVERYTHING same-origin
   e.respondWith(
     fetch(e.request)
       .then(response => {
