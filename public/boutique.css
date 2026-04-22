@@ -6712,3 +6712,123 @@ body:not(.bazar-mode) #k-bazar-home {
   }
   .k-narrative-content { font-size: 12px; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                                                                         */
+/*   🌺 BAZAR MODE — Compression radicale des anciens éléments             */
+/*   (pour que les mini-sections aient VRAIMENT la place de respirer)      */
+/*                                                                         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── HERO : en mode bazar, version COMPACT (80px au lieu de 300px) ── */
+body.bazar-mode .k-hero,
+body.bazar-mode .k-hero-wrap,
+body.bazar-mode .k-hero-img {
+  max-height: 100px !important;
+  height: 100px !important;
+  overflow: hidden !important;
+}
+body.bazar-mode .k-hero img {
+  max-height: 100px !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+body.bazar-mode .k-hero-title,
+body.bazar-mode .k-hero-text,
+body.bazar-mode .k-hero-text h1 {
+  font-size: 14px !important;
+  padding: 0 12px !important;
+}
+
+/* ─── CATS RONDES : en mode bazar, version MINI (chips horizontales) ── */
+body.bazar-mode .k-cats {
+  padding: 6px 12px !important;
+  min-height: 44px !important;
+  gap: 4px !important;
+}
+body.bazar-mode .k-cat-chip,
+body.bazar-mode .k-chip {
+  min-width: unset !important;
+  padding: 4px 10px !important;
+  gap: 4px !important;
+  flex-direction: row !important;  /* Rang : icône + label côte à côte */
+  align-items: center !important;
+  background: rgba(255,255,255,0.9);
+  border-radius: 20px !important;
+  border: 1px solid rgba(0,0,0,0.06);
+  height: 32px !important;
+}
+body.bazar-mode .k-chip-photo,
+body.bazar-mode .k-cat-chip-img {
+  width: 20px !important;
+  height: 20px !important;
+  background: transparent !important;
+}
+body.bazar-mode .k-chip-photo svg,
+body.bazar-mode .k-cat-chip-img svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+body.bazar-mode .k-cat-chip-label,
+body.bazar-mode .k-cat-chip span:not(.k-chip-photo):not(.k-cat-chip-img) {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+body.bazar-mode .k-chip.active,
+body.bazar-mode .k-cat-chip.active {
+  background: var(--coral, #e64a19) !important;
+  color: #fff !important;
+  border-color: var(--coral, #e64a19) !important;
+}
+body.bazar-mode .k-chip.active .k-chip-photo svg,
+body.bazar-mode .k-cat-chip.active .k-cat-chip-img svg {
+  color: #fff !important;
+}
+
+/* ─── SOUS-CATS : en mode bazar, les cacher (on a les mini-sections) ── */
+body.bazar-mode #k-subcats-wrap,
+body.bazar-mode .k-subcats-rail {
+  display: none !important;
+}
+
+/* ─── HORIZONTAL SCROLL : renforcer pour mini-sections ──────────── */
+.k-mini-section-rail {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+}
+.k-mini-section-rail .k-mini-card {
+  flex: 0 0 140px !important;
+  max-width: 140px !important;
+  min-width: 140px !important;
+}
+
+/* ─── CURATIONS : scroll horizontal renforcé ─────────────────────── */
+.k-curations-rail {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+}
+.k-curation-card {
+  flex: 0 0 130px !important;
+  min-width: 130px !important;
+}
+@media (max-width: 600px) {
+  .k-curation-card {
+    flex: 0 0 118px !important;
+    min-width: 118px !important;
+  }
+}
+
+/* ─── INDICATEUR SCROLL VISIBLE sur tous les rails ───────────────── */
+.k-curations-rail::after,
+.k-mini-section-rail::after {
+  content: '';
+  flex: 0 0 12px;
+  /* Petit espace de respiration à droite */
+}
