@@ -550,17 +550,43 @@
     }
 
     async function processQrPayload(raw) {
-      var payload, code;
-      try {
-        payload = JSON.parse(raw);
-        code = payload.c;
-      } catch(_) {
-        // Si pas JSON, peut-être que le QR encode directement le code
-        code = String(raw).trim();
+      var payload = null;
+      var code = null;
+      var rawStr = String(raw || '').trim();
+
+      // Format Komerce v1 : "KMR1." + base64url(JSON)
+      if (rawStr.indexOf('KMR1.') === 0) {
+        try {
+          var b64 = rawStr.slice(5).replace(/-/g, '+').replace(/_/g, '/');
+          // Re-padder le base64 si nécessaire
+          while (b64.length % 4) b64 += '=';
+          var decoded = atob(b64);
+          payload = JSON.parse(decoded);
+          code = payload && payload.c;
+        } catch(e) {
+          console.warn('[PICKUP-SCAN] Base64 decode failed:', e);
+        }
+      }
+
+      // Fallback rétro-compat : JSON en clair (anciens reçus)
+      if (!code) {
+        try {
+          payload = JSON.parse(rawStr);
+          code = payload && payload.c;
+        } catch(_) { /* pas du JSON */ }
+      }
+
+      // Fallback final : le QR encode juste le code brut
+      if (!code) {
+        // On vérifie que ça ressemble à un code Komerce (chars autorisés + longueur 8)
+        var clean = rawStr.replace(/[-\s]/g, '').toUpperCase();
+        if (/^[A-HJ-NP-Z2-9]{8}$/.test(clean)) {
+          code = clean;
+        }
       }
 
       if (!code) {
-        toast('❌ QR invalide : code introuvable', 'error');
+        toast('❌ QR invalide : ce n\'est pas un QR Komerce', 'error');
         modal.close();
         return;
       }

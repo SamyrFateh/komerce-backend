@@ -512,12 +512,16 @@ function buildReceiptHTML({ code, order, items }) {
 <!-- QR generation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
-  // Payload du QR : JSON compact { c: code, o: orderRef }
-  // Le relais scanne → JSON parsé → verify avec le code complet
-  var qrPayload = JSON.stringify({
+  // Payload du QR : JSON encodé en base64url pour dissuader la lecture directe
+  // par une app caméra standard. Le hub relais décode et parse le JSON.
+  // Format interne : { c: code, o: orderRef }
+  var qrPayloadRaw = JSON.stringify({
     c: ${JSON.stringify(code)},
     o: ${JSON.stringify(order.reference)}
   });
+  // base64url (sans padding, - et _ au lieu de + et /)
+  var qrPayload = 'KMR1.' + btoa(qrPayloadRaw)
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   function renderQR() {
     if (typeof QRious === 'undefined') {
