@@ -6386,3 +6386,183 @@ button,
     transform: translateY(0);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  SECTIONS VERTICALES (home "Tout") — en-têtes + grille 2 cols par cat   */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* En-tête de section : "👕 Mode 42" en gras à gauche, ligne fine en dessous */
+.k-sec-header {
+  grid-column: 1 / -1;  /* pleine largeur si dans un grid */
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 18px 12px 8px;
+  margin-top: 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  scroll-margin-top: 70px;  /* offset pour scroll smooth (compense le header sticky) */
+}
+.k-sec-header-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+.k-sec-header-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text, #1f3024);
+  letter-spacing: -0.2px;
+}
+.k-sec-header-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #8a877f);
+  margin-left: auto;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+}
+
+/* Grille de produits d'une section : réutilise la même structure que .k-grid */
+.k-sec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (min-width: 768px) {
+  .k-sec-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .k-sec-grid {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+}
+
+/* Plus d'espace entre 2 sections */
+.k-sec-grid + .k-sec-header {
+  margin-top: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  INDEX FLOTTANT VERTICAL À DROITE (saut rapide entre sections)           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+#k-section-index {
+  position: fixed;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 4px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  /* Caché par défaut, s'affiche par animation quand le user scroll */
+  opacity: 0.88;
+  transition: opacity .2s ease, transform .2s ease;
+}
+#k-section-index:hover,
+#k-section-index:focus-within {
+  opacity: 1;
+}
+
+.k-section-index-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background .15s ease, transform .15s ease;
+  position: relative;
+}
+.k-section-index-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.08);
+}
+.k-section-index-btn:active {
+  transform: scale(0.94);
+}
+.k-section-index-btn.active {
+  background: var(--coral, #e64a19);
+}
+.k-section-index-btn.active .k-section-index-emoji {
+  filter: brightness(0) invert(1);  /* emoji blanc sur fond coral */
+}
+
+.k-section-index-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+/* Le label texte n'est visible que si hover/focus (expand) */
+.k-section-index-label {
+  display: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text, #1f3024);
+  padding: 0 8px;
+}
+/* Sur desktop : montrer le label au hover */
+@media (hover: hover) and (pointer: fine) {
+  #k-section-index:hover .k-section-index-btn {
+    width: auto;
+    padding: 0 10px 0 6px;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  #k-section-index:hover .k-section-index-label {
+    display: inline;
+  }
+}
+
+/* Masquer l'index si page catalogue filtrée (cat active ≠ all) */
+body:not(.k-view-catalog) #k-section-index,
+.k-view-active:not([data-view="catalog"]) ~ * #k-section-index {
+  display: none;
+}
+
+/* Encore : cacher si modal ouverte / panier ouvert (pour éviter superposition) */
+body.modal-open #k-section-index,
+body.cart-open #k-section-index {
+  display: none !important;
+}
+
+/* Mobile : position un peu plus à droite pour ne pas gêner le scroll tactile */
+@media (max-width: 600px) {
+  #k-section-index {
+    right: 4px;
+    gap: 2px;
+    padding: 4px 3px;
+  }
+  .k-section-index-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .k-section-index-emoji {
+    font-size: 16px;
+  }
+}
+
+
+/* Mode sections : le conteneur grid devient un bloc (chaque section gère son
+   propre grid en interne via .k-sec-grid) */
+.k-grid.k-grid-has-sections {
+  display: block !important;
+  grid-template-columns: none !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}

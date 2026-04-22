@@ -652,6 +652,18 @@
     }
     const pageItems = list.slice(0, state.pageSize);
 
+    // ── BAZAR vertical : en mode "Tout", on groupe par catégorie avec en-têtes ──
+    // (catégorie active autre que 'all' = comportement classique sans sections)
+    const useSections = state.activeCat === 'all' && !state.activeSubcat;
+    if (useSections) {
+      dom.grid.classList.add('k-grid-has-sections');
+      dom.grid.innerHTML = _renderGridWithSections(pageItems);
+      _bindGridEvents();
+      return;
+    }
+    // Sinon : mode grille classique, s'assurer qu'on n'a pas la classe sections
+    dom.grid.classList.remove('k-grid-has-sections');
+
     dom.grid.innerHTML = pageItems.map(p => {
       const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
       const qty = inCart ? inCart.qty : 0;
@@ -713,6 +725,132 @@
       });
     });
   }
+
+
+  // ── HELPERS pour rendu sections catégorie en mode "Tout" ────────────
+  function _renderCard(p) {
+    const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+    const qty = inCart ? inCart.qty : 0;
+    return `
+      <div class="k-card" data-id="${p.id}">
+        <div class="k-card-img-wrap">
+          ${renderProductCarousel(p, 400)}
+          ${p.promo_pct ? `<span class="k-card-promo">-${p.promo_pct}%</span>` : ''}
+          <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
+            ${isFav(p.id) ? '❤️' : '🤍'}
+          </button>
+          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
+          </button>
+        </div>
+        <div class="k-card-info">
+          <div class="k-card-name">${p.name}</div>
+          <div class="k-card-bottom k-card-prices-row">
+            <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+            ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+          </div>
+          <div class="k-card-tabs">
+            <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
+            <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
+            <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
+          </div>
+          <div class="k-card-panels">
+            <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
+            <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
+            <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function _renderGridWithSections(items) {
+    // Grouper par catégorie en préservant l'ordre d'apparition
+    const order = [];
+    const byCat = {};
+    for (const p of items) {
+      const cat = p.category || 'Autres';
+      if (!byCat[cat]) { byCat[cat] = []; order.push(cat); }
+      byCat[cat].push(p);
+    }
+    // Emoji par catégorie (doit matcher les data-cat des chips du header)
+    const EMOJI_CAT = {
+      'Mode': '👕',
+      'Beauté': '🌸',
+      'Tech': '📱',
+      'Enfant': '🧒',
+      'Maison': '🏠',
+      'Sport': '⚽',
+      'Sur-mesure': '✨',
+      'Autres': '📦',
+    };
+
+    // Construire le HTML : pour chaque cat, en-tête + grille de ses produits
+    const parts = [];
+    for (const cat of order) {
+      const emoji = EMOJI_CAT[cat] || '📦';
+      const prods = byCat[cat];
+      const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+      parts.push(
+        '<div class="k-sec-header" id="' + anchorId + '" data-cat="' + sanitize(cat) + '">' +
+          '<span class="k-sec-header-emoji">' + emoji + '</span>' +
+          '<span class="k-sec-header-name">' + sanitize(cat) + '</span>' +
+          '<span class="k-sec-header-count">' + prods.length + '</span>' +
+        '</div>'
+      );
+      // Les cartes, enveloppées dans un wrapper grille pour cette section
+      parts.push('<div class="k-sec-grid">');
+      for (const p of prods) parts.push(_renderCard(p));
+      parts.push('</div>');
+    }
+    return parts.join('');
+  }
+
+  function _bindGridEvents() {
+    // Cartes : ouvrir modal
+    dom.grid.querySelectorAll('.k-card').forEach(card => {
+      bindCarouselDots(card);
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+        if (card.dataset.justSwiped === '1') return;
+        openModal(card.dataset.id);
+      });
+    });
+    // Favoris
+    dom.grid.querySelectorAll('.k-card-fav').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFav(btn.dataset.fav, btn);
+      });
+    });
+    // Ajout panier
+    dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
+        else { quickAdd(btn.dataset.add, btn); }
+      });
+    });
+    // Afficher/mettre à jour l'index flottant si on est en mode sections
+    if (typeof _renderFloatingIndex === 'function') _renderFloatingIndex();
+  }
+
+  // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
+  window.scrollToCategorySection = function(cat) {
+    if (!cat || cat === 'all') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+    const el = document.getElementById(anchorId);
+    if (el) {
+      // Décaler du header sticky pour que l'en-tête soit visible, pas caché dessous
+      const headerH = (document.querySelector('.k-header')?.offsetHeight || 60) + 10;
+      const y = el.getBoundingClientRect().top + window.scrollY - headerH;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
 
   /* ── FLY TO CART ANIMATION ──────────────────────────────── */
   function flyToCart(sourceEl, product) {
@@ -3859,5 +3997,126 @@ document.addEventListener('click', function(e) {
   }
   window.addEventListener('resize', updatePlaceholder);
 })();
+
+
+
+  // ── Chips = saut vers section (mode "Tout" = sections verticales) ──
+  // Quand state.activeCat === 'all' et qu'on tape sur une catégorie, on scroll
+  // vers la section au lieu de filtrer (car la home "Tout" affiche déjà toutes
+  // les catégories en sections groupées).
+  // Taper sur "Tout" scroll tout en haut.
+  // Si on est DÉJÀ sur une cat spécifique (Mode actif), taper sur une autre
+  // cat la filtre normalement (comportement historique de setupCats).
+  document.addEventListener('click', function(e) {
+    const chip = e.target.closest('.k-chip[data-cat]');
+    if (!chip) return;
+    // Uniquement en mode sections (home "Tout")
+    if (state.activeCat !== 'all') return;
+    const cat = chip.getAttribute('data-cat');
+    if (!cat) return;
+    // Tap sur "Tout" quand on est déjà sur "all" → scroll top
+    if (cat === 'all') {
+      // stopImmediatePropagation : empêche setupCats de re-render la grille
+      // (pas de re-render inutile, juste scroll)
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    // Tap sur "Mode" quand on est sur "Tout" → scroll vers la section Mode
+    // sans changer activeCat (on reste en mode sections)
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    // Marquer visuellement le chip actif temporairement (effet feedback)
+    document.querySelectorAll('.k-chip').forEach(function(c) { c.classList.remove('active'); });
+    chip.classList.add('active');
+    // Puis remettre "Tout" actif après 600ms (le temps du scroll smooth)
+    setTimeout(function() {
+      document.querySelectorAll('.k-chip').forEach(function(c) { c.classList.remove('active'); });
+      const allChip = document.querySelector('.k-chip[data-cat="all"]');
+      if (allChip) allChip.classList.add('active');
+    }, 700);
+    if (typeof window.scrollToCategorySection === 'function') {
+      window.scrollToCategorySection(cat);
+    }
+  }, true);  // capture phase + stopImmediatePropagation : bloque setupCats
+
+
+
+
+  // ── Index flottant vertical à droite (sauts rapides entre sections) ──
+  // Apparaît uniquement en mode "Tout" (sections verticales actives).
+  // Se met à jour à chaque re-render de la grille sectionnée.
+  function _renderFloatingIndex() {
+    const existing = document.getElementById('k-section-index');
+    if (existing) existing.remove();
+
+    // Uniquement en mode sections
+    if (state.activeCat !== 'all' || state.activeSubcat) return;
+
+    // Récupérer toutes les sections actuellement dans le DOM
+    const headers = document.querySelectorAll('.k-sec-header');
+    if (headers.length < 2) return; // inutile s'il n'y a qu'une section
+
+    const EMOJI_CAT = {
+      'Mode': '👕',
+      'Beauté': '🌸',
+      'Tech': '📱',
+      'Enfant': '🧒',
+      'Maison': '🏠',
+      'Sport': '⚽',
+      'Sur-mesure': '✨',
+      'Autres': '📦',
+    };
+
+    const nav = document.createElement('nav');
+    nav.id = 'k-section-index';
+    nav.setAttribute('aria-label', 'Index des catégories');
+
+    headers.forEach(function(h) {
+      const cat = h.getAttribute('data-cat');
+      const emoji = EMOJI_CAT[cat] || '📦';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'k-section-index-btn';
+      btn.setAttribute('data-cat', cat);
+      btn.setAttribute('aria-label', cat);
+      btn.title = cat;
+      btn.innerHTML = '<span class="k-section-index-emoji">' + emoji + '</span><span class="k-section-index-label">' + cat + '</span>';
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.scrollToCategorySection === 'function') {
+          window.scrollToCategorySection(cat);
+        }
+      });
+      nav.appendChild(btn);
+    });
+
+    document.body.appendChild(nav);
+
+    // Observer : highlight le chip actif selon la section visible à l'écran
+    if (_sectionObserver) _sectionObserver.disconnect();
+    _sectionObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          const cat = entry.target.getAttribute('data-cat');
+          document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
+            b.classList.toggle('active', b.getAttribute('data-cat') === cat);
+          });
+        }
+      });
+    }, {
+      rootMargin: '-20% 0% -60% 0%',  // zone centrale-haute de l'écran
+      threshold: 0,
+    });
+    headers.forEach(function(h) { _sectionObserver.observe(h); });
+  }
+  let _sectionObserver = null;
+
+  // Appeler _renderFloatingIndex après chaque render de la grille en mode sections
+  // On enveloppe _bindGridEvents pour appeler _renderFloatingIndex à la suite
+  const __origBindGridEvents = (typeof _bindGridEvents === 'function') ? _bindGridEvents : null;
+
 
 })();
