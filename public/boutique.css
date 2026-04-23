@@ -3052,7 +3052,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(100px, 26vw, 130px);
+    height: clamp(80px, 20vw, 105px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -3130,7 +3130,7 @@ body.cart-open{overflow:hidden}
     scrollbar-width: none;
     -ms-overflow-style: none;
     gap: 2px;
-    padding: 4px 6px !important;
+    padding: 4px 10px !important;
     background: rgba(253,250,245,.96);
     align-items: flex-start;
     min-height: 46px;
@@ -3428,7 +3428,7 @@ body.cart-open{overflow:hidden}
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 1;
-    padding-bottom: 56px; /* space for bottom nav */
+    padding-bottom: 68px; /* space for bottom nav */
     /* top is set dynamically by JS based on wrap height */
   }
 
