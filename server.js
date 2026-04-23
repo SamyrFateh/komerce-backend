@@ -970,6 +970,24 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 051: signals table created');
       } catch(e) { console.warn('Migration 051 (non-fatal):', e.message); }
 
+      // ── Migration 052: Seed default charges ──
+      try {
+        const { rows: existingCharges } = await db.query('SELECT COUNT(*) as c FROM charges');
+        if (parseInt(existingCharges[0].c) === 0) {
+          await db.query(`
+            INSERT INTO charges (family, name, amount_kmf, is_recurring, recurrence_period, is_active, notes) VALUES
+            ('logistique', 'Hub Dubai', 40000, true, 'monthly', true, 'Réception & stockage Dubai — défaut 400 KMF/cmd × 100 cmd/mois'),
+            ('logistique', 'Relais Comores', 30000, true, 'monthly', true, 'Points relais Comores — défaut 300 KMF/cmd × 100 cmd/mois'),
+            ('approvisionnement', 'Sourcing Dubai', 100000, true, 'monthly', true, 'Achat & approvisionnement — défaut 1000 KMF/cmd × 100 cmd/mois'),
+            ('support', 'Support client', 20000, true, 'monthly', true, 'SAV & support client — défaut 200 KMF/cmd × 100 cmd/mois'),
+            ('logistique', 'Transit Comores', 500, false, null, true, 'Transport Dubai→Comores — variable par commande')
+          `);
+          console.log('✅ Migration 052: 5 charges seeded with defaults');
+        } else {
+          console.log('✅ Migration 052: charges already seeded, skipping');
+        }
+      } catch(e) { console.warn('Migration 052 (non-fatal):', e.message); }
+
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
       console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message);

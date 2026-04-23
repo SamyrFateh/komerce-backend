@@ -206,7 +206,85 @@ CT.platform = {
       readOnly: []
     },
 
+    /* ══════ CT : Ventes ══════ */
+    {
+      id:    'sales',
+      shell: 'ct',  section: 'pilotage',
+      emoji: '💰',  label:   'Ventes',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: ['period'],
+      readOnly: ['finance']
+    },
+
+    /* ══════ BO : Hub ══════ */
+    {
+      id:    'hub',
+      shell: 'bo',  section: 'operations',
+      emoji: '🏭',  label:   'Hub Dubai',
+      roles: ['founder','admin','hub'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'relais',
+      shell: 'bo',  section: 'operations',
+      emoji: '📦',  label:   'Relais',
+      roles: ['founder','admin','relais'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'transitaire',
+      shell: 'bo',  section: 'operations',
+      emoji: '🚢',  label:   'Transitaire',
+      roles: ['founder','admin','hub'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'inventory',
+      shell: 'bo',  section: 'operations',
+      emoji: '📋',  label:   'Inventaire',
+      roles: ['founder','admin','hub'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+
+    /* ══════ BO : Finance ══════ */
+    {
+      id:    'accounting',
+      shell: 'bo',  section: 'finance_bo',
+      emoji: '📊',  label:   'Comptabilité',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: ['period'],
+      readOnly: []
+    },
+
     /* ══════ BO : Configuration ══════ */
+    {
+      id:    'suppliers',
+      shell: 'bo',  section: 'config',
+      emoji: '🏭',  label:   'Fournisseurs',
+      roles: ['founder','admin','sourcing'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'settings',
+      shell: 'bo',  section: 'config',
+      emoji: '⚙️',  label:   'Paramètres',
+      roles: ['founder','admin'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
     {
       id:    'simulator',
       shell: 'bo',  section: 'config',
@@ -219,7 +297,7 @@ CT.platform = {
   ],
 
   /* Vues prévues mais pas encore implémentées — documentées ici */
-  PLANNED_VIEWS: ['hub','transitaire','relais','inventory','clients','settings'],
+  PLANNED_VIEWS: ['clients'],
 
   /* Legacy views — accessible par URL mais pas dans sidebar */
   LEGACY_VIEWS: ['previsions'],

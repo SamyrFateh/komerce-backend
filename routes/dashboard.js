@@ -1874,5 +1874,81 @@ router.get('/payments', async (req, res, next) => {
   } catch(err) { next(err); }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// GET /api/dashboard/sales — Sales analytics for CT view
+// ═══════════════════════════════════════════════════════════════
+router.get('/sales', async (req, res, next) => {
+  try {
+    const period = parseInt(req.query.period) || 30;
+    const since = new Date();
+    since.setDate(since.getDate() - period);
+    const sinceStr = since.toISOString();
+
+    // KPIs
+    const kpiQ = await db.query(`
+      SELECT 
+        COUNT(*) as nb_commandes,
+        COALESCE(SUM(total_kmf), 0) as ca_kmf,
+        COALESCE(AVG(total_kmf), 0) as panier_moyen,
+        COALESCE(SUM(CASE WHEN payment_mode = 'stripe_eur' THEN total_eur ELSE 0 END), 0) as ca_eur
+      FROM orders 
+      WHERE created_at >= $1 AND status NOT IN ('cancelled', 'expired')
+    `, [sinceStr]);
+
+    // Previous period for evolution
+    const prevSince = new Date(since);
+    prevSince.setDate(prevSince.getDate() - period);
+    const prevKpiQ = await db.query(`
+      SELECT COUNT(*) as nb, COALESCE(SUM(total_kmf),0) as ca
+      FROM orders 
+      WHERE created_at >= $1 AND created_at < $2 AND status NOT IN ('cancelled','expired')
+    `, [prevSince.toISOString(), sinceStr]);
+
+    // By island
+    const byIsland = await db.query(`
+      SELECT relais_island as island, COUNT(*) as nb, COALESCE(SUM(total_kmf),0) as ca
+      FROM orders WHERE created_at >= $1 AND status NOT IN ('cancelled','expired')
+      GROUP BY relais_island ORDER BY ca DESC
+    `, [sinceStr]);
+
+    // By payment mode
+    const byPayment = await db.query(`
+      SELECT payment_mode, COUNT(*) as nb, COALESCE(SUM(total_kmf),0) as ca
+      FROM orders WHERE created_at >= $1 AND status NOT IN ('cancelled','expired')
+      GROUP BY payment_mode ORDER BY ca DESC
+    `, [sinceStr]);
+
+    // Top products
+    const topProducts = await db.query(`
+      SELECT p.name, p.category, COUNT(*) as nb_sold, COALESCE(SUM(oi.price_kmf * oi.quantity),0) as revenue
+      FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      JOIN orders o ON o.id = oi.order_id
+      WHERE o.created_at >= $1 AND o.status NOT IN ('cancelled','expired')
+      GROUP BY p.name, p.category
+      ORDER BY revenue DESC LIMIT 10
+    `, [sinceStr]);
+
+    const k = kpiQ.rows[0];
+    const pk = prevKpiQ.rows[0];
+    const evoCa = pk.ca > 0 ? (((k.ca_kmf - pk.ca) / pk.ca) * 100).toFixed(1) : '—';
+    const evoCmd = pk.nb > 0 ? (((k.nb_commandes - pk.nb) / pk.nb) * 100).toFixed(1) : '—';
+
+    res.json({
+      period,
+      kpi: {
+        ca_kmf: Number(k.ca_kmf),
+        ca_eur: Number(k.ca_eur),
+        nb_commandes: Number(k.nb_commandes),
+        panier_moyen: Math.round(Number(k.panier_moyen)),
+        evolution: { ca_pct: evoCa + '%', commandes_pct: evoCmd + '%' }
+      },
+      by_island: byIsland.rows,
+      by_payment: byPayment.rows,
+      top_products: topProducts.rows
+    });
+  } catch(err) { next(err); }
+});
+
 module.exports = router;
 
