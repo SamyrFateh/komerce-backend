@@ -716,7 +716,7 @@
    *   - Résultat : jamais de cartes orphelines dans la grille 3-cols
    */
   function _balancedPick(list, pageSize) {
-    const MIN_PER_SECTION = 6; // pair → pas de carte orpheline en 2-cols
+    const MIN_PER_SECTION = 4; // min produits par section (pair pour grille 2-cols)
 
     // Grouper par cat dans l'ordre d'apparition
     const byCat = new Map();
@@ -728,7 +728,7 @@
     }
 
     const rich = [];   // catégories qui ont >= MIN
-    const thin = [];   // produits des catégories maigres à regrouper en "Autres"
+    const thin = [];   // produits des catégories maigres → regrouper en "Autres"
 
     for (const cat of order) {
       const prods = byCat.get(cat);
@@ -738,27 +738,22 @@
         thin.push(...prods);
       }
     }
-
-    // Regrouper les maigres en "Autres"
-    if (thin.length > 0) {
-      const existingAutres = rich.find(s => s.cat === 'Autres');
-      if (existingAutres) {
-        existingAutres.prods.push(...thin);
-      } else if (thin.length >= MIN_PER_SECTION) {
-        rich.push({ cat: 'Autres', prods: thin });
-      }
+    if (thin.length >= MIN_PER_SECTION) {
+      rich.push({ cat: 'Autres', prods: thin });
     }
 
-    // Aplatir avec comptes PAIRS par section (2-cols mobile, jamais de carte seule)
+    // ── Distribution équitable : chaque catégorie reçoit sa part ──
+    const nCats = rich.length || 1;
+    const basePerCat = Math.floor(pageSize / nCats);
+    // Arrondir au pair inférieur (grille 2-cols, pas de carte orpheline)
+    const perCat = basePerCat >= 2 ? (basePerCat % 2 === 0 ? basePerCat : basePerCat - 1) : 2;
+
     const flat = [];
     for (const section of rich) {
-      // Prendre un nombre pair de produits pour cette section
-      const maxFromSection = Math.min(section.prods.length, pageSize - flat.length);
-      const count = maxFromSection >= 2 ? (maxFromSection % 2 === 0 ? maxFromSection : maxFromSection - 1) : 0;
-      for (let i = 0; i < count; i++) {
-        flat.push(section.prods[i]);
-      }
-      if (flat.length >= pageSize) break;
+      const take = Math.min(perCat, section.prods.length);
+      // Aussi arrondir au pair
+      const count = take >= 2 ? (take % 2 === 0 ? take : take - 1) : 0;
+      for (let i = 0; i < count; i++) flat.push(section.prods[i]);
     }
     return flat;
   }
