@@ -3192,7 +3192,7 @@ body.cart-open{overflow:hidden}
   /* ── G. PROMOS — horizontal scroll, landscape cards ─── */
   #k-promos-section {
     padding: 2px 0 0;
-    margin: 0;
+    margin: 0 0 0 0 !important;
     overflow: visible;
   }
   #k-promos-section .k-section-head {
@@ -3293,12 +3293,16 @@ body.cart-open{overflow:hidden}
 
   /* ── H. CATALOGUE GRID — 2 columns premium (desktop harmony) ── */
   #k-catalog-section {
-    padding: 2px 0 0;
+    padding: 0;
     margin: 0;
     overflow: visible;
   }
   #k-catalog-section .k-section-head {
-    padding: 0 8px 3px;
+    padding: 0 8px 0;
+    margin: 0 !important;
+  }
+  .k-section-head {
+    margin-bottom: 2px !important;
   }
   .k-grid {
     display: grid;
@@ -3669,7 +3673,7 @@ body.cart-open{overflow:hidden}
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 8px 10px 3px;
+    padding: 4px 10px 2px;
     font-size: 13px;
     font-weight: 700;
     color: var(--text);
