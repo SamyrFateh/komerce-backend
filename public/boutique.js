@@ -700,6 +700,7 @@
         </div>
         <div class="k-card-info">
           <div class="k-card-name">${p.name}</div>
+          ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
           <div class="k-card-bottom k-card-prices-row">
             <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
             ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
