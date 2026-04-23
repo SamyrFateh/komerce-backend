@@ -521,11 +521,47 @@ CT.platform = {
 
   SEVERITIES: ['info','warning','critical','urgent'],
 
-  /* ─── VISUAL CONVENTION O/C/P/R (Phase 5 — schema) ──────────── */
+  /* ═══════════════════════════════════════════════════════════════
+     VISUAL CONVENTION O/C/P/R (Phase 5)
+     ═══════════════════════════════════════════════════════════════
+     Usage:
+       CT.platform.nature('12 500 KMF', 'calculated')
+       → '<span data-nature="calculated">12 500 KMF</span>'
+
+       CT.platform.natureKPI('30%', 'Marge cible', 'projected')
+       → KPI div tagged with data-nature
+
+       CT.platform.natureTip('calculated')
+       → 'Agrégation calculée'
+     ══════════════════════════════════════════════════════════════ */
   DATA_NATURES: {
     observed:    { badge: null,   css: 'kn-observed',    label: null,         tip: 'Donnée réelle terrain',     color: 'inherit'  },
     calculated:  { badge: 'calc', css: 'kn-calculated',  label: 'Calculé',    tip: 'Agrégation calculée',       color: '#3b82f6'  },
     projected:   { badge: 'proj', css: 'kn-projected',   label: 'Projeté',    tip: 'Projection / scénario',     color: '#f59e0b'  },
     recommended: { badge: 'reco', css: 'kn-recommended', label: 'Recommandé', tip: 'Suggestion du moteur',      color: '#10b981'  }
+  },
+
+  /* Tag a value with a data nature */
+  nature: function(value, nature) {
+    if (!nature || nature === 'observed') return '' + value;
+    return '<span data-nature="' + nature + '" title="' +
+      (CT.platform.DATA_NATURES[nature] ? CT.platform.DATA_NATURES[nature].tip : '') +
+      '">' + value + '</span>';
+  },
+
+  /* Create a KPI block tagged with a nature */
+  natureKPI: function(emoji, value, label, nature, bg) {
+    var attr = nature && nature !== 'observed' ? ' data-nature="' + nature + '"' : '';
+    var tip  = nature && CT.platform.DATA_NATURES[nature] ? ' title="' + CT.platform.DATA_NATURES[nature].tip + '"' : '';
+    return '<div class="ct-kpi" style="background:' + (bg || 'white') + '"' + attr + tip + '>' +
+      '<div class="ct-kpi-icon">' + emoji + '</div>' +
+      '<div><div class="ct-kpi-value">' + value + '</div>' +
+      '<div class="ct-kpi-label">' + label + '</div></div></div>';
+  },
+
+  /* Get tooltip text for a nature */
+  natureTip: function(nature) {
+    var n = CT.platform.DATA_NATURES[nature];
+    return n ? n.tip : '';
   }
 };

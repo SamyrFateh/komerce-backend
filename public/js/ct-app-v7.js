@@ -253,6 +253,40 @@ CT.app = {
     }
 
     nav.innerHTML = html;
+
+    /* ── Inject signal badges (async, non-blocking) ── */
+    if (shell === 'bo') {
+      CT.app._injectSignalBadges();
+    }
+  },
+
+  /* Fetch signal counts per target_view and inject badges into sidebar */
+  _injectSignalBadges: function() {
+    if (!CT.api || !CT.api.signalsList) return;
+    CT.api.signalsList({ limit: 200 }).then(function(data) {
+      var signals = data.signals || [];
+      /* Count by target_view, only open+critical/urgent */
+      var counts = {};
+      signals.forEach(function(s) {
+        if (!s.target_view) return;
+        if (!counts[s.target_view]) counts[s.target_view] = { total: 0, urgent: 0 };
+        counts[s.target_view].total++;
+        if (s.severity === 'urgent' || s.severity === 'critical') counts[s.target_view].urgent++;
+      });
+      /* Inject into sidebar nav items */
+      Object.keys(counts).forEach(function(viewId) {
+        var btn = document.querySelector('#ct-sidebar-nav [data-view="' + viewId + '"]');
+        if (!btn) return;
+        var c = counts[viewId];
+        var color = c.urgent > 0 ? '#ef4444' : '#f59e0b';
+        var badge = document.createElement('span');
+        badge.className = 'ct-signal-badge';
+        badge.style.cssText = 'margin-left:auto;background:' + color + ';color:white;font-size:11px;' +
+          'font-weight:700;padding:1px 7px;border-radius:10px;min-width:20px;text-align:center';
+        badge.textContent = c.total;
+        btn.appendChild(badge);
+      });
+    }).catch(function() { /* silent */ });
   },
 
   /* ══════════════════════════════════════════════════════════════
