@@ -3863,21 +3863,51 @@ body.cart-open{overflow:hidden}
       height: 30px;
     }
     .k-search input {
-      font-size: 14px;
+      font-size: 16px;  /* iOS : évite auto-zoom sur focus */
       height: 30px;
       padding: 0 10px 0 32px;
     }
     .k-search-icon { left: 10px; width: 14px; height: 14px; }
-    .k-cart-btn { width: 44px; height: 44px; }
+    .k-cart-btn { width: 44px; height: 44px; overflow: visible; }
     .k-cart-avatar { width: 38px !important; height: 38px !important; }
     .k-cart-badge {
-      top: -4px;
-      right: -4px;
-      min-width: 18px;
-      height: 18px;
+      top: -6px;
+      right: -6px;
+      min-width: 20px;
+      height: 20px;
       font-size: 11px;
       padding: 0 5px;
+      border: 2px solid #fff;
     }
+  }
+
+  /* ── N. PHONE INPUT COMPACT (panier/checkout) ──────────── */
+  .k-ck-phone-select {
+    flex: 0 0 90px;
+    font-size: 0.8rem;
+    padding: 0 4px;
+  }
+  .k-ck-phone-input {
+    min-width: 0;
+    font-size: 0.85rem;
+  }
+  .k-ck-phone-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── O. MODAL DESCRIPTION visible (pas écrasée) ──────────── */
+  .k-modal-desc {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+    max-height: 3.5em;  /* ~2.5 lignes */
+    overflow: hidden;
+  }
+  .k-modal-info {
+    padding-bottom: 4px;
   }
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
@@ -6351,112 +6381,10 @@ button,
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*                                                                         */
 /*        🏠 HOME PAGE OPTIMISATION v2 — densité + clarté + identité       */
+/*        ⚠️ Sections 1-3 (header/hero/chips) SUPPRIMÉES — consolidées     */
+/*        dans le bloc mobile principal @media (max-width: 899px)          */
 /*                                                                         */
 /* ═══════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────────────────────── */
-/*  1. HEADER COMPACT MOBILE (< 600px)                                 */
-/*     - Logo sans texte "Komerce" (gagne 50px)                        */
-/*     - Barre de recherche élargie                                    */
-/*     - Badge dame repositionné proprement                            */
-/* ─────────────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .k-header-inner {
-    gap: 8px !important;
-    padding: 0 12px;
-  }
-  /* Cacher le texte "Komerce" sur mobile, garder juste l'icône */
-  .k-logo-text {
-    display: none !important;
-  }
-  .k-logo-icon {
-    width: 32px !important;
-    height: 32px !important;
-  }
-  /* Barre recherche qui prend toute la place dispo */
-  .k-search {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    max-width: none !important;  /* Annule le max-width:200px de la règle 899px */
-    height: 38px !important;
-  }
-  .k-search-icon {
-    left: 12px !important;
-  }
-  .k-search input {
-    padding: 0 12px 0 36px !important;
-  }
-  .k-search input {
-    font-size: 16px !important;  /* iOS : évite zoom */
-    height: 38px !important;
-  }
-  .k-search input::placeholder {
-    /* Placeholder plus court sur mobile pour éviter troncature */
-    font-size: 14px;
-  }
-  /* Badge dame : position ajustée pour ne pas déborder */
-  .k-cart-btn {
-    flex: 0 0 auto !important;
-    margin-right: 0 !important;
-  }
-  .k-cart-badge {
-    /* Badge À L'INTÉRIEUR du bouton pour ne pas déborder sur Samsung/iPhone */
-    top: 0 !important;
-    right: 0 !important;
-    min-width: 18px !important;
-    height: 18px !important;
-    font-size: 10px !important;
-    padding: 0 4px !important;
-    border: 1.5px solid #fff !important;
-  }
-  /* Respiration à droite pour que la dame ne touche pas le bord écran */
-  .k-header-inner {
-    padding-right: 14px !important;
-  }
-}
-
-/* Placeholder raccourci sur très petit écran */
-@media (max-width: 400px) {
-  .k-search input::placeholder {
-    content: 'Rechercher...';
-  }
-  /* Technique : on met le placeholder directement dans l'input via JS
-     Ou on force via ::placeholder mais CSS seul ne peut pas changer le text */
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-/*  2. HERO BANNER COMPACT (mobile)                                    */
-/*     - Hauteur 200px → 140px                                         */
-/*     - Garde les 2 dames (identité !)                                */
-/*     - Slogan toujours visible mais mieux intégré                    */
-/* ─────────────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .k-hero,
-  .k-hero-img,
-  .k-hero-wrap {
-    max-height: 150px !important;
-    height: auto !important;
-  }
-  .k-hero img {
-    object-fit: cover !important;
-    object-position: center !important;
-    max-height: 150px !important;
-  }
-  /* Slogan plus compact */
-  .k-hero-title,
-  .k-hero-text h1 {
-    font-size: 18px !important;
-    line-height: 1.2 !important;
-    padding: 0 12px !important;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-/*  3. CHIPS CATÉGORIES PLUS PETITES (mobile)                          */
-/*     - Photo : 48px → 40px                                           */
-/*     - Hauteur totale : 100px → 72px                                 */
-/*     - Cats/chips consolidé dans mobile block @899px — plus de patch ici */
-/* ─────────────────────────────────────────────────────────────────── */
 
 /* ─────────────────────────────────────────────────────────────────── */
 /*  4. RAIL HORIZONTAL CLAIR + INDICATEUR SCROLL                       */
