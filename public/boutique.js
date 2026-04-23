@@ -458,16 +458,7 @@
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
-            <div class="k-card-tabs">
-              <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-              <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-              <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-            </div>
-            <div class="k-card-panels">
-              <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-              <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-              <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-            </div>
+
           </div>
         </div>`;
     }).join('');
@@ -658,16 +649,7 @@
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             </div>
-            <div class="k-card-tabs">
-              <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-              <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-              <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-            </div>
-            <div class="k-card-panels">
-              <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-              <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-              <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-            </div>
+
           </div>
         </div>`;
     }).join('');
@@ -721,16 +703,6 @@
           <div class="k-card-bottom k-card-prices-row">
             <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
             ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
-          </div>
-          <div class="k-card-tabs">
-            <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-            <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-            <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-          </div>
-          <div class="k-card-panels">
-            <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-            <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-            <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
           </div>
         </div>
       </div>`;
@@ -913,17 +885,23 @@
 
   // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
   window.scrollToCategorySection = function(cat) {
+    const container = document.getElementById('k-page-scroll');
     if (!cat || cat === 'all') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
     const el = document.getElementById(anchorId);
-    if (el) {
-      // Décaler du header sticky pour que l'en-tête soit visible, pas caché dessous
-      const headerH = (document.querySelector('.k-header')?.offsetHeight || 60) + 10;
-      const y = el.getBoundingClientRect().top + window.scrollY - headerH;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+    if (!el) return;
+    // #k-page-scroll est un container fixed séparé — calcul direct
+    if (container) {
+      const containerTop = container.getBoundingClientRect().top;
+      const elTop = el.getBoundingClientRect().top;
+      const scrollTarget = container.scrollTop + (elTop - containerTop) - 8;
+      container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -1752,18 +1730,26 @@ function quickRemove(productId, btnEl) {
     sugSection.classList.remove('u-hidden');
     console.log('[KMRC SUG] rendering', sameCat.length + otherCat.length, 'products');
 
-    // Template carte suggestion (factoring)
-    const cardHTML = (p) => `
+    // Template carte suggestion — stepper −/qty/+ en bas
+    const cardHTML = (p) => {
+      const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+      const qty = inCart ? inCart.qty : 0;
+      return `
       <div class="k-sug-card" data-id="${p.id}">
         <div class="k-sug-card-img">
           <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
           ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
-          <button class="k-sug-add" data-add="${p.id}" aria-label="Ajouter">+</button>
         </div>
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
         <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
-      </div>
-    `;
+        <div class="k-sug-card-actions">
+          ${qty > 0
+            ? `<button class="k-sug-step k-sug-minus" data-pid="${p.id}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${p.id}">+</button>`
+            : `<button class="k-sug-add" data-add="${p.id}">+ Ajouter</button>`
+          }
+        </div>
+      </div>`;
+    };
 
     // Construire 2 sections distinctes avec titres contextuels
     let html = '';
@@ -1800,22 +1786,54 @@ function quickRemove(productId, btnEl) {
     // Clic sur toute la carte → ouvrir le produit
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-sug-add')) return;
+        if (e.target.closest('.k-sug-add') || e.target.closest('.k-sug-step')) return;
         openModal(card.dataset.id);
       });
     });
 
+    // Bouton "Ajouter" (pas encore dans le panier)
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const product = state.products.find(p => p.id === btn.dataset.add);
         if (!product) return;
         addToCart(product, 1, btn);
+        // Re-render les suggestions pour afficher le stepper
+        if (state.modalProduct) {
+          const mp = state.modalProduct;
+          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 10);
+          const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
+          renderSuggestions(sameCat, otherCat, mp.category);
+        }
       });
     });
 
-    // Note : les flèches ◀▶ sont désactivées car on a maintenant 2 sections distinctes.
-    // Le scroll horizontal reste disponible sur chaque .k-sug-rail (CSS).
+    // Stepper −/+ (déjà dans le panier)
+    dom.sugRail.querySelectorAll('.k-sug-minus').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        quickRemove(btn.dataset.pid, btn);
+        // Re-render
+        if (state.modalProduct) {
+          const mp = state.modalProduct;
+          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 10);
+          const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
+          renderSuggestions(sameCat, otherCat, mp.category);
+        }
+      });
+    });
+    dom.sugRail.querySelectorAll('.k-sug-plus').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        quickAdd(btn.dataset.pid, btn);
+        if (state.modalProduct) {
+          const mp = state.modalProduct;
+          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 10);
+          const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
+          renderSuggestions(sameCat, otherCat, mp.category);
+        }
+      });
+    });
   }
 
   function setupModal() {
@@ -3163,16 +3181,7 @@ async function submitOrder(btn) {
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? `<span class="k-card-old-price">${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>` : ''}
             </div>
-            <div class="k-card-tabs">
-              <button class="k-card-tab active" data-tab="details" type="button">Détails</button>
-              <button class="k-card-tab" data-tab="colors" type="button">Couleurs</button>
-              <button class="k-card-tab" data-tab="delivery" type="button">Livraison</button>
-            </div>
-            <div class="k-card-panels">
-              <div class="k-card-panel active" data-panel="details">${sanitize(p.description || 'Voir le produit en détail')}</div>
-              <div class="k-card-panel" data-panel="colors">Plusieurs options disponibles</div>
-              <div class="k-card-panel" data-panel="delivery">Retrait relais disponible</div>
-            </div>
+
           </div>
         </div>`;
       }).join('');
@@ -4073,7 +4082,9 @@ document.addEventListener('click', function(e) {
     document.body.appendChild(nav);
 
     // Observer : highlight le chip actif selon la section visible à l'écran
+    // IMPORTANT: root = #k-page-scroll (container fixe, pas le viewport)
     if (_sectionObserver) _sectionObserver.disconnect();
+    const scrollRoot = document.getElementById('k-page-scroll') || null;
     _sectionObserver = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
@@ -4091,7 +4102,8 @@ document.addEventListener('click', function(e) {
         }
       });
     }, {
-      rootMargin: '-20% 0% -60% 0%',  // zone centrale-haute de l'écran
+      root: scrollRoot,
+      rootMargin: '-15% 0% -65% 0%',
       threshold: 0,
     });
     headers.forEach(function(h) { _sectionObserver.observe(h); });
