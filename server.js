@@ -56,79 +56,22 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-// ══════════════════════════════════════════════════════════════════════════════
-// WEBHOOK AUTHKEY — réception des statuts de delivery WhatsApp
-// ──────────────────────────────────────────────────────────────────────────────
-// AuthKey ping ce endpoint à chaque changement de statut d'un message :
-//   sent → delivered → read   (ou failed à n'importe quelle étape)
-//
-// URL configurée dans AuthKey : /webhook/authkey-whatsapp (GET)
-// Params query : Mobile, Email, Status, Log ID, Time
-//
-// Stratégie : répondre 200 IMMÉDIATEMENT (sinon AuthKey retry), 
-//             puis stocker en DB en arrière-plan (fire-and-forget).
-// ══════════════════════════════════════════════════════════════════════════════
 app.get('/webhook/authkey-whatsapp', async (req, res) => {
-  // 1. Réponse rapide à AuthKey (évite les retries)
-  res.status(200).send('OK');
-
   try {
-    const params = req.query || {};
-    const mobile = params.Mobile || params.mobile || null;
-    const email  = params.Email || params.email || null;
-    const status = params.Status || params.status || null;  // 'sent', 'delivered', 'read', 'failed'
-    const logId  = params['Log ID'] || params.LogID || params.log_id || params.logid || null;
-    const time   = params.Time || params.time || null;
-    const wid    = params.WID || params.wid || null;
+    console.log('[AUTHKEY-WA][WEBHOOK]', req.query);
 
-    console.log('[AUTHKEY-WA][WEBHOOK]', { mobile, status, logId, time, wid });
+    const mobile = req.query.Mobile || null;
+    const email = req.query.Email || null;
+    const status = req.query.Status || null;
+    const logId = req.query['Log ID'] || req.query.LogID || req.query.log_id || null;
+    const time = req.query.Time || null;
 
-    // 2. Persistance en arrière-plan (fire-and-forget)
-    if (status || logId) {
-      handleAuthkeyWebhook({ mobile, email, status, logId, time, wid })
-        .catch(err => console.error('[AUTHKEY-WA][WEBHOOK][BG]', err.message));
-    }
+    return res.status(200).send('OK');
   } catch (e) {
     console.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
-    // Déjà répondu 200, on ne fait rien de plus
+    return res.status(500).send('ERROR');
   }
 });
-
-// Handler DB séparé pour que le webhook réponde toujours vite
-async function handleAuthkeyWebhook({ mobile, email, status, logId, time, wid }) {
-  // 1. Log brut du webhook (trace complète pour debug)
-  try {
-    await db.query(
-      `INSERT INTO notification_log
-         (order_ref, parcel_ref, channel, event, recipient, status, detail, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-      [
-        null,
-        null,
-        'whatsapp_delivery',
-        'delivery_status_' + (status || 'unknown').toLowerCase(),
-        mobile,
-        status || 'unknown',
-        JSON.stringify({ logId, time, wid, email }),
-      ]
-    );
-  } catch (err) {
-    if (err.code !== '42P01') {
-      console.warn('[AUTHKEY-WA][WEBHOOK][LOG]', err.message);
-    }
-    // Si la table n'existe pas encore, on skip silencieusement
-  }
-
-  // 2. Si FAILED, on log un warning plus visible pour le monitoring
-  if (status && /^fail/i.test(status)) {
-    console.warn(`[AUTHKEY-WA][FAILED] mobile=${mobile} logId=${logId} time=${time}`);
-  }
-
-  // 3. Si DELIVERED ou READ, pas d'action — juste la trace
-  //    (on pourrait ici update notification_log.status de la notif originale
-  //     si on matchait via logId, mais ça demande de stocker logId au moment 
-  //     de l'envoi, ce qu'AuthKey ne renvoie pas toujours)
-}
 
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
@@ -281,7 +224,6 @@ const otpRouter = require('./routes/otp');
 const clientTrackingRouter = require('./routes/client-tracking');
 const simulatorRouter = require('./routes/simulator');
 const cashRouter = require('./routes/cash');
-const pickupSecretRouter = require('./routes/pickup-secret'); // Western Union model
 const inventoryApiRouter = require('./routes/inventory-api');
 const transitaireApiRouter = require('./routes/transitaire-api');
 const autoDistributeRouter = require('./routes/auto-distribute-api');
@@ -289,6 +231,7 @@ const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 const transitDashboardRoutes = require('./routes/transit-dashboard');
 const sharesRouter = require('./routes/shares');
 const metaWhatsAppRoutes = require('./routes/meta-whatsapp');
+const economicEngineRouter = require('./routes/economic-engine');
 
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
@@ -302,6 +245,7 @@ app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
 app.use('/api/admin/radar', adminRadarRouter);
+app.use('/api/admin/economic', economicEngineRouter);
 app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
@@ -320,7 +264,6 @@ app.use('/api/auth/otp', otpRouter);      // WhatsApp OTP auth
 app.use('/api/client/tracking', clientTrackingRouter);
 app.use('/api/simulator', simulatorRouter);
 app.use('/api/cash', cashRouter); // Authenticated client tracking
-app.use('/api/pickup', pickupSecretRouter); // Western Union model : code secret au paiement
 app.use('/api/auth', clientAuthRouter);   // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);
@@ -826,99 +769,62 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 040: phone_payer + phone_beneficiary columns added');
       } catch(e) { console.warn('Migration 040 (non-fatal):', e.message); }
 
-      // ── Migration 042: pickup_secret system (Western Union model) ──
-      // Voir /docs/SECURITY-MODEL.md pour la doctrine complète.
+      // ── Migration 046: economic_variables table ──
       try {
         await db.query(`
-          -- Code secret hashé (jamais en clair en DB)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_hash TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_salt TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_created_at TIMESTAMPTZ;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_expires_at TIMESTAMPTZ;
-
-          -- Rate limiting au retrait (visite 2)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_attempts INT DEFAULT 0;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_blocked_until TIMESTAMPTZ;
-
-          -- Régénération admin (perte de reçu)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_regen_count INT DEFAULT 0;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_regen_reason TEXT;
-
-          -- Traçabilité visite 1 (paiement cash)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_received_at TIMESTAMPTZ;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_received_by_agent_id UUID REFERENCES users(id);
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_name TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_id_type TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_id_number TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS payer_note TEXT;
-
-          -- Traçabilité visite 2 (retrait)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS collected_by_name TEXT;
-
-          -- Index utiles
-          CREATE INDEX IF NOT EXISTS idx_orders_pickup_created ON orders(pickup_secret_created_at);
-          CREATE INDEX IF NOT EXISTS idx_orders_payment_received ON orders(payment_received_at);
+          CREATE TABLE IF NOT EXISTS economic_variables (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            category TEXT NOT NULL,
+            key TEXT NOT NULL UNIQUE,
+            label TEXT NOT NULL,
+            unit TEXT DEFAULT 'KMF',
+            value_supposed NUMERIC,
+            value_observed NUMERIC,
+            value_used NUMERIC,
+            source_used TEXT DEFAULT 'supposed',
+            description TEXT,
+            is_critical BOOLEAN DEFAULT FALSE,
+            is_computed BOOLEAN DEFAULT FALSE,
+            is_active BOOLEAN DEFAULT TRUE,
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
         `);
-        console.log('✅ Migration 042: pickup_secret system (Western Union model)');
-      } catch(e) { console.warn('Migration 042 (non-fatal):', e.message); }
+        console.log('✅ Migration 046: economic_variables table created');
+      } catch(e) { console.warn('Migration 046 (non-fatal):', e.message); }
 
-      // ── Migration 043: tracking multi-numéros (paiement au relais) ──
-      // Permet un second numéro "personne de confiance" qui reçoit aussi les
-      // notifs de tracking. Le numéro principal peut être confirmé/corrigé au
-      // comptoir par l'agent.
+      // ── Migration 047: charges table ──
       try {
         await db.query(`
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_phone_secondary VARCHAR(30);
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_phone_confirmed_at TIMESTAMPTZ;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_phone_confirmed_by_agent_id UUID REFERENCES users(id);
+          CREATE TABLE IF NOT EXISTS charges (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            family TEXT NOT NULL,
+            name TEXT NOT NULL,
+            amount_kmf NUMERIC NOT NULL,
+            is_recurring BOOLEAN DEFAULT FALSE,
+            recurrence_period TEXT,
+            is_active BOOLEAN DEFAULT TRUE,
+            notes TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          );
         `);
-        console.log('✅ Migration 043: tracking multi-numéros (personne de confiance)');
-      } catch(e) { console.warn('Migration 043 (non-fatal):', e.message); }
+        console.log('✅ Migration 047: charges table created');
+      } catch(e) { console.warn('Migration 047 (non-fatal):', e.message); }
 
-      // ── Migration 044: pickup_secret_last4 (saisie 4 chars au guichet) ──
-      // L'agent relais saisit uniquement les 4 derniers caractères du code pour
-      // simplifier l'UX et limiter l'exposition du code complet.
-      // Unicité garantie au niveau du relais parmi les codes actifs.
+      // ── Migration 048: economic_snapshots table ──
       try {
         await db.query(`
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_last4 VARCHAR(4);
-          CREATE INDEX IF NOT EXISTS idx_orders_pickup_last4_relais
-            ON orders(relais_id, pickup_secret_last4)
-            WHERE pickup_secret_last4 IS NOT NULL;
+          CREATE TABLE IF NOT EXISTS economic_snapshots (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            snapshot_data JSONB NOT NULL,
+            model_status TEXT NOT NULL DEFAULT 'stable',
+            trigger_event TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
         `);
-        console.log('✅ Migration 044: pickup_secret_last4 (saisie 4 chars au guichet)');
-      } catch(e) { console.warn('Migration 044 (non-fatal):', e.message); }
-
-      // ── Migration 045: multi-canal émission code (Stripe, MVola, Wallet) ──
-      // Trace le canal de paiement qui a déclenché l'émission du code, et
-      // stocke les métadonnées nécessaires pour la procédure de perte
-      // différenciée selon le canal (nom CB, MSISDN, email, etc.)
-      try {
-        await db.query(`
-          -- Canal de paiement qui a déclenché l'émission du code
-          -- ('cash_relais' | 'stripe' | 'mobile_money' | 'wallet')
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_channel TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_emitted_at TIMESTAMPTZ;
-
-          -- Horodatage de la révélation one-shot du code (Stripe/Wallet/MM)
-          -- Une fois posé, le code ne peut plus être affiché via l'API
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_secret_revealed_at TIMESTAMPTZ;
-
-          -- Métadonnées Stripe (procédure de perte : nom CB + last4)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_billing_name TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_card_last4 VARCHAR(4);
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_receipt_email TEXT;
-
-          -- Métadonnées Mobile Money (procédure de perte : MSISDN + nom)
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS mobile_money_msisdn VARCHAR(30);
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS mobile_money_operator TEXT;
-          ALTER TABLE orders ADD COLUMN IF NOT EXISTS mobile_money_payer_name TEXT;
-
-          -- Index pour la recherche par canal
-          CREATE INDEX IF NOT EXISTS idx_orders_pickup_channel ON orders(pickup_secret_channel);
-        `);
-        console.log('✅ Migration 045: multi-canal émission code (Stripe, MVola, Wallet)');
-      } catch(e) { console.warn('Migration 045 (non-fatal):', e.message); }
+        console.log('✅ Migration 048: economic_snapshots table created');
+      } catch(e) { console.warn('Migration 048 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {

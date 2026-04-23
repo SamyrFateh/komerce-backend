@@ -126,7 +126,8 @@ CT.app = {
       'simulator':      CT.views.simulator,
       'settings':       CT.views.settings,
       'previsions':     CT.views.previsions,
-      'inventory':      CT.views.inventory
+      'inventory':      CT.views.inventory,
+      'economic':       CT.views.economic
     }[view];
 
     if (viewFn) {

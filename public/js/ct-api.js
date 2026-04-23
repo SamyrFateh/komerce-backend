@@ -125,5 +125,18 @@ CT.api = {
 
     // ---- Transit Dashboard ----
   transitParcels: function() { return this.get('/api/transit-dashboard'); },
-  markInTransit: function(ref) { return this.post('/api/transit-dashboard/' + ref + '/transit'); }
+  markInTransit: function(ref) { return this.post('/api/transit-dashboard/' + ref + '/transit'); },
+
+  // ---- Economic Engine ----
+  ecoExecutive: function() { return this.get('/api/admin/economic/executive'); },
+  ecoVariables: function() { return this.get('/api/admin/economic/variables'); },
+  ecoUpdateVar: function(key, body) { return this.put('/api/admin/economic/variables/' + key, body); },
+  ecoCharges: function() { return this.get('/api/admin/economic/charges'); },
+  ecoAddCharge: function(body) { return this.post('/api/admin/economic/charges', body); },
+  ecoUpdateCharge: function(id, body) { return this.put('/api/admin/economic/charges/' + id, body); },
+  ecoToggleCharge: function(id) { return this.put('/api/admin/economic/charges/' + id + '/toggle'); },
+  ecoCoherence: function() { return this.get('/api/admin/economic/coherence'); },
+  ecoHistory: function() { return this.get('/api/admin/economic/history'); },
+  ecoRedistribute: function() { return this.post('/api/admin/economic/redistribute'); }
 };
+
