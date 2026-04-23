@@ -234,6 +234,7 @@ const metaWhatsAppRoutes = require('./routes/meta-whatsapp');
 const economicEngineRouter  = require('./routes/economic-engine');
 const adminFinanceConfig    = require('./routes/admin-finance-config');
 const adminLoyaltyRouter    = require('./routes/admin-loyalty');
+const sourcingEngineRouter  = require('./routes/sourcing-engine');
 
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
@@ -250,6 +251,7 @@ app.use('/api/admin/radar', adminRadarRouter);
 app.use('/api/admin/economic', economicEngineRouter);
 app.use('/api/admin/finance-config', adminFinanceConfig);
 app.use('/api/admin/loyalty', adminLoyaltyRouter);
+app.use('/api/admin/sourcing', sourcingEngineRouter);
 app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
@@ -899,6 +901,29 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 049: finance_config (variabilisée) + loyalty_rewards + big_basket');
       } catch(e) { console.warn('Migration 049 (non-fatal):', e.message); }
+
+      // ── Migration 050: sourcing columns on products ──
+      try {
+        await db.query(`
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS sourcing_rail TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price_kmf INTEGER;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_g INTEGER;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS volume_class TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS fragility TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_mode TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS exposure_mode TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS lifecycle_status TEXT DEFAULT 'candidate';
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_validated BOOLEAN DEFAULT FALSE;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS real_weight_known BOOLEAN DEFAULT FALSE;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS real_price_validated BOOLEAN DEFAULT FALSE;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS delivery_delay_days INTEGER;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_notes TEXT;
+          ALTER TABLE products ADD COLUMN IF NOT EXISTS last_review_at TIMESTAMPTZ;
+          CREATE INDEX IF NOT EXISTS idx_products_sourcing_rail ON products(sourcing_rail) WHERE sourcing_rail IS NOT NULL;
+          CREATE INDEX IF NOT EXISTS idx_products_lifecycle ON products(lifecycle_status) WHERE is_active = TRUE;
+        `);
+        console.log('✅ Migration 050: sourcing columns on products');
+      } catch(e) { console.warn('Migration 050 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {

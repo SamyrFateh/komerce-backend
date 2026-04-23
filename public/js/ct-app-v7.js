@@ -127,7 +127,8 @@ CT.app = {
       'settings':       CT.views.settings,
       'previsions':     CT.views.previsions,
       'inventory':      CT.views.inventory,
-      'economic':       CT.views.economic
+      'economic':       CT.views.economic,
+      'sourcing':       CT.views.sourcing
     }[view];
 
     if (viewFn) {

@@ -143,6 +143,13 @@ CT.api = {
   financeConfig: function() { return this.get('/api/admin/finance-config'); },
   financeConfigUpdate: function(key, body) { return this.put('/api/admin/finance-config/' + key, body); },
 
+  // Sourcing Intelligence
+  sourcingAnalysis: function(params) { var q = params ? '?' + new URLSearchParams(params).toString() : ''; return this.get('/api/admin/sourcing/analysis' + q); },
+  sourcingSynthesis: function() { return this.get('/api/admin/sourcing/synthesis'); },
+  sourcingConfig: function() { return this.get('/api/admin/sourcing/config'); },
+  sourcingUpdateProduct: function(id, body) { return this.put('/api/admin/sourcing/products/' + id, body); },
+  sourcingBulkRail: function(ids, rail) { return this.post('/api/admin/sourcing/bulk-rail', { product_ids: ids, rail: rail }); },
+
   // Loyalty admin
   loyaltyPending: function() { return this.get('/api/admin/loyalty/pending'); },
   loyaltyHistory: function() { return this.get('/api/admin/loyalty/history'); },
