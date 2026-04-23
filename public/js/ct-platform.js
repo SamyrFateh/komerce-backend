@@ -327,28 +327,177 @@ CT.platform = {
     if (dv) CT.app.navigate(dv);
   },
 
-  /* ─── DRILL-DOWN CONTRACT (Phase 2 — stub) ──────────────────── */
-  /*
-    Params: {
-      shell:       'ct' | 'bo',
-      view:        string,
-      tab:         string | null,
-      section:     string | null,
-      filters:     { key: value, ... },
-      highlightId: string | null,
-      origin:      { shell, view } | null,
-      returnTo:    { shell, view, tab } | null
-    }
-  */
+  /* ═══════════════════════════════════════════════════════════════
+     DRILL-DOWN CONTRACT (Phase 2)
+     ═══════════════════════════════════════════════════════════════
+
+     Format:
+       CT.platform.drillDown({
+         shell:       'ct' | 'bo',           // target shell (auto-inferred from view)
+         view:        'orders',              // REQUIRED — target view id
+         tab:         'pending' | null,      // optional tab within view
+         section:     'details' | null,      // optional section within view
+         filters:     { status: 'blocked' }, // optional filters
+         highlightId: 'ORD-1234' | null,     // optional row/card to highlight
+         origin:      { shell, view },       // auto-set: where we came from
+         returnTo:    { shell, view, tab }   // auto-set: where to go back
+       })
+
+     Guarantees:
+       1. Access check before navigation
+       2. Shell auto-switch
+       3. Origin/returnTo auto-populated
+       4. Hash URL serialization for deep-linking
+       5. Filter validation against view's supportedFilters
+       6. Graceful fallback on unknown view / unauthorized
+       7. Return navigation via CT.platform.drillBack()
+     ══════════════════════════════════════════════════════════════ */
+
+  _drillDownStack: [],
+
   drillDown: function(params) {
-    if (!params || !params.view) return;
+    if (!params || !params.view) return false;
+    var role = CT.platform.state.role;
+
+    /* ── 1. Access check ── */
+    if (!CT.platform.canAccess(params.view, role)) {
+      console.warn('[drill-down] Access denied:', params.view, 'for role', role);
+      return false;
+    }
+
+    /* ── 2. Auto-populate origin + returnTo ── */
+    if (!params.origin) {
+      params.origin = {
+        shell: CT.platform.state.shell,
+        view:  CT.app.currentView
+      };
+    }
+    if (!params.returnTo) {
+      params.returnTo = {
+        shell: CT.platform.state.shell,
+        view:  CT.app.currentView,
+        tab:   null
+      };
+    }
+
+    /* ── 3. Filter validation ── */
+    var viewDef = CT.platform.getView(params.view);
+    if (viewDef && params.filters) {
+      var supported = viewDef.supportedFilters || [];
+      var validated = {};
+      Object.keys(params.filters).forEach(function(k) {
+        if (supported.indexOf(k) !== -1) {
+          validated[k] = params.filters[k];
+        } else {
+          console.warn('[drill-down] Filter "' + k + '" not supported by view "' + params.view + '", ignored');
+        }
+      });
+      params.filters = validated;
+    }
+
+    /* ── 4. Push to stack ── */
+    CT.platform._drillDownStack.push(params);
+
+    /* ── 5. Shell switch ── */
     var targetShell = params.shell || CT.platform.shellForView(params.view);
     if (targetShell && targetShell !== CT.platform.state.shell) {
       CT.platform.state.shell = targetShell;
       CT.app.renderShellSwitcher();
       CT.app.renderSidebar();
     }
+
+    /* ── 6. Serialize to hash URL ── */
+    CT.platform._serializeToHash(params);
+
+    /* ── 7. Navigate ── */
     CT.app.navigate(params.view, params);
+    return true;
+  },
+
+  /* Return to origin — pop the drill-down stack */
+  drillBack: function() {
+    var stack = CT.platform._drillDownStack;
+    if (stack.length === 0) return false;
+
+    var last = stack.pop();
+    var ret = last.returnTo || last.origin;
+    if (!ret || !ret.view) return false;
+
+    /* Switch shell back */
+    if (ret.shell && ret.shell !== CT.platform.state.shell) {
+      CT.platform.state.shell = ret.shell;
+      CT.app.renderShellSwitcher();
+      CT.app.renderSidebar();
+    }
+
+    CT.app.navigate(ret.view);
+    return true;
+  },
+
+  /* Has a drill-down context to return from? */
+  hasDrillBack: function() {
+    return CT.platform._drillDownStack.length > 0;
+  },
+
+  /* Get current drill-down params (for the active view to read) */
+  getDrillDownParams: function() {
+    var stack = CT.platform._drillDownStack;
+    return stack.length > 0 ? stack[stack.length - 1] : null;
+  },
+
+  /* ── Hash URL serialization ── */
+  _serializeToHash: function(params) {
+    var parts = [params.view];
+    if (params.tab) parts.push('tab=' + params.tab);
+    if (params.section) parts.push('sec=' + params.section);
+    if (params.highlightId) parts.push('hl=' + params.highlightId);
+    if (params.filters) {
+      Object.keys(params.filters).forEach(function(k) {
+        parts.push('f.' + k + '=' + encodeURIComponent(params.filters[k]));
+      });
+    }
+    var hash = parts.join('&');
+    if (history && history.replaceState) {
+      history.replaceState(null, '', '#' + hash);
+    }
+  },
+
+  /* Parse hash URL back to drill-down params */
+  parseHash: function(hash) {
+    if (!hash) hash = (location.hash || '').replace('#', '');
+    if (!hash) return null;
+
+    var parts = hash.split('&');
+    var viewId = parts[0];
+    if (!viewId) return null;
+
+    var params = { view: viewId, filters: {} };
+    for (var i = 1; i < parts.length; i++) {
+      var kv = parts[i].split('=');
+      if (kv.length < 2) continue;
+      var key = kv[0];
+      var val = decodeURIComponent(kv.slice(1).join('='));
+      if (key === 'tab')      params.tab = val;
+      else if (key === 'sec') params.section = val;
+      else if (key === 'hl')  params.highlightId = val;
+      else if (key.indexOf('f.') === 0) params.filters[key.substring(2)] = val;
+    }
+    if (Object.keys(params.filters).length === 0) delete params.filters;
+    return params;
+  },
+
+  /* ── Render drill-back button (reusable helper) ── */
+  renderDrillBackButton: function() {
+    if (!CT.platform.hasDrillBack()) return '';
+    var last = CT.platform._drillDownStack[CT.platform._drillDownStack.length - 1];
+    var origin = last.origin || {};
+    var originView = CT.platform.getView(origin.view);
+    var label = originView ? originView.label : 'Retour';
+    var emoji = originView ? originView.emoji : '←';
+    return '<button class="ct-btn ct-btn-ghost ct-drill-back" data-action="drill-back" ' +
+           'style="margin-bottom:16px">' +
+           '← ' + emoji + ' ' + label +
+           '</button>';
   },
 
   /* ─── SIGNAL TYPES (Phase 3 — schema) ───────────────────────── */

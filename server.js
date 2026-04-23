@@ -235,6 +235,7 @@ const economicEngineRouter  = require('./routes/economic-engine');
 const adminFinanceConfig    = require('./routes/admin-finance-config');
 const adminLoyaltyRouter    = require('./routes/admin-loyalty');
 const sourcingEngineRouter  = require('./routes/sourcing-engine');
+const signalsRouter         = require('./routes/signals');
 
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
@@ -252,6 +253,7 @@ app.use('/api/admin/economic', economicEngineRouter);
 app.use('/api/admin/finance-config', adminFinanceConfig);
 app.use('/api/admin/loyalty', adminLoyaltyRouter);
 app.use('/api/admin/sourcing', sourcingEngineRouter);
+app.use('/api/admin/signals', signalsRouter);
 app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
@@ -924,6 +926,49 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 050: sourcing columns on products');
       } catch(e) { console.warn('Migration 050 (non-fatal):', e.message); }
+
+      // ── Migration 051: signals table (CT/BO platform) ──
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS signals (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            signal_type TEXT NOT NULL,
+            severity TEXT NOT NULL DEFAULT 'info'
+              CHECK (severity IN ('info','warning','critical','urgent')),
+            title TEXT NOT NULL,
+            summary TEXT,
+            source_module TEXT NOT NULL DEFAULT 'signal-service',
+            target_shell TEXT DEFAULT 'bo',
+            target_view TEXT,
+            target_filters JSONB DEFAULT '{}',
+            owner_role TEXT NOT NULL DEFAULT 'admin',
+            status TEXT NOT NULL DEFAULT 'open'
+              CHECK (status IN ('open','acknowledged','snoozed','resolved','expired')),
+            entity_type TEXT,
+            entity_id TEXT,
+            recommendation TEXT,
+            confidence TEXT DEFAULT 'high'
+              CHECK (confidence IN ('low','medium','high')),
+            meta JSONB DEFAULT '{}',
+            snoozed_until TIMESTAMPTZ,
+            escalated_at TIMESTAMPTZ,
+            resolved_at TIMESTAMPTZ,
+            resolved_by UUID,
+            expires_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status) WHERE status IN ('open','acknowledged');
+          CREATE INDEX IF NOT EXISTS idx_signals_type ON signals(signal_type);
+          CREATE INDEX IF NOT EXISTS idx_signals_severity ON signals(severity);
+          CREATE INDEX IF NOT EXISTS idx_signals_owner ON signals(owner_role);
+          CREATE INDEX IF NOT EXISTS idx_signals_entity ON signals(entity_type, entity_id);
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_signals_dedup
+            ON signals(signal_type, entity_type, entity_id) WHERE status = 'open';
+        `);
+        console.log('✅ Migration 051: signals table created');
+      } catch(e) { console.warn('Migration 051 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {

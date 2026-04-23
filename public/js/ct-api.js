@@ -154,6 +154,14 @@ CT.api = {
   loyaltyPending: function() { return this.get('/api/admin/loyalty/pending'); },
   loyaltyHistory: function() { return this.get('/api/admin/loyalty/history'); },
   loyaltyGrant: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/grant'); },
-  loyaltySkip: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/skip'); }
+  loyaltySkip: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/skip'); },
+
+  // ---- Signals (CT/BO platform) ----
+  signalsList: function(params) { var q = params ? '?' + new URLSearchParams(params).toString() : ''; return this.get('/api/admin/signals' + q); },
+  signalsStats: function() { return this.get('/api/admin/signals/stats'); },
+  signalsGenerate: function(types) { return this.post('/api/admin/signals/generate', types ? { types: types } : {}); },
+  signalAcknowledge: function(id) { return this.post('/api/admin/signals/' + id + '/acknowledge'); },
+  signalSnooze: function(id, hours) { return this.post('/api/admin/signals/' + id + '/snooze', { hours: hours || 24 }); },
+  signalResolve: function(id) { return this.post('/api/admin/signals/' + id + '/resolve'); }
 };
 

@@ -29,6 +29,15 @@ CT.app = {
     /* Bind delegated listeners (once) */
     CT.app._bindEvents();
 
+    /* Listen for drill-back clicks on main content (delegated) */
+    var mainEl = document.getElementById('ct-main');
+    if (mainEl) {
+      mainEl.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="drill-back"]');
+        if (btn) { CT.platform.drillBack(); }
+      });
+    }
+
     /* Check existing session */
     if (localStorage.getItem('kmrc_logged_in')) {
       CT.api.me().then(function(user) {
@@ -129,9 +138,14 @@ CT.app = {
     CT.app.renderShellSwitcher();
     CT.app.renderSidebar();
 
-    /* ── Navigate ── */
-    var initial = hashView || CT.platform.getDefaultView(CT.platform.state.shell, role) || 'dashboard';
-    CT.app.navigate(initial);
+    /* ── Navigate (support deep-link with drill-down params) ── */
+    var hashParams = CT.platform.parseHash();
+    if (hashParams && hashParams.view) {
+      CT.app.navigate(hashParams.view, hashParams);
+    } else {
+      var initial = hashView || CT.platform.getDefaultView(CT.platform.state.shell, role) || 'dashboard';
+      CT.app.navigate(initial);
+    }
   },
 
   showLogin: function() {
