@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Moteur de Pricing v6.6
+ * KOMERCE — Moteur de Pricing v6.7
  * Formule officielle spec v6.4 — 16 étapes
  * Triple devise : AED (Dubai) · KMF (Comores) · EUR (France)
  *
@@ -11,10 +11,14 @@
  *        (pricing_category_taxes, pricing_category_dims). Cache 60s,
  *        fallback sur les valeurs hardcodées en cas d'erreur DB.
  *        UI d'édition dans Control Tower > Paramètres.
+ *
+ * v6.7 : Migration vers eco-bridge — tous les paramètres pricing sont lus
+ *        depuis economic_variables (table SOV unique). Remplace getRuleNumber()
+ *        par getEcoVar() pour une source de vérité unifiée.
  */
 
 const db = require('../db');
-const { getRuleNumber } = require('./rules');
+const { getEcoVar, invalidateEcoCache } = require('./eco-bridge');
 
 const DEFAULT_RATES = { eur_kmf: 492, aed_kmf: 138, fret_eur_m3: 180 };
 
@@ -118,12 +122,12 @@ function invalidatePricingMatricesCache() {
   _taxesCacheAt = 0;
 }
 
-// ── getDefaultRates : taux FX fallback depuis business_rules ────────────────
+// ── getDefaultRates : taux FX depuis economic_variables (via eco-bridge) ────
 async function getDefaultRates() {
   return {
-    eur_kmf: await getRuleNumber('EUR_KMF_FALLBACK', 492),
-    aed_kmf: await getRuleNumber('AED_KMF_FALLBACK', 138),
-    fret_eur_m3: 180, // rarement changé, reste hardcodé
+    eur_kmf: await getEcoVar('eur_kmf', 492),
+    aed_kmf: await getEcoVar('aed_kmf', 138),
+    fret_eur_m3: await getEcoVar('fret_eur_m3', 180),
   };
 }
 
@@ -136,17 +140,17 @@ async function calcPrix(prixAchatAed, category, options = {}) {
   const catDims  = options.dims  || DIMS_NOW[category]  || DIMS_NOW.electronique;
   const taxes    = options.taxes || TAXES_NOW[category] || TAXES_NOW.electronique;
 
-  // Paramètres pricing depuis business_rules (v6.5)
-  const commissionAgentPct   = await getRuleNumber('COMMISSION_AGENT_PCT', 5) / 100;
-  const transportDxbKmf      = await getRuleNumber('TRANSPORT_DXB_KMF', 500);
-  const transitairePct       = await getRuleNumber('TRANSITAIRE_PCT', 2) / 100;
-  const transitaireFixedKmf  = await getRuleNumber('TRANSITAIRE_FIXED_KMF', 450);
-  const portuairesKmf        = await getRuleNumber('PORTUAIRES_KMF', 1200);
-  const transportRelaisKmf   = await getRuleNumber('TRANSPORT_RELAIS_KMF', 840);
-  const commRelaisStd        = await getRuleNumber('COMMISSION_RELAIS_STANDARD_KMF', 500);
-  const commRelaisShowroom   = await getRuleNumber('COMMISSION_RELAIS_SHOWROOM_KMF', 750);
-  const fraisStripePct       = await getRuleNumber('FRAIS_STRIPE_PCT', 2.5) / 100;
-  const margePct             = await getRuleNumber('MARGE_PCT', 12) / 100;
+  // Paramètres pricing depuis economic_variables (via eco-bridge v6.7)
+  const commissionAgentPct   = await getEcoVar('commission_agent_pct', 5) / 100;
+  const transportDxbKmf      = await getEcoVar('transport_dxb_kmf', 500);
+  const transitairePct       = await getEcoVar('transitaire_pct', 2) / 100;
+  const transitaireFixedKmf  = await getEcoVar('transitaire_fixed_kmf', 450);
+  const portuairesKmf        = await getEcoVar('portuaires_kmf', 1200);
+  const transportRelaisKmf   = await getEcoVar('transport_relais_kmf', 840);
+  const commRelaisStd        = await getEcoVar('commission_relais_standard_kmf', 500);
+  const commRelaisShowroom   = await getEcoVar('commission_relais_showroom_kmf', 750);
+  const fraisStripePct       = await getEcoVar('frais_stripe_pct', 2.5) / 100;
+  const margePct             = await getEcoVar('marge_cible_pct', 12) / 100;
 
   // 1. Prix achat en KMF
   const achatKmf = Math.round(prixAchatAed * rates.aed_kmf);
@@ -229,7 +233,7 @@ async function calcPrix(prixAchatAed, category, options = {}) {
 // ── calcFret : calcul simple du fret à partir du poids ──────────────────────
 async function calcFret(weightGrams, options = {}) {
   const rates = options.rates || await getDefaultRates();
-  const freightPerKg = await getRuleNumber('FREIGHT_KMF_PER_KG', 65);
+  const freightPerKg = await getEcoVar('freight_kmf_per_kg', 65);
   return Math.round((weightGrams / 1000) * freightPerKg);
 }
 
@@ -250,4 +254,5 @@ module.exports = {
   loadDims,
   loadTaxes,
   invalidatePricingMatricesCache,
+  invalidateEcoCache,
 };

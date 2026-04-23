@@ -30,6 +30,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { getRates } = require('../utils/rates');
 const { getRule } = require('../utils/rules');
+const { getEcoVar } = require('../utils/eco-bridge');
 
 // ── Auth : toutes les routes dashboard = admin only ─────────────────────────
 router.use(authenticate, requireRole(['admin']));
@@ -54,17 +55,9 @@ async function getEurKmf() {
   return { eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf };
 }
 
-// ── Helper : finance_config — source unique variables financières ────────────
-// Lit depuis la table finance_config avec fallback (zéro régression si table vide/absente)
-async function getFinanceVal(key, fallback) {
-  try {
-    const { rows } = await db.query(
-      'SELECT value FROM finance_config WHERE key = $1 AND is_active = true LIMIT 1', [key]
-    );
-    if (rows.length && rows[0].value != null) return parseFloat(rows[0].value);
-  } catch { /* table pas encore créée — fallback */ }
-  return fallback;
-}
+// ── Helper : finance variables — source unique = economic_variables (eco-bridge) ──
+// getFinanceVal supprimé — était cassé (finance_config = singleton row, pas key-value)
+// Tout passe désormais par getEcoVar() depuis utils/eco-bridge.js
 
 // ── Config SLA & Compensations (chargée depuis business_rules) ──────────────
 // Fallback = valeurs actuelles hardcodées → zéro régression si DB vide
@@ -400,9 +393,9 @@ router.get('/pilotage', async (req, res, next) => {
 
     const caKmf = parseFloat(vol.ca_kmf);
     // Variabilisé : priorité customs_taux_mensuel > finance_config > fallback
-    const customsDefault = await getFinanceVal('customs_rate_default', 42); // pct
+    const customsDefault = await getEcoVar('customs_rate_default_pct', 42); // pct
     const TAUX_TERRAIN = douaneEffectif ? douaneEffectif / 100 : customsDefault / 100;
-    const hubCostAed = await getFinanceVal('hub_monthly_cost_aed', 7000);
+    const hubCostAed = await getEcoVar('hub_monthly_cost_aed', 7000);
     const hubMensuelKmf = hubCostAed * rates.aed_kmf;
 
     const result = {

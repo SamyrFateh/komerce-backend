@@ -1,0 +1,155 @@
+/**
+ * KOMERCE — Economic Bridge v1.0
+ * ═══════════════════════════════
+ * Source unique de lecture pour TOUS les paramètres économiques.
+ *
+ * Lit depuis `economic_variables` (table SOV — Supposé/Observé/Utilisé).
+ * Remplace :
+ *   - getRuleNumber() pour les paramètres pricing
+ *   - getFinanceVal() dans le dashboard (qui était cassé — singleton vs key-value)
+ *
+ * Utilisé par :
+ *   - utils/pricing.js  (calcul CDR 16 étapes)
+ *   - routes/dashboard.js (pilotage, hub cost, customs)
+ *   - routes/economic-engine.js (redistribute, coherence)
+ *
+ * Cache mémoire 60s — invalidé après chaque PUT /variables/:key
+ */
+
+'use strict';
+
+const db = require('../db');
+
+// ── Cache ────────────────────────────────────────────────────────────
+const CACHE_TTL_MS = 60_000;
+let _varsCache = null;
+let _varsCacheAt = 0;
+
+/**
+ * Load all active economic variables into a key→value map.
+ * Priority: value_used > value_supposed > null
+ */
+async function loadEcoVars() {
+  if (_varsCache && Date.now() - _varsCacheAt < CACHE_TTL_MS) {
+    return _varsCache;
+  }
+  try {
+    const { rows } = await db.query(
+      'SELECT key, value_used, value_supposed FROM economic_variables WHERE is_active = TRUE'
+    );
+    const map = {};
+    for (const r of rows) {
+      const val = r.value_used != null ? r.value_used : r.value_supposed;
+      map[r.key] = val != null ? Number(val) : null;
+    }
+    _varsCache = map;
+    _varsCacheAt = Date.now();
+    return map;
+  } catch (err) {
+    console.error('[ECO-BRIDGE] loadEcoVars error:', err.message);
+    return _varsCache || {};
+  }
+}
+
+/**
+ * Get a single economic variable by key, with fallback.
+ * @param {string} key - The variable key (e.g. 'eur_kmf', 'commission_agent_pct')
+ * @param {number} fallback - Default value if not found
+ * @returns {Promise<number>}
+ */
+async function getEcoVar(key, fallback) {
+  const vars = await loadEcoVars();
+  const val = vars[key];
+  return val != null ? val : fallback;
+}
+
+/**
+ * Get multiple economic variables at once (batch read).
+ * @param {Array<{key: string, fallback: number}>} specs
+ * @returns {Promise<Object>} key→value map
+ */
+async function getEcoVars(specs) {
+  const vars = await loadEcoVars();
+  const result = {};
+  for (const { key, fallback } of specs) {
+    const val = vars[key];
+    result[key] = val != null ? val : fallback;
+  }
+  return result;
+}
+
+/**
+ * Invalidate the cache — call after any variable update.
+ */
+function invalidateEcoCache() {
+  _varsCache = null;
+  _varsCacheAt = 0;
+}
+
+// ── Charges helper ───────────────────────────────────────────────────
+
+let _chargesCache = null;
+let _chargesCacheAt = 0;
+
+/**
+ * Load active charges with computed cost-per-order.
+ * Monthly charges are divided by orders_per_month.
+ */
+async function loadChargesSummary() {
+  if (_chargesCache && Date.now() - _chargesCacheAt < CACHE_TTL_MS) {
+    return _chargesCache;
+  }
+  try {
+    const { rows } = await db.query('SELECT * FROM charges WHERE is_active = TRUE');
+    const ordersPerMonth = await getEcoVar('orders_per_month', 100);
+
+    let perOrderTotal = 0;
+    let monthlyTotal = 0;
+    let weeklyTotal = 0;
+
+    for (const c of rows) {
+      const amt = Number(c.amount_kmf);
+      if (c.recurrence_period === 'per_order') perOrderTotal += amt;
+      else if (c.recurrence_period === 'monthly') monthlyTotal += amt;
+      else if (c.recurrence_period === 'weekly') weeklyTotal += amt;
+    }
+
+    const totalMonthlyFixed = monthlyTotal + Math.round(weeklyTotal * 4.33);
+    const monthlyPerOrder = ordersPerMonth > 0
+      ? Math.round(totalMonthlyFixed / ordersPerMonth)
+      : 0;
+
+    const result = {
+      charges: rows,
+      per_order_total: perOrderTotal,
+      monthly_total: totalMonthlyFixed,
+      monthly_per_order: monthlyPerOrder,
+      total_cost_per_order: perOrderTotal + monthlyPerOrder,
+      orders_per_month: ordersPerMonth,
+    };
+
+    _chargesCache = result;
+    _chargesCacheAt = Date.now();
+    return result;
+  } catch (err) {
+    console.error('[ECO-BRIDGE] loadChargesSummary error:', err.message);
+    return _chargesCache || {
+      charges: [], per_order_total: 0, monthly_total: 0,
+      monthly_per_order: 0, total_cost_per_order: 0, orders_per_month: 100,
+    };
+  }
+}
+
+function invalidateChargesCache() {
+  _chargesCache = null;
+  _chargesCacheAt = 0;
+}
+
+module.exports = {
+  getEcoVar,
+  getEcoVars,
+  loadEcoVars,
+  loadChargesSummary,
+  invalidateEcoCache,
+  invalidateChargesCache,
+};

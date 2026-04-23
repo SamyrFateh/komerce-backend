@@ -7,6 +7,7 @@ var express = require('express');
 var router = express.Router();
 var db = require('../db');
 var { authenticate, requireAdmin } = require('../middleware/auth');
+var ecoBridge = require('../utils/eco-bridge');
 
 router.use(authenticate, requireAdmin);
 
@@ -18,6 +19,7 @@ var CATEGORY_META = {
   margin:   { label: 'Marges', icon: '📊' },
   mix:      { label: 'Mix CA', icon: '🎯' },
   exchange: { label: 'Change', icon: '💱' },
+  pricing:  { label: 'Pricing', icon: '🏷️' },
   health:   { label: 'Santé', icon: '🏥' }
 };
 
@@ -39,12 +41,24 @@ var STATUS_MAP = {
 // ─── Seed ────────────────────────────────────────────────────────────
 
 async function seedEconomicData() {
+  // ── Migration fixes (idempotent) ──────────────────────────────────
+  // Fix historical charge names and periods
+  try {
+    await db.query("UPDATE charges SET name = 'Hub Dubai' WHERE name = 'Hub France'");
+    await db.query("UPDATE charges SET recurrence_period = 'monthly' WHERE name IN ('Hub Dubai', 'Relais Comores', 'Sourcing Dubai', 'Support client') AND recurrence_period = 'per_order'");
+  } catch(e) { /* ignore if charges table doesn't exist yet */ }
+
+  // Fix cost_hub label
+  try {
+    await db.query("UPDATE economic_variables SET label = 'Hub (Dubai)' WHERE key = 'cost_hub' AND label = 'Hub (France)'");
+  } catch(e) { /* ignore if economic_variables table doesn't exist yet */ }
+
   // Seed economic_variables
   var variables = [
     // cost
     { category: 'cost', key: 'cost_sourcing', label: 'Sourcing (Dubai/Chine)', unit: 'KMF', value_supposed: 1000, is_critical: true, is_computed: false },
     { category: 'cost', key: 'cost_transit', label: 'Transit (vers Comores)', unit: 'KMF', value_supposed: 500, is_critical: true, is_computed: false },
-    { category: 'cost', key: 'cost_hub', label: 'Hub (France)', unit: 'KMF', value_supposed: 400, is_critical: false, is_computed: false },
+    { category: 'cost', key: 'cost_hub', label: 'Hub (Dubai)', unit: 'KMF', value_supposed: 400, is_critical: false, is_computed: false },
     { category: 'cost', key: 'cost_relais', label: 'Relais (Comores)', unit: 'KMF', value_supposed: 300, is_critical: false, is_computed: false },
     { category: 'cost', key: 'cost_support', label: 'Support client', unit: 'KMF', value_supposed: 200, is_critical: false, is_computed: false },
     { category: 'cost', key: 'total_cost_per_order', label: 'Coût total par commande', unit: 'KMF', value_supposed: 2400, is_critical: true, is_computed: true },
@@ -66,6 +80,21 @@ async function seedEconomicData() {
     // exchange
     { category: 'exchange', key: 'eur_kmf', label: 'Taux EUR → KMF', unit: 'ratio', value_supposed: 492, is_critical: true, is_computed: false },
     { category: 'exchange', key: 'aed_kmf', label: 'Taux AED → KMF', unit: 'ratio', value_supposed: 138, is_critical: false, is_computed: false },
+    // pricing (paramètres du moteur CDR 16 étapes)
+    { category: 'pricing', key: 'commission_agent_pct', label: 'Commission agent (%)', unit: '%', value_supposed: 5, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'transport_dxb_kmf', label: 'Transport Deira → Hub', unit: 'KMF', value_supposed: 500, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'transitaire_pct', label: 'Commission transitaire (%)', unit: '%', value_supposed: 2, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'transitaire_fixed_kmf', label: 'Frais fixes transitaire', unit: 'KMF', value_supposed: 450, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'portuaires_kmf', label: 'Frais portuaires', unit: 'KMF', value_supposed: 1200, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'transport_relais_kmf', label: 'Transport → relais', unit: 'KMF', value_supposed: 840, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'commission_relais_standard_kmf', label: 'Commission relais standard', unit: 'KMF', value_supposed: 500, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'commission_relais_showroom_kmf', label: 'Commission relais showroom', unit: 'KMF', value_supposed: 750, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'frais_stripe_pct', label: 'Frais Stripe (%)', unit: '%', value_supposed: 2.5, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'marge_cible_pct', label: 'Marge cible (%)', unit: '%', value_supposed: 12, is_critical: true, is_computed: false },
+    { category: 'pricing', key: 'fret_eur_m3', label: 'Fret maritime EUR/m³', unit: 'EUR', value_supposed: 180, is_critical: true, is_computed: false },
+    { category: 'pricing', key: 'freight_kmf_per_kg', label: 'Fret KMF/kg', unit: 'KMF', value_supposed: 65, is_critical: false, is_computed: false },
+    { category: 'pricing', key: 'hub_monthly_cost_aed', label: 'Coût Hub mensuel', unit: 'AED', value_supposed: 7000, is_critical: true, is_computed: false },
+    { category: 'pricing', key: 'customs_rate_default_pct', label: 'Taux douane terrain défaut', unit: '%', value_supposed: 42, is_critical: true, is_computed: false },
     // health (all computed)
     { category: 'health', key: 'safety_ratio', label: 'Marge de sécurité', unit: '%', value_supposed: 0, is_critical: true, is_computed: true },
     { category: 'health', key: 'margin_pressure', label: 'Pression charges', unit: '%', value_supposed: 0, is_critical: true, is_computed: true },
@@ -85,11 +114,11 @@ async function seedEconomicData() {
 
   // Seed charges
   var charges = [
-    { family: 'operationnelle', name: 'Sourcing Dubai', amount_kmf: 1000, is_recurring: true, recurrence_period: 'per_order' },
-    { family: 'operationnelle', name: 'Transit Comores', amount_kmf: 500, is_recurring: true, recurrence_period: 'per_order' },
-    { family: 'operationnelle', name: 'Hub France', amount_kmf: 400, is_recurring: true, recurrence_period: 'per_order' },
-    { family: 'operationnelle', name: 'Relais Comores', amount_kmf: 300, is_recurring: true, recurrence_period: 'per_order' },
-    { family: 'operationnelle', name: 'Support client', amount_kmf: 200, is_recurring: true, recurrence_period: 'per_order' }
+    { family: 'operationnelle', name: 'Hub Dubai', amount_kmf: 400, is_recurring: true, recurrence_period: 'monthly' },
+    { family: 'operationnelle', name: 'Relais Comores', amount_kmf: 300, is_recurring: true, recurrence_period: 'monthly' },
+    { family: 'operationnelle', name: 'Sourcing Dubai', amount_kmf: 1000, is_recurring: true, recurrence_period: 'monthly' },
+    { family: 'operationnelle', name: 'Support client', amount_kmf: 200, is_recurring: true, recurrence_period: 'monthly' },
+    { family: 'operationnelle', name: 'Transit Comores', amount_kmf: 500, is_recurring: true, recurrence_period: 'per_order' }
   ];
 
   for (var j = 0; j < charges.length; j++) {
@@ -523,6 +552,9 @@ router.put('/variables/:key', async function(req, res) {
     // Redistribute
     await redistribute('variable_update:' + key);
 
+    // Invalidate eco-bridge cache after variable update
+    ecoBridge.invalidateEcoCache();
+
     // Return updated variable + new executive summary
     var summary = await buildExecutiveSummary();
 
@@ -586,6 +618,11 @@ router.post('/charges', async function(req, res) {
     );
 
     await redistribute('charge_created:' + result.rows[0].id);
+
+    // Invalidate eco-bridge caches after charge creation
+    ecoBridge.invalidateEcoCache();
+    ecoBridge.invalidateChargesCache();
+
     var summary = await buildExecutiveSummary();
 
     res.json({ charge: result.rows[0], executive: summary });
@@ -629,6 +666,11 @@ router.put('/charges/:id', async function(req, res) {
     var result = await db.query(sql, params);
 
     await redistribute('charge_updated:' + id);
+
+    // Invalidate eco-bridge caches after charge update
+    ecoBridge.invalidateEcoCache();
+    ecoBridge.invalidateChargesCache();
+
     var summary = await buildExecutiveSummary();
 
     res.json({ charge: result.rows[0], executive: summary });
@@ -652,6 +694,11 @@ router.put('/charges/:id/toggle', async function(req, res) {
     }
 
     await redistribute('charge_toggled:' + id);
+
+    // Invalidate eco-bridge caches after charge toggle
+    ecoBridge.invalidateEcoCache();
+    ecoBridge.invalidateChargesCache();
+
     var summary = await buildExecutiveSummary();
 
     res.json({ charge: result.rows[0], executive: summary });

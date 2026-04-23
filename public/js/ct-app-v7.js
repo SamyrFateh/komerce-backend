@@ -2,6 +2,7 @@
    Komerce Control Tower — ct-app-v7.js
    Router principal + Sidebar + Seed/Reset
    + vue Transitaire
+   v7.1 — Ajout vues Pricing, Pilotage, Problèmes
    =================================================================== */
 window.CT = window.CT || {};
 
@@ -42,7 +43,7 @@ CT.app = {
       { id: 'dashboard',      emoji: '🎯', label: 'Dashboard' },
       { id: 'orders',         emoji: '📋', label: 'Commandes & Colis' },
       { id: 'parcels',        emoji: '📦', label: 'Tous les colis' },
-      { id: 'hub',            emoji: '🏭', label: 'Hub' },
+      { id: 'hub',            emoji: '🏭', label: 'Hub Dubai' },
       { id: 'transitaire',    emoji: '🚢', label: 'Transitaire' },
       { id: 'relais',         emoji: '📍', label: 'Relais' },
       { id: 'finances',       emoji: '💰', label: 'Finances' },
@@ -50,7 +51,12 @@ CT.app = {
       { id: 'alerts',         emoji: '⚡', label: 'Alertes' },
       { id: 'incidents',      emoji: '🚨', label: 'Incidents' },
       { id: 'reconciliation', emoji: '⚖️', label: 'Réconciliation' },
-      { id: 'simulator',      emoji: '🤖', label: 'Simulateur' }
+      { id: 'pricing',        emoji: '🧮', label: 'Simulateur Pricing' },
+      { id: 'pilotage',       emoji: '📊', label: 'Pilotage' },
+      { id: 'problems',       emoji: '🚨', label: 'Problèmes' },
+      { id: 'economic',       emoji: '🧠', label: 'Modèle économique' },
+      { id: 'sourcing',       emoji: '🔍', label: 'Intelligence Sourcing' },
+      { id: 'simulator',      emoji: '🤖', label: 'Simulateur Flux' }
     ];
 
     nav.innerHTML = items.map(function(item) {
@@ -128,7 +134,10 @@ CT.app = {
       'previsions':     CT.views.previsions,
       'inventory':      CT.views.inventory,
       'economic':       CT.views.economic,
-      'sourcing':       CT.views.sourcing
+      'sourcing':       CT.views.sourcing,
+      'pricing':        CT.views.pricing,
+      'pilotage':       CT.views.pilotage,
+      'problems':       CT.views.problems
     }[view];
 
     if (viewFn) {
