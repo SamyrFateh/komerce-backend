@@ -65,7 +65,7 @@ ul,ol{list-style:none}
 /* ── BUY NOW BUTTON ── */
 .k-buy-now-btn{
   height:42px;padding:0 18px;
-  background:var(--coral);color:var(--white);
+  background:var(--ocean);color:var(--white);
   border-radius:50px;font-weight:600;font-size:14px;
   white-space:nowrap;border:none;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
@@ -2909,7 +2909,7 @@ body.cart-open{overflow:hidden}
 .k-buy-now-btn{
   flex-shrink:0;height:42px;
   padding:0 14px;
-  background:var(--coral);color:var(--white);
+  background:var(--ocean);color:var(--white);
   border-radius:50px;
   font-size:13px;font-weight:700;
   display:flex;align-items:center;gap:4px;
@@ -5272,20 +5272,20 @@ body.cart-open #k-page-scroll {
   width: 100% !important;
   height: 48px !important;
   padding: 0 24px !important;
-  background: linear-gradient(135deg, #e05a48 0%, #c53927 100%) !important;
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%) !important;
   color: white !important;
   border: none !important;
   border-radius: 50px !important;
   font-size: 15px !important;
   font-weight: 700 !important;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(224, 90, 72, 0.3);
+  box-shadow: 0 3px 10px rgba(100, 175, 90, 0.3);
   transition: all 0.15s;
   white-space: nowrap;
 }
 .k-modal-actions .k-buy-now-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(224, 90, 72, 0.4);
+  box-shadow: 0 5px 14px rgba(100, 175, 90, 0.4);
 }
 .k-modal-actions .k-buy-now-btn:active { transform: scale(0.98); }
 
@@ -5622,17 +5622,17 @@ body.cart-open #k-page-scroll {
   transform:translateY(-1px);
 }
 
-/* Bouton Acheter — ombre colorée orange */
+/* Bouton Acheter — ombre colorée verte */
 .k-buy-now-btn{
   box-shadow:
-    0 2px 8px rgba(224, 90, 72, 0.25),
-    0 4px 16px rgba(224, 90, 72, 0.15) !important;
+    0 2px 8px rgba(100, 175, 90, 0.25),
+    0 4px 16px rgba(100, 175, 90, 0.15) !important;
   transition:all .25s ease !important;
 }
 .k-buy-now-btn:hover{
   box-shadow:
-    0 4px 12px rgba(224, 90, 72, 0.35),
-    0 8px 24px rgba(224, 90, 72, 0.2) !important;
+    0 4px 12px rgba(100, 175, 90, 0.35),
+    0 8px 24px rgba(100, 175, 90, 0.2) !important;
   transform:translateY(-1px);
 }
 .k-buy-now-btn:active{
