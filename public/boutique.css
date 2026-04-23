@@ -3119,7 +3119,7 @@ body.cart-open{overflow:hidden}
     overflow: visible;
   }
 
-  /* ── F. CHIPS — small circles, horizontal scroll ───── */
+  /* ── F. CHIPS — pill buttons, horizontal scroll ───── */
   .k-cats {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -3129,16 +3129,14 @@ body.cart-open{overflow:hidden}
     scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    gap: 4px;
-    padding: 4px 8px !important;
-    padding: 4px 8px;
+    gap: 8px;
+    padding: 6px 12px !important;
     background: rgba(253,250,245,.96);
-    align-items: flex-start;
+    align-items: center;
     overscroll-behavior-x: contain;
-    scroll-behavior: smooth;
-    scroll-padding-left: 8px;
-    scroll-padding-right: 8px;
-    min-height: 46px;   /* 34px chip + 8px label + padding */
+    scroll-padding-left: 12px;
+    scroll-padding-right: 12px;
+    min-height: 44px;
     contain: layout;
     will-change: scroll-position;
     transform: translateZ(0);
@@ -3148,46 +3146,55 @@ body.cart-open{overflow:hidden}
   .k-chip {
     flex: 0 0 auto !important;
     display: inline-flex !important;
-    flex-direction: column;
+    flex-direction: row !important;
     align-items: center;
-    gap: 2px;
-    padding: 2px 0;
-    min-width: 40px !important;
-    max-width: 48px !important;
+    gap: 6px;
+    padding: 6px 14px 6px 6px !important;
+    min-width: unset !important;
+    max-width: unset !important;
     width: auto !important;
     scroll-snap-align: start;
+    background: #fff !important;
+    border: 1.5px solid #e0e0e0 !important;
+    border-radius: 22px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    transition: all .2s ease;
   }
   .k-chip-photo,
   .k-chip-emoji {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
     border-radius: 50% !important;
     font-size: 14px !important;
-    border-width: 1px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+    border: none !important;
+    box-shadow: none !important;
   }
   .k-chip-photo > span {
     font-size: 9px !important;
   }
   .k-chip-label {
-    font-size: 8px;
-    font-weight: 600;
-    line-height: 1.1;
+    font-size: 12px !important;
+    font-weight: 500;
+    line-height: 1.2;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    max-width: unset !important;
+    color: #333;
   }
-  /* Active chip — green ring + bold label */
-  .k-chip.active .k-chip-photo,
-  .k-chip.active .k-chip-emoji {
-    border: 2px solid var(--k-primary, #2e7d32) !important;
-    box-shadow: 0 0 0 2px rgba(46,125,50,.2) !important;
+  /* Active chip — green bg */
+  .k-chip.active {
+    background: var(--k-primary, #2e7d32) !important;
+    border-color: var(--k-primary, #2e7d32) !important;
+    box-shadow: 0 2px 8px rgba(46,125,50,.25) !important;
   }
   .k-chip.active .k-chip-label {
-    color: var(--k-primary, #2e7d32) !important;
-    font-weight: 700 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
+  .k-chip.active .k-chip-emoji {
+    filter: brightness(1.1);
   }
 
   /* ── G. PROMOS — horizontal scroll, landscape cards ─── */
