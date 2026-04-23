@@ -1326,13 +1326,18 @@ function quickRemove(productId, btnEl) {
 
     var startX = 0, startY = 0, startT = 0;
     var tracking = false;
-    var SWIPE_MIN_DIST = 50;
-    var SWIPE_MAX_VERTICAL = 80;
-    var SWIPE_MAX_DURATION = 1000;
+    var axisLock = null; // null = undecided, 'h' = horizontal, 'v' = vertical
+
+    // ── Seuils durcis ──
+    var SWIPE_MIN_DIST   = 70;   // px — intentionnel, pas un drift de pouce
+    var SWIPE_MAX_DUR    = 600;  // ms — geste rapide uniquement
+    var LOCK_THRESHOLD   = 12;   // px — premier axe qui bouge de 12px gagne
 
     document.addEventListener('touchstart', function(e) {
       if (e.touches.length !== 1) { tracking = false; return; }
       var t = e.target;
+
+      // ── Exclusions : zones interactives qui ont leur propre swipe ──
       if (t.closest && t.closest(
         '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal, ' +
         '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
@@ -1340,22 +1345,33 @@ function quickRemove(productId, btnEl) {
         '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
         '.k-sug-rail, .k-sug-grid, .k-modal-carousel, ' +
         'input, textarea, select'
-      )) {
-        tracking = false;
-        return;
+      )) { tracking = false; return; }
+
+      // ── Inclusion réduite : UNIQUEMENT le catalogue ──
+      // Plus de #k-page-scroll (= tout le viewport), plus de .k-card individuelle
+      if (t.closest && !t.closest('#k-catalog-section, .k-grid, .k-section')) {
+        tracking = false; return;
       }
-      if (t.closest && !t.closest('#k-page-scroll, #k-catalog-section, .k-grid, .k-card, .k-section')) {
-        tracking = false;
-        return;
-      }
+
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       startT = Date.now();
       tracking = true;
+      axisLock = null;
+    }, { passive: true, capture: true });
+
+    // ── Axis-lock : le premier mouvement > 12px décide ──
+    // Si vertical d'abord → on annule. Si horizontal → on continue.
+    document.addEventListener('touchmove', function(e) {
+      if (!tracking || axisLock) return;
+      var dx = Math.abs(e.touches[0].clientX - startX);
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      if (dx >= LOCK_THRESHOLD) { axisLock = 'h'; }
+      else if (dy >= LOCK_THRESHOLD) { axisLock = 'v'; tracking = false; }
     }, { passive: true, capture: true });
 
     document.addEventListener('touchend', function(e) {
-      if (!tracking) return;
+      if (!tracking || axisLock === 'v') { tracking = false; return; }
       tracking = false;
       var touch = e.changedTouches[0];
       if (!touch) return;
@@ -1363,21 +1379,19 @@ function quickRemove(productId, btnEl) {
       var dy = touch.clientY - startY;
       var dt = Date.now() - startT;
 
-      if (dt > SWIPE_MAX_DURATION) return;
-      if (Math.abs(dy) > SWIPE_MAX_VERTICAL) return;
+      if (dt > SWIPE_MAX_DUR) return;
       if (Math.abs(dx) < SWIPE_MIN_DIST) return;
-      if (Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      // Ratio strict : vertical < 50% horizontal (nettement horizontal)
+      if (Math.abs(dy) > Math.abs(dx) * 0.5) return;
 
       var chips = Array.prototype.slice.call(document.querySelectorAll('#k-cats .k-chip'));
       if (chips.length < 2) return;
       var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
       if (currentIdx === -1) currentIdx = 0;
 
-      // Swipe L/R cycle through all categories including "Tout" (index 0)
       var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
       if (nextIdx < 0 || nextIdx >= chips.length) return;
 
-      // Flag pour que le click handler reconnaisse un swipe (pas de scrollTo + animation)
       state._fromSwipe = true;
       state._swipeDir = dx < 0 ? -1 : 1;
       chips[nextIdx].click();
