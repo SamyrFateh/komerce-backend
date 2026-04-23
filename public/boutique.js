@@ -783,6 +783,8 @@
       const prods = byCat[cat];
       const total = totalByCat[cat] || prods.length;
       const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+      // ── Wrapper section (pour horizontal pager mobile) ──
+      parts.push('<div class="k-cat-section" data-cat="' + sanitize(cat) + '">');
       // ── Section header avec "Voir tout" ──
       parts.push(
         '<div class="k-sec-header" id="' + anchorId + '" data-cat="' + sanitize(cat) + '">' +
@@ -815,6 +817,7 @@
       parts.push('<div class="k-sec-grid">');
       for (const p of sectionProds) parts.push(_renderCard(p));
       parts.push('</div>');
+      parts.push('</div>'); // close .k-cat-section
     }
     return parts.join('');
   }
@@ -881,27 +884,25 @@
   // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
   window._scrollingToSection = false;
   window.scrollToCategorySection = function(cat) {
-    const container = document.getElementById('k-page-scroll');
+    const grid = document.getElementById('k-grid');
+    if (!grid) return;
+    // "Tout" → scroll to first panel
     if (!cat || cat === 'all') {
-      if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
-      else window.scrollTo({ top: 0, behavior: 'smooth' });
+      grid.scrollTo({ left: 0, behavior: 'smooth' });
       return;
     }
-    const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
-    const el = document.getElementById(anchorId);
-    if (!el) return;
-    // Lock observer — prevents chip bounce during programmatic scroll
-    window._scrollingToSection = true;
-    // #k-page-scroll est un container fixed séparé — calcul direct
-    if (container) {
-      const containerTop = container.getBoundingClientRect().top;
-      const elTop = el.getBoundingClientRect().top;
-      const scrollTarget = container.scrollTop + (elTop - containerTop) - 8;
-      container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
-    } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Find the matching panel
+    const section = grid.querySelector('.k-cat-section[data-cat="' + cat + '"]');
+    if (!section) {
+      // Fallback to old vertical scroll (desktop or focused mode)
+      const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+      const el = document.getElementById(anchorId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
     }
-    // Unlock observer after scroll settles (~700ms)
+    // Mobile horizontal pager: scroll #k-grid horizontally
+    window._scrollingToSection = true;
+    grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
     setTimeout(function() { window._scrollingToSection = false; }, 700);
   };
 
@@ -4081,34 +4082,41 @@ document.addEventListener('click', function(e) {
 
     document.body.appendChild(nav);
 
-    // Observer : highlight le chip actif selon la section visible à l'écran
-    // IMPORTANT: root = #k-page-scroll (container fixe, pas le viewport)
+    // ── Sync pills with horizontal scroll (mobile pager) ──
     if (_sectionObserver) _sectionObserver.disconnect();
-    const scrollRoot = document.getElementById('k-page-scroll') || null;
-    _sectionObserver = new IntersectionObserver(function(entries) {
-      // Skip observer updates during programmatic scroll (prevents chip bounce)
-      if (window._scrollingToSection) return;
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          const cat = entry.target.getAttribute('data-cat');
-          // Floating index buttons
-          document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
-            b.classList.toggle('active', b.getAttribute('data-cat') === cat);
+    const grid = document.getElementById('k-grid');
+    if (grid) {
+      let _hScrollTimer;
+      grid.addEventListener('scroll', function() {
+        if (window._scrollingToSection) return;
+        clearTimeout(_hScrollTimer);
+        _hScrollTimer = setTimeout(function() {
+          const sections = grid.querySelectorAll('.k-cat-section');
+          if (!sections.length) return;
+          const centerX = grid.scrollLeft + grid.offsetWidth / 2;
+          let activeCat = null;
+          sections.forEach(function(sec) {
+            if (sec.offsetLeft <= centerX) {
+              activeCat = sec.dataset.cat;
+            }
           });
-          // Main nav chips — visual sync when scrolling through sections
-          if (state.activeCat === 'all') {
-            document.querySelectorAll('.k-chip').forEach(function(c) {
-              c.classList.toggle('active', c.getAttribute('data-cat') === cat);
+          if (activeCat) {
+            // Floating index buttons
+            document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
+              b.classList.toggle('active', b.dataset.cat === activeCat);
             });
+            // Main nav chips
+            if (state.activeCat === 'all') {
+              document.querySelectorAll('.k-chip').forEach(function(c) {
+                c.classList.toggle('active', c.dataset.cat === activeCat);
+              });
+              var activeChip = document.querySelector('.k-chip.active');
+              if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
+            }
           }
-        }
+        }, 80);
       });
-    }, {
-      root: scrollRoot,
-      rootMargin: '-15% 0% -65% 0%',
-      threshold: 0,
-    });
-    headers.forEach(function(h) { _sectionObserver.observe(h); });
+    }
   }
   let _sectionObserver = null;
 

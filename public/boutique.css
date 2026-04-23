@@ -3698,6 +3698,32 @@ body.cart-open{overflow:hidden}
     color: var(--text-muted);
     font-weight: 500;
   }
+  /* ── HORIZONTAL PAGER — swipe ← → between categories ── */
+  #k-grid.k-grid-has-sections {
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Fill remaining viewport: header(48) + pills(46) + bottom-nav(56) = 150 */
+    height: calc(100vh - 150px);
+    height: calc(100dvh - 150px);
+  }
+  #k-grid.k-grid-has-sections::-webkit-scrollbar { display: none; }
+  .k-cat-section {
+    min-width: 100%;
+    max-width: 100%;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 70px; /* space above bottom-nav */
+  }
+  /* Hide floating index on mobile (pills are enough) */
+  #k-section-index { display: none !important; }
+
   .k-sec-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
