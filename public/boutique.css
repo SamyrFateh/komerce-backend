@@ -3105,6 +3105,15 @@ body.cart-open{overflow:hidden}
     padding: 3px 6px;
     background: rgba(253,250,245,.96);
     align-items: flex-start;
+    /* Consolidé depuis patches 5+7 : anti layout-shift + fluidité */
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    scroll-padding-left: 8px;
+    scroll-padding-right: 8px;
+    min-height: 54px;   /* 36px chip + 9px label + padding */
+    contain: layout;
+    will-change: scroll-position;
+    transform: translateZ(0);
   }
   .k-cats::-webkit-scrollbar { display: none; }
 
@@ -4269,28 +4278,7 @@ body.modal-open .k-bnav {
 /*  Amélioration : scroll plus doux sur chips catégories + modale produit  */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Scroll chips catégories — fluide et snappy ───────────────────── */
-.k-cats {
-  /* Snap plus net que proximity : on s'arrête toujours sur une chip */
-  scroll-snap-type: x proximity !important;
-  /* Évite que le swipe sur les chips fasse scroller la page verticalement */
-  overscroll-behavior-x: contain !important;
-  /* Inertie iOS + accélération hardware */
-  -webkit-overflow-scrolling: touch !important;
-  scroll-behavior: smooth;
-  /* Padding pour que les chips de bord soient bien visibles au snap */
-  scroll-padding-left: 16px;
-  scroll-padding-right: 16px;
-  /* Force hardware acceleration */
-  will-change: scroll-position;
-  transform: translateZ(0);
-}
-.k-chip {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-}
-
-/* ── Sous-catégories : même traitement ───────────────────────────── */
+/* ── Scroll rails — fluide et snappy (cats consolidé dans mobile block @899px) ── */
 .k-subcats-rail {
   overscroll-behavior-x: contain !important;
   scroll-behavior: smooth;
@@ -6010,24 +5998,9 @@ button,
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */
-/*  BUG 1 FIX : pills catégories qui "bougent" au chargement              */
+/*  Anti layout-shift : subcats + subchip (cats consolidé dans mobile block) */
 /* ═══════════════════════════════════════════════════════════════════════ */
-.k-cats {
-  /* Bloquer le layout shift quand les images des chips chargent */
-  min-height: 80px !important;
-  contain: layout !important;
-  /* Empêcher scroll-snap de jumper */
-  scroll-snap-type: x mandatory !important;
-}
-.k-cat-chip {
-  /* Taille fixe pour éviter le layout shift */
-  flex: 0 0 auto !important;
-  scroll-snap-align: start;
-  /* Anti-wobble : pas de transform sur base */
-  will-change: auto;
-}
-
-/* Sous-cats : idem */
+/* Sous-cats : anti layout-shift */
 .k-subcats-rail {
   min-height: 40px !important;
   contain: layout !important;
@@ -6367,35 +6340,8 @@ button,
 /*  3. CHIPS CATÉGORIES PLUS PETITES (mobile)                          */
 /*     - Photo : 48px → 40px                                           */
 /*     - Hauteur totale : 100px → 72px                                 */
-/*     - Mieux défilables et plus claires                              */
+/*     - Cats/chips consolidé dans mobile block @899px — plus de patch ici */
 /* ─────────────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .k-cats {
-    padding: 8px 12px !important;
-    min-height: 64px !important;
-    gap: 6px !important;
-  }
-  .k-cat-chip {
-    min-width: 56px !important;
-    padding: 4px !important;
-    gap: 3px !important;
-  }
-  .k-chip-photo {
-    width: 40px !important;
-    height: 40px !important;
-  }
-  .k-cat-chip .k-cat-label,
-  .k-cat-chip span:not(.k-chip-photo) {
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    line-height: 1 !important;
-    white-space: nowrap;
-  }
-  /* Cats active : ring plus subtil */
-  .k-cat-chip.active .k-chip-photo {
-    box-shadow: 0 0 0 2px var(--coral, #e64a19) !important;
-  }
-}
 
 /* ─────────────────────────────────────────────────────────────────── */
 /*  4. RAIL HORIZONTAL CLAIR + INDICATEUR SCROLL                       */

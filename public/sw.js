@@ -1,5 +1,5 @@
-/* Komerce SW v174 — purge agressive + reload forcé aux clients */
-const CACHE = 'komerce-v174';
+/* Komerce SW v175 — purge agressive + reload forcé aux clients */
+const CACHE = 'komerce-v175';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -11,14 +11,14 @@ self.addEventListener('activate', (e) => {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => {
         if (k !== CACHE) {
-          console.log('[SW v174] Purge ancien cache :', k);
+          console.log('[SW v175] Purge ancien cache :', k);
           return caches.delete(k);
         }
       }));
       await self.clients.claim();
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach(client => {
-        client.postMessage({ type: 'sw-updated', version: 'v174' });
+        client.postMessage({ type: 'sw-updated', version: 'v175' });
       });
     })()
   );

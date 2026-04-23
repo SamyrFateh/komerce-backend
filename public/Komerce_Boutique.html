@@ -4,8 +4,8 @@
 <script>
 /* Nuclear SW reset v100 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v174'))return;
-  localStorage.setItem('sw_reset_v174','1');
+  if(localStorage.getItem('sw_reset_v175'))return;
+  localStorage.setItem('sw_reset_v175','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     if(!regs.length){location.reload(true);return;}
@@ -37,7 +37,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v174')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v175')===-1) caches.delete(n);
       });
     });
   }
@@ -54,7 +54,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=174">
+<link rel="stylesheet" href="/boutique.css?v=175">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>

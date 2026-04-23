@@ -1373,13 +1373,9 @@ function quickRemove(productId, btnEl) {
       var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
       if (currentIdx === -1) currentIdx = 0;
 
-      // Swipe cycle through specific categories only (skip "Tout" / "all")
+      // Swipe L/R cycle through all categories including "Tout" (index 0)
       var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-      // If currently on "Tout" (index 0), swipe left → go to first specific cat (1)
-      if (currentIdx === 0 && dx < 0) nextIdx = 1;
-      // If on first specific cat and swiping right, stop (don't go back to Tout)
-      if (nextIdx <= 0) return;
-      if (nextIdx >= chips.length) return;
+      if (nextIdx < 0 || nextIdx >= chips.length) return;
 
       // Flag pour que le click handler reconnaisse un swipe (pas de scrollTo + animation)
       state._fromSwipe = true;
