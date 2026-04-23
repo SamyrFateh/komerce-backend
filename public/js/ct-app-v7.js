@@ -346,33 +346,21 @@ CT.app = {
     }
   },
 
-  /* Map view IDs → render functions */
+  /* Map view IDs → render functions
+     Convention: registry id === CT.views[id] function name.
+     Legacy aliases kept for backward compatibility. */
   _resolveViewFn: function(view) {
     if (!CT.views) return null;
-    var map = {
-      'dashboard':      CT.views.dashboard,
-      'action-center':  CT.views.actionCenter,
-      'orders':         CT.views.orders,
-      'parcels':        CT.views.parcels,
-      'finances':       CT.views.finances,
-      'invoices':       CT.views.invoices,
-      'alerts':         CT.views.alerts,
-      'incidents':      CT.views.incidents,
-      'reconciliation': CT.views.reconciliation,
-      'hub':            CT.views.hub,
-      'transitaire':    CT.views.transitaire,
-      'relais':         CT.views.relais,
-      'simulator':      CT.views.simulator,
-      'settings':       CT.views.settings,
-      'previsions':     CT.views.previsions,
-      'inventory':      CT.views.inventory,
-      'economic':       CT.views.economic,
-      'sourcing':       CT.views.sourcing,
-      'pricing':        CT.views.pricing,
-      'pilotage':       CT.views.pilotage,
-      'problems':       CT.views.problems
+    /* Direct match (covers 95% of cases) */
+    if (typeof CT.views[view] === 'function') return CT.views[view];
+    /* Legacy aliases — old hash URLs still work */
+    var legacy = {
+      'action-center': 'actionCenter',
+      'parcels': 'orders'            // parcels was merged into orders
     };
-    return map[view] || null;
+    var mapped = legacy[view];
+    if (mapped && typeof CT.views[mapped] === 'function') return CT.views[mapped];
+    return null;
   },
 
   /* ══════════════════════════════════════════════════════════════

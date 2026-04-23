@@ -929,7 +929,7 @@ const server = app.listen(PORT, () => {
 
       // ── Migration 051: signals table (CT/BO platform) ──
       try {
-        await pool.query(`
+        await db.query(`
           CREATE TABLE IF NOT EXISTS signals (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             signal_type TEXT NOT NULL,

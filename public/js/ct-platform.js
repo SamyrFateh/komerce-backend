@@ -48,13 +48,15 @@ CT.platform = {
     strategie:  { label: 'Stratégie',  order: 3, shell: 'ct' },
     /* BO */
     operations: { label: 'Opérations',    order: 1, shell: 'bo' },
-    logistique: { label: 'Logistique',    order: 2, shell: 'bo' },
-    catalogue:  { label: 'Catalogue',     order: 3, shell: 'bo' },
-    finance_bo: { label: 'Finance',       order: 4, shell: 'bo' },
-    config:     { label: 'Configuration', order: 5, shell: 'bo' }
+    alerting:   { label: 'Alertes',       order: 2, shell: 'bo' },
+    finance_bo: { label: 'Finance',       order: 3, shell: 'bo' },
+    config:     { label: 'Configuration', order: 4, shell: 'bo' }
   },
 
-  /* ─── VIEW REGISTRY ──────────────────────────────────────────── */
+  /* ─── VIEW REGISTRY ────────────────────────────────────────────
+     ⚠️  Chaque id DOIT correspondre à un CT.views[id] existant.
+     Vues non implémentées → PLANNED_VIEWS (pas dans sidebar).
+     ─────────────────────────────────────────────────────────── */
   VIEWS: [
 
     /* ══════ CT : Cockpit ══════ */
@@ -65,10 +67,10 @@ CT.platform = {
       roles: ['founder','admin','finance'],
       tabs:  ['overview','revenue','operations'],
       supportedFilters: ['period'],
-      readOnly: ['finance']                      // finance = lecture seule
+      readOnly: ['finance']
     },
     {
-      id:    'action-center',
+      id:    'actionCenter',
       shell: 'ct',  section: 'cockpit',
       emoji: '⚡',  label:   'Centre d\'actions',
       roles: ['founder','admin'],
@@ -130,59 +132,48 @@ CT.platform = {
     {
       id:    'orders',
       shell: 'bo',  section: 'operations',
-      emoji: '📋',  label:   'Commandes',
+      emoji: '📋',  label:   'Commandes & Colis',
       roles: ['founder','admin','hub','relais','support'],
-      tabs:  [],
+      tabs:  ['all','free','parceled','parcels'],
       supportedFilters: ['status','date','client','search'],
       readOnly: []
     },
     {
-      id:    'parcels',
+      id:    'pendingCash',
       shell: 'bo',  section: 'operations',
-      emoji: '📦',  label:   'Colis',
-      roles: ['founder','admin','hub','relais','support'],
-      tabs:  [],
-      supportedFilters: ['status','island','relay','search'],
-      readOnly: []
-    },
-
-    /* ══════ BO : Logistique ══════ */
-    {
-      id:    'hub',
-      shell: 'bo',  section: 'logistique',
-      emoji: '🏭',  label:   'Hub Dubai',
-      roles: ['founder','admin','hub'],
-      tabs:  [],
-      supportedFilters: ['status'],
-      readOnly: []
-    },
-    {
-      id:    'transitaire',
-      shell: 'bo',  section: 'logistique',
-      emoji: '🚢',  label:   'Transitaire',
-      roles: ['founder','admin'],
-      tabs:  [],
-      supportedFilters: ['status','date'],
-      readOnly: []
-    },
-    {
-      id:    'relais',
-      shell: 'bo',  section: 'logistique',
-      emoji: '📍',  label:   'Relais Comores',
+      emoji: '💰',  label:   'Paiements cash',
       roles: ['founder','admin','relais'],
       tabs:  [],
-      supportedFilters: ['island','status'],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'createParcel',
+      shell: 'bo',  section: 'operations',
+      emoji: '📦',  label:   'Créer colis',
+      roles: ['founder','admin','hub'],
+      tabs:  [],
+      supportedFilters: [],
       readOnly: []
     },
 
-    /* ══════ BO : Catalogue ══════ */
+    /* ══════ BO : Alertes ══════ */
     {
-      id:    'inventory',
-      shell: 'bo',  section: 'catalogue',
-      emoji: '📦',  label:   'Inventaire',
-      roles: ['founder','admin','sourcing'],
+      id:    'alerts',
+      shell: 'bo',  section: 'alerting',
+      emoji: '⚠️',  label:   'Alertes',
+      roles: ['founder','admin','hub','support'],
       tabs:  [],
-      supportedFilters: ['category','status','search'],
+      supportedFilters: ['severity'],
+      readOnly: []
+    },
+    {
+      id:    'incidents',
+      shell: 'bo',  section: 'alerting',
+      emoji: '🔥',  label:   'Incidents',
+      roles: ['founder','admin','hub','support'],
+      tabs:  [],
+      supportedFilters: ['severity','status'],
       readOnly: []
     },
 
@@ -217,15 +208,6 @@ CT.platform = {
 
     /* ══════ BO : Configuration ══════ */
     {
-      id:    'settings',
-      shell: 'bo',  section: 'config',
-      emoji: '⚙️',  label:   'Paramètres',
-      roles: ['founder','admin'],
-      tabs:  [],
-      supportedFilters: [],
-      readOnly: []
-    },
-    {
       id:    'simulator',
       shell: 'bo',  section: 'config',
       emoji: '🤖',  label:   'Simulateur Flux',
@@ -236,8 +218,11 @@ CT.platform = {
     }
   ],
 
+  /* Vues prévues mais pas encore implémentées — documentées ici */
+  PLANNED_VIEWS: ['hub','transitaire','relais','inventory','clients','settings'],
+
   /* Legacy views — accessible par URL mais pas dans sidebar */
-  LEGACY_VIEWS: ['alerts','incidents','previsions'],
+  LEGACY_VIEWS: ['previsions'],
 
   /* ─── STATE ──────────────────────────────────────────────────── */
   state: {
