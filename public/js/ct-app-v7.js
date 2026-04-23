@@ -1,28 +1,35 @@
 /* ===================================================================
    Komerce Control Tower — ct-app-v7.js
-   Router principal + Sidebar + Seed/Reset
-   + vue Transitaire
-   v7.1 — Ajout vues Pricing, Pilotage, Problèmes
+   Router principal · Shell navigation · Role-based sidebar
+   v8.0 — Architecture CT / BO (2 shells, rôles, registry)
    =================================================================== */
 window.CT = window.CT || {};
 
 CT.app = {
-  currentView: 'dashboard',
+  currentView: null,
+  drillDownCtx: null,
 
-  // ── Init ────────────────────────────────────────────────────
+  /* Flags to prevent duplicate event delegation */
+  _navBound: false,
+  _switcherBound: false,
+
+  /* ══════════════════════════════════════════════════════════════
+     INIT
+     ══════════════════════════════════════════════════════════════ */
   init: function() {
-    var loginForm = document.getElementById('ct-login-form');
-    if (loginForm) {
-      loginForm.addEventListener('submit', function(e) {
+    /* Login form */
+    var form = document.getElementById('ct-login-form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
         e.preventDefault();
         CT.app.login();
       });
     }
 
-    // Construire la sidebar si le conteneur existe
-    CT.app.buildSidebar();
+    /* Bind delegated listeners (once) */
+    CT.app._bindEvents();
 
-    // Check if already logged in
+    /* Check existing session */
     if (localStorage.getItem('kmrc_logged_in')) {
       CT.api.me().then(function(user) {
         CT.app.onLogin(user);
@@ -34,45 +41,45 @@ CT.app = {
     }
   },
 
-  // ── Sidebar ────────────────────────────────────────────────
-  buildSidebar: function() {
-    var nav = document.getElementById('ct-sidebar');
-    if (!nav) return;
+  /* ── Delegated event listeners (bound once, never re-added) ── */
+  _bindEvents: function() {
+    /* Sidebar nav */
+    var nav = document.getElementById('ct-sidebar-nav');
+    if (nav && !CT.app._navBound) {
+      nav.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-view],[data-action]');
+        if (!btn) return;
+        if (btn.dataset.view)   CT.app.navigate(btn.dataset.view);
+        if (btn.dataset.action === 'seed')  CT.app.doSeed();
+        if (btn.dataset.action === 'reset') CT.app.doReset();
+      });
+      CT.app._navBound = true;
+    }
 
-    var items = [
-      { id: 'dashboard',      emoji: '🎯', label: 'Dashboard' },
-      { id: 'orders',         emoji: '📋', label: 'Commandes & Colis' },
-      { id: 'parcels',        emoji: '📦', label: 'Tous les colis' },
-      { id: 'hub',            emoji: '🏭', label: 'Hub Dubai' },
-      { id: 'transitaire',    emoji: '🚢', label: 'Transitaire' },
-      { id: 'relais',         emoji: '📍', label: 'Relais' },
-      { id: 'finances',       emoji: '💰', label: 'Finances' },
-      { id: 'invoices',       emoji: '🧾', label: 'Factures' },
-      { id: 'alerts',         emoji: '⚡', label: 'Alertes' },
-      { id: 'incidents',      emoji: '🚨', label: 'Incidents' },
-      { id: 'reconciliation', emoji: '⚖️', label: 'Réconciliation' },
-      { id: 'pricing',        emoji: '🧮', label: 'Simulateur Pricing' },
-      { id: 'pilotage',       emoji: '📊', label: 'Pilotage' },
-      { id: 'problems',       emoji: '🚨', label: 'Problèmes' },
-      { id: 'economic',       emoji: '🧠', label: 'Modèle économique' },
-      { id: 'sourcing',       emoji: '🔍', label: 'Intelligence Sourcing' },
-      { id: 'simulator',      emoji: '🤖', label: 'Simulateur Flux' }
-    ];
+    /* Shell switcher */
+    var switcher = document.getElementById('ct-shell-switcher');
+    if (switcher && !CT.app._switcherBound) {
+      switcher.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-shell]');
+        if (!btn) return;
+        CT.platform.setShell(btn.dataset.shell);
+      });
+      CT.app._switcherBound = true;
+    }
 
-    nav.innerHTML = items.map(function(item) {
-      return (
-        '<button class="ct-nav-item" data-view="' + item.id + '" onclick="CT.app.navigate(\'' + item.id + '\')">' +
-          '<span class="ct-nav-emoji">' + item.emoji + '</span>' +
-          '<span class="ct-nav-label">' + item.label + '</span>' +
-        '</button>'
-      );
-    }).join('');
+    /* Logout */
+    var logoutBtn = document.getElementById('ct-logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function() { CT.app.logout(); });
+    }
   },
 
-  // ── Login ───────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════
+     AUTH
+     ══════════════════════════════════════════════════════════════ */
   login: async function() {
     var email = document.getElementById('ct-email').value;
-    var pass = document.getElementById('ct-password').value;
+    var pass  = document.getElementById('ct-password').value;
     var errEl = document.getElementById('ct-login-error');
     try {
       errEl.textContent = '';
@@ -87,12 +94,44 @@ CT.app = {
   onLogin: function(user) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('bo-app').style.display = 'flex';
+
+    /* ── Set platform state ── */
+    CT.platform.state.user = user;
+    CT.platform.state.role = CT.platform.resolveRole(user);
+    var role = CT.platform.state.role;
+
+    /* User name + role badge */
     var nameEl = document.getElementById('ct-user-name');
     if (nameEl) nameEl.textContent = user.full_name || user.email || 'Admin';
+    var roleEl = document.getElementById('ct-user-role');
+    if (roleEl) {
+      var roleDef = CT.platform.ROLES[role];
+      roleEl.textContent = roleDef ? roleDef.label : role;
+    }
 
-    // Hash deep-link si présent, sinon dashboard
-    var initialView = (location.hash || '').replace('#', '') || 'dashboard';
-    CT.app.navigate(initialView);
+    /* ── Determine initial shell ── */
+    var shells   = CT.platform.getShellsForRole(role);
+    var hashView = (location.hash || '').replace('#','');
+
+    if (hashView) {
+      /* Deep-link: infer shell from the view */
+      var viewDef = CT.platform.getView(hashView);
+      if (viewDef && shells.indexOf(viewDef.shell) !== -1) {
+        CT.platform.state.shell = viewDef.shell;
+      } else {
+        CT.platform.state.shell = shells[0] || 'bo';
+      }
+    } else {
+      CT.platform.state.shell = shells[0] || 'bo';
+    }
+
+    /* ── Build UI ── */
+    CT.app.renderShellSwitcher();
+    CT.app.renderSidebar();
+
+    /* ── Navigate ── */
+    var initial = hashView || CT.platform.getDefaultView(CT.platform.state.shell, role) || 'dashboard';
+    CT.app.navigate(initial);
   },
 
   showLogin: function() {
@@ -103,22 +142,168 @@ CT.app = {
   logout: async function() {
     try { await CT.api.logout(); } catch(_) {}
     localStorage.removeItem('kmrc_logged_in');
+    CT.platform.state.user = null;
+    CT.platform.state.role = 'founder';
     CT.app.showLogin();
   },
 
-  // ── Navigation ──────────────────────────────────────────────
-  navigate: function(view) {
-    CT.app.currentView = view;
+  /* ══════════════════════════════════════════════════════════════
+     SHELL SWITCHER
+     ══════════════════════════════════════════════════════════════ */
+  renderShellSwitcher: function() {
+    var el = document.getElementById('ct-shell-switcher');
+    if (!el) return;
 
-    // Update sidebar active state
-    document.querySelectorAll('.ct-nav-item').forEach(function(item) {
-      item.classList.toggle('active', item.dataset.view === view);
+    var role   = CT.platform.state.role;
+    var shells = CT.platform.getShellsForRole(role);
+
+    /* Single-shell user → no switcher */
+    if (shells.length <= 1) {
+      el.style.display = 'none';
+      CT.app._updateShellChrome();
+      return;
+    }
+
+    el.style.display = '';
+    el.innerHTML = shells.map(function(sid) {
+      var s = CT.platform.SHELLS[sid];
+      var active = sid === CT.platform.state.shell ? ' active' : '';
+      return '<button class="ct-shell-tab' + active + '" data-shell="' + sid + '">' +
+               '<span class="ct-shell-emoji">' + s.emoji + '</span> ' +
+               '<span class="ct-shell-label">' + s.shortLabel + '</span>' +
+             '</button>';
+    }).join('');
+
+    CT.app._updateShellChrome();
+  },
+
+  /* Update sidebar accent + title to match active shell */
+  _updateShellChrome: function() {
+    var sidebar = document.querySelector('.ct-sidebar');
+    if (sidebar) sidebar.setAttribute('data-shell', CT.platform.state.shell);
+
+    var titleEl = document.getElementById('ct-shell-title');
+    if (titleEl) {
+      var s = CT.platform.SHELLS[CT.platform.state.shell];
+      titleEl.textContent = s.emoji + ' ' + s.label;
+    }
+
+    /* Shell description */
+    var descEl = document.getElementById('ct-shell-desc');
+    if (descEl) {
+      var s2 = CT.platform.SHELLS[CT.platform.state.shell];
+      descEl.textContent = s2.description;
+    }
+  },
+
+  /* ══════════════════════════════════════════════════════════════
+     SIDEBAR
+     ══════════════════════════════════════════════════════════════ */
+  renderSidebar: function() {
+    var nav = document.getElementById('ct-sidebar-nav');
+    if (!nav) return;
+
+    var shell    = CT.platform.state.shell;
+    var role     = CT.platform.state.role;
+    var sections = CT.platform.getSectionsForShell(shell, role);
+    var views    = CT.platform.getViewsForShell(shell, role);
+
+    /* Group views by section */
+    var bySection = {};
+    views.forEach(function(v) {
+      if (!bySection[v.section]) bySection[v.section] = [];
+      bySection[v.section].push(v);
     });
 
-    // Render view
-    var main = document.getElementById('ct-main');
-    var viewFn = {
+    var html = '';
+    sections.forEach(function(sec) {
+      var list = bySection[sec.id];
+      if (!list || !list.length) return;
+      html += '<div class="ct-section-title">' + sec.label + '</div>';
+      list.forEach(function(v) {
+        var cls = 'ct-nav-item' + (v.id === CT.app.currentView ? ' active' : '');
+        html += '<button class="' + cls + '" data-view="' + v.id + '">' +
+                  '<span class="ct-nav-emoji">' + v.emoji + '</span>' +
+                  '<span class="ct-nav-label">' + v.label + '</span>' +
+                '</button>';
+      });
+    });
+
+    /* Admin tools — founder/admin only, BO only */
+    if (shell === 'bo' && (role === 'founder' || role === 'admin')) {
+      html += '<div class="ct-section-title">🔧 Admin</div>';
+      html += '<button class="ct-nav-item ct-nav-item-admin" data-action="seed">' +
+                '<span class="ct-nav-emoji">🌱</span><span class="ct-nav-label">Seed test</span></button>';
+      html += '<button class="ct-nav-item ct-nav-item-admin" data-action="reset">' +
+                '<span class="ct-nav-emoji">🧹</span><span class="ct-nav-label">Reset tout</span></button>';
+    }
+
+    nav.innerHTML = html;
+  },
+
+  /* ══════════════════════════════════════════════════════════════
+     NAVIGATION
+     ══════════════════════════════════════════════════════════════ */
+  navigate: function(view, params) {
+    var role = CT.platform.state.role;
+
+    /* ── Access check ── */
+    if (!CT.platform.canAccess(view, role)) {
+      var m = document.getElementById('ct-main');
+      if (m) m.innerHTML =
+        '<div class="ct-error">' +
+          '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
+          '<h3>Accès non autorisé</h3>' +
+          '<p style="margin-top:8px;color:#64748b">Vous n\'avez pas la permission d\'accéder à cette vue.</p>' +
+        '</div>';
+      return;
+    }
+
+    /* ── Auto-switch shell if view belongs to the other shell ── */
+    var viewShell = CT.platform.shellForView(view);
+    if (viewShell && viewShell !== CT.platform.state.shell) {
+      CT.platform.state.shell = viewShell;
+      CT.app.renderShellSwitcher();
+      CT.app.renderSidebar();
+    }
+
+    /* ── Save context (Phase 2 drill-down) ── */
+    CT.app.drillDownCtx = params || null;
+    CT.app.currentView = view;
+
+    /* ── Sidebar active state ── */
+    document.querySelectorAll('#ct-sidebar-nav .ct-nav-item').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.view === view);
+    });
+
+    /* ── Render ── */
+    var main   = document.getElementById('ct-main');
+    var viewFn = CT.app._resolveViewFn(view);
+
+    if (viewFn) {
+      viewFn(main);
+      if (history && history.replaceState) {
+        history.replaceState(null, '', '#' + view);
+      }
+    } else {
+      main.innerHTML =
+        '<div class="ct-empty-state">' +
+          '<div style="font-size:48px;margin-bottom:16px">🚧</div>' +
+          '<h3>Vue en construction</h3>' +
+          '<p style="color:#94a3b8;margin-top:8px">' + view + ' — bientôt disponible</p>' +
+        '</div>';
+      if (history && history.replaceState) {
+        history.replaceState(null, '', '#' + view);
+      }
+    }
+  },
+
+  /* Map view IDs → render functions */
+  _resolveViewFn: function(view) {
+    if (!CT.views) return null;
+    var map = {
       'dashboard':      CT.views.dashboard,
+      'action-center':  CT.views.actionCenter,
       'orders':         CT.views.orders,
       'parcels':        CT.views.parcels,
       'finances':       CT.views.finances,
@@ -138,19 +323,13 @@ CT.app = {
       'pricing':        CT.views.pricing,
       'pilotage':       CT.views.pilotage,
       'problems':       CT.views.problems
-    }[view];
-
-    if (viewFn) {
-      viewFn(main);
-      if (history && history.replaceState) {
-        history.replaceState(null, '', '#' + view);
-      }
-    } else {
-      main.innerHTML = '<div class="ct-error">Vue inconnue: ' + view + '</div>';
-    }
+    };
+    return map[view] || null;
   },
 
-  // ── Seed / Reset ────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════
+     SEED / RESET (admin tools)
+     ══════════════════════════════════════════════════════════════ */
   doSeed: async function() {
     if (!confirm('🌱 Injecter les données de test ?\nCela créera 20 commandes + 13 colis + scans + incidents + factures.')) return;
     var main = document.getElementById('ct-main');
@@ -181,7 +360,7 @@ CT.app = {
   }
 };
 
-// Auto-init
+/* Auto-init */
 document.addEventListener('DOMContentLoaded', function() {
   CT.app.init();
 });
