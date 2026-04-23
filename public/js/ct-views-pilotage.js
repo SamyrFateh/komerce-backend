@@ -881,9 +881,32 @@ CT.views.pilotage = function(main) {
     statusEl.innerHTML = '<div class="ct-loading">⏳ Chargement des données…</div>';
 
     Promise.all([
-      apiFetch('/api/dashboard/stats'),
+      apiFetch('/api/dashboard/pilotage'),
+      apiFetch('/api/dashboard/finance').catch(() => ({})),
       apiFetch('/api/orders?limit=100').catch(() => ({ rows: [] })),
-    ]).then(([stats, ordersData]) => {
+    ]).then(([pilotage, finance, ordersData]) => {
+      // Merge pilotage + finance into a unified stats object
+      const vol = pilotage.volume || {};
+      const stats = {
+        ca: pilotage.ca,
+        volume: { ...vol, total_commandes: vol.total },
+        pipeline: pilotage.pipeline,
+        categories: pilotage.categories,
+        couts: pilotage.couts,
+        // Finance data
+        marges: finance.marges ? {
+          brute_pct: finance.marges.taux_marge_pct,
+          brute_kmf: finance.marges.marge_reelle_kmf,
+          alerte: finance.marges.alertes_perte ? finance.marges.alertes_perte.count + ' vente(s) à perte' : null,
+        } : null,
+        top_produits: (finance.top_produits || []).map(p => ({
+          produit: p.nom, categorie: p.categorie, qte: p.qty,
+          prix_vente_kmf: p.ca_kmf, cdr_kmf: 0,
+        })),
+        taux_conversion: finance.kpi ? (finance.kpi.nb_livrees && finance.kpi.nb_commandes
+          ? (finance.kpi.nb_livrees / finance.kpi.nb_commandes * 100).toFixed(1) + '%'
+          : '—') : '—',
+      };
       _pil.dashData = { stats, orders: ordersData.rows || ordersData || [] };
       statusEl.innerHTML = '<div style="color:#16a34a;font-size:0.78rem;">✅ Données chargées</div>';
       setTimeout(() => { statusEl.innerHTML = ''; }, 3000);
