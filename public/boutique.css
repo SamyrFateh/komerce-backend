@@ -3137,11 +3137,11 @@ body.cart-open{overflow:hidden}
     scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    gap: 2px;
-    padding: 4px 10px !important;
+    gap: 1px;
+    padding: 3px 8px !important;
     background: rgba(253,250,245,.96);
     align-items: flex-start;
-    min-height: 46px;
+    min-height: 38px;
   }
   .k-cats::-webkit-scrollbar { display: none; }
 
@@ -3150,10 +3150,10 @@ body.cart-open{overflow:hidden}
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    gap: 2px !important;
-    padding: 3px 2px !important;
-    min-width: 42px !important;
-    max-width: 50px !important;
+    gap: 1px !important;
+    padding: 2px 1px !important;
+    min-width: 36px !important;
+    max-width: 46px !important;
     width: auto !important;
     background: transparent !important;
     border: none !important;
@@ -3163,26 +3163,26 @@ body.cart-open{overflow:hidden}
   }
   .k-chip-photo,
   .k-chip-emoji {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
     border-radius: 50% !important;
-    font-size: 15px !important;
-    border: 2px solid transparent !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,.08) !important;
+    font-size: 13px !important;
+    border: 1.5px solid transparent !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06) !important;
     background: #fff;
   }
   .k-chip-photo > span {
-    font-size: 9px !important;
+    font-size: 8px !important;
   }
   .k-chip-label {
-    font-size: 9px !important;
+    font-size: 8px !important;
     font-weight: 500;
-    line-height: 1.1;
+    line-height: 1;
     white-space: nowrap;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 46px !important;
+    max-width: 42px !important;
     text-align: center;
     color: #555;
   }
@@ -3204,10 +3204,10 @@ body.cart-open{overflow:hidden}
     overflow: visible;
   }
   #k-promos-section .k-section-head {
-    padding: 0 8px 2px;
+    padding: 0 8px 1px;
     margin: 0;
   }
-  #k-promos-section .k-section-head h2 { font-size: 13px; }
+  #k-promos-section .k-section-head h2 { font-size: 12px; }
 
   #k-promo-rail {
     overflow-x: auto;
@@ -3252,7 +3252,7 @@ body.cart-open{overflow:hidden}
   }
   .k-promo-card-img {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 5 / 4;
     object-fit: cover;
     border-radius: 8px 8px 0 0;
     display: block;
@@ -3269,7 +3269,7 @@ body.cart-open{overflow:hidden}
     z-index: 2;
   }
   .k-promo-card-info {
-    padding: 2px 4px 4px;
+    padding: 1px 3px 2px;
   }
   .k-promo-card-name {
     font-size: 9px;
