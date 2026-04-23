@@ -3547,6 +3547,119 @@ body.cart-open{overflow:hidden}
 }
 .k-card-panel.active {
   display: -webkit-box;
+  /* ── K. SECTION MODE (Temu-style grouped by category) ── */
+  .k-grid.k-grid-has-sections {
+    display: block;
+    grid-template-columns: none;
+    gap: 0;
+    padding: 0;
+  }
+  .k-sec-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 10px 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    position: relative;
+  }
+  .k-sec-header::before {
+    content: '';
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--ocean);
+    flex-shrink: 0;
+  }
+  .k-sec-header-emoji { font-size: 16px; }
+  .k-sec-header-name { flex: 1; }
+  .k-sec-header-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .k-sec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 6px 8px 16px;
+  }
+  .k-sec-grid + .k-sec-header {
+    margin-top: 8px;
+  }
+  /* Compact cards inside sections */
+  .k-sec-grid .k-card-tabs,
+  .k-sec-grid .k-card-panels {
+    display: none;
+  }
+  .k-sec-grid .k-card-info {
+    padding: 6px 7px 8px;
+  }
+  .k-sec-grid .k-card-name {
+    font-size: 11.5px;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 2px;
+    min-height: auto;
+    max-height: 2.5em;
+  }
+  .k-sec-grid .k-card-price { font-size: 12.5px; font-weight: 800; }
+  .k-sec-grid .k-card-old-price { font-size: 10px; }
+  .k-sec-grid .k-card-promo {
+    font-size: 9.5px;
+    padding: 2px 5px;
+    top: 4px;
+    left: 4px;
+  }
+  .k-sec-grid .k-card-fav {
+    width: 24px; height: 24px;
+    top: 4px; right: 4px;
+    font-size: 11px;
+  }
+  .k-sec-grid .k-card-add {
+    width: 32px; height: 32px;
+    bottom: 4px; right: 4px;
+  }
+
+  /* ── L. SECTION INDEX — floating emoji jump ──────── */
+  #k-section-index {
+    right: 4px;
+    gap: 2px;
+    padding: 4px 3px;
+  }
+  .k-section-index-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .k-section-index-emoji {
+    font-size: 16px;
+  }
+
+  /* ── M. HEADER ULTRA-COMPACT (< 600px) ──────────── */
+  @media (max-width: 600px) {
+    .k-header-inner {
+      gap: 8px;
+      padding: 0 12px;
+    }
+    .k-logo-text { display: none; }
+    .k-logo-icon { width: 32px; height: 32px; }
+    .k-search {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: none;
+      height: 38px;
+    }
+    .k-search input {
+      font-size: 16px; /* iOS anti-zoom */
+      height: 38px;
+      padding: 0 12px 0 36px;
+    }
+    .k-search-icon { left: 12px; }
+  }
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
 
@@ -6099,11 +6212,13 @@ button,
   min-width: 72px !important;
   flex: 0 0 auto !important;
 }
-.k-chip-photo {
-  /* Taille fixe des photos de chip pour éviter le shift pendant le chargement */
-  width: 48px !important;
-  height: 48px !important;
-  flex-shrink: 0 !important;
+/* Chip photos — desktop only (mobile = 36px in mobile block) */
+@media (min-width: 900px) {
+  .k-chip-photo {
+    width: 48px !important;
+    height: 48px !important;
+    flex-shrink: 0 !important;
+  }
 }
 
 
@@ -6484,16 +6599,17 @@ button,
   border-radius: 10px;
 }
 
-/* Grille de produits d'une section : réutilise la même structure que .k-grid */
-/* Mobile : 3 colonnes = cartes plus compactes (gain de densité) */
+/* Grille de produits d'une section — mobile-first */
+/* Mobile default: 2 colonnes (cohérent avec le bloc mobile @899px) */
 .k-sec-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  padding: 12px 8px 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 6px 8px 16px;
 }
 @media (min-width: 500px) {
   .k-sec-grid {
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     padding: 14px 12px 24px;
   }
@@ -6637,64 +6753,5 @@ body.cart-open #k-section-index {
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  CARTES COMPACTES en mode sections 3 colonnes (mobile)                   */
-/* ═══════════════════════════════════════════════════════════════════════ */
-@media (max-width: 767px) {
-  /* Cartes dans les sections : cacher les onglets secondaires et compacter */
-  .k-sec-grid .k-card-tabs,
-  .k-sec-grid .k-card-panels {
-    display: none !important;
-  }
-  .k-sec-grid .k-card-info {
-    padding: 6px 7px 8px;
-  }
-  .k-sec-grid .k-card-name {
-    font-size: 11.5px;
-    line-height: 1.25;
-    -webkit-line-clamp: 2;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 2px;
-    min-height: auto;
-    max-height: 2.5em;
-  }
-  .k-sec-grid .k-card-price {
-    font-size: 12.5px;
-    font-weight: 800;
-  }
-  .k-sec-grid .k-card-old-price {
-    font-size: 10px;
-  }
-  /* Badge promo plus petit */
-  .k-sec-grid .k-card-promo {
-    font-size: 9.5px;
-    padding: 2px 5px;
-    top: 4px;
-    left: 4px;
-  }
-  /* Favori bouton plus petit */
-  .k-sec-grid .k-card-fav {
-    width: 24px;
-    height: 24px;
-    top: 4px;
-    right: 4px;
-    font-size: 11px;
-  }
-  /* Panier tressé plus petit pour s'adapter aux cartes compactes */
-  .k-sec-grid .k-card-add {
-    width: 32px;
-    height: 32px;
-    bottom: 4px;
-    right: 4px;
-  }
-  /* Quand le produit est dans le panier (Option C), badge qty plus petit */
-  .k-sec-grid .k-card-add-qty-badge {
-    min-width: 16px;
-    height: 16px;
-    font-size: 9px;
-    top: -2px;
-    right: -2px;
-  }
-}
+/* CARTES COMPACTES sections — rules consolidated into mobile block @899px */
+/* (see section K inside the main @media max-width: 899px block) */
