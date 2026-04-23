@@ -1598,12 +1598,12 @@ body.cart-open{overflow:hidden}
 }
 .k-sug-rail::-webkit-scrollbar{display:none}
 .k-sug-card{
-  flex:0 0 110px;scroll-snap-align:start;
-  border-radius:var(--radius);overflow:hidden;
+  border-radius:var(--radius);overflow:visible;
   background:var(--white);
   box-shadow:var(--shadow-sm);
   cursor:pointer;position:relative;
   transition:transform .2s;
+  display:flex;flex-direction:column;
 }
 .k-sug-card:active{transform:scale(.96)}
 .k-sug-card img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--sand-dark)}
@@ -4057,36 +4057,7 @@ input#of-client-email {
   color: var(--text) !important;
 }
 
-/* Grille verticale 2 colonnes mobile — scroll haut/bas naturel */
-.k-sug-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 10px !important;
-  overflow: visible !important;
-  scroll-snap-type: none !important;
-  padding: 0 !important;
-}
-
-.k-sug-card {
-  flex: unset !important;
-  width: 100% !important;
-  scroll-snap-align: unset !important;
-}
-
-.k-sug-card img {
-  aspect-ratio: 4/3 !important;
-}
-
-/* Desktop : 4 colonnes */
-@media (min-width: 900px) {
-  .k-sug-rail {
-    grid-template-columns: repeat(4, 1fr) !important;
-  }
-  .k-modal-img-wrap {
-    height: 60vh !important;
-    max-height: 600px;
-  }
-}
+/* (duplicate 1 removed — see canonical rules above) */
 
 /* Assurer que la modale garde les actions (quantité + ajout panier) en bas fixe */
 .k-modal-actions {
@@ -4226,37 +4197,7 @@ body.modal-open .k-bnav {
   border-top: 8px solid var(--sand) !important;
   background: var(--white);
 }
-.k-modal-suggestions h3 {
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  margin-bottom: 12px !important;
-  color: var(--text) !important;
-}
-.k-sug-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 10px !important;
-  overflow: visible !important;
-  scroll-snap-type: none !important;
-  padding: 0 !important;
-}
-.k-sug-card {
-  flex: unset !important;
-  width: 100% !important;
-  scroll-snap-align: unset !important;
-}
-.k-sug-card img {
-  aspect-ratio: 4/3 !important;
-}
-.k-modal-actions {
-  flex-shrink: 0;
-  background: var(--white);
-  border-top: 1px solid var(--sand-dark);
-}
-@media (min-width: 900px) {
-  .k-sug-grid { grid-template-columns: repeat(4, 1fr) !important; }
-  .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
-}
+/* (duplicate 2 removed — see canonical rules above) */
 
 /* ── Carrousel produit sur cartes grille (Shein-like) ───────────── */
 .k-card-img-wrap {
@@ -4407,44 +4348,7 @@ body.modal-open .k-bnav {
   background: var(--white, white);
   border-top: 8px solid var(--sand, #faf6ed);
 }
-.k-modal-suggestions h3 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  color: var(--text, #2a2a2a);
-}
-.k-sug-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  gap: 10px !important;
-  overflow: visible !important;
-  padding: 0 !important;
-}
-.k-sug-card {
-  flex: unset !important;
-  width: 100% !important;
-  scroll-snap-align: unset !important;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-.k-sug-card:active { transform: scale(0.97); }
-.k-sug-card img {
-  aspect-ratio: 4/3;
-  object-fit: cover;
-}
-
-@media (min-width: 900px) {
-  .k-sug-grid { grid-template-columns: repeat(4, 1fr) !important; }
-  .k-modal-overlay.open .k-modal-img-wrap { height: 60vh !important; max-height: 600px; }
-}
-
-/* Actions sticky en bas modale */
-.k-modal-actions {
-  background: var(--white, white);
-  border-top: 1px solid var(--sand-dark, #e4d9c7);
-  padding: 12px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
-}
+/* (duplicate 3 removed — see canonical rules above) */
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */
@@ -5288,18 +5192,22 @@ body.cart-open #k-page-scroll {
   padding-bottom:calc(12px + env(safe-area-inset-bottom)) !important;
 }
 
-/* Uniformisation des hauteurs de cartes suggestions (évite les trous) */
+/* Suggestion card flex column — actions toujours visibles */
 .k-sug-grid .k-sug-card{
   display:flex;
   flex-direction:column;
   height:auto;
+  overflow:visible;
 }
 .k-sug-grid .k-sug-card-name{
-  flex:1 0 auto;
+  flex:0 0 auto;
 }
-/* Prix toujours aligné en bas de carte */
 .k-sug-grid .k-sug-card-price{
-  margin-top:auto;
+  flex:0 0 auto;
+}
+.k-sug-grid .k-sug-card-actions{
+  flex:0 0 auto;
+  display:flex !important;
 }
 
 /* ── FIX : #k-sug-rail est maintenant un conteneur de sections, pas une grille ── */

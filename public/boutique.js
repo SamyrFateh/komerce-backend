@@ -879,6 +879,7 @@
   }
 
   // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
+  window._scrollingToSection = false;
   window.scrollToCategorySection = function(cat) {
     const container = document.getElementById('k-page-scroll');
     if (!cat || cat === 'all') {
@@ -889,6 +890,8 @@
     const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
     const el = document.getElementById(anchorId);
     if (!el) return;
+    // Lock observer — prevents chip bounce during programmatic scroll
+    window._scrollingToSection = true;
     // #k-page-scroll est un container fixed séparé — calcul direct
     if (container) {
       const containerTop = container.getBoundingClientRect().top;
@@ -898,6 +901,8 @@
     } else {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    // Unlock observer after scroll settles (~700ms)
+    setTimeout(function() { window._scrollingToSection = false; }, 700);
   };
 
 
@@ -4081,6 +4086,8 @@ document.addEventListener('click', function(e) {
     if (_sectionObserver) _sectionObserver.disconnect();
     const scrollRoot = document.getElementById('k-page-scroll') || null;
     _sectionObserver = new IntersectionObserver(function(entries) {
+      // Skip observer updates during programmatic scroll (prevents chip bounce)
+      if (window._scrollingToSection) return;
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           const cat = entry.target.getAttribute('data-cat');
