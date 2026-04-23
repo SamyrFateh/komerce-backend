@@ -299,6 +299,14 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
 
     console.log(`[PICKUP-SECRET] Généré pour ${order.reference} — agent=${agentId} payeur="${payer_name}"`);
 
+    // 4b. 🎁 Hook fidélité — fire-and-forget (non-bloquant)
+    try {
+      const loyaltyService = require('../services/loyalty-service');
+      loyaltyService.handleOrderConfirmed({ orderId })
+        .then(r => { if (r && !r.skipped) console.log('[loyalty] hook OK:', r); })
+        .catch(e => console.warn('[loyalty] hook error:', e.message));
+    } catch(e) { /* loyalty-service not yet loaded — silent */ }
+
     // 5. Renvoyer le code CLAIR une seule fois, avec un token d'impression
     // Le token d'impression permet d'accéder à /receipt/:orderId pendant 2 min
     const printToken = crypto.randomBytes(24).toString('hex');

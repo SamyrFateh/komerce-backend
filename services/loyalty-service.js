@@ -1,0 +1,234 @@
+'use strict';
+
+/**
+ * KOMERCE — services/loyalty-service.js
+ * ═══════════════════════════════════════════════════════════════════════
+ * Système de fidélité basé sur les "gros paniers" (big_basket_count)
+ *
+ * Règle métier :
+ *   Un "gros panier" = commande dont total_kmf >= loyalty_threshold_kmf
+ *                      ET passée en status 'confirmed' (paiement validé)
+ *
+ *   À partir de la Nᵉ commande gros panier (loyalty_trigger_count = 3 par défaut),
+ *   le client devient éligible à un cadeau de fidélité.
+ *
+ *   L'admin décide manuellement du cadeau (produit offert, crédit, etc.)
+ *   depuis le Control Tower — mais le système notifie automatiquement le client
+ *   par WhatsApp dès qu'il devient éligible.
+ *
+ * Activation / désactivation :
+ *   finance_config.loyalty_active = false → désactive complètement le système
+ *   (plus de notif, plus de création d'enregistrement loyalty_rewards)
+ *
+ * Ce service est appelé par :
+ *   - routes/pickup-secret.js quand une commande passe à 'confirmed' (cash)
+ *   - routes/payments.js quand un paiement Stripe est validé
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+
+const db = require('../db');
+
+// ─── Cache de la config (5 min) pour éviter de requêter à chaque commande ───
+let _configCache = null;
+let _configCacheAt = 0;
+const CONFIG_TTL_MS = 5 * 60 * 1000;
+
+async function getFinanceConfig() {
+  const now = Date.now();
+  if (_configCache && (now - _configCacheAt) < CONFIG_TTL_MS) {
+    return _configCache;
+  }
+  try {
+    const { rows: [cfg] } = await db.query('SELECT * FROM finance_config WHERE id = 1');
+    _configCache = cfg || null;
+    _configCacheAt = now;
+    return _configCache;
+  } catch (err) {
+    // Table pas encore créée — on ignore
+    if (err.code === '42P01') {
+      console.warn('[loyalty] finance_config table not yet created');
+      return null;
+    }
+    throw err;
+  }
+}
+
+// Invalidation manuelle du cache (appelée après PUT /api/admin/finance-config)
+function invalidateConfigCache() {
+  _configCache = null;
+  _configCacheAt = 0;
+}
+
+/**
+ * Appelé dans le hook post-confirmed d'une commande.
+ * Incrémente big_basket_count si le panier dépasse le seuil,
+ * déclenche la notification WhatsApp si le seuil de trigger est atteint.
+ *
+ * Non-bloquant : toute erreur est loggée mais n'empêche pas le flow.
+ *
+ * @param {object} opts
+ * @param {string} opts.orderId
+ * @param {object} [opts.dbClient]  — si dans une transaction, passer le client
+ */
+async function handleOrderConfirmed({ orderId, dbClient = null }) {
+  const dbHandle = dbClient || db;
+
+  try {
+    const cfg = await getFinanceConfig();
+    if (!cfg || !cfg.loyalty_active) {
+      return { skipped: true, reason: 'loyalty_disabled' };
+    }
+
+    // 1. Récupérer la commande et le user
+    const { rows: [order] } = await dbHandle.query(`
+      SELECT o.id, o.reference, o.user_id, o.total_kmf, o.status,
+             u.full_name, u.phone, u.big_basket_count, u.big_basket_last_notified_count
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.id = $1
+    `, [orderId]);
+
+    if (!order) {
+      console.warn('[loyalty] order not found', orderId);
+      return { skipped: true, reason: 'order_not_found' };
+    }
+
+    // Pas de user associé (guest checkout) → pas de fidélité
+    if (!order.user_id) {
+      return { skipped: true, reason: 'guest_order' };
+    }
+
+    // Panier sous le seuil → rien à faire
+    const totalKmf = Number(order.total_kmf || 0);
+    if (totalKmf < Number(cfg.loyalty_threshold_kmf)) {
+      return { skipped: true, reason: 'below_threshold', total_kmf: totalKmf };
+    }
+
+    // 2. Incrémenter le compteur (en DB directement pour atomicité)
+    const { rows: [updated] } = await dbHandle.query(`
+      UPDATE users
+      SET big_basket_count = big_basket_count + 1
+      WHERE id = $1
+      RETURNING big_basket_count, big_basket_last_notified_count, full_name, phone
+    `, [order.user_id]);
+
+    const newCount       = Number(updated.big_basket_count);
+    const lastNotified   = Number(updated.big_basket_last_notified_count);
+    const triggerCount   = Number(cfg.loyalty_trigger_count);
+
+    console.log(`[loyalty] user=${order.user_id} big_basket_count: ${newCount} (order=${order.reference}, total=${totalKmf})`);
+
+    // 3. Déclenchement si on atteint ou dépasse un palier de trigger
+    //    (par défaut 3, puis chaque tranche de 3 supplémentaire : 6, 9, 12...)
+    //    La condition : newCount est un multiple de triggerCount
+    //                   ET on n'a pas encore notifié à ce palier
+    const hasReachedNewTier =
+      triggerCount > 0 &&
+      newCount % triggerCount === 0 &&
+      newCount > lastNotified;
+
+    if (!hasReachedNewTier) {
+      return { skipped: false, incremented: true, notified: false, count: newCount };
+    }
+
+    // 4. Créer l'enregistrement loyalty_rewards (status 'pending' = à traiter admin)
+    await dbHandle.query(`
+      INSERT INTO loyalty_rewards (user_id, triggered_by_order_id, basket_count_at_trigger, status)
+      VALUES ($1, $2, $3, 'pending')
+    `, [order.user_id, orderId, newCount]);
+
+    // 5. Mémoriser qu'on a notifié à ce palier (évite les re-triggers)
+    await dbHandle.query(`
+      UPDATE users SET big_basket_last_notified_count = $1 WHERE id = $2
+    `, [newCount, order.user_id]);
+
+    // 6. Notifier le client par WhatsApp (fire-and-forget, non-bloquant)
+    try {
+      const notifSvc = require('./notification-service');
+      if (typeof notifSvc.notifyLoyaltyEarned === 'function') {
+        notifSvc.notifyLoyaltyEarned({
+          userId:     order.user_id,
+          userName:   updated.full_name,
+          phone:      updated.phone,
+          orderRef:   order.reference,
+          basketCount: newCount,
+        }).catch(e => console.error('[loyalty] notif error:', e.message));
+      }
+    } catch(e) { console.warn('[loyalty] notif require error:', e.message); }
+
+    console.log(`[loyalty] 🎉 Client ${order.user_id} éligible (palier ${newCount}/${triggerCount})`);
+
+    return {
+      skipped: false,
+      incremented: true,
+      notified: true,
+      count: newCount,
+      tier: Math.floor(newCount / triggerCount),
+    };
+
+  } catch (err) {
+    console.error('[loyalty] handleOrderConfirmed error:', err.message, err.stack);
+    return { skipped: true, reason: 'error', error: err.message };
+  }
+}
+
+/**
+ * Calcule le statut fidélité d'un utilisateur (pour /api/orders/me et la boutique)
+ *
+ * @returns {object} { count, threshold_kmf, trigger_count, next_step, pending_reward }
+ */
+async function getUserLoyaltyStatus(userId) {
+  if (!userId) return null;
+
+  const cfg = await getFinanceConfig();
+  if (!cfg || !cfg.loyalty_active) {
+    return { active: false };
+  }
+
+  const { rows: [user] } = await db.query(`
+    SELECT big_basket_count, big_basket_last_notified_count FROM users WHERE id = $1
+  `, [userId]);
+
+  if (!user) return null;
+
+  const count        = Number(user.big_basket_count);
+  const trigger      = Number(cfg.loyalty_trigger_count);
+  const threshold    = Number(cfg.loyalty_threshold_kmf);
+
+  // Combien de gros paniers encore à faire pour atteindre le prochain palier ?
+  const nextTier       = Math.ceil((count + 1) / trigger) * trigger;
+  const remaining      = nextTier - count;
+
+  // Y a-t-il un cadeau pending pas encore accordé pour ce user ?
+  const { rows: [pending] } = await db.query(`
+    SELECT id, basket_count_at_trigger, created_at
+    FROM loyalty_rewards
+    WHERE user_id = $1 AND status = 'pending'
+    ORDER BY created_at DESC LIMIT 1
+  `, [userId]);
+
+  return {
+    active: true,
+    count,
+    threshold_kmf: threshold,
+    trigger_count: trigger,
+    next_tier: nextTier,
+    remaining_to_next_tier: remaining,
+    pending_reward: pending ? {
+      id: pending.id,
+      at_count: Number(pending.basket_count_at_trigger),
+      created_at: pending.created_at,
+    } : null,
+    // État synthétique pour l'UI boutique
+    status: pending ? 'reward_pending' :
+            (remaining === 1 ? 'one_more' :
+            (count > 0 ? 'active' : 'inactive')),
+  };
+}
+
+module.exports = {
+  handleOrderConfirmed,
+  getUserLoyaltyStatus,
+  getFinanceConfig,
+  invalidateConfigCache,
+};

@@ -195,7 +195,8 @@ CT.views.economic = async function(container) {
         { id: 'executif', label: '📊 Vue exécutive' },
         { id: 'variables', label: '🔢 Variables' },
         { id: 'charges', label: '💸 Charges' },
-        { id: 'coherence', label: '🛡️ Cohérence' }
+        { id: 'coherence', label: '🛡️ Cohérence' },
+        { id: 'config', label: '⚙️ Config & Fidélité' }
       ];
       if (expert) {
         tabs.push({ id: 'history', label: '📜 Historique' });
@@ -243,6 +244,7 @@ CT.views.economic = async function(container) {
         else if (tab === 'variables') await renderVariables(content);
         else if (tab === 'charges') await renderCharges(content);
         else if (tab === 'coherence') await renderCoherence(content);
+        else if (tab === 'config') await renderConfig(content);
         else if (tab === 'history') await renderHistory(content);
       } catch (err) {
         content.innerHTML = '<div class="ct-error">❌ ' + err.message + '</div>';
@@ -779,6 +781,179 @@ CT.views.economic = async function(container) {
 
       html += '</div>';
       content.innerHTML = html;
+    }
+
+    // ─── Tab 5: Config & Fidélité ──────────────────────────────────
+
+    async function renderConfig(content) {
+      var html = '';
+
+      // ── Section 1: Finance Config (variabilisée) ──────────────────
+      html += '<div class="eco-section">';
+      html += '<h3>⚙️ Configuration financière</h3>';
+      html += '<p style="color:#6b7280;font-size:13px;margin-bottom:12px;">Tous les paramètres métier pilotables — modifiez ici, le moteur recalcule tout.</p>';
+
+      try {
+        var cfgResp = await CT.api.get('/api/admin/finance-config');
+        var configs = cfgResp.configs || cfgResp || [];
+
+        if (!configs.length) {
+          html += '<div class="ct-empty">Aucune config. Le seed se crée au premier redémarrage.</div>';
+        } else {
+          // Group by category
+          var groups = {};
+          for (var i = 0; i < configs.length; i++) {
+            var c = configs[i];
+            var cat = c.category || 'Général';
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(c);
+          }
+
+          var cats = Object.keys(groups).sort();
+          for (var g = 0; g < cats.length; g++) {
+            html += '<div class="eco-config-group">';
+            html += '<h4 style="font-size:14px;color:#374151;margin:12px 0 8px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">' + cats[g] + '</h4>';
+
+            var items = groups[cats[g]];
+            for (var j = 0; j < items.length; j++) {
+              var item = items[j];
+              html += '<div class="eco-config-row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">';
+              html += '<span style="flex:1;font-size:13px;color:#374151;" title="' + (item.description || '') + '">' + item.label + '</span>';
+              html += '<input type="number" class="eco-config-input" data-key="' + item.key + '" value="' + (item.value != null ? item.value : '') + '" step="any" style="width:100px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;text-align:right;">';
+              html += '<span style="font-size:12px;color:#9ca3af;width:50px;">' + (item.unit || '') + '</span>';
+              html += '<button class="eco-config-save btn-sm" data-key="' + item.key + '" style="padding:3px 10px;font-size:12px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;">💾</button>';
+              html += '</div>';
+            }
+            html += '</div>';
+          }
+        }
+      } catch (e) {
+        html += '<div class="ct-error">Erreur config: ' + e.message + '</div>';
+      }
+      html += '</div>';
+
+      // ── Section 2: Seuils fidélité ────────────────────────────────
+      html += '<div class="eco-section">';
+      html += '<h3>🎁 Programme fidélité</h3>';
+      html += '<p style="color:#6b7280;font-size:13px;margin-bottom:12px;">Seuils, taux, et paliers — tout est dans la config financière ci-dessus (catégorie "Fidélité").</p>';
+
+      // Pending rewards
+      try {
+        var loyResp = await CT.api.get('/api/admin/loyalty/pending');
+        var pending = loyResp.rewards || loyResp || [];
+
+        if (pending.length > 0) {
+          html += '<h4 style="font-size:14px;color:#f59e0b;margin:12px 0 8px;">🎁 Cadeaux en attente (' + pending.length + ')</h4>';
+          html += '<div class="eco-table-wrap" style="overflow-x:auto;">';
+          html += '<table class="ct-table" style="width:100%;font-size:13px;">';
+          html += '<thead><tr><th>Client</th><th>Téléphone</th><th>Commandes</th><th>Panier moyen</th><th>Cadeau suggéré</th><th>Action</th></tr></thead>';
+          html += '<tbody>';
+          for (var p = 0; p < pending.length; p++) {
+            var rw = pending[p];
+            html += '<tr>';
+            html += '<td>' + (rw.name || '—') + '</td>';
+            html += '<td>' + (rw.phone || '—') + '</td>';
+            html += '<td style="text-align:center;">' + (rw.order_count || 0) + '</td>';
+            html += '<td style="text-align:right;">' + fmtKMF(rw.avg_basket || 0) + '</td>';
+            html += '<td>' + (rw.suggested_gift || 'À définir') + '</td>';
+            html += '<td>';
+            html += '<button class="btn-sm loyalty-grant" data-user-id="' + rw.user_id + '" style="padding:3px 8px;font-size:11px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:4px;">✅ Accorder</button>';
+            html += '<button class="btn-sm loyalty-skip" data-user-id="' + rw.user_id + '" style="padding:3px 8px;font-size:11px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">⏭ Ignorer</button>';
+            html += '</td>';
+            html += '</tr>';
+          }
+          html += '</tbody></table></div>';
+        } else {
+          html += '<div class="ct-empty" style="padding:12px;color:#6b7280;font-size:13px;">Aucun cadeau en attente — tout va bien 🎉</div>';
+        }
+      } catch (e) {
+        html += '<div style="color:#6b7280;font-size:12px;">Module fidélité pas encore actif (' + e.message + ')</div>';
+      }
+
+      // Recent rewards history
+      try {
+        var histResp = await CT.api.get('/api/admin/loyalty/history');
+        var history = histResp.rewards || histResp || [];
+
+        if (history.length > 0) {
+          html += '<h4 style="font-size:14px;color:#374151;margin:16px 0 8px;">📋 Historique récent</h4>';
+          html += '<div class="eco-table-wrap" style="overflow-x:auto;">';
+          html += '<table class="ct-table" style="width:100%;font-size:12px;">';
+          html += '<thead><tr><th>Date</th><th>Client</th><th>Type</th><th>Description</th><th>Statut</th></tr></thead>';
+          html += '<tbody>';
+          for (var h = 0; h < Math.min(history.length, 20); h++) {
+            var hr = history[h];
+            html += '<tr>';
+            html += '<td>' + new Date(hr.created_at).toLocaleDateString('fr-FR') + '</td>';
+            html += '<td>' + (hr.user_name || hr.phone || '—') + '</td>';
+            html += '<td>' + (hr.reward_type || '—') + '</td>';
+            html += '<td>' + (hr.description || '—') + '</td>';
+            var stColor = hr.status === 'granted' ? '#10b981' : hr.status === 'skipped' ? '#6b7280' : '#f59e0b';
+            html += '<td style="color:' + stColor + ';">' + (hr.status || '—') + '</td>';
+            html += '</tr>';
+          }
+          html += '</tbody></table></div>';
+        }
+      } catch (e) {
+        // Silent — history may not exist yet
+      }
+
+      html += '</div>';
+      content.innerHTML = html;
+
+      // ── Wire save buttons (config) ────────────────────────────────
+      var saveBtns = content.querySelectorAll('.eco-config-save');
+      saveBtns.forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var key = btn.getAttribute('data-key');
+          var input = content.querySelector('.eco-config-input[data-key="' + key + '"]');
+          if (!input) return;
+          btn.textContent = '⏳';
+          try {
+            await CT.api.put('/api/admin/finance-config/' + key, { value: parseFloat(input.value) });
+            btn.textContent = '✅';
+            setTimeout(function() { btn.textContent = '💾'; }, 1500);
+            // Trigger redistribution
+            await CT.api.post('/api/admin/economic/redistribute');
+          } catch (e) {
+            btn.textContent = '❌';
+            alert('Erreur: ' + e.message);
+          }
+        });
+      });
+
+      // ── Wire loyalty actions ──────────────────────────────────────
+      var grantBtns = content.querySelectorAll('.loyalty-grant');
+      grantBtns.forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var userId = btn.getAttribute('data-user-id');
+          btn.textContent = '⏳';
+          try {
+            await CT.api.post('/api/admin/loyalty/' + userId + '/grant');
+            btn.textContent = '✅ Accordé';
+            btn.disabled = true;
+          } catch (e) {
+            btn.textContent = '❌';
+            alert('Erreur: ' + e.message);
+          }
+        });
+      });
+
+      var skipBtns = content.querySelectorAll('.loyalty-skip');
+      skipBtns.forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var userId = btn.getAttribute('data-user-id');
+          btn.textContent = '⏳';
+          try {
+            await CT.api.post('/api/admin/loyalty/' + userId + '/skip');
+            btn.textContent = '⏭ Ignoré';
+            btn.disabled = true;
+          } catch (e) {
+            btn.textContent = '❌';
+            alert('Erreur: ' + e.message);
+          }
+        });
+      });
     }
 
     // Start

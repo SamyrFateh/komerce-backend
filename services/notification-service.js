@@ -738,6 +738,59 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
   }
 }
 
+// ─── Notification fidélité — cadeau éligible ───────────────────────────────────
+/**
+ * Notifie un client qu'il est éligible au cadeau de fidélité.
+ * Appelé par loyalty-service.js quand le seuil de gros paniers est atteint.
+ *
+ * @param {object} opts - { userId, userName, phone, orderRef, basketCount }
+ */
+async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCount }) {
+  if (!phone) {
+    console.warn('[loyalty-notif] Pas de téléphone pour user', userId);
+    return { success: false, reason: 'no_phone' };
+  }
+
+  const name = firstName(userName);
+  const message = `🎉 Bravo ${name} ! Vous avez atteint ${basketCount} gros paniers chez Komerce ! Un cadeau de fidélité vous attend. Notre équipe vous contactera bientôt. Merci de votre confiance ! 🇰🇲`;
+
+  try {
+    // Utiliser le WID générique (pas de template dédié pour l'instant)
+    const result = await callAuthKey({
+      wid: WID,
+      phone,
+      text: message,
+    });
+
+    await logNotification({
+      orderRef,
+      channel: 'whatsapp',
+      event: 'loyalty_earned',
+      recipient: phone,
+      status: result.ok ? 'sent' : 'failed',
+      detail: { basketCount, userId },
+    });
+
+    if (result.ok) {
+      console.log(`[loyalty-notif] ✅ → ${phone} (${basketCount} paniers)`);
+    } else {
+      console.warn(`[loyalty-notif] ❌ ${phone}: ${result.error}`);
+    }
+
+    return { success: result.ok };
+  } catch (err) {
+    console.error('[loyalty-notif] exception:', err.message);
+    await logNotification({
+      channel: 'whatsapp',
+      event: 'loyalty_earned',
+      recipient: phone,
+      status: 'failed',
+      detail: { error: err.message, basketCount, userId },
+    });
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = {
   // Fonctions historiques (flux commande)
   notifyOrderCreated,
@@ -750,6 +803,9 @@ module.exports = {
   notifyParcelScan,
   sendOtpMessage,
   sendMagicLink,
+
+  // Fidélité
+  notifyLoyaltyEarned,
 
   // Helper interne exposé pour tests
   _loadOrderFromParcel,

@@ -137,6 +137,16 @@ CT.api = {
   ecoToggleCharge: function(id) { return this.put('/api/admin/economic/charges/' + id + '/toggle'); },
   ecoCoherence: function() { return this.get('/api/admin/economic/coherence'); },
   ecoHistory: function() { return this.get('/api/admin/economic/history'); },
-  ecoRedistribute: function() { return this.post('/api/admin/economic/redistribute'); }
+  ecoRedistribute: function() { return this.post('/api/admin/economic/redistribute'); },
+
+  // Finance Config (variabilisée)
+  financeConfig: function() { return this.get('/api/admin/finance-config'); },
+  financeConfigUpdate: function(key, body) { return this.put('/api/admin/finance-config/' + key, body); },
+
+  // Loyalty admin
+  loyaltyPending: function() { return this.get('/api/admin/loyalty/pending'); },
+  loyaltyHistory: function() { return this.get('/api/admin/loyalty/history'); },
+  loyaltyGrant: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/grant'); },
+  loyaltySkip: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/skip'); }
 };
 

@@ -231,7 +231,9 @@ const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
 const transitDashboardRoutes = require('./routes/transit-dashboard');
 const sharesRouter = require('./routes/shares');
 const metaWhatsAppRoutes = require('./routes/meta-whatsapp');
-const economicEngineRouter = require('./routes/economic-engine');
+const economicEngineRouter  = require('./routes/economic-engine');
+const adminFinanceConfig    = require('./routes/admin-finance-config');
+const adminLoyaltyRouter    = require('./routes/admin-loyalty');
 
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
@@ -246,6 +248,8 @@ app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
 app.use('/api/admin/radar', adminRadarRouter);
 app.use('/api/admin/economic', economicEngineRouter);
+app.use('/api/admin/finance-config', adminFinanceConfig);
+app.use('/api/admin/loyalty', adminLoyaltyRouter);
 app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
 app.use('/api/relay',      relayDashRouter);
@@ -825,6 +829,76 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 048: economic_snapshots table created');
       } catch(e) { console.warn('Migration 048 (non-fatal):', e.message); }
+
+      // ── Migration 049: finance_config (variabilisée) + loyalty_rewards + big_basket ──
+      // Table singleton de TOUS les paramètres métier ajustables
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS finance_config (
+            id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+
+            -- Coûts fixes par commande (KMF)
+            cost_fixed_sourcing_kmf     INT NOT NULL DEFAULT 1000,
+            cost_fixed_transit_kmf      INT NOT NULL DEFAULT  500,
+            cost_fixed_hub_kmf          INT NOT NULL DEFAULT  400,
+            cost_fixed_relais_kmf       INT NOT NULL DEFAULT  300,
+            cost_fixed_support_kmf      INT NOT NULL DEFAULT  200,
+
+            -- Objectifs & pilotage
+            target_marge_brute_pct      NUMERIC(5,2) NOT NULL DEFAULT 30.00,
+            target_panier_moyen_kmf     INT NOT NULL DEFAULT 15000,
+            objectif_commandes_mois     INT NOT NULL DEFAULT 100,
+            objectif_ca_mensuel_kmf     INT NOT NULL DEFAULT 1500000,
+
+            -- Paramètres sourcing
+            taux_change_eur_kmf         NUMERIC(10,2) NOT NULL DEFAULT 491.96,
+            markup_cible_pct            NUMERIC(5,2) NOT NULL DEFAULT 250.00,
+            cout_achat_moyen_eur        NUMERIC(10,2) NOT NULL DEFAULT 5.00,
+            delai_transit_jours         INT NOT NULL DEFAULT 25,
+
+            -- Paramètres opérationnels
+            commission_relais_pct       NUMERIC(5,2) NOT NULL DEFAULT 5.00,
+            frais_livraison_defaut_kmf  INT NOT NULL DEFAULT 1500,
+            seuil_livraison_gratuite_kmf INT NOT NULL DEFAULT 25000,
+            taux_conversion_pct         NUMERIC(5,2) NOT NULL DEFAULT 3.00,
+            taux_retour_pct             NUMERIC(5,2) NOT NULL DEFAULT 2.00,
+
+            -- Système fidélité (cadeau gros paniers)
+            loyalty_active              BOOLEAN NOT NULL DEFAULT TRUE,
+            loyalty_threshold_kmf       INT NOT NULL DEFAULT 20000,
+            loyalty_trigger_count       INT NOT NULL DEFAULT 3,
+
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_by UUID
+          );
+
+          INSERT INTO finance_config (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+          -- Compteur de gros paniers sur les utilisateurs
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS big_basket_count INT NOT NULL DEFAULT 0;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS big_basket_last_notified_count INT NOT NULL DEFAULT 0;
+
+          -- Historique des cadeaux de fidélité
+          CREATE TABLE IF NOT EXISTS loyalty_rewards (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            triggered_by_order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+            basket_count_at_trigger INT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending', 'granted', 'skipped')),
+            gift_description TEXT,
+            granted_at TIMESTAMPTZ,
+            granted_by UUID REFERENCES users(id),
+            notes TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_loyalty_rewards_user ON loyalty_rewards(user_id);
+          CREATE INDEX IF NOT EXISTS idx_loyalty_rewards_status ON loyalty_rewards(status);
+          CREATE INDEX IF NOT EXISTS idx_users_big_basket ON users(big_basket_count) WHERE big_basket_count > 0;
+        `);
+        console.log('✅ Migration 049: finance_config (variabilisée) + loyalty_rewards + big_basket');
+      } catch(e) { console.warn('Migration 049 (non-fatal):', e.message); }
 
       console.log('✅ Migrations et seeds terminées');
     } catch (err) {
