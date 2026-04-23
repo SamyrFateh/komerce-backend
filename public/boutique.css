@@ -3532,28 +3532,44 @@ body.cart-open{overflow:hidden}
     -webkit-image-rendering: auto;
   }
 
-  /* ── N. Suggestion cards mobile — grille compacte dans modal ── */
+  /* ── N. Suggestion cards mobile — rail horizontal swipable ── */
   .k-sug-grid {
-    padding: 0 8px !important;
-    gap: 6px !important;
+    display: flex !important;
+    grid-template-columns: unset !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 8px !important;
+    padding: 0 10px !important;
   }
+  .k-sug-grid::-webkit-scrollbar { display: none !important; }
   .k-sug-card {
+    flex: 0 0 42vw !important;
+    max-width: 42vw !important;
+    min-width: 0 !important;
+    scroll-snap-align: start !important;
     border-radius: 10px !important;
     overflow: visible !important;
   }
   .k-sug-card-img {
-    aspect-ratio: 4/3 !important;
+    aspect-ratio: 1 !important;
     overflow: hidden !important;
     border-radius: 10px 10px 0 0 !important;
   }
   .k-sug-card-img img {
-    aspect-ratio: 4/3 !important;
+    aspect-ratio: 1 !important;
     object-fit: cover !important;
   }
   .k-sug-card-name {
     font-size: 11px !important;
     padding: 4px 6px 1px !important;
-    min-height: 28px !important;
+    min-height: 26px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   .k-sug-card-price {
     font-size: 12px !important;
@@ -3584,7 +3600,11 @@ body.cart-open{overflow:hidden}
   /* Suggestion section titles compact */
   .k-sug-title {
     font-size: 14px !important;
-    padding: 8px 8px 4px !important;
+    padding: 8px 10px 4px !important;
+  }
+  /* Hint: peek 5th card to signal scroll */
+  .k-sug-section {
+    overflow: visible !important;
   }
 }
 /* ── Card mini tabs (Shein-style) ── */
