@@ -657,9 +657,9 @@
 
     let pageItems;
     if (useSections) {
-      // Piochage équilibré : garantir min 3 produits par section visible
-      // pour éviter les cartes orphelines dans une grille 3-cols
-      pageItems = _balancedPick(list, state.pageSize);
+      // Piochage équilibré : garantir min 4 produits par section (nombre pair)
+      // pour éviter les cartes orphelines dans une grille 2-cols mobile
+      pageItems = _balancedPick(list, 30);
     } else {
       pageItems = list.slice(0, state.pageSize);
     }
@@ -780,7 +780,7 @@
    *   - Résultat : jamais de cartes orphelines dans la grille 3-cols
    */
   function _balancedPick(list, pageSize) {
-    const MIN_PER_SECTION = 3;
+    const MIN_PER_SECTION = 4; // pair → pas de carte orpheline en 2-cols
 
     // Grouper par cat dans l'ordre d'apparition
     const byCat = new Map();
@@ -799,12 +799,11 @@
       if (prods.length >= MIN_PER_SECTION) {
         rich.push({ cat, prods });
       } else {
-        // Sauf si "Autres" existe déjà en catégorie riche — dans ce cas on ajoute au groupe dédié
         thin.push(...prods);
       }
     }
 
-    // Si on a des produits "maigres", les regrouper dans une section "Autres" (ou fusionner avec existante)
+    // Regrouper les maigres en "Autres"
     if (thin.length > 0) {
       const existingAutres = rich.find(s => s.cat === 'Autres');
       if (existingAutres) {
@@ -812,16 +811,16 @@
       } else if (thin.length >= MIN_PER_SECTION) {
         rich.push({ cat: 'Autres', prods: thin });
       }
-      // Si moins de MIN_PER_SECTION et pas de section "Autres" existante,
-      // ces produits sont simplement masqués (acceptable : on préfère pas de section qu'une section cassée)
     }
 
-    // Aplatir dans l'ordre (en respectant la limite pageSize)
+    // Aplatir avec comptes PAIRS par section (2-cols mobile, jamais de carte seule)
     const flat = [];
     for (const section of rich) {
-      for (const p of section.prods) {
-        if (flat.length >= pageSize) break;
-        flat.push(p);
+      // Prendre un nombre pair de produits pour cette section
+      const maxFromSection = Math.min(section.prods.length, pageSize - flat.length);
+      const count = maxFromSection >= 2 ? (maxFromSection % 2 === 0 ? maxFromSection : maxFromSection - 1) : 0;
+      for (let i = 0; i < count; i++) {
+        flat.push(section.prods[i]);
       }
       if (flat.length >= pageSize) break;
     }
@@ -1373,8 +1372,14 @@ function quickRemove(productId, btnEl) {
       if (chips.length < 2) return;
       var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
       if (currentIdx === -1) currentIdx = 0;
+
+      // Swipe cycle through specific categories only (skip "Tout" / "all")
       var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-      if (nextIdx < 0 || nextIdx >= chips.length) return;
+      // If currently on "Tout" (index 0), swipe left → go to first specific cat (1)
+      if (currentIdx === 0 && dx < 0) nextIdx = 1;
+      // If on first specific cat and swiping right, stop (don't go back to Tout)
+      if (nextIdx <= 0) return;
+      if (nextIdx >= chips.length) return;
 
       // Flag pour que le click handler reconnaisse un swipe (pas de scrollTo + animation)
       state._fromSwipe = true;
