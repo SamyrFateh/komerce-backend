@@ -3125,10 +3125,12 @@ body.cart-open{overflow:hidden}
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    gap: 2px;
+    gap: 4px;
+    padding: 4px 8px !important;
     padding: 4px 8px;
     background: rgba(253,250,245,.96);
     align-items: flex-start;
@@ -3175,8 +3177,17 @@ body.cart-open{overflow:hidden}
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 46px;
     max-width: 100%;
+  }
+  /* Active chip — green ring + bold label */
+  .k-chip.active .k-chip-photo,
+  .k-chip.active .k-chip-emoji {
+    border: 2px solid var(--k-primary, #2e7d32) !important;
+    box-shadow: 0 0 0 2px rgba(46,125,50,.2) !important;
+  }
+  .k-chip.active .k-chip-label {
+    color: var(--k-primary, #2e7d32) !important;
+    font-weight: 700 !important;
   }
 
   /* ── G. PROMOS — horizontal scroll, landscape cards ─── */
@@ -3532,27 +3543,18 @@ body.cart-open{overflow:hidden}
     -webkit-image-rendering: auto;
   }
 
-  /* ── N. Suggestion cards mobile — rail horizontal swipable ── */
+  /* ── N. Suggestion cards mobile — grille 2 colonnes verticale ── */
   .k-sug-grid {
-    display: flex !important;
-    grid-template-columns: unset !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scroll-snap-type: x mandatory !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    gap: 8px !important;
-    padding: 0 10px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    padding: 0 8px !important;
+    overflow: visible !important;
   }
-  .k-sug-grid::-webkit-scrollbar { display: none !important; }
   .k-sug-card {
-    flex: 0 0 42vw !important;
-    max-width: 42vw !important;
-    min-width: 0 !important;
-    scroll-snap-align: start !important;
     border-radius: 10px !important;
     overflow: visible !important;
+    min-width: 0 !important;
   }
   .k-sug-card-img {
     aspect-ratio: 1 !important;
