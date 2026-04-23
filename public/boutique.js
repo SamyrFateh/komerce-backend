@@ -207,6 +207,7 @@
   favs: JSON.parse(localStorage.getItem('k_favs') || '[]'),
   activeCat: 'all',
     activeSubcat: null,
+    sectionSubcats: {},
   modalProduct: null,
   modalQty: 1,
   modalHistory: [],
@@ -281,51 +282,14 @@
   };
 
   /* ── RENDER SUBCATEGORIES ────────────────────────────── */
-  function renderSubcats(category) {
+  function renderSubcats() {
+    /* Removed — subcategories are now local inline chips inside each section.
+       See _renderGridWithSections() for the local subcats approach. */
     var wrap = document.getElementById('k-subcats-wrap');
-    if (!wrap) return;
-
-    state.activeSubcat = null;
-
-    /* "Tout" or no subcats → hide rail */
-    if (category === 'all' || !SUBCATS[category]) {
-      wrap.innerHTML = '';
-      wrap.classList.remove('k-subcats-visible');
-      _updateMobileScrollTop();
-      return;
-    }
-
-    var subs = SUBCATS[category];
-
-    /* No "Tout" chip — first chip auto-selected or none */
-    var chips = subs.map(function(s) {
-      return '<button class="k-subchip" data-subcat="' + s.key + '">'
-        + '<span class="k-subchip-icon">' + s.icon + '</span>'
-        + '<span class="k-subchip-label">' + s.label + '</span></button>';
-    }).join('');
-
-    wrap.innerHTML = '<div class="k-subcats-rail">' + chips + '</div>';
-    wrap.classList.add('k-subcats-visible');
-
-    wrap.querySelectorAll('.k-subchip').forEach(function(chip) {
-      chip.addEventListener('click', function() {
-        var wasActive = chip.classList.contains('active');
-        wrap.querySelectorAll('.k-subchip').forEach(function(c) { c.classList.remove('active'); });
-        if (wasActive) {
-          /* Toggle off — show all products in this category */
-          state.activeSubcat = null;
-        } else {
-          chip.classList.add('active');
-          state.activeSubcat = chip.dataset.subcat;
-        }
-        renderGrid();
-      });
-    });
-
-    _updateMobileScrollTop();
+    if (wrap) { wrap.innerHTML = ''; wrap.classList.remove('k-subcats-visible'); }
   }
 
-  /* ── MOBILE SCROLL TOP RECALC ────────────────────────── */
+    /* ── MOBILE SCROLL TOP RECALC ────────────────────────── */
   function _updateMobileScrollTop() {
     if (window.innerWidth > 899) return;
     var doUpdate = function() {
@@ -653,13 +617,13 @@
 
     // ── BAZAR vertical : en mode "Tout", on groupe par catégorie avec en-têtes ──
     // (catégorie active autre que 'all' = comportement classique sans sections)
-    const useSections = state.activeCat === 'all' && !state.activeSubcat;
+    const useSections = state.activeCat === 'all';
 
     let pageItems;
     if (useSections) {
       // Piochage équilibré : garantir min 4 produits par section (nombre pair)
       // pour éviter les cartes orphelines dans une grille 2-cols mobile
-      pageItems = _balancedPick(list, 30);
+      pageItems = _balancedPick(list, 48);
     } else {
       pageItems = list.slice(0, state.pageSize);
     }
@@ -780,7 +744,7 @@
    *   - Résultat : jamais de cartes orphelines dans la grille 3-cols
    */
   function _balancedPick(list, pageSize) {
-    const MIN_PER_SECTION = 4; // pair → pas de carte orpheline en 2-cols
+    const MIN_PER_SECTION = 6; // pair → pas de carte orpheline en 2-cols
 
     // Grouper par cat dans l'ordre d'apparition
     const byCat = new Map();
@@ -836,41 +800,60 @@
       if (!byCat[cat]) { byCat[cat] = []; order.push(cat); }
       byCat[cat].push(p);
     }
-    // Emoji par catégorie (doit matcher les data-cat des chips du header)
     const EMOJI_CAT = {
-      'Mode': '👕',
-      'Beauté': '🌸',
-      'Tech': '📱',
-      'Enfant': '🧒',
-      'Maison': '🏠',
-      'Sport': '⚽',
-      'Sur-mesure': '✨',
-      'Autres': '📦',
+      'Mode': '👕', 'Beauté': '🌸', 'Tech': '📱', 'Enfant': '🧒',
+      'Maison': '🏠', 'Sport': '⚽', 'Sur-mesure': '✨', 'Autres': '📦',
     };
-
-    // Construire le HTML : pour chaque cat, en-tête + grille de ses produits
+    // Total produits par catégorie (tous, pas seulement le balanced pick)
+    const totalByCat = {};
+    for (const p of state.filtered) {
+      const cat = p.category || 'Autres';
+      totalByCat[cat] = (totalByCat[cat] || 0) + 1;
+    }
     const parts = [];
     for (const cat of order) {
       const emoji = EMOJI_CAT[cat] || '📦';
       const prods = byCat[cat];
+      const total = totalByCat[cat] || prods.length;
       const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+      // ── Section header avec "Voir tout" ──
       parts.push(
         '<div class="k-sec-header" id="' + anchorId + '" data-cat="' + sanitize(cat) + '">' +
           '<span class="k-sec-header-emoji">' + emoji + '</span>' +
           '<span class="k-sec-header-name">' + sanitize(cat) + '</span>' +
-          '<span class="k-sec-header-count">' + prods.length + '</span>' +
+          '<span class="k-sec-header-count">' + total + '</span>' +
+          '<button class="k-sec-see-all" data-see-cat="' + sanitize(cat) + '">Voir tout →</button>' +
         '</div>'
       );
-      // Les cartes, enveloppées dans un wrapper grille pour cette section
+      // ── Sous-catégories locales (chips inline dans la section) ──
+      const localSub = (state.sectionSubcats || {})[cat] || null;
+      if (SUBCATS[cat] && SUBCATS[cat].length > 0) {
+        parts.push('<div class="k-sec-subcats">');
+        for (const s of SUBCATS[cat]) {
+          parts.push(
+            '<button class="k-sec-subchip' + (localSub === s.key ? ' active' : '') + '" ' +
+            'data-sec-cat="' + sanitize(cat) + '" data-sec-sub="' + s.key + '">' +
+            s.icon + ' ' + s.label + '</button>'
+          );
+        }
+        parts.push('</div>');
+      }
+      // ── Filtrer par sous-cat locale si active ──
+      let sectionProds = prods;
+      if (localSub) {
+        const filtered = prods.filter(p => p.subcategory === localSub);
+        if (filtered.length > 0) sectionProds = filtered;
+      }
+      // ── Grille produits de cette section ──
       parts.push('<div class="k-sec-grid">');
-      for (const p of prods) parts.push(_renderCard(p));
+      for (const p of sectionProds) parts.push(_renderCard(p));
       parts.push('</div>');
     }
     return parts.join('');
   }
 
   function _bindGridEvents() {
-    // Cartes : ouvrir modal
+    // ── Cartes : ouvrir modal ──
     dom.grid.querySelectorAll('.k-card').forEach(card => {
       bindCarouselDots(card);
       card.addEventListener('click', (e) => {
@@ -879,14 +862,14 @@
         openModal(card.dataset.id);
       });
     });
-    // Favoris
+    // ── Favoris ──
     dom.grid.querySelectorAll('.k-card-fav').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleFav(btn.dataset.fav, btn);
       });
     });
-    // Ajout panier
+    // ── Ajout panier ──
     dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
       btn.dataset.bound = '1';
       btn.addEventListener('click', (e) => {
@@ -895,7 +878,36 @@
         else { quickAdd(btn.dataset.add, btn); }
       });
     });
-    // Afficher/mettre à jour l'index flottant si on est en mode sections
+    // ── "Voir tout →" dans les en-têtes de section ──
+    dom.grid.querySelectorAll('.k-sec-see-all').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const cat = btn.dataset.seeCat;
+        if (!cat) return;
+        state.activeCat = cat;
+        state.activeSubcat = null;
+        $$('.k-chip').forEach(c => c.classList.remove('active'));
+        const chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+        if (chip) { chip.classList.add('active'); centerActiveChip(chip); }
+        renderGrid();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    // ── Sous-catégories locales (filtrent dans la section) ──
+    dom.grid.querySelectorAll('.k-sec-subchip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const cat = chip.dataset.secCat;
+        const sub = chip.dataset.secSub;
+        if (!cat || !sub) return;
+        if (!state.sectionSubcats) state.sectionSubcats = {};
+        state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
+        renderGrid();
+      });
+    });
+    // ── Index flottant + observer nav chips ──
     if (typeof _renderFloatingIndex === 'function') _renderFloatingIndex();
   }
 
@@ -1240,51 +1252,54 @@ function quickRemove(productId, btnEl) {
       }
       chip.addEventListener('click', () => {
         const cat = chip.dataset.cat;
-        const fromSwipe = !!state._fromSwipe;
-        const swipeDir = state._swipeDir || 0; // -1 = gauche (next), +1 = droite (prev)
-        state._fromSwipe = false;
-        state._swipeDir = 0;
 
-        /* Toggle: re-click same category → back to "Tout" + hide subcats */
-        if (cat === state.activeCat && cat !== 'all') {
+        // ── "Tout" chip ──
+        if (cat === 'all') {
+          if (state.activeCat === 'all') {
+            // Already in Tout → scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+          // Retour au mode sections
+          $$('.k-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          state.activeCat = 'all';
+          state.activeSubcat = null;
+          state.sectionSubcats = {};
+          renderGrid();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+
+        // ── En mode "Tout" (sections) → scroll vers la section ──
+        if (state.activeCat === 'all') {
+          // Feedback visuel immédiat
+          $$('.k-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          centerActiveChip(chip);
+          scrollToCategorySection(cat);
+          return;
+        }
+
+        // ── En mode focalisé : même chip → retour à "Tout" ──
+        if (cat === state.activeCat) {
           $$('.k-chip').forEach(c => c.classList.remove('active'));
           const allChip = document.querySelector('.k-chip[data-cat="all"]');
           if (allChip) allChip.classList.add('active');
           state.activeCat = 'all';
           state.activeSubcat = null;
-          renderSubcats('all');
+          state.sectionSubcats = {};
           renderGrid();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
+
+        // ── En mode focalisé : autre chip → changer de catégorie ──
         $$('.k-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         state.activeCat = cat;
-        renderSubcats(state.activeCat);
-
-        if (fromSwipe) {
-          // Animation slide : grille actuelle sort, nouvelle rentre depuis l'autre côté
-          const grid = dom.grid;
-          if (grid) {
-            const outClass = swipeDir < 0 ? 'k-grid-slide-out-left' : 'k-grid-slide-out-right';
-            const inClass  = swipeDir < 0 ? 'k-grid-slide-in-right' : 'k-grid-slide-in-left';
-            grid.classList.add(outClass);
-            setTimeout(() => {
-              grid.classList.remove(outClass);
-              renderGrid();
-              grid.classList.add(inClass);
-              // force reflow pour que l'animation démarre proprement
-              void grid.offsetWidth;
-              setTimeout(() => grid.classList.remove(inClass), 260);
-            }, 160);
-          } else {
-            renderGrid();
-          }
-          // PAS de scrollTo : on garde la position verticale actuelle
-          return;
-        }
-
+        state.activeSubcat = null;
         renderGrid();
-        // Scroll vers le haut de la page pour voir le filtre appliqué (pattern B)
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
@@ -1318,87 +1333,9 @@ function quickRemove(productId, btnEl) {
     // Scroll horizontal = visuel uniquement, pas de changement auto de catégorie
   }
 
-  /* ── CATALOG SWIPE NAV (mobile) ──────────────────────────
-     Swipe horizontal gauche/droite sur le catalogue → change catégorie
-     avec animation slide (grille sort d'un côté, rentre de l'autre) */
-  function setupCatalogSwipeNav() {
-    if (window.innerWidth > 899) return;
+  /* ── CATALOG SWIPE removed — navigation v2 uses scroll-to-section ── */
 
-    var startX = 0, startY = 0, startT = 0;
-    var tracking = false;
-    var axisLock = null; // null = undecided, 'h' = horizontal, 'v' = vertical
-
-    // ── Seuils durcis ──
-    var SWIPE_MIN_DIST   = 70;   // px — intentionnel, pas un drift de pouce
-    var SWIPE_MAX_DUR    = 600;  // ms — geste rapide uniquement
-    var LOCK_THRESHOLD   = 12;   // px — premier axe qui bouge de 12px gagne
-
-    document.addEventListener('touchstart', function(e) {
-      if (e.touches.length !== 1) { tracking = false; return; }
-      var t = e.target;
-
-      // ── Exclusions : zones interactives qui ont leur propre swipe ──
-      if (t.closest && t.closest(
-        '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal, ' +
-        '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab, ' +
-        '.k-card-fav, .k-card-add, .k-card-tab, ' +
-        '#k-promo-rail, .k-promo-rail, .k-promo-card, ' +
-        '.k-sug-rail, .k-sug-grid, .k-modal-carousel, ' +
-        'input, textarea, select'
-      )) { tracking = false; return; }
-
-      // ── Inclusion réduite : UNIQUEMENT le catalogue ──
-      // Plus de #k-page-scroll (= tout le viewport), plus de .k-card individuelle
-      if (t.closest && !t.closest('#k-catalog-section, .k-grid, .k-section')) {
-        tracking = false; return;
-      }
-
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      startT = Date.now();
-      tracking = true;
-      axisLock = null;
-    }, { passive: true, capture: true });
-
-    // ── Axis-lock : le premier mouvement > 12px décide ──
-    // Si vertical d'abord → on annule. Si horizontal → on continue.
-    document.addEventListener('touchmove', function(e) {
-      if (!tracking || axisLock) return;
-      var dx = Math.abs(e.touches[0].clientX - startX);
-      var dy = Math.abs(e.touches[0].clientY - startY);
-      if (dx >= LOCK_THRESHOLD) { axisLock = 'h'; }
-      else if (dy >= LOCK_THRESHOLD) { axisLock = 'v'; tracking = false; }
-    }, { passive: true, capture: true });
-
-    document.addEventListener('touchend', function(e) {
-      if (!tracking || axisLock === 'v') { tracking = false; return; }
-      tracking = false;
-      var touch = e.changedTouches[0];
-      if (!touch) return;
-      var dx = touch.clientX - startX;
-      var dy = touch.clientY - startY;
-      var dt = Date.now() - startT;
-
-      if (dt > SWIPE_MAX_DUR) return;
-      if (Math.abs(dx) < SWIPE_MIN_DIST) return;
-      // Ratio strict : vertical < 50% horizontal (nettement horizontal)
-      if (Math.abs(dy) > Math.abs(dx) * 0.5) return;
-
-      var chips = Array.prototype.slice.call(document.querySelectorAll('#k-cats .k-chip'));
-      if (chips.length < 2) return;
-      var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
-      if (currentIdx === -1) currentIdx = 0;
-
-      var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-      if (nextIdx < 0 || nextIdx >= chips.length) return;
-
-      state._fromSwipe = true;
-      state._swipeDir = dx < 0 ? -1 : 1;
-      chips[nextIdx].click();
-    }, { passive: true, capture: true });
-  }
-
-  /* ── SEARCH ─────────────────────────────────────────────── */
+    /* ── SEARCH ─────────────────────────────────────────────── */
   function setupSearch() {
     dom.searchInput.addEventListener('input', () => {
       clearTimeout(state.searchTimeout);
@@ -3839,7 +3776,6 @@ async function submitOrder(btn) {
     updateCartBadge();
     setupCats();
     setupCatSwipeNav();
-    setupCatalogSwipeNav();
 
     /* ── Card mini-tabs (Shein-style, event delegation) ── */
     document.addEventListener('click', function(e) {
@@ -4083,51 +4019,9 @@ document.addEventListener('click', function(e) {
 
 
 
-  // ── Chips = saut vers section (mode "Tout" = sections verticales) ──
-  // Quand state.activeCat === 'all' et qu'on tape sur une catégorie, on scroll
-  // vers la section au lieu de filtrer (car la home "Tout" affiche déjà toutes
-  // les catégories en sections groupées).
-  // Taper sur "Tout" scroll tout en haut.
-  // Si on est DÉJÀ sur une cat spécifique (Mode actif), taper sur une autre
-  // cat la filtre normalement (comportement historique de setupCats).
-  document.addEventListener('click', function(e) {
-    const chip = e.target.closest('.k-chip[data-cat]');
-    if (!chip) return;
-    // Uniquement en mode sections (home "Tout")
-    if (state.activeCat !== 'all') return;
-    const cat = chip.getAttribute('data-cat');
-    if (!cat) return;
-    // Tap sur "Tout" quand on est déjà sur "all" → scroll top
-    if (cat === 'all') {
-      // stopImmediatePropagation : empêche setupCats de re-render la grille
-      // (pas de re-render inutile, juste scroll)
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    // Tap sur "Mode" quand on est sur "Tout" → scroll vers la section Mode
-    // sans changer activeCat (on reste en mode sections)
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    // Marquer visuellement le chip actif temporairement (effet feedback)
-    document.querySelectorAll('.k-chip').forEach(function(c) { c.classList.remove('active'); });
-    chip.classList.add('active');
-    // Puis remettre "Tout" actif après 600ms (le temps du scroll smooth)
-    setTimeout(function() {
-      document.querySelectorAll('.k-chip').forEach(function(c) { c.classList.remove('active'); });
-      const allChip = document.querySelector('.k-chip[data-cat="all"]');
-      if (allChip) allChip.classList.add('active');
-    }, 700);
-    if (typeof window.scrollToCategorySection === 'function') {
-      window.scrollToCategorySection(cat);
-    }
-  }, true);  // capture phase + stopImmediatePropagation : bloque setupCats
+  /* ── Capture-phase listener REMOVED — handled by setupCats v2 ── */
 
-
-
-
-  // ── Index flottant vertical à droite (sauts rapides entre sections) ──
+    // ── Index flottant vertical à droite (sauts rapides entre sections) ──
   // Apparaît uniquement en mode "Tout" (sections verticales actives).
   // Se met à jour à chaque re-render de la grille sectionnée.
   function _renderFloatingIndex() {
@@ -4184,9 +4078,16 @@ document.addEventListener('click', function(e) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           const cat = entry.target.getAttribute('data-cat');
+          // Floating index buttons
           document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
             b.classList.toggle('active', b.getAttribute('data-cat') === cat);
           });
+          // Main nav chips — visual sync when scrolling through sections
+          if (state.activeCat === 'all') {
+            document.querySelectorAll('.k-chip').forEach(function(c) {
+              c.classList.toggle('active', c.getAttribute('data-cat') === cat);
+            });
+          }
         }
       });
     }, {

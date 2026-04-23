@@ -674,7 +674,9 @@ body{
 
 /* ── SUBCATEGORIES — Horizontal scrollable rail ────────── */
 /* ── SUBCATEGORIES — ultra-compact single-line pills ───────── */
-#k-subcats-wrap {
+/* Global subcats bar removed — subcats are now local to sections */
+#k-subcats-wrap { display: none !important; }
+#k-subcats-wrap-legacy {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
@@ -3634,6 +3636,58 @@ body.cart-open{overflow:hidden}
     bottom: 4px; right: 4px;
   }
 
+  /* ── "Voir tout →" button in section headers ── */
+  .k-sec-see-all {
+    background: none;
+    border: none;
+    color: var(--ocean);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    margin-left: auto;
+    transition: background .15s;
+  }
+  .k-sec-see-all:active {
+    background: rgba(67,160,71,.1);
+  }
+
+  /* ── Sous-catégories locales inline (dans chaque section) ── */
+  .k-sec-subcats {
+    display: flex;
+    gap: 6px;
+    padding: 2px 10px 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .k-sec-subcats::-webkit-scrollbar { display: none; }
+  .k-sec-subchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .k-sec-subchip:active { transform: scale(.94); }
+  .k-sec-subchip.active {
+    background: var(--ocean);
+    color: #fff;
+    border-color: var(--ocean);
+    font-weight: 600;
+  }
+
   /* ── L. SECTION INDEX — floating emoji jump ──────── */
   #k-section-index {
     right: 4px;
@@ -3691,10 +3745,7 @@ body.cart-open{overflow:hidden}
   from { transform: translateX(-24px); opacity: 0; }
   to   { transform: translateX(0);     opacity: 1; }
 }
-.k-grid.k-grid-slide-out-left  { animation: k-grid-out-left  .16s ease-out forwards; }
-.k-grid.k-grid-slide-out-right { animation: k-grid-out-right .16s ease-out forwards; }
-.k-grid.k-grid-slide-in-right  { animation: k-grid-in-right  .26s cubic-bezier(.22,1,.36,1) both; }
-.k-grid.k-grid-slide-in-left   { animation: k-grid-in-left   .26s cubic-bezier(.22,1,.36,1) both; }
+/* Slide animations removed — navigation v2 uses scroll-to-section instead */
 
 /* Respect des préférences d'accessibilité */
 @media (prefers-reduced-motion: reduce) {
