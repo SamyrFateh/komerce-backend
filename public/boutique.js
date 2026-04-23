@@ -884,25 +884,17 @@
   // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
   window._scrollingToSection = false;
   window.scrollToCategorySection = function(cat) {
-    const grid = document.getElementById('k-grid');
-    if (!grid) return;
-    // "Tout" → scroll to first panel
+    var scroller = document.getElementById('k-page-scroll');
+    if (!scroller) return;
     if (!cat || cat === 'all') {
-      grid.scrollTo({ left: 0, behavior: 'smooth' });
+      scroller.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    // Find the matching panel
-    const section = grid.querySelector('.k-cat-section[data-cat="' + cat + '"]');
-    if (!section) {
-      // Fallback to old vertical scroll (desktop or focused mode)
-      const anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
-      const el = document.getElementById(anchorId);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    // Mobile horizontal pager: scroll #k-grid horizontally
+    var anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+    var el = document.getElementById(anchorId);
+    if (!el) return;
     window._scrollingToSection = true;
-    grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(function() { window._scrollingToSection = false; }, 700);
   };
 
@@ -4082,40 +4074,32 @@ document.addEventListener('click', function(e) {
 
     document.body.appendChild(nav);
 
-    // ── Sync pills with horizontal scroll (mobile pager) ──
+    // ── IntersectionObserver — sync pills with visible section (vertical scroll) ──
     if (_sectionObserver) _sectionObserver.disconnect();
-    const grid = document.getElementById('k-grid');
-    if (grid) {
-      let _hScrollTimer;
-      grid.addEventListener('scroll', function() {
+    var scroller = document.getElementById('k-page-scroll');
+    if (scroller) {
+      _sectionObserver = new IntersectionObserver(function(entries) {
         if (window._scrollingToSection) return;
-        clearTimeout(_hScrollTimer);
-        _hScrollTimer = setTimeout(function() {
-          const sections = grid.querySelectorAll('.k-cat-section');
-          if (!sections.length) return;
-          const centerX = grid.scrollLeft + grid.offsetWidth / 2;
-          let activeCat = null;
-          sections.forEach(function(sec) {
-            if (sec.offsetLeft <= centerX) {
-              activeCat = sec.dataset.cat;
-            }
+        entries.forEach(function(entry) {
+          if (!entry.isIntersecting) return;
+          var cat = entry.target.dataset.cat;
+          if (!cat) return;
+          // Floating index buttons
+          document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.cat === cat);
           });
-          if (activeCat) {
-            // Floating index buttons
-            document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
-              b.classList.toggle('active', b.dataset.cat === activeCat);
+          // Main nav chips
+          if (state.activeCat === 'all') {
+            document.querySelectorAll('.k-chip').forEach(function(c) {
+              c.classList.toggle('active', c.dataset.cat === cat);
             });
-            // Main nav chips
-            if (state.activeCat === 'all') {
-              document.querySelectorAll('.k-chip').forEach(function(c) {
-                c.classList.toggle('active', c.dataset.cat === activeCat);
-              });
-              var activeChip = document.querySelector('.k-chip.active');
-              if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
-            }
+            var activeChip = document.querySelector('.k-chip.active');
+            if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
           }
-        }, 80);
-      });
+        });
+      }, { root: scroller, threshold: 0.3 });
+      var sections = document.querySelectorAll('.k-cat-section');
+      sections.forEach(function(sec) { _sectionObserver.observe(sec); });
     }
   }
   let _sectionObserver = null;
