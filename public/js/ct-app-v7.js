@@ -295,6 +295,14 @@ CT.app = {
   navigate: function(view, params) {
     var role = CT.platform.state.role;
 
+    /* ── Auto-switch shell if view belongs to the other shell ── */
+    var viewDef = CT.platform.VIEWS.find(function(v) { return v.id === view; });
+    if (viewDef && viewDef.shell !== CT.platform.state.shell) {
+      CT.platform.state.shell = viewDef.shell;
+      CT.app.renderShellSwitch();
+      CT.app.renderSidebar();
+    }
+
     /* ── Access check ── */
     if (!CT.platform.canAccess(view, role)) {
       var m = document.getElementById('ct-main');

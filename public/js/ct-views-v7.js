@@ -656,14 +656,14 @@ CT.views.createParcel = async function(container) {
 CT.views.dashboard = async function(container) {
   container.innerHTML = '<div class="ct-loading">🎯 Chargement du dashboard...</div>';
   try {
-    var kpis = await CT.api.v2ParcelKpis();
+    /* Fetch parcel KPIs (for island breakdown) + order KPIs (for commandes synthèse) */
+    var results = await Promise.all([
+      CT.api.v2ParcelKpis(),
+      CT.api.v2Orders().catch(function() { return {}; })
+    ]);
+    var kpis = results[0];
     var pk = kpis.parcels;
-    var fin = kpis.finance;
-    var inc = kpis.incidents;
-
-    // Also fetch order KPIs
-    var orderData = {};
-    try { orderData = await CT.api.v2Orders(); } catch(_) {}
+    var orderData = results[1];
     var ok = orderData.kpis || {};
     
     var html = '<div class="ct-view-header"><h2>🎯 Dashboard</h2></div>';
@@ -686,7 +686,7 @@ CT.views.dashboard = async function(container) {
       if (awaitingParcel > 0) {
         html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px">' +
           '⚠️ <strong>' + awaitingParcel + ' commande(s) payée(s) en attente de colis</strong> — ' +
-          '<a href="#" onclick="CT.app.navigate(\'createParcel\');return false" style="color:#1d4ed8;text-decoration:underline">Créer les colis →</a></div>';
+          '<a href="#" onclick="CT.app.navigate(\'createParcel\');return false" style="color:#1d4ed8;text-decoration:underline">Créer les colis → (BO)</a></div>';
       }
       // Alert if payment incidents
       if ((ok.payment_failed || 0) > 0) {
@@ -696,25 +696,11 @@ CT.views.dashboard = async function(container) {
       html += '</div>';
     }
 
-    // KPI row 1: Parcels by status
-    html += '<div class="ct-kpi-grid">';
-    html += CT.pc.kpiCard('📦', 'Total colis', pk.total, '#3b82f6');
-    html += CT.pc.kpiCard('🔧', 'Préparation', pk.by_status.preparation, '#eab308');
-    html += CT.pc.kpiCard('✈️', 'Expédiés', pk.by_status.shipped, '#3b82f6');
-    html += CT.pc.kpiCard('🚢', 'En transit', pk.by_status.in_transit, '#8b5cf6');
-    html += CT.pc.kpiCard('📍', 'Disponibles', pk.by_status.available, '#22c55e');
-    html += CT.pc.kpiCard('✅', 'Récupérés', pk.by_status.collected, '#16a34a');
-    html += '</div>';
-
-    // KPI row 2: Finance
-    html += '<div class="ct-kpi-grid">';
-    html += CT.pc.kpiCard('💰', 'CA Total', CT.pc.fmt(fin.ca_total_kmf), '#16a34a');
-    html += CT.pc.kpiCard('📊', 'CA Actif', CT.pc.fmt(fin.ca_active_kmf), '#3b82f6');
-    html += CT.pc.kpiCard('🧺', 'Panier moyen', CT.pc.fmt(fin.avg_basket_kmf), '#8b5cf6');
-    html += CT.pc.kpiCard('👥', 'Clients', fin.nb_clients, '#f59e0b');
-    html += CT.pc.kpiCard('🚨', 'Incidents ouverts', inc.open, '#ef4444');
-    html += CT.pc.kpiCard('🔴', 'Critiques', inc.critical, '#dc2626');
-    html += '</div>';
+    /* ── Colis par statut et Finance retirés du dashboard ──
+       Le radar (ct-views-dashboard-radar.js) couvre déjà :
+       - 💰 Money → CA, cash, wallets, marge avec comparaisons
+       - 📦 Flux colis → distribution status_detail cliquable
+       Pas de doublon. */
 
     // By island
     html += '<div class="ct-section-block"><h3>🏝️ Par île</h3><div class="ct-island-grid">';
