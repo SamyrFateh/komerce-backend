@@ -54,10 +54,23 @@ async function getEurKmf() {
   return { eur_kmf: rates.eur_kmf, aed_kmf: rates.aed_kmf };
 }
 
+// ── Helper : finance_config — source unique variables financières ────────────
+// Lit depuis la table finance_config avec fallback (zéro régression si table vide/absente)
+async function getFinanceVal(key, fallback) {
+  try {
+    const { rows } = await db.query(
+      'SELECT value FROM finance_config WHERE key = $1 AND is_active = true LIMIT 1', [key]
+    );
+    if (rows.length && rows[0].value != null) return parseFloat(rows[0].value);
+  } catch { /* table pas encore créée — fallback */ }
+  return fallback;
+}
+
 // ── Config SLA & Compensations (chargée depuis business_rules) ──────────────
 // Fallback = valeurs actuelles hardcodées → zéro régression si DB vide
 async function loadDashConfig() {
-  const [slaWarn, slaLate, slaBlocked, inactive, compPrev, compCredit, compDiscount, compRefund, cacheSec] = await Promise.all([
+  const [slaWarn, slaLate, slaBlocked, inactive, compPrev, compCredit, compDiscount, compRefund, cacheSec,
+         fraudReverseCritDays, fraudPendingCritH, fraudPendingWarnH, fraudStaleDays, fraudReverseSqlDays] = await Promise.all([
     getRule('SLA_WARNING_DAYS', 35),
     getRule('SLA_LATE_DAYS', 42),
     getRule('SLA_BLOCKED_DAYS', 56),
@@ -67,9 +80,20 @@ async function loadDashConfig() {
     getRule('COMP_DISCOUNT_DAYS', 42),
     getRule('COMP_REFUND_DAYS', 56),
     getRule('DASHBOARD_CACHE_TTL_SEC', 30),
+    // Anti-fraude — variabilisé (plus de magic numbers)
+    getRule('FRAUD_REVERSE_CRITICAL_DAYS', 7),    // délai reverse → critical
+    getRule('FRAUD_PENDING_CRITICAL_HOURS', 36),   // paiement en attente → critical
+    getRule('FRAUD_PENDING_WARNING_HOURS', 12),    // paiement en attente → warning
+    getRule('FRAUD_STALE_PARCEL_DAYS', 14),        // colis bloqué au relais
+    getRule('FRAUD_REVERSE_SQL_DAYS', 3),          // seuil SQL delayed reverse
   ]);
   _cacheTtlMs = cacheSec * 1000;
-  return { SLA_WARNING_DAYS: slaWarn, SLA_LATE_DAYS: slaLate, SLA_BLOCKED_DAYS: slaBlocked, INACTIVE_DAYS: inactive, DELAY_PREVENTIF: compPrev, DELAY_AVOIR: compCredit, DELAY_REMISE: compDiscount, DELAY_REMBOURSEMENT: compRefund };
+  return {
+    SLA_WARNING_DAYS: slaWarn, SLA_LATE_DAYS: slaLate, SLA_BLOCKED_DAYS: slaBlocked, INACTIVE_DAYS: inactive,
+    DELAY_PREVENTIF: compPrev, DELAY_AVOIR: compCredit, DELAY_REMISE: compDiscount, DELAY_REMBOURSEMENT: compRefund,
+    FRAUD_REVERSE_CRIT_DAYS: fraudReverseCritDays, FRAUD_PENDING_CRIT_H: fraudPendingCritH,
+    FRAUD_PENDING_WARN_H: fraudPendingWarnH, FRAUD_STALE_DAYS: fraudStaleDays, FRAUD_REVERSE_SQL_DAYS: fraudReverseSqlDays,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -375,8 +399,11 @@ router.get('/pilotage', async (req, res, next) => {
     );
 
     const caKmf = parseFloat(vol.ca_kmf);
-    const TAUX_TERRAIN = douaneEffectif ? douaneEffectif / 100 : 0.42;
-    const hubMensuelKmf = 7000 * rates.aed_kmf;
+    // Variabilisé : priorité customs_taux_mensuel > finance_config > fallback
+    const customsDefault = await getFinanceVal('customs_rate_default', 42); // pct
+    const TAUX_TERRAIN = douaneEffectif ? douaneEffectif / 100 : customsDefault / 100;
+    const hubCostAed = await getFinanceVal('hub_monthly_cost_aed', 7000);
+    const hubMensuelKmf = hubCostAed * rates.aed_kmf;
 
     const result = {
       periode: mois,
@@ -398,7 +425,7 @@ router.get('/pilotage', async (req, res, next) => {
       })),
       couts: {
         taux_terrain_pct: TAUX_TERRAIN * 100,
-        source_taux: douaneEffectif ? 'customs_history' : 'decision_v75_42pct',
+        source_taux: douaneEffectif ? 'customs_history' : 'finance_config',
         hub_fixe_mensuel_kmf: Math.round(hubMensuelKmf),
       },
       pipeline: pipelineRows.map(r => ({ statut: r.status, nb: parseInt(r.nb) })),
@@ -1232,6 +1259,7 @@ router.get('/hub', (req, res, next) => {
 
 router.get('/payments', async (req, res, next) => {
   try {
+    const cfg    = await loadDashConfig();
     const period = Math.max(1, Math.min(365, parseInt(req.query.period) || 30));
     const rates  = await getEurKmf();
 
@@ -1787,7 +1815,7 @@ router.get('/payments', async (req, res, next) => {
             collected_at:        o.collected_at,
             cash_paid_at:        o.cash_paid_at,
             jours_delai_reverse: Math.round(Number(o.jours_delai_reverse)),
-            urgency:             Number(o.jours_delai_reverse) >= 7 ? 'critical' : 'warning',
+            urgency:             Number(o.jours_delai_reverse) >= cfg.FRAUD_REVERSE_CRIT_DAYS ? 'critical' : 'warning',
           })),
         },
 
@@ -1845,7 +1873,7 @@ router.get('/payments', async (req, res, next) => {
           //   ok       → < 12h
           //   warning  → 12h–36h  (rappel à envoyer)
           //   critical → > 36h    (annulation à déclencher)
-          urgency: ageH >= 36 ? 'critical' : ageH >= 12 ? 'warning' : 'ok',
+          urgency: ageH >= cfg.FRAUD_PENDING_CRIT_H ? 'critical' : ageH >= cfg.FRAUD_PENDING_WARN_H ? 'warning' : 'ok',
         };
       }),
     });
