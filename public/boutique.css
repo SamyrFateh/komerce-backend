@@ -2994,7 +2994,7 @@ body.cart-open{overflow:hidden}
   /* ── B. HEADER — compact + sticky top ──────────────── */
   .k-header {
     height: 44px;
-    padding: 0 8px;
+    padding: 0 12px;
     position: fixed;
     top: 0;
     left: 0;
@@ -3003,6 +3003,21 @@ body.cart-open{overflow:hidden}
     z-index: 100;
     background: #fff;
     box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    overflow: visible;
+  }
+  .k-cart-btn {
+    width: 40px;
+    height: 40px;
+    overflow: visible;
+  }
+  .k-cart-badge {
+    top: -2px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    padding: 0 5px;
+    border-width: 2px;
   }
   .k-logo { font-size: 16px; }
   .k-search {
@@ -3037,7 +3052,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(110px, 28vw, 150px);
+    height: clamp(150px, 38vw, 200px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;

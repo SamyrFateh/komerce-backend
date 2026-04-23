@@ -1,5 +1,5 @@
 /* Komerce SW v177 — purge agressive + reload forcé aux clients */
-const CACHE = 'komerce-v186';
+const CACHE = 'komerce-v187';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -18,7 +18,7 @@ self.addEventListener('activate', (e) => {
       await self.clients.claim();
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach(client => {
-        client.postMessage({ type: 'sw-updated', version: 'v186' });
+        client.postMessage({ type: 'sw-updated', version: 'v187' });
       });
     })()
   );
