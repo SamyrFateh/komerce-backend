@@ -3052,7 +3052,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(150px, 38vw, 200px);
+    height: clamp(100px, 26vw, 130px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
