@@ -6531,57 +6531,59 @@ button,
 /*  SECTIONS VERTICALES (home "Tout") — en-têtes + grille 2 cols par cat   */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* En-tête de section : "👕 Mode 42" en gras + barre colorée pleine dessous */
-.k-sec-header {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 20px 14px 10px;
-  margin-top: 8px;
-  /* Barre colorée plus visible : gradient coral->sand sous l'en-tête */
-  border-bottom: 3px solid var(--coral, #e64a19);
-  background:
-    linear-gradient(180deg,
-      transparent 0%,
-      transparent calc(100% - 3px),
-      var(--coral, #e64a19) calc(100% - 3px),
-      var(--coral, #e64a19) 100%);
-  position: relative;
-  scroll-margin-top: 70px;  /* offset pour scroll smooth (compense header sticky) */
-}
-/* Petit accent coloré en forme de carré à gauche pour renforcer le marqueur */
-.k-sec-header::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 20px;
-  background: var(--coral, #e64a19);
-  border-radius: 2px;
-  margin-right: 2px;
-}
-.k-sec-header-emoji {
-  font-size: 20px;
-  line-height: 1;
-}
-.k-sec-header-name {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--text, #1f3024);
-  letter-spacing: -0.2px;
-}
-.k-sec-header-count {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted, #8a877f);
-  margin-left: auto;
-  padding: 2px 8px;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 10px;
+/* En-tête de section — DESKTOP ONLY (mobile styles are in @media max-width: 899px) */
+@media (min-width: 900px) {
+  .k-sec-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 14px 10px;
+    margin-top: 8px;
+    border-bottom: 3px solid var(--coral, #e64a19);
+    background:
+      linear-gradient(180deg,
+        transparent 0%,
+        transparent calc(100% - 3px),
+        var(--coral, #e64a19) calc(100% - 3px),
+        var(--coral, #e64a19) 100%);
+    position: relative;
+    scroll-margin-top: 70px;
+  }
+  .k-sec-header::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 20px;
+    background: var(--coral, #e64a19);
+    border-radius: 2px;
+    margin-right: 2px;
+  }
+  .k-sec-header-emoji {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .k-sec-header-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text, #1f3024);
+    letter-spacing: -0.2px;
+  }
+  .k-sec-header-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted, #8a877f);
+    margin-left: auto;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+  }
+  .k-sec-grid + .k-sec-header {
+    margin-top: 32px;
+  }
 }
 
-/* Grille de produits d'une section — mobile-first */
-/* Mobile default: 2 colonnes (cohérent avec le bloc mobile @899px) */
+/* Grille de produits d'une section — responsive */
 .k-sec-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -6607,11 +6609,6 @@ button,
     grid-template-columns: repeat(5, 1fr);
     gap: 16px;
   }
-}
-
-/* Plus d'espace entre 2 sections (padding plus large entre zones) */
-.k-sec-grid + .k-sec-header {
-  margin-top: 32px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */
