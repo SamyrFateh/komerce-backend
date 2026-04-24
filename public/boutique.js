@@ -1055,7 +1055,83 @@
       });
     }, { passive: true });
 
+    _setupFlatSubcatDragScroll();
     _setupFlatSubcatInfiniteScroll();
+  }
+
+  // Drag-scroll programmatique : force le pager sous-cat à gagner le swipe
+  // horizontal contre tout concurrent (carrousels cartes, auto-advance, etc.)
+  function _setupFlatSubcatDragScroll() {
+    var grid = document.getElementById('k-grid');
+    if (!grid || grid._flatDragBound) return;
+    grid._flatDragBound = true;
+    var down = false;
+    var dragging = false;
+    var startX = 0;
+    var startY = 0;
+    var startScrollLeft = 0;
+    function isFlatMode() {
+      return window.innerWidth < 900 &&
+        window.state &&
+        window.state.flatSubcat &&
+        grid.classList.contains('k-grid-flat-subcat');
+    }
+    grid.addEventListener('pointerdown', function(e) {
+      if (!isFlatMode()) return;
+      /* Ne pas voler les vrais boutons */
+      if (e.target.closest(
+        'button, a, input, textarea, select, .k-card-add, .k-card-fav, .k-flat-subcat-tab, .k-flat-subcat-close'
+      )) return;
+      down = true;
+      dragging = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      startScrollLeft = grid.scrollLeft;
+    }, true);
+    grid.addEventListener('pointermove', function(e) {
+      if (!down || !isFlatMode()) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      if (!dragging) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        /* Geste vertical : on laisse la page interne scroller */
+        if (Math.abs(dy) > Math.abs(dx)) {
+          down = false;
+          dragging = false;
+          return;
+        }
+        dragging = true;
+        grid._flatDidDrag = true;
+        grid.classList.add('is-flat-dragging');
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      grid.scrollLeft = startScrollLeft - dx;
+    }, { capture: true, passive: false });
+    function endDrag(e) {
+      if (!down) return;
+      if (dragging) {
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(function() {
+          grid._flatDidDrag = false;
+          grid.classList.remove('is-flat-dragging');
+        }, 180);
+      }
+      down = false;
+      dragging = false;
+    }
+    grid.addEventListener('pointerup', endDrag, true);
+    grid.addEventListener('pointercancel', endDrag, true);
+    /* Empêche l'ouverture de modale après un swipe horizontal */
+    grid.addEventListener('click', function(e) {
+      if (!grid._flatDidDrag) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      grid._flatDidDrag = false;
+      grid.classList.remove('is-flat-dragging');
+    }, true);
   }
 
   // IO par page → pagination indépendante par sous-cat
