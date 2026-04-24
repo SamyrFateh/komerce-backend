@@ -7080,3 +7080,214 @@ body.cart-open #k-section-index {
 #k-modal-cart-btn.has-items .k-cart-avatar {
   mix-blend-mode: multiply;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   TEMU-STYLE FLAT SUBCAT MODE (mobile)
+   Pager horizontal de sous-catégories : 1 page par sous-cat,
+   swipe ← → pour changer, scroll vertical infini par page.
+   ⚠️ TOUT EST SCOPÉ par .k-grid-flat-subcat pour ne JAMAIS
+   impacter le pager accueil normal.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── CHROME (header + tabs) — injecté AU-DESSUS de .k-grid ── */
+#k-flat-subcat-chrome {
+  background: var(--sand);
+  flex-shrink: 0;
+}
+
+/* ── HEADER : ✕ + fil d'ariane + compteur ── */
+.k-flat-subcat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 6px;
+  background: linear-gradient(180deg, var(--sand) 0%, rgba(253,250,245,0.98) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.k-flat-subcat-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--sand-dark);
+  color: var(--text);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform .15s var(--ease), background .15s var(--ease);
+}
+.k-flat-subcat-close:active {
+  transform: scale(.9);
+  background: var(--border);
+}
+.k-flat-subcat-crumb {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.k-flat-subcat-cat {
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.k-flat-subcat-sep {
+  color: var(--text-light);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.k-flat-subcat-sub {
+  color: var(--ocean-dark);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-flat-subcat-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--sand-dark);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── BARRE DE TABS SOUS-CATS ── */
+.k-flat-subcat-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: var(--sand);
+  border-bottom: 1px solid var(--border);
+  scroll-behavior: smooth;
+}
+.k-flat-subcat-tabs::-webkit-scrollbar { display: none; }
+
+.k-flat-subcat-tab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .18s var(--ease);
+}
+.k-flat-subcat-tab-icon { font-size: 15px; line-height: 1; }
+.k-flat-subcat-tab-label { font-size: 13px; }
+.k-flat-subcat-tab:active { transform: scale(.95); }
+.k-flat-subcat-tab.is-active {
+  background: var(--ocean);
+  border-color: var(--ocean-dark);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(100,175,90,.35);
+}
+
+/* ── PAGES DU PAGER (scopées .k-grid-flat-subcat) ──
+   Héritent du layout .k-pager-active .k-cat-section existant. */
+.k-flat-subcat-page {
+  padding: 0 !important;
+  padding-bottom: 80px !important;
+}
+.k-flat-subcat-page > .k-sec-grid {
+  padding: 10px 8px 8px !important;
+}
+
+/* ── FIN DE PAGE : "Tout vu → swipe pour X" ── */
+.k-flat-page-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 20px 40px;
+  gap: 10px;
+  animation: kFlatEndFadeIn .5s var(--ease);
+}
+@keyframes kFlatEndFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.k-flat-page-end-emoji { font-size: 36px; line-height: 1; }
+.k-flat-page-end-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.k-flat-page-end-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.k-flat-page-end-next {
+  margin-top: 4px;
+  padding: 10px 18px;
+  background: var(--ocean);
+  color: var(--white);
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(100,175,90,.3);
+  transition: transform .15s var(--ease);
+}
+.k-flat-page-end-next:active { transform: scale(.96); }
+
+/* ── ÉTAT VIDE (sous-cat sans produits) ── */
+.k-flat-subcat-empty {
+  padding: 40px 24px;
+  text-align: center;
+}
+.k-flat-subcat-empty-emoji {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.k-flat-subcat-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.k-flat-subcat-empty-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.k-flat-page-sentinel {
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* ── Layout : SCOPE STRICT sur .k-grid-flat-subcat ──
+   Ces règles ne s'activent QUE quand .k-grid porte la classe flat.
+   Elles ne toucheront JAMAIS le pager accueil normal. */
+#k-page-scroll.k-pager-active #k-catalog-section:has(.k-grid-flat-subcat) {
+  display: flex;
+  flex-direction: column;
+}
+#k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat {
+  flex: 1 1 0;
+  min-height: 0;
+}

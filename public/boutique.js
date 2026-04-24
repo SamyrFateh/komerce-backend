@@ -208,6 +208,10 @@
   activeCat: 'all',
     activeSubcat: null,
     sectionSubcats: {},
+    // ── TEMU-STYLE FLAT SUBCAT MODE (mobile) ──
+    // Pager horizontal de sous-catégories, scroll vertical infini par page.
+    // { cat: 'Mode', sub: 'Femme' } — sub = page actuellement visible
+    flatSubcat: null,
   modalProduct: null,
   modalSubcatFilter: null,
   modalQty: 1,
@@ -430,6 +434,13 @@
   /* ── INFINITE SCROLL — append next page ─────────────────── */
   function appendNextPage() {
     const spinner = document.getElementById('k-load-more-spinner');
+
+    // ── MODE FLAT SUBCAT : pagination gérée par IO par page (pas de global append) ──
+    if (state.flatSubcat && window.innerWidth < 900) {
+      if (spinner) spinner.classList.remove('show');
+      return;
+    }
+
     // Même logique que renderGrid : si activeCat === 'all', on prend filtered tel quel
     // sinon on filtre filtered par catégorie (cohérent avec renderGrid)
     let list = state.activeCat === 'all'
@@ -608,6 +619,27 @@
   function renderGrid() {
     state.page = 0;
     const _isMobile = window.innerWidth < 900;
+
+    // ── TEMU FLAT SUBCAT MODE (mobile only) ──
+    // Pager horizontal : 1 page par sous-cat, scroll vertical infini par page.
+    // Court-circuite le rendu sections quand flatSubcat est actif.
+    if (_isMobile && state.flatSubcat) {
+      dom.grid.classList.add('k-grid-has-sections');
+      dom.grid.classList.add('k-grid-flat-subcat');
+      dom.grid.innerHTML = _renderFlatSubcat();
+      _mountFlatSubcatChrome();
+      _bindGridEvents();
+      _bindFlatSubcatControls();
+      var _psf = document.getElementById('k-page-scroll');
+      if (_psf) _psf.classList.add('k-pager-active');
+      _recalcPagerHeight();
+      _setupFlatSubcatPager();
+      return;
+    }
+    // Pas en mode flat : cleanup de la classe et du chrome éventuels
+    dom.grid.classList.remove('k-grid-flat-subcat');
+    _unmountFlatSubcatChrome();
+
     // Mobile pager: always show all products grouped by category
     let list = (state.activeCat === 'all' || _isMobile)
       ? state.filtered
@@ -794,6 +826,306 @@
       for (let i = 0; i < count; i++) flat.push(section.prods[i]);
     }
     return flat;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // TEMU FLAT SUBCAT MODE — Pager horizontal de sous-catégories
+  // 1 page par sous-cat · swipe ← → pour changer · scroll vertical
+  // infini indépendant dans chaque page · IO par page pour pagination
+  // ══════════════════════════════════════════════════════════
+
+  // Produits filtrés sur (cat, sub)
+  function _productsForSubcat(cat, sub) {
+    return state.filtered.filter(function(p) {
+      return p.category === cat && p.subcategory === sub;
+    });
+  }
+
+  // Meta (label + icon) d'une sous-cat depuis SUBCATS
+  function _subcatMeta(cat, subKey) {
+    var subs = SUBCATS[cat] || [];
+    for (var i = 0; i < subs.length; i++) {
+      if (subs[i].key === subKey) return subs[i];
+    }
+    return { key: subKey, label: subKey, icon: '✨' };
+  }
+
+  // Sous-cat suivante dans l'ordre SUBCATS (null si dernière)
+  function _nextSubcat(cat, currentSub) {
+    var subs = SUBCATS[cat] || [];
+    for (var i = 0; i < subs.length - 1; i++) {
+      if (subs[i].key === currentSub) return subs[i + 1].key;
+    }
+    return null;
+  }
+
+  // Helper : bind events sur les nouvelles cartes ajoutées (append incremental)
+  function _bindAppendedCards() {
+    dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(function(card) {
+      card.dataset.bound = '1';
+      bindCarouselDots(card);
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+        if (card.dataset.justSwiped === '1') return;
+        openModal(card.dataset.id);
+      });
+    });
+    dom.grid.querySelectorAll('.k-card-fav:not([data-bound])').forEach(function(btn) {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function(e) { e.stopPropagation(); toggleFav(btn.dataset.fav, btn); });
+    });
+    dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(function(btn) {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
+        else { quickAdd(btn.dataset.add, btn); }
+      });
+    });
+  }
+
+  // Rendu : 1 page par sous-cat dans .k-grid + chrome header/tabs stocké pour injection
+  function _renderFlatSubcat() {
+    var fs = state.flatSubcat;
+    if (!fs) return '';
+    var subs = SUBCATS[fs.cat] || [];
+
+    // Chrome (header + tabs) — stocké pour _mountFlatSubcatChrome
+    var headerHtml =
+      '<div class="k-flat-subcat-header">' +
+        '<button class="k-flat-subcat-close" id="k-flat-subcat-close" aria-label="Fermer">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+        '</button>' +
+        '<span class="k-flat-subcat-crumb">' +
+          '<span class="k-flat-subcat-cat">' + sanitize(fs.cat) + '</span>' +
+          '<span class="k-flat-subcat-sep">›</span>' +
+          '<span class="k-flat-subcat-sub" id="k-flat-subcat-sub-label"></span>' +
+        '</span>' +
+        '<span class="k-flat-subcat-count" id="k-flat-subcat-count"></span>' +
+      '</div>' +
+      '<div class="k-flat-subcat-tabs" id="k-flat-subcat-tabs">' +
+        subs.map(function(s) {
+          return '<button class="k-flat-subcat-tab" data-flat-sub="' + s.key + '">' +
+            '<span class="k-flat-subcat-tab-icon">' + s.icon + '</span>' +
+            '<span class="k-flat-subcat-tab-label">' + sanitize(s.label) + '</span>' +
+          '</button>';
+        }).join('') +
+      '</div>';
+
+    // Pages du pager (1 par sous-cat) — réutilise .k-cat-section pour hériter du CSS pager
+    var pagesHtml = subs.map(function(s) {
+      var prods = _productsForSubcat(fs.cat, s.key);
+      var total = prods.length;
+      var firstPage = prods.slice(0, state.pageSize);
+      var gridHtml = firstPage.length > 0
+        ? ('<div class="k-sec-grid">' + firstPage.map(_renderCard).join('') + '</div>')
+        : ('<div class="k-flat-subcat-empty">' +
+            '<div class="k-flat-subcat-empty-emoji">🔎</div>' +
+            '<div class="k-flat-subcat-empty-title">Bientôt disponible</div>' +
+            '<div class="k-flat-subcat-empty-sub">Swipe → pour voir d\'autres sélections</div>' +
+          '</div>');
+      return '<div class="k-cat-section k-flat-subcat-page" data-flat-sub="' + s.key +
+             '" data-flat-total="' + total + '" data-flat-page="0">' +
+          gridHtml +
+          '<div class="k-flat-page-sentinel" data-flat-sub="' + s.key + '"></div>' +
+        '</div>';
+    }).join('');
+
+    state._flatSubcatHeaderHtml = headerHtml;
+    return pagesHtml;
+  }
+
+  // Injection/retrait du chrome (header + tabs) AU-DESSUS de .k-grid
+  function _mountFlatSubcatChrome() {
+    _unmountFlatSubcatChrome();
+    var sec = document.getElementById('k-catalog-section');
+    var grid = document.getElementById('k-grid');
+    if (!sec || !grid) return;
+    var wrapper = document.createElement('div');
+    wrapper.id = 'k-flat-subcat-chrome';
+    wrapper.innerHTML = state._flatSubcatHeaderHtml || '';
+    sec.insertBefore(wrapper, grid);
+  }
+  function _unmountFlatSubcatChrome() {
+    var old = document.getElementById('k-flat-subcat-chrome');
+    if (old) old.remove();
+  }
+
+  // Bouton ✕ de sortie + clics sur les tabs
+  function _bindFlatSubcatControls() {
+    var closeBtn = document.getElementById('k-flat-subcat-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        state.flatSubcat = null;
+        state.page = 0;
+        renderGrid();
+        var _sc = document.getElementById('k-page-scroll');
+        if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
+      });
+    }
+    document.querySelectorAll('.k-flat-subcat-tab').forEach(function(tab) {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _scrollFlatPagerToSub(tab.dataset.flatSub);
+      });
+    });
+  }
+
+  // Scroll horizontal vers une sous-cat précise
+  function _scrollFlatPagerToSub(sub) {
+    var grid = document.getElementById('k-grid');
+    if (!grid || !sub) return;
+    var page = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + sub + '"]');
+    if (!page) return;
+    grid.scrollTo({ left: page.offsetLeft, behavior: 'smooth' });
+    _syncFlatActiveTab(sub);
+  }
+
+  // Met à jour header + tab actif selon la page visible
+  function _syncFlatActiveTab(sub) {
+    if (!state.flatSubcat) return;
+    state.flatSubcat.sub = sub;
+    var fs = state.flatSubcat;
+    var meta = _subcatMeta(fs.cat, sub);
+    var lbl = document.getElementById('k-flat-subcat-sub-label');
+    if (lbl) lbl.innerHTML = meta.icon + ' ' + sanitize(meta.label);
+    var total = _productsForSubcat(fs.cat, sub).length;
+    var cnt = document.getElementById('k-flat-subcat-count');
+    if (cnt) cnt.textContent = total + ' produit' + (total > 1 ? 's' : '');
+    var tabs = document.querySelectorAll('.k-flat-subcat-tab');
+    var activeTab = null;
+    tabs.forEach(function(t) {
+      var on = t.dataset.flatSub === sub;
+      t.classList.toggle('is-active', on);
+      if (on) activeTab = t;
+    });
+    if (activeTab) {
+      var bar = document.getElementById('k-flat-subcat-tabs');
+      if (bar) {
+        var left = activeTab.offsetLeft - bar.clientWidth / 2 + activeTab.clientWidth / 2;
+        bar.scrollTo({ left: left, behavior: 'smooth' });
+      }
+    }
+  }
+
+  // Calcule --pager-h sans brancher les listeners de _setupMobilePager
+  function _recalcPagerHeight() {
+    var hdr = document.querySelector('.k-header');
+    var hero = document.getElementById('k-hero');
+    var cats = document.querySelector('.k-cats-shell');
+    var usedH = (hdr ? hdr.offsetHeight : 0)
+              + (hero ? hero.offsetHeight : 0)
+              + (cats ? cats.offsetHeight : 0);
+    document.documentElement.style.setProperty('--pager-h', (window.innerHeight - usedH) + 'px');
+  }
+
+  // Setup pager horizontal : scroll initial vers la sous-cat choisie + listener sync
+  function _setupFlatSubcatPager() {
+    var grid = document.getElementById('k-grid');
+    if (!grid || !state.flatSubcat) return;
+
+    var fs = state.flatSubcat;
+    var initialPage = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + fs.sub + '"]');
+    if (initialPage) {
+      requestAnimationFrame(function() {
+        grid.scrollLeft = initialPage.offsetLeft;
+        _syncFlatActiveTab(fs.sub);
+      });
+    }
+
+    // Sync tab actif au swipe horizontal
+    var syncRaf = null;
+    grid.addEventListener('scroll', function() {
+      if (syncRaf) cancelAnimationFrame(syncRaf);
+      syncRaf = requestAnimationFrame(function() {
+        var pages = grid.querySelectorAll('.k-flat-subcat-page');
+        var scrollL = grid.scrollLeft;
+        var bestPage = null;
+        var bestDist = Infinity;
+        pages.forEach(function(p) {
+          var d = Math.abs(p.offsetLeft - scrollL);
+          if (d < bestDist) { bestDist = d; bestPage = p; }
+        });
+        if (bestPage && state.flatSubcat && bestPage.dataset.flatSub !== state.flatSubcat.sub) {
+          _syncFlatActiveTab(bestPage.dataset.flatSub);
+        }
+      });
+    }, { passive: true });
+
+    _setupFlatSubcatInfiniteScroll();
+  }
+
+  // IO par page → pagination indépendante par sous-cat
+  function _setupFlatSubcatInfiniteScroll() {
+    var grid = document.getElementById('k-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.k-flat-subcat-page').forEach(function(page) {
+      if (page._flatIO) { try { page._flatIO.disconnect(); } catch(e){} page._flatIO = null; }
+      var sentinel = page.querySelector('.k-flat-page-sentinel');
+      if (!sentinel) return;
+      var io = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) _appendNextToFlatPage(page);
+      }, { root: page, rootMargin: '300px 0px 0px 0px' });
+      io.observe(sentinel);
+      page._flatIO = io;
+    });
+  }
+
+  // Append next batch à une page donnée ; fin de parcours = message + bouton swipe
+  function _appendNextToFlatPage(page) {
+    var sub = page.dataset.flatSub;
+    var fs = state.flatSubcat;
+    if (!fs) return;
+    var currentPage = parseInt(page.dataset.flatPage || '0', 10);
+    var list = _productsForSubcat(fs.cat, sub);
+    var start = (currentPage + 1) * state.pageSize;
+
+    if (start >= list.length) {
+      if (!page.querySelector('.k-flat-page-end')) {
+        var nextSub = _nextSubcat(fs.cat, sub);
+        var endHtml =
+          '<div class="k-flat-page-end">' +
+            '<div class="k-flat-page-end-emoji">✨</div>' +
+            '<div class="k-flat-page-end-title">Tout vu dans ' + sanitize(_subcatMeta(fs.cat, sub).label) + '</div>' +
+            (nextSub
+              ? '<button class="k-flat-page-end-next" data-next-sub="' + nextSub + '">Swipe pour ' +
+                  _subcatMeta(fs.cat, nextSub).icon + ' ' + sanitize(_subcatMeta(fs.cat, nextSub).label) +
+                  ' →</button>'
+              : '<div class="k-flat-page-end-sub">Dernière sous-catégorie !</div>') +
+          '</div>';
+        var gridEl = page.querySelector('.k-sec-grid');
+        if (gridEl) {
+          gridEl.insertAdjacentHTML('afterend', endHtml);
+        } else {
+          var sent = page.querySelector('.k-flat-page-sentinel');
+          if (sent) sent.insertAdjacentHTML('beforebegin', endHtml);
+        }
+        var nextBtn = page.querySelector('.k-flat-page-end-next');
+        if (nextBtn) {
+          nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            _scrollFlatPagerToSub(nextBtn.dataset.nextSub);
+          });
+        }
+      }
+      return;
+    }
+
+    page.dataset.flatPage = String(currentPage + 1);
+    var nextItems = list.slice(start, start + state.pageSize);
+    var fragment = nextItems.map(_renderCard).join('');
+    var gridEl = page.querySelector('.k-sec-grid');
+    if (gridEl) {
+      gridEl.insertAdjacentHTML('beforeend', fragment);
+    } else {
+      var sent = page.querySelector('.k-flat-page-sentinel');
+      if (sent) sent.insertAdjacentHTML('beforebegin', '<div class="k-sec-grid">' + fragment + '</div>');
+    }
+    _bindAppendedCards();
   }
 
   function _renderGridWithSections(items) {
@@ -984,7 +1316,9 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
-    // ── Sous-catégories locales (filtrent dans la section) ──
+    // ── Sous-catégories locales ──
+    // Mobile : bascule en pager flat horizontal style Temu
+    // Desktop : comportement historique (filtre local dans la section)
     dom.grid.querySelectorAll('.k-sec-subchip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         e.preventDefault();
@@ -992,9 +1326,23 @@
         const cat = chip.dataset.secCat;
         const sub = chip.dataset.secSub;
         if (!cat || !sub) return;
-        if (!state.sectionSubcats) state.sectionSubcats = {};
-        state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
-        renderGrid();
+        const _isMobile = window.innerWidth < 900;
+        if (_isMobile) {
+          // Toggle off si on re-clique sur la même sous-cat déjà active
+          if (state.flatSubcat && state.flatSubcat.cat === cat && state.flatSubcat.sub === sub) {
+            state.flatSubcat = null;
+          } else {
+            state.flatSubcat = { cat: cat, sub: sub };
+          }
+          state.page = 0;
+          renderGrid();
+          var _sc = document.getElementById('k-page-scroll');
+          if (_sc) _sc.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          if (!state.sectionSubcats) state.sectionSubcats = {};
+          state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
+          renderGrid();
+        }
       });
     });
     // ── Index flottant + observer nav chips ──
@@ -1355,6 +1703,13 @@ function quickRemove(productId, btnEl) {
       }
       chip.addEventListener('click', () => {
         const cat = chip.dataset.cat;
+
+        // ── Quitte le mode flat sous-cat si actif ──
+        // Re-render en mode sections, puis continue avec le flux normal
+        if (state.flatSubcat) {
+          state.flatSubcat = null;
+          renderGrid();
+        }
 
         // ── Mobile pager: scroll to page instead of re-rendering ──
         if (window.innerWidth < 900 && document.getElementById('k-page-scroll') &&
