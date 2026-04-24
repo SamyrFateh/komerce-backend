@@ -388,6 +388,8 @@
     const count = cartQty();
     dom.cartBadge.textContent = count;
     dom.cartBadge.classList.toggle('show', count > 0);
+    // Toggle dame avec/sans panier
+    dom.cartBtn.classList.toggle('has-items', count > 0);
     // Modal badge
     if (dom.modalCartBadge) {
       dom.modalCartBadge.textContent = count > 0 ? count : '';
