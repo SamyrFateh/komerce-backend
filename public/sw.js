@@ -1,5 +1,5 @@
 /* Komerce SW v177 — purge agressive + reload forcé aux clients */
-const CACHE = 'komerce-v239';
+const CACHE = 'komerce-v240';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
