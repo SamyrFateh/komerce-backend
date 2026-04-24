@@ -3486,7 +3486,7 @@ body.cart-open{overflow:hidden}
     box-shadow: none !important;
   }
   .k-card-add .k-card-add-basket {
-    width: 30px !important; height: 30px !important;
+    width: 40px !important; height: 40px !important;
     pointer-events: none;
     mix-blend-mode: multiply;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
@@ -3884,7 +3884,7 @@ body.cart-open{overflow:hidden}
     font-size: 9px;
   }
   .k-sec-grid .k-card-add .k-card-add-basket {
-    width: 28px !important; height: 28px !important;
+    width: 40px !important; height: 40px !important;
     pointer-events: none;
     mix-blend-mode: multiply;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
