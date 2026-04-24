@@ -4319,6 +4319,54 @@ document.addEventListener('click', function(e) {
     // Recalc on resize/orientation change
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
+    // Setup auto-advance when section reaches bottom
+    _setupSectionAutoAdvance();
+  }
+
+  /* ── Auto-advance to next category when vertical scroll ends ──
+     When user reaches bottom of a section → smooth snap to next section.
+     Debounced 280ms after scrollend / scroll-at-bottom to feel natural.  */
+  function _setupSectionAutoAdvance() {
+    var grid = document.getElementById('k-grid');
+    if (!grid || window.innerWidth >= 900) return;
+    var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
+    sections.forEach(function(sec, idx) {
+      // Cleanup old listener
+      if (sec._advHandler) {
+        sec.removeEventListener('scroll', sec._advHandler);
+        sec.removeEventListener('scrollend', sec._advHandlerEnd);
+      }
+      var _advTimer = null;
+      var _lastScrollTop = -1;
+
+      function _tryAdvance() {
+        if (window._scrollingToSection) return;
+        if (idx >= sections.length - 1) return; // last section — nothing after
+        var atBottom = sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 24;
+        if (!atBottom) { clearTimeout(_advTimer); return; }
+        // Only trigger if we were scrolling down (not already at bottom on load)
+        if (_lastScrollTop < 0 || sec.scrollTop <= _lastScrollTop + 2) return;
+        clearTimeout(_advTimer);
+        _advTimer = setTimeout(function() {
+          if (window._scrollingToSection) return;
+          var nextSec = sections[idx + 1];
+          if (!nextSec) return;
+          var cat = nextSec.dataset.cat;
+          if (cat) _scrollPagerToCat(cat);
+        }, 280);
+      }
+
+      sec._advHandler = function() {
+        _tryAdvance();
+        _lastScrollTop = sec.scrollTop;
+      };
+      sec._advHandlerEnd = function() {
+        _lastScrollTop = sec.scrollTop;
+        _tryAdvance();
+      };
+      sec.addEventListener('scroll', sec._advHandler, { passive: true });
+      sec.addEventListener('scrollend', sec._advHandlerEnd, { passive: true });
+    });
   }
 
   // ── Sync pill ↔ scroll : rAF instant (zéro retard) ──
