@@ -3329,13 +3329,14 @@ body.cart-open{overflow:hidden}
     overflow: hidden;
     background: #faf8f5;
   }
-  /* Carousel grille mobile : touch passe au scroll vertical,
+  /* Carousel grille mobile : overflow-x hidden empêche le swipe image,
      dots gèrent le changement d'image via JS scrollTo().
+     PAS de touch-action: pan-y — ça bloquerait le swipe ↔ entre catégories
+     (les cartes couvrent 90% de l'écran).
      !important nécessaire : les définitions base (.k-card-carousel L4067/L4473)
      passent APRÈS ce bloc mobile et écrasent sans !important. */
   .k-card-carousel {
     overflow-x: hidden !important;
-    touch-action: pan-y !important;
   }
   .k-card-img {
     width: 100%;
