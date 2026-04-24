@@ -7019,10 +7019,24 @@ body.cart-open #k-section-index {
   box-shadow: none !important;
   overflow: visible !important;
 }
+/* Desktop : 52px libre */
+@media (min-width: 900px) {
+  .k-header .k-cart-avatar,
+  #k-modal-cart-btn .k-cart-avatar {
+    width: 52px !important;
+    height: 52px !important;
+  }
+}
+/* Mobile : 40px pour tenir dans header 44px */
+@media (max-width: 899px) {
+  .k-header .k-cart-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}
+/* Commun : style flottant */
 .k-header .k-cart-avatar,
 #k-modal-cart-btn .k-cart-avatar {
-  width: 52px !important;
-  height: 52px !important;
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
