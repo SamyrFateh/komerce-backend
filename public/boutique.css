@@ -349,7 +349,7 @@ body{
   display:flex;gap:10px;
   overflow-x:auto;
   padding-bottom:4px;
-  scroll-snap-type:x mandatory;
+  scroll-snap-type:x proximity;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
   background:transparent;
@@ -1601,7 +1601,7 @@ body.cart-open{overflow:hidden}
 }
 .k-sug-rail{
   display:flex;gap:10px;
-  overflow-x:auto;scroll-snap-type:x mandatory;
+  overflow-x:auto;scroll-snap-type:x proximity;
   scrollbar-width:none;padding-bottom:4px;
 }
 .k-sug-rail::-webkit-scrollbar{display:none}
@@ -3213,7 +3213,7 @@ body.cart-open{overflow:hidden}
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
     padding: 0 0 4px;
   }
@@ -3858,7 +3858,7 @@ body.cart-open{overflow:hidden}
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     height: 100%;
@@ -3915,16 +3915,7 @@ body.cart-open{overflow:hidden}
   }
 
   /* ── Direction lock: vertical gesture → disable horizontal snap ── */
-  /* ── Touch-action zones: hardware-level scroll separation ── */
-  /* Products area: ONLY vertical scroll — no diagonal confusion */
-  #k-page-scroll.k-pager-active .k-cat-section {
-    touch-action: pan-y;
-  }
-  /* Section header: horizontal swipe zone — grab handle for paging */
-  #k-page-scroll.k-pager-active .k-sec-header {
-    touch-action: pan-x;
-    cursor: grab;
-  }
+  /* ── Touch zones removed: proximity snap handles direction naturally ── */
 
   /* ── GPU compositing: smoother scroll animation ── */
   #k-page-scroll.k-pager-active .k-grid {
@@ -4077,8 +4068,8 @@ body.cart-open{overflow:hidden}
   -ms-overflow-style: none;
   width: 100%;
   aspect-ratio: 4/3;
-  /* pan-y : réserve le geste vertical au scroll global, horizontal au carrousel */
-  touch-action: pan-y;
+  /* pan-x pan-y : permet swipe horizontal du carousel + scroll vertical global */
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   background: #faf8f5;
 }
@@ -4482,7 +4473,7 @@ body.modal-open .k-bnav {
   scrollbar-width: none;
   width: 100%;
   aspect-ratio: 4/3;
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   background: #faf8f5;
 }
@@ -6259,7 +6250,7 @@ button,
 .k-subcats-rail {
   min-height: 40px !important;
   contain: layout !important;
-  scroll-snap-type: x mandatory !important;
+  scroll-snap-type: x proximity !important;
 }
 .k-subchip {
   flex: 0 0 auto !important;
