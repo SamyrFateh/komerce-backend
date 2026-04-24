@@ -391,6 +391,12 @@
     if (dom.modalCartBadge) {
       dom.modalCartBadge.textContent = count > 0 ? count : '';
     }
+    // Bottom nav badge
+    var bnavBadge = document.getElementById('k-bnav-cart-badge');
+    if (bnavBadge) {
+      bnavBadge.textContent = count;
+      bnavBadge.classList.toggle('show', count > 0);
+    }
   }
 
   function isFav(id) { return state.favs.includes(id); }
