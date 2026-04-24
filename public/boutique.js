@@ -458,17 +458,17 @@
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
-            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="20" height="20">'}
-            </button>
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${p.name}</div>
+            ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+              <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+                ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
+              </button>
             </div>
-
           </div>
         </div>`;
     }).join('');
@@ -664,17 +664,17 @@
             <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
-            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="20" height="20">'}
-            </button>
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${p.name}</div>
+            ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+              <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+                ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
+              </button>
             </div>
-
           </div>
         </div>`;
     }).join('');
@@ -719,9 +719,6 @@
           <button class="k-card-fav${isFav(p.id) ? ' liked' : ''}" data-fav="${p.id}" aria-label="Favori">
             ${isFav(p.id) ? '❤️' : '🤍'}
           </button>
-          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="20" height="20">'}
-          </button>
         </div>
         <div class="k-card-info">
           <div class="k-card-name">${p.name}</div>
@@ -729,6 +726,9 @@
           <div class="k-card-bottom k-card-prices-row">
             <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
             ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+            <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
+            </button>
           </div>
         </div>
       </div>`;

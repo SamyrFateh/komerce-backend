@@ -3073,9 +3073,14 @@ body.cart-open{overflow:hidden}
     overflow: visible;
   }
   .k-cart-btn {
-    width: 40px;
-    height: 40px;
+    width: auto;
+    height: auto;
     overflow: visible;
+    background: transparent !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
   .k-cart-badge {
     top: -2px;
@@ -3428,7 +3433,7 @@ body.cart-open{overflow:hidden}
   }
   .k-card-prices-row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 3px;
     margin-top: 0;
   }
@@ -3451,10 +3456,13 @@ body.cart-open{overflow:hidden}
     left: 5px;
   }
   .k-card-add {
+    position: static !important;
+    bottom: auto !important;
+    right: auto !important;
+    margin-left: auto;
+    flex-shrink: 0;
     width: 36px;
     height: 36px;
-    bottom: 6px;
-    right: 6px;
     background: transparent !important;
     background-image: none !important;
     border: none !important;
@@ -3467,9 +3475,14 @@ body.cart-open{overflow:hidden}
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
   }
   .k-card-add.in-cart {
-    width: 66px;
-    border-radius: 12px;
+    width: 72px;
+    min-width: 72px;
+    height: 32px !important;
+    border-radius: 16px;
     padding: 0 4px;
+    background: #fff !important;
+    border: 1.5px solid var(--ocean, #0d9488) !important;
+    box-shadow: 0 1px 4px rgba(13,148,136,.2) !important;
   }
   .k-add-minus, .k-add-plus-ic {
     width: 20px;
@@ -3604,7 +3617,7 @@ body.cart-open{overflow:hidden}
   /* Nom + description sur la même ligne */
   #k-modal-name {
     font-size: 18px;
-    display: inline;
+    display: block;
   }
   /* k-modal-desc : consolidé dans section O plus bas */
   .k-modal-price-row {
