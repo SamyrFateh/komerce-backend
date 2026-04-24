@@ -2975,10 +2975,10 @@ body.cart-open{overflow:hidden}
 /* ── Input hauteur compacte ─────────────────────────── */
 .k-order-body input[type=text],
 .k-order-body input[type=tel]{
-  height:34px;font-size:.85rem;box-sizing:border-box;
+  height:44px;font-size:.85rem;box-sizing:border-box;
 }
-.k-phone-row{height:34px}
-.k-phone-row select,.k-phone-row input{height:34px;font-size:.85rem}
+.k-phone-row{height:44px}
+.k-phone-row select,.k-phone-row input{height:44px;font-size:.85rem}
 
 /* ── Accordion sender phone compact ────────────────── */
 .ck-sms-body{padding:6px 0 4px;gap:4px}
@@ -4160,17 +4160,23 @@ body.cart-open{overflow:hidden}
   }
 
   /* ── N. PHONE INPUT COMPACT (panier/checkout) ──────────── */
+  .k-ck-phone-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    height: 44px;
+    align-items: stretch;
+  }
   .k-ck-phone-select {
     flex: 0 0 90px;
+    height: 44px;
     font-size: 0.8rem;
-    padding: 0 4px;
+    padding: 0 6px;
+    box-sizing: border-box;
   }
   .k-ck-phone-input {
     min-width: 0;
+    height: 44px;
     font-size: 0.85rem;
-  }
-  .k-ck-phone-wrap {
-    max-width: 100%;
     box-sizing: border-box;
   }
 
