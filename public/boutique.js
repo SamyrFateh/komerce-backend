@@ -1325,6 +1325,8 @@
         e.stopPropagation();
         const cat = chip.dataset.secCat;
         const sub = chip.dataset.secSub;
+        // DEBUG TEMPORAIRE : trace ce qui se passe
+        window.__lastSubchipClick = { cat: cat, sub: sub, ts: Date.now(), innerW: window.innerWidth };
         if (!cat || !sub) return;
         const _isMobile = window.innerWidth < 900;
         if (_isMobile) {
@@ -5027,6 +5029,10 @@ document.addEventListener('click', function(e) {
       lines.push('=== FLAT SUBCAT DEBUG ===');
       lines.push('state.flatSubcat: ' + JSON.stringify(state.flatSubcat));
       lines.push('window: ' + window.innerWidth + 'x' + window.innerHeight);
+      lines.push('isMobile (<900): ' + (window.innerWidth < 900));
+      lines.push('');
+      lines.push('🎯 Sub-chips DOM: ' + document.querySelectorAll('.k-sec-subchip').length);
+      lines.push('🎯 Dernier clic chip: ' + JSON.stringify(window.__lastSubchipClick || 'AUCUN'));
       lines.push('');
       elements.forEach(function(pair) {
         var name = pair[0], el = pair[1];
