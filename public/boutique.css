@@ -3087,7 +3087,7 @@ body.cart-open{overflow:hidden}
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center 30%;
+    object-position: center 10% !important;
     border-radius: 0;
   }
 
