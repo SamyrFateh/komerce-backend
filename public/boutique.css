@@ -4001,19 +4001,57 @@ body.cart-open{overflow:hidden}
     box-sizing: border-box;
   }
 
-  /* ── O. MODAL DESCRIPTION visible — SEULE définition mobile ──────────── */
+  /* ── O. FIX MODALE PRODUIT — description jamais masquée (v228) ────── */
+  .k-modal-scroll {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .k-modal-details {
+    margin-top: -18px !important;
+    padding-bottom: 0 !important;
+  }
+
+  .k-modal-info {
+    padding: 14px 16px 10px !important;
+  }
+
+  #k-modal-name {
+    display: block !important;
+    font-size: 20px !important;
+    line-height: 1.18 !important;
+    margin-bottom: 6px !important;
+  }
+
   .k-modal-desc {
     display: -webkit-box !important;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 12px;
-    color: #666;
-    margin-top: 4px;
-    line-height: 1.4;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin: 0 0 10px !important;
+    color: var(--text-muted) !important;
   }
-  .k-modal-info {
-    padding: 12px 16px 8px;
+
+  .k-modal-price-row {
+    margin-top: 4px !important;
+  }
+
+  .k-modal-scroll > .k-modal-actions {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: 0.8fr 1.2fr !important;
+    gap: 10px !important;
+    margin: 4px 16px 16px !important;
+    padding: 0 !important;
+    border-top: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .k-modal-actions .k-buy-now-btn {
+    grid-column: 1 / -1 !important;
   }
 }
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
@@ -5425,17 +5463,7 @@ body.cart-open #k-page-scroll {
 }
 .k-modal-actions .k-buy-now-btn:active { transform: scale(0.98); }
 
-/* ── Scroll unifié : padding pour éviter que le FAB masque le contenu ── */
-.k-modal-scroll{
-  padding-bottom:80px;
-  scroll-behavior:smooth;
-}
-/* Actions intégrées dans le scroll : reset des résidus sticky */
-.k-modal-scroll > .k-modal-actions{
-  position:static !important;
-  flex-shrink:0;
-  margin-top:0;
-}
+/* [SUPPRIMÉ v228] — static/padding modal déplacés dans bloc mobile unique */
 /* Image pas trop imposante au 1er coup d'œil pour inciter au scroll */
 @media (max-width:600px){
   .k-modal-img-wrap{
@@ -5444,17 +5472,7 @@ body.cart-open #k-page-scroll {
   }
 }
 
-/* Actions produit : bien visibles, avec petit séparateur + fond blanc */
-.k-modal-scroll > .k-modal-actions{
-  position:sticky !important;
-  bottom:0 !important;
-  z-index:5;
-  background:#fff;
-  border-top:1px solid var(--sand-dark);
-  box-shadow:0 -4px 12px rgba(0,0,0,.06);
-  padding:12px !important;
-  padding-bottom:calc(12px + env(safe-area-inset-bottom)) !important;
-}
+/* [SUPPRIMÉ v228] — sticky actions déplacé dans bloc mobile unique */
 
 /* Suggestion card flex column — actions toujours visibles */
 .k-sug-grid .k-sug-card{
@@ -5674,13 +5692,7 @@ body.cart-open #k-page-scroll {
 }
 
 
-/* Quand la topbar enrichie est active, on cache le sticky bottom 
-   pour éviter la redondance visuelle. La topbar prend le relais. */
-.k-modal.is-scrolled .k-modal-scroll > .k-modal-actions{
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .2s ease;
-}
+/* [SUPPRIMÉ v228] — is-scrolled killer retiré (actions static, plus de sticky) */
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */
