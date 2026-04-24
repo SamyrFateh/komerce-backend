@@ -639,6 +639,8 @@
         var _ps = document.getElementById('k-page-scroll');
         if (_ps) _ps.classList.add('k-pager-active');
         _setupMobilePager();
+        _setupInfiniteLoop();
+        _setupSectionAutoAdvance();
         if (state.activeCat !== 'all') {
           setTimeout(function() { _scrollPagerToCat(state.activeCat); }, 50);
         }
@@ -4320,7 +4322,6 @@ document.addEventListener('click', function(e) {
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
     // Setup auto-advance when section reaches bottom
-    _setupSectionAutoAdvance();
     _setupHorizontalWrap();
   }
 
@@ -4337,6 +4338,7 @@ document.addEventListener('click', function(e) {
     if (!n) return;
 
     sections.forEach(function(sec, idx) {
+      if (sec.getAttribute('data-ghost')) return; // skip ghost
       // Cleanup old listeners
       if (sec._advHandler)      sec.removeEventListener('scroll',     sec._advHandler);
       if (sec._advHandlerEnd)   sec.removeEventListener('scrollend',  sec._advHandlerEnd);
@@ -4357,9 +4359,19 @@ document.addEventListener('click', function(e) {
         if (window._scrollingToSection) return;
         var targetSec = sections[(targetIdx + n) % n];
         if (!targetSec) return;
+        _wasDown = false;
+        // Ghost Tout → scroll vers le fantôme en avant (téléportation gérée par scrollend)
+        if (targetSec.getAttribute('data-ghost')) {
+          _scrollPagerToGhost();
+          document.querySelectorAll('.k-chip').forEach(function(c) {
+            c.classList.toggle('active', c.dataset.cat === 'all');
+          });
+          var allChip = document.querySelector('.k-chip[data-cat="all"]');
+          if (allChip && typeof centerActiveChip === 'function') centerActiveChip(allChip);
+          return;
+        }
         var cat = targetSec.dataset.cat;
         if (!cat) return;
-        _wasDown = false;
         _scrollPagerToCat(cat);
         // Sync chip immédiatement (sans attendre scrollend)
         document.querySelectorAll('.k-chip').forEach(function(c) {
@@ -4450,13 +4462,7 @@ document.addEventListener('click', function(e) {
         var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
         if (chip && typeof centerActiveChip === 'function') centerActiveChip(chip);
       }
-      if (dx < -40 && atRight) {
-        var cat = sections[0].dataset.cat;
-        if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
-      } else if (dx > 40 && atLeft) {
-        var cat = sections[n - 1].dataset.cat;
-        if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
-      }
+      // wraps gérés par ghost Tout (infinite loop)
     };
     grid.addEventListener('touchstart', grid._hwTouchStart, { passive: true });
     grid.addEventListener('touchend',   grid._hwTouchEnd,   { passive: true });
@@ -4507,6 +4513,69 @@ document.addEventListener('click', function(e) {
       grid.removeEventListener('scrollend', _clr);
     }, { once: true });
     setTimeout(function() { window._scrollingToSection = false; }, 600);
+  }
+
+  /* ── Scroll vers la section fantôme (ghost Tout en fin de pager) ── */
+  function _scrollPagerToGhost() {
+    var grid = document.getElementById('k-grid');
+    if (!grid) return;
+    var ghost = grid.querySelector('.k-cat-section[data-ghost]');
+    if (!ghost) return;
+    window._scrollingToSection = true;
+    grid.scrollTo({ left: ghost.offsetLeft, behavior: 'smooth' });
+    grid.addEventListener('scrollend', function _clr() {
+      window._scrollingToSection = false;
+      grid.removeEventListener('scrollend', _clr);
+    }, { once: true });
+    setTimeout(function() { window._scrollingToSection = false; }, 700);
+  }
+
+  /* ── Infinite loop : ghost Tout en fin → téléportation silencieuse ──
+     Principe : on clone la section Tout et on l'ajoute à la fin du pager.
+     L'utilisateur arrive sur le ghost en scrollant en avant, puis scrollend
+     détecte la position et remet scrollLeft=0 (vrai Tout) sans animation.  */
+  function _setupInfiniteLoop() {
+    var grid = document.getElementById('k-grid');
+    if (!grid || window.innerWidth >= 900) return;
+    // Supprimer l'ancien ghost si présent
+    var existing = grid.querySelector('[data-ghost]');
+    if (existing) existing.remove();
+    // Cloner la section Tout
+    var toutSec = grid.querySelector('.k-cat-section[data-cat="all"]');
+    if (!toutSec) return;
+    var ghost = toutSec.cloneNode(true);
+    ghost.setAttribute('data-ghost', 'true');
+    grid.appendChild(ghost);
+    // Téléportation silencieuse quand l'utilisateur atterrit sur le ghost
+    function _ghostCheck() {
+      var ghostEl = grid.querySelector('[data-ghost]');
+      if (!ghostEl) return;
+      if (Math.abs(grid.scrollLeft - ghostEl.offsetLeft) < grid.clientWidth * 0.45) {
+        // Désactiver snap + smooth, sauter au vrai Tout, réactiver
+        grid.style.scrollBehavior = 'auto';
+        grid.style.scrollSnapType = 'none';
+        grid.scrollLeft = 0;
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            grid.style.scrollBehavior = '';
+            grid.style.scrollSnapType = '';
+            _syncChipToScroll();
+          });
+        });
+      }
+    }
+    // Nettoyage listeners précédents
+    if (grid._ghostCheck) {
+      grid.removeEventListener('scrollend', grid._ghostCheck);
+      clearTimeout(grid._ghostTimer);
+    }
+    grid._ghostCheck = _ghostCheck;
+    grid.addEventListener('scrollend', _ghostCheck, { passive: true });
+    // Fallback pour navigateurs sans scrollend natif
+    grid.addEventListener('scroll', function() {
+      clearTimeout(grid._ghostTimer);
+      grid._ghostTimer = setTimeout(_ghostCheck, 200);
+    }, { passive: true });
   }
 
   // Appeler _renderFloatingIndex après chaque render de la grille en mode sections
