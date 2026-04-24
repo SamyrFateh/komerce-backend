@@ -3077,7 +3077,7 @@ body.cart-open{overflow:hidden}
   /* Slogan overlaid on hero — top center */
   .k-hero-mini-slogan {
     position: absolute;
-    top: 6px;
+    top: 22%;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
