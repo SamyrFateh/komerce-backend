@@ -3743,22 +3743,41 @@ body.cart-open{overflow:hidden}
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
-  .k-sug-card-price {
-    font-size: 12px !important;
-    padding: 0 6px 4px !important;
+  /* ── Ligne prix + panier suggestions — même alignement cartes accueil */
+  .k-sug-card-bottom {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 4px 6px !important;
+    gap: 4px !important;
   }
-  .k-sug-card-actions {
-    padding: 2px 6px 6px !important;
-    min-height: 26px !important;
+  .k-sug-card-bottom .k-sug-card-price {
+    flex: 1 !important;
+    font-size: 12px !important;
+    padding: 0 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .k-sug-card-bottom .k-sug-card-actions {
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+    min-height: unset !important;
+    display: flex !important;
+    align-items: center !important;
   }
   .k-sug-add {
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 0 !important;
-    border-radius: 50% !important;
-    background: #fff !important;
-    border: 1px solid rgba(31,48,36,.10) !important;
-    box-shadow: 0 2px 8px rgba(31,48,36,.15) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  .k-sug-add img {
+    width: 28px !important;
+    height: 28px !important;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.15)) !important;
   }
   .k-sug-step {
     width: 24px !important;
@@ -4518,7 +4537,7 @@ input#of-client-email {
 /* ── SUGGESTIONS : passer de rail horizontal à grille verticale ──────── */
 .k-modal-suggestions {
   flex-shrink: 1 !important;
-  padding: 16px 12px 20px !important;
+  padding: 24px 12px 20px !important;
   border-top: 8px solid var(--sand) !important;
   background: var(--white);
 }
@@ -4528,6 +4547,7 @@ input#of-client-email {
   font-weight: 700 !important;
   margin-bottom: 12px !important;
   color: var(--text) !important;
+  padding-top: 4px !important;
 }
 
 /* (duplicate 1 removed — see canonical rules above) */
