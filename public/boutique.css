@@ -3488,7 +3488,7 @@ body.cart-open{overflow:hidden}
   .k-card-add .k-card-add-basket {
     width: 30px !important; height: 30px !important;
     pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
+    filter: sepia(1) saturate(5) hue-rotate(85deg) drop-shadow(0 1px 2px rgba(0,0,0,.18));
   }
   .k-card-add.in-cart {
     flex-shrink: 0 !important;
@@ -3885,7 +3885,7 @@ body.cart-open{overflow:hidden}
   .k-sec-grid .k-card-add .k-card-add-basket {
     width: 28px !important; height: 28px !important;
     pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
+    filter: sepia(1) saturate(5) hue-rotate(85deg) drop-shadow(0 1px 2px rgba(0,0,0,.18));
   }
   .k-sec-grid .k-card-add:active {
     transform: scale(.92);
