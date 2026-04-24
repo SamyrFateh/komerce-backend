@@ -54,7 +54,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=242">
+<link rel="stylesheet" href="/boutique.css?v=243">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -89,8 +89,7 @@ if('serviceWorker' in navigator){
     </div>
     <div class="k-header-actions">
       <button class="k-cart-btn k-header-action" id="k-cart-btn" aria-label="Panier">
-        <span class="k-cart-lady">👩</span>
-        <img src="/images/avatar_panier.png" class="k-cart-avatar" width="28" height="28" alt="">
+        <img src="/images/avatar_seule.png" class="k-cart-avatar" width="28" height="28" alt="">
         <span class="k-header-action-label">Panier</span>
         <span class="k-cart-badge" id="k-cart-badge">0</span>
       </button>
@@ -473,7 +472,7 @@ if('serviceWorker' in navigator){
   })();
 </script>
 <script src="/komerce-api.js?v=1776626686"></script>
-<script src="/boutique.js?v=242"></script>
+<script src="/boutique.js?v=243"></script>
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->

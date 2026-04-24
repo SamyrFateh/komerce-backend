@@ -388,8 +388,19 @@
     const count = cartQty();
     dom.cartBadge.textContent = count;
     dom.cartBadge.classList.toggle('show', count > 0);
-    // Toggle dame avec/sans panier
+    // Toggle dame avec/sans panier sur la tête
+    var wasEmpty = !dom.cartBtn.classList.contains('has-items');
     dom.cartBtn.classList.toggle('has-items', count > 0);
+    var avatar = dom.cartBtn.querySelector('.k-cart-avatar');
+    if (avatar) {
+      avatar.src = count > 0 ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
+      // Animation bounce quand le panier arrive sur sa tête
+      if (count > 0 && wasEmpty) {
+        avatar.style.animation = 'none';
+        void avatar.offsetWidth;
+        avatar.style.animation = '';
+      }
+    }
     // Modal badge
     if (dom.modalCartBadge) {
       dom.modalCartBadge.textContent = count > 0 ? count : '';
@@ -458,7 +469,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
@@ -664,7 +675,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
@@ -719,7 +730,7 @@
             ${isFav(p.id) ? '❤️' : '🤍'}
           </button>
           <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
+            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
           </button>
         </div>
         <div class="k-card-info">
@@ -1279,7 +1290,7 @@ const item = state.cart.find(i => String(i.product.id) === pid);
       } else {
         // Produit plus dans le panier → remettre juste le "+"
         btn.classList.remove('in-cart');
-        btn.innerHTML = '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>';
+        btn.innerHTML = '<span class="k-card-add-plus">+</span>';
       }
     });
   }
@@ -3344,7 +3355,7 @@ async function submitOrder(btn) {
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
               ${qty > 0
                 ? `<span class="k-add-minus" data-pid="${p.id}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`
-                : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
+                : '<span class="k-card-add-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
