@@ -4321,68 +4321,148 @@ document.addEventListener('click', function(e) {
     window.addEventListener('resize', _setupMobilePager);
     // Setup auto-advance when section reaches bottom
     _setupSectionAutoAdvance();
+    _setupHorizontalWrap();
   }
 
   /* ── Auto-advance to next category when vertical scroll ends ──
      When user scrolls down to bottom of a section → smooth snap to next.
      Uses direction tracking (_wasDown) to avoid false triggers.         */
+  /* ── Auto-advance circulaire : bas → section suivante (wrap premier↔dernier)
+     + retour arrière : haut de première section → dernière                    */
   function _setupSectionAutoAdvance() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
     var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
+    var n = sections.length;
+    if (!n) return;
+
     sections.forEach(function(sec, idx) {
-      if (idx >= sections.length - 1) return; // last section — nothing after
       // Cleanup old listeners
-      if (sec._advHandler)    sec.removeEventListener('scroll',    sec._advHandler);
-      if (sec._advHandlerEnd) sec.removeEventListener('scrollend', sec._advHandlerEnd);
+      if (sec._advHandler)      sec.removeEventListener('scroll',     sec._advHandler);
+      if (sec._advHandlerEnd)   sec.removeEventListener('scrollend',  sec._advHandlerEnd);
+      if (sec._wrapTouchStart)  sec.removeEventListener('touchstart', sec._wrapTouchStart);
+      if (sec._wrapTouchEnd)    sec.removeEventListener('touchend',   sec._wrapTouchEnd);
 
-      var _advTimer   = null;
-      var _lastST     = 0;
-      var _wasDown    = false;
+      var _advTimer = null;
+      var _lastST   = 0;
+      var _wasDown  = false;
 
-      function _atBottom() {
-        return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
-      }
+      function _atBottom() { return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32; }
+      function _atTop()    { return sec.scrollTop <= 4; }
 
-      function _doAdvance() {
+      function _goTo(targetIdx, scrollToBottom) {
         if (window._scrollingToSection) return;
-        if (!_wasDown) return;
-        if (!_atBottom()) return;
-        var nextSec = sections[idx + 1];
-        if (!nextSec) return;
-        var cat = nextSec.dataset.cat;
+        var targetSec = sections[(targetIdx + n) % n];
+        if (!targetSec) return;
+        var cat = targetSec.dataset.cat;
         if (!cat) return;
-        _wasDown = false; // reset — avoid double-fire
+        _wasDown = false;
         _scrollPagerToCat(cat);
-        // Bring next section back to top for fresh browse
+        // Sync chip immédiatement (sans attendre scrollend)
+        document.querySelectorAll('.k-chip').forEach(function(c) {
+          c.classList.toggle('active', c.dataset.cat === cat);
+        });
+        var activeChip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+        if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
         setTimeout(function() {
-          if (nextSec.scrollTop > 0) nextSec.scrollTop = 0;
+          if (scrollToBottom) {
+            targetSec.scrollTop = targetSec.scrollHeight;
+          } else {
+            if (targetSec.scrollTop > 0) targetSec.scrollTop = 0;
+          }
         }, 450);
       }
 
+      // ── Scroll down → advance to next (wrap: last → first) ──
       sec._advHandler = function() {
         var st = sec.scrollTop;
-        if (st > _lastST + 2)       _wasDown = true;  // scrolling down
-        else if (st < _lastST - 8)  _wasDown = false; // scrolling up — reset
+        if (st > _lastST + 2)      _wasDown = true;
+        else if (st < _lastST - 8) _wasDown = false;
         _lastST = st;
         if (_wasDown && _atBottom()) {
           clearTimeout(_advTimer);
-          _advTimer = setTimeout(_doAdvance, 300);
+          _advTimer = setTimeout(function() {
+            if (_wasDown && _atBottom()) _goTo(idx + 1, false); // wrap: last→first
+          }, 300);
         }
       };
-
-      // scrollend = precise confirmation (supported browsers)
       sec._advHandlerEnd = function() {
         _lastST = sec.scrollTop;
         if (_wasDown && _atBottom()) {
           clearTimeout(_advTimer);
-          _doAdvance();
+          _goTo(idx + 1, false);
         }
       };
-
       sec.addEventListener('scroll',    sec._advHandler,    { passive: true });
       sec.addEventListener('scrollend', sec._advHandlerEnd, { passive: true });
+
+      // ── Pull down from top (first section only) → go to last ──
+      // (finger moves DOWN on screen = trying to scroll UP past top)
+      var _touchY0 = 0;
+      sec._wrapTouchStart = function(e) { _touchY0 = e.touches[0].clientY; };
+      sec._wrapTouchEnd   = function(e) {
+        if (!_atTop()) return;
+        var dy = e.changedTouches[0].clientY - _touchY0; // positive = finger down = scroll up intent
+        if (dy > 60) _goTo(idx - 1, true); // wrap: first→last (scrolled to bottom of last)
+      };
+      // Only bind on first section for "go back to last" (and optionally all for prev)
+      if (idx === 0) {
+        sec.addEventListener('touchstart', sec._wrapTouchStart, { passive: true });
+        sec.addEventListener('touchend',   sec._wrapTouchEnd,   { passive: true });
+      }
     });
+  }
+
+  /* ── Horizontal wrap : swipe gauche sur dernière → première,
+                          swipe droite sur première → dernière  ──            */
+  function _setupHorizontalWrap() {
+    var grid = document.getElementById('k-grid');
+    if (!grid || window.innerWidth >= 900) return;
+    // Remove old listeners
+    if (grid._hwTouchStart) grid.removeEventListener('touchstart', grid._hwTouchStart);
+    if (grid._hwTouchEnd)   grid.removeEventListener('touchend',   grid._hwTouchEnd);
+
+    var _tx0 = 0, _ty0 = 0;
+
+    grid._hwTouchStart = function(e) {
+      _tx0 = e.touches[0].clientX;
+      _ty0 = e.touches[0].clientY;
+    };
+    grid._hwTouchEnd = function(e) {
+      var dx = e.changedTouches[0].clientX - _tx0;
+      var dy = e.changedTouches[0].clientY - _ty0;
+      // Only horizontal swipes (not vertical)
+      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
+      var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
+      if (!sections.length) return;
+      // Find current section
+      var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
+      var bestIdx = 0, bestDist = Infinity;
+      sections.forEach(function(sec, i) {
+        var dist = Math.abs(sec.offsetLeft + sec.offsetWidth / 2 - scrollCenter);
+        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      });
+      var n = sections.length;
+      function _syncChip(cat) {
+        document.querySelectorAll('.k-chip').forEach(function(c) {
+          c.classList.toggle('active', c.dataset.cat === cat);
+        });
+        var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+        if (chip && typeof centerActiveChip === 'function') centerActiveChip(chip);
+      }
+      // Swipe LEFT (finger goes left, dx < 0) = go to next → wrap last→first
+      if (dx < -50 && bestIdx === n - 1) {
+        var cat = sections[0].dataset.cat;
+        if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
+      }
+      // Swipe RIGHT (finger goes right, dx > 0) = go to prev → wrap first→last
+      else if (dx > 50 && bestIdx === 0) {
+        var cat = sections[n - 1].dataset.cat;
+        if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
+      }
+    };
+    grid.addEventListener('touchstart', grid._hwTouchStart, { passive: true });
+    grid.addEventListener('touchend',   grid._hwTouchEnd,   { passive: true });
   }
 
   // ── Sync pill ↔ scroll : rAF instant (zéro retard) ──
