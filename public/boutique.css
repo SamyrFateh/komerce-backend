@@ -1500,6 +1500,40 @@ body.cart-open{overflow:hidden}
   background:linear-gradient(to right, var(--sand-dark), transparent);
 }
 
+/* ── SUBCATEGORY CHIPS — "profond dedans" ── */
+.k-sug-chips{
+  display:flex;
+  gap:6px;
+  padding:6px 0 10px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.k-sug-chips::-webkit-scrollbar{display:none}
+.k-sug-chip{
+  flex-shrink:0;
+  padding:5px 14px;
+  border-radius:20px;
+  border:1.5px solid var(--sand-dark);
+  background:var(--white);
+  font-size:12px;
+  font-weight:500;
+  color:#555;
+  cursor:pointer;
+  transition:all .2s;
+  white-space:nowrap;
+}
+.k-sug-chip.is-active{
+  background:#e53935;
+  color:#fff;
+  border-color:#e53935;
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(229,57,53,.3);
+}
+.k-sug-card.subcat-hidden{
+  display:none !important;
+}
+
 /* ── GRILLE 2 COLONNES (style Shein/Temu) ── */
 .k-sug-grid{
   display:grid;

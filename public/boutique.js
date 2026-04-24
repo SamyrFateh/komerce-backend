@@ -209,6 +209,7 @@
     activeSubcat: null,
     sectionSubcats: {},
   modalProduct: null,
+  modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
   carouselIndex: 0,
@@ -1619,12 +1620,13 @@ function quickRemove(productId, btnEl) {
     // Séparer clairement : même catégorie (jusqu'à 8) puis autres (jusqu'à 12)
     const sameCat = state.products
       .filter(p => p.category === product.category && p.id !== product.id)
-      .slice(0, 10);
+      .slice(0, 20);
     const otherCat = state.products
       .filter(p => p.category !== product.category && p.id !== product.id)
       .sort(() => Math.random() - 0.5)
       .slice(0, 16);
     console.log('[KMRC SUG] calling with sameCat=' + sameCat.length + ' otherCat=' + otherCat.length + ' cat=' + product.category);
+    state.modalSubcatFilter = null; // Reset subcategory filter for new product
     renderSuggestions(sameCat, otherCat, product.category);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
@@ -1869,7 +1871,7 @@ function quickRemove(productId, btnEl) {
       const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
       const qty = inCart ? inCart.qty : 0;
       return `
-      <div class="k-sug-card" data-id="${p.id}">
+      <div class="k-sug-card" data-id="${p.id}" data-subcat="${p.subcategory || ''}">
         <div class="k-sug-card-img">
           <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async">
           ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
@@ -1890,12 +1892,23 @@ function quickRemove(productId, btnEl) {
 
     if (sameCat.length > 0) {
       const catLabel = categoryName ? categoryName.toLowerCase() : 'même catégorie';
+      // ── Subcategory chips — "profond dedans" ──
+      const uniqueSubcats = [...new Set(sameCat.map(p => p.subcategory).filter(Boolean))].sort();
+      const activeFilter = state.modalSubcatFilter || null;
+      let chipsHTML = '';
+      if (uniqueSubcats.length >= 2) {
+        chipsHTML = `<div class="k-sug-chips">
+          <button class="k-sug-chip${!activeFilter ? ' is-active' : ''}" data-subcat="">Tout</button>
+          ${uniqueSubcats.map(s => `<button class="k-sug-chip${activeFilter === s ? ' is-active' : ''}" data-subcat="${sanitize(s)}">${sanitize(s)}</button>`).join('')}
+        </div>`;
+      }
       html += `
         <div class="k-sug-section">
           <div class="k-sug-title">
             <span class="k-sug-title-icon">🔍</span>
             <span class="k-sug-title-text">Dans la catégorie ${sanitize(catLabel)}</span>
           </div>
+          ${chipsHTML}
           <div class="k-sug-grid k-sug-grid--same">${sameCat.map(cardHTML).join('')}</div>
         </div>`;
     }
@@ -1917,6 +1930,29 @@ function quickRemove(productId, btnEl) {
     const oldH3 = sugSection.querySelector('h3');
     if (oldH3) oldH3.style.display = 'none';
 
+    // ── Subcategory chip filter — "profond dedans" ──
+    function applySubcatFilter() {
+      const filter = state.modalSubcatFilter;
+      dom.sugRail.querySelectorAll('.k-sug-grid--same .k-sug-card').forEach(card => {
+        if (!filter || card.dataset.subcat === filter) {
+          card.classList.remove('subcat-hidden');
+        } else {
+          card.classList.add('subcat-hidden');
+        }
+      });
+    }
+    applySubcatFilter();
+
+    dom.sugRail.querySelectorAll('.k-sug-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.modalSubcatFilter = chip.dataset.subcat || null;
+        dom.sugRail.querySelectorAll('.k-sug-chip').forEach(c => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        applySubcatFilter();
+      });
+    });
+
     // Clic sur toute la carte → ouvrir le produit
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
       card.addEventListener('click', (e) => {
@@ -1935,7 +1971,7 @@ function quickRemove(productId, btnEl) {
         // Re-render les suggestions pour afficher le stepper
         if (state.modalProduct) {
           const mp = state.modalProduct;
-          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 10);
+          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 20);
           const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
           renderSuggestions(sameCat, otherCat, mp.category);
         }
@@ -1950,7 +1986,7 @@ function quickRemove(productId, btnEl) {
         // Re-render
         if (state.modalProduct) {
           const mp = state.modalProduct;
-          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 10);
+          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 20);
           const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
           renderSuggestions(sameCat, otherCat, mp.category);
         }
@@ -1962,7 +1998,7 @@ function quickRemove(productId, btnEl) {
         quickAdd(btn.dataset.pid, btn);
         if (state.modalProduct) {
           const mp = state.modalProduct;
-          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 10);
+          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 20);
           const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
           renderSuggestions(sameCat, otherCat, mp.category);
         }
