@@ -731,6 +731,15 @@
    *   - Les catégories "maigres" (< MIN) sont fusionnées en une section "Autres" à la fin
    *   - Résultat : jamais de cartes orphelines dans la grille 3-cols
    */
+  // ── Fisher-Yates shuffle (chaos contrôlé pour page "Tout") ──
+  function _shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
   function _balancedPick(list, pageSize) {
     const MIN_PER_SECTION = 4; // min produits par section (pair pour grille 2-cols)
 
@@ -766,6 +775,7 @@
 
     const flat = [];
     for (const section of rich) {
+      _shuffle(section.prods); // ← chaos contrôlé : ordre aléatoire dans chaque catégorie
       const take = Math.min(perCat, section.prods.length);
       // Aussi arrondir au pair
       const count = take >= 2 ? (take % 2 === 0 ? take : take - 1) : 0;
@@ -796,7 +806,7 @@
     const parts = [];
     // ── Mobile pager: prepend "Soldes" section with promo products ──
     if (window.innerWidth < 900) {
-      var _soldes = state.filtered.filter(function(p){ return p.promo_pct > 0; }).slice(0, 30);
+      var _soldes = _shuffle(state.filtered.filter(function(p){ return p.promo_pct > 0; })).slice(0, 30);
       if (_soldes.length > 0) {
         parts.push('<div class="k-cat-section" data-cat="Soldes">');
         parts.push(
@@ -4200,21 +4210,24 @@ document.addEventListener('click', function(e) {
       var grid = document.getElementById('k-grid');
       if (!grid) return;
       var sections = grid.querySelectorAll('.k-cat-section');
-      var gridLeft = grid.scrollLeft;
-      var gridWidth = grid.clientWidth;
-      if (gridWidth === 0) return;
-      var pageIndex = Math.round(gridLeft / gridWidth);
-      if (pageIndex < 0) pageIndex = 0;
-      if (pageIndex >= sections.length) pageIndex = sections.length - 1;
-      if (sections[pageIndex]) {
-        var cat = sections[pageIndex].dataset.cat;
+      var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
+      // ── Trouver la section dont le centre est le plus proche du scroll ──
+      var bestIdx = 0;
+      var bestDist = Infinity;
+      for (var i = 0; i < sections.length; i++) {
+        var secCenter = sections[i].offsetLeft + sections[i].offsetWidth / 2;
+        var dist = Math.abs(scrollCenter - secCenter);
+        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      }
+      if (sections[bestIdx]) {
+        var cat = sections[bestIdx].dataset.cat;
         document.querySelectorAll('.k-chip').forEach(function(c) {
           c.classList.toggle('active', c.dataset.cat === cat);
         });
         var activeChip = document.querySelector('.k-chip.active');
         if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
       }
-    }, 60);
+    }, 150);
   }
 
   function _scrollPagerToCat(cat) {
