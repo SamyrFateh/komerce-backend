@@ -456,7 +456,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
@@ -662,7 +662,7 @@
               ${isFav(p.id) ? '❤️' : '🤍'}
             </button>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">
@@ -717,7 +717,7 @@
             ${isFav(p.id) ? '❤️' : '🤍'}
           </button>
           <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-card-add-plus">+</span>'}
+            ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
           </button>
         </div>
         <div class="k-card-info">
@@ -1277,7 +1277,7 @@ const item = state.cart.find(i => String(i.product.id) === pid);
       } else {
         // Produit plus dans le panier → remettre juste le "+"
         btn.classList.remove('in-cart');
-        btn.innerHTML = '<span class="k-card-add-plus">+</span>';
+        btn.innerHTML = '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>';
       }
     });
   }
@@ -3342,7 +3342,7 @@ async function submitOrder(btn) {
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
               ${qty > 0
                 ? `<span class="k-add-minus" data-pid="${p.id}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`
-                : '<span class="k-card-add-plus">+</span>'}
+                : '<span class="k-cart-icon">🧺</span><span class="k-cart-plus">+</span>'}
             </button>
           </div>
           <div class="k-card-info">

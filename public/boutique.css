@@ -1034,14 +1034,29 @@ body{
   opacity: 0.7;
 }
 
-/* Le "+" textuel est masqué visuellement mais reste pour les lecteurs d'écran */
-.k-card-add-plus{
-  font-size:0;
-  color:transparent;
+/* Premium cart button — 🧺 + petit "+" vert */
+.k-cart-icon{
+  font-size:20px;
   line-height:1;
   pointer-events:none;
-  width:0;
-  height:0;
+}
+.k-cart-plus{
+  position:absolute;
+  right:2px;
+  bottom:2px;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:var(--ocean, #0d9488);
+  color:#fff;
+  font-size:13px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid #fff;
+  box-shadow:0 2px 6px rgba(13,148,136,.35);
+  pointer-events:none;
 }
 /* Stepper parts */
 .k-add-minus,.k-add-plus-ic{
@@ -3819,21 +3834,21 @@ body.cart-open{overflow:hidden}
     font-size: 9px;
   }
   .k-sec-grid .k-card-add {
-    width: 30px; height: 30px;
+    width: 36px; height: 36px;
     bottom: 6px; right: 6px;
-    background: var(--ocean, #0d9488) !important;
+    background: #fff !important;
     background-image: none !important;
-    border: 1.5px solid var(--white);
+    border: 1px solid rgba(31,48,36,.10) !important;
     border-radius: 50% !important;
-    box-shadow: 0 1px 6px rgba(13,148,136,.25);
+    box-shadow: 0 4px 14px rgba(31,48,36,.15);
   }
-  .k-sec-grid .k-card-add .k-card-add-plus {
-    font-size: 18px !important;
-    color: #fff !important;
-    width: auto !important;
-    height: auto !important;
-    line-height: 1;
-    pointer-events: none;
+  .k-sec-grid .k-card-add .k-cart-icon {
+    font-size: 16px !important;
+  }
+  .k-sec-grid .k-card-add .k-cart-plus {
+    width: 15px !important; height: 15px !important;
+    font-size: 12px !important;
+    right: 1px !important; bottom: 1px !important;
   }
   .k-sec-grid .k-card-add:active {
     transform: scale(.92);
