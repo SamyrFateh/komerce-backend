@@ -196,6 +196,7 @@ body{
   border:none !important;
   box-shadow:none !important;
   background:transparent !important;
+  mix-blend-mode:multiply; /* efface fond blanc sur avatar_seule et avatar_panier */
   transition:opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
 /* Dame: panier apparaît sur sa tête quand items > 0 */
@@ -3432,6 +3433,16 @@ body.cart-open{overflow:hidden}
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
     background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  .k-card-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .k-card-bottom {
+    margin-top: auto;
   }
   .k-card-img-wrap {
     aspect-ratio: 4 / 3;

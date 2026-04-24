@@ -54,7 +54,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=264">
+<link rel="stylesheet" href="/boutique.css?v=265">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -72,12 +72,12 @@ if('serviceWorker' in navigator){
              Inspiration directe du drapeau des Comores : croissant représente l'islam/union,
              4 étoiles = les 4 îles (Grande Comore, Anjouan, Mohéli, Mayotte). -->
         <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="20" cy="20" r="16" fill="#2A3E2C"/>
-          <path d="M 26 20 A 8 8 0 1 1 20 12 A 6 6 0 1 0 26 20 Z" fill="#FDFAF5"/>
-          <circle cx="21.5" cy="14.5" r="0.8" fill="#FDFAF5"/>
-          <circle cx="24.5" cy="17" r="0.8" fill="#FDFAF5"/>
-          <circle cx="24.5" cy="23" r="0.8" fill="#FDFAF5"/>
-          <circle cx="21.5" cy="25.5" r="0.8" fill="#FDFAF5"/>
+          <!-- Croissant + 4 étoiles — flottant, sans fond -->
+          <path d="M 26 20 A 8 8 0 1 1 20 12 A 6 6 0 1 0 26 20 Z" fill="#2A3E2C"/>
+          <circle cx="21.5" cy="14.5" r="1.1" fill="#C8B87A"/>
+          <circle cx="24.5" cy="17" r="1.1" fill="#C8B87A"/>
+          <circle cx="24.5" cy="23" r="1.1" fill="#C8B87A"/>
+          <circle cx="21.5" cy="25.5" r="1.1" fill="#C8B87A"/>
         </svg>
       </span>
       <span class="k-logo-text">Komerce</span>
@@ -472,7 +472,7 @@ if('serviceWorker' in navigator){
   })();
 </script>
 <script src="/komerce-api.js?v=1776626686"></script>
-<script src="/boutique.js?v=264"></script>
+<script src="/boutique.js?v=265"></script>
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
