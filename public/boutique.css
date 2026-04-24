@@ -4005,11 +4005,20 @@ body.cart-open{overflow:hidden}
     background: rgba(67,160,71,.1);
   }
 
-  /* ── Sous-catégories masquées sur mobile ("large dehors, profond dedans")
-       Les subcats vivent dans le modal produit, pas sur l'accueil ── */
+  /* ── Sous-catégories visibles sur mobile (style Temu scrollable)
+       Active le mode flat subcat (pager horizontal) au clic ── */
   .k-sec-subcats {
-    display: none !important;
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 8px 10px 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
+  .k-sec-subcats::-webkit-scrollbar { display: none; }
   .k-sec-subchip {
     display: inline-flex;
     align-items: center;

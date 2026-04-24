@@ -1068,7 +1068,7 @@
       if (!sentinel) return;
       var io = new IntersectionObserver(function(entries) {
         if (entries[0].isIntersecting) _appendNextToFlatPage(page);
-      }, { root: page, rootMargin: '300px 0px 0px 0px' });
+      }, { root: page, rootMargin: '0px 0px 300px 0px', threshold: 0.01 });
       io.observe(sentinel);
       page._flatIO = io;
     });
@@ -1317,36 +1317,9 @@
       });
     });
     // ── Sous-catégories locales ──
-    // Mobile : bascule en pager flat horizontal style Temu
-    // Desktop : comportement historique (filtre local dans la section)
-    dom.grid.querySelectorAll('.k-sec-subchip').forEach(chip => {
-      chip.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const cat = chip.dataset.secCat;
-        const sub = chip.dataset.secSub;
-        // DEBUG TEMPORAIRE : trace ce qui se passe
-        window.__lastSubchipClick = { cat: cat, sub: sub, ts: Date.now(), innerW: window.innerWidth };
-        if (!cat || !sub) return;
-        const _isMobile = window.innerWidth < 900;
-        if (_isMobile) {
-          // Toggle off si on re-clique sur la même sous-cat déjà active
-          if (state.flatSubcat && state.flatSubcat.cat === cat && state.flatSubcat.sub === sub) {
-            state.flatSubcat = null;
-          } else {
-            state.flatSubcat = { cat: cat, sub: sub };
-          }
-          state.page = 0;
-          renderGrid();
-          var _sc = document.getElementById('k-page-scroll');
-          if (_sc) _sc.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          if (!state.sectionSubcats) state.sectionSubcats = {};
-          state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
-          renderGrid();
-        }
-      });
-    });
+    // ⚠️ Handler déplacé dans le listener global délégué (document.addEventListener
+    // 'click' en capture). Pas de duplication ici pour éviter les conflits.
+    // (voir section "LISTENER GLOBAL DÉLÉGUÉ pour .k-sec-subchip")
     // ── Index flottant + observer nav chips ──
     if (typeof _renderFloatingIndex === 'function') _renderFloatingIndex();
   }
@@ -4403,41 +4376,60 @@ async function submitOrder(btn) {
 
 
 // FIX 2.3 : Rendre les carousel dots de la modal cliquables
+// DEBUG TEMPORAIRE : logguer TOUT pointerdown pour voir sur quoi on tape vraiment
+document.addEventListener('pointerdown', function(e) {
+  var el = e.target;
+  var info = el.tagName + (el.className ? '.' + String(el.className).split(' ').slice(0,2).join('.') : '');
+  var chip = el.closest ? el.closest('.k-sec-subchip') : null;
+  window.__lastPointerDown = {
+    target: info,
+    insideChip: !!chip,
+    chipCat: chip ? chip.dataset.secCat : null,
+    chipSub: chip ? chip.dataset.secSub : null,
+    x: e.clientX, y: e.clientY,
+    pointerType: e.pointerType,
+    ts: Date.now()
+  };
+}, true);
+
 // ══════════════════════════════════════════════════════════
-// LISTENER GLOBAL DÉLÉGUÉ pour .k-sec-subchip
-// Attrape TOUS les clics sur les sous-cat chips, peu importe quand
-// elles ont été rendues (résiste aux re-renders, aux rebindings loupés,
-// et aux handlers concurrents qui stopPropagation).
+// LISTENER GLOBAL DÉLÉGUÉ pour .k-sec-subchip — SOURCE UNIQUE
+// Capture phase + stopImmediatePropagation pour bypass tout handler concurrent.
+// Mobile : bascule en mode flat (pager horizontal sous-cats)
+// Desktop : filtre local dans la section
 // ══════════════════════════════════════════════════════════
 document.addEventListener('click', function(e) {
   var chip = e.target.closest('.k-sec-subchip');
   if (!chip) return;
   e.preventDefault();
   e.stopPropagation();
+  e.stopImmediatePropagation(); // bloque tout handler concurrent sur le même event
   var cat = chip.dataset.secCat;
   var sub = chip.dataset.secSub;
-  window.__lastSubchipClick = { cat: cat, sub: sub, ts: Date.now(), innerW: window.innerWidth, via: 'global-delegated' };
+  window.__lastSubchipClick = { cat: cat, sub: sub, ts: Date.now(), innerW: window.innerWidth, via: 'click-capture' };
   if (!cat || !sub) return;
-  // Accès direct à window.state (exposé en read-only par le module principal)
   var state = window.state;
   if (!state) return;
   var _isMobile = window.innerWidth < 900;
   if (_isMobile) {
-    if (state.flatSubcat && state.flatSubcat.cat === cat && state.flatSubcat.sub === sub) {
-      state.flatSubcat = null;
-    } else {
-      state.flatSubcat = { cat: cat, sub: sub };
-    }
+    // Pas de toggle-off : re-cliquer la même chip re-scroll en haut.
+    // La sortie se fait UNIQUEMENT par le bouton ✕ du chrome.
+    state.flatSubcat = { cat: cat, sub: sub };
     state.page = 0;
+    console.log('[FLAT_SUBCAT]', {
+      cat: cat,
+      sub: sub,
+      pages: document.querySelectorAll('.k-flat-subcat-page').length
+    });
     if (typeof window.renderGrid === 'function') window.renderGrid();
     var _sc = document.getElementById('k-page-scroll');
-    if (_sc) _sc.scrollTo({ top: 0, behavior: 'smooth' });
+    if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
   } else {
     if (!state.sectionSubcats) state.sectionSubcats = {};
     state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
     if (typeof window.renderGrid === 'function') window.renderGrid();
   }
-}, true); // capture: true → tourne AVANT tous les autres handlers, impossible à bloquer
+}, true); // capture: true → tourne AVANT tous les autres handlers
 
 // (si ce n'est pas déjà fait ailleurs)
 document.addEventListener('click', function(e) {
@@ -5071,6 +5063,7 @@ document.addEventListener('click', function(e) {
       lines.push('');
       lines.push('🎯 Sub-chips DOM: ' + document.querySelectorAll('.k-sec-subchip').length);
       lines.push('🎯 Dernier clic chip: ' + JSON.stringify(window.__lastSubchipClick || 'AUCUN'));
+      lines.push('🎯 Dernier pointerdown: ' + JSON.stringify(window.__lastPointerDown || 'AUCUN'));
       lines.push('');
       elements.forEach(function(pair) {
         var name = pair[0], el = pair[1];
