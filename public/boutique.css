@@ -202,8 +202,15 @@ body{
   50% { transform:scale(1.12) rotate(4deg) }
   100%{ transform:scale(1) rotate(0deg) }
 }
-.k-cart-btn.has-items .k-cart-avatar{
+.k-cart-btn.has-items .k-cart-avatar,
+.k-modal-cart-btn.has-items .k-cart-avatar{
   animation:panierArrive .5s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Hide badges when cart button is explicitly empty */
+.k-cart-btn.is-empty .k-cart-badge,
+.k-modal-cart-btn.is-empty .k-modal-cart-badge{
+  display:none !important;
 }
 
 /* Animation "coucou" quand le panier est déclenché */

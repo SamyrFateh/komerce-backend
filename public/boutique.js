@@ -386,31 +386,45 @@
 
   function updateCartBadge() {
     const count = cartQty();
-    dom.cartBadge.textContent = count;
-    dom.cartBadge.classList.toggle('show', count > 0);
-    // Toggle dame avec/sans panier sur la tête
-    var wasEmpty = !dom.cartBtn.classList.contains('has-items');
-    dom.cartBtn.classList.toggle('has-items', count > 0);
-    var avatar = dom.cartBtn.querySelector('.k-cart-avatar');
-    if (avatar) {
-      avatar.src = count > 0 ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
-      // Animation bounce quand le panier arrive sur sa tête
-      if (count > 0 && wasEmpty) {
-        avatar.style.animation = 'none';
-        void avatar.offsetWidth;
-        avatar.style.animation = '';
+    const hasItems = count > 0;
+    const avatarSrc = hasItems ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
+
+    // All cart buttons (header + modal)
+    const cartButtons = [
+      document.getElementById('k-cart-btn'),
+      document.getElementById('k-modal-cart-btn')
+    ].filter(Boolean);
+
+    cartButtons.forEach(btn => {
+      const wasEmpty = !btn.classList.contains('has-items');
+
+      btn.classList.toggle('has-items', hasItems);
+      btn.classList.toggle('is-empty', !hasItems);
+
+      const avatar = btn.querySelector('.k-cart-avatar');
+      if (avatar && avatar.getAttribute('src') !== avatarSrc) {
+        avatar.setAttribute('src', avatarSrc);
+
+        // Animation bounce quand le panier arrive sur sa tête
+        if (hasItems && wasEmpty) {
+          avatar.style.animation = 'none';
+          void avatar.offsetWidth;
+          avatar.style.animation = '';
+        }
       }
-    }
-    // Modal badge
-    if (dom.modalCartBadge) {
-      dom.modalCartBadge.textContent = count > 0 ? count : '';
-    }
-    // Bottom nav badge
-    var bnavBadge = document.getElementById('k-bnav-cart-badge');
-    if (bnavBadge) {
-      bnavBadge.textContent = count;
-      bnavBadge.classList.toggle('show', count > 0);
-    }
+    });
+
+    // All badges (header + modal + bottom nav)
+    const badges = [
+      document.getElementById('k-cart-badge'),
+      document.getElementById('k-modal-cart-badge'),
+      document.getElementById('k-bnav-cart-badge')
+    ].filter(Boolean);
+
+    badges.forEach(badge => {
+      badge.textContent = hasItems ? String(count) : '';
+      badge.classList.toggle('show', hasItems);
+    });
   }
 
   function isFav(id) { return state.favs.includes(id); }
