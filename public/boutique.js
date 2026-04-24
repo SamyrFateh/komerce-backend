@@ -4324,47 +4324,63 @@ document.addEventListener('click', function(e) {
   }
 
   /* ── Auto-advance to next category when vertical scroll ends ──
-     When user reaches bottom of a section → smooth snap to next section.
-     Debounced 280ms after scrollend / scroll-at-bottom to feel natural.  */
+     When user scrolls down to bottom of a section → smooth snap to next.
+     Uses direction tracking (_wasDown) to avoid false triggers.         */
   function _setupSectionAutoAdvance() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
     var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
     sections.forEach(function(sec, idx) {
-      // Cleanup old listener
-      if (sec._advHandler) {
-        sec.removeEventListener('scroll', sec._advHandler);
-        sec.removeEventListener('scrollend', sec._advHandlerEnd);
-      }
-      var _advTimer = null;
-      var _lastScrollTop = -1;
+      if (idx >= sections.length - 1) return; // last section — nothing after
+      // Cleanup old listeners
+      if (sec._advHandler)    sec.removeEventListener('scroll',    sec._advHandler);
+      if (sec._advHandlerEnd) sec.removeEventListener('scrollend', sec._advHandlerEnd);
 
-      function _tryAdvance() {
+      var _advTimer   = null;
+      var _lastST     = 0;
+      var _wasDown    = false;
+
+      function _atBottom() {
+        return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
+      }
+
+      function _doAdvance() {
         if (window._scrollingToSection) return;
-        if (idx >= sections.length - 1) return; // last section — nothing after
-        var atBottom = sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 24;
-        if (!atBottom) { clearTimeout(_advTimer); return; }
-        // Only trigger if we were scrolling down (not already at bottom on load)
-        if (_lastScrollTop < 0 || sec.scrollTop <= _lastScrollTop + 2) return;
-        clearTimeout(_advTimer);
-        _advTimer = setTimeout(function() {
-          if (window._scrollingToSection) return;
-          var nextSec = sections[idx + 1];
-          if (!nextSec) return;
-          var cat = nextSec.dataset.cat;
-          if (cat) _scrollPagerToCat(cat);
-        }, 280);
+        if (!_wasDown) return;
+        if (!_atBottom()) return;
+        var nextSec = sections[idx + 1];
+        if (!nextSec) return;
+        var cat = nextSec.dataset.cat;
+        if (!cat) return;
+        _wasDown = false; // reset — avoid double-fire
+        _scrollPagerToCat(cat);
+        // Bring next section back to top for fresh browse
+        setTimeout(function() {
+          if (nextSec.scrollTop > 0) nextSec.scrollTop = 0;
+        }, 450);
       }
 
       sec._advHandler = function() {
-        _tryAdvance();
-        _lastScrollTop = sec.scrollTop;
+        var st = sec.scrollTop;
+        if (st > _lastST + 2)       _wasDown = true;  // scrolling down
+        else if (st < _lastST - 8)  _wasDown = false; // scrolling up — reset
+        _lastST = st;
+        if (_wasDown && _atBottom()) {
+          clearTimeout(_advTimer);
+          _advTimer = setTimeout(_doAdvance, 300);
+        }
       };
+
+      // scrollend = precise confirmation (supported browsers)
       sec._advHandlerEnd = function() {
-        _lastScrollTop = sec.scrollTop;
-        _tryAdvance();
+        _lastST = sec.scrollTop;
+        if (_wasDown && _atBottom()) {
+          clearTimeout(_advTimer);
+          _doAdvance();
+        }
       };
-      sec.addEventListener('scroll', sec._advHandler, { passive: true });
+
+      sec.addEventListener('scroll',    sec._advHandler,    { passive: true });
       sec.addEventListener('scrollend', sec._advHandlerEnd, { passive: true });
     });
   }
