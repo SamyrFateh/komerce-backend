@@ -4245,7 +4245,7 @@ document.addEventListener('click', function(e) {
   /* ══════════════════════════════════════════════════════════════════ */
   /* ── TEMU-STYLE MOBILE PAGER — horizontal category page sync ───── */
   /* ══════════════════════════════════════════════════════════════════ */
-  let _pagerScrollTimer = null;
+  // _pagerRaf declared in _syncChipToScroll block above
 
   function _setupMobilePager() {
     var grid = document.getElementById('k-grid');
@@ -4260,39 +4260,46 @@ document.addEventListener('click', function(e) {
     document.documentElement.style.setProperty('--pager-h', (window.innerHeight - usedH) + 'px');
     // Disconnect vertical observer (horizontal scroll handles sync)
     if (_sectionObserver) { _sectionObserver.disconnect(); _sectionObserver = null; }
-    // Remove old listener, add new
+    // Remove old listeners, add new — rAF for instant + scrollend for final
     grid.removeEventListener('scroll', _onPagerScroll);
     grid.addEventListener('scroll', _onPagerScroll, { passive: true });
+    grid.removeEventListener('scrollend', _syncChipToScroll);
+    grid.addEventListener('scrollend', _syncChipToScroll, { passive: true });
     // Recalc on resize/orientation change
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
   }
 
+  // ── Sync pill ↔ scroll : rAF instant (zéro retard) ──
+  var _pagerRaf = null;
+  function _syncChipToScroll() {
+    var grid = document.getElementById('k-grid');
+    if (!grid) return;
+    var sections = grid.querySelectorAll('.k-cat-section');
+    var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
+    var bestIdx = 0, bestDist = Infinity;
+    for (var i = 0; i < sections.length; i++) {
+      var secCenter = sections[i].offsetLeft + sections[i].offsetWidth / 2;
+      var dist = Math.abs(scrollCenter - secCenter);
+      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+    }
+    if (sections[bestIdx]) {
+      var cat = sections[bestIdx].dataset.cat;
+      document.querySelectorAll('.k-chip').forEach(function(c) {
+        c.classList.toggle('active', c.dataset.cat === cat);
+      });
+      var activeChip = document.querySelector('.k-chip.active');
+      if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
+    }
+  }
+
   function _onPagerScroll() {
-    clearTimeout(_pagerScrollTimer);
-    _pagerScrollTimer = setTimeout(function() {
-      if (window._scrollingToSection) return;
-      var grid = document.getElementById('k-grid');
-      if (!grid) return;
-      var sections = grid.querySelectorAll('.k-cat-section');
-      var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
-      // ── Trouver la section dont le centre est le plus proche du scroll ──
-      var bestIdx = 0;
-      var bestDist = Infinity;
-      for (var i = 0; i < sections.length; i++) {
-        var secCenter = sections[i].offsetLeft + sections[i].offsetWidth / 2;
-        var dist = Math.abs(scrollCenter - secCenter);
-        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
-      }
-      if (sections[bestIdx]) {
-        var cat = sections[bestIdx].dataset.cat;
-        document.querySelectorAll('.k-chip').forEach(function(c) {
-          c.classList.toggle('active', c.dataset.cat === cat);
-        });
-        var activeChip = document.querySelector('.k-chip.active');
-        if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
-      }
-    }, 150);
+    if (window._scrollingToSection) return;
+    if (_pagerRaf) return;
+    _pagerRaf = requestAnimationFrame(function() {
+      _pagerRaf = null;
+      _syncChipToScroll();
+    });
   }
 
   function _scrollPagerToCat(cat) {
@@ -4302,7 +4309,7 @@ document.addEventListener('click', function(e) {
     if (!section) return;
     window._scrollingToSection = true;
     grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
-    setTimeout(function() { window._scrollingToSection = false; }, 700);
+    setTimeout(function() { window._scrollingToSection = false; }, 400);
   }
 
   // Appeler _renderFloatingIndex après chaque render de la grille en mode sections
