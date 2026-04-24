@@ -3801,16 +3801,11 @@ body.cart-open{overflow:hidden}
     background: rgba(67,160,71,.1);
   }
 
-  /* ── Sous-catégories locales inline (dans chaque section) ── */
+  /* ── Sous-catégories masquées sur mobile ("large dehors, profond dedans")
+       Les subcats vivent dans le modal produit, pas sur l'accueil ── */
   .k-sec-subcats {
-    display: flex;
-    gap: 6px;
-    padding: 2px 10px 6px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: none !important;
   }
-  .k-sec-subcats::-webkit-scrollbar { display: none; }
   .k-sec-subchip {
     display: inline-flex;
     align-items: center;
