@@ -3443,15 +3443,15 @@ body.cart-open{overflow:hidden}
     left: 5px;
   }
   .k-card-add {
-    width: 28px;
-    height: 28px;
-    bottom: 8px;
-    right: 6px;
-    background-color: var(--ocean, #0d9488) !important;
-    background-size: 55%;
-    background-blend-mode: screen;
-    border: 1.5px solid var(--white);
-    box-shadow: 0 1px 6px rgba(13,148,136,.25);
+    width: 34px;
+    height: 34px;
+    bottom: -1px;
+    right: -1px;
+    background: #fff !important;
+    border: 1.5px solid rgba(0,0,0,.08) !important;
+    border-radius: 0 0 var(--radius, 14px) 0 !important;
+    border-top-left-radius: 10px !important;
+    box-shadow: -1px -1px 6px rgba(0,0,0,.08);
   }
   .k-card-add.in-cart {
     width: 66px;
@@ -3838,16 +3838,6 @@ body.cart-open{overflow:hidden}
     width: 20px; height: 20px;
     top: 3px; right: 3px;
     font-size: 9px;
-  }
-  .k-sec-grid .k-card-add {
-    width: 34px; height: 34px;
-    bottom: -1px; right: -1px;
-    background: #fff !important;
-    background-image: none !important;
-    border: 1.5px solid rgba(0,0,0,.08) !important;
-    border-radius: 0 0 var(--radius, 14px) 0 !important;
-    border-top-left-radius: 10px !important;
-    box-shadow: -1px -1px 6px rgba(0,0,0,.08);
   }
   .k-sec-grid .k-card-add .k-card-add-basket {
     width: 20px !important; height: 20px !important;
