@@ -912,7 +912,8 @@
         }).join('') +
       '</div>';
 
-    // Pages du pager (1 par sous-cat) — réutilise .k-cat-section pour hériter du CSS pager
+    // Pages du pager (1 par sous-cat) — classe DÉDIÉE .k-flat-subcat-page
+    // (indépendante de .k-cat-section pour éviter les collisions avec le pager principal)
     var pagesHtml = subs.map(function(s) {
       var prods = _productsForSubcat(fs.cat, s.key);
       var total = prods.length;
@@ -924,7 +925,7 @@
             '<div class="k-flat-subcat-empty-title">Bientôt disponible</div>' +
             '<div class="k-flat-subcat-empty-sub">Swipe → pour voir d\'autres sélections</div>' +
           '</div>');
-      return '<div class="k-cat-section k-flat-subcat-page" data-flat-sub="' + s.key +
+      return '<div class="k-flat-subcat-page" data-flat-sub="' + s.key +
              '" data-flat-total="' + total + '" data-flat-page="0">' +
           gridHtml +
           '<div class="k-flat-page-sentinel" data-flat-sub="' + s.key + '"></div>' +
@@ -1056,7 +1057,79 @@
     }, { passive: true });
 
     _setupFlatSubcatDragScroll();
+    _setupFlatSubcatTouchSwipe();
     _setupFlatSubcatInfiniteScroll();
+  }
+
+  // Fallback touch natif — certains mobiles n'émettent pas des pointerevents
+  // exploitables pour le drag scroll, donc on double avec touchstart/move/end.
+  // touchmove est en passive: false pour pouvoir faire preventDefault et
+  // empêcher le browser de scroller verticalement quand on swipe horizontalement.
+  function _setupFlatSubcatTouchSwipe() {
+    var grid = document.getElementById('k-grid');
+    if (!grid || grid._flatTouchBound) return;
+    grid._flatTouchBound = true;
+    var active = false;
+    var dragging = false;
+    var startX = 0, startY = 0, startScrollLeft = 0;
+
+    function isFlatMode() {
+      return window.innerWidth < 900 &&
+        window.state &&
+        window.state.flatSubcat &&
+        grid.classList.contains('k-grid-flat-subcat');
+    }
+
+    grid.addEventListener('touchstart', function(e) {
+      if (!isFlatMode()) return;
+      if (e.touches.length !== 1) return;
+      var t = e.touches[0];
+      // Respecter les vrais boutons
+      if (e.target.closest(
+        'button, a, input, textarea, select, .k-card-add, .k-card-fav, .k-flat-subcat-tab, .k-flat-subcat-close'
+      )) return;
+      active = true;
+      dragging = false;
+      startX = t.clientX;
+      startY = t.clientY;
+      startScrollLeft = grid.scrollLeft;
+    }, { capture: true, passive: true });
+
+    grid.addEventListener('touchmove', function(e) {
+      if (!active || !isFlatMode()) return;
+      var t = e.touches[0];
+      var dx = t.clientX - startX;
+      var dy = t.clientY - startY;
+      if (!dragging) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        // Geste vertical → on laisse la page interne scroller
+        if (Math.abs(dy) > Math.abs(dx)) {
+          active = false;
+          return;
+        }
+        dragging = true;
+        grid._flatDidDrag = true;
+        grid.classList.add('is-flat-dragging');
+      }
+      // Horizontal confirmé : on prend le contrôle
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+      grid.scrollLeft = startScrollLeft - dx;
+    }, { capture: true, passive: false });
+
+    function endTouch(e) {
+      if (!active) return;
+      active = false;
+      if (dragging) {
+        dragging = false;
+        setTimeout(function() {
+          grid._flatDidDrag = false;
+          grid.classList.remove('is-flat-dragging');
+        }, 180);
+      }
+    }
+    grid.addEventListener('touchend', endTouch, { capture: true, passive: true });
+    grid.addEventListener('touchcancel', endTouch, { capture: true, passive: true });
   }
 
   // Drag-scroll programmatique : force le pager sous-cat à gagner le swipe

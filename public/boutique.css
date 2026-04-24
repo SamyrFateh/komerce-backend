@@ -7213,27 +7213,28 @@ body.cart-open #k-section-index {
   box-shadow: 0 2px 8px rgba(100,175,90,.35);
 }
 
-/* ── PAGES DU PAGER (scopées .k-grid-flat-subcat) ──
-   Héritent du layout .k-pager-active .k-cat-section existant.
-   On force les propriétés critiques pour le scroll vertical au cas où
-   une règle plus ancienne dans le fichier les override. */
-.k-grid-flat-subcat .k-flat-subcat-page {
+/* ── PAGES DU PAGER — autonomes (pas de dépendance à .k-cat-section) ──
+   Toutes les propriétés du scroll vertical + snap horizontal sont ici.
+   Scopées strictement sur .k-grid-flat-subcat pour ne jamais impacter
+   le pager accueil principal. */
+#k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
   flex: 0 0 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
+  width: 100% !important;
   height: 100% !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior-y: contain !important;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  overscroll-behavior-x: contain !important;
+  scroll-snap-align: start !important;
+  scroll-snap-stop: always !important;
   padding: 0 !important;
   padding-bottom: 80px !important;
-  /* Pas de contain: paint ici — peut bloquer le scroll interne sur certains mobiles */
   contain: none !important;
 }
-.k-grid-flat-subcat .k-flat-subcat-page > .k-sec-grid {
+#k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat > .k-flat-subcat-page > .k-sec-grid {
   padding: 10px 8px 8px !important;
 }
 
@@ -7338,7 +7339,7 @@ body.cart-open #k-section-index {
     overscroll-behavior-x: contain !important;
     touch-action: pan-x pan-y !important;
   }
-  .k-grid.k-grid-flat-subcat .k-flat-subcat-page {
+  .k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
     flex: 0 0 100vw !important;
     width: 100vw !important;
     min-width: 100vw !important;
