@@ -3409,11 +3409,7 @@ body.cart-open{overflow:hidden}
     min-height: auto;
   }
   .k-card-desc {
-    font-size: 9px;
-    line-height: 1.2;
-    margin: 0;
-    color: #999;
-    -webkit-line-clamp: 1;
+    display: none !important; /* v233 — plus de descriptions sur mobile, respire */
   }
   .k-card-prices-row {
     display: flex;
@@ -4089,16 +4085,18 @@ body.cart-open{overflow:hidden}
   }
 
   .k-modal-scroll > .k-modal-actions {
-    position: static !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 10 !important;
     display: grid !important;
     grid-template-columns: 0.8fr 1.2fr !important;
     gap: 10px !important;
-    margin: 4px 16px 16px !important;
-    padding: 0 !important;
-    border-top: 0 !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    margin: 0 !important;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important;
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
   }
 
   .k-modal-actions .k-buy-now-btn {
