@@ -389,39 +389,15 @@
     const hasItems = count > 0;
     const avatarSrc = hasItems ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
 
-    // All cart buttons (header + modal)
-    const cartButtons = [
-      document.getElementById('k-cart-btn'),
-      document.getElementById('k-modal-cart-btn')
-    ].filter(Boolean);
-
-    cartButtons.forEach(btn => {
-      const wasEmpty = !btn.classList.contains('has-items');
-
+    document.querySelectorAll('.k-cart-btn, #k-modal-cart-btn').forEach(btn => {
       btn.classList.toggle('has-items', hasItems);
       btn.classList.toggle('is-empty', !hasItems);
 
-      const avatar = btn.querySelector('.k-cart-avatar');
-      if (avatar && avatar.getAttribute('src') !== avatarSrc) {
-        avatar.setAttribute('src', avatarSrc);
-
-        // Animation bounce quand le panier arrive sur sa tête
-        if (hasItems && wasEmpty) {
-          avatar.style.animation = 'none';
-          void avatar.offsetWidth;
-          avatar.style.animation = '';
-        }
-      }
+      const img = btn.querySelector('.k-cart-avatar');
+      if (img) img.src = avatarSrc;
     });
 
-    // All badges (header + modal + bottom nav)
-    const badges = [
-      document.getElementById('k-cart-badge'),
-      document.getElementById('k-modal-cart-badge'),
-      document.getElementById('k-bnav-cart-badge')
-    ].filter(Boolean);
-
-    badges.forEach(badge => {
+    document.querySelectorAll('.k-cart-badge, .k-modal-cart-badge, #k-bnav-cart-badge').forEach(badge => {
       badge.textContent = hasItems ? String(count) : '';
       badge.classList.toggle('show', hasItems);
     });
