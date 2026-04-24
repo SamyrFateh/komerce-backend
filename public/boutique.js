@@ -4998,9 +4998,65 @@ document.addEventListener('click', function(e) {
     }, { passive: true });
   }
 
-  // Appeler _renderFloatingIndex après chaque render de la grille en mode sections
-  // On enveloppe _bindGridEvents pour appeler _renderFloatingIndex à la suite
-  const __origBindGridEvents = (typeof _bindGridEvents === 'function') ? _bindGridEvents : null;
+  // ══════════════════════════════════════════════════════════
+  // DEBUG BUTTON (temporaire) — affiche infos flat subcat à l'écran
+  // Tape sur le bouton 🐛 en bas-droite pour voir le diagnostic
+  // ══════════════════════════════════════════════════════════
+  (function() {
+    var btn = document.createElement('button');
+    btn.id = 'k-debug-btn';
+    btn.textContent = '🐛';
+    btn.style.cssText = 'position:fixed;bottom:80px;left:12px;width:44px;height:44px;border-radius:50%;border:none;background:#e53935;color:#fff;font-size:20px;z-index:99999;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:pointer;';
+    document.body.appendChild(btn);
+
+    var panel = document.createElement('div');
+    panel.id = 'k-debug-panel';
+    panel.style.cssText = 'position:fixed;top:60px;left:8px;right:8px;bottom:140px;background:#111;color:#0f0;font-family:monospace;font-size:11px;padding:12px;overflow-y:auto;z-index:99998;display:none;white-space:pre-wrap;border-radius:8px;line-height:1.4;';
+    document.body.appendChild(panel);
+
+    btn.addEventListener('click', function() {
+      if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+      var lines = [];
+      var elements = [
+        ['#k-page-scroll', document.getElementById('k-page-scroll')],
+        ['#k-catalog-section', document.getElementById('k-catalog-section')],
+        ['#k-flat-subcat-chrome', document.getElementById('k-flat-subcat-chrome')],
+        ['#k-grid', document.getElementById('k-grid')],
+        ['.k-flat-subcat-page[0]', document.querySelector('.k-flat-subcat-page')]
+      ];
+      lines.push('=== FLAT SUBCAT DEBUG ===');
+      lines.push('state.flatSubcat: ' + JSON.stringify(state.flatSubcat));
+      lines.push('window: ' + window.innerWidth + 'x' + window.innerHeight);
+      lines.push('');
+      elements.forEach(function(pair) {
+        var name = pair[0], el = pair[1];
+        if (!el) { lines.push('❌ ' + name + ' MISSING'); lines.push(''); return; }
+        var cs = getComputedStyle(el);
+        lines.push('📦 ' + name);
+        lines.push('  offsetH:  ' + el.offsetHeight);
+        lines.push('  scrollH:  ' + el.scrollHeight);
+        lines.push('  canScroll:' + (el.scrollHeight > el.offsetHeight ? '✅ YES' : '❌ NO'));
+        lines.push('  display:  ' + cs.display);
+        lines.push('  flexDir:  ' + cs.flexDirection);
+        lines.push('  overflowY:' + cs.overflowY);
+        lines.push('  overflowX:' + cs.overflowX);
+        lines.push('  touchAct: ' + cs.touchAction);
+        lines.push('  contain:  ' + cs.contain);
+        lines.push('  height:   ' + cs.height);
+        lines.push('  position: ' + cs.position);
+        lines.push('');
+      });
+      var page = document.querySelector('.k-flat-subcat-page');
+      if (page) {
+        lines.push('🎯 Cartes page[0]: ' + page.querySelectorAll('.k-card').length);
+        lines.push('🎯 Classes .k-grid: ' + document.getElementById('k-grid').className);
+        lines.push('🎯 Classes #k-page-scroll: ' + document.getElementById('k-page-scroll').className);
+      }
+      panel.textContent = lines.join('\n');
+      panel.style.display = 'block';
+    });
+  })();
+
 
 
 })();
