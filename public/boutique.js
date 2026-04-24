@@ -597,24 +597,25 @@
   /* ── RENDER GRID ────────────────────────────────────────── */
   function renderGrid() {
     state.page = 0;
-    let list = state.activeCat === 'all'
+    const _isMobile = window.innerWidth < 900;
+    // Mobile pager: always show all products grouped by category
+    let list = (state.activeCat === 'all' || _isMobile)
       ? state.filtered
       : state.filtered.filter(p => p.category === state.activeCat);
-    // Subcategory filter
-    if (state.activeSubcat) {
+    // Subcategory filter (desktop focused mode only)
+    if (!_isMobile && state.activeSubcat) {
       const subF = list.filter(p => p.subcategory === state.activeSubcat);
       if (subF.length > 0) list = subF;
     }
 
-    // ── BAZAR vertical : en mode "Tout", on groupe par catégorie avec en-têtes ──
-    // (catégorie active autre que 'all' = comportement classique sans sections)
-    const useSections = state.activeCat === 'all';
+    // ── TEMU PAGER (mobile): always sections ──
+    // ── Desktop: sections only in "Tout" mode ──
+    const useSections = state.activeCat === 'all' || _isMobile;
 
     let pageItems;
     if (useSections) {
-      // Piochage équilibré : garantir min 4 produits par section (nombre pair)
-      // pour éviter les cartes orphelines dans une grille 2-cols mobile
-      pageItems = _balancedPick(list, 48);
+      // Mobile pager: more products per page (20 per cat); Desktop: balanced 48
+      pageItems = _isMobile ? _balancedPick(list, 160) : _balancedPick(list, 48);
     } else {
       pageItems = list.slice(0, state.pageSize);
     }
@@ -623,10 +624,24 @@
       dom.grid.classList.add('k-grid-has-sections');
       dom.grid.innerHTML = _renderGridWithSections(pageItems);
       _bindGridEvents();
+      // ── Temu pager setup (mobile) ──
+      if (_isMobile) {
+        var _ps = document.getElementById('k-page-scroll');
+        if (_ps) _ps.classList.add('k-pager-active');
+        _setupMobilePager();
+        if (state.activeCat !== 'all') {
+          setTimeout(function() { _scrollPagerToCat(state.activeCat); }, 50);
+        }
+      } else {
+        var _ps2 = document.getElementById('k-page-scroll');
+        if (_ps2) _ps2.classList.remove('k-pager-active');
+      }
       return;
     }
     // Sinon : mode grille classique, s'assurer qu'on n'a pas la classe sections
     dom.grid.classList.remove('k-grid-has-sections');
+    var _ps3 = document.getElementById('k-page-scroll');
+    if (_ps3) _ps3.classList.remove('k-pager-active');
 
     dom.grid.innerHTML = pageItems.map(p => {
       const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
@@ -885,6 +900,18 @@
   // ── Saut vers une section depuis le header (chip tap) ou l'index flottant ──
   window._scrollingToSection = false;
   window.scrollToCategorySection = function(cat) {
+    // Mobile pager: scroll horizontally
+    if (window.innerWidth < 900 && document.getElementById('k-page-scroll') &&
+        document.getElementById('k-page-scroll').classList.contains('k-pager-active')) {
+      if (!cat || cat === 'all') {
+        var _g = document.getElementById('k-grid');
+        if (_g) _g.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        _scrollPagerToCat(cat);
+      }
+      return;
+    }
+    // Desktop: vertical scroll
     var scroller = document.getElementById('k-page-scroll');
     if (!scroller) return;
     if (!cat || cat === 'all') {
@@ -1224,6 +1251,21 @@ function quickRemove(productId, btnEl) {
       }
       chip.addEventListener('click', () => {
         const cat = chip.dataset.cat;
+
+        // ── Mobile pager: scroll to page instead of re-rendering ──
+        if (window.innerWidth < 900 && document.getElementById('k-page-scroll') &&
+            document.getElementById('k-page-scroll').classList.contains('k-pager-active')) {
+          $$('.k-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          centerActiveChip(chip);
+          if (cat === 'all') {
+            var _g = document.getElementById('k-grid');
+            if (_g) _g.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            _scrollPagerToCat(cat);
+          }
+          return;
+        }
 
         // ── "Tout" chip ──
         if (cat === 'all') {
@@ -4077,6 +4119,9 @@ document.addEventListener('click', function(e) {
 
     // ── IntersectionObserver — sync pills with visible section (vertical scroll) ──
     if (_sectionObserver) _sectionObserver.disconnect();
+    // Skip on mobile pager (horizontal scroll handles sync)
+    if (window.innerWidth < 900 && document.getElementById('k-page-scroll') &&
+        document.getElementById('k-page-scroll').classList.contains('k-pager-active')) return;
     var scroller = document.getElementById('k-page-scroll');
     if (scroller) {
       _sectionObserver = new IntersectionObserver(function(entries) {
@@ -4104,6 +4149,55 @@ document.addEventListener('click', function(e) {
     }
   }
   let _sectionObserver = null;
+
+  /* ══════════════════════════════════════════════════════════════════ */
+  /* ── TEMU-STYLE MOBILE PAGER — horizontal category page sync ───── */
+  /* ══════════════════════════════════════════════════════════════════ */
+  let _pagerScrollTimer = null;
+
+  function _setupMobilePager() {
+    const grid = document.getElementById('k-grid');
+    if (!grid || window.innerWidth >= 900) return;
+    // Disconnect vertical observer (horizontal scroll handles sync)
+    if (_sectionObserver) { _sectionObserver.disconnect(); _sectionObserver = null; }
+    // Remove old listener, add new
+    grid.removeEventListener('scroll', _onPagerScroll);
+    grid.addEventListener('scroll', _onPagerScroll, { passive: true });
+  }
+
+  function _onPagerScroll() {
+    clearTimeout(_pagerScrollTimer);
+    _pagerScrollTimer = setTimeout(function() {
+      if (window._scrollingToSection) return;
+      var grid = document.getElementById('k-grid');
+      if (!grid) return;
+      var sections = grid.querySelectorAll('.k-cat-section');
+      var gridLeft = grid.scrollLeft;
+      var gridWidth = grid.clientWidth;
+      if (gridWidth === 0) return;
+      var pageIndex = Math.round(gridLeft / gridWidth);
+      if (pageIndex < 0) pageIndex = 0;
+      if (pageIndex >= sections.length) pageIndex = sections.length - 1;
+      if (sections[pageIndex]) {
+        var cat = sections[pageIndex].dataset.cat;
+        document.querySelectorAll('.k-chip').forEach(function(c) {
+          c.classList.toggle('active', c.dataset.cat === cat);
+        });
+        var activeChip = document.querySelector('.k-chip.active');
+        if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
+      }
+    }, 60);
+  }
+
+  function _scrollPagerToCat(cat) {
+    var grid = document.getElementById('k-grid');
+    if (!grid) return;
+    var section = grid.querySelector('.k-cat-section[data-cat="' + cat + '"]');
+    if (!section) return;
+    window._scrollingToSection = true;
+    grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
+    setTimeout(function() { window._scrollingToSection = false; }, 700);
+  }
 
   // Appeler _renderFloatingIndex après chaque render de la grille en mode sections
   // On enveloppe _bindGridEvents pour appeler _renderFloatingIndex à la suite

@@ -3060,7 +3060,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(105px, 28vw, 145px);
+    height: clamp(90px, 24vw, 120px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -3825,6 +3825,86 @@ body.cart-open{overflow:hidden}
     border-color: var(--ocean);
     font-weight: 600;
   }
+
+  /* ══════════════════════════════════════════════════════════════════ */
+  /* ── P. TEMU PAGER — horizontal category pages (mobile only) ───── */
+  /* ══════════════════════════════════════════════════════════════════ */
+
+  /* Activate pager layout on #k-page-scroll */
+  #k-page-scroll.k-pager-active {
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+  #k-page-scroll.k-pager-active #k-promos-section {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  #k-page-scroll.k-pager-active .k-proverb-sep {
+    display: none;
+  }
+  #k-page-scroll.k-pager-active #k-catalog-section {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Grid becomes horizontal pager */
+  #k-page-scroll.k-pager-active .k-grid,
+  #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    height: 100%;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+  #k-page-scroll.k-pager-active .k-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Each category section = full-width swipeable page */
+  #k-page-scroll.k-pager-active .k-cat-section {
+    flex: 0 0 100%;
+    min-width: 100%;
+    max-width: 100%;
+    scroll-snap-align: start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding-bottom: 24px;
+  }
+
+  /* Section header inside pager pages — compact */
+  #k-page-scroll.k-pager-active .k-sec-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+    padding: 6px 10px 4px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* Keep 2-column grid inside each page */
+  #k-page-scroll.k-pager-active .k-sec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    padding: 4px 6px 8px;
+  }
+
+  /* Hide loading spinner in pager mode */
+  #k-page-scroll.k-pager-active #k-loading {
+    display: none;
+  }
+
 
   /* ── L. SECTION INDEX — floating emoji jump ──────── */
   #k-section-index {
