@@ -3330,10 +3330,12 @@ body.cart-open{overflow:hidden}
     background: #faf8f5;
   }
   /* Carousel grille mobile : touch passe au scroll vertical,
-     dots gèrent le changement d'image via JS scrollTo() */
+     dots gèrent le changement d'image via JS scrollTo().
+     !important nécessaire : les définitions base (.k-card-carousel L4067/L4473)
+     passent APRÈS ce bloc mobile et écrasent sans !important. */
   .k-card-carousel {
-    overflow-x: hidden;
-    touch-action: pan-y;
+    overflow-x: hidden !important;
+    touch-action: pan-y !important;
   }
   .k-card-img {
     width: 100%;
