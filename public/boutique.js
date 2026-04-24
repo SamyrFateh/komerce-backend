@@ -466,7 +466,7 @@
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
               <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-                ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
+                ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
               </button>
             </div>
           </div>
@@ -672,7 +672,7 @@
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
               ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
               <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-                ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
+                ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
               </button>
             </div>
           </div>
@@ -727,7 +727,7 @@
             <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
             ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
+              ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
             </button>
           </div>
         </div>
@@ -1280,7 +1280,7 @@ const item = state.cart.find(i => String(i.product.id) === pid);
       } else {
         // Produit plus dans le panier → remettre juste le "+"
         btn.classList.remove('in-cart');
-        btn.innerHTML = '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="20" height="20">';
+        btn.innerHTML = '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="20" height="20">';
       }
     });
   }
@@ -1884,7 +1884,7 @@ function quickRemove(productId, btnEl) {
         <div class="k-sug-card-actions">
           ${qty > 0
             ? `<button class="k-sug-step k-sug-minus" data-pid="${p.id}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${p.id}">+</button>`
-            : `<button class="k-sug-add" data-add="${p.id}"><img src="/images/panier_tresse.png" width="18" height="18" alt="+" style="pointer-events:none"></button>`
+            : `<button class="k-sug-add" data-add="${p.id}"><img src="/images/panier_tresse_vert.png" width="18" height="18" alt="+" style="pointer-events:none"></button>`
           }
         </div>
       </div>`;
@@ -3345,7 +3345,7 @@ async function submitOrder(btn) {
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
               ${qty > 0
                 ? `<span class="k-add-minus" data-pid="${p.id}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`
-                : '<img src="/images/panier_tresse.png" class="k-card-add-basket" alt="+" width="20" height="20">'}
+                : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="20" height="20">'}
             </button>
           </div>
           <div class="k-card-info">
