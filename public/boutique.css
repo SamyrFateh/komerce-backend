@@ -1594,6 +1594,45 @@ body.cart-open{overflow:hidden}
   font-weight:700;
   color:var(--coral);
 }
+/* ── Ligne prix + panier suggestions (même alignement que cartes accueil) */
+.k-sug-card-bottom{
+  display:flex;
+  align-items:center;
+  padding:0 4px 6px;
+  gap:4px;
+}
+.k-sug-card-bottom .k-sug-card-price{
+  flex:1;
+  padding:0 4px !important;
+  font-size:13px;
+  font-weight:700;
+  color:var(--coral);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.k-sug-card-bottom .k-sug-card-actions{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  padding:0 !important;
+  min-height:unset !important;
+}
+.k-sug-add{
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.k-sug-add img{
+  width:28px !important;
+  height:28px !important;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.15));
+}
 .k-sug-grid .k-sug-promo-badge{
   position:absolute;top:6px;left:6px;
   background:var(--coral);color:#fff;
@@ -3082,6 +3121,11 @@ body.cart-open{overflow:hidden}
     box-shadow: none !important;
     padding: 0 !important;
   }
+  /* Dame contenue dans le header 44px */
+  .k-header .k-cart-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
   .k-cart-badge {
     top: -2px;
     right: -2px;
@@ -4079,7 +4123,8 @@ body.cart-open{overflow:hidden}
     }
     .k-search-icon { left: 9px; width: 13px; height: 13px; }
     .k-cart-btn { width: auto; height: auto; overflow: visible; background: transparent !important; border: none !important; box-shadow: none !important; }
-    .k-cart-avatar { width: 48px !important; height: 48px !important; border: none !important; box-shadow: none !important; background: transparent !important; border-radius: 0 !important; object-fit: contain !important; }
+    .k-cart-avatar { width: 38px !important; height: 38px !important; border: none !important; box-shadow: none !important; background: transparent !important; border-radius: 0 !important; object-fit: contain !important; }
+    .k-header .k-cart-avatar { width: 38px !important; height: 38px !important; }
     .k-cart-badge {
       position: absolute !important;  /* Override tap-target position:relative */
       top: -4px;

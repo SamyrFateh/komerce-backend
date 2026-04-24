@@ -1880,12 +1880,14 @@ function quickRemove(productId, btnEl) {
           ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
         </div>
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
-        <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
-        <div class="k-sug-card-actions">
-          ${qty > 0
-            ? `<button class="k-sug-step k-sug-minus" data-pid="${p.id}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${p.id}">+</button>`
-            : `<button class="k-sug-add" data-add="${p.id}"><img src="/images/panier_tresse_vert.png" width="18" height="18" alt="+" style="pointer-events:none"></button>`
-          }
+        <div class="k-sug-card-bottom">
+          <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
+          <div class="k-sug-card-actions">
+            ${qty > 0
+              ? `<button class="k-sug-step k-sug-minus" data-pid="${p.id}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${p.id}">+</button>`
+              : `<button class="k-sug-add" data-add="${p.id}"><img src="/images/panier_tresse_vert.png" width="28" height="28" alt="+" style="pointer-events:none"></button>`
+            }
+          </div>
         </div>
       </div>`;
     };
