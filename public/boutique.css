@@ -861,7 +861,7 @@ body{
 .k-card-add{
   position:absolute;bottom:6px;right:6px;
   width:40px;height:40px;
-  background:var(--white) url('/images/panier_tresse.png') center/78% no-repeat;
+  background:var(--white) url('/images/panier_tresse_vert.png') center/78% no-repeat;
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 2px 8px rgba(31,48,36,.14), 0 0 0 1px rgba(31,48,36,.06);
@@ -3488,7 +3488,8 @@ body.cart-open{overflow:hidden}
   .k-card-add .k-card-add-basket {
     width: 30px !important; height: 30px !important;
     pointer-events: none;
-    filter: sepia(1) saturate(5) hue-rotate(85deg) drop-shadow(0 1px 2px rgba(0,0,0,.18));
+    mix-blend-mode: multiply;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
   }
   .k-card-add.in-cart {
     flex-shrink: 0 !important;
@@ -3885,7 +3886,8 @@ body.cart-open{overflow:hidden}
   .k-sec-grid .k-card-add .k-card-add-basket {
     width: 28px !important; height: 28px !important;
     pointer-events: none;
-    filter: sepia(1) saturate(5) hue-rotate(85deg) drop-shadow(0 1px 2px rgba(0,0,0,.18));
+    mix-blend-mode: multiply;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
   }
   .k-sec-grid .k-card-add:active {
     transform: scale(.92);
