@@ -4457,7 +4457,6 @@ document.addEventListener('click', function(e) {
         var cat = sections[n - 1].dataset.cat;
         if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
       }
-    }
     };
     grid.addEventListener('touchstart', grid._hwTouchStart, { passive: true });
     grid.addEventListener('touchend',   grid._hwTouchEnd,   { passive: true });
