@@ -2011,6 +2011,54 @@ function quickRemove(productId, btnEl) {
         }
       });
     });
+
+    // ── Modal infini : auto-advance subcats quand fin de scroll ──
+    if (window.innerWidth < 900) {
+      var _mScrollEl = document.querySelector('.k-modal-scroll');
+      if (_mScrollEl) {
+        if (_mScrollEl._sugInfinite) {
+          _mScrollEl.removeEventListener('scrollend', _mScrollEl._sugInfinite);
+          clearTimeout(_mScrollEl._sugInfTimer);
+        }
+        var _mAdv = false;
+        _mScrollEl._sugInfinite = function() {
+          if (_mAdv) return;
+          var rem = _mScrollEl.scrollHeight - _mScrollEl.scrollTop - _mScrollEl.clientHeight;
+          if (rem > 80) return;
+          _mAdv = true;
+          var chipBtns = Array.from(dom.sugRail.querySelectorAll('.k-sug-chip'));
+          if (chipBtns.length < 2) { _mAdv = false; return; }
+          var activeIdx = chipBtns.findIndex(function(c) { return c.classList.contains('is-active'); });
+          var nextIdx = (activeIdx + 1) % chipBtns.length;
+          // Reshuffle si on revient à Tout (wrap)
+          if (nextIdx === 0) {
+            var _sg = dom.sugRail.querySelector('.k-sug-grid--same');
+            if (_sg) {
+              var _sc = Array.from(_sg.children);
+              for (var _si = _sc.length - 1; _si > 0; _si--) {
+                var _sj = Math.floor(Math.random() * (_si + 1));
+                var _st = _sc[_si]; _sc[_si] = _sc[_sj]; _sc[_sj] = _st;
+              }
+              var _sf = document.createDocumentFragment();
+              _sc.forEach(function(c) { _sf.appendChild(c); });
+              _sg.appendChild(_sf);
+            }
+          }
+          chipBtns[nextIdx].click();
+          // Scroll doux vers le titre des suggestions
+          setTimeout(function() {
+            var sugTitle = dom.sugRail.querySelector('.k-sug-title');
+            if (sugTitle) sugTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(function() { _mAdv = false; }, 600);
+          }, 150);
+        };
+        _mScrollEl.addEventListener('scrollend', _mScrollEl._sugInfinite, { passive: true });
+        _mScrollEl.addEventListener('scroll', function() {
+          clearTimeout(_mScrollEl._sugInfTimer);
+          _mScrollEl._sugInfTimer = setTimeout(_mScrollEl._sugInfinite, 300);
+        }, { passive: true });
+      }
+    }
   }
 
   function setupModal() {
@@ -4530,6 +4578,22 @@ document.addEventListener('click', function(e) {
     setTimeout(function() { window._scrollingToSection = false; }, 700);
   }
 
+  /* ── Reshuffle Tout : mélange les cartes DOM à chaque téléportation ── */
+  function _reshuffleToutInDOM() {
+    var toutSec = document.querySelector('#k-grid .k-cat-section[data-cat="all"]:not([data-ghost])');
+    if (!toutSec) return;
+    var secGrid = toutSec.querySelector('.k-sec-grid');
+    if (!secGrid) return;
+    var cards = Array.from(secGrid.children);
+    for (var _ri = cards.length - 1; _ri > 0; _ri--) {
+      var _rj = Math.floor(Math.random() * (_ri + 1));
+      var _rt = cards[_ri]; cards[_ri] = cards[_rj]; cards[_rj] = _rt;
+    }
+    var _rf = document.createDocumentFragment();
+    cards.forEach(function(c) { _rf.appendChild(c); });
+    secGrid.appendChild(_rf);
+  }
+
   /* ── Infinite loop : ghost Tout en fin → téléportation silencieuse ──
      Principe : on clone la section Tout et on l'ajoute à la fin du pager.
      L'utilisateur arrive sur le ghost en scrollant en avant, puis scrollend
@@ -4554,6 +4618,7 @@ document.addEventListener('click', function(e) {
         // Désactiver snap + smooth, sauter au vrai Tout, réactiver
         grid.style.scrollBehavior = 'auto';
         grid.style.scrollSnapType = 'none';
+        _reshuffleToutInDOM();
         grid.scrollLeft = 0;
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
