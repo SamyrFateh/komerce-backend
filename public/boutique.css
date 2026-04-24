@@ -3443,15 +3443,20 @@ body.cart-open{overflow:hidden}
     left: 5px;
   }
   .k-card-add {
-    width: 34px;
-    height: 34px;
-    bottom: -1px;
-    right: -1px;
-    background: #fff !important;
-    border: 1.5px solid rgba(0,0,0,.08) !important;
-    border-radius: 0 0 var(--radius, 14px) 0 !important;
-    border-top-left-radius: 10px !important;
-    box-shadow: -1px -1px 6px rgba(0,0,0,.08);
+    width: 38px;
+    height: 38px;
+    bottom: 6px;
+    right: 6px;
+    background-color: #faf6f0 !important;
+    background-image: none !important;
+    border: 1.5px solid rgba(139,90,43,.18) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(139,90,43,.22), 0 0 0 1px rgba(139,90,43,.08);
+  }
+  .k-card-add .k-card-add-basket {
+    width: 24px !important; height: 24px !important;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.1));
   }
   .k-card-add.in-cart {
     width: 66px;
