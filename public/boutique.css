@@ -3827,19 +3827,18 @@ body.cart-open{overflow:hidden}
     font-size: 9px;
   }
   .k-sec-grid .k-card-add {
-    width: 32px; height: 32px;
+    width: 34px; height: 34px;
     bottom: -1px; right: -1px;
-    background: #1a7a6f !important;
+    background: #fff !important;
     background-image: none !important;
-    border: 2px solid #fff !important;
+    border: 1.5px solid rgba(0,0,0,.08) !important;
     border-radius: 0 0 var(--radius, 14px) 0 !important;
     border-top-left-radius: 10px !important;
-    box-shadow: -2px -2px 8px rgba(0,0,0,.12);
+    box-shadow: -1px -1px 6px rgba(0,0,0,.08);
   }
-  .k-sec-grid .k-card-add .k-card-add-plus {
-    font-size: 20px !important;
-    font-weight: 900 !important;
-    color: #fff !important;
+  .k-sec-grid .k-card-add .k-card-add-basket {
+    width: 20px !important; height: 20px !important;
+    pointer-events: none;
   }
   .k-sec-grid .k-card-add:active {
     transform: scale(.92);
