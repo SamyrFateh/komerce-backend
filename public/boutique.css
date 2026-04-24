@@ -3436,11 +3436,15 @@ body.cart-open{overflow:hidden}
     left: 5px;
   }
   .k-card-add {
-    width: 30px;
-    height: 30px;
-    bottom: 5px;
-    right: 5px;
-    background-size: 70%;
+    width: 34px;
+    height: 34px;
+    bottom: -4px;
+    right: 4px;
+    background-color: var(--ocean, #0d9488) !important;
+    background-size: 60%;
+    background-blend-mode: screen;
+    border: 2px solid var(--white);
+    box-shadow: 0 2px 10px rgba(13,148,136,.35);
   }
   .k-card-add.in-cart {
     width: 66px;
@@ -3825,9 +3829,16 @@ body.cart-open{overflow:hidden}
     font-size: 9px;
   }
   .k-sec-grid .k-card-add {
-    width: 26px; height: 26px;
-    bottom: 3px; right: 3px;
-    background-size: 68%;
+    width: 34px; height: 34px;
+    bottom: -6px; right: 4px;
+    background-color: var(--ocean, #0d9488) !important;
+    background-size: 60%;
+    background-blend-mode: screen; /* icône devient claire sur fond ocean */
+    border: 2px solid var(--white);
+    box-shadow: 0 2px 10px rgba(13,148,136,.35);
+  }
+  .k-sec-grid .k-card-add:active {
+    transform: scale(.92);
   }
 
   /* ── "Voir tout →" button in section headers ── */
