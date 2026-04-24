@@ -1881,7 +1881,7 @@ function quickRemove(productId, btnEl) {
         <div class="k-sug-card-actions">
           ${qty > 0
             ? `<button class="k-sug-step k-sug-minus" data-pid="${p.id}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${p.id}">+</button>`
-            : `<button class="k-sug-add" data-add="${p.id}">+ Ajouter</button>`
+            : `<button class="k-sug-add" data-add="${p.id}">+</button>`
           }
         </div>
       </div>`;
