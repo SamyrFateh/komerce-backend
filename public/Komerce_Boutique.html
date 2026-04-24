@@ -4,8 +4,8 @@
 <script>
 /* Nuclear SW reset v100 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v176'))return;
-  localStorage.setItem('sw_reset_v176','1');
+  if(localStorage.getItem('sw_reset_v177'))return;
+  localStorage.setItem('sw_reset_v177','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     if(!regs.length){location.reload(true);return;}
@@ -37,7 +37,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v176')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v177')===-1) caches.delete(n);
       });
     });
   }
@@ -104,7 +104,7 @@ if('serviceWorker' in navigator){
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
-      <img class="k-hero-img" src="/New_Hero.jpg" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+      <img class="k-hero-img" src="/images/hero_banner.png" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-line-1">Qui cherche bien</span>
         <span class="k-line-2">trouve bien&nbsp;!</span>
