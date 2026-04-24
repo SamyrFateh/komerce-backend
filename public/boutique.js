@@ -4347,7 +4347,10 @@ document.addEventListener('click', function(e) {
       var _lastST   = 0;
       var _wasDown  = false;
 
-      function _atBottom() { return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32; }
+      function _atBottom() {
+        if (sec.scrollHeight <= sec.clientHeight + 40) return false; // section trop courte, pas de scroll
+        return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
+      }
       function _atTop()    { return sec.scrollTop <= 4; }
 
       function _goTo(targetIdx, scrollToBottom) {
@@ -4431,18 +4434,15 @@ document.addEventListener('click', function(e) {
     grid._hwTouchEnd = function(e) {
       var dx = e.changedTouches[0].clientX - _tx0;
       var dy = e.changedTouches[0].clientY - _ty0;
-      // Only horizontal swipes (not vertical)
-      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
+      // Horizontal seulement (angle < 45°)
+      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
       var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
-      if (!sections.length) return;
-      // Find current section
-      var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
-      var bestIdx = 0, bestDist = Infinity;
-      sections.forEach(function(sec, i) {
-        var dist = Math.abs(sec.offsetLeft + sec.offsetWidth / 2 - scrollCenter);
-        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
-      });
       var n = sections.length;
+      if (!n) return;
+      // Détection par scrollLeft absolu — résiste au snap bounce
+      var maxScroll = grid.scrollWidth - grid.clientWidth;
+      var atLeft  = grid.scrollLeft < grid.clientWidth * 0.4;
+      var atRight = maxScroll > 0 && grid.scrollLeft > maxScroll - grid.clientWidth * 0.4;
       function _syncChip(cat) {
         document.querySelectorAll('.k-chip').forEach(function(c) {
           c.classList.toggle('active', c.dataset.cat === cat);
@@ -4450,16 +4450,14 @@ document.addEventListener('click', function(e) {
         var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
         if (chip && typeof centerActiveChip === 'function') centerActiveChip(chip);
       }
-      // Swipe LEFT (finger goes left, dx < 0) = go to next → wrap last→first
-      if (dx < -50 && bestIdx === n - 1) {
+      if (dx < -40 && atRight) {
         var cat = sections[0].dataset.cat;
         if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
-      }
-      // Swipe RIGHT (finger goes right, dx > 0) = go to prev → wrap first→last
-      else if (dx > 50 && bestIdx === 0) {
+      } else if (dx > 40 && atLeft) {
         var cat = sections[n - 1].dataset.cat;
         if (cat) { _scrollPagerToCat(cat); _syncChip(cat); }
       }
+    }
     };
     grid.addEventListener('touchstart', grid._hwTouchStart, { passive: true });
     grid.addEventListener('touchend',   grid._hwTouchEnd,   { passive: true });
