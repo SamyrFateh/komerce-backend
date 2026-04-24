@@ -4365,6 +4365,8 @@ async function submitOrder(btn) {
 
   function init() {
     updateCartBadge();
+    // Expose renderGrid sur window pour le listener délégué global (flat subcat)
+    if (typeof window !== 'undefined') window.renderGrid = renderGrid;
     setupCats();
     setupCatSwipeNav();
 
@@ -4401,6 +4403,42 @@ async function submitOrder(btn) {
 
 
 // FIX 2.3 : Rendre les carousel dots de la modal cliquables
+// ══════════════════════════════════════════════════════════
+// LISTENER GLOBAL DÉLÉGUÉ pour .k-sec-subchip
+// Attrape TOUS les clics sur les sous-cat chips, peu importe quand
+// elles ont été rendues (résiste aux re-renders, aux rebindings loupés,
+// et aux handlers concurrents qui stopPropagation).
+// ══════════════════════════════════════════════════════════
+document.addEventListener('click', function(e) {
+  var chip = e.target.closest('.k-sec-subchip');
+  if (!chip) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var cat = chip.dataset.secCat;
+  var sub = chip.dataset.secSub;
+  window.__lastSubchipClick = { cat: cat, sub: sub, ts: Date.now(), innerW: window.innerWidth, via: 'global-delegated' };
+  if (!cat || !sub) return;
+  // Accès direct à window.state (exposé en read-only par le module principal)
+  var state = window.state;
+  if (!state) return;
+  var _isMobile = window.innerWidth < 900;
+  if (_isMobile) {
+    if (state.flatSubcat && state.flatSubcat.cat === cat && state.flatSubcat.sub === sub) {
+      state.flatSubcat = null;
+    } else {
+      state.flatSubcat = { cat: cat, sub: sub };
+    }
+    state.page = 0;
+    if (typeof window.renderGrid === 'function') window.renderGrid();
+    var _sc = document.getElementById('k-page-scroll');
+    if (_sc) _sc.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    if (!state.sectionSubcats) state.sectionSubcats = {};
+    state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
+    if (typeof window.renderGrid === 'function') window.renderGrid();
+  }
+}, true); // capture: true → tourne AVANT tous les autres handlers, impossible à bloquer
+
 // (si ce n'est pas déjà fait ailleurs)
 document.addEventListener('click', function(e) {
   const dot = e.target.closest('.k-modal-dot');
