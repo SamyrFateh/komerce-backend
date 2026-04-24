@@ -3186,14 +3186,14 @@ body.cart-open{overflow:hidden}
     text-align: center;
     color: #555;
   }
-  /* Active chip — green ring + bold label */
+  /* Active chip — RED ring + bold label */
   .k-chip.active .k-chip-photo,
   .k-chip.active .k-chip-emoji {
-    border-color: var(--k-primary, #2e7d32) !important;
-    box-shadow: 0 0 0 2px rgba(46,125,50,.2) !important;
+    border-color: #e53935 !important;
+    box-shadow: 0 0 0 2px rgba(229,57,53,.25) !important;
   }
   .k-chip.active .k-chip-label {
-    color: var(--k-primary, #2e7d32) !important;
+    color: #e53935 !important;
     font-weight: 700 !important;
   }
 
@@ -3858,7 +3858,7 @@ body.cart-open{overflow:hidden}
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     height: 100%;
@@ -3876,6 +3876,7 @@ body.cart-open{overflow:hidden}
     min-width: 100%;
     max-width: 100%;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
@@ -3883,14 +3884,25 @@ body.cart-open{overflow:hidden}
     padding-bottom: 68px;
   }
 
-  /* Section header inside pager pages — compact */
+  /* Section header inside pager pages — RED accent, prominent */
   #k-page-scroll.k-pager-active .k-sec-header {
     position: sticky;
     top: 0;
     z-index: 5;
     background: #fff;
-    padding: 6px 10px 4px;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 8px 12px 6px;
+    border-bottom: 2px solid #e53935;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  #k-page-scroll.k-pager-active .k-sec-header::before {
+    background: #e53935;
+    width: 4px;
+    height: 16px;
+  }
+  #k-page-scroll.k-pager-active .k-sec-header-name {
+    color: #e53935;
+    font-size: 14px;
   }
 
   /* Keep 2-column grid inside each page */
