@@ -34,11 +34,11 @@
       imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
     }
     if (!imgs.length) {
-      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy">`;
+      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy" decoding="async">`;
     }
     const slides = imgs.map((src, i) => `
       <div class="k-card-slide">
-        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy">
+        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy" decoding="async">
       </div>`).join('');
     const dots = imgs.length > 1
       ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i===0?' active':''}"></span>`).join('')}</div>`
@@ -567,7 +567,7 @@
       const oldPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
       return `
         <div class="k-promo-card" data-id="${p.id}">
-          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy">
+          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy" decoding="async">
           <span class="k-promo-badge">-${p.promo_pct}%</span>
           <div class="k-promo-card-info">
             <div class="k-promo-card-name">${p.name}</div>
@@ -1477,7 +1477,7 @@ function quickRemove(productId, btnEl) {
     }
     dom.searchDrop.innerHTML = results.map(p => `
       <div class="k-search-item" data-id="${p.id}">
-        <img src="${optimizeImgUrl(p.image_url, 80)}" alt="${p.name}" loading="lazy">
+        <img src="${optimizeImgUrl(p.image_url, 80)}" alt="${p.name}" loading="lazy" decoding="async">
         <div class="k-search-item-info">
           <div class="k-search-item-name">${p.emoji || ''} ${p.name}</div>
           <div class="k-search-item-price">${fmtPrice(p.price_kmf)}</div>
@@ -1865,7 +1865,7 @@ function quickRemove(productId, btnEl) {
       return `
       <div class="k-sug-card" data-id="${p.id}">
         <div class="k-sug-card-img">
-          <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy">
+          <img src="${optimizeImgUrl(p.image_url, 200)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async">
           ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
         </div>
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
@@ -3545,7 +3545,7 @@ async function submitOrder(btn) {
       const productImg = o.product_image_url || null;
       const itemsCount = parseInt(o.items_count, 10) || 1;
       const imgHtml = productImg
-        ? '<img src="' + sanitize(optimizeImgUrl(productImg, 100)) + '" alt="" loading="lazy">'
+        ? '<img src="' + sanitize(optimizeImgUrl(productImg, 100)) + '" alt="" loading="lazy" decoding="async">'
         : '<div class="k-myorder-emoji">📦</div>';
       const itemsSummary = itemsCount > 1
         ? productName + ' + ' + (itemsCount - 1) + ' autre' + (itemsCount > 2 ? 's' : '')
@@ -4265,6 +4265,30 @@ document.addEventListener('click', function(e) {
     grid.addEventListener('scroll', _onPagerScroll, { passive: true });
     grid.removeEventListener('scrollend', _syncChipToScroll);
     grid.addEventListener('scrollend', _syncChipToScroll, { passive: true });
+    // ── Direction lock: detect gesture direction, lock to avoid caprices ──
+    var _dirX, _dirY, _dirLock;
+    grid.addEventListener('touchstart', function(e) {
+      _dirX = e.touches[0].clientX;
+      _dirY = e.touches[0].clientY;
+      _dirLock = null;
+    }, { passive: true });
+    grid.addEventListener('touchmove', function(e) {
+      if (!_dirLock && e.touches.length) {
+        var dx = Math.abs(e.touches[0].clientX - _dirX);
+        var dy = Math.abs(e.touches[0].clientY - _dirY);
+        if (dx > 8 || dy > 8) {
+          _dirLock = dx > dy ? 'x' : 'y';
+          if (_dirLock === 'y') grid.classList.add('k-dir-vertical');
+        }
+      }
+    }, { passive: true });
+    grid.addEventListener('touchend', function() {
+      if (_dirLock === 'y') {
+        // Small delay to let section scroll settle before re-enabling snap
+        setTimeout(function() { grid.classList.remove('k-dir-vertical'); }, 50);
+      }
+      _dirLock = null;
+    }, { passive: true });
     // Recalc on resize/orientation change
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
@@ -4309,7 +4333,12 @@ document.addEventListener('click', function(e) {
     if (!section) return;
     window._scrollingToSection = true;
     grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
-    setTimeout(function() { window._scrollingToSection = false; }, 400);
+    // Use scrollend to clear flag (precise) + timeout fallback (safe)
+    grid.addEventListener('scrollend', function _clr() {
+      window._scrollingToSection = false;
+      grid.removeEventListener('scrollend', _clr);
+    }, { once: true });
+    setTimeout(function() { window._scrollingToSection = false; }, 600);
   }
 
   // Appeler _renderFloatingIndex après chaque render de la grille en mode sections

@@ -3913,6 +3913,20 @@ body.cart-open{overflow:hidden}
     padding: 4px 6px 8px;
   }
 
+  /* ── Direction lock: vertical gesture → disable horizontal snap ── */
+  #k-page-scroll.k-pager-active .k-grid.k-dir-vertical {
+    scroll-snap-type: none !important;
+    overflow-x: hidden !important;
+  }
+
+  /* ── GPU compositing: smoother scroll animation ── */
+  #k-page-scroll.k-pager-active .k-grid {
+    will-change: scroll-position;
+  }
+  #k-page-scroll.k-pager-active .k-cat-section {
+    contain: layout style paint;
+  }
+
   /* Hide loading spinner in pager mode */
   #k-page-scroll.k-pager-active #k-loading {
     display: none;
