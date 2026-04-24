@@ -3890,9 +3890,10 @@ body.cart-open{overflow:hidden}
     top: 0;
     z-index: 5;
     background: #fff;
-    padding: 8px 12px 6px;
+    padding: 10px 12px 8px;
     border-bottom: 2px solid #e53935;
     font-size: 14px;
+    min-height: 36px;
     font-weight: 700;
   }
   #k-page-scroll.k-pager-active .k-sec-header::before {
@@ -3914,9 +3915,15 @@ body.cart-open{overflow:hidden}
   }
 
   /* ── Direction lock: vertical gesture → disable horizontal snap ── */
-  #k-page-scroll.k-pager-active .k-grid.k-dir-vertical {
-    scroll-snap-type: none !important;
-    overflow-x: hidden !important;
+  /* ── Touch-action zones: hardware-level scroll separation ── */
+  /* Products area: ONLY vertical scroll — no diagonal confusion */
+  #k-page-scroll.k-pager-active .k-cat-section {
+    touch-action: pan-y;
+  }
+  /* Section header: horizontal swipe zone — grab handle for paging */
+  #k-page-scroll.k-pager-active .k-sec-header {
+    touch-action: pan-x;
+    cursor: grab;
   }
 
   /* ── GPU compositing: smoother scroll animation ── */

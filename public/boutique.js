@@ -4265,30 +4265,10 @@ document.addEventListener('click', function(e) {
     grid.addEventListener('scroll', _onPagerScroll, { passive: true });
     grid.removeEventListener('scrollend', _syncChipToScroll);
     grid.addEventListener('scrollend', _syncChipToScroll, { passive: true });
-    // ── Direction lock: detect gesture direction, lock to avoid caprices ──
-    var _dirX, _dirY, _dirLock;
-    grid.addEventListener('touchstart', function(e) {
-      _dirX = e.touches[0].clientX;
-      _dirY = e.touches[0].clientY;
-      _dirLock = null;
-    }, { passive: true });
-    grid.addEventListener('touchmove', function(e) {
-      if (!_dirLock && e.touches.length) {
-        var dx = Math.abs(e.touches[0].clientX - _dirX);
-        var dy = Math.abs(e.touches[0].clientY - _dirY);
-        if (dx > 8 || dy > 8) {
-          _dirLock = dx > dy ? 'x' : 'y';
-          if (_dirLock === 'y') grid.classList.add('k-dir-vertical');
-        }
-      }
-    }, { passive: true });
-    grid.addEventListener('touchend', function() {
-      if (_dirLock === 'y') {
-        // Small delay to let section scroll settle before re-enabling snap
-        setTimeout(function() { grid.classList.remove('k-dir-vertical'); }, 50);
-      }
-      _dirLock = null;
-    }, { passive: true });
+    // ── Direction lock: handled by CSS touch-action zones ──
+    // pan-y on .k-cat-section (products = vertical only)
+    // pan-x on .k-sec-header (section header = horizontal swipe zone)
+    // No JS direction detection needed — hardware-level separation
     // Recalc on resize/orientation change
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
