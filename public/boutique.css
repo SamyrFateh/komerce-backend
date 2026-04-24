@@ -3060,7 +3060,7 @@ body.cart-open{overflow:hidden}
   }
   .k-hero-media {
     width: 100%;
-    height: clamp(90px, 24vw, 120px);
+    height: clamp(70px, 18vw, 90px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -3835,10 +3835,10 @@ body.cart-open{overflow:hidden}
     display: flex !important;
     flex-direction: column;
     overflow: hidden !important;
+    height: var(--pager-h, 60vh);
   }
   #k-page-scroll.k-pager-active #k-promos-section {
-    flex: 0 0 auto;
-    overflow: visible;
+    display: none !important;
   }
   #k-page-scroll.k-pager-active .k-proverb-sep {
     display: none;
@@ -3879,7 +3879,8 @@ body.cart-open{overflow:hidden}
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    padding-bottom: 24px;
+    height: 100%;
+    padding-bottom: 68px;
   }
 
   /* Section header inside pager pages — compact */

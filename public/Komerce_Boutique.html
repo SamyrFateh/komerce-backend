@@ -37,7 +37,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v177')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v215')===-1) caches.delete(n);
       });
     });
   }
@@ -54,7 +54,7 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/boutique.css?v=214">
+<link rel="stylesheet" href="/boutique.css?v=215">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -145,6 +145,12 @@ if('serviceWorker' in navigator){
         <span>Tout</span>
       </span>
       <span class="k-chip-label">Tout</span>
+    </button>
+    <button class="k-chip" data-cat="Soldes">
+      <span class="k-chip-photo">
+        <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      </span>
+      <span class="k-chip-label">Soldes</span>
     </button>
     <button class="k-chip" data-cat="Mode">
       <span class="k-chip-photo">
@@ -465,7 +471,7 @@ if('serviceWorker' in navigator){
   })();
 </script>
 <script src="/komerce-api.js?v=1776626686"></script>
-<script src="/boutique.js?v=1776991783"></script>
+<script src="/boutique.js?v=215"></script>
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->

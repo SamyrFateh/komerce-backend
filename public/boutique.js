@@ -794,6 +794,23 @@
       totalByCat[cat] = (totalByCat[cat] || 0) + 1;
     }
     const parts = [];
+    // ── Mobile pager: prepend "Soldes" section with promo products ──
+    if (window.innerWidth < 900) {
+      var _soldes = state.filtered.filter(function(p){ return p.promo_pct > 0; }).slice(0, 30);
+      if (_soldes.length > 0) {
+        parts.push('<div class="k-cat-section" data-cat="Soldes">');
+        parts.push(
+          '<div class="k-sec-header" data-cat="Soldes">' +
+          '<span class="k-sec-header-emoji">🏷️</span>' +
+          '<span class="k-sec-header-name">Soldes</span>' +
+          '<span class="k-sec-header-count">' + _soldes.length + '</span>' +
+          '</div>'
+        );
+        parts.push('<div class="k-sec-grid">');
+        for (var _si = 0; _si < _soldes.length; _si++) parts.push(_renderCard(_soldes[_si]));
+        parts.push('</div></div>');
+      }
+    }
     for (const cat of order) {
       const emoji = EMOJI_CAT[cat] || '📦';
       const prods = byCat[cat];
@@ -4156,13 +4173,24 @@ document.addEventListener('click', function(e) {
   let _pagerScrollTimer = null;
 
   function _setupMobilePager() {
-    const grid = document.getElementById('k-grid');
+    var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
+    // ── Calculate pager height: viewport minus header/hero/cats ──
+    var hdr = document.querySelector('.k-header');
+    var hero = document.getElementById('k-hero');
+    var cats = document.querySelector('.k-cats-shell');
+    var usedH = (hdr ? hdr.offsetHeight : 0)
+              + (hero ? hero.offsetHeight : 0)
+              + (cats ? cats.offsetHeight : 0);
+    document.documentElement.style.setProperty('--pager-h', (window.innerHeight - usedH) + 'px');
     // Disconnect vertical observer (horizontal scroll handles sync)
     if (_sectionObserver) { _sectionObserver.disconnect(); _sectionObserver = null; }
     // Remove old listener, add new
     grid.removeEventListener('scroll', _onPagerScroll);
     grid.addEventListener('scroll', _onPagerScroll, { passive: true });
+    // Recalc on resize/orientation change
+    window.removeEventListener('resize', _setupMobilePager);
+    window.addEventListener('resize', _setupMobilePager);
   }
 
   function _onPagerScroll() {
