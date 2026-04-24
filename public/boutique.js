@@ -1893,7 +1893,7 @@ function quickRemove(productId, btnEl) {
     if (sameCat.length > 0) {
       const catLabel = categoryName ? categoryName.toLowerCase() : 'même catégorie';
       // ── Subcategory chips — "profond dedans" ──
-      const uniqueSubcats = [...new Set(sameCat.map(p => p.subcategory).filter(Boolean))].sort();
+      const uniqueSubcats = [...new Set(sameCat.map(p => p.subcategory).filter(Boolean))].sort().slice(0, 5);
       const activeFilter = state.modalSubcatFilter || null;
       let chipsHTML = '';
       if (uniqueSubcats.length >= 2) {

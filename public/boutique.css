@@ -4118,6 +4118,19 @@ body.cart-open{overflow:hidden}
     grid-column: 1 / -1 !important;
   }
 }
+  /* ── P. Subcategory chips — wrap compact ── */
+  .k-sug-chips{
+    flex-wrap:wrap;
+    overflow-x:visible;
+    padding:8px 12px;
+    gap:6px;
+  }
+  .k-sug-chip{
+    padding:4px 10px;
+    font-size:11px;
+    border-radius:16px;
+  }
+
 /* ═══════════ END MOBILE OVERRIDES ════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════
