@@ -2938,27 +2938,11 @@ body.cart-open{overflow:hidden}
 
 /* ── MODAL ADD BTN — CONFIRMED STATE ───────────────────────── */
 .k-add-cart-btn.confirmed{
-  background:var(--sand);
-  color:var(--text);
-  gap:0;
-  padding:0;
-  overflow:hidden;
-}
-.k-btn-done{
-  flex:1;padding:0 10px;
-  font-size:12px;font-weight:700;
-  color:var(--coral);
-  text-align:center;
-}
-.k-btn-sep{
-  color:var(--border);font-size:20px;font-weight:300;
-  flex-shrink:0;line-height:1;
-}
-.k-btn-see{
-  flex-shrink:0;padding:0 14px;
-  font-size:12px;font-weight:700;
-  color:var(--coral);
-  white-space:nowrap;
+  background:var(--ocean, #0d9488);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  justify-content:center;
 }
 
 /* ── BUY NOW BUTTON ─────────────────────────────────────────── */
@@ -5505,13 +5489,10 @@ body.cart-open #k-page-scroll {
 
 /* Quand le produit est dans le panier (état "confirmed") */
 .k-modal-actions .k-add-cart-btn.confirmed {
-  background: #e8f5ee !important;
-  border-color: #2a7a3e !important;
-  color: #1d5b2a !important;
+  background: var(--ocean, #0d9488) !important;
+  color: #fff !important;
+  font-size: 13px !important;
 }
-.k-modal-actions .k-btn-done    { font-weight: 700; }
-.k-modal-actions .k-btn-sep     { opacity: 0.4; margin: 0 4px; }
-.k-modal-actions .k-btn-see     { font-weight: 600; }
 
 /* Ligne 2 : Acheter pleine largeur */
 .k-modal-actions .k-buy-now-btn {

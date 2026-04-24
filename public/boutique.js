@@ -1225,7 +1225,7 @@ function addToCart(product, qty, sourceBtn) {
       dom.addCartBtn.classList.remove('added');
       dom.addCartBtn.classList.add('confirmed');
       dom.addCartBtn.disabled = false;
-      dom.addCartBtn.innerHTML = '<span class="k-btn-done">✓ Dans le panier</span><span class="k-btn-sep"> | </span><span class="k-btn-see">Voir (' + count + ') →</span>';
+      dom.addCartBtn.innerHTML = '✓ Ajouté';
       dom.addCartBtn.onclick = function() { closeModal(); setTimeout(openCart, 150); };
     }, 700);
   } else if (sourceBtn) {
