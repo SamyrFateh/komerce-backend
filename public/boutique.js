@@ -2368,10 +2368,10 @@ function quickRemove(productId, btnEl) {
 
   async function buildCartShareURL() {
     // Appel API → POST /api/shares → retourne share_url courte
-    const items = state.cart.map(function(item) {
+    const cart_items = state.cart.map(function(item) {
       return { product_id: item.product.id, qty: item.qty };
     });
-    const res = await apiPost('/api/shares', { items: items });
+    const res = await apiPost('/api/shares', { cart_items: cart_items });
     if (res && res.share_url) return res.share_url;
     throw new Error('share_url manquante');
   }

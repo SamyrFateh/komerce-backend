@@ -331,6 +331,15 @@ app.get('/s/:token', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'suivi.html'));
 });
 
+// ── Cart share short URL: /c/:token → boutique with ?share=token ──────────
+app.get('/c/:token', (req, res) => {
+  const token = req.params.token;
+  if (!token || token.length > 20 || !/^[\w-]+$/.test(token)) {
+    return res.redirect('/Komerce_Boutique.html');
+  }
+  res.redirect(301, '/Komerce_Boutique.html?share=' + encodeURIComponent(token));
+});
+
 // ── Mon Compte — serve without auth-guard ─────────────────────────────────
 app.get('/mon-compte', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

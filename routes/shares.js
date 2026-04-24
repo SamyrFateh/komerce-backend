@@ -111,8 +111,9 @@ router.post('/', async (req, res, next) => {
       ]
     );
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://komerce.km';
-    const share_url = `${baseUrl}/Komerce_Boutique.html?share=${share.share_token}`;
+    // URL courte : /c/token → redirige vers la boutique avec ?share=token
+    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const share_url = `${baseUrl}/c/${share.share_token}`;
 
     return res.status(201).json({
       share_token: share.share_token,
