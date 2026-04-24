@@ -3434,8 +3434,24 @@ body.cart-open{overflow:hidden}
   .k-card-prices-row {
     display: flex;
     align-items: center;
-    gap: 3px;
+    flex-wrap: nowrap;
+    gap: 4px;
     margin-top: 0;
+  }
+  .k-card-price {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .k-card-old-price {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70px;
   }
   .k-card-price {
     font-size: 11px;
@@ -3475,11 +3491,12 @@ body.cart-open{overflow:hidden}
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
   }
   .k-card-add.in-cart {
-    width: 72px;
-    min-width: 72px;
+    flex-shrink: 0 !important;
+    width: 76px !important;
+    min-width: 76px !important;
     height: 32px !important;
-    border-radius: 16px;
-    padding: 0 4px;
+    border-radius: 16px !important;
+    padding: 0 4px !important;
     background: #fff !important;
     border: 1.5px solid var(--ocean, #0d9488) !important;
     box-shadow: 0 1px 4px rgba(13,148,136,.2) !important;
@@ -4104,6 +4121,7 @@ body.cart-open{overflow:hidden}
 
   .k-modal-info {
     padding: 14px 16px 10px !important;
+    overflow: visible !important;
   }
 
   #k-modal-name {
@@ -4125,7 +4143,9 @@ body.cart-open{overflow:hidden}
   }
 
   .k-modal-price-row {
-    margin-top: 4px !important;
+    margin-top: 8px !important;
+    padding: 6px 0 4px !important;
+    overflow: visible !important;
   }
 
   .k-modal-scroll > .k-modal-actions {
@@ -6936,4 +6956,9 @@ body.cart-open #k-section-index {
   background: transparent !important;
   border-radius: 0 !important;
   object-fit: contain !important;
+}
+/* Avatar panier.png fond blanc → multiply l'efface sur fond clair */
+.k-cart-btn.has-items .k-cart-avatar,
+#k-modal-cart-btn.has-items .k-cart-avatar {
+  mix-blend-mode: multiply;
 }
