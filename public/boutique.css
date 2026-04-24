@@ -2436,21 +2436,25 @@ body.cart-open{overflow:hidden}
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.1));
 }
 /* Bottom nav cart badge */
-.k-bnav-item[data-tab="cart"]{position:relative}
+.k-bnav-item[data-tab="cart"]{position:relative;overflow:visible}
 .k-bnav-badge{
   position:absolute;
-  top:0;right:50%;
-  margin-right:-20px;
-  min-width:16px;height:16px;
+  top:-2px;
+  left:50%;margin-left:4px;
+  min-width:18px;height:18px;
   background:var(--coral);color:#fff;
-  font-size:9px;font-weight:800;
-  display:none;align-items:center;justify-content:center;
-  border-radius:50px;padding:0 4px;
-  border:1.5px solid #fff;
+  font-size:10px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50px;padding:0 5px;
+  border:2px solid #fff;
   line-height:1;
-  z-index:2;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+  transform:scale(0);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+  z-index:5;
 }
-.k-bnav-badge.show{display:flex}
+.k-bnav-badge.show{transform:scale(1)}
 
 .k-bnav-item.active .k-bnav-basket{
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.1)) brightness(0.9);
