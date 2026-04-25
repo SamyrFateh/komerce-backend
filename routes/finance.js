@@ -82,6 +82,8 @@ router.get('/export', ...adminOnly, async (req, res, next) => {
       LEFT JOIN users         u  ON u.id  = o.user_id
       LEFT JOIN relais        r  ON r.id  = o.relais_id
       -- Taux figé au moment de la commande (dernier taux avant la commande)
+      -- ADR-009 : usage légitime de exchange_rates en tant qu'historique d'audit.
+      -- finance_config porte le taux ACTUEL ; exchange_rates porte les taux PASSÉS.
       LEFT JOIN LATERAL (
         SELECT eur_kmf, aed_kmf
         FROM exchange_rates

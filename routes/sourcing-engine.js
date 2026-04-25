@@ -33,19 +33,29 @@ const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ══════════════════════════════════════════════════════════════════════════
-// Helper : lire une valeur depuis finance_config (même pattern que dashboard)
+// Helper : lire une valeur de paramétrage depuis business_rules
 // ══════════════════════════════════════════════════════════════════════════
+// NOTE: business_rules est la table clé/valeur appropriée pour ces seuils.
+// finance_config est un singleton à colonnes (variables financières globales)
+// et n'est PAS un kv-store — d'où le fix de cette fonction.
+// Si la clé n'existe pas en BDD, le fallback fourni est utilisé.
 async function getCfg(key, fallback) {
   try {
     const { rows } = await db.query(
-      `SELECT value FROM finance_config WHERE key = $1 AND is_active = TRUE LIMIT 1`,
-      [key]
+      `SELECT value FROM business_rules WHERE key = $1 LIMIT 1`,
+      [key.toUpperCase()]  // les clés business_rules sont en MAJ par convention
     );
     if (rows.length && rows[0].value !== null && rows[0].value !== undefined) {
-      const v = Number(rows[0].value);
-      return isNaN(v) ? rows[0].value : v;
+      // value peut être un JSON {value: 42} ou directement un nombre
+      const raw = rows[0].value;
+      if (typeof raw === 'object' && raw !== null && 'value' in raw) {
+        const v = Number(raw.value);
+        return isNaN(v) ? raw.value : v;
+      }
+      const v = Number(raw);
+      return isNaN(v) ? raw : v;
     }
-  } catch (_) { /* table may not exist yet */ }
+  } catch (_) { /* table may not exist */ }
   return fallback;
 }
 

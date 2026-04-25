@@ -430,14 +430,17 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 });
 
 // ── GET /api/payments/rates ───────────────────────────────────────────────────
-// Retourne les taux de change actuels (utilisés par le front pour la conversion)
+// Retourne les taux de change actuels (utilisés par le front pour la conversion).
+// ADR-009 : getRates() lit la source de vérité finance_config.
+// On ne lit PLUS exchange_rates ici (devenue table d'historique passive).
 router.get('/rates', async (req, res, next) => {
   try {
     const rates = await getRates();
-    const { rows } = await db.query(
-      'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 1'
-    );
-    res.json(rows[0] || rates);
+    res.json({
+      eur_kmf: rates.eur_kmf,
+      aed_kmf: rates.aed_kmf,
+      source: 'finance_config',
+    });
   } catch(err) { next(err); }
 });
 
