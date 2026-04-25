@@ -14,13 +14,29 @@ CT.views = CT.views || {};
  *  STATE
  * ───────────────────────────────────────────────────────────────────────── */
 const _ps = {
-  // Exchange rates (loaded from API, fallback defaults)
+  // ─── Source de vérité : finance_config (ADR-009) ─────────────────────
+  // Ces fallbacks ne sont utilisés qu'au tout premier rendu avant que
+  // _loadConfig() ait chargé les vraies valeurs depuis la BDD.
   TAUX_AED: 138,
   TAUX_EUR: 492,
   FRET_EUR_M3: 180,
   EMBARK_AED: 3,
   get EMBARK() { return this.EMBARK_AED * this.TAUX_AED; },
   get TAUX_FRET_M3() { return this.FRET_EUR_M3 * this.TAUX_EUR; },
+
+  // NEW (ADR-009) : cible marge globale depuis finance_config
+  TARGET_MARGE_PCT: 40,            // % cible globale (était hardcodé 12 avant)
+  FRAIS_STRIPE_PCT: 2.5,
+  COMMISSION_RELAIS_KMF: 500,
+  COMMISSION_AGENT_PCT: 5,
+  TRANSITAIRE_PCT: 2,
+  TRANSITAIRE_FIXED_KMF: 450,
+  PORTUAIRES_KMF: 1200,
+  HUB_MONTHLY_AED: 7000,
+
+  // NEW (ADR-009) : catégories chargées depuis customs_categories (BDD)
+  // Au premier rendu, on a les fallbacks dans CATS_FALLBACK.
+  catsFromDb: null,                // null = pas chargé, sinon objet { key: {...} }
 
   // Simulator state
   source: 's1',
@@ -43,13 +59,21 @@ const _ps = {
 
   // Loaded flags
   ratesLoaded: false,
-  productsLoaded: false
+  productsLoaded: false,
+  configLoaded: false   // NEW : finance_config + customs_categories chargés
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
  *  CONSTANTS — Categories, Scenarios, Mappings
+ *
+ *  ADR-009: CATS_FALLBACK est utilisé UNIQUEMENT si la BDD est inaccessible
+ *  ou avant que _loadConfig() ait répondu. La vraie source est la table
+ *  customs_categories (chargée via /api/admin/customs-categories).
+ *
+ *  Pour modifier un taux/dimension/cible marge : passer par la Control Tower
+ *  → Modèle économique → Catégories douanières (à venir Étape 3).
  * ───────────────────────────────────────────────────────────────────────── */
-const CATS = {
+const CATS_FALLBACK = {
   phones:      { label:"📱 Téléphones & accessoires", sub:"Samsung, Itel, Realme milieu de gamme", dims:[17,12,11], douane:10, tva:10, taxeAdd:0, hint:"Téléphones 10% — SH 8517.12", sh:"SH 8517.12" },
   vetements:   { label:"👗 Vêtements, Wax & Dentelles", sub:"Tissus Wax, dentelles, abayas africanisées", dims:[25,22,10], douane:20, tva:10, taxeAdd:2.5, hint:"Textiles 20% + parafiscale 2,5% — SH 61xx/62xx", sh:"SH 61xx/62xx" },
   ceremonie:   { label:"💃 Tenues cérémonie (abayas)", sub:"Tissu + confection · tailles S→XXL", dims:[30,25,11], douane:20, tva:10, taxeAdd:2.5, hint:"Textiles 20% + parafiscale 2,5% — SH 61xx", sh:"SH 61xx" },
@@ -59,6 +83,32 @@ const CATS = {
   enfants:     { label:"🧸 Enfants", sub:"Jouets, vêtements enfants, accessoires scolaires", dims:[25,20,9], douane:10, tva:10, taxeAdd:0, hint:"Jouets 10% (SH 9503)", sh:"SH 9503" },
   materiels:   { label:"🔧 Petits Matériels", sub:"Outillage, quincaillerie, serrures, robinetterie", dims:[30,20,15], douane:15, tva:10, taxeAdd:0, hint:"SH 82xx/73xx — taux 15% douane", sh:"SH 82xx/73xx" },
 };
+
+/**
+ * Retourne les catégories actuelles, BDD prioritaire, fallback hardcodé.
+ * Format compatible CATS_FALLBACK : { key: { label, sub, dims, douane, tva, taxeAdd, hint, sh } }
+ *
+ * Si _ps.catsFromDb a été chargé depuis /api/admin/customs-categories,
+ * on utilise ces valeurs (BDD = source de vérité).
+ * Sinon fallback sur CATS_FALLBACK.
+ */
+function _getCats() {
+  if (_ps.catsFromDb && Object.keys(_ps.catsFromDb).length > 0) {
+    return _ps.catsFromDb;
+  }
+  return CATS_FALLBACK;
+}
+
+/**
+ * Retourne la cible marge pour une catégorie donnée.
+ * BDD prioritaire (default_margin_pct dans customs_categories) → fallback global.
+ */
+function _getMarginTargetForCat(catKey) {
+  if (_ps.catsFromDb && _ps.catsFromDb[catKey] && _ps.catsFromDb[catKey].defaultMargin) {
+    return _ps.catsFromDb[catKey].defaultMargin / 100;  // décimal
+  }
+  return _ps.TARGET_MARGE_PCT / 100;  // fallback global depuis finance_config
+}
 
 const DOUANE_SCENARIOS = {
   opt:  { label:'Optimiste',  pct: 15, color:'#34d399' },
@@ -154,20 +204,74 @@ async function _apiPost(path, body) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- *  LOAD RATES FROM API
+ *  LOAD CONFIG FROM API (ADR-009)
+ *
+ *  Charge en parallèle :
+ *    1. /api/admin/finance-config       → taux, marge cible, frais
+ *    2. /api/admin/customs-categories   → 8 catégories avec leurs taux
+ *
+ *  En cas d'échec, on garde les fallbacks hardcodés (CATS_FALLBACK + _ps.*).
+ *  Le module continue à fonctionner même si la BDD est inaccessible.
  * ───────────────────────────────────────────────────────────────────────── */
-async function _loadRates() {
-  try {
-    const data = await _apiGet('/api/pricing/rates');
-    if (data.rates) {
-      if (data.rates.eur_kmf)     _ps.TAUX_EUR     = data.rates.eur_kmf;
-      if (data.rates.aed_kmf)     _ps.TAUX_AED     = data.rates.aed_kmf;
-      if (data.rates.fret_eur_m3) _ps.FRET_EUR_M3  = data.rates.fret_eur_m3;
-    }
+async function _loadConfig() {
+  // Lancement en parallèle des 2 endpoints
+  const [cfgResult, catsResult] = await Promise.allSettled([
+    _apiGet('/api/admin/finance-config').catch(e => null),
+    _apiGet('/api/admin/customs-categories?active=true').catch(e => null),
+  ]);
+
+  // 1. finance_config
+  const cfg = cfgResult.status === 'fulfilled' ? cfgResult.value : null;
+  if (cfg) {
+    if (cfg.taux_change_eur_kmf)            _ps.TAUX_EUR              = Number(cfg.taux_change_eur_kmf);
+    if (cfg.taux_aed_kmf)                   _ps.TAUX_AED              = Number(cfg.taux_aed_kmf);
+    if (cfg.fret_eur_per_m3)                _ps.FRET_EUR_M3           = Number(cfg.fret_eur_per_m3);
+    if (cfg.target_marge_brute_pct)         _ps.TARGET_MARGE_PCT      = Number(cfg.target_marge_brute_pct);
+    if (cfg.frais_stripe_pct)               _ps.FRAIS_STRIPE_PCT      = Number(cfg.frais_stripe_pct);
+    if (cfg.commission_relais_standard_kmf) _ps.COMMISSION_RELAIS_KMF = Number(cfg.commission_relais_standard_kmf);
+    if (cfg.commission_agent_pct)           _ps.COMMISSION_AGENT_PCT  = Number(cfg.commission_agent_pct);
+    if (cfg.transitaire_pct)                _ps.TRANSITAIRE_PCT       = Number(cfg.transitaire_pct);
+    if (cfg.transitaire_fixed_kmf)          _ps.TRANSITAIRE_FIXED_KMF = Number(cfg.transitaire_fixed_kmf);
+    if (cfg.portuaires_kmf)                 _ps.PORTUAIRES_KMF        = Number(cfg.portuaires_kmf);
+    if (cfg.hub_monthly_cost_aed)           _ps.HUB_MONTHLY_AED       = Number(cfg.hub_monthly_cost_aed);
     _ps.ratesLoaded = true;
-  } catch (e) {
-    console.warn('[Pricing] Rates API unavailable, using defaults', e.message);
+  } else {
+    console.warn('[Pricing] /api/admin/finance-config indisponible — fallbacks utilisés');
   }
+
+  // 2. customs_categories
+  const cats = catsResult.status === 'fulfilled' ? catsResult.value : null;
+  if (Array.isArray(cats) && cats.length > 0) {
+    // Convertir en format compatible CATS_FALLBACK : { key: {...} }
+    _ps.catsFromDb = {};
+    cats.forEach(c => {
+      _ps.catsFromDb[c.key] = {
+        label:        (c.emoji ? c.emoji + ' ' : '') + (c.label || c.key),
+        sub:          c.sub_label || '',
+        dims:         [
+          Number(c.default_dim_l_cm) || 25,
+          Number(c.default_dim_w_cm) || 20,
+          Number(c.default_dim_h_cm) || 10
+        ],
+        douane:       Number(c.douane_pct) || 0,
+        tva:          Number(c.tva_pct) || 10,
+        taxeAdd:      Number(c.taxe_add_pct) || 0,
+        hint:         c.hint || '',
+        sh:           c.sh_code || '',
+        defaultMargin: Number(c.default_margin_pct) || null,
+      };
+    });
+    console.log('[Pricing] ' + cats.length + ' catégories chargées depuis customs_categories');
+  } else {
+    console.warn('[Pricing] /api/admin/customs-categories indisponible — fallback CATS_FALLBACK');
+  }
+
+  _ps.configLoaded = true;
+}
+
+/* ─── BACKWARD COMPAT : ancien nom _loadRates ──────────────────────────── */
+async function _loadRates() {
+  return _loadConfig();
 }
 
 async function _loadProducts() {
@@ -472,7 +576,7 @@ function _computeAll(p) {
  * ═══════════════════════════════════════════════════════════════════════════ */
 function _calcCDRProduit(product) {
   const catKey = _mapCat(product.category);
-  const catData = CATS[catKey] || CATS.phones;
+  const catData = _getCats()[catKey] || _getCats().phones;
   const prixAed = product.price_aed || 0;
   const qte = 1;
   const agentPct = _ps.pmAgentPct || 0.05;
@@ -507,7 +611,9 @@ function _calcCDRProduit(product) {
             + transKmf + fPortKmf + douaneKmf
             + tRelaisKmf + cRelaisKmf;
 
-  const targetMargin = 0.12;
+  // ADR-009: cible marge depuis customs_categories (par catégorie) ou
+  // fallback sur cible globale finance_config.target_marge_brute_pct.
+  const targetMargin = _getMarginTargetForCat(catKey);
   const prixMin = cdr;
   const prixMinViable = cdr / 0.90;
   const prixConseilleBrut = cdr / (1 - targetMargin);
@@ -546,7 +652,7 @@ function _calcCDRProduit(product) {
  * ═══════════════════════════════════════════════════════════════════════════ */
 function _renderSimHTML() {
   // Category options
-  const catOpts = Object.entries(CATS).map(([k, v]) =>
+  const catOpts = Object.entries(_getCats()).map(([k, v]) =>
     `<option value="${k}">${v.label}</option>`
   ).join('');
 
@@ -1070,7 +1176,7 @@ function _renderConfigHTML() {
  * ═══════════════════════════════════════════════════════════════════════════ */
 function _simCalculate(main) {
   const cat = main.querySelector('[data-el="categorie"]')?.value || 'phones';
-  const catData = CATS[cat] || CATS.phones;
+  const catData = _getCats()[cat] || _getCats().phones;
   const isTenue = cat === 'ceremonie';
   const isAgent = _ps.source === 's1';
   const isDiaspora = _ps.marche === 'diaspora';
@@ -1188,7 +1294,7 @@ function _renderVerdict(main, r, totalActif, margePctActif, targetMargePct, cat)
   const panel = main.querySelector('[data-el="verdict-panel"]');
   if (!panel) return;
 
-  const catData = CATS[cat] || CATS.phones;
+  const catData = _getCats()[cat] || _getCats().phones;
   const prixMin = r.subtotalB;
   const prixMinViable = r.subtotalB / 0.90;
   const prixConseille = _arrondirPsycho(r.subtotalB / (1 - targetMargePct), cat, true);
@@ -1352,7 +1458,7 @@ function _recalcFret(main) {
  * ───────────────────────────────────────────────────────────────────────── */
 function _onCatChange(main) {
   const cat = main.querySelector('[data-el="categorie"]')?.value || 'phones';
-  const d = CATS[cat];
+  const d = _getCats()[cat];
   if (!d) return;
 
   // Update dims
@@ -1409,7 +1515,7 @@ function _setDouaneScenario(main, key) {
   // Compute effective taxes as a combined rate
   // Use the scenario pct as a global effective rate applied across douane+tva+taxeAdd
   const cat = main.querySelector('[data-el="categorie"]')?.value || 'phones';
-  const catData = CATS[cat] || CATS.phones;
+  const catData = _getCats()[cat] || _getCats().phones;
 
   // When using scenarios: we set douane as the main scenario value, keep TVA and taxeAdd from category
   // The scenario represents the total effective tax burden
@@ -1583,7 +1689,7 @@ async function _cfgLoadTaxes(main) {
     _cfgRenderTaxes(main);
   } catch (e) {
     // Use default CATS data
-    _ps.taxesData = Object.entries(CATS).map(([k, v]) => ({
+    _ps.taxesData = Object.entries(_getCats()).map(([k, v]) => ({
       category: k, douane_pct: v.douane, tva_pct: v.tva, taxe_add_pct: v.taxeAdd
     }));
     _cfgRenderTaxes(main);
@@ -1594,13 +1700,13 @@ function _cfgRenderTaxes(main) {
   const tbody = main.querySelector('[data-el="cfg-taxes-tbody"]');
   if (!tbody) return;
 
-  const data = _ps.taxesData.length > 0 ? _ps.taxesData : Object.entries(CATS).map(([k, v]) => ({
+  const data = _ps.taxesData.length > 0 ? _ps.taxesData : Object.entries(_getCats()).map(([k, v]) => ({
     category: k, douane_pct: v.douane, tva_pct: v.tva, taxe_add_pct: v.taxeAdd
   }));
 
   tbody.innerHTML = data.map(t => `
     <tr data-tax-cat="${t.category}">
-      <td style="font-weight:600;">${CATS[t.category]?.label || t.category}</td>
+      <td style="font-weight:600;">${_getCats()[t.category]?.label || t.category}</td>
       <td style="text-align:right;"><input class="pm-price-input" type="number" data-tax-douane="${t.category}" value="${t.douane_pct}" step="0.5" style="width:65px;text-align:right;"></td>
       <td style="text-align:right;"><input class="pm-price-input" type="number" data-tax-tva="${t.category}" value="${t.tva_pct}" step="0.5" style="width:65px;text-align:right;"></td>
       <td style="text-align:right;"><input class="pm-price-input" type="number" data-tax-add="${t.category}" value="${t.taxe_add_pct}" step="0.5" style="width:65px;text-align:right;"></td>
@@ -1621,10 +1727,10 @@ async function _cfgSaveTax(main, category) {
     });
     if (btn) { btn.classList.remove('pending'); btn.classList.add('success'); btn.textContent = '✅'; }
     // Update local CATS
-    if (CATS[category]) {
-      CATS[category].douane = douane;
-      CATS[category].tva = tva;
-      CATS[category].taxeAdd = taxeAdd;
+    if (_getCats()[category]) {
+      _getCats()[category].douane = douane;
+      _getCats()[category].tva = tva;
+      _getCats()[category].taxeAdd = taxeAdd;
     }
     setTimeout(() => { if (btn) { btn.classList.remove('success'); btn.classList.add('pending'); btn.textContent = '💾'; } }, 2000);
   } catch (e) {
@@ -1638,7 +1744,7 @@ async function _cfgLoadDims(main) {
     _ps.dimsData = data.dims || [];
     _cfgRenderDims(main);
   } catch (e) {
-    _ps.dimsData = Object.entries(CATS).map(([k, v]) => ({
+    _ps.dimsData = Object.entries(_getCats()).map(([k, v]) => ({
       category: k, length_cm: v.dims[0], width_cm: v.dims[1], height_cm: v.dims[2]
     }));
     _cfgRenderDims(main);
@@ -1649,7 +1755,7 @@ function _cfgRenderDims(main) {
   const tbody = main.querySelector('[data-el="cfg-dims-tbody"]');
   if (!tbody) return;
 
-  const data = _ps.dimsData.length > 0 ? _ps.dimsData : Object.entries(CATS).map(([k, v]) => ({
+  const data = _ps.dimsData.length > 0 ? _ps.dimsData : Object.entries(_getCats()).map(([k, v]) => ({
     category: k, length_cm: v.dims[0], width_cm: v.dims[1], height_cm: v.dims[2]
   }));
 
@@ -1657,7 +1763,7 @@ function _cfgRenderDims(main) {
     const vol = d.length_cm * d.width_cm * d.height_cm;
     return `
     <tr data-dim-cat="${d.category}">
-      <td style="font-weight:600;">${CATS[d.category]?.label || d.category}</td>
+      <td style="font-weight:600;">${_getCats()[d.category]?.label || d.category}</td>
       <td style="text-align:right;"><input class="pm-price-input" type="number" data-dim-l="${d.category}" value="${d.length_cm}" step="1" style="width:60px;text-align:right;"></td>
       <td style="text-align:right;"><input class="pm-price-input" type="number" data-dim-w="${d.category}" value="${d.width_cm}" step="1" style="width:60px;text-align:right;"></td>
       <td style="text-align:right;"><input class="pm-price-input" type="number" data-dim-h="${d.category}" value="${d.height_cm}" step="1" style="width:60px;text-align:right;"></td>
@@ -1678,7 +1784,7 @@ async function _cfgSaveDim(main, category) {
       length_cm: l, width_cm: w, height_cm: h
     });
     if (btn) { btn.classList.remove('pending'); btn.classList.add('success'); btn.textContent = '✅'; }
-    if (CATS[category]) CATS[category].dims = [l, w, h];
+    if (_getCats()[category]) _getCats()[category].dims = [l, w, h];
     setTimeout(() => { if (btn) { btn.classList.remove('success'); btn.classList.add('pending'); btn.textContent = '💾'; } }, 2000);
   } catch (e) {
     if (btn) { btn.classList.remove('pending'); btn.classList.add('error'); btn.textContent = '❌'; }
@@ -1694,7 +1800,7 @@ function _populateScanner(main) {
 
   const opts = _ps.products.map(p => {
     const catKey = _mapCat(p.category);
-    const emoji = CATS[catKey]?.label?.split(' ')[0] || '📦';
+    const emoji = _getCats()[catKey]?.label?.split(' ')[0] || '📦';
     const price = p.price_aed ? `${p.price_aed} AED` : '';
     return `<option value="${p.id || p._id}">${emoji} ${p.name || p.title} ${price ? '— ' + price : ''}</option>`;
   }).join('');
