@@ -137,4 +137,262 @@ router.put('/rates', ...adminOnly, async (req, res, next) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// POST /api/pricing/recommend (ADR-011 — moteur unifié 3 niveaux)
+//
+// Calcule le prix recommandé d'un produit en intégrant :
+//   Niveau 1 : composants unitaires (pricing_components)
+//   Niveau 2 : part charges fixes (charges ÷ volume)
+//   Niveau 3 : provisions risques (risk_provisions)
+//   + marge cible par catégorie (customs_categories.default_margin_pct)
+//     ou cible globale (finance_config.target_marge_brute_pct)
+//
+// Body :
+//   {
+//     product_id?: UUID,             // Si fourni, charge le produit
+//     category: 'phones'|'electro'|...,  // Sinon, fournir manuellement
+//     prix_aed?: number,             // Prix d'achat fournisseur en AED
+//     volume_m3?: number,            // Volume en m3
+//     poids_kg?: number,
+//     is_diaspora?: bool,            // Pour Stripe
+//     channel?: 'cash_relais'|'stripe',
+//     verbose?: bool                 // Si true, retourne le détail des 3 niveaux
+//   }
+//
+// Réponse :
+//   {
+//     prix_recommande_kmf: 13990,
+//     prix_recommande_brut_kmf: 13845,    // avant arrondi psycho
+//     marge_pct_atteinte: 40.2,
+//     niveau1: { total: 7800, components: [...] },
+//     niveau2: { total: 3000, charges_mensuelles: 300000, volume_cible: 100 },
+//     niveau3: { total: 600, provisions: [...] },
+//     warnings: []
+//   }
+// ═══════════════════════════════════════════════════════════════════
+
+router.post('/recommend', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const verbose = !!b.verbose;
+    const warnings = [];
+
+    // ── 1. Charger le produit si product_id fourni ──
+    let product = null;
+    if (b.product_id) {
+      const r = await db.query('SELECT * FROM products WHERE id = $1', [b.product_id]);
+      if (!r.rows.length) return res.status(404).json({ error: 'Produit introuvable' });
+      product = r.rows[0];
+    }
+
+    const category = b.category || product?.category || 'phones';
+    const prixAed  = Number(b.prix_aed) || (product ? Number(product.cost_aed) || 0 : 0);
+    const volumeM3 = Number(b.volume_m3) || 0.005;  // défaut 5L
+    const poidsKg  = Number(b.poids_kg) || 1;
+    const isDiaspora = !!b.is_diaspora;
+    const channel = b.channel || 'cash_relais';
+
+    if (!prixAed || prixAed <= 0) {
+      warnings.push('prix_aed manquant ou nul → prix recommandé non significatif');
+    }
+
+    // ── 2. Charger en parallèle tous les paramètres ──
+    const [fcRes, catRes, compRes, provRes, chargesRes] = await Promise.all([
+      db.query('SELECT * FROM finance_config WHERE id = 1'),
+      db.query('SELECT * FROM customs_categories WHERE key = $1 AND is_active = TRUE', [category]),
+      db.query('SELECT * FROM pricing_components WHERE is_active = TRUE ORDER BY display_order'),
+      db.query('SELECT * FROM risk_provisions WHERE is_active = TRUE ORDER BY display_order'),
+      db.query('SELECT * FROM charges WHERE is_active = TRUE'),
+    ]);
+
+    const fc = fcRes.rows[0] || {};
+    const cat = catRes.rows[0];
+    if (!cat) {
+      warnings.push('Catégorie "' + category + '" introuvable → utilisation valeurs par défaut');
+    }
+
+    const taxAED = Number(fc.taux_aed_kmf) || 138;
+    const taxEUR = Number(fc.taux_change_eur_kmf) || 492;
+    const fretEurM3 = Number(fc.fret_eur_per_m3) || 180;
+
+    // Marge cible (par catégorie ou globale)
+    const margeCiblePct = (cat?.default_margin_pct
+      ? Number(cat.default_margin_pct)
+      : Number(fc.target_marge_brute_pct) || 40) / 100;
+
+    // ── 3. NIVEAU 1 : composants unitaires ──
+    const prixAchatKmf = prixAed * taxAED;
+    const fretKmf = volumeM3 * fretEurM3 * taxEUR;
+    let valCIF = prixAchatKmf + fretKmf;  // sera enrichi avec embarq, agent...
+
+    const niveau1Items = [];
+
+    function applies(comp) {
+      const a = comp.applies_to || 'all';
+      if (a === 'all') return true;
+      if (a === 'is_diaspora:true')  return isDiaspora;
+      if (a === 'is_diaspora:false') return !isDiaspora;
+      if (a.startsWith('channel:'))  return channel === a.substring(8);
+      if (a.startsWith('category:')) return category === a.substring(9);
+      return true;  // par défaut on applique
+    }
+
+    function computeComponent(comp, baseKmf) {
+      const v = Number(comp.default_value);
+      switch (comp.unit) {
+        case 'pct':         return baseKmf * (v / 100);
+        case 'kmf':         return v;
+        case 'kmf_per_kg':  return v * poidsKg;
+        case 'kmf_per_m3':  return v * volumeM3;
+        case 'aed':         return v * taxAED;
+        case 'eur':         return v * taxEUR;
+        default:            return 0;
+      }
+    }
+
+    // Pour chaque composant actif et applicable
+    for (const comp of compRes.rows) {
+      if (!applies(comp)) continue;
+      // Pour les pourcentages, la base = valCIF (valeur CIF du moment)
+      const valeurKmf = computeComponent(comp, valCIF);
+      if (verbose || true) {  // Toujours détailler si vide
+        niveau1Items.push({
+          key: comp.key,
+          label: comp.label,
+          category: comp.category,
+          unit: comp.unit,
+          rate: comp.default_value,
+          valeur_kmf: Math.round(valeurKmf),
+        });
+      }
+      valCIF += valeurKmf;
+    }
+
+    // Ajouter douane/TVA/taxe additionnelle DEPUIS customs_categories
+    if (cat) {
+      const douaneKmf  = (prixAchatKmf + fretKmf) * (Number(cat.douane_pct) / 100);
+      const tvaKmf     = (prixAchatKmf + fretKmf) * (Number(cat.tva_pct) / 100);
+      const taxeAddKmf = (prixAchatKmf + fretKmf) * (Number(cat.taxe_add_pct) / 100);
+
+      niveau1Items.push({
+        key: 'douane_pct', label: 'Droits douane (' + cat.douane_pct + '%)',
+        category: 'douane', unit: 'pct', rate: cat.douane_pct,
+        valeur_kmf: Math.round(douaneKmf)
+      });
+      niveau1Items.push({
+        key: 'tva_pct', label: 'TVA (' + cat.tva_pct + '%)',
+        category: 'douane', unit: 'pct', rate: cat.tva_pct,
+        valeur_kmf: Math.round(tvaKmf)
+      });
+      if (Number(cat.taxe_add_pct) > 0) {
+        niveau1Items.push({
+          key: 'taxe_add_pct', label: 'Taxe additionnelle (' + cat.taxe_add_pct + '%)',
+          category: 'douane', unit: 'pct', rate: cat.taxe_add_pct,
+          valeur_kmf: Math.round(taxeAddKmf)
+        });
+      }
+      valCIF += douaneKmf + tvaKmf + taxeAddKmf;
+    }
+
+    const niveau1Total = Math.round(valCIF);
+
+    // ── 4. NIVEAU 2 : charges fixes / volume cible ──
+    const totalChargesMensuelles = chargesRes.rows
+      .filter(c => c.recurrence_period === 'monthly')
+      .reduce((s, c) => s + Number(c.amount_kmf), 0);
+
+    const totalChargesHebdo = chargesRes.rows
+      .filter(c => c.recurrence_period === 'weekly')
+      .reduce((s, c) => s + Number(c.amount_kmf), 0);
+
+    const totalChargesParOrder = chargesRes.rows
+      .filter(c => c.recurrence_period === 'per_order')
+      .reduce((s, c) => s + Number(c.amount_kmf), 0);
+
+    const totalMensuel = totalChargesMensuelles + Math.round(totalChargesHebdo * 4.33);
+    const volumeCible = Number(fc.objectif_commandes_mois) || 100;
+    const partFixeParCmd = volumeCible > 0 ? totalMensuel / volumeCible : 0;
+    const niveau2Total = Math.round(partFixeParCmd + totalChargesParOrder);
+
+    if (volumeCible === 0) warnings.push('objectif_commandes_mois = 0 → niveau 2 ignoré');
+    if (totalMensuel === 0) warnings.push('Aucune charge fixe mensuelle dans la table charges');
+
+    // ── 5. NIVEAU 3 : provisions risques (% sur subtotal niveau 1+2) ──
+    const baseProvisions = niveau1Total + niveau2Total;
+    let niveau3Total = 0;
+    const niveau3Items = [];
+
+    for (const prov of provRes.rows) {
+      if (!applies(prov)) continue;
+      const valeurKmf = baseProvisions * (Number(prov.rate_pct) / 100);
+      niveau3Items.push({
+        key: prov.key,
+        label: prov.label,
+        rate_pct: Number(prov.rate_pct),
+        valeur_kmf: Math.round(valeurKmf),
+      });
+      niveau3Total += valeurKmf;
+    }
+    niveau3Total = Math.round(niveau3Total);
+
+    // ── 6. Calcul du prix recommandé ──
+    const coutTotal = niveau1Total + niveau2Total + niveau3Total;
+    const prixRecommandeBrut = coutTotal / (1 - margeCiblePct);
+
+    // Arrondi psychologique simple : .990 si > 1000 sinon arrondi entier
+    function arrondiPsycho(x) {
+      if (x < 500) return Math.ceil(x / 10) * 10;
+      if (x < 1000) return Math.ceil(x / 100) * 100 - 10;  // ex 990
+      // pour les valeurs > 1000 : arrondir à la centaine au-dessus puis -10
+      const k = Math.ceil(x / 1000) * 1000;
+      return k - 10;  // ex 13990
+    }
+
+    const prixRecommande = arrondiPsycho(prixRecommandeBrut);
+    const margeAtteintePct = prixRecommande > 0
+      ? ((prixRecommande - coutTotal) / prixRecommande * 100)
+      : 0;
+
+    // ── 7. Réponse ──
+    res.json({
+      // Réponse synthétique
+      prix_recommande_kmf: prixRecommande,
+      prix_recommande_brut_kmf: Math.round(prixRecommandeBrut),
+      cout_total_kmf: coutTotal,
+      marge_cible_pct: Number((margeCiblePct * 100).toFixed(1)),
+      marge_atteinte_pct: Number(margeAtteintePct.toFixed(2)),
+
+      // Détail des 3 niveaux
+      niveau1: {
+        total: niveau1Total,
+        items: niveau1Items,
+        description: 'Coûts unitaires variables par commande (composants pricing_components + douane/TVA)'
+      },
+      niveau2: {
+        total: niveau2Total,
+        charges_mensuelles_kmf: totalMensuel,
+        charges_per_order_kmf: totalChargesParOrder,
+        volume_cible: volumeCible,
+        part_fixe_par_cmd: Math.round(partFixeParCmd),
+        description: 'Charges fixes business amorties sur le volume cible mensuel'
+      },
+      niveau3: {
+        total: niveau3Total,
+        items: niveau3Items,
+        description: 'Provisions de risques en % du subtotal (Niveau 1+2)'
+      },
+
+      context: {
+        product_id: b.product_id || null,
+        category,
+        channel,
+        is_diaspora: isDiaspora,
+        taux_aed_kmf: taxAED,
+        taux_eur_kmf: taxEUR,
+      },
+      warnings,
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -116,6 +116,21 @@ router.put('/:key', ...guard, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── PUT /api/admin/customs-categories/:key/toggle ─────────────────
+// Raccourci pour toggle is_active sans avoir à connaître la valeur actuelle.
+router.put('/:key/toggle', ...guard, async (req, res, next) => {
+  try {
+    const { rows: [row] } = await db.query(
+      `UPDATE customs_categories
+          SET is_active = NOT is_active, updated_at = NOW()
+        WHERE key = $1 RETURNING *`,
+      [req.params.key]
+    );
+    if (!row) return res.status(404).json({ error: 'Catégorie introuvable' });
+    res.json(row);
+  } catch (err) { next(err); }
+});
+
 // ─── DELETE /api/admin/customs-categories/:key ─────────────────────
 // Soft-delete (is_active = false) car les products référencent la category par sa clé.
 router.delete('/:key', ...guard, async (req, res, next) => {

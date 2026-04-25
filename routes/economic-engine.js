@@ -708,6 +708,55 @@ router.put('/charges/:id/toggle', async function(req, res) {
   }
 });
 
+// DELETE /charges/:id  (ADR-011 — soft delete par défaut, hard via ?force=true)
+router.delete('/charges/:id', async function(req, res) {
+  try {
+    var id = req.params.id;
+    var force = req.query.force === 'true' || req.query.force === '1';
+
+    var existing = await db.query('SELECT * FROM charges WHERE id = $1', [id]);
+    if (!existing.rows[0]) {
+      return res.status(404).json({ error: 'Charge non trouvée' });
+    }
+
+    if (force) {
+      // Vérifier si la colonne is_deletable existe et l'appliquer
+      var canDelete = existing.rows[0].is_deletable !== false; // true ou null = OK
+      if (!canDelete) {
+        return res.status(403).json({
+          error: 'Charge système : suppression définitive interdite',
+          hint: 'Tu peux la désactiver via toggle'
+        });
+      }
+      await db.query('DELETE FROM charges WHERE id = $1', [id]);
+      await redistribute('charge_deleted:' + id);
+      ecoBridge.invalidateEcoCache();
+      ecoBridge.invalidateChargesCache();
+      return res.json({ deleted: true, id: id, mode: 'hard' });
+    }
+
+    // Soft delete
+    var result = await db.query(
+      'UPDATE charges SET is_active = FALSE, updated_at = NOW() WHERE id = $1 RETURNING *',
+      [id]
+    );
+    await redistribute('charge_soft_deleted:' + id);
+    ecoBridge.invalidateEcoCache();
+    ecoBridge.invalidateChargesCache();
+
+    res.json({
+      deleted: true,
+      id: id,
+      mode: 'soft',
+      hint: 'Charge désactivée. Pour suppression définitive : DELETE ?force=true',
+      charge: result.rows[0]
+    });
+  } catch (err) {
+    console.error('[Economic] Delete charge error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /coherence
 router.get('/coherence', async function(req, res) {
   try {
