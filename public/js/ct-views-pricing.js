@@ -192,6 +192,189 @@ function _injectStyles() {
     /* Empty / loading */
     .pv-empty { padding: 40px 20px; text-align: center; color: #64748b; font-size: 0.9rem; }
     .pv-loading { padding: 24px; text-align: center; color: #64748b; }
+
+    /* ═══ KPIs (Phase 4 — Tableau de bord pricing) ═══ */
+    .pv-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .pv-kpi-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .pv-kpi-label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 6px; }
+    .pv-kpi-value { font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: ui-monospace, monospace; line-height: 1.2; }
+    .pv-kpi-detail { font-size: 0.82rem; color: #475569; margin-top: 4px; }
+
+    /* ═══ Alertes ═══ */
+    .pv-alerts {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .pv-alerts-head {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+    .pv-alert {
+      border-left: 3px solid #cbd5e1;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      background: #f8fafc;
+    }
+    .pv-alert:last-child { margin-bottom: 0; }
+    .pv-alert-critical { border-left-color: #dc2626; background: #fef2f2; }
+    .pv-alert-warning { border-left-color: #f59e0b; background: #fffbeb; }
+    .pv-alert-info { border-left-color: #3b82f6; background: #eff6ff; }
+    .pv-alert-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .pv-alert-icon { font-size: 1.05rem; flex-shrink: 0; line-height: 1.4; }
+    .pv-alert-text { flex: 1; }
+    .pv-alert-text strong { color: #1e293b; font-size: 0.92rem; }
+    .pv-alert-msg { font-size: 0.82rem; color: #475569; margin-top: 2px; }
+    .pv-alert-list {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(0,0,0,0.08);
+    }
+    .pv-alert-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+      font-size: 0.82rem;
+      color: #475569;
+    }
+    .pv-alert-more {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    /* ═══ Onglets Lot B (3 sections) ═══ */
+    .pv-tabs {
+      display: flex; gap: 4px;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 18px;
+      padding-bottom: 0;
+      flex-wrap: wrap;
+    }
+    .pv-tab {
+      padding: 10px 18px;
+      border: none; background: none;
+      font-size: 0.92rem; font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      border-radius: 6px 6px 0 0;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .pv-tab:hover { background: #f1f5f9; color: #1e293b; }
+    .pv-tab.active {
+      color: #f59e0b;
+      border-bottom-color: #f59e0b;
+      font-weight: 600;
+    }
+    .pv-tab-content { animation: fadeIn 0.2s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Bandeau pédagogique */
+    .pv-explain {
+      background: #eff6ff;
+      border-left: 3px solid #3b82f6;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      color: #1e40af;
+      line-height: 1.5;
+    }
+    .pv-explain strong { color: #1e3a8a; }
+    .pv-explain em { color: #3730a3; font-style: normal; font-weight: 600; }
+
+    /* ═══ Signaux marché (Section 3) ═══ */
+    .pv-signals { display: flex; flex-direction: column; gap: 18px; }
+    .pv-signal-block {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .pv-signal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 4px;
+    }
+    .pv-signal-sub {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin: 0 0 14px;
+    }
+    .pv-signal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .pv-signal-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .pv-signal-card:hover {
+      border-color: #cbd5e1;
+      background: #fff;
+      transform: translateY(-1px);
+    }
+    .pv-signal-emoji { font-size: 1.4rem; margin-bottom: 4px; }
+    .pv-signal-count {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1e293b;
+      font-family: ui-monospace, monospace;
+      line-height: 1;
+    }
+    .pv-signal-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin: 4px 0 2px;
+    }
+    .pv-signal-pct {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-family: ui-monospace, monospace;
+      margin-bottom: 4px;
+    }
+    .pv-signal-hint {
+      font-size: 0.72rem;
+      color: #64748b;
+      font-style: italic;
+      line-height: 1.3;
+    }
   `;
   document.head.appendChild(s);
 }
@@ -244,13 +427,23 @@ async function _loadCatalog() {
   }
 }
 
+async function _loadDashboard() {
+  try {
+    _ps.dashboard = await _apiGet('/api/pricing/dashboard');
+  } catch (err) {
+    console.warn('[Pricing v2] _loadDashboard error:', err.message);
+    _ps.dashboard = null;
+  }
+}
+
 /* ─── RENDER ───────────────────────────────────────────────────────── */
 async function _render(container) {
-  container.innerHTML = '<div class="pv-loading">Chargement du moteur de prix...</div>';
+  container.innerHTML = '<div class="pv-loading">Chargement du tableau de bord pricing...</div>';
   try {
+    // _loadAll garde la config (nécessaire pour le drawer "ajouter variable")
     await _loadAll();
-    if (_ps.inputPrixAed > 0) await _computeReco();
-    await _loadCatalog();
+    // Dashboard + catalogue en parallèle
+    await Promise.all([_loadDashboard(), _loadCatalog()]);
     _ps.loaded = true;
     _renderHTML(container);
   } catch (err) {
@@ -263,24 +456,284 @@ function _renderHTML(container) {
   _injectStyles();
 
   let html = '<div class="pv-wrap">';
-  html += '<h1 class="pv-h1">🧮 Moteur de prix Komerce</h1>';
-  html += '<p class="pv-sub">Le moteur calcule, l\'humain décide. Active/désactive les variables, ajuste les valeurs, et applique les recos.</p>';
+
+  // ─── HEADER ─────────────────────────────────────────────────────────
+  html += '<h1 class="pv-h1">🧮 Pricing — Pilotage du marché</h1>';
+  html += '<p class="pv-sub">Apprendre le marché et guider le sourcing par la contribution.</p>';
   html += '<div class="pv-tools">';
-  html += '  <button class="pv-btn pv-btn-primary" data-act="recalc">🔄 Recalculer</button>';
-  html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="component">➕ Ajouter une variable</button>';
-  html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="provision">🛡️ Ajouter une provision</button>';
-  html += '  <button class="pv-btn pv-btn-secondary" data-act="open-workshop" style="margin-left:auto;">🧱 Atelier de composition</button>';
-  html += '  <button class="pv-btn pv-btn-secondary" data-act="open-strategy">💰 Stratégie de prix</button>';
+  html += '  <button class="pv-btn pv-btn-secondary" data-act="refresh">🔄 Rafraîchir</button>';
+  html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="component">⚙️ Variables</button>';
+  html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="provision">🛡️ Provisions</button>';
+  html += '  <button class="pv-btn pv-btn-primary" data-act="open-workshop" style="margin-left:auto;">🧱 Atelier de composition</button>';
+  // Bouton Stratégie masqué (Lot B : feature flag, modules avancés en pause)
+  if (window.FEATURE_PRICING_STRATEGY) {
+    html += '  <button class="pv-btn pv-btn-primary" data-act="open-strategy">💰 Stratégie de prix</button>';
+  }
   html += '</div>';
 
-  html += _section('sim', '🧪 Simulateur unitaire', '', _renderSimBody());
-  html += _section('catalog', '📦 Catalogue & recommandations', '', _renderCatalogBody());
+  // ─── ONGLETS DES 3 SECTIONS ─────────────────────────────────────────
+  const activeTab = _ps.activeTab || 'atelier';
+  html += '<div class="pv-tabs">';
+  html += '  <button class="pv-tab ' + (activeTab === 'atelier' ? 'active' : '') + '" data-act="set-tab" data-tab="atelier">🛠️ Atelier produit</button>';
+  html += '  <button class="pv-tab ' + (activeTab === 'catalogue' ? 'active' : '') + '" data-act="set-tab" data-tab="catalogue">📦 Catalogue pricing</button>';
+  html += '  <button class="pv-tab ' + (activeTab === 'signaux' ? 'active' : '') + '" data-act="set-tab" data-tab="signaux">📡 Signaux marché</button>';
+  html += '</div>';
+
+  // ─── CONTENU SELON ONGLET ───────────────────────────────────────────
+  html += '<div class="pv-tab-content">';
+  if (activeTab === 'atelier') {
+    html += _renderAtelierProduit();
+  } else if (activeTab === 'catalogue') {
+    html += _renderCataloguePricing();
+  } else if (activeTab === 'signaux') {
+    html += _renderSignauxMarche();
+  }
+  html += '</div>';
 
   html += '</div>';
   html += _renderDrawer();
 
   container.innerHTML = html;
   _bindEvents(container);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 1 — Atelier produit
+// Répond à : Ce produit peut-il être vendu ? À quel prix ?
+// ═══════════════════════════════════════════════════════════════════
+function _renderAtelierProduit() {
+  let html = '';
+  // KPIs synthétiques (existants : marge, statut catalogue, vente à perte, couverture)
+  html += _renderKPIs();
+  // Alertes (existantes)
+  html += _renderAlerts();
+  // Bandeau pédagogique
+  html += '<div class="pv-explain">' +
+    '<strong>💡 Comment ça marche</strong><br>' +
+    'Le moteur calcule 4 prix pour chaque produit : <em>survie, minimum sûr, conseillé, test</em>. ' +
+    'Cliquez sur l\'Atelier de composition pour comprendre le détail des coûts d\'un produit.' +
+    '</div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 2 — Catalogue pricing
+// La table actuelle des produits avec écart vs CDR
+// ═══════════════════════════════════════════════════════════════════
+function _renderCataloguePricing() {
+  return _section('catalog', '📦 Catalogue & verdicts', '', _renderCatalogBody());
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 3 — Signaux marché
+// Distributions doctrine : santé / décision sourcing / confiance marché
+// Répond à : Faut-il sourcer, tester, renforcer ou éviter ?
+// ═══════════════════════════════════════════════════════════════════
+function _renderSignauxMarche() {
+  const d = _ps.dashboard;
+  if (!d || !d.doctrine) {
+    return '<div class="pv-empty">' +
+      '<p>Signaux marché en cours de calcul...</p>' +
+      '<p style="font-size:0.85rem;color:#94a3b8;">Si ce message persiste, vérifiez que le service pricing-engine est actif.</p>' +
+      '</div>';
+  }
+
+  const doc = d.doctrine;
+  const total = doc.sample_size || 0;
+
+  let html = '<div class="pv-signals">';
+
+  // Bandeau explicatif
+  html += '<div class="pv-explain">' +
+    '<strong>📡 Doctrine du moteur</strong><br>' +
+    'Le moteur classe chaque produit selon sa <em>santé</em> (prix vs coûts), ' +
+    'sa <em>confiance marché</em> (signal des ventes) et la <em>décision sourcing</em> recommandée.<br>' +
+    '<span style="color:#475569;font-size:0.85rem;">Important : le moteur recommande, l\'admin décide.</span>' +
+    '</div>';
+
+  // ── Distribution Santé ──
+  html += '<div class="pv-signal-block">';
+  html += '<h3 class="pv-signal-title">🩺 Santé prix (' + total + ' produits)</h3>';
+  html += '<p class="pv-signal-sub">Le prix actuel couvre-t-il les coûts ?</p>';
+  html += '<div class="pv-signal-grid">';
+  html += _signalCard('loss', '🔴', 'À perte', doc.by_health.loss, total, 'Prix < CDR — vente à perte');
+  html += _signalCard('danger', '🟠', 'Danger', doc.by_health.danger, total, 'Marge < 15%');
+  html += _signalCard('fragile', '🟡', 'Fragile', doc.by_health.fragile, total, 'Marge 15-25%');
+  html += _signalCard('healthy', '🟢', 'Sain', doc.by_health.healthy, total, 'Marge 25-40%');
+  html += _signalCard('strong', '💚', 'Fort', doc.by_health.strong, total, 'Marge > 40%');
+  html += _signalCard('unknown', '⚪', 'Inconnu', doc.by_health.unknown, total, 'Données insuffisantes');
+  html += '</div></div>';
+
+  // ── Distribution Confiance marché ──
+  html += '<div class="pv-signal-block">';
+  html += '<h3 class="pv-signal-title">📊 Confiance marché</h3>';
+  html += '<p class="pv-signal-sub">Que disent les ventes réelles ?</p>';
+  html += '<div class="pv-signal-grid">';
+  html += _signalCard('m_unknown', '❔', 'Inconnu', doc.by_market.unknown, total, '0 vente — pas de signal');
+  html += _signalCard('m_testing', '🧪', 'En test', doc.by_market.testing, total, '1-5 ventes — observation');
+  html += _signalCard('m_validated', '✅', 'Validé', doc.by_market.validated, total, '6-20 ventes — signal positif');
+  html += _signalCard('m_scaling', '🚀', 'Scaling', doc.by_market.scaling, total, '> 20 ventes — repeat purchase');
+  html += _signalCard('m_rejected', '❌', 'Rejeté', doc.by_market.rejected, total, 'Pas de vente sur 60j');
+  html += '</div></div>';
+
+  // ── Distribution Décision sourcing ──
+  html += '<div class="pv-signal-block">';
+  html += '<h3 class="pv-signal-title">🎯 Décision sourcing recommandée</h3>';
+  html += '<p class="pv-signal-sub">Faut-il continuer à sourcer ce produit ?</p>';
+  html += '<div class="pv-signal-grid">';
+  html += _signalCard('s_priority', '⭐', 'PRIORITY', doc.by_sourcing.PRIORITY, total, 'Forte marge + demande validée');
+  html += _signalCard('s_test', '🧪', 'TEST', doc.by_sourcing.TEST, total, 'Bonne marge mais à tester');
+  html += _signalCard('s_watch', '👀', 'WATCH', doc.by_sourcing.WATCH, total, 'Marge fragile à surveiller');
+  html += _signalCard('s_avoid', '⛔', 'AVOID', doc.by_sourcing.AVOID, total, 'Faible marge + complexité');
+  html += _signalCard('s_loss', '🚨', 'LOSS', doc.by_sourcing.LOSS, total, 'Vendu à perte');
+  if (doc.by_sourcing.RENEGOTIATE > 0) {
+    html += _signalCard('s_reneg', '💬', 'RENEGOTIATE', doc.by_sourcing.RENEGOTIATE, total, 'Renégocier fournisseur');
+  }
+  if (doc.by_sourcing.INCREASE_PRICE > 0) {
+    html += _signalCard('s_inc', '📈', 'INCREASE_PRICE', doc.by_sourcing.INCREASE_PRICE, total, 'Augmenter le prix');
+  }
+  html += '</div></div>';
+
+  html += '</div>';
+  return html;
+}
+
+function _signalCard(key, emoji, label, count, total, hint) {
+  const pct = total > 0 ? Math.round(count / total * 100) : 0;
+  return '<div class="pv-signal-card" data-signal="' + key + '">' +
+    '<div class="pv-signal-emoji">' + emoji + '</div>' +
+    '<div class="pv-signal-count">' + count + '</div>' +
+    '<div class="pv-signal-label">' + label + '</div>' +
+    '<div class="pv-signal-pct">' + pct + '%</div>' +
+    '<div class="pv-signal-hint">' + hint + '</div>' +
+  '</div>';
+}
+
+function _renderKPIs() {
+  const d = _ps.dashboard;
+  if (!d || !d.kpis) {
+    return '<div class="pv-empty">Tableau de bord indisponible.</div>';
+  }
+  const k = d.kpis;
+  const ecartColor = k.ecart_cible_pct >= 0 ? '#16a34a' : (k.ecart_cible_pct >= -10 ? '#d97706' : '#dc2626');
+  const ecartIcon = k.ecart_cible_pct >= 0 ? '✓' : '⚠';
+  const couvColor = k.couverture_cost_pct >= 80 ? '#16a34a' : (k.couverture_cost_pct >= 50 ? '#d97706' : '#dc2626');
+
+  let html = '<div class="pv-kpis">';
+
+  // KPI 1 : Marge globale vs cible
+  html += '<div class="pv-kpi-card">' +
+    '<div class="pv-kpi-label">📈 Marge effective moyenne</div>' +
+    '<div class="pv-kpi-value">' + k.marge_moyenne_pct + '%</div>' +
+    '<div class="pv-kpi-detail" style="color:' + ecartColor + ';font-weight:600;">' +
+      ecartIcon + ' ' + (k.ecart_cible_pct >= 0 ? '+' : '') + k.ecart_cible_pct + '% vs cible ' + k.marge_cible_pct + '%' +
+    '</div>' +
+  '</div>';
+
+  // KPI 2 : Statut catalogue
+  html += '<div class="pv-kpi-card">' +
+    '<div class="pv-kpi-label">📊 Statut catalogue</div>' +
+    '<div class="pv-kpi-value">' + k.nb_total + '<span style="font-size:14px;color:#94a3b8;font-weight:400;"> produits</span></div>' +
+    '<div class="pv-kpi-detail">' +
+      '<span style="color:#16a34a;">' + k.nb_aligned + ' alignés</span> · ' +
+      '<span style="color:#d97706;">' + k.nb_underpriced + ' sous</span> · ' +
+      '<span style="color:#6366f1;">' + k.nb_overpriced + ' sur</span>' +
+      (k.nb_unset ? ' · <span style="color:#94a3b8;">' + k.nb_unset + ' non fixés</span>' : '') +
+    '</div>' +
+  '</div>';
+
+  // KPI 3 : Vente à perte (alerte critique)
+  const lossColor = k.nb_at_loss > 0 ? '#dc2626' : '#16a34a';
+  html += '<div class="pv-kpi-card">' +
+    '<div class="pv-kpi-label">🚨 Vente à perte</div>' +
+    '<div class="pv-kpi-value" style="color:' + lossColor + ';">' + k.nb_at_loss + '</div>' +
+    '<div class="pv-kpi-detail">' +
+      (k.nb_at_loss > 0
+        ? '<span style="color:#dc2626;font-weight:600;">prix actuel &lt; CDR</span>'
+        : '<span style="color:#16a34a;">aucun produit en perte</span>') +
+    '</div>' +
+  '</div>';
+
+  // KPI 4 : Couverture coût
+  html += '<div class="pv-kpi-card">' +
+    '<div class="pv-kpi-label">📋 Couverture coût d\'achat</div>' +
+    '<div class="pv-kpi-value" style="color:' + couvColor + ';">' + k.couverture_cost_pct + '%</div>' +
+    '<div class="pv-kpi-detail">' + (k.nb_total - Math.round(k.nb_total * k.couverture_cost_pct / 100)) + ' produits sans cost_kmf renseigné</div>' +
+  '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function _renderAlerts() {
+  const d = _ps.dashboard;
+  if (!d || !d.alerts || !d.alerts.length) {
+    return '<div class="pv-section" style="padding:14px 16px;background:#f0fdf4;border-color:#86efac;">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:1.4rem;">✓</span>' +
+        '<div><strong style="color:#166534;">Aucune anomalie détectée</strong>' +
+        '<div style="font-size:0.82rem;color:#475569;margin-top:2px;">' +
+        'Les prix sont cohérents avec les coûts. Tout va bien.</div></div>' +
+      '</div></div>';
+  }
+
+  let html = '<div class="pv-alerts">';
+  html += '<div class="pv-alerts-head">⚠️ Anomalies détectées (' + d.alerts.length + ')</div>';
+
+  d.alerts.forEach(a => {
+    const sevClass = 'pv-alert-' + a.severity;
+    const sevIcon = a.severity === 'critical' ? '🔴' : (a.severity === 'warning' ? '🟠' : '🔵');
+
+    html += '<div class="pv-alert ' + sevClass + '">' +
+      '<div class="pv-alert-head">' +
+        '<span class="pv-alert-icon">' + sevIcon + '</span>' +
+        '<div class="pv-alert-text">' +
+          '<strong>' + a.title + '</strong>' +
+          '<div class="pv-alert-msg">' + a.message + '</div>' +
+        '</div>' +
+        (a.code === 'sale_at_loss' || a.code === 'low_margin'
+          ? '<button class="pv-btn pv-btn-secondary" data-act="filter-catalog" data-status="underpriced" style="padding:5px 10px;font-size:0.78rem;">Voir produits</button>'
+          : '') +
+      '</div>';
+
+    // Détails
+    if (a.products && a.products.length) {
+      html += '<div class="pv-alert-list">';
+      a.products.slice(0, 5).forEach(p => {
+        if (a.code === 'sale_at_loss') {
+          html += '<div class="pv-alert-item">' +
+            '<span>' + p.name + '</span>' +
+            '<span style="color:#dc2626;font-family:ui-monospace,monospace;">' +
+              _fmt(p.price_kmf) + ' < CDR ' + _fmt(p.cdr_kmf) + ' (perte ' + _fmt(p.gap_kmf) + ')' +
+            '</span></div>';
+        } else if (a.code === 'low_margin') {
+          html += '<div class="pv-alert-item">' +
+            '<span>' + p.name + '</span>' +
+            '<span style="color:#d97706;font-family:ui-monospace,monospace;">marge ' + p.marge_pct + '%</span>' +
+          '</div>';
+        }
+      });
+      if (a.products.length > 5) {
+        html += '<div class="pv-alert-more">...et ' + (a.products.length - 5) + ' autre(s)</div>';
+      }
+      html += '</div>';
+    }
+    if (a.categories && a.categories.length) {
+      html += '<div class="pv-alert-list">';
+      a.categories.forEach(c => {
+        html += '<div class="pv-alert-item">' +
+          '<span>' + c.category + ' (' + c.nb_produits + ' produits)</span>' +
+          '<span style="color:#d97706;font-family:ui-monospace,monospace;">marge moyenne ' + c.marge_moyenne_pct + '%</span>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
 }
 
 function _section(id, title, amount, body) {
@@ -650,16 +1103,32 @@ function _bindEvents(container) {
       return;
     }
 
-    if (act === 'recalc') {
-      t.textContent = '⏳ Calcul...';
+    if (act === 'set-tab') {
+      _ps.activeTab = t.dataset.tab;
+      _renderHTML(container);
+      return;
+    }
+
+    if (act === 'refresh') {
+      t.textContent = '⏳ Actualisation...';
       t.disabled = true;
       try {
-        await _computeReco();
-        await _loadCatalog();
+        await Promise.all([_loadDashboard(), _loadCatalog()]);
         _renderHTML(container);
       } catch (err) {
-        alert('Erreur de recalcul : ' + err.message);
+        alert('Erreur : ' + err.message);
+        t.textContent = '🔄 Rafraîchir';
+        t.disabled = false;
       }
+      return;
+    }
+
+    if (act === 'filter-catalog') {
+      _ps.catalogFilter = t.dataset.status || 'all';
+      // Scroll vers le catalogue
+      _renderHTML(container);
+      const catSection = container.querySelector('[data-section="catalog"]');
+      if (catSection) catSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -775,7 +1244,8 @@ function _bindEvents(container) {
         }
         _ps.drawerOpen = false;
         await _loadAll();
-        if (_ps.currentReco) await _computeReco();
+        // Recharger dashboard + catalogue car la nouvelle variable change les CDR
+        await Promise.all([_loadDashboard(), _loadCatalog()]);
         _renderHTML(container);
       } catch (err) {
         alert('Erreur création : ' + err.message);
@@ -790,7 +1260,8 @@ function _bindEvents(container) {
       if (!confirm('Appliquer ' + _fmt(price) + ' comme nouveau prix de vente sur ce produit ?')) return;
       try {
         await _apiPut('/api/pricing/apply-price/' + productId, { price_kmf: price, source: 'reco' });
-        await _loadCatalog();
+        // Recharger dashboard + catalogue : prix changé, KPIs et alertes peuvent évoluer
+        await Promise.all([_loadDashboard(), _loadCatalog()]);
         _renderHTML(container);
       } catch (err) {
         alert('Erreur application : ' + err.message);
@@ -814,7 +1285,7 @@ function _bindEvents(container) {
       try {
         const r = await _apiPut('/api/pricing/apply-all', { items, source: 'batch' });
         alert('✓ ' + r.count + ' prix mis à jour.');
-        await _loadCatalog();
+        await Promise.all([_loadDashboard(), _loadCatalog()]);
         _renderHTML(container);
       } catch (err) {
         alert('Erreur application en masse : ' + err.message);

@@ -7,6 +7,23 @@ window.CT = window.CT || {};
 
 CT.platform = {
 
+  /* ─── FEATURE FLAGS (Lot B — doctrine économique) ────────────── */
+  /* Désactive les modules pricing avancés : strategy, benchmarks, élasticité,
+   * apply-all massif. Le code reste en place mais les UI sont cachées.
+   * Pour réactiver : passer le flag à true.
+   * Doctrine §3 : on n'automatise pas, l'admin décide. */
+  FEATURES: {
+    pricing_strategy:    false,  // ct-views-pricing-strategy.js (élasticité, loss leader, etc.)
+    pricing_benchmarks:  false,  // section "manques sectoriels" dans l'Atelier
+    pricing_apply_all:   false,  // bouton "Tout appliquer" dans le catalogue
+    economic_full:       false,  // onglets Variables/Charges/Cohérence du Modèle économique (legacy)
+  },
+
+  /** Helper pour lire un flag avec fallback. Utilisable depuis n'importe quelle vue. */
+  isFeatureEnabled: function(flagName) {
+    return Boolean(this.FEATURES && this.FEATURES[flagName]);
+  },
+
   /* ─── ROLES ──────────────────────────────────────────────────── */
   ROLES: {
     founder:  { label: 'Fondateur',      level: 100, shells: ['ct','bo'], canConfig: true  },
@@ -146,9 +163,9 @@ CT.platform = {
     {
       id:    'economic',
       shell: 'ct',  section: 'strategie',
-      emoji: '🧠',  label:   'Modèle économique',
+      emoji: '📊',  label:   'Santé économique',
       roles: ['founder','admin','finance'],
-      tabs:  ['executive','variables','charges','coherence'],
+      tabs:  [],  // Lot B : vue monobloc (KPIs + santé catalogue + alertes)
       supportedFilters: [],
       readOnly: ['finance']
     },
@@ -179,7 +196,8 @@ CT.platform = {
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance'],
-      hidden: true,  // accessible via bouton depuis Pricing
+      hidden: true,  // Lot B : module avance en PAUSE (feature flag FEATURE_PRICING_STRATEGY)
+      featureFlag: 'FEATURE_PRICING_STRATEGY',
     },
     {
       id:    'sourcing',
