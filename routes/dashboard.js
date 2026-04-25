@@ -863,21 +863,34 @@ router.get('/clients/list', async (req, res, next) => {
     const island = req.query.island || null;
     const seuilVipKmf = parseInt(req.query.vip_threshold || '200000');
 
-    // Filtres dynamiques
+    // ── Construction dynamique des paramètres SQL ──
+    // FIX 25/04/2026 : params démarrait avec [seuilVipKmf] = $1 même si aucune
+    // clause ne l'utilisait, ce qui donnait l'erreur Postgres :
+    //   "bind message supplies 1 parameters, but prepared statement requires 0"
+    // Solution : params commence VIDE, on ajoute uniquement les paramètres
+    // effectivement référencés par les clauses actives.
     const havingClauses = [];
-    const params = [seuilVipKmf];  // $1
+    const params = [];
 
+    // Filtre search (LIKE sur name + phone)
+    let searchClauseSql = '';
     if (search) {
       params.push('%' + search.toLowerCase() + '%');
-      havingClauses.push(`(LOWER(client_name) LIKE $${params.length} OR LOWER(client_phone) LIKE $${params.length})`);
+      const idx = params.length;
+      searchClauseSql = `(LOWER(client_name) LIKE $${idx} OR LOWER(client_phone) LIKE $${idx})`;
+      havingClauses.push(searchClauseSql);
     }
 
+    // Filtre segment
     if (segment === 'new') {
       havingClauses.push(`COUNT(*) = 1 AND EXTRACT(DAY FROM NOW() - MAX(created_at))::int <= 30`);
     } else if (segment === 'recurrent') {
       havingClauses.push(`COUNT(*) >= 2 AND EXTRACT(DAY FROM NOW() - MAX(created_at))::int <= 90`);
     } else if (segment === 'vip') {
-      havingClauses.push(`(SUM(total_kmf) >= $1 OR COUNT(*) >= 5) AND EXTRACT(DAY FROM NOW() - MAX(created_at))::int <= 180`);
+      // VIP = LTV >= seuil OU >= 5 commandes, et actif <= 180j
+      params.push(seuilVipKmf);
+      const idx = params.length;
+      havingClauses.push(`(SUM(total_kmf) >= $${idx} OR COUNT(*) >= 5) AND EXTRACT(DAY FROM NOW() - MAX(created_at))::int <= 180`);
     } else if (segment === 'at_risk') {
       havingClauses.push(`COUNT(*) >= 2 AND EXTRACT(DAY FROM NOW() - MAX(created_at))::int BETWEEN 60 AND 180`);
     } else if (segment === 'dormant') {
@@ -886,11 +899,12 @@ router.get('/clients/list', async (req, res, next) => {
 
     const havingSql = havingClauses.length ? 'HAVING ' + havingClauses.join(' AND ') : '';
 
-    let islandJoinSql = '';
-    let islandWhereSql = '';
+    // Filtre island
+    let islandClauseSql = '';
     if (island) {
       params.push(island);
-      islandWhereSql = `AND r.island = $${params.length}`;
+      const idx = params.length;
+      islandClauseSql = `AND rl.island = $${idx}`;
     }
 
     const sql = `
@@ -905,7 +919,7 @@ router.get('/clients/list', async (req, res, next) => {
         LEFT JOIN relais rl    ON rl.id = o.relais_id
         WHERE o.status NOT IN ('cancelled','refunded')
           AND COALESCE(u.phone, r.phone) IS NOT NULL
-          ${island ? `AND rl.island = $${params.length}` : ''}
+          ${islandClauseSql}
       )
       SELECT
         client_phone AS phone,
@@ -936,7 +950,7 @@ router.get('/clients/list', async (req, res, next) => {
         LEFT JOIN relais rl    ON rl.id = o.relais_id
         WHERE o.status NOT IN ('cancelled','refunded')
           AND COALESCE(u.phone, r.phone) IS NOT NULL
-          ${island ? `AND rl.island = $${params.length}` : ''}
+          ${islandClauseSql}
       ),
       grouped AS (
         SELECT client_phone, client_name, COUNT(*) AS cnt, SUM(total_kmf) AS ltv, MAX(created_at) AS last_o
