@@ -321,18 +321,96 @@ function computeCDR(product, ctx = {}) {
       if (channel === 'diaspora' && !(c.key || '').startsWith('stripe_') && (c.key || '').includes('cash')) continue;
     }
 
-    let amount = 0;
+    // ─────────────────────────────────────────────────────────────────
+    // IMPUTATION DOCTRINE — Allocation des coûts agrégés à l'article
+    // ─────────────────────────────────────────────────────────────────
+    // Doctrine : Komerce engage des coûts à 4 niveaux :
+    //   1. Par shipment   (1 conteneur LCL Dubai-Moroni)
+    //   2. Par colis      (un sac/carton qui sort du hub)
+    //   3. Par commande   (1 client = 1 commande Komerce)
+    //   4. Par article    (1 produit dans la commande)
+    //
+    // Pour pricer UN article, on divise les coûts agrégés par les
+    // moyennes correspondantes (lues dans finance_config).
+    // On garde la traçabilité dans `engagedAmount` pour l'audit.
+    const avgArticlesPerOrder    = Number(fc.avg_articles_per_order)    || 2.5;
+    const avgArticlesPerParcel   = Number(fc.avg_articles_per_parcel)   || 4.0;
+    const avgArticlesPerShipment = Number(fc.avg_articles_per_shipment) || 200.0;
+
+    let amount = 0;          // montant imputé à l'article (après division)
+    let engagedAmount = 0;   // montant engagé à son niveau (avant division) pour audit
+    let allocationLevel = 'article'; // par défaut : déjà à l'article
+    let allocationDivisor = 1;
+
     switch (c.unit) {
-      case 'pct':                amount = runningSubtotal * (v / 100); break;
-      case 'kmf':                amount = v; break;
-      case 'kmf_per_kg':         amount = v * weightKg; break;
-      case 'kmf_per_m3':         amount = v * volM3; break;
-      case 'kmf_per_order':      amount = v; break;
-      case 'kmf_per_parcel':     amount = v; break;
-      case 'kmf_per_shipment':   amount = v; break;
-      case 'aed':                amount = v * taxAED; break;
-      case 'eur':                amount = v * taxEUR; break;
-      case 'usd':                amount = v * 0.92 * taxEUR; break;
+      case 'pct':
+        amount = runningSubtotal * (v / 100);
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+      case 'kmf':
+        amount = v;
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+      case 'kmf_per_kg':
+        amount = v * weightKg;
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+      case 'kmf_per_m3':
+        amount = v * volM3;
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+      case 'kmf_per_order':
+        engagedAmount = v;
+        allocationDivisor = avgArticlesPerOrder;
+        amount = v / allocationDivisor;
+        allocationLevel = 'order';
+        break;
+      case 'kmf_per_parcel':
+        engagedAmount = v;
+        allocationDivisor = avgArticlesPerParcel;
+        amount = v / allocationDivisor;
+        allocationLevel = 'parcel';
+        break;
+      case 'kmf_per_shipment':
+        engagedAmount = v;
+        allocationDivisor = avgArticlesPerShipment;
+        amount = v / allocationDivisor;
+        allocationLevel = 'shipment';
+        break;
+      case 'aed':
+        amount = v * taxAED;
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+      case 'eur':
+        amount = v * taxEUR;
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+      case 'usd':
+        amount = v * 0.92 * taxEUR;
+        engagedAmount = amount;
+        allocationLevel = 'article';
+        break;
+    }
+
+    // Traçabilité interne : on stocke l'imputation pour l'audit / l'UI Atelier
+    if (!details._allocations) details._allocations = [];
+    if (amount > 0) {
+      details._allocations.push({
+        component_key: c.key || null,
+        component_label: c.label || c.key || '',
+        category: c.category || null,
+        unit: c.unit,
+        engaged_amount_kmf: r(engagedAmount),
+        engaged_level: allocationLevel,
+        allocation_divisor: r(allocationDivisor * 100) / 100,  // ex: 200 articles
+        imputed_amount_kmf: r(amount),
+      });
     }
 
     // ── Bucketing : aligné sur les catégories doctrine ──
@@ -385,6 +463,22 @@ function computeCDR(product, ctx = {}) {
   if (fixedAlloc.warnings.length) warnings.push(...fixedAlloc.warnings);
   details.fixed_costs = fixedAlloc.fixed_cost_allocation_kmf;
 
+  // ── PHASE 3a : warning si moyennes d'allocation pas calibrées ──
+  // Si les moyennes restent à leurs hypothèses initiales, l'imputation
+  // est approximative. On le signale explicitement.
+  if (!fc.allocation_calibrated_at && (fc.allocation_confidence || 'low') === 'low') {
+    const hasAllocations = (details._allocations || []).some(
+      a => a.engaged_level !== 'article'
+    );
+    if (hasAllocations) {
+      warnings.push(
+        'Moyennes d\'allocation non calibrées (hypothèses initiales). ' +
+        'Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. ' +
+        'À recalibrer dans finance_config dès que vous aurez du volume réel.'
+      );
+    }
+  }
+
   // Provisions risques — on les calcule sur (variable + fixed)
   const baseRisks = variableCostEstimated + fixedAlloc.fixed_cost_allocation_kmf;
   for (const p of cfg.provisions) {
@@ -392,8 +486,11 @@ function computeCDR(product, ctx = {}) {
   }
   details.risks = r(risksAmount);
 
-  // Arrondi final des détails
-  for (const k of Object.keys(details)) details[k] = r(details[k]);
+  // Arrondi final des détails (sauf _allocations qui est un tableau pour la traçabilité)
+  for (const k of Object.keys(details)) {
+    if (k === '_allocations') continue;
+    details[k] = r(details[k]);
+  }
 
   const variableTotal = r(variableCostEstimated + risksAmount);
   const fixedTotal = fixedAlloc.fixed_cost_allocation_kmf;
@@ -1084,6 +1181,18 @@ async function recommend(input, options = {}) {
     cost_breakdown: {
       landed_relay: breakdown.landed_relay,
       business: breakdown.business,
+      // ── PHASE 3a : traçabilité de l'imputation (engagé/niveau/imputé) ──
+      // Détail ligne par ligne pour l'Atelier Construction du Prix.
+      // Chaque entrée : { component_key, engaged_amount_kmf, engaged_level,
+      //                    allocation_divisor, imputed_amount_kmf }
+      allocations: cdr.details._allocations || [],
+      // Moyennes utilisées pour la division (visibles pour l'admin)
+      allocation_averages: {
+        articles_per_order:    Number(fc.avg_articles_per_order)    || 2.5,
+        articles_per_parcel:   Number(fc.avg_articles_per_parcel)   || 4.0,
+        articles_per_shipment: Number(fc.avg_articles_per_shipment) || 200.0,
+        confidence:            fc.allocation_confidence || 'low',
+      },
     },
 
     // ── PRIX ─────────────────────────────────────────────────────────
