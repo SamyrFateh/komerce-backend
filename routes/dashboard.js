@@ -1634,6 +1634,56 @@ router.get('/hub', (req, res, next) => {
   router.handle(req, res, next);
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// Alias /stats → /global avec mapping pour compat pilotage
+// (ct-views-pilotage.js attend des noms de champs spécifiques)
+// ═══════════════════════════════════════════════════════════════════
+router.get('/stats', async (req, res, next) => {
+  try {
+    const hit = cached('global');
+    let g = hit;
+    if (!g) {
+      // On reproduit la logique de /global pour les KPIs essentiels
+      const { rows: [kpi] } = await db.query(`
+        SELECT
+          COUNT(*)::int AS total_orders,
+          COUNT(*) FILTER (WHERE status NOT IN ('collected','cancelled'))::int AS active_orders,
+          COUNT(*) FILTER (WHERE status = 'collected')::int AS completed_orders,
+          COALESCE(SUM(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS ca_total_kmf,
+          COALESCE(AVG(total_kmf) FILTER (WHERE status != 'cancelled'), 0) AS avg_basket_kmf,
+          COUNT(DISTINCT user_id)::int AS nb_clients
+        FROM orders
+      `);
+      g = { kpi: {
+        total_orders: Number(kpi.total_orders),
+        active_orders: Number(kpi.active_orders),
+        completed_orders: Number(kpi.completed_orders),
+        ca_total_kmf: Math.round(Number(kpi.ca_total_kmf)),
+        avg_basket_kmf: Math.round(Number(kpi.avg_basket_kmf)),
+        nb_clients: Number(kpi.nb_clients),
+      } };
+    }
+    // Mapping vers les champs attendus par ct-views-pilotage.js
+    res.json({
+      // Format attendu par pilotage (alias)
+      panier_moyen_kmf: g.kpi.avg_basket_kmf,
+      avgBasket: g.kpi.avg_basket_kmf,
+      nb_clients: g.kpi.nb_clients,
+      total_orders: g.kpi.total_orders,
+      active_orders: g.kpi.active_orders,
+      completed_orders: g.kpi.completed_orders,
+      ca_total_kmf: g.kpi.ca_total_kmf,
+      // Format /global complet pour réutilisation
+      kpi: g.kpi,
+    });
+  } catch(err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Alias racine /api/admin/radar → redirige vers le bon endpoint
+// (mais c'est admin-radar.js qui gère, pas ce fichier)
+// ═══════════════════════════════════════════════════════════════════
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 11. GET /payments — Suivi des paiements Cash relais + Stripe
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -89,6 +89,32 @@ function getDetail(parcels) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// 0. /api/admin/radar (racine) — synthèse pour ct-views-pilotage.js
+// ══════════════════════════════════════════════════════════════════════════
+// Endpoint léger qui retourne juste un résumé. Pour le détail, utiliser
+// les sous-endpoints /alerts, /money, /status-details, etc.
+router.get('/', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    // Récupération minimale : compter les alertes critiques actives
+    let alertCount = 0;
+    try {
+      const { rows: [r] } = await db.query(
+        `SELECT COUNT(*)::int AS c FROM signals
+          WHERE severity IN ('critical','high') AND resolved_at IS NULL`
+      );
+      alertCount = r ? r.c : 0;
+    } catch(_) { /* table peut ne pas exister */ }
+
+    res.json({
+      ok: true,
+      alert_count: alertCount,
+      generated_at: new Date().toISOString(),
+      hint: 'Pour détail : /alerts, /money, /status-details',
+    });
+  } catch (err) { next(err); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
 // 1. /api/admin/radar/alerts
 // ══════════════════════════════════════════════════════════════════════════
 // Retourne les alertes critiques "à action aujourd'hui"
