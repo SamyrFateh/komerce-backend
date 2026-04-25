@@ -1246,6 +1246,57 @@ function _injectStyles() {
     }
     .pv-apply-btn:hover { background: #15803d; }
     .pv-apply-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* ═══ DOCTRINE V3 : TABLE IMPUTATION DÉTAILLÉE (colonne 2) ═══ */
+    .pv-alloc-table {
+      font-size: 0.74rem;
+      margin-top: 4px;
+    }
+    .pv-alloc-header {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr 1.2fr 0.8fr;
+      gap: 4px;
+      padding: 4px 6px;
+      background: #f8fafc;
+      border-radius: 4px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      font-size: 0.62rem;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .pv-alloc-row {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr 1.2fr 0.8fr;
+      gap: 4px;
+      padding: 4px 6px;
+      border-bottom: 0.5px dashed #e2e8f0;
+      align-items: center;
+    }
+    .pv-alloc-row:last-child { border-bottom: none; }
+    .pv-alloc-aggregated {
+      background: #fefce8;  /* léger jaune pour montrer division */
+    }
+    .pv-alloc-label {
+      font-weight: 500;
+      color: #1e293b;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pv-alloc-num {
+      font-family: ui-monospace, monospace;
+      text-align: right;
+      font-size: 0.72rem;
+    }
+    .pv-alloc-engaged { color: #94a3b8; }
+    .pv-alloc-imputed { color: #1e293b; font-weight: 600; }
+    .pv-alloc-lvl {
+      font-size: 0.66rem;
+      color: #64748b;
+      font-style: italic;
+    }
   `;
   document.head.appendChild(s);
 }
@@ -1551,15 +1602,19 @@ function _renderColLanded(reco) {
   const landed = breakdown.landed_relay || {};
   const total = reco.landed_relay_cost_kmf || 0;
 
+  // ── DOCTRINE V3 : récupérer les allocations détaillées ──
+  const allocations = breakdown.allocations || [];
+  const allocAverages = breakdown.allocation_averages || {};
+
   let html = '';
 
   // KPI total en haut
   html += '<div class="pv-ktotal pv-ktotal-blue">';
-  html += '<div class="pv-ktotal-label">Total landed</div>';
+  html += '<div class="pv-ktotal-label">Total imputé à l\'article</div>';
   html += '<div class="pv-ktotal-value">' + _fmt(total) + '</div>';
   html += '</div>';
 
-  // Section : 9 lignes
+  // Section : 9 lignes (résumé sobre par défaut)
   let linesBody = '';
   const lines = [
     ['🛒', 'Achat fournisseur',     landed.product_purchase],
@@ -1580,6 +1635,53 @@ function _renderColLanded(reco) {
     linesBody += '</div>';
   });
   html += _kSection('landed-lines', 'Détail (9 lignes)', linesBody, false);
+
+  // ── DOCTRINE V3 : Section IMPUTATION DÉTAILLÉE (engagé / niveau / imputé) ──
+  // Affichée seulement si on a des allocations significatives (au moins une au niveau ≠ article)
+  if (allocations.length > 0) {
+    const hasNonArticle = allocations.some(a => a.engaged_level !== 'article');
+    if (hasNonArticle) {
+      let allocBody = '';
+      allocBody += '<p class="pv-action-reason" style="margin-bottom:8px;">';
+      allocBody += '<em>Komerce engage des coûts à plusieurs niveaux. Chaque coût agrégé ' +
+                   '(shipment, colis, commande) est divisé par le nombre moyen d\'articles ' +
+                   'à ce niveau pour être imputé à l\'article.</em>';
+      allocBody += '</p>';
+      // Tableau compact : composant | engagé | niveau ÷ | imputé
+      allocBody += '<div class="pv-alloc-table">';
+      allocBody += '<div class="pv-alloc-header">';
+      allocBody += '<span>Composant</span>';
+      allocBody += '<span class="pv-alloc-num">Engagé</span>';
+      allocBody += '<span class="pv-alloc-lvl">Niveau ÷</span>';
+      allocBody += '<span class="pv-alloc-num">Imputé</span>';
+      allocBody += '</div>';
+      allocations.forEach(a => {
+        const isAggregated = a.engaged_level !== 'article';
+        const levelLabel = {
+          shipment: 'shipment ÷ ' + (allocAverages.articles_per_shipment || 200),
+          parcel:   'colis ÷ ' + (allocAverages.articles_per_parcel || 4),
+          order:    'commande ÷ ' + (allocAverages.articles_per_order || 2.5),
+          article:  '—',
+        }[a.engaged_level] || a.engaged_level;
+        allocBody += '<div class="pv-alloc-row' + (isAggregated ? ' pv-alloc-aggregated' : '') + '">';
+        allocBody += '<span class="pv-alloc-label">' + _escape(a.component_label || a.component_key || '') + '</span>';
+        allocBody += '<span class="pv-alloc-num pv-alloc-engaged">' + _fmt(a.engaged_amount_kmf) + '</span>';
+        allocBody += '<span class="pv-alloc-lvl">' + levelLabel + '</span>';
+        allocBody += '<span class="pv-alloc-num pv-alloc-imputed">' + _fmt(a.imputed_amount_kmf) + '</span>';
+        allocBody += '</div>';
+      });
+      allocBody += '</div>';
+      // Confidence des moyennes
+      if (allocAverages.confidence === 'low') {
+        allocBody += '<p class="pv-action-reason" style="margin-top:8px; color:#dc2626;">';
+        allocBody += '⚠️ Moyennes d\'allocation non calibrées (confidence: low). ';
+        allocBody += 'Les divisions par shipment/colis/commande utilisent des hypothèses initiales. ';
+        allocBody += 'À recalibrer dès que vous aurez du volume réel.';
+        allocBody += '</p>';
+      }
+      html += _kSection('imputation', '🏗️ Imputation détaillée', allocBody, false);
+    }
+  }
 
   // Section : Qualité données (intégré ici)
   if (reco.data_quality) {
