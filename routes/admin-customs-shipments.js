@@ -87,6 +87,59 @@ function allocateCustoms(shipment, parcels) {
   }));
 }
 
+/**
+ * Propage la somme des customs_share_kmf vers orders.cost_douane_kmf
+ * pour les commandes liées aux parcel_ids fournis.
+ *
+ * Logique : pour chaque order, cost_douane_kmf = somme des customs_share_kmf
+ * de TOUS ses colis (qui peuvent venir de plusieurs envois).
+ *
+ * Si une commande n'a plus aucun colis ventilé (envoi désactivé), son
+ * cost_douane_kmf est remis à 0 → marge réelle recalculée sans douane attribuée.
+ *
+ * @param {Object} client - pg client (transaction)
+ * @param {Array<string>} parcelIds - parcel_ids à recalculer (et leurs orders)
+ */
+async function propagateCostDouane(client, parcelIds) {
+  if (!Array.isArray(parcelIds) || parcelIds.length === 0) return;
+
+  // 1. Trouver les orders concernées par ces parcels
+  const { rows: ordersToUpdate } = await client.query(
+    `SELECT DISTINCT order_id FROM parcels WHERE id = ANY($1::uuid[])`,
+    [parcelIds]
+  );
+  if (!ordersToUpdate.length) return;
+  const orderIds = ordersToUpdate.map(r => r.order_id);
+
+  // 2. Pour chaque order, recalculer la somme depuis customs_shipment_parcels
+  //    en ne tenant compte que des envois ACTIFS.
+  await client.query(
+    `UPDATE orders o
+        SET cost_douane_kmf = COALESCE((
+              SELECT SUM(csp.customs_share_kmf)
+                FROM customs_shipment_parcels csp
+                JOIN parcels p ON p.id = csp.parcel_id
+                JOIN customs_shipments cs ON cs.id = csp.shipment_id
+               WHERE p.order_id = o.id
+                 AND cs.is_active = TRUE
+            ), 0)
+      WHERE o.id = ANY($1::uuid[])`,
+    [orderIds]
+  );
+
+  // 3. Recalculer margin_real_pct si les colonnes coûts sont toutes renseignées
+  await client.query(
+    `UPDATE orders
+        SET margin_real_pct = CASE
+              WHEN total_kmf > 0 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0)
+                THEN ROUND(((total_kmf - COALESCE(cost_transport_kmf,0) - COALESCE(cost_douane_kmf,0))::numeric / total_kmf * 100)::numeric, 2)
+              ELSE margin_real_pct
+            END
+      WHERE id = ANY($1::uuid[])`,
+    [orderIds]
+  );
+}
+
 // ══════════════════════════════════════════════════════════
 // GET /api/admin/customs-shipments
 // ══════════════════════════════════════════════════════════
@@ -252,6 +305,9 @@ router.post('/', ...guard, async (req, res, next) => {
           [shipment.id, a.parcel_id, a.cif_kmf, a.weight_kg, a.customs_share_kmf, a.allocation_basis]
         );
       }
+
+      // Propage cost_douane_kmf + margin_real_pct vers orders
+      await propagateCostDouane(client, allocations.map(a => a.parcel_id));
     }
 
     await client.query('COMMIT');
@@ -330,10 +386,13 @@ router.post('/:id/deactivate', ...guard, async (req, res, next) => {
       [req.params.id]
     );
 
+    // Propager le retrait vers orders.cost_douane_kmf (devient 0 si plus aucune ventilation active)
+    await propagateCostDouane(client, removed.map(r => r.parcel_id));
+
     await client.query('COMMIT');
     res.json({
       shipment,
-      message: `Envoi désactivé. Ventilation retirée de ${removed.length} colis.`,
+      message: `Envoi désactivé. Ventilation retirée de ${removed.length} colis. Marges recalculées.`,
       parcels_reset: removed.length,
     });
   } catch (err) {
@@ -399,10 +458,13 @@ router.post('/:id/activate', ...guard, async (req, res, next) => {
           [shipment.id, a.parcel_id, a.cif_kmf, a.weight_kg, a.customs_share_kmf, a.allocation_basis]
         );
       }
+
+      // Propager les nouvelles parts vers orders.cost_douane_kmf
+      await propagateCostDouane(client, allocations.map(a => a.parcel_id));
     }
 
     await client.query('COMMIT');
-    res.json({ shipment, allocations, message: `Envoi réactivé. ${allocations.length} colis ventilés.` });
+    res.json({ shipment, allocations, message: `Envoi réactivé. ${allocations.length} colis ventilés. Marges recalculées.` });
   } catch (err) {
     await client.query('ROLLBACK');
     next(err);
@@ -416,13 +478,35 @@ router.post('/:id/activate', ...guard, async (req, res, next) => {
 // Suppression définitive (cascade sur customs_shipment_parcels)
 // ══════════════════════════════════════════════════════════
 router.delete('/:id', ...guard, async (req, res, next) => {
+  const client = await db.pool.connect();
   try {
-    const { rowCount } = await db.query(
+    await client.query('BEGIN');
+
+    // Récupérer les parcels concernés AVANT le cascade DELETE
+    const { rows: linkedParcels } = await client.query(
+      `SELECT parcel_id FROM customs_shipment_parcels WHERE shipment_id = $1`,
+      [req.params.id]
+    );
+
+    const { rowCount } = await client.query(
       `DELETE FROM customs_shipments WHERE id = $1`, [req.params.id]
     );
-    if (!rowCount) return res.status(404).json({ error: 'Shipment not found' });
-    res.json({ deleted: true, id: req.params.id });
-  } catch (err) { next(err); }
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Shipment not found' });
+    }
+
+    // Recalculer les coûts douane des orders dont les parcels étaient liés
+    await propagateCostDouane(client, linkedParcels.map(r => r.parcel_id));
+
+    await client.query('COMMIT');
+    res.json({ deleted: true, id: req.params.id, parcels_recalculated: linkedParcels.length });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = router;

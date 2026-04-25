@@ -374,12 +374,29 @@ router.get('/pilotage', async (req, res, next) => {
       GROUP BY p.category ORDER BY nb_commandes DESC
     `, [debutMois, finMois]);
 
-    // ── Taux douane effectif (customs_taux_mensuel) ─────────────────────────
+    // ── Taux douane effectif (depuis customs_effective_rates — ADR-001) ─────
+    // Source de vérité = vue créée par migration 034 qui agrège les envois
+    // customs_shipments actifs sur 30 / 90 / 365 jours.
+    // Fallback en cascade : 30j → 90j → 365j → finance_config.customs_rate_default_pct
     let douaneEffectif = null;
+    let douaneSource = null;
     try {
-      const { rows } = await db.query('SELECT taux_effectif_pct FROM customs_taux_mensuel WHERE mois = $1', [mois]);
-      if (rows[0]?.taux_effectif_pct != null) douaneEffectif = parseFloat(rows[0].taux_effectif_pct);
-    } catch { /* vue pas encore disponible */ }
+      const { rows } = await db.query(
+        `SELECT period, rate_pct, nb_shipments
+           FROM customs_effective_rates
+          WHERE rate_pct > 0
+          ORDER BY CASE period
+                     WHEN 'last_30d'  THEN 1
+                     WHEN 'last_90d'  THEN 2
+                     WHEN 'last_365d' THEN 3
+                   END
+          LIMIT 1`
+      );
+      if (rows[0]?.rate_pct != null) {
+        douaneEffectif = parseFloat(rows[0].rate_pct);
+        douaneSource = rows[0].period;  // 'last_30d' | 'last_90d' | 'last_365d'
+      }
+    } catch { /* vue pas encore disponible — migration 034 non passée */ }
 
     // ── Pipeline du mois ────────────────────────────────────────────────────
     const { rows: pipelineRows } = await db.query(`
@@ -392,7 +409,7 @@ router.get('/pilotage', async (req, res, next) => {
     );
 
     const caKmf = parseFloat(vol.ca_kmf);
-    // Variabilisé : priorité customs_taux_mensuel > finance_config > fallback
+    // Variabilisé : priorité customs_effective_rates > finance_config > fallback
     const customsDefault = await getEcoVar('customs_rate_default_pct', 42); // pct
     const TAUX_TERRAIN = douaneEffectif ? douaneEffectif / 100 : customsDefault / 100;
     const hubCostAed = await getEcoVar('hub_monthly_cost_aed', 7000);
@@ -418,7 +435,7 @@ router.get('/pilotage', async (req, res, next) => {
       })),
       couts: {
         taux_terrain_pct: TAUX_TERRAIN * 100,
-        source_taux: douaneEffectif ? 'customs_history' : 'finance_config',
+        source_taux: douaneSource || 'finance_config_fallback',
         hub_fixe_mensuel_kmf: Math.round(hubMensuelKmf),
       },
       pipeline: pipelineRows.map(r => ({ statut: r.status, nb: parseInt(r.nb) })),
