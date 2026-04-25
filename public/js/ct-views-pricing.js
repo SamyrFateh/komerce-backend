@@ -69,7 +69,10 @@ const _ps = {
 /* ─── HELPERS ─────────────────────────────────────────────────────────── */
 const _nf = new Intl.NumberFormat('fr-FR');
 const _fmt = (n) => _nf.format(Math.round(n || 0)) + ' KMF';
-const _fmtNum = (n, dec) => _nf.format(Number((n || 0).toFixed(dec || 0)));
+const _fmtNum = (n, dec) => {
+  const num = Number(n) || 0;
+  return _nf.format(Number(num.toFixed(dec || 0)));
+};
 function _esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
