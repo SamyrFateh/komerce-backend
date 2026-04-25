@@ -128,6 +128,7 @@ app.use(cors(corsOptions));
 // ── Stripe webhook MUST receive raw body for signature verification ──────────
 // This must come BEFORE express.json() so the body stays a Buffer
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -242,6 +243,7 @@ const adminCustomsShipmentsRouter = require('./routes/admin-customs-shipments');
 const adminCustomsCategoriesRouter = require('./routes/admin-customs-categories');
 const adminPricingComponentsRouter = require('./routes/admin-pricing-components');
 const adminCostComponentsRouter    = require('./routes/admin-cost-components');
+const sharedCart                   = require('./routes/shared-cart');
 const adminRiskProvisionsRouter    = require('./routes/admin-risk-provisions');
 
 
@@ -257,6 +259,12 @@ app.use('/api/admin/customs-shipments', adminCustomsShipmentsRouter);
 app.use('/api/admin/customs-categories', adminCustomsCategoriesRouter);
 app.use('/api/admin/pricing-components', adminPricingComponentsRouter);
 app.use('/api/admin/cost-components',    adminCostComponentsRouter);
+
+// ═══ Panier Partagé MVP (Niveau 1) ═══
+// IMPORTANT : webhook Stripe en raw (mounté plus haut), avant le router
+app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
+app.use('/api/shared-carts',       sharedCart.router);
+app.use('/api/admin/shared-carts', sharedCart.adminRouter);
 app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
@@ -359,6 +367,28 @@ app.get('/mon-compte', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'public', 'mon-compte.html'));
+});
+
+// ── Panier Partagé — page publique ─────────────────────────────────────────
+// /cart/shared/:token        → page principale
+// /cart/shared/success       → page retour Stripe success
+// /cart/shared/cancel        → page retour Stripe cancel
+app.get('/cart/shared/:token', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'shared-cart-public.html'));
+});
+app.get('/cart/shared', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'shared-cart-public.html'));
+});
+
+// ── Mes Paniers Partagés — espace bénéficiaire authentifié ─────────────────
+app.get('/account/shared-carts', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'shared-cart-account.html'));
 });
 
 app.get('*', (req, res) => {
