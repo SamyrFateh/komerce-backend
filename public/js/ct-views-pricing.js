@@ -2790,7 +2790,7 @@ function _scheduleLiveRecalc(container, delayMs) {
     _ps.isComputing = true;
     _renderHTML(container);
     try {
-      await _computePrices();
+      await _computeReco();
     } catch (err) {
       console.error('[pricing] live recalc error', err);
     } finally {
