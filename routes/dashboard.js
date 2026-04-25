@@ -1919,14 +1919,14 @@ router.get('/sales', async (req, res, next) => {
         COUNT(*)             FILTER (WHERE cost_real_kmf IS NULL)         AS nb_sans_cost,
         COALESCE(AVG(margin_real_pct) FILTER (WHERE margin_real_pct IS NOT NULL), 0) AS marge_moy_pct
       FROM orders
-      WHERE created_at >= $1 AND status NOT IN ('cancelled', 'expired')
+      WHERE created_at >= $1 AND status NOT IN ('cancelled')
     `, [sinceStr]);
 
     // Previous period KPIs
     const prevKpiQ = await db.query(`
       SELECT COUNT(*) AS nb, COALESCE(SUM(total_kmf),0) AS ca
       FROM orders
-      WHERE created_at >= $1 AND created_at < $2 AND status NOT IN ('cancelled','expired')
+      WHERE created_at >= $1 AND created_at < $2 AND status NOT IN ('cancelled')
     `, [prevSinceStr, sinceStr]);
 
     // ═══ 2. Répartition par île ═══
@@ -1935,7 +1935,7 @@ router.get('/sales', async (req, res, next) => {
              COUNT(*)                    AS nb,
              COALESCE(SUM(total_kmf),0)  AS ca
       FROM orders
-      WHERE created_at >= $1 AND status NOT IN ('cancelled','expired')
+      WHERE created_at >= $1 AND status NOT IN ('cancelled')
       GROUP BY relais_island
       ORDER BY ca DESC
     `, [sinceStr]);
@@ -1946,7 +1946,7 @@ router.get('/sales', async (req, res, next) => {
              COUNT(*)                   AS nb,
              COALESCE(SUM(total_kmf),0) AS ca
       FROM orders
-      WHERE created_at >= $1 AND status NOT IN ('cancelled','expired')
+      WHERE created_at >= $1 AND status NOT IN ('cancelled')
       GROUP BY payment_mode
       ORDER BY ca DESC
     `, [sinceStr]);
@@ -1959,7 +1959,7 @@ router.get('/sales', async (req, res, next) => {
       FROM order_items oi
       JOIN products p ON p.id = oi.product_id
       JOIN orders o   ON o.id = oi.order_id
-      WHERE o.created_at >= $1 AND o.status NOT IN ('cancelled','expired')
+      WHERE o.created_at >= $1 AND o.status NOT IN ('cancelled')
       GROUP BY p.name, p.category
       ORDER BY revenue DESC LIMIT 10
     `, [sinceStr]);
@@ -1980,7 +1980,7 @@ router.get('/sales', async (req, res, next) => {
       FROM order_items oi
       JOIN products p ON p.id = oi.product_id
       JOIN orders o   ON o.id = oi.order_id
-      WHERE o.created_at >= $1 AND o.status NOT IN ('cancelled','expired')
+      WHERE o.created_at >= $1 AND o.status NOT IN ('cancelled')
       GROUP BY p.category
       ORDER BY ca_kmf DESC
     `, [sinceStr]);
@@ -1994,25 +1994,31 @@ router.get('/sales', async (req, res, next) => {
         COUNT(*)                            AS nb_commandes,
         COALESCE(SUM(total_kmf),0)          AS ca_kmf
       FROM orders
-      WHERE created_at >= $1 AND status NOT IN ('cancelled','expired')
+      WHERE created_at >= $1 AND status NOT IN ('cancelled')
       GROUP BY bucket_date
       ORDER BY bucket_date ASC
     `, [sinceStr, bucket]);
 
     // ═══ 7. NEW — Funnel commandes ═══
-    // 5 étapes: créées → confirmées → expédiées → livrées → payées (cash collecté ou stripe paid)
-    // "payée" = status in ('collected','delivered') OU (payment_mode='stripe_eur' AND payment_status='paid')
+    // 5 étapes: créées → confirmées → expédiées → livrées → payées
+    // ENUM order_status: confirmed, ordered, preparation, shipped, available, collected, cancelled, refunded
+    // - "confirmed"  = créée + paiement attendu
+    // - "ordered"    = paiement validé → commande lancée
+    // - "preparation"= colis emballé au hub
+    // - "shipped"    = en transit maritime
+    // - "available"  = arrivé au relais
+    // - "collected"  = remis au client (= livré + payé)
     const funnelQ = await db.query(`
       SELECT
         COUNT(*)                                                                AS nb_creees,
-        COUNT(*) FILTER (WHERE status NOT IN ('draft','expired','cancelled'))   AS nb_confirmees,
-        COUNT(*) FILTER (WHERE status IN ('shipped','in_transit','available','collected','delivered')) AS nb_expediees,
-        COUNT(*) FILTER (WHERE status IN ('collected','delivered'))             AS nb_livrees,
+        COUNT(*) FILTER (WHERE status NOT IN ('cancelled', 'refunded'))         AS nb_confirmees,
+        COUNT(*) FILTER (WHERE status IN ('shipped','available','collected'))   AS nb_expediees,
+        COUNT(*) FILTER (WHERE status = 'collected')                            AS nb_livrees,
         COUNT(*) FILTER (WHERE
-          status IN ('collected','delivered')
+          status = 'collected'
           OR (payment_mode = 'stripe_eur' AND payment_status = 'paid')
         )                                                                        AS nb_payees,
-        COUNT(*) FILTER (WHERE status IN ('cancelled','expired'))               AS nb_perdues
+        COUNT(*) FILTER (WHERE status IN ('cancelled', 'refunded'))             AS nb_perdues
       FROM orders
       WHERE created_at >= $1
     `, [sinceStr]);
@@ -2029,7 +2035,7 @@ router.get('/sales', async (req, res, next) => {
                date_trunc('month', MIN(created_at))::date AS cohort_month
         FROM orders
         WHERE client_phone IS NOT NULL
-          AND status NOT IN ('cancelled','expired')
+          AND status NOT IN ('cancelled')
         GROUP BY client_phone
         HAVING MIN(created_at) >= (CURRENT_DATE - ($1 || ' months')::interval)
       ),
@@ -2041,7 +2047,7 @@ router.get('/sales', async (req, res, next) => {
                + EXTRACT(MONTH FROM age(date_trunc('month', o.created_at), fo.cohort_month)) AS offset_months
         FROM orders o
         JOIN first_orders fo ON fo.client_phone = o.client_phone
-        WHERE o.status NOT IN ('cancelled','expired')
+        WHERE o.status NOT IN ('cancelled')
       )
       SELECT cohort_month,
              offset_months::int AS offset_months,

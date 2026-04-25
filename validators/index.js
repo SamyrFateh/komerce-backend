@@ -275,33 +275,79 @@ const payments = {
 
 // ── Schémas : admin.js ──────────────────────────────────────────────────────────
 
+const VALID_PARTNER_TYPES = ['relais', 'agent_hub', 'sourcing', 'personnalise', 'logistique'];
+const VALID_CURRENCIES    = ['KMF', 'EUR', 'USD', 'AED', 'CNY'];
+const VALID_ISLANDS       = ['Grande Comore', 'Anjouan', 'Mohéli', 'Mayotte'];
+
 const admin = {
   createPartner: {
     body: Joi.object({
-      company_name:  safeStr(200).required(),
-      contact_name:  safeStr(100),
-      contact_email: email,
-      contact_phone: phone,
-      category:      safeStr(100),
-      country:       safeStr(50),
-      commission_pct: Joi.number().min(0).max(100),
-      notes:         safeStr(1000),
+      // Coeur (obligatoires)
+      name:           safeStr(200).required(),
+      partner_type:   Joi.string().valid(...VALID_PARTNER_TYPES).required(),
+
+      // Contact
+      contact_name:   safeStr(100).allow('', null),
+      contact_phone:  Joi.alternatives().try(phone, Joi.string().allow('', null)),
+      contact_email:  Joi.alternatives().try(email, Joi.string().allow('', null)),
+      whatsapp_url:   safeStr(500).allow('', null),
+      website_url:    safeStr(500).allow('', null),
+
+      // Localisation
+      address:        safeStr(500).allow('', null),
+      island:         Joi.string().valid(...VALID_ISLANDS).allow('', null),
+      zone:           safeStr(100).allow('', null),
+      country_code:   safeStr(5).allow('', null),
+      country_label:  safeStr(100).allow('', null),
+
+      // Conditions commerciales
+      currency:        Joi.string().valid(...VALID_CURRENCIES).allow('', null),
+      lead_time_days:  Joi.number().integer().min(0).max(365).allow(null),
+      payment_terms:   safeStr(500).allow('', null),
+      commission_kmf:  Joi.number().integer().min(0).allow(null),
+
+      // Catalogue
+      product_categories: Joi.array().items(safeStr(100)).max(20),
+
+      // Logistique
+      pricing_notes:   safeStr(1000).allow('', null),
+
+      // Qualitatif
+      rating:          Joi.number().integer().min(1).max(5).allow(null),
+      notes:           safeStr(2000).allow('', null),
+      is_active:       Joi.boolean().default(true),
     }),
   },
 
   updatePartner: {
     params: Joi.object({ id: uuid.required() }),
     body: Joi.object({
-      company_name:  safeStr(200),
-      contact_name:  safeStr(100),
-      contact_email: email,
-      contact_phone: phone,
-      category:      safeStr(100),
-      country:       safeStr(50),
-      commission_pct: Joi.number().min(0).max(100),
-      notes:         safeStr(1000),
-      is_active:     Joi.boolean(),
+      name:           safeStr(200),
+      partner_type:   Joi.string().valid(...VALID_PARTNER_TYPES),
+      contact_name:   safeStr(100).allow('', null),
+      contact_phone:  Joi.alternatives().try(phone, Joi.string().allow('', null)),
+      contact_email:  Joi.alternatives().try(email, Joi.string().allow('', null)),
+      whatsapp_url:   safeStr(500).allow('', null),
+      website_url:    safeStr(500).allow('', null),
+      address:        safeStr(500).allow('', null),
+      island:         Joi.string().valid(...VALID_ISLANDS).allow('', null),
+      zone:           safeStr(100).allow('', null),
+      country_code:   safeStr(5).allow('', null),
+      country_label:  safeStr(100).allow('', null),
+      currency:       Joi.string().valid(...VALID_CURRENCIES).allow('', null),
+      lead_time_days: Joi.number().integer().min(0).max(365).allow(null),
+      payment_terms:  safeStr(500).allow('', null),
+      commission_kmf: Joi.number().integer().min(0).allow(null),
+      product_categories: Joi.array().items(safeStr(100)).max(20),
+      pricing_notes:  safeStr(1000).allow('', null),
+      rating:         Joi.number().integer().min(1).max(5).allow(null),
+      notes:          safeStr(2000).allow('', null),
+      is_active:      Joi.boolean(),
     }).min(1),
+  },
+
+  deletePartner: {
+    params: Joi.object({ id: uuid.required() }),
   },
 
   reset: {

@@ -109,6 +109,7 @@ CT.views.customs = function(main) {
   var state = {
     shipments: [],
     rates: null,
+    transitaires: [],  // partners partner_type='logistique'
     selected: null,
     selectedParcels: [],
   };
@@ -122,9 +123,11 @@ CT.views.customs = function(main) {
     Promise.all([
       CT.api.get('/api/admin/customs-shipments'),
       CT.api.get('/api/admin/customs-shipments/rates/effective'),
+      CT.api.get('/api/admin/partners?type=logistique&active=true').catch(function() { return []; }),
     ]).then(function(results) {
       state.shipments = results[0].shipments || [];
       state.rates = results[1].rates || {};
+      state.transitaires = Array.isArray(results[2]) ? results[2] : [];
       buildUI();
     }).catch(function(err) {
       main.innerHTML = '<div class="ct-error">Erreur : ' + (err.message || err) + '</div>';
@@ -205,7 +208,24 @@ CT.views.customs = function(main) {
     html += '<input id="cust-date" type="date" value="' + today + '"></div>';
 
     html += '<div><label>Transitaire</label>';
-    html += '<input id="cust-transit" type="text" placeholder="ex: Ahmed Dubai"></div>';
+    if (state.transitaires.length > 0) {
+      html += '<select id="cust-transit-select">';
+      html += '<option value="">— Aucun —</option>';
+      state.transitaires.forEach(function(t) {
+        html += '<option value="' + t.id + '" data-name="' + (t.name || '').replace(/"/g, '&quot;') + '">';
+        html += (t.name || '?');
+        if (t.country_label) html += ' (' + t.country_label + ')';
+        html += '</option>';
+      });
+      html += '<option value="__custom__">+ Autre (saisie libre)…</option>';
+      html += '</select>';
+      html += '<input id="cust-transit" type="text" placeholder="ex: Ahmed Dubai" style="display:none;margin-top:6px">';
+      html += '<div class="cust-help">Choisis dans la liste des transitaires logistiques. <strong>Pour gérer la liste : Fournisseurs → Logistique</strong></div>';
+    } else {
+      html += '<input id="cust-transit" type="text" placeholder="ex: Ahmed Dubai">';
+      html += '<div class="cust-help">Aucun transitaire enregistré. <strong>Tu peux créer une fiche dans Fournisseurs → Logistique</strong> pour réutiliser le contact ensuite.</div>';
+    }
+    html += '</div>';
 
     html += '<div><label>Mode transport</label>';
     html += '<select id="cust-mode">';
@@ -354,6 +374,21 @@ CT.views.customs = function(main) {
       });
     }
 
+    // Transitaire select : afficher input de saisie libre si "Autre"
+    var transitSel = document.getElementById('cust-transit-select');
+    var transitInput = document.getElementById('cust-transit');
+    if (transitSel && transitInput) {
+      transitSel.addEventListener('change', function() {
+        if (transitSel.value === '__custom__') {
+          transitInput.style.display = 'block';
+          transitInput.focus();
+        } else {
+          transitInput.style.display = 'none';
+          transitInput.value = '';
+        }
+      });
+    }
+
     // Reset
     var resetBtn = document.getElementById('cust-reset');
     if (resetBtn) resetBtn.addEventListener('click', function() { render(); });
@@ -386,10 +421,30 @@ CT.views.customs = function(main) {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   function submitNewShipment() {
+    // Résoudre le transitaire : soit un partner_id (select), soit du texte libre
+    var supplierId = null;
+    var transitaireName = '';
+    var sel = document.getElementById('cust-transit-select');
+    if (sel) {
+      var v = sel.value;
+      if (v && v !== '__custom__') {
+        supplierId = v;
+        var opt = sel.options[sel.selectedIndex];
+        transitaireName = opt.dataset.name || '';
+      } else if (v === '__custom__') {
+        var freeInput = document.getElementById('cust-transit');
+        transitaireName = freeInput ? freeInput.value.trim() : '';
+      }
+    } else {
+      var directInput = document.getElementById('cust-transit');
+      transitaireName = directInput ? directInput.value.trim() : '';
+    }
+
     var body = {
       reference:         document.getElementById('cust-ref').value.trim(),
       shipment_date:     document.getElementById('cust-date').value,
-      transitaire_name:  document.getElementById('cust-transit').value.trim(),
+      supplier_id:       supplierId,
+      transitaire_name:  transitaireName,
       transport_mode:    document.getElementById('cust-mode').value || null,
       cif_value_kmf:     parseFloat(document.getElementById('cust-cif').value) || 0,
       customs_paid_kmf:  parseFloat(document.getElementById('cust-paid').value) || 0,

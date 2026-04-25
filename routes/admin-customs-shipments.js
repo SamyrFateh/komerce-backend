@@ -238,7 +238,7 @@ router.post('/', ...guard, async (req, res, next) => {
       reference, shipment_date, transitaire_name, transport_mode,
       cif_value_kmf, customs_paid_kmf, freight_kmf, total_weight_kg,
       nb_parcels, allocation_method, allocation_config, notes,
-      parcel_ids,
+      supplier_id, parcel_ids,
     } = req.body;
 
     if (!reference || !shipment_date || !cif_value_kmf || !customs_paid_kmf) {
@@ -253,14 +253,14 @@ router.post('/', ...guard, async (req, res, next) => {
       `INSERT INTO customs_shipments
         (reference, shipment_date, transitaire_name, transport_mode,
          cif_value_kmf, customs_paid_kmf, freight_kmf, total_weight_kg,
-         nb_parcels, allocation_method, allocation_config, notes, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+         nb_parcels, allocation_method, allocation_config, notes, supplier_id, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        RETURNING *`,
       [
         reference, shipment_date, transitaire_name || null, transport_mode || null,
         cif_value_kmf, customs_paid_kmf, freight_kmf || null, total_weight_kg || null,
         nb_parcels || null, allocation_method || 'by_cif_value',
-        allocation_config || null, notes || null, req.user.id,
+        allocation_config || null, notes || null, supplier_id || null, req.user.id,
       ]
     );
 
@@ -330,6 +330,7 @@ router.patch('/:id', ...guard, async (req, res, next) => {
       'reference', 'shipment_date', 'transitaire_name', 'transport_mode',
       'cif_value_kmf', 'customs_paid_kmf', 'freight_kmf', 'total_weight_kg',
       'nb_parcels', 'allocation_method', 'allocation_config', 'notes',
+      'supplier_id',
     ];
     const updates = [];
     const params = [];
