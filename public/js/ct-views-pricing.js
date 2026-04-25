@@ -837,6 +837,292 @@ function _injectStyles() {
       color: #991b1b;
     }
     .pv-data-missing strong { color: #7f1d1d; }
+
+    /* ═══ LOT L1 — Kanban 4 colonnes doctrinal ═══ */
+    .pv-kanban-wrap { padding-top: 6px; }
+    .pv-spinner {
+      margin-left: auto;
+      font-size: 1.1rem;
+      animation: pv-spin 1.4s linear infinite;
+    }
+    @keyframes pv-spin {
+      from { opacity: 0.4; }
+      50% { opacity: 1; }
+      to { opacity: 0.4; }
+    }
+
+    .pv-kanban {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 1100px) {
+      .pv-kanban { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .pv-kanban { grid-template-columns: 1fr; }
+    }
+
+    .pv-kcol {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .pv-kcol-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .pv-kcol-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: 0.78rem;
+      flex-shrink: 0;
+    }
+    .pv-kcol-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.2;
+    }
+    .pv-kcol-sub {
+      font-size: 0.72rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    /* Couleurs par colonne */
+    .pv-kcol-gray  .pv-kcol-head { background: #f1f5f9; }
+    .pv-kcol-gray  .pv-kcol-num { background: #475569; }
+    .pv-kcol-blue  .pv-kcol-head { background: #eff6ff; }
+    .pv-kcol-blue  .pv-kcol-num { background: #3b82f6; }
+    .pv-kcol-blue  .pv-kcol-title { color: #1e3a8a; }
+    .pv-kcol-blue  .pv-kcol-sub { color: #2563eb; }
+    .pv-kcol-green .pv-kcol-head { background: #ecfdf5; }
+    .pv-kcol-green .pv-kcol-num { background: #16a34a; }
+    .pv-kcol-green .pv-kcol-title { color: #14532d; }
+    .pv-kcol-green .pv-kcol-sub { color: #15803d; }
+    .pv-kcol-amber .pv-kcol-head { background: #fffbeb; }
+    .pv-kcol-amber .pv-kcol-num { background: #f59e0b; }
+    .pv-kcol-amber .pv-kcol-title { color: #78350f; }
+    .pv-kcol-amber .pv-kcol-sub { color: #b45309; }
+
+    .pv-kcol-body { padding: 0; }
+
+    /* KPI total en haut de colonne */
+    .pv-ktotal {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .pv-ktotal-blue { background: #f8fbfe; }
+    .pv-ktotal-green { background: #f2fbf7; }
+    .pv-ktotal-decision {
+      background: #f0f9ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      text-align: left;
+      padding: 12px;
+    }
+    .pv-ktotal-label {
+      font-size: 0.68rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+    }
+    .pv-ktotal-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-family: ui-monospace, monospace;
+      color: #1e293b;
+      margin-top: 4px;
+    }
+    .pv-decision-badge {
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+    }
+
+    /* Sections accordéons (details/summary) */
+    .pv-ksection {
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .pv-ksection:last-child { border-bottom: none; }
+    .pv-ksection-head {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      list-style: none;
+      position: relative;
+      user-select: none;
+    }
+    .pv-ksection-head::-webkit-details-marker { display: none; }
+    .pv-ksection-head::after {
+      content: '▶';
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.65rem;
+      color: #94a3b8;
+      transition: transform 0.15s;
+    }
+    .pv-ksection[open] .pv-ksection-head::after { transform: translateY(-50%) rotate(90deg); }
+    .pv-ksection-head:hover { background: #f8fafc; color: #1e293b; }
+    .pv-ksection-body { padding: 4px 12px 10px; }
+
+    /* Lignes du calcul */
+    .pv-kline {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      font-size: 0.82rem;
+      border-bottom: 1px dashed #f1f5f9;
+    }
+    .pv-kline:last-child { border-bottom: none; }
+    .pv-kline-icon { text-align: center; font-size: 0.92rem; }
+    .pv-kline-label { color: #475569; }
+    .pv-kline-val {
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+      color: #1e293b;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .pv-kline-report {
+      background: #f8fafc;
+      margin: 0 -12px;
+      padding: 6px 12px;
+      font-style: italic;
+      color: #64748b;
+    }
+    .pv-kline-primary .pv-kline-label { font-weight: 700; color: #1e293b; }
+    .pv-kline-primary .pv-kline-val { color: #16a34a; }
+
+    /* Inputs colonne 1 */
+    .pv-mode-radio {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fafbfc;
+    }
+    .pv-mode-radio label {
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px;
+      padding: 7px 10px;
+      border-radius: 5px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      transition: all 0.15s;
+    }
+    .pv-mode-radio label:hover { border-color: #94a3b8; }
+    .pv-mode-radio label.active { background: #16a34a; border-color: #15803d; color: #fff; }
+    .pv-mode-radio input { display: none; }
+
+    .pv-klabel {
+      display: block;
+      font-size: 0.7rem;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin: 8px 0 4px;
+    }
+    .pv-klabel:first-child { margin-top: 0; }
+    .pv-kinput {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      background: #fff;
+      color: #1e293b;
+      box-sizing: border-box;
+    }
+    .pv-kinput:focus {
+      outline: 2px solid #16a34a;
+      outline-offset: -1px;
+      border-color: #16a34a;
+    }
+    .pv-kinput-num { font-family: ui-monospace, monospace; }
+    .pv-krow { display: flex; gap: 6px; }
+    .pv-krow > * { flex: 1; }
+    .pv-krow-3 > * { flex: 1; min-width: 0; }
+    .pv-kinput-cur { max-width: 65px; flex: 0 0 65px; }
+    .pv-khint { font-size: 0.72rem; color: #64748b; margin-top: 4px; }
+
+    .pv-kempty {
+      padding: 30px 12px;
+      text-align: center;
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 0.82rem;
+    }
+
+    .pv-mini-badge {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 1px 7px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* Lecture doctrinale */
+    .pv-doctrinal-read {
+      display: flex;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #fef9c3;
+      border-left: 4px solid #f59e0b;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #713f12;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+    .pv-doctrinal-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .pv-doctrinal-read strong { color: #422006; }
+    .pv-mono { font-family: ui-monospace, monospace; }
+
+    /* Action recommandée */
+    .pv-action-text {
+      margin: 0 0 6px;
+      font-size: 0.82rem;
+      color: #1e293b;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+    .pv-action-reason {
+      margin: 0;
+      font-size: 0.74rem;
+      color: #64748b;
+      line-height: 1.4;
+    }
   `;
   document.head.appendChild(s);
 }
@@ -974,211 +1260,400 @@ function _renderHTML(container) {
 // ═══════════════════════════════════════════════════════════════════
 function _renderBlocA() {
   const reco = _ps.currentReco;
-  const mode = _ps.buildMode || 'catalog';  // 'catalog' | 'simulation'
+  const mode = _ps.buildMode || 'catalog';
+  const isComputing = !!_ps.isComputing;
 
   let html = '<div class="pv-bloc pv-bloc-a">';
   html += '<div class="pv-bloc-head">';
   html += '<span class="pv-bloc-num">A</span>';
   html += '<div><h2 class="pv-bloc-title">Construire le prix</h2>';
-  html += '<div class="pv-bloc-sub">Choisir un produit du catalogue ou simuler un produit fournisseur.</div></div>';
-  html += '</div>';
-
-  html += '<div class="pv-bloc-body">';
-
-  // ── Toggle mode ──
-  html += '<div class="pv-mode-toggle">';
-  html += '<button class="pv-mode-btn ' + (mode === 'catalog' ? 'active' : '') + '" data-act="set-build-mode" data-mode="catalog">📦 Produit du catalogue</button>';
-  html += '<button class="pv-mode-btn ' + (mode === 'simulation' ? 'active' : '') + '" data-act="set-build-mode" data-mode="simulation">🧪 Simulation / candidat fournisseur</button>';
-  html += '</div>';
-
-  // ── Formulaire ──
-  html += '<div class="pv-build-grid">';
-
-  if (mode === 'catalog') {
-    // Mode catalogue : sélecteur produit + canal seulement (les autres champs sont dérivés du produit)
-    html += '<div style="grid-column: span 2;">';
-    html += '<label class="pv-build-label">Produit du catalogue *</label>';
-    html += '<select class="pv-build-input" data-input="product-select">';
-    html += '<option value="">-- Choisir un produit --</option>';
-    (_ps.catalog || []).forEach(it => {
-      const sel = (_ps.selectedProductId === it.product_id) ? ' selected' : '';
-      html += '<option value="' + it.product_id + '"' + sel + '>' +
-        _escape(it.name) + ' — ' + _fmt(it.current_price_kmf) +
-        '</option>';
-    });
-    html += '</select>';
-    if (!_ps.catalog?.length) {
-      html += '<div style="font-size:0.78rem;color:#94a3b8;margin-top:4px;font-style:italic;">Aucun produit dans le catalogue. Utilisez le mode Simulation pour tester.</div>';
-    }
-    html += '</div>';
-
-    html += '<div>';
-    html += '<label class="pv-build-label">Canal</label>';
-    html += '<select class="pv-build-input" data-input="channel">';
-    html += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
-    html += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora</option>';
-    html += '</select>';
-    html += '</div>';
-
-  } else {
-    // Mode simulation : tous les champs requis
-    html += '<div>';
-    html += '<label class="pv-build-label">Catégorie *</label>';
-    html += '<select class="pv-build-input" data-input="category">';
-    _ps.categories.forEach(c => {
-      const sel = (c.key === _ps.inputCategory) ? ' selected' : '';
-      html += '<option value="' + c.key + '"' + sel + '>' + _escape(c.label || c.key) + '</option>';
-    });
-    html += '</select></div>';
-
-    html += '<div>';
-    html += '<label class="pv-build-label">Prix achat *</label>';
-    html += '<input type="number" class="pv-build-input" data-input="prix_achat" value="' + _ps.inputPrixAchat + '" min="0" step="0.01">';
-    html += '</div>';
-
-    html += '<div>';
-    html += '<label class="pv-build-label">Devise</label>';
-    html += '<select class="pv-build-input" data-input="currency">';
-    ['AED', 'EUR', 'USD', 'KMF'].forEach(cur => {
-      html += '<option value="' + cur + '"' + (_ps.inputCurrency === cur ? ' selected' : '') + '>' + cur + '</option>';
-    });
-    html += '</select></div>';
-
-    html += '<div>';
-    html += '<label class="pv-build-label">Poids (kg) *</label>';
-    html += '<input type="number" class="pv-build-input" data-input="poids_kg" value="' + _ps.inputPoidsKg + '" min="0" step="0.01">';
-    html += '</div>';
-
-    html += '<div>';
-    html += '<label class="pv-build-label">Volume L×l×h (cm)</label>';
-    html += '<div style="display:flex;gap:4px;">';
-    html += '<input type="number" class="pv-build-input" data-input="dim_l" value="' + _ps.inputDimL + '" min="0" placeholder="L" style="width:33%">';
-    html += '<input type="number" class="pv-build-input" data-input="dim_w" value="' + _ps.inputDimW + '" min="0" placeholder="l" style="width:33%">';
-    html += '<input type="number" class="pv-build-input" data-input="dim_h" value="' + _ps.inputDimH + '" min="0" placeholder="h" style="width:33%">';
-    html += '</div></div>';
-
-    html += '<div>';
-    html += '<label class="pv-build-label">Canal</label>';
-    html += '<select class="pv-build-input" data-input="channel">';
-    html += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
-    html += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora</option>';
-    html += '</select></div>';
+  html += '<div class="pv-bloc-sub">Calcul live · doctrine §2 : objet → coût rendu relais → coût complet → décision</div></div>';
+  if (isComputing) {
+    html += '<span class="pv-spinner" title="Recalcul en cours">⏳</span>';
   }
-
-  html += '</div>';  // .pv-build-grid
-
-  // ── Bouton + état ──
-  const canCompute = (mode === 'catalog' && _ps.selectedProductId) ||
-                     (mode === 'simulation' && _ps.inputPrixAchat > 0 && _ps.inputCategory);
-  html += '<div style="display:flex;align-items:center;gap:12px;margin-top:12px;">';
-  if (!canCompute) {
-    html += '<div style="font-size:0.82rem;color:#94a3b8;font-style:italic;flex:1;">';
-    html += mode === 'catalog'
-      ? '↑ Sélectionnez un produit pour activer le calcul'
-      : '↑ Renseignez au moins catégorie + prix achat';
-    html += '</div>';
-  } else {
-    html += '<div style="flex:1;"></div>';
-  }
-  html += '<button class="pv-btn pv-btn-primary" data-act="compute-reco"' + (canCompute ? '' : ' disabled style="opacity:0.5;cursor:not-allowed;"') + '>🧮 Calculer les prix</button>';
   html += '</div>';
 
-  // ── Résultats si reco disponible ──
+  html += '<div class="pv-bloc-body pv-kanban-wrap">';
+
+  // ═══════════════════════════════════════════════════════════════════
+  // KANBAN 4 COLONNES DOCTRINAL
+  // ═══════════════════════════════════════════════════════════════════
+  html += '<div class="pv-kanban">';
+
+  // ─── COLONNE 1 — OBJET ──────────────────────────────────────────────
+  html += _kanbanCol(1, 'gray', '🎯 Objet', 'Caractéristiques produit', _renderColObjet(mode));
+
+  // ─── COLONNE 2 — COÛT RENDU RELAIS ─────────────────────────────────
+  html += _kanbanCol(2, 'blue', '📦 Coût rendu relais', '9 lignes · landed', _renderColLanded(reco));
+
+  // ─── COLONNE 3 — COÛT COMPLET BUSINESS ──────────────────────────────
+  html += _kanbanCol(3, 'green', '💼 Coût complet business', '+ paiement, risques, charges fixes', _renderColBusiness(reco));
+
+  // ─── COLONNE 4 — DÉCISION ───────────────────────────────────────────
+  html += _kanbanCol(4, 'amber', '🎯 Décision', 'Prix · marge · sourcing', _renderColDecision(reco));
+
+  html += '</div>'; // .pv-kanban
+
+  // ─── Lecture doctrinale (synthèse en bas) ────────────────────────────
   if (reco) {
-    const breakdown = reco.cost_breakdown || { landed_relay: {}, business: {} };
-    const landed = breakdown.landed_relay || {};
-    const business = breakdown.business || {};
-    const landedTotal = reco.landed_relay_cost_kmf || 0;
-    const businessTotal = reco.business_complete_cost_kmf || reco.cost_complete_estimated_kmf || 0;
-
-    // Bandeau type de sujet (subject_type)
-    if (reco.subject_type) {
-      html += _renderSubjectBanner(reco.subject_type);
-    }
-
-    // ─── 1. Coût rendu relais (9 lignes) ───
-    html += '<div class="pv-cost-block">';
-    html += '<div class="pv-cost-block-head">';
-    html += '<span class="pv-cost-step">1</span>';
-    html += '<div><h3 class="pv-cost-block-title">📦 Coût rendu relais</h3>';
-    html += '<div class="pv-cost-block-sub">Combien coûte cet objet rendu disponible au point relais ?</div></div>';
-    html += '<div class="pv-cost-total">' + _fmt(landedTotal) + '</div>';
-    html += '</div>';
-    html += '<div class="pv-cost-lines">';
-    html += _costLine('🛒', 'Achat fournisseur', landed.product_purchase);
-    html += _costLine('🔍', 'Sourcing', landed.sourcing);
-    html += _costLine('🏬', 'Hub Dubai', landed.hub);
-    html += _costLine('📦', 'Emballage', landed.packaging);
-    html += _costLine('🚢', 'Fret', landed.freight);
-    html += _costLine('🛃', 'Douane', landed.customs);
-    html += _costLine('📋', 'Port / transitaire', landed.port_transitary);
-    html += _costLine('🚚', 'Distribution locale', landed.local_distribution);
-    html += _costLine('🏪', 'Relais', landed.relay);
-    html += '</div>';
-    html += '</div>';
-
-    // ─── 2. Coût complet business (3 lignes en plus) ───
-    html += '<div class="pv-cost-block">';
-    html += '<div class="pv-cost-block-head">';
-    html += '<span class="pv-cost-step">2</span>';
-    html += '<div><h3 class="pv-cost-block-title">💼 Coût complet business</h3>';
-    html += '<div class="pv-cost-block-sub">+ frais de paiement, provisions risques, part charges fixes.</div></div>';
-    html += '<div class="pv-cost-total">' + _fmt(businessTotal) + '</div>';
-    html += '</div>';
-    html += '<div class="pv-cost-lines">';
-    html += _costLine('═', 'Coût rendu relais (report)', landedTotal, true);
-    html += _costLine('💳', 'Frais de paiement', business.payment);
-    html += _costLine('🛡️', 'Provision risques', business.risk_provision);
-    html += _costLine('🏢', 'Part charges fixes', business.fixed_overhead);
-    html += '</div>';
-    html += '</div>';
-
-    // ─── 3. Phrase métier (révisée doctrine §4) ───
-    html += '<div class="pv-truth-phrase">';
-    html += '<div class="pv-truth-icon">💡</div>';
-    html += '<div class="pv-truth-text">';
-    html += 'Cet objet coûte <strong>' + _fmt(landedTotal) + '</strong> rendu relais. ';
-    html += 'Coût complet business : <strong>' + _fmt(businessTotal) + '</strong>. ';
-    html += 'Ne pas vendre sous <strong>' + _fmt(reco.minimum_safe_price_kmf) + '</strong>. ';
-    html += 'Prix conseillé : <strong>' + _fmt(reco.recommended_price_kmf) + '</strong>. ';
-    html += 'Prix test marché : <strong>' + _fmt(reco.test_price_kmf) + '</strong>.';
+    html += '<div class="pv-doctrinal-read">';
+    html += '<div class="pv-doctrinal-icon">💡</div>';
+    html += '<div>';
+    html += '<strong>Lecture doctrinale</strong> ';
+    html += '<span>Cet objet coûte <strong class="pv-mono">' + _fmt(reco.landed_relay_cost_kmf) + '</strong> rendu relais. ';
+    html += 'Coût complet business : <strong class="pv-mono">' + _fmt(reco.business_complete_cost_kmf || reco.cost_complete_estimated_kmf) + '</strong>. ';
+    html += 'Ne pas vendre sous <strong class="pv-mono">' + _fmt(reco.minimum_safe_price_kmf) + '</strong>. ';
+    html += 'Conseillé : <strong class="pv-mono">' + _fmt(reco.recommended_price_kmf) + '</strong>.</span>';
     html += '</div></div>';
-
-    // ─── 4. Cards des 4 prix ───
-    html += '<div class="pv-prices-grid">';
-    html += _priceCard('💀 Prix de survie', reco.survival_price_kmf, 'Coûts variables uniquement. Sous ce prix, vente à perte immédiate.');
-    html += _priceCard('🛡️ Minimum sûr', reco.minimum_safe_price_kmf, 'Couvre variables + risques + part charges fixes.');
-    html += _priceCard('🎯 Prix conseillé', reco.recommended_price_kmf, 'Coût complet ÷ (1 - marge cible). Recommandation moteur.', true);
-    html += _priceCard('🧪 Prix test marché', reco.test_price_kmf, 'Pour tester le marché. Jamais sous le minimum sûr.');
-    html += '</div>';
-
-    // ─── 5. Marge / contribution / seuil ───
-    html += '<div class="pv-build-meta">';
-    if (reco.estimated_margin_pct != null && reco.current_price_kmf > 0) {
-      html += '<div><strong>Marge estimée (au prix actuel) :</strong> ' + reco.estimated_margin_pct + '% · ' +
-        '<strong>Contribution :</strong> ' + _fmt(reco.estimated_contribution_kmf) + '</div>';
-    } else {
-      html += '<div><strong>Marge cible :</strong> ' + (reco.target_margin_pct || 40) + '%</div>';
-    }
-    if (reco.monthly_break_even_orders) {
-      html += '<div><strong>Seuil rentabilité :</strong> ' + reco.monthly_break_even_orders + ' commandes/mois pour couvrir les charges fixes</div>';
-    }
-    html += '</div>';
-
-    // ─── 6. Qualité des données (data_quality du backend) ───
-    html += _renderDataQuality(reco);
-  } else {
-    html += '<div class="pv-build-empty">';
-    html += mode === 'catalog'
-      ? 'Sélectionnez un produit du catalogue puis cliquez sur "Calculer les prix".'
-      : 'Renseignez les paramètres du produit fournisseur puis cliquez sur "Calculer les prix".';
-    html += '</div>';
   }
 
   html += '</div>'; // .pv-bloc-body
   html += '</div>'; // .pv-bloc
   return html;
 }
+
+/* ─── Helper colonne kanban ────────────────────────────────────────── */
+function _kanbanCol(num, color, title, sub, body) {
+  return '<div class="pv-kcol pv-kcol-' + color + '">' +
+    '<div class="pv-kcol-head">' +
+      '<span class="pv-kcol-num">' + num + '</span>' +
+      '<div><div class="pv-kcol-title">' + title + '</div>' +
+      '<div class="pv-kcol-sub">' + sub + '</div></div>' +
+    '</div>' +
+    '<div class="pv-kcol-body">' + body + '</div>' +
+  '</div>';
+}
+
+/* ─── Section accordéon (details/summary natifs) ───────────────────── */
+function _kSection(id, title, body, openByDefault) {
+  const open = openByDefault ? ' open' : '';
+  return '<details class="pv-ksection" data-section="' + id + '"' + open + '>' +
+    '<summary class="pv-ksection-head">' + title + '</summary>' +
+    '<div class="pv-ksection-body">' + body + '</div>' +
+  '</details>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * COLONNE 1 — Objet
+ * ═══════════════════════════════════════════════════════════════════════ */
+function _renderColObjet(mode) {
+  let html = '';
+
+  // Sélecteur radio mode (en haut, pas dans une section)
+  html += '<div class="pv-mode-radio">';
+  html += '<label class="' + (mode === 'catalog' ? 'active' : '') + '">' +
+    '<input type="radio" name="pv-mode" value="catalog" ' + (mode === 'catalog' ? 'checked' : '') + ' data-act="set-build-mode" data-mode="catalog">' +
+    '📦 Catalogue</label>';
+  html += '<label class="' + (mode === 'simulation' ? 'active' : '') + '">' +
+    '<input type="radio" name="pv-mode" value="simulation" ' + (mode === 'simulation' ? 'checked' : '') + ' data-act="set-build-mode" data-mode="simulation">' +
+    '🧪 Simulation</label>';
+  html += '</div>';
+
+  // Section : Identification
+  let idBody = '';
+  if (mode === 'catalog') {
+    idBody += '<label class="pv-klabel">Produit du catalogue</label>';
+    idBody += '<select class="pv-kinput" data-input="product-select">';
+    idBody += '<option value="">— Choisir —</option>';
+    (_ps.catalog || []).forEach(it => {
+      const sel = (_ps.selectedProductId === it.product_id) ? ' selected' : '';
+      idBody += '<option value="' + it.product_id + '"' + sel + '>' +
+        _escape(it.name).slice(0, 40) + ' — ' + _fmt(it.current_price_kmf) + '</option>';
+    });
+    idBody += '</select>';
+    if (!_ps.catalog?.length) {
+      idBody += '<div class="pv-khint">Aucun produit chargé.</div>';
+    }
+  } else {
+    // Simulation : catégorie
+    idBody += '<label class="pv-klabel">Catégorie</label>';
+    idBody += '<select class="pv-kinput" data-input="category">';
+    (_ps.categories || []).forEach(c => {
+      const sel = (_ps.inputCategory === c.key) ? ' selected' : '';
+      idBody += '<option value="' + _escape(c.key) + '"' + sel + '>' + _escape(c.label || c.key) + '</option>';
+    });
+    idBody += '</select>';
+  }
+  html += _kSection('id', 'Identification', idBody, true);
+
+  // Section : Caractéristiques (mode simulation seulement)
+  if (mode === 'simulation') {
+    let charBody = '';
+    charBody += '<label class="pv-klabel">Prix achat</label>';
+    charBody += '<div class="pv-krow">';
+    charBody += '<input type="number" class="pv-kinput pv-kinput-num" data-input="prix_achat" value="' + (_ps.inputPrixAchat || 0) + '" min="0" step="0.01">';
+    charBody += '<select class="pv-kinput pv-kinput-cur" data-input="currency">';
+    ['AED', 'EUR', 'USD', 'KMF'].forEach(c => {
+      charBody += '<option value="' + c + '"' + (_ps.inputCurrency === c ? ' selected' : '') + '>' + c + '</option>';
+    });
+    charBody += '</select>';
+    charBody += '</div>';
+
+    charBody += '<label class="pv-klabel">Poids (kg)</label>';
+    charBody += '<input type="number" class="pv-kinput pv-kinput-num" data-input="poids_kg" value="' + (_ps.inputPoidsKg || 0) + '" min="0" step="0.01">';
+
+    charBody += '<label class="pv-klabel">Dimensions (cm) L × l × h</label>';
+    charBody += '<div class="pv-krow pv-krow-3">';
+    charBody += '<input type="number" class="pv-kinput pv-kinput-num" data-input="dim_l" value="' + (_ps.inputDimL || 0) + '" min="0" step="0.1" placeholder="L">';
+    charBody += '<input type="number" class="pv-kinput pv-kinput-num" data-input="dim_w" value="' + (_ps.inputDimW || 0) + '" min="0" step="0.1" placeholder="l">';
+    charBody += '<input type="number" class="pv-kinput pv-kinput-num" data-input="dim_h" value="' + (_ps.inputDimH || 0) + '" min="0" step="0.1" placeholder="h">';
+    charBody += '</div>';
+    const volM3 = ((_ps.inputDimL || 0) * (_ps.inputDimW || 0) * (_ps.inputDimH || 0)) / 1_000_000;
+    charBody += '<div class="pv-khint">Volume calculé : <strong>' + volM3.toFixed(4) + ' m³</strong></div>';
+
+    html += _kSection('char', 'Caractéristiques', charBody, true);
+  }
+
+  // Section : Contexte (canal + île)
+  let ctxBody = '';
+  ctxBody += '<label class="pv-klabel">Canal de vente</label>';
+  ctxBody += '<select class="pv-kinput" data-input="channel">';
+  ctxBody += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
+  ctxBody += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora (carte)</option>';
+  ctxBody += '</select>';
+  html += _kSection('ctx', 'Contexte', ctxBody, false);
+
+  return html;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * COLONNE 2 — Coût rendu relais (9 lignes)
+ * ═══════════════════════════════════════════════════════════════════════ */
+function _renderColLanded(reco) {
+  if (!reco) {
+    return '<div class="pv-kempty">Renseignez le produit pour voir le calcul.</div>';
+  }
+
+  const breakdown = reco.cost_breakdown || { landed_relay: {} };
+  const landed = breakdown.landed_relay || {};
+  const total = reco.landed_relay_cost_kmf || 0;
+
+  let html = '';
+
+  // KPI total en haut
+  html += '<div class="pv-ktotal pv-ktotal-blue">';
+  html += '<div class="pv-ktotal-label">Total landed</div>';
+  html += '<div class="pv-ktotal-value">' + _fmt(total) + '</div>';
+  html += '</div>';
+
+  // Section : 9 lignes
+  let linesBody = '';
+  const lines = [
+    ['🛒', 'Achat fournisseur',     landed.product_purchase],
+    ['🔍', 'Sourcing',              landed.sourcing],
+    ['🏬', 'Hub Dubai',             landed.hub],
+    ['📦', 'Emballage',             landed.packaging],
+    ['🚢', 'Fret',                  landed.freight],
+    ['🛃', 'Douane',                landed.customs],
+    ['📋', 'Port / transitaire',    landed.port_transitary],
+    ['🚚', 'Distribution locale',   landed.local_distribution],
+    ['🏪', 'Relais',                landed.relay],
+  ];
+  lines.forEach(([emoji, label, val]) => {
+    linesBody += '<div class="pv-kline">';
+    linesBody += '<span class="pv-kline-icon">' + emoji + '</span>';
+    linesBody += '<span class="pv-kline-label">' + label + '</span>';
+    linesBody += '<span class="pv-kline-val">' + (val > 0 ? _fmt(val) : '—') + '</span>';
+    linesBody += '</div>';
+  });
+  html += _kSection('landed-lines', 'Détail (9 lignes)', linesBody, false);
+
+  // Section : Qualité données (intégré ici)
+  if (reco.data_quality) {
+    html += _kSection('data-quality', 'Qualité données', _renderDataQualityCompact(reco), false);
+  }
+
+  return html;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * COLONNE 3 — Coût complet business (3 lignes en plus)
+ * ═══════════════════════════════════════════════════════════════════════ */
+function _renderColBusiness(reco) {
+  if (!reco) {
+    return '<div class="pv-kempty">En attente du calcul…</div>';
+  }
+  const breakdown = reco.cost_breakdown || { business: {} };
+  const business = breakdown.business || {};
+  const landed = reco.landed_relay_cost_kmf || 0;
+  const total = reco.business_complete_cost_kmf || reco.cost_complete_estimated_kmf || 0;
+
+  let html = '';
+
+  // KPI total en haut
+  html += '<div class="pv-ktotal pv-ktotal-green">';
+  html += '<div class="pv-ktotal-label">Total business</div>';
+  html += '<div class="pv-ktotal-value">' + _fmt(total) + '</div>';
+  html += '</div>';
+
+  // Section : détail
+  let detBody = '';
+  detBody += '<div class="pv-kline pv-kline-report">';
+  detBody += '<span class="pv-kline-icon">═</span>';
+  detBody += '<span class="pv-kline-label">Coût rendu relais (report)</span>';
+  detBody += '<span class="pv-kline-val">' + _fmt(landed) + '</span>';
+  detBody += '</div>';
+
+  const adds = [
+    ['💳', 'Frais paiement',     business.payment],
+    ['🛡️', 'Provision risques',  business.risk_provision],
+    ['🏢', 'Part charges fixes', business.fixed_overhead],
+  ];
+  adds.forEach(([emoji, label, val]) => {
+    detBody += '<div class="pv-kline">';
+    detBody += '<span class="pv-kline-icon">' + emoji + '</span>';
+    detBody += '<span class="pv-kline-label">' + label + '</span>';
+    detBody += '<span class="pv-kline-val">' + (val > 0 ? '+ ' + _fmt(val) : '—') + '</span>';
+    detBody += '</div>';
+  });
+  html += _kSection('business-detail', 'Détail (3 lignes business)', detBody, false);
+
+  // Section : pilotage seuils (charges fixes)
+  if (reco.monthly_break_even_orders || reco.target_orders_per_month) {
+    let pilotBody = '';
+    if (reco.target_orders_per_month) {
+      pilotBody += '<div class="pv-kline"><span class="pv-kline-label">Cible mensuelle</span><span class="pv-kline-val">' +
+        reco.target_orders_per_month + ' commandes</span></div>';
+    }
+    if (reco.monthly_break_even_orders) {
+      pilotBody += '<div class="pv-kline"><span class="pv-kline-label">Seuil rentabilité</span><span class="pv-kline-val">' +
+        reco.monthly_break_even_orders + ' commandes/mois</span></div>';
+    }
+    if (reco.monthly_fixed_costs_kmf) {
+      pilotBody += '<div class="pv-kline"><span class="pv-kline-label">Charges fixes</span><span class="pv-kline-val">' +
+        _fmt(reco.monthly_fixed_costs_kmf) + '/mois</span></div>';
+    }
+    html += _kSection('business-pilot', 'Pilotage charges fixes', pilotBody, false);
+  }
+
+  return html;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * COLONNE 4 — Décision (4 prix, marge, sourcing)
+ * ═══════════════════════════════════════════════════════════════════════ */
+function _renderColDecision(reco) {
+  if (!reco) {
+    return '<div class="pv-kempty">Le moteur affichera ici les prix et la décision.</div>';
+  }
+
+  let html = '';
+
+  // KPI prix conseillé en haut + badge décision
+  const decisionMap = {
+    PRIORITY:        { color: '#3b82f6', label: 'PRIORITY' },
+    TEST:            { color: '#16a34a', label: 'TEST' },
+    WATCH:           { color: '#f59e0b', label: 'WATCH' },
+    AVOID:           { color: '#dc2626', label: 'AVOID' },
+    LOSS:            { color: '#7f1d1d', label: 'LOSS' },
+    RENEGOTIATE:     { color: '#ea580c', label: 'RENEGOTIATE' },
+    INCREASE_PRICE:  { color: '#ea580c', label: 'INCREASE PRICE' },
+  };
+  const dec = decisionMap[reco.sourcing_decision] || { color: '#94a3b8', label: reco.sourcing_decision || '—' };
+
+  html += '<div class="pv-ktotal pv-ktotal-decision">';
+  html += '<div>';
+  html += '<div class="pv-ktotal-label">Conseillé</div>';
+  html += '<div class="pv-ktotal-value">' + _fmt(reco.recommended_price_kmf) + '</div>';
+  html += '</div>';
+  html += '<span class="pv-decision-badge" style="background:' + dec.color + ';">' + dec.label + '</span>';
+  html += '</div>';
+
+  // Section : Les 4 prix
+  let pricesBody = '';
+  const prices = [
+    ['💀', 'Survie',        reco.survival_price_kmf,       false],
+    ['🛡️', 'Minimum sûr',   reco.minimum_safe_price_kmf,   false],
+    ['🎯', 'Conseillé',     reco.recommended_price_kmf,    true],
+    ['🧪', 'Test marché',   reco.test_price_kmf,           false],
+  ];
+  prices.forEach(([emoji, label, val, primary]) => {
+    pricesBody += '<div class="pv-kline ' + (primary ? 'pv-kline-primary' : '') + '">';
+    pricesBody += '<span class="pv-kline-icon">' + emoji + '</span>';
+    pricesBody += '<span class="pv-kline-label">' + label + '</span>';
+    pricesBody += '<span class="pv-kline-val">' + _fmt(val) + '</span>';
+    pricesBody += '</div>';
+  });
+  html += _kSection('prices', 'Les 4 prix', pricesBody, true);
+
+  // Section : Marge & santé
+  let margeBody = '';
+  if (reco.estimated_margin_pct != null && reco.current_price_kmf > 0) {
+    const margeColor = reco.estimated_margin_pct >= 25 ? '#16a34a'
+                     : reco.estimated_margin_pct >= 10 ? '#f59e0b'
+                     : '#dc2626';
+    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Marge estimée</span>' +
+      '<span class="pv-kline-val" style="color:' + margeColor + ';font-weight:700;">' + reco.estimated_margin_pct + '%</span></div>';
+    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Contribution</span>' +
+      '<span class="pv-kline-val">' + _fmt(reco.estimated_contribution_kmf) + '</span></div>';
+  } else {
+    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Marge cible</span>' +
+      '<span class="pv-kline-val">' + (reco.target_margin_pct || 40) + '%</span></div>';
+  }
+  if (reco.health_status) {
+    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Santé</span>' +
+      '<span class="pv-kline-val"><span class="pv-mini-badge">' + reco.health_status + '</span></span></div>';
+  }
+  if (reco.market_confidence) {
+    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Confiance marché</span>' +
+      '<span class="pv-kline-val"><span class="pv-mini-badge">' + reco.market_confidence + '</span></span></div>';
+  }
+  html += _kSection('marge', 'Marge & santé', margeBody, false);
+
+  // Section : Action recommandée
+  if (reco.recommended_action) {
+    let actionBody = '<p class="pv-action-text">' + _escape(reco.recommended_action) + '</p>';
+    if (reco.reason) {
+      actionBody += '<p class="pv-action-reason"><em>' + _escape(reco.reason) + '</em></p>';
+    }
+    html += _kSection('action', 'Action recommandée', actionBody, true);
+  }
+
+  return html;
+}
+
+/* ─── Data quality compact (pour la colonne 2) ──────────────────────── */
+function _renderDataQualityCompact(reco) {
+  const dq = reco.data_quality || {};
+  const conf = dq.confidence || 'medium';
+  const confMap = {
+    high:   { bg: '#dcfce7', color: '#14532d', label: '✓ Élevée' },
+    medium: { bg: '#fef9c3', color: '#854d0e', label: '~ Moyenne' },
+    low:    { bg: '#fef2f2', color: '#b91c1c', label: '⚠ Faible' },
+  };
+  const c = confMap[conf];
+
+  let html = '<div style="margin-bottom:8px;">';
+  html += '<span style="background:' + c.bg + ';color:' + c.color + ';padding:3px 10px;border-radius:4px;font-size:0.7rem;font-weight:700;">' + c.label + '</span>';
+  html += '</div>';
+
+  if (dq.sources) {
+    const fieldLabels = {
+      purchase_price: 'Prix d\'achat',
+      weight: 'Poids',
+      volume: 'Volume',
+      customs_category: 'Cat. douane',
+      fixed_overhead: 'Charges fixes',
+      freight: 'Fret',
+      customs: 'Douane',
+    };
+    html += '<div style="font-size:0.78rem;">';
+    Object.keys(fieldLabels).forEach(k => {
+      const src = dq.sources[k];
+      if (!src) return;
+      html += '<div class="pv-kline" style="padding:3px 0;"><span class="pv-kline-label">' + fieldLabels[k] + '</span>' +
+        '<span class="pv-kline-val" style="font-size:0.72rem;color:#64748b;font-family:inherit;">' + src + '</span></div>';
+    });
+    html += '</div>';
+  }
+  if (dq.missing_fields && dq.missing_fields.length) {
+    html += '<div style="margin-top:6px;font-size:0.74rem;color:#b91c1c;">';
+    html += '⚠ Manquant : ' + dq.missing_fields.join(', ');
+    html += '</div>';
+  }
+  return html;
+}
+
 
 // ── Bandeau du type de sujet d'analyse (catalog / candidate / simulation) ──
 function _renderSubjectBanner(subjectType) {
@@ -2033,20 +2508,45 @@ function _renderDrawer() {
 }
 
 /* ─── EVENTS ──────────────────────────────────────────────────────── */
+// LOT L1 : helper debounce pour recalcul live
+let _recalcTimer = null;
+function _scheduleLiveRecalc(container, delayMs) {
+  clearTimeout(_recalcTimer);
+  _recalcTimer = setTimeout(async () => {
+    // En mode catalog sans produit sélectionné, ne rien faire
+    if (_ps.buildMode === 'catalog' && !_ps.selectedProductId) return;
+    // En simulation, vérifier au moins prix > 0
+    if (_ps.buildMode === 'simulation' && (!_ps.inputPrixAchat || _ps.inputPrixAchat <= 0)) return;
+
+    _ps.isComputing = true;
+    _renderHTML(container);
+    try {
+      await _computePrices();
+    } catch (err) {
+      console.error('[pricing] live recalc error', err);
+    } finally {
+      _ps.isComputing = false;
+      _renderHTML(container);
+    }
+  }, delayMs || 250);
+}
+
 function _bindEvents(container) {
-  // ── Handler change pour les inputs du Bloc A (formulaire build) ──
-  container.addEventListener('change', (e) => {
+  // ── Handler change/input pour les inputs du Bloc A (formulaire build) ──
+  // LOT L1 : recalcul live à chaque changement
+  const inputHandler = (e) => {
     const t = e.target.closest('[data-input]');
     if (!t) return;
     const f = t.dataset.input;
     if (f === 'product-select') {
       _ps.selectedProductId = t.value || null;
-      // Si on choisit un produit, on présélectionne sa catégorie
       const item = (_ps.catalog || []).find(c => c.product_id === _ps.selectedProductId);
       if (item) {
         if (item.category) _ps.inputCategory = item.category;
       }
       _renderHTML(container);
+      _scheduleLiveRecalc(container, 100);
+      return;
     } else if (f === 'category')  _ps.inputCategory = t.value;
     else if (f === 'prix_achat') _ps.inputPrixAchat = parseFloat(t.value) || 0;
     else if (f === 'currency')   _ps.inputCurrency = t.value || 'AED';
@@ -2061,8 +2561,13 @@ function _bindEvents(container) {
     else if (f === 'catFilter') {
       _ps.catalogFilter = t.value;
       _renderHTML(container);
+      return;
     }
-  });
+    // Déclencher le recalcul live (sauf si déjà géré ci-dessus)
+    _scheduleLiveRecalc(container, 250);
+  };
+  container.addEventListener('change', inputHandler);
+  container.addEventListener('input', inputHandler);
 
   container.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-act]');
