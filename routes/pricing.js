@@ -425,6 +425,15 @@ router.post('/recommend', authenticate, async (req, res, next) => {
       // Ajoutés en surface pour les nouveaux consommateurs UI.
       // Si le service est indisponible, doctrine = null et les champs restent à null.
       ...(doctrine ? {
+        // ── Lot G : décomposition landed cost rendu relais ──
+        subject_type: doctrine.subject_type,
+        candidate_id: doctrine.candidate_id,
+        landed_relay_cost_kmf: doctrine.landed_relay_cost_kmf,
+        business_complete_cost_kmf: doctrine.business_complete_cost_kmf,
+        cost_breakdown: doctrine.cost_breakdown,
+        data_quality: doctrine.data_quality,
+
+        // ── Prix doctrine ──
         survival_price_kmf: doctrine.survival_price_kmf,
         minimum_safe_price_kmf: doctrine.minimum_safe_price_kmf,
         recommended_price_kmf: doctrine.recommended_price_kmf,

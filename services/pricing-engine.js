@@ -207,10 +207,13 @@ function computeCDR(product, ctx = {}) {
     product_cost: r(productCostKmf),
     sourcing: 0,
     hub: 0,
+    packaging: 0,           // mappé sur composants ayant 'packaging' dans la key
     freight: 0,
     customs: 0,
     port_transitaire: 0,
-    distribution: 0,
+    distribution: 0,        // total = local_distribution + relay (legacy)
+    local_distribution: 0,  // transport hub→relais
+    relay: 0,               // commission relais
     payment: 0,
     risks: 0,
     fixed_costs: 0,
@@ -244,14 +247,34 @@ function computeCDR(product, ctx = {}) {
     }
 
     // Bucketing par category de pricing_components
+    // + sous-tracking landed_relay : on sépare local_distribution / relay / packaging
     switch (c.category) {
       case 'sourcing':     details.sourcing += amount; break;
       case 'hub':          details.hub += amount; break;
       case 'transit':      details.freight += amount; break;
       case 'douane':       details.port_transitaire += amount; break;
-      case 'distribution': details.distribution += amount; break;
+      case 'distribution': {
+        details.distribution += amount;  // total agrégé (rétro-compat)
+        const k = (c.key || '').toLowerCase();
+        if (k.includes('commission') || k.includes('relais') && !k.includes('transport')) {
+          details.relay += amount;
+        } else if (k.includes('transport') || k.includes('local') || k.includes('hub')) {
+          details.local_distribution += amount;
+        } else {
+          details.local_distribution += amount; // fallback
+        }
+        break;
+      }
       case 'paiement':     details.payment += amount; break;
       default:             details.sourcing += amount;
+    }
+
+    // Détection packaging par nom de key (en attendant une vraie catégorie)
+    const lowKey = (c.key || '').toLowerCase();
+    if (c.category === 'hub' && (lowKey.includes('packaging') || lowKey.includes('emballage'))) {
+      // On sort le packaging du hub pour le tracker à part (sans double comptage)
+      details.packaging += amount;
+      details.hub -= amount;
     }
 
     runningSubtotal += amount;
@@ -307,8 +330,151 @@ function computeCDR(product, ctx = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CALCUL DES 4 PRIX (Doctrine §3)
+// COST BREAKDOWN DOCTRINAL (Lot G — landed cost rendu relais)
 // ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Produit la décomposition doctrinale en 2 blocs :
+ *   - landed_relay : 9 lignes (achat, sourcing, hub, packaging, freight,
+ *                              customs, port_transitary, local_distribution, relay)
+ *   - business    : 3 lignes (payment, risk_provision, fixed_overhead)
+ *
+ * Doctrine §2 : "Komerce ne part pas du produit, il part du coût rendu relais."
+ *
+ *   landed_relay_cost_kmf      = somme des 9 lignes landed_relay
+ *   business_complete_cost_kmf = landed_relay_cost_kmf + somme des 3 lignes business
+ *
+ * @param {Object} details  — résultat de computeCDR().details
+ * @returns {{ landed_relay, business, landed_relay_cost_kmf, business_complete_cost_kmf }}
+ */
+function buildCostBreakdown(details) {
+  const r = (x) => Math.round(Number(x) || 0);
+  const landed_relay = {
+    product_purchase:    r(details.product_cost),
+    sourcing:            r(details.sourcing),
+    hub:                 r(details.hub),
+    packaging:           r(details.packaging || 0),
+    freight:             r(details.freight),
+    customs:             r(details.customs),
+    port_transitary:     r(details.port_transitaire),
+    local_distribution:  r(details.local_distribution || 0),
+    relay:               r(details.relay || 0),
+  };
+  // Si on n'a pas pu splitter distribution → relay/local, on bascule tout sur local_distribution
+  // pour que le total reste cohérent
+  if (landed_relay.local_distribution === 0 && landed_relay.relay === 0 && details.distribution > 0) {
+    landed_relay.local_distribution = r(details.distribution);
+  }
+
+  const business = {
+    payment:        r(details.payment),
+    risk_provision: r(details.risks),
+    fixed_overhead: r(details.fixed_costs),
+  };
+
+  const landed_relay_cost_kmf = Object.values(landed_relay).reduce((s, v) => s + v, 0);
+  const business_extra = Object.values(business).reduce((s, v) => s + v, 0);
+  const business_complete_cost_kmf = landed_relay_cost_kmf + business_extra;
+
+  return {
+    landed_relay,
+    business,
+    landed_relay_cost_kmf,
+    business_complete_cost_kmf,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA QUALITY (Lot G — fiabilité données)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Évalue la fiabilité des données utilisées et retourne :
+ *   - confidence : 'low' | 'medium' | 'high'
+ *   - missing_fields : liste des champs absents/par défaut
+ *   - sources : { field: 'real'|'manual'|'category'|'default'|'missing' }
+ *
+ * @param {Object} input    — paramètres d'entrée du recommend()
+ * @param {Object} context  — { hasProduct, hasCustomsCategory, hasFinanceConfig, warnings }
+ * @returns {{ confidence, missing_fields, sources }}
+ */
+function buildDataQuality(input, context) {
+  const sources = {};
+  const missing = [];
+
+  // Prix d'achat
+  if (input.product_id && context.hasProduct) {
+    sources.purchase_price = 'real';        // depuis products.cost_kmf
+  } else if (input.cost_kmf || input.prix_aed) {
+    sources.purchase_price = 'manual';      // saisi par l'admin (simulation/candidat)
+  } else {
+    sources.purchase_price = 'missing';
+    missing.push('purchase_price');
+  }
+
+  // Poids
+  if (input.weight_kg || input.poids_kg) {
+    sources.weight = input.product_id && context.hasProduct ? 'real' : 'manual';
+  } else if (context.hasCustomsCategory) {
+    sources.weight = 'category';
+  } else {
+    sources.weight = 'default';
+    missing.push('weight');
+  }
+
+  // Volume
+  if (input.volume_m3 && Number(input.volume_m3) > 0) {
+    sources.volume = 'manual';
+  } else if (context.hasCustomsCategory) {
+    sources.volume = 'category';
+  } else {
+    sources.volume = 'default';
+    missing.push('volume');
+  }
+
+  // Catégorie douane
+  sources.customs_category = context.hasCustomsCategory ? 'category' : 'default';
+  if (!context.hasCustomsCategory) missing.push('customs_category');
+
+  // Charges fixes
+  sources.fixed_overhead = context.hasFinanceConfig ? 'real' : 'default';
+
+  // Fret estimé (toujours par catégorie/global pour le moment)
+  sources.freight = 'category';
+  // Douane estimée
+  sources.customs = context.hasCustomsCategory ? 'category' : 'default';
+
+  // Confidence : nombre de champs missing/default
+  const total = Object.keys(sources).length;
+  const realOrManual = Object.values(sources).filter(s => s === 'real' || s === 'manual').length;
+  const ratio = realOrManual / total;
+  let confidence = 'low';
+  if (ratio >= 0.6) confidence = 'high';
+  else if (ratio >= 0.3) confidence = 'medium';
+
+  // Warnings du moteur ajoutent du bruit qui dégrade la confidence
+  if ((context.warnings || []).length >= 3) confidence = 'low';
+
+  return { confidence, missing_fields: missing, sources };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SUBJECT TYPE (Lot G)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Détermine le type de sujet d'analyse selon les paramètres reçus.
+ *   - catalog_product   : product_id fourni et trouvé en BDD
+ *   - supplier_candidate : candidate_id fourni (futur — non supporté ici)
+ *   - manual_simulation : aucun id, juste des champs saisis
+ */
+function inferSubjectType(input, context) {
+  if (input.product_id && context.hasProduct) return 'catalog_product';
+  if (input.candidate_id) return 'supplier_candidate';
+  return 'manual_simulation';
+}
+
+
 
 /**
  * Produit les 4 prix doctrinaux à partir d'un CDR.
@@ -811,40 +977,60 @@ async function recommend(input, options = {}) {
   // 11. Warnings cumulés
   const warnings = [...cdr.warnings, ...market.warnings];
 
+  // ─── LOT G : décomposition landed cost rendu relais ───────────────
+  const breakdown = buildCostBreakdown(cdr.details);
+  const dataQuality = buildDataQuality(input, {
+    hasProduct: !!productRow,
+    hasCustomsCategory: !!cat,
+    hasFinanceConfig: !!fc && Object.keys(fc).length > 0,
+    warnings,
+  });
+  const subjectType = inferSubjectType(input, { hasProduct: !!productRow });
+
   return {
+    // ── SUBJECT (Lot G) ──────────────────────────────────────────────
+    subject_type: subjectType,
     product_id: merged.id,
+    candidate_id: input.candidate_id || null,
     category: merged.category,
     channel: ctx.channel,
 
-    // ── PRIX ──
+    // ── COÛTS DOCTRINAUX (Lot G) ─────────────────────────────────────
+    landed_relay_cost_kmf: breakdown.landed_relay_cost_kmf,
+    business_complete_cost_kmf: breakdown.business_complete_cost_kmf,
+    cost_breakdown: {
+      landed_relay: breakdown.landed_relay,
+      business: breakdown.business,
+    },
+
+    // ── PRIX ─────────────────────────────────────────────────────────
     current_price_kmf: r(currentPrice),
     survival_price_kmf: prices.survival_price_kmf,
     minimum_safe_price_kmf: prices.minimum_safe_price_kmf,
     recommended_price_kmf: prices.recommended_price_kmf,
     test_price_kmf: prices.test_price_kmf,
 
-    // ── COÛTS ──
+    // ── COÛTS LEGACY (rétro-compat) ──────────────────────────────────
     cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf,
     variable_cost_estimated_kmf: cdr.variable_cost_estimated_kmf,
     fixed_cost_allocation_kmf: cdr.fixed_cost_allocation_kmf,
     risk_provision_estimated_kmf: cdr.risk_provision_estimated_kmf,
 
-    // ── MARGE ──
+    // ── MARGE ────────────────────────────────────────────────────────
     target_margin_pct: prices.target_margin_pct,
     estimated_margin_pct: estimatedMarginPct !== null ? Number(estimatedMarginPct.toFixed(1)) : null,
     estimated_contribution_kmf: estimatedContribution !== null ? r(estimatedContribution) : null,
 
-    // ── PILOTAGE ──
+    // ── PILOTAGE ─────────────────────────────────────────────────────
     monthly_fixed_costs_kmf: monthlyFixed,
     target_orders_per_month: cdr.target_orders_per_month,
     monthly_break_even_orders: monthlyBreakEven,
 
-    // ── SANTÉ + DÉCISION ──
+    // ── SANTÉ + DÉCISION ─────────────────────────────────────────────
     health_status: healthStatus,
     market_confidence: market.market_confidence,
     sourcing_decision: sourcingDecision,
     reason,
-    // Action concrète en langage admin (mappage 1:1 avec sourcing_decision)
     recommended_action: ({
       PRIORITY:        'Sourcer plus. Augmenter le stock pour profiter de la demande.',
       TEST:            'Tester en faible quantité. Ne pas sourcer massivement avant signal marché.',
@@ -855,9 +1041,12 @@ async function recommend(input, options = {}) {
       INCREASE_PRICE:  'Augmenter le prix de vente actuel pour restaurer la marge.',
     })[sourcingDecision] || 'À examiner manuellement',
 
-    // ── DÉTAILS ──
+    // ── DATA QUALITY (Lot G) ─────────────────────────────────────────
+    data_quality: dataQuality,
+
+    // ── DÉTAILS / SIGNAUX / ALERTS ───────────────────────────────────
     market_signals: market.market_signals,
-    details: cdr.details,
+    details: cdr.details,   // legacy : conservé pour rétro-compat
     alerts,
     warnings,
 
@@ -878,6 +1067,10 @@ module.exports = {
   computeSourcingDecision,
   buildAlerts,
   buildRecommendationText,
+  // Helpers Lot G
+  buildCostBreakdown,
+  buildDataQuality,
+  inferSubjectType,
   // Constantes
   HEALTH_THRESHOLDS,
   MARKET_THRESHOLDS,
