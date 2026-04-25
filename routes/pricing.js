@@ -69,24 +69,72 @@ router.post('/couture', async (req, res, next) => {
 });
 
 // GET /api/pricing/rates
+// Lit la source de vérité (finance_config). exchange_rates devient passif (historique).
 router.get('/rates', async (req, res, next) => {
   try {
-    const { rows } = await db.query('SELECT * FROM exchange_rates ORDER BY valid_from DESC LIMIT 5');
-    res.json({ current: rows[0] || { eur_kmf:495, aed_kmf:139 }, history: rows });
+    const { rows } = await db.query(
+      'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
+    );
+    const fc = rows[0];
+    // Historique pour info (audit)
+    const { rows: history } = await db.query(
+      'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 5'
+    );
+    res.json({
+      current: {
+        eur_kmf: Number(fc?.taux_change_eur_kmf) || 492,
+        aed_kmf: Number(fc?.taux_aed_kmf) || 138,
+      },
+      history,
+    });
   } catch(e) { next(e); }
 });
 
 // PUT /api/pricing/rates — admin
+// Écrit dans finance_config + log dans exchange_rates pour audit.
 router.put('/rates', ...adminOnly, async (req, res, next) => {
+  const client = await db.pool.connect();
   try {
     const { eur_kmf, aed_kmf } = req.body;
     if (!eur_kmf || !aed_kmf) return res.status(400).json({ error: 'eur_kmf et aed_kmf requis' });
-    const { rows } = await db.query(
-      'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1,$2,CURRENT_DATE) RETURNING *',
+
+    await client.query('BEGIN');
+
+    // 1. Update finance_config (source de vérité)
+    await client.query(
+      `UPDATE finance_config
+          SET taux_change_eur_kmf = $1,
+              taux_aed_kmf = $2,
+              updated_at = NOW(),
+              updated_by = $3
+        WHERE id = 1`,
+      [eur_kmf, aed_kmf, req.user?.id || null]
+    );
+
+    // 2. Log dans exchange_rates pour historique/audit
+    await client.query(
+      'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
       [eur_kmf, aed_kmf]
     );
-    res.json({ message: 'Taux mis à jour', rate: rows[0] });
-  } catch(e) { next(e); }
+
+    await client.query('COMMIT');
+
+    // 3. Invalider le cache global
+    try {
+      const { invalidateCache } = require('../utils/rates');
+      invalidateCache();
+    } catch(_) {}
+
+    res.json({
+      message: 'Taux mis à jour dans finance_config + log historique',
+      rate: { eur_kmf, aed_kmf },
+    });
+  } catch(e) {
+    await client.query('ROLLBACK').catch(()=>{});
+    next(e);
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = router;

@@ -237,6 +237,7 @@ const adminLoyaltyRouter    = require('./routes/admin-loyalty');
 const sourcingEngineRouter  = require('./routes/sourcing-engine');
 const signalsRouter         = require('./routes/signals');
 const adminCustomsShipmentsRouter = require('./routes/admin-customs-shipments');
+const adminCustomsCategoriesRouter = require('./routes/admin-customs-categories');
 
 
 app.use('/api/transit-dashboard', transitDashboardRoutes);
@@ -248,6 +249,7 @@ app.use('/api/admin/finance',  financeRouter);
 app.use('/api/admin/pilotage', dashboardRouter);
 app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin/customs-shipments', adminCustomsShipmentsRouter);
+app.use('/api/admin/customs-categories', adminCustomsCategoriesRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
 app.use('/api/admin/radar', adminRadarRouter);

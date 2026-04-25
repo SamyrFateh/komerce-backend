@@ -136,6 +136,25 @@ router.put('/', adminOnly, async (req, res, next) => {
     // Invalider le cache du service loyalty
     invalidateConfigCache();
 
+    // Invalider le cache des taux de change si les taux ont été modifiés
+    try {
+      const { invalidateCache } = require('../utils/rates');
+      invalidateCache();
+    } catch(_) {}
+
+    // Si les taux ont changé : log historique dans exchange_rates
+    if (updates.taux_change_eur_kmf !== undefined || updates.taux_aed_kmf !== undefined) {
+      try {
+        await db.query(
+          'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
+          [
+            Number(updated.taux_change_eur_kmf) || 492,
+            Number(updated.taux_aed_kmf) || 138,
+          ]
+        );
+      } catch(_) { /* historique non bloquant */ }
+    }
+
     console.log(`[finance-config] Updated by ${req.user.id}:`, updates);
 
     res.json(formatConfig(updated));
