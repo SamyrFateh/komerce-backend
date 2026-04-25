@@ -718,6 +718,125 @@ function _injectStyles() {
       font-family: inherit;
     }
     .pv-btn-ghost:hover { color: #1e293b; text-decoration: underline; }
+
+    /* ═══ LOT H — Bandeau subject_type ═══ */
+    .pv-subject-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      margin-top: 14px;
+      background: #f8fafc;
+      border-left: 4px solid #94a3b8;
+      border-radius: 6px;
+    }
+    .pv-subject-emoji { font-size: 1.4rem; flex-shrink: 0; }
+    .pv-subject-label {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.2;
+    }
+    .pv-subject-desc {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* ═══ LOT H — Blocs coût (rendu relais / business) ═══ */
+    .pv-cost-block {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+    .pv-cost-block-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .pv-cost-step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: #3b82f6;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.92rem;
+      flex-shrink: 0;
+    }
+    .pv-cost-block:nth-of-type(2) .pv-cost-step { background: #16a34a; }
+    .pv-cost-block-title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      margin: 0;
+      color: #1e293b;
+    }
+    .pv-cost-block-sub {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .pv-cost-total {
+      margin-left: auto;
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-family: ui-monospace, monospace;
+      color: #1e293b;
+    }
+    .pv-cost-lines {
+      padding: 6px 14px;
+    }
+    .pv-cost-line {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px dashed #f1f5f9;
+      font-size: 0.88rem;
+    }
+    .pv-cost-line:last-child { border-bottom: none; }
+    .pv-cost-line-report {
+      background: #f8fafc;
+      margin: 0 -14px;
+      padding: 8px 14px;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      font-style: italic;
+    }
+    .pv-cost-icon {
+      text-align: center;
+      font-size: 1rem;
+    }
+    .pv-cost-label {
+      color: #475569;
+    }
+    .pv-cost-value {
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+      color: #1e293b;
+      text-align: right;
+    }
+
+    /* ═══ LOT H — Données manquantes ═══ */
+    .pv-data-missing {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #fef2f2;
+      border-left: 3px solid #dc2626;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: #991b1b;
+    }
+    .pv-data-missing strong { color: #7f1d1d; }
   `;
   document.head.appendChild(s);
 }
@@ -966,39 +1085,87 @@ function _renderBlocA() {
 
   // ── Résultats si reco disponible ──
   if (reco) {
-    // Phrase métier (P2)
+    const breakdown = reco.cost_breakdown || { landed_relay: {}, business: {} };
+    const landed = breakdown.landed_relay || {};
+    const business = breakdown.business || {};
+    const landedTotal = reco.landed_relay_cost_kmf || 0;
+    const businessTotal = reco.business_complete_cost_kmf || reco.cost_complete_estimated_kmf || 0;
+
+    // Bandeau type de sujet (subject_type)
+    if (reco.subject_type) {
+      html += _renderSubjectBanner(reco.subject_type);
+    }
+
+    // ─── 1. Coût rendu relais (9 lignes) ───
+    html += '<div class="pv-cost-block">';
+    html += '<div class="pv-cost-block-head">';
+    html += '<span class="pv-cost-step">1</span>';
+    html += '<div><h3 class="pv-cost-block-title">📦 Coût rendu relais</h3>';
+    html += '<div class="pv-cost-block-sub">Combien coûte cet objet rendu disponible au point relais ?</div></div>';
+    html += '<div class="pv-cost-total">' + _fmt(landedTotal) + '</div>';
+    html += '</div>';
+    html += '<div class="pv-cost-lines">';
+    html += _costLine('🛒', 'Achat fournisseur', landed.product_purchase);
+    html += _costLine('🔍', 'Sourcing', landed.sourcing);
+    html += _costLine('🏬', 'Hub Dubai', landed.hub);
+    html += _costLine('📦', 'Emballage', landed.packaging);
+    html += _costLine('🚢', 'Fret', landed.freight);
+    html += _costLine('🛃', 'Douane', landed.customs);
+    html += _costLine('📋', 'Port / transitaire', landed.port_transitary);
+    html += _costLine('🚚', 'Distribution locale', landed.local_distribution);
+    html += _costLine('🏪', 'Relais', landed.relay);
+    html += '</div>';
+    html += '</div>';
+
+    // ─── 2. Coût complet business (3 lignes en plus) ───
+    html += '<div class="pv-cost-block">';
+    html += '<div class="pv-cost-block-head">';
+    html += '<span class="pv-cost-step">2</span>';
+    html += '<div><h3 class="pv-cost-block-title">💼 Coût complet business</h3>';
+    html += '<div class="pv-cost-block-sub">+ frais de paiement, provisions risques, part charges fixes.</div></div>';
+    html += '<div class="pv-cost-total">' + _fmt(businessTotal) + '</div>';
+    html += '</div>';
+    html += '<div class="pv-cost-lines">';
+    html += _costLine('═', 'Coût rendu relais (report)', landedTotal, true);
+    html += _costLine('💳', 'Frais de paiement', business.payment);
+    html += _costLine('🛡️', 'Provision risques', business.risk_provision);
+    html += _costLine('🏢', 'Part charges fixes', business.fixed_overhead);
+    html += '</div>';
+    html += '</div>';
+
+    // ─── 3. Phrase métier (révisée doctrine §4) ───
     html += '<div class="pv-truth-phrase">';
     html += '<div class="pv-truth-icon">💡</div>';
     html += '<div class="pv-truth-text">';
-    html += 'Ce produit coûte <strong>' + _fmt(reco.cost_complete_estimated_kmf) + '</strong> tout compris. ';
+    html += 'Cet objet coûte <strong>' + _fmt(landedTotal) + '</strong> rendu relais. ';
+    html += 'Coût complet business : <strong>' + _fmt(businessTotal) + '</strong>. ';
     html += 'Ne pas vendre sous <strong>' + _fmt(reco.minimum_safe_price_kmf) + '</strong>. ';
     html += 'Prix conseillé : <strong>' + _fmt(reco.recommended_price_kmf) + '</strong>. ';
     html += 'Prix test marché : <strong>' + _fmt(reco.test_price_kmf) + '</strong>.';
     html += '</div></div>';
 
-    // Cards des 4 prix
+    // ─── 4. Cards des 4 prix ───
     html += '<div class="pv-prices-grid">';
     html += _priceCard('💀 Prix de survie', reco.survival_price_kmf, 'Coûts variables uniquement. Sous ce prix, vente à perte immédiate.');
-    html += _priceCard('🛡️ Minimum sûr', reco.minimum_safe_price_kmf, 'Couvre coûts variables + risques + part charges fixes.');
+    html += _priceCard('🛡️ Minimum sûr', reco.minimum_safe_price_kmf, 'Couvre variables + risques + part charges fixes.');
     html += _priceCard('🎯 Prix conseillé', reco.recommended_price_kmf, 'Coût complet ÷ (1 - marge cible). Recommandation moteur.', true);
-    html += _priceCard('🧪 Prix test marché', reco.test_price_kmf, 'Prix conseillé arrondi pour tester le marché (jamais sous le minimum sûr).');
+    html += _priceCard('🧪 Prix test marché', reco.test_price_kmf, 'Pour tester le marché. Jamais sous le minimum sûr.');
     html += '</div>';
 
-    // Détail coût + marge + contribution
+    // ─── 5. Marge / contribution / seuil ───
     html += '<div class="pv-build-meta">';
-    html += '<div><strong>Coût de revient complet :</strong> ' + _fmt(reco.cost_complete_estimated_kmf) + '</div>';
-    html += '<div><strong>Coût variable :</strong> ' + _fmt(reco.variable_cost_estimated_kmf) +
-      ' · <strong>Part charges fixes :</strong> ' + _fmt(reco.fixed_cost_allocation_kmf) + '</div>';
-    if (reco.estimated_margin_pct != null) {
+    if (reco.estimated_margin_pct != null && reco.current_price_kmf > 0) {
       html += '<div><strong>Marge estimée (au prix actuel) :</strong> ' + reco.estimated_margin_pct + '% · ' +
         '<strong>Contribution :</strong> ' + _fmt(reco.estimated_contribution_kmf) + '</div>';
+    } else {
+      html += '<div><strong>Marge cible :</strong> ' + (reco.target_margin_pct || 40) + '%</div>';
     }
     if (reco.monthly_break_even_orders) {
-      html += '<div><strong>Seuil rentabilité :</strong> ' + reco.monthly_break_even_orders + ' commandes/mois</div>';
+      html += '<div><strong>Seuil rentabilité :</strong> ' + reco.monthly_break_even_orders + ' commandes/mois pour couvrir les charges fixes</div>';
     }
     html += '</div>';
 
-    // Qualité des données (P6) — sources + warnings
+    // ─── 6. Qualité des données (data_quality du backend) ───
     html += _renderDataQuality(reco);
   } else {
     html += '<div class="pv-build-empty">';
@@ -1011,6 +1178,32 @@ function _renderBlocA() {
   html += '</div>'; // .pv-bloc-body
   html += '</div>'; // .pv-bloc
   return html;
+}
+
+// ── Bandeau du type de sujet d'analyse (catalog / candidate / simulation) ──
+function _renderSubjectBanner(subjectType) {
+  const map = {
+    catalog_product:    { emoji: '📦', label: 'Produit du catalogue', desc: 'Données issues de products.', color: '#16a34a' },
+    supplier_candidate: { emoji: '🧪', label: 'Candidat fournisseur', desc: 'En attente de validation admin.', color: '#3b82f6' },
+    manual_simulation:  { emoji: '✍️', label: 'Simulation manuelle', desc: 'Test rapide d\'une offre fournisseur.', color: '#f59e0b' },
+  };
+  const m = map[subjectType] || { emoji: '❔', label: subjectType, desc: '', color: '#94a3b8' };
+  return '<div class="pv-subject-banner" style="border-left-color:' + m.color + ';">' +
+    '<span class="pv-subject-emoji">' + m.emoji + '</span>' +
+    '<div><div class="pv-subject-label">' + m.label + '</div>' +
+    '<div class="pv-subject-desc">' + m.desc + '</div></div>' +
+  '</div>';
+}
+
+// ── Une ligne de coût dans la décomposition ──
+function _costLine(emoji, label, value, isReport) {
+  const v = Number(value) || 0;
+  const cls = isReport ? 'pv-cost-line pv-cost-line-report' : 'pv-cost-line';
+  return '<div class="' + cls + '">' +
+    '<span class="pv-cost-icon">' + emoji + '</span>' +
+    '<span class="pv-cost-label">' + _escape(label) + '</span>' +
+    '<span class="pv-cost-value">' + (v > 0 ? _fmt(v) : '—') + '</span>' +
+  '</div>';
 }
 
 function _priceCard(label, value, hint, primary) {
@@ -1026,21 +1219,43 @@ function _priceCard(label, value, hint, primary) {
 // Indique source + confidence + warnings, conformément à la doctrine §6.
 function _renderDataQuality(reco) {
   const warnings = reco.warnings || [];
-  const details = reco.details || {};
-  // En mode catalogue : on a un produit_id donc cost_kmf vient de la BDD = real
-  // En mode simulation : on dépend de prix_aed saisi par l'admin = manual
-  const inSimulation = _ps.buildMode === 'simulation';
+  // LOT G : data_quality vient maintenant du backend (services/pricing-engine.js)
+  const dq = reco.data_quality || null;
 
-  // Estimer une confidence globale d'après les warnings
-  let confidence = 'high';
-  if (warnings.length >= 3) confidence = 'low';
-  else if (warnings.length >= 1) confidence = 'medium';
+  // Confidence : préférer celle du backend, fallback sur warnings
+  let confidence = dq?.confidence;
+  if (!confidence) {
+    if (warnings.length >= 3) confidence = 'low';
+    else if (warnings.length >= 1) confidence = 'medium';
+    else confidence = 'high';
+  }
 
   const confColor = ({
     high:   { bg: '#dcfce7', text: '#14532d', label: '✓ Fiabilité élevée' },
     medium: { bg: '#fef9c3', text: '#854d0e', label: '~ Fiabilité moyenne' },
     low:    { bg: '#fef2f2', text: '#b91c1c', label: '⚠ Fiabilité faible' },
-  })[confidence];
+  })[confidence] || { bg: '#f1f5f9', text: '#64748b', label: '? Inconnu' };
+
+  // Mapping des labels de source vers libellés français lisibles
+  const sourceLabels = {
+    real:     { label: 'réel', class: 'real' },
+    manual:   { label: 'manuel', class: 'manual' },
+    supplier: { label: 'fournisseur', class: 'supplier' },
+    category: { label: 'estimé catégorie', class: 'category' },
+    default:  { label: 'défaut système', class: 'default' },
+    missing:  { label: 'manquant', class: 'missing' },
+  };
+
+  // Mapping des clés data_quality.sources → libellés affichés
+  const fieldLabels = {
+    purchase_price:   'Prix d\'achat',
+    weight:           'Poids',
+    volume:           'Volume',
+    customs_category: 'Catégorie douane',
+    fixed_overhead:   'Charges fixes',
+    freight:          'Fret',
+    customs:          'Douane',
+  };
 
   let html = '<div class="pv-data-quality">';
   html += '<div class="pv-data-quality-head">';
@@ -1048,28 +1263,36 @@ function _renderDataQuality(reco) {
   html += '<span style="background:' + confColor.bg + ';color:' + confColor.text + ';padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:700;">' + confColor.label + '</span>';
   html += '</div>';
 
-  html += '<ul class="pv-data-sources">';
-  // Prix achat
-  html += '<li><span class="pv-data-key">Prix d\'achat :</span> ';
-  html += inSimulation ? '<span class="pv-data-src manual">manuel</span>' : '<span class="pv-data-src real">réel (catalogue)</span>';
-  html += '</li>';
-  // Poids
-  html += '<li><span class="pv-data-key">Poids :</span> ';
-  html += inSimulation ? '<span class="pv-data-src manual">saisi manuellement</span>' : '<span class="pv-data-src real">issu du catalogue</span>';
-  html += '</li>';
-  // Volume
-  const hasVolume = (_ps.inputDimL > 0 && _ps.inputDimW > 0 && _ps.inputDimH > 0);
-  html += '<li><span class="pv-data-key">Volume :</span> ';
-  html += hasVolume ? '<span class="pv-data-src manual">dimensions saisies</span>' : '<span class="pv-data-src default">défaut catégorie</span>';
-  html += '</li>';
-  // Fret / Douane
-  html += '<li><span class="pv-data-key">Fret :</span> <span class="pv-data-src category">estimé sur taux moyen</span></li>';
-  html += '<li><span class="pv-data-key">Douane :</span> <span class="pv-data-src category">estimée par catégorie douane</span></li>';
-  // Charges fixes
-  html += '<li><span class="pv-data-key">Charges fixes :</span> <span class="pv-data-src real">issues de finance_config</span></li>';
-  html += '</ul>';
+  // Si on a un data_quality structuré du backend, on l'affiche
+  if (dq && dq.sources) {
+    html += '<ul class="pv-data-sources">';
+    Object.keys(fieldLabels).forEach(field => {
+      const sourceKey = dq.sources[field];
+      if (!sourceKey) return;
+      const sourceMeta = sourceLabels[sourceKey] || { label: sourceKey, class: 'default' };
+      html += '<li>';
+      html += '<span class="pv-data-key">' + fieldLabels[field] + ' :</span> ';
+      html += '<span class="pv-data-src ' + sourceMeta.class + '">' + sourceMeta.label + '</span>';
+      html += '</li>';
+    });
+    html += '</ul>';
 
-  // Warnings explicites
+    // Champs manquants
+    if (dq.missing_fields && dq.missing_fields.length) {
+      html += '<div class="pv-data-missing">';
+      html += '<strong>❌ Données manquantes :</strong> ';
+      html += dq.missing_fields.map(f => fieldLabels[f] || f).join(', ');
+      html += '</div>';
+    }
+  } else {
+    // Fallback (rare) : data_quality absent du backend
+    html += '<div style="font-size:0.82rem;color:#64748b;font-style:italic;">';
+    html += 'Données détaillées non disponibles. ';
+    html += 'Le backend doit retourner data_quality (LOT G).';
+    html += '</div>';
+  }
+
+  // Warnings explicites du moteur
   if (warnings.length) {
     html += '<div class="pv-data-warnings">';
     html += '<strong>⚠️ Notes / hypothèses :</strong>';
