@@ -136,7 +136,8 @@ CT.platform = {
       roles: ['founder','admin','finance'],
       tabs:  [],
       supportedFilters: ['period'],
-      readOnly: ['finance']
+      readOnly: ['finance'],
+      hidden: true,  // P7 : masqué dans la nav (mode expert) — accessible via URL hash
     },
 
     /* ══════ CT : Pilotage (LEGACY — mégavue ADR-008) ══════ */
@@ -169,7 +170,8 @@ CT.platform = {
       roles: ['founder','admin','finance'],
       tabs:  [],
       supportedFilters: ['period','category'],
-      readOnly: ['finance']
+      readOnly: ['finance'],
+      hidden: true,  // P7 : masqué dans la nav (mode expert)
     },
 
     /* ══════ CT : 🏷️ ATELIER PRIX & SOURCING ══════
@@ -300,7 +302,8 @@ CT.platform = {
       roles: ['founder','admin','finance'],
       tabs:  [],
       supportedFilters: ['period'],
-      readOnly: ['finance']
+      readOnly: ['finance'],
+      hidden: true,  // P7 : masqué dans la nav (mode expert) — Santé Économique suffit
     },
 
     /* ══════ BO : Hub ══════ */

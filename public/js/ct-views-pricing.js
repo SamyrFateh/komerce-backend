@@ -31,13 +31,18 @@ const _ps = {
 
   // État UI simulateur
   inputCategory: 'phones',
-  inputPrixAed: 100,
+  inputPrixAchat: 100,        // unifié : valeur dans la devise sélectionnée
+  inputCurrency: 'AED',       // 'AED' | 'EUR' | 'USD' | 'KMF'
   inputDimL: 25,
   inputDimW: 20,
   inputDimH: 10,
   inputPoidsKg: 1,
   inputChannel: 'cash_relais',
   inputIsDiaspora: false,
+
+  // Mode du Bloc A (P1) : 'catalog' (sélection produit) ou 'simulation' (saisie libre)
+  buildMode: 'catalog',
+  selectedProductId: null,
 
   // Calcul actuel (résultat /recommend)
   currentReco: null,
@@ -555,6 +560,164 @@ function _injectStyles() {
     }
     .pv-warnings ul { margin: 4px 0 0; padding-left: 20px; }
     .pv-warnings li { margin-bottom: 2px; }
+
+    /* ═══ Toggle mode Bloc A (catalogue / simulation) ═══ */
+    .pv-mode-toggle {
+      display: flex; gap: 6px; margin-bottom: 14px;
+    }
+    .pv-mode-btn {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #475569;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .pv-mode-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .pv-mode-btn.active {
+      background: #f59e0b;
+      color: #fff;
+      border-color: #d97706;
+      font-weight: 600;
+    }
+
+    /* ═══ Phrase de vérité métier ═══ */
+    .pv-truth-phrase {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #fef3c7, #fef9c3);
+      border-left: 4px solid #f59e0b;
+      border-radius: 6px;
+    }
+    .pv-truth-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .pv-truth-text {
+      font-size: 0.94rem;
+      line-height: 1.6;
+      color: #78350f;
+    }
+    .pv-truth-text strong {
+      color: #b45309;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* ═══ Qualité des données (P6) ═══ */
+    .pv-data-quality {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .pv-data-quality-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.88rem;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pv-data-sources {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 6px;
+    }
+    .pv-data-sources li {
+      font-size: 0.82rem;
+      color: #475569;
+      padding: 4px 0;
+    }
+    .pv-data-key {
+      font-weight: 600;
+      color: #1e293b;
+      margin-right: 4px;
+    }
+    .pv-data-src {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .pv-data-src.real     { background: #dcfce7; color: #14532d; }
+    .pv-data-src.supplier { background: #d1fae5; color: #065f46; }
+    .pv-data-src.manual   { background: #dbeafe; color: #1e40af; }
+    .pv-data-src.category { background: #fef9c3; color: #854d0e; }
+    .pv-data-src.default  { background: #f1f5f9; color: #64748b; }
+    .pv-data-src.missing  { background: #fee2e2; color: #b91c1c; }
+    .pv-data-warnings {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #fefce8;
+      border-left: 3px solid #facc15;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: #854d0e;
+    }
+    .pv-data-warnings ul {
+      margin: 4px 0 0;
+      padding-left: 18px;
+    }
+    .pv-data-warnings li { margin-bottom: 2px; }
+
+    /* ═══ Compteurs P4 (5 statuts) ═══ */
+    .pv-summary-loss     { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .pv-summary-fragile  { background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .pv-summary-below    { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .pv-summary-above    { background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .pv-summary-unset    { background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+
+    /* ═══ Zone admin (apply-all) ═══ */
+    .pv-danger-zone {
+      margin: 12px 0;
+      border: 2px solid #fca5a5;
+      border-radius: 8px;
+      background: #fef2f2;
+      overflow: hidden;
+    }
+    .pv-danger-head {
+      padding: 10px 14px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #fca5a5;
+    }
+    .pv-danger-body {
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      color: #7f1d1d;
+      line-height: 1.5;
+    }
+    .pv-danger-body p { margin: 0 0 10px; }
+    .pv-btn-danger {
+      background: #dc2626;
+      color: #fff;
+      border-color: #b91c1c;
+    }
+    .pv-btn-danger:hover { background: #b91c1c; }
+    .pv-btn-ghost {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+    .pv-btn-ghost:hover { color: #1e293b; text-decoration: underline; }
   `;
   document.head.appendChild(s);
 }
@@ -581,13 +744,32 @@ async function _loadAll() {
 }
 
 async function _computeReco() {
+  // Conversion devise → AED (le backend /recommend attend prix_aed)
+  // Taux de référence depuis la config chargée au démarrage
+  const fc = _ps.config?.targets || _ps.config || {};
+  const tauxAed = Number(fc.taux_aed_kmf || 138);
+  const tauxEur = Number(fc.taux_change_eur_kmf || 492);
+  const tauxUsdEur = 0.92;  // approx, à raffiner si besoin
+
+  function toAED(amount, cur) {
+    const v = Number(amount) || 0;
+    if (!v) return 0;
+    if (cur === 'AED') return v;
+    if (cur === 'KMF') return v / tauxAed;
+    if (cur === 'EUR') return (v * tauxEur) / tauxAed;
+    if (cur === 'USD') return (v * tauxUsdEur * tauxEur) / tauxAed;
+    return v;
+  }
+
   const volM3 = (_ps.inputDimL * _ps.inputDimW * _ps.inputDimH) / 1_000_000;
+  const prixAed = toAED(_ps.inputPrixAchat, _ps.inputCurrency || 'AED');
+
   const body = {
-    product_id: _ps.selectedProductId || null,
+    product_id: (_ps.buildMode === 'catalog' && _ps.selectedProductId) ? _ps.selectedProductId : null,
     category: _ps.inputCategory,
-    prix_aed: _ps.inputPrixAed,
-    volume_m3: volM3,
-    poids_kg: _ps.inputPoidsKg,
+    prix_aed: prixAed,
+    volume_m3: volM3 || 0.005,
+    poids_kg: _ps.inputPoidsKg || 0.5,
     channel: _ps.inputChannel,
     is_diaspora: _ps.inputChannel === 'diaspora',
     verbose: true,
@@ -669,83 +851,137 @@ function _renderHTML(container) {
 
 // ═══════════════════════════════════════════════════════════════════
 // BLOC A — Construire le prix
-// "Ce produit coûte X. Voici les 4 prix proposés."
+// 2 modes : produit catalogue OU simulation manuelle (test fournisseur)
 // ═══════════════════════════════════════════════════════════════════
 function _renderBlocA() {
   const reco = _ps.currentReco;
+  const mode = _ps.buildMode || 'catalog';  // 'catalog' | 'simulation'
+
   let html = '<div class="pv-bloc pv-bloc-a">';
   html += '<div class="pv-bloc-head">';
   html += '<span class="pv-bloc-num">A</span>';
   html += '<div><h2 class="pv-bloc-title">Construire le prix</h2>';
-  html += '<div class="pv-bloc-sub">Sélectionnez un produit et voyez les prix calculés par le moteur.</div></div>';
+  html += '<div class="pv-bloc-sub">Choisir un produit du catalogue ou simuler un produit fournisseur.</div></div>';
   html += '</div>';
 
   html += '<div class="pv-bloc-body">';
 
-  // ── Sélecteur produit + paramètres ──
+  // ── Toggle mode ──
+  html += '<div class="pv-mode-toggle">';
+  html += '<button class="pv-mode-btn ' + (mode === 'catalog' ? 'active' : '') + '" data-act="set-build-mode" data-mode="catalog">📦 Produit du catalogue</button>';
+  html += '<button class="pv-mode-btn ' + (mode === 'simulation' ? 'active' : '') + '" data-act="set-build-mode" data-mode="simulation">🧪 Simulation / candidat fournisseur</button>';
+  html += '</div>';
+
+  // ── Formulaire ──
   html += '<div class="pv-build-grid">';
-  html += '<div>';
-  html += '<label class="pv-build-label">Produit</label>';
-  html += '<select class="pv-build-input" data-input="product-select">';
-  html += '<option value="">-- Choisir un produit du catalogue --</option>';
-  (_ps.catalog || []).forEach(it => {
-    const sel = (_ps.selectedProductId === it.product_id) ? ' selected' : '';
-    html += '<option value="' + it.product_id + '"' + sel + '>' +
-      _escape(it.name) + ' — ' + _fmt(it.current_price_kmf) +
-      '</option>';
-  });
-  html += '</select>';
-  html += '</div>';
 
-  html += '<div>';
-  html += '<label class="pv-build-label">Catégorie</label>';
-  html += '<select class="pv-build-input" data-input="category">';
-  _ps.categories.forEach(c => {
-    const sel = (c.key === _ps.inputCategory) ? ' selected' : '';
-    html += '<option value="' + c.key + '"' + sel + '>' + _escape(c.label || c.key) + '</option>';
-  });
-  html += '</select>';
-  html += '</div>';
+  if (mode === 'catalog') {
+    // Mode catalogue : sélecteur produit + canal seulement (les autres champs sont dérivés du produit)
+    html += '<div style="grid-column: span 2;">';
+    html += '<label class="pv-build-label">Produit du catalogue *</label>';
+    html += '<select class="pv-build-input" data-input="product-select">';
+    html += '<option value="">-- Choisir un produit --</option>';
+    (_ps.catalog || []).forEach(it => {
+      const sel = (_ps.selectedProductId === it.product_id) ? ' selected' : '';
+      html += '<option value="' + it.product_id + '"' + sel + '>' +
+        _escape(it.name) + ' — ' + _fmt(it.current_price_kmf) +
+        '</option>';
+    });
+    html += '</select>';
+    if (!_ps.catalog?.length) {
+      html += '<div style="font-size:0.78rem;color:#94a3b8;margin-top:4px;font-style:italic;">Aucun produit dans le catalogue. Utilisez le mode Simulation pour tester.</div>';
+    }
+    html += '</div>';
 
-  html += '<div>';
-  html += '<label class="pv-build-label">Prix achat (AED)</label>';
-  html += '<input type="number" class="pv-build-input" data-input="prix_aed" value="' + _ps.inputPrixAed + '" min="0" step="1">';
-  html += '</div>';
+    html += '<div>';
+    html += '<label class="pv-build-label">Canal</label>';
+    html += '<select class="pv-build-input" data-input="channel">';
+    html += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
+    html += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora</option>';
+    html += '</select>';
+    html += '</div>';
 
-  html += '<div>';
-  html += '<label class="pv-build-label">Poids (kg)</label>';
-  html += '<input type="number" class="pv-build-input" data-input="poids_kg" value="' + _ps.inputPoidsKg + '" min="0" step="0.1">';
-  html += '</div>';
+  } else {
+    // Mode simulation : tous les champs requis
+    html += '<div>';
+    html += '<label class="pv-build-label">Catégorie *</label>';
+    html += '<select class="pv-build-input" data-input="category">';
+    _ps.categories.forEach(c => {
+      const sel = (c.key === _ps.inputCategory) ? ' selected' : '';
+      html += '<option value="' + c.key + '"' + sel + '>' + _escape(c.label || c.key) + '</option>';
+    });
+    html += '</select></div>';
 
-  html += '<div>';
-  html += '<label class="pv-build-label">Volume L×l×h (cm)</label>';
-  html += '<div style="display:flex;gap:4px;">';
-  html += '<input type="number" class="pv-build-input" data-input="dim_l" value="' + _ps.inputDimL + '" min="0" style="width:33%">';
-  html += '<input type="number" class="pv-build-input" data-input="dim_w" value="' + _ps.inputDimW + '" min="0" style="width:33%">';
-  html += '<input type="number" class="pv-build-input" data-input="dim_h" value="' + _ps.inputDimH + '" min="0" style="width:33%">';
-  html += '</div></div>';
+    html += '<div>';
+    html += '<label class="pv-build-label">Prix achat *</label>';
+    html += '<input type="number" class="pv-build-input" data-input="prix_achat" value="' + _ps.inputPrixAchat + '" min="0" step="0.01">';
+    html += '</div>';
 
-  html += '<div>';
-  html += '<label class="pv-build-label">Canal</label>';
-  html += '<select class="pv-build-input" data-input="channel">';
-  html += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
-  html += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora (carte)</option>';
-  html += '</select>';
-  html += '</div>';
+    html += '<div>';
+    html += '<label class="pv-build-label">Devise</label>';
+    html += '<select class="pv-build-input" data-input="currency">';
+    ['AED', 'EUR', 'USD', 'KMF'].forEach(cur => {
+      html += '<option value="' + cur + '"' + (_ps.inputCurrency === cur ? ' selected' : '') + '>' + cur + '</option>';
+    });
+    html += '</select></div>';
+
+    html += '<div>';
+    html += '<label class="pv-build-label">Poids (kg) *</label>';
+    html += '<input type="number" class="pv-build-input" data-input="poids_kg" value="' + _ps.inputPoidsKg + '" min="0" step="0.01">';
+    html += '</div>';
+
+    html += '<div>';
+    html += '<label class="pv-build-label">Volume L×l×h (cm)</label>';
+    html += '<div style="display:flex;gap:4px;">';
+    html += '<input type="number" class="pv-build-input" data-input="dim_l" value="' + _ps.inputDimL + '" min="0" placeholder="L" style="width:33%">';
+    html += '<input type="number" class="pv-build-input" data-input="dim_w" value="' + _ps.inputDimW + '" min="0" placeholder="l" style="width:33%">';
+    html += '<input type="number" class="pv-build-input" data-input="dim_h" value="' + _ps.inputDimH + '" min="0" placeholder="h" style="width:33%">';
+    html += '</div></div>';
+
+    html += '<div>';
+    html += '<label class="pv-build-label">Canal</label>';
+    html += '<select class="pv-build-input" data-input="channel">';
+    html += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
+    html += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora</option>';
+    html += '</select></div>';
+  }
+
   html += '</div>';  // .pv-build-grid
 
-  // Bouton recalculer
-  html += '<div style="text-align:right;margin-top:10px;">';
-  html += '<button class="pv-btn pv-btn-primary" data-act="compute-reco">🧮 Calculer les prix</button>';
+  // ── Bouton + état ──
+  const canCompute = (mode === 'catalog' && _ps.selectedProductId) ||
+                     (mode === 'simulation' && _ps.inputPrixAchat > 0 && _ps.inputCategory);
+  html += '<div style="display:flex;align-items:center;gap:12px;margin-top:12px;">';
+  if (!canCompute) {
+    html += '<div style="font-size:0.82rem;color:#94a3b8;font-style:italic;flex:1;">';
+    html += mode === 'catalog'
+      ? '↑ Sélectionnez un produit pour activer le calcul'
+      : '↑ Renseignez au moins catégorie + prix achat';
+    html += '</div>';
+  } else {
+    html += '<div style="flex:1;"></div>';
+  }
+  html += '<button class="pv-btn pv-btn-primary" data-act="compute-reco"' + (canCompute ? '' : ' disabled style="opacity:0.5;cursor:not-allowed;"') + '>🧮 Calculer les prix</button>';
   html += '</div>';
 
   // ── Résultats si reco disponible ──
   if (reco) {
+    // Phrase métier (P2)
+    html += '<div class="pv-truth-phrase">';
+    html += '<div class="pv-truth-icon">💡</div>';
+    html += '<div class="pv-truth-text">';
+    html += 'Ce produit coûte <strong>' + _fmt(reco.cost_complete_estimated_kmf) + '</strong> tout compris. ';
+    html += 'Ne pas vendre sous <strong>' + _fmt(reco.minimum_safe_price_kmf) + '</strong>. ';
+    html += 'Prix conseillé : <strong>' + _fmt(reco.recommended_price_kmf) + '</strong>. ';
+    html += 'Prix test marché : <strong>' + _fmt(reco.test_price_kmf) + '</strong>.';
+    html += '</div></div>';
+
+    // Cards des 4 prix
     html += '<div class="pv-prices-grid">';
     html += _priceCard('💀 Prix de survie', reco.survival_price_kmf, 'Coûts variables uniquement. Sous ce prix, vente à perte immédiate.');
     html += _priceCard('🛡️ Minimum sûr', reco.minimum_safe_price_kmf, 'Couvre coûts variables + risques + part charges fixes.');
     html += _priceCard('🎯 Prix conseillé', reco.recommended_price_kmf, 'Coût complet ÷ (1 - marge cible). Recommandation moteur.', true);
-    html += _priceCard('🧪 Prix test marché', reco.test_price_kmf, 'Prix conseillé pour tester le marché (jamais sous le minimum sûr).');
+    html += _priceCard('🧪 Prix test marché', reco.test_price_kmf, 'Prix conseillé arrondi pour tester le marché (jamais sous le minimum sûr).');
     html += '</div>';
 
     // Détail coût + marge + contribution
@@ -761,8 +997,15 @@ function _renderBlocA() {
       html += '<div><strong>Seuil rentabilité :</strong> ' + reco.monthly_break_even_orders + ' commandes/mois</div>';
     }
     html += '</div>';
+
+    // Qualité des données (P6) — sources + warnings
+    html += _renderDataQuality(reco);
   } else {
-    html += '<div class="pv-build-empty">Sélectionnez un produit ou ajustez les paramètres puis cliquez sur "Calculer les prix".</div>';
+    html += '<div class="pv-build-empty">';
+    html += mode === 'catalog'
+      ? 'Sélectionnez un produit du catalogue puis cliquez sur "Calculer les prix".'
+      : 'Renseignez les paramètres du produit fournisseur puis cliquez sur "Calculer les prix".';
+    html += '</div>';
   }
 
   html += '</div>'; // .pv-bloc-body
@@ -777,6 +1020,66 @@ function _priceCard(label, value, hint, primary) {
     '<div class="pv-price-value">' + _fmt(value) + '</div>' +
     '<div class="pv-price-hint">' + hint + '</div>' +
   '</div>';
+}
+
+// ── Affichage qualité des données (P6) ──
+// Indique source + confidence + warnings, conformément à la doctrine §6.
+function _renderDataQuality(reco) {
+  const warnings = reco.warnings || [];
+  const details = reco.details || {};
+  // En mode catalogue : on a un produit_id donc cost_kmf vient de la BDD = real
+  // En mode simulation : on dépend de prix_aed saisi par l'admin = manual
+  const inSimulation = _ps.buildMode === 'simulation';
+
+  // Estimer une confidence globale d'après les warnings
+  let confidence = 'high';
+  if (warnings.length >= 3) confidence = 'low';
+  else if (warnings.length >= 1) confidence = 'medium';
+
+  const confColor = ({
+    high:   { bg: '#dcfce7', text: '#14532d', label: '✓ Fiabilité élevée' },
+    medium: { bg: '#fef9c3', text: '#854d0e', label: '~ Fiabilité moyenne' },
+    low:    { bg: '#fef2f2', text: '#b91c1c', label: '⚠ Fiabilité faible' },
+  })[confidence];
+
+  let html = '<div class="pv-data-quality">';
+  html += '<div class="pv-data-quality-head">';
+  html += '<strong>📋 Qualité des données utilisées</strong>';
+  html += '<span style="background:' + confColor.bg + ';color:' + confColor.text + ';padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:700;">' + confColor.label + '</span>';
+  html += '</div>';
+
+  html += '<ul class="pv-data-sources">';
+  // Prix achat
+  html += '<li><span class="pv-data-key">Prix d\'achat :</span> ';
+  html += inSimulation ? '<span class="pv-data-src manual">manuel</span>' : '<span class="pv-data-src real">réel (catalogue)</span>';
+  html += '</li>';
+  // Poids
+  html += '<li><span class="pv-data-key">Poids :</span> ';
+  html += inSimulation ? '<span class="pv-data-src manual">saisi manuellement</span>' : '<span class="pv-data-src real">issu du catalogue</span>';
+  html += '</li>';
+  // Volume
+  const hasVolume = (_ps.inputDimL > 0 && _ps.inputDimW > 0 && _ps.inputDimH > 0);
+  html += '<li><span class="pv-data-key">Volume :</span> ';
+  html += hasVolume ? '<span class="pv-data-src manual">dimensions saisies</span>' : '<span class="pv-data-src default">défaut catégorie</span>';
+  html += '</li>';
+  // Fret / Douane
+  html += '<li><span class="pv-data-key">Fret :</span> <span class="pv-data-src category">estimé sur taux moyen</span></li>';
+  html += '<li><span class="pv-data-key">Douane :</span> <span class="pv-data-src category">estimée par catégorie douane</span></li>';
+  // Charges fixes
+  html += '<li><span class="pv-data-key">Charges fixes :</span> <span class="pv-data-src real">issues de finance_config</span></li>';
+  html += '</ul>';
+
+  // Warnings explicites
+  if (warnings.length) {
+    html += '<div class="pv-data-warnings">';
+    html += '<strong>⚠️ Notes / hypothèses :</strong>';
+    html += '<ul>';
+    warnings.forEach(w => { html += '<li>' + _escape(w) + '</li>'; });
+    html += '</ul></div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -807,10 +1110,15 @@ function _renderBlocB() {
   html += _decisionCard('🎯 Décision sourcing', reco.sourcing_decision, _sourcingLabel(reco.sourcing_decision), _sourcingColor(reco.sourcing_decision));
   html += '</div>';
 
-  // ── Raison en langage humain ──
-  if (reco.reason) {
+  // ── Raison + action recommandée en langage humain ──
+  if (reco.reason || reco.recommended_action) {
     html += '<div class="pv-reason">';
-    html += '<strong>💡 Raison :</strong> ' + _escape(reco.reason);
+    if (reco.reason) {
+      html += '<div><strong>💡 Raison :</strong> ' + _escape(reco.reason) + '</div>';
+    }
+    if (reco.recommended_action) {
+      html += '<div style="margin-top:6px;"><strong>🎯 Action :</strong> ' + _escape(reco.recommended_action) + '</div>';
+    }
     html += '</div>';
   }
 
@@ -1279,29 +1587,75 @@ function _renderCatalogBody() {
     return '<div class="pv-empty">Aucun produit dans le catalogue.<br>Ajoute des produits via la vue Sourcing puis reviens ici.</div>';
   }
 
-  const summary = _ps.catalogSummary;
   const canApplyAll = _userCanApplyAll();
 
-  let html = '<div class="pv-catalog-tools">' +
-    '<div class="pv-catalog-summary">' +
-      '<span class="pv-summary-aligned">✓ Alignés : ' + (summary.aligned || 0) + '</span>' +
-      '<span class="pv-summary-under">↑ Sous-prix : ' + (summary.underpriced || 0) + '</span>' +
-      '<span class="pv-summary-over">↓ Sur-prix : ' + (summary.overpriced || 0) + '</span>' +
-    '</div>' +
-    '<select class="pv-select" data-input="catFilter">' +
-      '<option value="all"' + (_ps.catalogFilter === 'all' ? ' selected' : '') + '>Tous les produits</option>' +
-      '<option value="underpriced"' + (_ps.catalogFilter === 'underpriced' ? ' selected' : '') + '>Sous-prix uniquement</option>' +
-      '<option value="overpriced"' + (_ps.catalogFilter === 'overpriced' ? ' selected' : '') + '>Sur-prix uniquement</option>' +
-      '<option value="aligned"' + (_ps.catalogFilter === 'aligned' ? ' selected' : '') + '>Alignés uniquement</option>' +
-    '</select>' +
-    (canApplyAll
-      ? '<button class="pv-btn pv-btn-primary" data-act="apply-all">✨ Tout appliquer (admin)</button>'
-      : '<span style="font-size:0.78rem; color:#64748b;">⚠ "Tout appliquer" réservé admin/founder</span>') +
-  '</div>';
+  // ── Calculer un statut précis par item (P4) ──
+  // Utilise les champs doctrine du backend, pas une recalcul.
+  // Le backend nous donne : current_price_kmf, recommended_price_kmf, health_status
+  // On dérive juste un label conforme à la doctrine.
+  function _computeBucket(it) {
+    const cur = Number(it.current_price_kmf) || 0;
+    const reco = Number(it.recommended_price_kmf) || 0;
+    if (cur <= 0) return 'unset';
+    // Priorité absolue : santé du prix
+    if (it.health_status === 'loss') return 'loss';
+    if (it.health_status === 'danger' || it.health_status === 'fragile') return 'fragile';
+    if (!reco) return 'unknown';
+    const gapPct = (cur - reco) / reco * 100;
+    if (Math.abs(gapPct) <= 5) return 'aligned';
+    if (gapPct < -5) return 'below_reco';   // sous le prix conseillé mais marge OK
+    return 'above_reco';                     // au-dessus du conseillé
+  }
 
-  let items = _ps.catalog;
-  if (_ps.catalogFilter !== 'all') {
-    items = items.filter(it => it.status === _ps.catalogFilter);
+  // Compter par bucket
+  const buckets = { loss: 0, fragile: 0, below_reco: 0, aligned: 0, above_reco: 0, unset: 0, unknown: 0 };
+  _ps.catalog.forEach(it => { buckets[_computeBucket(it)]++; });
+
+  let html = '<div class="pv-catalog-tools">';
+
+  // Compteurs P4 (5 statuts précis)
+  html += '<div class="pv-catalog-summary">';
+  html += '<span class="pv-summary-loss" title="Vendu sous coût complet">🔴 À perte : ' + buckets.loss + '</span>';
+  html += '<span class="pv-summary-fragile" title="Marge sous 25%">🟡 Marge fragile : ' + buckets.fragile + '</span>';
+  html += '<span class="pv-summary-below" title="Marge OK mais prix < conseillé">↑ Sous conseillé : ' + buckets.below_reco + '</span>';
+  html += '<span class="pv-summary-aligned" title="Prix à ±5% du conseillé">✓ Aligné : ' + buckets.aligned + '</span>';
+  html += '<span class="pv-summary-above" title="Prix > conseillé +5%">↓ Au-dessus : ' + buckets.above_reco + '</span>';
+  if (buckets.unset) html += '<span class="pv-summary-unset" title="Prix non fixé">— Non fixé : ' + buckets.unset + '</span>';
+  html += '</div>';
+
+  // Filtre
+  html += '<select class="pv-select" data-input="catFilter">';
+  html += '<option value="all"' + (_ps.catalogFilter === 'all' ? ' selected' : '') + '>Tous les produits</option>';
+  html += '<option value="loss"' + (_ps.catalogFilter === 'loss' ? ' selected' : '') + '>🔴 À perte uniquement</option>';
+  html += '<option value="fragile"' + (_ps.catalogFilter === 'fragile' ? ' selected' : '') + '>🟡 Marge fragile uniquement</option>';
+  html += '<option value="below_reco"' + (_ps.catalogFilter === 'below_reco' ? ' selected' : '') + '>↑ Sous conseillé uniquement</option>';
+  html += '<option value="aligned"' + (_ps.catalogFilter === 'aligned' ? ' selected' : '') + '>✓ Alignés uniquement</option>';
+  html += '<option value="above_reco"' + (_ps.catalogFilter === 'above_reco' ? ' selected' : '') + '>↓ Au-dessus uniquement</option>';
+  html += '</select>';
+
+  // Apply-all caché par défaut (P5) — sera dans une zone "danger zone" expandable
+  if (canApplyAll) {
+    html += '<button class="pv-btn pv-btn-ghost" data-act="toggle-apply-all" style="margin-left:auto;font-size:0.78rem;color:#64748b;">⚙️ Outils admin</button>';
+  } else {
+    html += '<span style="margin-left:auto;font-size:0.78rem; color:#64748b;">⚠ Outils admin réservés admin/founder</span>';
+  }
+  html += '</div>';
+
+  // Zone "Outils admin" (apply-all) — affichée sur demande seulement, P5
+  if (canApplyAll && _ps.showApplyAll) {
+    html += '<div class="pv-danger-zone">';
+    html += '<div class="pv-danger-head">⚠️ Zone admin — Outils massifs</div>';
+    html += '<div class="pv-danger-body">';
+    html += '<p>Le bouton ci-dessous applique le prix conseillé à <strong>tous les produits</strong> du catalogue. ';
+    html += 'Le pricing recommande, l\'humain décide : utiliser uniquement après revue manuelle des écarts.</p>';
+    html += '<button class="pv-btn pv-btn-danger" data-act="apply-all">✨ Tout appliquer (confirmation requise)</button>';
+    html += '</div></div>';
+  }
+
+  // Filtrage des items
+  let items = _ps.catalog.map(it => ({ ...it, _bucket: _computeBucket(it) }));
+  if (_ps.catalogFilter && _ps.catalogFilter !== 'all') {
+    items = items.filter(it => it._bucket === _ps.catalogFilter);
   }
 
   if (!items.length) {
@@ -1311,6 +1665,7 @@ function _renderCatalogBody() {
 
   html += '<table class="pv-table"><thead><tr>' +
     '<th>Produit</th><th>Cat.</th>' +
+    '<th>Statut</th>' +
     '<th class="pv-num">Prix actuel</th>' +
     '<th class="pv-num">Min. sûr</th>' +
     '<th class="pv-num">Conseillé</th>' +
@@ -1322,8 +1677,18 @@ function _renderCatalogBody() {
     '<th>Action</th>' +
   '</tr></thead><tbody>';
 
+  // Mapping bucket → badge
+  const bucketBadges = {
+    loss:       { label: '🔴 À perte',       bg: '#fee2e2', text: '#b91c1c' },
+    fragile:    { label: '🟡 Fragile',       bg: '#fef9c3', text: '#854d0e' },
+    below_reco: { label: '↑ Sous conseillé', bg: '#fef3c7', text: '#92400e' },
+    aligned:    { label: '✓ Aligné',         bg: '#dcfce7', text: '#166534' },
+    above_reco: { label: '↓ Au-dessus',      bg: '#e0e7ff', text: '#4338ca' },
+    unset:      { label: '— Non fixé',       bg: '#f1f5f9', text: '#64748b' },
+    unknown:    { label: '? Inconnu',        bg: '#f8fafc', text: '#94a3b8' },
+  };
+
   items.forEach(it => {
-    // Champs doctrine (présents si recommend-batch a appelé pricing-engine)
     const minSafe = it.minimum_safe_price_kmf;
     const reco = it.recommended_price_kmf;
     const testP = it.test_price_kmf;
@@ -1331,6 +1696,12 @@ function _renderCatalogBody() {
     const contrib = it.estimated_contribution_kmf;
     const health = it.health_status;
     const decision = it.sourcing_decision;
+
+    // Badge statut bucket (P4)
+    const bucket = bucketBadges[it._bucket] || bucketBadges.unknown;
+    const bucketBadge = '<span style="background:' + bucket.bg + ';color:' + bucket.text +
+      ';padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:600;white-space:nowrap;">' +
+      bucket.label + '</span>';
 
     // Badges health/decision
     let healthBadge = '<span style="color:#94a3b8;font-style:italic;">—</span>';
@@ -1351,6 +1722,7 @@ function _renderCatalogBody() {
     html += '<tr data-product-id="' + it.product_id + '">' +
       '<td>' + _escape(it.name) + '</td>' +
       '<td>' + _escape(it.category) + '</td>' +
+      '<td>' + bucketBadge + '</td>' +
       '<td class="pv-num">' + _fmt(it.current_price_kmf) + '</td>' +
       '<td class="pv-num">' + (minSafe != null ? _fmt(minSafe) : '—') + '</td>' +
       '<td class="pv-num"><strong>' + _fmt(reco) + '</strong></td>' +
@@ -1446,15 +1818,15 @@ function _bindEvents(container) {
     const f = t.dataset.input;
     if (f === 'product-select') {
       _ps.selectedProductId = t.value || null;
-      // Si on choisit un produit, on présélectionne ses paramètres dans le formulaire
+      // Si on choisit un produit, on présélectionne sa catégorie
       const item = (_ps.catalog || []).find(c => c.product_id === _ps.selectedProductId);
       if (item) {
         if (item.category) _ps.inputCategory = item.category;
-        // les autres inputs restent libres : prix_aed, dim, poids ne sont pas dans recommend-batch
       }
       _renderHTML(container);
     } else if (f === 'category')  _ps.inputCategory = t.value;
-    else if (f === 'prix_aed')   _ps.inputPrixAed = parseFloat(t.value) || 0;
+    else if (f === 'prix_achat') _ps.inputPrixAchat = parseFloat(t.value) || 0;
+    else if (f === 'currency')   _ps.inputCurrency = t.value || 'AED';
     else if (f === 'poids_kg')   _ps.inputPoidsKg = parseFloat(t.value) || 0;
     else if (f === 'dim_l')      _ps.inputDimL = parseFloat(t.value) || 0;
     else if (f === 'dim_w')      _ps.inputDimW = parseFloat(t.value) || 0;
@@ -1462,6 +1834,10 @@ function _bindEvents(container) {
     else if (f === 'channel') {
       _ps.inputChannel = t.value;
       _ps.inputIsDiaspora = (t.value === 'diaspora');
+    }
+    else if (f === 'catFilter') {
+      _ps.catalogFilter = t.value;
+      _renderHTML(container);
     }
   });
 
@@ -1489,6 +1865,15 @@ function _bindEvents(container) {
     }
 
     // Bloc A : calculer les prix via /api/pricing/recommend
+    // Toggle mode du Bloc A (catalog vs simulation)
+    if (act === 'set-build-mode') {
+      _ps.buildMode = t.dataset.mode || 'catalog';
+      // Reset reco quand on change de mode pour ne pas mélanger
+      _ps.currentReco = null;
+      _renderHTML(container);
+      return;
+    }
+
     if (act === 'compute-reco') {
       t.disabled = true;
       const oldText = t.textContent;
@@ -1664,6 +2049,12 @@ function _bindEvents(container) {
       return;
     }
 
+    if (act === 'toggle-apply-all') {
+      _ps.showApplyAll = !_ps.showApplyAll;
+      _renderHTML(container);
+      return;
+    }
+
     if (act === 'apply-all') {
       if (!_userCanApplyAll()) {
         alert('Réservé aux rôles admin / founder.');
@@ -1676,10 +2067,25 @@ function _bindEvents(container) {
         alert('Tous les produits sont déjà alignés.');
         return;
       }
-      if (!confirm('Appliquer les prix recommandés sur ' + items.length + ' produits ?\n\nCette action est journalisée dans price_history.')) return;
+      // Confirmation forte (P5) : double étape + saisie texte
+      const step1 = confirm(
+        '⚠️ ATTENTION — Action massive\n\n' +
+        'Vous êtes sur le point d\'appliquer le prix conseillé sur ' + items.length + ' produits.\n' +
+        'Cette action sera journalisée dans price_history et visible par tous les admins.\n\n' +
+        'Le pricing recommande, l\'humain décide. Êtes-vous sûr d\'avoir revu chaque écart ?'
+      );
+      if (!step1) return;
+      const confirmText = prompt(
+        'Pour confirmer, tapez exactement : APPLIQUER ' + items.length
+      );
+      if (confirmText !== ('APPLIQUER ' + items.length)) {
+        alert('Confirmation incorrecte. Action annulée.');
+        return;
+      }
       try {
         const r = await _apiPut('/api/pricing/apply-all', { items, source: 'batch' });
         alert('✓ ' + r.count + ' prix mis à jour.');
+        _ps.showApplyAll = false;
         await Promise.all([_loadDashboard(), _loadCatalog()]);
         _renderHTML(container);
       } catch (err) {
@@ -1687,22 +2093,6 @@ function _bindEvents(container) {
       }
       return;
     }
-  });
-
-  // Inputs (changement immédiat du state, recalcul manuel)
-  container.addEventListener('change', (e) => {
-    const t = e.target.closest('[data-input]');
-    if (!t) return;
-    const f = t.dataset.input;
-    const v = t.value;
-    if (f === 'category')        _ps.inputCategory = v;
-    else if (f === 'prixAed')    _ps.inputPrixAed = parseFloat(v) || 0;
-    else if (f === 'dimL')       _ps.inputDimL = parseFloat(v) || 0;
-    else if (f === 'dimW')       _ps.inputDimW = parseFloat(v) || 0;
-    else if (f === 'dimH')       _ps.inputDimH = parseFloat(v) || 0;
-    else if (f === 'poidsKg')    _ps.inputPoidsKg = parseFloat(v) || 0;
-    else if (f === 'channel')    _ps.inputChannel = v;
-    else if (f === 'catFilter')  { _ps.catalogFilter = v; _renderHTML(container); }
   });
 }
 

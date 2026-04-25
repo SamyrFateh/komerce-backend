@@ -443,6 +443,7 @@ router.post('/recommend', authenticate, async (req, res, next) => {
         market_confidence: doctrine.market_confidence,
         sourcing_decision: doctrine.sourcing_decision,
         reason: doctrine.reason,
+        recommended_action: doctrine.recommended_action,
         market_signals: doctrine.market_signals,
         details: doctrine.details,
         alerts: doctrine.alerts,

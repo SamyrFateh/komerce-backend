@@ -844,6 +844,16 @@ async function recommend(input, options = {}) {
     market_confidence: market.market_confidence,
     sourcing_decision: sourcingDecision,
     reason,
+    // Action concrète en langage admin (mappage 1:1 avec sourcing_decision)
+    recommended_action: ({
+      PRIORITY:        'Sourcer plus. Augmenter le stock pour profiter de la demande.',
+      TEST:            'Tester en faible quantité. Ne pas sourcer massivement avant signal marché.',
+      WATCH:           'Surveiller. Compléter les données avant décision.',
+      AVOID:           'Éviter. Renégocier le prix fournisseur ou changer de produit.',
+      LOSS:            'Vendu sous coût. Corriger le prix ou retirer du catalogue.',
+      RENEGOTIATE:     'Renégocier avec le fournisseur (prix d\'achat trop élevé).',
+      INCREASE_PRICE:  'Augmenter le prix de vente actuel pour restaurer la marge.',
+    })[sourcingDecision] || 'À examiner manuellement',
 
     // ── DÉTAILS ──
     market_signals: market.market_signals,
