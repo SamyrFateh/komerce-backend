@@ -62,7 +62,7 @@ const _ps = {
   lastError: null,          // erreur de calcul si la dernière requête a échoué
 
   // Zone 2 (composants)
-  showAllComponents: false, // false = uniquement utilisés ; true = tous les 22
+  showAllComponents: true,  // true par défaut : on part des coûts (doctrine)
   editingCompId: null,      // id du composant en cours d'édition inline
 };
 
@@ -220,11 +220,11 @@ function _renderHTML(container) {
   html += '</div>';
   html += '</header>';
 
-  // ZONE 1 — Kanban 4 colonnes
-  html += _renderZone1();
-
-  // ZONE 2 — Composants utilisés
+  // ZONE 1 — Composants de coût (la base doctrinale : on part des coûts)
   html += _renderZone2();
+
+  // ZONE 2 — Simulation produit (le cas d'application)
+  html += _renderZone1();
 
   html += '</div>';
   container.innerHTML = html;
@@ -237,7 +237,8 @@ function _renderHTML(container) {
 function _renderZone1() {
   let html = '<section class="apv-zone apv-zone1">';
   html += '<div class="apv-zone-head">';
-  html += '<h2 class="apv-zone-title">📊 Simulation</h2>';
+  html += '<h2 class="apv-zone-title">📊 Appliquer à un produit</h2>';
+  html += '<span class="apv-zone-sub">Sélectionnez un produit catalogue ou simulez un nouveau produit pour voir comment les coûts s\'imputent.</span>';
   if (_ps.isComputing) html += '<span class="apv-spinner" title="Calcul en cours">⏳</span>';
   html += '</div>';
 
@@ -627,14 +628,15 @@ function _kSection(id, title, body, openByDefault) {
 function _renderZone2() {
   let html = '<section class="apv-zone apv-zone2">';
   html += '<div class="apv-zone-head">';
-  html += '<h2 class="apv-zone-title">🧱 Composants de coût</h2>';
+  html += '<h2 class="apv-zone-title">🧱 Les coûts qui construisent le prix</h2>';
+  html += '<span class="apv-zone-sub">Komerce ne part pas du produit, il part du coût rendu relais. Calibrez ici les composants qui pèsent sur chaque article vendu.</span>';
   html += '<div class="apv-zone-actions">';
   if (_ps.currentReco) {
     const usedKeys = _getUsedComponentKeys();
     html += '<span class="apv-zone-badge">' + usedKeys.size + ' utilisés sur ' + _ps.components.length + '</span>';
   }
   html += '<button class="apv-btn apv-btn-ghost" data-act="toggle-show-all">' +
-    (_ps.showAllComponents ? '▼ Masquer non utilisés' : '▶ Afficher tous (' + _ps.components.length + ')') +
+    (_ps.showAllComponents ? '▼ Filtrer aux utilisés' : '▶ Afficher tous (' + _ps.components.length + ')') +
     '</button>';
   html += '<button class="apv-btn apv-btn-secondary" data-act="open-workshop">⚙️ Vue exhaustive</button>';
   html += '</div></div>';
@@ -645,7 +647,6 @@ function _renderZone2() {
     return html;
   }
 
-  // Liste filtrée
   const usedKeys = _getUsedComponentKeys();
   const items = _ps.showAllComponents
     ? _ps.components
@@ -668,37 +669,147 @@ function _renderZone2() {
   });
 
   const CAT_LABELS = {
-    product_purchase:   { emoji: '🛒', label: 'Achat fournisseur' },
-    sourcing:           { emoji: '🔍', label: 'Sourcing' },
-    hub:                { emoji: '🏬', label: 'Hub Dubai' },
-    packaging:          { emoji: '📦', label: 'Emballage' },
-    freight:            { emoji: '🚢', label: 'Fret international' },
-    customs:            { emoji: '🛃', label: 'Douane' },
-    port_transitary:    { emoji: '📋', label: 'Port / transitaire' },
-    local_distribution: { emoji: '🚚', label: 'Distribution locale' },
-    relay:              { emoji: '🏪', label: 'Relais' },
-    payment:            { emoji: '💳', label: 'Paiement' },
-    risk_provision:     { emoji: '🛡️', label: 'Provision risques' },
-    fixed_overhead:     { emoji: '🏢', label: 'Charges fixes' },
-    incident:           { emoji: '⚠️', label: 'Incident' },
-    autres:             { emoji: '•',  label: 'Autres' },
+    product_purchase:   { emoji: '🛒', label: 'Achat fournisseur',    color: '#94a3b8' },
+    sourcing:           { emoji: '🔍', label: 'Sourcing',             color: '#a855f7' },
+    hub:                { emoji: '🏬', label: 'Hub Dubai',            color: '#0ea5e9' },
+    packaging:          { emoji: '📦', label: 'Emballage',            color: '#06b6d4' },
+    freight:            { emoji: '🚢', label: 'Fret international',   color: '#3b82f6' },
+    customs:            { emoji: '🛃', label: 'Douane',               color: '#ef4444' },
+    port_transitary:    { emoji: '📋', label: 'Port / transitaire',   color: '#f97316' },
+    local_distribution: { emoji: '🚚', label: 'Distribution locale',  color: '#16a34a' },
+    relay:              { emoji: '🏪', label: 'Relais',               color: '#22c55e' },
+    payment:            { emoji: '💳', label: 'Paiement',             color: '#8b5cf6' },
+    risk_provision:     { emoji: '🛡️', label: 'Provision risques',    color: '#facc15' },
+    fixed_overhead:     { emoji: '🏢', label: 'Charges fixes',        color: '#d97706' },
+    incident:           { emoji: '⚠️', label: 'Incident',             color: '#dc2626' },
+    autres:             { emoji: '•',  label: 'Autres',               color: '#64748b' },
   };
 
+  // ─── GRILLE DE CARDS (2 colonnes) ──────────────────────────────
+  html += '<div class="apv-cat-grid">';
   Object.keys(grouped).sort().forEach(cat => {
-    const meta = CAT_LABELS[cat] || { emoji: '•', label: cat };
-    html += '<div class="apv-comp-group">';
-    html += '<div class="apv-comp-group-head">';
-    html += '<span class="apv-comp-group-emoji">' + meta.emoji + '</span>';
-    html += '<span class="apv-comp-group-label">' + _esc(meta.label) + '</span>';
-    html += '<span class="apv-comp-group-count">' + grouped[cat].length + '</span>';
+    const meta = CAT_LABELS[cat] || { emoji: '•', label: cat, color: '#64748b' };
+    const comps = grouped[cat];
+    const catTotal = _computeCategoryImputed(cat);
+
+    html += '<div class="apv-cat-card" data-cat="' + _esc(cat) + '">';
+    // Header avec emoji + label + total imputé
+    html += '<div class="apv-cat-card-head" style="border-left:3px solid ' + meta.color + ';">';
+    html += '<span class="apv-cat-card-emoji">' + meta.emoji + '</span>';
+    html += '<span class="apv-cat-card-label">' + _esc(meta.label) + '</span>';
+    html += '<span class="apv-cat-card-count">' + comps.length + '</span>';
+    if (catTotal > 0) {
+      html += '<span class="apv-cat-card-total">' + _fmt(catTotal) + '</span>';
+    }
     html += '</div>';
-    grouped[cat].forEach(c => {
+    // Composants à l'intérieur
+    html += '<div class="apv-cat-card-body">';
+    comps.forEach(c => {
       html += _renderComponentRow(c, usedKeys.has(c.key));
     });
     html += '</div>';
+    html += '</div>';
   });
+  html += '</div>';
+
+  // ─── BARRE COLORÉE EMPILÉE EN BAS (synthèse poids relatif) ─────
+  html += _renderStackedBar(grouped, CAT_LABELS);
 
   html += '</section>';
+  return html;
+}
+
+/**
+ * Calcule le coût imputé total d'une catégorie pour le produit/contexte courant.
+ * Utilise les allocations si disponibles, sinon les sous-totaux landed_relay/business.
+ */
+function _computeCategoryImputed(catKey) {
+  const r = _ps.currentReco;
+  if (!r) return 0;
+
+  // Mapping catégorie composant → clé du breakdown
+  // Cumul de toutes les keys qui peuvent contribuer à cette catégorie
+  const breakdown = r.cost_breakdown || {};
+  const landed = breakdown.landed_relay || {};
+  const business = breakdown.business || {};
+
+  // Mapping direct (le breakdown utilise les mêmes noms que les catégories)
+  const direct = { ...landed, ...business };
+  if (direct[catKey] != null) return Number(direct[catKey]) || 0;
+
+  // Fallback : sommer les allocations dont le composant est dans cette catégorie
+  const allocs = breakdown.allocations || [];
+  let sum = 0;
+  allocs.forEach(a => {
+    const comp = _ps.components.find(c => c.key === a.component_key);
+    if (comp && comp.category === catKey) {
+      sum += Number(a.imputed_amount_kmf) || 0;
+    }
+  });
+  return sum;
+}
+
+/**
+ * Barre empilée horizontale avec les poids relatifs des catégories.
+ * Affichée en bas de la zone, comme synthèse "où va l'argent".
+ */
+function _renderStackedBar(grouped, CAT_LABELS) {
+  // Calculer le total imputé par catégorie
+  const catTotals = [];
+  let grandTotal = 0;
+  Object.keys(grouped).forEach(cat => {
+    const total = _computeCategoryImputed(cat);
+    if (total > 0) {
+      catTotals.push({ cat, total, meta: CAT_LABELS[cat] || { emoji: '•', label: cat, color: '#64748b' } });
+      grandTotal += total;
+    }
+  });
+
+  if (grandTotal === 0) {
+    // Pas de calcul → afficher un message neutre
+    return '<div class="apv-stackbar-empty">' +
+      '💡 Sélectionnez un produit dans la zone ci-dessous pour voir comment ces composants se répartissent.' +
+      '</div>';
+  }
+
+  // Trier par poids décroissant
+  catTotals.sort((a, b) => b.total - a.total);
+
+  let html = '<div class="apv-stackbar">';
+  html += '<div class="apv-stackbar-head">';
+  html += '<span class="apv-stackbar-label">Coût imputé à l\'article</span>';
+  html += '<span class="apv-stackbar-total">' + _fmt(grandTotal) + '</span>';
+  html += '</div>';
+
+  // La barre elle-même
+  html += '<div class="apv-stackbar-track" role="img" aria-label="Répartition des coûts">';
+  catTotals.forEach(({ cat, total, meta }) => {
+    const pct = (total / grandTotal) * 100;
+    if (pct < 0.5) return;  // sauter les segments minuscules
+    const showLabel = pct >= 8;
+    html += '<div class="apv-stackbar-seg" data-cat="' + _esc(cat) + '" ' +
+      'style="width:' + pct.toFixed(2) + '%;background:' + meta.color + ';" ' +
+      'title="' + _esc(meta.label) + ' : ' + _fmt(total) + ' (' + pct.toFixed(1) + '%)">';
+    if (showLabel) {
+      html += '<span class="apv-stackbar-seg-label">' + pct.toFixed(0) + '%</span>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Légende compacte sous la barre
+  html += '<div class="apv-stackbar-legend">';
+  catTotals.forEach(({ cat, total, meta }) => {
+    const pct = (total / grandTotal) * 100;
+    if (pct < 0.5) return;
+    html += '<span class="apv-stackbar-legend-item">';
+    html += '<span class="apv-stackbar-dot" style="background:' + meta.color + ';"></span>';
+    html += _esc(meta.label) + ' <span class="apv-stackbar-legend-pct">' + pct.toFixed(1) + '%</span>';
+    html += '</span>';
+  });
+  html += '</div>';
+
+  html += '</div>';
   return html;
 }
 
@@ -808,8 +919,9 @@ function _injectStyles() {
 
     /* ZONES */
     .apv-zone { background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:16px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,.03); }
-    .apv-zone-head { display:flex; align-items:center; padding:14px 18px; background:#f8fafc; border-bottom:1px solid #e2e8f0; gap:12px; }
-    .apv-zone-title { font-size:1rem; font-weight:700; margin:0; flex:1; }
+    .apv-zone-head { display:flex; align-items:center; padding:14px 18px; background:#f8fafc; border-bottom:1px solid #e2e8f0; gap:12px; flex-wrap:wrap; }
+    .apv-zone-title { font-size:1rem; font-weight:700; margin:0; }
+    .apv-zone-sub { font-size:.78rem; color:#64748b; flex:1; min-width:200px; font-style:italic; }
     .apv-zone-actions { display:flex; align-items:center; gap:8px; }
     .apv-zone-badge { background:#dbeafe; color:#1e40af; padding:3px 10px; border-radius:12px; font-size:.78rem; font-weight:600; }
 
@@ -938,33 +1050,55 @@ function _injectStyles() {
     .apv-error-banner strong { color:#991b1b; }
     .apv-error-hint { margin-top:6px; font-size:.78rem; color:#991b1b; }
 
-    /* ZONE 2 — COMPOSANTS */
-    .apv-comp-group { padding:8px 14px; border-bottom:1px solid #f1f5f9; }
-    .apv-comp-group:last-child { border-bottom:none; }
-    .apv-comp-group-head { display:flex; align-items:center; gap:8px; padding:6px 0; font-size:.78rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.4px; }
-    .apv-comp-group-emoji { font-size:1rem; }
-    .apv-comp-group-count { background:#f1f5f9; color:#64748b; padding:1px 8px; border-radius:10px; font-size:.7rem; }
+    /* ZONE 2 — CARDS PAR CATÉGORIE EN GRILLE */
+    .apv-cat-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; padding:14px; }
+    @media (max-width: 700px) { .apv-cat-grid { grid-template-columns:1fr; } }
 
-    .apv-comp-row { display:grid; grid-template-columns:32px 1fr auto auto auto; gap:10px; align-items:center; padding:7px 6px; border-radius:4px; transition:background .12s; }
+    .apv-cat-card { background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; transition:all .15s; }
+    .apv-cat-card.apv-cat-highlight { border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.2); }
+    .apv-cat-card-head { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#f8fafc; border-bottom:1px solid #e2e8f0; }
+    .apv-cat-card-emoji { font-size:1.05rem; flex-shrink:0; }
+    .apv-cat-card-label { font-size:.82rem; font-weight:700; color:#1e293b; flex:1; }
+    .apv-cat-card-count { background:#f1f5f9; color:#64748b; padding:1px 7px; border-radius:10px; font-size:.7rem; font-weight:600; }
+    .apv-cat-card-total { font-family:ui-monospace,monospace; font-size:.78rem; font-weight:700; color:#d97706; margin-left:6px; }
+    .apv-cat-card-body { padding:4px 0; }
+
+    /* COMPOSANT ROW (compact dans card) */
+    .apv-comp-row { display:grid; grid-template-columns:30px 1fr auto auto auto; gap:8px; align-items:center; padding:5px 10px; border-radius:4px; transition:background .12s; font-size:.82rem; }
     .apv-comp-row:hover { background:#f8fafc; }
     .apv-comp-used { background:linear-gradient(to right, transparent 0%, #fefce8 8px, transparent 16px); }
-    .apv-comp-unused { opacity:.7; }
+    .apv-comp-unused { opacity:.65; }
     .apv-comp-info { min-width:0; }
-    .apv-comp-label { font-size:.85rem; font-weight:500; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .apv-comp-key { font-size:.7rem; color:#94a3b8; font-family:ui-monospace,monospace; margin-top:1px; }
-    .apv-comp-value { display:flex; gap:4px; align-items:baseline; }
-    .apv-comp-num { font-family:ui-monospace,monospace; font-weight:600; color:#1e293b; font-size:.92rem; }
-    .apv-comp-unit { font-size:.72rem; color:#64748b; }
-    .apv-comp-conf { font-weight:700; font-size:1rem; }
+    .apv-comp-label { font-size:.82rem; font-weight:500; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .apv-comp-key { display:none; }  /* clé technique masquée par défaut, trop bruyant */
+    .apv-comp-value { display:flex; gap:3px; align-items:baseline; white-space:nowrap; }
+    .apv-comp-num { font-family:ui-monospace,monospace; font-weight:600; color:#1e293b; font-size:.85rem; }
+    .apv-comp-unit { font-size:.68rem; color:#94a3b8; }
+    .apv-comp-conf { font-weight:700; font-size:.95rem; min-width:14px; text-align:center; }
     .apv-comp-actions { display:flex; gap:2px; }
     .apv-comp-edit { display:flex; gap:4px; align-items:center; }
-    .apv-comp-edit .apv-input { width:90px; }
+    .apv-comp-edit .apv-input { width:80px; }
 
     /* TOGGLE ON/OFF */
-    .apv-toggle { width:30px; height:16px; border-radius:8px; background:#cbd5e1; position:relative; cursor:pointer; transition:background .15s; flex-shrink:0; display:inline-block; }
+    .apv-toggle { width:28px; height:14px; border-radius:7px; background:#cbd5e1; position:relative; cursor:pointer; transition:background .15s; flex-shrink:0; display:inline-block; }
     .apv-toggle.on { background:#10b981; }
-    .apv-toggle::after { content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+    .apv-toggle::after { content:''; position:absolute; top:2px; left:2px; width:10px; height:10px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 2px rgba(0,0,0,.15); }
     .apv-toggle.on::after { left:16px; }
+
+    /* ─── BARRE EMPILÉE (synthèse poids relatif) ─────────────────── */
+    .apv-stackbar { padding:14px 18px; background:#fafbfc; border-top:1px solid #e2e8f0; }
+    .apv-stackbar-empty { padding:14px 18px; text-align:center; font-size:.82rem; color:#64748b; font-style:italic; background:#f8fafc; border-top:1px solid #e2e8f0; }
+    .apv-stackbar-head { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+    .apv-stackbar-label { font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.4px; font-weight:600; }
+    .apv-stackbar-total { font-family:ui-monospace,monospace; font-size:1.1rem; font-weight:800; color:#1e293b; }
+    .apv-stackbar-track { display:flex; height:24px; border-radius:6px; overflow:hidden; background:#e2e8f0; }
+    .apv-stackbar-seg { display:flex; align-items:center; justify-content:center; transition:opacity .15s; cursor:pointer; min-width:1px; }
+    .apv-stackbar-seg:hover { opacity:.8; }
+    .apv-stackbar-seg-label { font-size:.7rem; font-weight:700; color:rgba(255,255,255,.95); font-family:ui-monospace,monospace; }
+    .apv-stackbar-legend { display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:10px; font-size:.75rem; color:#475569; }
+    .apv-stackbar-legend-item { display:inline-flex; align-items:center; gap:5px; }
+    .apv-stackbar-dot { display:inline-block; width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+    .apv-stackbar-legend-pct { font-family:ui-monospace,monospace; color:#64748b; font-size:.72rem; margin-left:2px; }
   `;
   document.head.appendChild(s);
 }
