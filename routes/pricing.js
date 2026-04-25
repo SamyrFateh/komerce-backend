@@ -93,7 +93,7 @@ router.get('/rates', async (req, res, next) => {
 // PUT /api/pricing/rates — admin
 // Écrit dans finance_config + log dans exchange_rates pour audit.
 router.put('/rates', ...adminOnly, async (req, res, next) => {
-  const client = await db.pool.connect();
+  const client = await db.getClient();
   try {
     const { eur_kmf, aed_kmf } = req.body;
     if (!eur_kmf || !aed_kmf) return res.status(400).json({ error: 'eur_kmf et aed_kmf requis' });
@@ -171,7 +171,7 @@ router.put('/rates', ...adminOnly, async (req, res, next) => {
 //   }
 // ═══════════════════════════════════════════════════════════════════
 
-router.post('/recommend', async (req, res, next) => {
+router.post('/recommend', authenticate, async (req, res, next) => {
   try {
     const b = req.body || {};
     const verbose = !!b.verbose;
@@ -186,8 +186,16 @@ router.post('/recommend', async (req, res, next) => {
     }
 
     const category = b.category || product?.category || 'phones';
-    const prixAed  = Number(b.prix_aed) || (product ? Number(product.cost_aed) || 0 : 0);
-    const volumeM3 = Number(b.volume_m3) || 0.005;  // défaut 5L
+    // products.cost_aed n'existe pas — on utilise b.prix_aed du body, ou on dérive depuis cost_kmf
+    let prixAed = Number(b.prix_aed) || 0;
+    if (!prixAed && product?.cost_kmf) {
+      // Dérive : si on a un cost_kmf en BDD, on le reconvertit en AED via le taux courant
+      // (sera surchargé par taxAED ci-dessous en lisant finance_config)
+      const fcRow = await db.query('SELECT taux_aed_kmf FROM finance_config WHERE id = 1').catch(() => null);
+      const taux = Number(fcRow?.rows?.[0]?.taux_aed_kmf) || 138;
+      prixAed = Number(product.cost_kmf) / taux;
+    }
+    const volumeM3 = Number(b.volume_m3) || 0.005;
     const poidsKg  = Number(b.poids_kg) || 1;
     const isDiaspora = !!b.is_diaspora;
     const channel = b.channel || 'cash_relais';
@@ -419,7 +427,7 @@ router.post('/recommend', async (req, res, next) => {
 //   }
 // ═══════════════════════════════════════════════════════════════════
 
-router.post('/recommend-batch', async (req, res, next) => {
+router.post('/recommend-batch', authenticate, async (req, res, next) => {
   try {
     const b = req.body || {};
     const limit = Math.min(parseInt(b.limit) || 200, 500);
@@ -439,7 +447,7 @@ router.post('/recommend-batch', async (req, res, next) => {
     params.push(limit);
     const productsRes = await db.query(
       `SELECT p.id, p.name, p.category, p.price_kmf,
-              p.cost_aed, p.cost_kmf, p.weight_kg
+              p.cost_kmf, p.weight_kg
          FROM products p
         WHERE ${conditions.join(' AND ')}
         ORDER BY p.category, p.name
@@ -493,7 +501,6 @@ router.post('/recommend-batch', async (req, res, next) => {
     for (const product of productsRes.rows) {
       const category = product.category || 'phones';
       const cat = cats[category];
-      const prixAed = Number(product.cost_aed) || 0;
       const poidsKg = Number(product.weight_kg) || 1;
       const volumeM3 = 0.005;  // défaut 5L (à enrichir avec dim produits plus tard)
 
@@ -502,7 +509,9 @@ router.post('/recommend-batch', async (req, res, next) => {
         : margeGlobalePct;
 
       // Niveau 1
-      const prixAchatKmf = prixAed * taxAED;
+      // Note : la table products ne stocke pas cost_aed, seulement cost_kmf
+      // (prix d'achat déjà converti). On part directement de cost_kmf.
+      const prixAchatKmf = Number(product.cost_kmf) || 0;
       const fretKmf = volumeM3 * fretEurM3 * taxEUR;
       let valCIF = prixAchatKmf + fretKmf;
 
@@ -658,7 +667,7 @@ router.put('/apply-price/:product_id', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 
 router.put('/apply-all', ...adminOnly, async (req, res, next) => {
-  const client = await db.pool.connect();
+  const client = await db.getClient();
   try {
     const items = req.body?.items || [];
     if (!Array.isArray(items) || !items.length) {
