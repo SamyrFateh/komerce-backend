@@ -364,7 +364,9 @@ CT.app = {
     /* Legacy aliases — old hash URLs still work */
     var legacy = {
       'action-center': 'actionCenter',
-      'parcels': 'orders'            // parcels was merged into orders
+      'parcels': 'orders',                       // parcels was merged into orders
+      'parcel_reconciliation': 'reconciliation', // ADR-007 : renommé pour clarifier (colis vs cash)
+      'finances': 'finances'                     // ADR-007 : retiré du menu mais URL legacy fonctionne
     };
     var mapped = legacy[view];
     if (mapped && typeof CT.views[mapped] === 'function') return CT.views[mapped];

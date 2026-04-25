@@ -178,15 +178,10 @@ CT.platform = {
     },
 
     /* ══════ BO : Finance ══════ */
-    {
-      id:    'finances',
-      shell: 'bo',  section: 'finance_bo',
-      emoji: '💰',  label:   'Finances',
-      roles: ['founder','admin','finance'],
-      tabs:  [],
-      supportedFilters: ['period','type'],
-      readOnly: []
-    },
+    /* Note: 'finances' a été retirée du registry (ADR-007 hygiène).
+       Sa fonction est couverte par Comptabilité (CA, marges) + Dashboard
+       (KPI temps réel) + Sales (panier moyen, top clients).
+       Le code reste dans ct-views-v7.js pour ne pas casser les routes legacy. */
     {
       id:    'invoices',
       shell: 'bo',  section: 'finance_bo',
@@ -196,15 +191,10 @@ CT.platform = {
       supportedFilters: ['status','date','search'],
       readOnly: []
     },
-    {
-      id:    'reconciliation',
-      shell: 'bo',  section: 'finance_bo',
-      emoji: '⚖️',  label:   'Réconciliation',
-      roles: ['founder','admin','finance'],
-      tabs:  [],
-      supportedFilters: ['status','period'],
-      readOnly: []
-    },
+    /* Note: 'reconciliation' (réconciliation des COLIS bloqués/warning/OK)
+       a été déplacée vers Opérations sous le nom 'parcel_reconciliation'.
+       La VRAIE réconciliation cash (Attendu/Collecté/Déposé par agent)
+       est dans la vue Comptabilité (ADR-003). */
 
     /* ══════ CT : Ventes ══════ */
     {
@@ -252,6 +242,15 @@ CT.platform = {
       roles: ['founder','admin','hub'],
       tabs:  [],
       supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'parcel_reconciliation',
+      shell: 'bo',  section: 'operations',
+      emoji: '⚖️',  label:   'Colis à réconcilier',
+      roles: ['founder','admin','hub','support'],
+      tabs:  [],
+      supportedFilters: ['status'],
       readOnly: []
     },
 
