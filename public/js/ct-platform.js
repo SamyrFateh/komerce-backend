@@ -265,6 +265,15 @@ CT.platform = {
       supportedFilters: ['period'],
       readOnly: []
     },
+    {
+      id:    'customs',
+      shell: 'bo',  section: 'finance_bo',
+      emoji: '📦',  label:   'Historique Douane',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: ['period'],
+      readOnly: []
+    },
 
     /* ══════ BO : Configuration ══════ */
     {
