@@ -480,21 +480,31 @@ router.get('/alerts', authenticate, requireAdmin, async (req, res, next) => {
       // ── N. Pattern suspect : agent avec écart > 3 semaines consécutives ──
       try {
         const { rows: suspectAgents } = await db.query(`
-          WITH weekly_gaps AS (
+          -- FIX 25/04/2026 : la sous-requête corrélée référençait cc.confirmed_at
+          -- qui n'est pas dans le GROUP BY au niveau du SELECT extérieur. Au lieu de
+          -- ça, on calcule le week_start AVANT le GROUP BY (alias) puis on réutilise.
+          WITH cc_aligned AS (
             SELECT
-              cc.collected_by AS agent_id,
-              DATE_TRUNC('week', cc.confirmed_at) AS week_start,
-              SUM(cc.amount_kmf) AS declared_kmf,
+              cc.collected_by,
+              cc.amount_kmf,
+              DATE_TRUNC('week', cc.confirmed_at) AS week_start
+            FROM cash_collections cc
+            WHERE cc.confirmed_at > NOW() - INTERVAL '4 weeks'
+          ),
+          weekly_gaps AS (
+            SELECT
+              cca.collected_by AS agent_id,
+              cca.week_start,
+              SUM(cca.amount_kmf) AS declared_kmf,
               COALESCE((
                 SELECT SUM(cd.amount_kmf)
                 FROM cash_deposits cd
-                WHERE cd.agent_id = cc.collected_by
-                  AND cd.period_start <= (DATE_TRUNC('week', cc.confirmed_at) + INTERVAL '6 days')::date
-                  AND cd.period_end >= DATE_TRUNC('week', cc.confirmed_at)::date
+                WHERE cd.agent_id = cca.collected_by
+                  AND cd.period_start <= (cca.week_start + INTERVAL '6 days')::date
+                  AND cd.period_end >= cca.week_start::date
               ), 0) AS deposited_kmf
-            FROM cash_collections cc
-            WHERE cc.confirmed_at > NOW() - INTERVAL '4 weeks'
-            GROUP BY cc.collected_by, DATE_TRUNC('week', cc.confirmed_at)
+            FROM cc_aligned cca
+            GROUP BY cca.collected_by, cca.week_start
           ),
           agent_gaps AS (
             SELECT

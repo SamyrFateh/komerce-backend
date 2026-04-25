@@ -2466,12 +2466,25 @@ router.get('/sales', async (req, res, next) => {
     // Puis on mesure le % qui a re-commandé les mois suivants.
     // Retourne une matrice mois_acquisition × mois_offset.
     // Limité à 6 cohortes × 6 mois pour rester lisible.
+    //
+    // FIX 25/04/2026 : la colonne `client_phone` n'existe pas sur `orders`.
+    // On la récupère via COALESCE(u.phone, r.phone) — pattern déjà utilisé
+    // dans /clients du même fichier.
     const cohortLimitMonths = 6;
     const cohortsQ = await db.query(`
-      WITH first_orders AS (
+      WITH orders_with_phone AS (
+        SELECT o.id,
+               o.created_at,
+               o.status,
+               COALESCE(u.phone, r.phone) AS client_phone
+        FROM orders o
+        LEFT JOIN users u      ON u.id = o.user_id
+        LEFT JOIN recipients r ON r.id = o.recipient_id
+      ),
+      first_orders AS (
         SELECT client_phone,
                date_trunc('month', MIN(created_at))::date AS cohort_month
-        FROM orders
+        FROM orders_with_phone
         WHERE client_phone IS NOT NULL
           AND status NOT IN ('cancelled')
         GROUP BY client_phone
@@ -2483,7 +2496,7 @@ router.get('/sales', async (req, res, next) => {
                date_trunc('month', o.created_at)::date AS order_month,
                EXTRACT(YEAR FROM age(date_trunc('month', o.created_at), fo.cohort_month))*12
                + EXTRACT(MONTH FROM age(date_trunc('month', o.created_at), fo.cohort_month)) AS offset_months
-        FROM orders o
+        FROM orders_with_phone o
         JOIN first_orders fo ON fo.client_phone = o.client_phone
         WHERE o.status NOT IN ('cancelled')
       )
@@ -2495,7 +2508,8 @@ router.get('/sales', async (req, res, next) => {
       GROUP BY cohort_month, offset_months
       ORDER BY cohort_month ASC, offset_months ASC
     `, [cohortLimitMonths, cohortLimitMonths]).catch(err => {
-      // Si le schéma ne colle pas (client_phone absent par ex.), on renvoie vide
+      // Si problème malgré le fix, on dégrade plutôt que planter
+      console.warn('[dashboard/sales] cohortes failed:', err.message);
       return { rows: [] };
     });
 
