@@ -302,11 +302,22 @@ CT.platform = {
       tabs:  [],
       supportedFilters: [],
       readOnly: []
+    },
+
+    /* ══════ CT : Clients (CRM analytique) ══════ */
+    {
+      id:    'clients',
+      shell: 'ct',  section: 'pilotage',
+      emoji: '👥',  label:   'Clients',
+      roles: ['founder','admin','finance','support'],
+      tabs:  [],
+      supportedFilters: ['period','island','segment'],
+      readOnly: ['finance','support']
     }
   ],
 
   /* Vues prévues mais pas encore implémentées — documentées ici */
-  PLANNED_VIEWS: ['clients'],
+  PLANNED_VIEWS: [],
 
   /* Legacy views — accessible par URL mais pas dans sidebar */
   LEGACY_VIEWS: ['previsions'],
