@@ -135,6 +135,7 @@ CT.views.sante = function(main) {
     CT.api.get('/api/cash/reconciliation?from=' + new Date(Date.now() - 30*86400000).toISOString().slice(0,10) + '&to=' + new Date().toISOString().slice(0,10)).catch(function() { return null; }),
     CT.api.get('/api/cash/uncollected').catch(function() { return null; }),
     CT.api.get('/api/admin/customs-shipments/rates/effective').catch(function() { return null; }),
+    CT.api.get('/api/admin/finance-config').catch(function() { return null; }),  // ADR-009: source de vérité
   ]).then(function(results) {
     var data = {
       ops:        results[0],
@@ -144,6 +145,7 @@ CT.views.sante = function(main) {
       reconciliation: results[4],
       uncollected: results[5],
       customs:    results[6],
+      financeConfig: results[7],  // singleton finance_config
     };
     buildUI(data);
   }).catch(function(err) {
@@ -227,19 +229,24 @@ CT.views.sante = function(main) {
     /* PILIER 2 — Marge */
     if (d.sales && d.sales.kpi) {
       var margePct = d.sales.kpi.marge_real_pct || d.sales.kpi.marge_pct || 0;
-      var cibleMarge = 25;  // cible par défaut, sera affinée
+      // ADR-009: cible marge depuis finance_config (40% au lieu du 25% hardcodé historique)
+      // Format réponse /api/admin/finance-config : { targets: { marge_brute_pct: 40 } }
+      var cibleMarge = (d.financeConfig && d.financeConfig.targets && d.financeConfig.targets.marge_brute_pct)
+        ? Number(d.financeConfig.targets.marge_brute_pct)
+        : 40;  // fallback aligné sur la décision business
 
       pillars.marge.value = margePct;
       pillars.marge.detail = {
         marge_pct: margePct,
         cible: cibleMarge,
         ecart: margePct - cibleMarge,
+        source: 'finance_config'
       };
 
       if (margePct >= cibleMarge) {
         pillars.marge.health = 'green';
         pillars.marge.why = 'Au-dessus de la cible (' + cibleMarge + '%)';
-      } else if (margePct >= cibleMarge - 5) {
+      } else if (margePct >= cibleMarge - 10) {
         pillars.marge.health = 'yellow';
         pillars.marge.why = fmtPct(cibleMarge - margePct, 1) + ' sous la cible';
       } else {

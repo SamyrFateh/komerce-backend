@@ -213,14 +213,22 @@ CT.views.sales = function(main) {
     html += '<div class="ct-kpi-label">Panier moyen</div>';
     html += '</div></div>';
 
-    // Marge réelle (remplace les 25% hardcodés)
+    // Marge réelle + cible business depuis finance_config (ADR-009)
     var tauxMarge = marges.taux_marge_pct || 0;
+    var cibleMarge = marges.cible_marge_pct || 40;     // depuis finance_config
+    var ecartCible = marges.ecart_cible_pct || 0;
     var couvPct = marges.couverture_pct || 0;
+    // Couleur de l'écart : vert si on est au-dessus, rouge si sous
+    var ecartColor = ecartCible >= 0 ? '#16a34a' : (ecartCible >= -10 ? '#d97706' : '#dc2626');
+    var ecartIcon  = ecartCible >= 0 ? '✓' : '⚠';
+
     html += '<div class="ct-kpi" data-nature="calculated"><div class="ct-kpi-icon">📈</div><div>';
     html += '<div class="ct-kpi-value">' + fmt(marges.marge_reelle_kmf) + ' <span style="font-size:14px;font-weight:500;color:#64748b">KMF</span></div>';
     html += '<div class="ct-kpi-label">Marge réelle · <strong>' + tauxMarge.toFixed(1) + '%</strong>';
+    html += ' <span style="color:' + ecartColor + ';font-weight:600;margin-left:6px;">' + ecartIcon + ' '
+         + (ecartCible >= 0 ? '+' : '') + ecartCible.toFixed(1) + '% vs cible ' + cibleMarge + '%</span>';
     if (couvPct < 100) {
-      html += ' <span title="Couverture" style="color:#d97706">(' + couvPct + '% des cmd)</span>';
+      html += ' <span title="Couverture" style="color:#d97706;font-size:11px;">(' + couvPct + '% des cmd avec coût réel)</span>';
     }
     html += '</div></div></div>';
 

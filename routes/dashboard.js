@@ -2316,13 +2316,15 @@ router.get('/sales', async (req, res, next) => {
     `, [prevSinceStr, sinceStr]);
 
     // ═══ 2. Répartition par île ═══
+    // Note : orders ne stocke pas l'île directement, on JOIN sur relais.
     const byIsland = await db.query(`
-      SELECT relais_island AS island,
-             COUNT(*)                    AS nb,
-             COALESCE(SUM(total_kmf),0)  AS ca
-      FROM orders
-      WHERE created_at >= $1 AND status NOT IN ('cancelled')
-      GROUP BY relais_island
+      SELECT COALESCE(r.island, 'Inconnue') AS island,
+             COUNT(*)                       AS nb,
+             COALESCE(SUM(o.total_kmf), 0)  AS ca
+      FROM orders o
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.created_at >= $1 AND o.status NOT IN ('cancelled')
+      GROUP BY COALESCE(r.island, 'Inconnue')
       ORDER BY ca DESC
     `, [sinceStr]);
 
@@ -2456,6 +2458,15 @@ router.get('/sales', async (req, res, next) => {
     const f = funnelQ.rows[0];
     const nbCreees = Number(f.nb_creees);
 
+    // ADR-009 : exposer la cible marge depuis finance_config pour cohérence Vue Santé / Sales
+    let targetMargePct = 40;  // fallback aligné sur la décision business
+    try {
+      const { rows: fc } = await db.query('SELECT target_marge_brute_pct FROM finance_config WHERE id = 1');
+      if (fc[0]?.target_marge_brute_pct) targetMargePct = Number(fc[0].target_marge_brute_pct);
+    } catch (_) { /* fallback sur 40 */ }
+    const margeReellePct = Number(k.marge_moy_pct);
+    const ecartCiblePct = +(margeReellePct - targetMargePct).toFixed(1);
+
     res.json({
       period,
       kpi: {
@@ -2465,10 +2476,12 @@ router.get('/sales', async (req, res, next) => {
         panier_moyen: Math.round(Number(k.panier_moyen)),
         evolution: { ca_pct: evoCa, commandes_pct: evoCmd },
       },
-      // NEW : marge réelle (plus de hardcode 25%)
+      // NEW : marge réelle (plus de hardcode 25%) + cible depuis finance_config (ADR-009)
       marges: {
         marge_reelle_kmf: Math.round(margeKmf),
-        taux_marge_pct:   +Number(k.marge_moy_pct).toFixed(1),
+        taux_marge_pct:   +margeReellePct.toFixed(1),
+        cible_marge_pct:  targetMargePct,        // NEW : cible depuis finance_config
+        ecart_cible_pct:  ecartCiblePct,         // NEW : positif si au-dessus, négatif si sous
         nb_avec_cost:     Number(k.nb_avec_cost),
         nb_sans_cost:     Number(k.nb_sans_cost),
         couverture_pct:   (Number(k.nb_avec_cost) + Number(k.nb_sans_cost)) > 0

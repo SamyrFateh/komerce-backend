@@ -612,8 +612,16 @@ router.get('/money', authenticate, requireAdmin, async (req, res, next) => {
         margeMtd = Number(margeRows[0].marge_mtd);
         margePrevMtd = Number(margeRows[0].marge_prev_mtd);
       } catch (_) {
-        // Colonne margin_kmf absente → fallback sur MARGE_PCT * CA
-        const margePct = await getRuleNumber('MARGE_PCT', 12);
+        // Colonne margin_kmf absente → fallback : marge cible × CA
+        // ADR-009 : priorité finance_config.target_marge_brute_pct, fallback business_rules.MARGE_PCT
+        let margePct;
+        try {
+          const { rows } = await db.query('SELECT target_marge_brute_pct FROM finance_config WHERE id = 1');
+          margePct = Number(rows[0]?.target_marge_brute_pct) || 0;
+        } catch (_) { margePct = 0; }
+        if (!margePct) {
+          margePct = await getRuleNumber('MARGE_PCT', 40);  // fallback aligné sur la décision business 40%
+        }
         margeMtd = Math.round(caMtd * margePct / 100);
         margePrevMtd = Math.round(caPrevMtd * margePct / 100);
       }
