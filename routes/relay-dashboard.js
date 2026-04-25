@@ -145,7 +145,9 @@ router.get('/orders', async (req, res, next) => {
       pi++;
     } else {
       // Default: relay-relevant statuses
-      where += ` AND o.status IN ('in_transit','available','collected')`;
+      // Note: ENUM order_status n'a pas 'in_transit' (c'est sur parcels).
+      // Les statuts pertinents pour un relais sont : shipped → available → collected.
+      where += ` AND o.status IN ('shipped','available','collected')`;
     }
 
     if (search) {

@@ -84,7 +84,7 @@ CT.platform = {
       shell: 'ct',  section: 'cockpit',
       emoji: '🎯',  label:   'Dashboard',
       roles: ['founder','admin','finance'],
-      tabs:  ['overview','revenue','operations'],
+      tabs:  [],
       supportedFilters: ['period'],
       readOnly: ['finance']
     },

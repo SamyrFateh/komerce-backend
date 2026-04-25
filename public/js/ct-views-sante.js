@@ -132,8 +132,8 @@ CT.views.sante = function(main) {
     CT.api.get('/api/dashboard/finance').catch(function() { return null; }),
     CT.api.get('/api/dashboard/clients').catch(function() { return null; }),
     CT.api.get('/api/dashboard/sales?period=30').catch(function() { return null; }),
-    CT.api.get('/api/admin/cash/reconciliation?days=30').catch(function() { return null; }),
-    CT.api.get('/api/admin/cash/uncollected').catch(function() { return null; }),
+    CT.api.get('/api/cash/reconciliation?from=' + new Date(Date.now() - 30*86400000).toISOString().slice(0,10) + '&to=' + new Date().toISOString().slice(0,10)).catch(function() { return null; }),
+    CT.api.get('/api/cash/uncollected').catch(function() { return null; }),
     CT.api.get('/api/admin/customs-shipments/rates/effective').catch(function() { return null; }),
   ]).then(function(results) {
     var data = {

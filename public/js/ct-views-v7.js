@@ -913,15 +913,21 @@ CT.views.incidents = async function(container) {
   }
 };
 
-// ── 3c. RÉCONCILIATION ───────────────────────────────────────
+// ── 3c. RÉCONCILIATION COLIS ─────────────────────────────────
+// Note (ADR-007) : cette vue concerne les COLIS bloqués/warning/OK.
+// La VRAIE réconciliation cash (Attendu/Collecté/Déposé) est dans
+// la vue Comptabilité (ADR-003).
 CT.views.reconciliation = async function(container) {
-  container.innerHTML = '<div class="ct-loading">🔄 Chargement réconciliation...</div>';
+  container.innerHTML = '<div class="ct-loading">⚖️ Chargement colis à réconcilier...</div>';
   try {
     var data = await CT.api.v2ParcelReconciliation();
     var parcels = data.parcels || [];
     var summary = data.summary || {};
 
-    var html = '<div class="ct-view-header"><h2>🔄 Réconciliation</h2>' +
+    var html = '<div class="ct-view-header"><h2>⚖️ Colis à réconcilier</h2>' +
+      '<p class="ct-view-desc" style="font-size:0.78rem;color:var(--ct-text-muted,#64748b);margin-top:2px;">' +
+      'Suivi des colis dont le statut est bloqué ou en attention — pour la réconciliation cash, voir Comptabilité' +
+      '</p>' +
       '<div class="ct-kpi-grid ct-kpi-mini">' +
         CT.pc.kpiCard('📦', 'Total', summary.total || 0, '#3b82f6') +
         CT.pc.kpiCard('🔴', 'Bloqués', summary.blocked || 0, '#ef4444') +
@@ -944,3 +950,6 @@ CT.views.reconciliation = async function(container) {
     container.innerHTML = '<div class="ct-error">❌ ' + err.message + '</div>';
   }
 };
+
+// Alias explicite pour le nouveau nom dans le registry (ADR-007)
+CT.views.parcel_reconciliation = CT.views.reconciliation;
