@@ -2,20 +2,31 @@
  * KOMERCE — Routes API Scanner Catalogue Fournisseur (LOT D)
  * ═══════════════════════════════════════════════════════════════
  *
- * Pipeline géré :
- *   POST   /catalogs/import              — créer un import (CSV ou manuel)
- *   GET    /catalogs                     — lister les imports
- *   GET    /candidates                   — lister les candidats (avec filtres)
- *   GET    /candidates/:id               — détail d'un candidat
- *   PUT    /candidates/:id               — éditer un candidat (corrections terrain)
- *   POST   /candidates/:id/scan          — re-scanner un candidat
- *   POST   /candidates/scan-batch        — re-scanner tous les candidats d'un import
- *   POST   /candidates/:id/import-product — créer le produit Komerce
- *   POST   /candidates/:id/reject        — rejeter
- *   POST   /candidates/:id/watchlist     — mettre en watchlist
+ * Le routeur utilise un DISPATCHER de connecteurs.
+ * Selon source_type, il appelle le bon connector pour produire
+ * des NormalizedSupplierProduct[], puis passe la liste au scanner.
  *
- * Sécurité : tous les endpoints sont admin/founder uniquement.
- * Pas d'import auto vers products : étape import-product est explicite.
+ * Aucune logique fournisseur dans ce fichier.
+ *
+ * Pipeline complet :
+ *   1. POST /catalogs/import     reçoit { source_type, supplier_name, ... }
+ *   2. Dispatch vers le bon connector
+ *   3. Connector → NormalizedSupplierProduct[]
+ *   4. Scanner   → normalize + scan via pricing-engine
+ *   5. Persist   → INSERT INTO sourcing_candidates
+ *
+ * Routes :
+ *   POST   /catalogs/import
+ *   GET    /catalogs
+ *   GET    /candidates
+ *   GET    /candidates/:id
+ *   PUT    /candidates/:id
+ *   POST   /candidates/:id/scan
+ *   POST   /candidates/scan-batch
+ *   POST   /candidates/:id/import-product
+ *   POST   /candidates/:id/reject
+ *   POST   /candidates/:id/watchlist
+ *   GET    /connectors                    ← NOUVEAU : liste connecteurs disponibles
  */
 
 'use strict';
@@ -28,7 +39,24 @@ const scanner = require('../services/supplier-catalog-scanner');
 const pricingEngine = require('../services/pricing-engine');
 const { authenticate } = require('../middleware/auth');
 
-// Middleware admin/founder uniquement
+// ── Connecteurs ──
+const csvConnector    = require('../services/suppliers/connectors/csv-connector');
+const manualConnector = require('../services/suppliers/connectors/manual-connector');
+const noonModule      = require('../services/suppliers/connectors/noon-connector');
+
+// ── Registre des connecteurs ──
+// Chaque entrée déclare comment dispatcher selon source_type (et supplier le cas échéant).
+const CONNECTORS = {
+  csv:    { module: csvConnector,    active: true,  label: 'CSV import' },
+  manual: { module: manualConnector, active: true,  label: 'Saisie manuelle' },
+  api: {
+    // Connecteurs API par fournisseur. Tous inactifs par défaut.
+    // Pour activer : implémenter le connecteur dans services/suppliers/connectors/
+    // et passer active=true ici.
+    noon: { active: noonModule.IS_ACTIVE, label: 'Noon API', reason: noonModule.INACTIVE_REASON },
+  },
+};
+
 function requireAdminOrFounder(req, res, next) {
   const role = req.user?.role;
   if (role !== 'admin' && role !== 'founder') {
@@ -38,8 +66,69 @@ function requireAdminOrFounder(req, res, next) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// GET /api/admin/sourcing/connectors
+// Liste les connecteurs disponibles (pour l'UI : afficher quoi est actif)
+// ═══════════════════════════════════════════════════════════════════════
+router.get('/connectors', authenticate, requireAdminOrFounder, async (req, res, next) => {
+  try {
+    res.json({
+      sources: [
+        { type: 'csv', active: true, label: 'CSV import' },
+        { type: 'manual', active: true, label: 'Saisie manuelle' },
+      ],
+      api_suppliers: Object.keys(CONNECTORS.api).map(s => ({
+        supplier: s,
+        active: CONNECTORS.api[s].active,
+        label: CONNECTORS.api[s].label,
+        reason: CONNECTORS.api[s].active ? null : CONNECTORS.api[s].reason,
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// DISPATCHER : appelle le bon connector pour produire NormalizedSupplierProduct[]
+// ═══════════════════════════════════════════════════════════════════════
+async function dispatchToConnector(body) {
+  const sourceType = body.source_type || 'manual';
+
+  if (sourceType === 'csv') {
+    return csvConnector.fetchProducts({
+      supplier_name: body.supplier_name,
+      csv_text: body.csv_text,
+      csv_mapping: body.csv_mapping,
+    });
+  }
+
+  if (sourceType === 'manual') {
+    return manualConnector.fetchProducts({
+      supplier_name: body.supplier_name,
+      items: body.items,
+    });
+  }
+
+  if (sourceType === 'api') {
+    const supplier = (body.supplier_id || '').toLowerCase();
+    const entry = CONNECTORS.api[supplier];
+    if (!entry) {
+      throw new Error(`API non configurée : supplier "${supplier}" inconnu. Sources connues : ${Object.keys(CONNECTORS.api).join(', ')}`);
+    }
+    if (!entry.active) {
+      throw new Error(`API non configurée : ${entry.reason || 'connecteur inactif'}`);
+    }
+    // Si actif un jour : instancier le connecteur et appeler fetchProducts
+    // const Connector = require('../services/suppliers/connectors/' + supplier + '-connector');
+    // const inst = new Connector.NoonConnector(body.config || {});
+    // return inst.fetchProducts(body.options || {});
+    throw new Error(`API "${supplier}" déclarée mais non câblée. Voir api-connector.base.js.`);
+  }
+
+  throw new Error(`source_type inconnu : "${sourceType}". Valeurs supportées : csv, manual, api.`);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // POST /api/admin/sourcing/catalogs/import
-// Body: { supplier_name, source_type, source_filename?, csv_text?, items? [], notes? }
+// Body: { supplier_name, source_type: 'csv'|'manual'|'api', ... }
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
@@ -47,44 +136,47 @@ router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req,
     const supplierName = (b.supplier_name || '').trim();
     const sourceType = b.source_type || 'manual';
 
-    if (!supplierName) {
-      return res.status(400).json({ error: 'supplier_name requis' });
-    }
-    if (!['csv', 'manual'].includes(sourceType)) {
-      return res.status(400).json({ error: 'source_type doit être "csv" ou "manual"' });
+    if (!supplierName) return res.status(400).json({ error: 'supplier_name requis' });
+    if (!['csv', 'manual', 'api'].includes(sourceType)) {
+      return res.status(400).json({ error: 'source_type doit être csv, manual ou api' });
     }
 
-    // Extraction des items selon source
-    let rawItems = [];
-    if (sourceType === 'csv') {
-      if (!b.csv_text) return res.status(400).json({ error: 'csv_text requis pour source_type=csv' });
-      rawItems = scanner.parseCSV(b.csv_text, b.csv_mapping);
-      if (!rawItems.length) return res.status(400).json({ error: 'Aucune ligne valide trouvée dans le CSV' });
-    } else {
-      // Manuel : items fournis directement (array d'objets)
-      rawItems = Array.isArray(b.items) ? b.items : [];
-      if (!rawItems.length) return res.status(400).json({ error: 'items requis pour source_type=manual' });
+    // 1. Dispatcher vers le connecteur → NormalizedSupplierProduct[]
+    let connectorResult;
+    try {
+      connectorResult = await dispatchToConnector(b);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
 
-    // Charger config Komerce une seule fois (perf : 1 requête au lieu de N)
+    const products = connectorResult.products || [];
+    const invalidFromConnector = connectorResult.invalid || [];
+
+    if (!products.length) {
+      return res.status(400).json({
+        error: 'Aucun produit valide trouvé',
+        invalid: invalidFromConnector,
+      });
+    }
+
+    // 2. Charger config Komerce une seule fois
     const config = await pricingEngine.loadGlobalConfig();
 
-    // Créer l'import
+    // 3. Créer l'import
     const importRes = await db.query(
       `INSERT INTO supplier_catalog_imports
          (supplier_name, source_type, source_filename, notes, total_items, imported_by)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [supplierName, sourceType, b.source_filename || null, b.notes || null, rawItems.length, req.user?.id || null]
+      [supplierName, sourceType, b.source_filename || null, b.notes || null, products.length, req.user?.id || null]
     );
     const importId = importRes.rows[0].id;
 
-    // Pour chaque item brut : normaliser + scanner + insérer
-    const results = { created: 0, errors: [] };
-    for (const raw of rawItems) {
+    // 4. Pour chaque NormalizedSupplierProduct : normaliser Komerce + scanner + persister
+    const results = { created: 0, errors: [...invalidFromConnector] };
+    for (const product of products) {
       try {
-        const enriched = { ...raw, supplier_name: supplierName };
-        const normalized = await scanner.normalizeCandidate(enriched, { config });
+        const normalized = await scanner.normalizeCandidate(product, { config });
         const scan = await scanner.scanCandidate(normalized, { config });
 
         await db.query(
@@ -110,28 +202,30 @@ router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req,
              'scanned', $26
            )`,
           [
-            importId, supplierName, raw.supplier_product_id || null,
-            raw.product_name, raw.supplier_category || null, raw.purchase_price || null, raw.currency || 'AED',
-            raw.image_url || null, raw.product_url || null, raw.description || null,
-            raw.stock_available || null, raw.min_order_qty || null, raw.supplier_delay_days || null,
-            raw.weight_kg || null, raw.dim_l_cm || null, raw.dim_w_cm || null, raw.dim_h_cm || null,
+            importId, supplierName, product.supplier_product_id || null,
+            product.product_name, product.supplier_category || null, product.purchase_price || null, product.currency || 'AED',
+            product.image_url || null, product.product_url || null, product.description || null,
+            product.stock_available || null, product.min_order_qty || null, product.supplier_delay_days || null,
+            product.weight_kg || null, product.dimensions?.l_cm || null, product.dimensions?.w_cm || null, product.dimensions?.h_cm || null,
             normalized.komerce_category, normalized.estimated_weight_kg, normalized.estimated_volume_m3,
             normalized.purchase_price_kmf, normalized.target_margin_pct,
-            JSON.stringify(normalized.data_sources), JSON.stringify({ ...scan.scan_result, sourcing_decision: scan.sourcing_decision, reason: scan.reason, recommended_action: scan.recommended_action }),
+            JSON.stringify(normalized.data_sources),
+            JSON.stringify({ ...scan.scan_result, sourcing_decision: scan.sourcing_decision, reason: scan.reason, recommended_action: scan.recommended_action }),
             scan.confidence,
             req.user?.id || null,
           ]
         );
         results.created++;
       } catch (errOne) {
-        results.errors.push({ product_name: raw.product_name || '?', error: errOne.message });
+        results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
       }
     }
 
     res.json({
       import_id: importId,
       supplier_name: supplierName,
-      total_items: rawItems.length,
+      source_type: sourceType,
+      total_items: products.length,
       created: results.created,
       errors: results.errors,
     });
@@ -140,7 +234,6 @@ router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req,
 
 // ═══════════════════════════════════════════════════════════════════════
 // GET /api/admin/sourcing/catalogs
-// Liste les imports les plus récents
 // ═══════════════════════════════════════════════════════════════════════
 router.get('/catalogs', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
@@ -227,7 +320,6 @@ router.get('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
     const r = await db.query('SELECT * FROM sourcing_candidates WHERE id = $1', [req.params.id]);
     if (!r.rows.length) return res.status(404).json({ error: 'Candidat introuvable' });
 
-    // Charger les events
     const eventsRes = await db.query(
       `SELECT id, event_type, old_state, new_state, changes, notes, created_at
          FROM sourcing_candidate_events
@@ -242,7 +334,6 @@ router.get('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
 
 // ═══════════════════════════════════════════════════════════════════════
 // PUT /api/admin/sourcing/candidates/:id
-// Édition rapide des champs corrigeables (cat, poids, volume, prix achat...)
 // ═══════════════════════════════════════════════════════════════════════
 router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
@@ -254,13 +345,11 @@ router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
     const params = [];
     let pi = 1;
 
-    // On marque les champs édités comme source 'manual' dans data_sources
     const sourceUpdates = {};
     for (const key of allowed) {
       if (b[key] !== undefined) {
         sets.push(`${key} = $${pi++}`);
         params.push(b[key]);
-        // Mapping champ -> clé data_sources
         const srcKey = ({
           komerce_category: 'category',
           estimated_weight_kg: 'weight',
@@ -274,7 +363,6 @@ router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
 
     if (!sets.length) return res.status(400).json({ error: 'Aucun champ à modifier' });
 
-    // Si changement de prix achat ou devise, recalculer purchase_price_kmf
     if (b.purchase_price !== undefined || b.currency !== undefined) {
       const config = await pricingEngine.loadGlobalConfig();
       const cur = b.currency || (await db.query('SELECT currency FROM sourcing_candidates WHERE id = $1', [req.params.id])).rows[0]?.currency || 'AED';
@@ -286,7 +374,6 @@ router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
       params.push(priceKmf);
     }
 
-    // Mettre à jour data_sources avec les nouvelles sources 'manual'
     if (Object.keys(sourceUpdates).length) {
       sets.push(`data_sources = data_sources || $${pi++}::jsonb`);
       params.push(JSON.stringify(sourceUpdates));
@@ -302,7 +389,6 @@ router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
     );
     if (!r.rows.length) return res.status(404).json({ error: 'Candidat introuvable' });
 
-    // Audit
     await db.query(
       `INSERT INTO sourcing_candidate_events (candidate_id, event_type, changes, notes, triggered_by)
          VALUES ($1, 'data_correction', $2, $3, $4)`,
@@ -315,7 +401,6 @@ router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
 
 // ═══════════════════════════════════════════════════════════════════════
 // POST /api/admin/sourcing/candidates/:id/scan
-// Re-scan d'un candidat (utile après édition)
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/candidates/:id/scan', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
@@ -346,8 +431,6 @@ router.post('/candidates/:id/scan', authenticate, requireAdminOrFounder, async (
 
 // ═══════════════════════════════════════════════════════════════════════
 // POST /api/admin/sourcing/candidates/scan-batch
-// Re-scanne tous les candidats d'un import (ou tous si pas d'import_id)
-// Body: { import_id?, ids? [] }
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/candidates/scan-batch', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
@@ -395,7 +478,6 @@ router.post('/candidates/scan-batch', authenticate, requireAdminOrFounder, async
 
 // ═══════════════════════════════════════════════════════════════════════
 // POST /api/admin/sourcing/candidates/:id/import-product
-// Crée un produit Komerce à partir du candidat
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
@@ -407,8 +489,6 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
       return res.status(409).json({ error: 'Déjà importé', product_id: c.product_id });
     }
 
-    // Choisir le prix de vente initial
-    // Par défaut : test_price si dispo, sinon recommended_price, sinon minimum_safe
     const sr = c.scan_result || {};
     const initialPrice = req.body?.price_kmf
       || sr.test_price_kmf
@@ -420,7 +500,6 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
       return res.status(400).json({ error: 'Pas de prix calculé. Re-scannez le candidat avant import.' });
     }
 
-    // Créer le produit (champs minimums — produit créé en is_active=FALSE pour démarrer en sourdine)
     const prodRes = await db.query(
       `INSERT INTO products (name, category, cost_kmf, price_kmf, weight_kg, is_active)
          VALUES ($1, $2, $3, $4, $5, FALSE)
@@ -435,7 +514,6 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
     );
     const productId = prodRes.rows[0].id;
 
-    // Mettre à jour le candidat
     await db.query(
       `UPDATE sourcing_candidates
           SET state = 'imported_to_catalog', product_id = $1, updated_by = $2
@@ -443,7 +521,6 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
       [productId, req.user?.id || null, req.params.id]
     );
 
-    // Audit
     await db.query(
       `INSERT INTO sourcing_candidate_events
          (candidate_id, event_type, old_state, new_state, changes, triggered_by)

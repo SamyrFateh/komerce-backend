@@ -1,33 +1,31 @@
 /**
- * KOMERCE — Supplier Catalog Scanner (LOT D)
- * ═══════════════════════════════════════════════════════════════
+ * KOMERCE — Supplier Catalog Scanner (LOT D — refactor connecteurs)
+ * ═══════════════════════════════════════════════════════════════════
  *
  * Doctrine §10 — Atelier Prix & Sourcing :
  *   "Le sourcing scanner n'achète pas à la place de l'admin.
  *    Il filtre, explique et priorise."
  *
+ * ARCHITECTURE :
+ *   Le scanner ne connaît AUCUN fournisseur spécifique.
+ *   Il accepte uniquement des NormalizedSupplierProduct[] produits
+ *   par les connecteurs (CSV, manuel, API stub).
+ *
+ *   Voir : services/suppliers/connectors/
+ *
  * Pipeline :
- *   1. Ingestion       → CSV ou saisie manuelle
- *   2. Normalisation   → cat Komerce, conversion KMF, poids/volume estimés
- *   3. Scan pricing    → réutilise services/pricing-engine.js
- *   4. Décision        → sourcing_decision + reason
- *   5. Action admin    → import boutique / watchlist / rejeté
+ *   1. (en amont) Connecteur produit NormalizedSupplierProduct[]
+ *   2. Normalisation Komerce  → cat Komerce, KMF, poids/volume estimés
+ *   3. Scan pricing           → réutilise services/pricing-engine.js
+ *   4. Décision               → sourcing_decision + reason
+ *   5. (en aval) Routes persistent en BDD + admin décide
  *
- * Aucun import automatique vers products.
- * Un sourcing_candidate devient un produit UNIQUEMENT après
- * validation explicite de l'admin (POST /candidates/:id/import-product).
- *
- * Ce service expose les fonctions pures pour :
- *   - normalizeCandidate(raw)    — mapper bruts -> Komerce
- *   - scanCandidate(candidate)   — appelle pricing-engine + retourne décision
- *   - parseCSVRow(row, mapping)  — convertit ligne CSV en raw
- *
- * Les routes (routes/sourcing-scanner.js) consomment ces fonctions.
+ * Aucun import automatique vers products. Un sourcing_candidate devient
+ * un produit UNIQUEMENT après validation explicite admin.
  */
 
 'use strict';
 
-const db = require('../db');
 const pricingEngine = require('./pricing-engine');
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -36,11 +34,10 @@ const pricingEngine = require('./pricing-engine');
 
 /**
  * Convertit un montant fournisseur en KMF.
- * Utilise les taux dans finance_config (snapshot au moment du scan).
  *
  * @param {number} amount
  * @param {string} currency  'AED' | 'EUR' | 'USD' | 'KMF'
- * @param {object} finance   { taux_aed_kmf, taux_change_eur_kmf, taux_usd_kmf? }
+ * @param {object} finance   { taux_aed_kmf, taux_change_eur_kmf }
  * @returns {number} montant en KMF (entier)
  */
 function convertToKMF(amount, currency, finance) {
@@ -50,18 +47,14 @@ function convertToKMF(amount, currency, finance) {
   if (cur === 'KMF') return Math.round(v);
   if (cur === 'AED') return Math.round(v * (Number(finance?.taux_aed_kmf) || 138));
   if (cur === 'EUR') return Math.round(v * (Number(finance?.taux_change_eur_kmf) || 492));
-  // USD fallback : ~1 USD = 0.27 EUR ~ 132 KMF (approximation, à raffiner si besoin)
+  // USD : approx 0.92 EUR (à raffiner si besoin avec taux dédié)
   if (cur === 'USD') return Math.round(v * 0.92 * (Number(finance?.taux_change_eur_kmf) || 492));
   return Math.round(v);
 }
 
 /**
- * Mappe une catégorie fournisseur vers une catégorie Komerce.
- * Logique simple par mots-clés. Si rien ne match : fallback 'autre'.
- *
- * @param {string} supplierCat   ex: "Women's clothing", "Mobile phones", "Beauty"
- * @param {Array} komerceCats    customs_categories.rows
- * @returns {{ key: string, source: 'mapped'|'default', confidence: 'low'|'medium'|'high' }}
+ * Mappe une catégorie fournisseur (texte libre) vers une customs_categories.key Komerce.
+ * Logique simple par mots-clés FR + EN.
  */
 function mapCategory(supplierCat, komerceCats) {
   const cats = Array.isArray(komerceCats) ? komerceCats : [];
@@ -70,7 +63,6 @@ function mapCategory(supplierCat, komerceCats) {
     return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
   }
   const s = supplierCat.toLowerCase();
-  // Mots-clés courants (FR + EN)
   const rules = [
     { keys: ['phone', 'mobile', 'téléphone', 'smartphone'], catKey: 'phones' },
     { keys: ['cloth', 'vetement', 'vêtement', 'robe', 'chemise', 'pantalon', 'fashion'], catKey: 'vetements' },
@@ -83,29 +75,21 @@ function mapCategory(supplierCat, komerceCats) {
   ];
   for (const r of rules) {
     if (r.keys.some(k => s.includes(k))) {
-      // Vérifier que la cat existe vraiment dans Komerce
       const cat = cats.find(c => c.key === r.catKey);
       if (cat) return { key: cat.key, source: 'mapped', confidence: 'medium' };
     }
   }
-  // Pas de match : fallback
   const fallback = cats.find(c => c.key === 'autre') || cats[0];
   return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
 }
 
 /**
  * Estime le poids si non fourni, par défaut catégorie.
- *
- * @param {number|null} suppliedWeight
- * @param {string} categoryKey
- * @param {Array} komerceCats
- * @returns {{ value: number, source: string, confidence: string }}
  */
 function estimateWeight(suppliedWeight, categoryKey, komerceCats) {
   if (suppliedWeight != null && Number(suppliedWeight) > 0) {
     return { value: Number(suppliedWeight), source: 'supplier', confidence: 'high' };
   }
-  // Défauts par catégorie (observations terrain Komerce, à ajuster)
   const defaults = {
     phones: 0.3, vetements: 0.4, tissus: 0.6, cosmetiques: 0.2,
     enfants: 0.5, accessoires: 0.3, maison: 1.5, electronique: 1.0,
@@ -123,9 +107,15 @@ function estimateWeight(suppliedWeight, categoryKey, komerceCats) {
 
 /**
  * Estime le volume en m³ depuis dimensions ou défaut catégorie.
+ *
+ * @param {Object|null} dimensions  — { l_cm, w_cm, h_cm } ou null
+ * @param {string} categoryKey
  */
-function estimateVolume(l, w, h, categoryKey) {
-  const lcm = Number(l) || 0, wcm = Number(w) || 0, hcm = Number(h) || 0;
+function estimateVolume(dimensions, categoryKey) {
+  const d = dimensions || {};
+  const lcm = Number(d.l_cm) || 0;
+  const wcm = Number(d.w_cm) || 0;
+  const hcm = Number(d.h_cm) || 0;
   if (lcm > 0 && wcm > 0 && hcm > 0) {
     return { value: (lcm * wcm * hcm) / 1_000_000, source: 'supplier', confidence: 'high' };
   }
@@ -142,10 +132,7 @@ function estimateVolume(l, w, h, categoryKey) {
 }
 
 /**
- * Calcule la confidence globale d'un candidat à partir des sources de ses champs.
- * Si tout est 'supplier' ou 'real' → high
- * Si majoritairement 'category' → medium
- * Sinon → low
+ * Calcule la confidence globale d'un candidat depuis les sources de ses champs.
  */
 function computeConfidence(dataSources) {
   const values = Object.values(dataSources || {});
@@ -159,37 +146,37 @@ function computeConfidence(dataSources) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// NORMALISATION
+// NORMALISATION : NormalizedSupplierProduct → candidate Komerce
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
- * Normalise un candidat brut en données Komerce exploitables par pricing-engine.
+ * Transforme un NormalizedSupplierProduct en candidat enrichi
+ * (cat Komerce, KMF, poids/volume estimés, marge cible héritée).
  *
- * @param {object} raw  — données brutes (depuis CSV ou form manuel)
- * @returns {object}    — candidat normalisé prêt à être inséré ou scanné
+ * @param {NormalizedSupplierProduct} product   — voir services/suppliers/normalized-product.js
+ * @param {Object} options                       — { config? }
+ * @returns {Object} candidate normalisé Komerce (prêt à insérer en sourcing_candidates)
  */
-async function normalizeCandidate(raw, options = {}) {
-  // Charger config Komerce (categories + finance)
+async function normalizeCandidate(product, options = {}) {
   const config = options.config || (await pricingEngine.loadGlobalConfig());
   const komerceCats = Object.values(config.categories || {});
-
-  const dataSources = { ...(raw.data_sources || {}) };
+  const dataSources = {};
 
   // Catégorie
-  const catMap = mapCategory(raw.supplier_category, komerceCats);
-  const komerceCategory = raw.komerce_category || catMap.key;
-  dataSources.category = raw.komerce_category ? 'manual' : catMap.source;
+  const catMap = mapCategory(product.supplier_category, komerceCats);
+  const komerceCategory = catMap.key;
+  dataSources.category = catMap.source;
 
   // Prix achat KMF
-  const purchasePriceKmf = convertToKMF(raw.purchase_price, raw.currency, config.finance);
-  dataSources.purchase_price = raw.purchase_price ? 'supplier' : 'missing';
+  const purchasePriceKmf = convertToKMF(product.purchase_price, product.currency, config.finance);
+  dataSources.purchase_price = product.purchase_price ? 'supplier' : 'missing';
 
   // Poids
-  const w = estimateWeight(raw.weight_kg, komerceCategory, komerceCats);
+  const w = estimateWeight(product.weight_kg, komerceCategory, komerceCats);
   dataSources.weight = w.source;
 
   // Volume
-  const v = estimateVolume(raw.dim_l_cm, raw.dim_w_cm, raw.dim_h_cm, komerceCategory);
+  const v = estimateVolume(product.dimensions, komerceCategory);
   dataSources.volume = v.source;
 
   // Marge cible : héritée catégorie ou défaut config
@@ -200,7 +187,25 @@ async function normalizeCandidate(raw, options = {}) {
   dataSources.target_margin = cat?.default_margin_pct ? 'category' : 'default';
 
   return {
-    ...raw,
+    // Identification fournisseur
+    supplier_name: product.supplier_name,
+    supplier_product_id: product.supplier_product_id || null,
+    // Champs bruts conservés
+    product_name: product.product_name,
+    supplier_category: product.supplier_category || null,
+    purchase_price: product.purchase_price || null,
+    currency: product.currency || 'AED',
+    image_url: product.image_url || null,
+    product_url: product.product_url || null,
+    description: product.description || null,
+    stock_available: product.stock_available || null,
+    min_order_qty: product.min_order_qty || null,
+    supplier_delay_days: product.supplier_delay_days || null,
+    weight_kg: product.weight_kg || null,
+    dim_l_cm: product.dimensions?.l_cm || null,
+    dim_w_cm: product.dimensions?.w_cm || null,
+    dim_h_cm: product.dimensions?.h_cm || null,
+    // Champs enrichis Komerce
     komerce_category: komerceCategory,
     purchase_price_kmf: purchasePriceKmf,
     estimated_weight_kg: w.value,
@@ -217,33 +222,24 @@ async function normalizeCandidate(raw, options = {}) {
 
 /**
  * Scanne un candidat normalisé via pricing-engine.recommend().
- * Retourne le résultat doctrine complet (4 prix, decision, alerts, etc.)
- * + override la sourcing_decision si on est sans données marché (TEST par défaut).
- *
- * @param {object} candidate  — candidat normalisé
- * @returns {object}          — { scan_result, sourcing_decision, reason, recommended_action }
+ * Retourne le résultat doctrine + override la sourcing_decision selon §10.
  */
 async function scanCandidate(candidate, options = {}) {
   const config = options.config || (await pricingEngine.loadGlobalConfig());
 
-  // Construire l'input pour pricing-engine
   const input = {
-    product_id: null,                              // pas un produit Komerce
+    product_id: null,
     category: candidate.komerce_category || 'autre',
     cost_kmf: candidate.purchase_price_kmf || 0,
     weight_kg: candidate.estimated_weight_kg || 0.5,
     volume_m3: candidate.estimated_volume_m3 || 0.005,
-    current_price_kmf: 0,                          // pas encore vendu, donc pas de prix actuel
+    current_price_kmf: 0,
     channel: candidate.channel || 'cash_relais',
   };
 
   const reco = await pricingEngine.recommend(input, { config });
 
-  // Sans données marché, on force market_confidence = 'unknown'
-  // et on contraint sourcing_decision selon doctrine §10 :
-  //   - bonne marge + unknown → TEST (pas PRIORITY)
-  //   - marge fragile → WATCH
-  //   - vendu à perte → LOSS
+  // Override §10 : sans données marché, jamais PRIORITY
   let sourcingDecision = reco.sourcing_decision;
   let reason = reco.reason || '';
   if (reco.health_status === 'loss') {
@@ -256,7 +252,6 @@ async function scanCandidate(candidate, options = {}) {
     sourcingDecision = 'WATCH';
     reason = reason || 'Marge fragile. Surveiller les coûts terrain avant sourcing massif.';
   } else if (reco.health_status === 'healthy' || reco.health_status === 'strong') {
-    // Sans signal marché on ne dit JAMAIS PRIORITY
     sourcingDecision = 'TEST';
     reason = 'Marge satisfaisante mais demande marché inconnue. Tester en faible quantité avant sourcing massif.';
   } else {
@@ -264,7 +259,6 @@ async function scanCandidate(candidate, options = {}) {
     reason = 'Données insuffisantes pour décider. Compléter prix achat / poids / catégorie.';
   }
 
-  // Action recommandée en langage admin
   const recommendedAction = ({
     PRIORITY: 'Importer comme produit test à fort potentiel',
     TEST:     'Importer comme produit test en faible quantité',
@@ -274,88 +268,13 @@ async function scanCandidate(candidate, options = {}) {
   })[sourcingDecision] || 'À examiner manuellement';
 
   return {
-    scan_result: reco,                  // résultat brut pricing-engine
+    scan_result: reco,
     sourcing_decision: sourcingDecision,
     reason,
     recommended_action: recommendedAction,
-    market_confidence: 'unknown',       // pas de données marché par défaut
+    market_confidence: 'unknown',
     confidence: candidate.confidence || 'low',
   };
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// PARSE CSV
-// ═══════════════════════════════════════════════════════════════════════
-
-/**
- * Parse un CSV simple (texte brut, séparateur , ou ;) en array d'objets.
- * Première ligne = headers. Mapping flexible.
- *
- * @param {string} csvText
- * @param {object} mapping  — clés Komerce -> noms de colonnes CSV (optionnel, auto si absent)
- * @returns {Array<object>} — lignes brutes prêtes à être normalisées
- */
-function parseCSV(csvText, mapping) {
-  if (!csvText || typeof csvText !== 'string') return [];
-  // Détecter séparateur
-  const firstLine = csvText.split(/\r?\n/)[0] || '';
-  const sep = firstLine.includes(';') ? ';' : ',';
-  const lines = csvText.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return [];
-
-  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase());
-
-  // Mapping par défaut : matchers sur noms de colonnes courants
-  const defaultMap = {
-    product_name:    ['name', 'product_name', 'titre', 'title', 'nom', 'product'],
-    supplier_category: ['category', 'cat', 'categorie', 'supplier_category'],
-    purchase_price:  ['price', 'cost', 'purchase_price', 'prix', 'prix_achat'],
-    currency:        ['currency', 'devise', 'cur'],
-    image_url:       ['image', 'image_url', 'photo', 'img'],
-    product_url:     ['url', 'product_url', 'link', 'lien'],
-    description:     ['description', 'desc', 'detail'],
-    stock_available: ['stock', 'qty', 'quantity', 'available'],
-    min_order_qty:   ['moq', 'min_order', 'min_qty'],
-    supplier_delay_days: ['delay', 'lead_time', 'delai'],
-    weight_kg:       ['weight', 'poids', 'weight_kg', 'poids_kg'],
-    dim_l_cm:        ['length', 'longueur', 'l', 'l_cm'],
-    dim_w_cm:        ['width', 'largeur', 'w', 'w_cm'],
-    dim_h_cm:        ['height', 'hauteur', 'h', 'h_cm'],
-    supplier_product_id: ['sku', 'ref', 'reference', 'product_id'],
-  };
-
-  // Construire l'index des headers
-  const headerIndex = {};
-  Object.keys(defaultMap).forEach(field => {
-    const candidates = (mapping && mapping[field]) ? [mapping[field]] : defaultMap[field];
-    for (const c of candidates) {
-      const idx = headers.indexOf(c.toLowerCase());
-      if (idx !== -1) {
-        headerIndex[field] = idx;
-        break;
-      }
-    }
-  });
-
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cells = lines[i].split(sep);
-    const row = {};
-    Object.keys(headerIndex).forEach(field => {
-      const v = (cells[headerIndex[field]] || '').trim().replace(/^"|"$/g, '');
-      if (v !== '') {
-        if (['purchase_price','weight_kg','dim_l_cm','dim_w_cm','dim_h_cm'].includes(field)) {
-          row[field] = parseFloat(v.replace(',', '.'));
-        } else if (['stock_available','min_order_qty','supplier_delay_days'].includes(field)) {
-          row[field] = parseInt(v, 10);
-        } else {
-          row[field] = v;
-        }
-      }
-    });
-    if (row.product_name) rows.push(row);
-  }
-  return rows;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -363,10 +282,9 @@ function parseCSV(csvText, mapping) {
 // ═══════════════════════════════════════════════════════════════════════
 
 module.exports = {
-  // Pipeline principal
+  // Pipeline principal — scanner = normalisation + scan
   normalizeCandidate,
   scanCandidate,
-  parseCSV,
 
   // Helpers exposés (utiles pour tests)
   convertToKMF,
