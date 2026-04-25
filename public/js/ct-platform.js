@@ -41,11 +41,18 @@ CT.platform = {
   },
 
   /* ─── SECTIONS ───────────────────────────────────────────────── */
+  /* ADR-008: La section "pilotage" générique a été splittée en deux :
+     - pilotage_op  → tout ce qui dit si la machine peut tenir (SLA, capacité)
+     - pilotage_fin → tout ce qui dit si la machine est saine (CA, marges)
+     Cette séparation matérialise la distinction métier "ops vs fin" demandée. */
   SECTIONS: {
     /* CT */
-    cockpit:    { label: 'Cockpit',    order: 1, shell: 'ct' },
-    pilotage:   { label: 'Pilotage',   order: 2, shell: 'ct' },
-    strategie:  { label: 'Stratégie',  order: 3, shell: 'ct' },
+    cockpit:       { label: 'Cockpit',           order: 1, shell: 'ct' },
+    pilotage_op:   { label: 'Pilotage Op',       order: 2, shell: 'ct' },
+    pilotage_fin:  { label: 'Pilotage Financier', order: 3, shell: 'ct' },
+    strategie:     { label: 'Stratégie',         order: 4, shell: 'ct' },
+    /* Backward-compatibility : ancien id 'pilotage' encore référencé */
+    pilotage:      { label: 'Pilotage',          order: 2, shell: 'ct', deprecated: true },
     /* BO */
     operations: { label: 'Opérations',    order: 1, shell: 'bo' },
     alerting:   { label: 'Alertes',       order: 2, shell: 'bo' },
@@ -60,6 +67,18 @@ CT.platform = {
   VIEWS: [
 
     /* ══════ CT : Cockpit ══════ */
+    /* La vue Santé est volontairement la première : c'est l'écran "est-ce
+       que ça tourne et ça ne va pas casser ?" qui agrège tous les indicateurs
+       corrélés. ADR-008. */
+    {
+      id:    'sante',
+      shell: 'ct',  section: 'cockpit',
+      emoji: '🏥',  label:   'Santé Business',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: ['finance']
+    },
     {
       id:    'dashboard',
       shell: 'ct',  section: 'cockpit',
@@ -88,12 +107,36 @@ CT.platform = {
       readOnly: []
     },
 
-    /* ══════ CT : Pilotage ══════ */
+    /* ══════ CT : Pilotage Opérationnel (ADR-008) ══════ */
+    {
+      id:    'pilotage_op',
+      shell: 'ct',  section: 'pilotage_op',
+      emoji: '🚦',  label:   'SLA & Pipeline',
+      roles: ['founder','admin','hub','support'],
+      tabs:  [],
+      supportedFilters: ['period'],
+      readOnly: ['support']
+    },
+
+    /* ══════ CT : Pilotage Financier (ADR-008) ══════ */
+    {
+      id:    'pilotage_fin',
+      shell: 'ct',  section: 'pilotage_fin',
+      emoji: '💰',  label:   'Projection & Mix',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: ['period','category'],
+      readOnly: ['finance']
+    },
+
+    /* ══════ CT : Pilotage (LEGACY — mégavue ADR-008) ══════ */
+    /* Conservée accessible pour les anciens liens mais retirée du menu
+       en n'étant plus mappée à une section visible (deprecated). */
     {
       id:    'pilotage',
       shell: 'ct',  section: 'pilotage',
-      emoji: '📊',  label:   'Pilotage Stratégique',
-      roles: ['founder','admin','finance'],
+      emoji: '📊',  label:   'Pilotage (legacy)',
+      roles: [],  // [] → personne ne la voit dans la sidebar (mais l'URL marche)
       tabs:  ['temporal','categories','ops'],
       supportedFilters: ['period','category'],
       readOnly: ['finance']
@@ -199,7 +242,7 @@ CT.platform = {
     /* ══════ CT : Ventes ══════ */
     {
       id:    'sales',
-      shell: 'ct',  section: 'pilotage',
+      shell: 'ct',  section: 'pilotage_fin',
       emoji: '💰',  label:   'Ventes',
       roles: ['founder','admin','finance'],
       tabs:  [],
@@ -306,7 +349,7 @@ CT.platform = {
     /* ══════ CT : Clients (CRM analytique) ══════ */
     {
       id:    'clients',
-      shell: 'ct',  section: 'pilotage',
+      shell: 'ct',  section: 'pilotage_fin',
       emoji: '👥',  label:   'Clients',
       roles: ['founder','admin','finance','support'],
       tabs:  [],
