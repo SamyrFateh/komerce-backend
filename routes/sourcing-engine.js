@@ -33,6 +33,41 @@ const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ══════════════════════════════════════════════════════════════════════════
+// Helpers LOT I : normalisation des doublons cost_kmf/cost_price_kmf
+//                 et weight_kg/weight_g
+// ══════════════════════════════════════════════════════════════════════════
+//
+// La table products a accumulé des colonnes en doublon :
+//   - cost_kmf (initial, INTEGER)  vs cost_price_kmf (ajouté plus tard, INTEGER)
+//   - weight_kg (initial, NUMERIC) vs weight_g (ajouté plus tard, INTEGER)
+//
+// Le pricing utilise cost_kmf + weight_kg.
+// Ce moteur de sourcing utilisait historiquement cost_price_kmf + weight_g.
+// Conséquence : un produit créé d'un côté n'apparaissait pas de l'autre.
+//
+// Solution :
+//   - Lecture : helpers ci-dessous lisent en priorité la valeur "principale"
+//     puis tombent sur le doublon. Une seule source de vérité dans la logique.
+//   - Écriture : la migration 042 synchronise les colonnes existantes,
+//     et toute mise à jour côté code écrit les 2 colonnes en parallèle.
+//
+function getProductCostKmf(p) {
+  if (p.cost_kmf != null && p.cost_kmf > 0) return Number(p.cost_kmf);
+  if (p.cost_price_kmf != null && p.cost_price_kmf > 0) return Number(p.cost_price_kmf);
+  return null;
+}
+function getProductWeightG(p) {
+  if (p.weight_kg != null && Number(p.weight_kg) > 0) return Math.round(Number(p.weight_kg) * 1000);
+  if (p.weight_g != null && Number(p.weight_g) > 0) return Number(p.weight_g);
+  return null;
+}
+function getProductWeightKg(p) {
+  if (p.weight_kg != null && Number(p.weight_kg) > 0) return Number(p.weight_kg);
+  if (p.weight_g != null && Number(p.weight_g) > 0) return Number(p.weight_g) / 1000;
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // Helper : lire une valeur de paramétrage depuis business_rules
 // ══════════════════════════════════════════════════════════════════════════
 // NOTE: business_rules est la table clé/valeur appropriée pour ces seuils.
@@ -130,12 +165,12 @@ function analyzeProduct(product, cfg, salesMap) {
     image_url: p.image_url,
     is_active: p.is_active,
 
-    // Métadonnées sourcing (peut être null)
+    // Métadonnées sourcing (peut être null) — lecture normalisée Lot I
     sourcing: {
       rail: p.sourcing_rail || null,
       rail_source: p.sourcing_rail ? 'declared' : null,
-      cost_price_kmf: p.cost_price_kmf,
-      weight_g: p.weight_g,
+      cost_price_kmf: getProductCostKmf(p),
+      weight_g: getProductWeightG(p),
       volume_class: p.volume_class,
       fragility: p.fragility,
       sale_mode: p.sale_mode,
@@ -171,8 +206,9 @@ function analyzeProduct(product, cfg, salesMap) {
   };
 
   // ── Étape 1 : Calcul de marge ──────────────────────────────────────────
-  if (p.cost_price_kmf && p.price_kmf) {
-    analysis.computed.margin_kmf = p.price_kmf - p.cost_price_kmf;
+  const costKmfNorm = getProductCostKmf(p);
+  if (costKmfNorm && p.price_kmf) {
+    analysis.computed.margin_kmf = p.price_kmf - costKmfNorm;
     analysis.computed.margin_pct = Math.round((analysis.computed.margin_kmf / p.price_kmf) * 100);
   }
 
@@ -205,8 +241,8 @@ function analyzeProduct(product, cfg, salesMap) {
   const marginTarget = cfg.margins[rail] || 30;
 
   // ── Étape 4 : Identifier les gaps ──────────────────────────────────────
-  if (!p.cost_price_kmf) analysis.gaps.push('Prix d\'achat manquant');
-  if (!p.weight_g && !p.real_weight_known) analysis.gaps.push('Poids réel inconnu');
+  if (!getProductCostKmf(p)) analysis.gaps.push('Prix d\'achat manquant');
+  if (!getProductWeightG(p) && !p.real_weight_known) analysis.gaps.push('Poids réel inconnu');
   if (!p.quality_validated) analysis.gaps.push('Qualité non validée');
   if (!p.delivery_delay_days) analysis.gaps.push('Délai réel non mesuré');
   if (!p.sourcing_rail) analysis.gaps.push('Rail non assigné (inféré)');
@@ -221,7 +257,7 @@ function analyzeProduct(product, cfg, salesMap) {
   // ── Étape 5 : Calculer la confiance ────────────────────────────────────
   const totalFields = 10;
   const filledFields = [
-    p.sourcing_rail, p.cost_price_kmf, p.weight_g, p.fragility,
+    p.sourcing_rail, getProductCostKmf(p), getProductWeightG(p), p.fragility,
     p.volume_class, p.sale_mode, p.quality_validated ? 'yes' : null,
     p.delivery_delay_days, p.real_price_validated ? 'yes' : null,
     p.real_weight_known ? 'yes' : null,
@@ -254,8 +290,9 @@ function analyzeProduct(product, cfg, salesMap) {
   if (p.quality_validated) score += 1;
 
   // Poids dans les limites du rail ?
-  if (p.weight_g && cfg.weightMax[rail]) {
-    if (p.weight_g <= cfg.weightMax[rail]) score += 1;
+  const weightG = getProductWeightG(p);
+  if (weightG && cfg.weightMax[rail]) {
+    if (weightG <= cfg.weightMax[rail]) score += 1;
     else score -= 1;
   }
 
@@ -378,10 +415,11 @@ function analyzeProduct(product, cfg, salesMap) {
       message: `Marge NÉGATIVE (${analysis.computed.margin_pct}%) — vente à perte`,
     });
   }
-  if (p.weight_g && cfg.weightMax[rail] && p.weight_g > cfg.weightMax[rail]) {
+  const wG = getProductWeightG(p);
+  if (wG && cfg.weightMax[rail] && wG > cfg.weightMax[rail]) {
     analysis.alerts.push({
       level: 'warning',
-      message: `Poids ${p.weight_g}g dépasse le max rail ${rail} (${cfg.weightMax[rail]}g)`,
+      message: `Poids ${wG}g dépasse le max rail ${rail} (${cfg.weightMax[rail]}g)`,
     });
   }
   if (p.is_active && !p.quality_validated && p.lifecycle_status !== 'candidate' && p.lifecycle_status !== 'test') {
@@ -612,6 +650,21 @@ router.put('/products/:id', authenticate, requireAdmin, async (req, res, next) =
         sets.push(`${key} = $${idx}`);
         vals.push(req.body[key]);
         idx++;
+
+        // Lot I : sync vers la colonne soeur en parallèle
+        // pour que pricing-engine voit aussi la mise à jour.
+        if (key === 'cost_price_kmf') {
+          sets.push(`cost_kmf = $${idx}`);
+          vals.push(req.body[key]);
+          idx++;
+        }
+        if (key === 'weight_g') {
+          sets.push(`weight_kg = $${idx}`);
+          // Conversion grammes → kg avec 2 décimales
+          const w = Number(req.body[key]);
+          vals.push(isFinite(w) && w > 0 ? Math.round((w / 1000) * 100) / 100 : null);
+          idx++;
+        }
       }
     }
 

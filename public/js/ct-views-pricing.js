@@ -2261,13 +2261,18 @@ function _bindEvents(container) {
       const price = Number(t.dataset.price);
       if (!productId || !price) return;
       if (!confirm('Appliquer ' + _fmt(price) + ' comme nouveau prix de vente sur ce produit ?')) return;
+      // Feedback visuel + protection double-clic
+      const originalText = t.textContent;
+      t.disabled = true;
+      t.textContent = '⏳ ...';
       try {
         await _apiPut('/api/pricing/apply-price/' + productId, { price_kmf: price, source: 'reco' });
-        // Recharger dashboard + catalogue : prix changé, KPIs et alertes peuvent évoluer
         await Promise.all([_loadDashboard(), _loadCatalog()]);
         _renderHTML(container);
       } catch (err) {
         alert('Erreur application : ' + err.message);
+        t.disabled = false;
+        t.textContent = originalText;
       }
       return;
     }
