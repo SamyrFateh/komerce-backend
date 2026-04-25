@@ -58,19 +58,25 @@ CT.platform = {
   },
 
   /* ─── SECTIONS ───────────────────────────────────────────────── */
-  /* ADR-008: La section "pilotage" générique a été splittée en deux :
-     - pilotage_op  → tout ce qui dit si la machine peut tenir (SLA, capacité)
-     - pilotage_fin → tout ce qui dit si la machine est saine (CA, marges)
-     Cette séparation matérialise la distinction métier "ops vs fin" demandée. */
+  /* LOT E : navigation alignée doctrine en 3 sections cibles :
+       - pilotage_op            → "Que doit-on traiter aujourd'hui ?"
+       - atelier_prix_sourcing  → "Quoi vendre, à quel prix, faut-il sourcer ?"
+       - sante_eco              → "Le modèle tient-il ?"
+     Les anciennes sections (cockpit, pilotage_fin, strategie) restent
+     déclarées en deprecated pour ne pas casser les anciens URL hash. */
   SECTIONS: {
-    /* CT */
-    cockpit:       { label: 'Cockpit',           order: 1, shell: 'ct' },
-    pilotage_op:   { label: 'Pilotage Op',       order: 2, shell: 'ct' },
-    pilotage_fin:  { label: 'Pilotage Financier', order: 3, shell: 'ct' },
-    strategie:     { label: 'Stratégie',         order: 4, shell: 'ct' },
-    /* Backward-compatibility : ancien id 'pilotage' encore référencé */
-    pilotage:      { label: 'Pilotage',          order: 2, shell: 'ct', deprecated: true },
-    /* BO */
+    /* CT — Sections cibles Lot E */
+    pilotage_op:           { label: '📦 Pilotage Opérationnel',  order: 1, shell: 'ct' },
+    atelier_prix_sourcing: { label: '🏷️ Atelier Prix & Sourcing', order: 2, shell: 'ct' },
+    sante_eco:             { label: '💰 Santé Économique',        order: 3, shell: 'ct' },
+
+    /* CT — Sections deprecated (conservées pour les liens existants) */
+    cockpit:       { label: 'Cockpit (legacy)',     order: 91, shell: 'ct', deprecated: true },
+    pilotage_fin:  { label: 'Pilotage Fin (legacy)', order: 92, shell: 'ct', deprecated: true },
+    strategie:     { label: 'Stratégie (legacy)',   order: 93, shell: 'ct', deprecated: true },
+    pilotage:      { label: 'Pilotage (legacy)',    order: 94, shell: 'ct', deprecated: true },
+
+    /* BO — inchangé */
     operations: { label: 'Opérations',    order: 1, shell: 'bo' },
     alerting:   { label: 'Alertes',       order: 2, shell: 'bo' },
     finance_bo: { label: 'Finance',       order: 3, shell: 'bo' },
@@ -83,13 +89,22 @@ CT.platform = {
      ─────────────────────────────────────────────────────────── */
   VIEWS: [
 
-    /* ══════ CT : Cockpit ══════ */
-    /* La vue Santé est volontairement la première : c'est l'écran "est-ce
-       que ça tourne et ça ne va pas casser ?" qui agrège tous les indicateurs
-       corrélés. ADR-008. */
+    /* ══════ CT : 📦 PILOTAGE OPÉRATIONNEL ══════
+       "Que doit-on traiter aujourd'hui ?" — orders, parcels, shipments, alertes.
+       Vues : SLA & Pipeline, Centre d'actions, Problèmes, et Santé Business
+       (qui dit si la machine peut tenir). */
+    {
+      id:    'pilotage_op',
+      shell: 'ct',  section: 'pilotage_op',
+      emoji: '🚦',  label:   'Vue Aujourd\'hui',
+      roles: ['founder','admin','hub','support'],
+      tabs:  [],
+      supportedFilters: ['period'],
+      readOnly: ['support']
+    },
     {
       id:    'sante',
-      shell: 'ct',  section: 'cockpit',
+      shell: 'ct',  section: 'pilotage_op',
       emoji: '🏥',  label:   'Santé Business',
       roles: ['founder','admin','finance'],
       tabs:  [],
@@ -97,18 +112,9 @@ CT.platform = {
       readOnly: ['finance']
     },
     {
-      id:    'dashboard',
-      shell: 'ct',  section: 'cockpit',
-      emoji: '🎯',  label:   'Dashboard',
-      roles: ['founder','admin','finance'],
-      tabs:  [],
-      supportedFilters: ['period'],
-      readOnly: ['finance']
-    },
-    {
       id:    'actionCenter',
-      shell: 'ct',  section: 'cockpit',
-      emoji: '⚡',  label:   'Centre d\'actions',
+      shell: 'ct',  section: 'pilotage_op',
+      emoji: '⚡',  label:   'Alertes & Incidents',
       roles: ['founder','admin'],
       tabs:  ['all','ops','eco','sourcing','disputes'],
       supportedFilters: ['severity','owner_role'],
@@ -116,39 +122,24 @@ CT.platform = {
     },
     {
       id:    'problems',
-      shell: 'ct',  section: 'cockpit',
+      shell: 'ct',  section: 'pilotage_op',
       emoji: '🚨',  label:   'Problèmes',
       roles: ['founder','admin'],
       tabs:  [],
       supportedFilters: ['type','severity'],
       readOnly: []
     },
-
-    /* ══════ CT : Pilotage Opérationnel (ADR-008) ══════ */
     {
-      id:    'pilotage_op',
+      id:    'dashboard',
       shell: 'ct',  section: 'pilotage_op',
-      emoji: '🚦',  label:   'SLA & Pipeline',
-      roles: ['founder','admin','hub','support'],
-      tabs:  [],
-      supportedFilters: ['period'],
-      readOnly: ['support']
-    },
-
-    /* ══════ CT : Pilotage Financier (ADR-008) ══════ */
-    {
-      id:    'pilotage_fin',
-      shell: 'ct',  section: 'pilotage_fin',
-      emoji: '💰',  label:   'Projection & Mix',
+      emoji: '🎯',  label:   'Dashboard global',
       roles: ['founder','admin','finance'],
       tabs:  [],
-      supportedFilters: ['period','category'],
+      supportedFilters: ['period'],
       readOnly: ['finance']
     },
 
     /* ══════ CT : Pilotage (LEGACY — mégavue ADR-008) ══════ */
-    /* Conservée accessible pour les anciens liens mais retirée du menu
-       en n'étant plus mappée à une section visible (deprecated). */
     {
       id:    'pilotage',
       shell: 'ct',  section: 'pilotage',
@@ -159,54 +150,78 @@ CT.platform = {
       readOnly: ['finance']
     },
 
-    /* ══════ CT : Stratégie ══════ */
+    /* ══════ CT : 💰 SANTÉ ÉCONOMIQUE ══════
+       "Le modèle tient-il ?" — CA, marges, contribution, seuil de rentabilité,
+       écarts terrain. Cette section consomme economic-engine + cost-allocation. */
     {
       id:    'economic',
-      shell: 'ct',  section: 'strategie',
-      emoji: '📊',  label:   'Santé économique',
+      shell: 'ct',  section: 'sante_eco',
+      emoji: '📊',  label:   'Santé Globale',
       roles: ['founder','admin','finance'],
-      tabs:  [],  // Lot B : vue monobloc (KPIs + santé catalogue + alertes)
+      tabs:  [],
       supportedFilters: [],
       readOnly: ['finance']
     },
     {
+      id:    'pilotage_fin',
+      shell: 'ct',  section: 'sante_eco',
+      emoji: '💸',  label:   'Projection & Mix',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: ['period','category'],
+      readOnly: ['finance']
+    },
+
+    /* ══════ CT : 🏷️ ATELIER PRIX & SOURCING ══════
+       "Quoi vendre, à quel prix, faut-il sourcer ?" — Pricing, Sourcing,
+       Scanner Catalogue Fournisseur. */
+    {
       id:    'pricing',
-      shell: 'ct',  section: 'strategie',
-      emoji: '🧮',  label:   'Pricing',
+      shell: 'ct',  section: 'atelier_prix_sourcing',
+      emoji: '🧮',  label:   'Construction du Prix',
       roles: ['founder','admin','finance','sourcing'],
-      tabs:  [],  // ADR-011 v2 : vue unique scrollable, plus de tabs
+      tabs:  [],
       supportedFilters: ['category'],
       readOnly: ['finance','sourcing']
     },
     {
-      id:    'pricing_workshop',
-      shell: 'ct',  section: 'strategie',
-      emoji: '🧱',  label:   'Composition avancée des coûts',
-      roles: ['founder','admin','finance'],
-      tabs:  [],  // vue plein-ecran sans tabs
-      supportedFilters: [],
-      readOnly: ['finance'],
-      hidden: true,  // accessible via le bouton "Composition avancée" depuis Pricing
-    },
-    {
-      id:    'pricing_strategy',
-      shell: 'ct',  section: 'strategie',
-      emoji: '💰',  label:   'Strategie de prix',
-      roles: ['founder','admin','finance'],
-      tabs:  [],
-      supportedFilters: [],
-      readOnly: ['finance'],
-      hidden: true,  // Lot B : module avance en PAUSE (feature flag FEATURE_PRICING_STRATEGY)
-      featureFlag: 'FEATURE_PRICING_STRATEGY',
-    },
-    {
       id:    'sourcing',
-      shell: 'ct',  section: 'strategie',
+      shell: 'ct',  section: 'atelier_prix_sourcing',
       emoji: '🔍',  label:   'Intelligence Sourcing',
       roles: ['founder','admin','sourcing'],
       tabs:  ['portfolio','opportunities','risks'],
       supportedFilters: ['category','rail'],
       readOnly: []
+    },
+    {
+      id:    'sourcing_scanner',
+      shell: 'ct',  section: 'atelier_prix_sourcing',
+      emoji: '📡',  label:   'Scanner Catalogue Fournisseur',
+      roles: ['founder','admin','sourcing'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'pricing_workshop',
+      shell: 'ct',  section: 'atelier_prix_sourcing',
+      emoji: '🧱',  label:   'Composition avancée des coûts',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: ['finance'],
+      hidden: true,  // accessible via le bouton depuis Pricing
+    },
+    {
+      id:    'pricing_strategy',
+      shell: 'ct',  section: 'atelier_prix_sourcing',
+      emoji: '💰',  label:   'Stratégie de prix',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: ['finance'],
+      hidden: true,  // Lot B : module avancé en PAUSE
+      featureFlag: 'FEATURE_PRICING_STRATEGY',
     },
 
     /* ══════ BO : Opérations ══════ */
@@ -277,10 +292,10 @@ CT.platform = {
        La VRAIE réconciliation cash (Attendu/Collecté/Déposé par agent)
        est dans la vue Comptabilité (ADR-003). */
 
-    /* ══════ CT : Ventes ══════ */
+    /* ══════ CT : Ventes (rattaché à Santé Éco — Lot E) ══════ */
     {
       id:    'sales',
-      shell: 'ct',  section: 'pilotage_fin',
+      shell: 'ct',  section: 'sante_eco',
       emoji: '💰',  label:   'Ventes',
       roles: ['founder','admin','finance'],
       tabs:  [],
