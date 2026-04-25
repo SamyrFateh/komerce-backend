@@ -84,10 +84,58 @@ function r(n) {
  * @returns {Object} { finance, categories, components, provisions, charges }
  */
 async function loadGlobalConfig() {
-  const [fcRes, catsRes, compRes, provRes, chargesRes] = await Promise.all([
+  // ─── Phase 1 cost_components : on tente d'abord la nouvelle table ───
+  // Fallback sur pricing_components si cost_components vide ou absente.
+  // Le champ family vient de la nouvelle table ; pour les anciens composants
+  // on dérive family depuis category.
+  let components = [];
+  let componentsSource = 'cost_components';
+  try {
+    const ccRes = await db.query(`
+      SELECT
+        id, key, label, emoji, description,
+        family, category,
+        default_value, unit, currency,
+        scope, scope_value, allocation_method,
+        source, confidence,
+        channel, island,
+        is_active, is_exceptional,
+        active_from, active_until,
+        display_order
+      FROM cost_components
+      WHERE is_active = TRUE
+        AND is_exceptional = FALSE
+        AND (active_from IS NULL OR active_from <= CURRENT_DATE)
+        AND (active_until IS NULL OR active_until >= CURRENT_DATE)
+      ORDER BY display_order, key
+    `);
+    components = ccRes.rows;
+  } catch (err) {
+    // cost_components n'existe pas encore (avant migration 043) — on continue.
+    components = [];
+  }
+
+  if (!components.length) {
+    // Fallback : ancienne table pricing_components
+    try {
+      const pcRes = await db.query('SELECT * FROM pricing_components WHERE is_active = TRUE');
+      components = pcRes.rows.map(c => ({
+        ...c,
+        // Mapper l'ancienne category vers la nouvelle structure pour le calcul LOT G
+        family: _legacyFamilyFromCategory(c.category),
+        category: _legacyCategoryToNew(c.category, c.key),
+        scope: 'global',
+        is_exceptional: false,
+      }));
+      componentsSource = 'pricing_components_legacy';
+    } catch (errFallback) {
+      components = [];
+    }
+  }
+
+  const [fcRes, catsRes, provRes, chargesRes] = await Promise.all([
     db.query('SELECT * FROM finance_config WHERE id = 1'),
     db.query('SELECT * FROM customs_categories WHERE is_active = TRUE'),
-    db.query('SELECT * FROM pricing_components WHERE is_active = TRUE'),
     db.query('SELECT * FROM risk_provisions WHERE is_active = TRUE'),
     db.query('SELECT * FROM charges WHERE is_active = TRUE'),
   ]);
@@ -98,10 +146,37 @@ async function loadGlobalConfig() {
   return {
     finance: fcRes.rows[0] || {},
     categories,
-    components: compRes.rows,
+    components,
+    components_source: componentsSource,
     provisions: provRes.rows,
     charges: chargesRes.rows,
   };
+}
+
+// ─── Helpers legacy (rétrocompat le temps que les anciennes données migrent) ───
+function _legacyFamilyFromCategory(oldCat) {
+  if (oldCat === 'paiement') return 'business';
+  return 'landed_relay';
+}
+function _legacyCategoryToNew(oldCat, key) {
+  // Mapping minimal de l'ancien vers le nouveau, basé sur la key quand pertinent
+  const k = (key || '').toLowerCase();
+  if (oldCat === 'sourcing') return 'sourcing';
+  if (oldCat === 'transit') return 'freight';
+  if (oldCat === 'douane') {
+    if (k.includes('transitaire') || k.includes('portuaire')) return 'port_transitary';
+    return 'customs';
+  }
+  if (oldCat === 'hub') {
+    if (k.includes('packaging') || k.includes('emballage')) return 'packaging';
+    return 'hub';
+  }
+  if (oldCat === 'distribution') {
+    if (k.includes('commission') || (k.includes('relais') && !k.includes('transport'))) return 'relay';
+    return 'local_distribution';
+  }
+  if (oldCat === 'paiement') return 'payment';
+  return 'sourcing'; // défaut conservateur
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -223,58 +298,66 @@ function computeCDR(product, ctx = {}) {
   const freightEstimated = volM3 * fretEUR * taxEUR;
   details.freight = r(freightEstimated);
 
-  // Composants Niveau 1 — répartis dans les bons buckets selon leur catégorie
+  // Composants Niveau 1 — répartis dans les bons buckets selon leur catégorie doctrine
+  // Phase 1 : on lit directement family/category depuis cost_components (ou mappé legacy).
   let runningSubtotal = productCostKmf + freightEstimated;
   for (const c of cfg.components) {
     const v = Number(c.default_value || 0);
+
+    // ── Filtrage scope/category : on n'applique que si le composant concerne le sujet ──
+    // applies_to ancien (rétro-compat) : 'all' | 'category:phones' | 'channel:diaspora'
     const a = c.applies_to || 'all';
-    // Ne pas appliquer si la composante est restreinte à une autre catégorie
-    if (a !== 'all' && !a.startsWith('category:' + categoryKey)) continue;
-    // Filtrage canal (paiement diaspora vs cash_relais)
-    if (c.category === 'paiement') {
-      if (channel === 'cash_relais' && c.key.startsWith('stripe_')) continue;
-      if (channel === 'diaspora' && !c.key.startsWith('stripe_') && c.key.includes('cash')) continue;
+    if (a !== 'all' && !a.startsWith('category:' + categoryKey) && !a.startsWith('channel:' + channel)) continue;
+
+    // Nouveau modèle : scope='category' avec scope_value=categoryKey
+    if (c.scope === 'category' && c.scope_value && c.scope_value !== categoryKey) continue;
+
+    // Filtrage canal explicite (champ channel sur le composant)
+    if (c.channel && c.channel !== channel) continue;
+
+    // Filtrage canal legacy (paiement diaspora vs cash_relais via convention de key)
+    if ((c.category === 'paiement' || c.category === 'payment') && !c.channel) {
+      if (channel === 'cash_relais' && (c.key || '').startsWith('stripe_')) continue;
+      if (channel === 'diaspora' && !(c.key || '').startsWith('stripe_') && (c.key || '').includes('cash')) continue;
     }
 
     let amount = 0;
     switch (c.unit) {
-      case 'pct':         amount = runningSubtotal * (v / 100); break;
-      case 'kmf':         amount = v; break;
-      case 'kmf_per_kg':  amount = v * weightKg; break;
-      case 'kmf_per_m3':  amount = v * volM3; break;
-      case 'aed':         amount = v * taxAED; break;
-      case 'eur':         amount = v * taxEUR; break;
+      case 'pct':                amount = runningSubtotal * (v / 100); break;
+      case 'kmf':                amount = v; break;
+      case 'kmf_per_kg':         amount = v * weightKg; break;
+      case 'kmf_per_m3':         amount = v * volM3; break;
+      case 'kmf_per_order':      amount = v; break;
+      case 'kmf_per_parcel':     amount = v; break;
+      case 'kmf_per_shipment':   amount = v; break;
+      case 'aed':                amount = v * taxAED; break;
+      case 'eur':                amount = v * taxEUR; break;
+      case 'usd':                amount = v * 0.92 * taxEUR; break;
     }
 
-    // Bucketing par category de pricing_components
-    // + sous-tracking landed_relay : on sépare local_distribution / relay / packaging
+    // ── Bucketing : aligné sur les catégories doctrine ──
+    // On utilise category (new) si disponible, sinon category (legacy) déjà mappée.
     switch (c.category) {
-      case 'sourcing':     details.sourcing += amount; break;
-      case 'hub':          details.hub += amount; break;
-      case 'transit':      details.freight += amount; break;
-      case 'douane':       details.port_transitaire += amount; break;
-      case 'distribution': {
-        details.distribution += amount;  // total agrégé (rétro-compat)
-        const k = (c.key || '').toLowerCase();
-        if (k.includes('commission') || k.includes('relais') && !k.includes('transport')) {
-          details.relay += amount;
-        } else if (k.includes('transport') || k.includes('local') || k.includes('hub')) {
-          details.local_distribution += amount;
-        } else {
-          details.local_distribution += amount; // fallback
-        }
-        break;
-      }
-      case 'paiement':     details.payment += amount; break;
-      default:             details.sourcing += amount;
-    }
-
-    // Détection packaging par nom de key (en attendant une vraie catégorie)
-    const lowKey = (c.key || '').toLowerCase();
-    if (c.category === 'hub' && (lowKey.includes('packaging') || lowKey.includes('emballage'))) {
-      // On sort le packaging du hub pour le tracker à part (sans double comptage)
-      details.packaging += amount;
-      details.hub -= amount;
+      // ── landed_relay ──
+      case 'product_purchase':   details.product_cost += amount; break;
+      case 'sourcing':           details.sourcing += amount; break;
+      case 'hub':                details.hub += amount; break;
+      case 'packaging':          details.packaging += amount; break;
+      case 'freight':            details.freight += amount; break;
+      case 'transit':            details.freight += amount; break;  // legacy
+      case 'customs':            details.customs += amount; break;
+      case 'douane':             details.customs += amount; break;  // legacy
+      case 'port_transitary':    details.port_transitaire += amount; break;
+      case 'local_distribution': details.local_distribution += amount; details.distribution += amount; break;
+      case 'relay':              details.relay += amount; details.distribution += amount; break;
+      case 'distribution':       details.local_distribution += amount; details.distribution += amount; break;  // legacy
+      // ── business ──
+      case 'payment':            details.payment += amount; break;
+      case 'paiement':           details.payment += amount; break;  // legacy
+      case 'risk_provision':     details.risks += amount; break;
+      case 'fixed_overhead':     details.fixed_costs += amount; break;
+      // ── exceptional / inconnu ──
+      default:                   details.sourcing += amount;
     }
 
     runningSubtotal += amount;

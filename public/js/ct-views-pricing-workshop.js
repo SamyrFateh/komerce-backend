@@ -1,19 +1,30 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  *  ct-views-pricing-workshop.js — Komerce Control Tower
  *
- *  ATELIER DE COMPOSITION DU PRIX (vue plein-ecran)
+ *  COMPOSITION AVANCEE DES COUTS (Phase 1 cost_components)
  *
- *  Objectif : permettre a l'utilisateur de :
- *    1. Visualiser comment le prix se compose (modules contributeurs)
- *    2. Identifier les charges / variables MANQUANTES via benchmarks sectoriels
- *    3. Ajouter en un clic les composantes manquantes
- *    4. Voir l'impact immediat sur le prix
+ *  Doctrine §3 : structure modulable des coûts.
+ *  3 familles : landed_relay (9 cat) / business (3 cat) / exceptional (1+)
  *
- *  API consommees :
- *    - GET /api/pricing/benchmarks-gap → liste des manques par categorie
- *    - POST /api/pricing/recommend → calcul prix actuel
- *    - POST /api/admin/pricing-components → creer composant
- *    - POST /api/admin/risk-provisions → creer provision
+ *  Cette vue permet de :
+ *    1. Voir tous les composants groupés par famille puis catégorie
+ *    2. Activer / désactiver un composant
+ *    3. Créer un nouveau composant
+ *    4. Modifier les valeurs et la portée
+ *    5. Voir l'historique audit
+ *
+ *  Phase 1 : structure + activation. Pas encore de simulation impact.
+ *  Phase 2 : valorisation fine.
+ *  Phase 3 : allocation (impact commande / colis / shipment).
+ *
+ *  API consommées :
+ *    GET    /api/admin/cost-components            — lister
+ *    GET    /api/admin/cost-components/_meta      — enums autorisés
+ *    GET    /api/admin/cost-components/:id        — détail + audit
+ *    POST   /api/admin/cost-components            — créer
+ *    PUT    /api/admin/cost-components/:id        — modifier
+ *    POST   /api/admin/cost-components/:id/toggle — activer/désactiver
+ *    DELETE /api/admin/cost-components/:id        — soft delete
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 (function() {
@@ -22,591 +33,605 @@
 window.CT = window.CT || {};
 CT.views = CT.views || {};
 
-/* ─── STATE ──────────────────────────────────────────────────────────── */
-const _ws = {
-  // Donnees
-  gap: null,              // reponse /benchmarks-gap
-  reco: null,             // reponse /recommend (pour le produit selectionne)
-
-  // Inputs simulateur (memes que Pricing principal)
-  inputCategory: 'phones',
-  inputPrixAed: 100,
-  inputDimL: 17,
-  inputDimW: 12,
-  inputDimH: 11,
-  inputPoidsKg: 0.5,
-  inputChannel: 'cash_relais',
-
-  // Filtres affichage
-  showOptional: false,    // par defaut on cache les optionnels
-  expandedCategories: { sourcing: true, transit: true, douane: true, hub: false, distribution: true, paiement: false },
-
-  loaded: false,
+const _cc = {
+  loading: false, components: [],
+  grouped: { landed_relay: {}, business: {}, exceptional: {} },
+  meta: null,
+  filterFamily: 'all', filterChannel: '', filterIsland: '',
+  showInactive: false, showExceptional: false,
+  drawerOpen: false, drawerMode: null, drawerForm: null, drawerEvents: [],
 };
 
-/* ─── HELPERS ───────────────────────────────────────────────────────── */
-const _wsNF = new Intl.NumberFormat('fr-FR');
-function _wsFmt(n) { return _wsNF.format(Math.round(n || 0)) + ' KMF'; }
-
-async function _wsApi(method, path, body) {
-  const opts = { method, credentials: 'include' };
-  if (body) {
-    opts.headers = { 'Content-Type': 'application/json' };
-    opts.body = JSON.stringify(body);
-  }
+const _ccNF = new Intl.NumberFormat('fr-FR');
+function _ccFmt(n) { return _ccNF.format(Math.round(n || 0)); }
+function _ccEsc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+async function _ccApi(method, path, body) {
+  const opts = { method, credentials: 'include', headers: { 'Content-Type': 'application/json' } };
+  if (body != null) opts.body = JSON.stringify(body);
   const res = await fetch(path, opts);
   if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error('API ' + res.status + ' : ' + txt.slice(0, 200));
+    const t = await res.text().catch(() => '');
+    throw new Error('API ' + res.status + ' : ' + t.slice(0, 250));
   }
   return res.json();
 }
 
-/* ─── STYLES ────────────────────────────────────────────────────────── */
-function _wsInjectStyles() {
-  if (document.getElementById('ct-pricing-workshop-styles')) return;
+const FAMILY_LABELS = {
+  landed_relay: { emoji: '📦', label: 'Coût rendu relais', color: '#3b82f6', desc: 'Tout ce qui amène l\'objet disponible au point relais.' },
+  business:     { emoji: '💼', label: 'Coûts business',    color: '#16a34a', desc: 'Paiement, risques et part de charges fixes.' },
+  exceptional:  { emoji: '⚡', label: 'Exceptionnels',     color: '#f59e0b', desc: 'Incidents et campagnes — exclus du calcul prix par défaut.' },
+};
+
+const CATEGORY_LABELS = {
+  product_purchase:   { emoji: '🛒', label: 'Achat fournisseur' },
+  sourcing:           { emoji: '🔍', label: 'Sourcing' },
+  hub:                { emoji: '🏬', label: 'Hub Dubai' },
+  packaging:          { emoji: '📦', label: 'Emballage' },
+  freight:            { emoji: '🚢', label: 'Fret international' },
+  customs:            { emoji: '🛃', label: 'Douane' },
+  port_transitary:    { emoji: '📋', label: 'Port / transitaire' },
+  local_distribution: { emoji: '🚚', label: 'Distribution locale' },
+  relay:              { emoji: '🏪', label: 'Relais' },
+  payment:            { emoji: '💳', label: 'Paiement' },
+  risk_provision:     { emoji: '🛡️', label: 'Provision risque' },
+  fixed_overhead:     { emoji: '🏢', label: 'Charges fixes' },
+  incident:           { emoji: '⚠️', label: 'Incident' },
+  marketing_campaign: { emoji: '📢', label: 'Campagne marketing' },
+};
+
+const UNIT_LABELS = {
+  kmf: 'KMF (forfait)', pct: '% (pourcentage)',
+  kmf_per_kg: 'KMF / kg', kmf_per_m3: 'KMF / m³',
+  kmf_per_order: 'KMF / commande', kmf_per_parcel: 'KMF / colis', kmf_per_shipment: 'KMF / shipment',
+  aed: 'AED (forfait)', eur: 'EUR (forfait)', usd: 'USD (forfait)',
+};
+
+const SCOPE_LABELS = {
+  global: 'Toutes les commandes', category: 'Catégorie produit', product: 'Produit spécifique',
+  order: 'Par commande', parcel: 'Par colis', shipment: 'Par shipment',
+  supplier: 'Fournisseur', relay: 'Relais',
+};
+
+const SOURCE_BADGES = {
+  real:     { label: 'Réel', cls: 'cc-src-real' },
+  manual:   { label: 'Manuel', cls: 'cc-src-manual' },
+  supplier: { label: 'Fournisseur', cls: 'cc-src-supplier' },
+  category: { label: 'Catégorie', cls: 'cc-src-category' },
+  default:  { label: 'Défaut', cls: 'cc-src-default' },
+  missing:  { label: 'Manquant', cls: 'cc-src-missing' },
+};
+const CONFIDENCE_BADGES = {
+  high:   { label: '✓ Élevée', cls: 'cc-conf-high' },
+  medium: { label: '~ Moyenne', cls: 'cc-conf-medium' },
+  low:    { label: '⚠ Faible', cls: 'cc-conf-low' },
+};
+
+function _ccInjectStyles() {
+  if (document.getElementById('cc-styles')) return;
   const s = document.createElement('style');
-  s.id = 'ct-pricing-workshop-styles';
+  s.id = 'cc-styles';
   s.textContent = `
-    .ws-wrap { padding: 16px 20px; max-width: 1400px; margin: 0 auto; color: #1e293b; }
-    .ws-h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 6px; color: #1e293b; display: flex; align-items: center; gap: 10px; }
-    .ws-sub { font-size: 0.9rem; color: #64748b; margin-bottom: 16px; }
-
-    /* Bandeau formule en haut */
-    .ws-formula { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 1px solid #fcd34d; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
-    .ws-formula-title { font-size: 0.78rem; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 12px; }
-    .ws-formula-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-family: ui-monospace, monospace; font-size: 1rem; }
-    .ws-formula-cell { background: #fff; border: 1px solid #fcd34d; border-radius: 8px; padding: 8px 14px; min-width: 110px; text-align: center; }
-    .ws-formula-cell.final { background: #d97706; color: #fff; border-color: #d97706; font-weight: 800; font-size: 1.15rem; min-width: 140px; }
-    .ws-formula-op { font-weight: 700; color: #92400e; font-size: 1.2rem; }
-    .ws-formula-label { display: block; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 2px; }
-    .ws-formula-cell.final .ws-formula-label { color: #fef3c7; }
-    .ws-formula-value { font-weight: 700; color: #1e293b; }
-    .ws-formula-cell.final .ws-formula-value { color: #fff; }
-
-    /* Tools */
-    .ws-tools { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; padding: 12px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
-    .ws-tool-label { font-size: 0.8rem; color: #64748b; font-weight: 600; }
-    .ws-input { padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #1e293b; font-size: 0.85rem; font-family: ui-monospace, monospace; }
-    .ws-input:focus { outline: none; border-color: #3b82f6; }
-    .ws-select { padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #1e293b; font-size: 0.85rem; }
-    .ws-btn { padding: 8px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
-    .ws-btn-primary { background: #f59e0b; color: #fff; border-color: #f59e0b; }
-    .ws-btn-primary:hover { background: #d97706; }
-    .ws-btn-secondary { background: #fff; color: #1e293b; border-color: #cbd5e1; }
-    .ws-btn-secondary:hover { background: #f8fafc; }
-    .ws-btn-add { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
-    .ws-btn-add:hover { background: #d1fae5; border-color: #6ee7b7; }
-    .ws-btn-back { background: transparent; color: #3b82f6; border: 1px solid transparent; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-    .ws-btn-back:hover { background: #eff6ff; }
-
-    /* Summary cards */
-    .ws-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-    .ws-summary-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; text-align: center; }
-    .ws-summary-card.critical { border-color: #fca5a5; background: linear-gradient(135deg, #fef2f2, #fff); }
-    .ws-summary-card.recommended { border-color: #fcd34d; background: linear-gradient(135deg, #fffbeb, #fff); }
-    .ws-summary-card.present { border-color: #a7f3d0; background: linear-gradient(135deg, #ecfdf5, #fff); }
-    .ws-summary-value { font-size: 1.6rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-    .ws-summary-card.critical .ws-summary-value { color: #b91c1c; }
-    .ws-summary-card.recommended .ws-summary-value { color: #92400e; }
-    .ws-summary-card.present .ws-summary-value { color: #047857; }
-    .ws-summary-label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
-
-    /* Section categorie */
-    .ws-cat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
-    .ws-cat-head { padding: 12px 16px; cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-    .ws-cat-head:hover { background: #f1f5f9; }
-    .ws-cat-title { font-size: 1rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
-    .ws-cat-meta { display: flex; gap: 14px; align-items: center; font-size: 0.82rem; }
-    .ws-cat-badge { padding: 3px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; }
-    .ws-cat-badge.crit { background: #fee2e2; color: #b91c1c; }
-    .ws-cat-badge.recom { background: #fef3c7; color: #92400e; }
-    .ws-cat-badge.ok { background: #d1fae5; color: #047857; }
-    .ws-cat-arrow { color: #94a3b8; transition: transform 0.2s; }
-    .ws-cat.collapsed .ws-cat-arrow { transform: rotate(-90deg); }
-    .ws-cat.collapsed .ws-cat-body { display: none; }
-    .ws-cat-body { padding: 12px 16px; }
-
-    /* ═══ GRILLE DES 6 MODULES (Atelier Phase 2 — disposition cadres) ═══ */
-    /* 2 colonnes × 3 lignes, hauteur égale, scroll interne par cadre */
-    .ws-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      grid-auto-rows: 380px;             /* hauteur égale fixe */
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-    @media (max-width: 768px) {
-      .ws-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
-    }
-    .ws-grid .ws-cat {
-      margin-bottom: 0;                  /* annule le margin global, géré par grid gap */
-      display: flex;
-      flex-direction: column;
-      min-height: 0;                     /* permet à flex-children de scroller */
-    }
-    .ws-grid .ws-cat-head {
-      flex-shrink: 0;
-      cursor: default;                   /* pas de toggle en mode grille */
-    }
-    .ws-grid .ws-cat-head:hover { background: #f8fafc; }  /* pas d'effet hover */
-    .ws-grid .ws-cat-arrow { display: none; }              /* cache le chevron */
-    .ws-grid .ws-cat.collapsed .ws-cat-body { display: flex; }  /* toujours visible en grid */
-    .ws-grid .ws-cat-body {
-      flex: 1 1 auto;
-      overflow-y: auto;                  /* scroll interne si déborde */
-      padding: 10px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    /* Total contribution module en sticky en haut du body */
-    .ws-cat-total {
-      position: sticky;
-      top: -10px;                        /* compense le padding-top */
-      background: #fff;
-      padding: 4px 0 6px;
-      margin: -10px -2px 4px;
-      font-size: 0.78rem;
-      color: #64748b;
-      border-bottom: 1px solid #f1f5f9;
-      z-index: 1;
-    }
-    .ws-cat-total strong { color: #d97706; font-family: ui-monospace, monospace; font-size: 0.95rem; float: right; }
-    /* Compactage en mode grille */
-    .ws-grid .ws-row-present {
-      grid-template-columns: 20px 1fr 90px 60px;  /* compact : retire bench + deviation séparés */
-      gap: 8px;
-      padding: 5px 2px;
-      font-size: 0.82rem;
-    }
-    .ws-grid .ws-row-present .ws-row-bench { display: none; }  /* on cache la colonne benchmark */
-    .ws-grid .ws-row-missing {
-      grid-template-columns: 22px 1fr 70px 90px;
-      gap: 6px;
-      padding: 6px 8px;
-      font-size: 0.8rem;
-    }
-    .ws-grid .ws-row-missing-importance { display: none; }  /* badge déjà signalé par bordure */
-    .ws-grid .ws-row-missing-source { display: none; }       /* économie de hauteur */
-    .ws-grid .ws-section-title {
-      font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;
-      font-weight: 700; margin: 6px 0 4px; padding-top: 6px; border-top: 1px dashed #f1f5f9;
-    }
-    .ws-grid .ws-section-title:first-child { padding-top: 0; border-top: none; margin-top: 0; }
-
-    /* Lignes presentes */
-    .ws-row-present { display: grid; grid-template-columns: 24px 1fr 100px 100px 80px; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
-    .ws-row-present:last-child { border-bottom: none; }
-    .ws-row-icon { color: #16a34a; text-align: center; font-weight: 700; }
-    .ws-row-label { color: #1e293b; }
-    .ws-row-value { font-family: ui-monospace, monospace; color: #1e293b; text-align: right; font-weight: 600; }
-    .ws-row-bench { font-family: ui-monospace, monospace; color: #94a3b8; text-align: right; font-size: 0.78rem; }
-    .ws-row-deviation { text-align: center; font-size: 0.75rem; font-weight: 600; }
-    .ws-row-deviation.high { color: #dc2626; }
-    .ws-row-deviation.low { color: #16a34a; }
-    .ws-row-deviation.ok { color: #94a3b8; }
-
-    /* Lignes manquantes */
-    .ws-row-missing { display: grid; grid-template-columns: 24px 1fr 130px 110px 100px; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 6px; margin-bottom: 4px; font-size: 0.85rem; transition: background 0.15s; }
-    .ws-row-missing:hover { background: #fffbeb; }
-    .ws-row-missing.critical { background: #fef2f2; border-left: 3px solid #ef4444; }
-    .ws-row-missing.recommended { background: #fffbeb; border-left: 3px solid #f59e0b; }
-    .ws-row-missing.optional { background: #f8fafc; border-left: 3px solid #cbd5e1; }
-    .ws-row-missing-icon { font-size: 1.05rem; text-align: center; cursor: help; }
-    .ws-row-missing-label { display: flex; flex-direction: column; gap: 2px; }
-    .ws-row-missing-name { font-weight: 600; color: #1e293b; }
-    .ws-row-missing-source { font-size: 0.7rem; color: #94a3b8; font-style: italic; }
-    .ws-row-missing-bench { font-family: ui-monospace, monospace; color: #475569; text-align: right; font-size: 0.82rem; }
-    .ws-row-missing-bench small { display: block; color: #94a3b8; font-size: 0.7rem; }
-    .ws-row-missing-importance { text-align: center; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
-    .ws-row-missing-importance.critical { background: #fee2e2; color: #b91c1c; }
-    .ws-row-missing-importance.recommended { background: #fef3c7; color: #92400e; }
-    .ws-row-missing-importance.optional { background: #f1f5f9; color: #64748b; }
-
-    /* Tooltip */
-    .ws-tooltip { position: relative; display: inline-block; cursor: help; }
-    .ws-tooltip-content { visibility: hidden; opacity: 0; background: #1e293b; color: #fff; text-align: left; border-radius: 8px; padding: 10px 12px; position: absolute; z-index: 10; left: 0; top: 100%; margin-top: 6px; width: 320px; font-size: 0.8rem; line-height: 1.4; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.15); pointer-events: none; }
-    .ws-tooltip:hover .ws-tooltip-content { visibility: visible; opacity: 1; }
-    .ws-tooltip-content::before { content: ''; position: absolute; top: -6px; left: 12px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1e293b; }
-
-    /* Empty / loading */
-    .ws-empty { padding: 30px 20px; text-align: center; color: #64748b; font-size: 0.9rem; background: #f8fafc; border-radius: 8px; }
-    .ws-loading { padding: 40px 20px; text-align: center; color: #64748b; }
+    .cc-wrap { max-width:1320px; margin:0 auto; padding:20px 24px; color:#1e293b; }
+    .cc-h1 { font-size:1.4rem; font-weight:800; margin:0 0 4px; }
+    .cc-sub { font-size:0.88rem; color:#64748b; margin:0 0 18px; line-height:1.5; }
+    .cc-tools { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:14px; }
+    .cc-tools label { font-size:0.78rem; color:#475569; font-weight:600; }
+    .cc-input, .cc-select { padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.85rem; font-family:inherit; background:#fff; color:#1e293b; }
+    .cc-input:focus, .cc-select:focus { outline:2px solid #16a34a; outline-offset:-1px; border-color:#16a34a; }
+    .cc-checkbox { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:#475569; cursor:pointer; }
+    .cc-btn { padding:7px 14px; font-size:0.85rem; font-weight:600; border-radius:6px; cursor:pointer; border:1px solid #cbd5e1; background:#fff; color:#1e293b; font-family:inherit; transition:all .15s; }
+    .cc-btn:hover { background:#f1f5f9; border-color:#94a3b8; }
+    .cc-btn-primary { background:#16a34a; color:#fff; border-color:#15803d; }
+    .cc-btn-primary:hover { background:#15803d; }
+    .cc-btn-sm { padding:4px 10px; font-size:0.75rem; }
+    .cc-btn-danger { background:#fff; color:#dc2626; border-color:#fecaca; }
+    .cc-btn-danger:hover { background:#fef2f2; }
+    .cc-family { margin-bottom:24px; }
+    .cc-family-head { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:8px; color:#fff; font-weight:700; }
+    .cc-family-emoji { font-size:1.4rem; }
+    .cc-family-title { font-size:1.05rem; font-weight:800; }
+    .cc-family-desc { font-size:0.78rem; opacity:0.9; margin-top:2px; }
+    .cc-family-count { margin-left:auto; background:rgba(255,255,255,0.25); padding:3px 10px; border-radius:14px; font-size:0.78rem; font-weight:600; }
+    .cc-family-body { padding:8px 0 0; }
+    .cc-category { background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-top:10px; overflow:hidden; }
+    .cc-category-head { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#f8fafc; border-bottom:1px solid #e2e8f0; }
+    .cc-category-emoji { font-size:1.1rem; }
+    .cc-category-title { font-size:0.92rem; font-weight:700; flex:1; }
+    .cc-category-stat { font-size:0.78rem; color:#64748b; }
+    .cc-comp { display:grid; grid-template-columns:1fr auto auto auto auto; gap:12px; align-items:center; padding:10px 14px; border-bottom:1px solid #f1f5f9; }
+    .cc-comp:last-child { border-bottom:none; }
+    .cc-comp:hover { background:#f8fafc; }
+    .cc-comp.inactive { opacity:0.5; }
+    .cc-comp-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .cc-comp-name { display:flex; align-items:center; gap:6px; font-size:0.88rem; font-weight:600; color:#1e293b; }
+    .cc-comp-key { font-family:ui-monospace,monospace; font-size:0.7rem; color:#94a3b8; }
+    .cc-comp-desc { font-size:0.78rem; color:#64748b; line-height:1.4; }
+    .cc-comp-badges { display:flex; gap:6px; flex-wrap:wrap; }
+    .cc-badge { padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600; white-space:nowrap; }
+    .cc-comp-value { text-align:right; font-family:ui-monospace,monospace; font-weight:700; font-size:0.95rem; color:#1e293b; }
+    .cc-comp-unit { display:block; font-family:inherit; font-size:0.7rem; color:#94a3b8; font-weight:500; margin-top:2px; }
+    .cc-comp-actions { display:flex; gap:4px; }
+    .cc-src-real { background:#dcfce7; color:#14532d; }
+    .cc-src-manual { background:#dbeafe; color:#1e40af; }
+    .cc-src-supplier { background:#d1fae5; color:#065f46; }
+    .cc-src-category { background:#fef9c3; color:#854d0e; }
+    .cc-src-default { background:#f1f5f9; color:#64748b; }
+    .cc-src-missing { background:#fee2e2; color:#b91c1c; }
+    .cc-conf-high { background:#dcfce7; color:#14532d; }
+    .cc-conf-medium { background:#fef9c3; color:#854d0e; }
+    .cc-conf-low { background:#fef2f2; color:#b91c1c; }
+    .cc-channel { background:#e0f2fe; color:#075985; }
+    .cc-island { background:#fae8ff; color:#86198f; }
+    .cc-toggle { display:inline-block; width:36px; height:20px; background:#cbd5e1; border-radius:10px; position:relative; cursor:pointer; transition:background 0.2s; }
+    .cc-toggle.active { background:#16a34a; }
+    .cc-toggle::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:50%; transition:left 0.2s; }
+    .cc-toggle.active::after { left:18px; }
+    .cc-empty { padding:30px 20px; text-align:center; color:#94a3b8; font-style:italic; font-size:0.88rem; }
+    .cc-loading { padding:60px 20px; text-align:center; color:#64748b; }
+    .cc-drawer-bg { position:fixed; inset:0; background:rgba(15,23,42,0.4); opacity:0; pointer-events:none; transition:opacity .2s; z-index:99; }
+    .cc-drawer-bg.open { opacity:1; pointer-events:auto; }
+    .cc-drawer { position:fixed; top:0; right:0; width:min(560px, 90vw); height:100vh; background:#fff; box-shadow:-4px 0 24px rgba(0,0,0,0.1); transform:translateX(100%); transition:transform .25s; z-index:100; display:flex; flex-direction:column; }
+    .cc-drawer.open { transform:translateX(0); }
+    .cc-drawer-head { padding:16px 18px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:12px; }
+    .cc-drawer-title { font-size:1.05rem; font-weight:700; flex:1; margin:0; }
+    .cc-drawer-body { flex:1; overflow-y:auto; padding:16px 18px; }
+    .cc-drawer-foot { padding:12px 18px; border-top:1px solid #e2e8f0; display:flex; gap:8px; flex-wrap:wrap; }
+    .cc-form-row { margin-bottom:12px; }
+    .cc-form-row label { display:block; font-size:0.72rem; color:#64748b; text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:4px; }
+    .cc-form-row input, .cc-form-row select, .cc-form-row textarea { width:100%; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.88rem; font-family:inherit; background:#fff; color:#1e293b; box-sizing:border-box; }
+    .cc-form-row textarea { resize:vertical; min-height:50px; }
+    .cc-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .cc-form-help { font-size:0.72rem; color:#64748b; margin-top:3px; line-height:1.4; }
+    .cc-form-section-title { font-size:0.85rem; font-weight:700; color:#1e293b; margin:16px 0 8px; padding-bottom:6px; border-bottom:1px solid #e2e8f0; }
+    .cc-events { margin-top:18px; padding:12px; background:#f8fafc; border-radius:6px; }
+    .cc-events-title { font-size:0.85rem; font-weight:700; margin-bottom:8px; color:#475569; }
+    .cc-event { font-size:0.78rem; color:#64748b; padding:5px 0; border-bottom:1px solid #e2e8f0; }
+    .cc-event:last-child { border-bottom:none; }
+    .cc-event-type { font-weight:600; color:#1e293b; }
   `;
   document.head.appendChild(s);
 }
 
-/* ─── DATA LOADING ──────────────────────────────────────────────────── */
-async function _wsLoadData() {
-  const params = _ws.showOptional ? '?include_optional=true' : '';
-  const [gap, reco] = await Promise.all([
-    _wsApi('GET', '/api/pricing/benchmarks-gap' + params),
-    _wsApi('POST', '/api/pricing/recommend', {
-      category: _ws.inputCategory,
-      prix_aed: _ws.inputPrixAed,
-      volume_m3: (_ws.inputDimL * _ws.inputDimW * _ws.inputDimH) / 1_000_000,
-      poids_kg: _ws.inputPoidsKg,
-      channel: _ws.inputChannel,
-      is_diaspora: _ws.inputChannel === 'diaspora',
-    }).catch(() => null),
-  ]);
-  _ws.gap = gap;
-  _ws.reco = reco;
-}
-
-/* ─── RENDER ───────────────────────────────────────────────────────── */
-async function _wsRender(container) {
-  container.innerHTML = '<div class="ws-loading">🧱 Analyse en cours...</div>';
+async function _ccLoadAll() {
+  _cc.loading = true;
   try {
-    await _wsLoadData();
-    _ws.loaded = true;
-    _wsRenderHTML(container);
-  } catch (err) {
-    container.innerHTML = '<div class="ws-empty">Erreur de chargement : ' + err.message + '</div>';
-    console.error('[Workshop] _wsRender error:', err);
+    const params = [];
+    if (_cc.filterFamily && _cc.filterFamily !== 'all') params.push('family=' + encodeURIComponent(_cc.filterFamily));
+    if (_cc.filterChannel) params.push('channel=' + encodeURIComponent(_cc.filterChannel));
+    if (_cc.filterIsland) params.push('island=' + encodeURIComponent(_cc.filterIsland));
+    if (!_cc.showInactive) params.push('is_active=true');
+    if (!_cc.showExceptional) params.push('is_exceptional=false');
+    const qs = params.length ? '?' + params.join('&') : '';
+
+    const ccRes = await _ccApi('GET', '/api/admin/cost-components' + qs);
+    _cc.components = ccRes.components || [];
+    _cc.grouped = ccRes.grouped || { landed_relay: {}, business: {}, exceptional: {} };
+
+    if (!_cc.meta) {
+      const metaRes = await _ccApi('GET', '/api/admin/cost-components/_meta');
+      _cc.meta = metaRes;
+    }
+  } finally {
+    _cc.loading = false;
   }
 }
 
-function _wsRenderHTML(container) {
-  _wsInjectStyles();
-  const r = _ws.reco;
-  const g = _ws.gap;
-
-  let html = '<div class="ws-wrap">';
-
-  // Header avec retour
-  html += '<button class="ws-btn-back" data-act="back-to-pricing">← Retour au Pricing</button>';
-  html += '<h1 class="ws-h1">🧱 Composition avancée des coûts</h1>';
-  html += '<p class="ws-sub">Bibliothèque des composantes de coût. Gérez pricing_components, risk_provisions et identifiez les charges manquantes.</p>';
-
-  // Bandeau formule (si reco disponible)
-  if (r) {
-    html += _wsRenderFormula(r);
+async function _ccRender(container) {
+  _ccInjectStyles();
+  container.innerHTML = '<div class="cc-loading">⏳ Chargement des composants de coût...</div>';
+  try {
+    await _ccLoadAll();
+    _ccRenderHTML(container);
+  } catch (err) {
+    container.innerHTML = '<div class="cc-loading" style="color:#dc2626;">Erreur : ' + _ccEsc(err.message) + '</div>';
   }
+}
 
-  // Tools (sélection produit)
-  html += _wsRenderTools();
+function _ccRenderHTML(container) {
+  let html = '<div class="cc-wrap">';
+  html += '<h1 class="cc-h1">🧱 Composition Avancée des Coûts</h1>';
+  html += '<p class="cc-sub">Tous les coûts qui rentrent dans le calcul du prix Komerce. ';
+  html += 'Famille → Catégorie → Composant. Activez, désactivez, ajoutez selon la réalité terrain.</p>';
 
-  // Summary cards
-  if (g) {
-    html += _wsRenderSummary(g.summary);
+  html += '<div class="cc-tools">';
+  html += '<label>Famille :</label><select class="cc-select" data-filter="family">';
+  html += '<option value="all"' + (_cc.filterFamily === 'all' ? ' selected' : '') + '>Toutes</option>';
+  ['landed_relay', 'business', 'exceptional'].forEach(f => {
+    const sel = (_cc.filterFamily === f) ? ' selected' : '';
+    html += '<option value="' + f + '"' + sel + '>' + (FAMILY_LABELS[f]?.label || f) + '</option>';
+  });
+  html += '</select>';
+  html += '<label>Canal :</label><select class="cc-select" data-filter="channel"><option value="">Tous</option>';
+  ['cash_relais', 'diaspora', 'mobile_money'].forEach(c => {
+    html += '<option value="' + c + '"' + (_cc.filterChannel === c ? ' selected' : '') + '>' + c + '</option>';
+  });
+  html += '</select>';
+  html += '<label>Île :</label><select class="cc-select" data-filter="island"><option value="">Toutes</option>';
+  ['grande_comore', 'moheli', 'anjouan', 'mayotte'].forEach(i => {
+    html += '<option value="' + i + '"' + (_cc.filterIsland === i ? ' selected' : '') + '>' + i + '</option>';
+  });
+  html += '</select>';
+  html += '<label class="cc-checkbox"><input type="checkbox" data-filter="show_inactive"' + (_cc.showInactive ? ' checked' : '') + '> Inactifs</label>';
+  html += '<label class="cc-checkbox"><input type="checkbox" data-filter="show_exceptional"' + (_cc.showExceptional ? ' checked' : '') + '> Exceptionnels</label>';
+  html += '<div style="flex:1;"></div>';
+  html += '<button class="cc-btn cc-btn-primary" data-act="open-create">+ Nouveau composant</button>';
+  html += '</div>';
+
+  ['landed_relay', 'business', 'exceptional'].forEach(family => {
+    if (_cc.filterFamily !== 'all' && _cc.filterFamily !== family) return;
+    html += _ccRenderFamily(family);
+  });
+
+  html += '</div>';
+  html += _ccRenderDrawer();
+  container.innerHTML = html;
+  _ccBindEvents(container);
+}
+
+function _ccRenderFamily(family) {
+  const fmeta = FAMILY_LABELS[family];
+  const cats = _cc.grouped[family] || {};
+  const totalComps = Object.values(cats).reduce((s, arr) => s + arr.length, 0);
+
+  let html = '<div class="cc-family">';
+  html += '<div class="cc-family-head" style="background:' + fmeta.color + ';">';
+  html += '<span class="cc-family-emoji">' + fmeta.emoji + '</span>';
+  html += '<div><div class="cc-family-title">' + _ccEsc(fmeta.label) + '</div>';
+  html += '<div class="cc-family-desc">' + _ccEsc(fmeta.desc) + '</div></div>';
+  html += '<span class="cc-family-count">' + totalComps + ' composants</span>';
+  html += '</div>';
+
+  html += '<div class="cc-family-body">';
+  if (!totalComps) {
+    html += '<div class="cc-empty">Aucun composant dans cette famille pour les filtres actuels.</div>';
+  } else {
+    const orderedCats = (_cc.meta?.categories?.[family]) || Object.keys(cats);
+    orderedCats.forEach(catKey => {
+      const comps = cats[catKey];
+      if (!comps || !comps.length) return;
+      html += _ccRenderCategory(catKey, comps);
+    });
   }
+  html += '</div></div>';
+  return html;
+}
 
-  // Sections par catégorie (grille 2x3 cadres avec hauteur égale)
-  if (g && g.by_category) {
-    html += '<div class="ws-grid">';
-    Object.keys(g.by_category).forEach(catKey => {
-      html += _wsRenderCategory(catKey, g.by_category[catKey]);
+function _ccRenderCategory(catKey, components) {
+  const cmeta = CATEGORY_LABELS[catKey] || { emoji: '❔', label: catKey };
+  const activeCount = components.filter(c => c.is_active).length;
+
+  let html = '<div class="cc-category">';
+  html += '<div class="cc-category-head">';
+  html += '<span class="cc-category-emoji">' + cmeta.emoji + '</span>';
+  html += '<span class="cc-category-title">' + _ccEsc(cmeta.label) + '</span>';
+  html += '<span class="cc-category-stat">' + activeCount + '/' + components.length + ' actifs</span>';
+  html += '</div>';
+  components.forEach(c => { html += _ccRenderComponent(c); });
+  html += '</div>';
+  return html;
+}
+
+function _ccRenderComponent(c) {
+  const inactiveCls = c.is_active ? '' : ' inactive';
+  let html = '<div class="cc-comp' + inactiveCls + '" data-comp-id="' + c.id + '">';
+  html += '<div class="cc-comp-info">';
+  html += '<div class="cc-comp-name">';
+  if (c.emoji) html += '<span>' + _ccEsc(c.emoji) + '</span>';
+  html += '<span>' + _ccEsc(c.label) + '</span>';
+  html += '<span class="cc-comp-key">' + _ccEsc(c.key) + '</span>';
+  if (c.is_exceptional) html += '<span class="cc-badge" style="background:#fef3c7;color:#92400e;">⚡ Exceptionnel</span>';
+  html += '</div>';
+  if (c.description) html += '<div class="cc-comp-desc">' + _ccEsc(c.description) + '</div>';
+  html += '<div class="cc-comp-badges">';
+  const sb = SOURCE_BADGES[c.source] || SOURCE_BADGES.default;
+  html += '<span class="cc-badge ' + sb.cls + '">' + sb.label + '</span>';
+  const cb = CONFIDENCE_BADGES[c.confidence] || CONFIDENCE_BADGES.medium;
+  html += '<span class="cc-badge ' + cb.cls + '">' + cb.label + '</span>';
+  if (c.scope && c.scope !== 'global') {
+    html += '<span class="cc-badge" style="background:#f1f5f9;color:#475569;">' + _ccEsc(SCOPE_LABELS[c.scope] || c.scope);
+    if (c.scope_value) html += ' : ' + _ccEsc(c.scope_value);
+    html += '</span>';
+  }
+  if (c.channel) html += '<span class="cc-badge cc-channel">📡 ' + _ccEsc(c.channel) + '</span>';
+  if (c.island) html += '<span class="cc-badge cc-island">🏝 ' + _ccEsc(c.island) + '</span>';
+  html += '</div></div>';
+
+  html += '<div class="cc-comp-value">';
+  html += _ccFmt(c.default_value);
+  html += '<span class="cc-comp-unit">' + _ccEsc(UNIT_LABELS[c.unit] || c.unit) + '</span>';
+  html += '</div>';
+
+  html += '<div title="' + (c.is_active ? 'Cliquer pour désactiver' : 'Cliquer pour activer') + '">';
+  html += '<span class="cc-toggle' + (c.is_active ? ' active' : '') + '" data-act="toggle-comp" data-id="' + c.id + '"></span>';
+  html += '</div>';
+
+  html += '<div class="cc-comp-actions">';
+  html += '<button class="cc-btn cc-btn-sm" data-act="edit-comp" data-id="' + c.id + '">✏️</button>';
+  if (c.is_deletable) {
+    html += '<button class="cc-btn cc-btn-sm cc-btn-danger" data-act="delete-comp" data-id="' + c.id + '">🗑</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function _ccRenderDrawer() {
+  const open = _cc.drawerOpen;
+  const f = _cc.drawerForm || {};
+  const isEdit = _cc.drawerMode === 'edit';
+
+  let html = '<div class="cc-drawer-bg ' + (open ? 'open' : '') + '" data-act="close-drawer"></div>';
+  html += '<div class="cc-drawer ' + (open ? 'open' : '') + '">';
+  if (!open) { html += '</div>'; return html; }
+
+  html += '<div class="cc-drawer-head">';
+  html += '<button class="cc-btn cc-btn-sm" data-act="close-drawer">←</button>';
+  html += '<h2 class="cc-drawer-title">' + (isEdit ? '✏️ Modifier le composant' : '+ Nouveau composant') + '</h2>';
+  html += '</div>';
+
+  html += '<div class="cc-drawer-body">';
+
+  html += '<div class="cc-form-section-title">📌 Identification</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Clé technique *</label><input type="text" data-form="key" value="' + _ccEsc(f.key) + '" ' + (isEdit ? 'disabled' : '') + ' placeholder="ex: fret_aerien_eur_kg"><div class="cc-form-help">Snake_case, unique. Non modifiable après création.</div></div>';
+  html += '<div class="cc-form-row"><label>Libellé *</label><input type="text" data-form="label" value="' + _ccEsc(f.label) + '" placeholder="Ex: Fret aérien"></div>';
+  html += '</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Emoji</label><input type="text" data-form="emoji" value="' + _ccEsc(f.emoji) + '" maxlength="4" placeholder="🚢"></div>';
+  html += '<div class="cc-form-row"></div>';
+  html += '</div>';
+  html += '<div class="cc-form-row"><label>Description (clair, métier)</label><textarea data-form="description">' + _ccEsc(f.description) + '</textarea></div>';
+
+  html += '<div class="cc-form-section-title">🏷️ Classification</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Famille *</label><select data-form="family">';
+  ['landed_relay', 'business', 'exceptional'].forEach(fa => {
+    const sel = (f.family === fa) ? ' selected' : '';
+    html += '<option value="' + fa + '"' + sel + '>' + (FAMILY_LABELS[fa]?.label || fa) + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="cc-form-row"><label>Catégorie *</label><select data-form="category">';
+  const cats = _cc.meta?.categories?.[f.family || 'landed_relay'] || [];
+  cats.forEach(c => {
+    const sel = (f.category === c) ? ' selected' : '';
+    html += '<option value="' + c + '"' + sel + '>' + (CATEGORY_LABELS[c]?.label || c) + '</option>';
+  });
+  html += '</select></div>';
+  html += '</div>';
+
+  html += '<div class="cc-form-section-title">💰 Valorisation (Phase 2)</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Valeur par défaut *</label><input type="number" step="0.01" data-form="default_value" value="' + _ccEsc(f.default_value) + '"></div>';
+  html += '<div class="cc-form-row"><label>Unité *</label><select data-form="unit">';
+  Object.keys(UNIT_LABELS).forEach(u => {
+    const sel = (f.unit === u) ? ' selected' : '';
+    html += '<option value="' + u + '"' + sel + '>' + UNIT_LABELS[u] + '</option>';
+  });
+  html += '</select></div>';
+  html += '</div>';
+
+  html += '<div class="cc-form-section-title">🎯 Portée d\'application (Phase 3)</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Scope</label><select data-form="scope">';
+  Object.keys(SCOPE_LABELS).forEach(s => {
+    const sel = (f.scope === s) ? ' selected' : '';
+    html += '<option value="' + s + '"' + sel + '>' + SCOPE_LABELS[s] + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="cc-form-row"><label>Valeur scope</label><input type="text" data-form="scope_value" value="' + _ccEsc(f.scope_value) + '" placeholder="Ex: phones"></div>';
+  html += '</div>';
+
+  html += '<div class="cc-form-section-title">🌐 Contexte</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Canal (optionnel)</label><select data-form="channel"><option value="">Tous</option>';
+  ['cash_relais', 'diaspora', 'mobile_money'].forEach(c => {
+    const sel = (f.channel === c) ? ' selected' : '';
+    html += '<option value="' + c + '"' + sel + '>' + c + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="cc-form-row"><label>Île (optionnel)</label><select data-form="island"><option value="">Toutes</option>';
+  ['grande_comore', 'moheli', 'anjouan', 'mayotte'].forEach(i => {
+    const sel = (f.island === i) ? ' selected' : '';
+    html += '<option value="' + i + '"' + sel + '>' + i + '</option>';
+  });
+  html += '</select></div>';
+  html += '</div>';
+
+  html += '<div class="cc-form-section-title">📋 Qualité des données</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Source</label><select data-form="source">';
+  Object.keys(SOURCE_BADGES).forEach(s => {
+    const sel = (f.source === s) ? ' selected' : '';
+    html += '<option value="' + s + '"' + sel + '>' + SOURCE_BADGES[s].label + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="cc-form-row"><label>Confiance</label><select data-form="confidence">';
+  Object.keys(CONFIDENCE_BADGES).forEach(c => {
+    const sel = (f.confidence === c) ? ' selected' : '';
+    html += '<option value="' + c + '"' + sel + '>' + CONFIDENCE_BADGES[c].label + '</option>';
+  });
+  html += '</select></div>';
+  html += '</div>';
+
+  html += '<div class="cc-form-section-title">🔘 Activation</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label class="cc-checkbox"><input type="checkbox" data-form="is_active"' + (f.is_active !== false ? ' checked' : '') + '> Actif</label></div>';
+  html += '<div class="cc-form-row"><label class="cc-checkbox"><input type="checkbox" data-form="is_exceptional"' + (f.is_exceptional ? ' checked' : '') + '> Exceptionnel</label></div>';
+  html += '</div>';
+  html += '<div class="cc-form-grid">';
+  html += '<div class="cc-form-row"><label>Actif depuis</label><input type="date" data-form="active_from" value="' + _ccEsc(f.active_from || '') + '"></div>';
+  html += '<div class="cc-form-row"><label>Actif jusqu\'à</label><input type="date" data-form="active_until" value="' + _ccEsc(f.active_until || '') + '"></div>';
+  html += '</div>';
+  html += '<div class="cc-form-row"><label>Notes</label><textarea data-form="notes">' + _ccEsc(f.notes) + '</textarea></div>';
+
+  if (isEdit && _cc.drawerEvents.length) {
+    html += '<div class="cc-events">';
+    html += '<div class="cc-events-title">🕓 Historique</div>';
+    _cc.drawerEvents.slice(0, 10).forEach(ev => {
+      html += '<div class="cc-event"><span class="cc-event-type">' + _ccEsc(ev.event_type) + '</span> · ' + new Date(ev.created_at).toLocaleString('fr-FR') + (ev.notes ? ' · ' + _ccEsc(ev.notes) : '') + '</div>';
     });
     html += '</div>';
   }
 
   html += '</div>';
-  container.innerHTML = html;
-  _wsBindEvents(container);
-}
 
-function _wsRenderFormula(r) {
-  const n1 = r.niveau1.total;
-  const n2 = r.niveau2.total;
-  const n3 = r.niveau3.total;
-  const total = r.cout_total_kmf;
-  const finalPrice = r.prix_recommande_kmf;
-  const margePct = r.marge_cible_pct;
-
-  return `
-    <div class="ws-formula">
-      <div class="ws-formula-title">📐 Formule appliquee a ce produit</div>
-      <div class="ws-formula-row">
-        <div class="ws-formula-cell">
-          <span class="ws-formula-label">Variables (N1)</span>
-          <span class="ws-formula-value">${_wsFmt(n1)}</span>
-        </div>
-        <span class="ws-formula-op">+</span>
-        <div class="ws-formula-cell">
-          <span class="ws-formula-label">Fixes amorties (N2)</span>
-          <span class="ws-formula-value">${_wsFmt(n2)}</span>
-        </div>
-        <span class="ws-formula-op">+</span>
-        <div class="ws-formula-cell">
-          <span class="ws-formula-label">Provisions (N3)</span>
-          <span class="ws-formula-value">${_wsFmt(n3)}</span>
-        </div>
-        <span class="ws-formula-op">→ ÷ (1 - ${margePct}%)</span>
-        <div class="ws-formula-cell final">
-          <span class="ws-formula-label">Prix recommande</span>
-          <span class="ws-formula-value">${_wsFmt(finalPrice)}</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function _wsRenderTools() {
-  return `
-    <div class="ws-tools">
-      <span class="ws-tool-label">Produit temoin :</span>
-      <select class="ws-select" data-input="category">
-        <option value="phones" ${_ws.inputCategory === 'phones' ? 'selected' : ''}>📱 Phones</option>
-        <option value="electro" ${_ws.inputCategory === 'electro' ? 'selected' : ''}>📺 Electro</option>
-        <option value="vetements" ${_ws.inputCategory === 'vetements' ? 'selected' : ''}>👕 Vetements</option>
-        <option value="cosmetiques" ${_ws.inputCategory === 'cosmetiques' ? 'selected' : ''}>💄 Cosmetiques</option>
-      </select>
-      <input class="ws-input" type="number" data-input="prixAed" value="${_ws.inputPrixAed}" style="width:80px;" placeholder="AED">
-      <span class="ws-tool-label">AED</span>
-      <select class="ws-select" data-input="channel">
-        <option value="cash_relais" ${_ws.inputChannel === 'cash_relais' ? 'selected' : ''}>Cash relais</option>
-        <option value="diaspora" ${_ws.inputChannel === 'diaspora' ? 'selected' : ''}>Diaspora</option>
-      </select>
-      <button class="ws-btn ws-btn-primary" data-act="recompute">🔄 Recalculer</button>
-      <span style="flex:1;"></span>
-      <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:#475569;">
-        <input type="checkbox" data-input="showOptional" ${_ws.showOptional ? 'checked' : ''}>
-        Afficher les optionnels
-      </label>
-    </div>
-  `;
-}
-
-function _wsRenderSummary(s) {
-  return `
-    <div class="ws-summary">
-      <div class="ws-summary-card critical">
-        <div class="ws-summary-value">${s.critical_missing}</div>
-        <div class="ws-summary-label">⚠ Manques critiques</div>
-      </div>
-      <div class="ws-summary-card recommended">
-        <div class="ws-summary-value">${s.recommended_missing}</div>
-        <div class="ws-summary-label">Manques recommandes</div>
-      </div>
-      <div class="ws-summary-card present">
-        <div class="ws-summary-value">${s.present_count}</div>
-        <div class="ws-summary-label">✓ Charges presentes</div>
-      </div>
-      <div class="ws-summary-card">
-        <div class="ws-summary-value">${s.total_benchmarks}</div>
-        <div class="ws-summary-label">Total benchmarks</div>
-      </div>
-    </div>
-  `;
-}
-
-function _wsRenderCategory(catKey, cat) {
-  const isOpen = _ws.expandedCategories[catKey];
-  const totalMissing = cat.missing.length;
-  const totalPresent = cat.present.length;
-  const critMissing = cat.missing.filter(m => m.importance === 'critical').length;
-  const recomMissing = cat.missing.filter(m => m.importance === 'recommended').length;
-
-  // Contribution totale du module (somme des composants présents dans le reco)
-  let moduleTotal = 0;
-  if (_ws.reco?.niveau1?.items) {
-    _ws.reco.niveau1.items.forEach(it => {
-      const matchingPresent = cat.present.find(p => p.key === it.key);
-      if (matchingPresent) moduleTotal += Number(it.valeur_kmf || 0);
-    });
-  }
-
-  let html = `
-    <div class="ws-cat ${isOpen ? '' : 'collapsed'}" data-cat="${catKey}">
-      <div class="ws-cat-head" data-act="toggle-cat" data-cat="${catKey}">
-        <div class="ws-cat-title">${cat.emoji} ${cat.label}</div>
-        <div class="ws-cat-meta">
-          ${critMissing > 0 ? '<span class="ws-cat-badge crit">' + critMissing + ' critique' + (critMissing > 1 ? 's' : '') + '</span>' : ''}
-          ${recomMissing > 0 ? '<span class="ws-cat-badge recom">' + recomMissing + ' recommande' + (recomMissing > 1 ? 's' : '') + '</span>' : ''}
-          ${critMissing === 0 && recomMissing === 0 ? '<span class="ws-cat-badge ok">✓ Complet</span>' : ''}
-          <span class="ws-cat-arrow">▼</span>
-        </div>
-      </div>
-      <div class="ws-cat-body">
-        <div class="ws-cat-total">Contribution module <strong>${_wsFmt(moduleTotal)}</strong></div>
-  `;
-
-  // Lignes présentes
-  if (cat.present.length) {
-    html += '<div>';
-    html += '<div class="ws-section-title">✓ Présentes (' + cat.present.length + ')</div>';
-    cat.present.forEach(p => {
-      const dev = p.deviation_pct || 0;
-      let devClass = 'ok';
-      let devStr = '';
-      if (Math.abs(dev) >= 30) { devClass = dev > 0 ? 'high' : 'low'; devStr = (dev > 0 ? '+' : '') + dev + '%'; }
-      const inactiveLabel = p.is_active ? '' : ' <span style="color:#94a3b8; font-size:0.7rem;">(off)</span>';
-      html += `
-        <div class="ws-row-present">
-          <span class="ws-row-icon">✓</span>
-          <span class="ws-row-label">${p.label}${inactiveLabel}</span>
-          <span class="ws-row-value">${p.current_value} ${p.unit === 'pct' ? '%' : 'KMF'}</span>
-          <span class="ws-row-bench">bench ${p.benchmark_median} ${p.unit === 'pct' ? '%' : ''}</span>
-          <span class="ws-row-deviation ${devClass}">${devStr}</span>
-        </div>
-      `;
-    });
-    html += '</div>';
-  }
-
-  // Lignes manquantes
-  if (cat.missing.length) {
-    html += '<div>';
-    html += '<div class="ws-section-title">⚠ Manques sectoriels (' + cat.missing.length + ')</div>';
-    // Trier : critical d'abord, puis recommended, puis optional
-    const sorted = cat.missing.slice().sort((a, b) => {
-      const order = { critical: 0, recommended: 1, optional: 2 };
-      return order[a.importance] - order[b.importance];
-    });
-    sorted.forEach(m => {
-      const benchStr = m.benchmark_min !== null && m.benchmark_max !== null
-        ? `${m.benchmark_median} ${m.unit === 'pct' ? '%' : 'KMF'}`
-        : `${m.benchmark_median} ${m.unit === 'pct' ? '%' : 'KMF'}`;
-      const benchRangeStr = m.benchmark_min !== null && m.benchmark_max !== null
-        ? `(${m.benchmark_min} - ${m.benchmark_max})`
-        : '';
-
-      const importLabels = { critical: 'CRITIQUE', recommended: 'RECOMMANDE', optional: 'OPTIONNEL' };
-
-      html += `
-        <div class="ws-row-missing ${m.importance}" data-bench-key="${m.key}">
-          <span class="ws-row-missing-icon ws-tooltip" title="${m.why || ''}">${m.emoji || '•'}
-            ${m.why ? '<span class="ws-tooltip-content"><strong>Pourquoi :</strong> ' + m.why + (m.source ? '<br><br><em>Source : ' + m.source + '</em>' : '') + '</span>' : ''}
-          </span>
-          <div class="ws-row-missing-label">
-            <span class="ws-row-missing-name">${m.label}</span>
-            ${m.source ? '<span class="ws-row-missing-source">' + m.source + '</span>' : ''}
-          </div>
-          <span class="ws-row-missing-bench">
-            ${benchStr}
-            ${benchRangeStr ? '<small>' + benchRangeStr + '</small>' : ''}
-          </span>
-          <span class="ws-row-missing-importance ${m.importance}">${importLabels[m.importance]}</span>
-          <button class="ws-btn-add" data-act="add-from-bench" data-bench-key="${m.key}"
-                  data-cat="${catKey}" data-unit="${m.unit}" data-value="${m.benchmark_median}"
-                  data-label="${m.label}" data-emoji="${m.emoji || ''}"
-                  data-applies-to="${m.suggested_applies_to || 'all'}">+ Ajouter</button>
-        </div>
-      `;
-    });
-    html += '</div>';
-  }
-
-  if (!cat.present.length && !cat.missing.length) {
-    html += '<div class="ws-empty">Aucun benchmark configure pour cette categorie.</div>';
-  }
-
-  html += '</div></div>';
+  html += '<div class="cc-drawer-foot">';
+  html += '<button class="cc-btn cc-btn-primary" data-act="' + (isEdit ? 'save-edit' : 'save-create') + '">' + (isEdit ? '💾 Enregistrer' : '+ Créer') + '</button>';
+  html += '<button class="cc-btn" data-act="close-drawer">Annuler</button>';
+  html += '</div>';
+  html += '</div>';
   return html;
 }
 
-/* ─── EVENTS ───────────────────────────────────────────────────────── */
-function _wsBindEvents(container) {
+function _ccBindEvents(container) {
+  container.addEventListener('change', async (e) => {
+    const tgt = e.target;
+    if (tgt.dataset.filter) {
+      const f = tgt.dataset.filter;
+      if (f === 'family') _cc.filterFamily = tgt.value;
+      else if (f === 'channel') _cc.filterChannel = tgt.value;
+      else if (f === 'island') _cc.filterIsland = tgt.value;
+      else if (f === 'show_inactive') _cc.showInactive = tgt.checked;
+      else if (f === 'show_exceptional') _cc.showExceptional = tgt.checked;
+      try { await _ccLoadAll(); _ccRenderHTML(container); }
+      catch (err) { alert('Erreur : ' + err.message); }
+    }
+    if (tgt.dataset.form && _cc.drawerForm) {
+      const k = tgt.dataset.form;
+      if (k === 'is_active' || k === 'is_exceptional') _cc.drawerForm[k] = tgt.checked;
+      else _cc.drawerForm[k] = tgt.value;
+      if (k === 'family') _ccRenderHTML(container);
+    }
+  });
+
+  container.addEventListener('input', (e) => {
+    const tgt = e.target;
+    if (tgt.dataset.form && _cc.drawerForm) _cc.drawerForm[tgt.dataset.form] = tgt.value;
+  });
+
   container.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-act]');
     if (!t) return;
     const act = t.dataset.act;
 
-    if (act === 'back-to-pricing') {
-      window.location.hash = '#pricing';
+    if (act === 'open-create') {
+      _cc.drawerMode = 'create';
+      _cc.drawerForm = {
+        key: '', label: '', emoji: '', description: '',
+        family: 'landed_relay', category: 'sourcing',
+        default_value: 0, unit: 'kmf', currency: '',
+        scope: 'global', scope_value: '', allocation_method: 'none',
+        source: 'default', confidence: 'medium',
+        channel: '', island: '',
+        is_active: true, is_exceptional: false,
+        active_from: '', active_until: '', notes: '',
+      };
+      _cc.drawerEvents = [];
+      _cc.drawerOpen = true;
+      _ccRenderHTML(container);
       return;
     }
 
-    if (act === 'toggle-cat') {
-      const cat = t.dataset.cat;
-      _ws.expandedCategories[cat] = !_ws.expandedCategories[cat];
-      const sec = container.querySelector('[data-cat="' + cat + '"]');
-      if (sec) sec.classList.toggle('collapsed', !_ws.expandedCategories[cat]);
+    if (act === 'edit-comp') {
+      const id = t.dataset.id;
+      try {
+        const r = await _ccApi('GET', '/api/admin/cost-components/' + id);
+        _cc.drawerMode = 'edit';
+        _cc.drawerForm = { ...r.component };
+        _cc.drawerEvents = r.events || [];
+        _cc.drawerOpen = true;
+        _ccRenderHTML(container);
+      } catch (err) { alert('Erreur : ' + err.message); }
       return;
     }
 
-    if (act === 'recompute') {
-      t.textContent = '⏳ Calcul...';
+    if (act === 'close-drawer') {
+      _cc.drawerOpen = false;
+      _cc.drawerForm = null;
+      _cc.drawerEvents = [];
+      _ccRenderHTML(container);
+      return;
+    }
+
+    if (act === 'save-create') {
+      const f = _cc.drawerForm;
+      if (!f.key || !f.label || !f.unit || !f.family || !f.category) {
+        alert('Champs requis : clé, libellé, famille, catégorie, unité');
+        return;
+      }
       t.disabled = true;
+      t.textContent = '⏳ Création...';
       try {
-        await _wsLoadData();
-        _wsRenderHTML(container);
+        const body = { ...f };
+        if (!body.channel) delete body.channel;
+        if (!body.island) delete body.island;
+        if (!body.scope_value) delete body.scope_value;
+        if (!body.active_from) delete body.active_from;
+        if (!body.active_until) delete body.active_until;
+        await _ccApi('POST', '/api/admin/cost-components', body);
+        _cc.drawerOpen = false;
+        _cc.drawerForm = null;
+        await _ccLoadAll();
+        _ccRenderHTML(container);
       } catch (err) {
-        alert('Erreur recalcul : ' + err.message);
+        alert('Erreur création : ' + err.message);
         t.disabled = false;
-        t.textContent = '🔄 Recalculer';
+        t.textContent = '+ Créer';
       }
       return;
     }
 
-    if (act === 'add-from-bench') {
-      const benchKey = t.dataset.benchKey;
-      const cat = t.dataset.cat;
-      const unit = t.dataset.unit;
-      const value = parseFloat(t.dataset.value);
-      const label = t.dataset.label;
-      const emoji = t.dataset.emoji || '';
-      const appliesTo = t.dataset.appliesTo || 'all';
-
-      const isProvision = ['demarque_inconnue_comores', 'defaut_paiement_cash_relais', 'mauvaise_dette_diaspora'].includes(benchKey);
-
-      let confirmMsg = `Ajouter "${label}" avec la valeur sectorielle ${value} ${unit === 'pct' ? '%' : unit} ?\n\n`;
-      confirmMsg += isProvision
-        ? 'Sera ajoute en tant que PROVISION RISQUE (Niveau 3).'
-        : `Sera ajoute en tant que VARIABLE (Niveau 1, categorie ${cat}).`;
-      confirmMsg += '\n\nVous pourrez modifier la valeur dans le module Pricing.';
-
-      if (!confirm(confirmMsg)) return;
-
+    if (act === 'save-edit') {
+      const f = _cc.drawerForm;
+      if (!f.id) return;
+      t.disabled = true;
+      t.textContent = '⏳ Enregistrement...';
       try {
-        if (isProvision) {
-          await _wsApi('POST', '/api/admin/risk-provisions', {
-            key: benchKey,
-            label,
-            emoji,
-            rate_pct: value,
-            applies_to: appliesTo,
-            notes: 'Ajoute via Atelier de composition (benchmark sectoriel)',
-          });
-        } else {
-          await _wsApi('POST', '/api/admin/pricing-components', {
-            key: benchKey,
-            label,
-            emoji,
-            category: cat,
-            unit,
-            default_value: value,
-            applies_to: appliesTo,
-            notes: 'Ajoute via Atelier de composition (benchmark sectoriel)',
-          });
-        }
-        // Recharger les donnees
-        t.textContent = '✓ Ajoute';
-        t.style.background = '#d1fae5';
-        t.disabled = true;
-        // Petit delai puis recharger
-        setTimeout(async () => {
-          await _wsLoadData();
-          _wsRenderHTML(container);
-        }, 600);
+        const body = { ...f };
+        delete body.id; delete body.key;
+        delete body.created_at; delete body.updated_at;
+        delete body.created_by; delete body.updated_by;
+        await _ccApi('PUT', '/api/admin/cost-components/' + f.id, body);
+        _cc.drawerOpen = false;
+        _cc.drawerForm = null;
+        await _ccLoadAll();
+        _ccRenderHTML(container);
       } catch (err) {
-        alert('Erreur ajout : ' + err.message);
+        alert('Erreur sauvegarde : ' + err.message);
+        t.disabled = false;
+        t.textContent = '💾 Enregistrer';
       }
       return;
     }
-  });
 
-  // Inputs (changement immediat)
-  container.addEventListener('change', (e) => {
-    const t = e.target.closest('[data-input]');
-    if (!t) return;
-    const f = t.dataset.input;
-    const v = t.type === 'checkbox' ? t.checked : t.value;
-    if (f === 'category')           _ws.inputCategory = v;
-    else if (f === 'prixAed')       _ws.inputPrixAed = parseFloat(v) || 0;
-    else if (f === 'channel')       _ws.inputChannel = v;
-    else if (f === 'showOptional')  {
-      _ws.showOptional = v;
-      _wsLoadData().then(() => _wsRenderHTML(container));
+    if (act === 'toggle-comp') {
+      const id = t.dataset.id;
+      try {
+        await _ccApi('POST', '/api/admin/cost-components/' + id + '/toggle');
+        await _ccLoadAll();
+        _ccRenderHTML(container);
+      } catch (err) { alert('Erreur : ' + err.message); }
+      return;
+    }
+
+    if (act === 'delete-comp') {
+      const id = t.dataset.id;
+      if (!confirm('Désactiver ce composant ? (Il pourra être réactivé)')) return;
+      try {
+        await _ccApi('DELETE', '/api/admin/cost-components/' + id);
+        await _ccLoadAll();
+        _ccRenderHTML(container);
+      } catch (err) { alert('Erreur : ' + err.message); }
+      return;
     }
   });
 }
 
-/* ─── ENTRY POINT ───────────────────────────────────────────────────── */
 CT.views.pricing_workshop = async function(container) {
-  await _wsRender(container);
+  await _ccRender(container);
 };
 
 })();

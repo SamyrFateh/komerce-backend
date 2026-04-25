@@ -189,6 +189,7 @@ const adminRulesRouter = require('./routes/admin-rules');
 const adminPricingMatricesRouter = require('./routes/admin-pricing-matrices');
 const dashboardRouter  = require('./routes/dashboard');
 const pricingRouter    = require('./routes/pricing');
+const pricingStrategyRouter = require('./routes/pricing-strategy');
 const modulesRouter    = require('./routes/modules');
 const basketsRouter    = require('./routes/baskets');
 const logisticsRouter  = require('./routes/logistics');
@@ -235,10 +236,12 @@ const economicEngineRouter  = require('./routes/economic-engine');
 const adminFinanceConfig    = require('./routes/admin-finance-config');
 const adminLoyaltyRouter    = require('./routes/admin-loyalty');
 const sourcingEngineRouter  = require('./routes/sourcing-engine');
+const sourcingScannerRouter = require('./routes/sourcing-scanner');
 const signalsRouter         = require('./routes/signals');
 const adminCustomsShipmentsRouter = require('./routes/admin-customs-shipments');
 const adminCustomsCategoriesRouter = require('./routes/admin-customs-categories');
 const adminPricingComponentsRouter = require('./routes/admin-pricing-components');
+const adminCostComponentsRouter    = require('./routes/admin-cost-components');
 const adminRiskProvisionsRouter    = require('./routes/admin-risk-provisions');
 
 
@@ -253,6 +256,7 @@ app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin/customs-shipments', adminCustomsShipmentsRouter);
 app.use('/api/admin/customs-categories', adminCustomsCategoriesRouter);
 app.use('/api/admin/pricing-components', adminPricingComponentsRouter);
+app.use('/api/admin/cost-components',    adminCostComponentsRouter);
 app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
@@ -261,6 +265,7 @@ app.use('/api/admin/economic', economicEngineRouter);
 app.use('/api/admin/finance-config', adminFinanceConfig);
 app.use('/api/admin/loyalty', adminLoyaltyRouter);
 app.use('/api/admin/sourcing', sourcingEngineRouter);
+app.use('/api/admin/sourcing', sourcingScannerRouter);
 app.use('/api/admin/signals', signalsRouter);
 app.use('/api/admin/pricing-matrices', adminPricingMatricesRouter);
 app.use('/api/dashboard',  dashboardRouter);
@@ -283,6 +288,7 @@ app.use('/api/cash', cashRouter); // Authenticated client tracking
 app.use('/api/auth', clientAuthRouter);   // Magic link routes
 app.use('/api/client', clientAuthRouter); // Client orders/invoices
 app.use('/api/invoices',   invoicesRouter);
+app.use('/api/pricing/strategy', pricingStrategyRouter);  // ADR-013 : Phase 3 strategie de prix
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);
