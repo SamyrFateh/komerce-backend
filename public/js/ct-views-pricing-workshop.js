@@ -277,8 +277,8 @@ function _wsRenderHTML(container) {
 
   // Header avec retour
   html += '<button class="ws-btn-back" data-act="back-to-pricing">← Retour au Pricing</button>';
-  html += '<h1 class="ws-h1">🧱 Atelier de composition du prix</h1>';
-  html += '<p class="ws-sub">Visualisez comment le prix se compose, et identifiez les charges manquantes par rapport aux benchmarks du secteur.</p>';
+  html += '<h1 class="ws-h1">🧱 Composition avancée des coûts</h1>';
+  html += '<p class="ws-sub">Bibliothèque des composantes de coût. Gérez pricing_components, risk_provisions et identifiez les charges manquantes.</p>';
 
   // Bandeau formule (si reco disponible)
   if (r) {

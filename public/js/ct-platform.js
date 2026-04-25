@@ -181,12 +181,12 @@ CT.platform = {
     {
       id:    'pricing_workshop',
       shell: 'ct',  section: 'strategie',
-      emoji: '🧱',  label:   'Atelier de composition',
+      emoji: '🧱',  label:   'Composition avancée des coûts',
       roles: ['founder','admin','finance'],
       tabs:  [],  // vue plein-ecran sans tabs
       supportedFilters: [],
       readOnly: ['finance'],
-      hidden: true,  // accessible uniquement via le bouton "Atelier" depuis Pricing
+      hidden: true,  // accessible via le bouton "Composition avancée" depuis Pricing
     },
     {
       id:    'pricing_strategy',

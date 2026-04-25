@@ -375,6 +375,186 @@ function _injectStyles() {
       font-style: italic;
       line-height: 1.3;
     }
+
+    /* ═══ BLOCS A / B / C (Atelier de Construction du Prix) ═══ */
+    .pv-bloc {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      overflow: hidden;
+    }
+    .pv-bloc-head {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .pv-bloc-num {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: #f59e0b;
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+    .pv-bloc-a .pv-bloc-num { background: #3b82f6; }
+    .pv-bloc-b .pv-bloc-num { background: #16a34a; }
+    .pv-bloc-c .pv-bloc-num { background: #f59e0b; }
+    .pv-bloc-title { font-size: 1.1rem; font-weight: 800; margin: 0; color: #1e293b; }
+    .pv-bloc-sub { font-size: 0.82rem; color: #64748b; margin-top: 1px; }
+    .pv-bloc-body { padding: 16px 18px; }
+
+    /* Bloc A — formulaire build */
+    .pv-build-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .pv-build-label {
+      display: block;
+      font-size: 0.72rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .pv-build-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      box-sizing: border-box;
+      background: #fff;
+      color: #1e293b;
+    }
+    .pv-build-input:focus { outline: 2px solid #f59e0b; outline-offset: -1px; border-color: #f59e0b; }
+    .pv-build-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: #94a3b8;
+      font-style: italic;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px dashed #cbd5e1;
+    }
+
+    /* Cards des 4 prix */
+    .pv-prices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .pv-price-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      transition: all 0.15s;
+    }
+    .pv-price-card.pv-price-primary {
+      background: linear-gradient(135deg, #fef3c7, #fffbeb);
+      border-color: #f59e0b;
+      border-width: 2px;
+    }
+    .pv-price-label {
+      font-size: 0.78rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .pv-price-card.pv-price-primary .pv-price-label { color: #92400e; }
+    .pv-price-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1e293b;
+      font-family: ui-monospace, monospace;
+      line-height: 1.1;
+    }
+    .pv-price-card.pv-price-primary .pv-price-value { color: #b45309; font-size: 1.7rem; }
+    .pv-price-hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 6px;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    /* Bloc A — meta sous les prix */
+    .pv-build-meta {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.7;
+    }
+    .pv-build-meta strong { color: #1e293b; }
+
+    /* Bloc B — décision sourcing */
+    .pv-decision-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .pv-decision-card {
+      border: 2px solid;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .pv-decision-title {
+      font-size: 0.72rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .pv-decision-key {
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-family: ui-monospace, monospace;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .pv-decision-label {
+      font-size: 0.82rem;
+      color: #475569;
+      font-style: italic;
+    }
+    .pv-reason {
+      background: #eff6ff;
+      border-left: 3px solid #3b82f6;
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      color: #1e40af;
+      line-height: 1.5;
+    }
+    .pv-reason strong { color: #1e3a8a; }
+    .pv-warnings {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fefce8;
+      border-left: 3px solid #facc15;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #854d0e;
+    }
+    .pv-warnings ul { margin: 4px 0 0; padding-left: 20px; }
+    .pv-warnings li { margin-bottom: 2px; }
   `;
   document.head.appendChild(s);
 }
@@ -403,6 +583,7 @@ async function _loadAll() {
 async function _computeReco() {
   const volM3 = (_ps.inputDimL * _ps.inputDimW * _ps.inputDimH) / 1_000_000;
   const body = {
+    product_id: _ps.selectedProductId || null,
     category: _ps.inputCategory,
     prix_aed: _ps.inputPrixAed,
     volume_m3: volM3,
@@ -458,37 +639,26 @@ function _renderHTML(container) {
   let html = '<div class="pv-wrap">';
 
   // ─── HEADER ─────────────────────────────────────────────────────────
-  html += '<h1 class="pv-h1">🧮 Pricing — Pilotage du marché</h1>';
-  html += '<p class="pv-sub">Apprendre le marché et guider le sourcing par la contribution.</p>';
+  html += '<h1 class="pv-h1">🧮 Atelier de Construction du Prix</h1>';
+  html += '<p class="pv-sub">Construire le prix de chaque produit. Décider quoi sourcer, tester, renforcer ou éviter.</p>';
   html += '<div class="pv-tools">';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="refresh">🔄 Rafraîchir</button>';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="component">⚙️ Variables</button>';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="provision">🛡️ Provisions</button>';
-  html += '  <button class="pv-btn pv-btn-primary" data-act="open-workshop" style="margin-left:auto;">🧱 Atelier de composition</button>';
-  // Bouton Stratégie masqué (Lot B : feature flag, modules avancés en pause)
+  html += '  <button class="pv-btn pv-btn-primary" data-act="open-workshop" style="margin-left:auto;">🧱 Composition avancée</button>';
   if (window.FEATURE_PRICING_STRATEGY) {
     html += '  <button class="pv-btn pv-btn-primary" data-act="open-strategy">💰 Stratégie de prix</button>';
   }
   html += '</div>';
 
-  // ─── ONGLETS DES 3 SECTIONS ─────────────────────────────────────────
-  const activeTab = _ps.activeTab || 'atelier';
-  html += '<div class="pv-tabs">';
-  html += '  <button class="pv-tab ' + (activeTab === 'atelier' ? 'active' : '') + '" data-act="set-tab" data-tab="atelier">🛠️ Atelier produit</button>';
-  html += '  <button class="pv-tab ' + (activeTab === 'catalogue' ? 'active' : '') + '" data-act="set-tab" data-tab="catalogue">📦 Catalogue pricing</button>';
-  html += '  <button class="pv-tab ' + (activeTab === 'signaux' ? 'active' : '') + '" data-act="set-tab" data-tab="signaux">📡 Signaux marché</button>';
-  html += '</div>';
+  // ─── BLOC A : Construire le prix ────────────────────────────────────
+  html += _renderBlocA();
 
-  // ─── CONTENU SELON ONGLET ───────────────────────────────────────────
-  html += '<div class="pv-tab-content">';
-  if (activeTab === 'atelier') {
-    html += _renderAtelierProduit();
-  } else if (activeTab === 'catalogue') {
-    html += _renderCataloguePricing();
-  } else if (activeTab === 'signaux') {
-    html += _renderSignauxMarche();
-  }
-  html += '</div>';
+  // ─── BLOC B : Décider sourcing ──────────────────────────────────────
+  html += _renderBlocB();
+
+  // ─── BLOC C : Catalogue à surveiller ────────────────────────────────
+  html += _renderBlocC();
 
   html += '</div>';
   html += _renderDrawer();
@@ -498,117 +668,281 @@ function _renderHTML(container) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SECTION 1 — Atelier produit
-// Répond à : Ce produit peut-il être vendu ? À quel prix ?
+// BLOC A — Construire le prix
+// "Ce produit coûte X. Voici les 4 prix proposés."
 // ═══════════════════════════════════════════════════════════════════
-function _renderAtelierProduit() {
-  let html = '';
-  // KPIs synthétiques (existants : marge, statut catalogue, vente à perte, couverture)
-  html += _renderKPIs();
-  // Alertes (existantes)
-  html += _renderAlerts();
-  // Bandeau pédagogique
-  html += '<div class="pv-explain">' +
-    '<strong>💡 Comment ça marche</strong><br>' +
-    'Le moteur calcule 4 prix pour chaque produit : <em>survie, minimum sûr, conseillé, test</em>. ' +
-    'Cliquez sur l\'Atelier de composition pour comprendre le détail des coûts d\'un produit.' +
-    '</div>';
-  return html;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SECTION 2 — Catalogue pricing
-// La table actuelle des produits avec écart vs CDR
-// ═══════════════════════════════════════════════════════════════════
-function _renderCataloguePricing() {
-  return _section('catalog', '📦 Catalogue & verdicts', '', _renderCatalogBody());
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SECTION 3 — Signaux marché
-// Distributions doctrine : santé / décision sourcing / confiance marché
-// Répond à : Faut-il sourcer, tester, renforcer ou éviter ?
-// ═══════════════════════════════════════════════════════════════════
-function _renderSignauxMarche() {
-  const d = _ps.dashboard;
-  if (!d || !d.doctrine) {
-    return '<div class="pv-empty">' +
-      '<p>Signaux marché en cours de calcul...</p>' +
-      '<p style="font-size:0.85rem;color:#94a3b8;">Si ce message persiste, vérifiez que le service pricing-engine est actif.</p>' +
-      '</div>';
-  }
-
-  const doc = d.doctrine;
-  const total = doc.sample_size || 0;
-
-  let html = '<div class="pv-signals">';
-
-  // Bandeau explicatif
-  html += '<div class="pv-explain">' +
-    '<strong>📡 Doctrine du moteur</strong><br>' +
-    'Le moteur classe chaque produit selon sa <em>santé</em> (prix vs coûts), ' +
-    'sa <em>confiance marché</em> (signal des ventes) et la <em>décision sourcing</em> recommandée.<br>' +
-    '<span style="color:#475569;font-size:0.85rem;">Important : le moteur recommande, l\'admin décide.</span>' +
-    '</div>';
-
-  // ── Distribution Santé ──
-  html += '<div class="pv-signal-block">';
-  html += '<h3 class="pv-signal-title">🩺 Santé prix (' + total + ' produits)</h3>';
-  html += '<p class="pv-signal-sub">Le prix actuel couvre-t-il les coûts ?</p>';
-  html += '<div class="pv-signal-grid">';
-  html += _signalCard('loss', '🔴', 'À perte', doc.by_health.loss, total, 'Prix < CDR — vente à perte');
-  html += _signalCard('danger', '🟠', 'Danger', doc.by_health.danger, total, 'Marge < 15%');
-  html += _signalCard('fragile', '🟡', 'Fragile', doc.by_health.fragile, total, 'Marge 15-25%');
-  html += _signalCard('healthy', '🟢', 'Sain', doc.by_health.healthy, total, 'Marge 25-40%');
-  html += _signalCard('strong', '💚', 'Fort', doc.by_health.strong, total, 'Marge > 40%');
-  html += _signalCard('unknown', '⚪', 'Inconnu', doc.by_health.unknown, total, 'Données insuffisantes');
-  html += '</div></div>';
-
-  // ── Distribution Confiance marché ──
-  html += '<div class="pv-signal-block">';
-  html += '<h3 class="pv-signal-title">📊 Confiance marché</h3>';
-  html += '<p class="pv-signal-sub">Que disent les ventes réelles ?</p>';
-  html += '<div class="pv-signal-grid">';
-  html += _signalCard('m_unknown', '❔', 'Inconnu', doc.by_market.unknown, total, '0 vente — pas de signal');
-  html += _signalCard('m_testing', '🧪', 'En test', doc.by_market.testing, total, '1-5 ventes — observation');
-  html += _signalCard('m_validated', '✅', 'Validé', doc.by_market.validated, total, '6-20 ventes — signal positif');
-  html += _signalCard('m_scaling', '🚀', 'Scaling', doc.by_market.scaling, total, '> 20 ventes — repeat purchase');
-  html += _signalCard('m_rejected', '❌', 'Rejeté', doc.by_market.rejected, total, 'Pas de vente sur 60j');
-  html += '</div></div>';
-
-  // ── Distribution Décision sourcing ──
-  html += '<div class="pv-signal-block">';
-  html += '<h3 class="pv-signal-title">🎯 Décision sourcing recommandée</h3>';
-  html += '<p class="pv-signal-sub">Faut-il continuer à sourcer ce produit ?</p>';
-  html += '<div class="pv-signal-grid">';
-  html += _signalCard('s_priority', '⭐', 'PRIORITY', doc.by_sourcing.PRIORITY, total, 'Forte marge + demande validée');
-  html += _signalCard('s_test', '🧪', 'TEST', doc.by_sourcing.TEST, total, 'Bonne marge mais à tester');
-  html += _signalCard('s_watch', '👀', 'WATCH', doc.by_sourcing.WATCH, total, 'Marge fragile à surveiller');
-  html += _signalCard('s_avoid', '⛔', 'AVOID', doc.by_sourcing.AVOID, total, 'Faible marge + complexité');
-  html += _signalCard('s_loss', '🚨', 'LOSS', doc.by_sourcing.LOSS, total, 'Vendu à perte');
-  if (doc.by_sourcing.RENEGOTIATE > 0) {
-    html += _signalCard('s_reneg', '💬', 'RENEGOTIATE', doc.by_sourcing.RENEGOTIATE, total, 'Renégocier fournisseur');
-  }
-  if (doc.by_sourcing.INCREASE_PRICE > 0) {
-    html += _signalCard('s_inc', '📈', 'INCREASE_PRICE', doc.by_sourcing.INCREASE_PRICE, total, 'Augmenter le prix');
-  }
-  html += '</div></div>';
-
+function _renderBlocA() {
+  const reco = _ps.currentReco;
+  let html = '<div class="pv-bloc pv-bloc-a">';
+  html += '<div class="pv-bloc-head">';
+  html += '<span class="pv-bloc-num">A</span>';
+  html += '<div><h2 class="pv-bloc-title">Construire le prix</h2>';
+  html += '<div class="pv-bloc-sub">Sélectionnez un produit et voyez les prix calculés par le moteur.</div></div>';
   html += '</div>';
+
+  html += '<div class="pv-bloc-body">';
+
+  // ── Sélecteur produit + paramètres ──
+  html += '<div class="pv-build-grid">';
+  html += '<div>';
+  html += '<label class="pv-build-label">Produit</label>';
+  html += '<select class="pv-build-input" data-input="product-select">';
+  html += '<option value="">-- Choisir un produit du catalogue --</option>';
+  (_ps.catalog || []).forEach(it => {
+    const sel = (_ps.selectedProductId === it.product_id) ? ' selected' : '';
+    html += '<option value="' + it.product_id + '"' + sel + '>' +
+      _escape(it.name) + ' — ' + _fmt(it.current_price_kmf) +
+      '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+
+  html += '<div>';
+  html += '<label class="pv-build-label">Catégorie</label>';
+  html += '<select class="pv-build-input" data-input="category">';
+  _ps.categories.forEach(c => {
+    const sel = (c.key === _ps.inputCategory) ? ' selected' : '';
+    html += '<option value="' + c.key + '"' + sel + '>' + _escape(c.label || c.key) + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+
+  html += '<div>';
+  html += '<label class="pv-build-label">Prix achat (AED)</label>';
+  html += '<input type="number" class="pv-build-input" data-input="prix_aed" value="' + _ps.inputPrixAed + '" min="0" step="1">';
+  html += '</div>';
+
+  html += '<div>';
+  html += '<label class="pv-build-label">Poids (kg)</label>';
+  html += '<input type="number" class="pv-build-input" data-input="poids_kg" value="' + _ps.inputPoidsKg + '" min="0" step="0.1">';
+  html += '</div>';
+
+  html += '<div>';
+  html += '<label class="pv-build-label">Volume L×l×h (cm)</label>';
+  html += '<div style="display:flex;gap:4px;">';
+  html += '<input type="number" class="pv-build-input" data-input="dim_l" value="' + _ps.inputDimL + '" min="0" style="width:33%">';
+  html += '<input type="number" class="pv-build-input" data-input="dim_w" value="' + _ps.inputDimW + '" min="0" style="width:33%">';
+  html += '<input type="number" class="pv-build-input" data-input="dim_h" value="' + _ps.inputDimH + '" min="0" style="width:33%">';
+  html += '</div></div>';
+
+  html += '<div>';
+  html += '<label class="pv-build-label">Canal</label>';
+  html += '<select class="pv-build-input" data-input="channel">';
+  html += '<option value="cash_relais"' + (_ps.inputChannel === 'cash_relais' ? ' selected' : '') + '>Cash relais</option>';
+  html += '<option value="diaspora"' + (_ps.inputChannel === 'diaspora' ? ' selected' : '') + '>Diaspora (carte)</option>';
+  html += '</select>';
+  html += '</div>';
+  html += '</div>';  // .pv-build-grid
+
+  // Bouton recalculer
+  html += '<div style="text-align:right;margin-top:10px;">';
+  html += '<button class="pv-btn pv-btn-primary" data-act="compute-reco">🧮 Calculer les prix</button>';
+  html += '</div>';
+
+  // ── Résultats si reco disponible ──
+  if (reco) {
+    html += '<div class="pv-prices-grid">';
+    html += _priceCard('💀 Prix de survie', reco.survival_price_kmf, 'Coûts variables uniquement. Sous ce prix, vente à perte immédiate.');
+    html += _priceCard('🛡️ Minimum sûr', reco.minimum_safe_price_kmf, 'Couvre coûts variables + risques + part charges fixes.');
+    html += _priceCard('🎯 Prix conseillé', reco.recommended_price_kmf, 'Coût complet ÷ (1 - marge cible). Recommandation moteur.', true);
+    html += _priceCard('🧪 Prix test marché', reco.test_price_kmf, 'Prix conseillé pour tester le marché (jamais sous le minimum sûr).');
+    html += '</div>';
+
+    // Détail coût + marge + contribution
+    html += '<div class="pv-build-meta">';
+    html += '<div><strong>Coût de revient complet :</strong> ' + _fmt(reco.cost_complete_estimated_kmf) + '</div>';
+    html += '<div><strong>Coût variable :</strong> ' + _fmt(reco.variable_cost_estimated_kmf) +
+      ' · <strong>Part charges fixes :</strong> ' + _fmt(reco.fixed_cost_allocation_kmf) + '</div>';
+    if (reco.estimated_margin_pct != null) {
+      html += '<div><strong>Marge estimée (au prix actuel) :</strong> ' + reco.estimated_margin_pct + '% · ' +
+        '<strong>Contribution :</strong> ' + _fmt(reco.estimated_contribution_kmf) + '</div>';
+    }
+    if (reco.monthly_break_even_orders) {
+      html += '<div><strong>Seuil rentabilité :</strong> ' + reco.monthly_break_even_orders + ' commandes/mois</div>';
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="pv-build-empty">Sélectionnez un produit ou ajustez les paramètres puis cliquez sur "Calculer les prix".</div>';
+  }
+
+  html += '</div>'; // .pv-bloc-body
+  html += '</div>'; // .pv-bloc
   return html;
 }
 
-function _signalCard(key, emoji, label, count, total, hint) {
-  const pct = total > 0 ? Math.round(count / total * 100) : 0;
-  return '<div class="pv-signal-card" data-signal="' + key + '">' +
-    '<div class="pv-signal-emoji">' + emoji + '</div>' +
-    '<div class="pv-signal-count">' + count + '</div>' +
-    '<div class="pv-signal-label">' + label + '</div>' +
-    '<div class="pv-signal-pct">' + pct + '%</div>' +
-    '<div class="pv-signal-hint">' + hint + '</div>' +
+function _priceCard(label, value, hint, primary) {
+  const cls = primary ? 'pv-price-card pv-price-primary' : 'pv-price-card';
+  return '<div class="' + cls + '">' +
+    '<div class="pv-price-label">' + label + '</div>' +
+    '<div class="pv-price-value">' + _fmt(value) + '</div>' +
+    '<div class="pv-price-hint">' + hint + '</div>' +
   '</div>';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// BLOC B — Décider sourcing
+// "health_status + market_confidence + sourcing_decision + reason"
+// ═══════════════════════════════════════════════════════════════════
+function _renderBlocB() {
+  const reco = _ps.currentReco;
+  let html = '<div class="pv-bloc pv-bloc-b">';
+  html += '<div class="pv-bloc-head">';
+  html += '<span class="pv-bloc-num">B</span>';
+  html += '<div><h2 class="pv-bloc-title">Décider sourcing</h2>';
+  html += '<div class="pv-bloc-sub">Le moteur recommande, l\'humain décide.</div></div>';
+  html += '</div>';
+
+  html += '<div class="pv-bloc-body">';
+
+  if (!reco) {
+    html += '<div class="pv-build-empty">Calculez d\'abord les prix dans le bloc A pour obtenir la décision sourcing.</div>';
+    html += '</div></div>';
+    return html;
+  }
+
+  // ── Triplet de badges (santé / marché / décision) ──
+  html += '<div class="pv-decision-grid">';
+  html += _decisionCard('🩺 Santé prix', reco.health_status, _healthLabel(reco.health_status), _healthColor(reco.health_status));
+  html += _decisionCard('📊 Confiance marché', reco.market_confidence, _marketLabel(reco.market_confidence), _marketColor(reco.market_confidence));
+  html += _decisionCard('🎯 Décision sourcing', reco.sourcing_decision, _sourcingLabel(reco.sourcing_decision), _sourcingColor(reco.sourcing_decision));
+  html += '</div>';
+
+  // ── Raison en langage humain ──
+  if (reco.reason) {
+    html += '<div class="pv-reason">';
+    html += '<strong>💡 Raison :</strong> ' + _escape(reco.reason);
+    html += '</div>';
+  }
+
+  // ── Alertes ──
+  if (reco.alerts && reco.alerts.length) {
+    html += '<div class="pv-alerts" style="margin-top:12px;background:transparent;border:none;padding:0;">';
+    html += '<div class="pv-alerts-head">⚠️ Alertes (' + reco.alerts.length + ')</div>';
+    reco.alerts.forEach(a => {
+      const sev = a.severity || 'info';
+      html += '<div class="pv-alert pv-alert-' + sev + '">';
+      html += '<div class="pv-alert-head"><span class="pv-alert-icon">' + (sev === 'critical' ? '🔴' : (sev === 'warning' ? '🟠' : '🔵')) + '</span>';
+      html += '<div class="pv-alert-text"><strong>' + _escape(a.title || a.code) + '</strong>';
+      if (a.message) html += '<div class="pv-alert-msg">' + _escape(a.message) + '</div>';
+      html += '</div></div></div>';
+    });
+    html += '</div>';
+  }
+
+  // ── Warnings ──
+  if (reco.warnings && reco.warnings.length) {
+    html += '<div class="pv-warnings"><strong>ℹ️ Notes :</strong><ul>';
+    reco.warnings.forEach(w => { html += '<li>' + _escape(w) + '</li>'; });
+    html += '</ul></div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+function _decisionCard(title, key, label, color) {
+  return '<div class="pv-decision-card" style="border-color:' + color.border + ';background:' + color.bg + ';">' +
+    '<div class="pv-decision-title">' + title + '</div>' +
+    '<div class="pv-decision-key" style="color:' + color.text + ';">' + (key || '—') + '</div>' +
+    '<div class="pv-decision-label">' + label + '</div>' +
+  '</div>';
+}
+
+function _healthLabel(s) {
+  const map = {
+    loss: 'Vendu à perte',
+    danger: 'Marge dangereusement faible',
+    fragile: 'Marge fragile',
+    healthy: 'Marge saine',
+    strong: 'Marge forte',
+    unknown: 'Données insuffisantes',
+  };
+  return map[s] || s || '—';
+}
+function _healthColor(s) {
+  const map = {
+    loss:    { border: '#dc2626', bg: '#fef2f2', text: '#b91c1c' },
+    danger:  { border: '#f59e0b', bg: '#fffbeb', text: '#92400e' },
+    fragile: { border: '#facc15', bg: '#fefce8', text: '#854d0e' },
+    healthy: { border: '#22c55e', bg: '#f0fdf4', text: '#166534' },
+    strong:  { border: '#16a34a', bg: '#dcfce7', text: '#14532d' },
+    unknown: { border: '#cbd5e1', bg: '#f8fafc', text: '#64748b' },
+  };
+  return map[s] || map.unknown;
+}
+function _marketLabel(s) {
+  const map = {
+    unknown:   'Non testé',
+    testing:   'En observation',
+    validated: 'Premiers signaux positifs',
+    scaling:   'À renforcer',
+    rejected:  'À arrêter ou repositionner',
+  };
+  return map[s] || s || '—';
+}
+function _marketColor(s) {
+  const map = {
+    unknown:   { border: '#cbd5e1', bg: '#f8fafc', text: '#64748b' },
+    testing:   { border: '#3b82f6', bg: '#eff6ff', text: '#1e40af' },
+    validated: { border: '#22c55e', bg: '#f0fdf4', text: '#166534' },
+    scaling:   { border: '#16a34a', bg: '#dcfce7', text: '#14532d' },
+    rejected:  { border: '#dc2626', bg: '#fef2f2', text: '#b91c1c' },
+  };
+  return map[s] || map.unknown;
+}
+function _sourcingLabel(s) {
+  const map = {
+    PRIORITY:        'Sourcing prioritaire',
+    TEST:            'Tester en faible quantité',
+    WATCH:           'Surveiller',
+    AVOID:           'Éviter',
+    LOSS:            'Vendu sous coût',
+    RENEGOTIATE:     'Renégocier fournisseur',
+    INCREASE_PRICE:  'Augmenter le prix',
+  };
+  return map[s] || s || '—';
+}
+function _sourcingColor(s) {
+  const map = {
+    PRIORITY:       { border: '#16a34a', bg: '#dcfce7', text: '#14532d' },
+    TEST:           { border: '#3b82f6', bg: '#eff6ff', text: '#1e40af' },
+    WATCH:          { border: '#f59e0b', bg: '#fffbeb', text: '#92400e' },
+    AVOID:          { border: '#94a3b8', bg: '#f1f5f9', text: '#475569' },
+    LOSS:           { border: '#dc2626', bg: '#fef2f2', text: '#b91c1c' },
+    RENEGOTIATE:    { border: '#a855f7', bg: '#faf5ff', text: '#6b21a8' },
+    INCREASE_PRICE: { border: '#06b6d4', bg: '#ecfeff', text: '#155e75' },
+  };
+  return map[s] || { border: '#cbd5e1', bg: '#f8fafc', text: '#64748b' };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BLOC C — Catalogue à surveiller
+// Liste enrichie avec health_status + sourcing_decision
+// ═══════════════════════════════════════════════════════════════════
+function _renderBlocC() {
+  let html = '<div class="pv-bloc pv-bloc-c">';
+  html += '<div class="pv-bloc-head">';
+  html += '<span class="pv-bloc-num">C</span>';
+  html += '<div><h2 class="pv-bloc-title">Catalogue à surveiller</h2>';
+  html += '<div class="pv-bloc-sub">Tous les produits — santé, décision, action.</div></div>';
+  html += '</div>';
+  html += '<div class="pv-bloc-body">';
+  html += _renderCatalogBody();
+  html += '</div></div>';
+  return html;
+}
+
+// Helper escape pour éviter XSS quand on injecte des données BDD
+function _escape(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════════
 function _renderKPIs() {
   const d = _ps.dashboard;
   if (!d || !d.kpis) {
@@ -976,31 +1310,56 @@ function _renderCatalogBody() {
   }
 
   html += '<table class="pv-table"><thead><tr>' +
-    '<th>Produit</th><th>Catégorie</th>' +
-    '<th class="pv-num">Prix actuel</th><th class="pv-num">Reco</th>' +
-    '<th class="pv-num">Écart</th><th>Status</th><th>Action</th>' +
+    '<th>Produit</th><th>Cat.</th>' +
+    '<th class="pv-num">Prix actuel</th>' +
+    '<th class="pv-num">Min. sûr</th>' +
+    '<th class="pv-num">Conseillé</th>' +
+    '<th class="pv-num">Test</th>' +
+    '<th class="pv-num">Marge</th>' +
+    '<th class="pv-num">Contrib.</th>' +
+    '<th>Santé</th>' +
+    '<th>Décision</th>' +
+    '<th>Action</th>' +
   '</tr></thead><tbody>';
 
   items.forEach(it => {
-    const statusClass = 'pv-status pv-status-' + it.status;
-    const statusLabel = ({
-      aligned: '✓ Aligné',
-      underpriced: '↑ Sous-prix',
-      overpriced: '↓ Sur-prix',
-      unset: '— Non fixé'
-    })[it.status] || it.status;
+    // Champs doctrine (présents si recommend-batch a appelé pricing-engine)
+    const minSafe = it.minimum_safe_price_kmf;
+    const reco = it.recommended_price_kmf;
+    const testP = it.test_price_kmf;
+    const margePct = it.estimated_margin_pct;
+    const contrib = it.estimated_contribution_kmf;
+    const health = it.health_status;
+    const decision = it.sourcing_decision;
 
-    const gapStr = it.gap_kmf >= 0 ? '+' + _fmt(it.gap_kmf) : _fmt(it.gap_kmf);
-    const gapClass = it.gap_kmf >= 0 ? 'pv-gap-pos' : 'pv-gap-neg';
+    // Badges health/decision
+    let healthBadge = '<span style="color:#94a3b8;font-style:italic;">—</span>';
+    if (health) {
+      const c = _healthColor(health);
+      healthBadge = '<span style="background:' + c.bg + ';color:' + c.text +
+        ';padding:2px 6px;border-radius:4px;font-size:0.72rem;font-weight:600;">' +
+        _escape(health) + '</span>';
+    }
+    let decisionBadge = '<span style="color:#94a3b8;font-style:italic;">—</span>';
+    if (decision) {
+      const c = _sourcingColor(decision);
+      decisionBadge = '<span style="background:' + c.bg + ';color:' + c.text +
+        ';padding:2px 6px;border-radius:4px;font-size:0.72rem;font-weight:700;">' +
+        _escape(decision) + '</span>';
+    }
 
     html += '<tr data-product-id="' + it.product_id + '">' +
-      '<td>' + it.name + '</td>' +
-      '<td>' + it.category + '</td>' +
+      '<td>' + _escape(it.name) + '</td>' +
+      '<td>' + _escape(it.category) + '</td>' +
       '<td class="pv-num">' + _fmt(it.current_price_kmf) + '</td>' +
-      '<td class="pv-num"><strong>' + _fmt(it.recommended_price_kmf) + '</strong></td>' +
-      '<td class="pv-num ' + gapClass + '">' + gapStr + ' (' + (it.gap_pct >= 0 ? '+' : '') + it.gap_pct + '%)</td>' +
-      '<td><span class="' + statusClass + '">' + statusLabel + '</span></td>' +
-      '<td><button class="pv-btn pv-btn-secondary" data-act="apply-one" data-product-id="' + it.product_id + '" data-price="' + it.recommended_price_kmf + '" style="padding:4px 10px; font-size:0.78rem;">Appliquer</button></td>' +
+      '<td class="pv-num">' + (minSafe != null ? _fmt(minSafe) : '—') + '</td>' +
+      '<td class="pv-num"><strong>' + _fmt(reco) + '</strong></td>' +
+      '<td class="pv-num">' + (testP != null ? _fmt(testP) : '—') + '</td>' +
+      '<td class="pv-num">' + (margePct != null ? margePct + '%' : '—') + '</td>' +
+      '<td class="pv-num">' + (contrib != null ? _fmt(contrib) : '—') + '</td>' +
+      '<td>' + healthBadge + '</td>' +
+      '<td>' + decisionBadge + '</td>' +
+      '<td><button class="pv-btn pv-btn-secondary" data-act="apply-one" data-product-id="' + it.product_id + '" data-price="' + reco + '" style="padding:4px 10px; font-size:0.78rem;">Appliquer</button></td>' +
     '</tr>';
   });
 
@@ -1080,6 +1439,32 @@ function _renderDrawer() {
 
 /* ─── EVENTS ──────────────────────────────────────────────────────── */
 function _bindEvents(container) {
+  // ── Handler change pour les inputs du Bloc A (formulaire build) ──
+  container.addEventListener('change', (e) => {
+    const t = e.target.closest('[data-input]');
+    if (!t) return;
+    const f = t.dataset.input;
+    if (f === 'product-select') {
+      _ps.selectedProductId = t.value || null;
+      // Si on choisit un produit, on présélectionne ses paramètres dans le formulaire
+      const item = (_ps.catalog || []).find(c => c.product_id === _ps.selectedProductId);
+      if (item) {
+        if (item.category) _ps.inputCategory = item.category;
+        // les autres inputs restent libres : prix_aed, dim, poids ne sont pas dans recommend-batch
+      }
+      _renderHTML(container);
+    } else if (f === 'category')  _ps.inputCategory = t.value;
+    else if (f === 'prix_aed')   _ps.inputPrixAed = parseFloat(t.value) || 0;
+    else if (f === 'poids_kg')   _ps.inputPoidsKg = parseFloat(t.value) || 0;
+    else if (f === 'dim_l')      _ps.inputDimL = parseFloat(t.value) || 0;
+    else if (f === 'dim_w')      _ps.inputDimW = parseFloat(t.value) || 0;
+    else if (f === 'dim_h')      _ps.inputDimH = parseFloat(t.value) || 0;
+    else if (f === 'channel') {
+      _ps.inputChannel = t.value;
+      _ps.inputIsDiaspora = (t.value === 'diaspora');
+    }
+  });
+
   container.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-act]');
     if (!t) return;
@@ -1103,9 +1488,19 @@ function _bindEvents(container) {
       return;
     }
 
-    if (act === 'set-tab') {
-      _ps.activeTab = t.dataset.tab;
-      _renderHTML(container);
+    // Bloc A : calculer les prix via /api/pricing/recommend
+    if (act === 'compute-reco') {
+      t.disabled = true;
+      const oldText = t.textContent;
+      t.textContent = '⏳ Calcul...';
+      try {
+        await _computeReco();
+        _renderHTML(container);
+      } catch (err) {
+        alert('Erreur de calcul : ' + err.message);
+        t.disabled = false;
+        t.textContent = oldText;
+      }
       return;
     }
 
