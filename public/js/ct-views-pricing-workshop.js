@@ -127,6 +127,74 @@ function _wsInjectStyles() {
     .ws-cat.collapsed .ws-cat-body { display: none; }
     .ws-cat-body { padding: 12px 16px; }
 
+    /* ═══ GRILLE DES 6 MODULES (Atelier Phase 2 — disposition cadres) ═══ */
+    /* 2 colonnes × 3 lignes, hauteur égale, scroll interne par cadre */
+    .ws-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 380px;             /* hauteur égale fixe */
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 768px) {
+      .ws-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    }
+    .ws-grid .ws-cat {
+      margin-bottom: 0;                  /* annule le margin global, géré par grid gap */
+      display: flex;
+      flex-direction: column;
+      min-height: 0;                     /* permet à flex-children de scroller */
+    }
+    .ws-grid .ws-cat-head {
+      flex-shrink: 0;
+      cursor: default;                   /* pas de toggle en mode grille */
+    }
+    .ws-grid .ws-cat-head:hover { background: #f8fafc; }  /* pas d'effet hover */
+    .ws-grid .ws-cat-arrow { display: none; }              /* cache le chevron */
+    .ws-grid .ws-cat.collapsed .ws-cat-body { display: flex; }  /* toujours visible en grid */
+    .ws-grid .ws-cat-body {
+      flex: 1 1 auto;
+      overflow-y: auto;                  /* scroll interne si déborde */
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    /* Total contribution module en sticky en haut du body */
+    .ws-cat-total {
+      position: sticky;
+      top: -10px;                        /* compense le padding-top */
+      background: #fff;
+      padding: 4px 0 6px;
+      margin: -10px -2px 4px;
+      font-size: 0.78rem;
+      color: #64748b;
+      border-bottom: 1px solid #f1f5f9;
+      z-index: 1;
+    }
+    .ws-cat-total strong { color: #d97706; font-family: ui-monospace, monospace; font-size: 0.95rem; float: right; }
+    /* Compactage en mode grille */
+    .ws-grid .ws-row-present {
+      grid-template-columns: 20px 1fr 90px 60px;  /* compact : retire bench + deviation séparés */
+      gap: 8px;
+      padding: 5px 2px;
+      font-size: 0.82rem;
+    }
+    .ws-grid .ws-row-present .ws-row-bench { display: none; }  /* on cache la colonne benchmark */
+    .ws-grid .ws-row-missing {
+      grid-template-columns: 22px 1fr 70px 90px;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+    }
+    .ws-grid .ws-row-missing-importance { display: none; }  /* badge déjà signalé par bordure */
+    .ws-grid .ws-row-missing-source { display: none; }       /* économie de hauteur */
+    .ws-grid .ws-section-title {
+      font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;
+      font-weight: 700; margin: 6px 0 4px; padding-top: 6px; border-top: 1px dashed #f1f5f9;
+    }
+    .ws-grid .ws-section-title:first-child { padding-top: 0; border-top: none; margin-top: 0; }
+
     /* Lignes presentes */
     .ws-row-present { display: grid; grid-template-columns: 24px 1fr 100px 100px 80px; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
     .ws-row-present:last-child { border-bottom: none; }
@@ -225,11 +293,13 @@ function _wsRenderHTML(container) {
     html += _wsRenderSummary(g.summary);
   }
 
-  // Sections par catégorie
+  // Sections par catégorie (grille 2x3 cadres avec hauteur égale)
   if (g && g.by_category) {
+    html += '<div class="ws-grid">';
     Object.keys(g.by_category).forEach(catKey => {
       html += _wsRenderCategory(catKey, g.by_category[catKey]);
     });
+    html += '</div>';
   }
 
   html += '</div>';
@@ -329,6 +399,15 @@ function _wsRenderCategory(catKey, cat) {
   const critMissing = cat.missing.filter(m => m.importance === 'critical').length;
   const recomMissing = cat.missing.filter(m => m.importance === 'recommended').length;
 
+  // Contribution totale du module (somme des composants présents dans le reco)
+  let moduleTotal = 0;
+  if (_ws.reco?.niveau1?.items) {
+    _ws.reco.niveau1.items.forEach(it => {
+      const matchingPresent = cat.present.find(p => p.key === it.key);
+      if (matchingPresent) moduleTotal += Number(it.valeur_kmf || 0);
+    });
+  }
+
   let html = `
     <div class="ws-cat ${isOpen ? '' : 'collapsed'}" data-cat="${catKey}">
       <div class="ws-cat-head" data-act="toggle-cat" data-cat="${catKey}">
@@ -337,17 +416,17 @@ function _wsRenderCategory(catKey, cat) {
           ${critMissing > 0 ? '<span class="ws-cat-badge crit">' + critMissing + ' critique' + (critMissing > 1 ? 's' : '') + '</span>' : ''}
           ${recomMissing > 0 ? '<span class="ws-cat-badge recom">' + recomMissing + ' recommande' + (recomMissing > 1 ? 's' : '') + '</span>' : ''}
           ${critMissing === 0 && recomMissing === 0 ? '<span class="ws-cat-badge ok">✓ Complet</span>' : ''}
-          <span style="color:#64748b; font-size:0.8rem;">${totalPresent} present${totalPresent > 1 ? 's' : ''}</span>
           <span class="ws-cat-arrow">▼</span>
         </div>
       </div>
       <div class="ws-cat-body">
+        <div class="ws-cat-total">Contribution module <strong>${_wsFmt(moduleTotal)}</strong></div>
   `;
 
   // Lignes présentes
   if (cat.present.length) {
-    html += '<div style="margin-bottom: 14px;">';
-    html += '<div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:6px;">✓ CHARGES PRESENTES</div>';
+    html += '<div>';
+    html += '<div class="ws-section-title">✓ Présentes (' + cat.present.length + ')</div>';
     cat.present.forEach(p => {
       const dev = p.deviation_pct || 0;
       let devClass = 'ok';
@@ -370,7 +449,7 @@ function _wsRenderCategory(catKey, cat) {
   // Lignes manquantes
   if (cat.missing.length) {
     html += '<div>';
-    html += '<div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:6px;">⚠ MANQUES SECTORIELS</div>';
+    html += '<div class="ws-section-title">⚠ Manques sectoriels (' + cat.missing.length + ')</div>';
     // Trier : critical d'abord, puis recommended, puis optional
     const sorted = cat.missing.slice().sort((a, b) => {
       const order = { critical: 0, recommended: 1, optional: 2 };
