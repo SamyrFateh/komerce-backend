@@ -157,7 +157,7 @@ CT.platform = {
       shell: 'ct',  section: 'strategie',
       emoji: '🧮',  label:   'Pricing',
       roles: ['founder','admin','finance','sourcing'],
-      tabs:  ['unit','mass','customs','config'],
+      tabs:  [],  // ADR-011 v2 : vue unique scrollable, plus de tabs
       supportedFilters: ['category'],
       readOnly: ['finance','sourcing']
     },
