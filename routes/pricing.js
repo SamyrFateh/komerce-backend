@@ -717,7 +717,7 @@ function _arrondiPsycho(x) {
 router.put('/apply-price/:product_id', ...adminOnly, async (req, res, next) => {
   try {
     const { product_id } = req.params;
-    const { price_kmf, source } = req.body;
+    const { price_kmf, source, scenario_id, scenario_label, levier } = req.body;
 
     if (!price_kmf || price_kmf <= 0) {
       return res.status(400).json({ error: 'price_kmf invalide' });
@@ -731,6 +731,18 @@ router.put('/apply-price/:product_id', ...adminOnly, async (req, res, next) => {
 
     const oldPrice = Number(product.price_kmf) || 0;
 
+    // ── Garde-fou doctrine V3 : refuser un prix sous survival ──
+    // Si le scénario fourni a un survival_price_kmf, on vérifie.
+    // (L'humain doit avoir consciemment choisi un scénario "selectable")
+    if (req.body.survival_price_kmf && price_kmf < Number(req.body.survival_price_kmf)) {
+      return res.status(400).json({
+        error: 'Prix sous le seuil de survie : refusé par doctrine.',
+        code: 'below_survival',
+        survival_price_kmf: Number(req.body.survival_price_kmf),
+        attempted_price_kmf: price_kmf,
+      });
+    }
+
     // Update
     const { rows: [updated] } = await db.query(
       `UPDATE products
@@ -740,20 +752,41 @@ router.put('/apply-price/:product_id', ...adminOnly, async (req, res, next) => {
       [price_kmf, product_id]
     );
 
-    // Audit (best effort, ne casse pas si la table n'existe pas)
+    // Audit enrichi : on stocke le scénario choisi pour traçabilité Phase 3b
     try {
       await db.query(
-        `INSERT INTO price_history (product_id, old_price_kmf, new_price_kmf, source, applied_by, applied_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [product_id, oldPrice, price_kmf, source || 'manual', req.user?.id || null]
+        `INSERT INTO price_history (
+           product_id, old_price_kmf, new_price_kmf, source, applied_by, applied_at,
+           scenario_id, scenario_label, levier
+         ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8)`,
+        [
+          product_id, oldPrice, price_kmf,
+          source || 'manual',
+          req.user?.id || null,
+          scenario_id || null,
+          scenario_label || null,
+          levier || null,
+        ]
       );
-    } catch(_) { /* table optionnelle */ }
+    } catch(_) {
+      // Fallback : si les colonnes scenario_* n'existent pas encore,
+      // on retombe sur l'audit minimal (pour rétrocompat).
+      try {
+        await db.query(
+          `INSERT INTO price_history (product_id, old_price_kmf, new_price_kmf, source, applied_by, applied_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [product_id, oldPrice, price_kmf, source || 'manual', req.user?.id || null]
+        );
+      } catch(_) { /* table optionnelle */ }
+    }
 
     res.json({
       ok: true,
       product: updated,
       old_price_kmf: oldPrice,
       new_price_kmf: price_kmf,
+      scenario_id: scenario_id || null,
+      levier: levier || null,
     });
   } catch (err) { next(err); }
 });

@@ -705,6 +705,200 @@ function computePrices(cdr, cat, finance) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SIMULATEUR DE SCÉNARIOS (Doctrine V3 — Phase 3a-bis)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Génère les scénarios de prix possibles à partir du baseline imputation.
+ *
+ * Doctrine V3 :
+ *   - Scénario "honnête baseline" = couverture 100% au volume actuel (recommandé)
+ *   - Scénario "sous-couverture" = Levier 1 (acceptable_undercoverage_pct)
+ *   - Scénario "volume cible" = recalcul si moyennes "cible" atteintes
+ *   - Scénario "promo volume" = Levier 3 (panier de N articles)
+ *   - Scénario "loading" = Levier 2 (cost_loading_factor < 1.0)
+ *
+ * Garde-fou : aucun scénario sous survival_price_kmf n'est selectable.
+ *
+ * @param {Object} cdr     — résultat computeCDR (avec details._allocations)
+ * @param {Object} prices  — résultat computePrices
+ * @param {Object} cat     — catégorie courante
+ * @param {Object} finance — finance_config row
+ * @returns {Array<Object>} liste de scénarios
+ */
+function computeScenarios(cdr, prices, cat, finance) {
+  const scenarios = [];
+  const survival = prices.survival_price_kmf;
+  const baseCostImputed = cdr.cost_complete_estimated_kmf;
+  const baselinePrice = prices.recommended_price_kmf;
+  const targetMarginPct = prices.target_margin_pct;
+
+  // Helper : calcul de marge en pourcentage
+  function marginPct(price, cost) {
+    if (price <= 0) return 0;
+    return r((price - cost) / price * 100 * 10) / 10;  // 1 décimale
+  }
+
+  // Helper : vérifier qu'un scénario est selectable (au-dessus de survival)
+  function checkSelectable(price) {
+    return price >= survival;
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // SCÉNARIO 1 — Honnête baseline (recommandé)
+  // ═════════════════════════════════════════════════════════════════
+  scenarios.push({
+    id: 'honest_baseline',
+    label: 'Honnête baseline',
+    short_description: `Couverture 100% au volume actuel (marge cible ${targetMarginPct}%)`,
+    explanation: 'Ce prix couvre tous les coûts imputés à l\'article (achat + landed + business + part fixe + risques) avec la marge cible de la catégorie. C\'est le prix recommandé par défaut.',
+    levier: null,
+    price_kmf: baselinePrice,
+    cost_imputed_kmf: r(baseCostImputed),
+    margin_kmf: r(baselinePrice - baseCostImputed),
+    margin_pct: marginPct(baselinePrice, baseCostImputed),
+    selectable: checkSelectable(baselinePrice),
+    is_recommended: true,
+  });
+
+  // ═════════════════════════════════════════════════════════════════
+  // SCÉNARIO 2 — Sous-couverture acceptée -15% (Levier 1)
+  // ═════════════════════════════════════════════════════════════════
+  const undercoveragePct = Number(finance.acceptable_undercoverage_pct) || 15;
+  const underCost = baseCostImputed * (1 - undercoveragePct / 100);
+  let underPrice = 0;
+  const margeDecimal = targetMarginPct / 100;
+  if (margeDecimal > 0 && margeDecimal < 1) {
+    underPrice = arrondiPsycho(underCost / (1 - margeDecimal));
+  }
+  scenarios.push({
+    id: 'undercoverage_accepted',
+    label: `Sous-couverture acceptée -${undercoveragePct}%`,
+    short_description: `Tu sous-collectes ${undercoveragePct}% en attendant le volume cible`,
+    explanation: `Stratégie de conquête : tu acceptes de ne pas couvrir 100% des coûts maintenant, en pariant que le volume va monter. À mesurer en continu dans Santé Éco. À borner dans le temps (typiquement 6 mois).`,
+    levier: 'undercoverage',
+    levier_params: { undercoverage_pct: undercoveragePct },
+    price_kmf: underPrice,
+    cost_imputed_kmf: r(baseCostImputed),
+    sous_couverture_kmf: r(baseCostImputed - underCost),
+    margin_kmf: r(underPrice - baseCostImputed),
+    margin_pct: marginPct(underPrice, baseCostImputed),
+    selectable: checkSelectable(underPrice),
+    is_recommended: false,
+  });
+
+  // ═════════════════════════════════════════════════════════════════
+  // SCÉNARIO 3 — Promo volume (panier 5 articles, Levier 3)
+  // ═════════════════════════════════════════════════════════════════
+  // Si le client commande 5 articles au lieu de 2.5 (moyenne), les coûts
+  // par commande sont divisés par 5 → on dilue mieux. On peut redonner
+  // une partie au client.
+  const avgArtPerOrder = Number(finance.avg_articles_per_order) || 2.5;
+  const promoVolumeTarget = 5;  // panier cible
+  // Identifier les coûts kmf_per_order dans les allocations
+  const allocations = (cdr.details && cdr.details._allocations) || [];
+  let perOrderEngaged = 0;
+  for (const a of allocations) {
+    if (a.engaged_level === 'order') {
+      perOrderEngaged += Number(a.engaged_amount_kmf || 0);
+    }
+  }
+  // Gain de dilution par article si panier 5 au lieu de 2.5
+  const currentImputed = perOrderEngaged / avgArtPerOrder;
+  const promoImputed = perOrderEngaged / promoVolumeTarget;
+  const dilutionGain = currentImputed - promoImputed;
+  // On redistribue 100% du gain au client (configurable plus tard)
+  const promoPrice = baselinePrice - r(dilutionGain);
+  scenarios.push({
+    id: 'promo_volume_5',
+    label: `Promo volume — 5 articles dans le panier`,
+    short_description: `Si client commande 5+ articles : -${r(dilutionGain)} KMF/article`,
+    explanation: `Quand le client commande 5 articles, les coûts par commande (commission relais, Stripe) sont divisés par 5 au lieu de ${avgArtPerOrder}. Tu gagnes ${r(dilutionGain)} KMF d'imputation par article. Tu peux le redonner au client.`,
+    levier: 'volume_discount',
+    levier_params: { panier_threshold: promoVolumeTarget, share_back_pct: 100 },
+    price_kmf: promoPrice,
+    cost_imputed_kmf: r(baseCostImputed - dilutionGain),
+    margin_kmf: r(promoPrice - (baseCostImputed - dilutionGain)),
+    margin_pct: marginPct(promoPrice, baseCostImputed - dilutionGain),
+    selectable: checkSelectable(promoPrice),
+    is_recommended: false,
+  });
+
+  // ═════════════════════════════════════════════════════════════════
+  // SCÉNARIO 4 — Loading 0.7× (Levier 2)
+  // ═════════════════════════════════════════════════════════════════
+  // Subvention croisée : ce produit porte 70% de sa part normale.
+  // Les 30% restants doivent être absorbés ailleurs dans le catalogue.
+  const loadingFactor = 0.7;
+  const loadedCost = baseCostImputed * loadingFactor;
+  let loadedPrice = 0;
+  if (margeDecimal > 0 && margeDecimal < 1) {
+    loadedPrice = arrondiPsycho(loadedCost / (1 - margeDecimal));
+  }
+  scenarios.push({
+    id: 'loading_07',
+    label: `Subventionné par autres articles (loading 0.7×)`,
+    short_description: `Ce produit porte 70% de sa part normale, 30% sont absorbés ailleurs`,
+    explanation: `Stratégie de redistribution : tu décides que ce produit est un "produit d'appel" et porte moins que sa juste part. Les 30% manquants doivent être compensés par des produits "vache à lait" qui portent plus de 1.0×. À utiliser avec parcimonie pour ne pas dériver la marge globale.`,
+    levier: 'cost_loading',
+    levier_params: { loading_factor: loadingFactor },
+    price_kmf: loadedPrice,
+    cost_imputed_kmf: r(loadedCost),
+    margin_kmf: r(loadedPrice - loadedCost),
+    margin_pct: marginPct(loadedPrice, loadedCost),
+    requires_compensation: true,
+    selectable: checkSelectable(loadedPrice),
+    is_recommended: false,
+  });
+
+  // ═════════════════════════════════════════════════════════════════
+  // SCÉNARIO 5 — Volume cible atteint (projection future)
+  // ═════════════════════════════════════════════════════════════════
+  // Recalcul si on atteignait le volume cible : moyennes "cible"
+  // au lieu de moyennes "actuelles".
+  // Pour l'instant on suppose que les cibles sont 1.5x les moyennes actuelles
+  // (à terme, ces cibles seront dans finance_config aussi).
+  const targetMultiplier = 1.5;
+  let perOrderImpacted = 0, perParcelImpacted = 0, perShipmentImpacted = 0;
+  for (const a of allocations) {
+    if (a.engaged_level === 'order')    perOrderImpacted    += Number(a.engaged_amount_kmf);
+    if (a.engaged_level === 'parcel')   perParcelImpacted   += Number(a.engaged_amount_kmf);
+    if (a.engaged_level === 'shipment') perShipmentImpacted += Number(a.engaged_amount_kmf);
+  }
+  const avgArtPerParcel   = Number(finance.avg_articles_per_parcel) || 4.0;
+  const avgArtPerShipment = Number(finance.avg_articles_per_shipment) || 200.0;
+
+  // Économie au volume cible
+  const econOrder    = perOrderImpacted    * (1/avgArtPerOrder    - 1/(avgArtPerOrder * targetMultiplier));
+  const econParcel   = perParcelImpacted   * (1/avgArtPerParcel   - 1/(avgArtPerParcel * targetMultiplier));
+  const econShipment = perShipmentImpacted * (1/avgArtPerShipment - 1/(avgArtPerShipment * targetMultiplier));
+  const totalEconomy = econOrder + econParcel + econShipment;
+  const targetCost = baseCostImputed - totalEconomy;
+  let targetPrice = 0;
+  if (margeDecimal > 0 && margeDecimal < 1) {
+    targetPrice = arrondiPsycho(targetCost / (1 - margeDecimal));
+  }
+  scenarios.push({
+    id: 'volume_target_reached',
+    label: `Au volume cible (×${targetMultiplier})`,
+    short_description: `Si on atteint ${r(avgArtPerShipment * targetMultiplier)} articles/shipment et ${r(avgArtPerOrder * targetMultiplier).toFixed(1)} articles/cmd`,
+    explanation: `Projection : si le volume monte de ${targetMultiplier}× (objectif moyen terme), les coûts agrégés se diluent mieux. Tu pourrais alors baisser le prix de ${r(totalEconomy)} KMF par article tout en gardant la même marge. Sert de cible commerciale.`,
+    levier: 'projection',
+    levier_params: { target_multiplier: targetMultiplier },
+    price_kmf: targetPrice,
+    cost_imputed_kmf: r(targetCost),
+    economy_vs_baseline_kmf: r(totalEconomy),
+    margin_kmf: r(targetPrice - targetCost),
+    margin_pct: marginPct(targetPrice, targetCost),
+    is_projection: true,
+    selectable: checkSelectable(targetPrice),
+    is_recommended: false,
+  });
+
+  return scenarios;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // MARKET CONFIDENCE (Doctrine §7)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1100,6 +1294,9 @@ async function recommend(input, options = {}) {
   // 3. Prix
   const prices = computePrices(cdr, cat, config.finance);
 
+  // 3-bis. Scénarios d'imputation (Doctrine V3 — Levier 1 prioritaire)
+  const scenarios = computeScenarios(cdr, prices, cat, config.finance);
+
   // 4. Marge & contribution estimées (sur le prix actuel)
   const currentPrice = Number(merged.price_kmf) || 0;
   let estimatedMarginPct = null;
@@ -1202,6 +1399,13 @@ async function recommend(input, options = {}) {
     recommended_price_kmf: prices.recommended_price_kmf,
     test_price_kmf: prices.test_price_kmf,
 
+    // ── SCÉNARIOS D'IMPUTATION (Doctrine V3) ─────────────────────────
+    // Tableau de scénarios : honnête / sous-couverture / promo / loading / projection
+    // Chaque scénario expose : id, label, price_kmf, margin_pct, levier, explanation
+    // L'humain choisit, le frontend lock-in via POST /api/pricing/apply
+    scenarios: scenarios,
+    recommended_scenario_id: 'honest_baseline',
+
     // ── COÛTS LEGACY (rétro-compat) ──────────────────────────────────
     cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf,
     variable_cost_estimated_kmf: cdr.variable_cost_estimated_kmf,
@@ -1253,6 +1457,7 @@ module.exports = {
   loadGlobalConfig,
   computeCDR,
   computePrices,
+  computeScenarios,
   computeFixedCostAllocation,
   computeMarketConfidence,
   computeHealthStatus,

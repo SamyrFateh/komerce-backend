@@ -1123,6 +1123,127 @@ function _injectStyles() {
       color: #64748b;
       line-height: 1.4;
     }
+
+    /* ═══ DOCTRINE V3 : SIMULATEUR DE SCÉNARIOS (colonne 4) ═══ */
+    .pv-scenario-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pv-scenario-card:hover:not(.pv-scenario-disabled) {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    .pv-scenario-selected {
+      border-color: #16a34a !important;
+      background: #f0fdf4 !important;
+      box-shadow: 0 0 0 1px #16a34a;
+    }
+    .pv-scenario-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f1f5f9;
+    }
+    .pv-scenario-recommended .pv-scenario-label::before {
+      content: '★ ';
+      color: #f59e0b;
+    }
+    .pv-scenario-projection {
+      border-style: dashed;
+    }
+    .pv-scenario-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .pv-scenario-radio {
+      font-size: 1rem;
+      color: #16a34a;
+      font-weight: 700;
+    }
+    .pv-scenario-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1e293b;
+      flex: 1;
+      line-height: 1.2;
+    }
+    .pv-scenario-tag {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .pv-tag-rec { background: #fef3c7; color: #92400e; }
+    .pv-tag-proj { background: #ddd6fe; color: #5b21b6; }
+    .pv-tag-blocked { background: #fee2e2; color: #b91c1c; }
+    .pv-scenario-prices {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 2px 0;
+    }
+    .pv-scenario-price {
+      font-family: ui-monospace, monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .pv-scenario-margin {
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+    .pv-scenario-desc {
+      font-size: 0.72rem;
+      color: #64748b;
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+    .pv-scenario-explanation {
+      margin: 0 0 8px;
+      font-size: 0.78rem;
+      color: #475569;
+      line-height: 1.5;
+      font-style: italic;
+    }
+    .pv-scenario-detail .pv-kline-strong {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #1e293b;
+    }
+    .pv-kline-warning {
+      background: #fef2f2;
+      border-radius: 4px;
+      padding: 4px 6px !important;
+      margin: 4px 0;
+    }
+    .pv-apply-zone {
+      margin-top: 10px;
+      padding: 8px 0 0;
+      border-top: 1px solid #e2e8f0;
+    }
+    .pv-apply-btn {
+      width: 100%;
+      padding: 10px 12px;
+      background: #16a34a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .pv-apply-btn:hover { background: #15803d; }
+    .pv-apply-btn:disabled { background: #94a3b8; cursor: not-allowed; }
   `;
   document.head.appendChild(s);
 }
@@ -1534,79 +1655,123 @@ function _renderColBusiness(reco) {
  * ═══════════════════════════════════════════════════════════════════════ */
 function _renderColDecision(reco) {
   if (!reco) {
-    return '<div class="pv-kempty">Le moteur affichera ici les prix et la décision.</div>';
+    return '<div class="pv-kempty">Le moteur affichera ici les scénarios de prix.</div>';
   }
 
   let html = '';
 
-  // KPI prix conseillé en haut + badge décision
-  const decisionMap = {
-    PRIORITY:        { color: '#3b82f6', label: 'PRIORITY' },
-    TEST:            { color: '#16a34a', label: 'TEST' },
-    WATCH:           { color: '#f59e0b', label: 'WATCH' },
-    AVOID:           { color: '#dc2626', label: 'AVOID' },
-    LOSS:            { color: '#7f1d1d', label: 'LOSS' },
-    RENEGOTIATE:     { color: '#ea580c', label: 'RENEGOTIATE' },
-    INCREASE_PRICE:  { color: '#ea580c', label: 'INCREASE PRICE' },
-  };
-  const dec = decisionMap[reco.sourcing_decision] || { color: '#94a3b8', label: reco.sourcing_decision || '—' };
+  // ── SIMULATEUR DE SCÉNARIOS (Doctrine V3 — Levier 1 prioritaire) ──
+  const scenarios = reco.scenarios || [];
+  const selectedId = _ps.selectedScenarioId || reco.recommended_scenario_id || 'honest_baseline';
+  const selected = scenarios.find(s => s.id === selectedId) || scenarios[0];
 
-  html += '<div class="pv-ktotal pv-ktotal-decision">';
-  html += '<div>';
-  html += '<div class="pv-ktotal-label">Conseillé</div>';
-  html += '<div class="pv-ktotal-value">' + _fmt(reco.recommended_price_kmf) + '</div>';
-  html += '</div>';
-  html += '<span class="pv-decision-badge" style="background:' + dec.color + ';">' + dec.label + '</span>';
-  html += '</div>';
+  // KPI haut : prix du scénario sélectionné
+  if (selected) {
+    const decisionMap = {
+      PRIORITY:        { color: '#3b82f6', label: 'PRIORITY' },
+      TEST:            { color: '#16a34a', label: 'TEST' },
+      WATCH:           { color: '#f59e0b', label: 'WATCH' },
+      AVOID:           { color: '#dc2626', label: 'AVOID' },
+      LOSS:            { color: '#7f1d1d', label: 'LOSS' },
+      RENEGOTIATE:     { color: '#ea580c', label: 'RENEGOTIATE' },
+      INCREASE_PRICE:  { color: '#ea580c', label: 'INCREASE PRICE' },
+    };
+    const dec = decisionMap[reco.sourcing_decision] || { color: '#94a3b8', label: reco.sourcing_decision || '—' };
 
-  // Section : Les 4 prix
-  let pricesBody = '';
-  const prices = [
-    ['💀', 'Survie',        reco.survival_price_kmf,       false],
-    ['🛡️', 'Minimum sûr',   reco.minimum_safe_price_kmf,   false],
-    ['🎯', 'Conseillé',     reco.recommended_price_kmf,    true],
-    ['🧪', 'Test marché',   reco.test_price_kmf,           false],
-  ];
-  prices.forEach(([emoji, label, val, primary]) => {
-    pricesBody += '<div class="pv-kline ' + (primary ? 'pv-kline-primary' : '') + '">';
-    pricesBody += '<span class="pv-kline-icon">' + emoji + '</span>';
-    pricesBody += '<span class="pv-kline-label">' + label + '</span>';
-    pricesBody += '<span class="pv-kline-val">' + _fmt(val) + '</span>';
-    pricesBody += '</div>';
-  });
-  html += _kSection('prices', 'Les 4 prix', pricesBody, true);
+    html += '<div class="pv-ktotal pv-ktotal-decision">';
+    html += '<div>';
+    html += '<div class="pv-ktotal-label">' + _escape(selected.label) + '</div>';
+    html += '<div class="pv-ktotal-value">' + _fmt(selected.price_kmf) + '</div>';
+    html += '</div>';
+    html += '<span class="pv-decision-badge" style="background:' + dec.color + ';">' + dec.label + '</span>';
+    html += '</div>';
+  }
 
-  // Section : Marge & santé
-  let margeBody = '';
-  if (reco.estimated_margin_pct != null && reco.current_price_kmf > 0) {
-    const margeColor = reco.estimated_margin_pct >= 25 ? '#16a34a'
-                     : reco.estimated_margin_pct >= 10 ? '#f59e0b'
+  // ── Section : Les 5 scénarios cliquables ──
+  let scenariosBody = '';
+  scenarios.forEach(s => {
+    const isSelected = (s.id === selectedId);
+    const isRec = s.is_recommended;
+    const isProj = s.is_projection;
+    const cls = [
+      'pv-scenario-card',
+      isSelected ? 'pv-scenario-selected' : '',
+      !s.selectable ? 'pv-scenario-disabled' : '',
+      isRec ? 'pv-scenario-recommended' : '',
+      isProj ? 'pv-scenario-projection' : '',
+    ].filter(Boolean).join(' ');
+
+    const marginColor = s.margin_pct >= 15 ? '#16a34a'
+                     : s.margin_pct >= 5  ? '#f59e0b'
                      : '#dc2626';
-    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Marge estimée</span>' +
-      '<span class="pv-kline-val" style="color:' + margeColor + ';font-weight:700;">' + reco.estimated_margin_pct + '%</span></div>';
-    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Contribution</span>' +
-      '<span class="pv-kline-val">' + _fmt(reco.estimated_contribution_kmf) + '</span></div>';
-  } else {
-    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Marge cible</span>' +
-      '<span class="pv-kline-val">' + (reco.target_margin_pct || 40) + '%</span></div>';
-  }
-  if (reco.health_status) {
-    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Santé</span>' +
-      '<span class="pv-kline-val"><span class="pv-mini-badge">' + reco.health_status + '</span></span></div>';
-  }
-  if (reco.market_confidence) {
-    margeBody += '<div class="pv-kline"><span class="pv-kline-label">Confiance marché</span>' +
-      '<span class="pv-kline-val"><span class="pv-mini-badge">' + reco.market_confidence + '</span></span></div>';
-  }
-  html += _kSection('marge', 'Marge & santé', margeBody, false);
 
-  // Section : Action recommandée
-  if (reco.recommended_action) {
-    let actionBody = '<p class="pv-action-text">' + _escape(reco.recommended_action) + '</p>';
-    if (reco.reason) {
-      actionBody += '<p class="pv-action-reason"><em>' + _escape(reco.reason) + '</em></p>';
+    scenariosBody += '<div class="' + cls + '" data-scenario-id="' + _escape(s.id) + '"' +
+      (s.selectable ? ' role="button" tabindex="0"' : '') + '>';
+    scenariosBody += '<div class="pv-scenario-head">';
+    scenariosBody += '<span class="pv-scenario-radio">' + (isSelected ? '●' : '○') + '</span>';
+    scenariosBody += '<span class="pv-scenario-label">' + _escape(s.label) + '</span>';
+    if (isRec) scenariosBody += '<span class="pv-scenario-tag pv-tag-rec">recommandé</span>';
+    if (isProj) scenariosBody += '<span class="pv-scenario-tag pv-tag-proj">projection</span>';
+    if (!s.selectable) scenariosBody += '<span class="pv-scenario-tag pv-tag-blocked">⚠️ sous survie</span>';
+    scenariosBody += '</div>';
+    scenariosBody += '<div class="pv-scenario-prices">';
+    scenariosBody += '<span class="pv-scenario-price">' + _fmt(s.price_kmf) + '</span>';
+    scenariosBody += '<span class="pv-scenario-margin" style="color:' + marginColor + ';">marge ' + s.margin_pct + '%</span>';
+    scenariosBody += '</div>';
+    if (s.short_description) {
+      scenariosBody += '<div class="pv-scenario-desc">' + _escape(s.short_description) + '</div>';
     }
-    html += _kSection('action', 'Action recommandée', actionBody, true);
+    scenariosBody += '</div>';
+  });
+  html += _kSection('scenarios', 'Scénarios d\'imputation', scenariosBody, true);
+
+  // ── Section : Détail du scénario sélectionné ──
+  if (selected) {
+    let detailBody = '';
+    if (selected.explanation) {
+      detailBody += '<p class="pv-scenario-explanation">' + _escape(selected.explanation) + '</p>';
+    }
+    detailBody += '<div class="pv-scenario-detail">';
+    detailBody += '<div class="pv-kline"><span class="pv-kline-label">Prix de vente</span>' +
+      '<span class="pv-kline-val pv-kline-strong">' + _fmt(selected.price_kmf) + '</span></div>';
+    detailBody += '<div class="pv-kline"><span class="pv-kline-label">Coût imputé à l\'article</span>' +
+      '<span class="pv-kline-val">' + _fmt(selected.cost_imputed_kmf) + '</span></div>';
+    detailBody += '<div class="pv-kline"><span class="pv-kline-label">Marge brute</span>' +
+      '<span class="pv-kline-val" style="color:' + (selected.margin_pct >= 15 ? '#16a34a' : '#f59e0b') + ';font-weight:700;">' +
+      _fmt(selected.margin_kmf) + ' (' + selected.margin_pct + '%)</span></div>';
+    if (selected.sous_couverture_kmf) {
+      detailBody += '<div class="pv-kline pv-kline-warning"><span class="pv-kline-label">⚠️ Sous-couverture</span>' +
+        '<span class="pv-kline-val" style="color:#dc2626;">−' + _fmt(selected.sous_couverture_kmf) + ' / article</span></div>';
+    }
+    if (selected.economy_vs_baseline_kmf) {
+      detailBody += '<div class="pv-kline"><span class="pv-kline-label">Économie vs baseline</span>' +
+        '<span class="pv-kline-val" style="color:#16a34a;">−' + _fmt(selected.economy_vs_baseline_kmf) + '</span></div>';
+    }
+    detailBody += '</div>';
+    html += _kSection('selected_detail', 'Détail du scénario sélectionné', detailBody, false);
+  }
+
+  // ── Section : Garde-fous ──
+  let safeBody = '';
+  safeBody += '<div class="pv-kline"><span class="pv-kline-label">💀 Prix de survie</span>' +
+    '<span class="pv-kline-val">' + _fmt(reco.survival_price_kmf) + '</span></div>';
+  safeBody += '<div class="pv-kline"><span class="pv-kline-label">🛡️ Minimum sûr</span>' +
+    '<span class="pv-kline-val">' + _fmt(reco.minimum_safe_price_kmf) + '</span></div>';
+  safeBody += '<p class="pv-action-reason"><em>Aucun scénario ne peut être appliqué sous le prix de survie.</em></p>';
+  html += _kSection('safety', 'Garde-fous', safeBody, false);
+
+  // ── Action : Appliquer ──
+  if (selected && selected.selectable && _userCanApplyAll() && reco.product_id) {
+    html += '<div class="pv-apply-zone">';
+    html += '<button class="pv-apply-btn" data-action="apply-scenario" ' +
+      'data-product-id="' + _escape(reco.product_id) + '" ' +
+      'data-price="' + selected.price_kmf + '" ' +
+      'data-scenario-id="' + _escape(selected.id) + '" ' +
+      'data-scenario-label="' + _escape(selected.label) + '" ' +
+      'data-levier="' + _escape(selected.levier || '') + '" ' +
+      'data-survival="' + reco.survival_price_kmf + '"' +
+      '>✓ Appliquer ce scénario (' + _fmt(selected.price_kmf) + ')</button>';
+    html += '</div>';
   }
 
   return html;
@@ -2570,6 +2735,71 @@ function _bindEvents(container) {
   container.addEventListener('input', inputHandler);
 
   container.addEventListener('click', async (e) => {
+    // ── DOCTRINE V3 : Sélection d'un scénario ──
+    const scenarioCard = e.target.closest('.pv-scenario-card');
+    if (scenarioCard && !scenarioCard.classList.contains('pv-scenario-disabled')) {
+      _ps.selectedScenarioId = scenarioCard.dataset.scenarioId;
+      _renderHTML(container);
+      return;
+    }
+
+    // ── DOCTRINE V3 : Appliquer le scénario sélectionné ──
+    const applyBtn = e.target.closest('[data-action="apply-scenario"]');
+    if (applyBtn) {
+      const productId = applyBtn.dataset.productId;
+      const price = Number(applyBtn.dataset.price);
+      const scenarioId = applyBtn.dataset.scenarioId;
+      const scenarioLabel = applyBtn.dataset.scenarioLabel;
+      const levier = applyBtn.dataset.levier || null;
+      const survival = Number(applyBtn.dataset.survival);
+
+      if (price < survival) {
+        alert('⚠️ Prix sous le seuil de survie. Application bloquée.');
+        return;
+      }
+
+      const confirmMsg =
+        'Appliquer le scénario "' + scenarioLabel + '" au produit ?\n\n' +
+        'Prix : ' + price.toLocaleString('fr-FR') + ' KMF' +
+        (levier ? '\nLevier : ' + levier : '') +
+        '\n\nL\'audit sera enregistré dans price_history.';
+
+      if (!confirm(confirmMsg)) return;
+
+      applyBtn.disabled = true;
+      applyBtn.textContent = '⏳ Application en cours...';
+
+      try {
+        const res = await fetch('/api/pricing/apply-price/' + encodeURIComponent(productId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            price_kmf: price,
+            source: 'scenario',
+            scenario_id: scenarioId,
+            scenario_label: scenarioLabel,
+            levier: levier,
+            survival_price_kmf: survival,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'HTTP ' + res.status);
+        }
+        applyBtn.textContent = '✅ Appliqué !';
+        setTimeout(() => {
+          // Refresh la vue pour voir le nouveau prix
+          _scheduleLiveRecalc(container, 100);
+        }, 800);
+      } catch (err) {
+        alert('Erreur : ' + err.message);
+        applyBtn.disabled = false;
+        applyBtn.textContent = '✓ Appliquer ce scénario';
+      }
+      return;
+    }
+
     const t = e.target.closest('[data-act]');
     if (!t) return;
     const act = t.dataset.act;
