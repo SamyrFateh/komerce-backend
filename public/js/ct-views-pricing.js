@@ -84,7 +84,9 @@ const _apiPut  = (p, b) => _api('PUT',  p, b);
 const _apiDel  = (p) => _api('DELETE', p);
 
 function _userCanApplyAll() {
-  const role = (window.CT && CT.platform && CT.platform.role) || '';
+  // FIX BUG : le rôle vit dans CT.platform.state.role (pas CT.platform.role)
+  // cf. ct-app-v7.js ligne 109 : CT.platform.state.role = ...
+  const role = (window.CT && CT.platform && CT.platform.state && CT.platform.state.role) || '';
   return role === 'admin' || role === 'founder';
 }
 
@@ -2707,7 +2709,30 @@ function _bindEvents(container) {
       _ps.selectedProductId = t.value || null;
       const item = (_ps.catalog || []).find(c => c.product_id === _ps.selectedProductId);
       if (item) {
+        // ── FIX BUG SÉLECTION : alimenter TOUS les champs de la colonne Objet ──
+        // Quand l'utilisateur change de produit, les "cases d'à côté" doivent suivre.
         if (item.category) _ps.inputCategory = item.category;
+        if (item.cost_kmf != null) {
+          // Le produit en BDD est en KMF. On affiche en KMF (ne pas reconvertir en AED par défaut).
+          _ps.inputPrixAchat = Number(item.cost_kmf) || 0;
+          _ps.inputCurrency  = 'KMF';
+        }
+        if (item.weight_kg != null) {
+          _ps.inputPoidsKg = Number(item.weight_kg) || 0;
+        }
+        if (item.volume_m3 != null) {
+          // Convertir m³ → cm³ pour les inputs L/W/H si on n'a pas le détail
+          // Pour un volume isotrope : côté = (vol_m3 * 1e6)^(1/3) en cm
+          // Mais on ne va pas inventer les dimensions ; on laisse à 0 si pas connues
+          const vol_cm3 = Number(item.volume_m3) * 1e6;
+          if (vol_cm3 > 0 && (!_ps.inputDimL || !_ps.inputDimW || !_ps.inputDimH)) {
+            // Approche conservatrice : cube équivalent
+            const side = Math.cbrt(vol_cm3);
+            _ps.inputDimL = Math.round(side);
+            _ps.inputDimW = Math.round(side);
+            _ps.inputDimH = Math.round(side);
+          }
+        }
       }
       _renderHTML(container);
       _scheduleLiveRecalc(container, 100);

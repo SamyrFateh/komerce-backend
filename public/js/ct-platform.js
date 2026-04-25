@@ -214,6 +214,10 @@ CT.platform = {
       readOnly: ['finance'],
       hidden: true,  // accessible via le bouton depuis Pricing
     },
+    /* DÉSACTIVÉ avril 2026 — Option A.
+       La fonction "Stratégie de prix" est couverte par cost_components
+       (scope, channel, island) + l'Atelier dual mode. Le code reste sur
+       disque pour rollback éventuel mais n'est ni chargé ni accessible.
     {
       id:    'pricing_strategy',
       shell: 'ct',  section: 'atelier_prix_sourcing',
@@ -222,9 +226,10 @@ CT.platform = {
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance'],
-      hidden: true,  // Lot B : module avancé en PAUSE
+      hidden: true,
       featureFlag: 'FEATURE_PRICING_STRATEGY',
     },
+    */
 
     /* ══════ BO : Opérations ══════ */
     {
@@ -343,6 +348,10 @@ CT.platform = {
       supportedFilters: [],
       readOnly: []
     },
+    /* DÉSACTIVÉ avril 2026 — vue parcel_reconciliation jamais implémentée.
+       L'entrée fait référence à un CT.views.parcel_reconciliation qui n'existe pas.
+       Cliquer dessus dans le menu ferait planter avec "Vue introuvable".
+       Si tu veux réactiver, code la vue d'abord puis décommente.
     {
       id:    'parcel_reconciliation',
       shell: 'bo',  section: 'operations',
@@ -352,6 +361,7 @@ CT.platform = {
       supportedFilters: ['status'],
       readOnly: []
     },
+    */
 
     /* ══════ BO : Finance ══════ */
     {
@@ -379,6 +389,15 @@ CT.platform = {
       shell: 'bo',  section: 'config',
       emoji: '🏭',  label:   'Fournisseurs',
       roles: ['founder','admin','sourcing'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: []
+    },
+    {
+      id:    'shared_carts',
+      shell: 'bo',  section: 'operations',
+      emoji: '🤝',  label:   'Paniers Partagés',
+      roles: ['founder','admin','support'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []

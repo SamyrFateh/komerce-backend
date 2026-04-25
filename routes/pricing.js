@@ -627,6 +627,10 @@ router.post('/recommend-batch', authenticate, async (req, res, next) => {
         product_id: product.id,
         name: product.name,
         category,
+        // ── Caractéristiques produit (pour alimenter la colonne Objet de l'Atelier) ──
+        cost_kmf: prixAchatKmf,
+        weight_kg: poidsKg,
+        volume_m3: volumeM3,
         current_price_kmf: currentPrice,
         recommended_price_kmf: prixRecommande,
         gap_kmf: gap,
