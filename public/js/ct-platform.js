@@ -172,6 +172,16 @@ CT.platform = {
       hidden: true,  // accessible uniquement via le bouton "Atelier" depuis Pricing
     },
     {
+      id:    'pricing_strategy',
+      shell: 'ct',  section: 'strategie',
+      emoji: '💰',  label:   'Strategie de prix',
+      roles: ['founder','admin','finance'],
+      tabs:  [],
+      supportedFilters: [],
+      readOnly: ['finance'],
+      hidden: true,  // accessible via bouton depuis Pricing
+    },
+    {
       id:    'sourcing',
       shell: 'ct',  section: 'strategie',
       emoji: '🔍',  label:   'Intelligence Sourcing',

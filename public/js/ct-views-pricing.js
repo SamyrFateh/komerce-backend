@@ -270,6 +270,7 @@ function _renderHTML(container) {
   html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="component">➕ Ajouter une variable</button>';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="provision">🛡️ Ajouter une provision</button>';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="open-workshop" style="margin-left:auto;">🧱 Atelier de composition</button>';
+  html += '  <button class="pv-btn pv-btn-secondary" data-act="open-strategy">💰 Stratégie de prix</button>';
   html += '</div>';
 
   html += _section('sim', '🧪 Simulateur unitaire', '', _renderSimBody());
@@ -641,6 +642,11 @@ function _bindEvents(container) {
 
     if (act === 'open-workshop') {
       window.location.hash = '#pricing_workshop';
+      return;
+    }
+
+    if (act === 'open-strategy') {
+      window.location.hash = '#pricing_strategy';
       return;
     }
 
