@@ -703,4 +703,183 @@ router.put('/apply-all', ...adminOnly, async (req, res, next) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// GET /api/pricing/benchmarks-gap
+//
+// Compare la config actuelle (pricing_components + risk_provisions)
+// avec le catalogue pricing_benchmarks pour identifier ce qui manque.
+//
+// Query (optionnel) :
+//   ?importance=critical       → ne renvoyer que les manques critiques
+//   ?category=sourcing         → filtrer par categorie
+//   ?include_optional=true     → inclure aussi les optionnels (sinon caches)
+//
+// Reponse :
+//   {
+//     summary: { critical_missing, recommended_missing, optional_missing,
+//                present_count, total_benchmarks },
+//     by_category: {
+//       sourcing: {
+//         label: 'Sourcing', emoji: '🏭',
+//         present: [{ key, label, current_value, ... }],
+//         missing: [{
+//           key, label, emoji, importance, why,
+//           benchmark_median, benchmark_min, benchmark_max,
+//           unit, suggested_applies_to
+//         }]
+//       },
+//       transit: { ... }, ...
+//     }
+//   }
+// ═══════════════════════════════════════════════════════════════════
+
+router.get('/benchmarks-gap', authenticate, async (req, res, next) => {
+  try {
+    const filterImportance = req.query.importance || null;
+    const filterCategory   = req.query.category || null;
+    const includeOptional  = req.query.include_optional === 'true';
+
+    // 1. Tous les benchmarks (filtres optionnels)
+    const benchClauses = ['is_active = TRUE'];
+    const benchParams = [];
+    let bi = 1;
+    if (filterImportance) {
+      benchClauses.push(`importance = $${bi++}`);
+      benchParams.push(filterImportance);
+    }
+    if (filterCategory) {
+      benchClauses.push(`category = $${bi++}`);
+      benchParams.push(filterCategory);
+    }
+    if (!includeOptional && !filterImportance) {
+      benchClauses.push(`importance != 'optional'`);
+    }
+    const benchRes = await db.query(
+      `SELECT * FROM pricing_benchmarks
+        WHERE ${benchClauses.join(' AND ')}
+        ORDER BY category, display_order, label`,
+      benchParams
+    );
+
+    // 2. Composants et provisions actuels (peu importe is_active)
+    const [compRes, provRes] = await Promise.all([
+      db.query('SELECT key, label, category, default_value, unit, is_active FROM pricing_components'),
+      db.query('SELECT key, label, rate_pct, is_active FROM risk_provisions'),
+    ]);
+
+    // 3. Index par key (composants + provisions = tous les "actifs config")
+    const presentKeys = new Map();
+    for (const c of compRes.rows) {
+      presentKeys.set(c.key, { ...c, type: 'component' });
+    }
+    for (const p of provRes.rows) {
+      presentKeys.set(p.key, { ...p, type: 'provision', category: 'distribution' });
+    }
+
+    // 4. Construire la reponse par categorie
+    const cats = {
+      sourcing:     { label: 'Sourcing',     emoji: '🏭', present: [], missing: [] },
+      transit:      { label: 'Transit',      emoji: '🚢', present: [], missing: [] },
+      douane:       { label: 'Douane',       emoji: '📋', present: [], missing: [] },
+      hub:          { label: 'Hub',          emoji: '🏢', present: [], missing: [] },
+      distribution: { label: 'Distribution', emoji: '📦', present: [], missing: [] },
+      paiement:     { label: 'Paiement',     emoji: '💳', present: [], missing: [] },
+    };
+
+    const summary = {
+      critical_missing: 0,
+      recommended_missing: 0,
+      optional_missing: 0,
+      present_count: 0,
+      total_benchmarks: benchRes.rows.length,
+    };
+
+    for (const b of benchRes.rows) {
+      const cat = cats[b.category] || cats.sourcing;
+      const existing = presentKeys.get(b.key);
+
+      if (existing) {
+        cat.present.push({
+          key: b.key,
+          label: b.label,
+          current_value: Number(existing.default_value || existing.rate_pct || 0),
+          unit: existing.unit || (existing.type === 'provision' ? 'pct' : 'kmf'),
+          benchmark_median: Number(b.benchmark_median),
+          deviation_pct: Number(b.benchmark_median) > 0
+            ? Math.round((Number(existing.default_value || existing.rate_pct || 0) - Number(b.benchmark_median))
+                / Number(b.benchmark_median) * 100)
+            : 0,
+          is_active: existing.is_active,
+        });
+        summary.present_count++;
+      } else {
+        cat.missing.push({
+          key: b.key,
+          label: b.label,
+          emoji: b.emoji,
+          unit: b.unit,
+          importance: b.importance,
+          why: b.why,
+          benchmark_median: Number(b.benchmark_median),
+          benchmark_min: b.benchmark_min !== null ? Number(b.benchmark_min) : null,
+          benchmark_max: b.benchmark_max !== null ? Number(b.benchmark_max) : null,
+          source: b.source_benchmark,
+          suggested_applies_to: b.applies_to,
+        });
+        if (b.importance === 'critical') summary.critical_missing++;
+        else if (b.importance === 'recommended') summary.recommended_missing++;
+        else summary.optional_missing++;
+      }
+    }
+
+    res.json({
+      summary,
+      filters: {
+        importance: filterImportance,
+        category: filterCategory,
+        include_optional: includeOptional,
+      },
+      by_category: cats,
+      generated_at: new Date().toISOString(),
+    });
+  } catch (err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// GET /api/pricing/benchmarks
+// Liste des benchmarks sectoriels pour l'Atelier de composition.
+// Query : ?category=sourcing&importance=critical
+// ═══════════════════════════════════════════════════════════════════
+router.get('/benchmarks', authenticate, async (req, res, next) => {
+  try {
+    const where = ['is_active = TRUE'];
+    const params = [];
+    let pi = 0;
+    if (req.query.category) {
+      params.push(req.query.category);
+      where.push(`category = $${++pi}`);
+    }
+    if (req.query.importance) {
+      params.push(req.query.importance);
+      where.push(`importance = $${++pi}`);
+    }
+    const sql = `
+      SELECT id, key, label, emoji, category, unit,
+             benchmark_median, benchmark_min, benchmark_max,
+             importance, why, source_benchmark, applies_to, display_order
+      FROM pricing_benchmarks
+      WHERE ${where.join(' AND ')}
+      ORDER BY category, display_order, label
+    `;
+    const { rows } = await db.query(sql, params);
+    res.json({ count: rows.length, benchmarks: rows });
+  } catch (err) {
+    // Table peut ne pas exister si migration 039 pas passée
+    if (err.code === '42P01') {
+      return res.json({ count: 0, benchmarks: [], warning: 'Table pricing_benchmarks absente — migration 039 requise' });
+    }
+    next(err);
+  }
+});
+
 module.exports = router;

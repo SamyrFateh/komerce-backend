@@ -162,6 +162,16 @@ CT.platform = {
       readOnly: ['finance','sourcing']
     },
     {
+      id:    'pricing_workshop',
+      shell: 'ct',  section: 'strategie',
+      emoji: '🧱',  label:   'Atelier de composition',
+      roles: ['founder','admin','finance'],
+      tabs:  [],  // vue plein-ecran sans tabs
+      supportedFilters: [],
+      readOnly: ['finance'],
+      hidden: true,  // accessible uniquement via le bouton "Atelier" depuis Pricing
+    },
+    {
       id:    'sourcing',
       shell: 'ct',  section: 'strategie',
       emoji: '🔍',  label:   'Intelligence Sourcing',

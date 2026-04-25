@@ -269,6 +269,7 @@ function _renderHTML(container) {
   html += '  <button class="pv-btn pv-btn-primary" data-act="recalc">🔄 Recalculer</button>';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="component">➕ Ajouter une variable</button>';
   html += '  <button class="pv-btn pv-btn-secondary" data-act="add" data-target="provision">🛡️ Ajouter une provision</button>';
+  html += '  <button class="pv-btn pv-btn-secondary" data-act="open-workshop" style="margin-left:auto;">🧱 Atelier de composition</button>';
   html += '</div>';
 
   html += _section('sim', '🧪 Simulateur unitaire', '', _renderSimBody());
@@ -635,6 +636,11 @@ function _bindEvents(container) {
       _ps.openSections[id] = !_ps.openSections[id];
       const sec = container.querySelector('[data-section="' + id + '"]');
       if (sec) sec.classList.toggle('collapsed', !_ps.openSections[id]);
+      return;
+    }
+
+    if (act === 'open-workshop') {
+      window.location.hash = '#pricing_workshop';
       return;
     }
 
