@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Komerce — Pilotage</title>
+  <link rel="stylesheet" href="/dashboards/admin/css/tokens.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/layout.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/components.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/responsive.css" />
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="loading-state" style="padding: 40px;">
+    <span class="loader"></span> Chargement...
+  </div>
+
+  <!-- Core -->
+  <script src="/dashboards/admin/js/api-client.js"></script>
+  <script src="/dashboards/admin/js/filters-store.js"></script>
+  <!-- Components -->
+  <script src="/dashboards/admin/js/components/KpiCard.js"></script>
+  <script src="/dashboards/admin/js/components/UI.js"></script>
+  <script src="/dashboards/admin/js/components/Charts.js"></script>
+  <!-- Views -->
+  <script src="/dashboards/admin/js/views/PilotageView.js"></script>
+  <script src="/dashboards/admin/js/views/ControlTowerView.js"></script>
+  <script src="/dashboards/admin/js/views/CostingView.js"></script>
+  <script src="/dashboards/admin/js/views/OrdersLogisticsView.js"></script>
+  <script src="/dashboards/admin/js/views/EventWorkspacesView.js"></script>
+  <!-- App -->
+  <script src="/dashboards/admin/js/app.js"></script>
+</body>
+</html>

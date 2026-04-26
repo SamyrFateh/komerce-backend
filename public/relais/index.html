@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Komerce Relais — Gestion Colis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      min-height: 100vh;
+    }
+
+    .relais-header {
+      background: #059669;
+      color: #fff;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .relais-header h1 { font-size: 18px; font-weight: 800; }
+    .relais-header .relais-info { font-size: 13px; color: #a7f3d0; }
+
+    .relais-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* ── Actions ────────────────────────────── */
+    .relais-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .relais-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 20px 8px;
+      border: 2px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .relais-action-btn:hover {
+      border-color: #059669;
+      background: #ecfdf5;
+    }
+    .relais-action-btn .emoji { font-size: 32px; }
+
+    /* ── KPI strip ─────────────────────────── */
+    .relais-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .relais-kpi {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .relais-kpi .number {
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .relais-kpi .label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    /* ── Tabs ──────────────────────────────── */
+    .relais-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+    }
+    .relais-tab {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .relais-tab.active {
+      background: #059669;
+      color: #fff;
+      border-color: #059669;
+    }
+
+    /* ── Scanner ───────────────────────────── */
+    .scan-section {
+      background: #fff;
+      border: 2px solid #059669;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .scan-input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      text-transform: uppercase;
+    }
+    .scan-input:focus {
+      outline: none;
+      border-color: #059669;
+    }
+    .scan-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      background: #059669;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .scan-btn:hover { background: #047857; }
+    .scan-btn:disabled { background: #9ca3af; }
+
+    .relais-empty {
+      text-align: center;
+      padding: 40px;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="relais-header">
+    <h1>🏪 Point Relais</h1>
+    <div class="relais-info" id="relais-info">Chargement...</div>
+  </header>
+
+  <div class="relais-content">
+    <!-- Action buttons -->
+    <div class="relais-actions">
+      <button class="relais-action-btn" onclick="Relais.showScan('arrived')">
+        <span class="emoji">📥</span>
+        Réception colis
+      </button>
+      <button class="relais-action-btn" onclick="Relais.showScan('collected')">
+        <span class="emoji">🤝</span>
+        Remise client
+      </button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="relais-kpis" id="relais-kpis">
+      <div class="relais-kpi"><div class="number">—</div><div class="label">🚚 En approche</div></div>
+      <div class="relais-kpi"><div class="number">—</div><div class="label">📥 Disponibles</div></div>
+      <div class="relais-kpi"><div class="number">—</div><div class="label">⏰ En retard</div></div>
+    </div>
+
+    <!-- Scanner (hidden by default) -->
+    <div class="scan-section" id="scan-section" style="display:none">
+      <h3 id="scan-title" style="margin-bottom:12px;font-size:16px">📷 Scanner un colis</h3>
+      <input type="text" class="scan-input" id="scan-input" placeholder="PCL-2026-XXXXX" autofocus>
+      
+      <!-- PIN code section (for collection only) -->
+      <div id="pin-section" style="display:none;margin-top:10px">
+        <input type="text" id="pin-input" placeholder="Code PIN client (4 chiffres)" maxlength="4"
+          style="width:100%;padding:12px;border:2px solid #d1d5db;border-radius:10px;font-size:18px;text-align:center;letter-spacing:8px">
+      </div>
+      
+      <button class="scan-btn" id="scan-btn" onclick="Relais.doScan()">✅ Confirmer</button>
+      <div id="scan-result" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Parcels tabs -->
+    <div class="relais-tabs" id="relais-tabs">
+      <button class="relais-tab active" data-filter="in_transit" onclick="Relais.filterTab('in_transit')">🚚 En approche</button>
+      <button class="relais-tab" data-filter="available" onclick="Relais.filterTab('available')">📥 Disponibles</button>
+      <button class="relais-tab" data-filter="collected" onclick="Relais.filterTab('collected')">✅ Collectés</button>
+      <button class="relais-tab" data-filter="overdue" onclick="Relais.filterTab('overdue')">⏰ En retard</button>
+    </div>
+
+    <!-- Parcels list -->
+    <div id="relais-parcels">
+      <div class="relais-empty">⏳ Chargement des colis...</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/dashboards/admin-legacy/js/ct-api.js"></script>
+  <script src="/shared/js/parcel-components.js"></script>
+  <script>
+    window.Relais = {};
+    Relais.parcels = [];
+    Relais.scanType = null;
+
+    Relais.init = async function() {
+      try {
+        const { parcels } = await CT.api.get('/api/v2/parcels');
+        Relais.parcels = parcels;
+
+        // KPIs
+        const inTransit = parcels.filter(p => ['shipped', 'in_transit'].includes(p.status)).length;
+        const available = parcels.filter(p => p.status === 'available').length;
+        const overdue = parcels.filter(p => p.alerts && p.alerts.some(a => a.type === 'uncollected_warning' || a.type === 'uncollected_critical')).length;
+
+        document.getElementById('relais-kpis').innerHTML = `
+          <div class="relais-kpi"><div class="number" style="color:#8b5cf6">${inTransit}</div><div class="label">🚚 En approche</div></div>
+          <div class="relais-kpi"><div class="number" style="color:#10b981">${available}</div><div class="label">📥 Disponibles</div></div>
+          <div class="relais-kpi"><div class="number" style="color:${overdue > 0 ? '#dc2626' : '#6b7280'}">${overdue}</div><div class="label">⏰ En retard</div></div>
+        `;
+
+        Relais.filterTab('in_transit');
+      } catch (err) {
+        document.getElementById('relais-parcels').innerHTML = 
+          `<div class="relais-empty" style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
+      }
+    };
+
+    Relais.filterTab = function(filter) {
+      document.querySelectorAll('.relais-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.filter === filter);
+      });
+
+      let filtered;
+      switch(filter) {
+        case 'in_transit':
+          filtered = Relais.parcels.filter(p => ['shipped', 'in_transit'].includes(p.status));
+          break;
+        case 'available':
+          filtered = Relais.parcels.filter(p => p.status === 'available');
+          break;
+        case 'collected':
+          filtered = Relais.parcels.filter(p => p.status === 'collected');
+          break;
+        case 'overdue':
+          filtered = Relais.parcels.filter(p => p.alerts && p.alerts.some(a => 
+            a.type === 'uncollected_warning' || a.type === 'uncollected_critical' || a.type === 'sla_breach_transit'
+          ));
+          break;
+        default:
+          filtered = Relais.parcels;
+      }
+
+      const emptyMessages = {
+        in_transit: '🚚 Aucun colis en approche',
+        available: '📥 Aucun colis disponible',
+        collected: '✅ Aucun colis collecté',
+        overdue: '✅ Aucun colis en retard — tout est nominal !',
+      };
+
+      ParcelUI.renderParcelList('relais-parcels', filtered, {
+        onClick: 'ParcelUI.openDetail',
+        showActions: true,
+        emptyMessage: emptyMessages[filter] || '📦 Aucun colis',
+      });
+    };
+
+    Relais.showScan = function(type) {
+      Relais.scanType = type;
+      const labels = {
+        arrived: '📥 Réception d\'un colis',
+        collected: '🤝 Remise au client',
+      };
+      document.getElementById('scan-section').style.display = '';
+      document.getElementById('scan-title').textContent = labels[type] || '📷 Scanner';
+      document.getElementById('scan-input').value = '';
+      document.getElementById('scan-result').innerHTML = '';
+      document.getElementById('pin-section').style.display = type === 'collected' ? '' : 'none';
+      document.getElementById('scan-input').focus();
+    };
+
+    Relais.doScan = async function() {
+      const ref = document.getElementById('scan-input').value.trim();
+      if (!ref) return;
+
+      const btn = document.getElementById('scan-btn');
+      const result = document.getElementById('scan-result');
+      btn.disabled = true;
+      result.innerHTML = '⏳ Scan en cours...';
+
+      try {
+        const body = {
+          event_type: Relais.scanType,
+          location: 'Point Relais',
+          actor_name: 'Agent Relais',
+          actor_role: 'relay_agent',
+        };
+
+        // Add PIN for collection
+        if (Relais.scanType === 'collected') {
+          const pin = document.getElementById('pin-input').value.trim();
+          if (pin) body.pickup_code = pin;
+        }
+
+        const res = await CT.api.post(`/api/v2/parcels/${ref}/scan`, body);
+
+        const emoji = Relais.scanType === 'collected' ? '🤝' : '📥';
+        result.innerHTML = `
+          <div style="background:#d1fae5;padding:12px;border-radius:8px;margin-top:8px">
+            ${emoji} <strong>${res.parcel.reference}</strong> — ${res.parcel.old_status} → <strong>${res.parcel.new_status}</strong>
+            ${res.synced_orders > 0 ? `<br>📋 ${res.synced_orders} commande(s) synchronisée(s)` : ''}
+          </div>
+        `;
+
+        // Refresh list
+        Relais.init();
+      } catch (err) {
+        result.innerHTML = `<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">❌ ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // Enter key to scan
+    document.getElementById('scan-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') Relais.doScan();
+    });
+
+    // Init on load
+    Relais.init();
+  </script>
+
+</body>
+</html>

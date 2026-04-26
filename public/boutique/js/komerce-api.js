@@ -1,0 +1,327 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — API Unifiée v1.1
+   Couche unique pour tous les écrans (Hub, Pipeline, Relais, Dashboard, Admin)
+
+   Changelog v1.1 :
+   - Auth par cookie httpOnly (credentials: 'include') — plus de Bearer token en JS
+   - _state.api défaut = window.location.origin (fonctionne en same-origin Railway)
+   - auth.login lit data.user au lieu de data.token
+   - auth.logout appelle POST /api/auth/logout + efface flag localStorage
+   - auth.restore() → GET /api/auth/me pour retrouver la session depuis le cookie
+   - K.parcels.optimize(orderId) → POST /api/parcels/optimize
+   - K.parcels.bootstrap(orderId) → POST /api/parcels/bootstrap/:orderId
+   ═══════════════════════════════════════════════════════════════ */
+
+window.K = (() => {
+  'use strict';
+
+  // ── STATE ──────────────────────────────────────────────────
+  const _state = {
+    // Défaut : même origine (Railway ou localhost)
+    // Si l'utilisateur a défini une URL custom, on l'utilise.
+    api: localStorage.getItem('komerce_api_url') || (typeof window !== 'undefined' ? window.location.origin : ''),
+    user: null,
+  };
+
+  // ── RATE LIMITER ───────────────────────────────────────────
+  const _rl = {
+    queue: [],
+    active: 0,
+    MAX_CONC: 2,
+    MIN_DELAY_MS: 150,
+    lastStart: 0,
+  };
+
+  function _drainQueue() {
+    if (_rl.active >= _rl.MAX_CONC || _rl.queue.length === 0) return;
+    const item = _rl.queue.shift();
+    _rl.active++;
+
+    const now = Date.now();
+    const wait = Math.max(0, _rl.MIN_DELAY_MS - (now - _rl.lastStart));
+    _rl.lastStart = now + wait;
+
+    setTimeout(async () => {
+      try {
+        const result = await _doFetch(item.path, item.method, item.body, item.retries);
+        item.resolve(result);
+      } catch (e) {
+        item.reject(e);
+      } finally {
+        _rl.active--;
+        setTimeout(_drainQueue, 0);
+      }
+    }, wait);
+  }
+
+  async function _doFetch(path, method, body, maxRetries) {
+    const opts = {
+      method,
+      credentials: 'include',           // Envoie le cookie httpOnly kmrc_jwt
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    };
+
+    let lastErr;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(_state.api + path, opts);
+
+        // Retry on rate limit / transient errors
+        if ((res.status === 429 || res.status === 503 || res.status === 502) && attempt < maxRetries) {
+          const backoff = Math.pow(2, attempt) * 800;
+          await _sleep(backoff);
+          continue;
+        }
+
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+        return json;
+
+      } catch (e) {
+        lastErr = e;
+        if (attempt < maxRetries) {
+          await _sleep(400 * (attempt + 1));
+        }
+      }
+    }
+    throw lastErr;
+  }
+
+  function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── CORE REQUEST ───────────────────────────────────────────
+  function request(path, method = 'GET', body = null, retries = 2) {
+    return new Promise((resolve, reject) => {
+      _rl.queue.push({ path, method, body, retries, resolve, reject });
+      _drainQueue();
+    });
+  }
+
+  // ── AUTH ────────────────────────────────────────────────────
+  const auth = {
+    async login(email, password, apiUrl) {
+      if (apiUrl) {
+        _state.api = apiUrl.replace(/\/$/, '');
+        localStorage.setItem('komerce_api_url', _state.api);
+      }
+      const health = await request('/api/health');
+      const data = await request('/api/auth/login', 'POST', { email, password });
+      // Le backend répond { user: {...} } + pose un cookie httpOnly kmrc_jwt
+      _state.user = data.user;
+      localStorage.setItem('komerce_session', '1');
+      return { user: data.user, health };
+    },
+
+    async logout() {
+      try {
+        await request('/api/auth/logout', 'POST');
+      } catch (_) { /* ignore */ }
+      _state.user = null;
+      localStorage.removeItem('komerce_session');
+    },
+
+    // Restaure la session depuis le cookie httpOnly (à appeler au chargement de page)
+    async restore() {
+      try {
+        const user = await request('/api/auth/me');
+        _state.user = user;
+        localStorage.setItem('komerce_session', '1');
+        return user;
+      } catch (_) {
+        _state.user = null;
+        localStorage.removeItem('komerce_session');
+        return null;
+      }
+    },
+
+    getUser() { return _state.user; },
+    isConnected() { return !!_state.user || !!localStorage.getItem('komerce_session'); },
+
+    setUrl(url) {
+      _state.api = url.replace(/\/$/, '');
+      localStorage.setItem('komerce_api_url', _state.api);
+    },
+  };
+
+  // ── PARCELS ────────────────────────────────────────────────
+  const parcels = {
+    list(filters = {}) {
+      const qs = new URLSearchParams(filters).toString();
+      return request('/api/parcels' + (qs ? '?' + qs : ''));
+    },
+    get(id) { return request(`/api/parcels/${id}`); },
+    create(data) { return request('/api/parcels', 'POST', data); },
+    update(id, data) { return request(`/api/parcels/${id}`, 'PUT', data); },
+    addItem(parcelId, data) { return request(`/api/parcels/${parcelId}/items`, 'POST', data); },
+    stats() { return request('/api/parcels/stats'); },
+
+    // ── Moteur d'optimisation (Vague 4) ──
+    optimize(orderId, config = {}) {
+      return request('/api/parcels/optimize', 'POST', { order_id: orderId, config });
+    },
+    bootstrap(orderId) {
+      return request(`/api/parcels/bootstrap/${orderId}`, 'POST');
+    },
+  };
+
+  // ── HUB ────────────────────────────────────────────────────
+  const hub = {
+    scanItem(barcode, scannedBy) {
+      return request('/api/hub/scan', 'POST', { barcode, scanned_by: scannedBy });
+    },
+    pack(parcelId) {
+      return request('/api/scans/hub/pack', 'POST', { parcel_id: parcelId });
+    },
+    seal(parcelId) {
+      return request('/api/scans/hub/seal', 'POST', { parcel_id: parcelId });
+    },
+    getDraftParcels() {
+      return request('/api/parcels?status=draft');
+    },
+  };
+
+  // ── SCANS ──────────────────────────────────────────────────
+  const scans = {
+    create(data) { return request('/api/scans', 'POST', data); },
+    list(filters = {}) {
+      const qs = new URLSearchParams(filters).toString();
+      return request('/api/scans' + (qs ? '?' + qs : ''));
+    },
+  };
+
+  // ── ORDERS ─────────────────────────────────────────────────
+  const orders = {
+    list(filters = {}) {
+      const qs = new URLSearchParams(filters).toString();
+      return request('/api/orders' + (qs ? '?' + qs : ''));
+    },
+    get(id) { return request(`/api/orders/${id}`); },
+    stats() { return request('/api/orders/stats'); },
+	 // ✅ ICI
+  create(data) {
+    return request('/api/orders', 'POST', data);
+	 },
+  };
+
+  // ── LOGISTICS ──────────────────────────────────────────────
+  const logistics = {
+    shipments: {
+      list(filters = {}) {
+        const qs = new URLSearchParams(filters).toString();
+        return request('/api/logistics/shipments' + (qs ? '?' + qs : ''));
+      },
+      get(id) { return request(`/api/logistics/shipments/${id}`); },
+      create(data) { return request('/api/logistics/shipments', 'POST', data); },
+    },
+    containers: {
+      list() { return request('/api/logistics/containers'); },
+    },
+  };
+
+  // ── CARRIERS ───────────────────────────────────────────────
+  const carriers = {
+    list() { return request('/api/carriers'); },
+    get(id) { return request(`/api/carriers/${id}`); },
+    create(data) { return request('/api/carriers', 'POST', data); },
+    update(id, data) { return request(`/api/carriers/${id}`, 'PUT', data); },
+  };
+
+  // ── PRODUCTS ───────────────────────────────────────────────
+  const products = {
+    list(filters = {}) {
+      const qs = new URLSearchParams(filters).toString();
+      return request('/api/products' + (qs ? '?' + qs : ''));
+    },
+    get(id) { return request(`/api/products/${id}`); },
+  };
+
+  // ── PURCHASING ─────────────────────────────────────────────
+  const purchasing = {
+    suppliers: {
+      list() { return request('/api/purchasing/suppliers'); },
+      get(id) { return request(`/api/purchasing/suppliers/${id}`); },
+    },
+    orders: {
+      list(filters = {}) {
+        const qs = new URLSearchParams(filters).toString();
+        return request('/api/purchasing/orders' + (qs ? '?' + qs : ''));
+      },
+    },
+  };
+
+  // ── UI HELPERS (partagés entre tous les écrans) ────────────
+  const ui = {
+    // Status → badge
+    PARCEL_STATUS: {
+      draft:       { label: 'Brouillon',    badge: 'b-gray'   },
+      preparation: { label: 'Préparation',  badge: 'b-purple' },
+      shipped:     { label: 'Expédié',      badge: 'b-teal'   },
+      in_transit:  { label: 'En transit',   badge: 'b-blue'   },
+      arrived:     { label: 'Arrivé',       badge: 'b-gold'   },
+      available:   { label: 'Disponible',   badge: 'b-green'  },
+      collected:   { label: 'Remis',        badge: 'b-green'  },
+      cancelled:   { label: 'Annulé',       badge: 'b-red'    },
+    },
+
+    badge(status, map) {
+      const m = map || ui.PARCEL_STATUS;
+      const s = m[status] || { label: status, badge: 'b-gray' };
+      return `<span class="badge ${s.badge}">${s.label}</span>`;
+    },
+
+    toast(msg, type = 'ok') {
+      let t = document.getElementById('k-toast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'k-toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3500);
+    },
+
+    flash() {
+      const el = document.createElement('div');
+      el.className = 'success-flash';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 700);
+    },
+
+    fmtDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    },
+
+    fmtAge(dateStr) {
+      if (!dateStr) return '—';
+      const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+      if (days === 0) return 'Aujourd\'hui';
+      if (days === 1) return '1j';
+      return days + 'j';
+    },
+
+    ts() {
+      return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    },
+  };
+
+  // ── PUBLIC API ─────────────────────────────────────────────
+  return {
+    request,
+    auth,
+    parcels,
+    hub,
+    scans,
+    orders,
+    logistics,
+    carriers,
+    products,
+    purchasing,
+    ui,
+  };
+})();
