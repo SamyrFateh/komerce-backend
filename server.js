@@ -129,6 +129,7 @@ app.use(cors(corsOptions));
 // This must come BEFORE express.json() so the body stays a Buffer
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/collective-payments/stripe/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -265,6 +266,19 @@ app.use('/api/admin/cost-components',    adminCostComponentsRouter);
 app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
 app.use('/api/shared-carts',       sharedCart.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
+
+// ═══ Panier Événement Collectif V1 (capture atomique 100%) ═══
+// Coexiste avec shared-carts (philosophies différentes)
+const collectiveWS = require('./routes/collective-workspaces');
+const collectivePaymentOrchestrator = require('./services/collective-payment-orchestrator');
+app.post('/api/collective-payments/stripe/webhook', collectiveWS.stripeWebhookHandler);
+app.use('/api/collective-workspaces', collectiveWS.router);
+app.use('/api/collective-payments',   collectiveWS.paymentsRouter);
+// Démarrer le cron d'expiration (toutes les 5 min en prod, 30s en dev)
+if (process.env.NODE_ENV !== 'test') {
+  const intervalMs = process.env.NODE_ENV === 'production' ? 5 * 60 * 1000 : 30 * 1000;
+  collectivePaymentOrchestrator.startExpirationCron(intervalMs);
+}
 app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
