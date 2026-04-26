@@ -212,7 +212,12 @@ router.get('/public/:publicToken', async (req, res) => {
 // POST /api/collective-workspaces/public/:publicToken/contributions
 router.post('/public/:publicToken/contributions', async (req, res) => {
   try {
-    const c = await engine.addContribution(req.params.publicToken, req.body || {});
+    // P1.2 : accepter alias amount_kmf (front) → intended_amount_kmf (engine)
+    const body = Object.assign({}, req.body || {});
+    if (body.amount_kmf !== undefined && body.intended_amount_kmf === undefined) {
+      body.intended_amount_kmf = body.amount_kmf;
+    }
+    const c = await engine.addContribution(req.params.publicToken, body);
     res.status(201).json({
       contribution: c,
       message: 'Votre intention a été enregistrée. Aucun paiement n\'est effectué maintenant.',
@@ -220,6 +225,7 @@ router.post('/public/:publicToken/contributions', async (req, res) => {
   } catch (err) {
     const m = err.message;
     if (m === 'contributor_name_required') return _err(res, 400, 'name_required', 'Nom requis');
+    if (m === 'content_required') return _err(res, 400, 'content_required', 'Indiquez au moins un montant, une idée ou un message');
     if (m === 'amount_invalid') return _err(res, 400, 'amount_invalid', 'Montant invalide');
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_open') return _err(res, 409, 'closed', 'Cet espace n\'accepte plus d\'intentions');

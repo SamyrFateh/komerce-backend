@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmer ma part — Komerce</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/boutique/css/event.css">
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+
+<div class="ev-wrap">
+
+  <header class="ev-header">
+    <a href="/" class="ev-header-back">← Boutique</a>
+    <span class="ev-header-title">Confirmer ma part</span>
+  </header>
+
+  <div id="ev-loading" class="ev-empty">⏳ Chargement…</div>
+  <div id="ev-content" style="display:none;"></div>
+  <div id="ev-error-block" class="ev-warning" style="display:none;"></div>
+
+  <p class="ev-doctrine">
+    Aucun débit ne sera effectué avant que tous les contributeurs aient confirmé leur part.<br>
+    La commande sera créée seulement quand le panier sera entièrement sécurisé.
+  </p>
+
+</div>
+
+<script src="/boutique/js/event-pay.js"></script>
+</body>
+</html>

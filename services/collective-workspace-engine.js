@@ -341,10 +341,41 @@ async function removeItem(creatorToken, itemId) {
  * Aucun paiement n'est effectue ici.
  * Le contributeur partage son intention (montant qu'il proposera de payer).
  */
-async function addContribution(publicToken, { contributor_name, contributor_phone, contributor_email, intended_amount_kmf }) {
+async function addContribution(publicToken, payload = {}) {
+  const {
+    contributor_name,
+    contributor_phone,
+    contributor_email,
+    intended_amount_kmf,
+    suggestion,
+    message,
+    kind: rawKind,
+  } = payload;
+
   if (!contributor_name) throw new Error('contributor_name_required');
-  const amount = parseInt(intended_amount_kmf, 10);
-  if (!amount || amount <= 0) throw new Error('amount_invalid');
+
+  // P1.2 : amount nullable
+  let amount = null;
+  if (intended_amount_kmf !== undefined && intended_amount_kmf !== null && intended_amount_kmf !== '') {
+    amount = parseInt(intended_amount_kmf, 10);
+    if (Number.isNaN(amount) || amount <= 0) throw new Error('amount_invalid');
+  }
+
+  const sug = (suggestion || '').toString().trim() || null;
+  const msg = (message || '').toString().trim() || null;
+
+  // Au moins un des trois (montant, suggestion, message) doit être présent
+  if (amount === null && !sug && !msg) {
+    throw new Error('content_required');
+  }
+
+  // kind dérivé du contenu si non fourni
+  let kind = (rawKind || '').toString().trim().toLowerCase();
+  if (!['suggestion', 'intention', 'message'].includes(kind)) {
+    if (amount !== null) kind = 'intention';
+    else if (sug)        kind = 'suggestion';
+    else                 kind = 'message';
+  }
 
   const hash = _hashToken(publicToken);
   const client = await db.pool.connect();
@@ -368,13 +399,15 @@ async function addContribution(publicToken, { contributor_name, contributor_phon
 
     const { rows } = await client.query(
       `INSERT INTO collective_workspace_contributions
-         (workspace_id, contributor_name, contributor_phone, contributor_email, intended_amount_kmf, status)
-       VALUES ($1,$2,$3,$4,$5,'intention')
+         (workspace_id, contributor_name, contributor_phone, contributor_email,
+          intended_amount_kmf, suggestion, message, kind, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'intention')
        RETURNING *`,
-      [ws.id, contributor_name, contributor_phone || null, contributor_email || null, amount]
+      [ws.id, contributor_name, contributor_phone || null, contributor_email || null,
+       amount, sug, msg, kind]
     );
     await logEvent(client, ws.id, 'contribution_added', 'contributor', contributor_email || contributor_phone, {
-      contributor_name, intended_amount_kmf: amount,
+      contributor_name, intended_amount_kmf: amount, suggestion: sug, message: msg, kind,
     });
 
     await client.query('COMMIT');
@@ -669,7 +702,8 @@ async function finalizeWorkspace(creatorToken, { duration_hours = 72, idempotenc
         contributor_email: c.contributor_email,
         amount_kmf: amount,
         payment_token: tokenRaw,    // BRUT — à transmettre une seule fois
-        payment_url_path: '/api/collective-payments/' + tokenRaw,
+        payment_url_path: '/api/collective-payments/' + tokenRaw,         // API JSON
+        payment_page_url: '/event/pay/' + tokenRaw,                       // P1.3 : page HTML utilisateur
       });
     }
 

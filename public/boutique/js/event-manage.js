@@ -15,7 +15,11 @@
   const errorEl   = document.getElementById('ev-error-block');
 
   function getCreatorToken() {
-    const m = window.location.pathname.match(/\/event\/([^\/]+)\/manage/);
+    // P0.2 : URL canonique = /event/manage/:creatorToken
+    //        URL legacy    = /event/:creatorToken/manage (redirige 301 mais on est paranoïaque)
+    let m = window.location.pathname.match(/\/event\/manage\/([^\/?#]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    m = window.location.pathname.match(/\/event\/([^\/?#]+)\/manage/);
     return m ? decodeURIComponent(m[1]) : null;
   }
 
@@ -33,7 +37,8 @@
   }
 
   function publicUrl(publicToken) {
-    return window.location.origin + '/workspace/' + encodeURIComponent(publicToken);
+    // P0.2 : URL canonique /event/w/:publicToken (pas /workspace/:t)
+    return window.location.origin + '/event/w/' + encodeURIComponent(publicToken);
   }
   function whatsappShareUrl(eventName, publicToken) {
     const text = encodeURIComponent(
@@ -210,7 +215,7 @@
     const finalizeBtn = document.getElementById('ev-finalize-btn');
     if (finalizeBtn) {
       finalizeBtn.addEventListener('click', async () => {
-        if (!confirm('Finaliser le panier ? Cette action verrouille le panier pour passer à la commande sécurisée.')) return;
+        if (!confirm('Finaliser le panier ? Cette action verrouille le panier et génère les liens de paiement individuels. Vous devrez ensuite envoyer ces liens à chaque contributeur.')) return;
         finalizeBtn.disabled = true;
         finalizeBtn.textContent = '⏳ Finalisation…';
         try {
@@ -219,20 +224,148 @@
             encodeURIComponent(getCreatorToken()) + '/finalization-review', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
           });
-          if (!reviewRes.ok) throw new Error('Échec de la revue de finalisation');
-          // Étape 2 : finalize (verrou + lance paiement)
+          if (!reviewRes.ok) {
+            const err = await reviewRes.json().catch(() => ({}));
+            throw new Error(err.message || 'Échec de la revue de finalisation');
+          }
+          // Étape 2 : finalize (verrou + génération tokens)
           const finRes = await fetch('/api/collective-workspaces/' +
             encodeURIComponent(getCreatorToken()) + '/finalize', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
           });
-          if (!finRes.ok) throw new Error('Échec de la finalisation');
-          // On reload pour afficher le nouveau status
-          window.location.reload();
+          if (!finRes.ok) {
+            const err = await finRes.json().catch(() => ({}));
+            throw new Error(err.message || 'Échec de la finalisation');
+          }
+
+          // P1.3 — NE PAS RELOAD. Afficher les tokens reçus dans une vue dédiée.
+          const data = await finRes.json();
+          renderFinalizeResult(data);
         } catch (err) {
           alert('Erreur : ' + err.message);
           finalizeBtn.disabled = false;
           finalizeBtn.textContent = '🔒 Finaliser le panier';
         }
+      });
+    }
+  }
+
+  /**
+   * P1.3 — Affiche la liste des liens de paiement après finalize.
+   * Les tokens bruts ne sont retournés qu'UNE seule fois côté API
+   * → on les affiche immédiatement avec bouton copier + bouton WhatsApp
+   *   par contributeur. PAS DE RELOAD avant que l'utilisateur ait au moins
+   *   confirmé avoir envoyé les liens.
+   */
+  function renderFinalizeResult(data) {
+    const tokens = Array.isArray(data.tokens) ? data.tokens : [];
+    const expiresAt = data.session && data.session.expires_at;
+    const totalKmf = data.session && data.session.total_to_pay_kmf;
+
+    let html = '';
+
+    html += '<div class="ev-card">';
+    html += '<h2 class="ev-card-title">✅ Panier finalisé</h2>';
+    html += '<p class="ev-card-sub">' +
+      'Le panier est figé. Voici les <strong>' + tokens.length +
+      ' lien(s) de paiement</strong> à envoyer aux contributeurs. ' +
+      'Une commande sera créée seulement quand <strong>tous</strong> auront payé.</p>';
+
+    if (totalKmf) {
+      html += '<div class="ev-totals">';
+      html += '<div class="ev-totals-row ev-totals-row--final">';
+      html += '<span>Total à payer (réparti)</span>';
+      html += '<span>' + new Intl.NumberFormat('fr-FR').format(totalKmf) + ' KMF</span>';
+      html += '</div></div>';
+    }
+
+    html += '<div class="ev-warning" style="margin-top:14px;">';
+    html += '⚠️ <strong>Important : conservez bien cette page.</strong> ' +
+      'Les liens individuels ne sont affichés qu\'une seule fois. ' +
+      'Envoyez-les via WhatsApp ou copiez-les pour ne pas les perdre.';
+    if (expiresAt) {
+      const dt = new Date(expiresAt);
+      html += '<br><br>📅 Liens valables jusqu\'au <strong>' +
+        dt.toLocaleDateString('fr-FR') + ' ' +
+        dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '</strong>.';
+    }
+    html += '</div>';
+    html += '</div>';
+
+    // ── Liste des tokens / liens ────────────────────────────────
+    html += '<div class="ev-card">';
+    html += '<h3 class="ev-card-title" style="font-size:15px;">💳 Liens de paiement par contributeur</h3>';
+    html += '<ul class="ev-list">';
+    tokens.forEach(function(t, idx) {
+      const fullUrl = window.location.origin + (t.payment_page_url || '/event/pay/' + t.payment_token);
+      const waText = encodeURIComponent(
+        'Bonjour ' + t.contributor_name + ',\n\n' +
+        'Voici votre lien de paiement pour participer au panier événement :\n' +
+        fullUrl + '\n\n' +
+        'Montant : ' + new Intl.NumberFormat('fr-FR').format(t.amount_kmf) + ' KMF\n\n' +
+        'Merci !'
+      );
+      const waUrl = t.contributor_phone
+        ? 'https://wa.me/' + encodeURIComponent(t.contributor_phone.replace(/\D/g,'')) + '?text=' + waText
+        : 'https://wa.me/?text=' + waText;
+
+      html += '<li class="ev-list-item" style="flex-direction:column;align-items:stretch;gap:6px;padding:14px 0;">';
+      html += '<div style="display:flex;align-items:center;gap:10px;">';
+      html += '<div class="ev-list-emoji">💳</div>';
+      html += '<div class="ev-list-content">';
+      html += '<div class="ev-list-name">' + escHtml(t.contributor_name) +
+              ' <span style="color:var(--ev-success);font-weight:600;">' +
+              new Intl.NumberFormat('fr-FR').format(t.amount_kmf) + ' KMF</span></div>';
+      if (t.contributor_phone) {
+        html += '<div class="ev-list-meta">📞 ' + escHtml(t.contributor_phone) + '</div>';
+      }
+      html += '</div></div>';
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+      html += '<input type="text" readonly value="' + escHtml(fullUrl) +
+              '" id="ev-tok-url-' + idx + '" ' +
+              'style="flex:1;min-width:0;font-size:11px;padding:6px 8px;font-family:monospace;border:1px solid var(--ev-border);border-radius:4px;">';
+      html += '<button class="ev-btn ev-btn-secondary" data-copy-url="' + idx + '" style="padding:6px 10px;font-size:12px;">Copier</button>';
+      html += '<a href="' + waUrl + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp" style="padding:6px 10px;font-size:12px;">' +
+              '💬 WhatsApp</a>';
+      html += '</div>';
+      html += '</li>';
+    });
+    html += '</ul>';
+    html += '</div>';
+
+    // ── Action Termination : confirmer envoi tous les liens ──────
+    html += '<div class="ev-card" style="text-align:center;">';
+    html += '<button class="ev-btn ev-btn-success" id="ev-tokens-ack" style="width:100%;">' +
+            '✅ J\'ai envoyé tous les liens — actualiser le statut</button>';
+    html += '<div class="ev-help" style="margin-top:8px;">' +
+            'Cette action recharge la page pour voir l\'état d\'avancement des paiements.</div>';
+    html += '</div>';
+
+    contentEl.innerHTML = html;
+    contentEl.style.display = 'block';
+    loadingEl.style.display = 'none';
+
+    // ── Handlers copy + ack ──
+    contentEl.querySelectorAll('[data-copy-url]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const idx = btn.dataset.copyUrl;
+        const inp = document.getElementById('ev-tok-url-' + idx);
+        if (!inp) return;
+        try {
+          navigator.clipboard.writeText(inp.value);
+          btn.textContent = '✓ Copié';
+          setTimeout(function() { btn.textContent = 'Copier'; }, 2000);
+        } catch (_) {
+          inp.select(); document.execCommand('copy');
+          btn.textContent = '✓ Copié';
+          setTimeout(function() { btn.textContent = 'Copier'; }, 2000);
+        }
+      });
+    });
+    const ack = document.getElementById('ev-tokens-ack');
+    if (ack) {
+      ack.addEventListener('click', function() {
+        window.location.reload();
       });
     }
   }

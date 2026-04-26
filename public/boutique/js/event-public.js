@@ -15,7 +15,10 @@
   const errorEl   = document.getElementById('ev-error-block');
 
   function getPublicToken() {
-    const m = window.location.pathname.match(/\/workspace\/([^\/]+)/);
+    // P0.2 : URL canonique /event/w/:publicToken — legacy /workspace/:t (redirige 301)
+    let m = window.location.pathname.match(/\/event\/w\/([^\/?#]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    m = window.location.pathname.match(/\/workspace\/([^\/?#]+)/);
     return m ? decodeURIComponent(m[1]) : null;
   }
 
