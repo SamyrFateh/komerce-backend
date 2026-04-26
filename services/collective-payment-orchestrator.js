@@ -130,7 +130,7 @@ async function createOrGetPaymentIntent(rawToken) {
  * Idempotent : si le token est déjà authorized, ne fait rien.
  */
 async function onPaymentAuthorized(stripePaymentIntentId) {
-  const client = await db.connect();
+  const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 
@@ -187,9 +187,9 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
     }
     const session = sessionRes.rows[0];
 
-    await engine.logEvent(client, token.session_id /* workspace_id needed */, 'payment_authorized', 'system',
+    await engine.logEvent(client, session.workspace_id, 'payment_authorized', 'system',
       token.contributor_email || token.contributor_phone,
-      { token_id: token.id, payment_intent_id: stripePaymentIntentId, amount_kmf: token.amount_kmf });
+      { token_id: token.id, session_id: token.session_id, payment_intent_id: stripePaymentIntentId, amount_kmf: token.amount_kmf });
 
     // 100% atteint ?
     const reached100 = (session.amount_secured_kmf >= session.total_to_pay_kmf);
@@ -314,7 +314,28 @@ async function _markTokensPaid(tokenIds) {
 }
 
 async function _createOrderFromSession(sessionId) {
-  const client = await db.connect();
+  // PATCH P0 (sprint 3) — Alignement complet sur le cœur business :
+  //   1. INSERT orders (statut 'confirmed', payment_status 'paid')
+  //   2. INSERT order_items depuis snapshots
+  //   3. INSERT order_status_history (audit trail comme orders/create.js)
+  //   4. Stock decrement guarded (FOR UPDATE + check stock>=quantity)
+  //      -> si insuffisant : alerte paid_but_stock_blocked (pas de rollback,
+  //         le paiement Stripe est déjà capturé)
+  //   5. Liaison atomique workspace.order_id = order.id (defense in depth)
+  //   6. Transition vers 'ordered' via state machine (cohérence machine)
+  //   7. POST-COMMIT (fire-and-forget) :
+  //      - notifyPaymentConfirmed (WhatsApp + Email + Facture)
+  //      - triggerPurchasing (avec alerte si erreur)
+  //
+  // Une order collective payée DOIT suivre exactement le même flux qu'une
+  // order Stripe/cash payée. C'est l'invariant doctrinal.
+
+  const client = await db.pool.connect();
+  let createdOrderId = null;
+  let createdOrderRef = null;
+  let stockBlocked = false;
+  let triggerPurchasingFor = null;
+
   try {
     await client.query('BEGIN');
 
@@ -334,22 +355,26 @@ async function _createOrderFromSession(sessionId) {
       return { order_id: ws.order_id, idempotent: true };
     }
 
-    // Récupérer les items snapshots
-    const items = (await client.query(
-      `SELECT * FROM collective_workspace_items WHERE workspace_id = $1`,
-      [ws.id]
-    )).rows;
-
-    // Créer la commande — statut 'confirmed' pour suivre le flux Komerce existant
-    // Reference : KOM-COL-{8 chars}
-    const reference = 'KOM-COL-' + ws.id.replace(/-/g, '').slice(0, 8).toUpperCase();
-
-    // Si pas de relais, on ne peut pas créer la commande (relais_id NOT NULL dans orders)
     if (!ws.relais_id) {
       await client.query('ROLLBACK');
       throw new Error('missing_relais_id');
     }
 
+    // Récupérer les items snapshots
+    const items = (await client.query(
+      `SELECT * FROM collective_workspace_items WHERE workspace_id = $1 ORDER BY created_at`,
+      [ws.id]
+    )).rows;
+    if (!items.length) {
+      await client.query('ROLLBACK');
+      throw new Error('no_items');
+    }
+
+    // Reference : KOM-COL-{8 chars}
+    const reference = 'KOM-COL-' + ws.id.replace(/-/g, '').slice(0, 8).toUpperCase();
+
+    // 1) INSERT orders — statut 'confirmed' + payment_status 'paid'
+    //    (le paiement Stripe atomique est déjà capté)
     const orderRes = await client.query(
       `INSERT INTO orders (
          reference, user_id, recipient_id, relais_id,
@@ -360,7 +385,7 @@ async function _createOrderFromSession(sessionId) {
          $4, 'stripe_eur', 'paid', 'confirmed',
          $5
        )
-       RETURNING id, reference`,
+       RETURNING id, reference, total_kmf`,
       [
         reference,
         ws.creator_user_id || null,
@@ -370,10 +395,12 @@ async function _createOrderFromSession(sessionId) {
       ]
     );
     const order = orderRes.rows[0];
+    createdOrderId = order.id;
+    createdOrderRef = order.reference;
 
-    // Créer les order_items depuis les snapshots
+    // 2) INSERT order_items depuis les snapshots
     for (const it of items) {
-      if (!it.product_id) continue; // sécurité (item sans produit lié)
+      if (!it.product_id) continue; // sécurité
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
          VALUES ($1, $2, $3, $4)`,
@@ -381,14 +408,73 @@ async function _createOrderFromSession(sessionId) {
       );
     }
 
-    // Lier — Defense in depth :
-    // La WHERE clause refuse explicitement d'écraser un order_id existant
-    // ET refuse toute autre transition que payment_pending → order_created.
-    // Même si la garde idempotente plus haut (ws.order_id != null → return)
-    // est déjà passée, ce filet ultime garantit qu'aucun process concurrent
-    // ne peut nous faire écraser une commande déjà liée.
-    // Si rowCount = 0 : un autre process a créé une commande entre-temps
-    //   → on rollback pour ne JAMAIS détruire le lien existant.
+    // 3) INSERT order_status_history — alignement avec orders/create.js
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, 'confirmed', $2, $3)`,
+      [order.id, `Commande créée depuis panier collectif (session ${sessionId})`, ws.creator_user_id || null]
+    );
+
+    // 4) STOCK DECREMENT GUARDED — même pattern que webhook Stripe (patch 1)
+    const stockItems = (await client.query(
+      `SELECT oi.product_id, oi.quantity, p.stock, p.name
+       FROM order_items oi
+       JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id = $1 AND p.stock IS NOT NULL
+       FOR UPDATE OF p`,
+      [order.id]
+    )).rows;
+
+    const insufficientItems = [];
+    for (const si of stockItems) {
+      if (si.stock < si.quantity) {
+        insufficientItems.push({
+          product_id: si.product_id,
+          product_name: si.name,
+          available: si.stock,
+          needed: si.quantity,
+        });
+      }
+    }
+
+    if (insufficientItems.length > 0) {
+      stockBlocked = true;
+      const incidentNote = '\n[INCIDENT paid_but_stock_blocked] ' +
+        insufficientItems.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
+      await client.query(
+        `UPDATE orders SET notes = COALESCE(notes,'') || $1 WHERE id = $2`,
+        [incidentNote, order.id]
+      );
+      try {
+        await client.query(
+          `INSERT INTO alerts (level, source, message, payload)
+           VALUES ('critical', 'collective_capture', $1, $2)`,
+          [
+            `paid_but_stock_blocked — ${reference} (collective)`,
+            JSON.stringify({
+              order_id: order.id,
+              order_reference: reference,
+              workspace_id: ws.id,
+              session_id: sessionId,
+              insufficient_items: insufficientItems,
+            }),
+          ]
+        );
+      } catch (alertErr) {
+        console.error('[CollectivePay] ⛔ FAILED TO INSERT ALERT for', reference, alertErr.message);
+      }
+      console.error(`[CollectivePay] ⛔ paid_but_stock_blocked: ${reference} — ${insufficientItems.length} produit(s) en rupture`);
+    } else {
+      // Stock OK partout → décrémenter
+      for (const si of stockItems) {
+        await client.query(
+          'UPDATE products SET stock = stock - $1 WHERE id = $2',
+          [si.quantity, si.product_id]
+        );
+      }
+    }
+
+    // 5) Liaison atomique workspace ↔ order (defense in depth)
     const linkRes = await client.query(
       `UPDATE collective_workspaces
          SET status = 'order_created', order_id = $1
@@ -407,18 +493,90 @@ async function _createOrderFromSession(sessionId) {
     );
 
     await engine.logEvent(client, ws.id, 'order_created', 'system', null, {
-      order_id: order.id, order_reference: order.reference, session_id: sessionId,
+      order_id: order.id, order_reference: order.reference,
+      session_id: sessionId, stock_blocked: stockBlocked,
     });
 
     await client.query('COMMIT');
-    console.log('[CollectivePay] ✅ Commande creee', order.reference, 'depuis workspace', ws.id);
-    return { order_id: order.id, order_reference: order.reference };
+    console.log('[CollectivePay] ✅ Commande creee', order.reference, 'depuis workspace', ws.id, stockBlocked ? '(STOCK BLOCKED)' : '');
+
+    if (!stockBlocked) {
+      triggerPurchasingFor = order.id;
+    }
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+
+  // ─── 6) TRANSITION confirmed → ordered (via state machine, hors transaction principale) ───
+  // On ne fait cette transition QUE si stock OK. Si stock_blocked, l'admin doit traiter manuellement.
+  if (!stockBlocked && createdOrderId) {
+    try {
+      // Lazy require pour éviter cycle de dépendance au boot
+      const { transitionOrderStatus } = require('./order-status-machine');
+      await transitionOrderStatus({
+        orderId: createdOrderId,
+        newStatus: 'ordered',
+        actor: { id: null, role: 'system' },
+        source: 'system',
+        note: 'Commande lancée automatiquement après paiement collectif',
+      });
+    } catch (err) {
+      console.warn('[CollectivePay] transition ordered failed (non-fatal):', err.message);
+    }
+  }
+
+  // ─── 7) POST-COMMIT: notifications + purchasing (fire-and-forget) ───
+  if (createdOrderId) {
+    // Notifications complètes (WhatsApp + Email + Facture) — uniquement si pas stock_blocked
+    if (!stockBlocked) {
+      try {
+        const notifSvc = require('./notification-service');
+        notifSvc.notifyPaymentConfirmed(createdOrderId, createdOrderRef)
+          .then(result => {
+            if (result?.invoice) {
+              console.log(`🧾 [CollectivePay] Invoice ${result.invoice} sent for ${createdOrderRef}`);
+            }
+          })
+          .catch(e => console.error('[CollectivePay-NOTIF] ❌', e.message));
+      } catch (e) {
+        console.error('[CollectivePay-NOTIF] require error:', e.message);
+      }
+    }
+
+    // Sourcing — uniquement si stock OK
+    if (triggerPurchasingFor) {
+      try {
+        // Lazy require pour éviter cycle
+        const purchasing = require('../routes/purchasing');
+        if (typeof purchasing.triggerPurchasing === 'function') {
+          purchasing.triggerPurchasing(triggerPurchasingFor)
+            .then(r => console.log('[CollectivePay-PURCHASING] OK:', createdOrderRef, r))
+            .catch(async (e) => {
+              console.error('[CollectivePay-PURCHASING] error:', createdOrderRef, e.message);
+              try {
+                await db.query(
+                  `INSERT INTO alerts (level, source, message, payload)
+                   VALUES ('elevated', 'purchasing', $1, $2)`,
+                  [
+                    `triggerPurchasing failed (collective): ${createdOrderRef}`,
+                    JSON.stringify({ order_id: triggerPurchasingFor, error: e.message }),
+                  ]
+                );
+              } catch (alertErr) {
+                console.error('[CollectivePay-PURCHASING] alert insert failed:', alertErr.message);
+              }
+            });
+        }
+      } catch (e) {
+        console.warn('[CollectivePay-PURCHASING] require failed:', e.message);
+      }
+    }
+  }
+
+  return { order_id: createdOrderId, order_reference: createdOrderRef, stock_blocked: stockBlocked };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -481,7 +639,7 @@ async function _expireSession(sessionId) {
   }
 
   // Marquer en BDD
-  const client = await db.connect();
+  const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
     const session = (await client.query(

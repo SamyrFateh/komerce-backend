@@ -85,7 +85,7 @@ async function createWorkspace({
   const publicToken  = _generateToken(CONFIG.PUBLIC_TOKEN_PREFIX);
   const creatorToken = _generateToken(CONFIG.CREATOR_TOKEN_PREFIX);
 
-  const client = await db.connect();
+  const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(
@@ -194,63 +194,142 @@ async function getWorkspaceByCreatorToken(creatorToken) {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function addItem(creatorToken, { product_id, quantity }) {
-  const ws = await getWorkspaceByCreatorToken(creatorToken);
-  if (!ws) throw new Error('workspace_not_found');
-  if (ws.status !== 'conception') throw new Error('workspace_not_modifiable');
+  const hash = _hashToken(creatorToken);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  // Snapshot prix actuel + nom
-  let nameSnap = null, imgSnap = null, priceSnap = null;
-  if (product_id) {
-    const p = await db.query(
-      `SELECT name, image_url, price_kmf FROM products WHERE id = $1 AND active = true`,
-      [product_id]
+    // P0 FIX : SELECT FOR UPDATE pour bloquer toute mutation simultanée (finalize, etc.)
+    const wsRes = await client.query(
+      `SELECT id, status FROM collective_workspaces WHERE creator_token_hash = $1 FOR UPDATE`,
+      [hash]
     );
-    if (!p.rows.length) throw new Error('product_not_found');
-    nameSnap  = p.rows[0].name;
-    imgSnap   = p.rows[0].image_url;
-    priceSnap = p.rows[0].price_kmf;
-  }
+    if (!wsRes.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+    const ws = wsRes.rows[0];
+    if (ws.status !== 'conception') {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_modifiable');
+    }
 
-  const { rows } = await db.query(
-    `INSERT INTO collective_workspace_items
-       (workspace_id, product_id, quantity, product_name_snapshot, product_image_snapshot, price_snapshot_kmf)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     RETURNING *`,
-    [ws.id, product_id || null, Math.max(1, parseInt(quantity, 10) || 1), nameSnap, imgSnap, priceSnap]
-  );
-  await logEvent(null, ws.id, 'item_added', 'creator', null, { product_id, quantity });
-  return rows[0];
+    // Snapshot prix actuel + nom
+    let nameSnap = null, imgSnap = null, priceSnap = null;
+    if (product_id) {
+      const p = await client.query(
+        `SELECT name, image_url, price_kmf FROM products WHERE id = $1 AND is_active = true`,
+        [product_id]
+      );
+      if (!p.rows.length) {
+        await client.query('ROLLBACK');
+        throw new Error('product_not_found');
+      }
+      nameSnap  = p.rows[0].name;
+      imgSnap   = p.rows[0].image_url;
+      priceSnap = p.rows[0].price_kmf;
+    }
+
+    const { rows } = await client.query(
+      `INSERT INTO collective_workspace_items
+         (workspace_id, product_id, quantity, product_name_snapshot, product_image_snapshot, price_snapshot_kmf)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       RETURNING *`,
+      [ws.id, product_id || null, Math.max(1, parseInt(quantity, 10) || 1), nameSnap, imgSnap, priceSnap]
+    );
+    await logEvent(client, ws.id, 'item_added', 'creator', null, { product_id, quantity });
+
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateItem(creatorToken, itemId, { quantity }) {
-  const ws = await getWorkspaceByCreatorToken(creatorToken);
-  if (!ws) throw new Error('workspace_not_found');
-  if (ws.status !== 'conception') throw new Error('workspace_not_modifiable');
+  const hash = _hashToken(creatorToken);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const { rows } = await db.query(
-    `UPDATE collective_workspace_items
-       SET quantity = $1
-     WHERE id = $2 AND workspace_id = $3
-     RETURNING *`,
-    [Math.max(1, parseInt(quantity, 10) || 1), itemId, ws.id]
-  );
-  if (!rows.length) throw new Error('item_not_found');
-  await logEvent(null, ws.id, 'item_updated', 'creator', null, { item_id: itemId, quantity });
-  return rows[0];
+    const wsRes = await client.query(
+      `SELECT id, status FROM collective_workspaces WHERE creator_token_hash = $1 FOR UPDATE`,
+      [hash]
+    );
+    if (!wsRes.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+    const ws = wsRes.rows[0];
+    if (ws.status !== 'conception') {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_modifiable');
+    }
+
+    const { rows } = await client.query(
+      `UPDATE collective_workspace_items
+         SET quantity = $1
+       WHERE id = $2 AND workspace_id = $3
+       RETURNING *`,
+      [Math.max(1, parseInt(quantity, 10) || 1), itemId, ws.id]
+    );
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('item_not_found');
+    }
+    await logEvent(client, ws.id, 'item_updated', 'creator', null, { item_id: itemId, quantity });
+
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function removeItem(creatorToken, itemId) {
-  const ws = await getWorkspaceByCreatorToken(creatorToken);
-  if (!ws) throw new Error('workspace_not_found');
-  if (ws.status !== 'conception') throw new Error('workspace_not_modifiable');
+  const hash = _hashToken(creatorToken);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const { rowCount } = await db.query(
-    `DELETE FROM collective_workspace_items WHERE id = $1 AND workspace_id = $2`,
-    [itemId, ws.id]
-  );
-  if (!rowCount) throw new Error('item_not_found');
-  await logEvent(null, ws.id, 'item_removed', 'creator', null, { item_id: itemId });
-  return { ok: true };
+    const wsRes = await client.query(
+      `SELECT id, status FROM collective_workspaces WHERE creator_token_hash = $1 FOR UPDATE`,
+      [hash]
+    );
+    if (!wsRes.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+    const ws = wsRes.rows[0];
+    if (ws.status !== 'conception') {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_modifiable');
+    }
+
+    const { rowCount } = await client.query(
+      `DELETE FROM collective_workspace_items WHERE id = $1 AND workspace_id = $2`,
+      [itemId, ws.id]
+    );
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      throw new Error('item_not_found');
+    }
+    await logEvent(client, ws.id, 'item_removed', 'creator', null, { item_id: itemId });
+
+    await client.query('COMMIT');
+    return { ok: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -267,37 +346,87 @@ async function addContribution(publicToken, { contributor_name, contributor_phon
   const amount = parseInt(intended_amount_kmf, 10);
   if (!amount || amount <= 0) throw new Error('amount_invalid');
 
-  const ws = (await getWorkspaceByPublicToken(publicToken))?.workspace;
-  if (!ws) throw new Error('workspace_not_found');
-  if (ws.status !== 'conception') throw new Error('workspace_not_open');
+  const hash = _hashToken(publicToken);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const { rows } = await db.query(
-    `INSERT INTO collective_workspace_contributions
-       (workspace_id, contributor_name, contributor_phone, contributor_email, intended_amount_kmf, status)
-     VALUES ($1,$2,$3,$4,$5,'intention')
-     RETURNING *`,
-    [ws.id, contributor_name, contributor_phone || null, contributor_email || null, amount]
-  );
-  await logEvent(null, ws.id, 'contribution_added', 'contributor', contributor_email || contributor_phone, {
-    contributor_name, intended_amount_kmf: amount,
-  });
-  return rows[0];
+    // P0 FIX : SELECT FOR UPDATE pour bloquer toute mutation simultanée (finalize, etc.)
+    const wsRes = await client.query(
+      `SELECT id, status FROM collective_workspaces WHERE public_token_hash = $1 FOR UPDATE`,
+      [hash]
+    );
+    if (!wsRes.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+    const ws = wsRes.rows[0];
+    if (ws.status !== 'conception') {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_open');
+    }
+
+    const { rows } = await client.query(
+      `INSERT INTO collective_workspace_contributions
+         (workspace_id, contributor_name, contributor_phone, contributor_email, intended_amount_kmf, status)
+       VALUES ($1,$2,$3,$4,$5,'intention')
+       RETURNING *`,
+      [ws.id, contributor_name, contributor_phone || null, contributor_email || null, amount]
+    );
+    await logEvent(client, ws.id, 'contribution_added', 'contributor', contributor_email || contributor_phone, {
+      contributor_name, intended_amount_kmf: amount,
+    });
+
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function cancelContribution(publicToken, contributionId) {
-  const ws = (await getWorkspaceByPublicToken(publicToken))?.workspace;
-  if (!ws) throw new Error('workspace_not_found');
-  if (ws.status !== 'conception') throw new Error('workspace_not_open');
+  const hash = _hashToken(publicToken);
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const { rowCount } = await db.query(
-    `UPDATE collective_workspace_contributions
-       SET status = 'cancelled'
-     WHERE id = $1 AND workspace_id = $2 AND status = 'intention'`,
-    [contributionId, ws.id]
-  );
-  if (!rowCount) throw new Error('contribution_not_found_or_already_handled');
-  await logEvent(null, ws.id, 'contribution_cancelled', 'contributor', null, { contribution_id: contributionId });
-  return { ok: true };
+    const wsRes = await client.query(
+      `SELECT id, status FROM collective_workspaces WHERE public_token_hash = $1 FOR UPDATE`,
+      [hash]
+    );
+    if (!wsRes.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+    const ws = wsRes.rows[0];
+    if (ws.status !== 'conception') {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_open');
+    }
+
+    const { rowCount } = await client.query(
+      `UPDATE collective_workspace_contributions
+         SET status = 'cancelled'
+       WHERE id = $1 AND workspace_id = $2 AND status = 'intention'`,
+      [contributionId, ws.id]
+    );
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      throw new Error('contribution_not_found_or_already_handled');
+    }
+    await logEvent(client, ws.id, 'contribution_cancelled', 'contributor', null, { contribution_id: contributionId });
+
+    await client.query('COMMIT');
+    return { ok: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -314,7 +443,7 @@ async function finalizationReview(creatorToken) {
   if (ws.status !== 'conception') throw new Error('workspace_not_in_conception');
 
   const items = (await db.query(
-    `SELECT i.*, p.name as current_name, p.price_kmf as current_price_kmf, p.active as product_active
+    `SELECT i.*, p.name as current_name, p.price_kmf as current_price_kmf, p.is_active as product_active
      FROM collective_workspace_items i
      LEFT JOIN products p ON p.id = i.product_id
      WHERE i.workspace_id = $1`,
@@ -386,7 +515,7 @@ async function finalizeWorkspace(creatorToken, { duration_hours = 72, idempotenc
     Math.min(CONFIG.SESSION_DURATION_MS, duration_hours * 60 * 60 * 1000)
   );
 
-  const client = await db.connect();
+  const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 
@@ -425,7 +554,7 @@ async function finalizeWorkspace(creatorToken, { duration_hours = 72, idempotenc
     // Recalcul serveur
     const items = (await client.query(
       `SELECT i.*, p.price_kmf as current_price_kmf, p.name as current_name,
-              p.image_url as current_image, p.active as product_active
+              p.image_url as current_image, p.is_active as product_active
        FROM collective_workspace_items i
        LEFT JOIN products p ON p.id = i.product_id
        WHERE i.workspace_id = $1
@@ -598,7 +727,7 @@ async function finalizeWorkspace(creatorToken, { duration_hours = 72, idempotenc
 
 async function resumeWorkspace(creatorToken) {
   const hash = _hashToken(creatorToken);
-  const client = await db.connect();
+  const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
 

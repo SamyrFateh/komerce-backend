@@ -332,30 +332,162 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
 // ── POST /api/scans/collect ───────────────────────────────────────────────────
 // Retrait par le destinataire : l'agent relais saisit le code à 6 chiffres.
 // Body : { pickup_code }
-// [P3-1] await safeSyncScanToParcels — source de vérité
+//
+// PATCH P0 (sprint 2) — anti-fraude relais :
+//   - Cross-relais check : agent_relais ne peut valider qu'au relais où il est affecté
+//   - Si users.relais_id absent et role=agent_relais → REFUS (admin only)
+//   - Journalisation explicite des échecs (alerts) pour détecter brute-force
+//   - SELECT FOR UPDATE pour éviter double-validation simultanée
 router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), validate(scans.collect), async (req, res, next) => {
   // F27: transaction for atomic scan + parcelSync
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
     const { pickup_code } = req.body;
-    if (!pickup_code) return res.status(400).json({ error: 'pickup_code requis' });
+    if (!pickup_code) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'pickup_code requis' });
+    }
 
-    // Retrouver la commande par pickup_code
+    // Retrouver la commande par pickup_code (FOR UPDATE pour éviter race)
     const { rows } = await client.query(
       `SELECT o.*, r.name AS relais_name, rc.full_name AS recipient_name
        FROM orders o
        LEFT JOIN relais     r  ON r.id  = o.relais_id
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
-       WHERE o.pickup_code = $1 AND o.status = 'available'`,
+       WHERE o.pickup_code = $1 AND o.status = 'available'
+       FOR UPDATE OF o`,
       [pickup_code]
     );
 
     if (!rows.length) {
+      await client.query('ROLLBACK');
+      // Journalisation échec — utile pour détecter brute-force
+      // (on ne peut pas savoir quelle order était ciblée ; on log juste l'IP et l'agent)
+      try {
+        await db.query(
+          `INSERT INTO alerts (level, source, message, payload)
+           VALUES ('low', 'scan_collect', $1, $2)
+           ON CONFLICT DO NOTHING`,
+          [
+            'pickup_code invalide',
+            JSON.stringify({
+              user_id: req.user?.id,
+              user_role: req.user?.role,
+              ip: req.ip,
+              ua: req.get('user-agent'),
+              code_attempted_prefix: String(pickup_code).slice(0, 2) + '****',
+            }),
+          ]
+        );
+      } catch (_) { /* non-bloquant */ }
       return res.status(404).json({ error: 'Code invalide ou commande déjà retirée' });
     }
 
     const order = rows[0];
+
+    // ── ANTI-BRUTE-FORCE PAR COMMANDE (P0 sprint 2) ──────────────────────
+    // Si la commande est en blocage temporaire, refus immédiat (429).
+    // Le blocage est posé après 5 échecs cross-relais ou autres.
+    if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > new Date()) {
+      await client.query('ROLLBACK');
+      console.warn(`[SCAN-COLLECT] Order ${order.reference} blocked until ${order.pickup_secret_blocked_until}`);
+      return res.status(429).json({
+        error: 'Trop de tentatives sur cette commande, réessayez plus tard',
+        blocked_until: order.pickup_secret_blocked_until,
+      });
+    }
+
+    // ── CROSS-RELAIS CHECK (anti-fraude) ──────────────────────────────────
+    // agent_relais ne peut valider qu'au relais où il est affecté.
+    // admin = exempté (peut valider partout).
+    if (req.user.role === 'agent_relais') {
+      let agentRelaisId = null;
+      let checkPossible = true;
+      try {
+        const { rows: [agent] } = await client.query(
+          'SELECT relais_id FROM users WHERE id = $1',
+          [req.user.id]
+        );
+        agentRelaisId = agent?.relais_id || null;
+      } catch (e) {
+        // Colonne users.relais_id absente
+        checkPossible = false;
+        console.warn(`[SCAN-COLLECT] users.relais_id query failed: ${e.message}`);
+      }
+
+      if (!checkPossible || !agentRelaisId) {
+        // P0 FIX : agent_relais sans relais_id assigné → REFUS strict
+        // (avant : laissait passer silencieusement = trou de sécurité)
+        await client.query('ROLLBACK');
+        try {
+          await db.query(
+            `INSERT INTO alerts (level, source, message, payload)
+             VALUES ('elevated', 'scan_collect', $1, $2)`,
+            [
+              `agent_relais sans relais_id tente collect: user=${req.user.id}`,
+              JSON.stringify({
+                order_reference: order.reference,
+                user_id: req.user.id,
+                check_possible: checkPossible,
+              }),
+            ]
+          );
+        } catch (_) { /* non-bloquant */ }
+        return res.status(403).json({
+          error: 'Configuration agent incomplète — contactez un admin',
+        });
+      }
+
+      if (String(agentRelaisId) !== String(order.relais_id)) {
+        // P0 FIX : incrémenter pickup_secret_attempts sur cette commande.
+        // Si l'attaquant a deviné le pickup_code mais essaie depuis un mauvais relais,
+        // on bloque la commande après 5 tentatives (15 min).
+        // L'incrémentation se fait HORS transaction principale (qui est rollback).
+        const attempts = (order.pickup_secret_attempts || 0) + 1;
+        const blockUntil = attempts >= 5
+          ? new Date(Date.now() + 15 * 60 * 1000)
+          : null;
+
+        await client.query('ROLLBACK');
+        // UPDATE compteur dans une nouvelle requête (hors transaction rollback)
+        try {
+          await db.query(
+            `UPDATE orders
+               SET pickup_secret_attempts = $1,
+                   pickup_secret_blocked_until = $2
+             WHERE id = $3`,
+            [attempts, blockUntil, order.id]
+          );
+        } catch (e) {
+          console.warn('[SCAN-COLLECT] update attempts failed:', e.message);
+        }
+
+        console.warn(`[SCAN-COLLECT] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agentRelaisId}) tentait order ${order.reference} (relais ${order.relais_id}) — attempts=${attempts}/5`);
+        try {
+          await db.query(
+            `INSERT INTO alerts (level, source, message, payload)
+             VALUES ('elevated', 'scan_collect', $1, $2)`,
+            [
+              `Cross-relais refusé: ${order.reference}`,
+              JSON.stringify({
+                user_id: req.user.id,
+                agent_relais_id: agentRelaisId,
+                order_relais_id: order.relais_id,
+                order_reference: order.reference,
+                attempts,
+                blocked_until: blockUntil,
+              }),
+            ]
+          );
+        } catch (_) { /* non-bloquant */ }
+        return res.status(403).json({
+          error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
+          attempts,
+          blocked_until: blockUntil,
+        });
+      }
+    }
 
     // [B9] scans (pas scan_logs) | [B10] created_at auto | [B11] scan_code NOT NULL
     const { rows: [scanRow] } = await client.query(
@@ -388,6 +520,19 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
         dbClient: client,
       });
     }
+
+    // P0 FIX : Reset compteur d'échecs au succès (defense en profondeur)
+    // Si la commande avait des tentatives échouées avant un retrait légitime,
+    // on remet à zéro pour ne pas bloquer la commande à un futur retrait
+    // (cas extrême : retrait → annulation → re-livraison ; rare mais possible)
+    await client.query(
+      `UPDATE orders
+         SET pickup_secret_attempts = 0,
+             pickup_secret_blocked_until = NULL
+       WHERE id = $1
+         AND (pickup_secret_attempts > 0 OR pickup_secret_blocked_until IS NOT NULL)`,
+      [order.id]
+    );
 
     await client.query('COMMIT');
 

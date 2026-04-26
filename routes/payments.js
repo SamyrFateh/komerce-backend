@@ -84,6 +84,15 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
 // Stripe appelle cette route automatiquement quand un paiement est confirmé.
 // Vérifie la signature Stripe pour éviter les faux événements.
 // Ce endpoint reçoit le body brut (raw) — configuré dans server.js
+//
+// PATCH P0 (sprint 1) — durcissement :
+//   1. Idempotence forte via stripe_events_processed (event.id) en TÊTE
+//   2. Ignorer proprement les PaymentIntents sans metadata order_id
+//   3. Si transition noop -> commit + return immédiat (pas de side-effects)
+//   4. Stock guarded : SELECT FOR UPDATE + check stock>=quantity
+//   5. Si stock insuffisant -> alerte 'paid_but_stock_blocked' + pas de purchasing
+//   6. payment_failed limité à payment_status='pending'
+//   7. triggerPurchasing seulement si tout est nominal + alerte si erreur
 router.post('/stripe/webhook',
   express.raw({ type: 'application/json' }),
   async (req, res, next) => {
@@ -101,18 +110,57 @@ router.post('/stripe/webhook',
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    // ── 0. IDEMPOTENCE FORTE — DÈS L'ENTRÉE ────────────────────────────────
+    // Si event.id déjà traité, on ne refait RIEN (pas de stock, pas de SMS,
+    // pas de purchasing). On répond 200 pour que Stripe arrête de retry.
+    try {
+      const seen = await db.query(
+        'SELECT 1 FROM stripe_events_processed WHERE stripe_event_id = $1',
+        [event.id]
+      );
+      if (seen.rows.length) {
+        return res.json({ received: true, idempotent: true });
+      }
+    } catch (e) {
+      // Si la table n'existe pas (migration 048 pas passée), on log mais on continue
+      // pour ne pas bloquer le webhook. L'idempotence dégradera sur payment_status.
+      console.warn('[STRIPE-WEBHOOK] stripe_events_processed unavailable:', e.message);
+    }
+
+    // Variables d'état partagées entre les events
+    let processedOk = false;          // true si traitement nominal complet
+    let triggerPurchasingFor = null;  // order_id seulement si tout est nickel
+    let smsContext = null;            // {order, order_reference}
+    let stockBlocked = false;         // true si stock insuffisant détecté
+
     // Paiement confirmé
     if (event.type === 'payment_intent.succeeded') {
       const intent = event.data.object;
-      const { order_id, order_reference } = intent.metadata;
+      const orderId = intent.metadata?.order_id;
+      const orderReference = intent.metadata?.order_reference;
 
-      // Idempotence check — skip if already processed
+      // ── 1. Ignorer proprement les PI sans metadata order_id ──────────────
+      if (!orderId) {
+        console.warn('[STRIPE-WEBHOOK] PI sans order_id metadata, ignored:', intent.id);
+        await _markEventProcessed(event, { ignored: 'no_metadata' });
+        return res.json({ received: true, ignored: true });
+      }
+
+      // ── Garde additionnelle (defense in depth, dégradée) ─────────────────
+      // Si la commande est déjà 'paid', l'idempotence event.id a échoué (table absente?).
+      // On évite quand même le double traitement.
       const { rows: [existing] } = await db.query(
-        'SELECT payment_status FROM orders WHERE id = $1', [order_id]
+        'SELECT payment_status FROM orders WHERE id = $1', [orderId]
       );
-      if (existing?.payment_status === 'paid') {
-        console.log('Webhook already processed, skipping:', order_id);
-        return res.json({ received: true });
+      if (!existing) {
+        console.warn('[STRIPE-WEBHOOK] order_id not found:', orderId);
+        await _markEventProcessed(event, { ignored: 'order_not_found', order_id: orderId });
+        return res.json({ received: true, ignored: true });
+      }
+      if (existing.payment_status === 'paid') {
+        console.log('[STRIPE-WEBHOOK] order already paid, skipping:', orderId);
+        await _markEventProcessed(event, { ignored: 'already_paid', order_id: orderId });
+        return res.json({ received: true, idempotent: true });
       }
 
       const client = await db.pool.connect();
@@ -120,25 +168,30 @@ router.post('/stripe/webhook',
         await client.query('BEGIN');
 
         // Step 1: pending → confirmed (payment received)
-        // State machine auto-sets payment_status = 'paid'
         const confirmResult = await transitionOrderStatus({
-          orderId:  order_id,
+          orderId,
           newStatus: 'confirmed',
           actor:    { id: null, role: 'system' },
           source:   'stripe_webhook',
           note:     'Paiement Stripe reçu',
           dbClient: client,
         });
-        if (!confirmResult.success && !confirmResult.noop) {
+        // ── Si noop : transition déjà faite (idempotent), on COMMIT et return ──
+        if (confirmResult.noop) {
+          await client.query('COMMIT');
+          await _markEventProcessed(event, { noop: 'confirm', order_id: orderId });
+          return res.json({ received: true, idempotent: true });
+        }
+        if (!confirmResult.success) {
           console.error('[STRIPE] Machine rejected confirm:', confirmResult.error);
           await client.query('ROLLBACK');
-          client.release();
-          return res.json({ received: true });
+          await _markEventProcessed(event, { rejected: 'confirm', error: confirmResult.error, order_id: orderId });
+          return res.json({ received: true, rejected: true });
         }
 
-        // Step 2: confirmed → ordered (auto-launch purchasing)
+        // Step 2: confirmed → ordered
         const orderResult = await transitionOrderStatus({
-          orderId:  order_id,
+          orderId,
           newStatus: 'ordered',
           actor:    { id: null, role: 'system' },
           source:   'system',
@@ -147,35 +200,85 @@ router.post('/stripe/webhook',
         });
         if (!orderResult.success && !orderResult.noop) {
           console.warn('[STRIPE] Machine rejected ordered (non-fatal):', orderResult.error);
-          // Order stays confirmed — hub can manually advance
         }
 
-        // F21 fix: Stock decrement — Stripe orders never decremented before!
+        // ── 4. STOCK GUARDED — pas de stock négatif possible ─────────────
         const { rows: stripeItems } = await client.query(
-          `SELECT oi.product_id, oi.quantity FROM order_items oi
+          `SELECT oi.product_id, oi.quantity, p.stock, p.name
+           FROM order_items oi
            JOIN products p ON p.id = oi.product_id
            WHERE oi.order_id = $1 AND p.stock IS NOT NULL
            FOR UPDATE OF p`,
-          [order_id]
+          [orderId]
         );
+
+        const insufficientItems = [];
         for (const si of stripeItems) {
-          await client.query(
-            'UPDATE products SET stock = stock - $1 WHERE id = $2',
-            [si.quantity, si.product_id]
-          );
+          if (si.stock < si.quantity) {
+            // Stock épuisé entre commande et paiement
+            insufficientItems.push({
+              product_id: si.product_id,
+              product_name: si.name,
+              available: si.stock,
+              needed: si.quantity,
+            });
+          }
         }
 
-        // ── Western Union : émission du code secret de retrait ───────────────
-        // Le code est généré dans la même transaction que la confirmation paiement.
-        // Il sera affiché à l'écran payeur UNE SEULE FOIS via l'écran de succès
-        // (le frontend polle /api/orders/v2/:ref?include_secret=stripe_once).
-        // Les métadonnées Stripe (nom CB, last4, email) permettent la procédure
-        // de perte différenciée plus tard.
+        if (insufficientItems.length > 0) {
+          // ── 5. Stock insuffisant après paiement Stripe ─────────────────
+          // Le paiement a été encaissé, on ne peut pas rollback la transition.
+          // On marque la commande pour traitement manuel + alerte.
+          stockBlocked = true;
+
+          // Annoter la commande pour traçabilité
+          const incidentNote = '\n[INCIDENT paid_but_stock_blocked] ' +
+            insufficientItems.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
+          await client.query(
+            `UPDATE orders
+               SET notes = COALESCE(notes,'') || $1
+             WHERE id = $2`,
+            [incidentNote, orderId]
+          );
+
+          // Alerte exploitable côté admin
+          try {
+            await client.query(
+              `INSERT INTO alerts (level, source, message, payload)
+               VALUES ('critical', 'stripe_webhook', $1, $2)`,
+              [
+                `paid_but_stock_blocked — ${orderReference}`,
+                JSON.stringify({
+                  order_id: orderId,
+                  order_reference: orderReference,
+                  insufficient_items: insufficientItems,
+                  stripe_event_id: event.id,
+                  stripe_payment_intent_id: intent.id,
+                }),
+              ]
+            );
+          } catch (alertErr) {
+            // Ne PAS masquer l'incident : log explicite si alerts insère échoue
+            console.error('[STRIPE-WEBHOOK] ⛔ FAILED TO INSERT ALERT for', orderReference, alertErr.message);
+          }
+
+          console.error(`[STRIPE-WEBHOOK] ⛔ paid_but_stock_blocked: ${orderReference} — ${insufficientItems.length} produit(s) en rupture`);
+          // Pas de décrément stock (on n'a pas le stock), pas de purchasing
+        } else {
+          // Stock OK partout → décrémenter
+          for (const si of stripeItems) {
+            await client.query(
+              'UPDATE products SET stock = stock - $1 WHERE id = $2',
+              [si.quantity, si.product_id]
+            );
+          }
+        }
+
+        // ── Western Union : émission du code secret de retrait (inchangé) ─
         const { rows: [orderRow] } = await client.query(
-          'SELECT relais_id FROM orders WHERE id = $1', [order_id]
+          'SELECT relais_id FROM orders WHERE id = $1', [orderId]
         );
 
-        // Extraire les métadonnées Stripe utiles pour la procédure de perte
         let stripeBillingName = null;
         let stripeCardLast4   = null;
         let stripeEmail       = intent.receipt_email || null;
@@ -190,7 +293,7 @@ router.post('/stripe/webhook',
 
         try {
           const genResult = await generateAndStoreSecret({
-            orderId:   order_id,
+            orderId,
             relaisId:  orderRow?.relais_id || null,
             channel:   'stripe',
             dbClient:  client,
@@ -200,16 +303,27 @@ router.post('/stripe/webhook',
               stripe_receipt_email: stripeEmail,
             },
           });
-          // Placer le code clair en cache mémoire pour révélation one-shot
-          // via GET /api/pickup/reveal-once/:orderId (TTL 30 min)
-          cacheCodeForReveal(order_id, genResult.code);
+          cacheCodeForReveal(orderId, genResult.code);
         } catch(genErr) {
-          // Non-bloquant : si la génération échoue, on ne bloque pas le paiement
-          // (la procédure de perte permettra de régénérer plus tard)
           console.error('[STRIPE-WEBHOOK] ⚠ génération code échouée :', genErr.message);
         }
 
+        // Marquer event traité DANS la même transaction
+        await client.query(
+          `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (stripe_event_id) DO NOTHING`,
+          [event.id, event.type, JSON.stringify({
+            order_id: orderId,
+            order_reference: orderReference,
+            stock_blocked: stockBlocked,
+          })]
+        );
+
         await client.query('COMMIT');
+        processedOk = !stockBlocked;
+        smsContext = { order_id: orderId, order_reference: orderReference };
+        if (processedOk) triggerPurchasingFor = orderId;
       } catch (err) {
         await client.query('ROLLBACK');
         throw err;
@@ -217,56 +331,112 @@ router.post('/stripe/webhook',
         client.release();
       }
 
-      // SMS confirmation — non bloquant
-      const { rows: [order] } = await db.query(
-        `SELECT o.*, u.phone AS user_phone
-         FROM orders o LEFT JOIN users u ON u.id = o.user_id
-         WHERE o.id = $1`,
-        [order_id]
-      );
-      if (order?.user_phone) {
-        sendSMS(
-          order.user_phone,
-          `Komerce · Paiement reçu pour la commande ${order_reference}. Votre commande est lancée — achat en cours à Dubai.`,
-          'ordered', order_id
-        ).catch(err => console.error('SMS webhook error:', err.message));
+      // ── SMS confirmation — non bloquant ─────────────────────────────────
+      if (smsContext) {
+        const { rows: [order] } = await db.query(
+          `SELECT o.*, u.phone AS user_phone
+           FROM orders o LEFT JOIN users u ON u.id = o.user_id
+           WHERE o.id = $1`,
+          [smsContext.order_id]
+        );
+        if (order?.user_phone && !stockBlocked) {
+          sendSMS(
+            order.user_phone,
+            `Komerce · Paiement reçu pour la commande ${smsContext.order_reference}. Votre commande est lancée — achat en cours à Dubai.`,
+            'ordered', smsContext.order_id
+          ).catch(err => console.error('SMS webhook error:', err.message));
+        } else if (order?.user_phone && stockBlocked) {
+          // Notif différente : paiement reçu mais traitement spécial
+          sendSMS(
+            order.user_phone,
+            `Komerce · Paiement reçu pour ${smsContext.order_reference}. Notre équipe vous contacte sous 24h pour finaliser.`,
+            'paid_pending_review', smsContext.order_id
+          ).catch(err => console.error('SMS webhook error:', err.message));
+        }
+        console.log(`✅ Paiement Stripe confirmé : ${smsContext.order_reference}${stockBlocked ? ' (STOCK BLOCKED)' : ''}`);
+
+        // ── Notifications complètes (WhatsApp + Email + Facture) — uniquement si nominal ──
+        if (processedOk) {
+          try {
+            const notifSvc = require('../services/notification-service');
+            notifSvc.notifyPaymentConfirmed(smsContext.order_id, smsContext.order_reference)
+              .then(result => {
+                if (result?.invoice) {
+                  console.log(`🧾 [STRIPE] Invoice ${result.invoice} sent for ${smsContext.order_reference}`);
+                }
+              })
+              .catch(e => console.error('[STRIPE-NOTIF] ❌', e.message));
+          } catch(e) { console.error('[STRIPE-NOTIF] require error:', e.message); }
+        }
       }
 
-      console.log(`✅ Paiement Stripe confirmé : ${order_reference}`);
-
-      // ── NOTIFICATIONS COMPLÈTES — WhatsApp + Email + Facture (fire-and-forget) ──
-      try {
-        const notifSvc = require('../services/notification-service');
-        notifSvc.notifyPaymentConfirmed(order_id, order_reference)
-          .then(result => {
-            if (result?.invoice) {
-              console.log(`🧾 [STRIPE] Invoice ${result.invoice} sent for ${order_reference}`);
+      // ── Sourcing — uniquement si tout est nickel (pas de stock_blocked, pas de noop) ──
+      if (triggerPurchasingFor) {
+        triggerPurchasing(triggerPurchasingFor)
+          .then(r => console.log('[PURCHASING] Stripe trigger OK:', smsContext?.order_reference, r))
+          .catch(async (e) => {
+            console.error('[PURCHASING] Stripe trigger error:', smsContext?.order_reference, e.message);
+            // Trace exploitable DB pour traitement manuel admin
+            try {
+              await db.query(
+                `INSERT INTO alerts (level, source, message, payload)
+                 VALUES ('elevated', 'purchasing', $1, $2)`,
+                [
+                  `triggerPurchasing failed: ${smsContext?.order_reference}`,
+                  JSON.stringify({ order_id: triggerPurchasingFor, error: e.message, stripe_event_id: event.id }),
+                ]
+              );
+            } catch (alertErr) {
+              console.error('[PURCHASING] alert insert failed:', alertErr.message);
             }
-          })
-          .catch(e => console.error('[STRIPE-NOTIF] ❌', e.message));
-      } catch(e) { console.error('[STRIPE-NOTIF] require error:', e.message); }
-
-      // ── Sourcing semi-automatisé — déclenché après paiement Stripe ──────────
-      triggerPurchasing(order_id)
-        .then(r => console.log('[PURCHASING] Stripe trigger OK:', order_reference, r))
-        .catch(e => console.error('[PURCHASING] Stripe trigger error:', order_reference, e.message));
+          });
+      }
     }
 
-    // Paiement échoué
+    // ── Paiement échoué ──────────────────────────────────────────────────
     if (event.type === 'payment_intent.payment_failed') {
       const intent = event.data.object;
-      const { order_id } = intent.metadata;
+      const orderId = intent.metadata?.order_id;
 
-      await db.query(
-        `UPDATE orders SET payment_status = 'failed' WHERE id = $1`,
-        [order_id]
+      if (!orderId) {
+        console.warn('[STRIPE-WEBHOOK] payment_failed sans order_id, ignored:', intent.id);
+        await _markEventProcessed(event, { ignored: 'no_metadata_failed' });
+        return res.json({ received: true, ignored: true });
+      }
+
+      // ── Guard : ne JAMAIS écraser un paid avec un failed ─────────────
+      // Update conditionnel : ne touche que si payment_status est encore pending.
+      const upd = await db.query(
+        `UPDATE orders SET payment_status = 'failed'
+         WHERE id = $1 AND payment_status = 'pending'`,
+        [orderId]
       );
-      console.log(`❌ Paiement Stripe échoué : ${intent.metadata.order_reference}`);
+      if (upd.rowCount === 0) {
+        console.warn(`[STRIPE-WEBHOOK] payment_failed ignored (already paid or unknown): ${intent.metadata?.order_reference}`);
+      } else {
+        console.log(`❌ Paiement Stripe échoué : ${intent.metadata?.order_reference}`);
+      }
+
+      await _markEventProcessed(event, { event: 'failed', order_id: orderId, applied: upd.rowCount > 0 });
     }
 
     res.json({ received: true });
   }
 );
+
+// Helper : marque un event Stripe traité (idempotence). Erreur loggée mais non bloquante.
+async function _markEventProcessed(event, payloadSummary) {
+  try {
+    await db.query(
+      `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (stripe_event_id) DO NOTHING`,
+      [event.id, event.type, JSON.stringify(payloadSummary || {})]
+    );
+  } catch (e) {
+    console.warn('[STRIPE-WEBHOOK] _markEventProcessed failed:', e.message);
+  }
+}
 
 // ── POST /api/payments/cash/confirm ──────────────────────────────────────────
 // L'agent relais confirme la réception des espèces.
@@ -295,33 +465,70 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     const order = rows[0];
 
-    // [P1-5] Check cross-relais défensif.
+    // ── CROSS-RELAIS CHECK (P0 sprint 2) — STRICT ────────────────────────
     // Un agent_relais ne peut valider que les paiements de SON relais.
     // Admin = exempté (peut valider n'importe quelle commande).
-    // Si users.relais_id n'existe pas en DB (BUG-016), on log un warning mais on laisse passer
-    // — à durcir quand la colonne sera ajoutée.
+    //
+    // P0 FIX : si users.relais_id absent ou check impossible → REFUS strict
+    // pour agent_relais. Avant : laissait passer silencieusement = trou de sécurité.
+    // Seul admin peut contourner.
     if (req.user.role === 'agent_relais') {
+      let agentRelaisId = null;
+      let checkPossible = true;
       try {
         const { rows: [agent] } = await client.query(
           'SELECT relais_id FROM users WHERE id = $1',
           [req.user.id]
         );
-        if (agent && agent.relais_id) {
-          if (String(agent.relais_id) !== String(order.relais_id)) {
-            await client.query('ROLLBACK');
-            console.warn(`[CASH-CONFIRM] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agent.relais_id}) a tenté de valider commande ${order.reference} (relais ${order.relais_id})`);
-            return res.status(403).json({
-              error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
-            });
-          }
-        } else {
-          // Colonne users.relais_id absente ou user sans relais_id → on log mais on laisse passer
-          console.warn(`[CASH-CONFIRM] ⚠️  Agent ${req.user.id} sans relais_id — check cross-relais désactivé (colonne absente ou user non configuré)`);
-        }
+        agentRelaisId = agent?.relais_id || null;
       } catch (e) {
-        // Si la colonne users.relais_id n'existe pas, la query throw "column does not exist"
-        // On log et on continue (comportement actuel) — à activer en strict quand la colonne existera.
-        console.warn(`[CASH-CONFIRM] ⚠️  Check cross-relais impossible : ${e.message}`);
+        checkPossible = false;
+        console.warn(`[CASH-CONFIRM] users.relais_id query failed: ${e.message}`);
+      }
+
+      if (!checkPossible || !agentRelaisId) {
+        // P0 FIX : refus strict (avant : laissait passer)
+        await client.query('ROLLBACK');
+        try {
+          await db.query(
+            `INSERT INTO alerts (level, source, message, payload)
+             VALUES ('elevated', 'cash_confirm', $1, $2)`,
+            [
+              `agent_relais sans relais_id tente cash_confirm: user=${req.user.id}`,
+              JSON.stringify({
+                order_reference: order.reference,
+                user_id: req.user.id,
+                check_possible: checkPossible,
+              }),
+            ]
+          );
+        } catch (_) { /* non-bloquant */ }
+        return res.status(403).json({
+          error: 'Configuration agent incomplète — contactez un admin',
+        });
+      }
+
+      if (String(agentRelaisId) !== String(order.relais_id)) {
+        await client.query('ROLLBACK');
+        console.warn(`[CASH-CONFIRM] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agentRelaisId}) tentait commande ${order.reference} (relais ${order.relais_id})`);
+        try {
+          await db.query(
+            `INSERT INTO alerts (level, source, message, payload)
+             VALUES ('elevated', 'cash_confirm', $1, $2)`,
+            [
+              `Cross-relais refusé: ${order.reference}`,
+              JSON.stringify({
+                user_id: req.user.id,
+                agent_relais_id: agentRelaisId,
+                order_relais_id: order.relais_id,
+                order_reference: order.reference,
+              }),
+            ]
+          );
+        } catch (_) { /* non-bloquant */ }
+        return res.status(403).json({
+          error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
+        });
       }
     }
 
@@ -340,8 +547,12 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
       return res.status(409).json({ error: confirmResult.error });
     }
 
-    // cash_paid_at — not managed by machine
-    await client.query('UPDATE orders SET cash_paid_at = NOW() WHERE id = $1', [order.id]);
+    // cash_paid_at — P0 FIX : COALESCE pour ne jamais réécrire un timestamp existant
+    // (cohérent avec la doctrine "timestamps set ONCE" de la state machine)
+    await client.query(
+      'UPDATE orders SET cash_paid_at = COALESCE(cash_paid_at, NOW()) WHERE id = $1',
+      [order.id]
+    );
 
     // Step 2: confirmed → ordered (auto-launch purchasing)
     const orderResult = await transitionOrderStatus({
