@@ -767,7 +767,7 @@ async function computeProductCostVariance(productId, options = {}) {
  *   - estime (depuis order_item_cost_imputations)
  *   - reel (depuis order_item_real_cost_allocations, par cost_type)
  *   - variance
- *   - cost_status : 'provisional' | 'partial_real' | 'complete'
+ *   - cost_status : 'estimated' | 'partial_real' | 'actual' | 'incomplete'
  *   - missing_cost_fields : liste des cost_types manquants
  *
  * REGLE : on ne met JAMAIS 0 pour un cout manquant. On le declare 'missing'
@@ -818,6 +818,11 @@ async function getOrderCostTruth(orderId) {
   }
 
   // 4. Determiner cost_status + missing_cost_fields
+  // ENUM CANONIQUE (Sprint 1) :
+  //   estimated      = snapshot pricing-engine seul, aucun cout reel alloue
+  //   partial_real   = couts variables alloues mais pas tous les types attendus
+  //   actual         = tous les types attendus alloues (= ex-'complete')
+  //   incomplete     = imputation absente / cas pathologique
   const expectedVariable = ['product_purchase', 'freight', 'customs', 'local_distribution', 'relay'];
   const expectedFixed = ['hub', 'risk_provision', 'fixed_overhead'];
   const expectedAll = [...expectedVariable, ...expectedFixed, 'payment'];
@@ -831,20 +836,20 @@ async function getOrderCostTruth(orderId) {
 
   let costStatus;
   if (Number(est.imputations_count) === 0) {
-    costStatus = 'no_imputations';
+    costStatus = 'incomplete';            // ex 'no_imputations'
   } else if (totalRealKmf === 0) {
-    costStatus = 'provisional';
+    costStatus = 'estimated';             // ex 'provisional'
   } else if (missingVariable.length > 0) {
     costStatus = 'partial_real';
-  } else if (missingFixed.length > 0) {
+  } else if (missingFixed.length > 0 || missingPayment.length > 0) {
     costStatus = 'partial_real';
   } else {
-    costStatus = 'complete';
+    costStatus = 'actual';                // ex 'complete'
   }
 
-  // 5. Marge reelle UNIQUEMENT si complete
+  // 5. Marge reelle UNIQUEMENT si actual
   const sale = Number(est.sale_total) || Number(order.total_kmf) || 0;
-  const realMarginKmf = costStatus === 'complete' ? (sale - totalRealKmf) : null;
+  const realMarginKmf = costStatus === 'actual' ? (sale - totalRealKmf) : null;
   const realMarginPct = (realMarginKmf != null && sale > 0)
     ? Number(((realMarginKmf / sale) * 100).toFixed(2))
     : null;

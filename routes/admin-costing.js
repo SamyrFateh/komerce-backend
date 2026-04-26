@@ -20,7 +20,7 @@
  * Doctrine "verite economique" :
  *   - cost_status indique TOUJOURS la qualite des donnees
  *   - missing_cost_fields liste les couts non encore alloues
- *   - real.margin_kmf est NULL tant que cost_status != 'complete'
+ *   - real.margin_kmf est NULL tant que cost_status != 'actual'
  *   - on n'affiche JAMAIS un 0 pour un cout manquant
  */
 
@@ -29,6 +29,7 @@
 const express = require('express');
 const db = require('../db');
 const costAllocation = require('../services/cost-allocation');
+const dashboardCache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -98,8 +99,8 @@ router.get('/orders', authenticate, requireAdmin, async (req, res, next) => {
 
       // Pour cost_status precis on appelle getOrderCostTruth uniquement si reel present
       let costStatus = !hasImputations
-        ? 'no_imputations'
-        : (hasReal ? 'partial_real' : 'provisional');
+        ? 'incomplete'
+        : (hasReal ? 'partial_real' : 'estimated');
       let missingFields = !hasImputations
         ? ['cost_imputations']
         : (hasReal ? ['fixed_overhead', 'payment'] : ['real_costs']);
@@ -332,7 +333,7 @@ router.get('/products', authenticate, requireAdmin, async (req, res, next) => {
             total_kmf: _round(real - estB),
             total_pct: Number((((real - estB) / estB) * 100).toFixed(2)),
           } : null,
-          cost_status: real > 0 ? 'partial_real' : 'provisional',
+          cost_status: real > 0 ? 'partial_real' : 'estimated',
         };
       }),
       doctrine_phase: 'D-full',
@@ -435,6 +436,7 @@ router.get('/relais', authenticate, requireAdmin, async (req, res, next) => {
 router.post('/shipments/:id/allocate', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const result = await costAllocation.allocateShipmentRealCosts(req.params.id);
+    dashboardCache.invalidateAllDashboards();   // ← Sprint 1 : auto-invalidation
     res.json({ ok: true, ...result });
   } catch (err) {
     console.error('[admin-costing] POST /shipments/:id/allocate error:', err);
@@ -448,6 +450,7 @@ router.post('/shipments/:id/allocate', authenticate, requireAdmin, async (req, r
 router.post('/parcels/:id/allocate', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const result = await costAllocation.allocateParcelRealCosts(req.params.id);
+    dashboardCache.invalidateAllDashboards();
     res.json({ ok: true, ...result });
   } catch (err) {
     console.error('[admin-costing] POST /parcels/:id/allocate error:', err);
@@ -461,6 +464,7 @@ router.post('/parcels/:id/allocate', authenticate, requireAdmin, async (req, res
 router.post('/orders/:id/lock-purchase', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const result = await costAllocation.allocateProductPurchaseCosts(req.params.id);
+    dashboardCache.invalidateAllDashboards();
     res.json({ ok: true, ...result });
   } catch (err) {
     console.error('[admin-costing] POST /orders/:id/lock-purchase error:', err);
@@ -476,6 +480,7 @@ router.post('/monthly-fixed/:yearMonth', authenticate, requireAdmin, async (req,
   try {
     const dryRun = !!(req.body && req.body.dryRun);
     const result = await costAllocation.allocateMonthlyFixedCosts(req.params.yearMonth, { dryRun });
+    if (!dryRun) dashboardCache.invalidateAllDashboards();   // dryRun ne change rien
     res.json({ ok: true, ...result });
   } catch (err) {
     console.error('[admin-costing] POST /monthly-fixed error:', err);
@@ -623,6 +628,7 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
       allocation_confidence, allocation_calibrated_at, allocation_notes
       FROM finance_config LIMIT 1`);
 
+    dashboardCache.invalidateAllDashboards();
     res.json({ ok: true, applied: r.rows[0] });
   } catch (err) {
     console.error('[admin-costing] POST /recalibration-apply error:', err);
