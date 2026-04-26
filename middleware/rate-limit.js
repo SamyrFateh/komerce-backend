@@ -120,13 +120,18 @@ const dashboardLimiter = createLimiter({
   message: { error: 'Trop de requêtes dashboard, réessayez dans 1 minute' },
 }, 'dashboard');
 
-// ── Admin limiter: 30 per minute per IP ──────────────────────────────────────────
+// ── Admin limiter: 300 requests/min per IP, GET ne sont PAS limités ──────────────
+// Cleanup avril 2026 : le quota 30/min était trop bas pour les dashboards admin
+// qui font 5-15 GET en parallèle (cost-components, finance-config, customs-categories,
+// risk-provisions, pricing-recommend, etc.). On skippe les GET (lectures sûres,
+// déjà cachées côté backend) et on garde un quota agressif sur les writes.
 const adminLimiter = createLimiter({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes admin, réessayez dans 1 minute' },
+  skip: (req) => req.method === 'GET',  // GET illimités (lectures pures)
 }, 'admin');
 
 module.exports = {

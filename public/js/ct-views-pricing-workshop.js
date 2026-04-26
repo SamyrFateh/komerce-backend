@@ -38,6 +38,7 @@ const _cc = {
   grouped: { landed_relay: {}, business: {}, exceptional: {} },
   meta: null,
   filterFamily: 'all', filterChannel: '', filterIsland: '',
+  filterScope: '', filterAllocation: '',  // Sprint UX : nouveaux filtres expert
   showInactive: false, showExceptional: false,
   drawerOpen: false, drawerMode: null, drawerForm: null, drawerEvents: [],
 };
@@ -115,8 +116,16 @@ function _ccInjectStyles() {
   s.id = 'cc-styles';
   s.textContent = `
     .cc-wrap { max-width:1320px; margin:0 auto; padding:20px 24px; color:#1e293b; }
+    .cc-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; }
+    .cc-header-text { flex:1; }
+    .cc-header-actions { flex-shrink:0; }
     .cc-h1 { font-size:1.4rem; font-weight:800; margin:0 0 4px; }
     .cc-sub { font-size:0.88rem; color:#64748b; margin:0 0 18px; line-height:1.5; }
+    .cc-expert-warning { display:flex; gap:12px; align-items:flex-start; padding:12px 16px; background:#fef3c7; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:6px; margin-bottom:18px; }
+    .cc-expert-warning-icon { font-size:1.2rem; flex-shrink:0; }
+    .cc-expert-warning-text { font-size:0.86rem; color:#78350f; line-height:1.5; }
+    .cc-btn-secondary { background:#f1f5f9; color:#0f172a; border-color:#cbd5e1; }
+    .cc-btn-secondary:hover { background:#e2e8f0; }
     .cc-tools { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:14px; }
     .cc-tools label { font-size:0.78rem; color:#475569; font-weight:600; }
     .cc-input, .cc-select { padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.85rem; font-family:inherit; background:#fff; color:#1e293b; }
@@ -202,6 +211,8 @@ async function _ccLoadAll() {
     if (_cc.filterFamily && _cc.filterFamily !== 'all') params.push('family=' + encodeURIComponent(_cc.filterFamily));
     if (_cc.filterChannel) params.push('channel=' + encodeURIComponent(_cc.filterChannel));
     if (_cc.filterIsland) params.push('island=' + encodeURIComponent(_cc.filterIsland));
+    if (_cc.filterScope) params.push('scope=' + encodeURIComponent(_cc.filterScope));
+    if (_cc.filterAllocation) params.push('allocation_method=' + encodeURIComponent(_cc.filterAllocation));
     if (!_cc.showInactive) params.push('is_active=true');
     if (!_cc.showExceptional) params.push('is_exceptional=false');
     const qs = params.length ? '?' + params.join('&') : '';
@@ -232,9 +243,25 @@ async function _ccRender(container) {
 
 function _ccRenderHTML(container) {
   let html = '<div class="cc-wrap">';
-  html += '<h1 class="cc-h1">🧱 Composition Avancée des Coûts</h1>';
-  html += '<p class="cc-sub">Tous les coûts qui rentrent dans le calcul du prix Komerce. ';
-  html += 'Famille → Catégorie → Composant. Activez, désactivez, ajoutez selon la réalité terrain.</p>';
+  // Sprint UX : renommage doctrinal — "Configuration des coûts"
+  html += '<div class="cc-header">';
+  html += '<div class="cc-header-text">';
+  html += '<h1 class="cc-h1">⚙️ Configuration des coûts</h1>';
+  html += '<p class="cc-sub">Écran expert — règles utilisées par le moteur de pricing et d\'imputation.</p>';
+  html += '</div>';
+  html += '<div class="cc-header-actions">';
+  html += '<button class="cc-btn cc-btn-secondary" data-act="back-to-pricing">← Retour à Construction du prix</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // Warning expert
+  html += '<div class="cc-expert-warning">';
+  html += '<span class="cc-expert-warning-icon">⚠️</span>';
+  html += '<div class="cc-expert-warning-text">';
+  html += '<strong>Écran expert</strong> — Toute modification ici affecte les calculs de prix de tous les produits. ';
+  html += 'Si vous voulez seulement décider d\'un prix produit, utilisez ';
+  html += '<a href="#pricing" data-act="back-to-pricing" style="color:#0c4a6e;text-decoration:underline;">Construction du prix</a>.';
+  html += '</div></div>';
 
   html += '<div class="cc-tools">';
   html += '<label>Famille :</label><select class="cc-select" data-filter="family">';
@@ -244,6 +271,24 @@ function _ccRenderHTML(container) {
     html += '<option value="' + f + '"' + sel + '>' + (FAMILY_LABELS[f]?.label || f) + '</option>';
   });
   html += '</select>';
+
+  // Sprint UX : ajouter filtre Scope
+  html += '<label>Scope :</label><select class="cc-select" data-filter="scope">';
+  html += '<option value="">Tous</option>';
+  ['global', 'category', 'island', 'channel'].forEach(s => {
+    html += '<option value="' + s + '"' + (_cc.filterScope === s ? ' selected' : '') + '>' + s + '</option>';
+  });
+  html += '</select>';
+
+  // Sprint UX : ajouter filtre Allocation
+  html += '<label>Allocation :</label><select class="cc-select" data-filter="allocation">';
+  html += '<option value="">Toutes</option>';
+  ['direct', 'by_value', 'by_weight', 'by_volume', 'by_taxable_weight',
+   'per_item', 'per_order', 'per_parcel', 'per_shipment', 'monthly_prorata'].forEach(a => {
+    html += '<option value="' + a + '"' + (_cc.filterAllocation === a ? ' selected' : '') + '>' + a + '</option>';
+  });
+  html += '</select>';
+
   html += '<label>Canal :</label><select class="cc-select" data-filter="channel"><option value="">Tous</option>';
   ['cash_relais', 'diaspora', 'mobile_money'].forEach(c => {
     html += '<option value="' + c + '"' + (_cc.filterChannel === c ? ' selected' : '') + '>' + c + '</option>';
@@ -494,6 +539,8 @@ function _ccBindEvents(container) {
       if (f === 'family') _cc.filterFamily = tgt.value;
       else if (f === 'channel') _cc.filterChannel = tgt.value;
       else if (f === 'island') _cc.filterIsland = tgt.value;
+      else if (f === 'scope') _cc.filterScope = tgt.value;
+      else if (f === 'allocation') _cc.filterAllocation = tgt.value;
       else if (f === 'show_inactive') _cc.showInactive = tgt.checked;
       else if (f === 'show_exceptional') _cc.showExceptional = tgt.checked;
       try { await _ccLoadAll(); _ccRenderHTML(container); }
@@ -516,6 +563,13 @@ function _ccBindEvents(container) {
     const t = e.target.closest('[data-act]');
     if (!t) return;
     const act = t.dataset.act;
+
+    // Sprint UX : retour vers Construction du prix
+    if (act === 'back-to-pricing') {
+      e.preventDefault();
+      window.location.hash = '#pricing';
+      return;
+    }
 
     if (act === 'open-create') {
       _cc.drawerMode = 'create';

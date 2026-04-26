@@ -220,6 +220,29 @@ function _esRenderHTML(container) {
   const k = _esComputeKPIs();
   let html = '<div class="es-wrap">';
 
+  // Cleanup avril 2026 : bandeau legacy (Option A — non-bloquant)
+  // Cette vue reste accessible mais signal\u00e9e comme ancienne.
+  // Source de v\u00e9rit\u00e9 \u00e9conomique = nouveau dashboard /admin/costing
+  html += '<div class="es-legacy-banner" style="' +
+    'display:flex;gap:12px;align-items:flex-start;padding:14px 18px;' +
+    'background:#fef3c7;border:1px solid #fde68a;border-left:4px solid #f59e0b;' +
+    'border-radius:6px;margin-bottom:18px;">';
+  html += '<span style="font-size:1.3rem;flex-shrink:0;">\u26A0\uFE0F</span>';
+  html += '<div style="flex:1;">';
+  html += '<div style="font-weight:700;color:#78350f;margin-bottom:4px;font-size:0.95rem;">' +
+    'Vue ancienne \u2014 rest\u00e9e accessible</div>';
+  html += '<div style="font-size:0.86rem;color:#78350f;line-height:1.5;">';
+  html += 'Cette vue est ancienne. Le nouveau dashboard <strong>Co\u00fbt rendu relais</strong> ' +
+    'est la source de v\u00e9rit\u00e9 \u00e9conomique (KPIs unifi\u00e9s, marge \u00e0 3 niveaux qualifi\u00e9e, ' +
+    'doctrine cost_status). On garde celle-ci accessible jusqu\'\u00e0 validation compl\u00e8te.';
+  html += '</div>';
+  html += '<a href="/admin/costing" target="_blank" rel="noopener" ' +
+    'style="display:inline-block;margin-top:10px;padding:7px 14px;' +
+    'background:#fff;color:#92400e;border:1px solid #f59e0b;border-radius:6px;' +
+    'text-decoration:none;font-weight:600;font-size:0.85rem;">' +
+    '\ud83d\udce6 Ouvrir le nouveau Co\u00fbt rendu relais \u2197</a>';
+  html += '</div></div>';
+
   html += '<h1 class="es-h1">📊 Santé économique</h1>';
   html += '<p class="es-sub">Pilotage de la rentabilité par la contribution moyenne par commande collectée.</p>';
 

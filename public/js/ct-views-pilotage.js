@@ -282,11 +282,11 @@ CT.views.pilotage = function(main) {
 
 <div class="pil-tabs" data-pil-tabs>
   <div class="pil-tab active" data-pil-tab="temporel">📅 Temporel</div>
-  <div class="pil-tab" data-pil-tab="mix">🗂️ Mix Catégories</div>
+  <div class="pil-tab" data-pil-tab="mix" style="display:none;">🗂️ Mix Catégories</div>
   <div class="pil-tab" data-pil-tab="dashboard">📊 Dashboard Live</div>
   <div class="pil-tab" data-pil-tab="ops">🚦 Opérationnel</div>
-  <div class="pil-tab" data-pil-tab="fidelite">⭐ Fidélité & Invendus</div>
-  <div class="pil-tab" data-pil-tab="clients">👥 Clients & Ventes</div>
+  <div class="pil-tab" data-pil-tab="fidelite" style="display:none;">⭐ Fidélité & Invendus</div>
+  <div class="pil-tab" data-pil-tab="clients" style="display:none;">👥 Clients & Ventes</div>
 </div>
 
 <!-- ═══ TAB 1: TEMPOREL ═══ -->

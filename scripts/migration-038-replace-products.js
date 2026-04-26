@@ -1,9 +1,11 @@
 /**
  * Migration 038 — Replace all products with curated catalog
- * 
+ *
  * - Soft-deletes ALL existing products (is_active = FALSE)
  * - Inserts 467 new products with real images (AliExpress + DummyJSON)
  * - Idempotent: checks marker before running
+ *
+ * 🔧 FIX 2026-04-26 : marker price_kmf 0 → 1 (contrainte CHECK chk_products_price > 0)
  */
 
 const path = require('path');
@@ -67,9 +69,13 @@ module.exports = async function migration038(db) {
   }
 
   // ── Step 3: Insert idempotency marker ──
+  // 🔧 FIX 2026-04-26 : price_kmf = 1 (et non 0) pour respecter la contrainte
+  // CHECK chk_products_price (price_kmf > 0). Le marker n'est jamais visible
+  // côté front (is_active=FALSE, is_available=FALSE) donc le prix n'a aucun
+  // impact métier — c'est juste un drapeau interne.
   await db.query(
     `INSERT INTO products (name, description, category, price_kmf, is_active, is_available)
-     VALUES ('__M038_CATALOG_V2__', 'Migration 038 marker', 'system', 0, FALSE, FALSE)`
+     VALUES ('__M038_CATALOG_V2__', 'Migration 038 marker', 'system', 1, FALSE, FALSE)`
   );
 
   console.log(`  Migration 038: inserted ${inserted} new products ✅`);

@@ -56,6 +56,21 @@ CT.app = {
     var nav = document.getElementById('ct-sidebar-nav');
     if (nav && !CT.app._navBound) {
       nav.addEventListener('click', function(e) {
+        // Cleanup avril 2026 : toggle section pliable (Configuration & Expert)
+        var sectionToggle = e.target.closest('[data-section-toggle]');
+        if (sectionToggle) {
+          var sectionId = sectionToggle.dataset.sectionToggle;
+          var body = nav.querySelector('[data-section-body="' + sectionId + '"]');
+          if (!body) return;
+          var isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'block';
+          sectionToggle.setAttribute('aria-expanded', String(!isOpen));
+          var caret = sectionToggle.querySelector('.ct-section-caret');
+          if (caret) caret.textContent = isOpen ? '\u25B6' : '\u25BC';
+          try { localStorage.setItem('ct-' + sectionId + '-open', String(!isOpen)); } catch (_) {}
+          return;
+        }
+
         var btn = e.target.closest('[data-view],[data-action]');
         if (!btn) return;
         if (btn.dataset.view)   CT.app.navigate(btn.dataset.view);
@@ -233,14 +248,43 @@ CT.app = {
     sections.forEach(function(sec) {
       var list = bySection[sec.id];
       if (!list || !list.length) return;
-      html += '<div class="ct-section-title">' + sec.label + '</div>';
-      list.forEach(function(v) {
-        var cls = 'ct-nav-item' + (v.id === CT.app.currentView ? ' active' : '');
-        html += '<button class="' + cls + '" data-view="' + v.id + '">' +
-                  '<span class="ct-nav-emoji">' + v.emoji + '</span>' +
-                  '<span class="ct-nav-label">' + v.label + '</span>' +
-                '</button>';
-      });
+
+      // Cleanup avril 2026 : la section "expert" / "expert_ct" est pli\u00e9e par d\u00e9faut.
+      // \u00c9tat persist\u00e9 dans localStorage (par section)
+      var isExpert = (sec.id === 'expert' || sec.id === 'expert_ct' || sec.collapsed === true);
+      if (isExpert) {
+        var stored = null;
+        try { stored = localStorage.getItem('ct-' + sec.id + '-open'); } catch (_) {}
+        var isOpen = (stored === 'true');
+        var caret = isOpen ? '\u25BC' : '\u25B6';
+        html += '<div class="ct-section-title ct-section-title--collapsible" ' +
+                  'data-section-toggle="' + sec.id + '" ' +
+                  'role="button" ' +
+                  'aria-expanded="' + isOpen + '" ' +
+                  'style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">' +
+                  '<span class="ct-section-caret" style="font-size:0.7em;width:12px;display:inline-block;">' + caret + '</span>' +
+                  '<span>' + sec.label + '</span>' +
+                '</div>';
+        html += '<div class="ct-section-body" data-section-body="' + sec.id + '" ' +
+                  'style="display:' + (isOpen ? 'block' : 'none') + ';">';
+        list.forEach(function(v) {
+          var cls = 'ct-nav-item' + (v.id === CT.app.currentView ? ' active' : '');
+          html += '<button class="' + cls + '" data-view="' + v.id + '">' +
+                    '<span class="ct-nav-emoji">' + v.emoji + '</span>' +
+                    '<span class="ct-nav-label">' + v.label + '</span>' +
+                  '</button>';
+        });
+        html += '</div>';
+      } else {
+        html += '<div class="ct-section-title">' + sec.label + '</div>';
+        list.forEach(function(v) {
+          var cls = 'ct-nav-item' + (v.id === CT.app.currentView ? ' active' : '');
+          html += '<button class="' + cls + '" data-view="' + v.id + '">' +
+                    '<span class="ct-nav-emoji">' + v.emoji + '</span>' +
+                    '<span class="ct-nav-label">' + v.label + '</span>' +
+                  '</button>';
+        });
+      }
     });
 
     /* Admin tools — founder/admin only, BO only */

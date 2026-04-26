@@ -62,7 +62,7 @@ const _ps = {
   lastError: null,          // erreur de calcul si la dernière requête a échoué
 
   // Zone 2 (composants)
-  showAllComponents: true,  // true par défaut : on part des coûts (doctrine)
+  showAllComponents: false,  // Sprint UX : false par défaut — Construction du Prix = vue décisionnelle, pas exhaustive
   editingCompId: null,      // id du composant en cours d'édition inline
 };
 
@@ -626,94 +626,131 @@ function _kSection(id, title, body, openByDefault) {
  * ZONE 2 — COMPOSANTS UTILISÉS DANS LE CALCUL
  * ═══════════════════════════════════════════════════════════════════════ */
 function _renderZone2() {
-  let html = '<section class="apv-zone apv-zone2">';
+  // Sprint UX (Construction du Prix = vue DÉCISIONNELLE) :
+  // Cette zone est désormais un résumé COMPACT, LECTURE SEULE.
+  // Pour configurer les composants : bouton "⚙️ Configurer les composants"
+  return _renderCostBreakdownSummary();
+}
+
+/**
+ * Résumé compact "Coût rendu relais" — lecture seule.
+ * Affiche uniquement les familles utilisées dans le calcul courant.
+ * Pas d'édition inline ici : la configuration se fait dans pricing_workshop.
+ */
+function _renderCostBreakdownSummary() {
+  let html = '<section class="apv-zone apv-zone2 apv-zone2--summary">';
   html += '<div class="apv-zone-head">';
-  html += '<h2 class="apv-zone-title">🧱 Les coûts qui construisent le prix</h2>';
-  html += '<span class="apv-zone-sub">Komerce ne part pas du produit, il part du coût rendu relais. Calibrez ici les composants qui pèsent sur chaque article vendu.</span>';
+  html += '<h2 class="apv-zone-title">📦 Décomposition du coût</h2>';
+  html += '<span class="apv-zone-sub">Comment ce coût se construit, en lecture seule. ' +
+          'Pour modifier les règles : <strong>Configurer les composants</strong>.</span>';
   html += '<div class="apv-zone-actions">';
-  if (_ps.currentReco) {
-    const usedKeys = _getUsedComponentKeys();
-    html += '<span class="apv-zone-badge">' + usedKeys.size + ' utilisés sur ' + _ps.components.length + '</span>';
-  }
-  html += '<button class="apv-btn apv-btn-ghost" data-act="toggle-show-all">' +
-    (_ps.showAllComponents ? '▼ Filtrer aux utilisés' : '▶ Afficher tous (' + _ps.components.length + ')') +
-    '</button>';
-  html += '<button class="apv-btn apv-btn-secondary" data-act="open-workshop">⚙️ Vue exhaustive</button>';
+  html += '<button class="apv-btn apv-btn-ghost" data-act="open-workshop">⚙️ Configurer les composants</button>';
   html += '</div></div>';
 
-  if (!_ps.components.length) {
-    html += '<div class="apv-empty">Aucun composant chargé. Vérifiez /api/admin/cost-components.</div>';
-    html += '</section>';
-    return html;
-  }
-
-  const usedKeys = _getUsedComponentKeys();
-  const items = _ps.showAllComponents
-    ? _ps.components
-    : _ps.components.filter(c => usedKeys.has(c.key));
-
-  if (!items.length && !_ps.showAllComponents) {
+  if (!_ps.currentReco) {
     html += '<div class="apv-empty apv-empty-info">';
-    html += '💡 Aucun composant n\'est utilisé pour ce calcul. Sélectionnez un produit ou cliquez sur "Afficher tous" pour voir la liste complète.';
-    html += '</div>';
-    html += '</section>';
+    html += '💡 Sélectionnez un produit du catalogue ou lancez une simulation pour voir la décomposition de son coût.';
+    html += '</div></section>';
     return html;
   }
 
-  // Grouper par catégorie
-  const grouped = {};
-  items.forEach(c => {
-    const cat = c.category || 'autres';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(c);
-  });
+  const breakdown = _ps.currentReco.cost_breakdown || {};
+  const landed = breakdown.landed_relay || {};
+  const business = breakdown.business || {};
 
-  const CAT_LABELS = {
-    product_purchase:   { emoji: '🛒', label: 'Achat fournisseur',    color: '#94a3b8' },
-    sourcing:           { emoji: '🔍', label: 'Sourcing',             color: '#a855f7' },
-    hub:                { emoji: '🏬', label: 'Hub Dubai',            color: '#0ea5e9' },
-    packaging:          { emoji: '📦', label: 'Emballage',            color: '#06b6d4' },
-    freight:            { emoji: '🚢', label: 'Fret international',   color: '#3b82f6' },
-    customs:            { emoji: '🛃', label: 'Douane',               color: '#ef4444' },
-    port_transitary:    { emoji: '📋', label: 'Port / transitaire',   color: '#f97316' },
-    local_distribution: { emoji: '🚚', label: 'Distribution locale',  color: '#16a34a' },
-    relay:              { emoji: '🏪', label: 'Relais',               color: '#22c55e' },
-    payment:            { emoji: '💳', label: 'Paiement',             color: '#8b5cf6' },
-    risk_provision:     { emoji: '🛡️', label: 'Provision risques',    color: '#facc15' },
-    fixed_overhead:     { emoji: '🏢', label: 'Charges fixes',        color: '#d97706' },
-    incident:           { emoji: '⚠️', label: 'Incident',             color: '#dc2626' },
-    autres:             { emoji: '•',  label: 'Autres',               color: '#64748b' },
+  // Mapping famille → label + ordre doctrinal
+  const LANDED_ROWS = [
+    { key: 'product_purchase',   emoji: '🛒', label: 'Achat fournisseur'        },
+    { key: 'sourcing',           emoji: '🔍', label: 'Sourcing'                  },
+    { key: 'hub',                emoji: '🏬', label: 'Hub Dubai'                 },
+    { key: 'packaging',          emoji: '📦', label: 'Emballage'                 },
+    { key: 'freight',            emoji: '🚢', label: 'Fret international'        },
+    { key: 'customs',            emoji: '🛃', label: 'Douane / TVA'              },
+    { key: 'port_transitaire',   emoji: '📋', label: 'Port / transitaire'        },
+    { key: 'port_transitary',    emoji: '📋', label: 'Port / transitaire'        }, // legacy
+    { key: 'local_distribution', emoji: '🚚', label: 'Distribution locale'       },
+    { key: 'relay',              emoji: '🏪', label: 'Commission relais'         },
+  ];
+  const BUSINESS_ROWS = [
+    { key: 'payment',            emoji: '💳', label: 'Frais paiement'            },
+    { key: 'risk_provision',     emoji: '🛡️', label: 'Provision risques'         },
+    { key: 'fixed_overhead',     emoji: '🏢', label: 'Charges fixes (imputées)'  },
+  ];
+
+  // Helper : afficher une ligne uniquement si > 0
+  const renderRow = (row, src) => {
+    const v = src[row.key] != null ? Number(src[row.key]) : 0;
+    if (v <= 0) return '';
+    return '<div class="apv-summary-row">' +
+           '<span class="apv-summary-row-emoji">' + row.emoji + '</span>' +
+           '<span class="apv-summary-row-label">' + _esc(row.label) + '</span>' +
+           '<span class="apv-summary-row-value">' + _fmt(v) + ' KMF</span>' +
+           '</div>';
   };
 
-  // ─── GRILLE DE CARDS (2 colonnes) ──────────────────────────────
-  html += '<div class="apv-cat-grid">';
-  Object.keys(grouped).sort().forEach(cat => {
-    const meta = CAT_LABELS[cat] || { emoji: '•', label: cat, color: '#64748b' };
-    const comps = grouped[cat];
-    const catTotal = _computeCategoryImputed(cat);
-
-    html += '<div class="apv-cat-card" data-cat="' + _esc(cat) + '">';
-    // Header avec emoji + label + total imputé
-    html += '<div class="apv-cat-card-head" style="border-left:3px solid ' + meta.color + ';">';
-    html += '<span class="apv-cat-card-emoji">' + meta.emoji + '</span>';
-    html += '<span class="apv-cat-card-label">' + _esc(meta.label) + '</span>';
-    html += '<span class="apv-cat-card-count">' + comps.length + '</span>';
-    if (catTotal > 0) {
-      html += '<span class="apv-cat-card-total">' + _fmt(catTotal) + '</span>';
+  // ─── BLOC 1 : LANDED RELAY ─────────────────────────────────────
+  html += '<div class="apv-summary-block apv-summary-block--landed">';
+  html += '<div class="apv-summary-block-head">';
+  html += '<span class="apv-summary-block-title">📦 Coût rendu relais</span>';
+  html += '<span class="apv-summary-block-total">' + _fmt(_ps.currentReco.landed_relay_cost_kmf) + ' KMF</span>';
+  html += '</div>';
+  html += '<div class="apv-summary-block-body">';
+  // Dédupliquer les keys déjà rendus (port_transitaire vs port_transitary legacy)
+  const seenKeys = new Set();
+  LANDED_ROWS.forEach(r => {
+    if (!seenKeys.has(r.label)) {
+      const rendered = renderRow(r, landed);
+      if (rendered) {
+        html += rendered;
+        seenKeys.add(r.label);
+      }
     }
-    html += '</div>';
-    // Composants à l'intérieur
-    html += '<div class="apv-cat-card-body">';
-    comps.forEach(c => {
-      html += _renderComponentRow(c, usedKeys.has(c.key));
-    });
-    html += '</div>';
-    html += '</div>';
   });
+  html += '</div></div>';
+
+  // ─── BLOC 2 : BUSINESS ─────────────────────────────────────────
+  html += '<div class="apv-summary-block apv-summary-block--business">';
+  html += '<div class="apv-summary-block-head">';
+  html += '<span class="apv-summary-block-title">💼 Frais business</span>';
+  const businessOnly = (Number(_ps.currentReco.business_complete_cost_kmf) || 0) -
+                       (Number(_ps.currentReco.landed_relay_cost_kmf) || 0);
+  html += '<span class="apv-summary-block-total">' + _fmt(businessOnly) + ' KMF</span>';
+  html += '</div>';
+  html += '<div class="apv-summary-block-body">';
+  BUSINESS_ROWS.forEach(r => {
+    const rendered = renderRow(r, business);
+    if (rendered) html += rendered;
+  });
+  html += '</div></div>';
+
+  // ─── TOTAL FINAL ───────────────────────────────────────────────
+  html += '<div class="apv-summary-totals">';
+  html += '<div class="apv-summary-total-row">';
+  html += '<span class="apv-summary-total-label">Coût rendu relais</span>';
+  html += '<span class="apv-summary-total-value">' + _fmt(_ps.currentReco.landed_relay_cost_kmf) + ' KMF</span>';
+  html += '</div>';
+  html += '<div class="apv-summary-total-row apv-summary-total-row--final">';
+  html += '<span class="apv-summary-total-label">Coût complet business</span>';
+  html += '<span class="apv-summary-total-value">' + _fmt(_ps.currentReco.business_complete_cost_kmf) + ' KMF</span>';
+  html += '</div>';
   html += '</div>';
 
-  // ─── BARRE COLORÉE EMPILÉE EN BAS (synthèse poids relatif) ─────
-  html += _renderStackedBar(grouped, CAT_LABELS);
+  // ─── ALERTES SI CONFIDENCE LOW ─────────────────────────────────
+  const dq = _ps.currentReco.data_quality || {};
+  if (dq.confidence === 'low' || (dq.warnings && dq.warnings.length > 0)) {
+    html += '<div class="apv-summary-alert">';
+    html += '<span>⚠️</span>';
+    html += '<div>';
+    if (dq.confidence === 'low') {
+      html += '<strong>Confidence faible</strong> : ';
+      html += 'les hypothèses d\'allocation ne sont pas calibrées. Le coût est indicatif.';
+    } else if (dq.warnings && dq.warnings.length) {
+      html += '<strong>' + dq.warnings.length + ' avertissement(s)</strong> : ';
+      html += _esc(dq.warnings[0]);
+      if (dq.warnings.length > 1) html += ' (+' + (dq.warnings.length - 1) + ')';
+    }
+    html += '</div></div>';
+  }
 
   html += '</section>';
   return html;
@@ -924,6 +961,30 @@ function _injectStyles() {
     .apv-zone-sub { font-size:.78rem; color:#64748b; flex:1; min-width:200px; font-style:italic; }
     .apv-zone-actions { display:flex; align-items:center; gap:8px; }
     .apv-zone-badge { background:#dbeafe; color:#1e40af; padding:3px 10px; border-radius:12px; font-size:.78rem; font-weight:600; }
+
+    /* SUMMARY (Sprint UX — vue décisionnelle) */
+    .apv-zone2--summary { padding-bottom: 0; }
+    .apv-summary-block { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; }
+    .apv-summary-block:last-of-type { border-bottom: none; }
+    .apv-summary-block--landed { background: #fafbfd; }
+    .apv-summary-block--business { background: #fdfaf6; }
+    .apv-summary-block-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; }
+    .apv-summary-block-title { font-size:.88rem; font-weight:700; color:#1e293b; }
+    .apv-summary-block-total { font-size:.92rem; font-weight:800; color:#1e293b; }
+    .apv-summary-block-body { display:flex; flex-direction:column; gap:4px; }
+    .apv-summary-row { display:flex; gap:8px; align-items:center; padding:5px 0; font-size:.85rem; color:#334155; }
+    .apv-summary-row-emoji { width:18px; flex-shrink:0; text-align:center; }
+    .apv-summary-row-label { flex:1; }
+    .apv-summary-row-value { font-variant-numeric: tabular-nums; font-weight:600; color:#0f172a; }
+    .apv-summary-totals { padding: 12px 18px; background: #f8fafc; border-top: 2px solid #e2e8f0; }
+    .apv-summary-total-row { display:flex; justify-content:space-between; align-items:center; padding: 4px 0; }
+    .apv-summary-total-row--final { border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 4px; }
+    .apv-summary-total-label { font-size:.85rem; font-weight:600; color:#475569; }
+    .apv-summary-total-row--final .apv-summary-total-label { font-size:.95rem; font-weight:800; color:#0f172a; }
+    .apv-summary-total-value { font-size:.92rem; font-weight:700; font-variant-numeric: tabular-nums; color:#0f172a; }
+    .apv-summary-total-row--final .apv-summary-total-value { font-size:1.1rem; font-weight:800; color:#16a34a; }
+    .apv-summary-alert { display:flex; gap:10px; align-items:flex-start; padding:10px 18px; background:#fef3c7; border-top:1px solid #fde68a; font-size:.85rem; color:#78350f; }
+    .apv-summary-alert > div { flex:1; line-height:1.4; }
 
     .apv-spinner { font-size:1.1rem; animation: apv-spin 1.4s linear infinite; }
     @keyframes apv-spin { 0%,100% { opacity:.4; } 50% { opacity:1; } }

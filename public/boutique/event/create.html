@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un panier événement — Komerce</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/boutique/css/event.css">
+</head>
+<body>
+
+<div class="ev-wrap">
+
+  <header class="ev-header">
+    <a href="/" class="ev-header-back">← Boutique</a>
+    <span class="ev-header-title">Nouveau panier événement</span>
+  </header>
+
+  <div class="ev-hero">
+    <div class="ev-hero-emoji">🎉</div>
+    <h1 class="ev-hero-title">Pour un mariage, anniversaire ou naissance ?</h1>
+    <p class="ev-hero-sub">
+      Créez un panier événement. Partagez le lien à votre famille.
+      Tout le monde ajoute ses idées. Vous validez et payez quand vous êtes prêt.
+    </p>
+  </div>
+
+  <form id="ev-create-form" class="ev-card">
+    <h2 class="ev-card-title">Détails de l'événement</h2>
+    <p class="ev-card-sub">Tous les champs marqués (optionnel) peuvent être remplis plus tard.</p>
+
+    <div class="ev-field">
+      <label class="ev-label" for="event_name">Nom de l'événement</label>
+      <input type="text" id="event_name" name="event_name" class="ev-input"
+             placeholder="Ex : Mariage Fatima · Anniversaire Aïcha"
+             required maxlength="100">
+    </div>
+
+    <div class="ev-field">
+      <label class="ev-label" for="event_note">
+        Message à la famille
+        <span class="ev-label-optional">(optionnel)</span>
+      </label>
+      <textarea id="event_note" name="event_note" class="ev-textarea" rows="3"
+                placeholder="Ex : Cher tous, voici la liste pour l'anniversaire d'Aïcha. Ajoutez vos idées 🎁"
+                maxlength="500"></textarea>
+    </div>
+
+    <div class="ev-field">
+      <label class="ev-label" for="recipient_name">
+        Destinataire
+        <span class="ev-label-optional">(qui reçoit le panier)</span>
+      </label>
+      <input type="text" id="recipient_name" name="recipient_name" class="ev-input"
+             placeholder="Ex : Famille Mohamed à Moroni" maxlength="100">
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--ev-border); margin: 20px 0;">
+
+    <h3 class="ev-card-title" style="font-size: 14px;">Vos coordonnées (créateur)</h3>
+
+    <div class="ev-field">
+      <label class="ev-label" for="creator_name">Votre nom</label>
+      <input type="text" id="creator_name" name="creator_name" class="ev-input"
+             placeholder="Ex : Ali Said" required maxlength="80">
+    </div>
+
+    <div class="ev-field">
+      <label class="ev-label" for="creator_phone">
+        Téléphone WhatsApp
+        <span class="ev-label-optional">(pour partager le lien)</span>
+      </label>
+      <input type="tel" id="creator_phone" name="creator_phone" class="ev-input"
+             placeholder="+33 6 12 34 56 78" maxlength="30">
+      <div class="ev-help">Format international avec +. Aucun appel ne vous sera passé.</div>
+    </div>
+
+    <div class="ev-field">
+      <label class="ev-label" for="creator_email">
+        Email
+        <span class="ev-label-optional">(optionnel — pour récupérer votre lien)</span>
+      </label>
+      <input type="email" id="creator_email" name="creator_email" class="ev-input"
+             placeholder="exemple@email.com" maxlength="120">
+    </div>
+
+    <div class="ev-info">
+      <strong>Sans compte requis.</strong> Conservez bien votre lien créateur,
+      c'est lui qui vous permet de gérer et finaliser le panier.
+    </div>
+
+    <button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-submit-btn">
+      🎉 Créer le panier événement
+    </button>
+
+    <div id="ev-error" class="ev-warning" style="display:none; margin-top:12px;"></div>
+  </form>
+
+  <p class="ev-doctrine">
+    Les contributions sont des intentions. Aucun paiement n'est effectué maintenant.<br>
+    La commande sera lancée uniquement après paiement sécurisé.
+  </p>
+
+</div>
+
+<script src="/boutique/js/event-create.js"></script>
+</body>
+</html>

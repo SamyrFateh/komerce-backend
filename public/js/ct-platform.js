@@ -69,6 +69,7 @@ CT.platform = {
     pilotage_op:           { label: '📦 Pilotage Opérationnel',  order: 1, shell: 'ct' },
     atelier_prix_sourcing: { label: '🏷️ Atelier Prix & Sourcing', order: 2, shell: 'ct' },
     sante_eco:             { label: '💰 Santé Économique',        order: 3, shell: 'ct' },
+    expert_ct:             { label: '⚙️ Configuration & Expert',  order: 9, shell: 'ct', collapsed: true },  // Cleanup
 
     /* CT — Sections deprecated (conservées pour les liens existants) */
     cockpit:       { label: 'Cockpit (legacy)',     order: 91, shell: 'ct', deprecated: true },
@@ -76,11 +77,12 @@ CT.platform = {
     strategie:     { label: 'Stratégie (legacy)',   order: 93, shell: 'ct', deprecated: true },
     pilotage:      { label: 'Pilotage (legacy)',    order: 94, shell: 'ct', deprecated: true },
 
-    /* BO — inchangé */
+    /* BO — Cleanup avril 2026 : ajout section "Expert" pour les vues techniques */
     operations: { label: 'Opérations',    order: 1, shell: 'bo' },
     alerting:   { label: 'Alertes',       order: 2, shell: 'bo' },
     finance_bo: { label: 'Finance',       order: 3, shell: 'bo' },
-    config:     { label: 'Configuration', order: 4, shell: 'bo' }
+    config:     { label: 'Configuration', order: 4, shell: 'bo' },
+    expert:     { label: '⚙️ Configuration & Expert', order: 5, shell: 'bo', collapsed: true }
   },
 
   /* ─── VIEW REGISTRY ────────────────────────────────────────────
@@ -97,28 +99,32 @@ CT.platform = {
       id:    'pilotage_op',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '🚦',  label:   'Vue Aujourd\'hui',
-      roles: ['founder','admin','hub','support'],
-      tabs:  [],
-      supportedFilters: ['period'],
-      readOnly: ['support']
+      roles: ['founder','admin'],
+      tabs: [],
+      supportedFilters: [],
+      readOnly: [],
+      hidden: true,  // Cleanup : doublon nouveau dashboard /admin/orders-logistics (Sprint 5)
     },
     {
       id:    'sante',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '🏥',  label:   'Santé Business',
-      roles: ['founder','admin','finance'],
+      roles: ['founder','admin','hub','support'],
       tabs:  [],
-      supportedFilters: [],
-      readOnly: ['finance']
+      supportedFilters: ['period'],
+      readOnly: ['support'],
+      hidden: true,  // Cleanup : KPIs instables (\"machine tourne bien\" non mesurable)
     },
     {
       id:    'actionCenter',
       shell: 'ct',  section: 'pilotage_op',
-      emoji: '⚡',  label:   'Alertes & Incidents',
+      emoji: '⚡',  label:   'Centre d\'action',
       roles: ['founder','admin'],
       tabs:  ['all','ops','eco','sourcing','disputes'],
       supportedFilters: ['severity','owner_role'],
-      readOnly: []
+      readOnly: [],
+      // Cleanup : Centre d'action = d\u00e9cisions business (cmds bloqu\u00e9es,
+      // co\u00fbts incomplets, sourcing \u00e0 arbitrer, panier \u00e0 reprendre, marge n\u00e9gative)
     },
     {
       id:    'problems',
@@ -127,7 +133,8 @@ CT.platform = {
       roles: ['founder','admin'],
       tabs:  [],
       supportedFilters: ['type','severity'],
-      readOnly: []
+      readOnly: [],
+      hidden: true,  // Cleanup : doublon actionCenter (m\u00eame source, m\u00eame audience)
     },
     {
       id:    'dashboard',
@@ -157,11 +164,12 @@ CT.platform = {
     {
       id:    'economic',
       shell: 'ct',  section: 'sante_eco',
-      emoji: '📊',  label:   'Santé Globale',
+      emoji: '📊',  label:   'Santé Globale (legacy)',
       roles: ['founder','admin','finance'],
       tabs:  [],
       supportedFilters: [],
-      readOnly: ['finance']
+      readOnly: ['finance'],
+      legacy_banner: true,  // Cleanup : Option A — bandeau \"voir nouveau /admin/costing\"
     },
     {
       id:    'pilotage_fin',
@@ -188,12 +196,13 @@ CT.platform = {
     },
     {
       id:    'sourcing',
-      shell: 'ct',  section: 'atelier_prix_sourcing',
+      shell: 'ct',  section: 'expert_ct',
       emoji: '🔍',  label:   'Intelligence Sourcing',
       roles: ['founder','admin','sourcing'],
       tabs:  ['portfolio','opportunities','risks'],
       supportedFilters: ['category','rail'],
-      readOnly: []
+      readOnly: [],
+      // Cleanup : d\u00e9plac\u00e9 en Expert (strat\u00e9gie achat avanc\u00e9e, pas pilotage)
     },
     {
       id:    'sourcing_scanner',
@@ -206,13 +215,14 @@ CT.platform = {
     },
     {
       id:    'pricing_workshop',
-      shell: 'ct',  section: 'atelier_prix_sourcing',
-      emoji: '🧱',  label:   'Composition avancée des coûts',
+      shell: 'ct',  section: 'expert_ct',
+      emoji: '⚙️',  label:   'Configuration des coûts',
       roles: ['founder','admin','finance'],
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance'],
-      hidden: true,  // accessible via le bouton depuis Pricing
+      hidden: false,  // Cleanup : maintenant visible mais en section Expert
+                      // Plus 'hidden:true' car la section Expert est la nouvelle maison
     },
     /* DÉSACTIVÉ avril 2026 — Option A.
        La fonction "Stratégie de prix" est couverte par cost_components
@@ -248,7 +258,8 @@ CT.platform = {
       roles: ['founder','admin','relais'],
       tabs:  [],
       supportedFilters: [],
-      readOnly: []
+      readOnly: [],
+      hidden: true,  // Cleanup : sous-vue \u00e9clat\u00e9e \u2014 fonctionnalit\u00e9 dans Comptabilit\u00e9
     },
     {
       id:    'createParcel',
@@ -257,18 +268,23 @@ CT.platform = {
       roles: ['founder','admin','hub'],
       tabs:  [],
       supportedFilters: [],
-      readOnly: []
+      readOnly: [],
+      hidden: true,  // Cleanup : action contextuelle, pas une vue (bouton dans orders)
     },
 
-    /* ══════ BO : Alertes ══════ */
+    /* ══════ BO : Alertes ══════
+       Cleanup : actionCenter = d\u00e9cisions business (CT) | alerts = sant\u00e9 technique (BO) */
     {
       id:    'alerts',
       shell: 'bo',  section: 'alerting',
-      emoji: '⚠️',  label:   'Alertes',
+      emoji: '🛠️',  label:   'Alertes système',
       roles: ['founder','admin','hub','support'],
       tabs:  [],
       supportedFilters: ['severity'],
-      readOnly: []
+      readOnly: [],
+      // Cleanup : renomm\u00e9 'Alertes' \u2192 'Alertes syst\u00e8me'
+      // Cibles : webhook Stripe erreur, cron job \u00e9chou\u00e9, API externe down,
+      //          Twilio/Brevo failure, erreur serveur r\u00e9p\u00e9t\u00e9e, cache stale, Railway env
     },
     {
       id:    'incidents',
@@ -277,7 +293,8 @@ CT.platform = {
       roles: ['founder','admin','hub','support'],
       tabs:  [],
       supportedFilters: ['severity','status'],
-      readOnly: []
+      readOnly: [],
+      hidden: true,  // Cleanup : doublon Centre d'action / Alertes syst\u00e8me
     },
 
     /* ══════ BO : Finance ══════ */
@@ -338,15 +355,17 @@ CT.platform = {
       tabs:  [],
       supportedFilters: [],
       readOnly: []
+      // Cleanup : reste en Op\u00e9rations (saisie fret = ex\u00e9cution physique)
     },
     {
       id:    'inventory',
-      shell: 'bo',  section: 'operations',
+      shell: 'bo',  section: 'expert',
       emoji: '📋',  label:   'Inventaire',
       roles: ['founder','admin','hub'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
+      // Cleanup : d\u00e9plac\u00e9 en Expert (logistique pointue, peu utilis\u00e9 quotidiennement)
     },
     /* DÉSACTIVÉ avril 2026 — vue parcel_reconciliation jamais implémentée.
        L'entrée fait référence à un CT.views.parcel_reconciliation qui n'existe pas.
@@ -375,23 +394,26 @@ CT.platform = {
     },
     {
       id:    'customs',
-      shell: 'bo',  section: 'finance_bo',
-      emoji: '📦',  label:   'Historique Douane',
-      roles: ['founder','admin','finance'],
+      shell: 'bo',  section: 'operations',
+      emoji: '🛃',  label:   'Douane & Shipments',
+      roles: ['founder','admin','finance','hub'],
       tabs:  [],
       supportedFilters: ['period'],
       readOnly: []
+      // Cleanup : d\u00e9plac\u00e9 en Op\u00e9rations (saisie facture douane = ex\u00e9cution)
+      // Renomm\u00e9 'Historique Douane' \u2192 'Douane & Shipments' (plus pr\u00e9cis)
     },
 
     /* ══════ BO : Configuration ══════ */
     {
       id:    'suppliers',
-      shell: 'bo',  section: 'config',
+      shell: 'bo',  section: 'expert',
       emoji: '🏭',  label:   'Fournisseurs',
       roles: ['founder','admin','sourcing'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
+      // Cleanup : d\u00e9plac\u00e9 en Expert (gestion CRM amont)
     },
     {
       id:    'shared_carts',
@@ -413,12 +435,13 @@ CT.platform = {
     },
     {
       id:    'simulator',
-      shell: 'bo',  section: 'config',
+      shell: 'bo',  section: 'expert',
       emoji: '🤖',  label:   'Simulateur Flux',
       roles: ['founder','admin'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
+      // Cleanup : d\u00e9plac\u00e9 en Expert (outil what-if avanc\u00e9)
     },
 
     /* ══════ CT : Clients (CRM analytique) ══════ */
@@ -429,7 +452,8 @@ CT.platform = {
       roles: ['founder','admin','finance','support'],
       tabs:  [],
       supportedFilters: ['period','island','segment'],
-      readOnly: ['finance','support']
+      readOnly: ['finance','support'],
+      hidden: true,  // Cleanup : hors scope V1 (Sprint 10 CRM d\u00e9di\u00e9 plus tard)
     }
   ],
 
@@ -480,7 +504,14 @@ CT.platform = {
     });
     return Object.keys(CT.platform.SECTIONS)
       .filter(function(k) { return CT.platform.SECTIONS[k].shell === shell && viewsBySection[k]; })
-      .map(function(k) { return { id: k, label: CT.platform.SECTIONS[k].label, order: CT.platform.SECTIONS[k].order }; })
+      .map(function(k) {
+        return {
+          id: k,
+          label: CT.platform.SECTIONS[k].label,
+          order: CT.platform.SECTIONS[k].order,
+          collapsed: CT.platform.SECTIONS[k].collapsed === true,  // Cleanup : propager le flag
+        };
+      })
       .sort(function(a, b) { return a.order - b.order; });
   },
 

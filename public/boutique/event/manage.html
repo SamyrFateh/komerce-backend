@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon panier événement — Komerce</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/boutique/css/event.css">
+</head>
+<body>
+
+<div class="ev-wrap">
+
+  <header class="ev-header">
+    <a href="/" class="ev-header-back">← Boutique</a>
+    <span class="ev-header-title">Mon panier événement</span>
+  </header>
+
+  <div id="ev-loading" class="ev-empty">⏳ Chargement de votre panier…</div>
+  <div id="ev-content" style="display:none;"></div>
+  <div id="ev-error-block" class="ev-warning" style="display:none;"></div>
+
+  <p class="ev-doctrine">
+    Les contributions sont des intentions. Aucun paiement n'est effectué maintenant.<br>
+    Le créateur finalisera le panier quand la famille sera prête.
+  </p>
+
+</div>
+
+<script src="/boutique/js/event-manage.js"></script>
+</body>
+</html>
