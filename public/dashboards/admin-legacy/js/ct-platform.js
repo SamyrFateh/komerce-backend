@@ -207,12 +207,12 @@ CT.platform = {
     {
       id:    'pricing_workshop',
       shell: 'ct',  section: 'atelier_prix_sourcing',
-      emoji: '🧱',  label:   'Composition avancée des coûts',
+      emoji: '⚙️',  label:   'Configuration des coûts',
       roles: ['founder','admin','finance'],
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance'],
-      hidden: true,  // accessible via le bouton depuis Pricing
+      hidden: true,  // accessible via le bouton "Configurer les composants" depuis Construction du prix
     },
     /* DÉSACTIVÉ avril 2026 — Option A.
        La fonction "Stratégie de prix" est couverte par cost_components
