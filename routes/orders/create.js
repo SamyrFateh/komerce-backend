@@ -330,6 +330,20 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       );
     }
 
+    // ─── PHASE B — Snapshot economique fige (P3 doctrine) ────────────────
+    // Appelle pricing-engine.recommend() sur chaque order_item et stocke
+    // l'estime dans order_item_cost_imputations (immuable).
+    // No-op si ORDER_COST_SNAPSHOT_ACTIVE != true (rollout progressif).
+    // Idempotent (ON CONFLICT order_item_id DO NOTHING).
+    try {
+      const orderCostSnapshot = require('../../services/order-cost-snapshot');
+      await orderCostSnapshot.lockEstimatedCostsForOrder(order.id, client, { source: 'pricing-engine' });
+    } catch (snapErr) {
+      // Non-bloquant : si le snapshot échoue, la commande est quand même créée.
+      // L'erreur est loggée pour traitement admin (alerts table possible plus tard).
+      console.error('[ORDER-CREATE] cost snapshot failed for', order.reference, snapErr.message);
+    }
+
     await client.query('COMMIT');
 
     // ── Lier le partage à la commande si share_token présent (fire-and-forget) ──

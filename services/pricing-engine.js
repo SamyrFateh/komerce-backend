@@ -1264,12 +1264,21 @@ function buildRecommendationText({
 async function recommend(input, options = {}) {
   const config = options.config || (await loadGlobalConfig());
 
+  // ─── PATCH P2 (Phase A) — alias pour scope cohérent ──────────────────
+  // Ces 2 références (`fc`, `productRow`) sont utilisées plus bas dans la fonction
+  // (data_quality, allocation_averages, subject_type) mais n'étaient pas déclarées
+  // dans le scope de recommend() = ReferenceError silencieusement swallow par les
+  // try/catch des callers (routes/pricing.js). On les déclare maintenant proprement.
+  const fc = config.finance;
+
   // Normaliser : product (depuis BDD) ou inputs libres
   let product = null;
   if (input.product_id) {
     const r0 = await db.query('SELECT * FROM products WHERE id = $1', [input.product_id]);
     if (r0.rows.length) product = r0.rows[0];
   }
+  const productRow = product;          // ← PATCH P2 — alias pour cohérence avec l'usage en aval
+
   // Fusionner inputs prioritaires sur le produit
   const merged = {
     id: input.product_id || product?.id || null,

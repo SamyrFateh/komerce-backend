@@ -497,6 +497,16 @@ async function _createOrderFromSession(sessionId) {
       session_id: sessionId, stock_blocked: stockBlocked,
     });
 
+    // ─── PHASE B — Snapshot economique fige (P3 doctrine) ────────────────
+    // Une commande collective doit suivre EXACTEMENT le meme cœur business
+    // qu'une commande Stripe/cash : snapshot pricing-engine au moment de la creation.
+    try {
+      const orderCostSnapshot = require('./order-cost-snapshot');
+      await orderCostSnapshot.lockEstimatedCostsForOrder(order.id, client, { source: 'collective' });
+    } catch (snapErr) {
+      console.error('[CollectivePay] cost snapshot failed for', order.reference, snapErr.message);
+    }
+
     await client.query('COMMIT');
     console.log('[CollectivePay] ✅ Commande creee', order.reference, 'depuis workspace', ws.id, stockBlocked ? '(STOCK BLOCKED)' : '');
 
