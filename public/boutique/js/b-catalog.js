@@ -237,6 +237,15 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
  * Rend la grille principale des produits (desktop).
  * @param {Array} products - Tous les produits
  */
+
+  // ── Flat subcat chrome cleanup (stub — mode non actif en ES modules) ──
+  function _unmountFlatSubcatChrome() {
+    var overlay = document.getElementById('k-flat-subcat-overlay');
+    if (overlay) overlay.remove();
+    var nav = document.getElementById('k-flat-subcat-nav');
+    if (nav) nav.remove();
+  }
+
   function renderGrid() {
     state.page = 0;
     const _isMobile = window.innerWidth < 900;

@@ -11,7 +11,7 @@ import { fmt, fmtPrice, sanitize, optimizeImgUrl, renderProductCarousel, bindCar
 import { showToast, saveCart }        from './b-cart-core.js';
 import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { openCart, closeCart, renderCart, toggleFav, quickAdd, quickRemove, loadSharedCart, shareCartWhatsApp } from './b-cart.js';
-import { renderGrid }                 from './b-catalog.js';
+import { renderGrid, appendNextPage } from './b-catalog.js';
 import { openModal }                  from './b-modal.js';
 
   // ║  §12 · VIEWS — Favoris, Suivi, Historique commandes, switchView  ║
