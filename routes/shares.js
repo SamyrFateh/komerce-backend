@@ -1,191 +1,242 @@
-/**
- * KOMERCE — /api/shares
- *
- * Route A — POST /api/shares     : Créer un partage de panier
- * Route B — GET  /api/shares/:token : Récupérer un panier partagé
- */
-
-'use strict';
-
+// routes/shares.js — v2 (event shares + contributions)
 const express = require('express');
 const router  = express.Router();
-const crypto  = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** Token court de 8 caractères URL-safe */
-function generateShareToken() {
-  return crypto.randomBytes(6).toString('base64url').slice(0, 8);
+/* ── helpers ─────────────────────────────────────── */
+function genToken(len = 8) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let t = '';
+  for (let i = 0; i < len; i++) t += chars[Math.floor(Math.random() * chars.length)];
+  return t;
 }
 
-/** SHA256 sans stocker de PII (IP, User-Agent) */
-function sha256(str) {
-  return crypto.createHash('sha256').update(str || '').digest('hex');
+async function enrichItems(items) {
+  if (!items || !items.length) return [];
+  const ids = [...new Set(items.map(i => i.product_id).filter(Boolean))];
+  if (!ids.length) return items;
+  const { rows } = await db.query(
+    `SELECT id, name, price_kmf, promo_price_kmf, images FROM products WHERE id = ANY($1)`,
+    [ids]
+  );
+  const byId = {};
+  rows.forEach(p => byId[p.id] = p);
+  return items.map(item => {
+    const p = byId[item.product_id] || {};
+    return {
+      product_id: item.product_id,
+      qty: item.qty || 1,
+      product: {
+        id: item.product_id,
+        name: p.name || item.name || 'Produit',
+        price_kmf: p.promo_price_kmf || p.price_kmf || item.price_kmf || 0,
+        images: p.images || []
+      }
+    };
+  });
 }
 
-// ── Route A — POST /api/shares ─────────────────────────────────────────────
-
-router.post('/', async (req, res, next) => {
+/* ── POST /api/shares — créer un lien (simple ou événement) ── */
+router.post('/', async (req, res) => {
   try {
-    const { cart_items, sharer_name } = req.body;
+    const {
+      cart_items,
+      type        = 'simple',   // 'simple' | 'event'
+      event_label = null,       // ex: "Mariage de Samyr 🎉"
+      sharer_name = null
+    } = req.body;
 
-    if (!Array.isArray(cart_items) || cart_items.length === 0) {
-      return res.status(400).json({ error: 'cart_items[] obligatoire (tableau, min 1 article)' });
+    if (!cart_items || !Array.isArray(cart_items) || cart_items.length === 0) {
+      return res.status(400).json({ error: 'cart_items requis' });
     }
 
-    // Validation des items
-    for (const item of cart_items) {
-      if (!item.product_id || typeof item.product_id !== 'string') {
-        return res.status(400).json({ error: 'Chaque item doit avoir un product_id (string)' });
-      }
-      const qty = parseInt(item.qty, 10);
-      if (!qty || qty < 1) {
-        return res.status(400).json({ error: `qty invalide pour product_id: ${item.product_id}` });
-      }
-    }
+    // Calculer le total snapshot
+    const total_kmf = cart_items.reduce((sum, i) => {
+      return sum + ((i.price_kmf || i.product?.price_kmf || 0) * (i.qty || 1));
+    }, 0);
 
-    // Récupère les produits pour calculer le total et vérifier l'existence
-    const productIds = cart_items.map(i => i.product_id);
-    const { rows: products } = await db.query(
-      'SELECT id, name, price_kmf, image_url FROM products WHERE id = ANY($1) AND is_active = TRUE',
-      [productIds]
-    );
-
-    if (products.length === 0) {
-      return res.status(404).json({ error: 'Aucun produit actif trouvé dans le panier' });
-    }
-
-    const productMap = Object.fromEntries(products.map(p => [p.id, p]));
-
-    let cart_total_kmf = 0;
-    let items_count = 0;
-
-    for (const item of cart_items) {
-      const product = productMap[item.product_id];
-      if (!product) continue; // produit inconnu ignoré silencieusement
-      const qty = parseInt(item.qty, 10) || 1;
-      cart_total_kmf += product.price_kmf * qty;
-      items_count += qty;
-    }
-
-    if (items_count === 0) {
-      return res.status(400).json({ error: 'Aucun article valide dans le panier' });
-    }
-
-    // Hash IP + UA (anti-spam, zéro PII stocké)
-    const rawIp = req.ip || req.headers['x-forwarded-for'] || '';
-    const rawUa = req.headers['user-agent'] || '';
-    const sharer_ip_hash = sha256(rawIp);
-    const sharer_ua_hash = sha256(rawUa);
-
-    // Génère un token unique (retry sur collision, probabilité infime)
-    let share_token;
-    for (let i = 0; i < 5; i++) {
-      const candidate = generateShareToken();
-      const { rows: existing } = await db.query(
-        'SELECT id FROM cart_shares WHERE share_token = $1',
-        [candidate]
+    let token;
+    let attempts = 0;
+    while (attempts < 5) {
+      token = genToken(8);
+      const { rowCount } = await db.query(
+        'SELECT 1 FROM cart_shares WHERE share_token = $1', [token]
       );
-      if (existing.length === 0) { share_token = candidate; break; }
+      if (rowCount === 0) break;
+      attempts++;
     }
 
-    if (!share_token) {
-      return res.status(503).json({ error: 'Impossible de générer un token unique, réessayez' });
-    }
+    const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000); // 30 jours
 
-    const { rows: [share] } = await db.query(
-      `INSERT INTO cart_shares (
-        share_token, cart_items, cart_total_kmf, items_count,
-        sharer_name, sharer_ip_hash, sharer_ua_hash
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING share_token, created_at`,
-      [
-        share_token,
-        JSON.stringify(cart_items),
-        cart_total_kmf,
-        items_count,
-        sharer_name ? sharer_name.slice(0, 50) : null,
-        sharer_ip_hash,
-        sharer_ua_hash,
-      ]
+    await db.query(
+      `INSERT INTO cart_shares
+         (share_token, cart_items, type, event_label, sharer_name, status, contributed_kmf, expires_at)
+       VALUES ($1, $2, $3, $4, $5, 'active', 0, $6)`,
+      [token, JSON.stringify(cart_items), type, event_label, sharer_name, expiresAt]
     );
 
-    // URL courte : /c/token → redirige vers la boutique avec ?share=token
-    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-    const share_url = `${baseUrl}/c/${share.share_token}`;
-
-    return res.status(201).json({
-      share_token: share.share_token,
-      share_url,
-      created_at: share.created_at,
+    const host = process.env.APP_URL || `https://${req.headers.host}`;
+    return res.json({
+      token,
+      url:      `${host}/c/${token}`,
+      redirect: `/boutique/?share=${token}`,
+      type,
+      event_label,
+      total_kmf
     });
-
   } catch (err) {
-    next(err);
+    console.error('[shares] POST error:', err);
+    return res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
-// ── Route B — GET /api/shares/:token ──────────────────────────────────────
-
-router.get('/:token', async (req, res, next) => {
+/* ── GET /api/shares/:token — lire un panier partagé ── */
+router.get('/:token', async (req, res) => {
   try {
     const { token } = req.params;
+    const { rows } = await db.query(
+      `SELECT * FROM cart_shares WHERE share_token = $1`, [token]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Lien introuvable ou expiré' });
 
-    // Validation légère du format du token
-    if (!token || token.length > 20 || !/^[\w-]+$/.test(token)) {
-      return res.status(400).json({ error: 'Format de token invalide' });
+    const share = rows[0];
+
+    // Vérifier expiration
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Ce lien a expiré' });
     }
 
-    const { rows: [share] } = await db.query(
-      'SELECT * FROM cart_shares WHERE share_token = $1',
-      [token]
-    );
+    const rawItems = typeof share.cart_items === 'string'
+      ? JSON.parse(share.cart_items)
+      : share.cart_items || [];
 
-    if (!share) {
-      return res.status(404).json({ error: 'Partage introuvable ou expiré' });
+    const items = await enrichItems(rawItems);
+
+    const total_kmf = items.reduce((s, i) => s + (i.product.price_kmf * i.qty), 0);
+
+    // Contributions si mode événement
+    let contributions = [];
+    let contributed_kmf = share.contributed_kmf || 0;
+    if (share.type === 'event') {
+      const cRes = await db.query(
+        `SELECT contributor_name, mode, product_id, amount_kmf, message, status, created_at
+         FROM cart_contributions
+         WHERE share_token = $1
+         ORDER BY created_at ASC`,
+        [token]
+      );
+      contributions = cRes.rows;
+      contributed_kmf = contributions
+        .filter(c => c.status !== 'cancelled')
+        .reduce((s, c) => s + (c.amount_kmf || 0), 0);
     }
-
-    // Incrémente open_count + set first_opened_at (fire-and-forget, non bloquant)
-    db.query(
-      `UPDATE cart_shares
-       SET open_count       = open_count + 1,
-           first_opened_at  = COALESCE(first_opened_at, NOW())
-       WHERE share_token = $1`,
-      [token]
-    ).catch(e => console.error('[SHARES] open_count update error:', e.message));
-
-    // Enrichit les items avec le snapshot produit courant
-    const cartItems = share.cart_items; // JSONB → déjà parsé par le driver pg
-    const productIds = cartItems.map(i => i.product_id);
-
-    const { rows: products } = await db.query(
-      'SELECT id, name, price_kmf, image_url FROM products WHERE id = ANY($1)',
-      [productIds]
-    );
-    const productMap = Object.fromEntries(products.map(p => [p.id, p]));
-
-    const enrichedItems = cartItems.map(item => ({
-      product_id: item.product_id,
-      qty: item.qty,
-      product_snapshot: productMap[item.product_id]
-        ? {
-            name:  productMap[item.product_id].name,
-            price: productMap[item.product_id].price_kmf,
-            image: productMap[item.product_id].image_url,
-          }
-        : null,
-    }));
 
     return res.json({
-      cart_items:  enrichedItems,
-      total_kmf:   share.cart_total_kmf,
-      sharer_name: share.sharer_name,
-      items_count: share.items_count,
+      token,
+      type:          share.type || 'simple',
+      event_label:   share.event_label || null,
+      sharer_name:   share.sharer_name || null,
+      status:        share.status || 'active',
+      expires_at:    share.expires_at,
+      items,
+      total_kmf,
+      contributed_kmf,
+      remaining_kmf: Math.max(0, total_kmf - contributed_kmf),
+      contributions
     });
-
   } catch (err) {
-    next(err);
+    console.error('[shares] GET error:', err);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+/* ── POST /api/shares/:token/contributions — pledger ── */
+router.post('/:token/contributions', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const {
+      contributor_name,
+      mode       = 'amount',  // 'item' | 'amount'
+      product_id = null,
+      amount_kmf = null,
+      message    = null
+    } = req.body;
+
+    if (!contributor_name) return res.status(400).json({ error: 'contributor_name requis' });
+    if (mode === 'item' && !product_id) return res.status(400).json({ error: 'product_id requis pour mode item' });
+    if (mode === 'amount' && (!amount_kmf || amount_kmf <= 0)) return res.status(400).json({ error: 'amount_kmf requis' });
+
+    // Vérifier que le share existe et est actif
+    const { rows } = await db.query(
+      `SELECT type, status, expires_at FROM cart_shares WHERE share_token = $1`, [token]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Lien introuvable' });
+    const share = rows[0];
+    if (share.status !== 'active') return res.status(400).json({ error: 'Ce panier est clôturé' });
+    if (share.type !== 'event') return res.status(400).json({ error: 'Ce panier ne supporte pas les contributions' });
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Ce lien a expiré' });
+    }
+
+    // Calculer montant si mode item
+    let finalAmount = amount_kmf;
+    if (mode === 'item' && product_id) {
+      const pRes = await db.query(
+        'SELECT COALESCE(promo_price_kmf, price_kmf) as price FROM products WHERE id = $1', [product_id]
+      );
+      if (pRes.rows.length) finalAmount = pRes.rows[0].price;
+    }
+
+    const { rows: insertRows } = await db.query(
+      `INSERT INTO cart_contributions
+         (share_token, contributor_name, mode, product_id, amount_kmf, message, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pledged')
+       RETURNING id, contributor_name, mode, amount_kmf, message, status, created_at`,
+      [token, contributor_name, mode, product_id, finalAmount, message]
+    );
+
+    // Mettre à jour contributed_kmf sur cart_shares
+    await db.query(
+      `UPDATE cart_shares SET contributed_kmf = (
+        SELECT COALESCE(SUM(amount_kmf), 0) FROM cart_contributions
+        WHERE share_token = $1 AND status != 'cancelled'
+      ) WHERE share_token = $1`,
+      [token]
+    );
+
+    return res.status(201).json({ contribution: insertRows[0] });
+  } catch (err) {
+    console.error('[shares] contribution error:', err);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+/* ── PATCH /api/shares/:token/contributions/:id — confirmer paiement (admin) ── */
+router.patch('/:token/contributions/:id', async (req, res) => {
+  try {
+    const { token, id } = req.params;
+    const { status } = req.body; // 'paid' | 'cancelled'
+    if (!['paid', 'cancelled'].includes(status)) return res.status(400).json({ error: 'status invalide' });
+
+    await db.query(
+      `UPDATE cart_contributions SET status = $1 WHERE id = $2 AND share_token = $3`,
+      [status, id, token]
+    );
+
+    // Recalculer contributed_kmf
+    await db.query(
+      `UPDATE cart_shares SET contributed_kmf = (
+        SELECT COALESCE(SUM(amount_kmf), 0) FROM cart_contributions
+        WHERE share_token = $1 AND status != 'cancelled'
+      ) WHERE share_token = $1`,
+      [token]
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[shares] PATCH contribution error:', err);
+    return res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

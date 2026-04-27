@@ -2900,14 +2900,23 @@ function quickRemove(productId, btnEl) {
   /* ── SHARE CART WHATSAPP ────────────────────────────────── */
   /* ── SHARED CART — API v2 ──────────────────────────────────── */
 
-  async function buildCartShareURL() {
-    // Appel API → POST /api/shares → retourne share_url courte
-    const cart_items = state.cart.map(function(item) {
-      return { product_id: item.product.id, qty: item.qty };
-    });
-    const res = await apiPost('/api/shares', { cart_items: cart_items });
-    if (res && res.share_url) return res.share_url;
-    throw new Error('share_url manquante');
+  async function buildCartShareURL(opts) {
+    opts = opts || {};
+    const payload = {
+      cart_items: state.cart.map(function(item) {
+        return {
+          product_id: item.product.id,
+          qty: item.qty,
+          price_kmf: item.product.promo_price_kmf || item.product.price_kmf || 0
+        };
+      }),
+      type:        opts.type        || 'simple',
+      event_label: opts.event_label || null,
+      sharer_name: opts.sharer_name || null
+    };
+    const res = await apiPost('/api/shares', payload);
+    if (res && (res.url || res.share_url)) return res.url || res.share_url;
+    throw new Error('url manquante');
   }
 
   function _buildFallbackCartURL() {
@@ -2918,42 +2927,144 @@ function quickRemove(productId, btnEl) {
     return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
-  async function shareCartWhatsApp() {
+  /* ======= SHARE CHOICE MODAL ======= */
+  function _injectShareModalCSS() {
+    if (document.getElementById('k-share-modal-css')) return;
+    var s = document.createElement('style');
+    s.id = 'k-share-modal-css';
+    var css = '';
+    css += '.k-share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center}';
+    css += '.k-share-sheet{background:#fff;border-radius:20px 20px 0 0;padding:28px 20px 36px;width:100%;max-width:480px;animation:kShareIn .3s ease}';
+    css += '@keyframes kShareIn{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}';
+    css += '.k-share-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:6px}';
+    css += '.k-share-sub{font-size:13px;color:#999;text-align:center;margin-bottom:22px}';
+    css += '.k-share-choices{display:flex;flex-direction:column;gap:12px}';
+    css += '.k-share-choice{display:flex;align-items:center;gap:14px;padding:16px;border:2px solid #e0e0e0;border-radius:14px;cursor:pointer;transition:border-color .2s;background:#fff}';
+    css += '.k-share-choice:active,.k-share-choice:hover{border-color:#e53935;background:#fff8f8}';
+    css += '.k-share-choice-icon{font-size:32px;flex-shrink:0}';
+    css += '.k-share-choice-label{font-size:15px;font-weight:700}';
+    css += '.k-share-choice-desc{font-size:12px;color:#757575;margin-top:2px}';
+    css += '.k-share-cancel{margin-top:16px;width:100%;padding:12px;border:none;background:none;color:#999;font-size:14px;cursor:pointer}';
+    css += '.k-event-form label{font-size:13px;color:#757575;display:block;margin-bottom:4px;margin-top:14px}';
+    css += '.k-event-form input{width:100%;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box}';
+    css += '.k-event-form input:focus{border-color:#e53935}';
+    css += '.k-event-go{width:100%;padding:13px;background:#e53935;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:16px}';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function _closeShareModal() {
+    var ov = document.getElementById('k-share-overlay');
+    if (ov) ov.remove();
+  }
+
+  function showShareChoiceModal() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+    _injectShareModalCSS();
+    var ov = document.createElement('div');
+    ov.id = 'k-share-overlay';
+    ov.className = 'k-share-overlay';
+    var html = '<div class="k-share-sheet" id="k-share-sheet">'
+      + '<div class="k-share-title">Comment partager ?</div>'
+      + '<div class="k-share-sub">Choisis selon l&#x27;occasion</div>'
+      + '<div class="k-share-choices">'
+        + '<div class="k-share-choice" id="k-choice-simple">'
+          + '<div class="k-share-choice-icon">&#128279;</div>'
+          + '<div><div class="k-share-choice-label">Partage simple</div>'
+          + '<div class="k-share-choice-desc">Le destinataire voit ton panier et peut commander</div></div>'
+        + '</div>'
+        + '<div class="k-share-choice" id="k-choice-event">'
+          + '<div class="k-share-choice-icon">&#127881;</div>'
+          + '<div><div class="k-share-choice-label">&#201;v&#233;nement collectif</div>'
+          + '<div class="k-share-choice-desc">Mariage, anniversaire, naissance&#8230; chacun contribue</div></div>'
+        + '</div>'
+      + '</div>'
+      + '<button class="k-share-cancel" id="k-share-cancel-btn">Annuler</button>'
+      + '</div>';
+    ov.innerHTML = html;
+    ov.addEventListener('click', function(e){ if (e.target === ov) _closeShareModal(); });
+    document.body.appendChild(ov);
+    document.getElementById('k-choice-simple').addEventListener('click', function() {
+      _closeShareModal(); _doSimpleShare();
+    });
+    document.getElementById('k-choice-event').addEventListener('click', _showEventForm);
+    document.getElementById('k-share-cancel-btn').addEventListener('click', _closeShareModal);
+  }
 
-    showToast('⏳ Génération du lien…', 'info');
+  function _showEventForm() {
+    var sheet = document.getElementById('k-share-sheet');
+    if (!sheet) return;
+    var html = '<div class="k-share-title">&#127881; &#201;v&#233;nement collectif</div>'
+      + '<div class="k-share-sub">Les invit&#233;s pourront contribuer article par article</div>'
+      + '<div class="k-event-form">'
+        + '<label>Nom de l&#x27;&#233;v&#233;nement</label>'
+        + '<input id="k-event-label" type="text" placeholder="ex: Mariage de Samyr" maxlength="80"/>'
+        + '<label>Ton pr&#233;nom</label>'
+        + '<input id="k-event-sharer" type="text" placeholder="ex: Fatima" maxlength="60"/>'
+        + '<button class="k-event-go" id="k-event-go-btn">Cr&#233;er le lien &#127881;</button>'
+      + '</div>'
+      + '<button class="k-share-cancel" id="k-share-back-btn">&#8592; Retour</button>';
+    sheet.innerHTML = html;
+    document.getElementById('k-event-go-btn').addEventListener('click', _doEventShare);
+    document.getElementById('k-share-back-btn').addEventListener('click', function() {
+      _closeShareModal(); showShareChoiceModal();
+    });
+  }
+
+  async function _doSimpleShare() {
+    showToast('Generation du lien...', 'info');
     var cartURL;
-    try {
-      cartURL = await buildCartShareURL();
-    } catch(e) {
-      console.warn('share API error, using fallback URL:', e);
-      cartURL = _buildFallbackCartURL();
-    }
-
-    var lines = [];
-    lines.push('🧺 *Mon panier Komerce*');
-    lines.push('━━━━━━━━━━━━━━━━');
-    lines.push('');
-
-    state.cart.forEach(function(item, idx) {
+    try { cartURL = await buildCartShareURL({ type: 'simple' }); }
+    catch(e) { cartURL = _buildFallbackCartURL(); }
+    var lines = ['&#129525; *Mon panier Komerce*', '--------------------', ''];
+    state.cart.forEach(function(item, i) {
       var name = item.product.name || 'Produit';
-      var priceKMF = (item.product.price_kmf || 0) * item.qty;
-      var line = (idx + 1) + '. ' + name;
+      var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
+      var line = (i+1) + '. ' + name;
       if (item.qty > 1) line += ' x' + item.qty;
-      line += ' — ' + fmt(priceKMF, 'KMF');
+      line += ' - ' + fmt(price, 'KMF');
       lines.push(line);
     });
+    lines.push('', '--------------------');
+    lines.push('Total : ' + fmt(cartTotal(), 'KMF') + ' (approx. ' + fmt(cartTotal(), 'EUR') + ')');
+    lines.push('Livraison incluse - 3-5 semaines', '');
+    lines.push('Voir le panier et commander :', cartURL);
+    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+  }
 
-    lines.push('');
-    lines.push('━━━━━━━━━━━━━━━━');
-    lines.push('💰 *Total : ' + fmt(cartTotal(), 'KMF') + '* (≈ ' + fmt(cartTotal(), 'EUR') + ')');
-    lines.push('📦 Livraison incluse · 3-5 semaines');
-    lines.push('');
-    lines.push('👉 Voir le panier et commander :');
-    lines.push(cartURL);
+  async function _doEventShare() {
+    var labelEl  = document.getElementById('k-event-label');
+    var sharerEl = document.getElementById('k-event-sharer');
+    var eventLabel = labelEl  ? labelEl.value.trim()  : '';
+    var sharerName = sharerEl ? sharerEl.value.trim() : '';
+    if (!eventLabel) { showToast('Donne un nom a l&#x27;evenement', 'error'); return; }
+    var btn = document.getElementById('k-event-go-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creation...'; }
+    _closeShareModal();
+    showToast('Creation de l&#x27;evenement...', 'info');
+    var cartURL;
+    try {
+      cartURL = await buildCartShareURL({ type: 'event', event_label: eventLabel, sharer_name: sharerName || null });
+    } catch(e) { cartURL = _buildFallbackCartURL(); }
+    var lines = ['&#127881; *' + eventLabel + '*', '--------------------', ''];
+    lines.push('Voici la liste des cadeaux - contribue a ce qui te convient !', '');
+    state.cart.forEach(function(item, i) {
+      var name = item.product.name || 'Produit';
+      var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
+      var line = (i+1) + '. ' + name;
+      if (item.qty > 1) line += ' x' + item.qty;
+      line += ' - ' + fmt(price, 'KMF');
+      lines.push(line);
+    });
+    lines.push('', '--------------------');
+    lines.push('Total : ' + fmt(cartTotal(), 'KMF'), '');
+    lines.push('Voir et contribuer :', cartURL);
+    if (sharerName) lines.push('Merci de la part de ' + sharerName);
+    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+  }
 
-    var msg = lines.join('\n');
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  async function shareCartWhatsApp() {
+    showShareChoiceModal();
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
