@@ -32,6 +32,13 @@
   var _currency        = _KU._currency;
   var _rates           = _KU._rates;
 
+  /**
+   * Effectue une requête GET authentifiée vers l'API Komerce.
+   * Retry automatique sur 401 (refresh token) + gestion erreurs réseau.
+   * @param {string} url - Chemin relatif (ex: "/api/products")
+   * @param {Object} [opts={}] - Options fetch supplémentaires
+   * @returns {Promise<any>} Données JSON parsées
+   */
   async function apiGet(path) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 10000);
@@ -42,6 +49,14 @@
     } finally { clearTimeout(t); }
   }
 
+  /**
+   * Effectue une requête POST authentifiée vers l'API Komerce.
+   * Supporte JSON body + idempotency key automatique.
+   * @param {string} url - Chemin relatif
+   * @param {Object} body - Corps de la requête (sérialisé en JSON)
+   * @param {Object} [opts={}] - Options fetch supplémentaires
+   * @returns {Promise<any>} Données JSON parsées
+   */
   async function apiPost(path, body, opts = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 15000);
@@ -286,6 +301,10 @@
 
   /* ── CART HELPERS ───────────────────────────────────────── */
   function cartQty() { return state.cart.reduce((s, i) => s + i.qty, 0); }
+  /**
+   * Calcule le total du panier en appliquant les prix promo si disponibles.
+   * @returns {number} Total en KMF
+   */
   function cartTotal() { return state.cart.reduce((s, i) => s + (i.product.price_kmf || 0) * i.qty, 0); }
 
   /**
@@ -324,8 +343,17 @@
     });
   }
 
+  /**
+   * Vérifie si un produit est dans les favoris.
+   * @param {number|string} id - ID produit
+   * @returns {boolean}
+   */
   function isFav(id) { return state.favs.includes(id); }
 
+  /**
+   * Persiste les favoris dans localStorage.
+   * Déclenche un re-rendu de la vue Favoris si active.
+   */
   function saveFavs() {
     localStorage.setItem('k_favs', JSON.stringify(state.favs));
   }
@@ -341,6 +369,11 @@
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-catalog.js
 
+  /**
+   * Charge la page suivante de produits (pagination infinie — desktop).
+   * Utilisé en scroll ↕ sur la vue desktop classique.
+   * @param {string} [catSlug] - Slug catégorie à charger (null = tout)
+   */
   function appendNextPage() {
     const spinner = document.getElementById('k-load-more-spinner');
 
@@ -680,6 +713,12 @@
    *   - Résultat : jamais de cartes orphelines dans la grille 3-cols
    */
   // ── Fisher-Yates shuffle (chaos contrôlé pour page "Tout") ──
+  /**
+   * Fisher-Yates shuffle in-place.
+   * Utilisé pour le chaos aléatoire de la page "Tout" + dopamine loop ghost.
+   * @param {Array} arr - Tableau à mélanger
+   * @returns {Array} Le même tableau mélangé
+   */
   function _shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -688,6 +727,13 @@
     return arr;
   }
 
+  /**
+   * Sélectionne N produits répartis équitablement entre toutes les catégories.
+   * Garantit 20 produits/catégorie dans le pager Temu.
+   * @param {Array} products - Tous les produits
+   * @param {number} n - Nombre à sélectionner
+   * @returns {Array} Sélection équilibrée
+   */
   function _balancedPick(list, pageSize) {
     const MIN_PER_SECTION = 4; // min produits par section (pair pour grille 2-cols)
 
@@ -745,6 +791,12 @@
   // ══════════════════════════════════════════════════════════
 
   // Produits filtrés sur (cat, sub)
+  /**
+   * Filtre les produits d'une catégorie par sous-catégorie.
+   * @param {Array} products - Produits de la catégorie
+   * @param {string|null} subcat - Slug sous-catégorie (null = tout)
+   * @returns {Array} Produits filtrés
+   */
   function _productsForSubcat(cat, sub) {
     return state.filtered.filter(function(p) {
       return p.category === cat && p.subcategory === sub;
@@ -752,6 +804,12 @@
   }
 
   // Meta (label + icon) d'une sous-cat depuis SUBCATS
+  /**
+   * Retourne les métadonnées d'une sous-catégorie (label, count).
+   * Utilisé pour construire les chips filtrants dans le modal.
+   * @param {string} catSlug - Slug catégorie parente
+   * @returns {Array<{label:string, slug:string, count:number}>}
+   */
   function _subcatMeta(cat, subKey) {
     var subs = SUBCATS[cat] || [];
     for (var i = 0; i < subs.length; i++) {
@@ -761,6 +819,13 @@
   }
 
   // Sous-cat suivante dans l'ordre SUBCATS (null si dernière)
+  /**
+   * Retourne la sous-catégorie suivante dans le cycle (modal infini).
+   * Dernière subcat → revient à null (= "Tout").
+   * @param {string} catSlug - Catégorie courante
+   * @param {string|null} currentSubcat - Subcat active
+   * @returns {string|null} Subcat suivante
+   */
   function _nextSubcat(cat, currentSub) {
     var subs = SUBCATS[cat] || [];
     for (var i = 0; i < subs.length - 1; i++) {
@@ -795,6 +860,12 @@
   }
 
   // Rendu : 1 page par sous-cat dans .k-grid + chrome header/tabs stocké pour injection
+  /**
+   * Render complet d'une sous-catégorie dans le pager plat mobile.
+   * Injecte les chips + la grille produits filtrés.
+   * @param {string} catSlug - Catégorie à afficher
+   * @param {string|null} subcatSlug - Filtre actif (null = tout)
+   */
   function _renderFlatSubcat() {
     var fs = state.flatSubcat;
     if (!fs) return '';
@@ -847,6 +918,11 @@
   }
 
   // Injection/retrait du chrome (header + tabs) AU-DESSUS de .k-grid
+  /**
+   * Monte le chrome de navigation sous-catégorie (chips + header sticky).
+   * Appelé une seule fois à l'activation du pager plat.
+   * @param {HTMLElement} section - Élément section catégorie
+   */
   function _mountFlatSubcatChrome() {
     _unmountFlatSubcatChrome();
     var sec = document.getElementById('k-catalog-section');
@@ -857,6 +933,10 @@
     wrapper.innerHTML = state._flatSubcatHeaderHtml || '';
     sec.insertBefore(wrapper, grid);
   }
+  /**
+   * Démonte le chrome de navigation (cleanup avant changement de catégorie).
+   * @param {HTMLElement} section - Élément section catégorie
+   */
   function _unmountFlatSubcatChrome() {
     var old = document.getElementById('k-flat-subcat-chrome');
     if (old) old.remove();
@@ -923,6 +1003,10 @@
   }
 
   // Calcule --pager-h sans brancher les listeners de _setupMobilePager
+  /**
+   * Recalcule --pager-h (hauteur disponible pager) après resize ou rotation.
+   * Utilise offsetHeight pour mesurer le header/nav runtime.
+   */
   function _recalcPagerHeight() {
     var hdr = document.querySelector('.k-header');
     var hero = document.getElementById('k-hero');
@@ -1196,6 +1280,13 @@
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-catalog.js (même module §4)
 
+  /**
+   * Génère la grille produits 2 colonnes pour une section pager.
+   * Format Temu : 20 produits/catégorie, cartes ~183px.
+   * @param {Array} products - Produits à afficher
+   * @param {HTMLElement} container - Conteneur cible
+   * @param {string} catSlug - Slug catégorie (pour boutons ajout)
+   */
   function _renderGridWithSections(items) {
     // ── FIXED ORDER matching chips ──
     const CHIP_ORDER = ['Mode', 'Beauté', 'Tech', 'Enfant', 'Maison', 'Sport', 'Sur-mesure'];
@@ -1429,6 +1520,13 @@
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-cart.js
 
+  /**
+   * Animation "fly to cart" — produit vole de la carte vers l'avatar panier.
+   * Clone l'image → arc de Bézier → burst sparkles → updateCartBadge.
+   * Exception légitime : animation frame-by-frame (rAF).
+   * @param {HTMLElement} btn - Bouton panier cliqué
+   * @param {number} productId - ID du produit ajouté
+   */
   function flyToCart(sourceEl, product) {
     const cartIcon = dom.cartBtn;
     if (!cartIcon || !sourceEl) return;
@@ -1659,6 +1757,11 @@ function addToCart(product, qty, sourceBtn) {
     }
   }
 
+  /**
+   * Synchronise l'état visuel de tous les boutons panier dans les grilles.
+   * 🧺 → stepper si produit dans le panier, reset sinon.
+   * Appelé après chaque modification du panier.
+   */
   function markAllCartButtons() {
     // IDs actuellement dans le panier
     const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
@@ -1705,6 +1808,10 @@ function quickAdd(productId, btnEl) {
   addToCart(product, 1, btnEl);
 }
 
+/**
+ * Supprime instantanément un produit du panier (swipe left sur mobile).
+ * @param {number|string} productId - ID produit à supprimer
+ */
 function quickRemove(productId, btnEl) {
     const pid = String(productId);
     const item = state.cart.find(i => String(i.product.id) === pid);
@@ -1742,6 +1849,11 @@ function quickRemove(productId, btnEl) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-catalog.js (même module §4)
 
+  /**
+   * Initialise la barre de catégories horizontale (pills Temu-style).
+   * Bind les clics + synchronise avec le pager via offsetLeft.
+   * Mode desktop : scroll vertical classique par catégorie.
+   */
   function setupCats() {
     // Split emoji + label pour le layout en carré empilé
     const emojiRx = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*/u;
@@ -1842,6 +1954,11 @@ function quickRemove(productId, btnEl) {
     catsEl.scrollTo({ left: left, behavior: 'smooth' });
   }
 
+  /**
+   * Active la navigation par swipe ↔ entre catégories (pager mobile).
+   * Utilise scroll-snap-type: x proximity + detection offsetLeft.
+   * rAF pour sync pill active + scrollend pour confirmation finale.
+   */
   function setupCatSwipeNav() {
     if (window.innerWidth > 899) return;
     var catsEl = document.getElementById('k-cats');
@@ -1890,6 +2007,11 @@ function quickRemove(productId, btnEl) {
     });
   }
 
+  /**
+   * Affiche les suggestions de recherche en temps réel.
+   * Filtre produits par nom/description (debounce 200ms).
+   * @param {string} query - Terme recherché
+   */
   function renderSearchDropdown(results) {
     if (!results.length) {
       dom.searchDrop.innerHTML = '<div class="k-search-empty">Aucun résultat</div>';
@@ -1925,6 +2047,12 @@ function quickRemove(productId, btnEl) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-modal.js
 
+  /**
+   * Construit le carousel d'images dans le modal produit.
+   * Swipe ↔ mandatory snap + dots indicateurs.
+   * @param {Array<string>} images - URLs des images
+   * @param {HTMLElement} container - Conteneur carousel
+   */
   function buildCarouselSlides(product) {
     var track = dom.modalCarouselTrack;
     var dots = dom.modalDots;
@@ -1958,6 +2086,10 @@ function quickRemove(productId, btnEl) {
   }
 
   // Navigate to a specific slide
+  /**
+   * Navigue vers un slide spécifique du carousel modal.
+   * @param {number} index - Index du slide (0-based)
+   */
   function goToSlide(index) {
     if (index < 0 || index >= state.carouselCount) return;
     state.carouselIndex = index;
@@ -2081,6 +2213,10 @@ function quickRemove(productId, btnEl) {
     setupEnrichedTopbar();
   }
 
+  /**
+   * Scrolle le contenu du modal vers le haut (après changement produit).
+   * Utilise getBoundingClientRect pour position correcte dans le container.
+   */
   function scrollModalToTop() {
     const scrollEl = document.querySelector('.k-modal-scroll');
     if (scrollEl) {
@@ -2088,6 +2224,10 @@ function quickRemove(productId, btnEl) {
     }
   }
 
+  /**
+   * Configure la topbar sticky du modal (bouton ⚡, prix, badge stock).
+   * Sur mobile : bouton "Acheter" réduit à "⚡" pour ne pas écraser le prix.
+   */
   function setupEnrichedTopbar() {
     const modal = document.getElementById('k-modal');
     const topbar = modal ? modal.querySelector('.k-modal-topbar') : null;
@@ -2192,6 +2332,10 @@ function quickRemove(productId, btnEl) {
     }
   }
 
+  /**
+   * Masque le FAB flottant du modal (utilisé pendant le scroll suggestions).
+   * Le FAB réapparaît automatiquement après 800ms d'inactivité.
+   */
   function hideModalFAB() {
     // Reset topbar mode
     const modal = document.getElementById('k-modal');
@@ -2214,6 +2358,12 @@ function quickRemove(productId, btnEl) {
   }
 
   // ── Boutons ← → dans la topbar de la modal
+  /**
+   * Met à jour les flèches de navigation produit suivant/précédent.
+   * Masquées sur mobile, visibles desktop.
+   * @param {number} currentIndex - Index produit dans la liste
+   * @param {number} total - Total produits disponibles
+   */
   function updateModalNavArrows(list, currentIdx) {
     let navEl = document.getElementById('k-modal-nav');
     if (!navEl) {
@@ -2258,6 +2408,10 @@ function quickRemove(productId, btnEl) {
     if (nextBtn) nextBtn.classList.toggle('is-disabled', currentIdx >= list.length - 1);
   }
 
+  /**
+   * Retour arrière dans l'historique modal (produit précédent dans la pile).
+   * Utilisé par le bouton ← dans le topbar modal.
+   */
   function modalGoBack() {
     if (state.modalHistory.length === 0) { closeModal(); return; }
     const prevId = state.modalHistory.pop();
@@ -2281,6 +2435,13 @@ function quickRemove(productId, btnEl) {
     state.modalHistory = [];
   }
 
+  /**
+   * Affiche les suggestions "Dans la catégorie" sous la fiche produit.
+   * 20 produits, grille 2 colonnes, chips subcats filtrants.
+   * IntersectionObserver sur sentinel → modal infini (v276).
+   * @param {Object} product - Produit actif
+   * @param {string|null} [subcatFilter=null] - Filtre sous-catégorie actif
+   */
   function renderSuggestions(sameCat, otherCat, categoryName) {
         sameCat = sameCat || [];
     otherCat = otherCat || [];
@@ -2360,6 +2521,11 @@ function quickRemove(productId, btnEl) {
     if (oldH3) oldH3.classList.add('u-hidden');
 
     // ── Subcategory chip filter — "profond dedans" ──
+    /**
+     * Applique un filtre sous-catégorie sur les suggestions du modal.
+     * Met à jour les chips actives + re-render suggestions filtrées.
+     * @param {string|null} subcat - Slug sous-catégorie (null = tout)
+     */
     function applySubcatFilter() {
       const filter = state.modalSubcatFilter;
       dom.sugRail.querySelectorAll('.k-sug-grid--same .k-sug-card').forEach(card => {
@@ -2483,6 +2649,11 @@ function quickRemove(productId, btnEl) {
     }
   }
 
+  /**
+   * Initialise le modal produit complet (carousel, topbar, suggestions, swipe).
+   * Point d'entrée appelé une seule fois au DOMContentLoaded.
+   * Doctrine : structure HTML + CSS, JS = comportements uniquement.
+   */
   function setupModal() {
     dom.modalBack.addEventListener('click', modalGoBack);
     dom.modalClose.addEventListener('click', closeModal);
@@ -2551,6 +2722,11 @@ function quickRemove(productId, btnEl) {
 
   // ── Image zone: swipe ↔ carousel + swipe ↓ close (Temu-style) ──
   // Details zone: native ↕ scroll only — no gesture interference
+  /**
+   * Active le swipe ↔ sur la zone image du modal (carousel).
+   * scroll-snap-type: x mandatory sur .k-card-carousel.
+   * @param {HTMLElement} carousel - Élément carousel
+   */
   function setupImageZoneTouch() {
     var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
     var track = dom.modalCarouselTrack;
@@ -2618,6 +2794,11 @@ function quickRemove(productId, btnEl) {
   }
 
   // ── Navigation ← → entre produits dans la modal
+  /**
+   * Navigue vers le produit suivant/précédent dans le modal.
+   * Maintient une pile d'historique pour le bouton retour.
+   * @param {number} direction - +1 (suivant) ou -1 (précédent)
+   */
   function navigateModal(direction) {
     if (!state.modalProduct) return;
     const list = state.filtered.length ? state.filtered : state.products;
@@ -2657,6 +2838,10 @@ function quickRemove(productId, btnEl) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-cart.js (même module §7)
 
+  /**
+   * Ouvre le panneau panier latéral (slide-in depuis la droite).
+   * Met à jour le rendu complet + synchronise les badges.
+   */
   function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
@@ -2666,6 +2851,9 @@ function quickRemove(productId, btnEl) {
     document.body.classList.add('cart-open');
   }
 
+  /**
+   * Ferme le panneau panier + restore le scroll catalogue.
+   */
   function closeCart() {
     dom.cartOverlay.classList.remove('open');
     dom.cartDrawer.classList.remove('open');
