@@ -280,59 +280,108 @@ body{
 }
 .k-hero-tag{display:none}
 
-/* ── DESKTOP (>= 900px) ── split 2 colonnes + image NON full-bleed ── */
-/* Option A : hero compact — on veut que l'utilisateur voie déjà
-   le début des sections Soldes / Catalogue sans scroller.
-   Objectif : hero total ≤ 400px hauteur, laisse ≥ 400px de fold
-   pour les produits sur un laptop 1440×900. */
+/* ── DESKTOP (>= 900px) ── hero full-bleed + slogan overlaid ── */
+/* Fix v288 : .k-hero-overlay est dans .k-hero-cats-sticky (sticky bar),
+   pas dans .k-hero-inner → le split 58/42 était cassé.
+   Solution : hero bord-à-bord, image pleine hauteur, slogan overlaid bottom-left. */
 @media(min-width:900px){
   .k-hero{
-    /* Discret séparateur visuel sous le hero */
-    border-bottom:1px solid var(--border);
+    border-bottom:none;
+    overflow:hidden;
   }
   .k-hero-inner{
-    flex-direction:row;
-    align-items:stretch;
-    gap:40px;
-    padding:28px var(--pad-x);
-    min-height:200px;
+    flex-direction:column;
+    padding:0;
+    gap:0;
+    min-height:auto;
+    max-width:100%;
   }
   .k-hero-media{
-    flex:1 1 58%;
-    margin:0; /* fin du full-bleed */
-    border-radius:var(--radius-lg);
+    width:100%;
+    flex:none;
+    margin:0;
+    border-radius:0;
     overflow:hidden;
-    background:#f5ede0;
+    background:#2A3E2C;
+    position:relative;
   }
   .k-hero-img{
     width:100%;
-    height:100%;
-    min-height:200px;
-    object-position:center center;
-    border-radius:var(--radius-lg);
+    height:clamp(280px,28vw,420px);
+    min-height:auto;
+    object-fit:cover;
+    object-position:center 20%;
+    border-radius:0;
+    display:block;
   }
-  .k-hero-overlay{
-    flex:1 1 42%;
-    display:flex;
+  /* Gradient doux pour lisibilité slogan */
+  .k-hero-media::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(
+      to bottom,
+      rgba(0,0,0,.06) 0%,
+      transparent 35%,
+      rgba(0,0,0,.32) 75%,
+      rgba(0,0,0,.55) 100%
+    );
+    pointer-events:none;
+    z-index:1;
+  }
+  /* Slogan overlaid — bottom-left, au-dessus du gradient */
+  .k-hero-mini-slogan{
+    display:flex !important;
+    position:absolute;
+    bottom:36px;
+    left:clamp(24px,4vw,64px);
+    top:auto;
+    transform:none;
+    z-index:10;
     flex-direction:column;
-    justify-content:center;
-    gap:18px;
+    align-items:flex-start;
+    gap:4px;
+    background:none;
     padding:0;
-    border-bottom:none;
-    max-width:480px;
+    pointer-events:none;
   }
-  .k-hero-text-left{
-    gap:14px;
+  .k-hero-mini-slogan .k-line-1,
+  .k-hero-mini-slogan .k-line-2{
+    font-size:clamp(1.6rem,3.2vw,2.6rem);
+    font-weight:800;
+    line-height:1.2;
+    text-shadow:0 2px 12px rgba(0,0,0,.45);
+    color:#fff;
+  }
+  .k-hero-mini-slogan .k-line-2{
+    color:#A8D8A0; /* vert sauge clair — accord avec --ocean-light */
+  }
+  /* Cacher le doublon texte dans la sticky bar */
+  .k-hero-overlay,
+  .k-hero-pills,
+  .k-hero-pill,
+  .k-hero-right-col,
+  .k-hero-proverb-inline,
+  .k-hero-text-left,
+  .k-hero-title,
+  .k-proverb-sep,
+  .k-hero-bubble{
+    display:none !important;
   }
 }
 
 @media(min-width:1200px){
-  .k-hero-inner{
-    padding:36px var(--pad-x);
-    gap:56px;
-    min-height:220px;
+  .k-hero-img{
+    height:clamp(320px,30vw,480px);
   }
-  .k-hero-media, .k-hero-img{min-height:180px}
+  .k-hero-mini-slogan{
+    bottom:44px;
+    left:clamp(40px,5vw,80px);
+  }
+  .k-hero-mini-slogan .k-line-1,
+  .k-hero-mini-slogan .k-line-2{
+    font-size:clamp(2rem,3.6vw,3rem);
+  }
 }
 
 /* ── SECTIONS ──────────────────────────────────────────── */
