@@ -307,33 +307,6 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     { code: '+212', flag: '🇲🇦', name: 'Maroc',           digits: 9,  max: 10, ph: '0612 345678' },
   ];
 
-  /**
-   * Supprime tous les caractères non numériques d'une chaîne.
-   * @param {string} v - Chaîne à nettoyer
-   * @returns {string} Chaîne ne contenant que des chiffres
-   */
-
-  /**
-   * Normalise un numéro local en retirant le 0 initial si présent.
-   * @param {string} code   - Indicatif pays (ex: "+269")
-   * @param {string} digits - Numéro brut
-   * @returns {string} Numéro normalisé sans préfixe local
-   */
-
-  /**
-   * Formate un numéro brut en affichage lisible selon le pays.
-   * @param {string} raw     - Numéro brut
-   * @param {string} country - Code pays ISO (ex: "KM")
-   * @returns {string} Numéro formaté pour affichage
-   */
-
-  /**
-   * Construit un numéro au format E.164 (+XXXXXXXXXXX).
-   * @param {string} code - Indicatif pays (ex: "+269")
-   * @param {string} raw  - Numéro local (chiffres uniquement)
-   * @returns {string} Numéro E.164 complet
-   */
-
   const group = document.createElement('div');
   group.className = 'k-ck-group';
 
@@ -416,10 +389,6 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 
   /**
    * Crée un champ téléphone simplifié (sans sélecteur d'indicatif) pour les Comores.
-   * @param {string} id       - ID HTML du champ
-   * @param {string} label    - Label affiché
-   * @param {Object} dataObj  - Objet de données cible
-   * @param {string} key      - Clé à mettre à jour dans dataObj
    */
 export function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
@@ -458,9 +427,6 @@ export function makePhoneInput(id, label, dataObj, key) {
 
 
   /* ── Wallet ── */
-  /**
- * Vérifie le solde wallet KMF du client en checkout.
- */
 export async function checkWalletBalance() {
     try {
       const res = await fetch('/api/wallet', { credentials: 'same-origin' });
@@ -477,10 +443,6 @@ export async function checkWalletBalance() {
     } catch(e) { /* wallet balance non disponible */ }
   }
 
-  /**
- * Rafraîchit l'affichage du solde wallet.
- * @param {number} balance - Solde KMF
- */
 export function updateWalletDisplay() {
     const ded = document.getElementById('wallet-deduction');
     if (!ded) return;
@@ -497,44 +459,21 @@ export function updateWalletDisplay() {
     }
   }
 
-  /* ── Submit Order ── */
-/**
- * Soumet la commande finale après validation du formulaire.
- * @param {HTMLElement} btn - Bouton submit déclencheur
- * @returns {Promise<void>}
- */
 export async function submitOrder(btn) {
   const od = state.orderData;
   const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
   const recipPhone = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
 
-  // sender_phone : priorité à od.sender_phone, fallback DOM
   let senderPhone = (od.sender_phone || '').trim();
   if (senderPhone.length < 8) {
     const _phoneInput = document.getElementById('of-sender-phone');
     const _countrySel = document.getElementById('of-sender-phone-country');
     const _code = _countrySel?.value || '+33';
-
-    const RULES = {
-      '+33': 9,
-      '+269': 7,
-      '+262': 9,
-      '+32': 9,
-      '+41': 9,
-      '+44': 10,
-      '+1': 10,
-      '+971': 9,
-      '+966': 9,
-      '+60': 9,
-      '+212': 9
-    };
-
+    const RULES = { '+33': 9, '+269': 7, '+262': 9, '+32': 9, '+41': 9, '+44': 10, '+1': 10, '+971': 9, '+966': 9, '+60': 9, '+212': 9 };
     let _digits = String(_phoneInput?.value || '').replace(/\D/g, '');
-
     if (['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(_code) && _digits.startsWith('0')) {
       _digits = _digits.slice(1);
     }
-
     if (_digits.length > 0) {
       const expected = RULES[_code] || 9;
       if (_digits.length !== expected) {
@@ -550,14 +489,8 @@ export async function submitOrder(btn) {
   const fullRecipPhone = '+269' + recipDigits;
   const clientEmail = undefined;
 
-  if (!recipName) {
-    showToast('Indiquez le nom de la personne qui récupère.', 'error');
-    return;
-  }
-  if (!recipPhone) {
-    showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error');
-    return;
-  }
+  if (!recipName) { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
+  if (!recipPhone) { showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error'); return; }
   if (recipDigits.length !== 7) {
     showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
     return;
@@ -566,7 +499,6 @@ export async function submitOrder(btn) {
   const isStripe = od.payment_mode === 'stripe_eur';
   const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
 
-  // Anti double-clic / anti race
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
   btn.disabled = true;
@@ -583,134 +515,74 @@ export async function submitOrder(btn) {
     let orderData = null;
     let apiResult = null;
 
-    // CASH : comportement inchangé
-    // STRIPE : créer la commande UNE seule fois par tentative
     if (isStripe) {
-      if (!state.checkoutAttemptKey) {
-        state.checkoutAttemptKey = genIdempotencyKey();
-      }
-
+      if (!state.checkoutAttemptKey) state.checkoutAttemptKey = genIdempotencyKey();
       if (!state.pendingStripeOrderRef) {
         apiResult = await apiPost('/api/orders', {
-          items,
-          relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
-          recipient_name: recipName,
-          recipient_phone: fullRecipPhone,
-          payment_mode: od.payment_mode,
-          use_wallet: od.use_wallet || false,
-          tracking_phone: trackingPhone || undefined,
-          share_token: state.shareToken || undefined
-        }, {
-          idempotencyKey: state.checkoutAttemptKey
-        });
-
+          items, relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
+          recipient_name: recipName, recipient_phone: fullRecipPhone,
+          payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
+          tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
+        }, { idempotencyKey: state.checkoutAttemptKey });
         orderData = apiResult.order || apiResult;
         state.pendingStripeOrderRef = orderData.reference;
       } else {
-        // Retry Stripe : on réutilise la même commande
         orderData = { reference: state.pendingStripeOrderRef };
       }
     } else {
       apiResult = await apiPost('/api/orders', {
-        items,
-        relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
-        recipient_name: recipName,
-        recipient_phone: fullRecipPhone,
-        payment_mode: od.payment_mode,
-        use_wallet: od.use_wallet || false,
-        tracking_phone: trackingPhone || undefined,
-        share_token: state.shareToken || undefined
+        items, relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
+        recipient_name: recipName, recipient_phone: fullRecipPhone,
+        payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
+        tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
       });
-
       orderData = apiResult.order || apiResult;
     }
 
-    // Stripe payment
     if (isStripe) {
-      if (!_stripe || !_stripeCard) {
-        throw new Error('Stripe non chargé. Rechargez la page.');
-      }
-
+      if (!_stripe || !_stripeCard) throw new Error('Stripe non chargé. Rechargez la page.');
       btn.textContent = '🔒 Sécurisation du paiement…';
-
-      const intentResult = await apiPost('/api/payments/stripe/intent', {
-        order_reference: orderData.reference
-      });
-
+      const intentResult = await apiPost('/api/payments/stripe/intent', { order_reference: orderData.reference });
       btn.textContent = '💳 Validation en cours…';
-
       const stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
-        payment_method: {
-          card: _stripeCard,
-          billing_details: {
-            name: clientName,
-            email: clientEmail || undefined
-          }
-        }
+        payment_method: { card: _stripeCard, billing_details: { name: clientName, email: clientEmail || undefined } }
       });
-
       if (stripeResult.error) {
         const errEl = document.getElementById('stripe-card-error');
-        if (errEl) {
-          errEl.textContent = stripeResult.error.message;
-          errEl.classList.remove('u-hidden');
-        }
-        // IMPORTANT :
-        // on garde pendingStripeOrderRef et checkoutAttemptKey
-        // pour que le retry réutilise la même commande
+        if (errEl) { errEl.textContent = stripeResult.error.message; errEl.classList.remove('u-hidden'); }
         throw new Error(stripeResult.error.message);
       }
-
       showToast('🎉 Paiement accepté !', 'success');
-
-      // paiement OK => on nettoie l’état de tentative
       state.checkoutAttemptKey = null;
       state.pendingStripeOrderRef = null;
     }
 
-    // clear cart
     state.cart = [];
     saveCart();
     renderCart();
-
-    // success screen
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
     showToast('Commande confirmée !', 'success');
-
     btn.dataset.busy = '0';
   } catch (e) {
     console.error('submitOrder:', e);
     showToast(e.message || 'Erreur lors de la commande.', 'error');
-
     btn.disabled = false;
     btn.dataset.busy = '0';
-    btn.textContent = isStripe
-      ? '💳 Payer ' + fmt(cartTotal(), 'KMF')
-      : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     btn.style.opacity = '1';
   }
 }
 
-  /* ── Order Success ── */
-  /**
- * Affiche la confirmation après commande réussie.
- * @param {Object} order - Commande retournée par l'API
- */
 export function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
     const body = dom.orderBody;
     body.innerHTML = '';
     dom.orderTitle.textContent = '✅ Commande confirmée';
-
-    // Retirer tout bouton Confirmer sticky résiduel
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-
-    // Masquer le bouton retour panier s'il existe encore
     body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
 
     const wrap = document.createElement('div');
     wrap.className = 'k-confirm-wrap k-confirm-simple';
 
-    // Émoji + titre
     const emoji = document.createElement('div');
     emoji.className = 'k-confirm-emoji';
     emoji.textContent = '🎉';
@@ -721,7 +593,6 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
     title.textContent = 'Commande confirmée !';
     wrap.appendChild(title);
 
-    // Référence (élément central de l'écran)
     const refBlock = document.createElement('div');
     refBlock.className = 'k-confirm-ref-block';
     refBlock.innerHTML =
@@ -730,8 +601,6 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
     wrap.appendChild(refBlock);
 
-    // NOUVEAU : ligne récap "N articles — XXX KMF"
-    // On lit depuis order (renvoyé par l'API) ou depuis l'état sauvegardé
     const orderQty = order.items_count || (order.items && order.items.length) || null;
     const orderTotal = order.total_kmf != null ? order.total_kmf : null;
     if (orderQty && orderTotal) {
@@ -744,7 +613,6 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       wrap.appendChild(recapLine);
     }
 
-    // Code cash (seulement si paiement cash)
     if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
       const cashBlock = document.createElement('div');
       cashBlock.className = 'k-confirm-cash-block';
@@ -754,7 +622,6 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       wrap.appendChild(cashBlock);
     }
 
-    // 2 consignes courtes
     const notices = document.createElement('div');
     notices.className = 'k-confirm-notices';
     notices.innerHTML =
@@ -762,17 +629,14 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
     wrap.appendChild(notices);
 
-    // Actions : Suivre + Continuer
     const actions = document.createElement('div');
     actions.className = 'k-confirm-actions';
     actions.innerHTML =
       '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">📍 Suivre ma commande</button>' +
       '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">🛍️ Continuer mes achats</button>';
     wrap.appendChild(actions);
-
     body.appendChild(wrap);
 
-    // Bindings
     setTimeout(() => {
       const copyBtn = document.getElementById('k-copy-ref-btn');
       if (copyBtn) {
@@ -786,44 +650,22 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
           }
         });
       }
-
       const closeBtn = document.getElementById('k-order-close-btn');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          closeOrderModal();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-      }
-
+      if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
       const trackBtn = document.getElementById('k-order-track-btn');
       if (trackBtn) {
         trackBtn.addEventListener('click', () => {
           closeOrderModal();
           if (typeof renderTrackView === 'function') renderTrackView();
           if (typeof switchView === 'function') switchView('track');
-          const navItems = document.querySelectorAll('.k-bnav-item');
-          navItems.forEach(i => i.classList.remove('active'));
+          document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
           const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
           if (trackNav) trackNav.classList.add('active');
           setTimeout(() => {
             const refInput = document.getElementById('k-otp-ref');
-            if (refInput) {
-              refInput.value = order.reference || '';
-              const refBtn = document.getElementById('k-otp-ref-btn');
-              if (refBtn) refBtn.click();
-            }
+            if (refInput) { refInput.value = order.reference || ''; document.getElementById('k-otp-ref-btn')?.click(); }
           }, 350);
         });
       }
     }, 0);
   }
-
-    /* ── SETUP CART DRAWER ──────────────────────────────────── */
-
-export {
-  checkoutCart, closeOrderModal, renderCheckout,
-  makeInput, makeIntlPhoneInput,
-  digitsOnly, normalizeLocal, prettifyLocal, buildE164,
-  makePhoneInput, checkWalletBalance, updateWalletDisplay,
-  submitOrder, renderOrderSuccess,
-};
