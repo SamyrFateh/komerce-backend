@@ -270,7 +270,12 @@
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-cart-core.js
 
-  function showToast(msg, type) {
+  /**
+   * @brief showToast — Affiche un toast notification temporaire en bas d'écran
+   * @param {string} msg  - Texte à afficher
+   * @param {string} [type] - Classe CSS additionnelle : 'error' | 'success'
+   */
+    function showToast(msg, type) {
     type = type || '';
     // Wrapper requis pour les styles .k-toast.error/.success
     dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
@@ -283,7 +288,11 @@
   function cartQty() { return state.cart.reduce((s, i) => s + i.qty, 0); }
   function cartTotal() { return state.cart.reduce((s, i) => s + (i.product.price_kmf || 0) * i.qty, 0); }
 
-  function saveCart() {
+  /**
+   * @brief saveCart — Persiste le panier dans localStorage (clé kmrc_cart)
+   * Échoue silencieusement si localStorage indisponible (mode privé)
+   */
+    function saveCart() {
     try {
       localStorage.setItem('kmrc_cart', JSON.stringify(state.cart));
       localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
@@ -291,7 +300,12 @@
     updateCartBadge();
   }
 
-  function updateCartBadge() {
+  /**
+   * @brief updateCartBadge — Source de vérité unique pour tous les états panier
+   * Synchronise : badge header, badge modal, badge bnav, avatar (seule/panier)
+   * Règle : panier vide → avatar_seule.png ; plein → avatar_panier.png + animation
+   */
+    function updateCartBadge() {
     const count = cartQty();
     const hasItems = count > 0;
     const avatarSrc = hasItems ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
@@ -627,7 +641,12 @@
 
 
   // ── HELPERS pour rendu sections catégorie en mode "Tout" ────────────
-  function _renderCard(p) {
+  /**
+   * @brief _renderCard — Génère le HTML d'une carte produit
+   * @param {Object} p - Objet produit (id, name, description, price_kmf, promo_pct, image_url)
+   * @returns {string} HTML de la carte (incluant stepper si qty > 0)
+   */
+    function _renderCard(p) {
     const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
     const qty = inCart ? inCart.qty : 0;
     return `
@@ -957,7 +976,12 @@
   // touchmove est en passive: false pour pouvoir faire preventDefault et
   // empêcher le browser de scroller verticalement quand on swipe horizontalement.
   // ── Helper partagé : détecte si le pager sous-cat plat est actif ──
-  function _isFlatActive() {
+  /**
+   * @brief _isFlatActive — Détecte si le pager Temu (mode flat subcat) est actif
+   * Conditions : mobile (<900px) + state.flatSubcat + grille DOM présente
+   * @returns {boolean}
+   */
+    function _isFlatActive() {
     var _g = document.getElementById('k-grid');
     return window.innerWidth < 900 &&
       window.state &&
@@ -1612,7 +1636,14 @@ function addToCart(product, qty, sourceBtn) {
   }
 }
 
-  function setQty(productId, newQty) {
+  /**
+   * @brief setQty — Met à jour la quantité d'un article dans le panier
+   * Si newQty < 1 → supprime l'article (removeFromCart)
+   * Met à jour le DOM stepper + badge + localStorage
+   * @param {string|number} productId - ID du produit
+   * @param {number} newQty - Nouvelle quantité cible
+   */
+    function setQty(productId, newQty) {
     const pid = String(productId);
     if (newQty < 1) { removeFromCart(pid); return; }
     const item = state.cart.find(i => String(i.product.id) === pid);
@@ -1939,7 +1970,14 @@ function quickRemove(productId, btnEl) {
     });
   }
 
-  function openModal(id, pushHistory) {
+  /**
+   * @brief openModal — Ouvre la fiche produit (modal Shein-style)
+   * Mémorise scrollY du catalogue pour restauration à la fermeture
+   * Charge carousel images + suggestions + subcats filtrants
+   * @param {string|number} id - ID du produit
+   * @param {boolean} [pushHistory] - Pousser dans l'historique navigateur (retour natif)
+   */
+    function openModal(id, pushHistory) {
     const product = state.products.find(p => p.id === id);
     if (!product) return;
 
@@ -2226,7 +2264,12 @@ function quickRemove(productId, btnEl) {
     openModal(prevId, false);
   }
 
-  function closeModal() {
+  /**
+   * @brief closeModal — Ferme la fiche produit et restaure l'état catalogue
+   * Restaure le scroll Y du catalogue sauvegardé dans state._savedCatalogScrollY
+   * Reset les subcats modal + suggestions
+   */
+    function closeModal() {
     hideModalFAB();
     dom.modalOverlay.classList.remove('open');
     // Unlock body scroll — CSS class drives layout
@@ -2969,7 +3012,13 @@ function quickRemove(productId, btnEl) {
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
   }
 
-  async function shareCartWhatsApp() {
+  /**
+   * @brief shareCartWhatsApp — Déclenche le flow de partage panier WhatsApp
+   * Affiche le bottom sheet showShareChoiceModal() :
+   *   - Mode "Simple" : lien panier partagé
+   *   - Mode "Événement collectif" : flow contributions
+   */
+    async function shareCartWhatsApp() {
     showShareChoiceModal();
   }
 
@@ -3074,7 +3123,12 @@ function quickRemove(productId, btnEl) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-checkout.js
 
-  function checkoutCart() {
+  /**
+   * @brief checkoutCart — Lance le flow de commande depuis le panier
+   * Prérequis : panier non vide (sinon toast error)
+   * Ferme le tiroir panier, initialise state.orderData, affiche renderCheckout()
+   */
+    function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
