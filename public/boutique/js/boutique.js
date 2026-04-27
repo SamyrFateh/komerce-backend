@@ -835,6 +835,10 @@
   }
 
   // Helper : bind events sur les nouvelles cartes ajoutées (append incremental)
+  /**
+   * Relie les listeners click/stepper sur les cartes fraîchement injectées dans le DOM.
+   * Appelée après chaque append de produits (infinite scroll, subcat change).
+   */
   function _bindAppendedCards() {
     dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(function(card) {
       card.dataset.bound = '1';
@@ -943,6 +947,10 @@
   }
 
   // Bouton ✕ de sortie + clics sur les tabs
+  /**
+   * Initialise les contrôles de navigation inter-subcats dans la vue mobile plate.
+   * Gère les chips, le swipe horizontal et la synchronisation de l'onglet actif.
+   */
   function _bindFlatSubcatControls() {
     var closeBtn = document.getElementById('k-flat-subcat-close');
     if (closeBtn) {
@@ -966,6 +974,10 @@
   }
 
   // Scroll horizontal vers une sous-cat précise
+  /**
+   * Fait défiler le pager plat (scroll-snap horizontal) jusqu'à la page de la subcat donnée.
+   * @param {string} sub - Slug de la sous-catégorie cible
+   */
   function _scrollFlatPagerToSub(sub) {
     var grid = document.getElementById('k-grid');
     if (!grid || !sub) return;
@@ -976,6 +988,10 @@
   }
 
   // Met à jour header + tab actif selon la page visible
+  /**
+   * Met à jour la chip active dans la barre subcats et le titre de section visible.
+   * @param {string} sub - Slug de la sous-catégorie active
+   */
   function _syncFlatActiveTab(sub) {
     if (!state.flatSubcat) return;
     state.flatSubcat.sub = sub;
@@ -1018,6 +1034,10 @@
   }
 
   // Setup pager horizontal : scroll initial vers la sous-cat choisie + listener sync
+  /**
+   * Crée et injecte les pages du pager plat (une page par subcat).
+   * Appelée à chaque chargement de catégorie en mode mobile.
+   */
   function _setupFlatSubcatPager() {
     var grid = document.getElementById('k-grid');
     if (!grid || !state.flatSubcat) return;
@@ -1074,6 +1094,10 @@
       _g.classList.contains('k-grid-flat-subcat');
   }
 
+  /**
+   * Active le swipe tactile horizontal sur le pager plat via touch events.
+   * Calcule la vélocité et déclenche la navigation subcat si seuil atteint.
+   */
   function _setupFlatSubcatTouchSwipe() {
     var grid = document.getElementById('k-grid');
     if (!grid || grid._flatTouchBound) return;
@@ -1137,6 +1161,10 @@
 
   // Drag-scroll programmatique : force le pager sous-cat à gagner le swipe
   // horizontal contre tout concurrent (carrousels cartes, auto-advance, etc.)
+  /**
+   * Active le drag-scroll souris (desktop) sur le pager plat.
+   * Permet de faire glisser le pager avec la souris comme un doigt.
+   */
   function _setupFlatSubcatDragScroll() {
     var grid = document.getElementById('k-grid');
     if (!grid || grid._flatDragBound) return;
@@ -1205,6 +1233,10 @@
   }
 
   // IO par page → pagination indépendante par sous-cat
+  /**
+   * Installe un IntersectionObserver sur le sentinel de fin de page.
+   * Charge la page suivante automatiquement quand l'utilisateur atteint le bas.
+   */
   function _setupFlatSubcatInfiniteScroll() {
     var grid = document.getElementById('k-grid');
     if (!grid) return;
@@ -1221,6 +1253,10 @@
   }
 
   // Append next batch à une page donnée ; fin de parcours = message + bouton swipe
+  /**
+   * Injecte les produits de la page suivante dans la page subcat courante.
+   * @param {number} page - Index de page à charger (0-indexed)
+   */
   function _appendNextToFlatPage(page) {
     var sub = page.dataset.flatSub;
     var fs = state.flatSubcat;
@@ -1433,6 +1469,10 @@
     return parts.join('');
   }
 
+  /**
+   * Délègue les événements click sur la grille desktop (cartes + stepper + favoris).
+   * Utilise event delegation sur le container global pour performance.
+   */
   function _bindGridEvents() {
     // ── Cartes : ouvrir modal ──
     dom.grid.querySelectorAll('.k-card').forEach(card => {
@@ -1586,6 +1626,11 @@
     const duration = 900;
     let startTime = null;
 
+    /**
+     * Frame d'animation rAF pour l'arc de vol panier (flyToCart).
+     * Calcule la position courbe via Bézier quadratique.
+     * @param {DOMHighResTimeStamp} timestamp - Horodatage fourni par requestAnimationFrame
+     */
     function animateArc(timestamp) {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
@@ -2865,6 +2910,10 @@ function quickRemove(productId, btnEl) {
     }
   }
 
+  /**
+   * Ouvre le panneau panier et met en surbrillance un produit spécifique.
+   * @param {number|string} productId - ID du produit à mettre en avant
+   */
   function openCartWithHighlight(productId) {
     renderCartBody(productId);
     // Celebrating header
@@ -2886,6 +2935,10 @@ function quickRemove(productId, btnEl) {
     }, 120);
   }
 
+  /**
+   * Re-rend le contenu du panneau panier (liste items + totaux + CTA).
+   * @param {number|string} [highlightId] - ID produit à mettre en évidence (optionnel)
+   */
   function renderCartBody(highlightId) {
     dom.cartBody.innerHTML = '';
 
@@ -3056,6 +3109,11 @@ function quickRemove(productId, btnEl) {
     throw new Error('url manquante');
   }
 
+  /**
+   * Construit l'URL de partage de secours si l'API share échoue.
+   * Encode les items du panier en query string.
+   * @returns {string} URL de partage fallback
+   */
   function _buildFallbackCartURL() {
     // Fallback legacy URL si l'API échoue
     const items = state.cart.map(function(item) {
@@ -3090,11 +3148,18 @@ function quickRemove(productId, btnEl) {
     document.head.appendChild(s);
   }
 
+  /**
+   * Ferme et détruit le bottom sheet de choix de partage panier.
+   */
   function _closeShareModal() {
     var ov = document.getElementById('k-share-overlay');
     if (ov) ov.remove();
   }
 
+  /**
+   * Affiche le bottom sheet "Simple / Événement collectif" pour le partage panier.
+   * Point d'entrée unique pour tout partage WhatsApp du panier.
+   */
   function showShareChoiceModal() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     _injectShareModalCSS();
@@ -3128,6 +3193,10 @@ function quickRemove(productId, btnEl) {
     document.getElementById('k-share-cancel-btn').addEventListener('click', _closeShareModal);
   }
 
+  /**
+   * Affiche le formulaire de création d'événement collectif dans le bottom sheet de partage.
+   * Permet de saisir le libellé de l'événement et le nom du créateur.
+   */
   function _showEventForm() {
     var sheet = document.getElementById('k-share-sheet');
     if (!sheet) return;
@@ -3331,6 +3400,9 @@ function quickRemove(productId, btnEl) {
     }
   }
 
+  /**
+   * Ferme et détruit le modal de confirmation de commande.
+   */
   function closeOrderModal() {
     dom.orderModal.classList.remove('open');
     document.body.classList.remove('cart-open');
@@ -3345,6 +3417,10 @@ function quickRemove(productId, btnEl) {
     }
   }
 
+  /**
+   * Rend l'interface complète de passage de commande (récap + formulaire contact + paiement).
+   * Gère les étapes : validation panier → saisie infos → confirmation.
+   */
   function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
@@ -3517,6 +3593,13 @@ function quickRemove(productId, btnEl) {
   }
 
 
+  /**
+   * Crée un champ de saisie téléphone international avec sélecteur d'indicatif.
+   * @param {string} id       - ID HTML du champ
+   * @param {string} label    - Label affiché
+   * @param {Object} dataObj  - Objet de données où écrire la valeur normalisée
+   * @param {string} key      - Clé de l'objet dataObj à mettre à jour
+   */
   function makeIntlPhoneInput(id, label, dataObj, key) {
   const COUNTRIES = [
     { code: '+33',  flag: '🇫🇷', name: 'France',          digits: 9,  max: 10, ph: '06 12 34 56 78' },
@@ -3532,10 +3615,21 @@ function quickRemove(productId, btnEl) {
     { code: '+212', flag: '🇲🇦', name: 'Maroc',           digits: 9,  max: 10, ph: '0612 345678' },
   ];
 
+  /**
+   * Supprime tous les caractères non numériques d'une chaîne.
+   * @param {string} v - Chaîne à nettoyer
+   * @returns {string} Chaîne ne contenant que des chiffres
+   */
   function digitsOnly(v) {
     return String(v || '').replace(/\D+/g, '');
   }
 
+  /**
+   * Normalise un numéro local en retirant le 0 initial si présent.
+   * @param {string} code   - Indicatif pays (ex: "+269")
+   * @param {string} digits - Numéro brut
+   * @returns {string} Numéro normalisé sans préfixe local
+   */
   function normalizeLocal(code, digits) {
     // On accepte le 0 national saisi par l'utilisateur pour certains pays
     if (
@@ -3547,6 +3641,12 @@ function quickRemove(productId, btnEl) {
     return digits;
   }
 
+  /**
+   * Formate un numéro brut en affichage lisible selon le pays.
+   * @param {string} raw     - Numéro brut
+   * @param {string} country - Code pays ISO (ex: "KM")
+   * @returns {string} Numéro formaté pour affichage
+   */
   function prettifyLocal(raw, country) {
     const d = digitsOnly(raw).slice(0, country.max);
     if (!d) return '';
@@ -3565,6 +3665,12 @@ function quickRemove(productId, btnEl) {
     return d.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
   }
 
+  /**
+   * Construit un numéro au format E.164 (+XXXXXXXXXXX).
+   * @param {string} code - Indicatif pays (ex: "+269")
+   * @param {string} raw  - Numéro local (chiffres uniquement)
+   * @returns {string} Numéro E.164 complet
+   */
   function buildE164(code, raw) {
     let digits = digitsOnly(raw);
     if (!digits) return '';
@@ -3652,6 +3758,13 @@ function quickRemove(productId, btnEl) {
   return group;
 }
 
+  /**
+   * Crée un champ téléphone simplifié (sans sélecteur d'indicatif) pour les Comores.
+   * @param {string} id       - ID HTML du champ
+   * @param {string} label    - Label affiché
+   * @param {Object} dataObj  - Objet de données cible
+   * @param {string} key      - Clé à mettre à jour dans dataObj
+   */
   function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
     group.className = 'k-ck-group';
@@ -4040,6 +4153,10 @@ async function submitOrder(btn) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur modules: b-favs.js · b-tracking.js
 
+  /**
+   * Initialise le drawer de navigation latéral (open/close/swipe).
+   * Gère le backdrop, les gestes tactiles et l'accessibilité.
+   */
   function setupDrawer() {
     dom.cartBtn.addEventListener('click', openCart);
     dom.cartClose.addEventListener('click', closeCart);
@@ -4196,6 +4313,10 @@ async function submitOrder(btn) {
   }
 
   // FEATURE 2 : Badge "🎉" sur l'icône Favoris de la bnav quand promos actives
+  /**
+   * Met à jour le badge numérique sur l'onglet Favoris (nb de promos actives).
+   * @param {number} promoCount - Nombre de produits favoris en promo
+   */
   function updateFavPromoBadge(promoCount) {
     const favNavItem = document.querySelector('.k-bnav-item[data-tab="fav"]');
     if (!favNavItem) return;
@@ -4276,6 +4397,11 @@ async function submitOrder(btn) {
     { key: 'delivered',   label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' }
   ];
 
+  /**
+   * Génère le HTML de la timeline de statut commande (commandée → livrée).
+   * @param {string} status - Statut courant (ex: "pending", "shipped", "delivered")
+   * @returns {string} HTML de la timeline
+   */
   function buildTimeline(status) {
     const idx = TRACK_STEPS.findIndex(s => s.key === status);
     return TRACK_STEPS.map((s, i) => {
@@ -4292,6 +4418,11 @@ async function submitOrder(btn) {
     }).join('');
   }
 
+  /**
+   * Injecte la liste des commandes passées dans le container de l'onglet Suivi.
+   * @param {Array}       orders    - Tableau d'objets commande
+   * @param {HTMLElement} container - Élément DOM cible
+   */
   function renderOrdersHistory(orders, container) {
     if (!orders.length) {
       container.innerHTML = '<div class="k-search-empty">Aucune commande trouvée.</div>';
@@ -4308,6 +4439,11 @@ async function submitOrder(btn) {
       </div>`).join('');
   }
 
+  /**
+   * Injecte le détail complet d'une commande (items, statut, timeline, infos relais).
+   * @param {Object}      order     - Objet commande complet
+   * @param {HTMLElement} container - Élément DOM cible
+   */
   function renderOrderDetail(order, container) {
     container.innerHTML = `
       <div class="k-order-card">
@@ -4320,6 +4456,10 @@ async function submitOrder(btn) {
       </div>`;
   }
 
+  /**
+   * Initialise la vue Suivi : formulaire tracking rapide + lien historique OTP.
+   * Deux modes : tracking 4 chiffres (anonyme) et historique complet (OTP WhatsApp).
+   */
   function renderTrackView() {
     let el = document.getElementById('k-track-view');
     if (!el) {
@@ -4449,6 +4589,11 @@ async function submitOrder(btn) {
     return map[status] || { emoji: '📦', label: status || 'Inconnu', cls: 'pending' };
   }
 
+  /**
+   * Formate une date ISO en affichage localisé lisible.
+   * @param {string} isoDate - Date au format ISO 8601
+   * @returns {string} Date formatée (ex: "lun. 27 avr. 2026")
+   */
   function formatOrderDate(isoDate) {
     if (!isoDate) return '';
     try {
@@ -4739,6 +4884,11 @@ async function submitOrder(btn) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Reste dans boutique.js (orchestrateur)
 
+  /**
+   * Point d'entrée principal — initialise l'application Komerce boutique.
+   * Charge les produits, configure les vues, branche tous les listeners.
+   * Appelée une seule fois au DOMContentLoaded.
+   */
   function init() {
     updateCartBadge();
     // Expose renderGrid sur window pour le listener délégué global (flat subcat)
@@ -4880,6 +5030,9 @@ document.addEventListener('click', function(e) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-cart.js (même module §7)
 
+  /**
+   * Ferme le stepper actuellement ouvert et remet le bouton 🧺 panier à sa place.
+   */
   function closeActiveStepper() {
     if (!activeStepperBtn) return;
     const stepper = activeStepperBtn.querySelector('.k-card-add-stepper');
@@ -4892,11 +5045,18 @@ document.addEventListener('click', function(e) {
     if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
   }
 
+  /**
+   * Remet à zéro le timer d'auto-fermeture du stepper (3s sans interaction).
+   */
   function resetAutoClose() {
     if (autoCloseTimer) clearTimeout(autoCloseTimer);
     autoCloseTimer = setTimeout(closeActiveStepper, STEPPER_AUTOCLOSE_MS);
   }
 
+  /**
+   * Ouvre le stepper inline sur une carte produit et anime son apparition.
+   * @param {HTMLElement} btn - Bouton 🧺 qui déclenche l'ouverture
+   */
   function openStepper(btn) {
     // Fermer tout autre stepper ouvert
     closeActiveStepper();
@@ -4952,6 +5112,11 @@ document.addEventListener('click', function(e) {
     resetAutoClose();
   }
 
+  /**
+   * Démarre le chrono de long-press sur un bouton stepper (−/+).
+   * Déclenche une répétition accélérée après 500ms.
+   * @param {Event} e - Événement pointerdown
+   */
   function startPress(e) {
     const btn = e.target.closest('.k-card-add.in-cart');
     if (!btn) return;
@@ -4966,6 +5131,10 @@ document.addEventListener('click', function(e) {
     }, LONG_PRESS_MS);
   }
 
+  /**
+   * Arrête la répétition du long-press et libère le pointeur.
+   * @param {Event} e - Événement pointerup/pointerleave
+   */
   function endPress(e) {
     const btn = e.target.closest('.k-card-add.in-cart');
     if (btn) btn.classList.remove('is-long-pressing');
@@ -4982,6 +5151,9 @@ document.addEventListener('click', function(e) {
     isLongPress = false;
   }
 
+  /**
+   * Annule le long-press en cours sans déclencher d'action répétée.
+   */
   function cancelPress() {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     document.querySelectorAll('.k-card-add.is-long-pressing').forEach(b => {
@@ -5030,6 +5202,10 @@ document.addEventListener('click', function(e) {
 // Placeholder adaptatif sur la barre de recherche (évite troncature)
 // ═══════════════════════════════════════════════════════════════════════
 (function adaptivePlaceholder() {
+  /**
+   * Met à jour le texte placeholder de la barre de recherche selon la catégorie active.
+   * Utilise un cycle rotatif de suggestions thématiques.
+   */
   const updatePlaceholder = () => {
     const input = document.getElementById('k-search-input');
     if (!input) return;
@@ -5058,6 +5234,10 @@ document.addEventListener('click', function(e) {
     // ── Index flottant vertical à droite (sauts rapides entre sections) ──
   // Apparaît uniquement en mode "Tout" (sections verticales actives).
   // Se met à jour à chaque re-render de la grille sectionnée.
+  /**
+   * Rend l'index flottant des catégories (visible sur desktop, masqué sur mobile).
+   * Génère les ancres de navigation rapide entre sections.
+   */
   function _renderFloatingIndex() {
     const existing = document.getElementById('k-section-index');
     if (existing) existing.remove();
@@ -5150,6 +5330,10 @@ document.addEventListener('click', function(e) {
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-pager.js
 
+  /**
+   * Initialise le pager horizontal Temu-style pour le mobile.
+   * Configure le scroll-snap, les observers et la navigation circulaire (ghost loop).
+   */
   function _setupMobilePager() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
@@ -5203,12 +5387,25 @@ document.addEventListener('click', function(e) {
       var _lastST   = 0;
       var _wasDown  = false;
 
+      /**
+       * Vérifie si la section courante du pager est scrollée jusqu'en bas.
+       * @returns {boolean} true si le bas est atteint (marge 8px)
+       */
       function _atBottom() {
         if (sec.scrollHeight <= sec.clientHeight + 40) return false; // section trop courte, pas de scroll
         return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
       }
+      /**
+       * Vérifie si la section courante du pager est en haut.
+       * @returns {boolean} true si scrollTop ≤ 4px
+       */
       function _atTop()    { return sec.scrollTop <= 4; }
 
+      /**
+       * Navigue vers une section du pager par index, avec scroll optionnel en haut/bas.
+       * @param {number}  targetIdx      - Index de la section cible (0-indexed)
+       * @param {boolean} [scrollToBottom] - Si true, scrolle en bas de la section après navigation
+       */
       function _goTo(targetIdx, scrollToBottom) {
         if (window._scrollingToSection) return;
         var targetSec = sections[(targetIdx + n) % n];
@@ -5317,6 +5514,10 @@ document.addEventListener('click', function(e) {
 
   // ── Sync pill ↔ scroll : rAF instant (zéro retard) ──
   var _pagerRaf = null;
+  /**
+   * Synchronise la chip active dans la barre catégories selon la position de scroll du pager.
+   * Utilise offsetLeft pour une détection précise (pas une division par width).
+   */
   function _syncChipToScroll() {
     var grid = document.getElementById('k-grid');
     if (!grid) return;
@@ -5338,6 +5539,10 @@ document.addEventListener('click', function(e) {
     }
   }
 
+  /**
+   * Handler debounced sur le scroll horizontal du pager.
+   * Déclenche _syncChipToScroll + auto-avance vers section suivante si bas atteint.
+   */
   function _onPagerScroll() {
     if (window._scrollingToSection) return;
     if (_pagerRaf) return;
@@ -5347,6 +5552,11 @@ document.addEventListener('click', function(e) {
     });
   }
 
+  /**
+   * Fait défiler le pager horizontal jusqu'à la section de la catégorie donnée.
+   * Met à jour la chip active et déclenche le chargement des produits si nécessaire.
+   * @param {string} cat - Slug catégorie (ex: "mode", "tech", "all")
+   */
   function _scrollPagerToCat(cat) {
     var grid = document.getElementById('k-grid');
     if (!grid) return;
@@ -5410,6 +5620,10 @@ document.addEventListener('click', function(e) {
     ghost.setAttribute('data-ghost', 'true');
     grid.appendChild(ghost);
     // Téléportation silencieuse quand l'utilisateur atterrit sur le ghost
+    /**
+     * Détecte l'arrivée sur le ghost "Tout" en fin de pager.
+     * Déclenche la téléportation silencieuse vers la vraie section "Tout" + reshuffle.
+     */
     function _ghostCheck() {
       var ghostEl = grid.querySelector('[data-ghost]');
       if (!ghostEl) return;
