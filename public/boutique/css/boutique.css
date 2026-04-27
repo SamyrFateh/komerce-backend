@@ -5594,7 +5594,7 @@ button,
 /*                                                                         */
 /*        🏠 HOME PAGE OPTIMISATION v2 — densité + clarté + identité       */
 /*        ⚠️ Sections 1-3 (header/hero/chips) SUPPRIMÉES — consolidées     */
-/*        dans le bloc mobile principal 
+/*        dans le bloc mobile principal */
 .k-promo-rail-wrap::after {
   content: '';
   position: absolute;
@@ -5689,7 +5689,7 @@ button,
 /*  SECTIONS VERTICALES (home "Tout") — en-têtes + grille 2 cols par cat   */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* En-tête de section — DESKTOP ONLY (mobile styles are in 
+/* En-tête de section — DESKTOP ONLY (mobile styles are in */
 
 /* Grille de produits d'une section — responsive */
 .k-sec-grid {
@@ -5840,7 +5840,7 @@ body.cart-open #k-section-index {
 
 
 /* CARTES COMPACTES sections — rules consolidated into mobile block @899px */
-/* (see section K inside the main 
+/* (see section K inside the main */
 /* Desktop : 52px libre */
 @media (min-width: 900px) {
   .k-header .k-cart-avatar,
@@ -7447,8 +7447,6 @@ body.cart-open #k-section-index {
     grid-column: 1 / -1 !important;
   }
 
-  position: relative;
-  /* Fade à droite qui indique "il y a plus à droite" */
 
 .k-sec-header {
     grid-column: 1 / -1;
@@ -7466,11 +7464,6 @@ body.cart-open #k-section-index {
     position: relative;
     scroll-margin-top: 70px;
   }
-
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  overflow: visible !important;
 
 .k-header .k-cart-avatar {
     width: 40px !important;
