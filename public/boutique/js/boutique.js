@@ -511,8 +511,7 @@
 
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
   async function loadProducts() {
-  console.log("[loadProducts] start");
-
+  
   try {
     if (typeof K === 'undefined' || !K.products) {
       throw new Error("K non disponible");
@@ -541,10 +540,7 @@
   state.filtered = [...state.products];
   renderGrid();
   if (dom.promoRail) renderPromos();
-    applyMobileStyles();
   markAllCartButtons();
-  applyMobileStyles();
-
   // FEATURE 2 : vérifier si des favoris sont en promo et màj badge bnav
   try {
     const favProducts = state.products.filter(p => state.favs.includes(p.id));
@@ -1714,15 +1710,7 @@ function addToCart(product, qty, sourceBtn) {
   function setQty(productId, newQty) {
     const pid = String(productId);
     if (newQty < 1) { removeFromCart(pid); return; }
-    
-  // Écoute les événements du stepper flottant (module externe long-press)
-  document.addEventListener('cart:setqty', function(e) {
-    const { pid, qty } = e.detail || {};
-    if (pid !== undefined && qty !== undefined) {
-      setQty(pid, qty);
-    }
-  });
-const item = state.cart.find(i => String(i.product.id) === pid);
+    const item = state.cart.find(i => String(i.product.id) === pid);
     if (item) {
       item.qty = newQty;
       saveCart();
@@ -2109,8 +2097,7 @@ function quickRemove(productId, btnEl) {
       .filter(p => p.category !== product.category && p.id !== product.id)
       .sort(() => Math.random() - 0.5)
       .slice(0, 16);
-    console.log('[KMRC SUG] calling with sameCat=' + sameCat.length + ' otherCat=' + otherCat.length + ' cat=' + product.category);
-    state.modalSubcatFilter = null; // Reset subcategory filter for new product
+        state.modalSubcatFilter = null; // Reset subcategory filter for new product
     renderSuggestions(sameCat, otherCat, product.category);
 
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
@@ -2335,21 +2322,17 @@ function quickRemove(productId, btnEl) {
   }
 
   function renderSuggestions(sameCat, otherCat, categoryName) {
-    console.log('[KMRC SUG] called with', {sameCat: sameCat?.length, otherCat: otherCat?.length, cat: categoryName});
-    sameCat = sameCat || [];
+        sameCat = sameCat || [];
     otherCat = otherCat || [];
     const sugSection = document.getElementById('k-modal-suggestions');
-    console.log('[KMRC SUG] sugSection found:', !!sugSection);
-    if (!sugSection) return;
+        if (!sugSection) return;
 
     if (sameCat.length === 0 && otherCat.length === 0) {
-      console.log('[KMRC SUG] HIDING (both empty)');
-      sugSection.classList.add('u-hidden');
+            sugSection.classList.add('u-hidden');
       return;
     }
     sugSection.classList.remove('u-hidden');
-    console.log('[KMRC SUG] rendering', sameCat.length + otherCat.length, 'products');
-
+    
     // Template carte suggestion — stepper −/qty/+ en bas
     const cardHTML = (p) => {
       const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
@@ -3173,8 +3156,7 @@ function quickRemove(productId, btnEl) {
     // FIX : masquer bnav pour voir bouton Payer
     const bnav = document.getElementById('k-bnav');
     if (bnav) {
-      bnav.dataset.savedDisplay = bnav.style.display || '';
-      bnav.style.display = 'none';
+      bnav.classList.add('u-hidden');
     }
   }
 
@@ -3184,8 +3166,7 @@ function quickRemove(productId, btnEl) {
     // FIX : restaurer bnav
     const bnav = document.getElementById('k-bnav');
     if (bnav) {
-      bnav.style.display = bnav.dataset.savedDisplay || '';
-      delete bnav.dataset.savedDisplay;
+      bnav.classList.remove('u-hidden');
     }
     if (typeof window._savedScrollY === 'number') {
       window.scrollTo(0, window._savedScrollY);
@@ -3571,7 +3552,7 @@ function quickRemove(productId, btnEl) {
           if (balText) balText.textContent = 'Solde disponible : ' + fmt(state.walletBalance, 'KMF');
         }
       }
-    } catch(e) { console.log('wallet check:', e); }
+    } catch(e) { /* wallet balance non disponible */ }
   }
 
   function updateWalletDisplay() {
@@ -3944,7 +3925,7 @@ async function submitOrder(btn) {
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
         spinner.classList.add('show');
-        setTimeout(() => { appendNextPage(); applyMobileStyles(); }, 300);
+        setTimeout(() => { appendNextPage(); }, 300);
       }
     }, { rootMargin: '200px' });
     observer.observe(sentinel);
@@ -4627,8 +4608,17 @@ async function submitOrder(btn) {
     loadRelais();
   }
 
-  window.addEventListener('resize', applyMobileStyles);
+  // resize: applyMobileStyles supprimé — CSS gère tout
   if (document.readyState === 'loading') {
+    // ── LISTENER GLOBAL cart:setqty (stepper flottant) ──
+  // Enregistré UNE SEULE FOIS ici — pas dans setQty (memory leak évité)
+  document.addEventListener('cart:setqty', function(e) {
+    var d = e.detail || {};
+    if (d.pid !== undefined && d.qty !== undefined) {
+      setQty(d.pid, d.qty);
+    }
+  });
+
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
@@ -4676,11 +4666,6 @@ document.addEventListener('click', function(e) {
     // La sortie se fait UNIQUEMENT par le bouton ✕ du chrome.
     state.flatSubcat = { cat: cat, sub: sub };
     state.page = 0;
-    console.log('[FLAT_SUBCAT]', {
-      cat: cat,
-      sub: sub,
-      pages: document.querySelectorAll('.k-flat-subcat-page').length
-    });
     if (typeof window.renderGrid === 'function') window.renderGrid();
     var _sc = document.getElementById('k-page-scroll');
     if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
@@ -5293,67 +5278,5 @@ document.addEventListener('click', function(e) {
   // ══════════════════════════════════════════════════════════
   // DEBUG BUTTON (temporaire) — affiche infos flat subcat à l'écran
   // Tape sur le bouton 🐛 en bas-droite pour voir le diagnostic
-  // ══════════════════════════════════════════════════════════
-  (function() {
-    var btn = document.createElement('button');
-    btn.id = 'k-debug-btn';
-    btn.textContent = '🐛';
-    btn.style.cssText = 'position:fixed;bottom:80px;left:12px;width:44px;height:44px;border-radius:50%;border:none;background:#e53935;color:#fff;font-size:20px;z-index:99999;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:pointer;';
-    document.body.appendChild(btn);
-
-    var panel = document.createElement('div');
-    panel.id = 'k-debug-panel';
-    panel.style.cssText = 'position:fixed;top:60px;left:8px;right:8px;bottom:140px;background:#111;color:#0f0;font-family:monospace;font-size:11px;padding:12px;overflow-y:auto;z-index:99998;display:none;white-space:pre-wrap;border-radius:8px;line-height:1.4;';
-    document.body.appendChild(panel);
-
-    btn.addEventListener('click', function() {
-      if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
-      var lines = [];
-      var elements = [
-        ['#k-page-scroll', document.getElementById('k-page-scroll')],
-        ['#k-catalog-section', document.getElementById('k-catalog-section')],
-        ['#k-flat-subcat-chrome', document.getElementById('k-flat-subcat-chrome')],
-        ['#k-grid', document.getElementById('k-grid')],
-        ['.k-flat-subcat-page[0]', document.querySelector('.k-flat-subcat-page')]
-      ];
-      lines.push('=== FLAT SUBCAT DEBUG ===');
-      lines.push('state.flatSubcat: ' + JSON.stringify(state.flatSubcat));
-      lines.push('window: ' + window.innerWidth + 'x' + window.innerHeight);
-      lines.push('isMobile (<900): ' + (window.innerWidth < 900));
-      lines.push('');
-      lines.push('🎯 Sub-chips DOM: ' + document.querySelectorAll('.k-sec-subchip').length);
-      lines.push('🎯 Dernier clic chip: ' + JSON.stringify(window.__lastSubchipClick || 'AUCUN'));
-      lines.push('🎯 Dernier pointerdown: ' + JSON.stringify(window.__lastPointerDown || 'AUCUN'));
-      lines.push('');
-      elements.forEach(function(pair) {
-        var name = pair[0], el = pair[1];
-        if (!el) { lines.push('❌ ' + name + ' MISSING'); lines.push(''); return; }
-        var cs = getComputedStyle(el);
-        lines.push('📦 ' + name);
-        lines.push('  offsetH:  ' + el.offsetHeight);
-        lines.push('  scrollH:  ' + el.scrollHeight);
-        lines.push('  canScroll:' + (el.scrollHeight > el.offsetHeight ? '✅ YES' : '❌ NO'));
-        lines.push('  display:  ' + cs.display);
-        lines.push('  flexDir:  ' + cs.flexDirection);
-        lines.push('  overflowY:' + cs.overflowY);
-        lines.push('  overflowX:' + cs.overflowX);
-        lines.push('  touchAct: ' + cs.touchAction);
-        lines.push('  contain:  ' + cs.contain);
-        lines.push('  height:   ' + cs.height);
-        lines.push('  position: ' + cs.position);
-        lines.push('');
-      });
-      var page = document.querySelector('.k-flat-subcat-page');
-      if (page) {
-        lines.push('🎯 Cartes page[0]: ' + page.querySelectorAll('.k-card').length);
-        lines.push('🎯 Classes .k-grid: ' + document.getElementById('k-grid').className);
-        lines.push('🎯 Classes #k-page-scroll: ' + document.getElementById('k-page-scroll').className);
-      }
-      panel.textContent = lines.join('\n');
-      panel.style.display = 'block';
-    });
-  })();
-
-
 
 })();
