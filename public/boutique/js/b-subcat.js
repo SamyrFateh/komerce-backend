@@ -15,6 +15,10 @@ import {
 import {
   showToast,
 }                         from './b-cart-core.js';
+import {
+  _setupMobilePager,
+}                         from './b-pager.js';
+
 
 'use strict';
 

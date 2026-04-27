@@ -17,8 +17,24 @@ import {
 import {
   showToast, cartQty, updateCartBadge, isFav,
 }                         from './b-cart-core.js';
+import {
+  _setupMobilePager,
+  _setupSectionAutoAdvance,
+  _setupHorizontalWrap,
+  _syncChipToScroll,
+  _onPagerScroll,
+  _scrollPagerToCat,
+  _scrollPagerToGhost,
+  _reshuffleToutInDOM,
+  _setupInfiniteLoop,
+}                         from './b-pager.js';
+
 
 'use strict';
+
+// Pager → catalog : centrer la chip active (découplage circulaire)
+bus.on('chip:center', function(chip) { centerActiveChip(chip); });
+
 
   // ║  §4 · CATALOG — Promos, grille, cartes, shuffle                  ║
   // ╚══════════════════════════════════════════════════════════════════╝
