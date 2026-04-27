@@ -13,12 +13,14 @@ import {
 import {
   optimizeImgUrl, sanitize, promoImgUrl, fmt, fmtPrice,
   productEmoji, _currency, _rates,
+  renderProductCarousel, bindCarouselDots,
 }                         from './b-utils.js';
 import {
-  showToast, cartQty, updateCartBadge, isFav,
+  showToast, cartQty, updateCartBadge, isFav, saveCart,
 }                         from './b-cart-core.js';
 import {
   renderCartBody,
+  toggleFav, quickAdd, quickRemove, markAllCartButtons,
 }                         from './b-cart.js';
 import {
   _setupMobilePager,
@@ -31,7 +33,7 @@ import {
   _reshuffleToutInDOM,
   _setupInfiniteLoop,
 }                         from './b-pager.js';
-
+import { openModal }      from './b-modal.js';
 
 'use strict';
 
@@ -920,7 +922,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
 export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
-  loadProducts,
+  loadProducts, _renderCard,
 };
 // Backward-compat aliases (boutique.js Phase 10 legacy imports)
 export { setupCats as initCats, setupSearch as initSearch };

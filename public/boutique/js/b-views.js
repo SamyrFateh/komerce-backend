@@ -7,12 +7,11 @@
 
 import { bus }                        from './b-bus.js';
 import { state, dom, $, $$ }          from './b-store.js';
-import { fmt, fmtPrice, sanitize, optimizeImgUrl } from './b-utils.js';
+import { fmt, fmtPrice, sanitize, optimizeImgUrl, renderProductCarousel, bindCarouselDots, productEmoji, apiGet, apiPost } from './b-utils.js';
 import { showToast, saveCart }        from './b-cart-core.js';
-import { openCart, closeCart, renderCart } from './b-cart.js';
+import { openCart, closeCart, renderCart, toggleFav, quickAdd, quickRemove, loadSharedCart, shareCartWhatsApp } from './b-cart.js';
 import { renderGrid }                 from './b-catalog.js';
 import { openModal }                  from './b-modal.js';
-import { shareCartWhatsApp }          from './b-cart.js';
 
   // ║  §12 · VIEWS — Favoris, Suivi, Historique commandes, switchView  ║
   // ╚══════════════════════════════════════════════════════════════════╝

@@ -16,8 +16,15 @@ import {
 import {
   showToast, updateCartBadge, saveCart, cartQty,
 }                         from './b-cart-core.js';
+import {
+  addToCart, quickAdd, quickRemove, toggleFav, setQty,
+  openCart, closeCart, markAllCartButtons,
+}                         from './b-cart.js';
 
 'use strict';
+
+// Receive close-modal signal from b-cart (avoids circular dep)
+bus.on('modal:close', function() { if (typeof closeModal === 'function') closeModal(); });
 
   // ║  §9 · MODAL — Fiche produit, carousel, suggestions, subcat       ║
   // ╚══════════════════════════════════════════════════════════════════╝

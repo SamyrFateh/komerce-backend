@@ -13,9 +13,10 @@ import {
 }                         from './b-store.js';
 import {
   sanitize, fmt, fmtPrice, optimizeImgUrl,
+  productEmoji, _currency, apiGet, apiPost,
 }                         from './b-utils.js';
 import {
-  showToast, updateCartBadge, saveCart, cartQty, cartTotal,
+  showToast, updateCartBadge, saveCart, cartQty, cartTotal, saveFavs,
 }                         from './b-cart-core.js';
 
 'use strict';
@@ -240,7 +241,7 @@ import {
       dom.addCartBtn.classList.add('confirmed');
       dom.addCartBtn.disabled = false;
       dom.addCartBtn.innerHTML = '✓ Ajouté';
-      dom.addCartBtn.onclick = function() { closeModal(); setTimeout(openCart, 150); };
+      dom.addCartBtn.onclick = function() { bus.emit('modal:close'); setTimeout(openCart, 150); };
     }, 700);
   } else if (sourceBtn) {
     // Toast de confirmation (grid / rail)

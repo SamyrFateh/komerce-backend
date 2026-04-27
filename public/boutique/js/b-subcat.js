@@ -10,7 +10,7 @@ import {
   state, SUBCATS, dom, $, $$,
 }                         from './b-store.js';
 import {
-  sanitize, fmt,
+  sanitize, fmt, bindCarouselDots,
 }                         from './b-utils.js';
 import {
   showToast,
@@ -18,6 +18,9 @@ import {
 import {
   _setupMobilePager,
 }                         from './b-pager.js';
+import { _renderCard, renderGrid } from './b-catalog.js';
+import { openModal }               from './b-modal.js';
+import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
 
 
 'use strict';

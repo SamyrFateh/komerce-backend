@@ -177,6 +177,14 @@ export function bindCarouselDots(card) {
   carousel.addEventListener('mouseup',    onEnd);
 }
 
+// ── API helpers (wrappers around window.K.request) ──
+export function apiGet(path) {
+  return window.K.request(path, 'GET');
+}
+export function apiPost(path, body) {
+  return window.K.request(path, 'POST', body || null);
+}
+
 /* ── COMPAT LEGACY window.KUtils ─────────────────────────── */
 // Conservé pendant la migration pour tout code qui consomme window.KUtils
 // À supprimer quand boutique.js sera entièrement migré en ES module (Phase 7)

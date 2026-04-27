@@ -7,7 +7,7 @@
 
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$ }  from './b-store.js';
-import { fmt, sanitize, genIdempotencyKey } from './b-utils.js';
+import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
 import { showToast, cartTotal, saveCart }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart }  from './b-cart.js';
 
