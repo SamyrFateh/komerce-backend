@@ -7678,3 +7678,46 @@ body.cart-open #k-section-index {
 @media (min-width: 1200px) {
   .k-sec-grid { grid-template-columns: repeat(5, 1fr); gap: 16px; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX v289b — MODAL ACTIONS DESKTOP : placement grille explicite
+   Problème : display:contents sur .k-modal-details → actions auto-placées
+   après suggestions (tout en bas). Fix : grid placement explicite.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 600px) {
+  /* Grille 3 rangées : [info] [actions] [suggestions] */
+  .k-modal-scroll {
+    grid-template-rows: 1fr auto auto !important;
+  }
+  /* Image span rangées 1+2 (hauteur info + actions) */
+  .k-modal-img-wrap {
+    grid-column: 1 !important;
+    grid-row: 1 / 3 !important;
+    align-self: start !important;
+  }
+  /* Info : col 2, rangée 1 */
+  .k-modal-info {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    overflow-y: auto !important;
+  }
+  /* Actions : col 2, rangée 2 — sticky bottom dans le scroll */
+  .k-modal-actions {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    align-self: end !important;
+    z-index: 10 !important;
+    background: rgba(255,255,255,0.96) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(0,0,0,0.07) !important;
+  }
+  /* Suggestions : pleine largeur, rangée 3 */
+  .k-modal-suggestions {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+  }
+}
