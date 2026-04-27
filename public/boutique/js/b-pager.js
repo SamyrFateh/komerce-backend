@@ -13,6 +13,9 @@ import {
 
 'use strict';
 
+  // ── State variables ──
+  var _sectionObserver = null;  // IntersectionObserver vertical (désactivé en mode pager)
+
   // ║  §15 · PAGER TEMU — Navigation circulaire + ghost loop            ║
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-pager.js
