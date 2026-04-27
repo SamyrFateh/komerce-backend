@@ -18,6 +18,9 @@ import {
   showToast, cartQty, updateCartBadge, isFav,
 }                         from './b-cart-core.js';
 import {
+  renderCartBody,
+}                         from './b-cart.js';
+import {
   _setupMobilePager,
   _setupSectionAutoAdvance,
   _setupHorizontalWrap,
@@ -176,7 +179,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
   });
   if (state.cart.length !== before) {
     saveCart();
-    if (typeof renderCartBody === 'function') renderCartBody();
+    renderCartBody();
     if (typeof updateCartBadge === 'function') updateCartBadge();
     const removed = before - state.cart.length;
     showToast(`${removed} produit${removed > 1 ? 's' : ''} obsolète${removed > 1 ? 's' : ''} retiré${removed > 1 ? 's' : ''} du panier`, 'info');

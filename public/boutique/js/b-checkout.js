@@ -671,7 +671,7 @@ export async function submitOrder(btn) {
     // clear cart
     state.cart = [];
     saveCart();
-    renderCartBody();
+    renderCart();
 
     // success screen
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
