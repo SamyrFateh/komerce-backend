@@ -287,12 +287,6 @@
   };
 
   /* ── RENDER SUBCATEGORIES ────────────────────────────── */
-  function renderSubcats() {
-    /* Removed — subcategories are now local inline chips inside each section.
-       See _renderGridWithSections() for the local subcats approach. */
-    var wrap = document.getElementById('k-subcats-wrap');
-    if (wrap) { wrap.innerHTML = ''; wrap.classList.remove('k-subcats-visible'); }
-  }
 
     /* ── MOBILE SCROLL TOP RECALC ────────────────────────── */
   function _updateMobileScrollTop() {
@@ -415,21 +409,7 @@
 
 
   /* ── SKELETON LOADING ───────────────────────────────────── */
-  function showSkeletons(n) {
-    if (!dom.grid) return;
-    dom.grid.innerHTML = Array.from({length: n}, () => `
-      <div class="k-card k-card-skeleton">
-        <div class="k-skeleton k-skeleton-img"></div>
-        <div class="k-card-info">
-          <div class="k-skeleton k-skeleton-title"></div>
-          <div class="k-skeleton k-skeleton-price"></div>
-        </div>
-      </div>`).join('');
-  }
 
-  function hideSkeletons() {
-    dom.grid.querySelectorAll('.k-card-skeleton').forEach(el => el.remove());
-  }
 
   /* ── INFINITE SCROLL — append next page ─────────────────── */
   function appendNextPage() {
@@ -571,12 +551,6 @@
      MOBILE FIX v7.0 — Force inline styles via JS
      Runs after every render to guarantee mobile layout
      ═══════════════════════════════════════════════════════════════ */
-  function applyMobileStyles() {
-    /* CSS is the single source of truth for all layout.
-       This function is intentionally empty.
-       Mobile styles are defined in boutique.css @media(max-width:899px).
-       Desktop styles use @media(min-width:900px) overrides. */
-  }
 
   function renderPromos() {
     const promos = state.products.filter(p => p.promo_pct > 0).slice(0, 10);
@@ -1061,6 +1035,16 @@
   // exploitables pour le drag scroll, donc on double avec touchstart/move/end.
   // touchmove est en passive: false pour pouvoir faire preventDefault et
   // empêcher le browser de scroller verticalement quand on swipe horizontalement.
+  // ── Helper partagé : détecte si le pager sous-cat plat est actif ──
+  function _isFlatActive() {
+    var _g = document.getElementById('k-grid');
+    return window.innerWidth < 900 &&
+      window.state &&
+      window.state.flatSubcat &&
+      _g &&
+      _g.classList.contains('k-grid-flat-subcat');
+  }
+
   function _setupFlatSubcatTouchSwipe() {
     var grid = document.getElementById('k-grid');
     if (!grid || grid._flatTouchBound) return;
@@ -1069,15 +1053,9 @@
     var dragging = false;
     var startX = 0, startY = 0, startScrollLeft = 0;
 
-    function isFlatMode() {
-      return window.innerWidth < 900 &&
-        window.state &&
-        window.state.flatSubcat &&
-        grid.classList.contains('k-grid-flat-subcat');
-    }
 
     grid.addEventListener('touchstart', function(e) {
-      if (!isFlatMode()) return;
+      if (!_isFlatActive()) return;
       if (e.touches.length !== 1) return;
       var t = e.touches[0];
       // Respecter les vrais boutons
@@ -1092,7 +1070,7 @@
     }, { capture: true, passive: true });
 
     grid.addEventListener('touchmove', function(e) {
-      if (!active || !isFlatMode()) return;
+      if (!active || !_isFlatActive()) return;
       var t = e.touches[0];
       var dx = t.clientX - startX;
       var dy = t.clientY - startY;
@@ -1139,14 +1117,8 @@
     var startX = 0;
     var startY = 0;
     var startScrollLeft = 0;
-    function isFlatMode() {
-      return window.innerWidth < 900 &&
-        window.state &&
-        window.state.flatSubcat &&
-        grid.classList.contains('k-grid-flat-subcat');
-    }
     grid.addEventListener('pointerdown', function(e) {
-      if (!isFlatMode()) return;
+      if (!_isFlatActive()) return;
       /* Ne pas voler les vrais boutons */
       if (e.target.closest(
         'button, a, input, textarea, select, .k-card-add, .k-card-fav, .k-flat-subcat-tab, .k-flat-subcat-close'
@@ -1158,7 +1130,7 @@
       startScrollLeft = grid.scrollLeft;
     }, true);
     grid.addEventListener('pointermove', function(e) {
-      if (!down || !isFlatMode()) return;
+      if (!down || !_isFlatActive()) return;
       var dx = e.clientX - startX;
       var dy = e.clientY - startY;
       if (!dragging) {
@@ -2397,7 +2369,7 @@ function quickRemove(productId, btnEl) {
     dom.sugRail.innerHTML = html;
     // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
     const oldH3 = sugSection.querySelector('h3');
-    if (oldH3) oldH3.style.display = 'none';
+    if (oldH3) oldH3.classList.add('u-hidden');
 
     // ── Subcategory chip filter — "profond dedans" ──
     function applySubcatFilter() {
@@ -3326,12 +3298,6 @@ function quickRemove(productId, btnEl) {
   }
 
     /* ── Checkout form helpers ── */
-  function makeSection(text) {
-    const div = document.createElement('div');
-    div.className = 'k-ck-section';
-    div.textContent = text;
-    return div;
-  }
 
   function makeInput(id, label, type, placeholder, dataObj, key) {
     const group = document.createElement('div');
@@ -3522,21 +3488,6 @@ function quickRemove(productId, btnEl) {
     return group;
   }
 
-  function makePaymentOption(value, title, subtitle, checked) {
-    const wrapper = document.createElement('label');
-    wrapper.className = 'k-pay-option' + (checked ? ' is-selected' : '');
-    const radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.name = 'payment_mode';
-    radio.value = value;
-    radio.checked = checked;
-    radio.className = 'k-pay-radio';
-    wrapper.appendChild(radio);
-    const info = document.createElement('div');
-    info.innerHTML = '<div class="k-pay-title">' + title + '</div><div class="k-pay-subtitle">' + subtitle + '</div>';
-    wrapper.appendChild(info);
-    return { wrapper, radio };
-  }
 
   /* ── Wallet ── */
   async function checkWalletBalance() {
@@ -4252,7 +4203,7 @@ async function submitOrder(btn) {
           const backBtn = document.createElement('button');
           backBtn.className = 'k-track-btn k-track-btn--ghost';
           backBtn.innerHTML = '← Retour à mes commandes';
-          backBtn.style.marginBottom = '12px';
+          backBtn.classList.add('k-track-back-btn');
           backBtn.addEventListener('click', function() { renderTrackView(); });
           el.appendChild(backBtn);
           const box = document.createElement('div');
@@ -5135,13 +5086,6 @@ document.addEventListener('click', function(e) {
       var maxScroll = grid.scrollWidth - grid.clientWidth;
       var atLeft  = grid.scrollLeft < grid.clientWidth * 0.4;
       var atRight = maxScroll > 0 && grid.scrollLeft > maxScroll - grid.clientWidth * 0.4;
-      function _syncChip(cat) {
-        document.querySelectorAll('.k-chip').forEach(function(c) {
-          c.classList.toggle('active', c.dataset.cat === cat);
-        });
-        var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
-        if (chip && typeof centerActiveChip === 'function') centerActiveChip(chip);
-      }
       // wraps gérés par ghost Tout (infinite loop)
     };
     grid.addEventListener('touchstart', grid._hwTouchStart, { passive: true });
