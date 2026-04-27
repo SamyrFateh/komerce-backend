@@ -88,6 +88,14 @@ if('serviceWorker' in navigator){
       <div class="k-search-dropdown" id="k-search-dropdown"></div>
     </div>
     <div class="k-header-actions">
+      <button class="k-header-nav-btn" data-tab="fav" aria-label="Favoris">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span>Favoris</span>
+      </button>
+      <button class="k-header-nav-btn" data-tab="track" aria-label="Suivi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Suivi</span>
+      </button>
       <button class="k-cart-btn k-header-action" id="k-cart-btn" aria-label="Panier">
         <img src="/images/avatar_seule.png" class="k-cart-avatar" alt="">
         <span class="k-header-action-label">Panier</span>

@@ -7752,3 +7752,56 @@ body.cart-open #k-section-index {
   min-height: 0;
   height: auto;
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP HEADER NAV — Favoris + Suivi boutons v290
+   Visibles uniquement sur desktop (>=900px), cachés sur mobile
+   ═══════════════════════════════════════════════════════════ */
+.k-header-nav-btn {
+  display: none;
+}
+@media (min-width: 900px) {
+  .k-header-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light, #888);
+    font-size: 11px;
+    font-weight: 600;
+    transition: color 0.2s, background 0.2s;
+    border-radius: 8px;
+  }
+  .k-header-nav-btn:hover {
+    color: var(--ocean, #1a7f5a);
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .k-header-nav-btn.active {
+    color: var(--ocean, #1a7f5a);
+  }
+  .k-header-nav-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FIX grosse carte v290 — k-card-img-wrap avec aspect-ratio
+   Empêche images cassées/lentes de gonfler la carte.
+   Ratio 4/3 mobile, 1/1 desktop (carré).
+   ═══════════════════════════════════════════════════════════ */
+.k-card-img-wrap {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+@media (min-width: 900px) {
+  .k-card-img-wrap {
+    aspect-ratio: 1 / 1;
+  }
+}

@@ -645,11 +645,15 @@ export function switchView(tab) {
   }
 
 export function setupBnav() {
-    $$('.k-bnav-item').forEach(item => {
+    // Inclut les boutons desktop header (.k-header-nav-btn) + mobile bnav
+    const allNavBtns = document.querySelectorAll('.k-bnav-item, .k-header-nav-btn');
+    allNavBtns.forEach(item => {
       item.addEventListener('click', () => {
         const tab = item.dataset.tab;
-        $$('.k-bnav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
+        // Clear active partout
+        allNavBtns.forEach(i => i.classList.remove('active'));
+        // Active tous les boutons du même tab (bnav + header)
+        allNavBtns.forEach(i => { if (i.dataset.tab === tab) i.classList.add('active'); });
         if (tab === 'cart') { openCart(); return; }
         if (tab === 'fav') { renderFavView(); switchView('fav'); return; }
         if (tab === 'track') { renderTrackView(); switchView('track'); return; }
