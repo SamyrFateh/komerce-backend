@@ -690,7 +690,6 @@ body{
 }
 
 
-
 /* ── SUBCATEGORIES — Horizontal scrollable rail ────────── */
 /* ── SUBCATEGORIES — ultra-compact single-line pills ───────── */
 /* Global subcats bar removed — subcats are now local to sections */
@@ -3084,757 +3083,7 @@ body.cart-open{overflow:hidden}
    This block handles overrides needed for mobile only.
    DO NOT add mobile patches elsewhere in this file.
    ═══════════════════════════════════════════════════════════════ */
-@media (max-width: 899px) {
 
-  /* ══════════════════════════════════════════════════════
-     MOBILE OVERRIDE — SINGLE SOURCE OF TRUTH
-     Target: 390px phone, all components
-     ══════════════════════════════════════════════════════ */
-
-  /* ── A. GLOBAL — prevent sticky-breaking overflow ──── */
-  html, body {
-    overflow-x: clip; /* clip doesn't break fixed positioning, hidden does */
-  }
-  body {
-    padding-bottom: 64px; /* space for fixed bottom nav */
-  }
-
-  /* ── B. HEADER — compact + sticky top ──────────────── */
-  .k-header {
-    height: 44px;
-    padding: 0 12px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    z-index: 100;
-    background: #1F3024;
-    box-shadow: 0 2px 10px rgba(0,0,0,.32);
-    overflow: visible;
-  }
-  .k-cart-btn {
-    width: auto;
-    height: auto;
-    overflow: visible;
-    background: transparent !important;
-    border-radius: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-  /* Dame contenue dans le header 44px */
-  .k-header .k-cart-avatar {
-    width: 40px !important;
-    height: 40px !important;
-  }
-  .k-cart-badge {
-    top: -2px;
-    right: -2px;
-    min-width: 18px;
-    height: 18px;
-    font-size: 10px;
-    padding: 0 5px;
-    border-width: 2px;
-  }
-  .k-logo { font-size: 16px; }
-  .k-search {
-    height: 28px;
-    font-size: 12px;
-    max-width: 200px;
-    border-radius: 14px;
-  }
-  .k-search input {
-    height: 28px;
-    font-size: 12px;
-    padding: 0 8px 0 28px;
-  }
-  .k-search-icon {
-    width: 16px;
-    height: 16px;
-    left: 8px;
-  }
-  .k-header-actions .k-cart-label { font-size: 11px; }
-  /* ── B2. Dark header — logo + search adaptés ── */
-  .k-logo-text { color: #fff !important; }
-  .k-search {
-    background: rgba(255,255,255,.13) !important;
-    border-color: rgba(255,255,255,.22) !important;
-  }
-  .k-search input {
-    background: transparent !important;
-    color: #fff !important;
-  }
-  .k-search input::placeholder { color: rgba(255,255,255,.48) !important; }
-  .k-search-icon { filter: brightness(0) invert(1) !important; }
-
-  /* ── C. HERO — full-bleed + slogan overlaid ────────── */
-  .k-hero {
-    padding: 0;
-    margin: 0;
-    overflow: visible; /* allow sticky children after */
-  }
-  .k-hero-inner {
-    flex-direction: column;
-    padding: 0;
-    gap: 0;
-    min-height: auto;
-  }
-  .k-hero-media {
-    width: 100%;
-    height: clamp(90px, 24vw, 120px);
-    border-radius: 0;
-    margin: 0;
-    overflow: hidden;
-    position: relative;
-  }
-  .k-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 10% !important;
-    border-radius: 0;
-  }
-  /* Hero gradient : sombre en haut → transparent en bas (liaison header) */
-  .k-hero-media::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(to bottom, rgba(31,48,36,.52) 0%, rgba(31,48,36,.15) 45%, transparent 75%);
-    z-index: 5;
-    pointer-events: none;
-  }
-
-  /* Slogan overlaid on hero — top center */
-  .k-hero-mini-slogan {
-    position: absolute;
-    top: 22%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    pointer-events: none;
-    background: none;
-    padding: 0 6px;
-  }
-  .k-hero-mini-slogan .k-line-1,
-  .k-hero-mini-slogan .k-line-2 {
-    font-size: clamp(0.82rem, 3.6vw, 1.05rem);
-    font-weight: 800;
-    line-height: 1.25;
-    text-shadow: 0 0 6px rgba(255,255,255,.85), 0 0 12px rgba(255,255,255,.6);
-  }
-  .k-hero-mini-slogan .k-line-1 { color: #1a1a1a; }
-  .k-hero-mini-slogan .k-line-2 { color: #2d7a56; }
-
-  /* Bubble emoji — hidden on mobile */
-  .k-hero-bubble {
-    display: none;
-  }
-
-  /* ── D. HIDE desktop-only elements ─────────────────── */
-  .k-hero-overlay,
-  .k-hero-pills,
-  .k-hero-pill,
-  .k-hero-text-left,
-  .k-hero-title,
-  .k-hero-right-col,
-  .k-hero-proverb-inline,
-  .k-hero-btn,
-  .k-proverb-sep {
-    display: none !important;
-  }
-
-  /* ── E. STICKY CATEGORY BAR ────────────────────────── */
-  .k-hero-cats-sticky {
-    position: relative; /* inside fixed wrap, no need for sticky */
-    z-index: 90;
-    background: rgba(31,48,36,.06);
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    width: 100%;
-    overflow: visible;
-  }
-
-  /* ── F. CHIPS — compact circles, fits 8 in 390px ───── */
-  .k-cats {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    gap: 1px;
-    padding: 3px 8px !important;
-    background: rgba(31,48,36,.05);
-    align-items: flex-start;
-    min-height: 38px;
-  }
-  .k-cats::-webkit-scrollbar { display: none; }
-
-  .k-chip {
-    flex: 0 0 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 1px !important;
-    padding: 2px 1px !important;
-    min-width: 36px !important;
-    max-width: 46px !important;
-    width: auto !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 10px !important;
-    box-shadow: none !important;
-    transition: all .2s ease;
-  }
-  .k-chip-photo,
-  .k-chip-emoji {
-    width: 30px !important;
-    height: 30px !important;
-    min-width: 30px !important;
-    border-radius: 50% !important;
-    font-size: 13px !important;
-    border: 1.5px solid transparent !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,.06) !important;
-    background: #fff;
-  }
-  .k-chip-photo > span {
-    font-size: 8px !important;
-  }
-  .k-chip-label {
-    font-size: 8px !important;
-    font-weight: 500;
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 42px !important;
-    text-align: center;
-    color: #555;
-  }
-  /* Active chip — RED ring + bold label */
-  .k-chip.active .k-chip-photo,
-  .k-chip.active .k-chip-emoji {
-    border-color: #e53935 !important;
-    box-shadow: 0 0 0 2px rgba(229,57,53,.25) !important;
-  }
-  .k-chip.active .k-chip-label {
-    color: #e53935 !important;
-    font-weight: 700 !important;
-  }
-
-  /* ── G. PROMOS — horizontal scroll, landscape cards ─── */
-  #k-promos-section {
-    padding: 2px 0 0 !important;
-    margin: 0 !important;
-    overflow: visible;
-  }
-  #k-promos-section .k-section-head {
-    padding: 0 8px 1px;
-    margin: 0;
-  }
-  #k-promos-section .k-section-head h2 { font-size: 12px; }
-
-  #k-promo-rail {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    padding: 0 0 4px;
-  }
-  #k-promo-rail::-webkit-scrollbar { display: none; }
-
-  /* Kill desktop gradient overlays */
-  .k-promo-rail::before,
-  .k-promo-rail::after {
-    display: none;
-  }
-
-  .k-promo-rail-inner {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 6px;
-    padding: 0 8px;
-    width: max-content;
-    animation: none;
-    transform: none;
-    align-items: stretch;
-  }
-  /* Promo cards: 4 visible vignettes, square images.
-     Width = (100vw - 16px padding - 3×6px gaps) / 4 ≈ 89px on 390px.
-     1:1 ratio → compact thumbnails. Scrollable for more. */
-  .k-promo-card {
-    flex: 0 0 calc((100vw - 34px) / 4);
-    width: calc((100vw - 34px) / 4);
-    min-width: calc((100vw - 34px) / 4);
-    max-width: calc((100vw - 34px) / 4);
-    scroll-snap-align: start;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    position: relative;
-  }
-  .k-promo-card-img {
-    width: 100%;
-    aspect-ratio: 5 / 4;
-    object-fit: cover;
-    border-radius: 8px 8px 0 0;
-    display: block;
-    animation: none;
-    background: #faf8f5;
-  }
-  .k-promo-badge {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    font-size: 8px;
-    padding: 1px 4px;
-    border-radius: 50px;
-    z-index: 2;
-  }
-  .k-promo-card-info {
-    padding: 1px 3px 2px;
-  }
-  .k-promo-card-name {
-    font-size: 9px;
-    line-height: 1.2;
-    -webkit-line-clamp: 1;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 1px;
-  }
-  .k-promo-card-prices {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    margin-top: 1px;
-  }
-  .k-promo-card-price {
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--coral, #e64a19);
-    line-height: 1.1;
-  }
-  .k-promo-card-old {
-    font-size: 7px;
-    text-decoration: line-through;
-    color: #aaa;
-    line-height: 1.1;
-  }
-
-  /* ── H. CATALOGUE GRID — 2 columns premium (desktop harmony) ── */
-  #k-catalog-section {
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible;
-  }
-  #k-catalog-section .k-section-head {
-    padding: 0 8px 0;
-    margin: 0 !important;
-  }
-  .k-section-head {
-    margin-bottom: 2px !important;
-  }
-  .k-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    padding: 0 6px 10px;
-  }
-  .k-card {
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-  }
-  .k-card-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  .k-card-bottom {
-    margin-top: auto;
-  }
-  .k-card-img-wrap {
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-    background: #faf8f5;
-  }
-  /* Carousel grille mobile : overflow-x hidden empêche le swipe image,
-     dots gèrent le changement d'image via JS scrollTo().
-     PAS de touch-action: pan-y — ça bloquerait le swipe ↔ entre catégories
-     (les cartes couvrent 90% de l'écran).
-     !important nécessaire : les définitions base (.k-card-carousel L4067/L4473)
-     passent APRÈS ce bloc mobile et écrasent sans !important. */
-  .k-card-carousel {
-    overflow-x: hidden !important;
-  }
-  .k-card-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    padding: 0;
-  }
-  .k-card-info {
-    padding: 2px 5px 3px;
-  }
-  .k-card-name {
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.15;
-    -webkit-line-clamp: 1;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    min-height: auto;
-  }
-  .k-card-desc {
-    display: -webkit-box !important;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 11px;
-    color: #888;
-    margin: 0;
-    line-height: 1.3;
-  }
-  .k-card-prices-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 4px;
-    margin-top: 0;
-  }
-  .k-card-price {
-    flex: 1 1 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .k-card-old-price {
-    flex-shrink: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 70px;
-  }
-  .k-card-price {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.2;
-  }
-  .k-card-old-price {
-    font-size: 9px;
-    text-decoration: line-through;
-    color: #aaa;
-    line-height: 1.2;
-  }
-  .k-card-promo {
-    font-size: 8px;
-    padding: 1px 5px;
-    top: 5px;
-    left: 5px;
-  }
-  .k-card-add {
-    position: static !important;
-    bottom: auto !important;
-    right: auto !important;
-    margin-left: auto;
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    background: transparent !important;
-    background-image: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-  .k-card-add .k-card-add-basket {
-    width: 40px !important; height: 40px !important;
-    pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
-  }
-  .k-card-add.in-cart {
-    flex-shrink: 0 !important;
-    width: 76px !important;
-    min-width: 76px !important;
-    height: 32px !important;
-    border-radius: 16px !important;
-    padding: 0 4px !important;
-    background: #fff !important;
-    border: 1.5px solid var(--ocean, #0d9488) !important;
-    box-shadow: 0 1px 4px rgba(13,148,136,.2) !important;
-  }
-  .k-add-minus, .k-add-plus-ic {
-    width: 20px;
-    height: 20px;
-    font-size: 14px;
-  }
-  .k-add-qty {
-    font-size: 10px;
-    min-width: 16px;
-  }
-  .k-card-fav {
-    width: 26px;
-    height: 26px;
-    font-size: 12px;
-    top: 6px;
-    right: 6px;
-  }
-  .k-card-bottom {
-    gap: 4px;
-    margin-top: 3px;
-  }
-  .k-card-prices {
-    gap: 5px;
-  }
-
-  /* ── I. BOTTOM NAV — fixed ─────────────────────────── */
-  .k-bnav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 9999;
-    background: #fff;
-    box-shadow: 0 -1px 6px rgba(0,0,0,.08);
-    height: 52px;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .k-bnav-label { font-size: 9px; }
-
-  /* ── FIXED LAYOUT — header + hero/cats fixed, content scrolls ── */
-  #k-hero-fixed-wrap {
-    position: fixed;
-    top: 44px; /* below header */
-    left: 0;
-    right: 0;
-    z-index: 90;
-    background: #fff;
-  }
-
-  #k-page-scroll {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    z-index: 1;
-    padding-bottom: 68px; /* space for bottom nav */
-    /* top is set dynamically by JS based on wrap height */
-  }
-
-  #k-bar-spacer {
-    display: none; /* not needed with fixed layout */
-  }
-
-  /* Hide "Panier" text overflow in header */
-  .k-header-action-label {
-    display: none !important;
-  }
-
-  /* ── J. MISC ───────────────────────────────────────── */
-  #k-bar-spacer { height: 52px; }
-  .k-load-more {
-    font-size: 13px;
-    padding: 10px 20px;
-    margin: 8px auto 16px;
-  }
-  .k-section-head h2 { font-size: 14px; }
-  .k-see-all { font-size: 11px; }
-
-
-  /* Cart drawer: leave room for bottom nav */
-  .k-cart-drawer.open {
-    bottom: 52px !important;
-  }
-  .k-cart-overlay.open {
-    bottom: 52px !important;
-  }
-
-  /* Modal above bottom nav on mobile */
-  .k-modal-overlay {
-    z-index: 10000;
-    background: none;          /* ← kill voilé effect on mobile */
-  }
-  .k-modal {
-    z-index: 10001;
-    padding-bottom: 0;
-  }
-  /* Prevent scroll from bleeding through to body */
-  .k-modal-scroll {
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-  /* Details: thin scrollbar + bottom fade hint */
-  .k-modal-details {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0,0,0,.15) transparent;
-  }
-  .k-modal-details::-webkit-scrollbar { width: 3px; }
-  .k-modal-details::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
-  /* ── Modal Temu-style: image plein écran + carte info overlay ── */
-  .k-modal-img-wrap {
-    flex: 0 0 35vh;
-    position: relative;
-  }
-  .k-modal-slide {
-    object-fit: cover;
-    object-position: center center;
-  }
-  /* Carte info qui chevauche le bas de l'image */
-  .k-modal-details {
-    margin-top: -24px;
-    border-radius: 20px 20px 0 0;
-    background: var(--white);
-    position: relative;
-    z-index: 2;
-    box-shadow: 0 -2px 12px rgba(0,0,0,.06);
-  }
-  .k-modal-info {
-    padding: 14px 16px 0;
-  }
-  /* Nom + description sur la même ligne */
-  #k-modal-name {
-    font-size: 18px;
-    display: block;
-  }
-  /* k-modal-desc : consolidé dans section O plus bas */
-  .k-modal-price-row {
-    margin-top: 8px;
-  }
-  /* Modal actions always visible at bottom */
-  .k-modal-actions {
-    flex-shrink: 0;
-    background: #fff;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  }
-  /* Buy button styling — green (less aggressive than coral) */
-  .k-buy-now-btn {
-    height: 42px;
-    padding: 0 16px;
-    background: var(--ocean);
-    color: #fff;
-    border-radius: 50px;
-    font-weight: 600;
-    font-size: 14px;
-    white-space: nowrap;
-    border: none;
-    cursor: pointer;
-  }
-  .k-buy-now-btn:active {
-    transform: scale(.97);
-    opacity: .9;
-  }
-  /* Image sharper — remove any blur on modal */
-  .k-modal-img-wrap img {
-    image-rendering: auto;
-    -webkit-image-rendering: auto;
-  }
-
-  /* ── N. Suggestion cards mobile — grille 2 colonnes verticale ── */
-  .k-sug-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
-    padding: 0 8px !important;
-    overflow: visible !important;
-  }
-  .k-sug-card {
-    border-radius: 10px !important;
-    overflow: visible !important;
-    min-width: 0 !important;
-  }
-  .k-sug-card-img {
-    aspect-ratio: 1 !important;
-    overflow: hidden !important;
-    border-radius: 10px 10px 0 0 !important;
-  }
-  .k-sug-card-img img {
-    aspect-ratio: 1 !important;
-    object-fit: cover !important;
-  }
-  .k-sug-card-name {
-    font-size: 11px !important;
-    padding: 4px 6px 1px !important;
-    min-height: 26px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-  /* ── Ligne prix + panier suggestions — même alignement cartes accueil */
-  .k-sug-card-bottom {
-    display: flex !important;
-    align-items: center !important;
-    padding: 0 4px 6px !important;
-    gap: 4px !important;
-  }
-  .k-sug-card-bottom .k-sug-card-price {
-    flex: 1 !important;
-    font-size: 12px !important;
-    padding: 0 4px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-  .k-sug-card-bottom .k-sug-card-actions {
-    flex-shrink: 0 !important;
-    padding: 0 !important;
-    min-height: unset !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-  .k-sug-add {
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    width: auto !important;
-    height: auto !important;
-  }
-  .k-sug-add img {
-    width: 28px !important;
-    height: 28px !important;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,.15)) !important;
-  }
-  .k-sug-step {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 12px !important;
-  }
-  .k-sug-qty {
-    font-size: 11px !important;
-    min-width: 20px !important;
-  }
-  /* Hide suggestion arrows on mobile (swipe instead) */
-  .k-sug-arrow {
-    display: none !important;
-  }
-  /* Suggestion section titles compact */
-  .k-sug-title {
-    font-size: 14px !important;
-    padding: 8px 10px 4px !important;
-  }
-  /* Hint: peek 5th card to signal scroll */
-  .k-sug-section {
-    overflow: visible !important;
-  }
-}
 /* ── Card mini tabs (Shein-style) ── */
 .k-card-info {
   display: flex;
@@ -3885,400 +3134,7 @@ body.cart-open{overflow:hidden}
 }
 
 /* ── K. SECTION MODE (Temu-style grouped by category) ── */
-@media (max-width: 899px) {
-  .k-grid.k-grid-has-sections {
-    display: block;
-    grid-template-columns: none;
-    gap: 0;
-    padding: 0;
-  }
-  .k-sec-header {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px 2px;
-    margin-top: 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    position: relative;
-    border-bottom: none;
-    background: none;
-  }
-  .k-sec-header::before {
-    content: '';
-    width: 3px;
-    height: 14px;
-    border-radius: 2px;
-    background: var(--ocean);
-    flex-shrink: 0;
-  }
-  .k-sec-header-emoji { font-size: 14px; }
-  .k-sec-header-name { flex: 1; font-size: 13px; }
-  .k-sec-header-count {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-  /* ── Vertical section mode (each category stacks vertically) ── */
-  .k-cat-section {
-    padding-bottom: 4px;
-  }
-  /* Hide floating index on mobile (pills are enough) */
-  #k-section-index { display: none !important; }
 
-  .k-sec-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 5px;
-    padding: 3px 6px 8px;
-  }
-  .k-sec-grid + .k-sec-header {
-    margin-top: 4px;
-  }
-  /* Compact cards inside sections */
-  .k-sec-grid .k-card-tabs,
-  .k-sec-grid .k-card-panels {
-    display: none;
-  }
-  .k-sec-grid .k-card {
-    border-radius: 8px;
-  }
-  .k-sec-grid .k-card-img-wrap {
-    aspect-ratio: 4 / 3;
-  }
-  .k-sec-grid .k-card-img {
-    object-fit: cover;
-    padding: 0;
-  }
-  .k-sec-grid .k-card-info {
-    padding: 3px 5px 4px;
-  }
-  .k-sec-grid .k-card-name {
-    font-size: 10.5px;
-    line-height: 1.2;
-    -webkit-line-clamp: 2;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 1px;
-    min-height: auto;
-    max-height: 2.4em;
-  }
-  .k-sec-grid .k-card-price { font-size: 11px; font-weight: 800; }
-  .k-sec-grid .k-card-old-price { font-size: 8.5px; }
-  .k-sec-grid .k-card-promo {
-    font-size: 7px;
-    padding: 1px 4px;
-    top: 3px;
-    left: 3px;
-  }
-  .k-sec-grid .k-card-fav {
-    width: 20px; height: 20px;
-    top: 3px; right: 3px;
-    font-size: 9px;
-  }
-  .k-sec-grid .k-card-add .k-card-add-basket {
-    width: 40px !important; height: 40px !important;
-    pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
-  }
-  .k-sec-grid .k-card-add:active {
-    transform: scale(.92);
-  }
-
-  /* ── "Voir tout →" button in section headers ── */
-  .k-sec-see-all {
-    background: none;
-    border: none;
-    color: var(--ocean);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 6px;
-    white-space: nowrap;
-    margin-left: auto;
-    transition: background .15s;
-  }
-  .k-sec-see-all:active {
-    background: rgba(67,160,71,.1);
-  }
-
-  /* ── Sous-catégories visibles sur mobile (style Temu scrollable)
-       Active le mode flat subcat (pager horizontal) au clic ── */
-  .k-sec-subcats {
-    display: flex !important;
-    flex-wrap: nowrap;
-    gap: 6px;
-    padding: 8px 10px 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-  }
-  .k-sec-subcats::-webkit-scrollbar { display: none; }
-  .k-sec-subchip {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 4px 10px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    white-space: nowrap;
-    cursor: pointer;
-    transition: all .15s;
-    flex-shrink: 0;
-  }
-  .k-sec-subchip:active { transform: scale(.94); }
-  .k-sec-subchip.active {
-    background: var(--ocean);
-    color: #fff;
-    border-color: var(--ocean);
-    font-weight: 600;
-  }
-
-  /* ══════════════════════════════════════════════════════════════════ */
-  /* ── P. TEMU PAGER — horizontal category pages (mobile only) ───── */
-  /* ══════════════════════════════════════════════════════════════════ */
-
-  /* Activate pager layout on #k-page-scroll */
-  #k-page-scroll.k-pager-active {
-    display: flex !important;
-    flex-direction: column;
-    overflow: hidden !important;
-    height: var(--pager-h, 60vh);
-  }
-  #k-page-scroll.k-pager-active #k-promos-section {
-    display: none !important;
-  }
-  #k-page-scroll.k-pager-active .k-proverb-sep {
-    display: none;
-  }
-  #k-page-scroll.k-pager-active #k-catalog-section {
-    flex: 1 1 0;
-    min-height: 0;
-    overflow: hidden;
-    padding: 0;
-    margin: 0;
-  }
-
-  /* Grid becomes horizontal pager */
-  #k-page-scroll.k-pager-active .k-grid,
-  #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections {
-    display: flex !important;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    height: 100%;
-    grid-template-columns: none !important;
-    gap: 0 !important;
-    padding: 0 !important;
-  }
-  #k-page-scroll.k-pager-active .k-grid::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Each category section = full-width swipeable page */
-  #k-page-scroll.k-pager-active .k-cat-section {
-    flex: 0 0 100%;
-    min-width: 100%;
-    max-width: 100%;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    height: 100%;
-    padding-bottom: 68px;
-  }
-
-  /* Section header inside pager pages — RED accent, prominent */
-  #k-page-scroll.k-pager-active .k-sec-header {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background: #fff;
-    padding: 10px 12px 8px;
-    border-bottom: 2px solid #e53935;
-    font-size: 14px;
-    min-height: 36px;
-    font-weight: 700;
-  }
-  #k-page-scroll.k-pager-active .k-sec-header::before {
-    background: #e53935;
-    width: 4px;
-    height: 16px;
-  }
-  #k-page-scroll.k-pager-active .k-sec-header-name {
-    color: #e53935;
-    font-size: 14px;
-  }
-
-  /* Keep 2-column grid inside each page */
-  #k-page-scroll.k-pager-active .k-sec-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 5px;
-    padding: 4px 6px 8px;
-  }
-
-  /* ── Direction lock: vertical gesture → disable horizontal snap ── */
-  /* ── Touch zones removed: proximity snap handles direction naturally ── */
-
-  /* ── GPU compositing: smoother scroll animation ── */
-  #k-page-scroll.k-pager-active .k-grid {
-    will-change: scroll-position;
-  }
-  #k-page-scroll.k-pager-active .k-cat-section {
-    contain: layout style paint;
-  }
-
-  /* Hide loading spinner in pager mode */
-  #k-page-scroll.k-pager-active #k-loading {
-    display: none;
-  }
-
-
-  /* ── L. SECTION INDEX — floating emoji jump ──────── */
-  #k-section-index {
-    right: 4px;
-    gap: 2px;
-    padding: 4px 3px;
-  }
-  .k-section-index-btn {
-    width: 32px;
-    height: 32px;
-  }
-  .k-section-index-emoji {
-    font-size: 16px;
-  }
-
-  /* ── M. HEADER ULTRA-COMPACT (< 600px) ──────────── */
-  @media (max-width: 600px) {
-    .k-header-inner {
-      gap: 4px;
-      padding: 0 4px;
-    }
-    .k-logo-text { display: none; }
-    .k-logo-icon { width: 42px; height: 42px; }
-    .k-search {
-      flex: 1 1 auto;
-      min-width: 0;
-      max-width: none;
-      height: 28px;
-    }
-    .k-search input {
-      font-size: 16px;
-      height: 28px;
-      padding: 0 8px 0 30px;
-      border-radius: 14px;
-    }
-    .k-search-icon { left: 9px; width: 13px; height: 13px; }
-    .k-cart-btn { width: auto; height: auto; overflow: visible; background: transparent !important; border: none !important; box-shadow: none !important; }
-    .k-cart-avatar { width: 38px !important; height: 38px !important; border: none !important; box-shadow: none !important; background: transparent !important; border-radius: 0 !important; object-fit: contain !important; }
-    .k-header .k-cart-avatar { width: 38px !important; height: 38px !important; }
-    .k-cart-badge {
-      position: absolute !important;  /* Override tap-target position:relative */
-      top: -4px;
-      right: -4px;
-      min-width: 20px;
-      height: 20px;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 0 5px;
-      border: 2px solid #fff;
-      z-index: 10;
-    }
-  }
-
-  /* ── N. PHONE INPUT COMPACT (panier/checkout) ──────────── */
-  .k-ck-phone-wrap {
-    max-width: 100%;
-    box-sizing: border-box;
-    height: 44px;
-    align-items: stretch;
-  }
-  .k-ck-phone-select {
-    flex: 0 0 90px;
-    height: 44px;
-    font-size: 0.8rem;
-    padding: 0 6px;
-    box-sizing: border-box;
-  }
-  .k-ck-phone-input {
-    min-width: 0;
-    height: 44px;
-    font-size: 0.85rem;
-    box-sizing: border-box;
-  }
-
-  /* ── O. FIX MODALE PRODUIT — description jamais masquée (v228) ────── */
-  .k-modal-scroll {
-    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
-  }
-
-  .k-modal-details {
-    margin-top: -18px !important;
-    padding-bottom: 0 !important;
-  }
-
-  .k-modal-info {
-    padding: 14px 16px 10px !important;
-    overflow: visible !important;
-  }
-
-  #k-modal-name {
-    display: block !important;
-    font-size: 20px !important;
-    line-height: 1.18 !important;
-    margin-bottom: 6px !important;
-  }
-
-  .k-modal-desc {
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    font-size: 13px !important;
-    line-height: 1.35 !important;
-    margin: 0 0 10px !important;
-    color: var(--text-muted) !important;
-  }
-
-  .k-modal-price-row {
-    margin-top: 8px !important;
-    padding: 6px 0 4px !important;
-    overflow: visible !important;
-  }
-
-  .k-modal-scroll > .k-modal-actions {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 10 !important;
-    display: grid !important;
-    grid-template-columns: 0.8fr 1.2fr !important;
-    gap: 10px !important;
-    margin: 0 !important;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important;
-    background: rgba(255,255,255,0.95) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border-top: 1px solid rgba(0,0,0,0.06) !important;
-  }
-
-  .k-modal-actions .k-buy-now-btn {
-    grid-column: 1 / -1 !important;
-  }
-}
   /* ── P. Subcategory chips — wrap compact ── */
   .k-sug-chips{
     flex-wrap:wrap;
@@ -6738,20 +5594,7 @@ button,
 /*                                                                         */
 /*        🏠 HOME PAGE OPTIMISATION v2 — densité + clarté + identité       */
 /*        ⚠️ Sections 1-3 (header/hero/chips) SUPPRIMÉES — consolidées     */
-/*        dans le bloc mobile principal @media (max-width: 899px)          */
-/*                                                                         */
-/* ═══════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────────────────────── */
-/*  4. RAIL HORIZONTAL CLAIR + INDICATEUR SCROLL                       */
-/*     - Les produits sont clairement en rail (pas en grille confuse)  */
-/*     - Chip "Voir tout →" à la fin du rail                           */
-/*     - Dégradé fade + flèche pour indiquer le scroll                 */
-/* ─────────────────────────────────────────────────────────────────── */
-.k-promo-rail-wrap {
-  position: relative;
-  /* Fade à droite qui indique "il y a plus à droite" */
-}
+/*        dans le bloc mobile principal 
 .k-promo-rail-wrap::after {
   content: '';
   position: absolute;
@@ -6846,57 +5689,7 @@ button,
 /*  SECTIONS VERTICALES (home "Tout") — en-têtes + grille 2 cols par cat   */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* En-tête de section — DESKTOP ONLY (mobile styles are in @media max-width: 899px) */
-@media (min-width: 900px) {
-  .k-sec-header {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 20px 14px 10px;
-    margin-top: 8px;
-    border-bottom: 3px solid var(--coral, #e64a19);
-    background:
-      linear-gradient(180deg,
-        transparent 0%,
-        transparent calc(100% - 3px),
-        var(--coral, #e64a19) calc(100% - 3px),
-        var(--coral, #e64a19) 100%);
-    position: relative;
-    scroll-margin-top: 70px;
-  }
-  .k-sec-header::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 20px;
-    background: var(--coral, #e64a19);
-    border-radius: 2px;
-    margin-right: 2px;
-  }
-  .k-sec-header-emoji {
-    font-size: 20px;
-    line-height: 1;
-  }
-  .k-sec-header-name {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--text, #1f3024);
-    letter-spacing: -0.2px;
-  }
-  .k-sec-header-count {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted, #8a877f);
-    margin-left: auto;
-    padding: 2px 8px;
-    background: rgba(0, 0, 0, 0.04);
-    border-radius: 10px;
-  }
-  .k-sec-grid + .k-sec-header {
-    margin-top: 32px;
-  }
-}
+/* En-tête de section — DESKTOP ONLY (mobile styles are in 
 
 /* Grille de produits d'une section — responsive */
 .k-sec-grid {
@@ -7047,19 +5840,7 @@ body.cart-open #k-section-index {
 
 
 /* CARTES COMPACTES sections — rules consolidated into mobile block @899px */
-/* (see section K inside the main @media max-width: 899px block) */
-
-/* ═══════════════════════════════════════════════════════
-   DAME FLOTTANTE — avatar libre sans conteneur
-   Source de vérité : updateCartBadge()
-   ═══════════════════════════════════════════════════════ */
-.k-header .k-cart-btn,
-#k-modal-cart-btn {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
+/* (see section K inside the main 
 /* Desktop : 52px libre */
 @media (min-width: 900px) {
   .k-header .k-cart-avatar,
@@ -7069,12 +5850,7 @@ body.cart-open #k-section-index {
   }
 }
 /* Mobile : 40px pour tenir dans header 44px */
-@media (max-width: 899px) {
-  .k-header .k-cart-avatar {
-    width: 40px !important;
-    height: 40px !important;
-  }
-}
+
 /* Commun : style flottant */
 .k-header .k-cart-avatar,
 #k-modal-cart-btn .k-cart-avatar {
@@ -7323,7 +6099,1384 @@ body.cart-open #k-section-index {
    FIX FINAL — Flat subcat horizontal swipe robuste
    Le pager sous-catégorie gagne toujours le swipe horizontal.
    ═══════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE STYLES — @media (max-width: 899px)
+   SOURCE DE VÉRITÉ UNIQUE — tous les overrides mobile ici, nulle part ailleurs
+   Refactorisé : 7 blocs → 1 seul bloc, 20 doublons éliminés
+   ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
+
+/* ══════════════════════════════════════════════════════
+     MOBILE OVERRIDE — SINGLE SOURCE OF TRUTH
+     Target: 390px phone, all components
+     ══════════════════════════════════════════════════════ */
+
+/* ── A. GLOBAL — prevent sticky-breaking overflow ──── */
+
+  html, body {
+    overflow-x: clip;
+  }
+
+  body {
+    padding-bottom: 64px;
+  }
+
+/* ── B. HEADER — compact + sticky top ──────────────── */
+
+  .k-header {
+    height: 44px;
+    padding: 0 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100;
+    background: #1F3024;
+    box-shadow: 0 2px 10px rgba(0,0,0,.32);
+    overflow: visible;
+  }
+
+  .k-cart-btn {
+    width: auto;
+    height: auto;
+    overflow: visible;
+    background: transparent !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+/* Dame contenue dans le header 44px */
+
+  .k-header .k-cart-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .k-cart-badge {
+    top: -2px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    padding: 0 5px;
+    border-width: 2px;
+  }
+
+  .k-logo {
+    font-size: 16px;
+  }
+
+  .k-search {
+    height: 28px;
+    font-size: 12px;
+    max-width: 200px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.13) !important;
+    border-color: rgba(255,255,255,.22) !important;
+  }
+
+  .k-search input {
+    height: 28px;
+    font-size: 12px;
+    padding: 0 8px 0 28px;
+    background: transparent !important;
+    color: #fff !important;
+  }
+
+  .k-search-icon {
+    width: 16px;
+    height: 16px;
+    left: 8px;
+    filter: brightness(0) invert(1) !important;
+  }
+
+  .k-header-actions .k-cart-label {
+    font-size: 11px;
+  }
+
+/* ── B2. Dark header — logo + search adaptés ── */
+
+  .k-logo-text {
+    color: #fff !important;
+  }
+
+  .k-search input::placeholder {
+    color: rgba(255,255,255,.48) !important;
+  }
+
+/* ── C. HERO — full-bleed + slogan overlaid ────────── */
+
+  .k-hero {
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+  }
+
+  .k-hero-inner {
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+    min-height: auto;
+  }
+
+  .k-hero-media {
+    width: 100%;
+    height: clamp(90px, 24vw, 120px);
+    border-radius: 0;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .k-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 10% !important;
+    border-radius: 0;
+  }
+
+/* Hero gradient : sombre en haut → transparent en bas (liaison header) */
+
+  .k-hero-media::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(31,48,36,.52) 0%, rgba(31,48,36,.15) 45%, transparent 75%);
+    z-index: 5;
+    pointer-events: none;
+  }
+
+/* Slogan overlaid on hero — top center */
+
+  .k-hero-mini-slogan {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    pointer-events: none;
+    background: none;
+    padding: 0 6px;
+  }
+
+  .k-hero-mini-slogan .k-line-1,
+  .k-hero-mini-slogan .k-line-2 {
+    font-size: clamp(0.82rem, 3.6vw, 1.05rem);
+    font-weight: 800;
+    line-height: 1.25;
+    text-shadow: 0 0 6px rgba(255,255,255,.85), 0 0 12px rgba(255,255,255,.6);
+  }
+
+  .k-hero-mini-slogan .k-line-1 {
+    color: #1a1a1a;
+  }
+
+  .k-hero-mini-slogan .k-line-2 {
+    color: #2d7a56;
+  }
+
+/* Bubble emoji — hidden on mobile */
+
+  .k-hero-bubble {
+    display: none;
+  }
+
+/* ── D. HIDE desktop-only elements ─────────────────── */
+
+  .k-hero-overlay,
+  .k-hero-pills,
+  .k-hero-pill,
+  .k-hero-text-left,
+  .k-hero-title,
+  .k-hero-right-col,
+  .k-hero-proverb-inline,
+  .k-hero-btn,
+  .k-proverb-sep {
+    display: none !important;
+  }
+
+/* ── E. STICKY CATEGORY BAR ────────────────────────── */
+
+  .k-hero-cats-sticky {
+    position: relative;
+    /* inside fixed wrap, no need for sticky */
+    z-index: 90;
+    background: rgba(31,48,36,.06);
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    width: 100%;
+    overflow: visible;
+  }
+
+/* ── F. CHIPS — compact circles, fits 8 in 390px ───── */
+
+  .k-cats {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    gap: 1px;
+    padding: 3px 8px !important;
+    background: rgba(31,48,36,.05);
+    align-items: flex-start;
+    min-height: 38px;
+  }
+
+  .k-cats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k-chip {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1px !important;
+    padding: 2px 1px !important;
+    min-width: 36px !important;
+    max-width: 46px !important;
+    width: auto !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    transition: all .2s ease;
+  }
+
+  .k-chip-photo,
+  .k-chip-emoji {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    border-radius: 50% !important;
+    font-size: 13px !important;
+    border: 1.5px solid transparent !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06) !important;
+    background: #fff;
+  }
+
+  .k-chip-photo > span {
+    font-size: 8px !important;
+  }
+
+  .k-chip-label {
+    font-size: 8px !important;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 42px !important;
+    text-align: center;
+    color: #555;
+  }
+
+/* Active chip — RED ring + bold label */
+
+  .k-chip.active .k-chip-photo,
+  .k-chip.active .k-chip-emoji {
+    border-color: #e53935 !important;
+    box-shadow: 0 0 0 2px rgba(229,57,53,.25) !important;
+  }
+
+  .k-chip.active .k-chip-label {
+    color: #e53935 !important;
+    font-weight: 700 !important;
+  }
+
+/* ── G. PROMOS — horizontal scroll, landscape cards ─── */
+
+  #k-promos-section {
+    padding: 2px 0 0 !important;
+    margin: 0 !important;
+    overflow: visible;
+  }
+
+  #k-promos-section .k-section-head {
+    padding: 0 8px 1px;
+    margin: 0;
+  }
+
+  #k-promos-section .k-section-head h2 {
+    font-size: 12px;
+  }
+
+  #k-promo-rail {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding: 0 0 4px;
+  }
+
+  #k-promo-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+/* Kill desktop gradient overlays */
+
+  .k-promo-rail::before,
+  .k-promo-rail::after {
+    display: none;
+  }
+
+  .k-promo-rail-inner {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 0 8px;
+    width: max-content;
+    animation: none;
+    transform: none;
+    align-items: stretch;
+  }
+
+/* Promo cards: 4 visible vignettes, square images.
+     Width = (100vw - 16px padding - 3×6px gaps) / 4 ≈ 89px on 390px.
+     1:1 ratio → compact thumbnails. Scrollable for more. */
+
+  .k-promo-card {
+    flex: 0 0 calc((100vw - 34px) / 4);
+    width: calc((100vw - 34px) / 4);
+    min-width: calc((100vw - 34px) / 4);
+    max-width: calc((100vw - 34px) / 4);
+    scroll-snap-align: start;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    position: relative;
+  }
+
+  .k-promo-card-img {
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+    display: block;
+    animation: none;
+    background: #faf8f5;
+  }
+
+  .k-promo-badge {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 50px;
+    z-index: 2;
+  }
+
+  .k-promo-card-info {
+    padding: 1px 3px 2px;
+  }
+
+  .k-promo-card-name {
+    font-size: 9px;
+    line-height: 1.2;
+    -webkit-line-clamp: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 1px;
+  }
+
+  .k-promo-card-prices {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    margin-top: 1px;
+  }
+
+  .k-promo-card-price {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--coral, #e64a19);
+    line-height: 1.1;
+  }
+
+  .k-promo-card-old {
+    font-size: 7px;
+    text-decoration: line-through;
+    color: #aaa;
+    line-height: 1.1;
+  }
+
+/* ── H. CATALOGUE GRID — 2 columns premium (desktop harmony) ── */
+
+  #k-catalog-section {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible;
+  }
+
+  #k-catalog-section .k-section-head {
+    padding: 0 8px 0;
+    margin: 0 !important;
+  }
+
+  .k-section-head {
+    margin-bottom: 2px !important;
+  }
+
+  .k-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 0 6px 10px;
+  }
+
+  .k-card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .k-card-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2px 5px 3px;
+  }
+
+  .k-card-bottom {
+    margin-top: 3px;
+    gap: 4px;
+  }
+
+  .k-card-img-wrap {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: #faf8f5;
+  }
+
+/* Carousel grille mobile : overflow-x hidden empêche le swipe image,
+     dots gèrent le changement d'image via JS scrollTo().
+     PAS de touch-action: pan-y — ça bloquerait le swipe ↔ entre catégories
+     (les cartes couvrent 90% de l'écran).
+     !important nécessaire : les définitions base (.k-card-carousel L4067/L4473)
+     passent APRÈS ce bloc mobile et écrasent sans !important. */
+
+  .k-card-carousel {
+    overflow-x: hidden !important;
+  }
+
+  .k-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    padding: 0;
+  }
+
+  .k-card-name {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.15;
+    -webkit-line-clamp: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: auto;
+  }
+
+  .k-card-desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    color: #888;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .k-card-prices-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin-top: 0;
+  }
+
+  .k-card-price {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .k-card-old-price {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70px;
+    font-size: 9px;
+    text-decoration: line-through;
+    color: #aaa;
+    line-height: 1.2;
+  }
+
+  .k-card-promo {
+    font-size: 8px;
+    padding: 1px 5px;
+    top: 5px;
+    left: 5px;
+  }
+
+  .k-card-add {
+    position: static !important;
+    bottom: auto !important;
+    right: auto !important;
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .k-card-add .k-card-add-basket {
+    width: 40px !important;
+    height: 40px !important;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
+  }
+
+  .k-card-add.in-cart {
+    flex-shrink: 0 !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 32px !important;
+    border-radius: 16px !important;
+    padding: 0 4px !important;
+    background: #fff !important;
+    border: 1.5px solid var(--ocean, #0d9488) !important;
+    box-shadow: 0 1px 4px rgba(13,148,136,.2) !important;
+  }
+
+  .k-add-minus, .k-add-plus-ic {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+
+  .k-add-qty {
+    font-size: 10px;
+    min-width: 16px;
+  }
+
+  .k-card-fav {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    top: 6px;
+    right: 6px;
+  }
+
+  .k-card-prices {
+    gap: 5px;
+  }
+
+/* ── I. BOTTOM NAV — fixed ─────────────────────────── */
+
+  .k-bnav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    box-shadow: 0 -1px 6px rgba(0,0,0,.08);
+    height: 52px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .k-bnav-label {
+    font-size: 9px;
+  }
+
+/* ── FIXED LAYOUT — header + hero/cats fixed, content scrolls ── */
+
+  #k-hero-fixed-wrap {
+    position: fixed;
+    top: 44px;
+    /* below header */
+    left: 0;
+    right: 0;
+    z-index: 90;
+    background: #fff;
+  }
+
+  #k-page-scroll {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 1;
+    padding-bottom: 68px;
+  }
+
+  #k-bar-spacer {
+    display: none;
+    height: 52px;
+  }
+
+/* Hide "Panier" text overflow in header */
+
+  .k-header-action-label {
+    display: none !important;
+  }
+
+/* ── J. MISC ───────────────────────────────────────── */
+
+  .k-load-more {
+    font-size: 13px;
+    padding: 10px 20px;
+    margin: 8px auto 16px;
+  }
+
+  .k-section-head h2 {
+    font-size: 14px;
+  }
+
+  .k-see-all {
+    font-size: 11px;
+  }
+
+/* Cart drawer: leave room for bottom nav */
+
+  .k-cart-drawer.open {
+    bottom: 52px !important;
+  }
+
+  .k-cart-overlay.open {
+    bottom: 52px !important;
+  }
+
+/* Modal above bottom nav on mobile */
+
+  .k-modal-overlay {
+    z-index: 10000;
+    background: none;
+  }
+
+  .k-modal {
+    z-index: 10001;
+    padding-bottom: 0;
+  }
+
+/* Prevent scroll from bleeding through to body */
+
+  .k-modal-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+
+/* Details: thin scrollbar + bottom fade hint */
+
+  .k-modal-details {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,.15) transparent;
+    margin-top: -18px !important;
+    border-radius: 20px 20px 0 0;
+    background: var(--white);
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 -2px 12px rgba(0,0,0,.06);
+    padding-bottom: 0 !important;
+  }
+
+  .k-modal-details::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .k-modal-details::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,.12);
+    border-radius: 3px;
+  }
+
+/* ── Modal Temu-style: image plein écran + carte info overlay ── */
+
+  .k-modal-img-wrap {
+    flex: 0 0 35vh;
+    position: relative;
+  }
+
+  .k-modal-slide {
+    object-fit: cover;
+    object-position: center center;
+  }
+
+/* Carte info qui chevauche le bas de l'image */
+
+  .k-modal-info {
+    padding: 14px 16px 10px !important;
+    overflow: visible !important;
+  }
+
+/* Nom + description sur la même ligne */
+
+  #k-modal-name {
+    font-size: 20px !important;
+    display: block !important;
+    line-height: 1.18 !important;
+    margin-bottom: 6px !important;
+  }
+
+/* k-modal-desc : consolidé dans section O plus bas */
+
+  .k-modal-price-row {
+    margin-top: 8px !important;
+    padding: 6px 0 4px !important;
+    overflow: visible !important;
+  }
+
+/* Modal actions always visible at bottom */
+
+  .k-modal-actions {
+    flex-shrink: 0;
+    background: #fff;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+/* Buy button styling — green (less aggressive than coral) */
+
+  .k-buy-now-btn {
+    height: 42px;
+    padding: 0 16px;
+    background: var(--ocean);
+    color: #fff;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+  }
+
+  .k-buy-now-btn:active {
+    transform: scale(.97);
+    opacity: .9;
+  }
+
+/* Image sharper — remove any blur on modal */
+
+  .k-modal-img-wrap img {
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
+  }
+
+/* ── N. Suggestion cards mobile — grille 2 colonnes verticale ── */
+
+  .k-sug-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    padding: 0 8px !important;
+    overflow: visible !important;
+  }
+
+  .k-sug-card {
+    border-radius: 10px !important;
+    overflow: visible !important;
+    min-width: 0 !important;
+  }
+
+  .k-sug-card-img {
+    aspect-ratio: 1 !important;
+    overflow: hidden !important;
+    border-radius: 10px 10px 0 0 !important;
+  }
+
+  .k-sug-card-img img {
+    aspect-ratio: 1 !important;
+    object-fit: cover !important;
+  }
+
+  .k-sug-card-name {
+    font-size: 11px !important;
+    padding: 4px 6px 1px !important;
+    min-height: 26px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+/* ── Ligne prix + panier suggestions — même alignement cartes accueil */
+
+  .k-sug-card-bottom {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 4px 6px !important;
+    gap: 4px !important;
+  }
+
+  .k-sug-card-bottom .k-sug-card-price {
+    flex: 1 !important;
+    font-size: 12px !important;
+    padding: 0 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .k-sug-card-bottom .k-sug-card-actions {
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+    min-height: unset !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .k-sug-add {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .k-sug-add img {
+    width: 28px !important;
+    height: 28px !important;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.15)) !important;
+  }
+
+  .k-sug-step {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 12px !important;
+  }
+
+  .k-sug-qty {
+    font-size: 11px !important;
+    min-width: 20px !important;
+  }
+
+/* Hide suggestion arrows on mobile (swipe instead) */
+
+  .k-sug-arrow {
+    display: none !important;
+  }
+
+/* Suggestion section titles compact */
+
+  .k-sug-title {
+    font-size: 14px !important;
+    padding: 8px 10px 4px !important;
+  }
+
+/* Hint: peek 5th card to signal scroll */
+
+  .k-sug-section {
+    overflow: visible !important;
+  }
+
+  .k-grid.k-grid-has-sections {
+    display: block;
+    grid-template-columns: none;
+    gap: 0;
+    padding: 0;
+  }
+
+  .k-sec-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px 2px;
+    margin-top: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    position: relative;
+    border-bottom: none;
+    background: none;
+  }
+
+  .k-sec-header::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    background: var(--coral, #e64a19);
+    flex-shrink: 0;
+    display: inline-block;
+    margin-right: 2px;
+  }
+
+  .k-sec-header-emoji {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .k-sec-header-name {
+    flex: 1;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text, #1f3024);
+    letter-spacing: -0.2px;
+  }
+
+  .k-sec-header-count {
+    font-size: 12px;
+    color: var(--text-muted, #8a877f);
+    font-weight: 500;
+    margin-left: auto;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+  }
+
+/* ── Vertical section mode (each category stacks vertically) ── */
+
+  .k-cat-section {
+    padding-bottom: 4px;
+  }
+
+/* Hide floating index on mobile (pills are enough) */
+
+  #k-section-index {
+    display: none !important;
+    right: 4px;
+    gap: 2px;
+    padding: 4px 3px;
+  }
+
+  .k-sec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    padding: 3px 6px 8px;
+  }
+
+  .k-sec-grid + .k-sec-header {
+    margin-top: 32px;
+  }
+
+/* Compact cards inside sections */
+
+  .k-sec-grid .k-card-tabs,
+  .k-sec-grid .k-card-panels {
+    display: none;
+  }
+
+  .k-sec-grid .k-card {
+    border-radius: 8px;
+  }
+
+  .k-sec-grid .k-card-img-wrap {
+    aspect-ratio: 4 / 3;
+  }
+
+  .k-sec-grid .k-card-img {
+    object-fit: cover;
+    padding: 0;
+  }
+
+  .k-sec-grid .k-card-info {
+    padding: 3px 5px 4px;
+  }
+
+  .k-sec-grid .k-card-name {
+    font-size: 10.5px;
+    line-height: 1.2;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 1px;
+    min-height: auto;
+    max-height: 2.4em;
+  }
+
+  .k-sec-grid .k-card-price {
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .k-sec-grid .k-card-old-price {
+    font-size: 8.5px;
+  }
+
+  .k-sec-grid .k-card-promo {
+    font-size: 7px;
+    padding: 1px 4px;
+    top: 3px;
+    left: 3px;
+  }
+
+  .k-sec-grid .k-card-fav {
+    width: 20px;
+    height: 20px;
+    top: 3px;
+    right: 3px;
+    font-size: 9px;
+  }
+
+  .k-sec-grid .k-card-add .k-card-add-basket {
+    width: 40px !important;
+    height: 40px !important;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
+  }
+
+  .k-sec-grid .k-card-add:active {
+    transform: scale(.92);
+  }
+
+/* ── "Voir tout →" button in section headers ── */
+
+  .k-sec-see-all {
+    background: none;
+    border: none;
+    color: var(--ocean);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    margin-left: auto;
+    transition: background .15s;
+  }
+
+  .k-sec-see-all:active {
+    background: rgba(67,160,71,.1);
+  }
+
+/* ── Sous-catégories visibles sur mobile (style Temu scrollable)
+       Active le mode flat subcat (pager horizontal) au clic ── */
+
+  .k-sec-subcats {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 8px 10px 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .k-sec-subcats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k-sec-subchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+
+  .k-sec-subchip:active {
+    transform: scale(.94);
+  }
+
+  .k-sec-subchip.active {
+    background: var(--ocean);
+    color: #fff;
+    border-color: var(--ocean);
+    font-weight: 600;
+  }
+
+/* ── P. TEMU PAGER — horizontal category pages (mobile only) ───── */
+
+/* Activate pager layout on #k-page-scroll */
+
+  #k-page-scroll.k-pager-active {
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden !important;
+    height: var(--pager-h, 60vh);
+  }
+
+  #k-page-scroll.k-pager-active #k-promos-section {
+    display: none !important;
+  }
+
+  #k-page-scroll.k-pager-active .k-proverb-sep {
+    display: none;
+  }
+
+  #k-page-scroll.k-pager-active #k-catalog-section {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+
+/* Grid becomes horizontal pager */
+
+  #k-page-scroll.k-pager-active .k-grid,
+  #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    height: 100%;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  #k-page-scroll.k-pager-active .k-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+/* Each category section = full-width swipeable page */
+
+  #k-page-scroll.k-pager-active .k-cat-section {
+    flex: 0 0 100%;
+    min-width: 100%;
+    max-width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    height: 100%;
+    padding-bottom: 68px;
+    contain: layout style paint;
+  }
+
+/* Section header inside pager pages — RED accent, prominent */
+
+  #k-page-scroll.k-pager-active .k-sec-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+    padding: 10px 12px 8px;
+    border-bottom: 2px solid #e53935;
+    font-size: 14px;
+    min-height: 36px;
+    font-weight: 700;
+  }
+
+  #k-page-scroll.k-pager-active .k-sec-header::before {
+    background: #e53935;
+    width: 4px;
+    height: 16px;
+  }
+
+  #k-page-scroll.k-pager-active .k-sec-header-name {
+    color: #e53935;
+    font-size: 14px;
+  }
+
+/* Keep 2-column grid inside each page */
+
+  #k-page-scroll.k-pager-active .k-sec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    padding: 4px 6px 8px;
+  }
+
+/* ── Direction lock: vertical gesture → disable horizontal snap ── */
+
+/* ── Touch zones removed: proximity snap handles direction naturally ── */
+
+/* ── GPU compositing: smoother scroll animation ── */
+
+  #k-page-scroll.k-pager-active .k-grid {
+    will-change: scroll-position;
+  }
+
+/* Hide loading spinner in pager mode */
+
+  #k-page-scroll.k-pager-active #k-loading {
+    display: none;
+  }
+
+/* ── L. SECTION INDEX — floating emoji jump ──────── */
+
+  .k-section-index-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .k-section-index-emoji {
+    font-size: 16px;
+  }
+
+/* ── M. HEADER ULTRA-COMPACT (< 600px) ──────────── */
+
+  @media (max-width: 600px) {
+    .k-header-inner {
+      gap: 4px;
+      padding: 0 4px;
+    }
+    .k-logo-text { display: none; }
+    .k-logo-icon { width: 42px; height: 42px; }
+    .k-search {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: none;
+      height: 28px;
+    }
+    .k-search input {
+      font-size: 16px;
+      height: 28px;
+      padding: 0 8px 0 30px;
+      border-radius: 14px;
+    }
+    .k-search-icon { left: 9px; width: 13px; height: 13px; }
+    .k-cart-btn { width: auto; height: auto; overflow: visible; background: transparent !important; border: none !important; box-shadow: none !important; }
+    .k-cart-avatar { width: 38px !important; height: 38px !important; border: none !important; box-shadow: none !important; background: transparent !important; border-radius: 0 !important; object-fit: contain !important; }
+    .k-header .k-cart-avatar { width: 38px !important; height: 38px !important; }
+    .k-cart-badge {
+      position: absolute !important;  /* Override tap-target position:relative */
+      top: -4px;
+      right: -4px;
+      min-width: 20px;
+      height: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 0 5px;
+      border: 2px solid #fff;
+      z-index: 10;
+    };
+  }
+
+/* ── N. PHONE INPUT COMPACT (panier/checkout) ──────────── */
+
+  .k-ck-phone-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    height: 44px;
+    align-items: stretch;
+  }
+
+  .k-ck-phone-select {
+    flex: 0 0 90px;
+    height: 44px;
+    font-size: 0.8rem;
+    padding: 0 6px;
+    box-sizing: border-box;
+  }
+
+  .k-ck-phone-input {
+    min-width: 0;
+    height: 44px;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+  }
+
+/* ── O. FIX MODALE PRODUIT — description jamais masquée (v228) ────── */
+
+  .k-modal-desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin: 0 0 10px !important;
+    color: var(--text-muted) !important;
+  }
+
+  .k-modal-scroll > .k-modal-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 10 !important;
+    display: grid !important;
+    grid-template-columns: 0.8fr 1.2fr !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important;
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
+  }
+
+  .k-modal-actions .k-buy-now-btn {
+    grid-column: 1 / -1 !important;
+  }
+
+  position: relative;
+  /* Fade à droite qui indique "il y a plus à droite" */
+
+.k-sec-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 14px 10px;
+    margin-top: 8px;
+    border-bottom: 3px solid var(--coral, #e64a19);
+    background: linear-gradient(180deg,
+        transparent 0%,
+        transparent calc(100% - 3px),
+        var(--coral, #e64a19) calc(100% - 3px),
+        var(--coral, #e64a19) 100%);
+    position: relative;
+    scroll-margin-top: 70px;
+  }
+
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+
+.k-header .k-cart-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
   #k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat {
     display: flex !important;
     flex-direction: row !important;
@@ -7339,6 +7492,7 @@ body.cart-open #k-section-index {
     overscroll-behavior-x: contain !important;
     touch-action: pan-x pan-y !important;
   }
+
   .k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
     flex: 0 0 100vw !important;
     width: 100vw !important;
@@ -7351,14 +7505,18 @@ body.cart-open #k-section-index {
     scroll-snap-align: start !important;
     scroll-snap-stop: always !important;
   }
-  /* Dans le mode flat, les carrousels images ne doivent PAS voler le swipe page */
+
+/* Dans le mode flat, les carrousels images ne doivent PAS voler le swipe page */
+
   .k-grid.k-grid-flat-subcat .k-card-carousel {
     overflow-x: hidden !important;
     scroll-snap-type: none !important;
     touch-action: auto !important;
   }
+
   .k-grid.k-grid-flat-subcat.is-flat-dragging {
     scroll-snap-type: none !important;
     cursor: grabbing;
   }
-}
+
+} /* end @media (max-width: 899px) */
