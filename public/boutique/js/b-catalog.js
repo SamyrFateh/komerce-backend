@@ -92,8 +92,11 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
             <div class="k-card-name">${p.name}</div>
             ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
-              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+              <div class="k-card-price-col">
+                <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+                <span class="k-card-price-eur">≈ ${fmt(p.price_kmf, 'EUR')}</span>
+                ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+              </div>
               <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
                 ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
               </button>
@@ -333,8 +336,11 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
             <div class="k-card-name">${p.name}</div>
             ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
-              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+              <div class="k-card-price-col">
+                <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+                <span class="k-card-price-eur">≈ ${fmt(p.price_kmf, 'EUR')}</span>
+                ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+              </div>
               <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
                 ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
               </button>
@@ -393,8 +399,11 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
           <div class="k-card-name">${p.name}</div>
           ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
           <div class="k-card-bottom k-card-prices-row">
-            <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-            ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+            <div class="k-card-price-col">
+              <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
+              <span class="k-card-price-eur">≈ ${fmt(p.price_kmf, 'EUR')}</span>
+              ${p.promo_pct ? '<span class="k-card-old-price">' + fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100))) + '</span>' : ''}
+            </div>
             <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
               ${qty > 0 ? '<span class="k-add-minus" data-pid="' + p.id + '">−</span><span class="k-add-qty">' + qty + '</span><span class="k-add-plus-ic">+</span>' : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">'}
             </button>

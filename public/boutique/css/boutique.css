@@ -7721,3 +7721,34 @@ body.cart-open #k-section-index {
     grid-row: 3 !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════
+   FIX v290 — Prix double devise (KMF + EUR)
+   ═══════════════════════════════════════════════════ */
+.k-card-price-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+}
+.k-card-price-eur {
+  font-size: 10px;
+  color: #b0b0b0;
+  line-height: 1;
+  font-weight: 400;
+}
+/* Panier aligné en bas du bloc prix */
+.k-card-prices-row {
+  align-items: flex-end !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   FIX v290 — Modal suggestions : max 2 colonnes
+   ═══════════════════════════════════════════════════ */
+#k-modal .k-sug-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+#k-modal .k-sug-grid .k-card {
+  min-height: 0;
+  height: auto;
+}
