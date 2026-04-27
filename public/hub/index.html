@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Komerce Hub — Logistique</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      min-height: 100vh;
+    }
+
+    .hub-header {
+      background: #d97706;
+      color: #fff;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .hub-header h1 { font-size: 18px; font-weight: 800; }
+    .hub-header .hub-sub { font-size: 13px; color: #fde68a; }
+    .hub-header .refresh-btn {
+      padding: 5px 12px;
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 6px;
+      background: transparent;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .hub-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* ── KPI strip ─────────────────────────── */
+    .hub-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .hub-kpi {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .hub-kpi .number {
+      font-size: 26px;
+      font-weight: 800;
+    }
+    .hub-kpi .label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    /* ── Tabs ──────────────────────────────── */
+    .hub-tabs {
+      display: flex;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 0;
+      background: #fff;
+      border-radius: 10px 10px 0 0;
+      overflow: hidden;
+    }
+    .hub-tab {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #6b7280;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .hub-tab.active {
+      color: #d97706;
+      border-bottom-color: #d97706;
+      background: #fffbeb;
+    }
+    .hub-tab .badge {
+      display: inline-block;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 8px;
+      padding: 1px 6px;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+
+    /* ── Tab panels ────────────────────────── */
+    .hub-panel {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Table ─────────────────────────────── */
+    .hub-table { width: 100%; border-collapse: collapse; }
+    .hub-table th {
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 600;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    .hub-table td {
+      padding: 8px 10px;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .hub-table tr:last-child td { border-bottom: none; }
+
+    .action-btn {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Bottom grid ───────────────────────── */
+    .hub-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .hub-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .hub-card h4 {
+      margin: 0 0 10px;
+      font-size: 14px;
+    }
+
+    /* ── Alerts ────────────────────────────── */
+    .alert-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    /* ── Distribution card ─────────────────── */
+    .dist-parcel {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .dist-parcel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .hub-empty {
+      text-align: center;
+      padding: 32px;
+      color: #9ca3af;
+      font-size: 13px;
+    }
+
+    /* ── Toast ─────────────────────────────── */
+    #hub-toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #92400e;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 9999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .hub-kpis { grid-template-columns: repeat(2, 1fr); }
+      .hub-bottom { grid-template-columns: 1fr; }
+      .hub-table td, .hub-table th { padding: 6px 6px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="hub-toast"></div>
+
+  <header class="hub-header">
+    <div>
+      <h1>🏭 Hub Logistique</h1>
+      <div class="hub-sub">Commander · Répartir · Expédier</div>
+    </div>
+    <button class="refresh-btn" onclick="Hub.init()">🔄 Actualiser</button>
+  </header>
+
+  <div class="hub-content">
+    <!-- KPIs -->
+    <div class="hub-kpis" id="hub-kpis">
+      <div class="hub-kpi"><div class="number">—</div><div class="label">🛒 À commander</div></div>
+      <div class="hub-kpi"><div class="number">—</div><div class="label">📦 À emballer</div></div>
+      <div class="hub-kpi"><div class="number">—</div><div class="label">✈️ À expédier</div></div>
+      <div class="hub-kpi"><div class="number">—</div><div class="label">🚨 Alertes</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="hub-tabs">
+      <button class="hub-tab active" id="tab-btn-h1" onclick="Hub.switchTab('h1')">🛒 Commander <span class="badge" id="badge-h1" style="display:none"></span></button>
+      <button class="hub-tab" id="tab-btn-h2" onclick="Hub.switchTab('h2')">📦 Répartir <span class="badge" id="badge-h2" style="display:none"></span></button>
+      <button class="hub-tab" id="tab-btn-h3" onclick="Hub.switchTab('h3')">✈️ Expédier <span class="badge" id="badge-h3" style="display:none"></span></button>
+    </div>
+
+    <!-- Panel 1: Commander -->
+    <div class="hub-panel" id="panel-h1">
+      <div id="panel-h1-content"><div class="hub-empty">⏳ Chargement...</div></div>
+    </div>
+
+    <!-- Panel 2: Répartir -->
+    <div class="hub-panel" id="panel-h2" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <span style="font-size:12px;color:#6b7280">Le système répartit automatiquement les commandes par destination</span>
+        <button id="btn-auto-distribute" class="action-btn" style="background:#3b82f6;color:#fff"
+          onclick="Hub.autoDistribute()">🤖 Répartir maintenant</button>
+      </div>
+      <div id="distribution-panel"><div class="hub-empty">⏳ Chargement répartition...</div></div>
+    </div>
+
+    <!-- Panel 3: Expédier -->
+    <div class="hub-panel" id="panel-h3" style="display:none">
+      <div id="panel-h3-content"><div class="hub-empty">⏳ Chargement...</div></div>
+    </div>
+
+    <!-- Bottom: Prévisionnel + Alertes -->
+    <div class="hub-bottom">
+      <div class="hub-card">
+        <h4 style="color:#6366f1">📋 Prévisionnel</h4>
+        <div id="hub-previsionnel">—</div>
+      </div>
+      <div class="hub-card">
+        <h4 style="color:#ef4444">🚨 Alertes</h4>
+        <div id="hub-alertes">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/dashboards/admin-legacy/js/ct-api.js"></script>
+  <script>
+  window.Hub = {};
+  Hub._orders = [];
+  Hub._parcels = [];
+  Hub._activeTab = 'h1';
+
+  // ── Toast ────────────────────────────────
+  Hub.toast = function(msg) {
+    var el = document.getElementById('hub-toast');
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(Hub._toastTimer);
+    Hub._toastTimer = setTimeout(function() { el.style.display = 'none'; }, 2800);
+  };
+
+  // ── Tab switching ─────────────────────────
+  Hub.switchTab = function(tabId) {
+    Hub._activeTab = tabId;
+    ['h1','h2','h3'].forEach(function(id) {
+      document.getElementById('tab-btn-' + id).classList.toggle('active', id === tabId);
+      document.getElementById('panel-' + id).style.display = id === tabId ? 'block' : 'none';
+    });
+    if (tabId === 'h2') Hub.loadDistribution();
+  };
+
+  // ── Helpers ──────────────────────────────
+  Hub.fmt = function(n) {
+    if (!n && n !== 0) return '—';
+    return new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF';
+  };
+  Hub.ago = function(dt) {
+    if (!dt) return '—';
+    var diff = Date.now() - new Date(dt).getTime();
+    var h = Math.floor(diff / 3600000);
+    if (h < 1) return Math.floor(diff / 60000) + 'min';
+    if (h < 24) return h + 'h';
+    return Math.floor(h / 24) + 'j';
+  };
+
+  Hub.renderTable = function(headers, rows) {
+    if (!rows || rows.length === 0) {
+      return '<div class="hub-empty">✅ Rien à traiter</div>';
+    }
+    var h = '<div style="overflow-x:auto"><table class="hub-table">';
+    h += '<thead><tr>' + headers.map(function(hd) { return '<th>' + hd + '</th>'; }).join('') + '</tr></thead>';
+    h += '<tbody>' + rows.join('') + '</tbody></table></div>';
+    return h;
+  };
+
+  Hub.row = function(ref, client, info, age, btnLabel, btnAction, color) {
+    return '<tr>' +
+      '<td><strong style="color:#1e40af">' + ref + '</strong></td>' +
+      '<td>' + client + '</td>' +
+      '<td style="color:#6b7280;font-size:12px">' + info + '</td>' +
+      '<td style="color:#9ca3af;font-size:11px;white-space:nowrap">' + age + '</td>' +
+      '<td style="text-align:right">' +
+        (btnLabel ? '<button class="action-btn" data-action="' + btnAction + '" data-ref="' + ref + '" ' +
+          'style="background:' + color + '18;color:' + color + '">' + btnLabel + '</button>' : '') +
+      '</td></tr>';
+  };
+
+  // ── Init ──────────────────────────────────
+  Hub.init = async function() {
+    try {
+      var res = await Promise.all([
+        CT.api.v2Orders().catch(function() { return { orders: [] }; }),
+        CT.api.v2Parcels().catch(function() { return { parcels: [] }; })
+      ]);
+      Hub._orders = res[0].orders || [];
+      Hub._parcels = res[1].parcels || [];
+      Hub.render();
+    } catch(err) {
+      document.getElementById('panel-h1-content').innerHTML =
+        '<div style="color:#ef4444;padding:20px;text-align:center">❌ Erreur: ' + err.message + '</div>';
+    }
+  };
+
+  Hub.render = function() {
+    var orders  = Hub._orders;
+    var parcels = Hub._parcels;
+
+    var confirmed  = orders.filter(function(o) { return o.status === 'confirmed'; });
+    var pending    = orders.filter(function(o) { return o.status === 'pending'; });
+    var ordered    = orders.filter(function(o) { return o.status === 'ordered'; });
+    var prepP      = parcels.filter(function(p) { return p.status === 'preparation'; });
+    var shippedP   = parcels.filter(function(p) { return p.status === 'shipped'; });
+    var transitP   = parcels.filter(function(p) { return p.status === 'in_transit'; });
+
+    // Commandes ordered sans colis → à emballer
+    var parcelRefs = new Set();
+    parcels.forEach(function(p) { if (p.main_order_ref) parcelRefs.add(p.main_order_ref); });
+    var readyParcel = ordered.filter(function(o) { return !parcelRefs.has(o.reference); });
+
+    // Alertes
+    var now = Date.now();
+    var stuck48h    = confirmed.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 48*3600000; });
+    var stuckOrd48h = ordered.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 48*3600000; });
+    var expired36h  = pending.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 36*3600000; });
+    var critical7d  = ordered.concat(confirmed).filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 7*24*3600000; });
+    var alertCount  = stuck48h.length + stuckOrd48h.length + expired36h.length + critical7d.length;
+
+    // ── KPIs ──
+    document.getElementById('hub-kpis').innerHTML =
+      '<div class="hub-kpi"><div class="number" style="color:#e91e63">' + confirmed.length + '</div><div class="label">🛒 À commander</div></div>' +
+      '<div class="hub-kpi"><div class="number" style="color:#3b82f6">' + readyParcel.length + '</div><div class="label">📦 À emballer</div></div>' +
+      '<div class="hub-kpi"><div class="number" style="color:#8b5cf6">' + prepP.length + '</div><div class="label">✈️ À expédier</div></div>' +
+      '<div class="hub-kpi"><div class="number" style="color:' + (alertCount > 0 ? '#ef4444' : '#22c55e') + '">' + alertCount + '</div><div class="label">🚨 Alertes</div></div>';
+
+    // ── Badges ──
+    var badges = { h1: confirmed.length, h2: readyParcel.length, h3: prepP.length };
+    ['h1','h2','h3'].forEach(function(id) {
+      var el = document.getElementById('badge-' + id);
+      if (badges[id] > 0) { el.textContent = badges[id]; el.style.display = 'inline-block'; }
+      else { el.style.display = 'none'; }
+    });
+
+    // ── Auto-select tab ──
+    var autoTab = confirmed.length > 0 ? 'h1' : (readyParcel.length > 0 ? 'h2' : 'h3');
+    Hub.switchTab(autoTab);
+
+    // ── Panel 1: Commander ──
+    var rows1 = confirmed.map(function(o) {
+      var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
+      var desc = (items.length || o.nb_items || 0) + ' art. · ' + Hub.fmt(o.total_kmf) + ' · ' + (o.relais_island || '—');
+      return Hub.row(o.reference, o.customer_name || 'Client', desc, Hub.ago(o.created_at), '🛒 Commander', 'hub-mark-ordered', '#b45309');
+    });
+    document.getElementById('panel-h1-content').innerHTML =
+      Hub.renderTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows1);
+
+    // ── Panel 3: Expédier ──
+    var rows3 = prepP.map(function(p) {
+      var desc = (p.main_order_ref || '—') + ' · ' + (p.nb_items || 0) + ' art. · ' + (p.destination_island || p.relais_island || '—');
+      return Hub.row(p.reference, p.recipient_name || 'Client', desc, '', '✈️ Expédier', 'hub-ship', '#7c3aed');
+    });
+    document.getElementById('panel-h3-content').innerHTML =
+      Hub.renderTable(['Colis', 'Client', 'Détails', '', ''], rows3);
+
+    // ── Prévisionnel ──
+    var prev = '';
+    prev += '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:4px">⏳ En attente paiement (' + pending.length + ')</div>';
+    prev += Hub.miniTable(pending, [
+      function(o) { return '<strong>' + o.reference + '</strong>'; },
+      function(o) { return o.customer_name || '—'; },
+      function(o) { return o.payment_mode === 'stripe_eur' ? '💳' : '💰'; },
+      function(o) { return Hub.ago(o.created_at); }
+    ]);
+    prev += '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin:8px 0 4px">📋 À répartir (' + ordered.length + ')</div>';
+    prev += Hub.miniTable(ordered, [
+      function(o) { return '<strong>' + o.reference + '</strong>'; },
+      function(o) { return o.customer_name || '—'; },
+      function(o) { return (o.nb_items || '—') + ' art.'; },
+      function(o) { return Hub.ago(o.created_at); }
+    ]);
+    var enRoute = shippedP.concat(transitP);
+    prev += '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin:8px 0 4px">🚀 En route (' + enRoute.length + ')</div>';
+    prev += Hub.miniTable(enRoute, [
+      function(p) { return '<strong>' + p.reference + '</strong>'; },
+      function(p) { return '🏝️ ' + (p.destination_island || '—'); },
+      function(p) { return Hub.ago(p.shipped_at || p.created_at); }
+    ]);
+    document.getElementById('hub-previsionnel').innerHTML = prev;
+
+    // ── Alertes ──
+    var al = '';
+    if (alertCount === 0) {
+      al = '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
+    } else {
+      if (expired36h.length)  al += Hub.alertBadge('💸', 'Paiements expirés >36h', expired36h.length, '#e91e63');
+      if (stuck48h.length)    al += Hub.alertBadge('🛒', 'À répartir >48h', stuck48h.length, '#ef4444');
+      if (stuckOrd48h.length) al += Hub.alertBadge('⏰', 'Ordered bloqué >48h', stuckOrd48h.length, '#ef4444');
+      if (critical7d.length)  al += Hub.alertBadge('🔴', 'Critique >7 jours', critical7d.length, '#dc2626');
+    }
+    document.getElementById('hub-alertes').innerHTML = al;
+
+    // ── Wire actions ──
+    Hub.wireActions();
+  };
+
+  Hub.miniTable = function(items, cols) {
+    if (!items || items.length === 0) return '<div style="color:#d1d5db;font-size:12px;padding:4px 0">—</div>';
+    var h = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    items.slice(0, 8).forEach(function(item, i) {
+      h += '<tr style="border-bottom:1px solid #f8fafc' + (i % 2 ? ';background:#fafbfd' : '') + '">';
+      cols.forEach(function(c) { h += '<td style="padding:3px 6px">' + c(item) + '</td>'; });
+      h += '</tr>';
+    });
+    if (items.length > 8) h += '<tr><td colspan="99" style="padding:3px 6px;color:#9ca3af;font-size:11px">+ ' + (items.length - 8) + ' autres</td></tr>';
+    h += '</table>';
+    return h;
+  };
+
+  Hub.alertBadge = function(icon, label, count, color) {
+    return '<div class="alert-badge" style="background:' + color + '08;border:1px solid ' + color + '25">' +
+      '<span>' + icon + '</span><span style="flex:1">' + label + '</span>' +
+      '<strong style="color:' + color + '">' + count + '</strong></div>';
+  };
+
+  // ── Distribution ─────────────────────────────
+  Hub.loadDistribution = async function() {
+    var panel = document.getElementById('distribution-panel');
+    if (!panel) return;
+    panel.innerHTML = '<div class="hub-empty">⏳ Chargement...</div>';
+    try {
+      var data = await CT.api.getDistribution();
+      var parcels = data.parcels || [];
+      var unassigned = data.unassigned || [];
+      var saturated  = data.saturated || [];
+
+      var totalOrders = parcels.reduce(function(s,p) { return s + (p.orders_count || 0); }, 0);
+      var totalItems  = parcels.reduce(function(s,p) { return s + (p.items_count  || 0); }, 0);
+
+      var h = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
+      h += '<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">📦 ' + parcels.length + ' colis</span>';
+      h += '<span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">🛍️ ' + totalOrders + ' cmd</span>';
+      h += '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">📋 ' + totalItems + ' art.</span>';
+      if (unassigned.length) h += '<span style="background:#fce7f3;color:#831843;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">⏳ ' + unassigned.length + ' non assigné(s)</span>';
+      h += '</div>';
+
+      if (parcels.length === 0 && unassigned.length === 0) {
+        h += '<div class="hub-empty">✅ Aucune commande à répartir</div>';
+      }
+
+      // Saturation alerts
+      saturated.forEach(function(s) {
+        h += '<div style="background:#fce4ec;border:2px solid #e91e63;border-radius:8px;padding:10px 14px;margin-bottom:10px">' +
+          '<strong style="color:#880e4f">🚨 ' + s.destination + ' — Capacité max atteinte</strong>' +
+          '<div style="font-size:12px;color:#c62828;margin-top:2px">✈️ Expédiez les colis en cours pour débloquer</div>' +
+          '</div>';
+      });
+
+      // Parcel cards
+      parcels.forEach(function(p) {
+        var pStatus = p.status || p.parcel_status || 'draft';
+        var statusColors = { draft: 'fce4ec:#880e4f', preparation: 'dbeafe:#1e40af', shipped: 'd1fae5:#065f46' };
+        var sc = (statusColors[pStatus] || 'f1f5f9:#64748b').split(':');
+        var orders = []; try { orders = typeof p.orders === 'string' ? JSON.parse(p.orders) : (p.orders || []); } catch(e) {}
+
+        h += '<div class="dist-parcel">';
+        h += '<div class="dist-parcel-header">';
+        h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+        h += '<strong style="color:#1e40af;font-size:14px">📦 ' + p.reference + '</strong>';
+        h += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + (p.relais_name || p.relais_island || p.destination || '—') + '</span>';
+        h += '<span style="color:#6b7280;font-size:11px">' + (p.orders_count || 0) + ' cmd · ' + (p.items_count || 0) + ' art. · ' + Hub.fmt(p.total_kmf || 0) + '</span>';
+        h += '</div>';
+        h += '<div style="display:flex;align-items:center;gap:6px">';
+        h += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#' + sc[0] + ';color:#' + sc[1] + '">' + pStatus + '</span>';
+        if (pStatus === 'preparation') {
+          h += '<button class="action-btn" data-action="dist-ship" data-ref="' + p.reference + '" style="background:#7c3aed;color:#fff">✈️ Expédier</button>';
+        }
+        h += '</div></div>';
+
+        // Orders inside parcel
+        if (orders.length > 0) {
+          h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+          orders.forEach(function(o) {
+            h += '<tr style="border-bottom:1px solid #f1f5f9">' +
+              '<td style="padding:3px 6px;font-weight:600;color:#1e40af">' + (o.ref || '—') + '</td>' +
+              '<td style="padding:3px 6px">' + (o.customer || '—') + '</td>' +
+              '<td style="padding:3px 6px;color:#6b7280">' + (o.items_count || o.items || '?') + ' art.</td>' +
+              '<td style="padding:3px 6px;text-align:right">' + Hub.fmt(o.total_kmf || o.total || 0) + '</td>' +
+              '</tr>';
+          });
+          h += '</table>';
+        }
+        h += '</div>';
+      });
+
+      // Unassigned
+      if (unassigned.length > 0) {
+        h += '<div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px;margin-top:8px">';
+        h += '<div style="font-size:12px;font-weight:600;color:#880e4f;margin-bottom:6px">⏳ ' + unassigned.length + ' commande(s) non assignée(s)</div>';
+        unassigned.forEach(function(o) {
+          h += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">' +
+            '<span><strong>' + o.reference + '</strong> — ' + (o.customer_name || '?') + '</span>' +
+            '<span style="color:#6b7280">' + (o.items_count || '?') + ' art. · ' + (o.relais_name || o.relais_island || '?') + '</span>' +
+            '</div>';
+        });
+        h += '<div style="margin-top:6px;font-size:11px;color:#880e4f">Cliquez "🤖 Répartir maintenant" pour les assigner</div>';
+        h += '</div>';
+      }
+
+      panel.innerHTML = h;
+      // Wire dist-ship buttons
+      panel.querySelectorAll('[data-action="dist-ship"]').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var ref = btn.dataset.ref;
+          if (!confirm('Fermer & expédier ' + ref + ' ?')) return;
+          btn.disabled = true; btn.textContent = '⏳...';
+          try {
+            await CT.api.v2Scan(ref, 'shipped', 'Expédié Hub');
+            Hub.toast('✅ ' + ref + ' expédié ✈️');
+            Hub.init();
+          } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
+        });
+      });
+
+    } catch(e) {
+      panel.innerHTML = '<div style="color:#ef4444;font-size:13px;padding:12px">❌ ' + e.message + '</div>';
+    }
+  };
+
+  Hub.autoDistribute = async function() {
+    var btn = document.getElementById('btn-auto-distribute');
+    btn.disabled = true; btn.textContent = '⏳ Répartition...';
+    try {
+      var r = await CT.api.autoDistribute();
+      Hub.toast('✅ ' + (r.distributed || 0) + ' commande(s) répartie(s) 📦');
+      Hub.loadDistribution();
+      Hub.init();
+    } catch(e) { alert('❌ ' + e.message); }
+    btn.disabled = false; btn.textContent = '🤖 Répartir maintenant';
+  };
+
+  // ── Wire action buttons ──────────────────────────
+  Hub.wireActions = function() {
+    // Commander
+    document.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var ref = btn.dataset.ref;
+        if (!confirm('Passer en commande ' + ref + ' ?\nconfirmed → ordered')) return;
+        btn.disabled = true; btn.textContent = '⏳...';
+        try {
+          await CT.api.hubMarkOrdered(ref);
+          Hub.toast('✅ ' + ref + ' → commandé 📋');
+          Hub.init();
+        } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '🛒 Commander'; }
+      });
+    });
+
+    // Expédier
+    document.querySelectorAll('[data-action="hub-ship"]').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var ref = btn.dataset.ref;
+        if (!confirm('Expédier ' + ref + ' ?\npreparation → shipped')) return;
+        btn.disabled = true; btn.textContent = '⏳...';
+        try {
+          await CT.api.v2Scan(ref, 'shipped', 'Expédié Hub');
+          Hub.toast('✅ ' + ref + ' expédié ✈️');
+          Hub.init();
+        } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
+      });
+    });
+  };
+
+  // ── Start ──
+  Hub.init();
+  </script>
+
+</body>
+</html>
