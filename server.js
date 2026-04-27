@@ -126,7 +126,6 @@ app.use(helmet({
 app.use(cors(corsOptions));
 
 // ── Stripe webhook MUST receive raw body for signature verification ──────────
-// This must come BEFORE express.json() so the body stays a Buffer
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/collective-payments/stripe/webhook', express.raw({ type: 'application/json' }));
@@ -156,7 +155,6 @@ app.use('/api/admin/', adminLimiter);
 // ── Auth guard injection — auto-injects session checker into admin pages ────
 const _fs = require('fs');
 app.get('/*.html', (req, res, next) => {
-  // Skip boutique, portal, and public pages
   if (req.path.includes('Boutique') || req.path === '/boutique.html' || req.path === '/portal.html' || req.path === '/suivi.html' || req.path === '/mon-compte.html') return next();
   const filePath = path.join(__dirname, 'public', req.path);
   _fs.readFile(filePath, 'utf8', (err, html) => {
@@ -262,26 +260,23 @@ app.use('/api/admin/pricing-components', adminPricingComponentsRouter);
 app.use('/api/admin/cost-components',    adminCostComponentsRouter);
 
 // ═══ Panier Partagé MVP (Niveau 1) ═══
-// IMPORTANT : webhook Stripe en raw (mounté plus haut), avant le router
 app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
 app.use('/api/shared-carts',       sharedCart.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
 
-// ═══ Panier Événement Collectif V1 (capture atomique 100%) ═══
-// Coexiste avec shared-carts (philosophies différentes)
+// ═══ Panier Événement Collectif V1 ═══
 const collectiveWS = require('./routes/collective-workspaces');
 const collectivePaymentOrchestrator = require('./services/collective-payment-orchestrator');
 app.post('/api/collective-payments/stripe/webhook', collectiveWS.stripeWebhookHandler);
 app.use('/api/collective-workspaces', collectiveWS.router);
 app.use('/api/collective-payments',   collectiveWS.paymentsRouter);
-// Démarrer le cron d'expiration (toutes les 5 min en prod, 30s en dev)
 if (process.env.NODE_ENV !== 'test') {
   const intervalMs = process.env.NODE_ENV === 'production' ? 5 * 60 * 1000 : 30 * 1000;
   collectivePaymentOrchestrator.startExpirationCron(intervalMs);
 }
 app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
-app.use('/api/admin/dashboard',   require('./routes/admin-dashboard'));  // ← Sprint 1 dashboards
-app.use('/api/admin/costing',     require('./routes/admin-costing'));   // ← P3+P4+P5+E
+app.use('/api/admin/dashboard',   require('./routes/admin-dashboard'));
+app.use('/api/admin/costing',     require('./routes/admin-costing'));
 app.use('/api/admin',      adminRouter);
 app.use('/api/admin/rules', adminRulesRouter);
 app.use('/api/admin/radar', adminRadarRouter);
@@ -305,14 +300,14 @@ app.use('/api/v2/notifications', notificationApiRouter);
 app.use('/api/v2', opsApiRouter);
 
 app.use('/api/tracking', trackingRouter);
-app.use('/api/auth/otp', otpRouter);      // WhatsApp OTP auth
+app.use('/api/auth/otp', otpRouter);
 app.use('/api/client/tracking', clientTrackingRouter);
 app.use('/api/simulator', simulatorRouter);
-app.use('/api/cash', cashRouter); // Authenticated client tracking
-app.use('/api/auth', clientAuthRouter);   // Magic link routes
-app.use('/api/client', clientAuthRouter); // Client orders/invoices
+app.use('/api/cash', cashRouter);
+app.use('/api/auth', clientAuthRouter);
+app.use('/api/client', clientAuthRouter);
 app.use('/api/invoices',   invoicesRouter);
-app.use('/api/pricing/strategy', pricingStrategyRouter);  // ADR-013 : Phase 3 strategie de prix
+app.use('/api/pricing/strategy', pricingStrategyRouter);
 app.use('/api/pricing',    pricingRouter);
 app.use('/api/modules',    modulesRouter);
 app.use('/api/baskets',    basketsRouter);
@@ -360,11 +355,9 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// ── Public config (P0.4) ─────────────────────────────────────────────
-// Expose la config publique nécessaire au front (Stripe key, taux, etc.)
-// Évite de hardcoder pk_test côté JS. Ne JAMAIS retourner de secret.
+// ── Public config ─────────────────────────────────────────────
 app.get('/api/public/config', (req, res) => {
-  res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min de cache
+  res.setHeader('Cache-Control', 'public, max-age=300');
   res.json({
     stripe_public_key: process.env.STRIPE_PUBLIC_KEY || process.env.STRIPE_PK || '',
     eur_kmf_rate:      Number(process.env.EUR_KMF_RATE)  || 492,
@@ -393,17 +386,14 @@ app.get('/c/:token', (req, res) => {
   res.redirect(301, '/boutique/?share=' + encodeURIComponent(token));
 });
 
-// ── Mon Compte — serve without auth-guard ─────────────────────────────────
+// ── Mon Compte ─────────────────────────────────────────────────────────────
 app.get('/mon-compte', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'public', 'mon-compte.html'));
 });
 
-// ── Panier Partagé — page publique ─────────────────────────────────────────
-// /cart/shared/:token        → page principale
-// /cart/shared/success       → page retour Stripe success
-// /cart/shared/cancel        → page retour Stripe cancel
+// ── Panier Partagé ─────────────────────────────────────────────────────────
 app.get('/cart/shared/:token', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -415,23 +405,23 @@ app.get('/cart/shared', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'boutique', 'shared-cart-public.html'));
 });
 
-// ── Mes Paniers Partagés — espace bénéficiaire authentifié ─────────────────
+// ── Mes Paniers Partagés ────────────────────────────────────────────────────
 app.get('/account/shared-carts', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'public', 'boutique', 'shared-cart-account.html'));
 });
 
-// ── Admin Dashboards Sprint 1+ — shell unique pour les 5 vues ─────────────
-// Routes : /admin/pilotage, /admin/control-tower, /admin/costing,
-//          /admin/orders-logistics, /admin/event-workspaces
-// Fichiers : public/dashboards/admin/ (refonte arborescence)
+// ── Admin Dashboards Sprint 1+ — shell SPA pour toutes les vues admin ──────
+// Routes gérées côté SPA (app.js) via pushState — toutes servent le même index.html
 const ADMIN_DASHBOARD_PATHS = [
   '/admin/pilotage',
   '/admin/control-tower',
   '/admin/costing',
   '/admin/orders-logistics',
   '/admin/event-workspaces',
+  '/admin/sourcing',
+  '/admin/alerts',
 ];
 ADMIN_DASHBOARD_PATHS.forEach(p => {
   app.get(p, (req, res) => {
@@ -442,14 +432,13 @@ ADMIN_DASHBOARD_PATHS.forEach(p => {
 });
 
 // ── Anciens dashboards Control Tower (compatibilité descendante) ──────────
-// /control-tower.html → fichier déplacé dans dashboards/admin-legacy/
 app.get('/control-tower.html', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'public', 'dashboards', 'admin-legacy', 'control-tower.html'));
 });
 
-// ── App Relais — déplacée dans relais/ ────────────────────────────────────
+// ── App Relais ────────────────────────────────────────────────────────────
 app.get('/Komerce_Relais.html', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -461,12 +450,14 @@ app.get('/relais', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'relais', 'index.html'));
 });
 
-// ── Panier Événement (P0 — routes canoniques) ──────────────────────────
-// Conventions URL alignées :
-//   GET /event/create                  → page création
-//   GET /event/manage/:creatorToken    → page créateur (était /event/:t/manage)
-//   GET /event/w/:publicToken          → page publique  (était /workspace/:t)
-//   GET /event/pay/:paymentToken       → page paiement  (NEW — P1.4)
+// ── App Hub ───────────────────────────────────────────────────────────────
+app.get('/hub', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'hub', 'index.html'));
+});
+
+// ── Panier Événement ──────────────────────────────────────────────────
 app.get('/event/create', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -488,7 +479,7 @@ app.get('/event/pay/:paymentToken', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'boutique', 'event', 'pay.html'));
 });
 
-// ── Redirections legacy URLs événement (compat) ────────────────────────
+// ── Redirections legacy URLs événement ────────────────────────────────────
 app.get('/event/:creatorToken/manage', (req, res) => {
   res.redirect(301, '/event/manage/' + encodeURIComponent(req.params.creatorToken));
 });
@@ -496,9 +487,7 @@ app.get('/workspace/:publicToken', (req, res) => {
   res.redirect(301, '/event/w/' + encodeURIComponent(req.params.publicToken));
 });
 
-// ── Boutique canonique (P0.1) ────────────────────────────────────────
-// /Komerce_Boutique.html doit servir EXACTEMENT la même boutique que /
-// (anciennement servi par express.static depuis le top-level top-level qui était divergent)
+// ── Boutique canonique ────────────────────────────────────────
 app.get('/Komerce_Boutique.html', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -535,7 +524,6 @@ let cronRunning = false;
 
   console.log(`⏰ Cash reminder cron: every ${intervalMin}min`);
 
-  // ── Auto-confirm expired inventory proposals (every 30min) ──
   setInterval(async () => {
     try {
       const inv = require('./services/inventory-service');
@@ -634,7 +622,6 @@ const server = app.listen(PORT, () => {
         END$$`);
       } catch(e) { console.warn('F34 stock CHECK (non-fatal):', e.message); }
 
-      // ── Migration 023: invoices table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS invoices (
@@ -662,7 +649,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 023: invoices table ready');
       } catch(e) { console.warn('Migration 023 (non-fatal):', e.message); }
 
-      // ── Migration 024: notification_log table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS notification_log (
@@ -684,8 +670,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 024: notification_log table ready');
       } catch(e) { console.warn('Migration 024 (non-fatal):', e.message); }
 
-      
-      // ── Migration 025: otp_codes table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS otp_codes (
@@ -703,7 +687,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 025: otp_codes table ready');
       } catch(e) { console.warn('Migration 025 (non-fatal):', e.message); }
 
-      // ── Migration: ensure 'pending' in order_status enum ──
       try {
         await db.query(`
           DO $$ BEGIN
@@ -716,13 +699,10 @@ const server = app.listen(PORT, () => {
         `);
       } catch(e) { console.warn('Pending enum migration (non-fatal):', e.message); }
 
-      // ── Phase 2: Add timestamp columns for pending/confirmed ──
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ`);
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`);
       console.log('[MIGRATION] pending_at + confirmed_at columns ensured');
 
-
-      // ── Migration 026: inventory_items table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS inventory_items (
@@ -750,7 +730,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 026: inventory_items table ready');
       } catch(e) { console.warn('Migration 026 (non-fatal):', e.message); }
 
-      // ── Migration 027: orders enrichment columns ──
       try {
         await db.query(`
           ALTER TABLE orders ADD COLUMN IF NOT EXISTS completion_ratio FLOAT DEFAULT 0;
@@ -761,7 +740,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 027: orders enrichment columns ready');
       } catch(e) { console.warn('Migration 027 (non-fatal):', e.message); }
 
-      // ── Migration 028: seed transitaire user ──
       try {
         const bcrypt = require('bcryptjs');
         const transitPwd = process.env.TRANSITAIRE_PASSWORD || 'KomTransit2025!';
@@ -773,7 +751,6 @@ const server = app.listen(PORT, () => {
         `, [transitHash]);
         console.log('✅ Migration 028: transitaire user seeded');
 
-      // ── Migration 029: inventory_items proposal columns ──
       try {
         await db.query(`
           ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS proposed_parcel_id UUID;
@@ -782,8 +759,7 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 029: inventory_items proposal columns ready');
       } catch(e) { console.warn('Migration 029 (non-fatal):', e.message); }
       } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
-	  
-	        // ── Migration 033: table audit matrices pricing ──
+
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS pricing_matrices_audit (
@@ -801,8 +777,7 @@ const server = app.listen(PORT, () => {
         `);
         console.log('✅ Migration 033: pricing_matrices_audit table ready');
       } catch(e) { console.warn('Migration 033 (non-fatal):', e.message); }
-	  
-	        // ── Migration 030: cart_shares table (panier partagé) ──
+
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS cart_shares (
@@ -829,8 +804,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 030: cart_shares table ready');
       } catch(e) { console.warn('Migration 030 (non-fatal):', e.message); }
 
-
-      // ── Migration 031: products.subcategory column ──
       try {
         await db.query(`
           ALTER TABLE products ADD COLUMN IF NOT EXISTS subcategory TEXT;
@@ -840,7 +813,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 031: products.subcategory column ready');
       } catch(e) { console.warn('Migration 031 (non-fatal):', e.message); }
 
-      // ── Migration 034: cash_collections table (réconciliation Option C) ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS cash_collections (
@@ -859,7 +831,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 034: cash_collections table ready');
       } catch(e) { console.warn('Migration 034 (non-fatal):', e.message); }
 
-      // ── Migration 035: cash_deposits table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS cash_deposits (
@@ -885,7 +856,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 035: cash_deposits table ready');
       } catch(e) { console.warn('Migration 035 (non-fatal):', e.message); }
 
-      // ── Migration 036: cash_reconciliation table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS cash_reconciliation (
@@ -911,35 +881,29 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 036: cash_reconciliation table ready');
       } catch(e) { console.warn('Migration 036 (non-fatal):', e.message); }
 
-
-      // ── Migration 037: fix products is_active + subcategory + promo_pct ──
       try {
         const migration037 = require('./scripts/migration-037-fix-products');
         await migration037(db);
         console.log('✅ Migration 037: products is_active + subcategory fixed');
       } catch(e) { console.warn('Migration 037 (non-fatal):', e.message); }
 
-      // ── Migration 038: replace catalog with curated products ──
       try {
         const migration038 = require('./scripts/migration-038-replace-products');
         await migration038(db);
         console.log('✅ Migration 038: product catalog replaced');
       } catch(e) { console.warn('Migration 038 (non-fatal):', e.message); }
 
-      // ── Migration 039: French descriptions ──
       try {
         const migration039 = require('./scripts/migration-039-french-descriptions');
         await migration039();
         console.log('✅ Migration 039: descriptions updated to French');
       } catch(e) { console.warn('Migration 039 (non-fatal):', e.message); }
 
-      // ── Migration 041: make email nullable for guest checkout ──
       try {
         await db.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL;`);
         console.log('✅ Migration 041: users.email now nullable (guest checkout)');
       } catch(e) { console.warn('Migration 041 (non-fatal):', e.message); }
 
-      // ── Migration 040: users phone_payer + phone_beneficiary columns ──
       try {
         await db.query(`
           ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_payer VARCHAR(30);
@@ -949,7 +913,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 040: phone_payer + phone_beneficiary columns added');
       } catch(e) { console.warn('Migration 040 (non-fatal):', e.message); }
 
-      // ── Migration 046: economic_variables table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS economic_variables (
@@ -973,7 +936,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 046: economic_variables table created');
       } catch(e) { console.warn('Migration 046 (non-fatal):', e.message); }
 
-      // ── Migration 047: charges table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS charges (
@@ -992,7 +954,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 047: charges table created');
       } catch(e) { console.warn('Migration 047 (non-fatal):', e.message); }
 
-      // ── Migration 048: economic_snapshots table ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS economic_snapshots (
@@ -1006,55 +967,37 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 048: economic_snapshots table created');
       } catch(e) { console.warn('Migration 048 (non-fatal):', e.message); }
 
-      // ── Migration 049: finance_config (variabilisée) + loyalty_rewards + big_basket ──
-      // Table singleton de TOUS les paramètres métier ajustables
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS finance_config (
             id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-
-            -- Coûts fixes par commande (KMF)
             cost_fixed_sourcing_kmf     INT NOT NULL DEFAULT 1000,
             cost_fixed_transit_kmf      INT NOT NULL DEFAULT  500,
             cost_fixed_hub_kmf          INT NOT NULL DEFAULT  400,
             cost_fixed_relais_kmf       INT NOT NULL DEFAULT  300,
             cost_fixed_support_kmf      INT NOT NULL DEFAULT  200,
-
-            -- Objectifs & pilotage
             target_marge_brute_pct      NUMERIC(5,2) NOT NULL DEFAULT 30.00,
             target_panier_moyen_kmf     INT NOT NULL DEFAULT 15000,
             objectif_commandes_mois     INT NOT NULL DEFAULT 100,
             objectif_ca_mensuel_kmf     INT NOT NULL DEFAULT 1500000,
-
-            -- Paramètres sourcing
             taux_change_eur_kmf         NUMERIC(10,2) NOT NULL DEFAULT 491.96,
             markup_cible_pct            NUMERIC(5,2) NOT NULL DEFAULT 250.00,
             cout_achat_moyen_eur        NUMERIC(10,2) NOT NULL DEFAULT 5.00,
             delai_transit_jours         INT NOT NULL DEFAULT 25,
-
-            -- Paramètres opérationnels
             commission_relais_pct       NUMERIC(5,2) NOT NULL DEFAULT 5.00,
             frais_livraison_defaut_kmf  INT NOT NULL DEFAULT 1500,
             seuil_livraison_gratuite_kmf INT NOT NULL DEFAULT 25000,
             taux_conversion_pct         NUMERIC(5,2) NOT NULL DEFAULT 3.00,
             taux_retour_pct             NUMERIC(5,2) NOT NULL DEFAULT 2.00,
-
-            -- Système fidélité (cadeau gros paniers)
             loyalty_active              BOOLEAN NOT NULL DEFAULT TRUE,
             loyalty_threshold_kmf       INT NOT NULL DEFAULT 20000,
             loyalty_trigger_count       INT NOT NULL DEFAULT 3,
-
             updated_at TIMESTAMPTZ DEFAULT NOW(),
             updated_by UUID
           );
-
           INSERT INTO finance_config (id) VALUES (1) ON CONFLICT DO NOTHING;
-
-          -- Compteur de gros paniers sur les utilisateurs
           ALTER TABLE users ADD COLUMN IF NOT EXISTS big_basket_count INT NOT NULL DEFAULT 0;
           ALTER TABLE users ADD COLUMN IF NOT EXISTS big_basket_last_notified_count INT NOT NULL DEFAULT 0;
-
-          -- Historique des cadeaux de fidélité
           CREATE TABLE IF NOT EXISTS loyalty_rewards (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -1068,15 +1011,13 @@ const server = app.listen(PORT, () => {
             notes TEXT,
             created_at TIMESTAMPTZ DEFAULT NOW()
           );
-
           CREATE INDEX IF NOT EXISTS idx_loyalty_rewards_user ON loyalty_rewards(user_id);
           CREATE INDEX IF NOT EXISTS idx_loyalty_rewards_status ON loyalty_rewards(status);
           CREATE INDEX IF NOT EXISTS idx_users_big_basket ON users(big_basket_count) WHERE big_basket_count > 0;
         `);
-        console.log('✅ Migration 049: finance_config (variabilisée) + loyalty_rewards + big_basket');
+        console.log('✅ Migration 049: finance_config + loyalty_rewards + big_basket');
       } catch(e) { console.warn('Migration 049 (non-fatal):', e.message); }
 
-      // ── Migration 050: sourcing columns on products ──
       try {
         await db.query(`
           ALTER TABLE products ADD COLUMN IF NOT EXISTS sourcing_rail TEXT;
@@ -1099,7 +1040,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 050: sourcing columns on products');
       } catch(e) { console.warn('Migration 050 (non-fatal):', e.message); }
 
-      // ── Migration 051: signals table (CT/BO platform) ──
       try {
         await db.query(`
           CREATE TABLE IF NOT EXISTS signals (
@@ -1130,7 +1070,6 @@ const server = app.listen(PORT, () => {
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
           );
-
           CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status) WHERE status IN ('open','acknowledged');
           CREATE INDEX IF NOT EXISTS idx_signals_type ON signals(signal_type);
           CREATE INDEX IF NOT EXISTS idx_signals_severity ON signals(severity);
@@ -1142,7 +1081,6 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 051: signals table created');
       } catch(e) { console.warn('Migration 051 (non-fatal):', e.message); }
 
-      // ── Migration 052: Seed default charges ──
       try {
         const { rows: existingCharges } = await db.query('SELECT COUNT(*) as c FROM charges');
         if (parseInt(existingCharges[0].c) === 0) {

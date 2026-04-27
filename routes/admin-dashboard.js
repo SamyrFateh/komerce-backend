@@ -118,7 +118,7 @@ router.get(
           taux_completude_couts: '/admin/costing?cost_status=incomplete,partial_real,estimated',
         },
         data_quality: makeDataQuality(filters, [
-          'orders', 'parcels', 'scans', 'alerts',
+          'orders', 'parcels', 'scan_events', 'signals',
           'order_item_cost_imputations', 'order_item_real_cost_allocations',
         ], { warnings }),
       });
@@ -169,7 +169,6 @@ router.get(
       }
 
       const incompleteFields = [];
-      // Detect manquants au niveau dashboard
       if (margeConsolidee.data_quality.items_with_data === 0) {
         incompleteFields.push('fixed_overhead', 'payment');
       }
@@ -181,7 +180,7 @@ router.get(
           cmdsCoutIncomplet, coutMoy,
         ],
         charts,
-        tables: { /* tables legeres - les details vont sur /api/admin/costing/* */ },
+        tables: {},
         alerts,
         drilldown_links: {
           ca_vendu: '/admin/control-tower',
@@ -240,7 +239,7 @@ router.get(
         tables: {},
         alerts: [],
         drilldown_links: {},
-        data_quality: makeDataQuality(filters, ['orders', 'parcels', 'scans'], { warnings }),
+        data_quality: makeDataQuality(filters, ['orders', 'parcels', 'scan_events'], { warnings }),
       });
     } catch (err) {
       console.error('[admin-dashboard] /logistics error:', err);
@@ -423,7 +422,6 @@ router.post('/cache/clear', authenticate, requireAdmin, (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function _buildControlTowerCharts(filters) {
-  // Activity timeline (commandes par jour sur la periode)
   const { where, params } = metrics.buildFiltersClause(filters);
   const sql = `
     SELECT DATE(o.created_at) AS day,
@@ -439,7 +437,6 @@ async function _buildControlTowerCharts(filters) {
   const orders_series = r.rows.map(row => Number(row.orders_count));
   const ca_series = r.rows.map(row => Number(row.ca_kmf));
 
-  // Status breakdown (donut)
   const statusSql = `
     SELECT status, COUNT(*)::int AS count
     FROM orders o
@@ -472,7 +469,6 @@ async function _buildControlTowerCharts(filters) {
 }
 
 async function _buildControlTowerTables(filters) {
-  // Top 10 commandes a traiter (cost_status incomplet, payment pending, etc)
   const { where, params } = metrics.buildFiltersClause(filters);
   const sql = `
     SELECT o.id, o.reference, o.status, o.payment_status, o.total_kmf, o.created_at,
@@ -487,7 +483,6 @@ async function _buildControlTowerTables(filters) {
   `;
   const r = await db.query(sql, params);
 
-  // Performance relais (top 7 jours)
   const relaisSql = `
     SELECT r.id AS relais_id, r.name AS relais_name,
       COUNT(DISTINCT o.id)::int AS orders_count,
@@ -514,7 +509,6 @@ async function _buildControlTowerTables(filters) {
 }
 
 async function _buildCostingCharts(filters) {
-  // CA / cout / marge timeline
   const { where, params } = metrics.buildFiltersClause(filters);
   const sql = `
     SELECT DATE(o.created_at) AS day,
@@ -536,7 +530,6 @@ async function _buildCostingCharts(filters) {
   `;
   const r = await db.query(sql, params);
 
-  // Repartition cout reel par cost_type (donut)
   const familySql = `
     SELECT alc.cost_type, COALESCE(SUM(alc.amount_kmf), 0)::bigint AS amount_kmf
     FROM order_item_real_cost_allocations alc
@@ -574,7 +567,6 @@ async function _buildCostingCharts(filters) {
 async function _buildCostingAlerts() {
   const alerts = [];
 
-  // Fixed overhead non alloué pour le mois courant
   const fixedSql = `
     SELECT COUNT(DISTINCT o.id)::int AS count
     FROM orders o
@@ -598,7 +590,6 @@ async function _buildCostingAlerts() {
     });
   }
 
-  // Customs shipments non ventilés
   const customsSql = `
     SELECT COUNT(DISTINCT cs.id)::int AS count
     FROM customs_shipments cs
@@ -609,9 +600,8 @@ async function _buildCostingAlerts() {
         WHERE shipment_id = cs.id
       )
   `;
-  let cR;
   try {
-    cR = await db.query(customsSql);
+    const cR = await db.query(customsSql);
     if (Number(cR.rows[0].count) > 0) {
       alerts.push({
         key: 'customs_shipment_not_allocated',
@@ -624,7 +614,6 @@ async function _buildCostingAlerts() {
     }
   } catch (e) { /* table optional */ }
 
-  // Frais de paiement manquants
   const paySql = `
     SELECT COUNT(DISTINCT o.id)::int AS count
     FROM orders o
@@ -650,7 +639,6 @@ async function _buildCostingAlerts() {
 }
 
 async function _buildLogisticsCharts(filters) {
-  // Pipeline operationnel : count par order_status
   const { where, params } = metrics.buildFiltersClause(filters);
   const sql = `
     SELECT status, COUNT(*)::int AS count
@@ -671,7 +659,6 @@ async function _buildLogisticsCharts(filters) {
   `;
   const r = await db.query(sql, params);
 
-  // Parcel flow
   const parcelSql = `
     SELECT p.status, COUNT(*)::int AS count
     FROM parcels p
@@ -710,25 +697,41 @@ async function _buildWorkspacesCharts(filters) {
   };
 }
 
+/**
+ * _fetchTopAlerts — lit les N signaux actifs les plus critiques
+ * Table : signals (migration 051)
+ * Colonnes : severity (info/warning/critical/urgent), status (open/acknowledged/snoozed/resolved/expired)
+ */
 async function _fetchTopAlerts(limit = 5) {
   const sql = `
-    SELECT id, level, source, message, payload, created_at
-    FROM alerts
-    WHERE resolved_at IS NULL
-      AND level IN ('critical', 'elevated')
+    SELECT id,
+           severity        AS level,
+           source_module   AS source,
+           title           AS message,
+           meta            AS payload,
+           created_at
+    FROM signals
+    WHERE status IN ('open', 'acknowledged', 'snoozed')
+      AND severity IN ('critical', 'urgent')
     ORDER BY
-      CASE level WHEN 'critical' THEN 1 WHEN 'elevated' THEN 2 ELSE 3 END,
+      CASE severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 ELSE 3 END,
       created_at DESC
     LIMIT $1
   `;
-  const r = await db.query(sql, [limit]);
-  return r.rows.map(row => ({
-    id: row.id,
-    level: row.level,
-    source: row.source,
-    message: row.message,
-    created_at: row.created_at,
-  }));
+  try {
+    const r = await db.query(sql, [limit]);
+    return r.rows.map(row => ({
+      id:         row.id,
+      level:      row.level,
+      source:     row.source,
+      message:    row.message,
+      created_at: row.created_at,
+    }));
+  } catch (e) {
+    // Si signals vide ou autre erreur non bloquante
+    console.warn('[admin-dashboard] _fetchTopAlerts non-fatal:', e.message);
+    return [];
+  }
 }
 
 module.exports = router;

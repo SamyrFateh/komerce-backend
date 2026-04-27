@@ -1,23 +1,22 @@
 /**
  * KOMERCE Dashboard — App
  * ════════════════════════════════════════════════════════════════════════
- * Routing simple + render shell + dispatch sur la vue.
+ * Routing SPA (pushState) + render shell + dispatch sur la vue.
+ * Les routes secondaires (view: null) affichent "Vue à venir" sans quitter le SPA.
  */
 
 (function (global) {
   'use strict';
 
+  // Toutes les routes connues — view: null = "Vue à venir"
   const ROUTES = [
-    { path: '/admin/pilotage',         view: 'PilotageView',         label: 'Pilotage',          icon: '🎯', section: 'main' },
-    { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',  icon: '🗼', section: 'main' },
-    { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais', icon: '💰', section: 'main' },
-    { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', section: 'main' },
-    { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',  icon: '🎉', section: 'main' },
-  ];
-
-  const SECONDARY_ROUTES = [
-    { path: '/admin/sourcing',     view: null, label: 'Sourcing',     icon: '🔎' },
-    { path: '/admin/alerts',       view: null, label: 'Alertes',      icon: '🚨' },
+    { path: '/admin/pilotage',         view: 'PilotageView',         label: 'Pilotage',               icon: '🎯', section: 'PILOTAGE' },
+    { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',       icon: '🗼', section: 'PILOTAGE' },
+    { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', section: 'PILOTAGE' },
+    { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', section: 'PILOTAGE' },
+    { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',       icon: '🎉', section: 'PILOTAGE' },
+    { path: '/admin/sourcing',         view: null,                   label: 'Sourcing',               icon: '🔎', section: 'AUTRES' },
+    { path: '/admin/alerts',           view: null,                   label: 'Alertes',                icon: '🚨', section: 'AUTRES' },
   ];
 
   function renderShell() {
@@ -72,33 +71,62 @@
     const nav = document.getElementById('sidebar-nav');
     const currentPath = window.location.pathname;
 
-    // Section main
-    const mainSection = document.createElement('div');
-    mainSection.className = 'sidebar-section';
-    mainSection.innerHTML = '<div class="sidebar-section-label">Pilotage</div>';
+    // Regrouper par section
+    const sections = {};
     ROUTES.forEach(r => {
-      const link = document.createElement('a');
-      link.href = r.path;
-      link.className = 'sidebar-link' + (currentPath === r.path ? ' is-active' : '');
-      link.innerHTML = `<span class="sidebar-link-icon">${r.icon}</span><span>${r.label}</span>`;
-      mainSection.appendChild(link);
+      if (!sections[r.section]) sections[r.section] = [];
+      sections[r.section].push(r);
     });
-    nav.appendChild(mainSection);
 
-    // Section autres
-    if (SECONDARY_ROUTES.length) {
+    Object.entries(sections).forEach(([sectionLabel, routes]) => {
       const sec = document.createElement('div');
       sec.className = 'sidebar-section';
-      sec.innerHTML = '<div class="sidebar-section-label">Autres</div>';
-      SECONDARY_ROUTES.forEach(r => {
+      sec.innerHTML = `<div class="sidebar-section-label">${sectionLabel}</div>`;
+
+      routes.forEach(r => {
         const link = document.createElement('a');
-        link.href = r.path;
+        // Pour les routes sans vue : href="#" + SPA navigation via click
+        link.href = r.view ? r.path : '#';
         link.className = 'sidebar-link' + (currentPath === r.path ? ' is-active' : '');
         link.innerHTML = `<span class="sidebar-link-icon">${r.icon}</span><span>${r.label}</span>`;
+
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          navigateTo(r.path);
+        });
+
         sec.appendChild(link);
       });
+
       nav.appendChild(sec);
-    }
+    });
+  }
+
+  function navigateTo(path) {
+    if (window.location.pathname === path) return;
+    window.history.pushState({}, '', path);
+    refreshActiveLink();
+    dispatchView();
+  }
+
+  function refreshActiveLink() {
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      const route = ROUTES.find(r => r.path === currentPath);
+      link.classList.toggle('is-active', link.textContent.trim().includes(
+        route ? route.label : ''
+      ));
+    });
+    // Méthode plus précise : comparer le href ou data-path
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      const matchingRoute = ROUTES.find(r => r.path === currentPath);
+      if (matchingRoute) {
+        link.classList.toggle('is-active',
+          link.querySelector('span:last-child') &&
+          link.querySelector('span:last-child').textContent === matchingRoute.label
+        );
+      }
+    });
   }
 
   function renderHeaderPeriod() {
@@ -117,10 +145,12 @@
     const main = document.getElementById('main-content');
 
     if (!route || !route.view) {
+      const label = route ? route.label : path;
       main.innerHTML = `
         <div class="empty-state">
-          <h2>Vue à venir (Sprint 3+)</h2>
-          <p style="margin-top: 12px;">${path}</p>
+          <div style="font-size: 48px; margin-bottom: 16px;">🚧</div>
+          <h2>${label}</h2>
+          <p style="margin-top: 12px; color: var(--text-secondary);">Vue en cours de développement — disponible Sprint 3+</p>
         </div>
       `;
       return;
@@ -132,6 +162,7 @@
       return;
     }
 
+    main.innerHTML = '<div class="loading-state"><span class="loader"></span> Chargement...</div>';
     View.render(main).catch(err => {
       console.error('[app] render error:', err);
       main.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
@@ -143,13 +174,19 @@
     renderShell();
     dispatchView();
 
+    // Gestion du bouton retour navigateur
+    window.addEventListener('popstate', () => {
+      refreshActiveLink();
+      dispatchView();
+    });
+
     KmcFilters.subscribe(() => {
       renderHeaderPeriod();
       dispatchView();
     });
   }
 
-  global.KmcApp = { init };
+  global.KmcApp = { init, navigateTo };
 })(window);
 
 // Auto-init
