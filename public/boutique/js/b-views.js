@@ -10,7 +10,8 @@ import { state, dom, $, $$ }          from './b-store.js';
 import { fmt, fmtPrice, sanitize, optimizeImgUrl } from './b-utils.js';
 import { showToast, saveCart }        from './b-cart-core.js';
 import { openCart, closeCart, renderCart } from './b-cart.js';
-import { renderGrid, openModal }      from './b-catalog.js';
+import { renderGrid }                 from './b-catalog.js';
+import { openModal }                  from './b-modal.js';
 import { shareCartWhatsApp }          from './b-cart.js';
 
   // ║  §12 · VIEWS — Favoris, Suivi, Historique commandes, switchView  ║
@@ -30,7 +31,7 @@ export function setupDrawer() {
       if (state.cart.length === 0) return;
       state.cart = [];
       saveCart();
-      renderCartBody();
+      renderCart();
       showToast('🗑 Panier vidé');
     });
     dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
@@ -217,8 +218,6 @@ export async function shareWishlistWhatsApp() {
 
     showToast('⏳ Génération du lien…', 'info');
 
-    // Utilise l'API /api/shares existante pour créer un lien court partageable
-    // (comme le partage panier mais avec qty=1 pour chaque favori)
     let shareURL;
     try {
       const items = favProducts.map(p => ({ product_id: p.id, qty: 1 }));
@@ -226,11 +225,9 @@ export async function shareWishlistWhatsApp() {
       shareURL = (res && res.share_url) || (window.location.origin + '/Komerce_Boutique.html');
     } catch (e) {
       console.warn('[wishlist] share API error:', e);
-      // Fallback : URL simple de la boutique
       shareURL = window.location.origin + '/Komerce_Boutique.html';
     }
 
-    // Construire le message WhatsApp
     const lines = [];
     lines.push('💝 *Ma liste de souhaits Komerce*');
     lines.push('━━━━━━━━━━━━━━━━');
@@ -261,7 +258,6 @@ export async function shareWishlistWhatsApp() {
   }
 
   /* ── VUE SUIVI ───────────────────────────────────────────── */
-  /* ── OTP helpers ────────────────────────────────────────────────────── */
   const TRACK_STEPS = [
     { key: 'pending',     label: 'Commande reçue',         icon: '✓',  sub: 'Enregistrée avec succès' },
     { key: 'preparing',   label: 'En préparation',          icon: '⚙️', sub: 'Nous préparons votre colis' },
@@ -270,11 +266,6 @@ export async function shareWishlistWhatsApp() {
     { key: 'delivered',   label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' }
   ];
 
-  /**
-   * Génère le HTML de la timeline de statut commande (commandée → livrée).
-   * @param {string} status - Statut courant (ex: "pending", "shipped", "delivered")
-   * @returns {string} HTML de la timeline
-   */
 export function buildTimeline(status) {
     const idx = TRACK_STEPS.findIndex(s => s.key === status);
     return TRACK_STEPS.map((s, i) => {
@@ -291,11 +282,6 @@ export function buildTimeline(status) {
     }).join('');
   }
 
-  /**
-   * Injecte la liste des commandes passées dans le container de l'onglet Suivi.
-   * @param {Array}       orders    - Tableau d'objets commande
-   * @param {HTMLElement} container - Élément DOM cible
-   */
 export function renderOrdersHistory(orders, container) {
     if (!orders.length) {
       container.innerHTML = '<div class="k-search-empty">Aucune commande trouvée.</div>';
@@ -312,11 +298,6 @@ export function renderOrdersHistory(orders, container) {
       </div>`).join('');
   }
 
-  /**
-   * Injecte le détail complet d'une commande (items, statut, timeline, infos relais).
-   * @param {Object}      order     - Objet commande complet
-   * @param {HTMLElement} container - Élément DOM cible
-   */
 export function renderOrderDetail(order, container) {
     container.innerHTML = `
       <div class="k-order-card">
@@ -329,10 +310,6 @@ export function renderOrderDetail(order, container) {
       </div>`;
   }
 
-  /**
-   * Initialise la vue Suivi : formulaire tracking rapide + lien historique OTP.
-   * Deux modes : tracking 4 chiffres (anonyme) et historique complet (OTP WhatsApp).
-   */
 export function renderTrackView() {
     let el = document.getElementById('k-track-view');
     if (!el) {
@@ -342,37 +319,24 @@ export function renderTrackView() {
       favEl.after(el);
     }
 
-    // ── NOUVEAU : Tentative auto-chargement via cookie JWT ──
-    // Si le user a un cookie valide (= a déjà commandé), on affiche ses commandes directement
     el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
 
     (async () => {
       try {
         const data = await apiGet('/api/orders?limit=20');
-        // L'API retourne un tableau direct [{...}, {...}] ou parfois {orders:[...]}
         const orders = Array.isArray(data) ? data : ((data && data.orders) || []);
         if (orders.length > 0) {
           renderMyOrdersList(el, orders);
           return;
         }
-        // 0 commande → on reste en mode recherche classique
         renderTrackViewSearchMode(el);
       } catch (err) {
-        // 401 / 403 / erreur → mode recherche classique
         console.log('[track] pas de session, mode recherche :', err && err.message);
         renderTrackViewSearchMode(el);
       }
     })();
   }
 
-  /* ── NOUVEAU : Affichage liste "Mes commandes" ──
-     Si le user est connu via cookie JWT, on lui montre ses commandes
-     directement, triées par date (plus récentes en premier).
-  */
-  /**
- * Rend la liste des commandes dans l'onglet Suivi.
- * @param {Array} orders - Commandes
- */
 export function renderMyOrdersList(el, orders) {
     const header = '<h2>📦 Mes commandes</h2>' +
       '<p class="k-track-sub-hint">' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') + ' trouvée' + (orders.length > 1 ? 's' : '') + '</p>';
@@ -381,7 +345,6 @@ export function renderMyOrdersList(el, orders) {
       const statusInfo = getStatusDisplay(o.status || 'pending', o.payment_status);
       const totalStr = fmt(o.total_kmf || 0, 'KMF');
       const dateStr = formatOrderDate(o.created_at);
-      // L'API liste retourne : product_name, product_image_url, items_count
       const productName = o.product_name || 'Commande';
       const productImg = o.product_image_url || null;
       const itemsCount = parseInt(o.items_count, 10) || 1;
@@ -411,7 +374,6 @@ export function renderMyOrdersList(el, orders) {
       '<div class="k-myorders-list">' + cards + '</div>' +
       '<button class="k-track-btn k-track-btn--ghost k-myorders-new-search" id="k-myorders-search-other">🔍 Chercher une autre commande</button>';
 
-    // Clic sur une carte → ouvrir le détail
     el.querySelectorAll('.k-myorder-card').forEach(function(card) {
       card.addEventListener('click', async function() {
         const ref = card.dataset.ref;
@@ -420,7 +382,6 @@ export function renderMyOrdersList(el, orders) {
         try {
           const data = await apiGet('/api/orders/' + encodeURIComponent(ref));
           const order = (data && data.order) || data;
-          // On affiche le détail dans le même conteneur
           el.innerHTML = '';
           const backBtn = document.createElement('button');
           backBtn.className = 'k-track-btn k-track-btn--ghost';
@@ -438,7 +399,6 @@ export function renderMyOrdersList(el, orders) {
       });
     });
 
-    // Bouton "chercher une autre" → mode recherche classique
     const searchBtn = el.querySelector('#k-myorders-search-other');
     if (searchBtn) {
       searchBtn.addEventListener('click', function() {
@@ -447,14 +407,7 @@ export function renderMyOrdersList(el, orders) {
     }
   }
 
-  /* ── Helpers pour affichage liste commandes ── */
-  /**
- * Retourne libellé + emoji de statut commande.
- * @param {string} status
- * @returns {{label: string, emoji: string}}
- */
 export function getStatusDisplay(status, paymentStatus) {
-    // Map status → {emoji, label, cls}
     const map = {
       pending:     { emoji: '⏳', label: 'En attente',      cls: 'pending' },
       confirmed:   { emoji: '✅', label: 'Confirmée',       cls: 'confirmed' },
@@ -471,11 +424,6 @@ export function getStatusDisplay(status, paymentStatus) {
     return map[status] || { emoji: '📦', label: status || 'Inconnu', cls: 'pending' };
   }
 
-  /**
-   * Formate une date ISO en affichage localisé lisible.
-   * @param {string} isoDate - Date au format ISO 8601
-   * @returns {string} Date formatée (ex: "lun. 27 avr. 2026")
-   */
 export function formatOrderDate(isoDate) {
     if (!isoDate) return '';
     try {
@@ -490,17 +438,12 @@ export function formatOrderDate(isoDate) {
     } catch(e) { return ''; }
   }
 
-  /* ── Mode recherche classique (renommé de l'ancien renderTrackView) ── */
-  /**
- * Rend le mode recherche rapide suivi (sans auth).
- */
 export function renderTrackViewSearchMode(el) {
     const otpState = { phone: '', mode: 'quick' };
 
     el.innerHTML = `
       <h2>📦 Suivi de commande</h2>
 
-      <!-- Mode 1 : Tracking rapide (4 derniers chiffres) -->
       <div id="k-track-quick">
         <p class="k-otp-hint">Entrez les 4 derniers chiffres de votre commande</p>
         <div class="k-track-form">
@@ -514,7 +457,6 @@ export function renderTrackViewSearchMode(el) {
         <button class="k-track-btn k-track-btn--ghost" id="k-track-history-toggle">📋 Voir tout mon historique</button>
       </div>
 
-      <!-- Mode 2 : Historique complet (OTP WhatsApp) -->
       <div id="k-track-otp" class="u-hidden">
         <p class="k-otp-hint">Entrez votre numéro pour recevoir un code WhatsApp et voir toutes vos commandes.</p>
         <div class="k-track-form">
@@ -537,7 +479,6 @@ export function renderTrackViewSearchMode(el) {
         <button class="k-track-btn k-track-btn--ghost k-track-btn--mt" id="k-track-back-quick">← Suivi rapide</button>
       </div>
 
-      <!-- OTP Step 2 : saisie code -->
       <div id="k-otp-step2" class="u-hidden">
         <div class="k-otp-sent-banner">
           📲 Code WhatsApp envoyé au <strong id="k-otp-phone-display"></strong><br>
@@ -548,16 +489,13 @@ export function renderTrackViewSearchMode(el) {
         <button class="k-otp-resend-btn" id="k-otp-resend-btn">Renvoyer le code</button>
       </div>
 
-      <!-- Résultats -->
       <div id="k-otp-step3" class="u-hidden">
         <div id="k-orders-list"></div>
         <button class="k-otp-resend-btn k-otp-back-btn" id="k-otp-back-btn">← Nouvelle recherche</button>
       </div>`;
 
-    /* ── Tracking rapide : lookup par référence ── */
     const digitsInput = el.querySelector('#k-track-digits');
 
-    // Auto-submit on 4 digits
     digitsInput.addEventListener('input', () => {
       digitsInput.value = digitsInput.value.replace(/\D/g, '').slice(0, 4);
       if (digitsInput.value.length === 4) {
@@ -582,7 +520,6 @@ export function renderTrackViewSearchMode(el) {
       }
     });
 
-    /* ── Toggle entre tracking rapide et historique OTP ── */
     el.querySelector('#k-track-history-toggle').addEventListener('click', () => {
       el.querySelector('#k-track-quick').classList.add('u-hidden');
       el.querySelector('#k-track-otp').classList.remove('u-hidden');
@@ -593,7 +530,6 @@ export function renderTrackViewSearchMode(el) {
       el.querySelector('#k-track-quick').classList.remove('u-hidden');
     });
 
-    /* ── OTP : request code ── */
     function getFullPhone() {
       const countryCode = el.querySelector('#k-otp-country').value;
       let digits = (el.querySelector('#k-otp-phone').value || '').replace(/\D/g, '');
@@ -623,7 +559,6 @@ export function renderTrackViewSearchMode(el) {
       }
     });
 
-    /* ── OTP : verify code ── */
     el.querySelector('#k-otp-verify-btn').addEventListener('click', async () => {
       const code = el.querySelector('#k-otp-code').value.replace(/\s/g, '');
       if (code.length < 4) { showToast('Entrez le code complet.', 'error'); return; }
@@ -658,7 +593,6 @@ export function renderTrackViewSearchMode(el) {
       }
     });
 
-    /* ── OTP : resend ── */
     let resendTimer = null;
     el.querySelector('#k-otp-resend-btn').addEventListener('click', async () => {
       const btn = el.querySelector('#k-otp-resend-btn');
@@ -679,56 +613,37 @@ export function renderTrackViewSearchMode(el) {
       }
     });
 
-    /* ── Back button ── */
     el.querySelector('#k-otp-back-btn').addEventListener('click', () => renderTrackView());
   }
 
-  /* ── VUE SWITCHER ───────────────────────────────────────── */
-  /**
- * Bascule entre les onglets de l'app.
- * @param {string} view - boutique|cart|favs|track
- */
 export function switchView(tab) {
     const catalog = document.getElementById('k-catalog-section');
     const favView = document.getElementById('k-fav-view');
     const trackView = document.getElementById('k-track-view');
     const heroWrap = document.getElementById('k-hero-fixed-wrap');
     const pageScroll = document.getElementById('k-page-scroll');
-    // Show catalog by default
     if (catalog) catalog.classList.toggle('u-hidden', tab !== 'shop');
     if (favView) favView.classList.toggle('show', tab === 'fav');
     if (trackView) trackView.classList.toggle('show', tab === 'track');
-    // Also hide promo section when not on shop
     const promoSec = document.getElementById('k-promos-section');
     if (promoSec) promoSec.classList.toggle('u-hidden', tab !== 'shop');
-    // Hide hero+categories on non-shop tabs
     if (heroWrap) heroWrap.classList.toggle('u-hidden', tab !== 'shop');
-    // Adjust scroll container: on shop = below hero, on other tabs = below header only
     if (pageScroll) {
       pageScroll.dataset.tab = tab;
-      // FIX : sur vues non-shop, effacer le top inline mis par _updateMobileScrollTop
-      // pour que la règle CSS #k-page-scroll[data-tab="track"]{top:44px} prenne effet
       if (tab !== 'shop') {
         pageScroll.style.top = '';
       } else {
-        // Retour sur shop : re-calculer le top selon la hauteur du hero
         if (typeof _updateMobileScrollTop === 'function') _updateMobileScrollTop();
       }
     }
-    // Close cart drawer if open
     const cartOverlay = document.getElementById('k-cart-overlay');
     const cartDrawer = document.getElementById('k-cart-drawer');
     if (cartOverlay) cartOverlay.classList.remove('open');
     if (cartDrawer) cartDrawer.classList.remove('open');
     document.body.classList.remove('cart-open');
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /* ── BOTTOM NAV ─────────────────────────────────────────── */
-  /**
- * Initialise la bottom nav fixe (onglets + badges).
- */
 export function setupBnav() {
     $$('.k-bnav-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -743,10 +658,6 @@ export function setupBnav() {
     });
   }
 
-  /* ── SEE ALL PROMOS ─────────────────────────────────────── */
-  /**
- * Configure les boutons "Voir tout" par catégorie.
- */
 export function setupSeeAll() {
     const btn = $('#k-see-all-promos');
     if (btn) {
@@ -761,21 +672,9 @@ export function setupSeeAll() {
     }
   }
 
-  /* ── LOAD RELAIS ────────────────────────────────────────── */
-  /**
- * Charge la liste des points relais depuis l'API.
- * @returns {Promise<void>}
- */
 export async function loadRelais() {
     try {
       const data = await apiGet('/api/relais/public');
       state.relais = data.relais || data || [];
     } catch (e) { state.relais = []; }
   }
-
-  /* ── INIT ───────────────────────────────────────────────── */
-  // Note: setupStickyBar est géré par le script inline dans le HTML
-  // pour éviter le double IntersectionObserver (scintillement).
-
-
-  // ╔══════════════════════════════════════════════════════════════════╗
