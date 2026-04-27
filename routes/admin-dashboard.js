@@ -14,9 +14,10 @@
  *
  * DOCTRINE :
  *   - Tous les endpoints utilisent dashboard-metrics.js (source unique)
- *   - Cache 30s avec metadata is_cached / cache_age_seconds
+ *   - Cache 120s avec metadata is_cached / cache_age_seconds
  *   - Format de reponse standardise : kpis, charts, tables, alerts, drilldown_links, data_quality
  *   - Aucun SQL inline ici : delegate a metrics.js
+ *   - PERF : tout en Promise.all — zero await sequentiel
  */
 
 'use strict';
@@ -48,7 +49,7 @@ function parseFilters(req) {
 function makeDataQuality(filters, sourceTables, options = {}) {
   return {
     generated_at: new Date().toISOString(),
-    cache_ttl_seconds: 30,
+    cache_ttl_seconds: 120,
     filters,
     warnings: options.warnings || [],
     incomplete_fields: options.incompleteFields || [],
@@ -68,29 +69,30 @@ router.get(
     try {
       const filters = parseFilters(req);
 
-      // KPIs en parallele
+      // PERF : KPIs + charts + tables + alerts tous en parallele
       const [
-        caEncaisse, cmdsCreees, cmdsActives, colisTransit,
-        alertesCritiques, cmdsBloquees, tauxScans, tauxCouts,
+        [
+          caEncaisse, cmdsCreees, cmdsActives, colisTransit,
+          alertesCritiques, cmdsBloquees, tauxScans, tauxCouts,
+        ],
+        charts,
+        tables,
+        alerts,
       ] = await Promise.all([
-        metrics.getCAEncaisse(filters),
-        metrics.getCmdsCreees(filters),
-        metrics.getCmdsActives(filters),
-        metrics.getColisEnTransit(filters),
-        metrics.getAlertesCritiques(filters),
-        metrics.getCmdsBloquees(filters),
-        metrics.getTauxCompletudeScans(filters),
-        metrics.getTauxCompletudeCouts(filters),
+        Promise.all([
+          metrics.getCAEncaisse(filters),
+          metrics.getCmdsCreees(filters),
+          metrics.getCmdsActives(filters),
+          metrics.getColisEnTransit(filters),
+          metrics.getAlertesCritiques(filters),
+          metrics.getCmdsBloquees(filters),
+          metrics.getTauxCompletudeScans(filters),
+          metrics.getTauxCompletudeCouts(filters),
+        ]),
+        _buildControlTowerCharts(filters),
+        _buildControlTowerTables(filters),
+        _fetchTopAlerts(5),
       ]);
-
-      // Charts
-      const charts = await _buildControlTowerCharts(filters);
-
-      // Tables (legeres : top 10 cmds a traiter, top relais)
-      const tables = await _buildControlTowerTables(filters);
-
-      // Alerts (top 5 critiques)
-      const alerts = await _fetchTopAlerts(5);
 
       // Warnings data_quality
       const warnings = [];
@@ -140,23 +142,29 @@ router.get(
     try {
       const filters = parseFilters(req);
 
+      // PERF : KPIs + charts + alerts tous en parallele
       const [
-        caVendu, coutEstime, coutReel,
-        margeEstimee, margeVariableReelle, margeConsolidee,
-        cmdsCoutIncomplet, coutMoy,
+        [
+          caVendu, coutEstime, coutReel,
+          margeEstimee, margeVariableReelle, margeConsolidee,
+          cmdsCoutIncomplet, coutMoy,
+        ],
+        charts,
+        alerts,
       ] = await Promise.all([
-        metrics.getCAVendu(filters),
-        metrics.getCoutEstime(filters),
-        metrics.getCoutReel(filters),
-        metrics.getMargeEstimee(filters),
-        metrics.getMargeVariableReelle(filters),
-        metrics.getMargeConsolidee(filters),
-        metrics.getCmdsCoutIncompletCount(filters),
-        metrics.getCoutMoyParCmd(filters),
+        Promise.all([
+          metrics.getCAVendu(filters),
+          metrics.getCoutEstime(filters),
+          metrics.getCoutReel(filters),
+          metrics.getMargeEstimee(filters),
+          metrics.getMargeVariableReelle(filters),
+          metrics.getMargeConsolidee(filters),
+          metrics.getCmdsCoutIncompletCount(filters),
+          metrics.getCoutMoyParCmd(filters),
+        ]),
+        _buildCostingCharts(filters),
+        _buildCostingAlerts(),
       ]);
-
-      const charts = await _buildCostingCharts(filters);
-      const alerts = await _buildCostingAlerts();
 
       const warnings = [];
       if (margeConsolidee.data_quality.items_with_data === 0
@@ -209,21 +217,26 @@ router.get(
     try {
       const filters = parseFilters(req);
 
+      // PERF : KPIs + charts en parallele
       const [
-        cmdsAujourdhui, paiementsAttente, colisPrep, colisTransit,
-        disponiblesRelais, retardsCrit, tauxScans, tauxCollecte,
+        [
+          cmdsAujourdhui, paiementsAttente, colisPrep, colisTransit,
+          disponiblesRelais, retardsCrit, tauxScans, tauxCollecte,
+        ],
+        charts,
       ] = await Promise.all([
-        metrics.getCmdsAujourdhui(filters),
-        metrics.getPaiementsEnAttente(filters),
-        metrics.getColisPreparation(filters),
-        metrics.getColisEnTransit(filters),
-        metrics.getDisponiblesRelais(filters),
-        metrics.getRetardsCritiques(filters),
-        metrics.getTauxCompletudeScans(filters),
-        metrics.getTauxCollecteRelais(filters),
+        Promise.all([
+          metrics.getCmdsAujourdhui(filters),
+          metrics.getPaiementsEnAttente(filters),
+          metrics.getColisPreparation(filters),
+          metrics.getColisEnTransit(filters),
+          metrics.getDisponiblesRelais(filters),
+          metrics.getRetardsCritiques(filters),
+          metrics.getTauxCompletudeScans(filters),
+          metrics.getTauxCollecteRelais(filters),
+        ]),
+        _buildLogisticsCharts(filters),
       ]);
-
-      const charts = await _buildLogisticsCharts(filters);
 
       const warnings = [];
       if (retardsCrit.value > 0) {
@@ -259,21 +272,26 @@ router.get(
     try {
       const filters = parseFilters(req);
 
+      // PERF : KPIs + charts en parallele
       const [
-        wsActifs, sessionsOuvertes, tauxComplete, montantTotal,
-        sessionsSansCmd, cmdsCreeesWs, panierMoy, participantsMoy,
+        [
+          wsActifs, sessionsOuvertes, tauxComplete, montantTotal,
+          sessionsSansCmd, cmdsCreeesWs, panierMoy, participantsMoy,
+        ],
+        charts,
       ] = await Promise.all([
-        metrics.getWorkspacesActifs(filters),
-        metrics.getSessionsOuvertes(filters),
-        metrics.getTauxCompletion(filters),
-        metrics.getMontantTotalEvenements(filters),
-        metrics.getSessionsSansCommande(filters),
-        metrics.getCmdsCreeesWorkspace(filters),
-        metrics.getPanierMoyEvenement(filters),
-        metrics.getParticipantsMoy(filters),
+        Promise.all([
+          metrics.getWorkspacesActifs(filters),
+          metrics.getSessionsOuvertes(filters),
+          metrics.getTauxCompletion(filters),
+          metrics.getMontantTotalEvenements(filters),
+          metrics.getSessionsSansCommande(filters),
+          metrics.getCmdsCreeesWorkspace(filters),
+          metrics.getPanierMoyEvenement(filters),
+          metrics.getParticipantsMoy(filters),
+        ]),
+        _buildWorkspacesCharts(filters),
       ]);
-
-      const charts = await _buildWorkspacesCharts(filters);
 
       res.json({
         kpis: [
@@ -310,10 +328,15 @@ router.get(
     try {
       const filters = parseFilters(req);
 
-      // KPIs globaux synthetiques
+      // PERF : TOUS les 17 KPIs + alerts en UN SEUL Promise.all
+      // Avant : 6 paralleles + 11 await sequentiels dans les array literals
+      // Apres : 18 requetes 100% paralleles
       const [
-        ca, cmdsActives, margeConsolidee, wsActifs,
-        alertesCritiques, tauxCouts,
+        ca, cmdsActives, margeConsolidee, wsActifs, alertesCritiques, tauxCouts,
+        coutReel, cmdsCoutIncomplet, coutMoyParCmd,
+        cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
+        sessionsOuvertes, tauxCompletion, cmdsCreeesWorkspace,
+        topAlerts,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
         metrics.getCmdsActives(filters),
@@ -321,9 +344,21 @@ router.get(
         metrics.getWorkspacesActifs(filters),
         metrics.getAlertesCritiques(filters),
         metrics.getTauxCompletudeCouts(filters),
+        metrics.getCoutReel(filters),
+        metrics.getCmdsCoutIncompletCount(filters),
+        metrics.getCoutMoyParCmd(filters),
+        metrics.getCmdsAujourdhui(filters),
+        metrics.getColisEnTransit(filters),
+        metrics.getDisponiblesRelais(filters),
+        metrics.getRetardsCritiques(filters),
+        metrics.getTauxCompletudeScans(filters),
+        metrics.getSessionsOuvertes(filters),
+        metrics.getTauxCompletion(filters),
+        metrics.getCmdsCreeesWorkspace(filters),
+        _fetchTopAlerts(10),
       ]);
 
-      // Resume par vue (5 KPIs chacune)
+      // Resume par vue (5 KPIs chacune) — ZERO await ici
       const view_blocks = [
         {
           view: 'control_tower',
@@ -337,38 +372,21 @@ router.get(
           title: 'Coût rendu relais',
           subtitle: 'Dire la vérité économique',
           url: '/admin/costing',
-          kpis_summary: [
-            ca,
-            await metrics.getCoutReel(filters),
-            margeConsolidee,
-            await metrics.getCmdsCoutIncompletCount(filters),
-            await metrics.getCoutMoyParCmd(filters),
-          ],
+          kpis_summary: [ca, coutReel, margeConsolidee, cmdsCoutIncomplet, coutMoyParCmd],
         },
         {
           view: 'orders_logistics',
           title: 'Commandes & logistique',
           subtitle: 'Exécuter sans friction',
           url: '/admin/orders-logistics',
-          kpis_summary: [
-            await metrics.getCmdsAujourdhui(filters),
-            await metrics.getColisEnTransit(filters),
-            await metrics.getDisponiblesRelais(filters),
-            await metrics.getRetardsCritiques(filters),
-            await metrics.getTauxCompletudeScans(filters),
-          ],
+          kpis_summary: [cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans],
         },
         {
           view: 'event_workspaces',
           title: 'Panier événement',
           subtitle: 'Organiser la contribution familiale',
           url: '/admin/event-workspaces',
-          kpis_summary: [
-            wsActifs,
-            await metrics.getSessionsOuvertes(filters),
-            await metrics.getTauxCompletion(filters),
-            await metrics.getCmdsCreeesWorkspace(filters),
-          ],
+          kpis_summary: [wsActifs, sessionsOuvertes, tauxCompletion, cmdsCreeesWorkspace],
         },
       ];
 
@@ -398,7 +416,7 @@ router.get(
         view_blocks,
         economic_flow,
         principles,
-        system_alerts: await _fetchTopAlerts(10),
+        system_alerts: topAlerts,
         data_quality: makeDataQuality(filters, ['(toutes)']),
       });
     } catch (err) {
@@ -432,11 +450,6 @@ async function _buildControlTowerCharts(filters) {
     GROUP BY DATE(o.created_at)
     ORDER BY day
   `;
-  const r = await db.query(sql, params);
-  const x = r.rows.map(row => row.day);
-  const orders_series = r.rows.map(row => Number(row.orders_count));
-  const ca_series = r.rows.map(row => Number(row.ca_kmf));
-
   const statusSql = `
     SELECT status, COUNT(*)::int AS count
     FROM orders o
@@ -444,7 +457,15 @@ async function _buildControlTowerCharts(filters) {
     GROUP BY status
     ORDER BY count DESC
   `;
-  const sR = await db.query(statusSql, params);
+
+  const [r, sR] = await Promise.all([
+    db.query(sql, params),
+    db.query(statusSql, params),
+  ]);
+
+  const x = r.rows.map(row => row.day);
+  const orders_series = r.rows.map(row => Number(row.orders_count));
+  const ca_series = r.rows.map(row => Number(row.ca_kmf));
   const totalCount = sR.rows.reduce((s, r) => s + Number(r.count), 0);
   const status_breakdown = sR.rows.map(row => ({
     status: row.status,
@@ -481,8 +502,6 @@ async function _buildControlTowerTables(filters) {
     ORDER BY o.created_at DESC
     LIMIT 10
   `;
-  const r = await db.query(sql, params);
-
   const relaisSql = `
     SELECT r.id AS relais_id, r.name AS relais_name,
       COUNT(DISTINCT o.id)::int AS orders_count,
@@ -500,7 +519,11 @@ async function _buildControlTowerTables(filters) {
     ORDER BY orders_count DESC NULLS LAST
     LIMIT 10
   `;
-  const relaisR = await db.query(relaisSql);
+
+  const [r, relaisR] = await Promise.all([
+    db.query(sql, params),
+    db.query(relaisSql),
+  ]);
 
   return {
     orders_to_handle: r.rows,
@@ -528,8 +551,6 @@ async function _buildCostingCharts(filters) {
     GROUP BY DATE(o.created_at)
     ORDER BY day
   `;
-  const r = await db.query(sql, params);
-
   const familySql = `
     SELECT alc.cost_type, COALESCE(SUM(alc.amount_kmf), 0)::bigint AS amount_kmf
     FROM order_item_real_cost_allocations alc
@@ -539,7 +560,12 @@ async function _buildCostingCharts(filters) {
     GROUP BY alc.cost_type
     ORDER BY amount_kmf DESC
   `;
-  const fR = await db.query(familySql, params);
+
+  const [r, fR] = await Promise.all([
+    db.query(sql, params),
+    db.query(familySql, params),
+  ]);
+
   const total = fR.rows.reduce((s, r) => s + Number(r.amount_kmf), 0);
 
   return {
@@ -578,18 +604,6 @@ async function _buildCostingAlerts() {
         WHERE order_id = o.id AND cost_type = 'fixed_overhead'
       )
   `;
-  const fR = await db.query(fixedSql);
-  if (Number(fR.rows[0].count) > 0) {
-    alerts.push({
-      key: 'fixed_overhead_not_allocated',
-      level: 'warning',
-      label: 'Frais fixes non alloués (mois courant)',
-      count: Number(fR.rows[0].count),
-      action_url: '/admin/costing/recalibration',
-      action_label: 'Allouer les frais du mois',
-    });
-  }
-
   const customsSql = `
     SELECT COUNT(DISTINCT cs.id)::int AS count
     FROM customs_shipments cs
@@ -600,20 +614,6 @@ async function _buildCostingAlerts() {
         WHERE shipment_id = cs.id
       )
   `;
-  try {
-    const cR = await db.query(customsSql);
-    if (Number(cR.rows[0].count) > 0) {
-      alerts.push({
-        key: 'customs_shipment_not_allocated',
-        level: 'warning',
-        label: 'Shipments non ventilés',
-        count: Number(cR.rows[0].count),
-        action_url: '/admin/customs-shipments',
-        action_label: 'Voir les shipments',
-      });
-    }
-  } catch (e) { /* table optional */ }
-
   const paySql = `
     SELECT COUNT(DISTINCT o.id)::int AS count
     FROM orders o
@@ -625,7 +625,34 @@ async function _buildCostingAlerts() {
         WHERE order_id = o.id AND cost_type = 'payment'
       )
   `;
-  const pR = await db.query(paySql);
+
+  // Lancer les 3 alertes en parallele
+  const [fR, cR, pR] = await Promise.all([
+    db.query(fixedSql),
+    db.query(customsSql).catch(() => ({ rows: [{ count: 0 }] })), // table optionnelle
+    db.query(paySql),
+  ]);
+
+  if (Number(fR.rows[0].count) > 0) {
+    alerts.push({
+      key: 'fixed_overhead_not_allocated',
+      level: 'warning',
+      label: 'Frais fixes non alloués (mois courant)',
+      count: Number(fR.rows[0].count),
+      action_url: '/admin/costing/recalibration',
+      action_label: 'Allouer les frais du mois',
+    });
+  }
+  if (Number(cR.rows[0].count) > 0) {
+    alerts.push({
+      key: 'customs_shipment_not_allocated',
+      level: 'warning',
+      label: 'Shipments non ventilés',
+      count: Number(cR.rows[0].count),
+      action_url: '/admin/customs-shipments',
+      action_label: 'Voir les shipments',
+    });
+  }
   if (Number(pR.rows[0].count) > 0) {
     alerts.push({
       key: 'payment_fees_missing',
@@ -657,8 +684,6 @@ async function _buildLogisticsCharts(filters) {
         WHEN 'collected' THEN 7
       END
   `;
-  const r = await db.query(sql, params);
-
   const parcelSql = `
     SELECT p.status, COUNT(*)::int AS count
     FROM parcels p
@@ -666,7 +691,11 @@ async function _buildLogisticsCharts(filters) {
     WHERE ${where}
     GROUP BY p.status
   `;
-  const pR = await db.query(parcelSql, params);
+
+  const [r, pR] = await Promise.all([
+    db.query(sql, params),
+    db.query(parcelSql, params),
+  ]);
 
   return {
     ops_pipeline: { type: 'funnel', stages: r.rows },
@@ -675,6 +704,10 @@ async function _buildLogisticsCharts(filters) {
 }
 
 async function _buildWorkspacesCharts(filters) {
+  const params = [];
+  if (filters.from) params.push(filters.from);
+  if (filters.to)   params.push(filters.to);
+
   const sql = `
     SELECT status, COUNT(*)::int AS count
     FROM collective_workspaces
@@ -683,10 +716,6 @@ async function _buildWorkspacesCharts(filters) {
       ${filters.to ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
     GROUP BY status
   `;
-  const params = [];
-  if (filters.from) params.push(filters.from);
-  if (filters.to)   params.push(filters.to);
-
   const r = await db.query(sql, params);
 
   return {
@@ -728,7 +757,6 @@ async function _fetchTopAlerts(limit = 5) {
       created_at: row.created_at,
     }));
   } catch (e) {
-    // Si signals vide ou autre erreur non bloquante
     console.warn('[admin-dashboard] _fetchTopAlerts non-fatal:', e.message);
     return [];
   }
