@@ -270,12 +270,13 @@ async function getColisEnTransit(filters = {}) {
 }
 
 async function getAlertesCritiques(filters = {}) {
-  // Alertes non resolues, level critical (ou elevated tres impactant)
+  // Signaux non resolus, severity critical ou urgent
+  // Table: signals (severity: urgent|critical|warning, status: open|acknowledged|snoozed|resolved)
   const sql = `
     SELECT COUNT(*)::int AS value
-    FROM alerts
-    WHERE level IN ('critical', 'elevated')
-      AND resolved_at IS NULL
+    FROM signals
+    WHERE severity IN ('critical', 'urgent')
+      AND status IN ('open', 'acknowledged', 'snoozed')
       ${filters.from ? 'AND created_at >= $1' : ''}
       ${filters.to   ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
   `;
@@ -287,8 +288,8 @@ async function getAlertesCritiques(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('alertes_critiques', 'Alertes critiques', value, 'count', {
-    drillTo: '/admin/alerts?level=critical',
-    warning: value > 10 ? 'Beaucoup d\'alertes non resolues' : null,
+    drillTo: '/admin/signals?severity=critical',
+    warning: value > 10 ? 'Beaucoup de signaux non resolus' : null,
   });
 }
 
@@ -314,6 +315,7 @@ async function getCmdsBloquees(filters = {}) {
 
 async function getTauxCompletudeScans(filters = {}) {
   // Ratio parcels avec >=1 scan / parcels in transit ou apres
+  // Table: scan_events (colonne parcel_id — pas de order_id direct)
   const { where, params } = buildFiltersClause(filters, 'o');
   const sql = `
     WITH transit_parcels AS (
@@ -325,9 +327,9 @@ async function getTauxCompletudeScans(filters = {}) {
     )
     SELECT
       (SELECT COUNT(*) FROM transit_parcels)::int AS items_total,
-      (SELECT COUNT(DISTINCT s.order_id)
-       FROM scans s
-       WHERE s.order_id IN (SELECT order_id FROM parcels WHERE id IN (SELECT id FROM transit_parcels)))::int AS items_with_data
+      (SELECT COUNT(DISTINCT se.parcel_id)
+       FROM scan_events se
+       WHERE se.parcel_id IN (SELECT id FROM transit_parcels))::int AS items_with_data
   `;
   const r = await db.query(sql, [...params, [...TRANSIT_PARCEL_STATUSES, 'available', 'collected']]);
   const itemsTotal = Number(r.rows[0].items_total) || 0;
