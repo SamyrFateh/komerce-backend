@@ -181,8 +181,8 @@ export function bindCarouselDots(card) {
 export function apiGet(path) {
   return window.K.request(path, 'GET');
 }
-export function apiPost(path, body) {
-  return window.K.request(path, 'POST', body || null);
+export function apiPost(path, body, options) {
+  return window.K.request(path, 'POST', body || null, 2, options || {});
 }
 
 /* ── COMPAT LEGACY window.KUtils ─────────────────────────── */

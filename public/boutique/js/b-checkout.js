@@ -16,6 +16,26 @@ let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
 let _stripeCard = null;
 let _stripeElements = null;
 
+async function ensureStripe() {
+  if (_stripe) return _stripe;
+  try {
+    if (typeof window.Stripe !== 'function') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://js.stripe.com/v3/';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    const cfg = await apiGet('/api/public/config');
+    const key = cfg && cfg.stripe_public_key;
+    if (key && typeof window.Stripe === 'function') {
+      _stripe = window.Stripe(key);
+    }
+  } catch(e) { console.warn('[Stripe] init failed:', e.message || e); }
+  return _stripe;
+}
+
 
 
   // ║  §11 · CHECKOUT — Commande, paiement, wallet, order success      ║
@@ -103,7 +123,50 @@ export function closeOrderModal() {
    * Rend l'interface complète de passage de commande (récap + formulaire contact + paiement).
    * Gère les étapes : validation panier → saisie infos → confirmation.
    */
+async function _loadRelaisSection(container, od) {
+  try {
+    const data = await apiGet('/api/relais');
+    const list = Array.isArray(data) ? data : (data.relais || data.data || []);
+    if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
+    const byIle = {};
+    list.forEach(r => { const ile = r.island || r.ile || r.island_name || 'Comores'; if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
+    container.innerHTML = '';
+    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = 'Votre île :'; container.appendChild(ileLabel);
+    const ileGrid = document.createElement('div'); ileGrid.className = 'ck-relais-ile-grid';
+    const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
+    Object.keys(byIle).forEach(ile => {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck-relais-ile-btn'; btn.textContent = ile; btn.dataset.ile = ile;
+      btn.addEventListener('click', () => { ileGrid.querySelectorAll('.ck-relais-ile-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); _renderRelaisForIle(listWrap, byIle[ile], od); });
+      ileGrid.appendChild(btn);
+    });
+    container.appendChild(ileGrid);
+    container.appendChild(listWrap);
+    // Auto-select first island if only one
+    const firstBtn = ileGrid.querySelector('.ck-relais-ile-btn'); if (firstBtn) firstBtn.click();
+  } catch(e) { container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>'; console.warn('[checkout] relais:', e); }
+}
+
+function _renderRelaisForIle(listEl, relaisList, od) {
+  listEl.innerHTML = '';
+  relaisList.forEach(r => {
+    const item = document.createElement('div'); item.className = 'ck-relais-item'; item.dataset.id = r.id;
+    item.innerHTML = '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' + (r.address || r.adresse || r.location ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>' : '');
+    item.addEventListener('click', () => {
+      listEl.querySelectorAll('.ck-relais-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      od.selectedRelaisId = r.id;
+    });
+    listEl.appendChild(item);
+  });
+}
+
 export function renderCheckout() {
+    // CSS relais picker (inject once)
+    if (!document.getElementById('ck-relais-css')) {
+      const st = document.createElement('style'); st.id = 'ck-relais-css';
+      st.textContent = '.ck-relais-section{margin-bottom:12px}.ck-relais-ile-label{font-size:12px;color:#666;margin-bottom:6px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.ck-relais-ile-btn{padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:20px;background:#fff;font-size:13px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:6px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-name{display:block;font-weight:600;font-size:14px}.ck-relais-addr{display:block;font-size:12px;color:#888;margin-top:2px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:13px;padding:8px 0}';
+      document.head.appendChild(st);
+    }
     const body = dom.orderBody;
     body.innerHTML = '';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
@@ -129,6 +192,18 @@ export function renderCheckout() {
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. (+269) *', od, 'beneficiary_phone'));
+
+    /* ── 2b. Point relais ── */
+    const sRelais = document.createElement('div');
+    sRelais.className = 'ck-label';
+    sRelais.textContent = '🏪 Point relais *';
+    body.appendChild(sRelais);
+    const relaisSection = document.createElement('div');
+    relaisSection.id = 'ck-relais-section';
+    relaisSection.className = 'ck-relais-section';
+    relaisSection.innerHTML = '<div class="ck-relais-loading">⏳ Chargement des relais...</div>';
+    body.appendChild(relaisSection);
+    _loadRelaisSection(relaisSection, od);
 
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
@@ -229,16 +304,24 @@ export function renderCheckout() {
         if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.classList.add('is-visible'); }
       }
 
-      if (isStripe && _stripe && !_stripeCard) {
-        _stripeElements = _stripe.elements();
-        _stripeCard = _stripeElements.create('card', {
-          style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
-          hidePostalCode: true
-        });
-        _stripeCard.mount('#stripe-card-element');
-        _stripeCard.on('change', ev => {
-          const errEl = document.getElementById('stripe-card-error');
-          if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.classList.toggle('is-visible', !!ev.error); }
+      if (isStripe && !_stripeCard) {
+        ensureStripe().then(stripe => {
+          if (!stripe) {
+            const errEl = document.getElementById('stripe-card-error');
+            if (errEl) { errEl.textContent = 'Paiement carte indisponible.'; errEl.classList.add('is-visible'); }
+            return;
+          }
+          if (_stripeCard) return;
+          _stripeElements = stripe.elements();
+          _stripeCard = _stripeElements.create('card', {
+            style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
+            hidePostalCode: true
+          });
+          _stripeCard.mount('#stripe-card-element');
+          _stripeCard.on('change', ev => {
+            const errEl = document.getElementById('stripe-card-error');
+            if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.classList.toggle('is-visible', !!ev.error); }
+          });
         });
       }
 
@@ -499,6 +582,11 @@ export async function submitOrder(btn) {
   const isStripe = od.payment_mode === 'stripe_eur';
   const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
 
+  if (!od.selectedRelaisId) {
+    showToast('Veuillez choisir un point relais pour la livraison.', 'error');
+    return;
+  }
+
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
   btn.disabled = true;
@@ -519,7 +607,7 @@ export async function submitOrder(btn) {
       if (!state.checkoutAttemptKey) state.checkoutAttemptKey = genIdempotencyKey();
       if (!state.pendingStripeOrderRef) {
         apiResult = await apiPost('/api/orders', {
-          items, relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
+          items, relais_id: od.selectedRelaisId || undefined,
           recipient_name: recipName, recipient_phone: fullRecipPhone,
           payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
           tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
@@ -531,7 +619,7 @@ export async function submitOrder(btn) {
       }
     } else {
       apiResult = await apiPost('/api/orders', {
-        items, relais_id: state.relais.length > 0 ? state.relais[0].id : undefined,
+        items, relais_id: od.selectedRelaisId || undefined,
         recipient_name: recipName, recipient_phone: fullRecipPhone,
         payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
         tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
@@ -540,6 +628,7 @@ export async function submitOrder(btn) {
     }
 
     if (isStripe) {
+      if (!_stripe) await ensureStripe();
       if (!_stripe || !_stripeCard) throw new Error('Stripe non chargé. Rechargez la page.');
       btn.textContent = '🔒 Sécurisation du paiement…';
       const intentResult = await apiPost('/api/payments/stripe/intent', { order_reference: orderData.reference });

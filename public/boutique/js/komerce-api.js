@@ -43,7 +43,7 @@ window.K = (() => {
 
     setTimeout(async () => {
       try {
-        const result = await _doFetch(item.path, item.method, item.body, item.retries);
+        const result = await _doFetch(item.path, item.method, item.body, item.retries, item.options);
         item.resolve(result);
       } catch (e) {
         item.reject(e);
@@ -54,13 +54,15 @@ window.K = (() => {
     }, wait);
   }
 
-  async function _doFetch(path, method, body, maxRetries) {
+  async function _doFetch(path, method, body, maxRetries, options) {
+    options = options || {};
     const opts = {
       method,
       credentials: 'include',           // Envoie le cookie httpOnly kmrc_jwt
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: Object.assign(
+        { 'Content-Type': 'application/json' },
+        options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}
+      ),
       ...(body ? { body: JSON.stringify(body) } : {}),
     };
 
@@ -93,9 +95,9 @@ window.K = (() => {
   function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   // ── CORE REQUEST ───────────────────────────────────────────
-  function request(path, method = 'GET', body = null, retries = 2) {
+  function request(path, method = 'GET', body = null, retries = 2, options = {}) {
     return new Promise((resolve, reject) => {
-      _rl.queue.push({ path, method, body, retries, resolve, reject });
+      _rl.queue.push({ path, method, body, retries, options, resolve, reject });
       _drainQueue();
     });
   }

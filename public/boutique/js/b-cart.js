@@ -562,6 +562,44 @@ function quickRemove(productId, btnEl) {
 
     // Footer
     dom.cartFooter.classList.remove('u-hidden');
+
+    // Bouton événement collectif
+    const _evtBtnExisting = document.getElementById('k-cart-event-btn');
+    if (_evtBtnExisting) _evtBtnExisting.remove();
+    const _evtBtn = document.createElement('button');
+    _evtBtn.id = 'k-cart-event-btn';
+    _evtBtn.type = 'button';
+    _evtBtn.className = 'k-cart-event-btn';
+    _evtBtn.innerHTML = '🎉 Faire participer ma famille';
+    _evtBtn.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(
+          state.cart.map(item => ({
+            product_id: item.product.id,
+            name: item.product.name || '',
+            price_kmf: item.product.promo_price_kmf || item.product.price_kmf || 0,
+            image_url: item.product.image_url || '',
+            qty: item.qty,
+          }))
+        ));
+      } catch(e) {}
+      window.location.href = '/event/create?from=cart';
+    });
+    if (dom.cartFooter) {
+      const _checkoutBtn = dom.cartFooter.querySelector('#k-cart-checkout') || dom.cartCheckout;
+      if (_checkoutBtn && _checkoutBtn.parentNode === dom.cartFooter) {
+        dom.cartFooter.insertBefore(_evtBtn, _checkoutBtn);
+      } else {
+        dom.cartFooter.appendChild(_evtBtn);
+      }
+      // CSS inline once
+      if (!document.getElementById('k-cart-event-css')) {
+        const _s = document.createElement('style'); _s.id = 'k-cart-event-css';
+        _s.textContent = '.k-cart-event-btn{width:100%;padding:11px;background:#fff3e0;color:#e65100;border:1.5px solid #ff9800;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}';
+        document.head.appendChild(_s);
+      }
+    }
+
     const qty = cartQty();
     const total = cartTotal();
 

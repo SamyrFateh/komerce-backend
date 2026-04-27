@@ -9,6 +9,7 @@ import { bus }                        from './b-bus.js';
 import { state, dom, $, $$ }          from './b-store.js';
 import { fmt, fmtPrice, sanitize, optimizeImgUrl, renderProductCarousel, bindCarouselDots, productEmoji, apiGet, apiPost } from './b-utils.js';
 import { showToast, saveCart }        from './b-cart-core.js';
+import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { openCart, closeCart, renderCart, toggleFav, quickAdd, quickRemove, loadSharedCart, shareCartWhatsApp } from './b-cart.js';
 import { renderGrid }                 from './b-catalog.js';
 import { openModal }                  from './b-modal.js';

@@ -168,7 +168,7 @@
           contributor_phone: (fd.get('contributor_phone') || '').trim() || null,
           contributor_email: (fd.get('contributor_email') || '').trim() || null,
           suggestion:        (fd.get('suggestion') || '').trim() || null,
-          amount_kmf:        Number(fd.get('amount_kmf')) || null,
+          intended_amount_kmf: Number(fd.get('amount_kmf')) || null,
           message:           (fd.get('message') || '').trim() || null,
           kind:              Number(fd.get('amount_kmf')) > 0 ? 'intention' : 'suggestion',
         };
@@ -180,7 +180,7 @@
           errEl.textContent = 'Indiquez au moins un téléphone ou un email pour que le créateur puisse vous recontacter.';
           errEl.style.display = 'block'; return;
         }
-        if (!payload.suggestion && !payload.amount_kmf && !payload.message) {
+        if (!payload.suggestion && !payload.intended_amount_kmf && !payload.message) {
           errEl.textContent = 'Indiquez au moins une idée, un montant ou un message.';
           errEl.style.display = 'block'; return;
         }

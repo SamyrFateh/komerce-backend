@@ -37,11 +37,14 @@
     banner.className = 'ev-info';
     banner.style.cssText = 'margin-bottom:16px;';
     const itemsCount = pendingCart.length;
-    const itemsTotal = pendingCart.reduce((s, i) => s + (Number(i.price_kmf) || 0) * (Number(i.quantity) || 1), 0);
+    const itemsTotal = pendingCart.reduce((s, i) => s + (Number(i.price_kmf) || 0) * (Number(i.qty) || 1), 0);
+    const fromCart = new URLSearchParams(window.location.search).get('from') === 'cart';
+    const itemsList = pendingCart.slice(0, 5).map(i => '• ' + (i.name || 'Article') + ' — ' + new Intl.NumberFormat('fr-FR').format(i.price_kmf || 0) + ' KMF' + (i.qty > 1 ? ' ×' + i.qty : '')).join('<br>');
     banner.innerHTML =
-      '🛒 <strong>Panier pré-chargé</strong> : ' + itemsCount + ' article' + (itemsCount > 1 ? 's' : '') +
-      ' (' + new Intl.NumberFormat('fr-FR').format(Math.round(itemsTotal)) + ' KMF) ' +
-      'seront ajoutés à votre panier événement après création.';
+      '🛒 <strong>Panier pré-chargé ✓</strong> : ' + itemsCount + ' article' + (itemsCount > 1 ? 's' : '') +
+      ' (' + new Intl.NumberFormat('fr-FR').format(Math.round(itemsTotal)) + ' KMF)' +
+      (fromCart ? '<br><em style="font-size:12px;color:#555;">Arrivé depuis le panier boutique</em>' : '') +
+      '<div style="margin-top:8px;font-size:12px;color:#555;">' + itemsList + (pendingCart.length > 5 ? '<br>… et ' + (pendingCart.length - 5) + ' autre(s)' : '') + '</div>';
     if (form && form.parentElement) {
       form.parentElement.insertBefore(banner, form);
     }
