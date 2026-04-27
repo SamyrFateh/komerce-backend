@@ -6134,49 +6134,10 @@ body.cart-open #k-section-index {
     right: 0;
     width: 100%;
     z-index: 100;
-    background: transparent !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    box-shadow: none !important;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
     overflow: visible;
-    transition: background .3s ease;
   }
-  /* Logo + search : blanc sur le gradient hero sombre */
-  .k-logo-text { color: #fff !important; }
-  .k-logo-icon svg { stroke: #fff !important; }
-  .k-search input {
-    background: rgba(255,255,255,0.22) !important;
-    border-color: rgba(255,255,255,0.30) !important;
-    color: #fff !important;
-  }
-  .k-search input::placeholder { color: rgba(255,255,255,0.65) !important; }
-  .k-search-icon { color: rgba(255,255,255,0.8) !important; }
-  /* Onglets sans hero : restaurer fond blanc + couleurs sombres */
-  body:has(#k-page-scroll[data-tab="fav"]) .k-header,
-  body:has(#k-page-scroll[data-tab="track"]) .k-header,
-  body:has(#k-page-scroll[data-tab="cart"]) .k-header {
-    background: rgba(255,255,255,0.95) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
-  }
-  body:has(#k-page-scroll[data-tab="fav"]) .k-logo-text,
-  body:has(#k-page-scroll[data-tab="track"]) .k-logo-text,
-  body:has(#k-page-scroll[data-tab="cart"]) .k-logo-text { color: var(--ocean-dark) !important; }
-  body:has(#k-page-scroll[data-tab="fav"]) .k-logo-icon svg,
-  body:has(#k-page-scroll[data-tab="track"]) .k-logo-icon svg,
-  body:has(#k-page-scroll[data-tab="cart"]) .k-logo-icon svg { stroke: var(--ocean-dark) !important; }
-  body:has(#k-page-scroll[data-tab="fav"]) .k-search input,
-  body:has(#k-page-scroll[data-tab="track"]) .k-search input,
-  body:has(#k-page-scroll[data-tab="cart"]) .k-search input {
-    background: rgba(0,0,0,.05) !important;
-    border-color: rgba(0,0,0,.10) !important;
-    color: var(--text) !important;
-  }
-  body:has(#k-page-scroll[data-tab="fav"]) .k-search input::placeholder,
-  body:has(#k-page-scroll[data-tab="track"]) .k-search input::placeholder,
-  body:has(#k-page-scroll[data-tab="cart"]) .k-search input::placeholder { color: rgba(0,0,0,.35) !important; }
-  body:has(#k-page-scroll[data-tab="fav"]) .k-search-icon,
-  body:has(#k-page-scroll[data-tab="track"]) .k-search-icon,
-  body:has(#k-page-scroll[data-tab="cart"]) .k-search-icon { color: rgba(0,0,0,.35) !important; }
 
   .k-cart-btn {
     width: auto;
@@ -6265,7 +6226,7 @@ body.cart-open #k-section-index {
 
   .k-hero-media {
     width: 100%;
-    height: clamp(140px, 36vw, 180px); /* +44px pour couvrir zone header */
+    height: clamp(90px, 24vw, 120px);
     border-radius: 0;
     margin: 0;
     overflow: hidden;
@@ -6298,7 +6259,7 @@ body.cart-open #k-section-index {
 
   .k-hero-mini-slogan {
     position: absolute;
-    top: 52px;
+    top: 22%;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -6769,11 +6730,12 @@ body.cart-open #k-section-index {
 
   #k-hero-fixed-wrap {
     position: fixed;
-    top: 0;           /* hero starts behind transparent header */
+    top: 44px;
+    /* below header */
     left: 0;
     right: 0;
     z-index: 90;
-    background: transparent;
+    background: #fff;
   }
 
   #k-page-scroll {
