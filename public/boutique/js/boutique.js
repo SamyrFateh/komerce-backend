@@ -39,6 +39,11 @@
    * @param {Object} [opts={}] - Options fetch supplémentaires
    * @returns {Promise<any>} Données JSON parsées
    */
+  /**
+ * Effectue un GET authentifié vers l'API Komerce.
+ * @param {string} path - Chemin API (ex: /api/products)
+ * @returns {Promise<Object>} Données JSON
+ */
   async function apiGet(path) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 10000);
@@ -57,6 +62,13 @@
    * @param {Object} [opts={}] - Options fetch supplémentaires
    * @returns {Promise<any>} Données JSON parsées
    */
+  /**
+ * Effectue un POST authentifié vers l'API Komerce.
+ * @param {string} path - Chemin API
+ * @param {Object} body - Corps de la requête
+ * @param {Object} [opts] - Options { idempotencyKey }
+ * @returns {Promise<Object>} Données JSON
+ */
   async function apiPost(path, body, opts = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 15000);
@@ -300,6 +312,11 @@
   }
 
   /* ── CART HELPERS ───────────────────────────────────────── */
+  /**
+ * Retourne la quantité d'un produit dans le panier.
+ * @param {number|string} id - ID produit
+ * @returns {number} Quantité (0 si absent)
+ */
   function cartQty() { return state.cart.reduce((s, i) => s + i.qty, 0); }
   /**
    * Calcule le total du panier en appliquant les prix promo si disponibles.
@@ -452,6 +469,11 @@
   }
 
   /* ── LOAD PRODUCTS ──────────────────────────────────────── */
+  /**
+ * Charge les produits depuis l'API et initialise le catalogue.
+ * Lance le rendu pager Temu (mobile) ou grille classique (desktop).
+ * @returns {Promise<void>}
+ */
   async function loadProducts() {
   
   try {
@@ -514,6 +536,10 @@
      Runs after every render to guarantee mobile layout
      ═══════════════════════════════════════════════════════════════ */
 
+  /**
+ * Rend le bandeau de promotions scrollable horizontalement.
+ * @param {Array} products - Produits avec promo_price
+ */
   function renderPromos() {
     const promos = state.products.filter(p => p.promo_pct > 0).slice(0, 10);
     dom.promoRail.innerHTML = promos.map(p => {
@@ -548,6 +574,10 @@
   }
 
   /* ── RENDER GRID ────────────────────────────────────────── */
+  /**
+ * Rend la grille principale des produits (desktop).
+ * @param {Array} products - Tous les produits
+ */
   function renderGrid() {
     state.page = 0;
     const _isMobile = window.innerWidth < 900;
@@ -1693,7 +1723,12 @@
 
   /* ── ADD TO CART ────────────────────────────────────────── */
   /* ── ADD TO CART ────────────────────────────────────────── */
-function addToCart(product, qty, sourceBtn) {
+/**
+ * Ajoute un produit au panier ou incrémente sa quantité.
+ * @param {number|string} id - ID produit
+ * @param {Object} [opts] - { fromModal, qty }
+ */
+  function addToCart(product, qty, sourceBtn) {
   qty = qty || 1;
 
   const existing = state.cart.find(i =>
@@ -1832,6 +1867,10 @@ function addToCart(product, qty, sourceBtn) {
   }
 
   /* ── REMOVE FROM CART ───────────────────────────────────── */
+  /**
+ * Retire complètement un produit du panier.
+ * @param {number|string} id - ID produit
+ */
   function removeFromCart(productId) {
     const pid = String(productId);
     state.cart = state.cart.filter(i => String(i.product.id) !== pid);
@@ -1841,7 +1880,12 @@ function addToCart(product, qty, sourceBtn) {
   }
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
-function quickAdd(productId, btnEl) {
+/**
+ * Ajout rapide depuis une carte (bouton 🧺).
+ * @param {number|string} id - ID produit
+ * @param {HTMLElement} btn - Bouton déclencheur
+ */
+  function quickAdd(productId, btnEl) {
   const pid = String(productId);
   const product = state.products.find(p => String(p.id) === pid);
 
@@ -1869,6 +1913,11 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── TOGGLE FAV ─────────────────────────────────────────── */
+  /**
+ * Bascule un produit en favori / non favori.
+ * @param {number|string} id - ID produit
+ * @param {HTMLElement} [btn] - Bouton cœur
+ */
   function toggleFav(id, btnEl) {
     const idx = state.favs.indexOf(id);
     if (idx >= 0) {
@@ -1992,6 +2041,10 @@ function quickRemove(productId, btnEl) {
   /* ── CATEGORY SWIPE NAV (mobile) ────────────────────────── */
   /* Scroll horizontal sur les chips → auto-switch catégorie  */
   /* ── Center active chip on click (Temu-style) ── */
+  /**
+ * Centre le chip actif dans la barre de catégories.
+ * @param {HTMLElement} chip - Chip à centrer
+ */
   function centerActiveChip(chip) {
     var catsEl = document.getElementById('k-cats');
     if (!chip || !catsEl || window.innerWidth >= 900) return;
@@ -2025,6 +2078,9 @@ function quickRemove(productId, btnEl) {
   /* ── CATALOG SWIPE removed — navigation v2 uses scroll-to-section ── */
 
     /* ── SEARCH ─────────────────────────────────────────────── */
+  /**
+ * Initialise la barre de recherche avec dropdown live.
+ */
   function setupSearch() {
     dom.searchInput.addEventListener('input', () => {
       clearTimeout(state.searchTimeout);
@@ -2253,6 +2309,9 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── TOPBAR ENRICHIE : produit visible quand on scroll ── */
+  /**
+ * Configure le FAB du modal + actions sticky au scroll.
+ */
   function setupModalFAB() {
     // Nouvelle version : topbar enrichie au lieu d'un FAB
     setupEnrichedTopbar();
@@ -3090,6 +3149,11 @@ function quickRemove(productId, btnEl) {
   /* ── SHARE CART WHATSAPP ────────────────────────────────── */
   /* ── SHARED CART — API v2 ──────────────────────────────────── */
 
+  /**
+ * Construit l'URL de partage du panier via l'API.
+ * @param {Object} opts - { type: 'simple'|'event', eventLabel? }
+ * @returns {Promise<string>} URL de partage
+ */
   async function buildCartShareURL(opts) {
     opts = opts || {};
     const payload = {
@@ -3123,6 +3187,9 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ======= SHARE CHOICE MODAL ======= */
+  /**
+ * Injecte le CSS du modal de partage (une seule fois).
+ */
   function _injectShareModalCSS() {
     if (document.getElementById('k-share-modal-css')) return;
     var s = document.createElement('style');
@@ -3217,6 +3284,9 @@ function quickRemove(productId, btnEl) {
     });
   }
 
+  /**
+ * Exécute le partage simple du panier via WhatsApp.
+ */
   async function _doSimpleShare() {
     showToast('Generation du lien...', 'info');
     var cartURL;
@@ -3238,6 +3308,9 @@ function quickRemove(productId, btnEl) {
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
   }
 
+  /**
+ * Exécute le partage événement collectif (mariage, fête…).
+ */
   async function _doEventShare() {
     var labelEl  = document.getElementById('k-event-label');
     var sharerEl = document.getElementById('k-event-sharer');
@@ -3280,6 +3353,10 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
+  /**
+ * Charge et affiche un panier partagé depuis un token URL.
+ * @param {string} token - Token de partage
+ */
   function loadSharedCart() {
     var params = new URLSearchParams(window.location.search);
 
@@ -3327,6 +3404,11 @@ function quickRemove(productId, btnEl) {
     setTimeout(function() { clearInterval(checkProducts); }, 10000);
   }
 
+  /**
+ * Appel API pour charger les données d'un panier partagé.
+ * @param {string} token - Token de partage
+ * @returns {Promise<Object>} Données du panier
+ */
   async function _loadSharedCartFromAPI(token) {
     // GET /api/shares/:token → { sharer_name, items:[{product_id,qty,product:{...}}] }
     try {
@@ -3528,7 +3610,10 @@ function quickRemove(productId, btnEl) {
     /* ── Payment switching ── */
     // stripeCardWrap reste dans body (inline sous les chips)
 
-    function updatePaymentUI() {
+    /**
+ * Met à jour le récapitulatif paiement en checkout.
+ */
+  function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
@@ -3574,6 +3659,13 @@ function quickRemove(productId, btnEl) {
 
     /* ── Checkout form helpers ── */
 
+  /**
+ * Crée un input stylé pour le checkout.
+ * @param {string} type
+ * @param {string} name
+ * @param {string} placeholder
+ * @returns {HTMLElement}
+ */
   function makeInput(id, label, type, placeholder, dataObj, key) {
     const group = document.createElement('div');
     group.className = 'k-ck-group';
@@ -3802,6 +3894,9 @@ function quickRemove(productId, btnEl) {
 
 
   /* ── Wallet ── */
+  /**
+ * Vérifie le solde wallet KMF du client en checkout.
+ */
   async function checkWalletBalance() {
     try {
       const res = await fetch('/api/wallet', { credentials: 'same-origin' });
@@ -3818,6 +3913,10 @@ function quickRemove(productId, btnEl) {
     } catch(e) { /* wallet balance non disponible */ }
   }
 
+  /**
+ * Rafraîchit l'affichage du solde wallet.
+ * @param {number} balance - Solde KMF
+ */
   function updateWalletDisplay() {
     const ded = document.getElementById('wallet-deduction');
     if (!ded) return;
@@ -3835,6 +3934,11 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── Submit Order ── */
+/**
+ * Soumet la commande finale après validation du formulaire.
+ * @param {HTMLElement} btn - Bouton submit déclencheur
+ * @returns {Promise<void>}
+ */
 async function submitOrder(btn) {
   const od = state.orderData;
   const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
@@ -4024,6 +4128,10 @@ async function submitOrder(btn) {
 }
 
   /* ── Order Success ── */
+  /**
+ * Affiche la confirmation après commande réussie.
+ * @param {Object} order - Commande retournée par l'API
+ */
   function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
     const body = dom.orderBody;
     body.innerHTML = '';
@@ -4181,6 +4289,9 @@ async function submitOrder(btn) {
   }
 
   /* ── INFINITE SCROLL ───────────────────────────────────── */
+  /**
+ * Active le scroll infini (IntersectionObserver sur sentinel).
+ */
   function setupInfiniteScroll() {
     // Créer le sentinel + spinner
     const sentinel = document.createElement('div');
@@ -4205,6 +4316,9 @@ async function submitOrder(btn) {
   }
 
   /* ── VUE FAVORIS ────────────────────────────────────────── */
+  /**
+ * Rend la vue Favoris.
+ */
   function renderFavView() {
     let el = document.getElementById('k-fav-view');
     if (!el) {
@@ -4335,6 +4449,9 @@ async function submitOrder(btn) {
   }
 
   // FEATURE 3 : Partage wishlist via WhatsApp
+  /**
+ * Partage la liste de souhaits (favoris) via WhatsApp.
+ */
   async function shareWishlistWhatsApp() {
     const favProducts = state.products.filter(p => state.favs.includes(p.id));
     if (favProducts.length === 0) {
@@ -4496,6 +4613,10 @@ async function submitOrder(btn) {
      Si le user est connu via cookie JWT, on lui montre ses commandes
      directement, triées par date (plus récentes en premier).
   */
+  /**
+ * Rend la liste des commandes dans l'onglet Suivi.
+ * @param {Array} orders - Commandes
+ */
   function renderMyOrdersList(el, orders) {
     const header = '<h2>📦 Mes commandes</h2>' +
       '<p class="k-track-sub-hint">' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') + ' trouvée' + (orders.length > 1 ? 's' : '') + '</p>';
@@ -4571,6 +4692,11 @@ async function submitOrder(btn) {
   }
 
   /* ── Helpers pour affichage liste commandes ── */
+  /**
+ * Retourne libellé + emoji de statut commande.
+ * @param {string} status
+ * @returns {{label: string, emoji: string}}
+ */
   function getStatusDisplay(status, paymentStatus) {
     // Map status → {emoji, label, cls}
     const map = {
@@ -4609,6 +4735,9 @@ async function submitOrder(btn) {
   }
 
   /* ── Mode recherche classique (renommé de l'ancien renderTrackView) ── */
+  /**
+ * Rend le mode recherche rapide suivi (sans auth).
+ */
   function renderTrackViewSearchMode(el) {
     const otpState = { phone: '', mode: 'quick' };
 
@@ -4799,6 +4928,10 @@ async function submitOrder(btn) {
   }
 
   /* ── VUE SWITCHER ───────────────────────────────────────── */
+  /**
+ * Bascule entre les onglets de l'app.
+ * @param {string} view - boutique|cart|favs|track
+ */
   function switchView(tab) {
     const catalog = document.getElementById('k-catalog-section');
     const favView = document.getElementById('k-fav-view');
@@ -4837,6 +4970,9 @@ async function submitOrder(btn) {
   }
 
   /* ── BOTTOM NAV ─────────────────────────────────────────── */
+  /**
+ * Initialise la bottom nav fixe (onglets + badges).
+ */
   function setupBnav() {
     $$('.k-bnav-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -4852,6 +4988,9 @@ async function submitOrder(btn) {
   }
 
   /* ── SEE ALL PROMOS ─────────────────────────────────────── */
+  /**
+ * Configure les boutons "Voir tout" par catégorie.
+ */
   function setupSeeAll() {
     const btn = $('#k-see-all-promos');
     if (btn) {
@@ -4867,6 +5006,10 @@ async function submitOrder(btn) {
   }
 
   /* ── LOAD RELAIS ────────────────────────────────────────── */
+  /**
+ * Charge la liste des points relais depuis l'API.
+ * @returns {Promise<void>}
+ */
   async function loadRelais() {
     try {
       const data = await apiGet('/api/relais/public');
@@ -5368,6 +5511,10 @@ document.addEventListener('click', function(e) {
      Uses direction tracking (_wasDown) to avoid false triggers.         */
   /* ── Auto-advance circulaire : bas → section suivante (wrap premier↔dernier)
      + retour arrière : haut de première section → dernière                    */
+  /**
+ * Auto-avance entre sections du pager (scroll bas → suivante).
+ * Dernière section → ghost Tout (navigation circulaire).
+ */
   function _setupSectionAutoAdvance() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
@@ -5481,6 +5628,9 @@ document.addEventListener('click', function(e) {
 
   /* ── Horizontal wrap : swipe gauche sur dernière → première,
                           swipe droite sur première → dernière  ──            */
+  /**
+ * Wrap horizontal circulaire : dernière catégorie → ghost Tout.
+ */
   function _setupHorizontalWrap() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
@@ -5573,6 +5723,9 @@ document.addEventListener('click', function(e) {
   }
 
   /* ── Scroll vers la section fantôme (ghost Tout en fin de pager) ── */
+  /**
+ * Défile le pager vers le ghost Tout (clone en avant).
+ */
   function _scrollPagerToGhost() {
     var grid = document.getElementById('k-grid');
     if (!grid) return;
@@ -5588,6 +5741,10 @@ document.addEventListener('click', function(e) {
   }
 
   /* ── Reshuffle Tout : mélange les cartes DOM à chaque téléportation ── */
+  /**
+ * Reshuffle Fisher-Yates les produits Tout dans le DOM.
+ * Appelé à chaque téléportation → dopamine loop.
+ */
   function _reshuffleToutInDOM() {
     var toutSec = document.querySelector('#k-grid .k-cat-section[data-cat="all"]:not([data-ghost])');
     if (!toutSec) return;
@@ -5607,6 +5764,9 @@ document.addEventListener('click', function(e) {
      Principe : on clone la section Tout et on l'ajoute à la fin du pager.
      L'utilisateur arrive sur le ghost en scrollant en avant, puis scrollend
      détecte la position et remet scrollLeft=0 (vrai Tout) sans animation.  */
+  /**
+ * Initialise la navigation circulaire infinie Temu.
+ */
   function _setupInfiniteLoop() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
