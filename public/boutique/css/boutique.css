@@ -307,54 +307,61 @@ body{
   }
   .k-hero-img{
     width:100%;
-    height:clamp(280px,28vw,420px);
+    height:clamp(420px,44vw,600px);
     min-height:auto;
     object-fit:cover;
-    object-position:center 20%;
+    object-position:65% center;
     border-radius:0;
     display:block;
   }
-  /* Gradient doux pour lisibilité slogan */
+  /* Gradient latéral — voile gauche pour lisibilité panneau texte */
   .k-hero-media::after{
     content:'';
     position:absolute;
     inset:0;
     background:linear-gradient(
-      to bottom,
-      rgba(0,0,0,.06) 0%,
-      transparent 35%,
-      rgba(0,0,0,.32) 75%,
-      rgba(0,0,0,.55) 100%
+      100deg,
+      rgba(253,250,245,.98) 0%,
+      rgba(253,250,245,.95) 38%,
+      rgba(253,250,245,.70) 52%,
+      rgba(253,250,245,.15) 65%,
+      rgba(253,250,245,0) 78%
     );
     pointer-events:none;
     z-index:1;
   }
-  /* Slogan overlaid — bottom-left, au-dessus du gradient */
+  /* Slogan = panneau gauche premium — full height, centré verticalement */
   .k-hero-mini-slogan{
     display:flex !important;
     position:absolute;
-    bottom:36px;
-    left:clamp(24px,4vw,64px);
-    top:auto;
-    transform:none;
-    z-index:10;
+    top:0;bottom:0;left:0;
+    width:52%;
     flex-direction:column;
     align-items:flex-start;
-    gap:4px;
+    justify-content:center;
+    padding:48px 40px 48px clamp(24px,5vw,80px);
+    z-index:10;
     background:none;
-    padding:0;
-    pointer-events:none;
+    gap:0;
+    pointer-events:auto;
   }
-  .k-hero-mini-slogan .k-line-1,
-  .k-hero-mini-slogan .k-line-2{
-    font-size:clamp(1.6rem,3.2vw,2.6rem);
+  .k-hero-mini-slogan .k-line-1{
+    font-size:clamp(2rem,3.4vw,3.4rem);
     font-weight:800;
-    line-height:1.2;
-    text-shadow:0 2px 12px rgba(0,0,0,.45);
-    color:#fff;
+    line-height:1.15;
+    text-shadow:none;
+    color:#1a1a1a;
+    display:block;
+    margin-bottom:4px;
   }
   .k-hero-mini-slogan .k-line-2{
-    color:#A8D8A0; /* vert sauge clair — accord avec --ocean-light */
+    font-size:clamp(2.2rem,3.8vw,3.8rem);
+    font-weight:900;
+    line-height:1.05;
+    text-shadow:none;
+    color:#e53935;
+    display:block;
+    margin-bottom:22px;
   }
   /* Cacher le doublon texte dans la sticky bar */
   .k-hero-overlay,
@@ -370,17 +377,122 @@ body{
   }
 }
 
+/* ═══ HERO DESKTOP PREMIUM — nouveaux éléments v292 ═══ */
+/* Badge "La boutique comorienne" */
+.k-hero-badge{
+  display:none; /* mobile: caché */
+}
+@media(min-width:900px){
+  .k-hero-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:#e53935;
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    padding:5px 14px;
+    border-radius:20px;
+    margin-bottom:20px;
+    box-shadow:0 3px 10px rgba(229,57,53,.28);
+  }
+  /* Sous-titre */
+  .k-hero-sub{
+    display:block;
+    font-size:clamp(14px,1.4vw,17px);
+    color:#4a4a4a;
+    line-height:1.6;
+    margin-bottom:28px;
+    max-width:400px;
+    font-weight:400;
+  }
+  /* CTA row */
+  .k-hero-cta-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .k-hero-cta-primary{
+    background:#e53935;
+    color:#fff;
+    font-weight:700;
+    font-size:clamp(13px,1.2vw,15px);
+    padding:12px 26px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    transition:background .2s,transform .15s,box-shadow .2s;
+    box-shadow:0 4px 16px rgba(229,57,53,.32);
+    white-space:nowrap;
+    font-family:var(--font);
+  }
+  .k-hero-cta-primary:hover{
+    background:#c62828;
+    transform:translateY(-2px);
+    box-shadow:0 6px 22px rgba(229,57,53,.42);
+  }
+  .k-hero-cta-primary:active{transform:scale(.97)}
+  .k-hero-cta-ghost{
+    background:rgba(255,255,255,.75);
+    color:#333;
+    font-weight:600;
+    font-size:clamp(13px,1.2vw,15px);
+    padding:12px 22px;
+    border-radius:8px;
+    border:1.5px solid rgba(0,0,0,.14);
+    cursor:pointer;
+    transition:background .15s,border-color .15s,color .15s;
+    white-space:nowrap;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    font-family:var(--font);
+  }
+  .k-hero-cta-ghost:hover{
+    background:rgba(255,255,255,.95);
+    border-color:#e53935;
+    color:#e53935;
+  }
+  /* Trust badges */
+  .k-hero-trust{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    font-size:12px;
+    color:#666;
+    flex-wrap:wrap;
+    font-weight:500;
+  }
+  .k-trust-sep{color:#ccc;font-size:14px;font-weight:300}
+}
+/* Mobile: cacher les nouveaux éléments */
+@media(max-width:899px){
+  .k-hero-badge,.k-hero-sub,.k-hero-cta-row,.k-hero-trust{
+    display:none !important;
+  }
+}
+
 @media(min-width:1200px){
   .k-hero-img{
-    height:clamp(320px,30vw,480px);
+    height:clamp(480px,46vw,640px);
+    object-position:70% center;
   }
   .k-hero-mini-slogan{
-    bottom:44px;
-    left:clamp(40px,5vw,80px);
+    width:48%;
+    padding-left:clamp(32px,6vw,100px);
   }
-  .k-hero-mini-slogan .k-line-1,
+  .k-hero-mini-slogan .k-line-1{
+    font-size:clamp(2.4rem,3.8vw,4rem);
+  }
   .k-hero-mini-slogan .k-line-2{
-    font-size:clamp(2rem,3.6vw,3rem);
+    font-size:clamp(2.6rem,4.2vw,4.4rem);
+    margin-bottom:26px;
+  }
+  .k-hero-sub{
+    font-size:18px;
+    max-width:420px;
   }
 }
 
