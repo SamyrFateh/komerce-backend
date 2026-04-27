@@ -14,122 +14,23 @@
   /* ── HELPERS ───────────────────────────────────────────── */
 
   // ╔══════════════════════════════════════════════════════════════════╗
-  // ║  §1 · UTILS — Helpers purs (image, prix, format, sanitize)       ║
+  // ║  §1 · UTILS — window.KUtils (b-utils.js)                        ║
   // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-utils.js
+  //  Source : public/boutique/js/b-utils.js — chargé avant boutique.js
 
-  function optimizeImgUrl(url, w) {
-    if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
-    if (url.indexOf('f_auto') !== -1) return url;
-    return url.replace('/upload/', '/upload/f_auto,q_auto' + (w ? ',w_' + w : '') + '/');
-  }
-
-  /* ── Carousel produit (Shein-like) ──────────────────────────
-     Swipeable gauche/droite sur les cartes grille.
-     Utilise p.images (JSON array) si dispo, sinon duplique image_url × 4.
-  */
-  function renderProductCarousel(p, width) {
-    width = width || 400;
-    let imgs = [];
-    if (p.images) {
-      try {
-        imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
-      } catch (_) { imgs = []; }
-    }
-    if (!Array.isArray(imgs) || imgs.length === 0) {
-      imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
-    }
-    if (!imgs.length) {
-      return `<img class="k-card-img" src="" alt="${sanitize(p.name||'')}" loading="lazy" decoding="async">`;
-    }
-    const slides = imgs.map((src, i) => `
-      <div class="k-card-slide">
-        <img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name||'')} ${i+1}" loading="lazy" decoding="async">
-      </div>`).join('');
-    const dots = imgs.length > 1
-      ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i===0?' active':''}"></span>`).join('')}</div>`
-      : '';
-    return `<div class="k-card-carousel">${slides}</div>${dots}`;
-  }
-
-  /* ── Bind scroll dots + tap vs swipe (pour ouvrir modale au tap) ── */
-  function bindCarouselDots(card) {
-    const carousel = card.querySelector('.k-card-carousel');
-    const dots = card.querySelectorAll('.k-card-dot');
-    if (!carousel || carousel.dataset.bound) return;
-    carousel.dataset.bound = '1';
-
-    if (dots.length > 1) {
-      let raf = null;
-      carousel.addEventListener('scroll', () => {
-        if (raf) return;
-        raf = requestAnimationFrame(() => {
-          raf = null;
-          const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-          dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-        });
-      }, { passive: true });
-    }
-
-    // Tap vs swipe : si bouge > 10px, on marque pour bloquer ouverture modale
-    let sx = 0, sy = 0, moved = false;
-    function onStart(e) {
-      const t = e.touches ? e.touches[0] : e;
-      sx = t.clientX; sy = t.clientY; moved = false;
-    }
-    function onMove(e) {
-      const t = e.touches ? e.touches[0] : e;
-      if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) moved = true;
-    }
-    function onEnd() {
-      if (moved) {
-        card.dataset.justSwiped = '1';
-        setTimeout(() => { delete card.dataset.justSwiped; }, 250);
-      }
-    }
-    carousel.addEventListener('touchstart', onStart, { passive: true });
-    carousel.addEventListener('touchmove', onMove, { passive: true });
-    carousel.addEventListener('touchend', onEnd, { passive: true });
-    carousel.addEventListener('mousedown', onStart);
-    carousel.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
-    carousel.addEventListener('mouseup', onEnd);
-  }
-
-  function promoImgUrl(url, w) {
-    // Détourage CSS via mix-blend-mode:multiply (fonds blancs/clairs)
-    // e_background_removal retiré : add-on non disponible sur ce compte Cloudinary
-    return optimizeImgUrl(url, w);
-  }
-
-  function detectCurrency() {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (/Comoro|Mayotte/i.test(tz)) return 'KMF';
-    } catch (e) {}
-    return 'EUR';
-  }
-
-  const _rates = { EUR: 495, KMF: 1 };
-  const _currency = detectCurrency();
-
-  function fmt(kmf, currency) {
-    const c = currency || _currency;
-    const rate = _rates[c] || 1;
-    const val = Math.round(kmf / rate);
-    return val.toLocaleString('fr-FR') + (c === 'EUR' ? ' €' : ' KMF');
-  }
-
-  function fmtPrice(kmf) {
-    return new Intl.NumberFormat('fr-FR').format(kmf) + ' KMF';
-  }
-
-  function sanitize(s) {
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
-  }
-
-  function productEmoji(p) { return p.emoji || '📦'; }
+  var _KU              = window.KUtils;
+  var optimizeImgUrl   = _KU.optimizeImgUrl;
+  var sanitize         = _KU.sanitize;
+  var promoImgUrl      = _KU.promoImgUrl;
+  var renderProductCarousel = _KU.renderProductCarousel;
+  var bindCarouselDots = _KU.bindCarouselDots;
+  var detectCurrency   = _KU.detectCurrency;
+  var fmt              = _KU.fmt;
+  var fmtPrice         = _KU.fmtPrice;
+  var productEmoji     = _KU.productEmoji;
+  var genIdempotencyKey = _KU.genIdempotencyKey;
+  var _currency        = _KU._currency;
+  var _rates           = _KU._rates;
 
   async function apiGet(path) {
     const ctrl = new AbortController();
@@ -139,16 +40,6 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
     } finally { clearTimeout(t); }
-  }
-
-  /** UUID v4 pour Idempotency-Key (compat navigateurs anciens) */
-  function genIdempotencyKey() {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0;
-      var v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
   }
 
   async function apiPost(path, body, opts = {}) {
