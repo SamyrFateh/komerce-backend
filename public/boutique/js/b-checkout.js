@@ -408,7 +408,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     const opt = document.createElement('option');
     opt.value = c.code;
     opt.textContent = c.flag + ' ' + c.code;
-    if (c.code === '+269') opt.selected = true; // défaut KM
+    if (c.code === '+33') opt.selected = true; // défaut France (diaspora)
     sel.appendChild(opt);
   });
 
