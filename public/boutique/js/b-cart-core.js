@@ -1,0 +1,103 @@
+/**
+ * b-cart-core.js — Module ES · §3 TOAST & CART CORE
+ * Extrait de boutique.js Sprint 2F
+ * Dépendances : b-store.js (state, dom)
+ *
+ * Exports : showToast, cartQty, cartTotal, saveCart, updateCartBadge, isFav, saveFavs
+ */
+
+import { state, dom } from './b-store.js';
+
+const CART_VERSION = 3;
+
+// ──────────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────────
+
+/**
+ * @brief showToast — Affiche un toast notification temporaire en bas d'écran
+ * @param {string} msg   - Texte à afficher
+ * @param {string} [type] - Classe CSS : 'error' | 'success'
+ */
+export function showToast(msg, type) {
+  type = type || '';
+  dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
+  dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
+  clearTimeout(dom.toast._t);
+  dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 2800);
+}
+
+// ──────────────────────────────────────────────
+// CART HELPERS
+// ──────────────────────────────────────────────
+
+/**
+ * Retourne la quantité totale dans le panier.
+ * @returns {number}
+ */
+export function cartQty() {
+  return state.cart.reduce((s, i) => s + i.qty, 0);
+}
+
+/**
+ * Calcule le total du panier (prix promo si dispo).
+ * @returns {number} Total en KMF
+ */
+export function cartTotal() {
+  return state.cart.reduce((s, i) => s + (i.product.price_kmf || 0) * i.qty, 0);
+}
+
+/**
+ * @brief saveCart — Persiste le panier dans localStorage (clé kmrc_cart)
+ * Échoue silencieusement si localStorage indisponible (mode privé)
+ */
+export function saveCart() {
+  try {
+    localStorage.setItem('kmrc_cart', JSON.stringify(state.cart));
+    localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
+  } catch(e) {}
+  updateCartBadge();
+}
+
+/**
+ * @brief updateCartBadge — Source de vérité unique pour tous les états panier
+ * Synchronise : badge header, badge modal, badge bnav, avatar (seule/panier)
+ * Règle : panier vide → avatar_seule.png ; plein → avatar_panier.png + animation
+ */
+export function updateCartBadge() {
+  const count = cartQty();
+  const hasItems = count > 0;
+  const avatarSrc = hasItems ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
+
+  document.querySelectorAll('.k-cart-btn, #k-modal-cart-btn').forEach(btn => {
+    btn.classList.toggle('has-items', hasItems);
+    btn.classList.toggle('is-empty', !hasItems);
+    const img = btn.querySelector('.k-cart-avatar');
+    if (img) img.src = avatarSrc;
+  });
+
+  document.querySelectorAll('.k-cart-badge, .k-modal-cart-badge, #k-bnav-cart-badge').forEach(badge => {
+    badge.textContent = hasItems ? String(count) : '';
+    badge.classList.toggle('show', hasItems);
+  });
+}
+
+// ──────────────────────────────────────────────
+// FAVORIS
+// ──────────────────────────────────────────────
+
+/**
+ * Vérifie si un produit est dans les favoris.
+ * @param {number|string} id - ID produit
+ * @returns {boolean}
+ */
+export function isFav(id) {
+  return state.favs.includes(id);
+}
+
+/**
+ * Persiste les favoris dans localStorage.
+ */
+export function saveFavs() {
+  localStorage.setItem('k_favs', JSON.stringify(state.favs));
+}
