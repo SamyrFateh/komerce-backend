@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<meta charset="UTF-8">
 <script>
 /* Nuclear SW reset v100 — runs ONCE to clear all old caches */
 (function(){
@@ -43,7 +44,6 @@ if('serviceWorker' in navigator){
   }
 }
 </script>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
 <title>Komerce — Boutique en ligne</title>
@@ -51,9 +51,9 @@ if('serviceWorker' in navigator){
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
-<link rel="preload" as="image" href="/New_Hero.jpg" fetchpriority="high">
+<link rel="preload" as="image" href="/images/hero_banner.png" fetchpriority="high">
 <link rel="stylesheet" href="/boutique/css/boutique.css?v=287">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
@@ -112,7 +112,7 @@ if('serviceWorker' in navigator){
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
-      <img class="k-hero-img" src="/images/hero_banner.png" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+      <img class="k-hero-img" src="/images/hero_banner.png" width="1600" height="896" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge">La boutique comorienne</span>
         <span class="k-line-1">Qui cherche bien</span>
@@ -154,22 +154,18 @@ if('serviceWorker' in navigator){
   </div>
 
   <!-- ═══ BANDEAU PANIER ÉVÉNEMENT (Sprint MVP boutique) ═══ -->
-  <a href="/event/create" class="k-event-banner" aria-label="Créer un panier événement"
-     style="display:flex;gap:12px;align-items:center;padding:12px 16px;margin:8px 12px 0;
-            background:linear-gradient(135deg,#e6f1fb,#cfe5f7);border-radius:10px;
-            text-decoration:none;color:#0c447c;border:1px solid #b5d4f4;">
-    <span style="font-size:24px;flex-shrink:0;">🎉</span>
-    <span style="flex:1;min-width:0;">
-      <span style="display:block;font-weight:600;font-size:13px;line-height:1.3;">
+  <a href="/event/create" class="k-event-banner" aria-label="Créer un panier événement">
+    <span class="k-event-banner-icon">🎉</span>
+    <span class="k-event-banner-copy">
+      <span class="k-event-banner-title">
         Mariage, anniversaire, naissance ?
       </span>
-      <span style="display:block;font-size:12px;color:#1e3a5f;line-height:1.4;margin-top:2px;">
+      <span class="k-event-banner-text">
         Lancez un panier événement, partagez-le à la famille
       </span>
     </span>
-    <span style="font-size:13px;font-weight:600;flex-shrink:0;">→</span>
+    <span class="k-event-banner-arrow">→</span>
   </a>
-
   <!-- ═══ CATÉGORIES ═══ -->
   <div class="k-cats-shell">
   <div class="k-cats-wrap-fade-left"></div>

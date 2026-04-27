@@ -89,8 +89,8 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
             </button>
           </div>
           <div class="k-card-info">
-            <div class="k-card-name">${p.name}</div>
-            ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
+            <div class="k-card-name">${sanitize(p.name)}</div>
+            ${p.description ? '<div class="k-card-desc">' + sanitize(p.description).slice(0, 60) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
               <div class="k-card-price-col">
                 <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
@@ -208,10 +208,10 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
       const oldPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
       return `
         <div class="k-promo-card" data-id="${p.id}">
-          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${p.name}" loading="lazy" decoding="async">
+          <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async">
           <span class="k-promo-badge">-${p.promo_pct}%</span>
           <div class="k-promo-card-info">
-            <div class="k-promo-card-name">${p.name}</div>
+            <div class="k-promo-card-name">${sanitize(p.name)}</div>
             <div class="k-promo-card-prices">
               <span class="k-promo-card-price">${fmtPrice(p.price_kmf)}</span>
               <span class="k-promo-card-old">${fmtPrice(oldPrice)}</span>
@@ -333,8 +333,8 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
             </button>
           </div>
           <div class="k-card-info">
-            <div class="k-card-name">${p.name}</div>
-            ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
+            <div class="k-card-name">${sanitize(p.name)}</div>
+            ${p.description ? '<div class="k-card-desc">' + sanitize(p.description).slice(0, 60) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
               <div class="k-card-price-col">
                 <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
@@ -396,8 +396,8 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
           </button>
         </div>
         <div class="k-card-info">
-          <div class="k-card-name">${p.name}</div>
-          ${p.description ? '<div class="k-card-desc">' + p.description.slice(0, 60) + '</div>' : ''}
+          <div class="k-card-name">${sanitize(p.name)}</div>
+          ${p.description ? '<div class="k-card-desc">' + sanitize(p.description).slice(0, 60) + '</div>' : ''}
           <div class="k-card-bottom k-card-prices-row">
             <div class="k-card-price-col">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
@@ -915,9 +915,9 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
     }
     dom.searchDrop.innerHTML = results.map(p => `
       <div class="k-search-item" data-id="${p.id}">
-        <img src="${optimizeImgUrl(p.image_url, 80)}" alt="${p.name}" loading="lazy" decoding="async">
+        <img src="${optimizeImgUrl(p.image_url, 80)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async">
         <div class="k-search-item-info">
-          <div class="k-search-item-name">${p.emoji || ''} ${p.name}</div>
+          <div class="k-search-item-name">${sanitize(p.emoji || '')} ${sanitize(p.name)}</div>
           <div class="k-search-item-price">${fmtPrice(p.price_kmf)}</div>
         </div>
       </div>
