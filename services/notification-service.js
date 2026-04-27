@@ -610,11 +610,13 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
     // Délègue à notifyStatusChange avec 'preparation'.
     // Si aucun template ne correspond dans notifyStatusChange.mapping,
     // on log juste un 'skipped' mais on ne crash pas.
+    const _phone = pickPhone(order) || 'system';
     await logNotification({
       orderRef: order.reference,
       parcelRef,
       channel: 'whatsapp',
       event: 'parcel_created',
+      recipient: _phone,
       status: 'logged',
       detail: { info: 'colis cree, statut commande passe en preparation' },
     });
