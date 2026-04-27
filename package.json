@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles",
     "test:verbose": "jest --runInBand --forceExit --detectOpenHandles --verbose",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "check:boutique": "node scripts/check-boutique.mjs"
   },
   "dependencies": {
     "africastalking": "^0.7.2",
