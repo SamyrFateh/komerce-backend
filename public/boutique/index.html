@@ -4,8 +4,8 @@
 <script>
 /* Nuclear SW reset v100 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v177'))return;
-  localStorage.setItem('sw_reset_v177','1');
+  if(localStorage.getItem('sw_reset_v287'))return;
+  localStorage.setItem('sw_reset_v287','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     if(!regs.length){location.reload(true);return;}
@@ -33,11 +33,11 @@ if('serviceWorker' in navigator){
       location.reload();
     }
   });
-  // Also clear all caches
+  // Also clear all caches except current version
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v218')===-1) caches.delete(n);
+        if(n.indexOf('komerce-v287')===-1) caches.delete(n);
       });
     });
   }
