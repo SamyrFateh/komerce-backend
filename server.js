@@ -390,7 +390,7 @@ app.get('/c/:token', (req, res) => {
   if (!token || token.length > 20 || !/^[\w-]+$/.test(token)) {
     return res.redirect('/Komerce_Boutique.html');
   }
-  res.redirect(301, '/Komerce_Boutique.html?share=' + encodeURIComponent(token));
+  res.redirect(301, '/boutique/?share=' + encodeURIComponent(token));
 });
 
 // ── Mon Compte — serve without auth-guard ─────────────────────────────────
