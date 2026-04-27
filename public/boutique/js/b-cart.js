@@ -741,40 +741,31 @@ function quickRemove(productId, btnEl) {
   /**
    * Crée le lien de participation famille et l'envoie via WhatsApp.
    */
-  async function _doFamilyShare() {
+  function _doFamilyShare() {
     var labelEl = document.getElementById('k-event-label');
     var eventLabel = labelEl ? labelEl.value.trim() : '';
 
-    var btn = document.getElementById('k-family-go-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Création...'; }
-    _closeShareModal();
-    showToast('Création du lien...', 'info');
-
-    var cartURL;
+    // Sauvegarder le panier en session pour event-create.js
     try {
-      cartURL = await buildCartShareURL({
-        type: 'event',
-        event_label: eventLabel || 'Panier famille',
-        sharer_name: null,
+      var pendingItems = state.cart.map(function(item) {
+        return {
+          product_id:   item.product.id,
+          product_name: item.product.name || '',
+          name:         item.product.name || '',
+          price_kmf:    item.product.promo_price_kmf || item.product.price_kmf || 0,
+          qty:          item.qty,
+          quantity:     item.qty,
+        };
       });
-    } catch(e) { cartURL = _buildFallbackCartURL(); }
+      sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(pendingItems));
+    } catch(_) {}
 
-    var label = eventLabel || 'Panier famille';
-    var lines = ['🎉 *' + label + '*', '-------------------', ''];
-    lines.push('Plusieurs personnes peuvent contribuer à ce panier.', 'Paie ce qui te convient !', '');
-    state.cart.forEach(function(item, i) {
-      var name = item.product.name || 'Produit';
-      var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
-      var line = (i + 1) + '. ' + name;
-      if (item.qty > 1) line += ' ×' + item.qty;
-      line += ' — ' + fmt(price, 'KMF');
-      lines.push(line);
-    });
-    lines.push('', '-------------------');
-    lines.push('Total : ' + fmt(cartTotal(), 'KMF'), '');
-    lines.push('Participer :', cartURL);
+    _closeShareModal();
 
-    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+    // Rediriger vers /event/create?from=cart (+ label pré-rempli si saisi)
+    var url = '/boutique/event/create?from=cart';
+    if (eventLabel) url += '&label=' + encodeURIComponent(eventLabel);
+    window.location.href = url;
   }
 
   function showShareChoiceModal() {

@@ -50,6 +50,15 @@
     }
   }
 
+  // Pré-remplir le nom du panier depuis l'URL ?label=...
+  (function() {
+    var urlLabel = new URLSearchParams(window.location.search).get('label');
+    if (urlLabel) {
+      var nameInput = document.getElementById('event_name');
+      if (nameInput && !nameInput.value) nameInput.value = urlLabel;
+    }
+  })();
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError();
@@ -64,7 +73,7 @@
       recipient_name: (fd.get('recipient_name') || '').trim() || null,
     };
 
-    if (!payload.event_name) { showError('Le nom de l\'événement est requis.'); return; }
+    if (!payload.event_name) { showError('Le nom du panier est requis.'); return; }
     if (!payload.creator_name) { showError('Votre nom est requis.'); return; }
     if (!payload.creator_phone && !payload.creator_email) {
       showError('Indiquez au moins un téléphone ou un email pour pouvoir retrouver votre lien.');

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Créer un panier événement — Komerce</title>
+  <title>Créer un panier famille — Komerce</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,26 +16,26 @@
 
   <header class="ev-header">
     <a href="/" class="ev-header-back">← Boutique</a>
-    <span class="ev-header-title">Nouveau panier événement</span>
+    <span class="ev-header-title">Nouveau panier famille</span>
   </header>
 
   <div class="ev-hero">
     <div class="ev-hero-emoji">🎉</div>
-    <h1 class="ev-hero-title">Pour un mariage, anniversaire ou naissance ?</h1>
+    <h1 class="ev-hero-title">Faites participer vos proches</h1>
     <p class="ev-hero-sub">
-      Créez un panier événement. Partagez le lien à votre famille.
-      Tout le monde ajoute ses idées. Vous validez et payez quand vous êtes prêt.
+      Créez un panier partagé. Envoyez le lien à votre famille.<br>
+      Chacun contribue à sa façon. Vous validez et commandez quand vous êtes prêt.
     </p>
   </div>
 
   <form id="ev-create-form" class="ev-card">
-    <h2 class="ev-card-title">Détails de l'événement</h2>
+    <h2 class="ev-card-title">Détails du panier</h2>
     <p class="ev-card-sub">Tous les champs marqués (optionnel) peuvent être remplis plus tard.</p>
 
     <div class="ev-field">
-      <label class="ev-label" for="event_name">Nom de l'événement</label>
+      <label class="ev-label" for="event_name">Nom du panier</label>
       <input type="text" id="event_name" name="event_name" class="ev-input"
-             placeholder="Ex : Mariage Fatima · Anniversaire Aïcha"
+             placeholder="Ex : Commande famille, Cousins, Mariage, Naissance"
              required maxlength="100">
     </div>
 
@@ -45,7 +45,7 @@
         <span class="ev-label-optional">(optionnel)</span>
       </label>
       <textarea id="event_note" name="event_note" class="ev-textarea" rows="3"
-                placeholder="Ex : Cher tous, voici la liste pour l'anniversaire d'Aïcha. Ajoutez vos idées 🎁"
+                placeholder="Ex : Cher tous, voici notre liste. Ajoutez vos idées 🎁"
                 maxlength="500"></textarea>
     </div>
 
@@ -93,7 +93,7 @@
     </div>
 
     <button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-submit-btn">
-      🎉 Créer le panier événement
+      🎉 Créer le panier partagé
     </button>
 
     <div id="ev-error" class="ev-warning" style="display:none; margin-top:12px;"></div>

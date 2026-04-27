@@ -300,7 +300,7 @@
       const fullUrl = window.location.origin + (t.payment_page_url || '/event/pay/' + t.payment_token);
       const waText = encodeURIComponent(
         'Bonjour ' + t.contributor_name + ',\n\n' +
-        'Voici votre lien de paiement pour participer au panier événement :\n' +
+        'Voici votre lien de paiement pour participer au panier partagé :\n' +
         fullUrl + '\n\n' +
         'Montant : ' + new Intl.NumberFormat('fr-FR').format(t.amount_kmf) + ' KMF\n\n' +
         'Merci !'
@@ -375,7 +375,7 @@
     if (!token) { showError('Lien créateur invalide. Vérifiez l\'URL.'); return; }
     try {
       const res = await fetch('/api/collective-workspaces/me/' + encodeURIComponent(token));
-      if (res.status === 404) { showError('Panier événement introuvable. Le lien a peut-être expiré ou est incorrect.'); return; }
+      if (res.status === 404) { showError('Panier partagé introuvable. Le lien a peut-être expiré ou est incorrect.'); return; }
       if (!res.ok) { showError('Erreur ' + res.status + ' lors du chargement.'); return; }
       const data = await res.json();
       render(data.workspace || data);
