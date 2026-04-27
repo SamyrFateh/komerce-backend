@@ -12,6 +12,12 @@
   const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
   /* ── HELPERS ───────────────────────────────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §1 · UTILS — Helpers purs (image, prix, format, sanitize)       ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-utils.js
+
   function optimizeImgUrl(url, w) {
     if (!url || url.indexOf('res.cloudinary.com') === -1) return url;
     if (url.indexOf('f_auto') !== -1) return url;
@@ -200,6 +206,12 @@
     try { initialCart = JSON.parse(localStorage.getItem('kmrc_cart') || '[]'); } catch(e) { initialCart = []; }
   }
 
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §2 · STATE & DOM — Objets état + cache DOM                      ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-state.js
+
   const state = {
   products: [],
   filtered: [],
@@ -361,6 +373,12 @@
   };
 
   /* ── TOAST ─────────────────────────────────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §3 · TOAST & CART CORE — Badge, panier local, favoris           ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-cart-core.js
+
   function showToast(msg, type) {
     type = type || '';
     // Wrapper requis pour les styles .k-toast.error/.success
@@ -412,6 +430,12 @@
 
 
   /* ── INFINITE SCROLL — append next page ─────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §4 · CATALOG — Promos, grille, cartes, shuffle                  ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-catalog.js
+
   function appendNextPage() {
     const spinner = document.getElementById('k-load-more-spinner');
 
@@ -797,6 +821,12 @@
     }
     return flat;
   }
+
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §5 · FLAT SUBCAT — Pager sous-catégories + swipe               ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-subcat.js
 
   // ══════════════════════════════════════════════════════════
   // TEMU FLAT SUBCAT MODE — Pager horizontal de sous-catégories
@@ -1245,6 +1275,12 @@
     _bindAppendedCards();
   }
 
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §6 · GRID SECTIONS — Sections catégories + événements grille    ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-catalog.js (même module §4)
+
   function _renderGridWithSections(items) {
     // ── FIXED ORDER matching chips ──
     const CHIP_ORDER = ['Mode', 'Beauté', 'Tech', 'Enfant', 'Maison', 'Sport', 'Sur-mesure'];
@@ -1472,6 +1508,12 @@
 
 
   /* ── FLY TO CART ANIMATION ──────────────────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §7 · CART INTERACTIONS — addToCart, setQty, fly animation       ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-cart.js
+
   function flyToCart(sourceEl, product) {
     const cartIcon = dom.cartBtn;
     if (!cartIcon || !sourceEl) return;
@@ -1772,6 +1814,12 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ── CATEGORIES ─────────────────────────────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §8 · CATS & SEARCH — Pills catégories + barre de recherche      ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-catalog.js (même module §4)
+
   function setupCats() {
     // Split emoji + label pour le layout en carré empilé
     const emojiRx = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*/u;
@@ -1949,6 +1997,12 @@ function quickRemove(productId, btnEl) {
   /* ── PRODUCT MODAL — Carousel (Temu-style with Komerce spirit) ────── */
 
   // Build carousel slides dynamically (1 or N images)
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §9 · MODAL — Fiche produit, carousel, suggestions, subcat       ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-modal.js
+
   function buildCarouselSlides(product) {
     var track = dom.modalCarouselTrack;
     var dots = dom.modalDots;
@@ -2663,6 +2717,12 @@ function quickRemove(productId, btnEl) {
      CART DRAWER — Full mechanism
      ══════════════════════════════════════════════════════════ */
 
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §10 · CART PANEL & SHARE — Tiroir panier + partage WhatsApp     ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-cart.js (même module §7)
+
   function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
@@ -3116,6 +3176,12 @@ function quickRemove(productId, btnEl) {
   /* ══════════════════════════════════════════════════════════
      CHECKOUT / ORDER
      ══════════════════════════════════════════════════════════ */
+
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §11 · CHECKOUT — Commande, paiement, wallet, order success      ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-checkout.js
 
   function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
@@ -3835,6 +3901,12 @@ async function submitOrder(btn) {
   }
 
     /* ── SETUP CART DRAWER ──────────────────────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §12 · VIEWS — Favoris, Suivi, Historique commandes, switchView  ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur modules: b-favs.js · b-tracking.js
+
   function setupDrawer() {
     dom.cartBtn.addEventListener('click', openCart);
     dom.cartClose.addEventListener('click', closeCart);
@@ -4528,6 +4600,12 @@ async function submitOrder(btn) {
   // Note: setupStickyBar est géré par le script inline dans le HTML
   // pour éviter le double IntersectionObserver (scintillement).
 
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §13 · INIT — Boot sequence, bnav, seeAll                        ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Reste dans boutique.js (orchestrateur)
+
   function init() {
     updateCartBadge();
     // Expose renderGrid sur window pour le listener délégué global (flat subcat)
@@ -4662,6 +4740,12 @@ document.addEventListener('click', function(e) {
   let activeStepperBtn = null;
   let autoCloseTimer = null;
   let isLongPress = false;
+
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §14 · STEPPER — Bouton panier → stepper +/- avec haptic         ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-cart.js (même module §7)
 
   function closeActiveStepper() {
     if (!activeStepperBtn) return;
@@ -4926,6 +5010,12 @@ document.addEventListener('click', function(e) {
   /* ── TEMU-STYLE MOBILE PAGER — horizontal category page sync ───── */
   /* ══════════════════════════════════════════════════════════════════ */
   // _pagerRaf declared in _syncChipToScroll block above
+
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §15 · PAGER TEMU — Navigation circulaire + ghost loop            ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-pager.js
 
   function _setupMobilePager() {
     var grid = document.getElementById('k-grid');
