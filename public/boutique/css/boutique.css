@@ -7562,3 +7562,119 @@ body.cart-open #k-section-index {
   }
 
 } /* end @media (max-width: 899px) */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX v289 — SECTION HEADERS global (desktop + all breakpoints)
+   Les styles k-sec-header étaient uniquement dans @media max-width:899px
+   → pas de layout sur desktop → "Mode85Voir tout →" collé
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.k-cat-section {
+  margin-bottom: 4px;
+}
+
+.k-sec-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 16px 0 8px !important;
+  border-bottom: 2px solid var(--coral, #e64a19) !important;
+  margin-bottom: 4px !important;
+  position: relative !important;
+}
+
+.k-sec-header-emoji {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.k-sec-header-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text, #1f3024);
+  flex: 1;
+  min-width: 0;
+}
+
+.k-sec-header-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #8a877f);
+  padding: 2px 8px;
+  background: rgba(0,0,0,.04);
+  border-radius: 20px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.k-sec-see-all {
+  flex-shrink: 0;
+  background: none !important;
+  border: none !important;
+  color: var(--ocean, #4a9040) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: background .15s !important;
+}
+.k-sec-see-all:active { background: rgba(67,160,71,.1) !important; }
+.k-sec-see-all:hover { background: rgba(67,160,71,.08) !important; }
+
+/* Section subcat chips — desktop wrap */
+.k-sec-subcats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 8px;
+}
+
+.k-sec-subchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--sand-dark, #f0ebe0);
+  background: var(--white, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #8a877f);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.k-sec-subchip.active {
+  background: var(--coral, #c85c2d);
+  color: #fff;
+  border-color: var(--coral, #c85c2d);
+}
+.k-sec-subchip:hover {
+  background: rgba(200,92,45,.08);
+  border-color: var(--coral, #c85c2d);
+}
+
+/* Section grid — global */
+.k-sec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 6px 0 16px;
+}
+
+/* Mobile: override applies from @media max-width:899px above */
+/* Desktop: 4-5 columns via responsive breakpoints */
+@media (min-width: 600px) {
+  .k-sec-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+}
+@media (min-width: 900px) {
+  .k-sec-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 8px 0 20px; }
+  .k-sec-header { padding: 20px 0 10px !important; }
+  .k-sec-header-name { font-size: 18px; }
+}
+@media (min-width: 1200px) {
+  .k-sec-grid { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+}
