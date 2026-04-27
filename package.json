@@ -9,7 +9,8 @@
     "test": "jest --runInBand --forceExit --detectOpenHandles",
     "test:verbose": "jest --runInBand --forceExit --detectOpenHandles --verbose",
     "seed": "node scripts/seed.js",
-    "check:boutique": "node scripts/check-boutique.mjs"
+    "check:boutique": "node scripts/check-boutique.mjs",
+    "analyze:boutique-css": "node scripts/analyze-boutique-css.mjs"
   },
   "dependencies": {
     "africastalking": "^0.7.2",
