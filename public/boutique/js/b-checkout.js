@@ -377,8 +377,8 @@ export function makeInput(id, label, type, placeholder, dataObj, key) {
    */
 export function makeIntlPhoneInput(id, label, dataObj, key) {
   const COUNTRIES = [
-    { code: '+33',  flag: '🇫🇷', name: 'France',          digits: 9,  max: 10, ph: '06 12 34 56 78' },
     { code: '+269', flag: '🇰🇲', name: 'Comores',         digits: 7,  max: 7,  ph: '321 12 34' },
+    { code: '+33',  flag: '🇫🇷', name: 'France',          digits: 9,  max: 10, ph: '06 12 34 56 78' },
     { code: '+262', flag: '🇷🇪', name: 'Réunion',         digits: 9,  max: 10, ph: '0692 12 34 56' },
     { code: '+32',  flag: '🇧🇪', name: 'Belgique',        digits: 9,  max: 10, ph: '0470 12 34 56' },
     { code: '+41',  flag: '🇨🇭', name: 'Suisse',          digits: 9,  max: 10, ph: '076 123 45 67' },
@@ -408,7 +408,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     const opt = document.createElement('option');
     opt.value = c.code;
     opt.textContent = c.flag + ' ' + c.code;
-    if (c.code === '+33') opt.selected = true; // défaut FR
+    if (c.code === '+269') opt.selected = true; // défaut KM
     sel.appendChild(opt);
   });
 
@@ -417,12 +417,12 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   input.id = id;
   input.inputMode = 'numeric';
   input.autocomplete = 'tel';
-  input.placeholder = '06 12 34 56 78';
+  input.placeholder = '321 12 34';
   input.className = 'k-ck-phone-input';
 
   const help = document.createElement('div');
   help.className = 'k-ck-phone-help';
-  help.textContent = 'Exemple France : 06 12 34 56 78';
+  help.textContent = 'Exemple Comores : 321 12 34';
 
   function currentCountry() {
     return COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
@@ -551,7 +551,7 @@ export async function submitOrder(btn) {
   if (senderPhone.length < 8) {
     const _phoneInput = document.getElementById('of-sender-phone');
     const _countrySel = document.getElementById('of-sender-phone-country');
-    const _code = _countrySel?.value || '+33';
+    const _code = _countrySel?.value || '+269';
     const RULES = { '+33': 9, '+269': 7, '+262': 9, '+32': 9, '+41': 9, '+44': 10, '+1': 10, '+971': 9, '+966': 9, '+60': 9, '+212': 9 };
     let _digits = String(_phoneInput?.value || '').replace(/\D/g, '');
     if (['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(_code) && _digits.startsWith('0')) {
