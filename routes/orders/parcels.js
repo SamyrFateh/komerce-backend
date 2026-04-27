@@ -113,7 +113,7 @@ router.post('/:id/mark-availability', authenticate, requireRole(['admin', 'agent
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
@@ -359,7 +359,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
@@ -568,7 +568,7 @@ router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'a
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }
@@ -733,7 +733,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
 
   } catch (err) {
     await client.query('ROLLBACK');
-    next(e);
+    next(err);
   } finally {
     client.release();
   }

@@ -24,6 +24,7 @@ const crypto  = require('crypto');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 // ══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -796,12 +797,21 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       return res.status(409).json({ error: 'Cette commande est déjà marquée comme récupérée' });
     }
 
+    const transition = await transitionOrderStatus({
+      orderId,
+      newStatus: 'collected',
+      actor: { id: agentId, role: req.user.role },
+      source: 'patch',
+      note: 'Colis remis apres verification du code retrait',
+    });
+    if (!transition.success && !transition.noop) {
+      return res.status(409).json({ error: transition.error });
+    }
+
     await db.query(`
       UPDATE orders
-      SET status                 = 'collected',
-          collected_at           = NOW(),
-          collected_by_name      = $1,
-          updated_at             = NOW()
+      SET collected_by_name = $1,
+          updated_at        = NOW()
       WHERE id = $2
     `, [collected_by_name || null, orderId]);
 

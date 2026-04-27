@@ -3,6 +3,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { authenticate, requireRole } = require('../middleware/auth');
+
+router.use(authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']));
 
 // ——— GET /api/v2/global —————————————————————————————————————————————
 // Dashboard summary — all KPIs in one call

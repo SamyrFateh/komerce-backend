@@ -31,6 +31,29 @@ const STATUS_ORDER = [
   'in_transit', 'available', 'collected'
 ];
 
+const PICKUP_VERIFY_WINDOW_MS = 15 * 60 * 1000;
+const PICKUP_VERIFY_MAX_ATTEMPTS = 5;
+const pickupVerifyAttempts = new Map();
+
+function pickupAttemptKey(token, req) {
+  return `${token}:${req.ip || req.headers['x-forwarded-for'] || 'unknown'}`;
+}
+
+function checkPickupVerifyLimit(token, req) {
+  const key = pickupAttemptKey(token, req);
+  const now = Date.now();
+  let entry = pickupVerifyAttempts.get(key);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + PICKUP_VERIFY_WINDOW_MS };
+  }
+  entry.count += 1;
+  pickupVerifyAttempts.set(key, entry);
+  return {
+    allowed: entry.count <= PICKUP_VERIFY_MAX_ATTEMPTS,
+    retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+  };
+}
+
 /**
  * GET /api/tracking/:token
  * Public tracking endpoint — no auth required
@@ -184,7 +207,7 @@ router.get('/:token', async (req, res) => {
         name: order.relais_name,
         address: order.relais_address
       } : null,
-      pickupCode: isAtRelay ? order.pickup_code : null,
+      pickupReady: isAtRelay && Boolean(order.pickup_code),
       items: itemsResult.rows.map(i => ({
         name: i.product_name,
         emoji: i.emoji,
@@ -225,6 +248,14 @@ router.post('/:token/verify-pickup', async (req, res) => {
     if (!token || !code) {
       return res.status(400).json({ valid: false, error: 'Token et code requis' });
     }
+    const limit = checkPickupVerifyLimit(token, req);
+    if (!limit.allowed) {
+      return res.status(429).json({
+        valid: false,
+        error: 'Trop de tentatives. Reessayez plus tard.',
+        retryAfter: limit.retryAfter
+      });
+    }
 
     const result = await pool.query(`
       SELECT pickup_code, status FROM orders WHERE qr_token = $1
@@ -241,7 +272,11 @@ router.post('/:token/verify-pickup', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Commande pas encore disponible au retrait' });
     }
 
-    const valid = order.pickup_code && order.pickup_code === String(code).trim();
+    const expected = Buffer.from(String(order.pickup_code || ''));
+    const provided = Buffer.from(String(code).trim());
+    const valid = expected.length > 0 &&
+      expected.length === provided.length &&
+      crypto.timingSafeEqual(expected, provided);
     res.json({ valid: valid });
   } catch (err) {
     console.error('Verify pickup error:', err);
@@ -254,7 +289,7 @@ router.post('/:token/verify-pickup', async (req, res) => {
  * Called from scan event processing
  */
 async function generatePickupCode(orderId) {
-  const code = String(crypto.randomInt(1000, 10000));
+  const code = String(crypto.randomInt(100000, 1000000));
   await pool.query(
     `UPDATE orders SET pickup_code = $1 WHERE id = $2 AND pickup_code IS NULL`,
     [code, orderId]

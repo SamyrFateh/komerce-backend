@@ -37,6 +37,7 @@ const router   = express.Router();
 const db       = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS } = require('../utils/sms');
+const { transitionOrderStatus } = require('../services/order-status-machine');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -678,11 +679,16 @@ router.post('/:id/receive', ...guard, async (req, res, next) => {
     // 4. Mettre à jour le statut de la commande
     if (order_complete) {
       // Tous les articles sont là → preparation + SMS
-      await db.query(
-        `UPDATE orders SET status = 'preparation', preparation_at = NOW()
-         WHERE id = $1`,
-        [po.order_id]
-      );
+      const statusResult = await transitionOrderStatus({
+        orderId: po.order_id,
+        newStatus: 'preparation',
+        actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
+        source: 'system',
+        note: 'Tous les achats fournisseur recus au hub',
+      });
+      if (!statusResult.success && !statusResult.noop) {
+        return res.status(409).json({ error: statusResult.error });
+      }
 
       // Déclencher SCAN 3 (notification SMS hub + client)
       try {

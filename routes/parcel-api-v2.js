@@ -23,6 +23,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const { authenticate, requireRole } = require('../middleware/auth');
+
+router.use(authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']));
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS

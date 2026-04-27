@@ -42,6 +42,10 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
     if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
 
     const order = rows[0];
+    const privilegedRoles = ['admin', 'agent_hub', 'agent_relais'];
+    if (!privilegedRoles.includes(req.user.role) && String(order.user_id) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Acces refuse a cette commande' });
+    }
 
     if (order.payment_mode !== 'stripe_eur') {
       return res.status(400).json({ error: 'Cette commande n\'utilise pas Stripe' });

@@ -9,7 +9,7 @@ const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
 const inv = require('../services/inventory-service');
 
-router.use(authenticate, requireRole('admin', 'agent_hub'));
+router.use(authenticate, requireRole(['admin', 'agent_hub']));
 
 // ─── RECEIVE ──────────────────────────────────────────────────
 router.post('/receive', async (req, res) => {
