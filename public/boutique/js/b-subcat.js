@@ -552,5 +552,26 @@ import {
     _bindAppendedCards();
   }
 
+  /**
+   * Point d'entrée public : initialise le pager flat sous-catégories.
+   * Appelé depuis boutique.js §13 après chargement des produits.
+   */
+  function initFlatSubcat() {
+    _setupFlatSubcatPager();
+  }
 
-  // ╔══════════════════════════════════════════════════════════════════╗
+  /**
+   * Render subcat chips (stub — le rendu réel est inline dans b-modal.js renderSuggestions).
+   * Conservé pour compatibilité import.
+   * @param {string} cat - Catégorie courante
+   */
+  function renderSubcatChips(cat) {
+    // no-op stub: chips rendered inline in renderSuggestions (b-modal.js)
+  }
+
+export {
+  initFlatSubcat, renderSubcatChips,
+  _setupFlatSubcatPager, _renderFlatSubcat,
+  _mountFlatSubcatChrome, _unmountFlatSubcatChrome,
+  _bindFlatSubcatControls, _scrollFlatPagerToSub, _syncFlatActiveTab,
+};

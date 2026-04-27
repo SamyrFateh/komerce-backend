@@ -16,9 +16,6 @@ import {
 import {
   showToast, updateCartBadge, saveCart, cartQty,
 }                         from './b-cart-core.js';
-import {
-  renderSubcatChips,
-}                         from './b-subcat.js';
 
 'use strict';
 
@@ -814,5 +811,8 @@ import {
      CART DRAWER — Full mechanism
      ══════════════════════════════════════════════════════════ */
 
-
-  // ╔══════════════════════════════════════════════════════════════════╗
+export {
+  openModal, closeModal, modalGoBack, setupModal,
+  buildCarouselSlides, goToSlide,
+  renderSuggestions, setupImageZoneTouch, navigateModal,
+};

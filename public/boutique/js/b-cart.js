@@ -1207,5 +1207,13 @@ function quickRemove(productId, btnEl) {
   /* ══════════════════════════════════════════════════════════════════ */
   // _pagerRaf declared in _syncChipToScroll block above
 
-
-  // ╔══════════════════════════════════════════════════════════════════╗
+export {
+  addToCart, quickAdd, quickRemove, toggleFav, setQty,
+  openCart, closeCart, openCartWithHighlight,
+  renderCartBody,
+  removeFromCart, markAllCartButtons,
+  shareCartWhatsApp, showShareChoiceModal, loadSharedCart,
+  _showEventForm, _doEventShare,
+};
+// Alias pour boutique.js qui importe 'renderCart'
+export { renderCartBody as renderCart };

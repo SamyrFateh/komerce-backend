@@ -11,6 +11,13 @@ import { fmt, sanitize, genIdempotencyKey } from './b-utils.js';
 import { showToast, cartTotal, saveCart }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart }  from './b-cart.js';
 
+// Stripe globals (initialized on demand)
+let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
+let _stripeCard = null;
+let _stripeElements = null;
+
+
+
   // ║  §11 · CHECKOUT — Commande, paiement, wallet, order success      ║
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-checkout.js
@@ -20,7 +27,47 @@ import { openCart, closeCart, renderCart }  from './b-cart.js';
    * Prérequis : panier non vide (sinon toast error)
    * Ferme le tiroir panier, initialise state.orderData, affiche renderCheckout()
    */
-    function checkoutCart() {
+export function digitsOnly(v) {
+    return String(v || '').replace(/\D+/g, '');
+  }
+
+export function normalizeLocal(code, digits) {
+    // On accepte le 0 national saisi par l'utilisateur pour certains pays
+    if (
+      ['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(code) &&
+      digits.startsWith('0')
+    ) {
+      return digits.slice(1);
+    }
+    return digits;
+  }
+
+export function prettifyLocal(raw, country) {
+    const d = digitsOnly(raw).slice(0, country.max);
+    if (!d) return '';
+    // formatage léger visuel seulement
+    if (country.code === '+33' || country.code === '+262' || country.code === '+32' || country.code === '+41') {
+      return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+    }
+    if (country.code === '+44') {
+      return d.replace(/(\d{5})(\d{0,6})/, function(_, a, b){ return b ? a + ' ' + b : a; }).trim();
+    }
+    if (country.code === '+1') {
+      return d.replace(/(\d{3})(\d{0,3})(\d{0,4})/, function(_, a, b, c){
+        return [a, b, c].filter(Boolean).join(' ');
+      }).trim();
+    }
+    return d.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+  }
+
+export function buildE164(code, raw) {
+    let digits = digitsOnly(raw);
+    if (!digits) return '';
+    digits = normalizeLocal(code, digits);
+    return code + digits;
+  }
+
+export function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
@@ -166,7 +213,7 @@ export function renderCheckout() {
     /**
  * Met à jour le récapitulatif paiement en checkout.
  */
-export function updatePaymentUI() {
+  function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
@@ -265,9 +312,6 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
    * @param {string} v - Chaîne à nettoyer
    * @returns {string} Chaîne ne contenant que des chiffres
    */
-export function digitsOnly(v) {
-    return String(v || '').replace(/\D+/g, '');
-  }
 
   /**
    * Normalise un numéro local en retirant le 0 initial si présent.
@@ -275,16 +319,6 @@ export function digitsOnly(v) {
    * @param {string} digits - Numéro brut
    * @returns {string} Numéro normalisé sans préfixe local
    */
-export function normalizeLocal(code, digits) {
-    // On accepte le 0 national saisi par l'utilisateur pour certains pays
-    if (
-      ['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(code) &&
-      digits.startsWith('0')
-    ) {
-      return digits.slice(1);
-    }
-    return digits;
-  }
 
   /**
    * Formate un numéro brut en affichage lisible selon le pays.
@@ -292,23 +326,6 @@ export function normalizeLocal(code, digits) {
    * @param {string} country - Code pays ISO (ex: "KM")
    * @returns {string} Numéro formaté pour affichage
    */
-export function prettifyLocal(raw, country) {
-    const d = digitsOnly(raw).slice(0, country.max);
-    if (!d) return '';
-    // formatage léger visuel seulement
-    if (country.code === '+33' || country.code === '+262' || country.code === '+32' || country.code === '+41') {
-      return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
-    }
-    if (country.code === '+44') {
-      return d.replace(/(\d{5})(\d{0,6})/, function(_, a, b){ return b ? a + ' ' + b : a; }).trim();
-    }
-    if (country.code === '+1') {
-      return d.replace(/(\d{3})(\d{0,3})(\d{0,4})/, function(_, a, b, c){
-        return [a, b, c].filter(Boolean).join(' ');
-      }).trim();
-    }
-    return d.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-  }
 
   /**
    * Construit un numéro au format E.164 (+XXXXXXXXXXX).
@@ -316,12 +333,6 @@ export function prettifyLocal(raw, country) {
    * @param {string} raw  - Numéro local (chiffres uniquement)
    * @returns {string} Numéro E.164 complet
    */
-export function buildE164(code, raw) {
-    let digits = digitsOnly(raw);
-    if (!digits) return '';
-    digits = normalizeLocal(code, digits);
-    return code + digits;
-  }
 
   const group = document.createElement('div');
   group.className = 'k-ck-group';
@@ -357,11 +368,11 @@ export function buildE164(code, raw) {
   help.className = 'k-ck-phone-help';
   help.textContent = 'Exemple France : 06 12 34 56 78';
 
-export function currentCountry() {
+  function currentCountry() {
     return COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
   }
 
-export function sync() {
+  function sync() {
     const country = currentCountry();
     input.placeholder = country.ph;
 
@@ -809,4 +820,10 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
 
     /* ── SETUP CART DRAWER ──────────────────────────────────── */
 
-  // ╔══════════════════════════════════════════════════════════════════╗
+export {
+  checkoutCart, closeOrderModal, renderCheckout,
+  makeInput, makeIntlPhoneInput,
+  digitsOnly, normalizeLocal, prettifyLocal, buildE164,
+  makePhoneInput, checkWalletBalance, updateWalletDisplay,
+  submitOrder, renderOrderSuccess,
+};

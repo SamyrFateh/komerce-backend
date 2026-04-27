@@ -914,4 +914,10 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
 
   // Build carousel slides dynamically (1 or N images)
 
-  // ╔══════════════════════════════════════════════════════════════════╗
+export {
+  renderPromos, renderGrid, appendNextPage,
+  setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
+  loadProducts,
+};
+// Backward-compat aliases (boutique.js Phase 10 legacy imports)
+export { setupCats as initCats, setupSearch as initSearch };
