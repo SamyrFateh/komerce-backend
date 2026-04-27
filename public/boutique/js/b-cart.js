@@ -572,18 +572,7 @@ function quickRemove(productId, btnEl) {
     _evtBtn.className = 'k-cart-event-btn';
     _evtBtn.innerHTML = '🎉 Faire participer ma famille';
     _evtBtn.addEventListener('click', () => {
-      try {
-        sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(
-          state.cart.map(item => ({
-            product_id: item.product.id,
-            name: item.product.name || '',
-            price_kmf: item.product.promo_price_kmf || item.product.price_kmf || 0,
-            image_url: item.product.image_url || '',
-            qty: item.qty,
-          }))
-        ));
-      } catch(e) {}
-      window.location.href = '/event/create?from=cart';
+      _showFamilySheet();
     });
     if (dom.cartFooter) {
       const _checkoutBtn = dom.cartFooter.querySelector('#k-cart-checkout') || dom.cartCheckout;
@@ -681,6 +670,8 @@ function quickRemove(productId, btnEl) {
     css += '.k-share-choice-label{font-size:15px;font-weight:700}';
     css += '.k-share-choice-desc{font-size:12px;color:#757575;margin-top:2px}';
     css += '.k-share-cancel{margin-top:16px;width:100%;padding:12px;border:none;background:none;color:#999;font-size:14px;cursor:pointer}';
+    css += '.k-family-total{font-size:19px;font-weight:800;text-align:center;color:#e53935;margin:8px 0 18px}';
+    css += '.k-share-sub-family{font-size:14px;color:#555;text-align:center;margin-bottom:16px;line-height:1.5}';
     css += '.k-event-form label{font-size:13px;color:#757575;display:block;margin-bottom:4px;margin-top:14px}';
     css += '.k-event-form input{width:100%;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box}';
     css += '.k-event-form input:focus{border-color:#e53935}';
@@ -701,6 +692,91 @@ function quickRemove(productId, btnEl) {
    * Affiche le bottom sheet "Simple / Événement collectif" pour le partage panier.
    * Point d'entrée unique pour tout partage WhatsApp du panier.
    */
+
+  /* ══════════════════════════════════════════════════════════
+     FAMILY PARTICIPATION SHEET
+     "Faire participer ma famille" — bottom sheet dédié
+     ══════════════════════════════════════════════════════════ */
+
+  /**
+   * Ouvre le bottom sheet "🎉 Faire participer ma famille".
+   * Remplace le redirect vers /event/create.
+   */
+  function _showFamilySheet() {
+    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+    _injectShareModalCSS();
+
+    var total = cartTotal();
+
+    var ov = document.createElement('div');
+    ov.id = 'k-share-overlay';
+    ov.className = 'k-share-overlay';
+
+    var html = '<div class="k-share-sheet" id="k-share-sheet">'
+      + '<div class="k-share-title">🎉 Faire participer ma famille</div>'
+      + '<div class="k-share-sub-family">Plusieurs proches peuvent payer une partie<br>de ce panier.</div>'
+      + '<div class="k-family-total">' + fmt(total, 'KMF') + '</div>'
+      + '<div class="k-event-form">'
+        + '<label>Nom du panier <span style="color:#bbb;font-weight:400;font-size:11px">(facultatif)</span></label>'
+        + '<input id="k-event-label" type="text" placeholder="Ex : Commande famille, Cousins, Mariage, Naissance" maxlength="80"/>'
+        + '<button class="k-event-go" id="k-family-go-btn">Créer le lien de participation</button>'
+      + '</div>'
+      + '<button class="k-share-cancel" id="k-share-cancel-btn">Annuler</button>'
+      + '</div>';
+
+    ov.innerHTML = html;
+    ov.addEventListener('click', function(e) { if (e.target === ov) _closeShareModal(); });
+    document.body.appendChild(ov);
+
+    // Focus sur le champ (confort mobile)
+    setTimeout(function() {
+      var inp = document.getElementById('k-event-label');
+      if (inp) inp.focus();
+    }, 350);
+
+    document.getElementById('k-family-go-btn').addEventListener('click', _doFamilyShare);
+    document.getElementById('k-share-cancel-btn').addEventListener('click', _closeShareModal);
+  }
+
+  /**
+   * Crée le lien de participation famille et l'envoie via WhatsApp.
+   */
+  async function _doFamilyShare() {
+    var labelEl = document.getElementById('k-event-label');
+    var eventLabel = labelEl ? labelEl.value.trim() : '';
+
+    var btn = document.getElementById('k-family-go-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Création...'; }
+    _closeShareModal();
+    showToast('Création du lien...', 'info');
+
+    var cartURL;
+    try {
+      cartURL = await buildCartShareURL({
+        type: 'event',
+        event_label: eventLabel || 'Panier famille',
+        sharer_name: null,
+      });
+    } catch(e) { cartURL = _buildFallbackCartURL(); }
+
+    var label = eventLabel || 'Panier famille';
+    var lines = ['🎉 *' + label + '*', '-------------------', ''];
+    lines.push('Plusieurs personnes peuvent contribuer à ce panier.', 'Paie ce qui te convient !', '');
+    state.cart.forEach(function(item, i) {
+      var name = item.product.name || 'Produit';
+      var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
+      var line = (i + 1) + '. ' + name;
+      if (item.qty > 1) line += ' ×' + item.qty;
+      line += ' — ' + fmt(price, 'KMF');
+      lines.push(line);
+    });
+    lines.push('', '-------------------');
+    lines.push('Total : ' + fmt(cartTotal(), 'KMF'), '');
+    lines.push('Participer :', cartURL);
+
+    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+  }
+
   function showShareChoiceModal() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     _injectShareModalCSS();
@@ -823,7 +899,9 @@ function quickRemove(productId, btnEl) {
    *   - Mode "Événement collectif" : flow contributions
    */
     async function shareCartWhatsApp() {
-    showShareChoiceModal();
+    // Partage direct WhatsApp — pas de modal intermédiaire
+    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+    await _doSimpleShare();
   }
 
   /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
