@@ -112,23 +112,42 @@
       const cartItems = getPendingCart();
       if (cartItems && cartItems.length) {
         submitBtn.textContent = '⏳ Ajout des articles…';
-        try {
-          const itemsPayload = cartItems.map(it => ({
-            product_id: it.product_id,
-            quantity: Number(it.quantity) || 1,
-            amount_unit_kmf: Number(it.price_kmf) || 0,
-            note: it.product_name || null,
-          }));
-          await fetch('/api/collective-workspaces/' +
-            encodeURIComponent(data.creator_token) + '/items', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'add', items: itemsPayload }),
-          });
-          sessionStorage.removeItem('komerce_event_pending_cart');
-        } catch (errItems) {
-          console.warn('[event-create] echec ajout items panier (workspace cree, items a ajouter manuellement) :', errItems);
+        let patchFailed = false;
+        let patchError = null;
+        // Backend attend 1 item par appel PATCH
+        for (const it of cartItems) {
+          try {
+            const patchRes = await fetch('/api/collective-workspaces/' +
+              encodeURIComponent(data.creator_token) + '/items', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'add',
+                product_id: it.product_id,
+                quantity: Number(it.quantity) || 1,
+              }),
+            });
+            if (!patchRes.ok) {
+              const errBody = await patchRes.json().catch(() => ({}));
+              if (errBody.error === 'product_not_found') continue;
+              patchFailed = true;
+              patchError = errBody.message || ('Erreur ' + patchRes.status);
+              break;
+            }
+          } catch (e) {
+            patchFailed = true;
+            patchError = e.message || 'Erreur réseau lors de l\'ajout des articles';
+            break;
+          }
         }
+        if (patchFailed) {
+          showError('Panier créé, mais ajout des articles échoué : ' + patchError +
+            ' — vous pouvez les ajouter manuellement depuis la page de gestion.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🎉 Créer le panier famille';
+          return;
+        }
+        sessionStorage.removeItem('komerce_event_pending_cart');
       }
 
       // ── 4. Redirection vers la page createur (URL canonique) ──

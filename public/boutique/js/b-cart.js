@@ -763,7 +763,7 @@ function quickRemove(productId, btnEl) {
     _closeShareModal();
 
     // Rediriger vers /event/create?from=cart (+ label pré-rempli si saisi)
-    var url = '/boutique/event/create?from=cart';
+    var url = '/event/create?from=cart';
     if (eventLabel) url += '&label=' + encodeURIComponent(eventLabel);
     window.location.href = url;
   }
