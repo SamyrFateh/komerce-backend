@@ -7313,7 +7313,6 @@ body.cart-open #k-section-index {
 /* Keep 2-column grid inside each page */
 
   #k-page-scroll.k-pager-active .k-sec-grid {
-    grid-template-columns: repeat(2, 1fr);
     gap: 5px;
     padding: 4px 6px 8px;
   }
