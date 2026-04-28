@@ -6529,8 +6529,6 @@ body.cart-open #k-section-index {
   }
 
   .k-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
     padding: 0 6px 10px;
   }
