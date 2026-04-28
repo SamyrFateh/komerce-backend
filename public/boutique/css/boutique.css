@@ -1499,9 +1499,14 @@ body.cart-open{overflow:hidden}
 /* ── MODAL TOP BAR — clean white ── */
 .k-modal-topbar{
   display:flex;align-items:center;justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:20;
   padding:10px 12px;
-  background:var(--white);color:var(--text);
-  border-bottom:1px solid var(--border);
+  background:rgba(255, 255, 255, 0.82);color:var(--text);
+  backdrop-filter:blur(16px) saturate(180%);
+  -webkit-backdrop-filter:blur(16px) saturate(180%);
+  border-bottom:1px solid rgba(0,0,0,0.06);
   flex-shrink:0;
   padding-top:calc(10px + env(safe-area-inset-top));
 }
@@ -1578,7 +1583,7 @@ body.cart-open{overflow:hidden}
   position:relative;
   flex:0 0 auto;
   height:45vh;
-  background:var(--sand);
+  background:linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%);
   overflow:hidden;
 }
 
@@ -1589,11 +1594,21 @@ body.cart-open{overflow:hidden}
   flex:0 0 100%;
   width:100%;
   height:100%;
-  object-fit:contain !important;      /* IMAGE ENTIÈRE, jamais coupée */
+  object-fit:contain !important;      /* IMAGE ENTIERE, jamais coupee */
   object-position:center center;
   display:block;
-  background:#fff;                     /* fond blanc pour bandes éventuelles */
-  padding:12px;                        /* petit padding pour respirer */
+  background:transparent;
+  padding:16px;
+  max-width:100%;
+  max-height:100%;
+}
+.k-modal-carousel-track img {
+  object-fit:contain !important;
+  object-position:center center !important;
+  background:transparent !important;
+  padding:16px !important;
+  max-width:100% !important;
+  max-height:100% !important;
 }
 .k-modal-dots{
   position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
@@ -1661,8 +1676,10 @@ body.cart-open{overflow:hidden}
   display:flex;gap:10px;align-items:center;
   padding:10px 12px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--sand-dark);
-  flex-shrink:0;background:var(--white);
+  border-top:1px solid rgba(0,0,0,0.04);
+  flex-shrink:0;background:rgba(255, 255, 255, 0.92);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
 }
 .k-qty{
   display:flex;align-items:center;
@@ -4906,14 +4923,6 @@ body.cart-open #k-page-scroll {
 }
 .k-topbar-buy:active{transform:scale(.95)}
 
-/* Topbar : sticky top au scroll du modal */
-.k-modal-topbar{
-  position:sticky !important;
-  top:0;
-  z-index:20;
-  flex-shrink:0;
-}
-
 /* Le topbar-right se rétrécit quand en mode scrolled (pour laisser place au produit) */
 .k-modal.is-scrolled .k-modal-topbar-right .k-modal-cart-btn{
   display:none;
@@ -5009,22 +5018,6 @@ body.cart-open #k-page-scroll {
 /* ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── 1. GLASSMORPHISM : blur sur les surfaces "flottantes" ────────────── */
-
-/* Topbar modale : fond blur élégant */
-.k-modal-topbar{
-  background:rgba(255, 255, 255, 0.82) !important;
-  backdrop-filter:blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter:blur(16px) saturate(180%) !important;
-  border-bottom:1px solid rgba(0,0,0,0.06) !important;
-}
-
-/* Actions modale sticky : glass light */
-.k-modal-scroll > .k-modal-actions{
-  background:rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter:blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter:blur(20px) saturate(180%) !important;
-  border-top:1px solid rgba(0,0,0,0.04) !important;
-}
 
 /* Overlay panier : blur subtil du background */
 .k-cart-overlay.open{
@@ -5458,31 +5451,6 @@ button,
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*  IMAGE PRODUIT MODALE — responsive peu importe le ratio natif           */
 /* ═══════════════════════════════════════════════════════════════════════ */
-
-/* Fond subtil crème derrière l'image (plus élégant que blanc pur) */
-.k-modal-img-wrap {
-  background: linear-gradient(135deg, 
-    #faf9f7 0%, 
-    #f4f1ec 100%) !important;
-  position: relative;
-}
-
-/* Image entièrement visible, centrée, avec petit padding */
-.k-modal-slide,
-.k-modal-carousel-track img {
-  object-fit: contain !important;
-  object-position: center center !important;
-  background: transparent !important;
-  padding: 16px !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-}
-
-/* Pour les très petites images (< 300px), on ne les étire pas trop */
-.k-modal-slide[src] {
-  width: 100% !important;
-  height: 100% !important;
-}
 
 /* Ajustement mobile : un peu moins de padding pour maximiser l'espace */
 @media (max-width: 600px) {
