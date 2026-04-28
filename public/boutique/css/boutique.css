@@ -1012,14 +1012,27 @@ body{
   }
 }
 .k-card-img-wrap{
-  position:relative;overflow:hidden;
-  background:#faf8f5;
+  position:relative;
+  display:block;
+  overflow:hidden;
+  aspect-ratio:1 / 1;
+  background:linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%);
 }
 .k-card-img{
-  width:100%;aspect-ratio:1/1;
+  width:100%;
+  height:100%;
+  position:absolute;
+  inset:0;
   object-fit:contain;
   padding:8px;
   transition:transform .4s var(--ease);
+}
+.k-card-img-wrap > img,
+.k-card-img-wrap .k-card-carousel{
+  width:100%;
+  height:100%;
+  position:absolute;
+  inset:0;
 }
 @media(hover:hover) and (pointer:fine){
   .k-card:hover .k-card-img{transform:scale(1.04)}
@@ -1062,7 +1075,7 @@ body{
    Le bouton agrandit un peu (40px mobile) pour laisser place au panier.
 */
 .k-card-add{
-  position:absolute;bottom:6px;right:6px;
+  position:absolute;bottom:8px;right:8px;
   width:40px;height:40px;
   background:var(--white) url('/images/panier_tresse_vert.png') center/78% no-repeat;
   border-radius:50%;
@@ -5496,24 +5509,6 @@ button,
 /*  (éviter les crops brutaux quand le ratio ne matche pas)                */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* Cartes catalogue */
-.k-card-img-wrap {
-  background: linear-gradient(135deg, 
-    #faf9f7 0%, 
-    #f4f1ec 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.k-card-img-wrap img {
-  object-fit: contain !important;
-  object-position: center !important;
-  width: 100%;
-  height: 100%;
-  padding: 8px;
-}
-
 /* Suggestions grille */
 .k-sug-grid .k-sug-card-img {
   background: linear-gradient(135deg, 
@@ -5541,48 +5536,6 @@ button,
   flex: 0 0 auto !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════ */
-/*  BUG 2 FIX : favoris + panier bien positionnés dans la carte           */
-/* ═══════════════════════════════════════════════════════════════════════ */
-/* Réaffirmer les positions au cas où un override a cassé */
-.k-card-img-wrap {
-  position: relative !important;
-  display: block !important;  /* bloc, PAS flex */
-  overflow: hidden;
-  aspect-ratio: 1 / 1;  /* carré uniforme */
-}
-
-.k-card-img-wrap > .k-card-fav {
-  position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  z-index: 3;
-}
-
-.k-card-img-wrap > .k-card-add {
-  position: absolute !important;
-  bottom: 8px !important;
-  right: 8px !important;
-  z-index: 5;
-}
-
-.k-card-img-wrap > .k-card-promo {
-  position: absolute !important;
-  top: 8px !important;
-  left: 8px !important;
-  z-index: 3;
-}
-
-/* S'assurer que l'image remplit bien le wrap (sinon les icônes n'ont pas
-   de repère visuel cohérent) */
-.k-card-img-wrap > img,
-.k-card-img-wrap .k-card-img,
-.k-card-img-wrap .k-card-carousel {
-  width: 100% !important;
-  height: 100% !important;
-  position: absolute;
-  inset: 0;
-}
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */
