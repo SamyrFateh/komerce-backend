@@ -213,18 +213,17 @@ function _renderHTML(container) {
 
   // Header
   html += '<header class="apv-header">';
-  html += '<h1 class="apv-h1">🧮 Atelier de Construction du Prix</h1>';
-  html += '<p class="apv-sub">Simuler un produit, voir les coûts qui le construisent, ajuster les paramètres.</p>';
+  html += '<h1 class="apv-h1">🧮 Construction du Prix</h1>';
+  html += '<p class="apv-sub">Comprendre le coût, choisir un prix, puis affiner le modèle si nécessaire.</p>';
   html += '<div class="apv-tools">';
   html += '<button class="apv-btn apv-btn-secondary" data-act="refresh">🔄 Rafraîchir</button>';
   html += '</div>';
   html += '</header>';
 
-  // ZONE 1 — Composants de coût (la base doctrinale : on part des coûts)
-  html += _renderZone2();
-
-  // ZONE 2 — Simulation produit (le cas d'application)
   html += _renderZone1();
+
+  // ZONE 2 — Lecture du modèle de coût
+  html += _renderZone2();
 
   html += '</div>';
   container.innerHTML = html;
@@ -237,8 +236,8 @@ function _renderHTML(container) {
 function _renderZone1() {
   let html = '<section class="apv-zone apv-zone1">';
   html += '<div class="apv-zone-head">';
-  html += '<h2 class="apv-zone-title">📊 Appliquer à un produit</h2>';
-  html += '<span class="apv-zone-sub">Sélectionnez un produit catalogue ou simulez un nouveau produit pour voir comment les coûts s\'imputent.</span>';
+  html += '<h2 class="apv-zone-title">📊 Décider sur un produit</h2>';
+  html += '<span class="apv-zone-sub">Choisissez un produit ou simulez-en un, puis laissez le moteur montrer le coût rendu relais, le coût business et le prix conseillé.</span>';
   if (_ps.isComputing) html += '<span class="apv-spinner" title="Calcul en cours">⏳</span>';
   html += '</div>';
 
@@ -640,7 +639,7 @@ function _renderZone2() {
 function _renderCostBreakdownSummary() {
   let html = '<section class="apv-zone apv-zone2 apv-zone2--summary">';
   html += '<div class="apv-zone-head">';
-  html += '<h2 class="apv-zone-title">📦 Décomposition du coût</h2>';
+  html += '<h2 class="apv-zone-title">📦 Lire la composition du coût</h2>';
   html += '<span class="apv-zone-sub">Comment ce coût se construit, en lecture seule. ' +
           'Pour modifier les règles : <strong>Configurer les composants</strong>.</span>';
   html += '<div class="apv-zone-actions">';

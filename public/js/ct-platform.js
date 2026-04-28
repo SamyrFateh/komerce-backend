@@ -481,6 +481,7 @@ CT.platform = {
     var aliases = {
       superadmin: 'super_admin',
       'super-admin': 'super_admin',
+      super_admin: 'super_admin',
       founder: 'founder',
       admin: 'admin',
       finance: 'finance',
@@ -491,6 +492,10 @@ CT.platform = {
     };
     var r = aliases[raw] || raw;
     return CT.platform.ROLES[r] ? r : 'founder';
+  },
+
+  normalizeRole: function(role) {
+    return CT.platform.resolveRole({ role: role });
   },
 
   getShellsForRole: function(role) {
@@ -504,6 +509,7 @@ CT.platform = {
 
   /* Return views for a given shell + role, ordered by section */
   getViewsForShell: function(shell, role) {
+    role = CT.platform.normalizeRole(role);
     var views = CT.platform.VIEWS.filter(function(v) {
       return v.shell === shell && v.roles.indexOf(role) !== -1;
     });
@@ -517,10 +523,29 @@ CT.platform = {
     return views;
   },
 
+  getSidebarViewsForShell: function(shell, role) {
+    role = CT.platform.normalizeRole(role);
+    var views = CT.platform.getViewsForShell(shell, role).filter(function(v) {
+      return v.hidden !== true;
+    });
+    if (shell === 'ct' && CT.platform.canAccess('pricing', role)) {
+      var hasPricing = views.some(function(v) { return v.id === 'pricing'; });
+      if (!hasPricing) {
+        var pricingView = CT.platform.getView('pricing');
+        if (pricingView) views.push(pricingView);
+      }
+    }
+    return views.sort(function(a, b) {
+      var ai = CT.platform.VIEWS.findIndex(function(v) { return v.id === a.id; });
+      var bi = CT.platform.VIEWS.findIndex(function(v) { return v.id === b.id; });
+      return ai - bi;
+    });
+  },
+
   /* Return ordered sections that have ≥1 visible view */
   getSectionsForShell: function(shell, role) {
     var viewsBySection = {};
-    CT.platform.getViewsForShell(shell, role).forEach(function(v) {
+    CT.platform.getSidebarViewsForShell(shell, role).forEach(function(v) {
       viewsBySection[v.section] = true;
     });
     return Object.keys(CT.platform.SECTIONS)
@@ -538,8 +563,9 @@ CT.platform = {
 
   /* Access check — view × role */
   canAccess: function(viewId, role) {
+    role = CT.platform.normalizeRole(role);
     if (CT.platform.LEGACY_VIEWS.indexOf(viewId) !== -1) {
-      return role === 'founder' || role === 'admin';
+      return role === 'founder' || role === 'admin' || role === 'super_admin';
     }
     var v = CT.platform.getView(viewId);
     return v ? v.roles.indexOf(role) !== -1 : false;

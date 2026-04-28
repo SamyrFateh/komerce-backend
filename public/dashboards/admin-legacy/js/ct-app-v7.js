@@ -220,7 +220,7 @@ CT.app = {
     var shell    = CT.platform.state.shell;
     var role     = CT.platform.state.role;
     var sections = CT.platform.getSectionsForShell(shell, role);
-    var views    = CT.platform.getViewsForShell(shell, role);
+    var views    = CT.platform.getSidebarViewsForShell(shell, role);
 
     /* Group views by section */
     var bySection = {};
