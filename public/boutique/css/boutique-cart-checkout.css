@@ -504,10 +504,7 @@
     aspect-ratio:unset;
     height:100%;
     min-height:420px;
-    object-fit:contain;
-    object-position:center center;
     padding:12px;
-    box-sizing:border-box;
   }
   .k-modal-info{
     padding:20px 16px;
@@ -1860,10 +1857,6 @@ input#of-client-email {
 }
 
 /* Info produit aprÃ¨s l'image */
-.k-modal-info {
-  padding: 16px 14px 12px;
-  background: var(--white);
-}
 
 /* â”€â”€ SUGGESTIONS : passer de rail horizontal Ã  grille verticale â”€â”€â”€â”€â”€â”€â”€â”€ */
 .k-modal-suggestions h3 {
@@ -1877,11 +1870,6 @@ input#of-client-email {
 /* (duplicate 1 removed â€” see canonical rules above) */
 
 /* Assurer que la modale garde les actions (quantitÃ© + ajout panier) en bas fixe */
-.k-modal-actions {
-  flex-shrink: 0;
-  background: var(--white);
-  border-top: 1px solid var(--sand-dark);
-}
 
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
