@@ -1055,7 +1055,7 @@ body{
   font-size:13px;
   color:var(--ocean-dark);
   box-shadow:0 2px 8px rgba(31,48,36,.12);
-  transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s var(--ease);
   cursor:pointer;
   z-index:3;
 }
@@ -1260,7 +1260,7 @@ body{
   transition: all .2s ease;
 }
 
-.k-card-add:active { transform: scale(.9); }
+.k-card-add:active { transform: scale(.9); box-shadow:0 0 0 4px rgba(224,90,72,0.15); }
 
 /* En mode stepper ouvert, le panier tressé garde son style "in-cart" */
 .k-card-add.stepper-open {
@@ -5111,19 +5111,7 @@ body.cart-open #k-page-scroll {
   transition:width 0s, height 0s;
 }
 
-/* Bouton + des cartes produits : scale + ombre au tap */
-.k-card-add{
-  transition:transform .15s ease, box-shadow .2s ease !important;
-}
-.k-card-add:active{
-  transform:scale(0.85);
-  box-shadow:0 0 0 4px rgba(224,90,72,0.15) !important;
-}
-
 /* Favoris heart : bounce au clic */
-.k-card-fav{
-  transition:transform .2s cubic-bezier(.34,1.56,.64,1) !important;
-}
 .k-card-fav.active{
   animation:heartBounce .5s cubic-bezier(.34,1.56,.64,1);
 }
