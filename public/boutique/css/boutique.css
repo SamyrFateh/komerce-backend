@@ -1897,8 +1897,6 @@ body.cart-open{overflow:hidden}
 }
 
 /* ── STICKY BOTTOM RENFORCÉ pour les actions ── */
-.k-modal-actions{
-}
 /* Laisse l'espace nécessaire pour que la dernière ligne de la grille ne soit pas cachée derrière */
 .k-modal-suggestions{
   padding-bottom:16px !important;
