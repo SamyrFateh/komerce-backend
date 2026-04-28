@@ -1705,8 +1705,6 @@ body.cart-open{overflow:hidden}
 .k-add-cart-btn.added{background:var(--green)!important}
 
 /* ── SUGGESTIONS — COMPACT ── */
-.k-modal-suggestions{padding:8px 12px 12px;border-top:1px solid var(--sand-dark);flex-shrink:0}
-.k-modal-suggestions h3{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-muted)}
 
 /* ── 2 SECTIONS DISTINCTES (même catégorie vs complémentaires) ── */
 .k-sug-section{
@@ -1898,9 +1896,6 @@ body.cart-open{overflow:hidden}
 
 /* ── STICKY BOTTOM RENFORCÉ pour les actions ── */
 /* Laisse l'espace nécessaire pour que la dernière ligne de la grille ne soit pas cachée derrière */
-.k-modal-suggestions{
-  padding-bottom:16px !important;
-}
 
 /* ── DESKTOP 600+: 2-column grid ── */
 @media(min-width:600px){
@@ -3942,6 +3937,7 @@ body.modal-open .k-bnav {
 .k-modal-suggestions {
   flex-shrink: 1 !important;
   padding: 16px 14px 24px;
+  padding-bottom:16px !important;
   background: var(--white, white);
   border-top: 8px solid var(--sand, #faf6ed);
 }
