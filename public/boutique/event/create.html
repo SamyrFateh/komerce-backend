@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Créer un panier famille — Komerce</title>
+  <title>Creer une liste evenement - Komerce</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,52 +15,52 @@
 <div class="ev-wrap">
 
   <header class="ev-header">
-    <a href="/" class="ev-header-back">← Boutique</a>
-    <span class="ev-header-title">Nouveau panier famille</span>
+    <a href="/" class="ev-header-back">&lt; Boutique</a>
+    <span class="ev-header-title">Nouvelle liste evenement</span>
   </header>
 
   <div class="ev-hero">
-    <div class="ev-hero-emoji">🎉</div>
-    <h1 class="ev-hero-title">Faites participer vos proches</h1>
+    <div class="ev-hero-emoji">+</div>
+    <h1 class="ev-hero-title">Preparez votre evenement avec la famille</h1>
     <p class="ev-hero-sub">
-      Créez un panier partagé. Envoyez le lien à votre famille.<br>
-      Chacun contribue à sa façon. Vous validez et commandez quand vous êtes prêt.
+      Creez votre liste. Partagez-la a vos proches.<br>
+      Ils proposent des idees ou un montant, et vous gardez le controle jusqu'a la finalisation.
     </p>
   </div>
 
   <form id="ev-create-form" class="ev-card">
-    <h2 class="ev-card-title">Détails du panier</h2>
-    <p class="ev-card-sub">Tous les champs marqués (optionnel) peuvent être remplis plus tard.</p>
+    <h2 class="ev-card-title">Details de la liste</h2>
+    <p class="ev-card-sub">Tous les champs marques (optionnel) peuvent etre completes plus tard.</p>
 
     <div class="ev-field">
-      <label class="ev-label" for="event_name">Nom du panier</label>
+      <label class="ev-label" for="event_name">Nom de la liste</label>
       <input type="text" id="event_name" name="event_name" class="ev-input"
-             placeholder="Ex : Commande famille, Cousins, Mariage, Naissance"
+             placeholder="Ex : Mariage de Madi, Naissance de Salima, Aide famille"
              required maxlength="100">
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="event_note">
-        Message à la famille
+        Message a la famille
         <span class="ev-label-optional">(optionnel)</span>
       </label>
       <textarea id="event_note" name="event_note" class="ev-textarea" rows="3"
-                placeholder="Ex : Cher tous, voici notre liste. Ajoutez vos idées 🎁"
+                placeholder="Ex : Voici notre liste pour l'evenement. Vous pouvez proposer vos idees ou votre participation."
                 maxlength="500"></textarea>
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="recipient_name">
         Destinataire
-        <span class="ev-label-optional">(qui reçoit le panier)</span>
+        <span class="ev-label-optional">(qui recoit l'attention ou les cadeaux)</span>
       </label>
       <input type="text" id="recipient_name" name="recipient_name" class="ev-input"
-             placeholder="Ex : Famille Mohamed à Moroni" maxlength="100">
+             placeholder="Ex : Famille Mohamed a Moroni" maxlength="100">
     </div>
 
     <hr style="border: none; border-top: 1px solid var(--ev-border); margin: 20px 0;">
 
-    <h3 class="ev-card-title" style="font-size: 14px;">Vos coordonnées (créateur)</h3>
+    <h3 class="ev-card-title" style="font-size: 14px;">Vos coordonnees (organisateur)</h3>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_name">Votre nom</label>
@@ -70,38 +70,38 @@
 
     <div class="ev-field">
       <label class="ev-label" for="creator_phone">
-        Téléphone WhatsApp
-        <span class="ev-label-optional">(pour partager le lien)</span>
+        Telephone WhatsApp
+        <span class="ev-label-optional">(pour partager la liste facilement)</span>
       </label>
       <input type="tel" id="creator_phone" name="creator_phone" class="ev-input"
              placeholder="+33 6 12 34 56 78" maxlength="30">
-      <div class="ev-help">Format international avec +. Aucun appel ne vous sera passé.</div>
+      <div class="ev-help">Format international avec +. Aucun appel ne vous sera passe.</div>
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_email">
         Email
-        <span class="ev-label-optional">(optionnel — pour récupérer votre lien)</span>
+        <span class="ev-label-optional">(optionnel - pour retrouver votre lien)</span>
       </label>
       <input type="email" id="creator_email" name="creator_email" class="ev-input"
              placeholder="exemple@email.com" maxlength="120">
     </div>
 
     <div class="ev-info">
-      <strong>Sans compte requis.</strong> Conservez bien votre lien créateur,
-      c'est lui qui vous permet de gérer et finaliser le panier.
+      <strong>Sans compte requis.</strong> Conservez bien votre lien organisateur :
+      c'est lui qui vous permet de gerer la liste, relire les propositions et finaliser.
     </div>
 
     <button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-submit-btn">
-      🎉 Créer le panier partagé
+      Creer la liste evenement
     </button>
 
     <div id="ev-error" class="ev-warning" style="display:none; margin-top:12px;"></div>
   </form>
 
   <p class="ev-doctrine">
-    Les contributions sont des intentions. Aucun paiement n'est effectué maintenant.<br>
-    La commande sera lancée uniquement après paiement sécurisé.
+    Les retours de la famille sont des propositions, pas des modifications directes du panier.<br>
+    Le paiement ne commence qu'apres votre validation finale.
   </p>
 
 </div>

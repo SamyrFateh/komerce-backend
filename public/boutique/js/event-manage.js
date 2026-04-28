@@ -100,14 +100,29 @@
       : 'https://wa.me/?text=' + text;
   }
 
-  function statusBadge(status) {
-    if (status === 'finalized' || status === 'finalisation_review' || status === 'payment_pending') {
-      return '<span class="ev-badge ev-badge-finalized">En finalisation</span>';
+  function getWorkspacePhase(workspace) {
+    return workspace.phase || workspace.status || 'draft';
+  }
+
+  function phaseLabel(phase) {
+    if (phase === 'collecting') return 'Collecte ouverte';
+    if (phase === 'reviewing') return 'Revue organisateur';
+    if (phase === 'finalized' || phase === 'payment_pending') return 'Paiements en preparation';
+    if (phase === 'partially_paid') return 'Paiements en cours';
+    if (phase === 'paid' || phase === 'order_created') return 'Commande confirmee';
+    if (phase === 'expired') return 'Session expiree';
+    if (phase === 'cancelled') return 'Evenement annule';
+    return 'Brouillon';
+  }
+
+  function statusBadge(phase) {
+    if (phase === 'paid' || phase === 'order_created') {
+      return '<span class="ev-badge ev-badge-paid">' + phaseLabel(phase) + '</span>';
     }
-    if (status === 'paid' || status === 'order_created') {
-      return '<span class="ev-badge ev-badge-paid">Commande creee</span>';
+    if (phase === 'finalized' || phase === 'payment_pending' || phase === 'partially_paid' || phase === 'reviewing') {
+      return '<span class="ev-badge ev-badge-finalized">' + phaseLabel(phase) + '</span>';
     }
-    return '<span class="ev-badge ev-badge-conception">En conception</span>';
+    return '<span class="ev-badge ev-badge-conception">' + phaseLabel(phase) + '</span>';
   }
 
   function render(workspace) {
@@ -116,15 +131,17 @@
     const total = items.reduce((sum, it) => sum + (Number(it.price_kmf) || 0) * (Number(it.quantity) || 1), 0);
     const canShare = Boolean(workspace.public_token);
     const url = canShare ? publicUrl(workspace.public_token) : '';
+    const phase = getWorkspacePhase(workspace);
 
     let html = '';
     html += '<div class="ev-card"><div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;"><div style="flex:1;min-width:200px;">';
     html += '<h2 class="ev-card-title">' + escHtml(workspace.event_name) + '</h2>';
     if (workspace.recipient_name) html += '<div class="ev-card-sub">Destinataire : ' + escHtml(workspace.recipient_name) + '</div>';
     if (workspace.event_note) html += '<div style="font-size:13px;color:var(--ev-text-muted);margin-top:6px;font-style:italic;">&laquo; ' + escHtml(workspace.event_note) + ' &raquo;</div>';
-    html += '</div><div>' + statusBadge(workspace.status) + '</div></div></div>';
+    html += '<div class="ev-card-sub" style="margin-top:8px;">Etape actuelle : <strong>' + escHtml(phaseLabel(phase)) + '</strong></div>';
+    html += '</div><div>' + statusBadge(phase) + '</div></div></div>';
 
-    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Partager avec la famille</h3><p class="ev-card-sub">Toute personne avec ce lien peut voir le panier et ajouter des idees.</p><div class="ev-share"><div class="ev-share-label">Lien public a copier :</div><div class="ev-share-url">';
+    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Partager avec la famille</h3><p class="ev-card-sub">Envoyez un seul lien simple. La famille peut proposer, mais vous restez seul a modifier la vraie liste.</p><div class="ev-share"><div class="ev-share-label">Lien famille a copier :</div><div class="ev-share-url">';
     html += '<input type="text" readonly value="' + escHtml(url) + '" id="ev-public-url-input">';
     html += '<button class="ev-btn ev-btn-secondary" id="ev-copy-btn"' + (canShare ? '' : ' disabled') + '>Copier</button></div>';
     if (canShare) {
@@ -134,9 +151,9 @@
     }
     html += '</div></div>';
 
-    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Panier (' + items.length + ' article' + (items.length > 1 ? 's' : '') + ')</h3>';
+    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Ma liste (' + items.length + ' article' + (items.length > 1 ? 's' : '') + ')</h3><p class="ev-card-sub">Vous etes le seul a modifier cette liste. Les proches ne font que proposer.</p>';
     if (!items.length) {
-      html += '<div class="ev-empty">Aucun article dans le panier pour l instant.<br><a href="/" style="color:var(--ev-primary);">Parcourir la boutique</a> pour ajouter.</div>';
+      html += '<div class="ev-empty">Votre liste est vide pour l instant.<br><a href="/" style="color:var(--ev-primary);">Parcourir la boutique</a> pour ajouter vos premiers articles.</div>';
     } else {
       html += '<ul class="ev-list">';
       items.forEach((it) => {
@@ -144,13 +161,13 @@
         const lineTotal = (Number(it.price_kmf) || 0) * qty;
         html += '<li class="ev-list-item"><div class="ev-list-emoji">*</div><div class="ev-list-content"><div class="ev-list-name">' + escHtml(it.product_name) + '</div><div class="ev-list-meta">' + qty + ' x ' + fmt(it.price_kmf) + ' KMF = <strong>' + fmt(lineTotal) + ' KMF</strong></div></div></li>';
       });
-      html += '</ul><div class="ev-totals"><div class="ev-totals-row ev-totals-row--final"><span>Total estime du panier</span><span>' + fmt(total) + ' KMF</span></div></div>';
+      html += '</ul><div class="ev-totals"><div class="ev-totals-row ev-totals-row--final"><span>Total estime de la liste</span><span>' + fmt(total) + ' KMF</span></div></div>';
     }
     html += '</div>';
 
-    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Idees proposees par la famille (' + contribs.length + ')</h3><p class="ev-card-sub">Suggestions recues via le lien public.</p>';
+    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Propositions de la famille (' + contribs.length + ')</h3><p class="ev-card-sub">Ces retours vous aident a preparer la liste finale. Ils ne modifient pas automatiquement vos articles.</p>';
     if (!contribs.length) {
-      html += '<div class="ev-empty">Aucune suggestion pour le moment.</div>';
+      html += '<div class="ev-empty">Aucune proposition pour le moment. Partagez le lien famille pour commencer a recevoir des idees et des montants.</div>';
     } else {
       html += '<ul class="ev-list">';
       contribs.forEach((c) => {
@@ -165,12 +182,16 @@
     }
     html += '</div>';
 
-    if (workspace.status === 'conception' || workspace.status === 'open') {
-      html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Finaliser le panier</h3><p class="ev-card-sub">Quand vous etes pret, vous figez le panier et passez a la commande securisee.</p><div class="ev-btn-row"><button class="ev-btn ev-btn-success" id="ev-finalize-btn"' + (items.length === 0 ? ' disabled' : '') + '>Finaliser le panier (' + fmt(total) + ' KMF)</button><a href="/" class="ev-btn ev-btn-secondary">Continuer a parcourir la boutique</a></div></div>';
-    } else if (workspace.status === 'payment_pending') {
-      html += '<div class="ev-info">Le panier est finalise. Attendez les confirmations de paiement des contributeurs.</div>';
-    } else if (workspace.status === 'order_created') {
+    if (phase === 'draft' || phase === 'collecting' || phase === 'reviewing') {
+      html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Prochaine etape : finaliser la liste</h3><p class="ev-card-sub">Quand vous etes pret, vous figez la liste. Apres cela, on pourra demander les paiements sur la base de votre validation finale.</p><div class="ev-btn-row"><button class="ev-btn ev-btn-success" id="ev-finalize-btn"' + (items.length === 0 ? ' disabled' : '') + '>Finaliser la liste (' + fmt(total) + ' KMF)</button><a href="/" class="ev-btn ev-btn-secondary">Continuer a parcourir la boutique</a></div></div>';
+    } else if (phase === 'finalized' || phase === 'payment_pending') {
+      html += '<div class="ev-info">La liste est figee. Vous pouvez maintenant envoyer les liens de paiement aux participants retenus.</div>';
+    } else if (phase === 'partially_paid') {
+      html += '<div class="ev-info">Certains paiements sont deja passes. Vous pouvez suivre tranquillement les confirmations restantes.</div>';
+    } else if (phase === 'order_created' || phase === 'paid') {
       html += '<div class="ev-info">La commande a ete creee avec succes.</div>';
+    } else if (phase === 'expired') {
+      html += '<div class="ev-warning">La session precedente a expire. Vous pouvez relancer une nouvelle finalisation quand vous etes pret.</div>';
     }
 
     contentEl.innerHTML = html;
@@ -197,7 +218,7 @@
     const finalizeBtn = document.getElementById('ev-finalize-btn');
     if (finalizeBtn) {
       finalizeBtn.addEventListener('click', async () => {
-        if (!confirm('Finaliser le panier ? Cette action verrouille le panier et genere les liens de paiement individuels.')) return;
+        if (!confirm('Finaliser la liste ? Cette action verrouille vos articles et prepare les liens de paiement individuels.')) return;
         finalizeBtn.disabled = true;
         finalizeBtn.textContent = 'Finalisation...';
         try {
@@ -215,7 +236,7 @@
         } catch (err) {
           alert('Erreur : ' + err.message);
           finalizeBtn.disabled = false;
-          finalizeBtn.textContent = 'Finaliser le panier';
+          finalizeBtn.textContent = 'Finaliser la liste';
         }
       });
     }
@@ -225,13 +246,13 @@
     const tokens = Array.isArray(data.tokens) ? data.tokens : [];
     const expiresAt = data.expires_at || null;
     const totalKmf = data.total_kmf || 0;
-    let html = '<div class="ev-card"><h2 class="ev-card-title">Panier finalise</h2><p class="ev-card-sub">Le panier est fige. Voici les <strong>' + tokens.length + ' lien(s) de paiement</strong> a envoyer aux contributeurs.</p>';
+    let html = '<div class="ev-card"><h2 class="ev-card-title">Liste finalisee</h2><p class="ev-card-sub">Votre liste est maintenant figee. Voici les <strong>' + tokens.length + ' lien(s) de paiement</strong> a envoyer aux participants retenus.</p>';
     if (totalKmf) html += '<div class="ev-totals"><div class="ev-totals-row ev-totals-row--final"><span>Total a payer</span><span>' + fmt(totalKmf) + ' KMF</span></div></div>';
     if (expiresAt) {
       const dt = new Date(expiresAt);
       html += '<div class="ev-help" style="margin-top:8px;">Liens valables jusqu au <strong>' + dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '</strong>.</div>';
     }
-    html += '</div><div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Liens de paiement par contributeur</h3><ul class="ev-list">';
+    html += '</div><div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Demandes de paiement par participant</h3><p class="ev-card-sub">Envoyez chaque lien a la bonne personne. La commande ne sera creee qu\'une fois tout le montant confirme.</p><ul class="ev-list">';
     tokens.forEach((t, idx) => {
       const fullUrl = window.location.origin + (t.payment_page_url || '/event/pay/' + t.payment_token);
       const waText = encodeURIComponent('Bonjour ' + t.contributor_name + ',\n\nVoici votre lien de paiement :\n' + fullUrl + '\n\nMontant : ' + fmt(t.amount_kmf) + ' KMF');

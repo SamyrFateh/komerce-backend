@@ -41,15 +41,37 @@
     })) : [];
     return workspace;
   }
+
+  function getWorkspacePhase(workspace) {
+    return workspace.phase || workspace.status || 'draft';
+  }
+
+  function acceptsSuggestions(phase) {
+    return phase === 'draft' || phase === 'collecting' || phase === 'reviewing';
+  }
+
+  function phaseLabel(phase) {
+    if (phase === 'collecting') return 'Collecte ouverte';
+    if (phase === 'reviewing') return 'Revue organisateur';
+    if (phase === 'finalized' || phase === 'payment_pending') return 'Paiements en preparation';
+    if (phase === 'partially_paid') return 'Paiements en cours';
+    if (phase === 'paid' || phase === 'order_created') return 'Commande confirmee';
+    if (phase === 'expired') return 'Session expiree';
+    if (phase === 'cancelled') return 'Evenement annule';
+    return 'Brouillon';
+  }
+
   function render(workspace) {
     const items = Array.isArray(workspace.items) ? workspace.items : [];
-    const isOpen = workspace.status === 'conception' || workspace.status === 'open';
+    const phase = getWorkspacePhase(workspace);
+    const isOpen = acceptsSuggestions(phase);
     let html = '<div class="ev-hero" style="margin-top:0;"><div class="ev-hero-emoji">*</div><h1 class="ev-hero-title">' + escHtml(workspace.event_name) + '</h1>';
     if (workspace.event_note) html += '<p class="ev-hero-sub">&laquo; ' + escHtml(workspace.event_note) + ' &raquo;</p>';
     if (workspace.creator_name) html += '<p style="font-size:12px;color:var(--ev-text-muted);margin-top:8px;">Organise par ' + escHtml(workspace.creator_name) + '</p>';
-    html += '</div><div class="ev-card"><h2 class="ev-card-title">Articles deja dans le panier</h2><p class="ev-card-sub">Voici ce que le createur a deja ajoute. Vous pouvez proposer d autres idees plus bas.</p>';
+    html += '<p style="font-size:12px;color:var(--ev-text-muted);margin-top:6px;">Etape actuelle : <strong>' + escHtml(phaseLabel(phase)) + '</strong></p>';
+    html += '</div><div class="ev-card"><h2 class="ev-card-title">Liste actuelle</h2><p class="ev-card-sub">Voici ce que l\'organisateur a deja retenu. Vous pouvez proposer autre chose plus bas, mais vous ne modifiez pas directement cette liste.</p>';
     if (!items.length) {
-      html += '<div class="ev-empty">Le panier est vide pour l instant.</div>';
+      html += '<div class="ev-empty">La liste est encore vide pour l instant. L\'organisateur la prepare peut-etre encore.</div>';
     } else {
       html += '<ul class="ev-list">';
       items.forEach((it) => {
@@ -60,11 +82,11 @@
     }
     html += '</div>';
     if (isOpen) {
-      html += '<div class="ev-card"><h2 class="ev-card-title">Proposer une idee ou participer</h2><p class="ev-card-sub">Vos suggestions arrivent au createur. Aucun paiement maintenant.</p><form id="ev-contrib-form"><div class="ev-field"><label class="ev-label" for="contributor_name">Votre nom</label><input type="text" id="contributor_name" name="contributor_name" class="ev-input" required maxlength="80"></div><div class="ev-field"><label class="ev-label" for="contributor_phone">Telephone WhatsApp (ou email - au moins un des deux)</label><input type="tel" id="contributor_phone" name="contributor_phone" class="ev-input" maxlength="30"></div><div class="ev-field"><label class="ev-label" for="contributor_email">Email (optionnel)</label><input type="email" id="contributor_email" name="contributor_email" class="ev-input" maxlength="120"></div><div class="ev-field"><label class="ev-label" for="suggestion">Idee de cadeau / produit suggere</label><input type="text" id="suggestion" name="suggestion" class="ev-input" maxlength="120"></div><div class="ev-field"><label class="ev-label" for="amount_kmf">Montant que vous comptez offrir (KMF, optionnel)</label><input type="number" id="amount_kmf" name="amount_kmf" class="ev-input" min="0" step="500"><div class="ev-help">Aucun paiement maintenant - ce n est qu une intention.</div></div><div class="ev-field"><label class="ev-label" for="message">Message (optionnel)</label><textarea id="message" name="message" class="ev-textarea" rows="2" maxlength="300"></textarea></div><button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-contrib-submit">Envoyer mon idee</button><div id="ev-contrib-error" class="ev-warning" style="display:none;margin-top:10px;"></div><div id="ev-contrib-success" class="ev-info" style="display:none;margin-top:10px;"></div></form></div>';
+      html += '<div class="ev-card"><h2 class="ev-card-title">Faire une proposition</h2><p class="ev-card-sub">Vous pouvez proposer une idee, annoncer un montant ou laisser un message. Seul l\'organisateur decide ensuite de la liste finale. Aucun paiement maintenant.</p><form id="ev-contrib-form"><div class="ev-field"><label class="ev-label" for="contributor_name">Votre nom</label><input type="text" id="contributor_name" name="contributor_name" class="ev-input" required maxlength="80"></div><div class="ev-field"><label class="ev-label" for="contributor_phone">Telephone WhatsApp (ou email - au moins un des deux)</label><input type="tel" id="contributor_phone" name="contributor_phone" class="ev-input" maxlength="30"></div><div class="ev-field"><label class="ev-label" for="contributor_email">Email (optionnel)</label><input type="email" id="contributor_email" name="contributor_email" class="ev-input" maxlength="120"></div><div class="ev-field"><label class="ev-label" for="suggestion">Idee cadeau / produit suggere</label><input type="text" id="suggestion" name="suggestion" class="ev-input" maxlength="120"></div><div class="ev-field"><label class="ev-label" for="amount_kmf">Montant que vous comptez offrir (KMF, optionnel)</label><input type="number" id="amount_kmf" name="amount_kmf" class="ev-input" min="0" step="500"><div class="ev-help">Aucun paiement maintenant - ce n est qu une intention.</div></div><div class="ev-field"><label class="ev-label" for="message">Message (optionnel)</label><textarea id="message" name="message" class="ev-textarea" rows="2" maxlength="300"></textarea></div><button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-contrib-submit">Envoyer ma proposition</button><div id="ev-contrib-error" class="ev-warning" style="display:none;margin-top:10px;"></div><div id="ev-contrib-success" class="ev-info" style="display:none;margin-top:10px;"></div></form></div>';
     } else {
-      html += '<div class="ev-warning">Ce panier n accepte plus de nouvelles propositions.</div>';
+      html += '<div class="ev-warning">Cette liste n\'accepte plus de nouvelles propositions pour le moment. L\'organisateur est deja passe a l\'etape suivante.</div>';
     }
-    html += '<div class="ev-card" style="text-align:center;"><h3 class="ev-card-title" style="font-size:14px;">Inviter d autres personnes</h3><p class="ev-card-sub">Partagez ce lien a d autres membres de la famille pour qu ils participent aussi.</p><a href="' + whatsappShareUrl(workspace.event_name) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp">Partager sur WhatsApp</a></div>';
+    html += '<div class="ev-card" style="text-align:center;"><h3 class="ev-card-title" style="font-size:14px;">Inviter d autres proches</h3><p class="ev-card-sub">Partagez ce lien si vous voulez que d\'autres membres de la famille fassent aussi une proposition.</p><a href="' + whatsappShareUrl(workspace.event_name) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp">Partager sur WhatsApp</a></div>';
     contentEl.innerHTML = html;
     contentEl.style.display = 'block';
     loadingEl.style.display = 'none';
@@ -89,14 +111,14 @@
         if (!payload.contributor_name) { errEl.textContent = 'Votre nom est requis.'; errEl.style.display = 'block'; return; }
         if (!payload.contributor_phone && !payload.contributor_email) { errEl.textContent = 'Indiquez au moins un telephone ou un email.'; errEl.style.display = 'block'; return; }
         if (!payload.suggestion && !payload.intended_amount_kmf && !payload.message) { errEl.textContent = 'Indiquez au moins une idee, un montant ou un message.'; errEl.style.display = 'block'; return; }
-        submitBtn.disabled = true; submitBtn.textContent = 'Envoi...';
+        submitBtn.disabled = true; submitBtn.textContent = 'Envoi de votre proposition...';
         try {
           const res = await fetch('/api/collective-workspaces/public/' + encodeURIComponent(getPublicToken()) + '/contributions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || ('Erreur ' + res.status)); }
-          okEl.innerHTML = 'Merci <strong>' + escHtml(payload.contributor_name) + '</strong> ! Votre idee a ete envoyee au createur du panier.';
-          okEl.style.display = 'block'; form.reset(); submitBtn.disabled = false; submitBtn.textContent = 'Envoyer mon idee';
+          okEl.innerHTML = 'Merci <strong>' + escHtml(payload.contributor_name) + '</strong> ! Votre proposition a bien ete envoyee a l\'organisateur.';
+          okEl.style.display = 'block'; form.reset(); submitBtn.disabled = false; submitBtn.textContent = 'Envoyer ma proposition';
         } catch (err) {
-          errEl.textContent = err.message || 'Erreur lors de l envoi.'; errEl.style.display = 'block'; submitBtn.disabled = false; submitBtn.textContent = 'Envoyer mon idee';
+          errEl.textContent = err.message || 'Erreur lors de l envoi.'; errEl.style.display = 'block'; submitBtn.disabled = false; submitBtn.textContent = 'Envoyer ma proposition';
         }
       });
     }

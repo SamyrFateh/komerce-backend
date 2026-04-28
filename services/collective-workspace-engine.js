@@ -842,6 +842,52 @@ async function getTokenInfo(rawToken) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// CANONICAL V2 PHASE DERIVATION
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Derive a user-facing V2 phase from legacy/internal statuses.
+ *
+ * We keep the current DB states for compatibility, but expose a clearer
+ * product phase for organizer/public UIs:
+ *   - draft
+ *   - collecting
+ *   - reviewing
+ *   - finalized
+ *   - payment_pending
+ *   - partially_paid
+ *   - paid
+ *   - order_created
+ *   - expired
+ *   - cancelled
+ */
+function deriveWorkspacePhase(workspace, opts = {}) {
+  const ws = workspace || {};
+  const items = Array.isArray(opts.items) ? opts.items : [];
+  const contributions = Array.isArray(opts.contributions) ? opts.contributions : [];
+  const session = opts.session || null;
+
+  if (ws.status === 'order_created') return 'order_created';
+  if (ws.status === 'paid') return 'paid';
+  if (ws.status === 'session_ended') return 'expired';
+  if (ws.status === 'cancelled') return 'cancelled';
+  if (ws.status === 'payment_pending') {
+    const secured = Number(session?.amount_secured_kmf) || 0;
+    const total = Number(session?.total_to_pay_kmf) || 0;
+    if (secured > 0 && total > 0 && secured < total) return 'partially_paid';
+    return 'payment_pending';
+  }
+
+  if (ws.status === 'conception') {
+    if (!items.length && !contributions.length) return 'draft';
+    if (contributions.length > 0) return 'reviewing';
+    return 'collecting';
+  }
+
+  return ws.status || 'draft';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // EXPORTS
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -859,4 +905,5 @@ module.exports = {
   finalizeWorkspace,
   resumeWorkspace,
   getTokenInfo,
+  deriveWorkspacePhase,
 };

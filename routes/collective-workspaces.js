@@ -95,12 +95,15 @@ router.get('/me/:creatorToken', async (req, res) => {
       `SELECT status, COUNT(*) as n FROM collective_payment_tokens WHERE session_id = $1 GROUP BY status`, [session.id]
     )).rows : [];
 
+    const phase = engine.deriveWorkspacePhase(ws, { items, contributions, session });
+
     res.json({
-      workspace: ws,
+      workspace: { ...ws, phase },
       items,
       contributions,
       session,
       tokens_summary: tokensCount,
+      phase,
     });
   } catch (err) {
     console.error('[CollectiveWS] me error:', err);
@@ -142,7 +145,11 @@ router.patch('/:creatorToken/items', async (req, res) => {
 router.post('/:creatorToken/finalization-review', async (req, res) => {
   try {
     const review = await engine.finalizationReview(req.params.creatorToken);
-    res.json(review);
+    res.json({
+      ...review,
+      phase: 'reviewing',
+      next_phase: review.can_finalize ? 'finalized' : 'reviewing',
+    });
   } catch (err) {
     const map = {
       workspace_not_found: [404, 'not_found', 'Espace introuvable'],
@@ -163,6 +170,7 @@ router.post('/:creatorToken/finalize', async (req, res) => {
     const result = await engine.finalizeWorkspace(req.params.creatorToken, { duration_hours });
     res.status(201).json({
       ...result,
+      phase: 'payment_pending',
       message: 'Le panier est figé. Les contributeurs peuvent maintenant payer leur part.',
     });
   } catch (err) {
@@ -183,7 +191,11 @@ router.post('/:creatorToken/finalize', async (req, res) => {
 router.post('/:creatorToken/resume', async (req, res) => {
   try {
     const r = await engine.resumeWorkspace(req.params.creatorToken);
-    res.json({ ...r, message: 'Le panier peut être repris. Vous pouvez ajuster les parts et relancer une session.' });
+    res.json({
+      ...r,
+      phase: 'reviewing',
+      message: 'Le panier peut être repris. Vous pouvez ajuster les parts et relancer une session.',
+    });
   } catch (err) {
     if (err.message === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (err.message === 'workspace_locked_by_order') return _err(res, 409, 'locked_by_order', 'Une commande a déjà été créée pour cet espace. La reprise n\'est plus possible.');
@@ -202,7 +214,16 @@ router.get('/public/:publicToken', async (req, res) => {
   try {
     const data = await engine.getWorkspaceByPublicToken(req.params.publicToken);
     if (!data) return _err(res, 404, 'not_found', 'Espace introuvable');
-    res.json(data);
+    const phase = engine.deriveWorkspacePhase(data.workspace, {
+      items: data.items,
+      contributions: data.contributions,
+      session: data.session,
+    });
+    res.json({
+      ...data,
+      workspace: { ...(data.workspace || {}), phase },
+      phase,
+    });
   } catch (err) {
     console.error('[CollectiveWS] public read error:', err);
     _err(res, 500, 'server_error', 'Lecture impossible');
@@ -220,6 +241,7 @@ router.post('/public/:publicToken/contributions', async (req, res) => {
     const c = await engine.addContribution(req.params.publicToken, body);
     res.status(201).json({
       contribution: c,
+      phase: 'reviewing',
       message: 'Votre intention a été enregistrée. Aucun paiement n\'est effectué maintenant.',
     });
   } catch (err) {
