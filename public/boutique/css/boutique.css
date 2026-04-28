@@ -2448,6 +2448,15 @@ body.cart-open{overflow:hidden}
     flex-shrink:0;font-weight:700;font-size:.96rem;
     padding-top:calc(10px + env(safe-area-inset-top));
   }
+  .k-order-header #k-order-title{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .k-order-header .ck-order-title-text{
+    white-space:nowrap;
+  }
   .k-order-body{
     flex:1;overflow-y:auto;padding:0 10px 4px;
   }
@@ -4107,6 +4116,13 @@ body.modal-open .k-bnav {
   -webkit-backdrop-filter:none;
 }
 .ck-modal-back-btn:active { transform: scale(0.97); }
+.ck-modal-back-btn--header{
+  color:rgba(255,255,255,.92);
+  font-size:12px;
+  font-weight:700;
+  margin:0;
+  padding:0;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */

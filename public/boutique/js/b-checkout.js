@@ -486,24 +486,20 @@ export function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-    dom.orderTitle.textContent = '🛒 Commander';
+    dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour au panier">← Panier</button><span class="ck-order-title-text">🛒 Commander</span>';
 
     const od = state.orderData;
     if (!od.fulfillment_zone) od.fulfillment_zone = 'comoros';
 
-    renderFulfillmentSelector(body, od, refreshFulfillment);
+    const headerBackBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
+    if (headerBackBtn) {
+      headerBackBtn.addEventListener('click', () => {
+        closeOrderModal();
+        setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
+      });
+    }
 
-    document.querySelectorAll('.ck-modal-back-btn').forEach(el => el.remove());
-    const backBtn = document.createElement('button');
-    backBtn.className = 'ck-modal-back-btn';
-    backBtn.type = 'button';
-    backBtn.setAttribute('aria-label', 'Retour au panier');
-    backBtn.textContent = '← Modifier le panier';
-    backBtn.addEventListener('click', () => {
-      closeOrderModal();
-      setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
-    });
-    body.appendChild(backBtn);
+    renderFulfillmentSelector(body, od, refreshFulfillment);
 
       body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
