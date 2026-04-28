@@ -211,8 +211,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
   }
 
   /**
-   * Configure la topbar sticky du modal (bouton ⚡, prix, badge stock).
-   * Sur mobile : bouton "Acheter" réduit à "⚡" pour ne pas écraser le prix.
+   * Configure la topbar sticky du modal (vignette, nom, prix, accès panier).
+   * Sur mobile, on garde la vue produit légère et on laisse le panier visible.
    */
   function setupEnrichedTopbar() {
     const modal = document.getElementById('k-modal');
@@ -236,7 +236,6 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
             <span class="k-topbar-price-promo u-hidden"></span>
           </div>
         </div>
-        <button class="k-topbar-buy" aria-label="Acheter">⚡ Acheter</button>
       `;
       // Insérer avant .k-modal-topbar-right
       const rightBar = topbar.querySelector('.k-modal-topbar-right');
@@ -245,12 +244,6 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       } else {
         topbar.appendChild(productEl);
       }
-
-      // Wire click sur Acheter
-      productEl.querySelector('.k-topbar-buy').addEventListener('click', () => {
-        const buyBtn = document.getElementById('k-buy-now-btn');
-        if (buyBtn) buyBtn.click();
-      });
 
       // Wire click sur thumbnail → scroll smooth vers le haut
       productEl.querySelector('.k-topbar-thumb').addEventListener('click', () => {

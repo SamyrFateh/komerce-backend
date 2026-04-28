@@ -4674,26 +4674,11 @@ body.cart-open #k-page-scroll {
   font-weight:700;
 }
 
-/* Bouton Acheter compact */
-.k-topbar-buy{
-  flex:0 0 auto;
-  height:34px;
-  padding:0 14px;
-  border-radius:17px;
-  background:linear-gradient(135deg, #e05a48 0%, #c53927 100%);
-  color:#fff;
-  font-size:13px;
-  font-weight:700;
-  display:flex;align-items:center;gap:4px;
-  box-shadow:0 2px 8px rgba(224,90,72,.3);
-  transition:transform .15s;
-  white-space:nowrap;
-}
-.k-topbar-buy:active{transform:scale(.95)}
-
-/* Le topbar-right se rétrécit quand en mode scrolled (pour laisser place au produit) */
-.k-modal.is-scrolled .k-modal-topbar-right .k-modal-cart-btn{
-  display:none;
+/* Le topbar-right reste visible : panier puis fermeture */
+.k-modal.is-scrolled .k-modal-topbar-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
 
@@ -5285,41 +5270,45 @@ button,
 /*  FIX 1.4 : Topbar enrichie compact mobile (évite tronquage)             */
 /* ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  /* Sur mobile, on cache le nom + description qui prennent trop de place,
-     on garde juste thumbnail + prix + bouton action */
   .k-modal.is-scrolled .k-modal-topbar-product-name {
     display: none !important;
   }
   .k-modal.is-scrolled .k-modal-topbar-product {
-    max-width: 60%;
+    max-width: calc(100% - 132px);
     gap: 6px;
   }
   .k-modal.is-scrolled .k-modal-topbar-product-price {
     font-size: 14px;
     font-weight: 800;
   }
-  .k-topbar-buy {
-    height: 30px !important;
-    padding: 0 10px !important;
-    font-size: 0 !important;
-    min-width: 30px;
-    flex-shrink: 0;
+  .k-modal.is-scrolled .k-modal-topbar-right{
+    gap: 4px;
   }
-  .k-topbar-buy::after {
-    content: '⚡';
-    font-size: 16px;
+  .k-modal.is-scrolled .k-modal-cart-btn .k-cart-avatar{
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .k-modal.is-scrolled .k-modal-close{
+    width: 40px;
+    height: 40px;
   }
 }
 
 @media (max-width: 360px) {
-  /* iPhone SE : encore plus compact */
   .k-modal.is-scrolled .k-modal-topbar-thumb {
     width: 32px !important;
     height: 32px !important;
   }
-  .k-modal.is-scrolled .k-modal-topbar-buy {
-    padding: 6px 10px;
-    min-width: 36px;
+  .k-modal.is-scrolled .k-modal-topbar-product {
+    max-width: calc(100% - 116px);
+  }
+  .k-modal.is-scrolled .k-modal-cart-btn .k-cart-avatar{
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .k-modal.is-scrolled .k-modal-close{
+    width: 36px;
+    height: 36px;
   }
 }
 
