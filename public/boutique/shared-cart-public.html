@@ -254,34 +254,23 @@
 
   <!-- PLEDGE FORM (event only) -->
   <div class="sc-pledge" id="sc-pledge-form" hidden>
-    <div class="sc-pledge-title">💛 Participer à l'événement</div>
+    <div class="sc-pledge-title">💛 Participer à ce panier</div>
 
     <div class="sc-pledge-field">
       <label>Ton prénom</label>
       <input id="pledge-name" type="text" placeholder="Naïma, Youssouf…" autocomplete="given-name"/>
     </div>
 
-    <div class="sc-pledge-modes">
-      <button class="sc-pledge-mode-btn active" data-mode="amount" onclick="selectMode('amount')">
-        💰 Montant libre
-      </button>
-      <button class="sc-pledge-mode-btn" data-mode="item" onclick="selectMode('item')">
-        🎁 Prendre un article
-      </button>
+    <div class="sc-pledge-field">
+      <label>Ton email <span style="color:#999">(reçu de paiement)</span></label>
+      <input id="pledge-email" type="email" placeholder="naima@example.com" autocomplete="email"/>
     </div>
 
-    <!-- Mode montant -->
+    <!-- Mode montant uniquement en V1 (la spec dit pas de parts d'articles) -->
     <div id="pledge-amount-section" class="sc-pledge-field">
       <label>Montant (KMF)</label>
-      <input id="pledge-amount" type="number" min="500" step="500" placeholder="ex: 5000"/>
-    </div>
-
-    <!-- Mode article -->
-    <div id="pledge-item-section" class="sc-pledge-field" hidden>
-      <label>Article à couvrir</label>
-      <select id="pledge-item-select">
-        <option value="">— Choisir un article —</option>
-      </select>
+      <input id="pledge-amount" type="number" min="2500" step="500" placeholder="ex: 5000"/>
+      <div style="font-size:12px;color:#999;margin-top:4px">Minimum : 2 500 KMF · paiement par carte</div>
     </div>
 
     <div class="sc-pledge-field">
@@ -290,7 +279,7 @@
     </div>
 
     <button class="sc-pledge-submit" id="pledge-submit-btn" onclick="submitPledge()">
-      💛 Confirmer ma participation
+      💛 Continuer vers le paiement
     </button>
   </div>
 
@@ -370,17 +359,58 @@
       return;
     }
     try {
-      const r = await fetch('/api/shares/' + encodeURIComponent(token));
+      /* Refresh 28/04/26 — Bascule de l'ancienne API /api/shares vers
+         la nouvelle /api/shared-carts/public/:token qui apporte :
+         - statut financier réel (basé sur paiements Stripe confirmés)
+         - vraies contributions payées (pas juste déclarées)
+         - protection privacy (prénom seulement, pas email/phone) */
+      const r = await fetch('/api/shared-carts/public/' + encodeURIComponent(token));
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         showError(j.error || 'Ce lien est introuvable ou a expiré.');
         return;
       }
-      shareData = await r.json();
+      const raw = await r.json();
+      shareData = adaptApiShape(raw, token);
       render(shareData);
     } catch(e) {
       showError('Impossible de charger le panier. Vérifiez votre connexion.');
     }
+  }
+
+  /* Refresh 28/04/26 — Adapte le shape de /api/shared-carts/public/:token
+     vers le shape interne historique (items[i].product, total_kmf, etc.).
+     Évite de réécrire toute la fonction render(). */
+  function adaptApiShape(raw, token) {
+    const cart = raw.cart || {};
+    const items = (raw.items || []).map(it => ({
+      qty: it.quantity,
+      product: {
+        id:        null, /* le backend ne l'expose plus pour anti-scraping */
+        name:      it.name,
+        price_kmf: it.unit_price_kmf,
+        images:    it.image ? [it.image] : [],
+      },
+    }));
+    const contribs = (raw.contributions || []).map(c => ({
+      contributor_name: c.first_name,
+      message:          c.message,
+      amount_kmf:       c.amount_kmf,
+      product_id:       null, /* l'API publique n'expose pas l'item ciblé */
+    }));
+    return {
+      token:           token,
+      type:            'event',         /* la V1 panier familial = toujours "event" */
+      event_label:     cart.title || cart.beneficiary_name_snapshot || 'Panier famille',
+      sharer_name:     cart.beneficiary_name_snapshot,
+      expires_at:      cart.expires_at,
+      status:          (cart.status === 'active' || cart.status === 'partially_funded') ? 'active' : cart.status,
+      total_kmf:       cart.total_kmf_snapshot,
+      contributed_kmf: cart.contributed_kmf,
+      remaining_kmf:   cart.remaining_kmf,
+      items:           items,
+      contributions:   contribs,
+    };
   }
 
   function showError(msg) {
@@ -423,7 +453,8 @@
       /* Pledge form */
       if (d.status === 'active') {
         document.getElementById('sc-pledge-form').hidden = false;
-        buildItemSelect(d.items || []);
+        /* Refresh 28/04/26 — Le mode "prendre un article" est retiré en V1
+           (la spec dit montant libre uniquement). buildItemSelect non appelé. */
       }
 
       /* Remaining */
@@ -514,49 +545,65 @@
   };
 
   /* ── submit pledge ── */
+  /* Refresh 28/04/26 — Bascule vers /api/shared-carts/public/:token/contributions
+     qui crée une session Stripe Checkout. On redirige l'user vers Stripe
+     plutôt que d'afficher un toast — le paiement est réel maintenant. */
   window.submitPledge = async function() {
     const name = document.getElementById('pledge-name').value.trim();
     if (!name) { toast('Entre ton prénom 👋', 'error'); return; }
 
-    const body = { contributor_name: name, mode: pledgeMode };
+    const email = document.getElementById('pledge-email').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast('Email invalide', 'error'); return;
+    }
 
-    if (pledgeMode === 'amount') {
-      const amt = parseInt(document.getElementById('pledge-amount').value);
-      if (!amt || amt < 500) { toast('Montant minimum : 500 KMF', 'error'); return; }
-      body.amount_kmf = amt;
-    } else {
-      const sel = document.getElementById('pledge-item-select');
-      if (!sel.value) { toast('Choisis un article', 'error'); return; }
-      body.product_id = sel.value;
+    const amt = parseInt(document.getElementById('pledge-amount').value);
+    if (!amt || amt < 2500) { toast('Montant minimum : 2 500 KMF', 'error'); return; }
+
+    const remaining = shareData.remaining_kmf || 0;
+    if (amt > remaining) {
+      toast(`Il reste seulement ${fmt(remaining)} à couvrir`, 'error'); return;
     }
 
     const msg = document.getElementById('pledge-message').value.trim();
-    if (msg) body.message = msg;
+
+    const body = {
+      contributor_name:  name,
+      contributor_email: email,
+      amount_kmf:        amt,
+      message:           msg || undefined,
+    };
 
     const btn = document.getElementById('pledge-submit-btn');
     btn.disabled = true;
-    btn.textContent = '⏳ En cours…';
+    btn.textContent = '⏳ Préparation du paiement…';
 
     try {
       const token = shareData.token || getToken();
-      const r = await fetch('/api/shares/' + encodeURIComponent(token) + '/contributions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      const r = await fetch(
+        '/api/shared-carts/public/' + encodeURIComponent(token) + '/contributions',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }
+      );
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j.error || 'Erreur');
       }
-      toast('🎉 Merci ' + name + ' !', 'success');
-      btn.textContent = '✓ Contribution enregistrée !';
-      btn.style.background = 'var(--green)';
-      // Recharger pour mettre à jour les totaux
-      setTimeout(() => load(), 1500);
+      const result = await r.json();
+      if (!result.checkout_url) {
+        throw new Error('URL de paiement manquante');
+      }
+      btn.textContent = '✓ Redirection vers le paiement…';
+      /* Stripe gère la suite : paiement, success page, webhook qui marque
+         la contribution paid, recalcul du panier. */
+      window.location.href = result.checkout_url;
     } catch(e) {
       toast('Erreur : ' + e.message, 'error');
       btn.disabled = false;
-      btn.textContent = '💛 Confirmer ma participation';
+      btn.textContent = '💛 Continuer vers le paiement';
     }
   };
 

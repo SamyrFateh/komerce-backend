@@ -194,6 +194,167 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
   });
 }
 
+// ───────────────────────────────────────────────────────────────────────
+// Refresh 28/04/26 — Variante "from cart items"
+// Le panier mobile boutique vit en localStorage côté client (pas de basket
+// DB sync). Cette fonction crée un shared_cart à partir des items envoyés
+// directement.
+// L'authentification est gérée en amont via authenticateOrCreateGuest :
+// le user_id est toujours présent (créé à la volée à partir du phone du
+// bénéficiaire si besoin). Donc pas besoin de creator_token séparé —
+// l'auth Komerce existante (cookie httpOnly) suffit.
+// ───────────────────────────────────────────────────────────────────────
+
+/**
+ * Crée un panier partagé directement depuis une liste d'items
+ * (sans passer par baskets DB).
+ *
+ * @param {string} userId — bénéficiaire (peut être un guest fraichement créé)
+ * @param {Array} cartItems — [{ product_id, quantity }]
+ * @param {Object} options — { title, message, expirationDays, deliveryRelayId }
+ * @returns {Object} { sharedCart, items, token }
+ */
+async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
+  return withTransaction(async (client) => {
+    if (!userId) throw new Error('user_id requis');
+
+    // 1. Vérifier limite paniers actifs
+    const { rows: activeCount } = await client.query(
+      `SELECT COUNT(*)::int AS n FROM shared_carts
+        WHERE beneficiary_user_id = $1
+          AND status IN ('active', 'partially_funded', 'fully_funded')`,
+      [userId]
+    );
+    if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {
+      throw new Error(`Limite atteinte : ${CONFIG.MAX_ACTIVE_CARTS_PER_USER} paniers partagés actifs maximum`);
+    }
+
+    // 2. Validation items
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new Error('Le panier est vide, impossible de partager');
+    }
+
+    // 3. Charger les produits depuis la DB (source de vérité prix —
+    //    on ne fait JAMAIS confiance aux prix envoyés par le client)
+    const productIds = [...new Set(cartItems.map(i => i.product_id).filter(Boolean))];
+    if (productIds.length === 0) throw new Error('Aucun produit valide dans le panier');
+
+    const { rows: products } = await client.query(
+      `SELECT id, name, image_url, category, price_kmf, promo_price_kmf, is_active
+         FROM products
+        WHERE id = ANY($1)`,
+      [productIds]
+    );
+    const productsById = {};
+    products.forEach(p => { productsById[p.id] = p; });
+
+    // 4. Reconstruire les items snapshot avec les vrais prix DB
+    const enrichedItems = [];
+    for (const item of cartItems) {
+      const p = productsById[item.product_id];
+      if (!p || !p.is_active) continue;
+      const qty = r(item.quantity || 1);
+      if (qty <= 0) continue;
+      const unitPrice = r(p.promo_price_kmf || p.price_kmf || 0);
+      if (unitPrice <= 0) continue;
+      enrichedItems.push({
+        product_id: p.id,
+        name: p.name,
+        image_url: p.image_url,
+        category: p.category,
+        quantity: qty,
+        unit_price_kmf: unitPrice,
+        line_total_kmf: unitPrice * qty,
+      });
+    }
+
+    if (enrichedItems.length === 0) {
+      throw new Error('Aucun produit valide après vérification serveur');
+    }
+
+    // 5. Total snapshot
+    const totalKmf = enrichedItems.reduce((s, it) => s + it.line_total_kmf, 0);
+    if (totalKmf <= 0) throw new Error('Total panier invalide');
+
+    // 6. Récupérer infos bénéficiaire
+    const { rows: userRows } = await client.query(
+      `SELECT full_name, phone FROM users WHERE id = $1`, [userId]
+    );
+    if (!userRows.length) throw new Error('Utilisateur introuvable');
+    const user = userRows[0];
+
+    // 7. Générer token public (collision check)
+    let token;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      token = generateToken();
+      const { rows } = await client.query(
+        `SELECT 1 FROM shared_carts WHERE token = $1 LIMIT 1`, [token]
+      );
+      if (!rows.length) break;
+      if (attempt === 4) throw new Error('Impossible de générer un token unique');
+    }
+
+    // 8. Insérer le shared_cart (source_basket_id = NULL : le panier vient
+    //    du localStorage, pas d'une table basket)
+    const expirationDays = Math.max(1, Math.min(90, options.expirationDays || CONFIG.DEFAULT_EXPIRATION_DAYS));
+    const { rows: cartRows } = await client.query(
+      `INSERT INTO shared_carts (
+         token, beneficiary_user_id,
+         beneficiary_phone_snapshot, beneficiary_name_snapshot,
+         source_basket_id, title, message,
+         currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
+         delivery_relay_id, status, expires_at
+       ) VALUES (
+         $1, $2, $3, $4, NULL, $5, $6,
+         'KMF', $7, 0, $7,
+         $8, 'active',
+         NOW() + ($9 || ' days')::INTERVAL
+       ) RETURNING *`,
+      [
+        token, userId,
+        user.phone, user.full_name,
+        options.title || null, options.message || null,
+        totalKmf,
+        options.deliveryRelayId || null,
+        String(expirationDays),
+      ]
+    );
+    const sharedCart = cartRows[0];
+
+    // 9. Snapshot des items
+    const insertedItems = [];
+    for (const it of enrichedItems) {
+      const { rows: itemRows } = await client.query(
+        `INSERT INTO shared_cart_items (
+           shared_cart_id, product_id,
+           product_name_snapshot, product_image_snapshot, product_category_snapshot,
+           quantity, unit_price_kmf_snapshot, line_total_kmf_snapshot
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          sharedCart.id, it.product_id,
+          it.name, it.image_url, it.category,
+          it.quantity, it.unit_price_kmf, it.line_total_kmf,
+        ]
+      );
+      insertedItems.push(itemRows[0]);
+    }
+
+    // 10. Audit
+    await addEvent(client, sharedCart.id, 'shared_cart_created',
+      { type: 'user', id: userId },
+      {
+        total_kmf: totalKmf,
+        items_count: enrichedItems.length,
+        expires_at: sharedCart.expires_at,
+        source: 'cart_items',  // distingue from-basket vs from-cart-items
+      }
+    );
+
+    return { sharedCart, items: insertedItems, token };
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // 2. LECTURE
 // ═══════════════════════════════════════════════════════════════════════
@@ -728,6 +889,7 @@ async function expireOldCarts() {
 module.exports = {
   // API principale
   createSharedCartFromBasket,
+  createSharedCartFromCartItems,         // Refresh 28/04/26
   getSharedCartForPublic,
   getSharedCartForOwner,
   listMySharedCarts,

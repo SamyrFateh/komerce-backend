@@ -34,6 +34,7 @@ const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -226,6 +227,54 @@ async function stripeWebhookHandler(req, res) {
 // ═══════════════════════════════════════════════════════════════════════
 // ── BÉNÉFICIAIRE AUTHENTIFIÉ ─────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
+
+// Refresh 28/04/26 — Création depuis les items du localStorage boutique.
+// Le panier mobile boutique n'est PAS sync avec une table baskets DB —
+// il vit en localStorage. Cette route accepte les items en clair et
+// utilise authenticateOrCreateGuest pour créer un user à la volée si
+// l'utilisateur n'est pas connecté (sur la base de tracking_phone).
+//
+// Différence avec /from-basket : pas besoin de basket_id, juste les items.
+// La route ré-vérifie les prix côté DB (jamais confiance au client).
+router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next) => {
+  try {
+    const {
+      cart_items, title, message, expiration_days, delivery_relay_id,
+    } = req.body || {};
+
+    if (!Array.isArray(cart_items) || cart_items.length === 0) {
+      return res.status(400).json({ error: 'cart_items requis (panier vide)' });
+    }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        error: 'Authentification requise. Indiquez votre numéro de téléphone (tracking_phone) pour créer un panier famille.',
+      });
+    }
+
+    const result = await engine.createSharedCartFromCartItems(req.user.id, cart_items, {
+      title, message,
+      expirationDays: expiration_days,
+      deliveryRelayId: delivery_relay_id,
+    });
+
+    res.json({
+      shared_cart_id: result.sharedCart.id,
+      token: result.token,
+      share_url: `${PUBLIC_BASE_URL}/cart/shared/${result.token}`,
+      total_kmf: result.sharedCart.total_kmf_snapshot,
+      expires_at: result.sharedCart.expires_at,
+      items_count: result.items.length,
+    });
+  } catch (err) {
+    if (err.message.includes('Limite atteinte') ||
+        err.message.includes('vide') ||
+        err.message.includes('valide') ||
+        err.message.includes('introuvable')) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
 
 router.post('/from-basket', authenticate, async (req, res, next) => {
   try {

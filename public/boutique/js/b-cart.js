@@ -808,14 +808,19 @@ function quickRemove(productId, btnEl) {
   function _showEventForm() {
     var sheet = document.getElementById('k-share-sheet');
     if (!sheet) return;
-    var html = '<div class="k-share-title">&#127881; &#201;v&#233;nement collectif</div>'
-      + '<div class="k-share-sub">Les invit&#233;s pourront contribuer article par article</div>'
+    /* Refresh 28/04/26 — Vocabulaire spec V1 : "Panier famille" + ajout
+       champ téléphone obligatoire (utilisé par authenticateOrCreateGuest
+       pour créer le user à la volée si l'utilisateur n'est pas connecté). */
+    var html = '<div class="k-share-title">&#127881; Faire participer ma famille</div>'
+      + '<div class="k-share-sub">Cr&#233;e un lien pour que tes proches contribuent &#224; ce panier</div>'
       + '<div class="k-event-form">'
-        + '<label>Nom de l&#x27;&#233;v&#233;nement</label>'
-        + '<input id="k-event-label" type="text" placeholder="ex: Mariage de Samyr" maxlength="80"/>'
+        + '<label>Nom du panier <span style="color:#999">(optionnel)</span></label>'
+        + '<input id="k-event-label" type="text" placeholder="ex: Cadeau Maman, Cousins, Mariage..." maxlength="80"/>'
         + '<label>Ton pr&#233;nom</label>'
         + '<input id="k-event-sharer" type="text" placeholder="ex: Fatima" maxlength="60"/>'
-        + '<button class="k-event-go" id="k-event-go-btn">Cr&#233;er le lien &#127881;</button>'
+        + '<label>Ton num&#233;ro <span style="color:#999">(pour suivre les contributions)</span></label>'
+        + '<input id="k-event-phone" type="tel" placeholder="ex: +269..." maxlength="20"/>'
+        + '<button class="k-event-go" id="k-event-go-btn">Cr&#233;er le lien famille &#127881;</button>'
       + '</div>'
       + '<button class="k-share-cancel" id="k-share-back-btn">&#8592; Retour</button>';
     sheet.innerHTML = html;
@@ -853,21 +858,67 @@ function quickRemove(productId, btnEl) {
  * Exécute le partage événement collectif (mariage, fête…).
  */
   async function _doEventShare() {
+    /* Refresh 28/04/26 — Bascule de l'ancienne route /api/shares vers
+       la nouvelle chaîne /api/shared-carts/from-cart-items qui apporte :
+       - paiement Stripe réel (vs déclaratif sur l'ancienne)
+       - idempotence et transactions
+       - conversion automatique en order Komerce
+       - compatible "paiement mixte cash relais" (mixed_shared_cart_cash) */
+
     var labelEl  = document.getElementById('k-event-label');
     var sharerEl = document.getElementById('k-event-sharer');
+    var phoneEl  = document.getElementById('k-event-phone');
     var eventLabel = labelEl  ? labelEl.value.trim()  : '';
     var sharerName = sharerEl ? sharerEl.value.trim() : '';
-    if (!eventLabel) { showToast('Donne un nom a l&#x27;evenement', 'error'); return; }
+    var phone      = phoneEl  ? phoneEl.value.trim()  : '';
+
+    /* Phone obligatoire : c'est lui qui sert à authenticateOrCreateGuest
+       pour rattacher le panier à un user (existant ou créé à la volée). */
+    if (!phone) {
+      showToast('Ton num&#233;ro est requis pour cr&#233;er le panier famille', 'error');
+      return;
+    }
+
     var btn = document.getElementById('k-event-go-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Creation...'; }
-    _closeShareModal();
-    showToast('Creation de l&#x27;evenement...', 'info');
-    var cartURL;
+    if (btn) { btn.disabled = true; btn.textContent = 'Cr&#233;ation...'; }
+
+    /* Construire le payload. Le backend re-vérifie tous les prix DB :
+       on n'envoie que product_id + quantity, jamais de prix. */
+    var payload = {
+      cart_items: state.cart.map(function(item) {
+        return {
+          product_id: item.product.id,
+          quantity:   item.qty,
+        };
+      }),
+      title:            eventLabel || null,
+      message:          sharerName ? ('De la part de ' + sharerName) : null,
+      tracking_phone:   phone,    /* lu par authenticateOrCreateGuest */
+      recipient_phone:  phone,    /* le bénéficiaire = créateur en V1 */
+    };
+
+    var response;
     try {
-      cartURL = await buildCartShareURL({ type: 'event', event_label: eventLabel, sharer_name: sharerName || null });
-    } catch(e) { cartURL = _buildFallbackCartURL(); }
-    var lines = ['&#127881; *' + eventLabel + '*', '--------------------', ''];
-    lines.push('Voici la liste des cadeaux - contribue a ce qui te convient !', '');
+      response = await apiPost('/api/shared-carts/from-cart-items', payload);
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Cr&#233;er le lien famille &#127881;'; }
+      var msg = (err && err.message) ? err.message : 'Erreur lors de la cr&#233;ation';
+      showToast(msg, 'error');
+      return;
+    }
+
+    if (!response || !response.share_url) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Cr&#233;er le lien famille &#127881;'; }
+      showToast('R&#233;ponse serveur invalide', 'error');
+      return;
+    }
+
+    _closeShareModal();
+
+    /* Composer le message WhatsApp. On garde la mise en forme actuelle qui
+       fonctionne bien : titre, liste articles, total, lien, signature. */
+    var lines = ['&#127881; *' + (eventLabel || 'Panier famille') + '*', '--------------------', ''];
+    lines.push('Aide-moi &#224; financer ce panier - participe selon tes moyens !', '');
     state.cart.forEach(function(item, i) {
       var name = item.product.name || 'Produit';
       var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
@@ -877,10 +928,14 @@ function quickRemove(productId, btnEl) {
       lines.push(line);
     });
     lines.push('', '--------------------');
-    lines.push('Total : ' + fmt(cartTotal(), 'KMF'), '');
-    lines.push('Voir et contribuer :', cartURL);
-    if (sharerName) lines.push('Merci de la part de ' + sharerName);
+    lines.push('Total : ' + fmt(response.total_kmf || cartTotal(), 'KMF'), '');
+    lines.push('Voir et participer :', response.share_url);
+    if (sharerName) lines.push('', 'Merci de la part de ' + sharerName + ' &#10084;&#65039;');
+
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+
+    /* Toast de confirmation + invitation à consulter ses paniers */
+    showToast('Panier famille cr&#233;&#233; - lien envoy&#233; sur WhatsApp', 'success');
   }
 
   /**
