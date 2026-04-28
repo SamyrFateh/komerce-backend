@@ -26,6 +26,7 @@ CT.platform = {
 
   /* ─── ROLES ──────────────────────────────────────────────────── */
   ROLES: {
+    super_admin: { label: 'Super Admin',    level: 110, shells: ['ct','bo'], canConfig: true  },
     founder:  { label: 'Fondateur',      level: 100, shells: ['ct','bo'], canConfig: true  },
     admin:    { label: 'Administrateur', level: 90,  shells: ['ct','bo'], canConfig: true  },
     finance:  { label: 'Finance',        level: 50,  shells: ['ct','bo'], canConfig: false },
@@ -452,13 +453,25 @@ CT.platform = {
 
   resolveRole: function(user) {
     if (!user) return 'founder';
-    var r = user.role || 'founder';
+    var raw = String(user.role || 'founder').trim().toLowerCase();
+    var aliases = {
+      superadmin: 'super_admin',
+      'super-admin': 'super_admin',
+      founder: 'founder',
+      admin: 'admin',
+      finance: 'finance',
+      sourcing: 'sourcing',
+      hub: 'hub',
+      relais: 'relais',
+      support: 'support'
+    };
+    var r = aliases[raw] || raw;
     return CT.platform.ROLES[r] ? r : 'founder';
   },
 
   getShellsForRole: function(role) {
     var r = CT.platform.ROLES[role || 'founder'];
-    return r ? r.shells.slice() : ['bo'];
+    return r ? r.shells.slice() : ['ct', 'bo'];
   },
 
   canAccessShell: function(shell, role) {
@@ -467,9 +480,17 @@ CT.platform = {
 
   /* Return views for a given shell + role, ordered by section */
   getViewsForShell: function(shell, role) {
-    return CT.platform.VIEWS.filter(function(v) {
+    var views = CT.platform.VIEWS.filter(function(v) {
       return v.shell === shell && v.roles.indexOf(role) !== -1;
     });
+    if (shell === 'ct' && CT.platform.canAccess('pricing', role)) {
+      var hasPricing = views.some(function(v) { return v.id === 'pricing'; });
+      if (!hasPricing) {
+        var pricingView = CT.platform.getView('pricing');
+        if (pricingView) views.push(pricingView);
+      }
+    }
+    return views;
   },
 
   /* Return ordered sections that have ≥1 visible view */
