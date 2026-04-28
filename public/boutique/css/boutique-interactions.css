@@ -18,10 +18,6 @@ body.modal-open .k-bnav {
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Carrousel produit sur cartes grille (Shein-like) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
-.k-card-img-wrap {
-  position: relative;
-  overflow: hidden;
-}
 .k-card-carousel {
   display: flex;
   flex-wrap: nowrap;
