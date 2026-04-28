@@ -37,9 +37,11 @@ const _cc = {
   loading: false, components: [],
   grouped: { landed_relay: {}, business: {}, exceptional: {} },
   meta: null,
+  searchTerm: '',
   filterFamily: 'all', filterChannel: '', filterIsland: '',
   filterScope: '', filterAllocation: '',  // Sprint UX : nouveaux filtres expert
   showInactive: false, showExceptional: false,
+  collapsedCats: {},
   drawerOpen: false, drawerMode: null, drawerForm: null, drawerEvents: [],
 };
 
@@ -138,7 +140,8 @@ function _ccInjectStyles() {
     .cc-btn-sm { padding:4px 10px; font-size:0.75rem; }
     .cc-btn-danger { background:#fff; color:#dc2626; border-color:#fecaca; }
     .cc-btn-danger:hover { background:#fef2f2; }
-    .cc-family { margin-bottom:24px; }
+    .cc-families-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+    .cc-family { margin-bottom:8px; }
     .cc-family-head { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:8px; color:#fff; font-weight:700; }
     .cc-family-emoji { font-size:1.4rem; }
     .cc-family-title { font-size:1.05rem; font-weight:800; }
@@ -150,6 +153,9 @@ function _ccInjectStyles() {
     .cc-category-emoji { font-size:1.1rem; }
     .cc-category-title { font-size:0.92rem; font-weight:700; flex:1; }
     .cc-category-stat { font-size:0.78rem; color:#64748b; }
+    .cc-category-caret { font-size:0.78rem; color:#64748b; }
+    .cc-category-body { display:block; }
+    .cc-category.collapsed .cc-category-body { display:none; }
     .cc-comp { display:grid; grid-template-columns:1fr auto auto auto auto; gap:12px; align-items:center; padding:10px 14px; border-bottom:1px solid #f1f5f9; }
     .cc-comp:last-child { border-bottom:none; }
     .cc-comp:hover { background:#f8fafc; }
@@ -200,6 +206,7 @@ function _ccInjectStyles() {
     .cc-event { font-size:0.78rem; color:#64748b; padding:5px 0; border-bottom:1px solid #e2e8f0; }
     .cc-event:last-child { border-bottom:none; }
     .cc-event-type { font-weight:600; color:#1e293b; }
+    @media (max-width: 980px) { .cc-families-grid { grid-template-columns:1fr; } }
   `;
   document.head.appendChild(s);
 }
@@ -264,6 +271,7 @@ function _ccRenderHTML(container) {
   html += '</div></div>';
 
   html += '<div class="cc-tools">';
+  html += '<label>Recherche :</label><input class="cc-input" type="search" data-filter="search" value="' + _ccEsc(_cc.searchTerm) + '" placeholder="clé, libellé, scope…">';
   html += '<label>Famille :</label><select class="cc-select" data-filter="family">';
   html += '<option value="all"' + (_cc.filterFamily === 'all' ? ' selected' : '') + '>Toutes</option>';
   ['landed_relay', 'business', 'exceptional'].forEach(f => {
@@ -305,10 +313,12 @@ function _ccRenderHTML(container) {
   html += '<button class="cc-btn cc-btn-primary" data-act="open-create">+ Nouveau composant</button>';
   html += '</div>';
 
+  html += '<div class="cc-families-grid">';
   ['landed_relay', 'business', 'exceptional'].forEach(family => {
     if (_cc.filterFamily !== 'all' && _cc.filterFamily !== family) return;
     html += _ccRenderFamily(family);
   });
+  html += '</div>';
 
   html += '</div>';
   html += _ccRenderDrawer();
@@ -319,7 +329,12 @@ function _ccRenderHTML(container) {
 function _ccRenderFamily(family) {
   const fmeta = FAMILY_LABELS[family];
   const cats = _cc.grouped[family] || {};
-  const totalComps = Object.values(cats).reduce((s, arr) => s + arr.length, 0);
+  const filteredCats = {};
+  Object.keys(cats).forEach(catKey => {
+    const filtered = _ccFilterComponents(cats[catKey]);
+    if (filtered.length) filteredCats[catKey] = filtered;
+  });
+  const totalComps = Object.values(filteredCats).reduce((s, arr) => s + arr.length, 0);
 
   let html = '<div class="cc-family">';
   html += '<div class="cc-family-head" style="background:' + fmeta.color + ';">';
@@ -333,9 +348,9 @@ function _ccRenderFamily(family) {
   if (!totalComps) {
     html += '<div class="cc-empty">Aucun composant dans cette famille pour les filtres actuels.</div>';
   } else {
-    const orderedCats = (_cc.meta?.categories?.[family]) || Object.keys(cats);
+    const orderedCats = (_cc.meta?.categories?.[family]) || Object.keys(filteredCats);
     orderedCats.forEach(catKey => {
-      const comps = cats[catKey];
+      const comps = filteredCats[catKey];
       if (!comps || !comps.length) return;
       html += _ccRenderCategory(catKey, comps);
     });
@@ -347,16 +362,37 @@ function _ccRenderFamily(family) {
 function _ccRenderCategory(catKey, components) {
   const cmeta = CATEGORY_LABELS[catKey] || { emoji: '❔', label: catKey };
   const activeCount = components.filter(c => c.is_active).length;
+  const catStateKey = catKey;
+  const isCollapsed = _cc.collapsedCats[catStateKey] === true;
+  const sorted = components.slice().sort((a, b) => {
+    if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
+    return String(a.label || '').localeCompare(String(b.label || ''), 'fr');
+  });
 
-  let html = '<div class="cc-category">';
-  html += '<div class="cc-category-head">';
+  let html = '<div class="cc-category' + (isCollapsed ? ' collapsed' : '') + '">';
+  html += '<div class="cc-category-head" data-act="toggle-cat" data-cat="' + _ccEsc(catStateKey) + '" role="button">';
   html += '<span class="cc-category-emoji">' + cmeta.emoji + '</span>';
   html += '<span class="cc-category-title">' + _ccEsc(cmeta.label) + '</span>';
   html += '<span class="cc-category-stat">' + activeCount + '/' + components.length + ' actifs</span>';
+  html += '<span class="cc-category-caret">' + (isCollapsed ? '▶' : '▼') + '</span>';
   html += '</div>';
-  components.forEach(c => { html += _ccRenderComponent(c); });
+  html += '<div class="cc-category-body">';
+  sorted.forEach(c => { html += _ccRenderComponent(c); });
+  html += '</div>';
   html += '</div>';
   return html;
+}
+
+function _ccFilterComponents(components) {
+  const q = String(_cc.searchTerm || '').trim().toLowerCase();
+  if (!q) return components.slice();
+  return components.filter(c => {
+    const hay = [
+      c.label, c.key, c.description, c.scope, c.scope_value,
+      c.channel, c.island, c.source, c.confidence
+    ].filter(Boolean).join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
 }
 
 function _ccRenderComponent(c) {
@@ -536,6 +572,7 @@ function _ccBindEvents(container) {
     const tgt = e.target;
     if (tgt.dataset.filter) {
       const f = tgt.dataset.filter;
+      if (f === 'search') _cc.searchTerm = tgt.value;
       if (f === 'family') _cc.filterFamily = tgt.value;
       else if (f === 'channel') _cc.filterChannel = tgt.value;
       else if (f === 'island') _cc.filterIsland = tgt.value;
@@ -568,6 +605,13 @@ function _ccBindEvents(container) {
     if (act === 'back-to-pricing') {
       e.preventDefault();
       window.location.hash = '#pricing';
+      return;
+    }
+
+    if (act === 'toggle-cat') {
+      const cat = t.dataset.cat;
+      _cc.collapsedCats[cat] = !_cc.collapsedCats[cat];
+      _ccRenderHTML(container);
       return;
     }
 
