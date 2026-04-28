@@ -488,6 +488,12 @@ export function renderCheckout() {
     });
     body.appendChild(backBtn);
 
+    const sMode = document.createElement('div');
+    sMode.className = 'ck-label';
+    sMode.textContent = 'Où récupère-t-on ?';
+    body.appendChild(sMode);
+    renderFulfillmentSelector(body, od, refreshFulfillment);
+
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
     s1.className = 'ck-label';
@@ -495,12 +501,6 @@ export function renderCheckout() {
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
-
-    const sMode = document.createElement('div');
-    sMode.className = 'ck-label';
-    sMode.textContent = 'Où récupère-t-on ?';
-    body.appendChild(sMode);
-    renderFulfillmentSelector(body, od, refreshFulfillment);
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
