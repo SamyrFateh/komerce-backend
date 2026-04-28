@@ -1,8 +1,8 @@
 /**
  * @module b-checkout
- * @brief §11 CHECKOUT — Commande, paiement, wallet, order success
+ * @brief Â§11 CHECKOUT â€” Commande, paiement, wallet, order success
  *
- * Extrait de boutique.js — Option C Phase 8
+ * Extrait de boutique.js â€” Option C Phase 8
  */
 
 import { bus }           from './b-bus.js';
@@ -15,6 +15,20 @@ import { openCart, closeCart, renderCart }  from './b-cart.js';
 let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
 let _stripeCard = null;
 let _stripeElements = null;
+
+const PHONE_COUNTRIES = [
+  { code: '+269', flag: 'ðŸ‡°ðŸ‡²', name: 'Comores', digits: 7, max: 7, ph: '321 12 34' },
+  { code: '+33',  flag: 'ðŸ‡«ðŸ‡·', name: 'France', digits: 9, max: 10, ph: '06 12 34 56 78' },
+  { code: '+262', flag: 'ðŸ‡·ðŸ‡ª', name: 'RÃ©union', digits: 9, max: 10, ph: '0692 12 34 56' },
+  { code: '+32',  flag: 'ðŸ‡§ðŸ‡ª', name: 'Belgique', digits: 9, max: 10, ph: '0470 12 34 56' },
+  { code: '+41',  flag: 'ðŸ‡¨ðŸ‡­', name: 'Suisse', digits: 9, max: 10, ph: '076 123 45 67' },
+  { code: '+44',  flag: 'ðŸ‡¬ðŸ‡§', name: 'Royaume-Uni', digits: 10, max: 11, ph: '07911 123456' },
+  { code: '+1',   flag: 'ðŸ‡ºðŸ‡¸', name: 'USA / Canada', digits: 10, max: 10, ph: '202 555 0147' },
+  { code: '+971', flag: 'ðŸ‡¦ðŸ‡ª', name: 'Ã‰mirats', digits: 9, max: 10, ph: '050 123 4567' },
+  { code: '+966', flag: 'ðŸ‡¸ðŸ‡¦', name: 'Arabie Saoudite', digits: 9, max: 10, ph: '055 123 4567' },
+  { code: '+60',  flag: 'ðŸ‡²ðŸ‡¾', name: 'Malaisie', digits: 9, max: 10, ph: '012 345 6789' },
+  { code: '+212', flag: 'ðŸ‡²ðŸ‡¦', name: 'Maroc', digits: 9, max: 10, ph: '0612 345678' },
+];
 
 async function ensureStripe() {
   if (_stripe) return _stripe;
@@ -38,13 +52,13 @@ async function ensureStripe() {
 
 
 
-  // ║  §11 · CHECKOUT — Commande, paiement, wallet, order success      ║
-  // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-checkout.js
+  // â•‘  Â§11 Â· CHECKOUT â€” Commande, paiement, wallet, order success      â•‘
+  // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  //  â†’ Futur module: b-checkout.js
 
   /**
-   * @brief checkoutCart — Lance le flow de commande depuis le panier
-   * Prérequis : panier non vide (sinon toast error)
+   * @brief checkoutCart â€” Lance le flow de commande depuis le panier
+   * PrÃ©requis : panier non vide (sinon toast error)
    * Ferme le tiroir panier, initialise state.orderData, affiche renderCheckout()
    */
 export function digitsOnly(v) {
@@ -65,7 +79,7 @@ export function normalizeLocal(code, digits) {
 export function prettifyLocal(raw, country) {
     const d = digitsOnly(raw).slice(0, country.max);
     if (!d) return '';
-    // formatage léger visuel seulement
+    // formatage lÃ©ger visuel seulement
     if (country.code === '+33' || country.code === '+262' || country.code === '+32' || country.code === '+41') {
       return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
     }
@@ -91,7 +105,7 @@ export function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
-    renderCheckout();
+    renderCheckoutCompact();
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
@@ -103,7 +117,7 @@ export function checkoutCart() {
   }
 
   /**
-   * Ferme et détruit le modal de confirmation de commande.
+   * Ferme et dÃ©truit le modal de confirmation de commande.
    */
 export function closeOrderModal() {
     dom.orderModal.classList.remove('open');
@@ -120,8 +134,8 @@ export function closeOrderModal() {
   }
 
   /**
-   * Rend l'interface complète de passage de commande (récap + formulaire contact + paiement).
-   * Gère les étapes : validation panier → saisie infos → confirmation.
+   * Rend l'interface complÃ¨te de passage de commande (rÃ©cap + formulaire contact + paiement).
+   * GÃ¨re les Ã©tapes : validation panier â†’ saisie infos â†’ confirmation.
    */
 async function _loadRelaisSection(container, od) {
   try {
@@ -129,21 +143,53 @@ async function _loadRelaisSection(container, od) {
     const list = Array.isArray(data) ? data : (data.relais || data.data || []);
     if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
     const byIle = {};
-    list.forEach(r => { const ile = r.island || r.ile || r.island_name || 'Comores'; if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
+    list.forEach(r => { const ile = classifyRelayGroup(r); if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
     container.innerHTML = '';
-    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = 'Votre île :'; container.appendChild(ileLabel);
+    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = 'Zone de retrait :'; container.appendChild(ileLabel);
     const ileGrid = document.createElement('div'); ileGrid.className = 'ck-relais-ile-grid';
     const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
-    Object.keys(byIle).forEach(ile => {
+    getRelayGroupOrder(Object.keys(byIle)).forEach(ile => {
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck-relais-ile-btn'; btn.textContent = ile; btn.dataset.ile = ile;
       btn.addEventListener('click', () => { ileGrid.querySelectorAll('.ck-relais-ile-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); _renderRelaisForIle(listWrap, byIle[ile], od); });
       ileGrid.appendChild(btn);
     });
     container.appendChild(ileGrid);
     container.appendChild(listWrap);
-    // Auto-select first island if only one
     const firstBtn = ileGrid.querySelector('.ck-relais-ile-btn'); if (firstBtn) firstBtn.click();
   } catch(e) { container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>'; console.warn('[checkout] relais:', e); }
+}
+
+function classifyRelayGroup(relais) {
+  const haystack = [
+    relais.country,
+    relais.country_name,
+    relais.island,
+    relais.ile,
+    relais.island_name,
+    relais.zone,
+    relais.name,
+    relais.address,
+    relais.adresse,
+    relais.location,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (haystack.includes('france') || haystack.includes('paris')) return 'France';
+  if (haystack.includes('anjouan')) return 'Anjouan';
+  if (haystack.includes('grande comore') || haystack.includes('ngazidja') || haystack.includes('moroni')) return 'Grande Comore';
+  if (haystack.includes('moh') || haystack.includes('fomboni')) return 'Mohéli';
+  return relais.island || relais.ile || relais.island_name || 'Comores';
+}
+
+function getRelayGroupOrder(groups) {
+  const order = ['Anjouan', 'Grande Comore', 'Mohéli', 'France', 'Comores'];
+  return groups.slice().sort((a, b) => {
+    const ai = order.indexOf(a);
+    const bi = order.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b, 'fr');
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 }
 
 function _renderRelaisForIle(listEl, relaisList, od) {
@@ -160,6 +206,197 @@ function _renderRelaisForIle(listEl, relaisList, od) {
   });
 }
 
+function readIntlPhoneValue(id, fallbackValue) {
+  const input = document.getElementById(id);
+  const countrySel = document.getElementById(id + '-country');
+  if (!input || !countrySel) return (fallbackValue || '').trim();
+  const country = PHONE_COUNTRIES.find(c => c.code === countrySel.value);
+  const digits = normalizeLocal(countrySel.value, digitsOnly(input.value));
+  if (!country || !digits || digits.length !== country.digits) return '';
+  return buildE164(countrySel.value, digits);
+}
+
+function renderCheckoutCompact() {
+  if (!document.getElementById('ck-relais-css')) {
+    const st = document.createElement('style');
+    st.id = 'ck-relais-css';
+    st.textContent = '.ck-relais-section{margin-bottom:12px}.ck-relais-ile-label{font-size:12px;color:#666;margin-bottom:6px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.ck-relais-ile-btn{padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:20px;background:#fff;font-size:13px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:6px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-name{display:block;font-weight:600;font-size:14px}.ck-relais-addr{display:block;font-size:12px;color:#888;margin-top:2px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:13px;padding:8px 0}.ck-stepper{display:flex;gap:8px;margin:6px 0 12px}.ck-step-chip{flex:1;padding:8px 10px;border-radius:999px;background:#f5f5f2;color:#6b7280;font-size:12px;font-weight:700;text-align:center}.ck-step-chip.active{background:#e8eddb;color:#31511e}.ck-step-panel{display:none}.ck-step-panel.active{display:block}.ck-step-card{padding:10px 12px;border:1.5px solid rgba(0,0,0,.08);border-radius:12px;background:#fff;margin-bottom:10px}.ck-step-title{font-size:14px;font-weight:700;margin-bottom:3px;color:#111827}.ck-step-sub{font-size:12px;color:#6b7280;margin-bottom:8px}.ck-step-actions{display:flex;gap:8px;margin-top:12px}.ck-step-btn{flex:1;height:42px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer}.ck-step-btn--ghost{background:#f5f5f2;color:#374151;border:1px solid rgba(0,0,0,.08)}.ck-step-btn--primary{background:#31511e;color:#fff}.ck-track-details{margin-top:8px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#fafaf9}.ck-track-details summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:13px;font-weight:600;color:#374151}.ck-track-details summary::-webkit-details-marker{display:none}.ck-track-details[open] summary{border-bottom:1px solid rgba(0,0,0,.06)}.ck-track-details-body{padding:10px 12px}.ck-relay-note{font-size:12px;color:#6b7280;margin:-2px 0 8px}';
+    document.head.appendChild(st);
+  }
+
+  const body = dom.orderBody;
+  body.innerHTML = '';
+  body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
+  dom.orderTitle.textContent = '🛒 Commander';
+
+  const od = state.orderData;
+  if (!od.checkout_step) od.checkout_step = 1;
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'ck-back-btn';
+  backBtn.type = 'button';
+  backBtn.innerHTML = '← Retour au panier';
+  backBtn.addEventListener('click', () => {
+    closeOrderModal();
+    setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
+  });
+  body.appendChild(backBtn);
+
+  const stepper = document.createElement('div');
+  stepper.className = 'ck-stepper';
+  stepper.innerHTML = '<div class="ck-step-chip" data-step="1">1. Coordonnées</div><div class="ck-step-chip" data-step="2">2. Retrait et paiement</div>';
+  body.appendChild(stepper);
+
+  const step1 = document.createElement('div');
+  step1.className = 'ck-step-panel';
+  step1.dataset.step = '1';
+  step1.innerHTML = '<div class="ck-step-card"><div class="ck-step-title">Qui récupère la commande ?</div><div class="ck-step-sub">On commence simple : nom et téléphone du bénéficiaire.</div></div>';
+  step1.appendChild(makeInput('of-beneficiary-name', 'Nom *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
+  step1.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
+  const step1Actions = document.createElement('div');
+  step1Actions.className = 'ck-step-actions';
+  step1Actions.innerHTML = '<button type="button" class="ck-step-btn ck-step-btn--primary" id="ck-next-step">Continuer</button>';
+  step1.appendChild(step1Actions);
+  body.appendChild(step1);
+
+  const step2 = document.createElement('div');
+  step2.className = 'ck-step-panel';
+  step2.dataset.step = '2';
+  step2.innerHTML = '<div class="ck-step-card"><div class="ck-step-title">Où retire-t-on et comment paie-t-on ?</div><div class="ck-step-sub">Comores ou France selon le relais disponible pour ce panier.</div></div>';
+  body.appendChild(step2);
+
+  const sRelais = document.createElement('div');
+  sRelais.className = 'ck-label';
+  sRelais.textContent = '🏪 Point relais *';
+  step2.appendChild(sRelais);
+  const relayNote = document.createElement('div');
+  relayNote.className = 'ck-relay-note';
+  relayNote.textContent = 'Choisissez votre zone de retrait : Comores ou France quand un relais Paris est activé.';
+  step2.appendChild(relayNote);
+  const relaisSection = document.createElement('div');
+  relaisSection.id = 'ck-relais-section';
+  relaisSection.className = 'ck-relais-section';
+  relaisSection.innerHTML = '<div class="ck-relais-loading">⏳ Chargement des relais...</div>';
+  step2.appendChild(relaisSection);
+  _loadRelaisSection(relaisSection, od);
+
+  const s2 = document.createElement('div');
+  s2.className = 'ck-label';
+  s2.textContent = '💳 Paiement';
+  step2.appendChild(s2);
+
+  const payGrid = document.createElement('div');
+  payGrid.className = 'ck-pay-grid';
+  payGrid.innerHTML = '<label class="ck-pay-chip" id="ck-chip-cash"><input type="radio" name="payment_mode" value="cash_relais" checked><span class="ck-chip-icon">🏪</span><span class="ck-chip-lbl">Cash</span></label><label class="ck-pay-chip ck-pay-chip--off"><input type="radio" name="payment_mode" value="mvola" disabled><span class="ck-chip-icon">📱</span><span class="ck-chip-lbl">MVola<br><em class="ck-soon">Bientôt</em></span></label><label class="ck-pay-chip" id="ck-chip-stripe"><input type="radio" name="payment_mode" value="stripe_eur"><span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte</span></label>';
+  step2.appendChild(payGrid);
+
+  document.querySelectorAll('#stripe-card-wrap').forEach(el => el.remove());
+  if (_stripeCard) { try { _stripeCard.unmount(); } catch(e){} _stripeCard = null; _stripeElements = null; }
+  const stripeCardWrap = document.createElement('div');
+  stripeCardWrap.id = 'stripe-card-wrap';
+  stripeCardWrap.className = 'k-stripe-wrap';
+  stripeCardWrap.innerHTML = '<div class="k-stripe-title">🔒 Informations de carte</div><div id="stripe-card-element" class="k-stripe-element"></div><div id="stripe-card-error" class="k-stripe-error"></div><div id="stripe-eur-display" class="k-stripe-eur"></div>';
+  step2.appendChild(stripeCardWrap);
+
+  const trackWrap = document.createElement('details');
+  trackWrap.className = 'ck-track-details';
+  trackWrap.innerHTML = '<summary>📲 Ajouter un téléphone de suivi (optionnel)</summary>';
+  const trackExtra = document.createElement('div');
+  trackExtra.id = 'ck-track-extra';
+  trackExtra.className = 'ck-track-details-body';
+  const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
+  const trkHint = document.createElement('div');
+  trkHint.className = 'ck-track-hint';
+  trkHint.textContent = 'Notif WhatsApp dès que la commande arrive au relais.';
+  trackExtra.appendChild(senderGroup);
+  trackExtra.appendChild(trkHint);
+  trackWrap.appendChild(trackExtra);
+  step2.appendChild(trackWrap);
+
+  checkWalletBalance();
+  const walletSection = document.createElement('div');
+  walletSection.id = 'wallet-section';
+  walletSection.className = 'k-wallet-section';
+  walletSection.innerHTML = '<label class="k-wallet-label"><input type="checkbox" id="cb-use-wallet" class="k-wallet-cb"><div class="k-wallet-info"><div class="k-wallet-title">💰 Utiliser mon crédit</div><div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div></div></label><div id="wallet-deduction" class="k-wallet-ded"></div>';
+  step2.appendChild(walletSection);
+
+  const step2Actions = document.createElement('div');
+  step2Actions.className = 'ck-step-actions';
+  step2Actions.innerHTML = '<button type="button" class="ck-step-btn ck-step-btn--ghost" id="ck-prev-step">Modifier les coordonnées</button>';
+  step2.appendChild(step2Actions);
+
+  document.querySelectorAll('#btn-confirm-order').forEach(el => el.remove());
+  const confirmBtn = document.createElement('button');
+  confirmBtn.id = 'btn-confirm-order';
+  confirmBtn.className = 'ck-confirm-btn';
+  confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+  body.parentElement.appendChild(confirmBtn);
+
+  function validateStep1() {
+    const recipName = (document.getElementById('of-beneficiary-name')?.value || '').trim();
+    const recipPhone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
+    if (!recipName) { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return false; }
+    if (!recipPhone) { showToast('Indiquez un téléphone valide pour le bénéficiaire.', 'error'); return false; }
+    od.beneficiary_name = recipName;
+    od.beneficiary_phone = recipPhone;
+    return true;
+  }
+
+  function setStep(step) {
+    od.checkout_step = step;
+    body.querySelectorAll('.ck-step-panel').forEach(el => el.classList.toggle('active', el.dataset.step === String(step)));
+    body.querySelectorAll('.ck-step-chip').forEach(el => el.classList.toggle('active', el.dataset.step === String(step)));
+    confirmBtn.style.display = step === 2 ? '' : 'none';
+    body.scrollTop = 0;
+  }
+
+  function updatePaymentUI() {
+    const mode = document.querySelector('input[name="payment_mode"]:checked');
+    const isStripe = mode && mode.value === 'stripe_eur';
+    od.payment_mode = mode ? mode.value : 'cash_relais';
+    document.querySelectorAll('.ck-pay-chip').forEach(chip => {
+      const r = chip.querySelector('input[type=radio]');
+      if (r && !r.disabled) chip.classList.toggle('ck-pay-chip--active', r.checked);
+    });
+    const wrap = document.getElementById('stripe-card-wrap');
+    if (wrap) {
+      wrap.classList.toggle('is-visible', isStripe);
+      if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.classList.add('is-visible'); }
+    }
+    if (isStripe && !_stripeCard) {
+      ensureStripe().then(stripe => {
+        if (!stripe) {
+          const errEl = document.getElementById('stripe-card-error');
+          if (errEl) { errEl.textContent = 'Paiement carte indisponible.'; errEl.classList.add('is-visible'); }
+          return;
+        }
+        if (_stripeCard) return;
+        _stripeElements = stripe.elements();
+        _stripeCard = _stripeElements.create('card', {
+          style: { base: { fontSize: '15px', color: '#1e293b', '::placeholder': { color: '#94a3b8' } }, invalid: { color: '#dc2626' } },
+          hidePostalCode: true
+        });
+        _stripeCard.mount('#stripe-card-element');
+        _stripeCard.on('change', ev => {
+          const errEl = document.getElementById('stripe-card-error');
+          if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.classList.toggle('is-visible', !!ev.error); }
+        });
+      });
+    }
+    confirmBtn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+  }
+
+  payGrid.addEventListener('change', updatePaymentUI);
+  document.getElementById('ck-next-step')?.addEventListener('click', () => { if (validateStep1()) setStep(2); });
+  document.getElementById('ck-prev-step')?.addEventListener('click', () => setStep(1));
+  setTimeout(() => {
+    const cb = document.getElementById('cb-use-wallet');
+    if (cb) cb.addEventListener('change', function() { od.use_wallet = this.checked; updateWalletDisplay(); });
+  }, 0);
+  updatePaymentUI();
+  setStep(od.checkout_step);
+  confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
+}
 export function renderCheckout() {
     // CSS relais picker (inject once)
     if (!document.getElementById('ck-relais-css')) {
@@ -170,45 +407,45 @@ export function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-    dom.orderTitle.textContent = '🛒 Commander';
+    dom.orderTitle.textContent = 'ðŸ›’ Commander';
 
     const od = state.orderData;
 
-    /* ── Bouton retour panier ── */
+    /* â”€â”€ Bouton retour panier â”€â”€ */
     const backBtn = document.createElement('button');
     backBtn.className = 'ck-back-btn';
     backBtn.type = 'button';
-    backBtn.innerHTML = '← Retour au panier';
+    backBtn.innerHTML = 'â† Retour au panier';
     backBtn.addEventListener('click', () => {
       closeOrderModal();
       setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
     });
     body.appendChild(backBtn);
 
-    /* ── 2. Bénéficiaire ── */
+    /* â”€â”€ 2. BÃ©nÃ©ficiaire â”€â”€ */
     const s1 = document.createElement('div');
     s1.className = 'ck-label';
-    s1.textContent = '📦 Bénéficiaire';
+    s1.textContent = 'ðŸ“¦ BÃ©nÃ©ficiaire';
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
-    body.appendChild(makePhoneInput('of-beneficiary-phone', 'Tél. (+269) *', od, 'beneficiary_phone'));
+    body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
 
-    /* ── 2b. Point relais ── */
+    /* â”€â”€ 2b. Point relais â”€â”€ */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-label';
-    sRelais.textContent = '🏪 Point relais *';
+    sRelais.textContent = 'ðŸª Point relais *';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
     relaisSection.className = 'ck-relais-section';
-    relaisSection.innerHTML = '<div class="ck-relais-loading">⏳ Chargement des relais...</div>';
+    relaisSection.innerHTML = '<div class="ck-relais-loading">â³ Chargement des relais...</div>';
     body.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
-    /* ── 3. Paiement ── */
+    /* â”€â”€ 3. Paiement â”€â”€ */
     const s2 = document.createElement('div');
     s2.className = 'ck-label';
-    s2.textContent = '💳 Paiement';
+    s2.textContent = 'ðŸ’³ Paiement';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -216,16 +453,16 @@ export function renderCheckout() {
     payGrid.innerHTML =
       '<label class="ck-pay-chip" id="ck-chip-cash">'
       + '<input type="radio" name="payment_mode" value="cash_relais" checked>'
-      + '<span class="ck-chip-icon">🏪</span><span class="ck-chip-lbl">Cash</span>'
+      + '<span class="ck-chip-icon">ðŸª</span><span class="ck-chip-lbl">Cash</span>'
       + '</label>'
       + '<label class="ck-pay-chip ck-pay-chip--off">'
       + '<input type="radio" name="payment_mode" value="mvola" disabled>'
-      + '<span class="ck-chip-icon">📱</span>'
-      + '<span class="ck-chip-lbl">MVola<br><em class="ck-soon">Bientôt</em></span>'
+      + '<span class="ck-chip-icon">ðŸ“±</span>'
+      + '<span class="ck-chip-lbl">MVola<br><em class="ck-soon">BientÃ´t</em></span>'
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-stripe">'
       + '<input type="radio" name="payment_mode" value="stripe_eur">'
-      + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte</span>'
+      + '<span class="ck-chip-icon">ðŸ’³</span><span class="ck-chip-lbl">Carte</span>'
       + '</label>';
     body.appendChild(payGrid);
 
@@ -236,57 +473,57 @@ export function renderCheckout() {
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
     stripeCardWrap.className = 'k-stripe-wrap';
-    stripeCardWrap.innerHTML = '<div class="k-stripe-title">🔒 Informations de carte</div>'
+    stripeCardWrap.innerHTML = '<div class="k-stripe-title">ðŸ”’ Informations de carte</div>'
       + '<div id="stripe-card-element" class="k-stripe-element"></div>'
       + '<div id="stripe-card-error" class="k-stripe-error"></div>'
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
     body.appendChild(stripeCardWrap);
 
-    /* ── 4. Suivi SMS accordion ── */
+    /* â”€â”€ 4. Suivi SMS accordion â”€â”€ */
     const trackRow = document.createElement('div');
     trackRow.className = 'ck-track-row';
-    trackRow.innerHTML = '<label class="k-ck-track-label">📲 Votre tél. pour le suivi (optionnel)</label>';
+    trackRow.innerHTML = '<label class="k-ck-track-label">ðŸ“² Votre tÃ©l. pour le suivi (optionnel)</label>';
     body.appendChild(trackRow);
 
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-extra';
-    // Toujours visible — plus besoin de cocher une case
+    // Toujours visible â€” plus besoin de cocher une case
     const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
-    trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
+    trkHint.textContent = 'NotifiÃ©(e) par WhatsApp dÃ¨s que la commande arrive au relais';
     trackExtra.appendChild(senderGroup);
     trackExtra.appendChild(trkHint);
     body.appendChild(trackExtra);
 
-    /* ── 5. Wallet ── */
+    /* â”€â”€ 5. Wallet â”€â”€ */
     checkWalletBalance();
     const walletSection = document.createElement('div');
     walletSection.id = 'wallet-section';
     walletSection.className = 'k-wallet-section';
     walletSection.innerHTML = '<label class="k-wallet-label">'
       + '<input type="checkbox" id="cb-use-wallet" class="k-wallet-cb">'
-      + '<div class="k-wallet-info"><div class="k-wallet-title">💰 Utiliser mon crédit</div>'
-      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div></div></label>'
+      + '<div class="k-wallet-info"><div class="k-wallet-title">ðŸ’° Utiliser mon crÃ©dit</div>'
+      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargementâ€¦</div></div></label>'
       + '<div id="wallet-deduction" class="k-wallet-ded"></div>';
     body.appendChild(walletSection);
 
-    /* ── 6. Confirm (sticky) ── */
+    /* â”€â”€ 6. Confirm (sticky) â”€â”€ */
     // FIX: supprimer tout ancien bouton confirm
     document.querySelectorAll('#btn-confirm-order').forEach(el => el.remove());
     const confirmBtn = document.createElement('button');
     confirmBtn.id = 'btn-confirm-order';
     confirmBtn.className = 'ck-confirm-btn';
-    confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
-    // Bouton confirm HORS du scroll area → toujours visible en bas du modal
+    confirmBtn.textContent = 'âœ… Confirmer â€” ' + fmt(cartTotal(), 'KMF');
+    // Bouton confirm HORS du scroll area â†’ toujours visible en bas du modal
     body.parentElement.appendChild(confirmBtn);
 
-    /* ── Payment switching ── */
+    /* â”€â”€ Payment switching â”€â”€ */
     // stripeCardWrap reste dans body (inline sous les chips)
 
     /**
- * Met à jour le récapitulatif paiement en checkout.
+ * Met Ã  jour le rÃ©capitulatif paiement en checkout.
  */
   function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
@@ -326,11 +563,11 @@ export function renderCheckout() {
       }
 
       const btn = document.getElementById('btn-confirm-order');
-      if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+      if (btn) btn.textContent = isStripe ? 'ðŸ’³ Payer ' + fmt(cartTotal(), 'KMF') : 'âœ… Confirmer â€” ' + fmt(cartTotal(), 'KMF');
     }
 
     payGrid.addEventListener('change', updatePaymentUI);
-    updatePaymentUI(); // init état chip cash
+    updatePaymentUI(); // init Ã©tat chip cash
 
     setTimeout(() => {
       const cb = document.getElementById('cb-use-wallet');
@@ -340,10 +577,10 @@ export function renderCheckout() {
     confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
   }
 
-    /* ── Checkout form helpers ── */
+    /* â”€â”€ Checkout form helpers â”€â”€ */
 
   /**
- * Crée un input stylé pour le checkout.
+ * CrÃ©e un input stylÃ© pour le checkout.
  * @param {string} type
  * @param {string} name
  * @param {string} placeholder
@@ -369,26 +606,14 @@ export function makeInput(id, label, type, placeholder, dataObj, key) {
 
 
   /**
-   * Crée un champ de saisie téléphone international avec sélecteur d'indicatif.
+   * CrÃ©e un champ de saisie tÃ©lÃ©phone international avec sÃ©lecteur d'indicatif.
    * @param {string} id       - ID HTML du champ
-   * @param {string} label    - Label affiché
-   * @param {Object} dataObj  - Objet de données où écrire la valeur normalisée
-   * @param {string} key      - Clé de l'objet dataObj à mettre à jour
+   * @param {string} label    - Label affichÃ©
+   * @param {Object} dataObj  - Objet de donnÃ©es oÃ¹ Ã©crire la valeur normalisÃ©e
+   * @param {string} key      - ClÃ© de l'objet dataObj Ã  mettre Ã  jour
    */
 export function makeIntlPhoneInput(id, label, dataObj, key) {
-  const COUNTRIES = [
-    { code: '+269', flag: '🇰🇲', name: 'Comores',         digits: 7,  max: 7,  ph: '321 12 34' },
-    { code: '+33',  flag: '🇫🇷', name: 'France',          digits: 9,  max: 10, ph: '06 12 34 56 78' },
-    { code: '+262', flag: '🇷🇪', name: 'Réunion',         digits: 9,  max: 10, ph: '0692 12 34 56' },
-    { code: '+32',  flag: '🇧🇪', name: 'Belgique',        digits: 9,  max: 10, ph: '0470 12 34 56' },
-    { code: '+41',  flag: '🇨🇭', name: 'Suisse',          digits: 9,  max: 10, ph: '076 123 45 67' },
-    { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni',     digits: 10, max: 11, ph: '07911 123456' },
-    { code: '+1',   flag: '🇺🇸', name: 'USA / Canada',    digits: 10, max: 10, ph: '202 555 0147' },
-    { code: '+971', flag: '🇦🇪', name: 'Émirats',         digits: 9,  max: 10, ph: '050 123 4567' },
-    { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite', digits: 9,  max: 10, ph: '055 123 4567' },
-    { code: '+60',  flag: '🇲🇾', name: 'Malaisie',        digits: 9,  max: 10, ph: '012 345 6789' },
-    { code: '+212', flag: '🇲🇦', name: 'Maroc',           digits: 9,  max: 10, ph: '0612 345678' },
-  ];
+  const COUNTRIES = PHONE_COUNTRIES;
 
   const group = document.createElement('div');
   group.className = 'k-ck-group';
@@ -408,7 +633,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     const opt = document.createElement('option');
     opt.value = c.code;
     opt.textContent = c.flag + ' ' + c.code;
-    if (c.code === '+33') opt.selected = true; // défaut France (diaspora)
+    if (c.code === '+269') opt.selected = true;
     sel.appendChild(opt);
   });
 
@@ -448,7 +673,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   input.addEventListener('blur', sync);
   input.addEventListener('input', sync);
 
-  // Pré-remplissage depuis dataObj si déjà existant
+  // PrÃ©-remplissage depuis dataObj si dÃ©jÃ  existant
   if (dataObj[key]) {
     const existing = String(dataObj[key]).trim();
     const found = COUNTRIES.find(c => existing.startsWith(c.code));
@@ -471,7 +696,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 }
 
   /**
-   * Crée un champ téléphone simplifié (sans sélecteur d'indicatif) pour les Comores.
+   * CrÃ©e un champ tÃ©lÃ©phone simplifiÃ© (sans sÃ©lecteur d'indicatif) pour les Comores.
    */
 export function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
@@ -486,7 +711,7 @@ export function makePhoneInput(id, label, dataObj, key) {
     wrap.className = 'k-ck-km-wrap';
     const prefix = document.createElement('div');
     prefix.className = 'k-ck-km-prefix';
-    prefix.innerHTML = '🇰🇲 <span class="k-ck-km-code">+269</span>';
+    prefix.innerHTML = 'ðŸ‡°ðŸ‡² <span class="k-ck-km-code">+269</span>';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
     input.type = 'tel';
@@ -509,7 +734,7 @@ export function makePhoneInput(id, label, dataObj, key) {
   }
 
 
-  /* ── Wallet ── */
+  /* â”€â”€ Wallet â”€â”€ */
 export async function checkWalletBalance() {
     try {
       const res = await fetch('/api/wallet', { credentials: 'same-origin' });
@@ -535,8 +760,8 @@ export function updateWalletDisplay() {
       const applied = Math.min(state.walletBalance, total);
       const remaining = total - applied;
       ded.classList.add('is-visible');
-      ded.innerHTML = '<div class="k-wal-row"><span>💰 Crédit appliqué</span><span class="k-wal-value">-' + fmt(applied, 'KMF') + '</span></div>' +
-        (remaining > 0 ? '<div class="k-wal-row"><span>Reste à payer</span><span class="k-wal-bold">' + fmt(remaining, 'KMF') + '</span></div>' : '<div class="k-wal-success">✅ Entièrement couvert par votre crédit !</div>');
+      ded.innerHTML = '<div class="k-wal-row"><span>ðŸ’° CrÃ©dit appliquÃ©</span><span class="k-wal-value">-' + fmt(applied, 'KMF') + '</span></div>' +
+        (remaining > 0 ? '<div class="k-wal-row"><span>Reste Ã  payer</span><span class="k-wal-bold">' + fmt(remaining, 'KMF') + '</span></div>' : '<div class="k-wal-success">âœ… EntiÃ¨rement couvert par votre crÃ©dit !</div>');
     } else {
       ded.classList.remove('is-visible');
     }
@@ -545,7 +770,7 @@ export function updateWalletDisplay() {
 export async function submitOrder(btn) {
   const od = state.orderData;
   const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
-  const recipPhone = (document.getElementById('of-beneficiary-phone')?.value || '').trim();
+  const recipPhone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
 
   let senderPhone = (od.sender_phone || '').trim();
   if (senderPhone.length < 8) {
@@ -560,7 +785,7 @@ export async function submitOrder(btn) {
     if (_digits.length > 0) {
       const expected = RULES[_code] || 9;
       if (_digits.length !== expected) {
-        showToast(`Numéro invalide pour ${_code}. ${expected} chiffres attendus.`, 'error');
+        showToast(`NumÃ©ro invalide pour ${_code}. ${expected} chiffres attendus.`, 'error');
         return;
       }
       senderPhone = _code + _digits;
@@ -568,16 +793,11 @@ export async function submitOrder(btn) {
   }
 
   const clientName = recipName;
-  const recipDigits = recipPhone.replace(/\D/g, '');
-  const fullRecipPhone = '+269' + recipDigits;
+  const fullRecipPhone = recipPhone;
   const clientEmail = undefined;
 
   if (!recipName) { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
-  if (!recipPhone) { showToast('Indiquez le téléphone du bénéficiaire (+269).', 'error'); return; }
-  if (recipDigits.length !== 7) {
-    showToast(`Téléphone +269 invalide : 7 chiffres attendus (vous en avez ${recipDigits.length}).`, 'error');
-    return;
-  }
+  if (!recipPhone) { showToast('Indiquez un téléphone valide pour le bénéficiaire.', 'error'); return; }
 
   const isStripe = od.payment_mode === 'stripe_eur';
   const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
@@ -590,7 +810,7 @@ export async function submitOrder(btn) {
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
   btn.disabled = true;
-  btn.textContent = isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…';
+  btn.textContent = isStripe ? 'â³ Paiement en coursâ€¦' : 'â³ Envoi en coursâ€¦';
   btn.style.opacity = '0.7';
 
   try {
@@ -629,10 +849,10 @@ export async function submitOrder(btn) {
 
     if (isStripe) {
       if (!_stripe) await ensureStripe();
-      if (!_stripe || !_stripeCard) throw new Error('Stripe non chargé. Rechargez la page.');
-      btn.textContent = '🔒 Sécurisation du paiement…';
+      if (!_stripe || !_stripeCard) throw new Error('Stripe non chargÃ©. Rechargez la page.');
+      btn.textContent = 'ðŸ”’ SÃ©curisation du paiementâ€¦';
       const intentResult = await apiPost('/api/payments/stripe/intent', { order_reference: orderData.reference });
-      btn.textContent = '💳 Validation en cours…';
+      btn.textContent = 'ðŸ’³ Validation en coursâ€¦';
       const stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
         payment_method: { card: _stripeCard, billing_details: { name: clientName, email: clientEmail || undefined } }
       });
@@ -641,7 +861,7 @@ export async function submitOrder(btn) {
         if (errEl) { errEl.textContent = stripeResult.error.message; errEl.classList.remove('u-hidden'); }
         throw new Error(stripeResult.error.message);
       }
-      showToast('🎉 Paiement accepté !', 'success');
+      showToast('ðŸŽ‰ Paiement acceptÃ© !', 'success');
       state.checkoutAttemptKey = null;
       state.pendingStripeOrderRef = null;
     }
@@ -650,14 +870,14 @@ export async function submitOrder(btn) {
     saveCart();
     renderCart();
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
-    showToast('Commande confirmée !', 'success');
+    showToast('Commande confirmÃ©e !', 'success');
     btn.dataset.busy = '0';
   } catch (e) {
     console.error('submitOrder:', e);
     showToast(e.message || 'Erreur lors de la commande.', 'error');
     btn.disabled = false;
     btn.dataset.busy = '0';
-    btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    btn.textContent = isStripe ? 'ðŸ’³ Payer ' + fmt(cartTotal(), 'KMF') : 'âœ… Confirmer â€” ' + fmt(cartTotal(), 'KMF');
     btn.style.opacity = '1';
   }
 }
@@ -665,7 +885,7 @@ export async function submitOrder(btn) {
 export function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
     const body = dom.orderBody;
     body.innerHTML = '';
-    dom.orderTitle.textContent = '✅ Commande confirmée';
+    dom.orderTitle.textContent = 'âœ… Commande confirmÃ©e';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
 
@@ -674,20 +894,20 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
 
     const emoji = document.createElement('div');
     emoji.className = 'k-confirm-emoji';
-    emoji.textContent = '🎉';
+    emoji.textContent = 'ðŸŽ‰';
     wrap.appendChild(emoji);
 
     const title = document.createElement('h3');
     title.className = 'k-confirm-title';
-    title.textContent = 'Commande confirmée !';
+    title.textContent = 'Commande confirmÃ©e !';
     wrap.appendChild(title);
 
     const refBlock = document.createElement('div');
     refBlock.className = 'k-confirm-ref-block';
     refBlock.innerHTML =
-      '<div class="k-confirm-ref-label">Votre référence</div>' +
-      '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>' +
-      '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
+      '<div class="k-confirm-ref-label">Votre rÃ©fÃ©rence</div>' +
+      '<div class="k-confirm-ref">' + sanitize(order.reference || 'â€”') + '</div>' +
+      '<button id="k-copy-ref-btn" class="k-confirm-copy">ðŸ“‹ Copier</button>';
     wrap.appendChild(refBlock);
 
     const orderQty = order.items_count || (order.items && order.items.length) || null;
@@ -697,7 +917,7 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       recapLine.className = 'k-confirm-recap';
       recapLine.innerHTML =
         '<span class="k-confirm-recap-qty">' + orderQty + ' article' + (orderQty > 1 ? 's' : '') + '</span>' +
-        '<span class="k-confirm-recap-sep">•</span>' +
+        '<span class="k-confirm-recap-sep">â€¢</span>' +
         '<span class="k-confirm-recap-amount">' + fmt(orderTotal, 'KMF') + '</span>';
       wrap.appendChild(recapLine);
     }
@@ -706,7 +926,7 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       const cashBlock = document.createElement('div');
       cashBlock.className = 'k-confirm-cash-block';
       cashBlock.innerHTML =
-        '<div class="k-confirm-cash-label">🏪 Code à présenter au relais</div>' +
+        '<div class="k-confirm-cash-label">ðŸª Code Ã  prÃ©senter au relais</div>' +
         '<div class="k-confirm-cash-code">' + sanitize(order.cash_ref_code) + '</div>';
       wrap.appendChild(cashBlock);
     }
@@ -714,15 +934,15 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
     const notices = document.createElement('div');
     notices.className = 'k-confirm-notices';
     notices.innerHTML =
-      '<div class="k-confirm-notice-row">📲 Vous allez recevoir un WhatsApp de confirmation</div>' +
-      '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
+      '<div class="k-confirm-notice-row">ðŸ“² Vous allez recevoir un WhatsApp de confirmation</div>' +
+      '<div class="k-confirm-notice-row">ðŸª Rendez-vous au relais avec cette rÃ©fÃ©rence</div>';
     wrap.appendChild(notices);
 
     const actions = document.createElement('div');
     actions.className = 'k-confirm-actions';
     actions.innerHTML =
-      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">📍 Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">🛍️ Continuer mes achats</button>';
+      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">ðŸ“ Suivre ma commande</button>' +
+      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">ðŸ›ï¸ Continuer mes achats</button>';
     wrap.appendChild(actions);
     body.appendChild(wrap);
 
@@ -732,9 +952,9 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
         copyBtn.addEventListener('click', () => {
           if (navigator.clipboard) {
             navigator.clipboard.writeText(order.reference || '').then(() => {
-              showToast('📋 Référence copiée !', 'success');
-              copyBtn.textContent = '✓ Copié';
-              setTimeout(() => { copyBtn.textContent = '📋 Copier'; }, 2000);
+              showToast('ðŸ“‹ RÃ©fÃ©rence copiÃ©e !', 'success');
+              copyBtn.textContent = 'âœ“ CopiÃ©';
+              setTimeout(() => { copyBtn.textContent = 'ðŸ“‹ Copier'; }, 2000);
             });
           }
         });
