@@ -20,9 +20,15 @@
   function escHtml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  function isMobileWhatsAppContext() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  }
+
   function whatsappShareUrl(eventName) {
-    const text = encodeURIComponent('Hey ! "' + eventName + '" - un panier evenement Komerce.\nTu peux ajouter ton idee ici : ' + window.location.href);
-    return 'https://wa.me/?text=' + text;
+    const text = encodeURIComponent('Hey ! \"' + eventName + '\" - un panier evenement Komerce.\nTu peux ajouter ton idee ici : ' + window.location.href);
+    return isMobileWhatsAppContext()
+      ? 'whatsapp://send?text=' + text
+      : 'https://wa.me/?text=' + text;
   }
   function normalizeWorkspaceResponse(payload) {
     const root = payload || {};

@@ -74,12 +74,30 @@
     return workspace;
   }
 
+  function isMobileWhatsAppContext() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  }
+
   function whatsappShareUrl(eventName, publicToken) {
     const text = encodeURIComponent(
       'Bonjour ! J\'organise "' + eventName + '" sur Komerce. ' +
       'Tu peux ajouter tes idees ou ta contribution ici : ' + publicUrl(publicToken)
     );
-    return 'https://wa.me/?text=' + text;
+    return isMobileWhatsAppContext()
+      ? 'whatsapp://send?text=' + text
+      : 'https://wa.me/?text=' + text;
+  }
+
+  function whatsappDirectUrl(phone, text) {
+    const cleanPhone = String(phone || '').replace(/\D/g, '');
+    if (isMobileWhatsAppContext()) {
+      return cleanPhone
+        ? 'whatsapp://send?phone=' + encodeURIComponent(cleanPhone) + '&text=' + text
+        : 'whatsapp://send?text=' + text;
+    }
+    return cleanPhone
+      ? 'https://wa.me/' + encodeURIComponent(cleanPhone) + '?text=' + text
+      : 'https://wa.me/?text=' + text;
   }
 
   function statusBadge(status) {
@@ -217,8 +235,7 @@
     tokens.forEach((t, idx) => {
       const fullUrl = window.location.origin + (t.payment_page_url || '/event/pay/' + t.payment_token);
       const waText = encodeURIComponent('Bonjour ' + t.contributor_name + ',\n\nVoici votre lien de paiement :\n' + fullUrl + '\n\nMontant : ' + fmt(t.amount_kmf) + ' KMF');
-      const phone = (t.contributor_phone || '').replace(/\D/g, '');
-      const waUrl = phone ? 'https://wa.me/' + encodeURIComponent(phone) + '?text=' + waText : 'https://wa.me/?text=' + waText;
+      const waUrl = whatsappDirectUrl(t.contributor_phone, waText);
       html += '<li class="ev-list-item" style="flex-direction:column;align-items:stretch;gap:6px;padding:14px 0;"><div style="display:flex;align-items:center;gap:10px;"><div class="ev-list-emoji">*</div><div class="ev-list-content"><div class="ev-list-name">' + escHtml(t.contributor_name) + ' <span style="color:var(--ev-success);font-weight:600;">' + fmt(t.amount_kmf) + ' KMF</span></div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><input type="text" readonly value="' + escHtml(fullUrl) + '" id="ev-tok-url-' + idx + '" style="flex:1;min-width:0;font-size:11px;padding:6px 8px;font-family:monospace;border:1px solid var(--ev-border);border-radius:4px;"><button class="ev-btn ev-btn-secondary" data-copy-url="' + idx + '" style="padding:6px 10px;font-size:12px;">Copier</button><a href="' + waUrl + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp" style="padding:6px 10px;font-size:12px;">WhatsApp</a></div></li>';
     });
     html += '</ul></div><div class="ev-card" style="text-align:center;"><button class="ev-btn ev-btn-success" id="ev-tokens-ack" style="width:100%;">J ai envoye tous les liens - actualiser le statut</button></div>';
