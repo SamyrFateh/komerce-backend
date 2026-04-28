@@ -2447,7 +2447,7 @@ body.cart-open{overflow:hidden}
   padding-top:calc(14px + env(safe-area-inset-top));
 }
 .k-order-body{
-  flex:1;overflow-y:auto;padding:6px 12px;
+  flex:1;overflow-y:auto;padding:2px 12px 6px;
 }
 
 @media(min-width:600px){
@@ -3119,7 +3119,7 @@ body.cart-open{overflow:hidden}
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:8px;
-  margin:0 0 10px;
+  margin:2px 0 8px;
 }
 .ck-fulfillment-btn{
   min-height:44px;
@@ -4082,7 +4082,7 @@ body.modal-open .k-bnav {
   align-self:flex-end;
   height:auto;
   padding:0;
-  margin:2px 0 10px auto;
+  margin:0 0 8px auto;
   background:transparent;
   border:none;
   border-radius:0;

@@ -476,6 +476,8 @@ export function renderCheckout() {
     const od = state.orderData;
     if (!od.fulfillment_zone) od.fulfillment_zone = 'comoros';
 
+    renderFulfillmentSelector(body, od, refreshFulfillment);
+
     document.querySelectorAll('.ck-modal-back-btn').forEach(el => el.remove());
     const backBtn = document.createElement('button');
     backBtn.className = 'ck-modal-back-btn';
@@ -487,12 +489,6 @@ export function renderCheckout() {
       setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
     });
     body.appendChild(backBtn);
-
-    const sMode = document.createElement('div');
-    sMode.className = 'ck-label';
-    sMode.textContent = 'Où récupère-t-on ?';
-    body.appendChild(sMode);
-    renderFulfillmentSelector(body, od, refreshFulfillment);
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
