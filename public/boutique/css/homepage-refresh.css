@@ -1,33 +1,45 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    KOMERCE — HOMEPAGE MOBILE REFRESH
-   Date : 28 avril 2026
+   v2 · 28 avril 2026
    ───────────────────────────────────────────────────────────────────────────
 
-   Patch ciblé pour rendre la home mobile plus "e-commerce" :
-   - hero plus court (~25%) pour faire apparaître les produits plus tôt
-   - rail "🔥 Soldes du moment" mieux respiré
-   - cartes produits avec un peu plus d'air (padding, line-clamp net)
-   - section soldes masquée si zéro produit en promo
-   - fade-in léger sur les cartes au scroll (respect prefers-reduced-motion)
+   Patch ciblé pour rendre la home mobile plus "e-commerce".
 
-   PRINCIPE :
-   - Toutes les règles ici sont SCOPÉES mobile (max-width: 899px) sauf
-     le masquage de section vide qui s'applique partout.
-   - Aucune classe renommée. Aucun !important sauf où la sédimentation
-     du CSS principal le rend nécessaire (commenté à chaque fois).
-   - Ce fichier est chargé APRÈS boutique.css → ses règles gagnent à
-     spécificité égale.
+   v2 changes par rapport à v1 :
+   • chips remontées en overlay sur le bas de l'image hero (gain ~80px)
+   • chips compactes : 60px (vs 78), cercle 52px (vs 64), gap 6px (vs 10)
+     → 5 chips entières visibles sur écran 375px (iPhone SE) + bout de la 6ᵉ
+     → 6 entières sur écran 412px+ (Pixel/Galaxy)
+   • description carte : 10px / lh 1.2 / mt 1px (gain ~4px par carte)
+   • hero overlay padding tassé : 8/10 (vs 12/14)
+
+   STRUCTURE (rappel) :
+   <header />
+   <#k-hero-fixed-wrap position:fixed>          ← bloc épinglé en haut
+     <.k-hero>
+       <.k-hero-media>                          ← contient l'image + slogan
+         <img.k-hero-img />
+         <.k-hero-mini-slogan />
+       </.k-hero-media>
+     </.k-hero>
+     <.k-hero-cats-sticky>                      ← contient les chips
+       <.k-cats-shell>
+         <nav.k-cats>
+           <.k-chip />×N
+         </nav>
+       </.k-cats-shell>
+     </.k-hero-cats-sticky>
+   </#k-hero-fixed-wrap>
+
+   .k-cats-shell est SŒUR de .k-hero, pas dedans → on remonte par
+   margin-top négatif (pas de position:absolute pour rester dans le flow).
 
    ═══════════════════════════════════════════════════════════════════════════ */
 
 
 /* ─────────────────────────────────────────────────────────────────────────
-   1. Section soldes : masquée proprement quand le rail est vide
-   ─────────────────────────────────────────────────────────────────────────
-   Complément au patch JS dans b-catalog.js qui pose data-empty="1"
-   sur la section quand renderPromos() ne trouve aucune promo.
-   En backup CSS-only : si le rail-inner est vide après render. */
-
+   Section soldes : masquée proprement quand le rail est vide
+   ───────────────────────────────────────────────────────────────────────── */
 #k-promos-section[data-empty="1"] {
   display: none;
 }
@@ -40,52 +52,147 @@
 @media (max-width: 899px) {
 
   /* ───────────────────────────────────────────────────────────────────────
-     2. Hero mobile plus compact (-20% à -25% de hauteur)
-     ───────────────────────────────────────────────────────────────────────
-     Original : image clamp(120px, 22vw, 220px), overlay padding 18/22
-     Refresh  : image clamp(96px, 17vw, 168px), overlay padding 12/14    */
+     1. Hero compact (-25%)
+     ─────────────────────────────────────────────────────────────────────── */
 
   .k-hero-img {
     height: clamp(96px, 17vw, 168px);
   }
 
   .k-hero-overlay {
-    padding-top: 12px;
-    padding-bottom: 14px;
-    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 10px;
+    gap: 4px;
   }
 
-  /* Resserre le slogan mobile sans le rétrécir typo */
   .k-hero-mini-slogan {
     padding: 8px 12px;
   }
 
-  .k-hero-sub {
-    margin-top: 4px;
+  .k-hero-sub  { margin-top: 3px; }
+  .k-hero-cta-row { margin-top: 6px; }
+
+
+  /* ───────────────────────────────────────────────────────────────────────
+     2. CHIPS REMONTÉES EN OVERLAY SUR L'IMAGE HERO
+     ───────────────────────────────────────────────────────────────────────
+     L'image hero a margin: 0 var(--pad-x) 10px et border-radius en bas.
+     On supprime le margin-bottom et on remonte le bloc chips de ~28px
+     pour qu'il chevauche le bas de l'image.
+     Fond sand opaque pour cohérence avec le hero.                         */
+
+  /* Annule la marge qui crée l'espace beige entre image et chips */
+  .k-hero-media {
+    margin-bottom: 0;
   }
 
-  .k-hero-cta-row {
-    margin-top: 8px;
+  /* Le wrapper sticky perd son fond visible — laisse passer l'image dessous */
+  .k-hero-cats-sticky {
+    background: transparent !important;
+    /* CSS principal ligne 7237 : background #f6f0e3 !important — ici on
+       contre car on veut que les chips flottent visuellement sur l'image. */
+    box-shadow: none !important;
+    /* le margin-top négatif tire le bloc dans la zone image ; valeur calée
+       sur la hauteur de l'overlay chips ~70px → on remonte de la moitié. */
+    margin-top: -36px;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* Le shell devient une "carte" qui flotte sur le bas de l'image */
+  .k-cats-shell {
+    margin: 0 var(--pad-x);
+    padding: 0;
+    background: #f6f0e3;
+    /* Sand opaque — même teinte que le fond hero pour cohérence Komerce */
+    border: 1px solid rgba(31, 48, 36, .06);
+    border-radius: 18px;
+    box-shadow: 0 6px 20px rgba(31, 48, 36, .10);
+    overflow: hidden;
+  }
+
+  /* Padding interne du rail chips */
+  .k-cats {
+    padding: 8px 10px !important;
+    /* CSS principal ligne 7253 : padding 6px 10px !important — on ajuste. */
+    gap: 6px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Espace SOUS le bloc chips, avant la première section produits */
+  .k-hero-cats-sticky::after {
+    content: '';
+    display: block;
+    height: 12px;
+    /* respiration entre chips et section soldes */
   }
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     3. Rail "Soldes du moment" : titre plus présent, cartes mieux espacées
+     3. CHIPS PLUS COMPACTES — 5 entières + bout de la 6ᵉ sur 375px
      ─────────────────────────────────────────────────────────────────────── */
 
-  /* Le H2 prend un peu plus de gueule en mobile */
+  .k-chip {
+    min-width: 60px !important;
+    max-width: 60px !important;
+    /* override CSS principal ligne 715-716 (78px) */
+    gap: 4px;
+  }
+
+  .k-chip-photo {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 16px;
+  }
+
+  .k-chip-photo img {
+    border-radius: 16px;
+  }
+
+  .k-chip-photo > span {
+    font-size: 12px;
+  }
+
+  .k-chip[data-cat="all"] .k-chip-photo > span {
+    font-size: 13px;
+  }
+
+  .k-chip-photo svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .k-chip-label {
+    font-size: 10px;
+    max-width: 58px;
+    line-height: 1.1;
+  }
+
+  /* État active : enlever le scale qui fait "bouger" les chips voisines.
+     Garder uniquement le glow coral. */
+  .k-chip.active {
+    transform: none;
+  }
+
+
+  /* ───────────────────────────────────────────────────────────────────────
+     4. Rail "Soldes du moment"
+     ─────────────────────────────────────────────────────────────────────── */
+
   #k-promos-section .k-section-head h2 {
     font-size: 17px;
     letter-spacing: -.01em;
   }
 
-  /* Légère respiration verticale autour du rail */
   #k-promos-section {
     padding-top: 4px;
     padding-bottom: 8px;
   }
 
-  /* Le bouton "Voir tout" plus discret, comme un lien */
   #k-promos-section .k-see-all {
     font-size: 13px;
     color: var(--text-muted);
@@ -94,11 +201,11 @@
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     4. Cartes produits : respirer (padding interne, line-clamp net)
+     5. Cartes produits : respirer (padding interne, line-clamp net)
      ───────────────────────────────────────────────────────────────────────
-     L'override du bloc @media(min-width:600px) (ligne 1395 du boutique.css)
-     met le padding à 6/8/8 ce qui est trop serré sur mobile en 2 colonnes.
-     Ici on remet ~10/10/12 mais uniquement sous 600px.                   */
+     Le bloc @media(min-width:600px) du CSS principal applique padding 6/8/8
+     sur mobile par erreur (le commentaire dit "compactes sur mobile" mais
+     le bloc est dans min-600). On rétablit ici sous 600px.                */
 
   .k-card-info {
     padding: 10px 10px 12px;
@@ -107,7 +214,6 @@
   .k-card-name {
     font-size: 13px;
     line-height: 1.3;
-    /* line-clamp 2 lignes — re-affirme la règle déjà présente */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -115,13 +221,15 @@
     min-height: 2.6em;
   }
 
-  /* Description courte : 1 ligne max, déjà nowrap dans le CSS principal */
+  /* Description plus tassée — gain ~4px par carte */
   .k-card-desc {
-    margin-top: 3px;
+    font-size: 10px;
+    line-height: 1.2;
+    margin-top: 1px;
   }
 
   .k-card-bottom {
-    margin-top: 6px;
+    margin-top: 5px;
     gap: 6px;
   }
 
@@ -130,13 +238,11 @@
     font-weight: 700;
   }
 
-  /* Ancien prix barré : présent mais discret — KMF reste prioritaire */
   .k-card-old-price {
     font-size: 11px;
     color: var(--text-light);
   }
 
-  /* Évite que le panier tressé chevauche les prix sur petite carte */
   .k-card-add {
     bottom: 6px;
     right: 6px;
@@ -144,10 +250,8 @@
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     5. Espacement entre sections homepage
-     ───────────────────────────────────────────────────────────────────────
-     Resserre l'enchaînement hero → catégories → soldes → catalogue
-     pour que les produits arrivent plus tôt à l'écran.                   */
+     6. Espacement entre sections
+     ─────────────────────────────────────────────────────────────────────── */
 
   #k-promos-section + .k-proverb-sep {
     margin: 4px 0;
@@ -161,29 +265,18 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   6. Fade-in léger sur les cartes (TOUS écrans)
-   ═══════════════════════════════════════════════════════════════════════════
-   Très léger, non bloquant. Désactivé pour prefers-reduced-motion.
-   Animation déclenchée par CSS pur (pas de JS), via @keyframes.        */
+   Fade-in léger sur les cartes (TOUS écrans)
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes k-card-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* On cible uniquement les cartes générées dans la grille catalogue ;
-   pas les cartes du rail soldes (déjà animées par scroll auto). */
 .k-grid .k-card {
   animation: k-card-fade-in .35s var(--ease, ease-out) both;
 }
 
-/* Désactivation respectueuse */
 @media (prefers-reduced-motion: reduce) {
   .k-grid .k-card {
     animation: none;
@@ -192,5 +285,5 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FIN — homepage-refresh.css
+   FIN — homepage-refresh.css v2
    ═══════════════════════════════════════════════════════════════════════════ */
