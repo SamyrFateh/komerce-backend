@@ -1,38 +1,23 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    KOMERCE — HOMEPAGE MOBILE REFRESH
-   v2 · 28 avril 2026
+   v3 · 28 avril 2026
    ───────────────────────────────────────────────────────────────────────────
 
-   Patch ciblé pour rendre la home mobile plus "e-commerce".
+   v3 changes par rapport à v2 :
+   • Toutes les chips tiennent sur la ligne (8 chips après fusion Mode+Beauté)
+     → chip 40px, cercle 36px, gap 4px, padding shell 6px
+     → 348px sur 359px disponibles (iPhone SE) — 8 chips entières
+   • Hero recadré symétriquement (les 2 personnages équilibrés)
+     → object-position: 50% 30% (était center 15%)
+   • Plus d'espace bottom sous la grille avant la bottom nav
+     → padding-bottom #k-page-scroll passé de 68px à 100px
+   • Chip active : pas de transform scale (pas de "ça bouge")
 
-   v2 changes par rapport à v1 :
-   • chips remontées en overlay sur le bas de l'image hero (gain ~80px)
-   • chips compactes : 60px (vs 78), cercle 52px (vs 64), gap 6px (vs 10)
-     → 5 chips entières visibles sur écran 375px (iPhone SE) + bout de la 6ᵉ
-     → 6 entières sur écran 412px+ (Pixel/Galaxy)
-   • description carte : 10px / lh 1.2 / mt 1px (gain ~4px par carte)
-   • hero overlay padding tassé : 8/10 (vs 12/14)
-
-   STRUCTURE (rappel) :
-   <header />
-   <#k-hero-fixed-wrap position:fixed>          ← bloc épinglé en haut
-     <.k-hero>
-       <.k-hero-media>                          ← contient l'image + slogan
-         <img.k-hero-img />
-         <.k-hero-mini-slogan />
-       </.k-hero-media>
-     </.k-hero>
-     <.k-hero-cats-sticky>                      ← contient les chips
-       <.k-cats-shell>
-         <nav.k-cats>
-           <.k-chip />×N
-         </nav>
-       </.k-cats-shell>
-     </.k-hero-cats-sticky>
-   </#k-hero-fixed-wrap>
-
-   .k-cats-shell est SŒUR de .k-hero, pas dedans → on remonte par
-   margin-top négatif (pas de position:absolute pour rester dans le flow).
+   v2 (rappel) :
+   • Chips remontées en overlay sur le bas de l'image hero
+   • Hero compact (-25%)
+   • Cartes produits respirantes (padding interne, line-clamp net)
+   • Description carte tassée (10px lh 1.2)
 
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -52,11 +37,17 @@
 @media (max-width: 899px) {
 
   /* ───────────────────────────────────────────────────────────────────────
-     1. Hero compact (-25%)
-     ─────────────────────────────────────────────────────────────────────── */
+     1. Hero — image recadrée symétriquement
+     ───────────────────────────────────────────────────────────────────────
+     v3 : object-position: 50% 30% (au lieu de center 15%)
+     Le 50% horizontal centre vraiment ; le 30% vertical met les visages
+     en haut du cadrage, ce qui équilibre les 2 personnages.            */
 
   .k-hero-img {
     height: clamp(96px, 17vw, 168px);
+    object-position: 50% 30% !important;
+    /* CSS principal ligne 6026 a "object-position: center 10% !important"
+       → on contre avec le même !important. */
   }
 
   .k-hero-overlay {
@@ -65,115 +56,113 @@
     gap: 4px;
   }
 
-  .k-hero-mini-slogan {
-    padding: 8px 12px;
-  }
-
-  .k-hero-sub  { margin-top: 3px; }
-  .k-hero-cta-row { margin-top: 6px; }
+  .k-hero-mini-slogan { padding: 8px 12px; }
+  .k-hero-sub        { margin-top: 3px; }
+  .k-hero-cta-row    { margin-top: 6px; }
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     2. CHIPS REMONTÉES EN OVERLAY SUR L'IMAGE HERO
-     ───────────────────────────────────────────────────────────────────────
-     L'image hero a margin: 0 var(--pad-x) 10px et border-radius en bas.
-     On supprime le margin-bottom et on remonte le bloc chips de ~28px
-     pour qu'il chevauche le bas de l'image.
-     Fond sand opaque pour cohérence avec le hero.                         */
+     2. CHIPS REMONTÉES EN OVERLAY SUR L'IMAGE HERO (idem v2)
+     ─────────────────────────────────────────────────────────────────────── */
 
-  /* Annule la marge qui crée l'espace beige entre image et chips */
   .k-hero-media {
     margin-bottom: 0;
   }
 
-  /* Le wrapper sticky perd son fond visible — laisse passer l'image dessous */
   .k-hero-cats-sticky {
     background: transparent !important;
-    /* CSS principal ligne 7237 : background #f6f0e3 !important — ici on
-       contre car on veut que les chips flottent visuellement sur l'image. */
     box-shadow: none !important;
-    /* le margin-top négatif tire le bloc dans la zone image ; valeur calée
-       sur la hauteur de l'overlay chips ~70px → on remonte de la moitié. */
     margin-top: -36px;
     position: relative;
     z-index: 5;
   }
 
-  /* Le shell devient une "carte" qui flotte sur le bas de l'image */
   .k-cats-shell {
     margin: 0 var(--pad-x);
     padding: 0;
     background: #f6f0e3;
-    /* Sand opaque — même teinte que le fond hero pour cohérence Komerce */
     border: 1px solid rgba(31, 48, 36, .06);
     border-radius: 18px;
     box-shadow: 0 6px 20px rgba(31, 48, 36, .10);
     overflow: hidden;
   }
 
-  /* Padding interne du rail chips */
-  .k-cats {
-    padding: 8px 10px !important;
-    /* CSS principal ligne 7253 : padding 6px 10px !important — on ajuste. */
-    gap: 6px !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-
-  /* Espace SOUS le bloc chips, avant la première section produits */
   .k-hero-cats-sticky::after {
     content: '';
     display: block;
     height: 12px;
-    /* respiration entre chips et section soldes */
   }
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     3. CHIPS PLUS COMPACTES — 5 entières + bout de la 6ᵉ sur 375px
-     ─────────────────────────────────────────────────────────────────────── */
+     3. CHIPS COMPACTES — 8 chips qui tiennent sur la ligne
+     ───────────────────────────────────────────────────────────────────────
+     iPhone SE 375px → padding shell 6px → 363px disponibles
+     8 chips × 40px + 7 gaps × 4px = 348px → 15px de marge OK
+     Pixel 7 412px → 50px de marge, ça aère bien                          */
+
+  .k-cats {
+    padding: 8px 6px !important;
+    /* CSS principal ligne 7253 : padding 6px 10px !important — on ajuste. */
+    gap: 4px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    /* Le scroll horizontal est dispo si jamais ça déborde sur écran rare
+       très étroit (< 360px), mais pour 375px+ tout tient sans scroll. */
+
+    /* Snap mandatory — quand le scroll s'arrête, il tombe TOUJOURS sur
+       une chip propre (pas de demi-chip coupée au bord).
+       CSS principal ligne 695 : "x proximity" (mode doux) → on durcit. */
+    scroll-snap-type: x mandatory !important;
+    scroll-padding-left: 6px;
+    /* aligne la première chip avec le padding gauche du shell */
+  }
 
   .k-chip {
-    min-width: 60px !important;
-    max-width: 60px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
     /* override CSS principal ligne 715-716 (78px) */
-    gap: 4px;
+    gap: 3px;
   }
 
   .k-chip-photo {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    border-radius: 16px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 12px;
   }
 
   .k-chip-photo img {
-    border-radius: 16px;
+    border-radius: 12px;
   }
 
   .k-chip-photo > span {
-    font-size: 12px;
+    font-size: 9px;
+    font-weight: 800;
   }
 
   .k-chip[data-cat="all"] .k-chip-photo > span {
-    font-size: 13px;
+    font-size: 10px;
   }
 
   .k-chip-photo svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   .k-chip-label {
-    font-size: 10px;
-    max-width: 58px;
+    font-size: 9px;
+    max-width: 40px;
     line-height: 1.1;
+    /* Tronque proprement les labels longs comme "Mode & Beauté" */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* État active : enlever le scale qui fait "bouger" les chips voisines.
-     Garder uniquement le glow coral. */
+  /* État active : pas de scale, juste le glow coral autour du cercle */
   .k-chip.active {
     transform: none;
   }
@@ -201,11 +190,8 @@
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     5. Cartes produits : respirer (padding interne, line-clamp net)
-     ───────────────────────────────────────────────────────────────────────
-     Le bloc @media(min-width:600px) du CSS principal applique padding 6/8/8
-     sur mobile par erreur (le commentaire dit "compactes sur mobile" mais
-     le bloc est dans min-600). On rétablit ici sous 600px.                */
+     5. Cartes produits : respirer + description tassée
+     ─────────────────────────────────────────────────────────────────────── */
 
   .k-card-info {
     padding: 10px 10px 12px;
@@ -221,7 +207,6 @@
     min-height: 2.6em;
   }
 
-  /* Description plus tassée — gain ~4px par carte */
   .k-card-desc {
     font-size: 10px;
     line-height: 1.2;
@@ -250,7 +235,20 @@
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     6. Espacement entre sections
+     6. Espace en bas pour voir les dernières cartes en entier
+     ───────────────────────────────────────────────────────────────────────
+     Le CSS principal pose padding-bottom: 68px (ligne 6533) sur le scroll.
+     Bottom nav fixed = 52px → il restait 16px de marge → cartes du bas
+     trop collées. On bump à 100px → marge confortable de 48px.          */
+
+  #k-page-scroll {
+    padding-bottom: 100px !important;
+    /* CSS principal ligne 6533 : 68px — on dépasse pour respirer. */
+  }
+
+
+  /* ───────────────────────────────────────────────────────────────────────
+     7. Espacement entre sections
      ─────────────────────────────────────────────────────────────────────── */
 
   #k-promos-section + .k-proverb-sep {
@@ -285,5 +283,5 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FIN — homepage-refresh.css v2
+   FIN — homepage-refresh.css v3
    ═══════════════════════════════════════════════════════════════════════════ */

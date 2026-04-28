@@ -37,6 +37,16 @@ import { openModal }      from './b-modal.js';
 
 'use strict';
 
+// ── Refresh 28/04/26 : fusion Mode + Beauté en une seule catégorie ──
+// Mappe les anciennes valeurs "Mode" et "Beauté" (côté DB) vers le nouveau
+// label unique "Mode & Beauté" utilisé par les chips et l'affichage.
+// Toutes les comparaisons p.category === activeCat passent par cette fonction
+// pour que les anciens produits matchent la nouvelle chip.
+function _normalizeCat(cat) {
+  if (cat === 'Mode' || cat === 'Beauté') return 'Mode & Beauté';
+  return cat;
+}
+
 // Pager → catalog : centrer la chip active (découplage circulaire)
 bus.on('chip:center', function(chip) { centerActiveChip(chip); });
 
@@ -63,7 +73,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
     // sinon on filtre filtered par catégorie (cohérent avec renderGrid)
     let list = state.activeCat === 'all'
       ? state.filtered
-      : state.filtered.filter(p => p.category === state.activeCat);
+      : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
     // Subcategory filter
     if (state.activeSubcat) {
       const subF = list.filter(p => p.subcategory === state.activeSubcat);
@@ -288,7 +298,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
     // Mobile pager: always show all products grouped by category
     let list = (state.activeCat === 'all' || _isMobile)
       ? state.filtered
-      : state.filtered.filter(p => p.category === state.activeCat);
+      : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
     // Subcategory filter (desktop focused mode only)
     if (!_isMobile && state.activeSubcat) {
       const subF = list.filter(p => p.subcategory === state.activeSubcat);
@@ -460,7 +470,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
     const byCat = new Map();
     const order = [];
     for (const p of list) {
-      const cat = p.category || 'Autres';
+      const cat = _normalizeCat(p.category) || 'Autres';
       if (!byCat.has(cat)) { byCat.set(cat, []); order.push(cat); }
       byCat.get(cat).push(p);
     }
@@ -513,23 +523,24 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
    */
   function _renderGridWithSections(items) {
     // ── FIXED ORDER matching chips ──
-    const CHIP_ORDER = ['Mode', 'Beauté', 'Tech', 'Enfant', 'Maison', 'Sport', 'Sur-mesure'];
+    // Refresh 28/04/26 : "Mode" + "Beauté" fusionnées en "Mode & Beauté"
+    const CHIP_ORDER = ['Mode & Beauté', 'Tech', 'Enfant', 'Maison', 'Sport', 'Sur-mesure'];
     const EMOJI_CAT = {
       'Tout': '🔥', 'Soldes': '🏷️',
-      'Mode': '👕', 'Beauté': '🌸', 'Tech': '📱', 'Enfant': '🧒',
+      'Mode & Beauté': '👗', 'Tech': '📱', 'Enfant': '🧒',
       'Maison': '🏠', 'Sport': '⚽', 'Sur-mesure': '✨', 'Autres': '📦',
     };
-    // Group by category
+    // Group by category — _normalizeCat() fusionne Mode et Beauté
     const byCat = {};
     for (const p of items) {
-      const cat = p.category || 'Autres';
+      const cat = _normalizeCat(p.category) || 'Autres';
       if (!byCat[cat]) byCat[cat] = [];
       byCat[cat].push(p);
     }
     // Total per category (all products, not just balanced)
     const totalByCat = {};
     for (const p of state.filtered) {
-      const cat = p.category || 'Autres';
+      const cat = _normalizeCat(p.category) || 'Autres';
       totalByCat[cat] = (totalByCat[cat] || 0) + 1;
     }
     const parts = [];
