@@ -121,10 +121,8 @@
     position: sticky !important;
     bottom: 0 !important;
     z-index: 10 !important;
-    display: grid !important;
     grid-template-columns: 0.8fr 1.2fr !important;
     gap: 10px !important;
-    margin: 0 !important;
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important;
     background: rgba(255,255,255,0.95) !important;
     backdrop-filter: blur(12px) !important;
