@@ -2183,23 +2183,13 @@ body.cart-open #k-section-index {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ F. CHIPS Ã¢â‚¬â€ compact circles, fits 8 in 390px Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 
   .k-cats {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
     scroll-behavior: smooth;
-    scrollbar-width: none;
     -ms-overflow-style: none;
     gap: 1px;
     padding: 3px 8px !important;
     background: #ede9e0;
     align-items: flex-start;
     min-height: 38px;
-  }
-
-  .k-cats::-webkit-scrollbar {
-    display: none;
   }
 
   .k-chip {
@@ -2395,11 +2385,6 @@ body.cart-open #k-section-index {
 
   .k-section-head {
     margin-bottom: 2px !important;
-  }
-
-  .k-grid {
-    gap: 6px;
-    padding: 0 6px 10px;
   }
 
   .k-card {
