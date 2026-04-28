@@ -1604,14 +1604,7 @@ body.cart-open{overflow:hidden}
   max-width:100%;
   max-height:100%;
 }
-.k-modal-carousel-track img {
-  object-fit:contain !important;
-  object-position:center center !important;
-  background:transparent !important;
-  padding:16px !important;
-  max-width:100% !important;
-  max-height:100% !important;
-}
+
 .k-modal-dots{
   position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
   display:flex;gap:6px;z-index:2;
