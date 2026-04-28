@@ -66,11 +66,6 @@
     box-shadow: none !important;
   }
 
-  .k-cats-shell {
-    padding: 0 var(--pad-x) 12px;
-    background: #f6f0e3;
-  }
-
   .k-cats-wrap-fade-left,
   .k-cats-wrap-fade-right {
     display: none !important;
@@ -78,11 +73,6 @@
 
   .k-cats {
     gap: 4px;
-    padding: 6px 10px !important;
-    background: #fff !important;
-    border: 1px solid rgba(31,48,36,.08);
-    border-radius: 20px;
-    box-shadow: 0 10px 24px rgba(31,48,36,.08);
   }
 
   #k-page-scroll {
