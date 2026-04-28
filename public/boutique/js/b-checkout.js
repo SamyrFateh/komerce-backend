@@ -212,6 +212,21 @@ function _renderRelaisForIle(listEl, relaisList, od) {
     return !haystack.includes('domoni');
   });
 
+  if (visibleRelais.length === 1) {
+    const r = visibleRelais[0];
+    const item = document.createElement('div');
+    item.className = 'ck-relais-item ck-relais-item--compact selected';
+    item.dataset.id = r.id;
+    item.innerHTML =
+      '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' +
+      (r.address || r.adresse || r.location
+        ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>'
+        : '');
+    od.selectedRelaisId = r.id;
+    listEl.appendChild(item);
+    return;
+  }
+
   visibleRelais.forEach(r => {
     const item = document.createElement('div'); item.className = 'ck-relais-item'; item.dataset.id = r.id;
     item.innerHTML = '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' + (r.address || r.adresse || r.location ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>' : '');
@@ -284,7 +299,7 @@ function renderCheckoutCompact() {
   if (!document.getElementById('ck-relais-css')) {
     const st = document.createElement('style');
     st.id = 'ck-relais-css';
-    st.textContent = '.ck-relais-section{margin-bottom:12px}.ck-relais-ile-label{font-size:12px;color:#666;margin-bottom:6px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.ck-relais-ile-btn{padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:20px;background:#fff;font-size:13px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:6px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-name{display:block;font-weight:600;font-size:14px}.ck-relais-addr{display:block;font-size:12px;color:#888;margin-top:2px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:13px;padding:8px 0}.ck-stepper{display:flex;gap:8px;margin:6px 0 12px}.ck-step-chip{flex:1;padding:8px 10px;border-radius:999px;background:#f5f5f2;color:#6b7280;font-size:12px;font-weight:700;text-align:center}.ck-step-chip.active{background:#e8eddb;color:#31511e}.ck-step-panel{display:none}.ck-step-panel.active{display:block}.ck-step-card{padding:10px 12px;border:1.5px solid rgba(0,0,0,.08);border-radius:12px;background:#fff;margin-bottom:10px}.ck-step-title{font-size:14px;font-weight:700;margin-bottom:3px;color:#111827}.ck-step-sub{font-size:12px;color:#6b7280;margin-bottom:8px}.ck-step-actions{display:flex;gap:8px;margin-top:12px}.ck-step-btn{flex:1;height:42px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer}.ck-step-btn--ghost{background:#f5f5f2;color:#374151;border:1px solid rgba(0,0,0,.08)}.ck-step-btn--primary{background:#31511e;color:#fff}.ck-track-details{margin-top:8px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#fafaf9}.ck-track-details summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:13px;font-weight:600;color:#374151}.ck-track-details summary::-webkit-details-marker{display:none}.ck-track-details[open] summary{border-bottom:1px solid rgba(0,0,0,.06)}.ck-track-details-body{padding:10px 12px}.ck-relay-note{font-size:12px;color:#6b7280;margin:-2px 0 8px}';
+      st.textContent = '.ck-relais-section{margin-bottom:8px}.ck-relais-ile-label{font-size:11px;color:#666;margin-bottom:4px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.ck-relais-ile-btn{padding:5px 11px;border:1.5px solid #e0e0e0;border-radius:18px;background:#fff;font-size:12px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:9px 10px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:5px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-item--compact{padding:8px 10px;margin-bottom:4px}.ck-relais-name{display:block;font-weight:600;font-size:13px}.ck-relais-addr{display:block;font-size:11px;color:#888;margin-top:1px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:12px;padding:6px 0}.ck-stepper{display:flex;gap:8px;margin:6px 0 12px}.ck-step-chip{flex:1;padding:8px 10px;border-radius:999px;background:#f5f5f2;color:#6b7280;font-size:12px;font-weight:700;text-align:center}.ck-step-chip.active{background:#e8eddb;color:#31511e}.ck-step-panel{display:none}.ck-step-panel.active{display:block}.ck-step-card{padding:10px 12px;border:1.5px solid rgba(0,0,0,.08);border-radius:12px;background:#fff;margin-bottom:10px}.ck-step-title{font-size:14px;font-weight:700;margin-bottom:3px;color:#111827}.ck-step-sub{font-size:12px;color:#6b7280;margin-bottom:8px}.ck-step-actions{display:flex;gap:8px;margin-top:12px}.ck-step-btn{flex:1;height:42px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer}.ck-step-btn--ghost{background:#f5f5f2;color:#374151;border:1px solid rgba(0,0,0,.08)}.ck-step-btn--primary{background:#31511e;color:#fff}.ck-track-details{margin-top:8px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#fafaf9}.ck-track-details summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:13px;font-weight:600;color:#374151}.ck-track-details summary::-webkit-details-marker{display:none}.ck-track-details[open] summary{border-bottom:1px solid rgba(0,0,0,.06)}.ck-track-details-body{padding:10px 12px}.ck-relay-note{font-size:12px;color:#6b7280;margin:-2px 0 8px}';
     document.head.appendChild(st);
   }
 
@@ -465,9 +480,9 @@ export function renderCheckout() {
     // CSS relais picker (inject once)
     if (!document.getElementById('ck-relais-css')) {
       const st = document.createElement('style'); st.id = 'ck-relais-css';
-      st.textContent = '.ck-relais-section{margin-bottom:12px}.ck-relais-ile-label{font-size:12px;color:#666;margin-bottom:6px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.ck-relais-ile-btn{padding:6px 12px;border:1.5px solid #e0e0e0;border-radius:20px;background:#fff;font-size:13px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:6px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-name{display:block;font-weight:600;font-size:14px}.ck-relais-addr{display:block;font-size:12px;color:#888;margin-top:2px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:13px;padding:8px 0}';
-      document.head.appendChild(st);
-    }
+        st.textContent = '.ck-relais-section{margin-bottom:8px}.ck-relais-ile-label{font-size:11px;color:#666;margin-bottom:4px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.ck-relais-ile-btn{padding:5px 11px;border:1.5px solid #e0e0e0;border-radius:18px;background:#fff;font-size:12px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:9px 10px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:5px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-item--compact{padding:8px 10px;margin-bottom:4px}.ck-relais-name{display:block;font-weight:600;font-size:13px}.ck-relais-addr{display:block;font-size:11px;color:#888;margin-top:1px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:12px;padding:6px 0}';
+        document.head.appendChild(st);
+      }
     const body = dom.orderBody;
     body.innerHTML = '';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
@@ -490,12 +505,7 @@ export function renderCheckout() {
     });
     body.appendChild(backBtn);
 
-    /* ── 2. Bénéficiaire ── */
-    const s1 = document.createElement('div');
-    s1.className = 'ck-label';
-    s1.textContent = 'Qui récupère la commande ?';
-    body.appendChild(s1);
-    body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
+      body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
 
     /* ── 2b. Point relais ── */
