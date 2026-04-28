@@ -361,7 +361,7 @@ async function getTauxCompletudeCouts(filters = {}) {
           SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
           WHERE NOT EXISTS (
             SELECT 1 FROM order_item_real_cost_allocations alc
-            WHERE alc.order_id = os.id AND alc.cost_type = expected.t
+            WHERE alc.order_id = os.id AND alc.cost_type::text = expected.t
           )
         )
     )
@@ -500,13 +500,13 @@ async function getMargeVariableReelle(filters = {}) {
     orders_with_variable AS (
       SELECT os.id, os.total_kmf,
         (SELECT SUM(amount_kmf) FROM order_item_real_cost_allocations
-         WHERE order_id = os.id AND cost_type = ANY($${params.length + 1}::text[])) AS variable_real
+         WHERE order_id = os.id AND cost_type::text = ANY($${params.length + 1}::text[])) AS variable_real
       FROM order_set os
       WHERE NOT EXISTS (
         SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
         WHERE NOT EXISTS (
           SELECT 1 FROM order_item_real_cost_allocations
-          WHERE order_id = os.id AND cost_type = expected.t
+          WHERE order_id = os.id AND cost_type::text = expected.t
         )
       )
     )
@@ -557,7 +557,7 @@ async function getMargeConsolidee(filters = {}) {
           SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
           WHERE NOT EXISTS (
             SELECT 1 FROM order_item_real_cost_allocations
-            WHERE order_id = os.id AND cost_type = expected.t
+            WHERE order_id = os.id AND cost_type::text = expected.t
           )
         )
     )
@@ -603,7 +603,7 @@ async function getCmdsCoutIncompletCount(filters = {}) {
           SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
           WHERE NOT EXISTS (
             SELECT 1 FROM order_item_real_cost_allocations
-            WHERE order_id = o.id AND cost_type = expected.t
+            WHERE order_id = o.id AND cost_type::text = expected.t
           )
         )
       )
@@ -636,7 +636,7 @@ async function getCmdsCoutIncompletIds(filters = {}, options = {}) {
           SELECT 1 FROM unnest($${params.length + 1}::text[]) AS expected(t)
           WHERE NOT EXISTS (
             SELECT 1 FROM order_item_real_cost_allocations
-            WHERE order_id = o.id AND cost_type = expected.t
+            WHERE order_id = o.id AND cost_type::text = expected.t
           )
         )
       )
@@ -863,11 +863,18 @@ async function getTauxCompletion(filters = {}) {
 
 async function getMontantTotalEvenements(filters = {}) {
   const sql = `
-    SELECT COALESCE(SUM(cart_total_kmf), 0)::bigint AS value
-    FROM collective_workspaces
-    WHERE status NOT IN ('cancelled', 'archived')
-      ${filters.from ? 'AND created_at >= $1' : ''}
-      ${filters.to ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
+    SELECT COALESCE(SUM(workspace_total_kmf), 0)::bigint AS value
+    FROM (
+      SELECT
+        cw.id,
+        COALESCE(SUM(COALESCE(cwi.price_snapshot_kmf, 0) * COALESCE(cwi.quantity, 1)), 0) AS workspace_total_kmf
+      FROM collective_workspaces cw
+      LEFT JOIN collective_workspace_items cwi ON cwi.workspace_id = cw.id
+      WHERE cw.status NOT IN ('cancelled')
+        ${filters.from ? 'AND cw.created_at >= $1' : ''}
+        ${filters.to ? `AND cw.created_at <= $${filters.from ? 2 : 1}` : ''}
+      GROUP BY cw.id
+    ) totals
   `;
   const params = [];
   if (filters.from) params.push(filters.from);
@@ -915,12 +922,20 @@ async function getCmdsCreeesWorkspace(filters = {}) {
 
 async function getPanierMoyEvenement(filters = {}) {
   const sql = `
-    SELECT COALESCE(AVG(cart_total_kmf), 0)::bigint AS value,
-           COUNT(*)::int AS items_total
-    FROM collective_workspaces
-    WHERE status NOT IN ('cancelled', 'archived')
-      ${filters.from ? 'AND created_at >= $1' : ''}
-      ${filters.to ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
+    SELECT
+      COALESCE(AVG(workspace_total_kmf), 0)::bigint AS value,
+      COUNT(*)::int AS items_total
+    FROM (
+      SELECT
+        cw.id,
+        COALESCE(SUM(COALESCE(cwi.price_snapshot_kmf, 0) * COALESCE(cwi.quantity, 1)), 0) AS workspace_total_kmf
+      FROM collective_workspaces cw
+      LEFT JOIN collective_workspace_items cwi ON cwi.workspace_id = cw.id
+      WHERE cw.status NOT IN ('cancelled')
+        ${filters.from ? 'AND cw.created_at >= $1' : ''}
+        ${filters.to ? `AND cw.created_at <= $${filters.from ? 2 : 1}` : ''}
+      GROUP BY cw.id
+    ) totals
   `;
   const params = [];
   if (filters.from) params.push(filters.from);

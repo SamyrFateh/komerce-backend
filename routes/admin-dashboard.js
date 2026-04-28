@@ -534,22 +534,43 @@ async function _buildControlTowerTables(filters) {
 async function _buildCostingCharts(filters) {
   const { where, params } = metrics.buildFiltersClause(filters);
   const sql = `
-    SELECT DATE(o.created_at) AS day,
-      COALESCE(SUM(o.total_kmf) FILTER (WHERE o.payment_status='paid'), 0)::bigint AS ca_kmf,
-      COALESCE((
-        SELECT SUM(estimated_business_complete_cost_kmf)
-        FROM order_item_cost_imputations imp
-        WHERE imp.order_id IN (SELECT id FROM orders WHERE DATE(created_at) = DATE(o.created_at))
-      ), 0)::bigint AS cost_estimated_kmf,
-      COALESCE((
-        SELECT SUM(amount_kmf) FROM order_item_real_cost_allocations alc
-        WHERE alc.order_id IN (SELECT id FROM orders WHERE DATE(created_at) = DATE(o.created_at))
-          AND alc.is_actual = TRUE
-      ), 0)::bigint AS cost_real_kmf
-    FROM orders o
-    WHERE ${where}
-    GROUP BY DATE(o.created_at)
-    ORDER BY day
+    WITH order_set AS (
+      SELECT o.id, DATE(o.created_at) AS day, o.total_kmf, o.payment_status
+      FROM orders o
+      WHERE ${where}
+    ),
+    ca_by_day AS (
+      SELECT
+        day,
+        COALESCE(SUM(total_kmf) FILTER (WHERE payment_status = 'paid'), 0)::bigint AS ca_kmf
+      FROM order_set
+      GROUP BY day
+    ),
+    est_by_day AS (
+      SELECT
+        os.day,
+        COALESCE(SUM(imp.estimated_business_complete_cost_kmf), 0)::bigint AS cost_estimated_kmf
+      FROM order_set os
+      LEFT JOIN order_item_cost_imputations imp ON imp.order_id = os.id
+      GROUP BY os.day
+    ),
+    real_by_day AS (
+      SELECT
+        os.day,
+        COALESCE(SUM(alc.amount_kmf) FILTER (WHERE alc.is_actual = TRUE), 0)::bigint AS cost_real_kmf
+      FROM order_set os
+      LEFT JOIN order_item_real_cost_allocations alc ON alc.order_id = os.id
+      GROUP BY os.day
+    )
+    SELECT
+      ca.day,
+      ca.ca_kmf,
+      COALESCE(est.cost_estimated_kmf, 0)::bigint AS cost_estimated_kmf,
+      COALESCE(real.cost_real_kmf, 0)::bigint AS cost_real_kmf
+    FROM ca_by_day ca
+    LEFT JOIN est_by_day est ON est.day = ca.day
+    LEFT JOIN real_by_day real ON real.day = ca.day
+    ORDER BY ca.day
   `;
   const familySql = `
     SELECT alc.cost_type, COALESCE(SUM(alc.amount_kmf), 0)::bigint AS amount_kmf
