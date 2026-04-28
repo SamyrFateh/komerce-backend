@@ -560,14 +560,15 @@ export function renderCheckout() {
     /* ── 4. Suivi SMS accordion ── */
     const trackWrap = document.createElement('details');
     trackWrap.className = 'ck-track-details';
-    trackWrap.innerHTML = '<summary>Suivi WhatsApp (optionnel)</summary>';
+    trackWrap.innerHTML = '<summary>Suivi (optionnel)</summary>';
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-details-body';
     const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
+    senderGroup.classList.add('k-ck-group--tracking-compact');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
-    trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
+    trkHint.textContent = 'Infos de retrait sur ce numéro';
     trackExtra.appendChild(senderGroup);
     trackExtra.appendChild(trkHint);
     trackWrap.appendChild(trackExtra);
@@ -577,16 +578,14 @@ export function renderCheckout() {
       setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
       setIntlPhoneDefault('of-sender-phone', od.fulfillment_zone, !od.sender_phone);
       _loadRelaisSection(relaisSection, od);
-      const trackSummary = trackWrap.querySelector('summary');
-      if (trackSummary) {
-        trackSummary.textContent = od.fulfillment_zone === 'france'
-          ? 'Suivi WhatsApp (optionnel)'
-          : 'Suivi WhatsApp (optionnel)';
+        const trackSummary = trackWrap.querySelector('summary');
+        if (trackSummary) {
+          trackSummary.textContent = 'Suivi (optionnel)';
+        }
+        trkHint.textContent = od.fulfillment_zone === 'france'
+          ? 'Infos de retrait en France sur ce numéro'
+          : 'Infos de retrait aux Comores sur ce numéro';
       }
-      trkHint.textContent = od.fulfillment_zone === 'france'
-        ? 'Recevez les infos de retrait en France sur ce numéro'
-        : 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
-    }
     refreshFulfillment();
 
     /* ── 5. Wallet ── */

@@ -3161,6 +3161,8 @@ body.cart-open{overflow:hidden}
 .k-ck-group{margin-bottom:6px}
 .k-ck-label{display:block;font-size:0.76rem;font-weight:600;margin-bottom:2px}
 .k-ck-label--sm{font-size:0.75rem;color:#666}
+.k-ck-group--tracking-compact{margin-bottom:2px}
+.k-ck-group--tracking-compact .k-ck-phone-help{display:none}
 .k-ck-input{
     width:100%;padding:8px 10px;border:1.5px solid rgba(0,0,0,0.1);border-radius:8px;
     outline:none;font-size:0.84rem;transition:border-color 0.2s;box-sizing:border-box;
@@ -3376,15 +3378,22 @@ body.cart-open{overflow:hidden}
     margin-bottom:6px;
   }
 .ck-track-details{
-    margin-top:4px;
+    margin-top:3px;
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:10px;
+    background:#fafaf9;
   }
 .ck-track-details summary{
-    font-size:11px;
+    font-size:10px;
+    padding:8px 10px;
+    font-weight:700;
   }
 .ck-track-hint{
-  font-size:11px;
-  color:var(--text-light);
-}
+    font-size:10px;
+    color:var(--text-light);
+    margin-top:2px;
+  }
+.ck-track-details-body{padding:6px 8px 8px}
 .ck-pay-chip{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     min-height:62px;
