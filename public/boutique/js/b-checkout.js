@@ -497,7 +497,7 @@ export function renderCheckout() {
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
     s1.className = 'ck-label';
-    s1.textContent = 'Qui reçoit ?';
+    s1.textContent = 'Qui récupère la commande ?';
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
