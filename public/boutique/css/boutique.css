@@ -1566,7 +1566,9 @@ body.cart-open{overflow:hidden}
 .k-modal-scroll{
   flex:1;
   overflow-y:auto;
+  overflow-x: hidden !important;
   -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin;
   min-height:0;
   display:flex;
   flex-direction:column;
@@ -3656,13 +3658,6 @@ input#of-client-email {
 /*  MODALE PRODUIT — scroll vertical + suggestions en grille (Shein-like)  */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* Le conteneur principal doit scroller verticalement */
-.k-modal-scroll {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
 
 /* La zone image reste fixe en haut (carrousel horizontal) */
 .k-modal-img-wrap {
@@ -3810,11 +3805,7 @@ body.modal-open .k-bnav {
 }
 
 /* ── Modale produit : scroll vertical + suggestions en grille ───── */
-.k-modal-scroll {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch;
-}
+
 .k-modal-img-wrap {
   flex: 0 0 auto !important;
   height: 45vh !important;
