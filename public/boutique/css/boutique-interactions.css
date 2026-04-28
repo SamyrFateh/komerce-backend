@@ -2683,7 +2683,6 @@ body.cart-open #k-section-index {
 
   .k-modal-slide {
     object-fit: cover;
-    object-position: center center;
   }
 
 /* Carte info qui chevauche le bas de l'image */
