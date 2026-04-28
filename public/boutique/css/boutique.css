@@ -7313,7 +7313,6 @@ body.cart-open #k-section-index {
 
   #k-page-scroll.k-pager-active .k-sec-grid {
     gap: 5px;
-    padding: 4px 6px 8px;
   }
 
 /* ── Direction lock: vertical gesture → disable horizontal snap ── */
