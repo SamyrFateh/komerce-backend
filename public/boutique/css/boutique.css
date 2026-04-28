@@ -1044,9 +1044,11 @@ body{
   padding:3px 8px;border-radius:50px;
   letter-spacing:.3px;
   box-shadow:0 2px 6px rgba(200,92,45,.25);
+  z-index:2;
 }
 .k-card-fav{
   position:absolute;top:8px;right:8px;
+  left:auto;
   width:30px;height:30px;
   background:var(--white);
   border:none;
@@ -2801,7 +2803,7 @@ body.cart-open{overflow:hidden}
 /* ── FAV VIEW ──────────────────────────────────────────── */
 .k-fav-view,.k-track-view{
   display:none;
-  padding:12px 10px calc(var(--bnav-h) + 20px);
+  padding:12px 10px calc(var(--bnav-h) + 96px);
   min-height:60vh;
 }
 .k-fav-view.show,.k-track-view.show{display:block}
@@ -2872,6 +2874,7 @@ body.cart-open{overflow:hidden}
 .k-track-steps{
   background:var(--white);border-radius:12px;
   padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);
+  margin-bottom:28px;
 }
 .k-track-step{
   display:flex;align-items:flex-start;gap:12px;
@@ -6498,6 +6501,7 @@ body.cart-open #k-section-index {
     padding: 1px 5px;
     top: 5px;
     left: 5px;
+    z-index: 2;
   }
 
   .k-card-add {
@@ -6551,6 +6555,8 @@ body.cart-open #k-section-index {
     font-size: 12px;
     top: 6px;
     right: 6px;
+    left: auto;
+    z-index: 3;
   }
 
   .k-card-prices {
@@ -6986,6 +6992,7 @@ body.cart-open #k-section-index {
     padding: 1px 4px;
     top: 3px;
     left: 3px;
+    z-index: 2;
   }
 
   .k-sec-grid .k-card-fav {
@@ -6993,7 +7000,9 @@ body.cart-open #k-section-index {
     height: 20px;
     top: 3px;
     right: 3px;
+    left: auto;
     font-size: 9px;
+    z-index: 3;
   }
 
   .k-sec-grid .k-card-add .k-card-add-basket {
