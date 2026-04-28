@@ -194,7 +194,18 @@ function getRelayGroupOrder(groups) {
 
 function _renderRelaisForIle(listEl, relaisList, od) {
   listEl.innerHTML = '';
-  relaisList.forEach(r => {
+  const visibleRelais = relaisList.filter(r => {
+    const haystack = [
+      r.name,
+      r.nom,
+      r.address,
+      r.adresse,
+      r.location,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return !haystack.includes('domoni');
+  });
+
+  visibleRelais.forEach(r => {
     const item = document.createElement('div'); item.className = 'ck-relais-item'; item.dataset.id = r.id;
     item.innerHTML = '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' + (r.address || r.adresse || r.location ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>' : '');
     item.addEventListener('click', () => {
@@ -204,6 +215,9 @@ function _renderRelaisForIle(listEl, relaisList, od) {
     });
     listEl.appendChild(item);
   });
+
+  const first = listEl.querySelector('.ck-relais-item');
+  if (first && !od.selectedRelaisId) first.click();
 }
 
 function readIntlPhoneValue(id, fallbackValue) {
