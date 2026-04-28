@@ -146,13 +146,13 @@ async function _loadRelaisSection(container, od) {
     list.forEach(r => { const ile = classifyRelayGroup(r); if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
     container.innerHTML = '';
     const zone = od.fulfillment_zone || 'comoros';
-    const groups = getRelayGroupOrder(Object.keys(byIle)).filter(ile => zone === 'paris' ? ile === 'France' : ile !== 'France');
+    const groups = getRelayGroupOrder(Object.keys(byIle)).filter(ile => zone === 'france' ? ile === 'France' : ile !== 'France');
     if (!groups.length) {
       container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible pour cette zone</div>';
       return;
     }
 
-    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = zone === 'paris' ? 'Relais Paris :' : 'Zone de retrait :'; container.appendChild(ileLabel);
+    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = zone === 'france' ? 'Relais en France :' : 'Zone de retrait :'; container.appendChild(ileLabel);
     const ileGrid = document.createElement('div'); ileGrid.className = 'ck-relais-ile-grid';
     const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
     groups.forEach(ile => {
@@ -242,7 +242,7 @@ function renderFulfillmentSelector(container, od, onChange) {
   wrap.className = 'ck-fulfillment-switch';
   wrap.innerHTML =
     '<button type="button" class="ck-fulfillment-btn" data-zone="comoros">Retrait aux Comores</button>' +
-    '<button type="button" class="ck-fulfillment-btn" data-zone="paris">Retrait à Paris</button>';
+    '<button type="button" class="ck-fulfillment-btn" data-zone="france">Retrait en France</button>';
 
   function syncActive() {
     wrap.querySelectorAll('.ck-fulfillment-btn').forEach(btn => {
@@ -262,6 +262,22 @@ function renderFulfillmentSelector(container, od, onChange) {
 
   syncActive();
   container.appendChild(wrap);
+}
+
+function getDefaultPhoneCodeForZone(zone) {
+  return zone === 'france' ? '+33' : '+269';
+}
+
+function setIntlPhoneDefault(id, zone, force) {
+  const sel = document.getElementById(id + '-country');
+  const input = document.getElementById(id);
+  if (!sel) return;
+  const nextCode = getDefaultPhoneCodeForZone(zone);
+  const hasValue = !!String(input?.value || '').trim();
+  if (force || !hasValue) {
+    sel.value = nextCode;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 
 function renderCheckoutCompact() {
@@ -552,8 +568,18 @@ export function renderCheckout() {
     body.appendChild(trackWrap);
 
     function refreshFulfillment() {
+      setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
+      setIntlPhoneDefault('of-sender-phone', od.fulfillment_zone, !od.sender_phone);
       _loadRelaisSection(relaisSection, od);
-      trackWrap.style.display = od.fulfillment_zone === 'comoros' ? '' : 'none';
+      const trackSummary = trackWrap.querySelector('summary');
+      if (trackSummary) {
+        trackSummary.textContent = od.fulfillment_zone === 'france'
+          ? 'Suivi WhatsApp (optionnel)'
+          : 'Suivi WhatsApp (optionnel)';
+      }
+      trkHint.textContent = od.fulfillment_zone === 'france'
+        ? 'Recevez les infos de retrait en France sur ce numéro'
+        : 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
     }
     refreshFulfillment();
 
