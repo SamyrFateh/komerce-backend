@@ -7170,6 +7170,98 @@ body.cart-open #k-section-index {
     };
   }
 
+/* Home mobile cleanup v288 — hero plus calme, barre opaque, catégories premium */
+@media (max-width: 899px) {
+  .k-header {
+    background: #f6f0e3 !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid rgba(31,48,36,.07);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .k-header-inner {
+    gap: 8px;
+  }
+
+  .k-logo-text {
+    display: none !important;
+  }
+
+  .k-logo-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .k-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    height: 34px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.96) !important;
+    border: 1px solid rgba(31,48,36,.08) !important;
+    box-shadow: 0 8px 18px rgba(31,48,36,.06);
+  }
+
+  .k-search input {
+    height: 34px;
+    padding: 0 12px 0 36px;
+    background: transparent !important;
+    font-size: 15px;
+  }
+
+  .k-search-icon {
+    left: 12px;
+    width: 16px;
+    height: 16px;
+  }
+
+  #k-hero-fixed-wrap {
+    background: #f6f0e3 !important;
+    border-bottom: 1px solid rgba(31,48,36,.07);
+  }
+
+  .k-hero {
+    background: #f6f0e3;
+  }
+
+  .k-hero-media {
+    height: clamp(132px, 33vw, 176px);
+    margin: 0 var(--pad-x) 10px;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 14px 30px rgba(31,48,36,.08);
+  }
+
+  .k-hero-cats-sticky {
+    background: #f6f0e3 !important;
+    box-shadow: none !important;
+  }
+
+  .k-cats-shell {
+    padding: 0 var(--pad-x) 12px;
+    background: #f6f0e3;
+  }
+
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
+    display: none !important;
+  }
+
+  .k-cats {
+    gap: 4px;
+    padding: 6px 10px !important;
+    background: #fff !important;
+    border: 1px solid rgba(31,48,36,.08);
+    border-radius: 20px;
+    box-shadow: 0 10px 24px rgba(31,48,36,.08);
+  }
+
+  #k-page-scroll {
+    background: var(--sand);
+  }
+}
+
 /* ── N. PHONE INPUT COMPACT (panier/checkout) ──────────── */
 
   .k-ck-phone-wrap {

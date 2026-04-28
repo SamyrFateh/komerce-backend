@@ -570,26 +570,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
           '<button class="k-sec-see-all" data-see-cat="' + sanitize(cat) + '">Voir tout →</button>' +
           '</div>'
         );
-        // Sous-catégories inline
-        var localSub = (state.sectionSubcats || {})[cat] || null;
-        if (SUBCATS[cat] && SUBCATS[cat].length > 0) {
-          parts.push('<div class="k-sec-subcats">');
-          for (var _s = 0; _s < SUBCATS[cat].length; _s++) {
-            var s = SUBCATS[cat][_s];
-            parts.push(
-              '<button class="k-sec-subchip' + (localSub === s.key ? ' active' : '') + '" ' +
-              'data-sec-cat="' + sanitize(cat) + '" data-sec-sub="' + s.key + '">' +
-              s.icon + ' ' + s.label + '</button>'
-            );
-          }
-          parts.push('</div>');
-        }
-        // Filtrer par sous-cat si active
         var sectionProds = prods;
-        if (localSub) {
-          var filtered = prods.filter(function(p) { return p.subcategory === localSub; });
-          if (filtered.length > 0) sectionProds = filtered;
-        }
         parts.push('<div class="k-sec-grid">');
         for (var _pi = 0; _pi < sectionProds.length; _pi++) parts.push(_renderCard(sectionProds[_pi]));
         parts.push('</div></div>');
@@ -619,24 +600,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
           '<button class="k-sec-see-all" data-see-cat="' + sanitize(cat) + '">Voir tout →</button>' +
           '</div>'
         );
-        var localSub = (state.sectionSubcats || {})[cat] || null;
-        if (SUBCATS[cat] && SUBCATS[cat].length > 0) {
-          parts.push('<div class="k-sec-subcats">');
-          for (var _s = 0; _s < SUBCATS[cat].length; _s++) {
-            var s = SUBCATS[cat][_s];
-            parts.push(
-              '<button class="k-sec-subchip' + (localSub === s.key ? ' active' : '') + '" ' +
-              'data-sec-cat="' + sanitize(cat) + '" data-sec-sub="' + s.key + '">' +
-              s.icon + ' ' + s.label + '</button>'
-            );
-          }
-          parts.push('</div>');
-        }
         var sectionProds = prods;
-        if (localSub) {
-          var filtered = prods.filter(function(p) { return p.subcategory === localSub; });
-          if (filtered.length > 0) sectionProds = filtered;
-        }
         parts.push('<div class="k-sec-grid">');
         for (var _pi = 0; _pi < sectionProds.length; _pi++) parts.push(_renderCard(sectionProds[_pi]));
         parts.push('</div></div>');
