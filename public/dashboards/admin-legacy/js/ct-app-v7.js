@@ -254,6 +254,17 @@ CT.app = {
 
     nav.innerHTML = html;
 
+    if (shell === 'ct' && CT.platform.canAccess('pricing', role) && !nav.querySelector('[data-view="pricing"]')) {
+      var pricing = CT.platform.getView('pricing');
+      if (pricing) {
+        var btnHtml = '<button class="ct-nav-item' + (pricing.id === CT.app.currentView ? ' active' : '') + '" data-view="' + pricing.id + '">' +
+                        '<span class="ct-nav-emoji">' + pricing.emoji + '</span>' +
+                        '<span class="ct-nav-label">' + pricing.label + '</span>' +
+                      '</button>';
+        nav.insertAdjacentHTML('beforeend', '<div class="ct-section-title">🏷️ Atelier Prix & Sourcing</div>' + btnHtml);
+      }
+    }
+
     /* ── Inject signal badges (async, non-blocking) ── */
     if (shell === 'bo') {
       CT.app._injectSignalBadges();
