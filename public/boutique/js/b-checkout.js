@@ -1,8 +1,8 @@
 /**
  * @module b-checkout
- * @brief Â§11 CHECKOUT â€” Commande, paiement, wallet, order success
+ * @brief §11 CHECKOUT — Commande, paiement, wallet, order success
  *
- * Extrait de boutique.js â€” Option C Phase 8
+ * Extrait de boutique.js — Option C Phase 8
  */
 
 import { bus }           from './b-bus.js';
@@ -17,17 +17,17 @@ let _stripeCard = null;
 let _stripeElements = null;
 
 const PHONE_COUNTRIES = [
-  { code: '+269', flag: 'ðŸ‡°ðŸ‡²', name: 'Comores', digits: 7, max: 7, ph: '321 12 34' },
-  { code: '+33',  flag: 'ðŸ‡«ðŸ‡·', name: 'France', digits: 9, max: 10, ph: '06 12 34 56 78' },
-  { code: '+262', flag: 'ðŸ‡·ðŸ‡ª', name: 'RÃ©union', digits: 9, max: 10, ph: '0692 12 34 56' },
-  { code: '+32',  flag: 'ðŸ‡§ðŸ‡ª', name: 'Belgique', digits: 9, max: 10, ph: '0470 12 34 56' },
-  { code: '+41',  flag: 'ðŸ‡¨ðŸ‡­', name: 'Suisse', digits: 9, max: 10, ph: '076 123 45 67' },
-  { code: '+44',  flag: 'ðŸ‡¬ðŸ‡§', name: 'Royaume-Uni', digits: 10, max: 11, ph: '07911 123456' },
-  { code: '+1',   flag: 'ðŸ‡ºðŸ‡¸', name: 'USA / Canada', digits: 10, max: 10, ph: '202 555 0147' },
-  { code: '+971', flag: 'ðŸ‡¦ðŸ‡ª', name: 'Ã‰mirats', digits: 9, max: 10, ph: '050 123 4567' },
-  { code: '+966', flag: 'ðŸ‡¸ðŸ‡¦', name: 'Arabie Saoudite', digits: 9, max: 10, ph: '055 123 4567' },
-  { code: '+60',  flag: 'ðŸ‡²ðŸ‡¾', name: 'Malaisie', digits: 9, max: 10, ph: '012 345 6789' },
-  { code: '+212', flag: 'ðŸ‡²ðŸ‡¦', name: 'Maroc', digits: 9, max: 10, ph: '0612 345678' },
+  { code: '+269', flag: '🇰🇲', name: 'Comores', digits: 7, max: 7, ph: '321 12 34' },
+  { code: '+33',  flag: '🇫🇷', name: 'France', digits: 9, max: 10, ph: '06 12 34 56 78' },
+  { code: '+262', flag: '🇷🇪', name: 'Réunion', digits: 9, max: 10, ph: '0692 12 34 56' },
+  { code: '+32',  flag: '🇧🇪', name: 'Belgique', digits: 9, max: 10, ph: '0470 12 34 56' },
+  { code: '+41',  flag: '🇨🇭', name: 'Suisse', digits: 9, max: 10, ph: '076 123 45 67' },
+  { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni', digits: 10, max: 11, ph: '07911 123456' },
+  { code: '+1',   flag: '🇺🇸', name: 'USA / Canada', digits: 10, max: 10, ph: '202 555 0147' },
+  { code: '+971', flag: '🇦🇪', name: 'Émirats', digits: 9, max: 10, ph: '050 123 4567' },
+  { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite', digits: 9, max: 10, ph: '055 123 4567' },
+  { code: '+60',  flag: '🇲🇾', name: 'Malaisie', digits: 9, max: 10, ph: '012 345 6789' },
+  { code: '+212', flag: '🇲🇦', name: 'Maroc', digits: 9, max: 10, ph: '0612 345678' },
 ];
 
 async function ensureStripe() {
@@ -52,13 +52,13 @@ async function ensureStripe() {
 
 
 
-  // â•‘  Â§11 Â· CHECKOUT â€” Commande, paiement, wallet, order success      â•‘
-  // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  //  â†’ Futur module: b-checkout.js
+  // ║  §11 · CHECKOUT — Commande, paiement, wallet, order success      ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-checkout.js
 
   /**
-   * @brief checkoutCart â€” Lance le flow de commande depuis le panier
-   * PrÃ©requis : panier non vide (sinon toast error)
+   * @brief checkoutCart — Lance le flow de commande depuis le panier
+   * Prérequis : panier non vide (sinon toast error)
    * Ferme le tiroir panier, initialise state.orderData, affiche renderCheckout()
    */
 export function digitsOnly(v) {
@@ -79,7 +79,7 @@ export function normalizeLocal(code, digits) {
 export function prettifyLocal(raw, country) {
     const d = digitsOnly(raw).slice(0, country.max);
     if (!d) return '';
-    // formatage lÃ©ger visuel seulement
+    // formatage léger visuel seulement
     if (country.code === '+33' || country.code === '+262' || country.code === '+32' || country.code === '+41') {
       return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
     }
@@ -117,7 +117,7 @@ export function checkoutCart() {
   }
 
   /**
-   * Ferme et dÃ©truit le modal de confirmation de commande.
+   * Ferme et détruit le modal de confirmation de commande.
    */
 export function closeOrderModal() {
     dom.orderModal.classList.remove('open');
@@ -134,8 +134,8 @@ export function closeOrderModal() {
   }
 
   /**
-   * Rend l'interface complÃ¨te de passage de commande (rÃ©cap + formulaire contact + paiement).
-   * GÃ¨re les Ã©tapes : validation panier â†’ saisie infos â†’ confirmation.
+   * Rend l'interface complète de passage de commande (récap + formulaire contact + paiement).
+   * Gère les étapes : validation panier → saisie infos → confirmation.
    */
 async function _loadRelaisSection(container, od) {
   try {
@@ -407,45 +407,45 @@ export function renderCheckout() {
     const body = dom.orderBody;
     body.innerHTML = '';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-    dom.orderTitle.textContent = 'ðŸ›’ Commander';
+    dom.orderTitle.textContent = '🛒 Commander';
 
     const od = state.orderData;
 
-    /* â”€â”€ Bouton retour panier â”€â”€ */
+    /* ── Bouton retour panier ── */
     const backBtn = document.createElement('button');
     backBtn.className = 'ck-back-btn';
     backBtn.type = 'button';
-    backBtn.innerHTML = 'â† Retour au panier';
+    backBtn.innerHTML = '← Retour au panier';
     backBtn.addEventListener('click', () => {
       closeOrderModal();
       setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
     });
     body.appendChild(backBtn);
 
-    /* â”€â”€ 2. BÃ©nÃ©ficiaire â”€â”€ */
+    /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
     s1.className = 'ck-label';
-    s1.textContent = 'ðŸ“¦ BÃ©nÃ©ficiaire';
+    s1.textContent = '📦 Bénéficiaire';
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
 
-    /* â”€â”€ 2b. Point relais â”€â”€ */
+    /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-label';
-    sRelais.textContent = 'ðŸª Point relais *';
+    sRelais.textContent = '🏪 Point relais *';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
     relaisSection.className = 'ck-relais-section';
-    relaisSection.innerHTML = '<div class="ck-relais-loading">â³ Chargement des relais...</div>';
+    relaisSection.innerHTML = '<div class="ck-relais-loading">⏳ Chargement des relais...</div>';
     body.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
-    /* â”€â”€ 3. Paiement â”€â”€ */
+    /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-label';
-    s2.textContent = 'ðŸ’³ Paiement';
+    s2.textContent = '💳 Paiement';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -453,16 +453,16 @@ export function renderCheckout() {
     payGrid.innerHTML =
       '<label class="ck-pay-chip" id="ck-chip-cash">'
       + '<input type="radio" name="payment_mode" value="cash_relais" checked>'
-      + '<span class="ck-chip-icon">ðŸª</span><span class="ck-chip-lbl">Cash</span>'
+      + '<span class="ck-chip-icon">🏪</span><span class="ck-chip-lbl">Cash</span>'
       + '</label>'
       + '<label class="ck-pay-chip ck-pay-chip--off">'
       + '<input type="radio" name="payment_mode" value="mvola" disabled>'
-      + '<span class="ck-chip-icon">ðŸ“±</span>'
-      + '<span class="ck-chip-lbl">MVola<br><em class="ck-soon">BientÃ´t</em></span>'
+      + '<span class="ck-chip-icon">📱</span>'
+      + '<span class="ck-chip-lbl">MVola<br><em class="ck-soon">Bientôt</em></span>'
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-stripe">'
       + '<input type="radio" name="payment_mode" value="stripe_eur">'
-      + '<span class="ck-chip-icon">ðŸ’³</span><span class="ck-chip-lbl">Carte</span>'
+      + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte</span>'
       + '</label>';
     body.appendChild(payGrid);
 
@@ -473,57 +473,57 @@ export function renderCheckout() {
     const stripeCardWrap = document.createElement('div');
     stripeCardWrap.id = 'stripe-card-wrap';
     stripeCardWrap.className = 'k-stripe-wrap';
-    stripeCardWrap.innerHTML = '<div class="k-stripe-title">ðŸ”’ Informations de carte</div>'
+    stripeCardWrap.innerHTML = '<div class="k-stripe-title">🔒 Informations de carte</div>'
       + '<div id="stripe-card-element" class="k-stripe-element"></div>'
       + '<div id="stripe-card-error" class="k-stripe-error"></div>'
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
     body.appendChild(stripeCardWrap);
 
-    /* â”€â”€ 4. Suivi SMS accordion â”€â”€ */
+    /* ── 4. Suivi SMS accordion ── */
     const trackRow = document.createElement('div');
     trackRow.className = 'ck-track-row';
-    trackRow.innerHTML = '<label class="k-ck-track-label">ðŸ“² Votre tÃ©l. pour le suivi (optionnel)</label>';
+    trackRow.innerHTML = '<label class="k-ck-track-label">📲 Votre tél. pour le suivi (optionnel)</label>';
     body.appendChild(trackRow);
 
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-extra';
-    // Toujours visible â€” plus besoin de cocher une case
+    // Toujours visible — plus besoin de cocher une case
     const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
-    trkHint.textContent = 'NotifiÃ©(e) par WhatsApp dÃ¨s que la commande arrive au relais';
+    trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
     trackExtra.appendChild(senderGroup);
     trackExtra.appendChild(trkHint);
     body.appendChild(trackExtra);
 
-    /* â”€â”€ 5. Wallet â”€â”€ */
+    /* ── 5. Wallet ── */
     checkWalletBalance();
     const walletSection = document.createElement('div');
     walletSection.id = 'wallet-section';
     walletSection.className = 'k-wallet-section';
     walletSection.innerHTML = '<label class="k-wallet-label">'
       + '<input type="checkbox" id="cb-use-wallet" class="k-wallet-cb">'
-      + '<div class="k-wallet-info"><div class="k-wallet-title">ðŸ’° Utiliser mon crÃ©dit</div>'
-      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargementâ€¦</div></div></label>'
+      + '<div class="k-wallet-info"><div class="k-wallet-title">💰 Utiliser mon crédit</div>'
+      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div></div></label>'
       + '<div id="wallet-deduction" class="k-wallet-ded"></div>';
     body.appendChild(walletSection);
 
-    /* â”€â”€ 6. Confirm (sticky) â”€â”€ */
+    /* ── 6. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm
     document.querySelectorAll('#btn-confirm-order').forEach(el => el.remove());
     const confirmBtn = document.createElement('button');
     confirmBtn.id = 'btn-confirm-order';
     confirmBtn.className = 'ck-confirm-btn';
-    confirmBtn.textContent = 'âœ… Confirmer â€” ' + fmt(cartTotal(), 'KMF');
-    // Bouton confirm HORS du scroll area â†’ toujours visible en bas du modal
+    confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    // Bouton confirm HORS du scroll area → toujours visible en bas du modal
     body.parentElement.appendChild(confirmBtn);
 
-    /* â”€â”€ Payment switching â”€â”€ */
+    /* ── Payment switching ── */
     // stripeCardWrap reste dans body (inline sous les chips)
 
     /**
- * Met Ã  jour le rÃ©capitulatif paiement en checkout.
+ * Met à jour le récapitulatif paiement en checkout.
  */
   function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
@@ -563,11 +563,11 @@ export function renderCheckout() {
       }
 
       const btn = document.getElementById('btn-confirm-order');
-      if (btn) btn.textContent = isStripe ? 'ðŸ’³ Payer ' + fmt(cartTotal(), 'KMF') : 'âœ… Confirmer â€” ' + fmt(cartTotal(), 'KMF');
+      if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     }
 
     payGrid.addEventListener('change', updatePaymentUI);
-    updatePaymentUI(); // init Ã©tat chip cash
+    updatePaymentUI(); // init état chip cash
 
     setTimeout(() => {
       const cb = document.getElementById('cb-use-wallet');
@@ -577,10 +577,10 @@ export function renderCheckout() {
     confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
   }
 
-    /* â”€â”€ Checkout form helpers â”€â”€ */
+    /* ── Checkout form helpers ── */
 
   /**
- * CrÃ©e un input stylÃ© pour le checkout.
+ * Crée un input stylé pour le checkout.
  * @param {string} type
  * @param {string} name
  * @param {string} placeholder
@@ -606,11 +606,11 @@ export function makeInput(id, label, type, placeholder, dataObj, key) {
 
 
   /**
-   * CrÃ©e un champ de saisie tÃ©lÃ©phone international avec sÃ©lecteur d'indicatif.
+   * Crée un champ de saisie téléphone international avec sélecteur d'indicatif.
    * @param {string} id       - ID HTML du champ
-   * @param {string} label    - Label affichÃ©
-   * @param {Object} dataObj  - Objet de donnÃ©es oÃ¹ Ã©crire la valeur normalisÃ©e
-   * @param {string} key      - ClÃ© de l'objet dataObj Ã  mettre Ã  jour
+   * @param {string} label    - Label affiché
+   * @param {Object} dataObj  - Objet de données où écrire la valeur normalisée
+   * @param {string} key      - Clé de l'objet dataObj à mettre à jour
    */
 export function makeIntlPhoneInput(id, label, dataObj, key) {
   const COUNTRIES = PHONE_COUNTRIES;
@@ -673,7 +673,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   input.addEventListener('blur', sync);
   input.addEventListener('input', sync);
 
-  // PrÃ©-remplissage depuis dataObj si dÃ©jÃ  existant
+  // Pré-remplissage depuis dataObj si déjà existant
   if (dataObj[key]) {
     const existing = String(dataObj[key]).trim();
     const found = COUNTRIES.find(c => existing.startsWith(c.code));
@@ -696,7 +696,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 }
 
   /**
-   * CrÃ©e un champ tÃ©lÃ©phone simplifiÃ© (sans sÃ©lecteur d'indicatif) pour les Comores.
+   * Crée un champ téléphone simplifié (sans sélecteur d'indicatif) pour les Comores.
    */
 export function makePhoneInput(id, label, dataObj, key) {
     const group = document.createElement('div');
@@ -711,7 +711,7 @@ export function makePhoneInput(id, label, dataObj, key) {
     wrap.className = 'k-ck-km-wrap';
     const prefix = document.createElement('div');
     prefix.className = 'k-ck-km-prefix';
-    prefix.innerHTML = 'ðŸ‡°ðŸ‡² <span class="k-ck-km-code">+269</span>';
+    prefix.innerHTML = '🇰🇲 <span class="k-ck-km-code">+269</span>';
     wrap.appendChild(prefix);
     const input = document.createElement('input');
     input.type = 'tel';
@@ -734,7 +734,7 @@ export function makePhoneInput(id, label, dataObj, key) {
   }
 
 
-  /* â”€â”€ Wallet â”€â”€ */
+  /* ── Wallet ── */
 export async function checkWalletBalance() {
     try {
       const res = await fetch('/api/wallet', { credentials: 'same-origin' });
@@ -760,8 +760,8 @@ export function updateWalletDisplay() {
       const applied = Math.min(state.walletBalance, total);
       const remaining = total - applied;
       ded.classList.add('is-visible');
-      ded.innerHTML = '<div class="k-wal-row"><span>ðŸ’° CrÃ©dit appliquÃ©</span><span class="k-wal-value">-' + fmt(applied, 'KMF') + '</span></div>' +
-        (remaining > 0 ? '<div class="k-wal-row"><span>Reste Ã  payer</span><span class="k-wal-bold">' + fmt(remaining, 'KMF') + '</span></div>' : '<div class="k-wal-success">âœ… EntiÃ¨rement couvert par votre crÃ©dit !</div>');
+      ded.innerHTML = '<div class="k-wal-row"><span>💰 Crédit appliqué</span><span class="k-wal-value">-' + fmt(applied, 'KMF') + '</span></div>' +
+        (remaining > 0 ? '<div class="k-wal-row"><span>Reste à payer</span><span class="k-wal-bold">' + fmt(remaining, 'KMF') + '</span></div>' : '<div class="k-wal-success">✅ Entièrement couvert par votre crédit !</div>');
     } else {
       ded.classList.remove('is-visible');
     }
@@ -785,7 +785,7 @@ export async function submitOrder(btn) {
     if (_digits.length > 0) {
       const expected = RULES[_code] || 9;
       if (_digits.length !== expected) {
-        showToast(`NumÃ©ro invalide pour ${_code}. ${expected} chiffres attendus.`, 'error');
+        showToast(`Numéro invalide pour ${_code}. ${expected} chiffres attendus.`, 'error');
         return;
       }
       senderPhone = _code + _digits;
@@ -810,7 +810,7 @@ export async function submitOrder(btn) {
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
   btn.disabled = true;
-  btn.textContent = isStripe ? 'â³ Paiement en coursâ€¦' : 'â³ Envoi en coursâ€¦';
+  btn.textContent = isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…';
   btn.style.opacity = '0.7';
 
   try {
@@ -849,10 +849,10 @@ export async function submitOrder(btn) {
 
     if (isStripe) {
       if (!_stripe) await ensureStripe();
-      if (!_stripe || !_stripeCard) throw new Error('Stripe non chargÃ©. Rechargez la page.');
-      btn.textContent = 'ðŸ”’ SÃ©curisation du paiementâ€¦';
+      if (!_stripe || !_stripeCard) throw new Error('Stripe non chargé. Rechargez la page.');
+      btn.textContent = '🔒 Sécurisation du paiement…';
       const intentResult = await apiPost('/api/payments/stripe/intent', { order_reference: orderData.reference });
-      btn.textContent = 'ðŸ’³ Validation en coursâ€¦';
+      btn.textContent = '💳 Validation en cours…';
       const stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
         payment_method: { card: _stripeCard, billing_details: { name: clientName, email: clientEmail || undefined } }
       });
@@ -861,7 +861,7 @@ export async function submitOrder(btn) {
         if (errEl) { errEl.textContent = stripeResult.error.message; errEl.classList.remove('u-hidden'); }
         throw new Error(stripeResult.error.message);
       }
-      showToast('ðŸŽ‰ Paiement acceptÃ© !', 'success');
+      showToast('🎉 Paiement accepté !', 'success');
       state.checkoutAttemptKey = null;
       state.pendingStripeOrderRef = null;
     }
@@ -870,14 +870,14 @@ export async function submitOrder(btn) {
     saveCart();
     renderCart();
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
-    showToast('Commande confirmÃ©e !', 'success');
+    showToast('Commande confirmée !', 'success');
     btn.dataset.busy = '0';
   } catch (e) {
     console.error('submitOrder:', e);
     showToast(e.message || 'Erreur lors de la commande.', 'error');
     btn.disabled = false;
     btn.dataset.busy = '0';
-    btn.textContent = isStripe ? 'ðŸ’³ Payer ' + fmt(cartTotal(), 'KMF') : 'âœ… Confirmer â€” ' + fmt(cartTotal(), 'KMF');
+    btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
     btn.style.opacity = '1';
   }
 }
@@ -885,7 +885,7 @@ export async function submitOrder(btn) {
 export function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
     const body = dom.orderBody;
     body.innerHTML = '';
-    dom.orderTitle.textContent = 'âœ… Commande confirmÃ©e';
+    dom.orderTitle.textContent = '✅ Commande confirmée';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
 
@@ -894,20 +894,20 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
 
     const emoji = document.createElement('div');
     emoji.className = 'k-confirm-emoji';
-    emoji.textContent = 'ðŸŽ‰';
+    emoji.textContent = '🎉';
     wrap.appendChild(emoji);
 
     const title = document.createElement('h3');
     title.className = 'k-confirm-title';
-    title.textContent = 'Commande confirmÃ©e !';
+    title.textContent = 'Commande confirmée !';
     wrap.appendChild(title);
 
     const refBlock = document.createElement('div');
     refBlock.className = 'k-confirm-ref-block';
     refBlock.innerHTML =
-      '<div class="k-confirm-ref-label">Votre rÃ©fÃ©rence</div>' +
-      '<div class="k-confirm-ref">' + sanitize(order.reference || 'â€”') + '</div>' +
-      '<button id="k-copy-ref-btn" class="k-confirm-copy">ðŸ“‹ Copier</button>';
+      '<div class="k-confirm-ref-label">Votre référence</div>' +
+      '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>' +
+      '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
     wrap.appendChild(refBlock);
 
     const orderQty = order.items_count || (order.items && order.items.length) || null;
@@ -917,7 +917,7 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       recapLine.className = 'k-confirm-recap';
       recapLine.innerHTML =
         '<span class="k-confirm-recap-qty">' + orderQty + ' article' + (orderQty > 1 ? 's' : '') + '</span>' +
-        '<span class="k-confirm-recap-sep">â€¢</span>' +
+        '<span class="k-confirm-recap-sep">•</span>' +
         '<span class="k-confirm-recap-amount">' + fmt(orderTotal, 'KMF') + '</span>';
       wrap.appendChild(recapLine);
     }
@@ -926,7 +926,7 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       const cashBlock = document.createElement('div');
       cashBlock.className = 'k-confirm-cash-block';
       cashBlock.innerHTML =
-        '<div class="k-confirm-cash-label">ðŸª Code Ã  prÃ©senter au relais</div>' +
+        '<div class="k-confirm-cash-label">🏪 Code à présenter au relais</div>' +
         '<div class="k-confirm-cash-code">' + sanitize(order.cash_ref_code) + '</div>';
       wrap.appendChild(cashBlock);
     }
@@ -934,15 +934,15 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
     const notices = document.createElement('div');
     notices.className = 'k-confirm-notices';
     notices.innerHTML =
-      '<div class="k-confirm-notice-row">ðŸ“² Vous allez recevoir un WhatsApp de confirmation</div>' +
-      '<div class="k-confirm-notice-row">ðŸª Rendez-vous au relais avec cette rÃ©fÃ©rence</div>';
+      '<div class="k-confirm-notice-row">📲 Vous allez recevoir un WhatsApp de confirmation</div>' +
+      '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
     wrap.appendChild(notices);
 
     const actions = document.createElement('div');
     actions.className = 'k-confirm-actions';
     actions.innerHTML =
-      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">ðŸ“ Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">ðŸ›ï¸ Continuer mes achats</button>';
+      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">📍 Suivre ma commande</button>' +
+      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">🛍️ Continuer mes achats</button>';
     wrap.appendChild(actions);
     body.appendChild(wrap);
 
@@ -952,9 +952,9 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
         copyBtn.addEventListener('click', () => {
           if (navigator.clipboard) {
             navigator.clipboard.writeText(order.reference || '').then(() => {
-              showToast('ðŸ“‹ RÃ©fÃ©rence copiÃ©e !', 'success');
-              copyBtn.textContent = 'âœ“ CopiÃ©';
-              setTimeout(() => { copyBtn.textContent = 'ðŸ“‹ Copier'; }, 2000);
+              showToast('📋 Référence copiée !', 'success');
+              copyBtn.textContent = '✓ Copié';
+              setTimeout(() => { copyBtn.textContent = '📋 Copier'; }, 2000);
             });
           }
         });
