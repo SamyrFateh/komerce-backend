@@ -430,12 +430,12 @@ export function renderCheckout() {
     backBtn.className = 'ck-modal-back-btn';
     backBtn.type = 'button';
     backBtn.setAttribute('aria-label', 'Retour au panier');
-    backBtn.textContent = 'Panier';
+    backBtn.textContent = '← Modifier le panier';
     backBtn.addEventListener('click', () => {
       closeOrderModal();
       setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
     });
-    dom.orderTitle?.parentElement?.appendChild(backBtn);
+    body.appendChild(backBtn);
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
