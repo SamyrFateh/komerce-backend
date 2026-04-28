@@ -1249,7 +1249,14 @@ function _bindEvents(container) {
     }
 
     if (act === 'open-workshop') {
-      window.location.hash = '#pricing_workshop';
+      // Fix 28/04/26 : le routeur n'écoute pas hashchange, juste set le hash
+      // ne déclenche pas le rendu. On passe par navigate() qui monte la vue
+      // et replace l'URL en même temps.
+      if (window.CT && CT.app && typeof CT.app.navigate === 'function') {
+        CT.app.navigate('pricing_workshop');
+      } else {
+        window.location.hash = '#pricing_workshop';
+      }
       return;
     }
 

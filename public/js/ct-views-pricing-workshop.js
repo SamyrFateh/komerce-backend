@@ -43,6 +43,8 @@ const _cc = {
   showInactive: false, showExceptional: false,
   collapsedCats: {},
   drawerOpen: false, drawerMode: null, drawerForm: null, drawerEvents: [],
+  // Refresh 28/04/26 : refonte vue tableau triable
+  sortKey: 'family', sortDir: 'asc',
 };
 
 const _ccNF = new Intl.NumberFormat('fr-FR');
@@ -206,6 +208,68 @@ function _ccInjectStyles() {
     .cc-event { font-size:0.78rem; color:#64748b; padding:5px 0; border-bottom:1px solid #e2e8f0; }
     .cc-event:last-child { border-bottom:none; }
     .cc-event-type { font-weight:600; color:#1e293b; }
+
+    /* ── Refresh 28/04/26 — Vue tableau ───────────────────────── */
+    .cc-stats { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin:0 0 14px; }
+    .cc-stat { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; }
+    .cc-stat-label { font-size:0.72rem; color:#64748b; text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:4px; }
+    .cc-stat-value { font-size:1.4rem; font-weight:800; color:#0f172a; line-height:1.1; }
+    .cc-stat-sub { font-size:0.72rem; color:#94a3b8; margin-top:2px; }
+    .cc-stat.landed { border-left:3px solid #3b82f6; }
+    .cc-stat.business { border-left:3px solid #16a34a; }
+    .cc-stat.exceptional { border-left:3px solid #f59e0b; }
+
+    .cc-table-wrap { background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+    .cc-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+    .cc-table thead th {
+      background:#f8fafc; padding:10px 12px; text-align:left;
+      font-weight:600; font-size:0.78rem; color:#475569;
+      border-bottom:1px solid #e2e8f0; white-space:nowrap;
+      position:sticky; top:0; z-index:1;
+      cursor:pointer; user-select:none;
+    }
+    .cc-table thead th.sortable:hover { background:#eef2f7; }
+    .cc-table thead th.sorted { color:#0f172a; background:#eef2f7; }
+    .cc-table thead th .cc-sort-arrow { font-size:0.7rem; color:#64748b; margin-left:4px; opacity:0.6; }
+    .cc-table thead th.sorted .cc-sort-arrow { opacity:1; color:#16a34a; }
+    .cc-table thead th.right { text-align:right; }
+    .cc-table thead th.center { text-align:center; }
+    .cc-table tbody tr { border-bottom:1px solid #f1f5f9; transition:background .12s; }
+    .cc-table tbody tr:last-child { border-bottom:none; }
+    .cc-table tbody tr:hover { background:#f8fafc; }
+    .cc-table tbody tr.inactive { opacity:0.55; }
+    .cc-table tbody tr.exceptional { background:#fffbeb; }
+    .cc-table tbody tr.exceptional:hover { background:#fef3c7; }
+    .cc-table td { padding:9px 12px; vertical-align:middle; }
+    .cc-table td.right { text-align:right; font-family:ui-monospace,monospace; font-weight:600; }
+    .cc-table td.center { text-align:center; }
+    .cc-table td.unit { color:#64748b; font-size:0.75rem; font-weight:500; }
+    .cc-cell-name { display:flex; align-items:center; gap:6px; min-width:0; }
+    .cc-cell-name-text { font-weight:600; color:#1e293b; }
+    .cc-cell-name-key { font-family:ui-monospace,monospace; font-size:0.7rem; color:#94a3b8; white-space:nowrap; }
+    .cc-cell-fam { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; font-size:0.72rem; font-weight:600; white-space:nowrap; }
+    .cc-cell-fam.landed { background:#dbeafe; color:#1e40af; }
+    .cc-cell-fam.business { background:#dcfce7; color:#14532d; }
+    .cc-cell-fam.exceptional { background:#fef3c7; color:#92400e; }
+    .cc-cell-cat { display:inline-flex; align-items:center; gap:4px; color:#475569; font-size:0.78rem; }
+    .cc-cell-scope { font-size:0.75rem; color:#475569; white-space:nowrap; }
+    .cc-cell-actions { display:flex; gap:3px; justify-content:flex-end; }
+    .cc-cell-actions button { padding:3px 7px; font-size:0.78rem; border-radius:5px; border:1px solid transparent; background:transparent; cursor:pointer; transition:background .12s, border-color .12s; }
+    .cc-cell-actions button:hover { background:#f1f5f9; border-color:#cbd5e1; }
+    .cc-cell-actions button.danger:hover { background:#fef2f2; border-color:#fecaca; }
+    .cc-table-empty { padding:50px 20px; text-align:center; color:#94a3b8; font-style:italic; font-size:0.88rem; }
+    .cc-table-footer { padding:10px 14px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:0.78rem; color:#64748b; display:flex; justify-content:space-between; align-items:center; }
+
+    /* responsive : sur petits écrans on cache les colonnes secondaires */
+    @media (max-width: 1100px) {
+      .cc-table th.col-source, .cc-table td.col-source { display:none; }
+      .cc-table th.col-conf, .cc-table td.col-conf { display:none; }
+    }
+    @media (max-width: 900px) {
+      .cc-stats { grid-template-columns:repeat(2, 1fr); }
+      .cc-table th.col-cat, .cc-table td.col-cat { display:none; }
+      .cc-table th.col-scope, .cc-table td.col-scope { display:none; }
+    }
     @media (max-width: 980px) { .cc-families-grid { grid-template-columns:1fr; } }
   `;
   document.head.appendChild(s);
@@ -313,74 +377,14 @@ function _ccRenderHTML(container) {
   html += '<button class="cc-btn cc-btn-primary" data-act="open-create">+ Nouveau composant</button>';
   html += '</div>';
 
-  html += '<div class="cc-families-grid">';
-  ['landed_relay', 'business', 'exceptional'].forEach(family => {
-    if (_cc.filterFamily !== 'all' && _cc.filterFamily !== family) return;
-    html += _ccRenderFamily(family);
-  });
-  html += '</div>';
+  // Refresh 28/04/26 : refonte vue tableau (était : grille de blocs/listes)
+  html += _ccRenderStats();
+  html += _ccRenderTable();
 
   html += '</div>';
   html += _ccRenderDrawer();
   container.innerHTML = html;
   _ccBindEvents(container);
-}
-
-function _ccRenderFamily(family) {
-  const fmeta = FAMILY_LABELS[family];
-  const cats = _cc.grouped[family] || {};
-  const filteredCats = {};
-  Object.keys(cats).forEach(catKey => {
-    const filtered = _ccFilterComponents(cats[catKey]);
-    if (filtered.length) filteredCats[catKey] = filtered;
-  });
-  const totalComps = Object.values(filteredCats).reduce((s, arr) => s + arr.length, 0);
-
-  let html = '<div class="cc-family">';
-  html += '<div class="cc-family-head" style="background:' + fmeta.color + ';">';
-  html += '<span class="cc-family-emoji">' + fmeta.emoji + '</span>';
-  html += '<div><div class="cc-family-title">' + _ccEsc(fmeta.label) + '</div>';
-  html += '<div class="cc-family-desc">' + _ccEsc(fmeta.desc) + '</div></div>';
-  html += '<span class="cc-family-count">' + totalComps + ' composants</span>';
-  html += '</div>';
-
-  html += '<div class="cc-family-body">';
-  if (!totalComps) {
-    html += '<div class="cc-empty">Aucun composant dans cette famille pour les filtres actuels.</div>';
-  } else {
-    const orderedCats = (_cc.meta?.categories?.[family]) || Object.keys(filteredCats);
-    orderedCats.forEach(catKey => {
-      const comps = filteredCats[catKey];
-      if (!comps || !comps.length) return;
-      html += _ccRenderCategory(catKey, comps);
-    });
-  }
-  html += '</div></div>';
-  return html;
-}
-
-function _ccRenderCategory(catKey, components) {
-  const cmeta = CATEGORY_LABELS[catKey] || { emoji: '❔', label: catKey };
-  const activeCount = components.filter(c => c.is_active).length;
-  const catStateKey = catKey;
-  const isCollapsed = _cc.collapsedCats[catStateKey] === true;
-  const sorted = components.slice().sort((a, b) => {
-    if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
-    return String(a.label || '').localeCompare(String(b.label || ''), 'fr');
-  });
-
-  let html = '<div class="cc-category' + (isCollapsed ? ' collapsed' : '') + '">';
-  html += '<div class="cc-category-head" data-act="toggle-cat" data-cat="' + _ccEsc(catStateKey) + '" role="button">';
-  html += '<span class="cc-category-emoji">' + cmeta.emoji + '</span>';
-  html += '<span class="cc-category-title">' + _ccEsc(cmeta.label) + '</span>';
-  html += '<span class="cc-category-stat">' + activeCount + '/' + components.length + ' actifs</span>';
-  html += '<span class="cc-category-caret">' + (isCollapsed ? '▶' : '▼') + '</span>';
-  html += '</div>';
-  html += '<div class="cc-category-body">';
-  sorted.forEach(c => { html += _ccRenderComponent(c); });
-  html += '</div>';
-  html += '</div>';
-  return html;
 }
 
 function _ccFilterComponents(components) {
@@ -395,47 +399,201 @@ function _ccFilterComponents(components) {
   });
 }
 
-function _ccRenderComponent(c) {
-  const inactiveCls = c.is_active ? '' : ' inactive';
-  let html = '<div class="cc-comp' + inactiveCls + '" data-comp-id="' + c.id + '">';
-  html += '<div class="cc-comp-info">';
-  html += '<div class="cc-comp-name">';
-  if (c.emoji) html += '<span>' + _ccEsc(c.emoji) + '</span>';
-  html += '<span>' + _ccEsc(c.label) + '</span>';
-  html += '<span class="cc-comp-key">' + _ccEsc(c.key) + '</span>';
-  if (c.is_exceptional) html += '<span class="cc-badge" style="background:#fef3c7;color:#92400e;">⚡ Exceptionnel</span>';
+// ════════════════════════════════════════════════════════════════════
+// Refresh 28/04/26 — Vue tableau (remplace les blocs/listes empilés)
+// ════════════════════════════════════════════════════════════════════
+
+// Stats globales en haut de la vue
+function _ccRenderStats() {
+  const all = _ccCollectAllVisibleComponents();
+  const byFamily = { landed_relay: 0, business: 0, exceptional: 0 };
+  let activeCount = 0;
+  all.forEach(c => {
+    if (byFamily[c.family] !== undefined) byFamily[c.family]++;
+    if (c.is_active) activeCount++;
+  });
+  const total = all.length;
+
+  let html = '<div class="cc-stats">';
+  html += '<div class="cc-stat">';
+  html += '<div class="cc-stat-label">Total composants</div>';
+  html += '<div class="cc-stat-value">' + total + '</div>';
+  html += '<div class="cc-stat-sub">' + activeCount + ' actifs · ' + (total - activeCount) + ' inactifs</div>';
   html += '</div>';
-  if (c.description) html += '<div class="cc-comp-desc">' + _ccEsc(c.description) + '</div>';
-  html += '<div class="cc-comp-badges">';
+  html += '<div class="cc-stat landed">';
+  html += '<div class="cc-stat-label">📦 Landed relais</div>';
+  html += '<div class="cc-stat-value">' + byFamily.landed_relay + '</div>';
+  html += '<div class="cc-stat-sub">Coût rendu point relais</div>';
+  html += '</div>';
+  html += '<div class="cc-stat business">';
+  html += '<div class="cc-stat-label">💼 Business</div>';
+  html += '<div class="cc-stat-value">' + byFamily.business + '</div>';
+  html += '<div class="cc-stat-sub">Charges fixes et risques</div>';
+  html += '</div>';
+  html += '<div class="cc-stat exceptional">';
+  html += '<div class="cc-stat-label">⚡ Exceptionnels</div>';
+  html += '<div class="cc-stat-value">' + byFamily.exceptional + '</div>';
+  html += '<div class="cc-stat-sub">Hors calcul standard</div>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// Aplatit la structure groupée + applique le filtre famille + recherche
+function _ccCollectAllVisibleComponents() {
+  const flat = [];
+  ['landed_relay', 'business', 'exceptional'].forEach(family => {
+    if (_cc.filterFamily !== 'all' && _cc.filterFamily !== family) return;
+    const cats = _cc.grouped[family] || {};
+    Object.keys(cats).forEach(catKey => {
+      const filtered = _ccFilterComponents(cats[catKey]);
+      filtered.forEach(c => {
+        flat.push(Object.assign({}, c, { family: family, category: c.category || catKey }));
+      });
+    });
+  });
+  return flat;
+}
+
+// Rendu de la table principale
+function _ccRenderTable() {
+  let rows = _ccCollectAllVisibleComponents();
+  rows = _ccSortRows(rows);
+
+  const COLS = [
+    { key: 'label',      label: 'Composant',  cls: '',          sortable: true },
+    { key: 'family',     label: 'Famille',    cls: '',          sortable: true },
+    { key: 'category',   label: 'Catégorie',  cls: 'col-cat',   sortable: true },
+    { key: 'value',      label: 'Valeur',     cls: 'right',     sortable: true },
+    { key: 'scope',      label: 'Scope',      cls: 'col-scope', sortable: true },
+    { key: 'source',     label: 'Source',     cls: 'col-source center', sortable: true },
+    { key: 'confidence', label: 'Confiance',  cls: 'col-conf center',   sortable: true },
+    { key: 'is_active',  label: 'Actif',      cls: 'center',    sortable: true },
+    { key: '_actions',   label: '',           cls: 'right',     sortable: false },
+  ];
+
+  let html = '<div class="cc-table-wrap">';
+  html += '<table class="cc-table"><thead><tr>';
+  COLS.forEach(col => {
+    const sortedCls = (_cc.sortKey === col.key) ? ' sorted' : '';
+    const sortableCls = col.sortable ? ' sortable' : '';
+    const arrow = (_cc.sortKey === col.key)
+      ? '<span class="cc-sort-arrow">' + (_cc.sortDir === 'asc' ? '▲' : '▼') + '</span>'
+      : (col.sortable ? '<span class="cc-sort-arrow">↕</span>' : '');
+    const dataAttr = col.sortable ? ' data-act="sort" data-sort="' + col.key + '"' : '';
+    html += '<th class="' + col.cls + sortableCls + sortedCls + '"' + dataAttr + '>'
+         + _ccEsc(col.label) + arrow + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  if (rows.length === 0) {
+    html += '<tr><td colspan="' + COLS.length + '" class="cc-table-empty">'
+         + 'Aucun composant ne correspond aux filtres actuels.</td></tr>';
+  } else {
+    rows.forEach(c => { html += _ccRenderRow(c); });
+  }
+  html += '</tbody></table>';
+  html += '<div class="cc-table-footer">';
+  html += '<span>' + rows.length + ' composant' + (rows.length > 1 ? 's' : '') + ' affiché' + (rows.length > 1 ? 's' : '') + '</span>';
+  html += '<span style="color:#94a3b8;">Cliquez une ligne pour modifier · cliquez le toggle pour activer/désactiver</span>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// Tri d'une liste plate de composants selon _cc.sortKey + _cc.sortDir
+function _ccSortRows(rows) {
+  const dir = (_cc.sortDir === 'desc') ? -1 : 1;
+  const key = _cc.sortKey;
+  const FAMILY_ORDER = { landed_relay: 1, business: 2, exceptional: 3 };
+
+  function getVal(c) {
+    switch (key) {
+      case 'label':      return String(c.label || '').toLowerCase();
+      case 'family':     return FAMILY_ORDER[c.family] || 99;
+      case 'category':   return String(CATEGORY_LABELS[c.category]?.label || c.category || '').toLowerCase();
+      case 'value':      return Number(c.default_value || 0);
+      case 'scope':      return String(c.scope || '');
+      case 'source':     return String(c.source || '');
+      case 'confidence': return ({ high: 1, medium: 2, low: 3 })[c.confidence] || 99;
+      case 'is_active':  return c.is_active ? 0 : 1;  // actifs en premier en asc
+      default:           return 0;
+    }
+  }
+  return rows.slice().sort((a, b) => {
+    const va = getVal(a), vb = getVal(b);
+    if (va < vb) return -1 * dir;
+    if (va > vb) return  1 * dir;
+    return 0;
+  });
+}
+
+// Rendu d'une ligne du tableau
+function _ccRenderRow(c) {
+  const fmeta = FAMILY_LABELS[c.family] || { emoji: '?', label: c.family };
+  const cmeta = CATEGORY_LABELS[c.category] || { emoji: '❔', label: c.category };
   const sb = SOURCE_BADGES[c.source] || SOURCE_BADGES.default;
-  html += '<span class="cc-badge ' + sb.cls + '">' + sb.label + '</span>';
   const cb = CONFIDENCE_BADGES[c.confidence] || CONFIDENCE_BADGES.medium;
-  html += '<span class="cc-badge ' + cb.cls + '">' + cb.label + '</span>';
-  if (c.scope && c.scope !== 'global') {
-    html += '<span class="cc-badge" style="background:#f1f5f9;color:#475569;">' + _ccEsc(SCOPE_LABELS[c.scope] || c.scope);
-    if (c.scope_value) html += ' : ' + _ccEsc(c.scope_value);
-    html += '</span>';
+
+  let scopeText = SCOPE_LABELS[c.scope] || c.scope || 'global';
+  if (c.scope_value) scopeText += ' : ' + c.scope_value;
+  if (c.channel) scopeText += ' · 📡 ' + c.channel;
+  if (c.island) scopeText += ' · 🏝 ' + c.island;
+
+  const trCls = [];
+  if (!c.is_active) trCls.push('inactive');
+  if (c.is_exceptional) trCls.push('exceptional');
+
+  let html = '<tr class="' + trCls.join(' ') + '" data-comp-id="' + c.id + '" data-act="row-edit" data-id="' + c.id + '" style="cursor:pointer;">';
+
+  // Composant : emoji + label + key
+  html += '<td>';
+  html += '<div class="cc-cell-name">';
+  if (c.emoji) html += '<span>' + _ccEsc(c.emoji) + '</span>';
+  html += '<span class="cc-cell-name-text">' + _ccEsc(c.label || '') + '</span>';
+  html += '<span class="cc-cell-name-key">' + _ccEsc(c.key || '') + '</span>';
+  html += '</div>';
+  if (c.description) {
+    html += '<div style="font-size:0.75rem;color:#64748b;margin-top:2px;">' + _ccEsc(c.description) + '</div>';
   }
-  if (c.channel) html += '<span class="cc-badge cc-channel">📡 ' + _ccEsc(c.channel) + '</span>';
-  if (c.island) html += '<span class="cc-badge cc-island">🏝 ' + _ccEsc(c.island) + '</span>';
-  html += '</div></div>';
+  html += '</td>';
 
-  html += '<div class="cc-comp-value">';
-  html += _ccFmt(c.default_value);
-  html += '<span class="cc-comp-unit">' + _ccEsc(UNIT_LABELS[c.unit] || c.unit) + '</span>';
-  html += '</div>';
+  // Famille
+  const famCls = c.family === 'landed_relay' ? 'landed'
+              : c.family === 'business' ? 'business' : 'exceptional';
+  html += '<td><span class="cc-cell-fam ' + famCls + '">' + fmeta.emoji + ' ' + _ccEsc(fmeta.label) + '</span></td>';
 
-  html += '<div title="' + (c.is_active ? 'Cliquer pour désactiver' : 'Cliquer pour activer') + '">';
-  html += '<span class="cc-toggle' + (c.is_active ? ' active' : '') + '" data-act="toggle-comp" data-id="' + c.id + '"></span>';
-  html += '</div>';
+  // Catégorie
+  html += '<td class="col-cat"><span class="cc-cell-cat">' + cmeta.emoji + ' ' + _ccEsc(cmeta.label) + '</span></td>';
 
-  html += '<div class="cc-comp-actions">';
-  html += '<button class="cc-btn cc-btn-sm" data-act="edit-comp" data-id="' + c.id + '">✏️</button>';
+  // Valeur + unité
+  html += '<td class="right">' + _ccFmt(c.default_value);
+  html += ' <span style="font-size:0.7rem;color:#94a3b8;font-family:inherit;font-weight:500;">'
+       + _ccEsc(UNIT_LABELS[c.unit] || c.unit || '') + '</span></td>';
+
+  // Scope
+  html += '<td class="col-scope"><span class="cc-cell-scope">' + _ccEsc(scopeText) + '</span></td>';
+
+  // Source
+  html += '<td class="col-source center"><span class="cc-badge ' + sb.cls + '">' + sb.label + '</span></td>';
+
+  // Confiance
+  html += '<td class="col-conf center"><span class="cc-badge ' + cb.cls + '">' + cb.label + '</span></td>';
+
+  // Actif (toggle) — stopPropagation pour ne pas déclencher row-edit
+  html += '<td class="center" onclick="event.stopPropagation();">';
+  html += '<span class="cc-toggle' + (c.is_active ? ' active' : '') + '" data-act="toggle-comp" data-id="' + c.id + '" title="' + (c.is_active ? 'Cliquer pour désactiver' : 'Cliquer pour activer') + '"></span>';
+  html += '</td>';
+
+  // Actions — idem stopPropagation
+  html += '<td class="right" onclick="event.stopPropagation();"><div class="cc-cell-actions">';
+  html += '<button data-act="edit-comp" data-id="' + c.id + '" title="Modifier">✏️</button>';
   if (c.is_deletable) {
-    html += '<button class="cc-btn cc-btn-sm cc-btn-danger" data-act="delete-comp" data-id="' + c.id + '">🗑</button>';
+    html += '<button class="danger" data-act="delete-comp" data-id="' + c.id + '" title="Supprimer">🗑</button>';
   }
-  html += '</div>';
-  html += '</div>';
+  html += '</div></td>';
+
+  html += '</tr>';
   return html;
 }
 
@@ -604,7 +762,41 @@ function _ccBindEvents(container) {
     // Sprint UX : retour vers Construction du prix
     if (act === 'back-to-pricing') {
       e.preventDefault();
-      window.location.hash = '#pricing';
+      // Fix 28/04/26 : voir ct-views-pricing.js → idem, le routeur n'écoute
+      // pas hashchange, on passe par navigate() pour monter la vue.
+      if (window.CT && CT.app && typeof CT.app.navigate === 'function') {
+        CT.app.navigate('pricing');
+      } else {
+        window.location.hash = '#pricing';
+      }
+      return;
+    }
+
+    // Refresh 28/04/26 — tri sur les en-têtes du tableau
+    if (act === 'sort') {
+      const k = t.dataset.sort;
+      if (_cc.sortKey === k) {
+        _cc.sortDir = (_cc.sortDir === 'asc') ? 'desc' : 'asc';
+      } else {
+        _cc.sortKey = k;
+        _cc.sortDir = 'asc';
+      }
+      _ccRenderHTML(container);
+      return;
+    }
+
+    // Refresh 28/04/26 — clic sur une ligne du tableau ouvre le drawer en édition
+    // (équivalent au bouton ✏️ existant, plus naturel que de viser le mini-bouton)
+    if (act === 'row-edit') {
+      const id = t.dataset.id;
+      try {
+        const r = await _ccApi('GET', '/api/admin/cost-components/' + id);
+        _cc.drawerMode = 'edit';
+        _cc.drawerForm = { ...r.component };
+        _cc.drawerEvents = r.events || [];
+        _cc.drawerOpen = true;
+        _ccRenderHTML(container);
+      } catch (err) { alert('Erreur : ' + err.message); }
       return;
     }
 

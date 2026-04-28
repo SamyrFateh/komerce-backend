@@ -1,23 +1,25 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    KOMERCE — HOMEPAGE MOBILE REFRESH
-   v3 · 28 avril 2026
+   v4 · 28 avril 2026
    ───────────────────────────────────────────────────────────────────────────
 
-   v3 changes par rapport à v2 :
-   • Toutes les chips tiennent sur la ligne (8 chips après fusion Mode+Beauté)
-     → chip 40px, cercle 36px, gap 4px, padding shell 6px
-     → 348px sur 359px disponibles (iPhone SE) — 8 chips entières
-   • Hero recadré symétriquement (les 2 personnages équilibrés)
-     → object-position: 50% 30% (était center 15%)
-   • Plus d'espace bottom sous la grille avant la bottom nav
-     → padding-bottom #k-page-scroll passé de 68px à 100px
-   • Chip active : pas de transform scale (pas de "ça bouge")
+   v4 changes par rapport à v3 :
+   • Hero recadré : object-position 50% 15% (était 30%) → ne rogne plus
+     les visages/cheveux des personnages par le haut
+   • Image carte : aspect-ratio 1/1 carré (était 4/3 paysage)
+     → image dominante visuellement, style Instagram/Shein
+   • Description carte : cachée sur mobile (display:none)
+     → focus sur titre + prix, dispo dans la modal produit
+
+   v3 (rappel) :
+   • 8 chips qui tiennent sur la ligne (40px, fusion Mode+Beauté)
+   • Scroll-snap mandatory pour arrêt propre sur une chip
+   • Padding-bottom 100px pour voir les dernières cartes
 
    v2 (rappel) :
    • Chips remontées en overlay sur le bas de l'image hero
    • Hero compact (-25%)
-   • Cartes produits respirantes (padding interne, line-clamp net)
-   • Description carte tassée (10px lh 1.2)
+   • Section soldes masquée si zéro promo
 
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -39,13 +41,13 @@
   /* ───────────────────────────────────────────────────────────────────────
      1. Hero — image recadrée symétriquement
      ───────────────────────────────────────────────────────────────────────
-     v3 : object-position: 50% 30% (au lieu de center 15%)
-     Le 50% horizontal centre vraiment ; le 30% vertical met les visages
-     en haut du cadrage, ce qui équilibre les 2 personnages.            */
+     v4 : object-position: 50% 15% — on remonte le cadrage pour ne plus
+     rogner les visages/cheveux par le haut. (v3 mettait 30%, ce qui
+     poussait l'image trop bas et coupait les fronts.)                   */
 
   .k-hero-img {
     height: clamp(96px, 17vw, 168px);
-    object-position: 50% 30% !important;
+    object-position: 50% 15% !important;
     /* CSS principal ligne 6026 a "object-position: center 10% !important"
        → on contre avec le même !important. */
   }
@@ -190,11 +192,20 @@
 
 
   /* ───────────────────────────────────────────────────────────────────────
-     5. Cartes produits : respirer + description tassée
-     ─────────────────────────────────────────────────────────────────────── */
+     5. Cartes produits — focus visuel sur l'image (style Instagram/Shein)
+     ───────────────────────────────────────────────────────────────────────
+     v4 changements :
+     • image carrée (1:1) au lieu de 4/3 paysage → image dominante
+     • description cachée → seul le titre + prix subsistent
+     • zone info plus tassée car moins de contenu                         */
+
+  /* Image en carré : remplace le 4/3 défini ligne 7621 du CSS principal */
+  .k-card-img-wrap {
+    aspect-ratio: 1 / 1 !important;
+  }
 
   .k-card-info {
-    padding: 10px 10px 12px;
+    padding: 8px 10px 10px;
   }
 
   .k-card-name {
@@ -207,14 +218,15 @@
     min-height: 2.6em;
   }
 
+  /* Description : cachée pour donner toute la place au visuel + prix.
+     v4 : choix éditorial — sur mobile la description ne vend pas, elle
+     parasite. Disponible dans la modal produit pour ceux qui veulent. */
   .k-card-desc {
-    font-size: 10px;
-    line-height: 1.2;
-    margin-top: 1px;
+    display: none;
   }
 
   .k-card-bottom {
-    margin-top: 5px;
+    margin-top: 4px;
     gap: 6px;
   }
 
