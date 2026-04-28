@@ -5806,32 +5806,6 @@ button,
 /* En-tête de section — DESKTOP ONLY (mobile styles are in */
 
 /* Grille de produits d'une section — responsive */
-.k-sec-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  padding: 6px 8px 16px;
-}
-@media (min-width: 500px) {
-  .k-sec-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 14px 12px 24px;
-  }
-}
-@media (min-width: 768px) {
-  .k-sec-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    padding: 16px;
-  }
-}
-@media (min-width: 1024px) {
-  .k-sec-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-  }
-}
 
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*  INDEX FLOTTANT VERTICAL À DROITE (saut rapide entre sections)           */
