@@ -1,10 +1,10 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   Komerce — Panier Événement : Page CRÉATION (boutique)
-   Sans compte. POST /api/collective-workspaces → redirige vers /event/manage/:token
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   Komerce â€” Panier Ã‰vÃ©nement : Page CRÃ‰ATION (boutique)
+   Sans compte. POST /api/collective-workspaces â†’ redirige vers /event/manage/:token
 
-   P1.1 : si arrivé depuis le panier (?from=cart), pré-charge les items
-          puis les ajoute au workspace après création.
-   ═══════════════════════════════════════════════════════════════════════ */
+   P1.1 : si arrivÃ© depuis le panier (?from=cart), prÃ©-charge les items
+          puis les ajoute au workspace aprÃ¨s crÃ©ation.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 (function() {
   'use strict';
@@ -20,7 +20,7 @@
   }
   function hideError() { errorBox.style.display = 'none'; }
 
-  // ── P1.1 : récupérer le panier en attente (si arrivé depuis cart) ──
+  // â”€â”€ P1.1 : rÃ©cupÃ©rer le panier en attente (si arrivÃ© depuis cart) â”€â”€
   function getPendingCart() {
     try {
       const raw = sessionStorage.getItem('komerce_event_pending_cart');
@@ -30,7 +30,7 @@
     } catch (_) { return null; }
   }
 
-  // Si on arrive depuis le panier, afficher un bandeau d'info en tête de form
+  // Si on arrive depuis le panier, afficher un bandeau d'info en tÃªte de form
   const pendingCart = getPendingCart();
   if (pendingCart && pendingCart.length) {
     const banner = document.createElement('div');
@@ -39,18 +39,18 @@
     const itemsCount = pendingCart.length;
     const itemsTotal = pendingCart.reduce((s, i) => s + (Number(i.price_kmf) || 0) * (Number(i.qty) || 1), 0);
     const fromCart = new URLSearchParams(window.location.search).get('from') === 'cart';
-    const itemsList = pendingCart.slice(0, 5).map(i => '• ' + (i.name || 'Article') + ' — ' + new Intl.NumberFormat('fr-FR').format(i.price_kmf || 0) + ' KMF' + (i.qty > 1 ? ' ×' + i.qty : '')).join('<br>');
+    const itemsList = pendingCart.slice(0, 5).map(i => 'â€¢ ' + (i.name || 'Article') + ' â€” ' + new Intl.NumberFormat('fr-FR').format(i.price_kmf || 0) + ' KMF' + (i.qty > 1 ? ' Ã—' + i.qty : '')).join('<br>');
     banner.innerHTML =
-      '🛒 <strong>Panier pré-chargé ✓</strong> : ' + itemsCount + ' article' + (itemsCount > 1 ? 's' : '') +
+      'ðŸ›’ <strong>Panier prÃ©-chargÃ© âœ“</strong> : ' + itemsCount + ' article' + (itemsCount > 1 ? 's' : '') +
       ' (' + new Intl.NumberFormat('fr-FR').format(Math.round(itemsTotal)) + ' KMF)' +
-      (fromCart ? '<br><em style="font-size:12px;color:#555;">Arrivé depuis le panier boutique</em>' : '') +
-      '<div style="margin-top:8px;font-size:12px;color:#555;">' + itemsList + (pendingCart.length > 5 ? '<br>… et ' + (pendingCart.length - 5) + ' autre(s)' : '') + '</div>';
+      (fromCart ? '<br><em style="font-size:12px;color:#555;">ArrivÃ© depuis le panier boutique</em>' : '') +
+      '<div style="margin-top:8px;font-size:12px;color:#555;">' + itemsList + (pendingCart.length > 5 ? '<br>â€¦ et ' + (pendingCart.length - 5) + ' autre(s)' : '') + '</div>';
     if (form && form.parentElement) {
       form.parentElement.insertBefore(banner, form);
     }
   }
 
-  // Pré-remplir le nom du panier depuis l'URL ?label=...
+  // PrÃ©-remplir le nom du panier depuis l'URL ?label=...
   (function() {
     var urlLabel = new URLSearchParams(window.location.search).get('label');
     if (urlLabel) {
@@ -76,15 +76,15 @@
     if (!payload.event_name) { showError('Le nom du panier est requis.'); return; }
     if (!payload.creator_name) { showError('Votre nom est requis.'); return; }
     if (!payload.creator_phone && !payload.creator_email) {
-      showError('Indiquez au moins un téléphone ou un email pour pouvoir retrouver votre lien.');
+      showError('Indiquez au moins un tÃ©lÃ©phone ou un email pour pouvoir retrouver votre lien.');
       return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ Création en cours…';
+    submitBtn.textContent = 'â³ CrÃ©ation en coursâ€¦';
 
     try {
-      // ── 1. Créer le workspace ──
+      // â”€â”€ 1. CrÃ©er le workspace â”€â”€
       const res = await fetch('/api/collective-workspaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,22 +96,23 @@
       }
       const data = await res.json();
 
-      // ── 2. Sauvegarde locale du token créateur ──
+      // â”€â”€ 2. Sauvegarde locale du token crÃ©ateur â”€â”€
       try {
         const stored = JSON.parse(localStorage.getItem('komerce-events') || '[]');
         stored.unshift({
           creator_token: data.creator_token,
           public_token:  data.public_token,
+          public_url_path: data.public_url_path || null,
           event_name:    payload.event_name,
           created_at:    new Date().toISOString(),
         });
         localStorage.setItem('komerce-events', JSON.stringify(stored.slice(0, 10)));
       } catch (_) {}
 
-      // ── 3. P1.1 — Si panier en attente, ajouter les items au workspace ──
+      // â”€â”€ 3. P1.1 â€” Si panier en attente, ajouter les items au workspace â”€â”€
       const cartItems = getPendingCart();
       if (cartItems && cartItems.length) {
-        submitBtn.textContent = '⏳ Ajout des articles…';
+        submitBtn.textContent = 'â³ Ajout des articlesâ€¦';
         let patchFailed = false;
         let patchError = null;
         // Backend attend 1 item par appel PATCH
@@ -136,27 +137,29 @@
             }
           } catch (e) {
             patchFailed = true;
-            patchError = e.message || 'Erreur réseau lors de l\'ajout des articles';
+            patchError = e.message || 'Erreur rÃ©seau lors de l\'ajout des articles';
             break;
           }
         }
         if (patchFailed) {
-          showError('Panier créé, mais ajout des articles échoué : ' + patchError +
-            ' — vous pouvez les ajouter manuellement depuis la page de gestion.');
+          showError('Panier crÃ©Ã©, mais ajout des articles Ã©chouÃ© : ' + patchError +
+            ' â€” vous pouvez les ajouter manuellement depuis la page de gestion.');
           submitBtn.disabled = false;
-          submitBtn.textContent = '🎉 Créer le panier famille';
+          submitBtn.textContent = 'ðŸŽ‰ CrÃ©er le panier famille';
           return;
         }
         sessionStorage.removeItem('komerce_event_pending_cart');
       }
 
-      // ── 4. Redirection vers la page createur (URL canonique) ──
+      // â”€â”€ 4. Redirection vers la page createur (URL canonique) â”€â”€
       window.location.href = '/event/manage/' + encodeURIComponent(data.creator_token);
     } catch (err) {
       console.error('Creation workspace echouee :', err);
       showError(err.message || 'Erreur reseau. Reessayez.');
       submitBtn.disabled = false;
-      submitBtn.textContent = '🎉 Creer le panier evenement';
+      submitBtn.textContent = 'ðŸŽ‰ Creer le panier evenement';
     }
   });
 })();
+
+
