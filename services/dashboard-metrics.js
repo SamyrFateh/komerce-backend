@@ -88,11 +88,11 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
     params.push(filters.relais_id);
   }
   if (filters.status) {
-    where.push(`${orderAlias}.status = $${i++}`);
+    where.push(`${orderAlias}.status::text = $${i++}`);
     params.push(filters.status);
   }
   if (filters.payment_status) {
-    where.push(`${orderAlias}.payment_status = $${i++}`);
+    where.push(`${orderAlias}.payment_status::text = $${i++}`);
     params.push(filters.payment_status);
   }
 
@@ -240,7 +240,7 @@ async function getCmdsActives(filters = {}) {
     SELECT COUNT(*)::int AS value
     FROM orders o
     WHERE ${where}
-      AND o.status = ANY($${params.length + 1}::text[])
+      AND o.status::text = ANY($${params.length + 1}::text[])
   `;
   const r = await db.query(sql, [...params, ACTIVE_ORDER_STATUSES]);
   const value = Number(r.rows[0].value) || 0;
@@ -259,7 +259,7 @@ async function getColisEnTransit(filters = {}) {
     FROM parcels p
     JOIN orders o ON o.id = p.order_id
     WHERE ${where}
-      AND p.status = ANY($${params.length + 1}::text[])
+      AND p.status::text = ANY($${params.length + 1}::text[])
   `;
   const r = await db.query(sql, [...params, TRANSIT_PARCEL_STATUSES]);
   const value = Number(r.rows[0].value) || 0;
@@ -323,7 +323,7 @@ async function getTauxCompletudeScans(filters = {}) {
       FROM parcels p
       JOIN orders o ON o.id = p.order_id
       WHERE ${where}
-        AND p.status = ANY($${params.length + 1}::text[])
+        AND p.status::text = ANY($${params.length + 1}::text[])
     )
     SELECT
       (SELECT COUNT(*) FROM transit_parcels)::int AS items_total,
@@ -406,8 +406,7 @@ async function getCoutEstime(filters = {}) {
     WHERE ${where}
       AND o.status NOT IN ('cancelled', 'refunded')
   `;
-  // Note : on duplique les params pour les 2 clauses where
-  const r = await db.query(sql, [...params, ...params]);
+  const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
@@ -435,7 +434,7 @@ async function getCoutReel(filters = {}) {
       AND o.status NOT IN ('cancelled', 'refunded')
       AND alc.is_actual = TRUE
   `;
-  const r = await db.query(sql, [...params, ...params]);
+  const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
   const itemsWithData = Number(r.rows[0].items_with_data) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
@@ -804,7 +803,7 @@ async function getWorkspacesActifs(filters = {}) {
   const sql = `
     SELECT COUNT(*)::int AS value
     FROM collective_workspaces
-    WHERE status IN ('conception', 'finalization_review', 'payment_pending')
+    WHERE status IN ('conception', 'payment_pending')
       ${filters.from ? 'AND created_at >= $1' : ''}
       ${filters.to ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
   `;

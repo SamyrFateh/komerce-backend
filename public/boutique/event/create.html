@@ -23,21 +23,14 @@
     <div class="ev-hero-emoji">+</div>
     <h1 class="ev-hero-title">Preparez votre evenement avec la famille</h1>
     <p class="ev-hero-sub">
-      Creez votre liste. Partagez-la a vos proches.<br>
-      Ils proposent des idees ou un montant, et vous gardez le controle jusqu'a la finalisation.
+      Partagez la liste a vos proches.<br>
+      Ils proposent, vous decidez, puis vous finalisez.
     </p>
   </div>
 
   <form id="ev-create-form" class="ev-card">
-    <h2 class="ev-card-title">Details de la liste</h2>
-    <p class="ev-card-sub">Tous les champs marques (optionnel) peuvent etre completes plus tard.</p>
-
-    <div class="ev-field">
-      <label class="ev-label" for="event_name">Nom de la liste</label>
-      <input type="text" id="event_name" name="event_name" class="ev-input"
-             placeholder="Ex : Mariage de Madi, Naissance de Salima, Aide famille"
-             required maxlength="100">
-    </div>
+    <h2 class="ev-card-title">Demarrage rapide</h2>
+    <p class="ev-card-sub">On cree la liste maintenant. Le point relais et la recuperation viendront ensuite.</p>
 
     <div class="ev-field">
       <label class="ev-label" for="event_note">
@@ -47,15 +40,6 @@
       <textarea id="event_note" name="event_note" class="ev-textarea" rows="3"
                 placeholder="Ex : Voici notre liste pour l'evenement. Vous pouvez proposer vos idees ou votre participation."
                 maxlength="500"></textarea>
-    </div>
-
-    <div class="ev-field">
-      <label class="ev-label" for="recipient_name">
-        Destinataire
-        <span class="ev-label-optional">(qui recoit l'attention ou les cadeaux)</span>
-      </label>
-      <input type="text" id="recipient_name" name="recipient_name" class="ev-input"
-             placeholder="Ex : Famille Mohamed a Moroni" maxlength="100">
     </div>
 
     <hr style="border: none; border-top: 1px solid var(--ev-border); margin: 20px 0;">
@@ -90,6 +74,10 @@
     <div class="ev-info">
       <strong>Sans compte requis.</strong> Conservez bien votre lien organisateur :
       c'est lui qui vous permet de gerer la liste, relire les propositions et finaliser.
+    </div>
+
+    <div class="ev-help" style="margin-top:12px;">
+      Le choix du point relais se fera plus tard selon le produit, y compris Paris pour certains envois diaspora.
     </div>
 
     <button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-submit-btn">

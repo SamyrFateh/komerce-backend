@@ -50,14 +50,14 @@
     }
   }
 
-  // PrÃ©-remplir le nom du panier depuis l'URL ?label=...
-  (function() {
-    var urlLabel = new URLSearchParams(window.location.search).get('label');
-    if (urlLabel) {
-      var nameInput = document.getElementById('event_name');
-      if (nameInput && !nameInput.value) nameInput.value = urlLabel;
-    }
-  })();
+  function buildEventName(payload) {
+    const note = String(payload.event_note || '').trim();
+    const creator = String(payload.creator_name || '').trim();
+    const shortNote = note ? note.slice(0, 48) : '';
+    if (shortNote) return shortNote;
+    if (creator) return 'Liste famille de ' + creator;
+    return 'Liste evenement';
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -65,15 +65,15 @@
 
     const fd = new FormData(form);
     const payload = {
-      event_name:     (fd.get('event_name') || '').trim(),
+      event_name:     null,
       event_note:     (fd.get('event_note') || '').trim() || null,
       creator_name:   (fd.get('creator_name') || '').trim(),
       creator_phone:  (fd.get('creator_phone') || '').trim() || null,
       creator_email:  (fd.get('creator_email') || '').trim() || null,
-      recipient_name: (fd.get('recipient_name') || '').trim() || null,
+      recipient_name: null,
     };
+    payload.event_name = buildEventName(payload);
 
-    if (!payload.event_name) { showError('Le nom du panier est requis.'); return; }
     if (!payload.creator_name) { showError('Votre nom est requis.'); return; }
     if (!payload.creator_phone && !payload.creator_email) {
       showError('Indiquez au moins un tÃ©lÃ©phone ou un email pour pouvoir retrouver votre lien.');
@@ -81,7 +81,7 @@
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'â³ CrÃ©ation en coursâ€¦';
+    submitBtn.textContent = 'Creation en cours...';
 
     try {
       // â”€â”€ 1. CrÃ©er le workspace â”€â”€
@@ -112,7 +112,7 @@
       // â”€â”€ 3. P1.1 â€” Si panier en attente, ajouter les items au workspace â”€â”€
       const cartItems = getPendingCart();
       if (cartItems && cartItems.length) {
-        submitBtn.textContent = 'â³ Ajout des articlesâ€¦';
+        submitBtn.textContent = 'Ajout des articles...';
         let patchFailed = false;
         let patchError = null;
         // Backend attend 1 item par appel PATCH
@@ -142,10 +142,10 @@
           }
         }
         if (patchFailed) {
-          showError('Panier crÃ©Ã©, mais ajout des articles Ã©chouÃ© : ' + patchError +
-            ' â€” vous pouvez les ajouter manuellement depuis la page de gestion.');
+          showError('Liste creee, mais ajout des articles echoue : ' + patchError +
+            ' - vous pouvez les ajouter manuellement depuis la page de gestion.');
           submitBtn.disabled = false;
-          submitBtn.textContent = 'ðŸŽ‰ CrÃ©er le panier famille';
+          submitBtn.textContent = 'Creer la liste evenement';
           return;
         }
         sessionStorage.removeItem('komerce_event_pending_cart');
@@ -157,7 +157,7 @@
       console.error('Creation workspace echouee :', err);
       showError(err.message || 'Erreur reseau. Reessayez.');
       submitBtn.disabled = false;
-      submitBtn.textContent = 'ðŸŽ‰ Creer le panier evenement';
+      submitBtn.textContent = 'Creer la liste evenement';
     }
   });
 })();
