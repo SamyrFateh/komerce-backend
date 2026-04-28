@@ -1,0 +1,1944 @@
+   FULL CART DRAWER â€” Archipel palette
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+.k-cart-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:1100;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  opacity:0;
+  transition:opacity .3s ease;
+}
+.k-cart-overlay.open{
+  display:block;
+  opacity:1;
+}
+
+.k-cart-drawer{
+  position:fixed;
+  top:0;right:0;bottom:0;
+  width:100%;max-width:400px;
+  z-index:1150;
+  background:var(--white);
+  box-shadow:-4px 0 24px rgba(0,0,0,.12);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .35s var(--ease);
+  border-radius:16px 0 0 16px;
+}
+.k-cart-drawer.open{
+  transform:translateX(0);
+}
+
+.k-cart-header{
+  background:var(--ocean-dark);
+  color:#fff;
+  padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-weight:700;font-size:1.1rem;
+  border-radius:16px 0 0 0;
+  flex-shrink:0;
+  transition:background .5s;
+}
+.k-cart-header.celebrating{
+  background:linear-gradient(135deg,#247a5a,#d97706)!important;
+  animation:pulse .6s ease;
+}
+.k-cart-header.success-flash{
+  background:linear-gradient(135deg,#92400e,#d97706,var(--coral))!important;
+}
+
+.k-cart-body{
+  flex:1;overflow-y:auto;
+  padding:14px 16px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+
+.k-cart-empty{
+  text-align:center;
+  padding:48px 24px 60px;
+  color:var(--text-muted);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+}
+.k-cart-empty .k-cart-empty-icon{
+  font-size:72px;
+  line-height:1;
+  margin-bottom:4px;
+  opacity:.5;
+  animation:cart-empty-float 3s ease-in-out infinite;
+}
+.k-cart-empty-title{
+  font-size:18px;
+  font-weight:700;
+  color:var(--text);
+  margin:0;
+}
+.k-cart-empty-sub{
+  font-size:14px;
+  color:var(--text-muted);
+  line-height:1.5;
+  max-width:280px;
+  margin:0 auto 12px;
+}
+.k-cart-empty-cta{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:12px 28px;
+  margin-top:8px;
+  background:linear-gradient(135deg,#2a7a3e 0%,#1d5b2a 100%);
+  color:#fff;
+  border:none;
+  border-radius:50px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow:0 3px 10px rgba(42,122,62,.3);
+  transition:all .15s;
+}
+.k-cart-empty-cta:hover{
+  transform:translateY(-1px);
+  box-shadow:0 5px 14px rgba(42,122,62,.4);
+}
+.k-cart-empty-cta:active{transform:scale(.97)}
+@keyframes cart-empty-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-6px)}
+}
+
+.k-cart-continue-shop{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;padding:10px 16px;margin-bottom:10px;
+  background:transparent;border:1.5px dashed var(--border);
+  border-radius:10px;font-weight:600;font-size:.83rem;
+  color:var(--text-muted);cursor:pointer;transition:all .2s;
+}
+.k-cart-continue-shop:hover{
+  background:var(--sand);border-color:var(--border);
+  color:var(--text);border-style:solid;
+}
+
+/* Cart item */
+.k-cart-item{
+  display:flex;gap:12px;padding:12px 10px;margin-bottom:6px;
+  border-radius:12px;background:var(--white);
+  box-shadow:var(--shadow-sm);border:1px solid var(--border);
+  animation:fadeIn .3s;transition:all .2s ease;position:relative;
+}
+.k-cart-item:hover{box-shadow:var(--shadow-md)}
+
+.k-cart-item.new-item{
+  border-left:4px solid var(--gold);
+  background:linear-gradient(90deg,#fffbeb 0%,var(--white) 55%);
+  border-radius:0 12px 12px 0;
+  animation:newItemSlide .42s cubic-bezier(.34,1.56,.64,1);
+}
+.k-cart-item.new-item::before{
+  content:'âœ¨ AjoutÃ©';
+  position:absolute;top:-10px;right:12px;
+  background:var(--gold);color:#fff;
+  font-size:.62rem;font-weight:700;
+  padding:2px 10px;border-radius:10px;
+}
+
+.k-cart-item-img{
+  width:68px;height:68px;
+  background:var(--sand);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;flex-shrink:0;overflow:hidden;
+  border:1px solid var(--border);
+}
+.k-cart-item-img img{
+  width:100%;height:100%;object-fit:cover;
+  border-radius:8px;
+}
+
+.k-cart-item-info{
+  flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;
+}
+.k-cart-item-name{
+  font-weight:700;font-size:.85rem;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;
+}
+.k-cart-item-unit{
+  font-size:.72rem;color:var(--text-muted);margin-top:2px;
+}
+.k-cart-item-price{
+  font-size:.88rem;color:var(--coral);font-weight:700;margin-top:2px;
+}
+.k-cart-item-qty{
+  display:flex;align-items:center;gap:0;margin-top:6px;
+  background:var(--sand);border-radius:20px;
+  width:fit-content;border:1px solid var(--border);
+}
+.k-qty-ctrl{
+  width:30px;height:30px;border-radius:50%;
+  background:transparent;color:var(--coral);
+  font-weight:700;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;cursor:pointer;border:none;
+}
+.k-qty-ctrl:hover{background:var(--coral);color:#fff}
+.k-qty-ctrl-val{
+  min-width:20px;text-align:center;font-weight:700;font-size:.88rem;
+}
+
+.k-cart-item-remove{
+  background:none;color:var(--text-muted);font-size:.85rem;
+  align-self:flex-start;padding:2px 4px;transition:all .2s;
+  cursor:pointer;border-radius:50%;width:26px;height:26px;
+  display:flex;align-items:center;justify-content:center;border:none;
+}
+.k-cart-item-remove:hover{background:#fef2f2;color:var(--red);transform:scale(1.1)}
+
+/* Cart footer */
+.k-cart-footer{
+  border-top:none;padding:16px 18px 20px;
+  background:var(--white);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:0 -4px 16px rgba(0,0,0,.06);flex-shrink:0;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));
+}
+.k-cart-recap{
+  padding-bottom:14px;
+  margin-bottom:14px;
+}
+.k-cart-recap-line{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 0;
+  font-size:14px;
+}
+.k-cart-recap-label{
+  color:var(--text-muted,#666);
+  font-weight:500;
+}
+.k-cart-recap-val{
+  color:var(--text,#2a2a2a);
+  font-weight:600;
+}
+.k-cart-recap-free{
+  color:#2a7a3e;
+  font-weight:600;
+  font-size:13px;
+}
+.k-cart-recap-divider{
+  border-top:1px dashed var(--sand-dark,#e4d9c7);
+  margin:8px 0;
+}
+.k-cart-total-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:0;
+  padding:4px 0 0;
+  font-weight:700;
+  font-size:16px;
+}
+.k-cart-total-label{
+  font-size:15px;
+  color:var(--text,#2a2a2a);
+}
+.k-cart-total-val{
+  font-weight:800;
+  font-size:20px;
+  color:#2a7a3e;
+}
+.k-cart-total-conv{
+  font-size:12px;
+  color:var(--text-muted,#999);
+  display:block;
+  text-align:right;
+  font-weight:500;
+  margin-top:2px;
+  margin-bottom:12px;
+}
+
+/* Footer panier : grille 2 lignes organisÃ©e pour mobile
+   LIGNE 1 : [Continuer] [ðŸ—‘] [Partager]  (3 boutons secondaires sur 1 ligne)
+   LIGNE 2 : [âœ… Commander]                  (1 bouton primaire pleine largeur) */
+.k-cart-footer-btns{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;   /* Continuer (1fr) | ðŸ—‘ (auto) | Partager (1fr) */
+  grid-template-rows:auto auto;
+  gap:8px;
+  width:100%;
+}
+
+.kcf-btn{
+  padding:10px 14px;border-radius:12px;
+  font-weight:700;font-size:.88rem;
+  transition:all .2s var(--ease);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;border:none;
+  min-height:44px;  /* iOS touch target */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Disposition en grille : chaque bouton dans sa cellule */
+#k-cart-continue { grid-column: 1; grid-row: 1; }
+#k-cart-clear    { grid-column: 2; grid-row: 1; min-width:44px; padding:10px 12px; }
+#k-cart-whatsapp { grid-column: 3; grid-row: 1; }
+#k-cart-checkout { grid-column: 1 / -1; grid-row: 2; }  /* pleine largeur */
+
+/* Gestion texte WhatsApp selon largeur */
+@media (max-width: 380px) {
+  /* iPhone SE et trÃ¨s petits Ã©crans : on simplifie le texte de Partager */
+  #k-cart-whatsapp {
+    font-size: 0.72rem;
+    padding: 10px 6px;
+    gap: 4px;
+  }
+  #k-cart-whatsapp svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+.kcf-primary{
+  flex:2;background:var(--coral);color:#fff;
+  box-shadow:0 2px 10px rgba(255,111,97,.25);
+}
+.kcf-primary:hover{background:#e05a48;transform:translateY(-1px)}
+.kcf-full{
+  width:100%;
+  padding:14px 20px;
+  border-radius:50px;
+  font-size:15px;
+  font-weight:700;
+  margin:6px 0 12px;
+  background:linear-gradient(135deg,#2a7a3e 0%,#1d5b2a 100%);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(42,122,62,.3);
+}
+.kcf-full:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(42,122,62,.4);
+}
+.kcf-full:active{transform:scale(.98)}
+.k-cart-footer-secondary{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin-top:4px;
+}
+.kcf-whatsapp{background:var(--whatsapp);color:#fff;flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;font-size:0.78rem;font-weight:700;padding:8px 12px;white-space:nowrap}
+.kcf-whatsapp:hover{background:#20bd5a}
+.kcf-whatsapp-mini{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:9px 14px;
+  background:transparent;
+  color:#128c7e;
+  border:1.5px solid #25d366;
+  border-radius:50px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .15s;
+}
+.kcf-whatsapp-mini:hover{
+  background:#f0fdf4;
+  color:#128c7e;
+  transform:translateY(-1px);
+}
+.kcf-whatsapp-mini svg path{fill:#128c7e}
+.kcf-danger{
+  background:transparent;color:var(--red);
+  border:1.5px solid var(--red);flex:0 0 auto;
+}
+.kcf-danger:hover{background:#fef2f2}
+.kcf-danger-mini{
+  flex:0 0 auto;
+  padding:9px 14px;
+  background:transparent;
+  color:#999;
+  border:1.5px solid var(--sand-dark,#e4d9c7);
+  border-radius:50px;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .15s;
+}
+.kcf-danger-mini:hover{
+  background:#fef5f5;
+  color:#c73a3a;
+  border-color:#e8a0a0;
+}
+.kcf-secondary{
+  background:var(--sand);color:var(--text-muted);
+  border:1px solid var(--border);flex:1;
+}
+.kcf-secondary:hover{
+  background:var(--white);border-color:var(--border);color:var(--text);
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   ORDER MODAL
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+.k-order-overlay{
+  display:none;position:fixed;inset:0;z-index:1200;
+  background:rgba(45,95,51,.55);
+  justify-content:center;align-items:stretch;
+}
+.k-order-overlay.open{display:flex}
+
+.k-order-modal{
+  width:100%;height:100vh;height:100dvh;
+  background:var(--white);
+  border-radius:0;overflow:hidden;
+  animation:k-slide-up .3s var(--ease);
+  display:flex;flex-direction:column;
+}
+.k-order-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;
+    background:var(--ocean-dark);color:var(--white);
+    flex-shrink:0;font-weight:700;font-size:.96rem;
+    padding-top:calc(10px + env(safe-area-inset-top));
+  }
+  .k-order-header #k-order-title{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .k-order-header .ck-order-title-text{
+    white-space:nowrap;
+  }
+  .k-order-body{
+    flex:1;overflow-y:auto;padding:0 10px 4px;
+  }
+
+@media(min-width:600px){
+  .k-order-modal{max-width:480px;height:auto;max-height:92vh;border-radius:var(--radius-lg)}
+  .k-order-overlay{align-items:center}
+}
+
+/* Order form groups */
+.k-of-group{margin-bottom:5px}
+.k-of-group label{display:block;font-size:.78rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.k-of-group input{
+  width:100%;padding:6px 10px;border:2px solid var(--border);
+  border-radius:var(--radius);font-size:.9rem;
+  transition:border-color .2s;outline:none;background:var(--white);
+}
+.k-of-group input:focus{border-color:var(--coral)}
+
+
+/* Responsive image ratios (aspect-ratio only â€” colonnes gÃ©rÃ©es dans bloc RESPONSIVE) */
+@media(min-width:600px){
+  .k-card-img{aspect-ratio:1/1}
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   DESKTOP â€” vrai layout â‰¥ 768px
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+@media(min-width:768px){
+
+  /* Header plus imposant â€” on augmente --header-h pour que tous les sticky
+     s'alignent automatiquement dessous (catÃ©gories, toast) */
+  :root{ --header-h:64px; }
+  .k-header{height:64px;padding:0 24px;box-shadow:0 1px 0 var(--border)}
+  .k-header-inner{gap:20px}
+  .k-logo-icon{width:34px;height:34px}
+  .k-logo-text{font-size:20px}
+
+  /* Search : centrÃ©e, max-width */
+  .k-search{flex:1;max-width:480px;margin:0 auto}
+
+  /* Content area centrÃ© */
+  .k-main,
+  .k-section,
+  .k-cats,
+  .k-promo-rail{
+    max-width:1200px;
+    margin-left:auto;
+    margin-right:auto;
+    padding-left:24px;
+    padding-right:24px;
+  }
+  .k-cats{padding-top:12px;padding-bottom:12px}
+
+  /* Cards : typographie desktop â€” nom un peu plus grand, prix aÃ©rÃ© */
+  .k-card-name{font-size:15px}
+  .k-card-price{font-size:15px}
+  .k-card-old-price{font-size:13px}
+  /* .k-card-add : taille gÃ©rÃ© par 900px+ breakpoint (pas d'override ici) */
+
+  /* Section titres â€” taille gÃ©rÃ©e par clamp() sur .k-section-head h2 */
+
+  /* Panier : largeur fixe, pas plein Ã©cran */
+  .k-cart-panel,
+  .k-cart-drawer{
+    max-width:420px;
+    left:auto;
+  }
+
+  /* Modal produit : popup centrÃ©e 2 colonnes */
+  .k-modal{
+    width:680px;
+    max-width:95vw;
+  }
+  .k-modal-scroll{
+    grid-template-columns:320px 1fr;
+  }
+  .k-modal-img-wrap{
+    border-radius:0;
+    align-self:stretch;
+    min-height:420px;
+  }
+  .k-modal-slide{
+    aspect-ratio:unset;
+    height:100%;
+    min-height:420px;
+    object-fit:contain;
+    object-position:center center;
+    padding:12px;
+    box-sizing:border-box;
+  }
+  .k-modal-info{
+    padding:20px 16px;
+    justify-content:flex-start;
+  }
+  /* â”€â”€ Suggestions mobile: plus grosses, scroll facile â”€â”€ */
+  .k-modal-suggestions{
+    border-top:none;
+    border-left:none;
+    padding:12px 12px 16px;
+  }
+  .k-modal-suggestions h3{
+    font-size:14px;
+    font-weight:800;
+    color:var(--forest);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .k-modal-suggestions h3::after{
+    content:'â€º';
+    font-size:18px;
+    color:var(--coral);
+    animation:hintSwipe 1.5s ease-in-out infinite;
+  }
+  @keyframes hintSwipe{
+    0%,100%{transform:translateX(0);opacity:.6}
+    50%{transform:translateX(6px);opacity:1}
+  }
+  /* â”€â”€ Shein-style: 2-col vertical grid for suggestions â”€â”€ */
+  .k-modal-suggestions{
+    padding:12px;
+    border-top:none;
+    background:var(--sand);
+  }
+  .k-modal-suggestions h3{
+    font-size:15px;
+    font-weight:700;
+    color:var(--text);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .k-modal-suggestions h3::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--sand-dark);
+  }
+  .k-sug-rail{
+    display:grid !important;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    overflow:visible;
+    scroll-snap-type:none;
+    max-height:none;
+  }
+  .k-sug-card{
+    flex:none;
+    width:100%;
+    scroll-snap-align:unset;
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+    background:var(--white);
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
+  }
+  .k-sug-card img{
+    aspect-ratio:1;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    object-fit:cover;
+  }
+  .k-sug-card-name{
+    font-size:12px;
+    font-weight:600;
+    padding:8px 10px 2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .k-sug-card-price{
+    font-size:14px;
+    font-weight:700;
+    color:var(--coral);
+    padding:2px 10px 10px;
+  }
+  .k-sug-add{
+    width:34px !important;
+    height:34px !important;
+    border-radius:50% !important;
+    background:#fff !important;
+    font-size:0 !important;
+    position:static;
+  }
+  .k-sug-card-actions {
+    padding:4px 6px 8px;
+  }
+  /* Hide desktop arrows + fades on mobile */
+  .k-sug-arrow{display:none!important}
+  .k-sug-wrap::before,.k-sug-wrap::after{display:none}
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   WHATSAPP FAB
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+.k-wa-fab{
+  position:fixed;
+  bottom:calc(var(--bnav-h) + 8px);
+  right:10px;
+  width:44px;height:44px;
+  border-radius:50%;
+  background:var(--whatsapp);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;
+  box-shadow:0 3px 10px rgba(37,211,102,.35);
+  transition:transform .2s var(--ease);
+  animation:waPulse 2.5s ease-in-out infinite;
+  text-decoration:none;
+}
+.k-wa-fab:hover{transform:scale(1.08)}
+.k-wa-fab:active{transform:scale(.92)}
+.k-wa-fab svg{width:22px;height:22px}
+
+@media(min-width:1024px){
+  .k-wa-fab{bottom:18px;right:18px}
+}
+@keyframes waPulse{
+  0%,100%{box-shadow:0 3px 10px rgba(37,211,102,.35)}
+  50%{box-shadow:0 3px 18px rgba(37,211,102,.55)}
+}
+
+/* â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-toast{
+  position:fixed;top:-80px;left:50%;transform:translateX(-50%);
+  background:var(--text);color:var(--white);
+  padding:0;border-radius:16px;
+  font-size:14px;font-weight:600;
+  box-shadow:var(--shadow-lg);
+  transition:top .4s cubic-bezier(.22,1,.36,1);
+  z-index:2000;
+  min-width:220px;max-width:340px;
+  width:calc(100% - 32px);
+  overflow:hidden;
+}
+.k-toast.show{top:calc(var(--header-h) + 10px)}
+.k-toast.error .k-toast-simple{background:var(--coral);color:#fff}
+.k-toast.success .k-toast-simple{background:#16a34a;color:#fff}
+.k-toast.error,.k-toast.success{background:transparent;box-shadow:none}
+
+/* Simple toast (errors / info) */
+.k-toast-simple{padding:10px 18px;display:flex;align-items:center;justify-content:center;}
+
+/* Rich toast (after cart add) */
+.k-toast-rich{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px 8px 10px;
+}
+.k-toast-thumb{
+  width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;
+}
+.k-toast-emoji{font-size:24px;flex-shrink:0;width:44px;text-align:center;}
+.k-toast-body{
+  flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;
+}
+.k-toast-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:#8bc34a;
+}
+.k-toast-name{
+  font-size:13px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--white);
+}
+.k-toast-cta{
+  flex-shrink:0;
+  background:var(--coral);color:var(--white);
+  border-radius:20px;padding:6px 11px;
+  font-size:11px;font-weight:700;
+  white-space:nowrap;
+  transition:opacity .15s;
+}
+.k-toast-cta:active{opacity:.8}
+
+/* â”€â”€ BOTTOM NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-bnav{
+  position:fixed;bottom:0;left:0;right:0;
+  height:var(--bnav-h);
+  background:rgba(255, 255, 255, 0.85);
+  backdrop-filter:blur(20px) saturate(200%);
+  -webkit-backdrop-filter:blur(20px) saturate(200%);
+  border-top:1px solid rgba(0,0,0,0.06);
+  display:flex;z-index:90;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.k-bnav-item{
+  flex:1;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2px;
+  color:var(--text-light);
+  transition:color .2s;
+  font-size:10px;font-weight:600;
+}
+.k-bnav-item svg{width:22px;height:22px}
+.k-bnav-item.active{color:var(--ocean)}
+.k-bnav-item.active svg{stroke-width:2.5}
+
+/* â”€â”€ RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Ã‰tape A+C : progression 2 â†’ 3 â†’ 4 â†’ 5 â†’ 6 colonnes.
+   Mobile 2 cols (iPhone SE OK), 600px+ passe Ã  3, 900px+ Ã  4,
+   1200px+ Ã  5, 1600px+ Ã  6. Fini les cards Ã©tirÃ©es sur 1920.
+   Hero height gÃ©rÃ© par clamp() sur .k-hero img (pas d'override ici). */
+@media(min-width:480px){
+  .k-promo-card{/* removed â€” base handles mobile */}
+  .k-card-basket-icon{width:32px;height:32px}
+  .k-card-fav{width:30px;height:30px;top:8px;right:8px;font-size:14px}
+}
+@media(min-width:600px){
+  .k-grid{grid-template-columns:repeat(3,1fr);gap:12px}
+}
+@media(min-width:900px){
+  .k-grid{grid-template-columns:repeat(4,1fr);gap:16px}
+  .k-bnav{display:none}
+  body{padding-bottom:0}
+  .k-card-add{width:46px;height:46px;bottom:10px;right:10px}
+  .k-card-add.in-cart{width:88px}
+  .k-card-basket-icon{width:40px;height:40px}
+  .k-card-fav{width:32px;height:32px;top:10px;right:10px;font-size:15px}
+}
+@media(min-width:1200px){
+  .k-grid{grid-template-columns:repeat(5,1fr);gap:18px}
+}
+@media(min-width:1600px){
+  .k-grid{grid-template-columns:repeat(6,1fr);gap:20px}
+}
+
+/* â”€â”€ ANIMATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@keyframes k-pop{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.15)}
+  100%{transform:scale(1)}
+}
+.k-pop{animation:k-pop .3s ease}
+
+@keyframes newItemSlide{
+  0%{transform:translateX(60px);opacity:0}
+  100%{transform:translateX(0);opacity:1}
+}
+
+@keyframes pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.7}
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* â”€â”€ FAV VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-fav-view,.k-track-view{
+  display:none;
+  padding:12px 10px calc(var(--bnav-h) + 96px);
+  min-height:60vh;
+}
+.k-fav-view.show,.k-track-view.show{display:block}
+.k-fav-view h2,.k-track-view h2{
+  font-size:18px;font-weight:700;
+  margin-bottom:14px;color:var(--text);
+  display:flex;align-items:center;gap:8px;
+}
+.k-fav-empty{
+  text-align:center;padding:60px 20px;color:var(--text-muted);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.k-fav-empty svg{opacity:.3}
+.k-fav-empty p{font-size:14px;margin:0}
+
+/* â”€â”€ TRACK VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-track-form{
+  background:var(--white);border-radius:12px;
+  padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);
+  margin-bottom:16px;
+}
+.k-track-form label{
+  font-size:12px;font-weight:600;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;
+}
+.k-track-input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--sand-dark);
+  border-radius:8px;font-size:15px;font-family:inherit;
+  box-sizing:border-box;outline:none;transition:border-color .2s;
+}
+.k-track-input:focus{border-color:var(--coral)}
+.k-track-phone-wrap{
+  display:flex;gap:6px;width:100%;
+}
+.k-track-country{
+  flex:0 0 auto;padding:10px 6px;border:1.5px solid var(--sand-dark);
+  border-radius:8px;font-size:14px;background:var(--white);
+  font-family:inherit;outline:none;cursor:pointer;
+}
+.k-track-country:focus{border-color:var(--coral)}
+.k-track-input--phone{
+  flex:1;min-width:0;
+}
+.k-track-ref-wrap{
+  display:flex;align-items:center;gap:0;width:100%;
+  border:1.5px solid var(--sand-dark);border-radius:8px;
+  overflow:hidden;background:var(--white);transition:border-color .2s;
+}
+.k-track-ref-wrap:focus-within{border-color:var(--coral)}
+.k-track-ref-prefix{
+  flex:0 0 auto;padding:12px 2px 12px 14px;
+  font-size:15px;font-weight:600;color:var(--text);
+  white-space:nowrap;user-select:none;
+}
+.k-track-input--ref{
+  flex:1;min-width:0;border:none;outline:none;
+  padding:12px 14px 12px 0;font-size:18px;font-weight:700;
+  letter-spacing:4px;font-family:inherit;background:transparent;
+}
+.k-track-btn{
+  width:100%;margin-top:12px;padding:13px;
+  background:var(--text);color:white;border:none;
+  border-radius:8px;font-size:15px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  transition:opacity .15s;
+}
+.k-track-btn:active{opacity:.8}
+.k-track-steps{
+  background:var(--white);border-radius:12px;
+  padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);
+  margin-bottom:28px;
+}
+.k-track-step{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid var(--sand-dark);
+}
+.k-track-step:last-child{border:none}
+.k-track-step-dot{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:14px;
+  background:var(--sand-dark);color:var(--text-muted);
+}
+.k-track-step-dot.done{background:var(--ocean);color:white}
+.k-track-step-dot.current{background:var(--coral);color:white}
+.k-track-step-info{flex:1}
+.k-track-step-label{font-size:13px;font-weight:600;color:var(--text)}
+.k-track-step-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* â”€â”€ SCROLL SENTINEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+#k-scroll-sentinel{height:1px;margin-top:8px}
+.k-load-more-spinner{
+  text-align:center;padding:20px;display:none;color:var(--text-muted);font-size:13px;
+}
+.k-load-more-spinner.show{display:block}
+
+/* â”€â”€ SCROLLBAR AESTHETIC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* Very small screens */
+/* Very small screens */
+@media(max-width:380px){
+  .k-logo-text{display:block;font-size:14px}
+  .k-promo-card{/* base handles this */}
+  .k-grid{gap:6px;padding:4px 0 12px}
+}
+
+/* (doublon bouton add supprimÃ©) */
+
+/* Bottom nav basket icon */
+.k-bnav-basket{
+  width:24px;height:24px;
+  object-fit:contain;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.1));
+}
+/* Bottom nav cart badge */
+.k-bnav-item[data-tab="cart"]{position:relative;overflow:visible}
+.k-bnav-badge{
+  position:absolute;
+  top:-2px;
+  left:50%;margin-left:4px;
+  min-width:18px;height:18px;
+  background:var(--coral);color:#fff;
+  font-size:10px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50px;padding:0 5px;
+  border:2px solid #fff;
+  line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+  transform:scale(0);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+  z-index:5;
+}
+.k-bnav-badge.show{transform:scale(1)}
+
+.k-bnav-item.active .k-bnav-basket{
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.1)) brightness(0.9);
+  transform:scale(1.1);
+}
+
+/* Modal add button with basket */
+.k-add-cart-btn img{
+  width:22px;height:22px;
+  object-fit:contain;
+  margin-right:6px;
+}
+
+/* .k-hero height : gÃ©rÃ© par clamp() sur .k-hero img â€” pas d'override ici */
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   OTP / SUIVI FLOW
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* Hint texte */
+.k-otp-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+/* BanniÃ¨re "code envoyÃ©" */
+.k-otp-sent-banner {
+  background: #f0fdf4;
+  border-left: 3px solid #aaa;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.k-otp-sent-banner small {
+  color: var(--text-muted);
+}
+
+/* Champ code OTP â€” grand, centrÃ© */
+.k-otp-code-input {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 16px;
+  padding: 14px 8px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-align: center;
+  border: 2px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  background: white;
+  outline: none;
+  box-sizing: border-box;
+}
+.k-otp-code-input:focus {
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px rgba(255,111,60,0.12);
+}
+
+/* SÃ©parateur "ou" */
+.k-otp-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.k-otp-divider::before,
+.k-otp-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0,0,0,0.1);
+}
+
+/* Bouton ghost (rÃ©fÃ©rence) */
+.k-track-btn--ghost {
+  background: white !important;
+  color: var(--text) !important;
+  border: 1.5px solid rgba(0,0,0,0.12) !important;
+}
+.k-track-btn--ghost:active {
+  background: #f5f5f5 !important;
+}
+
+/* Bouton lien "Renvoyer" */
+.k-otp-resend-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 8px;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 6px;
+}
+.k-otp-resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* â”€â”€ Carte commande â”€â”€ */
+.k-order-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+.k-order-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.k-order-ref {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--coral);
+  letter-spacing: 0.02em;
+}
+.k-order-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.k-order-card-total {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* Timeline compacte dans les cartes */
+.k-track-steps--compact .k-track-step {
+  padding: 5px 0;
+}
+.k-track-steps--compact .k-track-step-dot {
+  width: 22px;
+  height: 22px;
+  font-size: 0.65rem;
+}
+.k-track-steps--compact .k-track-step-sub {
+  display: none;
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   COMPACT CHECKOUT â€” .ck-*
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* Mini cart rÃ©sumÃ© */
+.ck-summary{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 10px;
+  background:var(--sand);border-radius:8px;
+  margin-bottom:10px;
+}
+.ck-sum-qty{font-size:0.8rem;color:var(--text-muted)}
+.ck-sum-sep{color:var(--text-muted);font-size:0.8rem}
+.ck-sum-total{font-weight:800;font-size:1rem;color:var(--coral);margin-left:auto}
+
+/* Section label */
+.ck-label{
+    font-size:0.68rem;font-weight:700;
+    color:var(--text-muted);text-transform:none;
+    letter-spacing:.01em;
+    margin:6px 0 2px;
+  }
+.ck-fulfillment-switch{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    margin:0 0 6px;
+  }
+  .ck-fulfillment-btn{
+    min-height:40px;
+    padding:0 10px;
+    border:1.5px solid rgba(0,0,0,.1);
+    border-radius:11px;
+    background:#fff;
+    color:var(--text);
+    font-size:12px;
+    font-weight:700;
+    text-align:center;
+  }
+.ck-fulfillment-btn.active{
+  border-color:var(--ocean);
+  background:rgba(100,175,90,.10);
+  color:var(--ocean-dark);
+  box-shadow:0 0 0 2px rgba(100,175,90,.12);
+}
+
+/* Compact form inputs */
+.k-order-body input[type=text],
+.k-order-body input[type=tel]{
+    padding:7px 10px;font-size:0.84rem;
+  }
+.k-order-body label[style*="display:block"]{
+  font-size:0.78rem !important;margin-bottom:2px !important;
+}
+.k-order-body > div[style*="margin-bottom:8px"]{
+  margin-bottom:6px !important;
+}
+
+/* â”€â”€ P2 CLEANUP â€” CHECKOUT FORM/CONFIRM/SUIVI CLASSES â”€â”€â”€ */
+
+/* Form builder: section heading */
+.k-ck-section{font-weight:700;font-size:0.85rem;margin-bottom:6px;margin-top:10px}
+.k-order-body .k-ck-section{margin-top:8px;margin-bottom:4px}
+
+/* Form builder: group + label + input */
+.k-ck-group{margin-bottom:6px}
+.k-ck-label{display:block;font-size:0.76rem;font-weight:600;margin-bottom:2px}
+.k-ck-label--sm{font-size:0.75rem;color:#666}
+.k-ck-group--tracking-compact{margin-bottom:2px}
+.k-ck-group--tracking-compact .k-ck-phone-help{display:none}
+.k-ck-input{
+    width:100%;padding:8px 10px;border:1.5px solid rgba(0,0,0,0.1);border-radius:8px;
+    outline:none;font-size:0.84rem;transition:border-color 0.2s;box-sizing:border-box;
+  }
+.k-ck-input:focus{border-color:var(--coral)}
+
+/* Intl phone input (country selector + input) */
+.k-ck-phone-wrap{display:flex;height:38px;gap:6px}
+  .k-ck-phone-select{
+    height:38px;flex:0 0 98px;border:1.5px solid rgba(0,0,0,0.1);border-radius:8px;
+    background:#fff;padding:0 8px;font-size:0.84rem;outline:none;transition:border-color .2s;
+  }
+  .k-ck-phone-input{
+    height:38px;flex:1;border:1.5px solid rgba(0,0,0,0.1);border-radius:8px;
+    padding:0 10px;outline:none;font-size:0.84rem;box-sizing:border-box;
+    background:#fff;transition:border-color .2s;
+  }
+.k-ck-phone-wrap:focus-within .k-ck-phone-select,
+.k-ck-phone-wrap:focus-within .k-ck-phone-input{border-color:var(--coral)}
+  .k-ck-phone-help{font-size:0.68rem;line-height:1.2;color:#777;margin-top:2px}
+
+/* Comores +269 phone (prefix + input) */
+.k-ck-km-wrap{display:flex;height:40px}
+.k-ck-km-prefix{
+  display:flex;align-items:center;gap:4px;padding:0 10px;
+  background:#f5f5f2;border:1.5px solid rgba(0,0,0,0.12);border-right:none;
+  border-radius:8px 0 0 8px;font-size:12px;font-weight:700;color:#555;
+  white-space:nowrap;flex-shrink:0;transition:border-color .15s;
+}
+.k-ck-km-code{color:#888}
+.k-ck-km-input{
+  flex:1;height:100%;border:1.5px solid rgba(0,0,0,0.12);border-left:none;
+  border-radius:0 8px 8px 0;padding:0 12px;font-size:14px;font-family:inherit;
+  outline:none;background:#fff;transition:border-color .15s;
+}
+.k-ck-km-wrap:focus-within .k-ck-km-prefix,
+.k-ck-km-wrap:focus-within .k-ck-km-input{border-color:var(--ocean)}
+
+/* Stripe card section */
+.k-stripe-wrap{
+  display:none;margin-top:8px;padding:10px 14px;
+  background:#fff;border:1px solid var(--sand-dark);border-radius:10px;
+}
+.k-stripe-wrap.is-visible{display:block}
+.k-stripe-title{font-size:0.75rem;font-weight:700;color:var(--ocean);margin-bottom:6px}
+.k-stripe-element{
+  padding:10px 12px;border:1.5px solid rgba(0,0,0,0.12);
+  border-radius:8px;background:#fff;min-height:44px;cursor:text;
+}
+.k-stripe-error{color:#dc2626;font-size:0.75rem;margin-top:5px;display:none}
+.k-stripe-error.is-visible{display:block}
+.k-stripe-eur{
+  display:none;text-align:center;font-size:0.82rem;
+  color:var(--ocean);font-weight:700;margin-top:6px;padding-bottom:4px;
+}
+.k-stripe-eur.is-visible{display:block}
+
+/* Wallet section */
+.k-wallet-section{
+  margin-top:8px;padding:10px 12px;border:2px dashed var(--ocean);border-radius:8px;
+  background:linear-gradient(135deg,#f0f5e6,#e8eddb);display:none;
+}
+.k-wallet-section.is-visible{display:block}
+.k-wallet-label{display:flex;align-items:center;gap:10px;cursor:pointer}
+.k-wallet-cb{width:18px;height:18px;accent-color:var(--ocean);flex-shrink:0}
+.k-wallet-info{flex:1}
+.k-wallet-title{font-weight:700;font-size:0.85rem;color:var(--ocean)}
+.k-wallet-balance{font-size:0.72rem;color:#888;margin-top:1px}
+.k-wallet-ded{
+  margin-top:6px;padding:6px 8px;background:white;
+  border-radius:6px;font-size:0.82rem;display:none;
+}
+.k-wallet-ded.is-visible{display:block}
+
+/* Payment option radio */
+.k-pay-option{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border:2px solid rgba(0,0,0,0.08);border-radius:8px;
+  margin-bottom:6px;cursor:pointer;background:white;
+}
+.k-pay-option.is-selected{border-color:var(--ocean);background:rgba(67,160,71,0.06)}
+.k-order-body .k-pay-option{padding:8px 11px;margin-bottom:4px}
+.k-pay-radio{width:16px;height:16px;accent-color:var(--ocean);flex-shrink:0}
+.k-pay-title{font-weight:700;font-size:0.88rem}
+.k-pay-subtitle{font-size:0.75rem;color:#888;margin-top:1px}
+
+/* Wallet deduction rows */
+.k-wal-row{display:flex;justify-content:space-between}
+.k-wal-row+.k-wal-row{margin-top:4px}
+.k-wal-value{font-weight:700;color:var(--ocean)}
+.k-wal-bold{font-weight:700}
+.k-wal-success{margin-top:4px;text-align:center;font-weight:700;color:#16a34a}
+
+/* Order confirmation */
+.k-confirm-wrap{text-align:center;padding:14px 0}
+.k-confirm-emoji{font-size:3.2rem;margin-bottom:8px}
+.k-confirm-title{color:var(--ocean);margin-bottom:6px;font-size:1.1rem}
+.k-confirm-sub{color:#888;font-size:0.85rem;margin-bottom:2px}
+.k-confirm-ref{
+  display:inline-block;background:rgba(67,160,71,0.08);color:var(--ocean);
+  font-weight:800;font-size:1.15rem;padding:8px 20px;border-radius:10px;
+  margin:6px 0;letter-spacing:2px;font-family:monospace;
+}
+.k-confirm-copy{
+  margin-top:2px;background:none;border:none;color:var(--text-muted);
+  font-size:0.75rem;cursor:pointer;text-decoration:underline;
+}
+.k-confirm-cash-lbl{margin-top:10px;font-weight:700;font-size:0.88rem}
+.k-confirm-cash-ref{
+  display:inline-block;background:#fffbeb;color:#92400e;
+  font-weight:800;font-size:1.15rem;padding:8px 22px;border-radius:10px;
+  margin:6px 0;letter-spacing:2px;border:2px solid #fde68a;font-family:monospace;
+}
+.k-confirm-loyalty{
+  margin-top:10px;padding:8px 12px;background:#ecfdf5;border-radius:8px;
+  border:1px solid #a7f3d0;font-size:0.82rem;color:#065f46;font-weight:600;
+}
+.k-confirm-credit{
+  margin-top:6px;padding:8px 14px;background:linear-gradient(135deg,#f0f5e6,#e8eddb);
+  border-radius:8px;font-size:0.85rem;text-align:center;
+}
+.k-confirm-credit strong{color:var(--ocean)}
+.k-confirm-notice{
+  margin-top:12px;padding:10px 12px;background:#eef2e4;border-radius:10px;
+  font-size:0.82rem;color:#555;line-height:1.6;text-align:left;
+}
+.k-confirm-notice-item{margin-top:4px}
+.k-confirm-track{
+  margin-top:12px;width:100%;padding:11px;border-radius:8px;
+  font-weight:700;font-size:0.9rem;background:var(--ocean);
+  color:white;border:none;cursor:pointer;
+}
+.k-confirm-close{
+  margin-top:6px;width:100%;padding:10px;border-radius:8px;font-weight:600;
+  font-size:0.85rem;background:#eef2e4;color:var(--text);
+  border:1px solid rgba(0,0,0,0.08);cursor:pointer;
+}
+
+/* Checkout track label */
+.k-ck-track-label{font-size:0.8rem;font-weight:600;display:block;margin-bottom:3px}
+
+/* Misc: search empty, fav hint/count, spinner size */
+.k-search-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:14px}
+.k-fav-hint{font-size:12px}
+.k-fav-count{font-size:14px;font-weight:400;color:var(--text-muted)}
+.k-track-btn--mt{margin-top:8px}
+.k-otp-back-btn{margin-top:16px}
+.k-spinner--sm{width:22px;height:22px}
+
+/* pageScroll position: shop = default, other tabs = below header only */
+#k-page-scroll[data-tab="fav"],
+#k-page-scroll[data-tab="track"],
+#k-page-scroll[data-tab="cart"]{top:44px}
+
+/* MVola compact */
+.ck-pay-mvola{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 11px;
+  border:2px solid rgba(0,0,0,0.08);border-radius:8px;
+  margin-bottom:4px;
+  cursor:not-allowed;opacity:.5;
+  font-size:0.88rem;font-weight:600;
+  background:white;
+}
+.ck-pay-mvola input{width:15px;height:15px;flex-shrink:0}
+.ck-soon{
+  font-size:0.62rem;background:var(--coral);color:white;
+  padding:1px 5px;border-radius:5px;font-weight:700;vertical-align:middle;
+}
+
+/* Tracking accordion */
+.ck-track-row{margin:10px 0 0}
+.ck-track-toggle{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-size:0.85rem;font-weight:600;color:var(--text);
+}
+.ck-track-toggle input[type=checkbox]{
+  width:16px;height:16px;flex-shrink:0;
+  accent-color:var(--coral);
+}
+.ck-track-extra{
+  margin-top:6px;padding:10px;
+  background:var(--sand);border-radius:8px;
+}
+.ck-track-hint{
+  font-size:0.72rem;color:var(--text-muted);margin-top:4px;
+}
+
+/* Sticky confirm button */
+.ck-confirm-btn{
+  /* Flex child du .k-order-modal â†’ toujours visible, jamais dans le scroll */
+  flex-shrink:0;
+  width:100%;
+  padding:14px 16px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  border-radius:0;
+  background:linear-gradient(135deg,#d97706,#f59e0b);
+  color:white;font-weight:800;font-size:1rem;
+  border:none;cursor:pointer;
+  margin-top:0;
+  box-shadow:0 -4px 16px rgba(0,0,0,0.10),0 -1px 0 rgba(0,0,0,0.06);
+  transition:filter .2s,transform .15s;
+  z-index:5;
+}
+.ck-confirm-btn:active{transform:scale(.97);filter:brightness(.95)}
+.ck-confirm-btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
+
+/* â”€â”€ Chips paiement horizontaux â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.ck-pay-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:4px;
+    margin-bottom:6px;
+  }
+.ck-track-details{
+    margin-top:3px;
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:10px;
+    background:#fafaf9;
+  }
+.ck-track-details summary{
+    font-size:10px;
+    padding:8px 10px;
+    font-weight:700;
+  }
+.ck-track-hint{
+    font-size:10px;
+    color:var(--text-light);
+    margin-top:2px;
+  }
+.ck-track-details-body{padding:6px 8px 8px}
+.ck-pay-chip{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:62px;
+    padding:5px 4px;
+    border:2px solid rgba(0,0,0,0.08);
+    border-radius:10px;
+  cursor:pointer;
+  background:#fff;
+  text-align:center;
+  gap:2px;
+  transition:border-color .15s,background .15s;
+  user-select:none;
+}
+.ck-pay-chip input[type=radio]{display:none}
+.ck-pay-chip--active{
+  border-color:var(--coral) !important;
+  background:rgba(255,107,53,0.07) !important;
+}
+.ck-pay-chip--off{
+  opacity:.5;cursor:not-allowed;
+}
+.ck-chip-icon{font-size:1.15rem;line-height:1}
+.ck-chip-lbl{font-size:.64rem;font-weight:700;color:var(--text);line-height:1.2}
+.ck-chip-lbl em.ck-soon{
+  font-style:normal;font-size:.58rem;font-weight:600;
+  background:var(--coral);color:#fff;
+  border-radius:4px;padding:1px 4px;display:inline-block;margin-top:2px;
+}
+
+/* â”€â”€ Suivi tracking toggle compact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.ck-track-row{margin:4px 0 2px}
+.ck-track-toggle{
+  display:flex;align-items:center;gap:7px;
+  font-size:.8rem;font-weight:600;
+  cursor:pointer;padding:5px 0;
+  color:var(--text);
+}
+
+/* â”€â”€ Section rÃ©sumÃ© compact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.ck-summary{
+  font-size:.8rem;color:var(--text-muted);
+  padding:3px 0 6px;border-bottom:1px solid rgba(0,0,0,.07);
+  margin-bottom:6px;
+}
+
+/* â”€â”€ Input hauteur compacte â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-order-body input[type=text],
+.k-order-body input[type=tel]{
+    height:38px;font-size:.84rem;box-sizing:border-box;
+  }
+.k-phone-row{height:38px}
+.k-phone-row select,.k-phone-row input{height:38px;font-size:.84rem}
+
+/* â”€â”€ Accordion sender phone compact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.ck-sms-body{padding:6px 0 4px;gap:4px}
+.ck-sms-body .k-of-group{margin-bottom:0}
+
+/* â”€â”€ RING PULSE (after add to cart) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@keyframes k-ring-pulse{
+  0%  {box-shadow:0 0 0 0 rgba(255,90,70,.5)}
+  65% {box-shadow:0 0 0 12px rgba(255,90,70,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,90,70,0)}
+}
+.k-cart-btn.ring-pulse{
+  animation:k-ring-pulse .65s ease-out 2;
+  border-radius:50%;
+}
+
+/* â”€â”€ MODAL ADD BTN â€” CONFIRMED STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-add-cart-btn.confirmed{
+  background:var(--ocean, #0d9488);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  justify-content:center;
+}
+
+/* â”€â”€ BUY NOW BUTTON â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-buy-now-btn{
+  flex-shrink:0;height:42px;
+  padding:0 14px;
+  background:var(--ocean);color:var(--white);
+  border-radius:50px;
+  font-size:13px;font-weight:700;
+  display:flex;align-items:center;gap:4px;
+  transition:opacity .15s,transform .1s;
+  white-space:nowrap;
+}
+.k-buy-now-btn:active{opacity:.85;transform:scale(.97)}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   AMÃ‰LIORATIONS UX v3.1 â€” Navigation modal, swipe, nav arrows
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â”€â”€ Boutons navigation â† â†’ dans la modal â”€â”€ */
+#k-modal-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#k-modal-prev,
+#k-modal-next {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--sand);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s, transform .15s, opacity .2s;
+  flex-shrink: 0;
+}
+#k-modal-prev:hover,
+#k-modal-next:hover {
+  background: var(--ocean);
+  color: #fff;
+  border-color: var(--ocean);
+  transform: scale(1.08);
+}
+#k-modal-prev:active,
+#k-modal-next:active {
+  transform: scale(.92);
+}
+#k-modal-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 36px;
+  text-align: center;
+  user-select: none;
+}
+
+/* â”€â”€ Swipe indicator sur mobile (barre en haut de la modal) â”€â”€ */
+.k-modal::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 8px auto 0;
+  flex-shrink: 0;
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   MOBILE OVERRIDES â€” Single source of truth
+   Base styles are already mobile-first where possible.
+   This block handles overrides needed for mobile only.
+   DO NOT add mobile patches elsewhere in this file.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â”€â”€ Card mini tabs (Shein-style) â”€â”€ */
+.k-card-info {
+  display: flex;
+  flex-direction: column;
+}
+.k-card-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.k-card-tabs::-webkit-scrollbar { display: none; }
+.k-card-tab {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f7f6f2;
+  border: 1px solid rgba(0,0,0,.06);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.k-card-tab.active {
+  background: var(--ocean-dark);
+  color: #fff;
+  border-color: var(--ocean-dark);
+}
+.k-card-panels {
+  margin-top: 7px;
+  min-height: 28px;
+  max-width: 100%;
+}
+.k-card-panel {
+  display: none;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.k-card-panel.active {
+  display: -webkit-box;
+}
+
+/* â”€â”€ K. SECTION MODE (Temu-style grouped by category) â”€â”€ */
+
+  /* â”€â”€ P. Subcategory chips â€” wrap compact â”€â”€ */
+  .k-sug-chips{
+    flex-wrap:wrap;
+    overflow-x:visible;
+    padding:8px 12px;
+    gap:6px;
+  }
+  .k-sug-chip{
+    padding:4px 10px;
+    font-size:11px;
+    border-radius:16px;
+  }
+
+/* â•â•â•â•â•â•â•â•â•â•â• END MOBILE OVERRIDES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SWIPE CATÃ‰GORIE â€” animation slide de la grille
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+@keyframes k-grid-out-left {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(-24px); opacity: 0; }
+}
+@keyframes k-grid-out-right {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(24px);  opacity: 0; }
+}
+@keyframes k-grid-in-right {
+  from { transform: translateX(24px);  opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes k-grid-in-left {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+/* Slide animations removed â€” navigation v2 uses scroll-to-section instead */
+
+/* Respect des prÃ©fÃ©rences d'accessibilitÃ© */
+@media (prefers-reduced-motion: reduce) {
+  .k-grid.k-grid-slide-out-left,
+  .k-grid.k-grid-slide-out-right,
+  .k-grid.k-grid-slide-in-left,
+  .k-grid.k-grid-slide-in-right {
+    animation: none;
+  }
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/*  CARROUSEL PRODUIT SHEIN-LIKE â€” swipe horizontal + dots                 */
+/*  - scroll-snap horizontal dans la carte                                 */
+/*  - touch-action: pan-y â†’ le scroll vertical global reste fluide         */
+/*  - dots en bas pour indiquer la position                                */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+.k-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.k-card-carousel {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  aspect-ratio: 4/3;
+  /* pan-x pan-y : permet swipe horizontal du carousel + scroll vertical global */
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  background: #faf8f5;
+}
+
+.k-card-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.k-card-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-card-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  display: block;
+}
+
+/* Dots ronds en bas du carrousel */
+.k-card-dots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 50px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.k-card-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: all 0.25s ease;
+}
+
+.k-card-dot.active {
+  background: white;
+  width: 16px;
+  border-radius: 3px;
+}
+
+/* Sur desktop, carrousel lÃ©gÃ¨rement plus grand */
+@media (min-width: 900px) {
+  .k-card-carousel {
+    aspect-ratio: 1/1;
+  }
+  .k-card-slide-img {
+    padding: 12px;
+  }
+  .k-card-dots {
+    bottom: 8px;
+    padding: 4px 10px;
+  }
+  .k-card-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .k-card-dot.active {
+    width: 18px;
+  }
+}
+
+/* Masquer l'image statique originale si elle coexiste avec un carrousel */
+.k-card-img-wrap > .k-card-img:not(:only-child) {
+  display: none;
+}
+
+/* Masquer les onglets (on garde la rÃ¨gle prÃ©cÃ©dente) */
+.k-card-tabs,
+.k-card-panels {
+  display: none !important;
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/*  MODAL PAIEMENT â€” nouveaux Ã©lÃ©ments (v2.5)                              */
+/*  - bouton retour panier                                                  */
+/*  - rÃ©cap articles                                                        */
+/*  - champ email                                                           */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â”€â”€ Bouton retour panier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.ck-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 0 0 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.ck-back-btn:hover {
+  background: var(--sand-dark);
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.ck-back-btn:active {
+  transform: scale(0.97);
+}
+
+/* â”€â”€ RÃ©cap panier (mini) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.ck-recap {
+  background: var(--sand);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.ck-recap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ck-recap-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ck-recap-total {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--coral);
+}
+.ck-recap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ck-recap-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ck-recap-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--sand-dark);
+  flex-shrink: 0;
+}
+.ck-recap-thumb--empty {
+  background: var(--sand-dark);
+}
+.ck-recap-info {
+  flex: 1;
+  min-width: 0;
+}
+.ck-recap-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ck-recap-qty {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.ck-recap-more {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+/* â”€â”€ Champ email (type=email) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+input#of-client-email {
+  /* HÃ©rite dÃ©jÃ  de k-ck-input, juste un rappel de style */
+  font-family: var(--font);
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/*  MODALE PRODUIT â€” scroll vertical + suggestions en grille (Shein-like)  */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+
+/* La zone image reste fixe en haut (carrousel horizontal) */
+.k-modal-img-wrap {
+  flex: 0 0 auto !important;
+  height: 45vh !important;
+  max-height: 450px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sand);
+}
+
+/* Info produit aprÃ¨s l'image */
+.k-modal-info {
+  padding: 16px 14px 12px;
+  background: var(--white);
+}
+
+/* â”€â”€ SUGGESTIONS : passer de rail horizontal Ã  grille verticale â”€â”€â”€â”€â”€â”€â”€â”€ */
+.k-modal-suggestions h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  color: var(--text) !important;
+  padding-top: 4px !important;
+}
+
+/* (duplicate 1 removed â€” see canonical rules above) */
+
+/* Assurer que la modale garde les actions (quantitÃ© + ajout panier) en bas fixe */
+.k-modal-actions {
+  flex-shrink: 0;
+  background: var(--white);
+  border-top: 1px solid var(--sand-dark);
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/*  FIX â€” Bouton "Payer/Confirmer" toujours visible dans modal paiement    */
+/*  Garantit que .k-order-modal garde bien sa structure flex mÃªme quand    */
+/*  d'autres rÃ¨gles CSS interfÃ¨rent.                                        */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* Renforcer la modal d'ordre : flex column garanti, hauteur stable */
+.k-order-overlay.open {
+  display: flex !important;
+  z-index: 1200 !important;
+}
+.k-order-overlay.open .k-order-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+/* Le body garde son flex:1 et scrolle */
+.k-order-overlay.open .k-order-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+}
+
+/* Le bouton Payer est toujours visible en bas */
+.k-order-overlay.open .ck-confirm-btn {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 1300 !important;
+  /* Protection contre les claviers virtuels mobiles */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 600px) {
+  .k-order-overlay.open .k-order-modal {
+    height: auto !important;
+    max-height: 92vh !important;
+  }
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/*  PATCH MODAL PAIEMENT + CARROUSEL + BNAV (consolidÃ©)                    */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */

@@ -6,6 +6,11 @@ const root = resolve(new URL('..', import.meta.url).pathname.replace(/^\/(.:\/)/
 const files = {
   index: resolve(root, 'public/boutique/index.html'),
   css: resolve(root, 'public/boutique/css/boutique.css'),
+  cssBase: resolve(root, 'public/boutique/css/boutique-base.css'),
+  cssModal: resolve(root, 'public/boutique/css/boutique-modal.css'),
+  cssCartCheckout: resolve(root, 'public/boutique/css/boutique-cart-checkout.css'),
+  cssInteractions: resolve(root, 'public/boutique/css/boutique-interactions.css'),
+  cssMobile: resolve(root, 'public/boutique/css/boutique-mobile.css'),
   catalog: resolve(root, 'public/boutique/js/b-catalog.js'),
   main: resolve(root, 'public/boutique/js/main.js'),
 };
@@ -21,7 +26,16 @@ for (const [name, file] of Object.entries(files)) {
 }
 
 const index = existsSync(files.index) ? read(files.index) : '';
-const css = existsSync(files.css) ? read(files.css) : '';
+const cssFiles = [
+  files.css,
+  files.cssBase,
+  files.cssModal,
+  files.cssCartCheckout,
+  files.cssInteractions,
+  files.cssMobile,
+];
+const cssSources = cssFiles.filter(existsSync).map(read);
+const css = cssSources.join('\n');
 const catalog = existsSync(files.catalog) ? read(files.catalog) : '';
 
 const charsetAt = index.indexOf('<meta charset="UTF-8">');
@@ -31,7 +45,7 @@ check(firstScriptAt === -1 || charsetAt < firstScriptAt, 'UTF-8 charset must app
 check(!/\sstyle=/.test(index), 'index.html should not contain inline style attributes.');
 check(index.includes('<link rel="preload" as="image" href="/images/hero_banner.png"'), 'Hero preload must target the rendered hero image.');
 check(/<img class="k-hero-img"[^>]+width="1600"[^>]+height="896"/.test(index), 'Hero image should keep explicit width and height.');
-check(!/@import\s+url\(/.test(css), 'boutique.css should not import remote fonts; load them from index.html.');
+check(!/@import\s+url\(/.test(css), 'Boutique CSS files should not import remote fonts; load them from index.html.');
 
 for (const asset of [
   'public/images/hero_banner.png',

@@ -2,8 +2,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = resolve(new URL('..', import.meta.url).pathname.replace(/^\/(.:\/)/, '$1'));
-const cssPath = resolve(root, 'public/boutique/css/boutique.css');
-const css = readFileSync(cssPath, 'utf8');
+const cssPaths = [
+  resolve(root, 'public/boutique/css/boutique-base.css'),
+  resolve(root, 'public/boutique/css/boutique-modal.css'),
+  resolve(root, 'public/boutique/css/boutique-cart-checkout.css'),
+  resolve(root, 'public/boutique/css/boutique-interactions.css'),
+  resolve(root, 'public/boutique/css/boutique-mobile.css'),
+];
+const css = cssPaths.map((path) => readFileSync(path, 'utf8')).join('\n');
 
 const stripComments = (source) => source.replace(/\/\*[\s\S]*?\*\//g, '');
 const withoutComments = stripComments(css);
@@ -30,7 +36,8 @@ const duplicates = [...selectorCounts.entries()]
   .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
 const metrics = {
-  file: cssPath,
+  file: 'public/boutique/css/(split bundle)',
+  files: cssPaths.length,
   bytes: Buffer.byteLength(css),
   lines: css.split(/\r?\n/).length,
   important: (css.match(/!important/g) || []).length,

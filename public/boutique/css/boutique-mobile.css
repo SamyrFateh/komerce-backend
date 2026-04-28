@@ -1,0 +1,457 @@
+/* Home mobile cleanup v288 â€” hero plus calme, barre opaque, catÃ©gories premium */
+@media (max-width: 899px) {
+  .k-header {
+    background: #f6f0e3 !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid rgba(31,48,36,.07);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .k-header-inner {
+    gap: 8px;
+  }
+
+  .k-logo-text {
+    display: none !important;
+  }
+
+  .k-logo-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .k-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    height: 34px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.96) !important;
+    border: 1px solid rgba(31,48,36,.08) !important;
+    box-shadow: 0 8px 18px rgba(31,48,36,.06);
+  }
+
+  .k-search input {
+    height: 34px;
+    padding: 0 12px 0 36px;
+    background: transparent !important;
+    font-size: 15px;
+  }
+
+  .k-search-icon {
+    left: 12px;
+    width: 16px;
+    height: 16px;
+  }
+
+  #k-hero-fixed-wrap {
+    background: #f6f0e3 !important;
+    border-bottom: 1px solid rgba(31,48,36,.07);
+  }
+
+  .k-hero {
+    background: #f6f0e3;
+  }
+
+  .k-hero-media {
+    height: clamp(132px, 33vw, 176px);
+    margin: 0 var(--pad-x) 10px;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 14px 30px rgba(31,48,36,.08);
+  }
+
+  .k-hero-cats-sticky {
+    background: #f6f0e3 !important;
+    box-shadow: none !important;
+  }
+
+  .k-cats-shell {
+    padding: 0 var(--pad-x) 12px;
+    background: #f6f0e3;
+  }
+
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
+    display: none !important;
+  }
+
+  .k-cats {
+    gap: 4px;
+    padding: 6px 10px !important;
+    background: #fff !important;
+    border: 1px solid rgba(31,48,36,.08);
+    border-radius: 20px;
+    box-shadow: 0 10px 24px rgba(31,48,36,.08);
+  }
+
+  #k-page-scroll {
+    background: var(--sand);
+  }
+}
+
+/* â”€â”€ N. PHONE INPUT COMPACT (panier/checkout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+  .k-ck-phone-wrap {
+      max-width: 100%;
+      box-sizing: border-box;
+      height: 38px;
+      align-items: stretch;
+    }
+
+  .k-ck-phone-select {
+    flex: 0 0 90px;
+    height: 44px;
+    font-size: 0.8rem;
+    padding: 0 6px;
+    box-sizing: border-box;
+  }
+
+  .k-ck-phone-input {
+    min-width: 0;
+    height: 44px;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+  }
+
+/* â”€â”€ O. FIX MODALE PRODUIT â€” description jamais masquÃ©e (v228) â”€â”€â”€â”€â”€â”€ */
+
+  .k-modal-desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin: 0 0 10px !important;
+    color: var(--text-muted) !important;
+  }
+
+  .k-modal-scroll > .k-modal-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 10 !important;
+    display: grid !important;
+    grid-template-columns: 0.8fr 1.2fr !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)) !important;
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
+  }
+
+  .k-modal-actions .k-buy-now-btn {
+    grid-column: 1 / -1 !important;
+  }
+
+
+.k-sec-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 14px 10px;
+    margin-top: 8px;
+    border-bottom: 3px solid var(--coral, #e64a19);
+    background: linear-gradient(180deg,
+        transparent 0%,
+        transparent calc(100% - 3px),
+        var(--coral, #e64a19) calc(100% - 3px),
+        var(--coral, #e64a19) 100%);
+    position: relative;
+    scroll-margin-top: 70px;
+  }
+
+.k-header .k-cart-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  #k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 100vw !important;
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain !important;
+    touch-action: pan-x pan-y !important;
+  }
+
+  .k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
+    flex: 0 0 100vw !important;
+    width: 100vw !important;
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
+  }
+
+/* Dans le mode flat, les carrousels images ne doivent PAS voler le swipe page */
+
+  .k-grid.k-grid-flat-subcat .k-card-carousel {
+    overflow-x: hidden !important;
+    scroll-snap-type: none !important;
+    touch-action: auto !important;
+  }
+
+  .k-grid.k-grid-flat-subcat.is-flat-dragging {
+    scroll-snap-type: none !important;
+    cursor: grabbing;
+  }
+
+} /* end @media (max-width: 899px) */
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FIX v289 â€” SECTION HEADERS global (desktop + all breakpoints)
+   Les styles k-sec-header Ã©taient uniquement dans @media max-width:899px
+   â†’ pas de layout sur desktop â†’ "Mode85Voir tout â†’" collÃ©
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+.k-cat-section {
+  margin-bottom: 4px;
+}
+
+.k-sec-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 16px 0 8px !important;
+  border-bottom: 2px solid var(--coral, #e64a19) !important;
+  margin-bottom: 4px !important;
+  position: relative !important;
+}
+
+.k-sec-header-emoji {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.k-sec-header-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text, #1f3024);
+  flex: 1;
+  min-width: 0;
+}
+
+.k-sec-header-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #8a877f);
+  padding: 2px 8px;
+  background: rgba(0,0,0,.04);
+  border-radius: 20px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.k-sec-see-all {
+  flex-shrink: 0;
+  background: none !important;
+  border: none !important;
+  color: var(--ocean, #4a9040) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: background .15s !important;
+}
+.k-sec-see-all:active { background: rgba(67,160,71,.1) !important; }
+.k-sec-see-all:hover { background: rgba(67,160,71,.08) !important; }
+
+/* Section subcat chips â€” desktop wrap */
+.k-sec-subcats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 8px;
+}
+
+.k-sec-subchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--sand-dark, #f0ebe0);
+  background: var(--white, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #8a877f);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.k-sec-subchip.active {
+  background: var(--coral, #c85c2d);
+  color: #fff;
+  border-color: var(--coral, #c85c2d);
+}
+.k-sec-subchip:hover {
+  background: rgba(200,92,45,.08);
+  border-color: var(--coral, #c85c2d);
+}
+
+/* Section grid â€” global */
+.k-sec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 6px 0 16px;
+}
+
+/* Mobile: override applies from @media max-width:899px above */
+/* Desktop: 4-5 columns via responsive breakpoints */
+@media (min-width: 600px) {
+  .k-sec-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+}
+@media (min-width: 900px) {
+  .k-sec-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 8px 0 20px; }
+  .k-sec-header { padding: 20px 0 10px !important; }
+  .k-sec-header-name { font-size: 18px; }
+}
+@media (min-width: 1200px) {
+  .k-sec-grid { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FIX v289b â€” MODAL ACTIONS DESKTOP : placement grille explicite
+   ProblÃ¨me : display:contents sur .k-modal-details â†’ actions auto-placÃ©es
+   aprÃ¨s suggestions (tout en bas). Fix : grid placement explicite.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+@media (min-width: 600px) {
+  /* Grille 3 rangÃ©es : [info] [actions] [suggestions] */
+  .k-modal-scroll {
+    grid-template-rows: 1fr auto auto !important;
+  }
+  /* Image span rangÃ©es 1+2 (hauteur info + actions) */
+  .k-modal-img-wrap {
+    grid-column: 1 !important;
+    grid-row: 1 / 3 !important;
+    align-self: start !important;
+  }
+  /* Info : col 2, rangÃ©e 1 */
+  .k-modal-info {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    overflow-y: auto !important;
+  }
+  /* Actions : col 2, rangÃ©e 2 â€” sticky bottom dans le scroll */
+  .k-modal-actions {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    align-self: end !important;
+    z-index: 10 !important;
+    background: rgba(255,255,255,0.96) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(0,0,0,0.07) !important;
+  }
+  /* Suggestions : pleine largeur, rangÃ©e 3 */
+  .k-modal-suggestions {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+  }
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FIX v290 â€” Prix double devise (KMF + EUR)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+.k-card-price-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+}
+.k-card-price-eur {
+  font-size: 10px;
+  color: #b0b0b0;
+  line-height: 1;
+  font-weight: 400;
+}
+/* Panier alignÃ© en bas du bloc prix */
+.k-card-prices-row {
+  align-items: flex-end !important;
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FIX v290 â€” Modal suggestions : max 2 colonnes
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+#k-modal .k-sug-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+#k-modal .k-sug-grid .k-card {
+  min-height: 0;
+  height: auto;
+}
+
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   DESKTOP HEADER NAV â€” Favoris + Suivi boutons v290
+   Visibles uniquement sur desktop (>=900px), cachÃ©s sur mobile
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+.k-header-nav-btn {
+  display: none;
+}
+@media (min-width: 900px) {
+  .k-header-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light, #888);
+    font-size: 11px;
+    font-weight: 600;
+    transition: color 0.2s, background 0.2s;
+    border-radius: 8px;
+  }
+  .k-header-nav-btn:hover {
+    color: var(--ocean, #1a7f5a);
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .k-header-nav-btn.active {
+    color: var(--ocean, #1a7f5a);
+  }
+  .k-header-nav-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+  }
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FIX grosse carte v290 â€” k-card-img-wrap avec aspect-ratio
+   EmpÃªche images cassÃ©es/lentes de gonfler la carte.
+   Ratio 4/3 mobile, 1/1 desktop (carrÃ©).
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+.k-card-img-wrap {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+@media (min-width: 900px) {
+  .k-card-img-wrap {
+    aspect-ratio: 1 / 1;
+  }
+}
