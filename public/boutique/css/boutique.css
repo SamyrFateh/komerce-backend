@@ -4612,11 +4612,6 @@ body.cart-open #k-page-scroll {
   background: rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Drawer panier plein écran sur mobile, fond opaque garanti */
-.k-cart-drawer {
-  background: #ffffff !important;
-  z-index: 1150 !important;
-}
 
 /* Sur mobile : drawer prend toute la largeur (pas de max-width) */
 @media (max-width: 768px) {
