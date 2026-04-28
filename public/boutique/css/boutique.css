@@ -3682,13 +3682,6 @@ input#of-client-email {
 }
 
 /* ── SUGGESTIONS : passer de rail horizontal à grille verticale ──────── */
-.k-modal-suggestions {
-  flex-shrink: 1 !important;
-  padding: 24px 12px 20px !important;
-  border-top: 8px solid var(--sand) !important;
-  background: var(--white);
-}
-
 .k-modal-suggestions h3 {
   font-size: 15px !important;
   font-weight: 700 !important;
@@ -3831,14 +3824,6 @@ body.modal-open .k-bnav {
   z-index: 2;
   background: var(--sand);
 }
-.k-modal-suggestions {
-  flex-shrink: 1 !important;
-  padding: 16px 12px 20px !important;
-  border-top: 8px solid var(--sand) !important;
-  background: var(--white);
-}
-/* (duplicate 2 removed — see canonical rules above) */
-
 /* ── Carrousel produit sur cartes grille (Shein-like) ───────────── */
 .k-card-img-wrap {
   position: relative;
@@ -3984,6 +3969,7 @@ body.modal-open .k-bnav {
 
 /* ── Suggestions dans la modale : grille fluide ─────────────────── */
 .k-modal-suggestions {
+  flex-shrink: 1 !important;
   padding: 16px 14px 24px;
   background: var(--white, white);
   border-top: 8px solid var(--sand, #faf6ed);
