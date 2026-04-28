@@ -1792,6 +1792,10 @@ body.cart-open{overflow:hidden}
 }
 .k-sug-grid .k-sug-card{
   flex:none;                    /* annule flex des anciens styles */
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  overflow:visible;
   width:100%;
   scroll-snap-align:unset;
 }
@@ -1799,13 +1803,15 @@ body.cart-open{overflow:hidden}
   aspect-ratio:1 !important;
   position:relative;
   overflow:hidden;
-  background:var(--sand);
+  background: linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%) !important;
   border-radius:10px 10px 0 0;
 }
 .k-sug-grid .k-sug-card-img img{
   width:100% !important;height:100% !important;
   aspect-ratio:1 !important;
-  object-fit:cover !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 6px !important;
   display:block;
 }
 .k-sug-grid .k-sug-card-name{
@@ -1820,12 +1826,14 @@ body.cart-open{overflow:hidden}
   -webkit-box-orient:vertical;
   overflow:hidden;
   min-height:34px;
+  flex:0 0 auto;
 }
 .k-sug-grid .k-sug-card-price{
   padding:0 8px 8px;
   font-size:14px;
   font-weight:700;
   color:var(--coral);
+  flex:0 0 auto;
 }
 /* ── Ligne prix + panier suggestions (même alignement que cartes accueil) */
 .k-sug-card-bottom{
@@ -1850,6 +1858,7 @@ body.cart-open{overflow:hidden}
   align-items:center;
   padding:0 !important;
   min-height:unset !important;
+  flex:0 0 auto;
 }
 .k-sug-add{
   background:transparent !important;
@@ -4801,22 +4810,6 @@ body.cart-open #k-page-scroll {
 /* [SUPPRIMÉ v228] — sticky actions déplacé dans bloc mobile unique */
 
 /* Suggestion card flex column — actions toujours visibles */
-.k-sug-grid .k-sug-card{
-  display:flex;
-  flex-direction:column;
-  height:auto;
-  overflow:visible;
-}
-.k-sug-grid .k-sug-card-name{
-  flex:0 0 auto;
-}
-.k-sug-grid .k-sug-card-price{
-  flex:0 0 auto;
-}
-.k-sug-grid .k-sug-card-actions{
-  flex:0 0 auto;
-  display:flex !important;
-}
 
 /* ── FIX : #k-sug-rail est maintenant un conteneur de sections, pas une grille ── */
 #k-sug-rail{
@@ -5466,17 +5459,6 @@ button,
 /* ═══════════════════════════════════════════════════════════════════════ */
 
 /* Suggestions grille */
-.k-sug-grid .k-sug-card-img {
-  background: linear-gradient(135deg, 
-    #faf9f7 0%, 
-    #f4f1ec 100%) !important;
-}
-
-.k-sug-grid .k-sug-card-img img {
-  object-fit: contain !important;
-  object-position: center !important;
-  padding: 6px !important;
-}
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */
