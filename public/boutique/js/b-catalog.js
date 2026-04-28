@@ -204,6 +204,18 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
  */
   function renderPromos() {
     const promos = state.products.filter(p => p.promo_pct > 0).slice(0, 10);
+
+    // Refresh 28/04/26 : masquer la section "Soldes du moment" si zéro promo.
+    // Le CSS (homepage-refresh.css) gère l'affichage via [data-empty="1"].
+    const promoSection = document.getElementById('k-promos-section');
+    if (promoSection) {
+      if (promos.length === 0) {
+        promoSection.setAttribute('data-empty', '1');
+        return; // pas la peine de construire un rail vide
+      }
+      promoSection.removeAttribute('data-empty');
+    }
+
     dom.promoRail.innerHTML = promos.map(p => {
       const oldPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
       return `
