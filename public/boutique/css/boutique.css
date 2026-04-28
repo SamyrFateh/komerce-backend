@@ -3115,6 +3115,29 @@ body.cart-open{overflow:hidden}
   letter-spacing:.01em;
   margin:8px 0 4px;
 }
+.ck-fulfillment-switch{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:0 0 10px;
+}
+.ck-fulfillment-btn{
+  min-height:44px;
+  padding:0 12px;
+  border:1.5px solid rgba(0,0,0,.1);
+  border-radius:12px;
+  background:#fff;
+  color:var(--text);
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+}
+.ck-fulfillment-btn.active{
+  border-color:var(--ocean);
+  background:rgba(100,175,90,.10);
+  color:var(--ocean-dark);
+  box-shadow:0 0 0 2px rgba(100,175,90,.12);
+}
 
 /* Compact form inputs */
 .k-order-body input[type=text],

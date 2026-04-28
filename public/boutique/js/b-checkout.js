@@ -145,10 +145,17 @@ async function _loadRelaisSection(container, od) {
     const byIle = {};
     list.forEach(r => { const ile = classifyRelayGroup(r); if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
     container.innerHTML = '';
-    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = 'Zone de retrait :'; container.appendChild(ileLabel);
+    const zone = od.fulfillment_zone || 'comoros';
+    const groups = getRelayGroupOrder(Object.keys(byIle)).filter(ile => zone === 'paris' ? ile === 'France' : ile !== 'France');
+    if (!groups.length) {
+      container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible pour cette zone</div>';
+      return;
+    }
+
+    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = zone === 'paris' ? 'Relais Paris :' : 'Zone de retrait :'; container.appendChild(ileLabel);
     const ileGrid = document.createElement('div'); ileGrid.className = 'ck-relais-ile-grid';
     const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
-    getRelayGroupOrder(Object.keys(byIle)).forEach(ile => {
+    groups.forEach(ile => {
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck-relais-ile-btn'; btn.textContent = ile; btn.dataset.ile = ile;
       btn.addEventListener('click', () => { ileGrid.querySelectorAll('.ck-relais-ile-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); _renderRelaisForIle(listWrap, byIle[ile], od); });
       ileGrid.appendChild(btn);
@@ -228,6 +235,33 @@ function readIntlPhoneValue(id, fallbackValue) {
   const digits = normalizeLocal(countrySel.value, digitsOnly(input.value));
   if (!country || !digits || digits.length !== country.digits) return '';
   return buildE164(countrySel.value, digits);
+}
+
+function renderFulfillmentSelector(container, od, onChange) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ck-fulfillment-switch';
+  wrap.innerHTML =
+    '<button type="button" class="ck-fulfillment-btn" data-zone="comoros">Retrait aux Comores</button>' +
+    '<button type="button" class="ck-fulfillment-btn" data-zone="paris">Retrait à Paris</button>';
+
+  function syncActive() {
+    wrap.querySelectorAll('.ck-fulfillment-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.zone === od.fulfillment_zone);
+    });
+  }
+
+  wrap.querySelectorAll('.ck-fulfillment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (od.fulfillment_zone === btn.dataset.zone) return;
+      od.fulfillment_zone = btn.dataset.zone;
+      od.selectedRelaisId = null;
+      syncActive();
+      onChange();
+    });
+  });
+
+  syncActive();
+  container.appendChild(wrap);
 }
 
 function renderCheckoutCompact() {
@@ -424,6 +458,7 @@ export function renderCheckout() {
     dom.orderTitle.textContent = '🛒 Commander';
 
     const od = state.orderData;
+    if (!od.fulfillment_zone) od.fulfillment_zone = 'comoros';
 
     document.querySelectorAll('.ck-modal-back-btn').forEach(el => el.remove());
     const backBtn = document.createElement('button');
@@ -444,6 +479,12 @@ export function renderCheckout() {
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
+
+    const sMode = document.createElement('div');
+    sMode.className = 'ck-label';
+    sMode.textContent = 'Où récupère-t-on ?';
+    body.appendChild(sMode);
+    renderFulfillmentSelector(body, od, refreshFulfillment);
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
@@ -509,6 +550,12 @@ export function renderCheckout() {
     trackExtra.appendChild(trkHint);
     trackWrap.appendChild(trackExtra);
     body.appendChild(trackWrap);
+
+    function refreshFulfillment() {
+      _loadRelaisSection(relaisSection, od);
+      trackWrap.style.display = od.fulfillment_zone === 'comoros' ? '' : 'none';
+    }
+    refreshFulfillment();
 
     /* ── 5. Wallet ── */
     checkWalletBalance();
