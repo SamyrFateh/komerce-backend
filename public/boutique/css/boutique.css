@@ -3111,9 +3111,9 @@ body.cart-open{overflow:hidden}
 /* Section label */
 .ck-label{
   font-size:0.68rem;font-weight:700;
-  color:var(--text-muted);text-transform:uppercase;
-  letter-spacing:.05em;
-  margin:6px 0 3px;
+  color:var(--text-muted);text-transform:none;
+  letter-spacing:.01em;
+  margin:8px 0 4px;
 }
 
 /* Compact form inputs */
@@ -3351,6 +3351,16 @@ body.cart-open{overflow:hidden}
   grid-template-columns:repeat(3,1fr);
   gap:6px;
   margin-bottom:8px;
+}
+.ck-track-details{
+  margin-top:6px;
+}
+.ck-track-details summary{
+  font-size:12px;
+}
+.ck-track-hint{
+  font-size:11px;
+  color:var(--text-light);
 }
 .ck-pay-chip{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -4039,6 +4049,28 @@ body.modal-open .k-bnav {
   border-color: var(--text-muted);
 }
 .ck-back-btn:active { transform: scale(0.97); }
+
+.ck-modal-back-btn{
+  position:absolute;
+  top:10px;
+  right:54px;
+  z-index:2;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:30px;
+  padding:0 10px;
+  background:rgba(255,255,255,.92);
+  border:1px solid rgba(31,48,36,.12);
+  border-radius:999px;
+  color:var(--text-muted);
+  font-size:12px;
+  font-weight:700;
+  box-shadow:0 4px 12px rgba(31,48,36,.08);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+.ck-modal-back-btn:active { transform: scale(0.97); }
 
 
 /* ═══════════════════════════════════════════════════════════════════════ */

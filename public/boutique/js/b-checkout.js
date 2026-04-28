@@ -411,21 +411,22 @@ export function renderCheckout() {
 
     const od = state.orderData;
 
-    /* ── Bouton retour panier ── */
+    document.querySelectorAll('.ck-modal-back-btn').forEach(el => el.remove());
     const backBtn = document.createElement('button');
-    backBtn.className = 'ck-back-btn';
+    backBtn.className = 'ck-modal-back-btn';
     backBtn.type = 'button';
-    backBtn.innerHTML = '← Retour au panier';
+    backBtn.setAttribute('aria-label', 'Retour au panier');
+    backBtn.textContent = 'Panier';
     backBtn.addEventListener('click', () => {
       closeOrderModal();
       setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
     });
-    body.appendChild(backBtn);
+    dom.orderTitle?.parentElement?.appendChild(backBtn);
 
     /* ── 2. Bénéficiaire ── */
     const s1 = document.createElement('div');
     s1.className = 'ck-label';
-    s1.textContent = '📦 Bénéficiaire';
+    s1.textContent = 'Qui reçoit ?';
     body.appendChild(s1);
     body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
@@ -433,12 +434,8 @@ export function renderCheckout() {
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-label';
-    sRelais.textContent = '🏪 Point relais *';
+    sRelais.textContent = 'Retrait *';
     body.appendChild(sRelais);
-    const relayNote = document.createElement('div');
-    relayNote.className = 'ck-relay-note';
-    relayNote.textContent = 'Choisissez votre zone de retrait : Comores ou France quand un relais Paris est disponible.';
-    body.appendChild(relayNote);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
     relaisSection.className = 'ck-relais-section';
@@ -449,7 +446,7 @@ export function renderCheckout() {
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-label';
-    s2.textContent = '💳 Paiement';
+    s2.textContent = 'Paiement';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -486,7 +483,7 @@ export function renderCheckout() {
     /* ── 4. Suivi SMS accordion ── */
     const trackWrap = document.createElement('details');
     trackWrap.className = 'ck-track-details';
-    trackWrap.innerHTML = '<summary>📲 Ajouter un téléphone de suivi (optionnel)</summary>';
+    trackWrap.innerHTML = '<summary>Suivi WhatsApp (optionnel)</summary>';
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-details-body';
