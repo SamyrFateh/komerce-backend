@@ -1,25 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    KOMERCE — HOMEPAGE MOBILE REFRESH
-   v4 · 28 avril 2026
+   v5 · 28 avril 2026
    ───────────────────────────────────────────────────────────────────────────
 
-   v4 changes par rapport à v3 :
-   • Hero recadré : object-position 50% 15% (était 30%) → ne rogne plus
-     les visages/cheveux des personnages par le haut
-   • Image carte : aspect-ratio 1/1 carré (était 4/3 paysage)
-     → image dominante visuellement, style Instagram/Shein
-   • Description carte : cachée sur mobile (display:none)
-     → focus sur titre + prix, dispo dans la modal produit
+   v5 changes par rapport à v4 :
+   • Description carte : visible 2 lignes complètes au lieu de cachée
+     (le CSS principal a !important sur display, le display:none v4 ne
+      passait pas — au lieu de fight, on rend la description vraiment
+      utilisable avec 2 lignes line-clamp et hauteur réservée)
+   • Chips : flex 0 0 40px FORCE la taille (fix l'override de flex auto
+     du CSS principal qui faisait déborder "Mode & Beauté")
+   • Grid cartes : padding horizontal 12px symétrique (au lieu de 6px qui
+     paraissait collé au bord gauche)
 
-   v3 (rappel) :
-   • 8 chips qui tiennent sur la ligne (40px, fusion Mode+Beauté)
-   • Scroll-snap mandatory pour arrêt propre sur une chip
-   • Padding-bottom 100px pour voir les dernières cartes
-
-   v2 (rappel) :
-   • Chips remontées en overlay sur le bas de l'image hero
-   • Hero compact (-25%)
-   • Section soldes masquée si zéro promo
+   v4 (rappel) :
+   • Hero recadré 50% 15% (visages des personnages visibles)
+   • Image carte 1/1 carré au lieu de 4/3
+   • Cache busting ?v=4 (à bumper en ?v=5 pour cette livraison)
 
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -123,10 +120,18 @@
   }
 
   .k-chip {
+    /* v5 : flex: 0 0 40px FORCE l'allocation à 40px, peu importe la
+       largeur du contenu (était min/max-width 40px qui n'empêchent pas
+       le contenu de déborder à cause de flex: 0 0 auto au CSS principal).
+       Override de la règle ligne 711 (flex: 0 0 auto). */
+    flex: 0 0 40px !important;
     min-width: 40px !important;
     max-width: 40px !important;
+    width: 40px;
     /* override CSS principal ligne 715-716 (78px) */
     gap: 3px;
+    /* Empêcher le contenu de déborder */
+    overflow: hidden;
   }
 
   .k-chip-photo {
@@ -134,6 +139,7 @@
     height: 36px;
     min-width: 36px;
     border-radius: 12px;
+    flex-shrink: 0;
   }
 
   .k-chip-photo img {
@@ -156,12 +162,16 @@
 
   .k-chip-label {
     font-size: 9px;
+    /* width: 100% du parent (40px) — tronque automatiquement */
+    width: 100%;
     max-width: 40px;
     line-height: 1.1;
-    /* Tronque proprement les labels longs comme "Mode & Beauté" */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* Suppression marges parasites possibles */
+    padding: 0;
+    margin: 0;
   }
 
   /* État active : pas de scale, juste le glow coral autour du cercle */
@@ -194,14 +204,31 @@
   /* ───────────────────────────────────────────────────────────────────────
      5. Cartes produits — focus visuel sur l'image (style Instagram/Shein)
      ───────────────────────────────────────────────────────────────────────
-     v4 changements :
+     v5 changements :
+     • description visible 2 lignes (lisible) au lieu de tronquée 1 ligne
+     • padding grid horizontal symétrique 12px pour aligner les cartes
+       (le CSS principal met 6px ce qui parait collé au bord)
+     v4 :
      • image carrée (1:1) au lieu de 4/3 paysage → image dominante
-     • description cachée → seul le titre + prix subsistent
-     • zone info plus tassée car moins de contenu                         */
+     • zone info plus tassée                                                */
 
   /* Image en carré : remplace le 4/3 défini ligne 7621 du CSS principal */
   .k-card-img-wrap {
     aspect-ratio: 1 / 1 !important;
+  }
+
+  /* Padding horizontal du grid : symétrique gauche/droite pour bel
+     alignement avec les chips au-dessus.
+     CSS principal ligne 6867 : padding 3px 6px 8px → on bump à 12px
+     horizontal pour donner le même look que le shell de chips. */
+  .k-sec-grid {
+    padding: 4px 12px 12px !important;
+    gap: 8px !important;
+  }
+  /* Idem pour le grid simple (page "Tout") */
+  .k-grid {
+    padding: 4px 12px 12px !important;
+    gap: 8px !important;
   }
 
   .k-card-info {
@@ -218,11 +245,21 @@
     min-height: 2.6em;
   }
 
-  /* Description : cachée pour donner toute la place au visuel + prix.
-     v4 : choix éditorial — sur mobile la description ne vend pas, elle
-     parasite. Disponible dans la modal produit pour ceux qui veulent. */
+  /* Description : visible sur 2 lignes maxi, lisible entièrement.
+     v5 : retour en visible mais lisible (v4 cachait, mais le CSS principal
+     ligne 6388 a !important sur display:-webkit-box donc on devait override
+     avec !important — au lieu de cacher, on permet 2 lignes complètes). */
   .k-card-desc {
-    display: none;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--text-light);
+    margin-top: 2px;
+    /* Hauteur minimum pour que toutes les cartes alignent leur prix */
+    min-height: calc(11px * 1.35 * 2);
   }
 
   .k-card-bottom {
