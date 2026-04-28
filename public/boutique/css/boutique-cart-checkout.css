@@ -1390,6 +1390,324 @@
   background:var(--coral);color:#fff;
   border-radius:4px;padding:1px 4px;display:inline-block;margin-top:2px;
 }
+.ck-chip-lbl em.ck-stripe-tag{
+  font-style:normal;font-size:.58rem;font-weight:700;
+  background:#eef4ff;color:#315caa;
+  border-radius:4px;padding:1px 4px;display:inline-block;margin-top:2px;
+}
+
+/* Mobile checkout refinement */
+.k-order-header{
+  min-height:56px;
+  padding:8px 12px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  background:var(--ocean-dark);
+}
+.k-order-header #k-order-title{
+  flex:1;
+  min-width:0;
+  gap:10px;
+}
+.k-order-header .ck-order-title-text{
+  font-size:.94rem;
+  font-weight:800;
+  letter-spacing:.01em;
+}
+.k-order-header .k-modal-close{
+  width:42px;
+  height:42px;
+  flex:0 0 42px;
+  background:rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.22);
+  color:#fff;
+  font-size:18px;
+  box-shadow:none;
+}
+.k-order-header .ck-modal-back-btn--header{
+  min-height:34px;
+  padding:0 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.24);
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font-size:.76rem;
+  font-weight:700;
+  white-space:nowrap;
+}
+.k-order-body{
+  padding:6px 12px 10px;
+}
+.k-order-body--checkout{
+  padding-bottom:calc(124px + env(safe-area-inset-bottom));
+}
+
+.ck-label{
+  font-size:.95rem;
+  font-weight:800;
+  color:var(--text);
+  margin:10px 0 6px;
+}
+.ck-fulfillment-switch{
+  gap:8px;
+  margin:2px 0 10px;
+}
+.ck-fulfillment-btn{
+  min-height:48px;
+  padding:0 12px;
+  border:1.5px solid rgba(31,48,36,.12);
+  border-radius:14px;
+  background:#fff;
+  color:#617064;
+  font-size:.82rem;
+  font-weight:700;
+  line-height:1.15;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 12px rgba(31,48,36,.04);
+}
+.ck-fulfillment-btn.active{
+  border-color:var(--ocean);
+  background:#f1f8ed;
+  color:var(--ocean-dark);
+  box-shadow:0 0 0 1px rgba(100,175,90,.18),0 8px 18px rgba(49,81,30,.08);
+}
+
+.k-ck-group{
+  margin-bottom:8px;
+}
+.k-ck-label{
+  font-size:.82rem;
+  font-weight:700;
+  margin-bottom:4px;
+  color:var(--text);
+}
+.k-ck-input{
+  min-height:44px;
+  padding:0 12px;
+  border-radius:12px;
+  font-size:1rem;
+}
+.k-ck-phone-wrap{
+  height:44px;
+  gap:8px;
+}
+.k-ck-phone-select{
+  flex:0 0 84px;
+  height:44px;
+  padding:0 8px;
+  border-radius:12px;
+  font-size:.85rem;
+}
+.k-ck-phone-input{
+  height:44px;
+  padding:0 12px;
+  border-radius:12px;
+  font-size:1rem;
+}
+.k-ck-phone-help{
+  font-size:.74rem;
+  color:#7a8078;
+  margin-top:4px;
+}
+
+.ck-relais-section{
+  margin-bottom:10px;
+}
+.ck-relais-ile-label{
+  font-size:.79rem;
+  color:var(--text-muted);
+  margin-bottom:6px;
+}
+.ck-relais-ile-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:8px;
+}
+.ck-relais-ile-btn{
+  min-height:46px;
+  padding:0 10px;
+  border:1.5px solid rgba(31,48,36,.12);
+  border-radius:14px;
+  background:#fff;
+  color:var(--text);
+  font-size:.82rem;
+  font-weight:700;
+  text-align:center;
+}
+.ck-relais-ile-btn.active{
+  border-color:var(--ocean);
+  background:#f1f8ed;
+  color:var(--ocean-dark);
+}
+#ck-relais-list{
+  display:grid;
+  gap:8px;
+}
+.ck-relais-item{
+  position:relative;
+  padding:12px 14px 12px 42px;
+  border:1.5px solid rgba(31,48,36,.12);
+  border-radius:14px;
+  background:#fff;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(31,48,36,.04);
+}
+.ck-relais-item--compact{
+  padding-top:11px;
+  padding-bottom:11px;
+}
+.ck-relais-item.selected{
+  border-color:var(--ocean);
+  background:#f4fbf2;
+  box-shadow:0 0 0 1px rgba(100,175,90,.18),0 8px 18px rgba(49,81,30,.08);
+}
+.ck-relais-item.selected::before{
+  content:"\2713";
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:var(--ocean);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.ck-relais-name{
+  display:block;
+  font-size:.94rem;
+  font-weight:700;
+  color:var(--text);
+}
+.ck-relais-addr{
+  display:block;
+  margin-top:2px;
+  font-size:.76rem;
+  line-height:1.35;
+  color:var(--text-muted);
+}
+.ck-relais-section.is-error .ck-relais-ile-btn.active{
+  border-color:#dc2626;
+  background:#fff5f5;
+  color:#b91c1c;
+}
+.ck-relais-section.is-error #ck-relais-list{
+  padding:6px;
+  border:1px solid rgba(220,38,38,.28);
+  border-radius:16px;
+  background:#fff7f7;
+}
+.ck-relais-section.is-error .ck-relais-item:not(.selected){
+  border-color:rgba(220,38,38,.22);
+}
+
+.ck-pay-grid{
+  gap:8px;
+  margin-bottom:6px;
+}
+.ck-pay-chip{
+  min-height:76px;
+  padding:8px 6px;
+  border-radius:14px;
+  border:1.5px solid rgba(31,48,36,.1);
+  gap:4px;
+  box-shadow:0 4px 12px rgba(31,48,36,.04);
+}
+#ck-chip-cash.ck-pay-chip--active{
+  border-color:#d97706 !important;
+  background:#fff4e8 !important;
+  box-shadow:0 0 0 1px rgba(217,119,6,.14),0 8px 18px rgba(217,119,6,.08);
+}
+#ck-chip-stripe.ck-pay-chip--active{
+  border-color:var(--ocean) !important;
+  background:#eef5ff !important;
+  box-shadow:0 0 0 1px rgba(49,92,170,.14),0 8px 18px rgba(49,92,170,.08);
+}
+.ck-pay-chip--off{
+  opacity:.5;
+  filter:saturate(.75);
+}
+.ck-chip-icon{
+  font-size:1.2rem;
+}
+.ck-chip-lbl{
+  font-size:.78rem;
+}
+.ck-pay-helper{
+  margin:6px 0 10px;
+  padding:8px 10px;
+  border:1px solid rgba(217,119,6,.18);
+  border-radius:12px;
+  background:#fff7ed;
+  color:#8a5a17;
+  font-size:.76rem;
+  line-height:1.35;
+}
+
+.ck-track-details{
+  margin-top:6px;
+  border:1px solid rgba(31,48,36,.08);
+  border-radius:12px;
+  background:#fafaf8;
+}
+.ck-track-details summary{
+  list-style:none;
+  cursor:pointer;
+  padding:11px 12px;
+  font-size:.84rem;
+  font-weight:700;
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.ck-track-details summary::-webkit-details-marker{
+  display:none;
+}
+.ck-track-details summary::after{
+  content:"+";
+  font-size:1rem;
+  color:var(--text-muted);
+}
+.ck-track-details[open] summary::after{
+  content:"\2212";
+}
+.ck-track-details-body{
+  padding:0 12px 12px;
+}
+.ck-track-hint{
+  font-size:.74rem;
+  color:var(--text-muted);
+  margin-top:4px;
+}
+
+.ck-confirm-btn{
+  min-height:68px;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:3px;
+}
+.ck-confirm-main{
+  font-size:1rem;
+  font-weight:800;
+  line-height:1.1;
+}
+.ck-confirm-subtext{
+  font-size:.76rem;
+  font-weight:600;
+  line-height:1.15;
+  color:rgba(255,255,255,.92);
+}
 
 /* â”€â”€ Suivi tracking toggle compact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ck-track-row{margin:4px 0 2px}
@@ -1917,6 +2235,17 @@ input#of-client-email {
   .k-order-overlay.open .k-order-modal {
     height: auto !important;
     max-height: 92vh !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .k-order-overlay.open .k-order-body.k-order-body--checkout {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .k-order-overlay.open .ck-confirm-btn {
+    min-height: 68px !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
   }
 }
 

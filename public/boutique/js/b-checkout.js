@@ -144,6 +144,7 @@ async function _loadRelaisSection(container, od) {
     if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
     const byIle = {};
     list.forEach(r => { const ile = classifyRelayGroup(r); if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
+    container.classList.remove('is-error');
     container.innerHTML = '';
     const zone = od.fulfillment_zone || 'comoros';
     const groups = getRelayGroupOrder(Object.keys(byIle)).filter(ile => zone === 'france' ? ile === 'France' : ile !== 'France');
@@ -157,7 +158,12 @@ async function _loadRelaisSection(container, od) {
     const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
     groups.forEach(ile => {
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck-relais-ile-btn'; btn.textContent = ile; btn.dataset.ile = ile;
-      btn.addEventListener('click', () => { ileGrid.querySelectorAll('.ck-relais-ile-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); _renderRelaisForIle(listWrap, byIle[ile], od); });
+      btn.addEventListener('click', () => {
+        clearRelaySelectionError();
+        ileGrid.querySelectorAll('.ck-relais-ile-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        _renderRelaisForIle(listWrap, byIle[ile], od);
+      });
       ileGrid.appendChild(btn);
     });
     container.appendChild(ileGrid);
@@ -223,7 +229,9 @@ function _renderRelaisForIle(listEl, relaisList, od) {
         ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>'
         : '');
     od.selectedRelaisId = r.id;
+    clearRelaySelectionError();
     listEl.appendChild(item);
+    refreshCheckoutComputedUI();
     return;
   }
 
@@ -234,12 +242,18 @@ function _renderRelaisForIle(listEl, relaisList, od) {
       listEl.querySelectorAll('.ck-relais-item').forEach(i => i.classList.remove('selected'));
       item.classList.add('selected');
       od.selectedRelaisId = r.id;
+      clearRelaySelectionError();
+      refreshCheckoutComputedUI();
     });
     listEl.appendChild(item);
   });
 
   const first = listEl.querySelector('.ck-relais-item');
-  if (first && !od.selectedRelaisId) first.click();
+  if (first && !od.selectedRelaisId) {
+    first.click();
+  } else {
+    refreshCheckoutComputedUI();
+  }
 }
 
 function readIntlPhoneValue(id, fallbackValue) {
@@ -295,14 +309,47 @@ function setIntlPhoneDefault(id, zone, force) {
   }
 }
 
-function renderCheckoutCompact() {
-  if (!document.getElementById('ck-relais-css')) {
-    const st = document.createElement('style');
-    st.id = 'ck-relais-css';
-      st.textContent = '.ck-relais-section{margin-bottom:8px}.ck-relais-ile-label{font-size:11px;color:#666;margin-bottom:4px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.ck-relais-ile-btn{padding:5px 11px;border:1.5px solid #e0e0e0;border-radius:18px;background:#fff;font-size:12px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:9px 10px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:5px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-item--compact{padding:8px 10px;margin-bottom:4px}.ck-relais-name{display:block;font-weight:600;font-size:13px}.ck-relais-addr{display:block;font-size:11px;color:#888;margin-top:1px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:12px;padding:6px 0}.ck-stepper{display:flex;gap:8px;margin:6px 0 12px}.ck-step-chip{flex:1;padding:8px 10px;border-radius:999px;background:#f5f5f2;color:#6b7280;font-size:12px;font-weight:700;text-align:center}.ck-step-chip.active{background:#e8eddb;color:#31511e}.ck-step-panel{display:none}.ck-step-panel.active{display:block}.ck-step-card{padding:10px 12px;border:1.5px solid rgba(0,0,0,.08);border-radius:12px;background:#fff;margin-bottom:10px}.ck-step-title{font-size:14px;font-weight:700;margin-bottom:3px;color:#111827}.ck-step-sub{font-size:12px;color:#6b7280;margin-bottom:8px}.ck-step-actions{display:flex;gap:8px;margin-top:12px}.ck-step-btn{flex:1;height:42px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer}.ck-step-btn--ghost{background:#f5f5f2;color:#374151;border:1px solid rgba(0,0,0,.08)}.ck-step-btn--primary{background:#31511e;color:#fff}.ck-track-details{margin-top:8px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#fafaf9}.ck-track-details summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:13px;font-weight:600;color:#374151}.ck-track-details summary::-webkit-details-marker{display:none}.ck-track-details[open] summary{border-bottom:1px solid rgba(0,0,0,.06)}.ck-track-details-body{padding:10px 12px}.ck-relay-note{font-size:12px;color:#6b7280;margin:-2px 0 8px}';
-    document.head.appendChild(st);
-  }
+function clearRelaySelectionError() {
+  document.getElementById('ck-relais-section')?.classList.remove('is-error');
+}
 
+function markRelaySelectionError() {
+  document.getElementById('ck-relais-section')?.classList.add('is-error');
+}
+
+function setCheckoutConfirmButton(button, mainText, subText) {
+  if (!button) return;
+  button.innerHTML = '';
+  const main = document.createElement('span');
+  main.className = 'ck-confirm-main';
+  main.textContent = mainText;
+  button.appendChild(main);
+  if (subText) {
+    const sub = document.createElement('span');
+    sub.className = 'ck-confirm-subtext';
+    sub.textContent = subText;
+    button.appendChild(sub);
+  }
+}
+
+function refreshCheckoutComputedUI() {
+  const confirmBtn = document.getElementById('btn-confirm-order');
+  if (!confirmBtn) return;
+  const od = state.orderData || {};
+  const mode = document.querySelector('input[name="payment_mode"]:checked')?.value || od.payment_mode || 'cash_relais';
+  const relayName = document.querySelector('#ck-relais-section .ck-relais-item.selected .ck-relais-name')?.textContent?.trim() || '';
+  const mainText = mode === 'stripe_eur'
+    ? '💳 Payer ' + fmt(cartTotal(), 'KMF')
+    : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+  const subText = mode === 'stripe_eur'
+    ? (relayName ? 'Carte via Stripe • ' + relayName : 'Carte via Stripe')
+    : (relayName ? 'Cash au relais • ' + relayName : 'Cash au relais');
+  setCheckoutConfirmButton(confirmBtn, mainText, subText);
+  const cashHelper = document.getElementById('ck-pay-cash-helper');
+  if (cashHelper) cashHelper.hidden = mode !== 'cash_relais';
+}
+
+function renderCheckoutCompact() {
   const body = dom.orderBody;
   body.innerHTML = '';
   body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
@@ -477,14 +524,9 @@ function renderCheckoutCompact() {
   confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
 }
 export function renderCheckout() {
-    // CSS relais picker (inject once)
-    if (!document.getElementById('ck-relais-css')) {
-      const st = document.createElement('style'); st.id = 'ck-relais-css';
-        st.textContent = '.ck-relais-section{margin-bottom:8px}.ck-relais-ile-label{font-size:11px;color:#666;margin-bottom:4px}.ck-relais-ile-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.ck-relais-ile-btn{padding:5px 11px;border:1.5px solid #e0e0e0;border-radius:18px;background:#fff;font-size:12px;cursor:pointer}.ck-relais-ile-btn.active{border-color:#e53935;color:#e53935;font-weight:700}.ck-relais-item{padding:9px 10px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:5px;cursor:pointer}.ck-relais-item.selected{border-color:#e53935;background:#fff8f8}.ck-relais-item--compact{padding:8px 10px;margin-bottom:4px}.ck-relais-name{display:block;font-weight:600;font-size:13px}.ck-relais-addr{display:block;font-size:11px;color:#888;margin-top:1px}.ck-relais-loading,.ck-relais-error,.ck-relais-empty{color:#888;font-size:12px;padding:6px 0}';
-        document.head.appendChild(st);
-      }
     const body = dom.orderBody;
     body.innerHTML = '';
+    body.classList.add('k-order-body--checkout');
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour au panier">← Panier</button><span class="ck-order-title-text">🛒 Commander</span>';
 
@@ -536,9 +578,16 @@ export function renderCheckout() {
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-stripe">'
       + '<input type="radio" name="payment_mode" value="stripe_eur">'
-      + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte</span>'
+      + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte<br><em class="ck-stripe-tag">Stripe</em></span>'
       + '</label>';
     body.appendChild(payGrid);
+
+    const cashHelper = document.createElement('div');
+    cashHelper.id = 'ck-pay-cash-helper';
+    cashHelper.className = 'ck-pay-helper';
+    cashHelper.hidden = true;
+    cashHelper.textContent = 'Vous recevrez un code à présenter au relais.';
+    body.appendChild(cashHelper);
 
     // Stripe card wrap : inline dans le scroll, juste sous les chips paiement
     // FIX: supprimer tout ancien wrap (sinon doublons => Stripe casse en silence)
@@ -556,7 +605,8 @@ export function renderCheckout() {
     /* ── 4. Suivi SMS accordion ── */
     const trackWrap = document.createElement('details');
     trackWrap.className = 'ck-track-details';
-    trackWrap.innerHTML = '<summary>Suivi (optionnel)</summary>';
+    trackWrap.innerHTML = '<summary>Suivi optionnel</summary>';
+    trackWrap.open = false;
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
     trackExtra.className = 'ck-track-details-body';
@@ -576,7 +626,7 @@ export function renderCheckout() {
       _loadRelaisSection(relaisSection, od);
         const trackSummary = trackWrap.querySelector('summary');
         if (trackSummary) {
-          trackSummary.textContent = 'Suivi (optionnel)';
+          trackSummary.textContent = 'Suivi optionnel';
         }
         trkHint.textContent = od.fulfillment_zone === 'france'
           ? 'Infos de retrait en France sur ce numéro'
@@ -602,7 +652,7 @@ export function renderCheckout() {
     const confirmBtn = document.createElement('button');
     confirmBtn.id = 'btn-confirm-order';
     confirmBtn.className = 'ck-confirm-btn';
-    confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    setCheckoutConfirmButton(confirmBtn, '✅ Confirmer — ' + fmt(cartTotal(), 'KMF'), 'Cash au relais');
     // Bouton confirm HORS du scroll area → toujours visible en bas du modal
     body.parentElement.appendChild(confirmBtn);
 
@@ -649,12 +699,12 @@ export function renderCheckout() {
         });
       }
 
-      const btn = document.getElementById('btn-confirm-order');
-      if (btn) btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+      refreshCheckoutComputedUI();
     }
 
     payGrid.addEventListener('change', updatePaymentUI);
     updatePaymentUI(); // init état chip cash
+    refreshCheckoutComputedUI();
 
     setTimeout(() => {
       const cb = document.getElementById('cb-use-wallet');
@@ -890,6 +940,8 @@ export async function submitOrder(btn) {
   const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
 
   if (!od.selectedRelaisId) {
+    markRelaySelectionError();
+    document.getElementById('ck-relais-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     showToast('Veuillez choisir un point relais pour la livraison.', 'error');
     return;
   }
@@ -897,7 +949,7 @@ export async function submitOrder(btn) {
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
   btn.disabled = true;
-  btn.textContent = isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…';
+  setCheckoutConfirmButton(btn, isStripe ? '⏳ Paiement en cours…' : '⏳ Envoi en cours…', '');
   btn.style.opacity = '0.7';
 
   try {
@@ -964,7 +1016,7 @@ export async function submitOrder(btn) {
     showToast(e.message || 'Erreur lors de la commande.', 'error');
     btn.disabled = false;
     btn.dataset.busy = '0';
-    btn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    refreshCheckoutComputedUI();
     btn.style.opacity = '1';
   }
 }
@@ -972,6 +1024,7 @@ export async function submitOrder(btn) {
 export function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
     const body = dom.orderBody;
     body.innerHTML = '';
+    body.classList.remove('k-order-body--checkout');
     dom.orderTitle.textContent = '✅ Commande confirmée';
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
