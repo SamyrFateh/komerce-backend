@@ -2679,7 +2679,6 @@ body.cart-open #k-section-index {
 
   .k-modal-img-wrap {
     flex: 0 0 35vh;
-    position: relative;
   }
 
   .k-modal-slide {
@@ -2714,8 +2713,6 @@ body.cart-open #k-section-index {
 /* Modal actions always visible at bottom */
 
   .k-modal-actions {
-    flex-shrink: 0;
-    background: #fff;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
 
