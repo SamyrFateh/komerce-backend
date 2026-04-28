@@ -105,7 +105,7 @@ export function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
-    renderCheckoutCompact();
+    renderCheckout();
     dom.orderModal.classList.add('open');
     window._savedScrollY = window.scrollY;
     document.body.classList.add('cart-open');
@@ -435,6 +435,10 @@ export function renderCheckout() {
     sRelais.className = 'ck-label';
     sRelais.textContent = '🏪 Point relais *';
     body.appendChild(sRelais);
+    const relayNote = document.createElement('div');
+    relayNote.className = 'ck-relay-note';
+    relayNote.textContent = 'Choisissez votre zone de retrait : Comores ou France quand un relais Paris est disponible.';
+    body.appendChild(relayNote);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
     relaisSection.className = 'ck-relais-section';
@@ -480,22 +484,20 @@ export function renderCheckout() {
     body.appendChild(stripeCardWrap);
 
     /* ── 4. Suivi SMS accordion ── */
-    const trackRow = document.createElement('div');
-    trackRow.className = 'ck-track-row';
-    trackRow.innerHTML = '<label class="k-ck-track-label">📲 Votre tél. pour le suivi (optionnel)</label>';
-    body.appendChild(trackRow);
-
+    const trackWrap = document.createElement('details');
+    trackWrap.className = 'ck-track-details';
+    trackWrap.innerHTML = '<summary>📲 Ajouter un téléphone de suivi (optionnel)</summary>';
     const trackExtra = document.createElement('div');
     trackExtra.id = 'ck-track-extra';
-    trackExtra.className = 'ck-track-extra';
-    // Toujours visible — plus besoin de cocher une case
+    trackExtra.className = 'ck-track-details-body';
     const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
     const trkHint = document.createElement('div');
     trkHint.className = 'ck-track-hint';
     trkHint.textContent = 'Notifié(e) par WhatsApp dès que la commande arrive au relais';
     trackExtra.appendChild(senderGroup);
     trackExtra.appendChild(trkHint);
-    body.appendChild(trackExtra);
+    trackWrap.appendChild(trackExtra);
+    body.appendChild(trackWrap);
 
     /* ── 5. Wallet ── */
     checkWalletBalance();
