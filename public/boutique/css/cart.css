@@ -448,7 +448,7 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
    CHECKOUT COMPACT — .ck-* (tunnel de commande)
    ═══════════════════════════════════════════════════════════════ */
 
-.ck-summary { display:flex; align-items:center; gap:6px; padding:3px 0 6px; border-bottom:1px solid rgba(0,0,0,.07); margin-bottom:6px; font-size:.8rem; color:var(--text-muted); }
+.ck-summary { display:flex; align-items:center; gap:6px; padding:2px 0 4px; border-bottom:1px solid rgba(0,0,0,.07); margin-bottom:6px; font-size:.8rem; color:var(--text-muted); }
 .ck-sum-qty   { font-size:.8rem; color:var(--text-muted); }
 .ck-sum-sep   { color:var(--text-muted); font-size:.8rem; }
 .ck-sum-total { font-weight:800; font-size:1rem; color:var(--coral); margin-left:auto; }
@@ -471,14 +471,14 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
 }
 
 /* Formulaire */
-.k-ck-section  { font-weight:700; font-size:.85rem; margin:8px 0 4px; }
+.k-ck-section  { font-weight:700; font-size:.82rem; margin:5px 0 2px; }
 .k-ck-group    { margin-bottom:4px; }
 .k-ck-label    { display:block; font-size:.8rem; font-weight:700; margin-bottom:3px; color:var(--text); }
 .k-ck-label--sm { font-size:.75rem; color:#666; }
 .k-ck-group--tracking-compact { margin-bottom:2px; }
 .k-ck-group--tracking-compact .k-ck-phone-help { display:none; }
 .k-ck-input {
-  width:100%; min-height:42px; padding:0 10px;
+  width:100%; min-height:36px; padding:0 8px;
   border:1.5px solid rgba(0,0,0,.10); border-radius:11px;
   outline:none; font-size:.96rem; transition:border-color .2s; box-sizing:border-box; background:#fff;
 }
@@ -513,7 +513,7 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
 .k-stripe-eur.is-visible { display:block; }
 
 /* Wallet */
-.k-wallet-section       { margin-top:8px; padding:10px 12px; border:2px dashed var(--ocean); border-radius:8px; background:linear-gradient(135deg,#f0f5e6,#e8eddb); display:none; }
+.k-wallet-section       { margin-top:5px; padding:7px 10px; border:2px dashed var(--ocean); border-radius:8px; background:linear-gradient(135deg,#f0f5e6,#e8eddb); display:none; }
 .k-wallet-section.is-visible { display:block; }
 .k-wallet-label         { display:flex; align-items:center; gap:10px; cursor:pointer; }
 .k-wallet-cb            { width:18px; height:18px; accent-color:var(--ocean); flex-shrink:0; }
@@ -567,7 +567,7 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
 .ck-relais-section   { margin-bottom:8px; }
 .ck-relais-ile-label { font-size:.76rem; color:var(--text-muted); margin-bottom:5px; }
 .ck-relais-ile-grid  { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
-.ck-relais-ile-btn   { min-height:42px; padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:#fff; color:var(--text); font-size:.78rem; font-weight:700; text-align:center; }
+.ck-relais-ile-btn   { min-height:36px; padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:#fff; color:var(--text); font-size:.78rem; font-weight:700; text-align:center; }
 .ck-relais-ile-btn.active { border-color:var(--ocean); background:#f2faef; color:var(--ocean-dark); }
 .ck-relais-item      { position:relative; padding:7px 10px 7px 34px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:#fff; cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-relais-item--compact { padding-top:9px; padding-bottom:9px; }

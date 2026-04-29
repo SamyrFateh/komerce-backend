@@ -27,9 +27,9 @@
 }
 .k-hero-img {
   width: 100%;
-  height: clamp(120px, 32vw, 160px);
+  height: clamp(160px, 42vw, 200px);
   object-fit: cover;
-  object-position: 50% center;
+  object-position: 50% 22%;   /* cadre les visages, coupe le bas */
   display: block;
 }
 .k-hero-media-mobile { display: none; }
@@ -41,29 +41,36 @@
   inset: 0;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;   /* slogan en haut de l'image */
   text-align: center;
   z-index: 5;
-  padding: 0 24px;
+  padding: 12px 24px 0;
   pointer-events: none;
 }
 .k-hero-mini-slogan .k-line-1 {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(15px, 4.2vw, 20px);
+  font-size: clamp(17px, 4.8vw, 22px);
   font-weight: 800;
   color: var(--text);
   line-height: 1.15;
-  text-shadow: 0 1px 10px rgba(255,255,255,.95), 0 0 24px rgba(255,255,255,.8);
+  /* Halo blanc épais pour lisibilité sur image chargée */
+  text-shadow:
+    0 0 8px rgba(255,255,255,1),
+    0 0 20px rgba(255,255,255,.95),
+    0 2px 4px rgba(255,255,255,.9);
 }
 .k-hero-mini-slogan .k-line-2 {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(17px, 4.8vw, 23px);
+  font-size: clamp(19px, 5.4vw, 26px);
   font-weight: 900;
   color: var(--coral);
   line-height: 1.1;
-  text-shadow: 0 1px 10px rgba(255,255,255,.95), 0 0 24px rgba(255,255,255,.8);
+  text-shadow:
+    0 0 8px rgba(255,255,255,1),
+    0 0 20px rgba(255,255,255,.95),
+    0 2px 4px rgba(255,255,255,.9);
 }
 
 /* Overlay sticky : on garde uniquement les pills + proverbe, pas le slogan */
