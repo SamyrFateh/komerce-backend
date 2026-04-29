@@ -34,7 +34,10 @@ import {
     var usedH = (hdr ? hdr.offsetHeight : 0)
               + (hero ? hero.offsetHeight : 0)
               + (cats ? cats.offsetHeight : 0);
-    document.documentElement.style.setProperty('--pager-h', (window.innerHeight - usedH) + 'px');
+    var pagerH = window.innerHeight - usedH;
+    // Minimum 320px pour que la grille soit utilisable
+    if (pagerH < 320) pagerH = 320;
+    document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
     // Disconnect vertical observer (horizontal scroll handles sync)
     if (_sectionObserver) { _sectionObserver.disconnect(); _sectionObserver = null; }
     // Remove old listeners, add new — rAF for instant + scrollend for final
@@ -49,6 +52,8 @@ import {
     // Recalc on resize/orientation change
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
+    // Ajouter les dots de navigation en bas de chaque section
+    _setupPagerDots(grid);
     // Setup auto-advance when section reaches bottom
     _setupHorizontalWrap();
   }
@@ -62,6 +67,70 @@ import {
  * Auto-avance entre sections du pager (scroll bas → suivante).
  * Dernière section → ghost Tout (navigation circulaire).
  */
+  /**
+   * Crée les indicateurs dots de navigation en bas de chaque section pager.
+   * Le dot actif suit le scroll horizontal.
+   * @param {Element} grid - L'élément #k-grid
+   */
+  function _setupPagerDots(grid) {
+    // Supprimer les anciens dots
+    grid.querySelectorAll('.k-pager-dots').forEach(function(d) { d.remove(); });
+    var sections = Array.from(grid.querySelectorAll('.k-cat-section:not([data-ghost])'));
+    var n = sections.length;
+    if (n < 2) return;
+
+    // Créer un bandeau dots dans chaque section
+    sections.forEach(function(sec, idx) {
+      var dots = document.createElement('div');
+      dots.className = 'k-pager-dots';
+      for (var i = 0; i < n; i++) {
+        var dot = document.createElement('div');
+        dot.className = 'k-pager-dot' + (i === idx ? ' active' : '');
+        dots.appendChild(dot);
+      }
+      sec.appendChild(dots);
+    });
+
+    // Sync dots au scroll horizontal
+    function _updateDots() {
+      var secs = grid.querySelectorAll('.k-cat-section:not([data-ghost])');
+      var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
+      var bestIdx = 0, bestDist = Infinity;
+      secs.forEach(function(s, i) {
+        var dist = Math.abs(s.offsetLeft + s.offsetWidth / 2 - scrollCenter);
+        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      });
+      secs.forEach(function(sec, si) {
+        var dotEls = sec.querySelectorAll('.k-pager-dot');
+        dotEls.forEach(function(d, di) {
+          d.classList.toggle('active', di === bestIdx);
+        });
+      });
+    }
+    grid.addEventListener('scroll',    _updateDots, { passive: true });
+    grid.addEventListener('scrollend', _updateDots, { passive: true });
+  }
+
+  /**
+   * Affiche brièvement un indicateur "Catégorie suivante →" en bas de section.
+   * @param {Element} sec      - Section courante
+   * @param {Array}   sections - Toutes les sections du pager
+   * @param {number}  idx      - Index de la section courante
+   */
+  function _showNextHint(sec, sections, idx) {
+    var nextSec = sections[(idx + 1) % sections.length];
+    if (!nextSec) return;
+    var cat = nextSec.getAttribute('data-ghost') ? 'Tout' : (nextSec.dataset.cat || '');
+    if (!cat) return;
+    var existing = sec.querySelector('.k-pager-next-hint');
+    if (existing) existing.remove();
+    var hint = document.createElement('div');
+    hint.className = 'k-pager-next-hint';
+    hint.textContent = cat;
+    sec.appendChild(hint);
+    setTimeout(function() { if (hint.parentNode) hint.remove(); }, 900);
+  }
+
   function _setupSectionAutoAdvance() {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
@@ -86,7 +155,8 @@ import {
        * @returns {boolean} true si le bas est atteint (marge 8px)
        */
       function _atBottom() {
-        if (sec.scrollHeight <= sec.clientHeight + 40) return false; // section trop courte, pas de scroll
+        // Pour sections courtes (pas scrollable) → considérer toujours "au fond"
+        if (sec.scrollHeight <= sec.clientHeight + 8) return true;
         return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
       }
       /**
@@ -142,7 +212,10 @@ import {
         if (_wasDown && _atBottom()) {
           clearTimeout(_advTimer);
           _advTimer = setTimeout(function() {
-            if (_wasDown && _atBottom()) _goTo(idx + 1, false); // wrap: last→first
+            if (_wasDown && _atBottom()) {
+              _showNextHint(sec, sections, idx);
+              _goTo(idx + 1, false); // wrap: last→first
+            }
           }, 300);
         }
       };
@@ -228,11 +301,21 @@ import {
     }
     if (sections[bestIdx]) {
       var cat = sections[bestIdx].dataset.cat;
+      var prevActive = document.querySelector('.k-chip.active');
+      var prevCat = prevActive ? prevActive.dataset.cat : null;
       document.querySelectorAll('.k-chip').forEach(function(c) {
         c.classList.toggle('active', c.dataset.cat === cat);
+        c.classList.remove('transitioning');
       });
       var activeChip = document.querySelector('.k-chip.active');
-      if (activeChip && typeof centerActiveChip === 'function') bus.emit('chip:center', activeChip);
+      // Surbrillance pulse si changement de catégorie
+      if (activeChip && prevCat !== cat) {
+        activeChip.classList.add('transitioning');
+        setTimeout(function() {
+          if (activeChip) activeChip.classList.remove('transitioning');
+        }, 450);
+      }
+      if (activeChip) bus.emit('chip:center', activeChip);
     }
   }
 
@@ -377,5 +460,6 @@ export {
   _scrollPagerToCat,
   _scrollPagerToGhost,
   _reshuffleToutInDOM,
-  _setupInfiniteLoop
+  _setupInfiniteLoop,
+  _setupPagerDots,
 };

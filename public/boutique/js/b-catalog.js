@@ -278,12 +278,15 @@ function renderGrid() {
     if (_isMobile) {
       var _ps = document.getElementById('k-page-scroll');
       if (_ps) _ps.classList.add('k-pager-active');
-      _setupMobilePager();
-      _setupInfiniteLoop();
-      _setupSectionAutoAdvance();
-      if (state.activeCat !== 'all') {
-        setTimeout(function() { _scrollPagerToCat(state.activeCat); }, 50);
-      }
+      // Laisser le DOM se peindre avant d'initialiser le pager
+      requestAnimationFrame(function() {
+        _setupMobilePager();
+        _setupInfiniteLoop();
+        _setupSectionAutoAdvance();
+        if (state.activeCat !== 'all') {
+          setTimeout(function() { _scrollPagerToCat(state.activeCat); }, 80);
+        }
+      });
     } else {
       var _ps2 = document.getElementById('k-page-scroll');
       if (_ps2) _ps2.classList.remove('k-pager-active');

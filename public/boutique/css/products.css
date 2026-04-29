@@ -99,6 +99,7 @@
 .k-card-add.in-cart {
   width: auto;
   min-width: 72px;
+  max-width: 90px;        /* cap pour ne pas dépasser la carte */
   height: 32px;
   padding: 0;
   background: #fff;
@@ -109,6 +110,9 @@
   align-items: center;
   justify-content: space-between;
   animation: cartAddPulse .35s cubic-bezier(.34,1.56,.64,1);
+  /* Rester positionné en bas-droite de la carte */
+  right: 6px;
+  bottom: 6px;
 }
 @keyframes cartAddPulse {
   0%   { transform: scale(1); }

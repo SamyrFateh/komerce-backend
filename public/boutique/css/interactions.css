@@ -379,3 +379,75 @@ body.cart-open  #k-section-index { display:none; }
 .ck-pay-helper       { margin:4px 0 8px; padding:7px 9px; border:1px solid rgba(255,107,53,.18); border-left:3px solid var(--coral); border-radius:11px; background:#fff4ed; color:#9a4e2d; font-size:.73rem; line-height:1.3; }
 .k-confirm-notice    { margin-top:12px; padding:10px 12px; background:#eef2e4; border-radius:10px; font-size:.82rem; color:#555; line-height:1.6; text-align:left; }
 .k-confirm-notice-item { margin-top:4px; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGER TEMU — animations slide de catégorie + chip surbrillance
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Slide grille entière (swipe horizontal entre catégories) */
+@keyframes k-grid-out-left  {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-24px); opacity: 0; }
+}
+@keyframes k-grid-out-right {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(24px); opacity: 0; }
+}
+@keyframes k-grid-in-right  {
+  from { transform: translateX(24px);  opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes k-grid-in-left   {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.k-grid.k-grid-slide-out-left  { animation: k-grid-out-left  .16s ease-out forwards; }
+.k-grid.k-grid-slide-out-right { animation: k-grid-out-right .16s ease-out forwards; }
+.k-grid.k-grid-slide-in-right  { animation: k-grid-in-right  .26s var(--ease) both; }
+.k-grid.k-grid-slide-in-left   { animation: k-grid-in-left   .26s var(--ease) both; }
+
+/* Chip en surbrillance pendant la transition (scale + ring) */
+@keyframes k-chip-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); box-shadow: 0 0 0 3px rgba(200,92,45,.35); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+.k-chip.transitioning .k-chip-photo {
+  animation: k-chip-pulse .4s var(--ease-spring) both;
+}
+
+/* Indicateur pager : points en bas de chaque section */
+.k-pager-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 0 4px;
+  position: sticky;
+  bottom: calc(var(--bnav-h) + 4px);
+  z-index: 4;
+  pointer-events: none;
+}
+.k-pager-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(31,48,36,.18);
+  transition: all .25s var(--ease);
+  flex-shrink: 0;
+}
+.k-pager-dot.active {
+  background: var(--coral);
+  width: 18px;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(200,92,45,.35);
+}
+
+/* Respect des préférences d'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  .k-grid.k-grid-slide-out-left,
+  .k-grid.k-grid-slide-out-right,
+  .k-grid.k-grid-slide-in-right,
+  .k-grid.k-grid-slide-in-left,
+  .k-chip.transitioning .k-chip-photo { animation: none; }
+}
