@@ -1083,6 +1083,72 @@ const server = app.listen(PORT, () => {
         console.log('✅ Migration 051: signals table created');
       } catch(e) { console.warn('Migration 051 (non-fatal):', e.message); }
 
+      // ── Migration 050b : order_item_cost_imputations (snapshot économique figé) ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS order_item_cost_imputations (
+            id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            order_id              UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+            order_item_id         UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
+            product_id            UUID REFERENCES products(id) ON DELETE SET NULL,
+            quantity              INTEGER NOT NULL,
+            sale_unit_price_kmf   NUMERIC(12,2) NOT NULL,
+            sale_total_kmf        NUMERIC(12,2) NOT NULL,
+            estimated_landed_relay_cost_kmf      NUMERIC(12,2),
+            estimated_business_complete_cost_kmf NUMERIC(12,2),
+            estimated_margin_kmf                 NUMERIC(12,2),
+            estimated_margin_pct                 NUMERIC(6,2),
+            cost_breakdown         JSONB,
+            allocations            JSONB,
+            allocation_averages    JSONB,
+            allocation_confidence  TEXT,
+            data_quality           JSONB,
+            pricing_source         TEXT NOT NULL DEFAULT 'pricing-engine',
+            created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_oici_order      ON order_item_cost_imputations(order_id);
+          CREATE INDEX IF NOT EXISTS idx_oici_product    ON order_item_cost_imputations(product_id);
+          CREATE INDEX IF NOT EXISTS idx_oici_created_at ON order_item_cost_imputations(created_at);
+          DO $do$ BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint
+              WHERE conname = 'order_item_cost_imputations_order_item_id_unique'
+            ) THEN
+              ALTER TABLE order_item_cost_imputations
+                ADD CONSTRAINT order_item_cost_imputations_order_item_id_unique UNIQUE (order_item_id);
+            END IF;
+          END $do$;
+        `);
+        console.log('✅ Migration 050b: order_item_cost_imputations table ready');
+      } catch(e) { console.warn('Migration 050b (non-fatal):', e.message); }
+
+      // ── Migration 051b : order_item_real_cost_allocations (réventilation terrain) ──
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS order_item_real_cost_allocations (
+            id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            order_id          UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+            order_item_id     UUID REFERENCES order_items(id) ON DELETE CASCADE,
+            cost_type         TEXT NOT NULL,
+            allocation_method TEXT NOT NULL DEFAULT 'manual',
+            amount_kmf        NUMERIC(12,2) NOT NULL,
+            is_actual         BOOLEAN NOT NULL DEFAULT TRUE,
+            confidence        TEXT DEFAULT 'high',
+            source            TEXT,
+            parcel_id         UUID REFERENCES parcels(id) ON DELETE SET NULL,
+            shipment_id       UUID,
+            meta              JSONB DEFAULT '{}',
+            allocated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_oirca_order      ON order_item_real_cost_allocations(order_id);
+          CREATE INDEX IF NOT EXISTS idx_oirca_item       ON order_item_real_cost_allocations(order_item_id);
+          CREATE INDEX IF NOT EXISTS idx_oirca_cost_type  ON order_item_real_cost_allocations(cost_type);
+          CREATE INDEX IF NOT EXISTS idx_oirca_is_actual  ON order_item_real_cost_allocations(is_actual);
+        `);
+        console.log('✅ Migration 051b: order_item_real_cost_allocations table ready');
+      } catch(e) { console.warn('Migration 051b (non-fatal):', e.message); }
+
       try {
         const { rows: existingCharges } = await db.query('SELECT COUNT(*) as c FROM charges');
         if (parseInt(existingCharges[0].c) === 0) {
