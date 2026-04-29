@@ -476,9 +476,16 @@
      rogner les visages/cheveux par le haut. (v3 mettait 30%, ce qui
      poussait l'image trop bas et coupait les fronts.)                   */
 
+  .k-hero-media {
+    margin: 0 12px;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 14px 28px rgba(31, 48, 36, .10);
+  }
+
   .k-hero-img {
     height: 100%;
-    object-position: 50% 18% !important;
+    object-position: 46% 18% !important;
     /* CSS principal ligne 6026 a "object-position: center 10% !important"
        ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ on contre avec le mÃƒÆ’Ã‚Âªme !important. */
   }
@@ -505,18 +512,18 @@
   .k-hero-cats-sticky {
     background: transparent !important;
     box-shadow: none !important;
-    margin-top: -36px;
+    margin-top: -28px;
     position: relative;
     z-index: 5;
   }
 
   .k-cats-shell {
-    margin: -14px var(--pad-x) 0;
+    margin: -10px 12px 0;
     padding: 0;
     background: #f6f0e3;
     border: 1px solid rgba(31, 48, 36, .06);
     border-radius: 18px;
-    box-shadow: 0 8px 18px rgba(31, 48, 36, .08);
+    box-shadow: 0 10px 20px rgba(31, 48, 36, .08);
     overflow: hidden;
   }
 
@@ -535,7 +542,7 @@
      Pixel 7 412px ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ 50px de marge, ÃƒÆ’Ã‚Â§a aÃƒÆ’Ã‚Â¨re bien                          */
 
   .k-cats {
-    padding: 8px 6px !important;
+    padding: 8px 4px !important;
     /* CSS principal ligne 7253 : padding 6px 10px !important ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â on ajuste. */
     background: transparent !important;
     border: none !important;
@@ -557,21 +564,21 @@
        largeur du contenu (ÃƒÆ’Ã‚Â©tait min/max-width 40px qui n'empÃƒÆ’Ã‚Âªchent pas
        le contenu de dÃƒÆ’Ã‚Â©border ÃƒÆ’Ã‚Â  cause de flex: 0 0 auto au CSS principal).
        Override de la rÃƒÆ’Ã‚Â¨gle ligne 711 (flex: 0 0 auto). */
-    flex: 0 0 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    width: 40px;
+    flex: 0 0 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    width: 38px;
     /* override CSS principal ligne 715-716 (78px) */
-    gap: 3px;
+    gap: 2px;
     /* EmpÃƒÆ’Ã‚Âªcher le contenu de dÃƒÆ’Ã‚Â©border */
     overflow: hidden;
   }
 
   .k-chip-photo {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 12px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 11px;
     flex-shrink: 0;
   }
 
@@ -580,24 +587,24 @@
   }
 
   .k-chip-photo > span {
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 800;
   }
 
   .k-chip[data-cat="all"] .k-chip-photo > span {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .k-chip-photo svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 
   .k-chip-label {
-    font-size: 9px;
+    font-size: 8px;
     /* width: 100% du parent (40px) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â tronque automatiquement */
     width: 100%;
-    max-width: 40px;
+    max-width: 38px;
     line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
