@@ -325,10 +325,10 @@
 
 /* ── ESPACEMENT PROMOS / CATALOGUE ──────────────────────────── */
 #k-promos-section {
-  margin-bottom: 24px;
+  margin-bottom: 4px;
 }
 #k-catalog-section {
-  padding-top: 12px;
+  padding-top: 0;
 }
 
 /* ── DESKTOP ─────────────────────────────────────────────────── */

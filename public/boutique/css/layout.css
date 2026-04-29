@@ -378,3 +378,10 @@
   }
   .k-bnav { display: none; }
 }
+
+/* ── Coller la grille directement sous les chips (mobile) ───── */
+@media (max-width: 899px) {
+  .k-proverb-sep      { display: none; margin: 0; }
+  .k-section          { margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+  #k-catalog-section  { padding: 0; margin: 0; }
+}
