@@ -79,11 +79,13 @@
 .k-hero-text-left { display: none; }
 .k-hero-tag { display: none; }
 
-/* Éléments desktop cachés sur mobile */
+/* Éléments supprimés / cachés sur mobile */
 .k-hero-badge,
 .k-hero-sub,
 .k-hero-cta-row,
-.k-hero-trust { display: none; }
+.k-hero-trust,
+.k-hero-pills,
+.k-hero-overlay { display: none; }
 
 /* Section cat sticky sous le hero mobile */
 .k-hero-cats-sticky {
