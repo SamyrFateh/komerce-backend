@@ -196,6 +196,12 @@
 
 /* Section subcats (dans chaque section catalogue) */
 .k-cat-section  { margin-bottom: 4px; }
+
+/* Padding interne des sections dans le pager mobile */
+@media (max-width: 899px) {
+  .k-cat-section { padding: 0 12px; }
+  .k-sec-grid    { padding: 4px 0 12px; }
+}
 .k-sec-header {
   display: flex;
   align-items: center;
@@ -317,10 +323,10 @@
 
 /* ── ESPACEMENT PROMOS / CATALOGUE ──────────────────────────── */
 #k-promos-section {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 #k-catalog-section {
-  padding-top: 8px;
+  padding-top: 12px;
 }
 
 /* ── DESKTOP ─────────────────────────────────────────────────── */
