@@ -298,45 +298,53 @@ function _setupTouchNav(grid) {
 // ── Setup CSS des sections ──
 function _applyPagerCSS(grid) {
   var sections = _state.sections;
-  var vw = window.innerWidth;
+  var vw   = window.innerWidth;
+  var vh   = window.innerHeight;
   var bnav = document.querySelector('.k-bnav');
   var bnavH = bnav ? bnav.offsetHeight : 56;
 
-  // ── Neutraliser TOUS les parents jusqu'à body ──────────────────
-  // pour que #k-grid soit au flush left de la fenêtre
-  var catalogSec = document.getElementById('k-catalog-section');
-  var pageScroll  = document.getElementById('k-page-scroll');
+  // ── Mesurer le top de la zone chips (dernière chose avant la grille) ──
+  // On prend getBoundingClientRect du grid AVANT toute modif
+  var gridTop = grid.getBoundingClientRect().top;
+  // Si gridTop est négatif ou 0 (déjà fixed), utiliser la valeur stockée
+  if (gridTop <= 0 && _state._gridTop) gridTop = _state._gridTop;
+  if (gridTop > 0) _state._gridTop = gridTop;
+  if (!gridTop || gridTop < 50) gridTop = 180; // fallback
 
-  if (catalogSec) {
-    catalogSec.style.cssText = 'padding:0;margin:0;overflow:visible;width:100%;';
-  }
-  if (pageScroll) {
-    pageScroll.style.overflow = 'hidden'; // clip les sections hors écran
-    pageScroll.style.padding  = '0';
-  }
-
-  // ── Mesurer le top de la grille APRÈS reset parents ──────────
-  // (forcer reflow)
-  void grid.offsetTop;
-  var gridRect = grid.getBoundingClientRect();
-  var pagerH   = window.innerHeight - gridRect.top - bnavH;
+  var pagerH = vh - gridTop - bnavH;
   if (pagerH < 300) pagerH = 300;
   document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
 
-  // ── #k-grid : conteneur relatif, taille exacte ───────────────
+  // ── #k-grid : fixed, couvre exactement la zone catalogue ──────
+  // Évite tout problème de parent overflow/padding
   grid.style.cssText = [
-    'position:relative',
-    'display:block',
-    'width:' + vw + 'px',           // largeur exacte fenêtre
+    'position:fixed',
+    'top:' + gridTop + 'px',
+    'left:0',
+    'width:' + vw + 'px',
     'height:' + pagerH + 'px',
-    'overflow:visible',              // sections débordent à droite
+    'overflow:visible',
     'margin:0',
     'padding:0',
+    'display:block',
     'grid-template-columns:none',
     'gap:0',
+    'z-index:5',
+    'background:var(--sand)',
   ].join(';') + ';';
 
-  // ── Chaque section : absolute côte à côte ────────────────────
+  // ── #k-catalog-section : placeholder pour garder la hauteur dans le flux ──
+  var catalogSec = document.getElementById('k-catalog-section');
+  if (catalogSec) {
+    catalogSec.style.cssText = [
+      'height:' + pagerH + 'px',
+      'overflow:hidden',
+      'padding:0',
+      'margin:0',
+    ].join(';') + ';';
+  }
+
+  // ── Chaque section : absolute côte à côte dans le grid fixed ──
   sections.forEach(function(sec, i) {
     sec.style.cssText = [
       'position:absolute',
