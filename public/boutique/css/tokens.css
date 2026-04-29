@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — tokens.css
+   Source unique de vérité pour toutes les variables CSS.
+   Règle : jamais de couleur/valeur en dur ailleurs dans le CSS.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Couleurs principales ──────────────────────────────────── */
+  --ocean:        #64AF5A;
+  --ocean-light:  #82C478;
+  --ocean-dark:   #4A9040;
+  --cta-green:    #2a7a3e;
+
+  --sand:         #FDFAF5;
+  --sand-warm:    #f6f0e3;
+  --sand-dark:    #F0EBE0;
+
+  --coral:        #C85C2D;
+  --coral-dark:   #A84820;
+  --hero-red:     #e53935;
+
+  --white:        #ffffff;
+  --whatsapp:     #25d366;
+  --red:          #e53e3e;
+
+  /* ── Texte ────────────────────────────────────────────────── */
+  --text:         #1F3024;
+  --text-muted:   #6B7B63;
+  --text-light:   #9EAC95;
+  --border:       #E3D9C9;
+
+  /* ── Ombres (basées sur --text pour cohérence) ─────────────── */
+  --shadow-sm: 0 1px 3px rgba(31,48,36,.07);
+  --shadow-md: 0 4px 12px rgba(31,48,36,.09);
+  --shadow-lg: 0 8px 30px rgba(31,48,36,.12);
+
+  /* ── Typographie ─────────────────────────────────────────── */
+  --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-display: 'Fraunces','Plus Jakarta Sans',Georgia,serif;
+
+  /* ── Formes ──────────────────────────────────────────────── */
+  --radius:    12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  --container: 1400px;
+  --pad-x:     16px;
+  --header-h:  44px;
+  --bnav-h:    50px;
+
+  /* ── Animation ───────────────────────────────────────────── */
+  --ease: cubic-bezier(.22,1,.36,1);
+}
+
+@media (min-width: 768px) {
+  :root { --pad-x: 24px; }
+}
+@media (min-width: 900px) {
+  :root {
+    --header-h: 76px;
+    --pad-x: 28px;
+  }
+}
+@media (min-width: 1200px) {
+  :root { --pad-x: 32px; }
+}

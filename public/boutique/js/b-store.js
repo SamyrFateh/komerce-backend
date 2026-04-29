@@ -88,6 +88,19 @@ export const state = {
 // Debug global (read-only)
 if (typeof window !== 'undefined') window._kstate = state;
 
+/* ── SCROLL SHARED STATE ─────────────────────────────────── */
+
+/**
+ * État de scroll partagé entre modules.
+ * Évite les window.* partagés entre b-cart.js et b-checkout.js.
+ */
+export const scroll = {
+  /** Position Y sauvegardée avant ouverture d'un overlay (panier, checkout). */
+  savedY: 0,
+  /** Vrai pendant un scroll programmatique vers une section (anti-rebond). */
+  scrollingToSection: false,
+};
+
 /* ── SUBCATEGORIES MAP ───────────────────────────────────── */
 
 /**

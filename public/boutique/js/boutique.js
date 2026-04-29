@@ -2,9 +2,6 @@
  * @module boutique
  * @brief Komerce boutique — §13 INIT (orchestrateur)
  *
- * Phase 11 : boutique.js = §13 uniquement (~150 lignes)
- * Tous les autres §§ sont extraits dans leurs modules respectifs.
- *
  * §1  UTILS        → b-utils.js      ✅
  * §2  STATE & DOM  → b-store.js      ✅
  * §3  CART CORE    → b-cart-core.js  ✅
@@ -16,7 +13,9 @@
  * §9  MODAL        → b-modal.js      ✅
  * §10 CART PANEL   → b-cart.js       ✅
  * §11 CHECKOUT     → b-checkout.js   ✅
- * §12 VIEWS        → b-views.js      ✅
+ * §12 VIEWS        → b-nav.js        ✅ (navigation)
+ *                  → b-favs.js       ✅ (favoris)
+ *                  → b-tracking.js   ✅ (suivi commandes)
  * §13 INIT         → ici (orchestrateur) ✅
  * §14 STEPPER      → b-cart.js       ✅
  * §15 PAGER TEMU   → b-pager.js      ✅
@@ -61,12 +60,16 @@ import {
 }                              from './b-checkout.js';
 import {
   setupDrawer, setupInfiniteScroll,
+  switchView, setupBnav, setupSeeAll, loadRelais,
+}                              from './b-nav.js';
+import {
   renderFavView, updateFavPromoBadge, shareWishlistWhatsApp,
+}                              from './b-favs.js';
+import {
   buildTimeline, renderOrdersHistory, renderOrderDetail,
   renderTrackView, renderMyOrdersList,
   getStatusDisplay, formatOrderDate, renderTrackViewSearchMode,
-  switchView, setupBnav, setupSeeAll, loadRelais,
-}                              from './b-views.js';
+}                              from './b-tracking.js';
 import {
   _setupMobilePager, _setupSectionAutoAdvance,
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,

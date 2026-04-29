@@ -6,7 +6,7 @@
  */
 
 import { bus }           from './b-bus.js';
-import { state, dom, $, $$ }  from './b-store.js';
+import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
 import { showToast, cartTotal, saveCart }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart }  from './b-cart.js';
@@ -107,7 +107,7 @@ export function checkoutCart() {
     state.orderData = { payment_mode: 'cash_relais' };
     renderCheckout();
     dom.orderModal.classList.add('open');
-    window._savedScrollY = window.scrollY;
+    scroll.savedY = window.scrollY;
     document.body.classList.add('cart-open');
     // FIX : masquer bnav pour voir bouton Payer
     const bnav = document.getElementById('k-bnav');
@@ -127,9 +127,9 @@ export function closeOrderModal() {
     if (bnav) {
       bnav.classList.remove('u-hidden');
     }
-    if (typeof window._savedScrollY === 'number') {
-      window.scrollTo(0, window._savedScrollY);
-      window._savedScrollY = 0;
+    if (scroll.savedY) {
+      window.scrollTo(0, scroll.savedY);
+      scroll.savedY = 0;
     }
   }
 

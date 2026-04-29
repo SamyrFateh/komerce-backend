@@ -54,12 +54,17 @@ if('serviceWorker' in navigator){
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/images/hero_banner.png" fetchpriority="high">
-<link rel="stylesheet" href="/boutique/css/boutique-base.css?v=1">
-<link rel="stylesheet" href="/boutique/css/boutique-modal.css?v=1">
-<link rel="stylesheet" href="/boutique/css/boutique-cart-checkout.css?v=1">
-<link rel="stylesheet" href="/boutique/css/boutique-interactions.css?v=1">
-<link rel="stylesheet" href="/boutique/css/boutique-mobile.css?v=1">
-<link rel="stylesheet" href="/boutique/css/boutique-desktop.css?v=1">
+<!-- CSS Komerce v2 — refactorisé, 0 !important, encodage UTF-8 propre -->
+<link rel="stylesheet" href="/boutique/css/tokens.css?v=2">
+<link rel="stylesheet" href="/boutique/css/reset.css?v=2">
+<link rel="stylesheet" href="/boutique/css/layout.css?v=2">
+<link rel="stylesheet" href="/boutique/css/hero.css?v=2">
+<link rel="stylesheet" href="/boutique/css/categories.css?v=2">
+<link rel="stylesheet" href="/boutique/css/products.css?v=2">
+<link rel="stylesheet" href="/boutique/css/modal.css?v=2">
+<link rel="stylesheet" href="/boutique/css/cart.css?v=2">
+<link rel="stylesheet" href="/boutique/css/interactions.css?v=2">
+<link rel="stylesheet" href="/boutique/css/event.css?v=2">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>

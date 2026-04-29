@@ -8,7 +8,7 @@
 
 import { bus }           from './b-bus.js';
 import {
-  state, dom, $, $$,
+  state, dom, $, $$, scroll,
 }                         from './b-store.js';
 
 'use strict';
@@ -101,7 +101,7 @@ import {
        * @param {boolean} [scrollToBottom] - Si true, scrolle en bas de la section après navigation
        */
       function _goTo(targetIdx, scrollToBottom) {
-        if (window._scrollingToSection) return;
+        if (scroll.scrollingToSection) return;
         var targetSec = sections[(targetIdx + n) % n];
         if (!targetSec) return;
         _wasDown = false;
@@ -241,7 +241,7 @@ import {
    * Déclenche _syncChipToScroll + auto-avance vers section suivante si bas atteint.
    */
   function _onPagerScroll() {
-    if (window._scrollingToSection) return;
+    if (scroll.scrollingToSection) return;
     if (_pagerRaf) return;
     _pagerRaf = requestAnimationFrame(function() {
       _pagerRaf = null;
@@ -259,14 +259,14 @@ import {
     if (!grid) return;
     var section = grid.querySelector('.k-cat-section[data-cat="' + cat + '"]');
     if (!section) return;
-    window._scrollingToSection = true;
+    scroll.scrollingToSection = true;
     grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
     // Use scrollend to clear flag (precise) + timeout fallback (safe)
     grid.addEventListener('scrollend', function _clr() {
-      window._scrollingToSection = false;
+      scroll.scrollingToSection = false;
       grid.removeEventListener('scrollend', _clr);
     }, { once: true });
-    setTimeout(function() { window._scrollingToSection = false; }, 600);
+    setTimeout(function() { scroll.scrollingToSection = false; }, 600);
   }
 
   /* ── Scroll vers la section fantôme (ghost Tout en fin de pager) ── */
@@ -278,13 +278,13 @@ import {
     if (!grid) return;
     var ghost = grid.querySelector('.k-cat-section[data-ghost]');
     if (!ghost) return;
-    window._scrollingToSection = true;
+    scroll.scrollingToSection = true;
     grid.scrollTo({ left: ghost.offsetLeft, behavior: 'smooth' });
     grid.addEventListener('scrollend', function _clr() {
-      window._scrollingToSection = false;
+      scroll.scrollingToSection = false;
       grid.removeEventListener('scrollend', _clr);
     }, { once: true });
-    setTimeout(function() { window._scrollingToSection = false; }, 700);
+    setTimeout(function() { scroll.scrollingToSection = false; }, 700);
   }
 
   /* ── Reshuffle Tout : mélange les cartes DOM à chaque téléportation ── */

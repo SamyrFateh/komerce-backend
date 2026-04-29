@@ -9,8 +9,9 @@
 
 import { bus }           from './b-bus.js';
 import {
-  state, SUBCATS, dom, $, $$,
+  state, SUBCATS, dom, $, $$, scroll,
 }                         from './b-store.js';
+import { scrollToCategorySection } from './b-catalog.js';
 import {
   sanitize, fmt, fmtPrice, optimizeImgUrl,
   productEmoji, _currency, apiGet, apiPost,
@@ -387,7 +388,7 @@ function quickRemove(productId, btnEl) {
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     dom.cartOverlay.classList.add('open');
     dom.cartDrawer.classList.add('open');
-    window._savedScrollY = window.scrollY;
+    scroll.savedY = window.scrollY;
     document.body.classList.add('cart-open');
   }
 
@@ -399,9 +400,9 @@ function quickRemove(productId, btnEl) {
     dom.cartDrawer.classList.remove('open');
     document.body.classList.remove('cart-open');
     document.body.classList.remove('cart-empty');
-    if (typeof window._savedScrollY === 'number') {
-      window.scrollTo(0, window._savedScrollY);
-      window._savedScrollY = 0;
+    if (scroll.savedY) {
+      window.scrollTo(0, scroll.savedY);
+      scroll.savedY = 0;
     }
   }
 
@@ -421,7 +422,7 @@ function quickRemove(productId, btnEl) {
 
     dom.cartOverlay.classList.add('open');
     dom.cartDrawer.classList.add('open');
-    window._savedScrollY = window.scrollY;
+    scroll.savedY = window.scrollY;
     document.body.classList.add('cart-open');
 
     setTimeout(() => {
@@ -1238,8 +1239,7 @@ function quickRemove(productId, btnEl) {
     }
   }, true);  // capture phase pour intercepter avant le handler normal
 
-  // Exposer closeActiveStepper pour que d'autres parties du code (ouvrir modal, etc.) puissent fermer
-  window.closeCartStepper = closeActiveStepper;
+  // closeActiveStepper est exporté pour que d'autres modules puissent fermer le stepper
 })();
 
 
@@ -1323,9 +1323,7 @@ function quickRemove(productId, btnEl) {
       btn.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        if (typeof window.scrollToCategorySection === 'function') {
-          window.scrollToCategorySection(cat);
-        }
+        scrollToCategorySection(cat);
       });
       nav.appendChild(btn);
     });
@@ -1340,7 +1338,7 @@ function quickRemove(productId, btnEl) {
     var scroller = document.getElementById('k-page-scroll');
     if (scroller) {
       _sectionObserver = new IntersectionObserver(function(entries) {
-        if (window._scrollingToSection) return;
+        if (scroll.scrollingToSection) return;
         entries.forEach(function(entry) {
           if (!entry.isIntersecting) return;
           var cat = entry.target.dataset.cat;
