@@ -19,6 +19,7 @@
 
 /* ── MOBILE : image arrondie + texte dessous ─────────────────── */
 .k-hero-media {
+  position: relative;
   margin: 0 12px;
   border-radius: 22px;
   overflow: hidden;
@@ -26,13 +27,46 @@
 }
 .k-hero-img {
   width: 100%;
-  height: clamp(115px, 30vw, 134px);
+  height: clamp(170px, 46vw, 210px);
   object-fit: cover;
-  object-position: 46% 28%;
+  object-position: 50% center;
   display: block;
 }
 .k-hero-media-mobile { display: none; }
 
+/* Slogan en overlay sur l'image mobile — entre les personnages */
+.k-hero-mini-slogan {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 5;
+  padding: 0 24px;
+  pointer-events: none;
+}
+.k-hero-mini-slogan .k-line-1 {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(15px, 4.2vw, 20px);
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.15;
+  text-shadow: 0 1px 10px rgba(255,255,255,.95), 0 0 24px rgba(255,255,255,.8);
+}
+.k-hero-mini-slogan .k-line-2 {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(17px, 4.8vw, 23px);
+  font-weight: 900;
+  color: var(--coral);
+  line-height: 1.1;
+  text-shadow: 0 1px 10px rgba(255,255,255,.95), 0 0 24px rgba(255,255,255,.8);
+}
+
+/* Overlay sticky : on garde uniquement les pills + proverbe, pas le slogan */
 .k-hero-overlay {
   display: flex;
   flex-direction: column;
@@ -41,12 +75,8 @@
   border-bottom: 1px solid var(--border);
   background: linear-gradient(to bottom, rgba(246,240,227,.0) 0%, rgba(246,240,227,.6) 100%);
 }
-.k-hero-text-left {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
+/* Le slogan est maintenant sur l'image — masquer le doublon dans l'overlay */
+.k-hero-text-left { display: none; }
 .k-hero-tag { display: none; }
 
 /* Éléments desktop cachés sur mobile */
