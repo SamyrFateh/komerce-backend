@@ -2174,8 +2174,8 @@ body.cart-open #k-section-index {
     position: relative;
     /* inside fixed wrap, no need for sticky */
     z-index: 90;
-    background: #ede9e0;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    background: transparent;
+    box-shadow: none;
     width: 100%;
     overflow: visible;
   }
@@ -2185,54 +2185,54 @@ body.cart-open #k-section-index {
   .k-cats {
     scroll-behavior: smooth;
     -ms-overflow-style: none;
-    gap: 1px;
-    padding: 3px 8px !important;
-    background: #ede9e0;
+    gap: 6px;
+    padding: 8px 12px !important;
+    background: transparent;
     align-items: flex-start;
-    min-height: 38px;
+    min-height: 76px;
   }
 
   .k-chip {
-    flex: 0 0 auto !important;
+    flex: 0 0 64px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    gap: 1px !important;
-    padding: 2px 1px !important;
-    min-width: 36px !important;
-    max-width: 46px !important;
-    width: auto !important;
+    gap: 4px !important;
+    padding: 2px 2px 4px !important;
+    min-width: 64px !important;
+    max-width: 72px !important;
+    width: 64px !important;
     background: transparent !important;
     border: none !important;
-    border-radius: 10px !important;
+    border-radius: 14px !important;
     box-shadow: none !important;
     transition: all .2s ease;
   }
 
   .k-chip-photo,
   .k-chip-emoji {
-    width: 30px !important;
-    height: 30px !important;
-    min-width: 30px !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
     border-radius: 50% !important;
-    font-size: 13px !important;
+    font-size: 16px !important;
     border: 1.5px solid transparent !important;
     box-shadow: 0 1px 2px rgba(0,0,0,.06) !important;
     background: #fff;
   }
 
   .k-chip-photo > span {
-    font-size: 8px !important;
+    font-size: 10px !important;
   }
 
   .k-chip-label {
-    font-size: 8px !important;
-    font-weight: 500;
-    line-height: 1;
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1.15;
     white-space: nowrap;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 42px !important;
+    max-width: 64px !important;
     text-align: center;
     color: #555;
   }
@@ -2241,12 +2241,13 @@ body.cart-open #k-section-index {
 
   .k-chip.active .k-chip-photo,
   .k-chip.active .k-chip-emoji {
-    border-color: #e53935 !important;
-    box-shadow: 0 0 0 2px rgba(229,57,53,.25) !important;
+    border-color: #6ca84e !important;
+    box-shadow: 0 0 0 3px rgba(108,168,78,.16) !important;
+    background: #f5fbf1;
   }
 
   .k-chip.active .k-chip-label {
-    color: #e53935 !important;
+    color: #335f3d !important;
     font-weight: 700 !important;
   }
 
@@ -2860,8 +2861,8 @@ body.cart-open #k-section-index {
   .k-sec-header {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px 2px;
+    gap: 6px;
+    padding: 8px 10px 4px;
     margin-top: 0;
     font-size: 13px;
     font-weight: 700;
@@ -2873,8 +2874,8 @@ body.cart-open #k-section-index {
 
   .k-sec-header::before {
     content: '';
-    width: 4px;
-    height: 20px;
+    width: 3px;
+    height: 16px;
     border-radius: 2px;
     background: var(--coral, #e64a19);
     flex-shrink: 0;
@@ -2883,32 +2884,32 @@ body.cart-open #k-section-index {
   }
 
   .k-sec-header-emoji {
-    font-size: 20px;
+    font-size: 16px;
     line-height: 1;
   }
 
   .k-sec-header-name {
     flex: 1;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 800;
     color: var(--text, #1f3024);
     letter-spacing: -0.2px;
   }
 
   .k-sec-header-count {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-muted, #8a877f);
-    font-weight: 500;
+    font-weight: 600;
     margin-left: auto;
     padding: 2px 8px;
     background: rgba(0, 0, 0, 0.04);
-    border-radius: 10px;
+    border-radius: 999px;
   }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Vertical section mode (each category stacks vertically) Ã¢â€â‚¬Ã¢â€â‚¬ */
 
   .k-cat-section {
-    padding-bottom: 4px;
+    padding-bottom: 2px;
   }
 
 /* Hide floating index on mobile (pills are enough) */
@@ -2923,12 +2924,12 @@ body.cart-open #k-section-index {
   .k-sec-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
-    padding: 3px 6px 8px;
+    gap: 10px;
+    padding: 4px 10px 8px;
   }
 
   .k-sec-grid + .k-sec-header {
-    margin-top: 32px;
+    margin-top: 14px;
   }
 
 /* Compact cards inside sections */
@@ -2939,58 +2940,75 @@ body.cart-open #k-section-index {
   }
 
   .k-sec-grid .k-card {
-    border-radius: 8px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 20px rgba(31,48,36,.08);
+    overflow: hidden;
   }
 
   .k-sec-grid .k-card-img-wrap {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1 / 1;
+    background: #faf7f0;
   }
 
   .k-sec-grid .k-card-img {
-    object-fit: cover;
-    padding: 0;
+    object-fit: contain;
+    padding: 10px;
+    background: #faf7f0;
   }
 
   .k-sec-grid .k-card-info {
-    padding: 3px 5px 4px;
+    padding: 8px 9px 10px;
   }
 
   .k-sec-grid .k-card-name {
-    font-size: 10.5px;
-    line-height: 1.2;
+    font-size: 14px;
+    line-height: 1.28;
     -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 1px;
-    min-height: auto;
-    max-height: 2.4em;
+    margin-bottom: 4px;
+    min-height: 2.56em;
+    max-height: 2.56em;
+  }
+
+  .k-sec-grid .k-card-desc {
+    display: block !important;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--text-muted, #7e7b72);
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .k-sec-grid .k-card-price {
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 800;
   }
 
   .k-sec-grid .k-card-old-price {
-    font-size: 8.5px;
+    font-size: 10px;
   }
 
   .k-sec-grid .k-card-promo {
-    font-size: 7px;
-    padding: 1px 4px;
-    top: 3px;
-    left: 3px;
+    font-size: 9px;
+    padding: 3px 7px;
+    top: 8px;
+    left: 8px;
+    border-radius: 999px;
     z-index: 2;
   }
 
   .k-sec-grid .k-card-fav {
-    width: 20px;
-    height: 20px;
-    top: 3px;
-    right: 3px;
+    width: 28px;
+    height: 28px;
+    top: 8px;
+    right: 8px;
     left: auto;
-    font-size: 9px;
+    font-size: 13px;
     z-index: 3;
   }
 
@@ -3011,11 +3029,11 @@ body.cart-open #k-section-index {
     background: none;
     border: none;
     color: var(--ocean);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 6px;
+    padding: 3px 6px;
+    border-radius: 999px;
     white-space: nowrap;
     margin-left: auto;
     transition: background .15s;
@@ -3142,23 +3160,23 @@ body.cart-open #k-section-index {
     position: sticky;
     top: 0;
     z-index: 5;
-    background: #fff;
-    padding: 10px 12px 8px;
-    border-bottom: 2px solid #e53935;
+    background: rgba(255,255,255,.96);
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid rgba(31,48,36,.08);
     font-size: 14px;
-    min-height: 36px;
+    min-height: 32px;
     font-weight: 700;
   }
 
   #k-page-scroll.k-pager-active .k-sec-header::before {
-    background: #e53935;
-    width: 4px;
-    height: 16px;
+    background: var(--coral, #e64a19);
+    width: 3px;
+    height: 14px;
   }
 
   #k-page-scroll.k-pager-active .k-sec-header-name {
-    color: #e53935;
-    font-size: 14px;
+    color: var(--text, #1f3024);
+    font-size: 15px;
   }
 
 /* Keep 2-column grid inside each page */
@@ -3166,7 +3184,7 @@ body.cart-open #k-section-index {
   #k-page-scroll.k-pager-active .k-sec-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
+    gap: 10px;
   }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Direction lock: vertical gesture Ã¢â€ â€™ disable horizontal snap Ã¢â€â‚¬Ã¢â€â‚¬ */

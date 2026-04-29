@@ -612,22 +612,29 @@
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .k-wa-fab{
   position:fixed;
-  bottom:calc(var(--bnav-h) + 8px);
-  right:10px;
-  width:44px;height:44px;
+  bottom:calc(var(--bnav-h) + 16px + env(safe-area-inset-bottom));
+  right:16px;
+  width:54px;height:54px;
   border-radius:50%;
   background:var(--whatsapp);
   color:#fff;
   display:flex;align-items:center;justify-content:center;
   z-index:100;
   box-shadow:0 3px 10px rgba(37,211,102,.35);
-  transition:transform .2s var(--ease);
+  transition:transform .2s var(--ease), opacity .2s var(--ease);
   animation:waPulse 2.5s ease-in-out infinite;
   text-decoration:none;
 }
 .k-wa-fab:hover{transform:scale(1.08)}
 .k-wa-fab:active{transform:scale(.92)}
-.k-wa-fab svg{width:22px;height:22px}
+.k-wa-fab svg{width:26px;height:26px}
+
+body.modal-open .k-wa-fab,
+body.cart-open .k-wa-fab{
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(8px);
+}
 
 @media(min-width:1024px){
   .k-wa-fab{bottom:18px;right:18px}

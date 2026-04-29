@@ -129,8 +129,17 @@ export function renderProductCarousel(p, width) {
     try { imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images; }
     catch(_) { imgs = []; }
   }
+  if (Array.isArray(imgs)) {
+    const seen = new Set();
+    imgs = imgs.filter((src) => {
+      const key = String(src || '').trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
   if (!Array.isArray(imgs) || imgs.length === 0) {
-    imgs = p.image_url ? [p.image_url, p.image_url, p.image_url, p.image_url] : [];
+    imgs = p.image_url ? [p.image_url] : [];
   }
   if (!imgs.length) {
     return `<img class="k-card-img" src="" alt="${sanitize(p.name || '')}" loading="lazy" decoding="async">`;

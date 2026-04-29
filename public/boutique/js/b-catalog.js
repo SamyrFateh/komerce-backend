@@ -100,7 +100,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${sanitize(p.name)}</div>
-            ${p.description ? '<div class="k-card-desc">' + sanitize(p.description).slice(0, 60) + '</div>' : ''}
+            ${p.description ? '<div class="k-card-desc">' + sanitize(p.description) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
               <div class="k-card-price-col">
                 <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
@@ -356,7 +356,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
           </div>
           <div class="k-card-info">
             <div class="k-card-name">${sanitize(p.name)}</div>
-            ${p.description ? '<div class="k-card-desc">' + sanitize(p.description).slice(0, 60) + '</div>' : ''}
+            ${p.description ? '<div class="k-card-desc">' + sanitize(p.description) + '</div>' : ''}
             <div class="k-card-bottom k-card-prices-row">
               <div class="k-card-price-col">
                 <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
@@ -419,7 +419,7 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
         </div>
         <div class="k-card-info">
           <div class="k-card-name">${sanitize(p.name)}</div>
-          ${p.description ? '<div class="k-card-desc">' + sanitize(p.description).slice(0, 60) + '</div>' : ''}
+          ${p.description ? '<div class="k-card-desc">' + sanitize(p.description) + '</div>' : ''}
           <div class="k-card-bottom k-card-prices-row">
             <div class="k-card-price-col">
               <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>

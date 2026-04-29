@@ -25,24 +25,24 @@
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
-    height: 34px;
-    border-radius: 18px;
+    height: 40px;
+    border-radius: 21px;
     background: rgba(255,255,255,.96) !important;
     border: 1px solid rgba(31,48,36,.08) !important;
     box-shadow: 0 8px 18px rgba(31,48,36,.06);
   }
 
   .k-search input {
-    height: 34px;
-    padding: 0 12px 0 36px;
+    height: 40px;
+    padding: 0 14px 0 40px;
     background: transparent !important;
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .k-search-icon {
     left: 12px;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
   #k-hero-fixed-wrap {
@@ -55,10 +55,10 @@
   }
 
   .k-hero-media {
-    height: clamp(132px, 33vw, 176px);
-    margin: 0 var(--pad-x) 10px;
-    border-radius: 0 0 24px 24px;
-    box-shadow: 0 14px 30px rgba(31,48,36,.08);
+    height: clamp(150px, 38vw, 168px);
+    margin: 0 var(--pad-x) 6px;
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 12px 24px rgba(31,48,36,.08);
   }
 
   .k-hero-cats-sticky {
@@ -477,19 +477,19 @@
      poussait l'image trop bas et coupait les fronts.)                   */
 
   .k-hero-img {
-    height: clamp(96px, 17vw, 168px);
-    object-position: 50% 15% !important;
+    height: 100%;
+    object-position: 50% 18% !important;
     /* CSS principal ligne 6026 a "object-position: center 10% !important"
        ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ on contre avec le mÃƒÆ’Ã‚Âªme !important. */
   }
 
   .k-hero-overlay {
-    padding-top: 8px;
-    padding-bottom: 10px;
-    gap: 4px;
+    padding-top: 6px;
+    padding-bottom: 8px;
+    gap: 3px;
   }
 
-  .k-hero-mini-slogan { padding: 8px 12px; }
+  .k-hero-mini-slogan { padding: 6px 10px; }
   .k-hero-sub        { margin-top: 3px; }
   .k-hero-cta-row    { margin-top: 6px; }
 
@@ -511,19 +511,19 @@
   }
 
   .k-cats-shell {
-    margin: 0 var(--pad-x);
+    margin: -14px var(--pad-x) 0;
     padding: 0;
     background: #f6f0e3;
     border: 1px solid rgba(31, 48, 36, .06);
     border-radius: 18px;
-    box-shadow: 0 6px 20px rgba(31, 48, 36, .10);
+    box-shadow: 0 8px 18px rgba(31, 48, 36, .08);
     overflow: hidden;
   }
 
   .k-hero-cats-sticky::after {
     content: '';
     display: block;
-    height: 12px;
+    height: 4px;
   }
 
 
