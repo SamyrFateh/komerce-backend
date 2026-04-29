@@ -27,9 +27,9 @@
 }
 .k-hero-img {
   width: 100%;
-  height: clamp(160px, 42vw, 200px);
+  height: clamp(110px, 28vw, 140px);
   object-fit: cover;
-  object-position: 50% 22%;   /* cadre les visages, coupe le bas */
+  object-position: 50% 12%;   /* cadre têtes + épaules, coupe aux coudes */
   display: block;
 }
 .k-hero-media-mobile { display: none; }
@@ -98,7 +98,7 @@
 .k-hero-cats-sticky {
   background: transparent;
   box-shadow: none;
-  margin-top: -28px;
+  margin-top: -42px;
   position: relative;
   z-index: 5;
 }
@@ -108,7 +108,7 @@
   height: 4px;
 }
 .k-cats-shell {
-  margin: -10px 12px 0;
+  margin: -14px 12px 0;
   padding: 0;
   background: var(--sand-warm);
   border: 1px solid rgba(31,48,36,.06);
