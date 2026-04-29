@@ -25,7 +25,7 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
-  scroll-padding-left: 6px;
+  scroll-padding-left: 12px;
   scrollbar-width: none;
   padding: 8px 4px;
   align-items: stretch;
@@ -34,7 +34,7 @@
 }
 .k-cats::-webkit-scrollbar { display: none; }
 .k-cats::before,
-.k-cats::after { content: ""; flex: 0 0 2px; }
+.k-cats::after { content: ""; flex: 0 0 12px; }
 
 /* ── CHIP (mobile-first : 38px) ──────────────────────────────── */
 .k-chip {
@@ -314,6 +314,14 @@
 
 /* Section soldes masquée si vide */
 #k-promos-section[data-empty="1"] { display: none; }
+
+/* ── ESPACEMENT PROMOS / CATALOGUE ──────────────────────────── */
+#k-promos-section {
+  margin-bottom: 16px;
+}
+#k-catalog-section {
+  padding-top: 8px;
+}
 
 /* ── DESKTOP ─────────────────────────────────────────────────── */
 @media (min-width: 900px) {
