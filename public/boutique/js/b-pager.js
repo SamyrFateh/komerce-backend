@@ -300,46 +300,61 @@ function _applyPagerCSS(grid) {
   var sections = _state.sections;
   var vw = window.innerWidth;
   var bnav = document.querySelector('.k-bnav');
-  var gridRect = grid.getBoundingClientRect();
   var bnavH = bnav ? bnav.offsetHeight : 56;
-  var pagerH = window.innerHeight - gridRect.top - bnavH;
+
+  // ── Neutraliser TOUS les parents jusqu'à body ──────────────────
+  // pour que #k-grid soit au flush left de la fenêtre
+  var catalogSec = document.getElementById('k-catalog-section');
+  var pageScroll  = document.getElementById('k-page-scroll');
+
+  if (catalogSec) {
+    catalogSec.style.cssText = 'padding:0;margin:0;overflow:visible;width:100%;';
+  }
+  if (pageScroll) {
+    pageScroll.style.overflow = 'hidden'; // clip les sections hors écran
+    pageScroll.style.padding  = '0';
+  }
+
+  // ── Mesurer le top de la grille APRÈS reset parents ──────────
+  // (forcer reflow)
+  void grid.offsetTop;
+  var gridRect = grid.getBoundingClientRect();
+  var pagerH   = window.innerHeight - gridRect.top - bnavH;
   if (pagerH < 300) pagerH = 300;
   document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
 
-  // Container grid : position relative, overflow visible, largeur normale
-  grid.style.position = 'relative';
-  grid.style.display  = 'block';        // reset grid layout
-  grid.style.width    = '100%';
-  grid.style.height   = pagerH + 'px';
-  grid.style.overflow = 'visible';      // les sections débordent à droite — c'est voulu
-  grid.style.gridTemplateColumns = 'none';
+  // ── #k-grid : conteneur relatif, taille exacte ───────────────
+  grid.style.cssText = [
+    'position:relative',
+    'display:block',
+    'width:' + vw + 'px',           // largeur exacte fenêtre
+    'height:' + pagerH + 'px',
+    'overflow:visible',              // sections débordent à droite
+    'margin:0',
+    'padding:0',
+    'grid-template-columns:none',
+    'gap:0',
+  ].join(';') + ';';
 
-  // Chaque section : positionnée absolument côte à côte
+  // ── Chaque section : absolute côte à côte ────────────────────
   sections.forEach(function(sec, i) {
-    sec.style.position   = 'absolute';
-    sec.style.top        = '0';
-    sec.style.left       = (i * vw) + 'px';
-    sec.style.width      = vw + 'px';
-    sec.style.height     = pagerH + 'px';
-    sec.style.overflowY  = 'scroll';
-    sec.style.overflowX  = 'hidden';
-    sec.style.boxSizing  = 'border-box';
-    sec.style.paddingBottom = (bnavH + 48) + 'px';
-    sec.style.touchAction = 'pan-y';     // scroll vertical dans chaque section
+    sec.style.cssText = [
+      'position:absolute',
+      'top:0',
+      'left:' + (i * vw) + 'px',
+      'width:' + vw + 'px',
+      'height:' + pagerH + 'px',
+      'overflow-y:scroll',
+      'overflow-x:hidden',
+      '-webkit-overflow-scrolling:touch',
+      'overscroll-behavior-y:auto',
+      'overscroll-behavior-x:none',
+      'box-sizing:border-box',
+      'padding:0 0 ' + (bnavH + 64) + 'px',
+      'touch-action:pan-y',
+      'margin:0',
+    ].join(';') + ';';
   });
-
-  // #k-catalog-section : doit déborder visuellement (overflow visible)
-  var catalogSec = document.getElementById('k-catalog-section');
-  if (catalogSec) {
-    catalogSec.style.overflow = 'visible';
-    catalogSec.style.padding  = '0';
-  }
-
-  // Pager wrapper : clip pour masquer les sections hors écran
-  var pageScroll = document.getElementById('k-page-scroll');
-  if (pageScroll) {
-    pageScroll.style.overflow = 'hidden';  // clip horizontal
-  }
 }
 
 // ── Point d'entrée principal ──
