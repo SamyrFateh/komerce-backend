@@ -426,14 +426,14 @@ function renderCheckoutCompact() {
 
   const trackWrap = document.createElement('details');
   trackWrap.className = 'ck-track-details';
-  trackWrap.innerHTML = '<summary>📲 Ajouter un téléphone de suivi (optionnel)</summary>';
+  trackWrap.innerHTML = '<summary>Suivi optionnel</summary>';
   const trackExtra = document.createElement('div');
   trackExtra.id = 'ck-track-extra';
   trackExtra.className = 'ck-track-details-body';
   const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
   const trkHint = document.createElement('div');
   trkHint.className = 'ck-track-hint';
-  trkHint.textContent = 'Notif WhatsApp dès que la commande arrive au relais.';
+  trkHint.textContent = 'Notif WhatsApp des que la commande arrive au relais.';
   trackExtra.appendChild(senderGroup);
   trackExtra.appendChild(trkHint);
   trackWrap.appendChild(trackExtra);

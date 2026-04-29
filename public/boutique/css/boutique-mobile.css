@@ -55,7 +55,13 @@
   }
 
   .k-hero-media {
-    height: clamp(150px, 38vw, 168px);
+    /* v6 (29/04/26) : -32px de hauteur en moyenne pour gagner du vertical
+       sans casser la composition.
+       Avant : clamp(150px, 38vw, 168px) → ~156px sur mobile 412px
+       Après : clamp(115px, 30vw, 134px) → ~124px sur mobile 412px
+       Le recadrage object-position descend (cf .k-hero-img) pour rogner
+       le bas du stand de marché et garder visages + slogan pleins. */
+    height: clamp(115px, 30vw, 134px);
     margin: 0 var(--pad-x) 6px;
     border-radius: 0 0 22px 22px;
     box-shadow: 0 12px 24px rgba(31,48,36,.08);
@@ -485,9 +491,11 @@
 
   .k-hero-img {
     height: 100%;
-    object-position: 46% 18% !important;
-    /* CSS principal ligne 6026 a "object-position: center 10% !important"
-       ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ on contre avec le mÃƒÆ’Ã‚Âªme !important. */
+    object-position: 46% 28% !important;
+    /* v6 (29/04/26) : 18% → 28%, descend le cadrage pour bien centrer
+       sur les visages + slogan dans la nouvelle hauteur réduite.
+       Le bas du stand de marché est naturellement coupé — voulu.
+       Override CSS principal ligne 6026 ("center 10% !important"). */
   }
 
   .k-hero-overlay {
