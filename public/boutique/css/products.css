@@ -280,3 +280,10 @@
   .k-grid,
   .k-sec-grid { grid-template-columns: repeat(5, 1fr); gap: 16px; }
 }
+
+/* ── Mode pager : grid override ─────────────────────────────── */
+/* En mode pager, le JS set display:block via cssText — forcer ici aussi */
+#k-page-scroll.k-pager-active #k-grid {
+  display: block;
+  grid-template-columns: none;
+}

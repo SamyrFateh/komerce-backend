@@ -298,53 +298,56 @@ function _setupTouchNav(grid) {
 // ── Setup CSS des sections ──
 function _applyPagerCSS(grid) {
   var sections = _state.sections;
-  var vw   = window.innerWidth;
-  var vh   = window.innerHeight;
-  var bnav = document.querySelector('.k-bnav');
+  var vw    = window.innerWidth;
+  var bnav  = document.querySelector('.k-bnav');
   var bnavH = bnav ? bnav.offsetHeight : 56;
 
-  // ── Mesurer le top de la zone chips (dernière chose avant la grille) ──
-  // On prend getBoundingClientRect du grid AVANT toute modif
-  var gridTop = grid.getBoundingClientRect().top;
-  // Si gridTop est négatif ou 0 (déjà fixed), utiliser la valeur stockée
-  if (gridTop <= 0 && _state._gridTop) gridTop = _state._gridTop;
-  if (gridTop > 0) _state._gridTop = gridTop;
-  if (!gridTop || gridTop < 50) gridTop = 180; // fallback
-
-  var pagerH = vh - gridTop - bnavH;
+  // ── 1. Mesurer AVANT toute modification ──────────────────────
+  var gridRect = grid.getBoundingClientRect();
+  var gridTop  = gridRect.top;
+  var pagerH   = window.innerHeight - gridTop - bnavH;
   if (pagerH < 300) pagerH = 300;
   document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
 
-  // ── #k-grid : fixed, couvre exactement la zone catalogue ──────
-  // Évite tout problème de parent overflow/padding
+  // ── 2. Remonter la chaîne des parents et neutraliser ────────
+  // On cherche tous les ancêtres entre grid et body
+  var el = grid.parentElement;
+  while (el && el !== document.body) {
+    var cs = window.getComputedStyle(el);
+    // Seulement si ça ajoute du padding/margin
+    if (cs.paddingTop !== '0px' || cs.paddingLeft !== '0px' ||
+        cs.marginTop  !== '0px' || cs.overflowX !== 'visible') {
+      el.style.padding  = '0';
+      el.style.margin   = '0';
+      el.style.overflow = 'visible';
+    }
+    el = el.parentElement;
+  }
+
+  // ── 3. #k-page-scroll : overflow hidden pour clipper ─────────
+  var pageScroll = document.getElementById('k-page-scroll');
+  if (pageScroll) {
+    pageScroll.style.overflow   = 'hidden';
+    pageScroll.style.height     = (gridTop + pagerH) + 'px';
+    pageScroll.style.minHeight  = 'unset';
+  }
+
+  // ── 4. #k-grid : wrapper relatif ─────────────────────────────
   grid.style.cssText = [
-    'position:fixed',
-    'top:' + gridTop + 'px',
-    'left:0',
+    'position:relative',
+    'display:block',
     'width:' + vw + 'px',
     'height:' + pagerH + 'px',
     'overflow:visible',
     'margin:0',
     'padding:0',
-    'display:block',
     'grid-template-columns:none',
     'gap:0',
-    'z-index:5',
-    'background:var(--sand)',
+    'transform:translateX(0)',   // reset initial
+    'will-change:transform',
   ].join(';') + ';';
 
-  // ── #k-catalog-section : placeholder pour garder la hauteur dans le flux ──
-  var catalogSec = document.getElementById('k-catalog-section');
-  if (catalogSec) {
-    catalogSec.style.cssText = [
-      'height:' + pagerH + 'px',
-      'overflow:hidden',
-      'padding:0',
-      'margin:0',
-    ].join(';') + ';';
-  }
-
-  // ── Chaque section : absolute côte à côte dans le grid fixed ──
+  // ── 5. Chaque section : absolute côte à côte ─────────────────
   sections.forEach(function(sec, i) {
     sec.style.cssText = [
       'position:absolute',
