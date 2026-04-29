@@ -285,85 +285,33 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
   /* ── Variable hauteur pager (calculée par JS dans _setupMobilePager) ── */
   :root { --pager-h: calc(100dvh - 180px); }
 
-  /* ── #k-page-scroll : laisse passer, pas de clip ───────────── */
+  /* ── PAGER JS translateX — CSS minimal ─────────────────────── */
+  /* Le layout est géré en JS inline dans b-pager.js (_applyPagerCSS) */
+  /* CSS ici = juste le header sticky dans chaque section             */
+
   #k-page-scroll.k-pager-active {
-    overflow: visible;
-    position: relative;
+    overflow: hidden;      /* clip les sections qui débordent à droite */
   }
 
-  /* ── #k-catalog-section : enlever padding, laisser k-grid respirer ── */
   #k-page-scroll.k-pager-active #k-catalog-section {
-    padding: 0;
     overflow: visible;
-  }
-
-  /* ── #k-grid : rail horizontal (le vrai viewport pager) ────── */
-  #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections,
-  #k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    width: 100vw;
-    max-width: 100vw;
-    height: var(--pager-h);
-    overflow-x: scroll;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-snap-stop: always;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    overscroll-behavior-y: none;
-    gap: 0;
     padding: 0;
-    grid-template-columns: none;
-    position: relative;
-    left: 0;
-    /* Forcer le débordement hors du padding du parent */
-    margin-left: calc(-1 * var(--pad-x, 0px));
-    box-sizing: border-box;
-  }
-  #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections::-webkit-scrollbar,
-  #k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat::-webkit-scrollbar {
-    display: none;
   }
 
-  /* ── .k-cat-section : une page = 100vw × pager-h ───────────── */
-  #k-page-scroll.k-pager-active .k-grid .k-cat-section {
-    flex: 0 0 100vw;
-    width: 100vw;
-    min-width: 100vw;
-    max-width: 100vw;
-    height: var(--pager-h);
-    overflow-y: scroll;
-    overflow-x: hidden;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: auto;
-    overscroll-behavior-x: none;
-    touch-action: pan-y;
-    padding: 0 0 calc(var(--bnav-h) + 48px);
-    box-sizing: border-box;
-  }
-
-  /* ── .k-sec-header : zone swipe horizontal (pan-x) ─────────── */
+  /* Header sticky dans chaque section */
   #k-page-scroll.k-pager-active .k-grid .k-sec-header {
-    touch-action: pan-x;
-    cursor: grab;
     position: sticky;
     top: 0;
     z-index: 10;
     background: rgba(253,250,245,.96);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    padding: 10px 12px 8px;
+    padding: 8px 12px 6px;
     border-bottom: 2px solid var(--coral);
     user-select: none;
-    box-sizing: border-box;
   }
 
-  /* ── .k-sec-grid : grille 2 colonnes ───────────────────────── */
+  /* Grille 2 colonnes dans chaque section */
   #k-page-scroll.k-pager-active .k-grid .k-sec-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

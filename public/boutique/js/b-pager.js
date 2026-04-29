@@ -1,457 +1,397 @@
 /**
  * b-pager.js — Module ES · §15 PAGER TEMU
- * Extrait de boutique.js — Option C Phase 10
  *
- * Navigation circulaire Temu-style + ghost loop
- * Découplement : émet bus('chip:center') au lieu d'importer centerActiveChip
+ * Architecture : JS pur translateX — aucune dépendance au CSS scroll-snap.
+ * Fonctionne même avec overflow:clip sur html/body.
+ *
+ * - Scroll horizontal entre catégories : swipe JS + translateX
+ * - Scroll vertical dans chaque section : natif (chaque section est overflow-y:scroll)
+ * - Chip sync : se met à jour au fur et à mesure du glissement
+ * - Auto-advance : bas de section → catégorie suivante
+ * - Ghost loop : dernière → clone Tout → téléportation silencieuse
  */
 
-import { bus }           from './b-bus.js';
-import {
-  state, dom, $, $$, scroll,
-}                         from './b-store.js';
+import { bus }    from './b-bus.js';
+import { scroll } from './b-store.js';
 
 'use strict';
 
-  // ── State variables ──
-  var _sectionObserver = null;  // IntersectionObserver vertical (désactivé en mode pager)
+// ── State interne du pager ──
+var _state = {
+  currentIdx: 0,       // index de la section visible
+  sections:   [],      // NodeList des sections
+  isAnimating: false,  // animation en cours
+  touchStartX: 0,
+  touchStartY: 0,
+  touchStartTime: 0,
+  trackX: 0,           // translateX courant (px)
+  isDragging: false,
+};
 
-  // ║  §15 · PAGER TEMU — Navigation circulaire + ghost loop            ║
-  // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-pager.js
+// ── Wrapper de translation ──
+function _setX(grid, x, animate) {
+  grid.style.transition = animate ? 'transform .32s cubic-bezier(.22,1,.36,1)' : 'none';
+  grid.style.transform  = 'translateX(' + x + 'px)';
+  _state.trackX = x;
+}
 
-  /**
-   * Initialise le pager horizontal Temu-style pour le mobile.
-   * Configure le scroll-snap, les observers et la navigation circulaire (ghost loop).
-   */
-  function _setupMobilePager() {
-    var grid = document.getElementById('k-grid');
-    if (!grid || window.innerWidth >= 900) return;
-    // ── Calculate pager height: viewport minus header/hero/cats ──
-    // Calculer la hauteur disponible depuis le haut de #k-grid jusqu'en bas
-    var grid = document.getElementById('k-grid');
-    var bnav = document.querySelector('.k-bnav');
-    var gridTop = grid ? grid.getBoundingClientRect().top : 180;
-    var bnavH  = bnav ? bnav.offsetHeight : 56;
-    var pagerH = window.innerHeight - gridTop - bnavH;
-    // Minimum 320px
-    if (pagerH < 320) pagerH = 320;
-    document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
-    // Disconnect vertical observer (horizontal scroll handles sync)
-    if (_sectionObserver) { _sectionObserver.disconnect(); _sectionObserver = null; }
-    // Remove old listeners, add new — rAF for instant + scrollend for final
-    grid.removeEventListener('scroll', _onPagerScroll);
-    grid.addEventListener('scroll', _onPagerScroll, { passive: true });
-    grid.removeEventListener('scrollend', _syncChipToScroll);
-    grid.addEventListener('scrollend', _syncChipToScroll, { passive: true });
-    // ── Direction lock: handled by CSS touch-action zones ──
-    // pan-y on .k-cat-section (products = vertical only)
-    // pan-x on .k-sec-header (section header = horizontal swipe zone)
-    // No JS direction detection needed — hardware-level separation
-    // Recalc on resize/orientation change
-    window.removeEventListener('resize', _setupMobilePager);
-    window.addEventListener('resize', _setupMobilePager);
-    // Lever overflow-x:clip sur html/body (bloque le scroll horizontal des enfants)
-    document.documentElement.style.overflowX = 'visible';
-    document.body.style.overflowX = 'visible';
-    // Ajouter les dots de navigation en bas de chaque section
-    _setupPagerDots(grid);
-    // Setup auto-advance when section reaches bottom
-    _setupHorizontalWrap();
+// ── Aller à un index ──
+function _goToIdx(grid, idx, animate) {
+  var n = _state.sections.length;
+  if (idx < 0 || idx >= n) return;
+  if (_state.isAnimating && animate) return;
+  _state.isAnimating = !!animate;
+  _state.currentIdx  = idx;
+  var targetX = -idx * window.innerWidth;
+  _setX(grid, targetX, animate);
+  if (animate) {
+    setTimeout(function() { _state.isAnimating = false; }, 350);
   }
+  _syncChip(idx);
+  _updateDots();
+  // Reset scroll vertical de la section cible
+  var sec = _state.sections[idx];
+  if (sec && sec.scrollTop > 0) sec.scrollTop = 0;
+}
 
-  /* ── Auto-advance to next category when vertical scroll ends ──
-     When user scrolls down to bottom of a section → smooth snap to next.
-     Uses direction tracking (_wasDown) to avoid false triggers.         */
-  /* ── Auto-advance circulaire : bas → section suivante (wrap premier↔dernier)
-     + retour arrière : haut de première section → dernière                    */
-  /**
- * Auto-avance entre sections du pager (scroll bas → suivante).
- * Dernière section → ghost Tout (navigation circulaire).
- */
-  /**
-   * Crée les indicateurs dots de navigation en bas de chaque section pager.
-   * Le dot actif suit le scroll horizontal.
-   * @param {Element} grid - L'élément #k-grid
-   */
-  function _setupPagerDots(grid) {
-    // Supprimer les anciens dots
-    grid.querySelectorAll('.k-pager-dots').forEach(function(d) { d.remove(); });
-    var sections = Array.from(grid.querySelectorAll('.k-cat-section:not([data-ghost])'));
-    var n = sections.length;
-    if (n < 2) return;
+// ── Chip sync ──
+function _syncChip(idx) {
+  var sec = _state.sections[idx];
+  if (!sec) return;
+  var cat = sec.getAttribute('data-ghost') ? 'all' : (sec.dataset.cat || 'all');
+  var prevActive = document.querySelector('.k-chip.active');
+  var prevCat = prevActive ? prevActive.dataset.cat : null;
+  document.querySelectorAll('.k-chip').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.cat === cat);
+    c.classList.remove('transitioning');
+  });
+  var activeChip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+  if (activeChip && prevCat !== cat) {
+    activeChip.classList.add('transitioning');
+    setTimeout(function() { activeChip.classList.remove('transitioning'); }, 450);
+  }
+  if (activeChip) bus.emit('chip:center', activeChip);
+}
 
-    // Créer un bandeau dots dans chaque section
-    sections.forEach(function(sec, idx) {
-      var dots = document.createElement('div');
-      dots.className = 'k-pager-dots';
-      for (var i = 0; i < n; i++) {
-        var dot = document.createElement('div');
-        dot.className = 'k-pager-dot' + (i === idx ? ' active' : '');
-        dots.appendChild(dot);
-      }
-      sec.appendChild(dots);
+// ── Dots de navigation ──
+function _updateDots() {
+  var idx = _state.currentIdx;
+  document.querySelectorAll('.k-pager-dots').forEach(function(dotsEl) {
+    dotsEl.querySelectorAll('.k-pager-dot').forEach(function(d, i) {
+      d.classList.toggle('active', i === idx);
     });
+  });
+}
 
-    // Sync dots au scroll horizontal
-    function _updateDots() {
-      var secs = grid.querySelectorAll('.k-cat-section:not([data-ghost])');
-      var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
-      var bestIdx = 0, bestDist = Infinity;
-      secs.forEach(function(s, i) {
-        var dist = Math.abs(s.offsetLeft + s.offsetWidth / 2 - scrollCenter);
-        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
-      });
-      secs.forEach(function(sec, si) {
-        var dotEls = sec.querySelectorAll('.k-pager-dot');
-        dotEls.forEach(function(d, di) {
-          d.classList.toggle('active', di === bestIdx);
-        });
-      });
+function _setupPagerDots(grid) {
+  grid.querySelectorAll('.k-pager-dots').forEach(function(d) { d.remove(); });
+  var sections = _state.sections;
+  var n = sections.length;
+  if (n < 2) return;
+  sections.forEach(function(sec, idx) {
+    var dots = document.createElement('div');
+    dots.className = 'k-pager-dots';
+    for (var i = 0; i < n; i++) {
+      var dot = document.createElement('div');
+      dot.className = 'k-pager-dot' + (i === idx ? ' active' : '');
+      dots.appendChild(dot);
     }
-    grid.addEventListener('scroll',    _updateDots, { passive: true });
-    grid.addEventListener('scrollend', _updateDots, { passive: true });
-  }
+    sec.appendChild(dots);
+  });
+}
 
-  /**
-   * Affiche brièvement un indicateur "Catégorie suivante →" en bas de section.
-   * @param {Element} sec      - Section courante
-   * @param {Array}   sections - Toutes les sections du pager
-   * @param {number}  idx      - Index de la section courante
-   */
-  function _showNextHint(sec, sections, idx) {
-    var nextSec = sections[(idx + 1) % sections.length];
-    if (!nextSec) return;
-    var cat = nextSec.getAttribute('data-ghost') ? 'Tout' : (nextSec.dataset.cat || '');
-    if (!cat) return;
-    var existing = sec.querySelector('.k-pager-next-hint');
-    if (existing) existing.remove();
-    var hint = document.createElement('div');
-    hint.className = 'k-pager-next-hint';
-    hint.textContent = cat;
-    sec.appendChild(hint);
-    setTimeout(function() { if (hint.parentNode) hint.remove(); }, 900);
-  }
+// ── Hint "catégorie suivante" ──
+function _showNextHint(idx) {
+  var sections = _state.sections;
+  var nextSec  = sections[(idx + 1) % sections.length];
+  if (!nextSec) return;
+  var cat = nextSec.getAttribute('data-ghost') ? 'Tout' : (nextSec.dataset.cat || '');
+  if (!cat) return;
+  var curSec = sections[idx];
+  var existing = curSec.querySelector('.k-pager-next-hint');
+  if (existing) existing.remove();
+  var hint = document.createElement('div');
+  hint.className = 'k-pager-next-hint';
+  hint.textContent = cat;
+  curSec.appendChild(hint);
+  setTimeout(function() { if (hint.parentNode) hint.remove(); }, 900);
+}
 
-  function _setupSectionAutoAdvance() {
-    var grid = document.getElementById('k-grid');
-    if (!grid || window.innerWidth >= 900) return;
-    var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
-    var n = sections.length;
-    if (!n) return;
+// ── Auto-advance bas → suivante ──
+function _setupSectionAutoAdvance() {
+  _state.sections.forEach(function(sec, idx) {
+    if (sec.getAttribute('data-ghost')) return;
+    // Cleanup
+    if (sec._advH) sec.removeEventListener('scroll', sec._advH);
 
-    sections.forEach(function(sec, idx) {
-      if (sec.getAttribute('data-ghost')) return; // skip ghost
-      // Cleanup old listeners
-      if (sec._advHandler)      sec.removeEventListener('scroll',     sec._advHandler);
-      if (sec._advHandlerEnd)   sec.removeEventListener('scrollend',  sec._advHandlerEnd);
-      if (sec._wrapTouchStart)  sec.removeEventListener('touchstart', sec._wrapTouchStart);
-      if (sec._wrapTouchEnd)    sec.removeEventListener('touchend',   sec._wrapTouchEnd);
+    var _lastST = 0, _wasDown = false, _timer = null;
 
-      var _advTimer = null;
-      var _lastST   = 0;
-      var _wasDown  = false;
+    function _atBottom() {
+      if (sec.scrollHeight <= sec.clientHeight + 8) return true;
+      return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
+    }
 
-      /**
-       * Vérifie si la section courante du pager est scrollée jusqu'en bas.
-       * @returns {boolean} true si le bas est atteint (marge 8px)
-       */
-      function _atBottom() {
-        // Pour sections courtes (pas scrollable) → considérer toujours "au fond"
-        if (sec.scrollHeight <= sec.clientHeight + 8) return true;
-        return sec.scrollTop + sec.clientHeight >= sec.scrollHeight - 32;
-      }
-      /**
-       * Vérifie si la section courante du pager est en haut.
-       * @returns {boolean} true si scrollTop ≤ 4px
-       */
-      function _atTop()    { return sec.scrollTop <= 4; }
-
-      /**
-       * Navigue vers une section du pager par index, avec scroll optionnel en haut/bas.
-       * @param {number}  targetIdx      - Index de la section cible (0-indexed)
-       * @param {boolean} [scrollToBottom] - Si true, scrolle en bas de la section après navigation
-       */
-      function _goTo(targetIdx, scrollToBottom) {
-        if (scroll.scrollingToSection) return;
-        var targetSec = sections[(targetIdx + n) % n];
-        if (!targetSec) return;
-        _wasDown = false;
-        // Ghost Tout → scroll vers le fantôme en avant (téléportation gérée par scrollend)
-        if (targetSec.getAttribute('data-ghost')) {
-          _scrollPagerToGhost();
-          document.querySelectorAll('.k-chip').forEach(function(c) {
-            c.classList.toggle('active', c.dataset.cat === 'all');
-          });
-          var allChip = document.querySelector('.k-chip[data-cat="all"]');
-          if (allChip && typeof centerActiveChip === 'function') bus.emit('chip:center', allChip);
-          return;
-        }
-        var cat = targetSec.dataset.cat;
-        if (!cat) return;
-        _scrollPagerToCat(cat);
-        // Sync chip immédiatement (sans attendre scrollend)
-        document.querySelectorAll('.k-chip').forEach(function(c) {
-          c.classList.toggle('active', c.dataset.cat === cat);
-        });
-        var activeChip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
-        if (activeChip && typeof centerActiveChip === 'function') bus.emit('chip:center', activeChip);
-        setTimeout(function() {
-          if (scrollToBottom) {
-            targetSec.scrollTop = targetSec.scrollHeight;
+    sec._advH = function() {
+      var st = sec.scrollTop;
+      if (st > _lastST + 2)      _wasDown = true;
+      else if (st < _lastST - 8) _wasDown = false;
+      _lastST = st;
+      if (_wasDown && _atBottom()) {
+        clearTimeout(_timer);
+        _timer = setTimeout(function() {
+          if (!_wasDown || !_atBottom()) return;
+          _showNextHint(idx);
+          var grid = document.getElementById('k-grid');
+          var nextIdx = idx + 1;
+          if (nextIdx >= _state.sections.length) nextIdx = 0;
+          // Ghost → téléportation
+          if (_state.sections[nextIdx] && _state.sections[nextIdx].getAttribute('data-ghost')) {
+            _goToIdx(grid, nextIdx, true);
+            setTimeout(function() { _ghostTeleport(grid); }, 400);
           } else {
-            if (targetSec.scrollTop > 0) targetSec.scrollTop = 0;
+            _goToIdx(grid, nextIdx, true);
           }
-        }, 450);
+        }, 320);
       }
-
-      // ── Scroll down → advance to next (wrap: last → first) ──
-      sec._advHandler = function() {
-        var st = sec.scrollTop;
-        if (st > _lastST + 2)      _wasDown = true;
-        else if (st < _lastST - 8) _wasDown = false;
-        _lastST = st;
-        if (_wasDown && _atBottom()) {
-          clearTimeout(_advTimer);
-          _advTimer = setTimeout(function() {
-            if (_wasDown && _atBottom()) {
-              _showNextHint(sec, sections, idx);
-              _goTo(idx + 1, false); // wrap: last→first
-            }
-          }, 300);
-        }
-      };
-      sec._advHandlerEnd = function() {
-        _lastST = sec.scrollTop;
-        if (_wasDown && _atBottom()) {
-          clearTimeout(_advTimer);
-          _goTo(idx + 1, false);
-        }
-      };
-      sec.addEventListener('scroll',    sec._advHandler,    { passive: true });
-      sec.addEventListener('scrollend', sec._advHandlerEnd, { passive: true });
-
-      // ── Pull down from top (first section only) → go to last ──
-      // (finger moves DOWN on screen = trying to scroll UP past top)
-      var _touchY0 = 0;
-      sec._wrapTouchStart = function(e) { _touchY0 = e.touches[0].clientY; };
-      sec._wrapTouchEnd   = function(e) {
-        if (!_atTop()) return;
-        var dy = e.changedTouches[0].clientY - _touchY0; // positive = finger down = scroll up intent
-        if (dy > 60) _goTo(idx - 1, true); // wrap: first→last (scrolled to bottom of last)
-      };
-      // Only bind on first section for "go back to last" (and optionally all for prev)
-      if (idx === 0) {
-        sec.addEventListener('touchstart', sec._wrapTouchStart, { passive: true });
-        sec.addEventListener('touchend',   sec._wrapTouchEnd,   { passive: true });
-      }
-    });
-  }
-
-  /* ── Horizontal wrap : swipe gauche sur dernière → première,
-                          swipe droite sur première → dernière  ──            */
-  /**
- * Wrap horizontal circulaire : dernière catégorie → ghost Tout.
- */
-  function _setupHorizontalWrap() {
-    var grid = document.getElementById('k-grid');
-    if (!grid || window.innerWidth >= 900) return;
-    // Remove old listeners
-    if (grid._hwTouchStart) grid.removeEventListener('touchstart', grid._hwTouchStart);
-    if (grid._hwTouchEnd)   grid.removeEventListener('touchend',   grid._hwTouchEnd);
-
-    var _tx0 = 0, _ty0 = 0;
-
-    grid._hwTouchStart = function(e) {
-      _tx0 = e.touches[0].clientX;
-      _ty0 = e.touches[0].clientY;
     };
-    grid._hwTouchEnd = function(e) {
-      var dx = e.changedTouches[0].clientX - _tx0;
-      var dy = e.changedTouches[0].clientY - _ty0;
-      // Horizontal seulement (angle < 45°)
-      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
-      var sections = Array.from(grid.querySelectorAll('.k-cat-section'));
-      var n = sections.length;
-      if (!n) return;
-      // Détection par scrollLeft absolu — résiste au snap bounce
-      var maxScroll = grid.scrollWidth - grid.clientWidth;
-      var atLeft  = grid.scrollLeft < grid.clientWidth * 0.4;
-      var atRight = maxScroll > 0 && grid.scrollLeft > maxScroll - grid.clientWidth * 0.4;
-      // wraps gérés par ghost Tout (infinite loop)
-    };
-    grid.addEventListener('touchstart', grid._hwTouchStart, { passive: true });
-    grid.addEventListener('touchend',   grid._hwTouchEnd,   { passive: true });
-  }
+    sec.addEventListener('scroll', sec._advH, { passive: true });
+  });
+}
 
-  // ── Sync pill ↔ scroll : rAF instant (zéro retard) ──
-  var _pagerRaf = null;
-  /**
-   * Synchronise la chip active dans la barre catégories selon la position de scroll du pager.
-   * Utilise offsetLeft pour une détection précise (pas une division par width).
-   */
-  function _syncChipToScroll() {
-    var grid = document.getElementById('k-grid');
-    if (!grid) return;
-    var sections = grid.querySelectorAll('.k-cat-section');
-    var scrollCenter = grid.scrollLeft + grid.clientWidth / 2;
-    var bestIdx = 0, bestDist = Infinity;
-    for (var i = 0; i < sections.length; i++) {
-      var secCenter = sections[i].offsetLeft + sections[i].offsetWidth / 2;
-      var dist = Math.abs(scrollCenter - secCenter);
-      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
-    }
-    if (sections[bestIdx]) {
-      var cat = sections[bestIdx].dataset.cat;
-      var prevActive = document.querySelector('.k-chip.active');
-      var prevCat = prevActive ? prevActive.dataset.cat : null;
-      document.querySelectorAll('.k-chip').forEach(function(c) {
-        c.classList.toggle('active', c.dataset.cat === cat);
-        c.classList.remove('transitioning');
-      });
-      var activeChip = document.querySelector('.k-chip.active');
-      // Surbrillance pulse si changement de catégorie
-      if (activeChip && prevCat !== cat) {
-        activeChip.classList.add('transitioning');
-        setTimeout(function() {
-          if (activeChip) activeChip.classList.remove('transitioning');
-        }, 450);
-      }
-      if (activeChip) bus.emit('chip:center', activeChip);
-    }
-  }
+// ── Ghost loop : téléportation silencieuse ──
+function _setupInfiniteLoop() {
+  var grid = document.getElementById('k-grid');
+  if (!grid || window.innerWidth >= 900) return;
+  var existing = grid.querySelector('[data-ghost]');
+  if (existing) existing.remove();
+  var toutSec = grid.querySelector('.k-cat-section[data-cat="all"]');
+  if (!toutSec) return;
+  var ghost = toutSec.cloneNode(true);
+  ghost.setAttribute('data-ghost', 'true');
+  grid.appendChild(ghost);
+  // Recalculer sections avec le ghost
+  _state.sections = Array.from(grid.querySelectorAll('.k-cat-section'));
+}
 
-  /**
-   * Handler debounced sur le scroll horizontal du pager.
-   * Déclenche _syncChipToScroll + auto-avance vers section suivante si bas atteint.
-   */
-  function _onPagerScroll() {
-    if (scroll.scrollingToSection) return;
-    if (_pagerRaf) return;
-    _pagerRaf = requestAnimationFrame(function() {
-      _pagerRaf = null;
-      _syncChipToScroll();
-    });
-  }
+function _ghostTeleport(grid) {
+  // Sauter silencieusement au vrai Tout (index 0) sans animation
+  _reshuffleToutInDOM();
+  _state.currentIdx = 0;
+  _setX(grid, 0, false);
+  _syncChip(0);
+  _updateDots();
+}
 
-  /**
-   * Fait défiler le pager horizontal jusqu'à la section de la catégorie donnée.
-   * Met à jour la chip active et déclenche le chargement des produits si nécessaire.
-   * @param {string} cat - Slug catégorie (ex: "mode", "tech", "all")
-   */
-  function _scrollPagerToCat(cat) {
-    var grid = document.getElementById('k-grid');
-    if (!grid) return;
-    var section = grid.querySelector('.k-cat-section[data-cat="' + cat + '"]');
-    if (!section) return;
-    scroll.scrollingToSection = true;
-    grid.scrollTo({ left: section.offsetLeft, behavior: 'smooth' });
-    // Use scrollend to clear flag (precise) + timeout fallback (safe)
-    grid.addEventListener('scrollend', function _clr() {
-      scroll.scrollingToSection = false;
-      grid.removeEventListener('scrollend', _clr);
-    }, { once: true });
-    setTimeout(function() { scroll.scrollingToSection = false; }, 600);
+function _reshuffleToutInDOM() {
+  var toutSec = document.querySelector('#k-grid .k-cat-section[data-cat="all"]:not([data-ghost])');
+  if (!toutSec) return;
+  var secGrid = toutSec.querySelector('.k-sec-grid');
+  if (!secGrid) return;
+  var cards = Array.from(secGrid.children);
+  for (var i = cards.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = cards[i]; cards[i] = cards[j]; cards[j] = t;
   }
+  var frag = document.createDocumentFragment();
+  cards.forEach(function(c) { frag.appendChild(c); });
+  secGrid.appendChild(frag);
+}
 
-  /* ── Scroll vers la section fantôme (ghost Tout en fin de pager) ── */
-  /**
- * Défile le pager vers le ghost Tout (clone en avant).
- */
-  function _scrollPagerToGhost() {
-    var grid = document.getElementById('k-grid');
-    if (!grid) return;
-    var ghost = grid.querySelector('.k-cat-section[data-ghost]');
-    if (!ghost) return;
-    scroll.scrollingToSection = true;
-    grid.scrollTo({ left: ghost.offsetLeft, behavior: 'smooth' });
-    grid.addEventListener('scrollend', function _clr() {
-      scroll.scrollingToSection = false;
-      grid.removeEventListener('scrollend', _clr);
-    }, { once: true });
-    setTimeout(function() { scroll.scrollingToSection = false; }, 700);
-  }
+// ── Touch handlers ──
+function _setupTouchNav(grid) {
+  // Cleanup
+  if (grid._ptStart) grid.removeEventListener('touchstart', grid._ptStart);
+  if (grid._ptMove)  grid.removeEventListener('touchmove',  grid._ptMove);
+  if (grid._ptEnd)   grid.removeEventListener('touchend',   grid._ptEnd);
 
-  /* ── Reshuffle Tout : mélange les cartes DOM à chaque téléportation ── */
-  /**
- * Reshuffle Fisher-Yates les produits Tout dans le DOM.
- * Appelé à chaque téléportation → dopamine loop.
- */
-  function _reshuffleToutInDOM() {
-    var toutSec = document.querySelector('#k-grid .k-cat-section[data-cat="all"]:not([data-ghost])');
-    if (!toutSec) return;
-    var secGrid = toutSec.querySelector('.k-sec-grid');
-    if (!secGrid) return;
-    var cards = Array.from(secGrid.children);
-    for (var _ri = cards.length - 1; _ri > 0; _ri--) {
-      var _rj = Math.floor(Math.random() * (_ri + 1));
-      var _rt = cards[_ri]; cards[_ri] = cards[_rj]; cards[_rj] = _rt;
-    }
-    var _rf = document.createDocumentFragment();
-    cards.forEach(function(c) { _rf.appendChild(c); });
-    secGrid.appendChild(_rf);
-  }
+  var startX = 0, startY = 0, startTime = 0;
+  var isDragging = false, startTrackX = 0;
+  var LOCK_THRESHOLD = 8; // px avant de locker l'axe
+  var lockedAxis = null;  // 'x' | 'y' | null
 
-  /* ── Infinite loop : ghost Tout en fin → téléportation silencieuse ──
-     Principe : on clone la section Tout et on l'ajoute à la fin du pager.
-     L'utilisateur arrive sur le ghost en scrollant en avant, puis scrollend
-     détecte la position et remet scrollLeft=0 (vrai Tout) sans animation.  */
-  /**
- * Initialise la navigation circulaire infinie Temu.
- */
-  function _setupInfiniteLoop() {
-    var grid = document.getElementById('k-grid');
-    if (!grid || window.innerWidth >= 900) return;
-    // Supprimer l'ancien ghost si présent
-    var existing = grid.querySelector('[data-ghost]');
-    if (existing) existing.remove();
-    // Cloner la section Tout
-    var toutSec = grid.querySelector('.k-cat-section[data-cat="all"]');
-    if (!toutSec) return;
-    var ghost = toutSec.cloneNode(true);
-    ghost.setAttribute('data-ghost', 'true');
-    grid.appendChild(ghost);
-    // Téléportation silencieuse quand l'utilisateur atterrit sur le ghost
-    /**
-     * Détecte l'arrivée sur le ghost "Tout" en fin de pager.
-     * Déclenche la téléportation silencieuse vers la vraie section "Tout" + reshuffle.
-     */
-    function _ghostCheck() {
-      var ghostEl = grid.querySelector('[data-ghost]');
-      if (!ghostEl) return;
-      if (Math.abs(grid.scrollLeft - ghostEl.offsetLeft) < grid.clientWidth * 0.45) {
-        // Désactiver snap + smooth, sauter au vrai Tout, réactiver
-        grid.style.scrollBehavior = 'auto';
-        grid.style.scrollSnapType = 'none';
-        _reshuffleToutInDOM();
-        grid.scrollLeft = 0;
-        requestAnimationFrame(function() {
-          requestAnimationFrame(function() {
-            grid.style.scrollBehavior = '';
-            grid.style.scrollSnapType = '';
-            _syncChipToScroll();
-          });
-        });
+  grid._ptStart = function(e) {
+    if (e.touches.length !== 1) return;
+    var t = e.target;
+    // Ne pas intercepter sur les éléments scrollables verticalement
+    if (t.closest('.k-card-carousel, .k-modal, .k-cart-drawer, .k-cats, ' +
+                   '.k-subcats-rail, input, textarea, select, button')) return;
+    startX      = e.touches[0].clientX;
+    startY      = e.touches[0].clientY;
+    startTime   = Date.now();
+    startTrackX = _state.trackX;
+    isDragging  = false;
+    lockedAxis  = null;
+  };
+
+  grid._ptMove = function(e) {
+    if (e.touches.length !== 1) return;
+    var dx = e.touches[0].clientX - startX;
+    var dy = e.touches[0].clientY - startY;
+
+    // Locker l'axe
+    if (!lockedAxis) {
+      if (Math.abs(dx) > LOCK_THRESHOLD || Math.abs(dy) > LOCK_THRESHOLD) {
+        lockedAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
       }
     }
-    // Nettoyage listeners précédents
-    if (grid._ghostCheck) {
-      grid.removeEventListener('scrollend', grid._ghostCheck);
-      clearTimeout(grid._ghostTimer);
+    if (lockedAxis !== 'x') return;
+
+    // On est en mode swipe horizontal
+    e.preventDefault();
+    isDragging = true;
+
+    // Résistance aux bords
+    var n = _state.sections.length;
+    var maxX = 0;
+    var minX = -(n - 1) * window.innerWidth;
+    var targetX = startTrackX + dx;
+    if (targetX > maxX) targetX = maxX + (targetX - maxX) * 0.25;
+    if (targetX < minX) targetX = minX + (targetX - minX) * 0.25;
+
+    _setX(grid, targetX, false);
+
+    // Sync chip en temps réel
+    var pct = -targetX / window.innerWidth;
+    var idx = Math.round(pct);
+    idx = Math.max(0, Math.min(n - 1, idx));
+    _syncChip(idx);
+    _updateDots();
+  };
+
+  grid._ptEnd = function(e) {
+    if (!isDragging) { lockedAxis = null; return; }
+    isDragging = false;
+
+    var dx       = e.changedTouches[0].clientX - startX;
+    var dt       = Date.now() - startTime;
+    var velocity = Math.abs(dx) / dt; // px/ms
+    var n        = _state.sections.length;
+
+    // Snap : vitesse ou distance
+    var currentFloat = -_state.trackX / window.innerWidth;
+    var idx = Math.round(currentFloat);
+
+    if (velocity > 0.3 || Math.abs(dx) > window.innerWidth * 0.35) {
+      idx = dx < 0
+        ? Math.ceil(currentFloat)   // swipe gauche → section suivante
+        : Math.floor(currentFloat); // swipe droite → section précédente
     }
-    grid._ghostCheck = _ghostCheck;
-    grid.addEventListener('scrollend', _ghostCheck, { passive: true });
-    // Fallback pour navigateurs sans scrollend natif
-    grid.addEventListener('scroll', function() {
-      clearTimeout(grid._ghostTimer);
-      grid._ghostTimer = setTimeout(_ghostCheck, 200);
-    }, { passive: true });
+
+    idx = Math.max(0, Math.min(n - 1, idx));
+    _state.currentIdx = idx;
+
+    // Ghost check
+    if (_state.sections[idx] && _state.sections[idx].getAttribute('data-ghost')) {
+      _goToIdx(grid, idx, true);
+      setTimeout(function() { _ghostTeleport(grid); }, 380);
+    } else {
+      _goToIdx(grid, idx, true);
+    }
+    lockedAxis = null;
+  };
+
+  grid.addEventListener('touchstart', grid._ptStart, { passive: true });
+  grid.addEventListener('touchmove',  grid._ptMove,  { passive: false }); // false pour preventDefault
+  grid.addEventListener('touchend',   grid._ptEnd,   { passive: true });
+}
+
+// ── Setup CSS des sections ──
+function _applyPagerCSS(grid) {
+  var sections = _state.sections;
+  var vw = window.innerWidth;
+  var bnav = document.querySelector('.k-bnav');
+  var gridRect = grid.getBoundingClientRect();
+  var bnavH = bnav ? bnav.offsetHeight : 56;
+  var pagerH = window.innerHeight - gridRect.top - bnavH;
+  if (pagerH < 300) pagerH = 300;
+  document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
+
+  // Container grid : position relative, overflow visible, largeur normale
+  grid.style.position = 'relative';
+  grid.style.display  = 'block';        // reset grid layout
+  grid.style.width    = '100%';
+  grid.style.height   = pagerH + 'px';
+  grid.style.overflow = 'visible';      // les sections débordent à droite — c'est voulu
+  grid.style.gridTemplateColumns = 'none';
+
+  // Chaque section : positionnée absolument côte à côte
+  sections.forEach(function(sec, i) {
+    sec.style.position   = 'absolute';
+    sec.style.top        = '0';
+    sec.style.left       = (i * vw) + 'px';
+    sec.style.width      = vw + 'px';
+    sec.style.height     = pagerH + 'px';
+    sec.style.overflowY  = 'scroll';
+    sec.style.overflowX  = 'hidden';
+    sec.style.boxSizing  = 'border-box';
+    sec.style.paddingBottom = (bnavH + 48) + 'px';
+    sec.style.touchAction = 'pan-y';     // scroll vertical dans chaque section
+  });
+
+  // #k-catalog-section : doit déborder visuellement (overflow visible)
+  var catalogSec = document.getElementById('k-catalog-section');
+  if (catalogSec) {
+    catalogSec.style.overflow = 'visible';
+    catalogSec.style.padding  = '0';
   }
 
-  // ══════════════════════════════════════════════════════════
-  // DEBUG BUTTON (temporaire) — affiche infos flat subcat à l'écran
-  // Tape sur le bouton 🐛 en bas-droite pour voir le diagnostic
+  // Pager wrapper : clip pour masquer les sections hors écran
+  var pageScroll = document.getElementById('k-page-scroll');
+  if (pageScroll) {
+    pageScroll.style.overflow = 'hidden';  // clip horizontal
+  }
+}
 
+// ── Point d'entrée principal ──
+function _setupMobilePager() {
+  var grid = document.getElementById('k-grid');
+  if (!grid || window.innerWidth >= 900) return;
+
+  _state.sections    = Array.from(grid.querySelectorAll('.k-cat-section'));
+  _state.currentIdx  = 0;
+  _state.isAnimating = false;
+  _state.trackX      = 0;
+
+  if (!_state.sections.length) return;
+
+  // Appliquer le CSS inline (contourne overflow:clip du reset)
+  _applyPagerCSS(grid);
+
+  // Touch navigation
+  _setupTouchNav(grid);
+
+  // Dots
+  _setupPagerDots(grid);
+
+  // Recalc au resize
+  window.removeEventListener('resize', _setupMobilePager);
+  window.addEventListener('resize', _setupMobilePager);
+}
+
+// ── Navigation externe (depuis chip click) ──
+function _scrollPagerToCat(cat) {
+  var grid = document.getElementById('k-grid');
+  if (!grid) return;
+  var idx = _state.sections.findIndex(function(s) {
+    return s.dataset.cat === cat && !s.getAttribute('data-ghost');
+  });
+  if (idx === -1) return;
+  _goToIdx(grid, idx, true);
+}
+
+function _scrollPagerToGhost() {
+  var grid = document.getElementById('k-grid');
+  if (!grid) return;
+  var idx = _state.sections.findIndex(function(s) { return !!s.getAttribute('data-ghost'); });
+  if (idx === -1) return;
+  _goToIdx(grid, idx, true);
+  setTimeout(function() { _ghostTeleport(grid); }, 400);
+}
+
+// Stubs compatibilité (appelés par b-catalog.js)
+function _setupHorizontalWrap()    { /* géré par _setupTouchNav */ }
+function _syncChipToScroll()       { _syncChip(_state.currentIdx); }
+function _onPagerScroll()          { /* non utilisé en mode translateX */ }
 
 export {
   _setupMobilePager,
