@@ -818,7 +818,7 @@
 
         (async function() {
           try {
-            var resp = await apiFetch('/api/orders/v2?limit=500');
+            var resp = await apiFetch('/api/v2/orders?limit=500');
             var order = (resp.orders || []).find(function(o) { return o.reference === ref; });
             if (!order) {
               // Peut-être c'est un parcel (colis) pour l'action collected
