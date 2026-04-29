@@ -154,7 +154,6 @@ async function loadProducts() {
   state.filtered  = [...state.products];
 
   renderGrid();
-  if (dom.promoRail) renderPromos();
   markAllCartButtons();
 
   // Badge favoris en promo
