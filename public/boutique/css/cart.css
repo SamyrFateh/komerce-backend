@@ -285,28 +285,27 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
   /* ── Variable hauteur pager (calculée par JS dans _setupMobilePager) ── */
   :root { --pager-h: calc(100dvh - 180px); }
 
-  /* ── #k-page-scroll : devient le viewport du pager ─────────── */
+  /* ── #k-page-scroll : laisse passer, pas de clip ───────────── */
   #k-page-scroll.k-pager-active {
-    overflow: hidden;
-    height: var(--pager-h);
+    overflow: visible;
     position: relative;
   }
 
-  /* ── #k-catalog-section : wrapper transparent ──────────────── */
+  /* ── #k-catalog-section : enlever padding, laisser k-grid respirer ── */
   #k-page-scroll.k-pager-active #k-catalog-section {
-    height: 100%;
-    overflow: hidden;
     padding: 0;
+    overflow: visible;
   }
 
-  /* ── #k-grid : rail horizontal ─────────────────────────────── */
+  /* ── #k-grid : rail horizontal (le vrai viewport pager) ────── */
   #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections,
   #k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    width: max-content;
-    height: 100%;
+    width: 100vw;
+    max-width: 100vw;
+    height: var(--pager-h);
     overflow-x: scroll;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
@@ -315,18 +314,21 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     overscroll-behavior-y: none;
-    /* Pas de gap — chaque section fait 100vw exactement */
     gap: 0;
     padding: 0;
-    /* Désactiver le grid template (on est en flex horizontal) */
     grid-template-columns: none;
+    position: relative;
+    left: 0;
+    /* Forcer le débordement hors du padding du parent */
+    margin-left: calc(-1 * var(--pad-x, 0px));
+    box-sizing: border-box;
   }
   #k-page-scroll.k-pager-active .k-grid.k-grid-has-sections::-webkit-scrollbar,
   #k-page-scroll.k-pager-active .k-grid.k-grid-flat-subcat::-webkit-scrollbar {
     display: none;
   }
 
-  /* ── .k-cat-section : une page = 100vw × --pager-h ─────────── */
+  /* ── .k-cat-section : une page = 100vw × pager-h ───────────── */
   #k-page-scroll.k-pager-active .k-grid .k-cat-section {
     flex: 0 0 100vw;
     width: 100vw;
@@ -340,13 +342,12 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: auto;
     overscroll-behavior-x: none;
-    /* Direction lock CSS : seul l'axe Y est autorisé dans la section */
     touch-action: pan-y;
-    padding: 0 0 calc(var(--bnav-h) + 24px);
+    padding: 0 0 calc(var(--bnav-h) + 48px);
     box-sizing: border-box;
   }
 
-  /* ── .k-sec-header : zone de swipe horizontal (pan-x) ──────── */
+  /* ── .k-sec-header : zone swipe horizontal (pan-x) ─────────── */
   #k-page-scroll.k-pager-active .k-grid .k-sec-header {
     touch-action: pan-x;
     cursor: grab;
@@ -357,14 +358,12 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     padding: 10px 12px 8px;
-    margin: 0 -12px;
-    width: calc(100% + 24px);
     border-bottom: 2px solid var(--coral);
-    /* Indicateur visuel que ce header est swipable */
     user-select: none;
+    box-sizing: border-box;
   }
 
-  /* ── .k-sec-grid : grille 2 colonnes dans chaque page ──────── */
+  /* ── .k-sec-grid : grille 2 colonnes ───────────────────────── */
   #k-page-scroll.k-pager-active .k-grid .k-sec-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

@@ -28,14 +28,13 @@ import {
     var grid = document.getElementById('k-grid');
     if (!grid || window.innerWidth >= 900) return;
     // ── Calculate pager height: viewport minus header/hero/cats ──
-    var hdr = document.querySelector('.k-header');
-    var hero = document.getElementById('k-hero');
-    var cats = document.querySelector('.k-cats-shell');
-    var usedH = (hdr ? hdr.offsetHeight : 0)
-              + (hero ? hero.offsetHeight : 0)
-              + (cats ? cats.offsetHeight : 0);
-    var pagerH = window.innerHeight - usedH;
-    // Minimum 320px pour que la grille soit utilisable
+    // Calculer la hauteur disponible depuis le haut de #k-grid jusqu'en bas
+    var grid = document.getElementById('k-grid');
+    var bnav = document.querySelector('.k-bnav');
+    var gridTop = grid ? grid.getBoundingClientRect().top : 180;
+    var bnavH  = bnav ? bnav.offsetHeight : 56;
+    var pagerH = window.innerHeight - gridTop - bnavH;
+    // Minimum 320px
     if (pagerH < 320) pagerH = 320;
     document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
     // Disconnect vertical observer (horizontal scroll handles sync)
