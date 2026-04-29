@@ -30,6 +30,14 @@ import {
   toggleFav, quickAdd, quickRemove, markAllCartButtons,
 }                         from './b-cart.js';
 import {
+  initFlatSubcat, renderSubcatChips,
+}                              from './b-subcat.js';
+import {
+  _setupFlatSubcatPager, _renderFlatSubcat,
+  _mountFlatSubcatChrome, _unmountFlatSubcatChrome,
+  _bindFlatSubcatControls, _recalcPagerHeight,
+}                              from './b-subcat.js';
+import {
   _setupMobilePager,
   _setupSectionAutoAdvance,
   _setupHorizontalWrap,
@@ -212,12 +220,7 @@ function renderPromos() {
 
 /* ── RENDER GRID ────────────────────────────────────────────────── */
 
-function _unmountFlatSubcatChrome() {
-  var overlay = document.getElementById('k-flat-subcat-overlay');
-  if (overlay) overlay.remove();
-  var nav = document.getElementById('k-flat-subcat-nav');
-  if (nav) nav.remove();
-}
+// _unmountFlatSubcatChrome → importée depuis b-subcat.js
 
 // _renderCard : délégué à render-product-card.js
 function _renderCard(p) {

@@ -577,4 +577,5 @@ export {
   _setupFlatSubcatPager, _renderFlatSubcat,
   _mountFlatSubcatChrome, _unmountFlatSubcatChrome,
   _bindFlatSubcatControls, _scrollFlatPagerToSub, _syncFlatActiveTab,
+  _recalcPagerHeight,
 };
