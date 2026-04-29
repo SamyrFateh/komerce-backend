@@ -515,6 +515,6 @@ function renderSearchDropdown(results) {
 export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
-  loadProducts, _renderCard, scrollToCategorySection,
+  loadProducts, _renderCard,
 };
 export { setupCats as initCats, setupSearch as initSearch };
