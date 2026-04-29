@@ -133,9 +133,10 @@ export const SHOP_SCHEMA = {
       shortLabel: 'Soldes',
       order: 1,
       showInRail: true,
-      showInSections: false,
+      showInSections: true,   // page dédiée dans le pager Temu
       railBadge: { kind: 'svg', svg: CATEGORY_ICON_SVGS.Soldes },
       filter: (product) => (product.promo_pct || 0) > 0,
+      dbKeys: [],              // pas de clé DB — filtre via promo_pct
     },
     {
       key: 'Mode & Beauté',
