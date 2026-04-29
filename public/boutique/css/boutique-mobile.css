@@ -779,8 +779,12 @@
    Keep Komerce's warm hero and characters, but tighten the layout so products
    appear faster and the shell feels like a real desktop marketplace. */
 @media (min-width: 900px) {
+  :root {
+    --shop-max-width: 1440px;
+  }
+
   .k-header {
-    height: 78px;
+    height: 76px;
     background: rgba(255, 253, 249, 0.94);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
@@ -789,9 +793,10 @@
   }
 
   .k-header-inner {
-    max-width: 1360px;
+    max-width: var(--shop-max-width);
     gap: 18px;
-    min-height: 78px;
+    min-height: 76px;
+    padding-inline: clamp(24px, 3vw, 32px);
   }
 
   .k-logo {
@@ -809,7 +814,7 @@
 
   .k-search {
     flex: 1 1 560px;
-    max-width: 560px;
+    max-width: 620px;
     height: 46px;
     border-radius: 999px;
     border: 1px solid rgba(42, 62, 44, 0.12);
@@ -924,25 +929,28 @@
   }
 
   .k-hero {
-    padding: 14px clamp(20px, 3vw, 32px) 0;
+    padding: 12px clamp(24px, 3vw, 32px) 0;
     background: linear-gradient(180deg, #fcf8ef 0%, #fffdf8 72%, #fffdf8 100%);
   }
 
   .k-hero-inner {
-    max-width: 1360px;
+    max-width: var(--shop-max-width);
   }
 
   .k-hero-media {
     margin: 0;
     border-radius: 32px;
-    min-height: 420px;
+    min-height: 0;
+    height: clamp(360px, 40vw, 440px);
     box-shadow: 0 24px 48px rgba(31, 48, 36, 0.08);
     background: #f5ecde;
   }
 
   .k-hero-img {
-    height: clamp(390px, 34vw, 460px);
-    object-position: 72% center;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% center;
   }
 
   .k-hero-media::after {
@@ -958,32 +966,32 @@
 
   .k-hero-mini-slogan {
     width: min(47%, 560px);
-    padding: 36px 34px 34px clamp(28px, 4vw, 56px);
+    padding: 28px 28px 26px clamp(28px, 4vw, 52px);
   }
 
   .k-hero-mini-slogan .k-line-1 {
-    font-size: clamp(2.3rem, 3.5vw, 4rem);
+    font-size: clamp(2.15rem, 3.2vw, 3.6rem);
     margin-bottom: 2px;
   }
 
   .k-hero-mini-slogan .k-line-2 {
-    font-size: clamp(2.5rem, 3.9vw, 4.3rem);
-    margin-bottom: 16px;
+    font-size: clamp(2.3rem, 3.6vw, 3.9rem);
+    margin-bottom: 14px;
   }
 
   .k-hero-badge {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .k-hero-sub {
     max-width: 420px;
-    margin-bottom: 20px;
-    font-size: 16px;
-    line-height: 1.55;
+    margin-bottom: 16px;
+    font-size: 15px;
+    line-height: 1.5;
   }
 
   .k-hero-cta-row {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .k-hero-cta-primary,
@@ -996,12 +1004,12 @@
   }
 
   .k-hero-trust {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .k-hero-cats-sticky {
-    margin-top: -24px;
-    padding: 0 clamp(20px, 3vw, 32px);
+    margin-top: -18px;
+    padding: 0 clamp(24px, 3vw, 32px);
     background: transparent;
     box-shadow: none;
     position: relative;
@@ -1009,7 +1017,7 @@
   }
 
   .k-cats-shell {
-    max-width: 1360px;
+    max-width: var(--shop-max-width);
     margin: 0 auto;
     padding: 0;
   }
@@ -1017,10 +1025,10 @@
   .k-cats {
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: 14px;
-    padding: 14px 18px 16px !important;
+    gap: 12px;
+    padding: 12px 16px 13px !important;
     min-height: 0;
-    border-radius: 28px;
+    border-radius: 24px;
     background: rgba(255, 253, 249, 0.96) !important;
     border: 1px solid rgba(42, 62, 44, 0.08) !important;
     box-shadow: 0 16px 34px rgba(31, 48, 36, 0.08) !important;
@@ -1030,13 +1038,14 @@
   }
 
   .k-chip {
-    flex: 0 0 116px !important;
-    width: 116px !important;
-    min-width: 116px !important;
-    max-width: 116px !important;
-    gap: 10px !important;
-    padding: 12px 10px 14px !important;
-    border-radius: 22px !important;
+    flex: 0 0 126px !important;
+    width: 126px !important;
+    min-width: 126px !important;
+    max-width: 126px !important;
+    min-height: 96px !important;
+    gap: 8px !important;
+    padding: 10px 10px 12px !important;
+    border-radius: 20px !important;
     border: 1px solid rgba(42, 122, 62, 0.12) !important;
     background: rgba(255,255,255,0.72) !important;
     box-shadow: none !important;
@@ -1045,16 +1054,19 @@
 
   .k-chip-photo,
   .k-chip-emoji {
-    width: 54px !important;
-    height: 54px !important;
-    min-width: 54px !important;
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
     box-shadow: 0 8px 16px rgba(31, 48, 36, 0.06) !important;
   }
 
   .k-chip-label {
-    max-width: 96px !important;
+    max-width: 110px !important;
     font-size: 13px !important;
-    line-height: 1.2;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .k-chip.active {
@@ -1077,20 +1089,20 @@
   }
 
   #k-page-scroll {
-    max-width: 1360px;
-    margin: 8px auto 0;
+    max-width: var(--shop-max-width);
+    margin: 4px auto 0;
     padding: 0 clamp(20px, 3vw, 32px) 48px;
   }
 
   .k-section {
     padding-left: 0;
     padding-right: 0;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
 
   .k-sec-header {
-    padding: 12px 0 10px !important;
-    margin: 0 0 10px !important;
+    padding: 10px 0 8px !important;
+    margin: 0 0 8px !important;
     gap: 10px !important;
     border-bottom-width: 1px !important;
     background: transparent !important;
@@ -1104,7 +1116,7 @@
   }
 
   .k-sec-header-name {
-    font-size: 22px !important;
+    font-size: 20px !important;
     letter-spacing: -0.02em;
   }
 
@@ -1120,18 +1132,41 @@
 
   .k-see-all {
     margin-left: auto;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: #2a7a3e;
   }
 
-  .k-sec-grid {
+  .k-grid:not(.k-grid-has-sections):not(.k-grid-flat-subcat) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 20px;
-    padding: 6px 0 18px;
+    align-items: stretch;
+  }
+
+  .k-grid:not(.k-grid-has-sections):not(.k-grid-flat-subcat) .k-card {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .k-grid:not(.k-grid-has-sections):not(.k-grid-flat-subcat) .k-card-img-wrap {
+    max-height: 260px;
+  }
+
+  .k-sec-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+    padding: 4px 0 16px;
   }
 
   .k-sec-grid .k-card {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
     border-radius: 18px;
     border: 1px solid rgba(42, 62, 44, 0.08);
     background: #fff;
@@ -1147,12 +1182,15 @@
 
   .k-sec-grid .k-card-img-wrap {
     aspect-ratio: 1 / 1;
+    max-height: 260px;
     padding: 16px;
     border-radius: 18px 18px 0 0;
     background: linear-gradient(180deg, #fff, #faf7f1);
   }
 
   .k-sec-grid .k-card-img {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
     object-position: center;
     mix-blend-mode: normal;
@@ -1214,17 +1252,26 @@
   }
 
   .k-wa-fab {
-    width: 54px;
-    height: 54px;
-    right: 18px;
-    bottom: 22px;
+    width: 56px;
+    height: 56px;
+    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom));
     box-shadow: 0 16px 30px rgba(17, 66, 36, 0.24);
+  }
+
+  .k-hero-proverb-inline {
+    display: none;
   }
 }
 
 @media (min-width: 1200px) {
+  .k-grid:not(.k-grid-has-sections):not(.k-grid-flat-subcat) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 22px;
+  }
+
   .k-hero-img {
-    height: clamp(410px, 32vw, 460px);
+    height: 100%;
   }
 
   .k-sec-grid {
@@ -1233,12 +1280,16 @@
   }
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 1700px) {
   .k-header-inner,
   .k-cats-shell,
   #k-page-scroll,
   .k-hero-inner {
-    max-width: 1440px;
+    max-width: var(--shop-max-width);
+  }
+
+  .k-grid:not(.k-grid-has-sections):not(.k-grid-flat-subcat) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .k-sec-grid {
