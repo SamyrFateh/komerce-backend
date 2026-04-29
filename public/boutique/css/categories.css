@@ -377,3 +377,17 @@
   .k-subchip:hover .k-subchip-label { color: var(--text); }
   .k-sec-see-all:hover { background: rgba(67,160,71,.08); }
 }
+
+
+/* ── PROMO RAIL WRAPPERS — déplacés depuis interactions.css ───── */
+.k-promo-rail-wrap   { position: relative; overflow: hidden; }
+.k-promo-rail-more   {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 80px; height: 100px;
+  border: 1.5px dashed var(--border); border-radius: var(--radius);
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; text-align: center;
+  transition: border-color .2s var(--ease), color .2s;
+}
+.k-promo-rail-more:hover  { border-color: var(--coral); color: var(--coral); }
+.k-promo-card-prices { display: flex; flex-direction: column; gap: 1px; }
