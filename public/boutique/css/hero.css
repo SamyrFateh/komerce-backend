@@ -36,9 +36,10 @@
 .k-hero-overlay {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 6px var(--pad-x) 8px;
+  gap: 4px;
+  padding: 8px var(--pad-x) 10px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, rgba(246,240,227,.0) 0%, rgba(246,240,227,.6) 100%);
 }
 .k-hero-text-left {
   display: flex;
@@ -88,8 +89,11 @@
   text-decoration: none;
   background: linear-gradient(135deg, #e6f1fb, #cfe5f7);
   border: 1px solid #b5d4f4;
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: var(--elev-1);
+  transition: box-shadow .2s var(--ease), transform .2s var(--ease);
 }
+.k-event-banner:active { transform: scale(.98); box-shadow: none; }
 .k-event-banner-icon { flex-shrink: 0; font-size: 24px; line-height: 1; }
 .k-event-banner-copy { flex: 1; min-width: 0; }
 .k-event-banner-title { display: block; font-size: 13px; font-weight: 600; line-height: 1.3; }

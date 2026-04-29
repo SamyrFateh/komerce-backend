@@ -69,7 +69,8 @@
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,.06);
   background: #f8f8f8;
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  box-shadow: var(--elev-1);
+  transition: box-shadow .2s var(--ease), transform .2s var(--ease);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,7 +132,8 @@
 /* État actif mobile */
 .k-chip.active .k-chip-photo {
   border-color: var(--coral);
-  box-shadow: 0 0 0 2px var(--coral), 0 6px 14px rgba(200,92,45,.28);
+  box-shadow: 0 0 0 2.5px var(--coral), var(--elev-2);
+  transform: scale(1.05);
 }
 .k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: #fff; }
@@ -291,7 +293,7 @@
   object-fit: contain;
   background: transparent;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,.20)) drop-shadow(0 1px 3px rgba(0,0,0,.10));
-  animation: promo-float 3s ease-in-out infinite;
+  animation: promo-float 3.2s var(--ease-in) infinite;
 }
 @keyframes promo-float {
   0%, 100% { transform: translateY(0); }

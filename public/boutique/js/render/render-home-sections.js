@@ -8,7 +8,7 @@
  *   - Soldes filtré via getPromoProducts() dans partitionProductsByCategory
  */
 
-import { getCategorySectionEmoji, getSectionOrder, getCategoryByKey } from '../shop-schema.js';
+import { getCategorySectionEmoji, getSectionOrder } from '../shop-schema.js';
 import { getPromoProducts, partitionProductsByCategory } from '../product-store.js';
 import { sanitize } from '../b-utils.js';
 
@@ -46,6 +46,9 @@ export function renderHomeSections({
   const parts = [];
 
   if (isMobile) {
+    // Partitionner UNE FOIS avant la boucle (pas à chaque itération)
+    const byCategoryMobile = partitionProductsByCategory(items);
+
     // ── PAGE "TOUT" — mélange aléatoire, toujours en premier ──
     const allShuffled = shuffle(items.slice()).slice(0, 40);
     parts.push('<div class="k-cat-section" data-cat="all">');
@@ -68,9 +71,8 @@ export function renderHomeSections({
         // Soldes : filtre par promo_pct, mélangé
         products = shuffle(getPromoProducts().slice()).slice(0, 30);
       } else {
-        // Autres catégories : depuis la partition des items
-        const byCategory = partitionProductsByCategory(items);
-        products = byCategory[category];
+        // Autres catégories : depuis la partition calculée une fois
+        products = byCategoryMobile[category];
       }
 
       if (!products || products.length === 0) continue;

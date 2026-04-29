@@ -21,17 +21,22 @@
   animation: k-slide-up .3s cubic-bezier(.22,1,.36,1);
   display: flex; flex-direction: column;
 }
-@keyframes k-slide-up { from { transform: translateY(100%); } }
+@keyframes k-slide-up {
+  0%   { transform: translateY(100%); opacity: .6; }
+  60%  { transform: translateY(-4px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
 
 /* ── TOP BAR ─────────────────────────────────────────────────── */
 .k-modal-topbar {
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 20;
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
-  background: rgba(255,255,255,.82);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(0,0,0,.06);
+  background: rgba(253,250,245,.92);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border-bottom: 1px solid rgba(0,0,0,.07);
+  box-shadow: 0 2px 12px rgba(31,48,36,.06);
   flex-shrink: 0;
 }
 .k-modal-back {
@@ -159,11 +164,12 @@
   background: var(--white); color: var(--text);
   border: 1.5px solid var(--sand-dark);
   border-radius: 50px; font-size: 14px; font-weight: 600;
-  transition: background .2s, transform .15s, border-color .2s;
+  transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
+.k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
 /* Bouton "Acheter" (modal) */
 .k-modal-actions .k-buy-now-btn {
   grid-column: 1 / -1; grid-row: 2; width: 100%;

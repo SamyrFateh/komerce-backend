@@ -51,7 +51,12 @@
   border-radius: 21px;
   background: rgba(255,255,255,.96);
   border: 1px solid rgba(31,48,36,.08);
-  box-shadow: 0 8px 18px rgba(31,48,36,.06);
+  box-shadow: var(--elev-1);
+  transition: box-shadow .2s var(--ease), border-color .2s;
+}
+.k-search:focus-within {
+  border-color: rgba(42,122,62,.3);
+  box-shadow: var(--elev-2), 0 0 0 3px rgba(100,175,90,.08);
 }
 .k-search input {
   width: 100%;

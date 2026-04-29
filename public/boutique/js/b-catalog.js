@@ -123,14 +123,7 @@ function appendNextPage() {
 /* ── LOAD PRODUCTS ──────────────────────────────────────────────── */
 
 async function loadProducts() {
-  // Déléguer le chargement/cache à product-store.js (source unique)
-  try {
-    await _loadProductsFromStore === undefined
-      ? null
-      : null; // product-store gère l'API et le cache localStorage
-  } catch(_) {}
-
-  // Charger via product-store
+  // Charger via product-store (source unique — cache + normalisation)
   let products;
   try {
     if (typeof K === 'undefined' || !K.products) throw new Error('K non disponible');
