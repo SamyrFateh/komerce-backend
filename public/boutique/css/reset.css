@@ -51,3 +51,15 @@ body.cart-open { overflow: hidden; }
 
 /* Utilité globale */
 .u-hidden { display: none; }
+
+/* ── MODE PAGER TEMU : lever overflow-x clip sur html/body ──────
+   overflow-x:clip sur html/body tue le scroll horizontal des enfants.
+   La classe .k-pager-active est ajoutée par JS sur #k-page-scroll.
+   On utilise :has() pour cibler html/body quand le pager est actif.
+   Fallback JS dans b-pager.js pour navigateurs sans :has().          */
+@media (max-width: 899px) {
+  html:has(#k-page-scroll.k-pager-active),
+  html:has(#k-page-scroll.k-pager-active) body {
+    overflow-x: visible;
+  }
+}

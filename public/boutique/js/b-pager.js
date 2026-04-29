@@ -51,6 +51,9 @@ import {
     // Recalc on resize/orientation change
     window.removeEventListener('resize', _setupMobilePager);
     window.addEventListener('resize', _setupMobilePager);
+    // Lever overflow-x:clip sur html/body (bloque le scroll horizontal des enfants)
+    document.documentElement.style.overflowX = 'visible';
+    document.body.style.overflowX = 'visible';
     // Ajouter les dots de navigation en bas de chaque section
     _setupPagerDots(grid);
     // Setup auto-advance when section reaches bottom
