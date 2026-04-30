@@ -111,16 +111,24 @@ function _setupMobilePager() {
     ps.style.width = '100vw';
   }
   var bnav  = document.querySelector('.k-bnav');
-  var bnavH = bnav ? bnav.offsetHeight : 56;
-  // Mesurer APRÈS avoir forcé la largeur
-  void (ps && ps.offsetWidth); // reflow
-  var gridRect = grid.getBoundingClientRect();
-  var pagerH = window.innerHeight - gridRect.top - bnavH;
-  if (pagerH < 300) pagerH = 300;
-  // Toujours window.innerWidth — jamais clientWidth qui peut être 0
-  var pagerW = window.innerWidth;
-  document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
-  document.documentElement.style.setProperty('--pager-w', pagerW + 'px');
+var bnavH = bnav ? bnav.offsetHeight : 56;
+
+var gridRect = grid.getBoundingClientRect();
+var pagerTop = Math.max(0, Math.round(gridRect.top));
+
+var pagerH = window.innerHeight - pagerTop - bnavH;
+if (pagerH < 300) pagerH = 300;
+
+document.documentElement.style.setProperty('--pager-top', pagerTop + 'px');
+document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
+document.documentElement.style.setProperty('--pager-w', window.innerWidth + 'px');
+
+if (ps) {
+  ps.classList.add('k-pager-active');
+  ps.style.left = '0';
+  ps.style.right = '0';
+  ps.style.width = '100vw';
+}
 
   // Listener scroll passif — sync chips au scroll natif
   if (grid._catPagerScrollHandler) {
@@ -135,8 +143,9 @@ function _setupMobilePager() {
   grid.addEventListener('scroll', grid._catPagerScrollHandler, { passive: true });
 
   // Resize
-  window.removeEventListener('resize', _setupMobilePager);
-  window.addEventListener('resize', _setupMobilePager);
+window.removeEventListener('resize', _setupMobilePager);
+window.removeEventListener('orientationchange', _setupMobilePager);
+window.addEventListener('orientationchange', _setupMobilePager);
 }
 
 // ── Auto-advance bas → catégorie suivante ─────────────────────────
@@ -168,6 +177,9 @@ function destroyMobilePager() {
   var ps = document.getElementById('k-page-scroll');
   if (ps) ps.classList.remove('k-pager-active');
   window.removeEventListener('resize', _setupMobilePager);
+  document.documentElement.style.removeProperty('--pager-top');
+  document.documentElement.style.removeProperty('--pager-h');
+  document.documentElement.style.removeProperty('--pager-w');
 }
 
 // ── Stubs compatibilité ───────────────────────────────────────────
