@@ -39,7 +39,7 @@ body.cart-open .k-hero { pointer-events: none; }
   font-weight: 700; font-size: 1.1rem;
   border-radius: 16px 0 0 0; flex-shrink: 0;
 }
-.k-cart-body { flex: 1; overflow-y: auto; padding: 14px 16px; scrollbar-width: thin; }
+.k-cart-body { flex: 1; overflow-y: auto; padding: 8px 12px; scrollbar-width: thin; }
 
 /* Panier vide */
 .k-cart-empty { text-align: center; padding: 48px 24px 60px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 14px; }
@@ -69,7 +69,7 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* ── ITEMS ─────────────────────────────────────────────────── */
 .k-cart-item {
-  display: flex; gap: 12px; padding: 12px 10px; margin-bottom: 6px;
+  display: flex; gap: 8px; padding: 8px 10px; margin-bottom: 4px;
   border-radius: 12px; background: var(--white);
   box-shadow: var(--elev-1); border: 1px solid var(--border);
   animation: fadeIn .3s; transition: box-shadow .2s ease; position: relative;
@@ -81,16 +81,16 @@ body.cart-open .k-hero { pointer-events: none; }
   border-radius: 0 12px 12px 0;
   animation: newItemSlide .42s cubic-bezier(.34,1.56,.64,1);
 }
-.k-cart-item-img { width: 68px; height: 68px; background: var(--sand); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border); }
+.k-cart-item-img { width: 54px; height: 54px; background: var(--sand); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border); }
 .k-cart-item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-.k-cart-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.k-cart-item-name  { font-weight: 700; font-size: .85rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
-.k-cart-item-unit  { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
-.k-cart-item-price { font-size: .88rem; color: var(--coral); font-weight: 700; margin-top: 2px; }
-.k-cart-item-qty   { display: flex; align-items: center; gap: 0; margin-top: 6px; background: var(--sand); border-radius: 20px; width: fit-content; border: 1px solid var(--border); }
-.k-qty-ctrl { width: 30px; height: 30px; border-radius: 50%; background: transparent; color: var(--coral); font-weight: 700; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all .2s; cursor: pointer; border: none; }
+.k-cart-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+.k-cart-item-name  { font-weight: 700; font-size: .8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.k-cart-item-unit  { font-size: .68rem; color: var(--text-muted); margin-top: 0; }
+.k-cart-item-price { font-size: .82rem; color: var(--coral); font-weight: 700; margin-top: 0; }
+.k-cart-item-qty   { display: flex; align-items: center; gap: 0; margin-top: 3px; background: var(--sand); border-radius: 20px; width: fit-content; border: 1px solid var(--border); }
+.k-qty-ctrl { width: 26px; height: 26px; border-radius: 50%; background: transparent; color: var(--coral); font-weight: 700; font-size: .95rem; display: flex; align-items: center; justify-content: center; transition: all .2s; cursor: pointer; border: none; touch-action: manipulation; }
 .k-qty-ctrl:hover { background: var(--coral); color: #fff; }
-.k-qty-ctrl-val { min-width: 20px; text-align: center; font-weight: 700; font-size: .88rem; }
+.k-qty-ctrl-val { min-width: 18px; text-align: center; font-weight: 700; font-size: .82rem; }
 .k-cart-item-remove { background: none; color: var(--text-muted); font-size: .85rem; align-self: flex-start; padding: 2px 4px; transition: all .2s; cursor: pointer; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; }
 .k-cart-item-remove:hover { background: #fef2f2; color: var(--red); transform: scale(1.1); }
 
