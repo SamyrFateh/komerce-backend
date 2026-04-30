@@ -129,13 +129,12 @@ body {
   border-radius: 50%;
   transition: background .2s;
   margin-right: -4px;     /* coller l'avatar contre le label */
-  
-/* Laisser le badge panier dépasser sans être rogné */
-.k-header,
-.k-header-inner,
-.k-cart-btn {
   overflow: visible;
 }
+
+.k-header,
+.k-header-inner {
+  overflow: visible;
 }
 .k-cart-btn svg { width: 22px; height: 22px; color: var(--coral); }
 .k-cart-btn:active { background: rgba(200,92,45,.1); }
