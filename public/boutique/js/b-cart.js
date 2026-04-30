@@ -571,7 +571,7 @@ function quickRemove(productId, btnEl) {
     _evtBtn.id = 'k-cart-event-btn';
     _evtBtn.type = 'button';
     _evtBtn.className = 'k-cart-event-btn';
-    _evtBtn.innerHTML = '🎉 Faire participer ma famille';
+    _evtBtn.innerHTML = '👥 Payer en groupe';
     _evtBtn.addEventListener('click', () => {
       _showFamilySheet();
     });
@@ -585,7 +585,7 @@ function quickRemove(productId, btnEl) {
       // CSS inline once
       if (!document.getElementById('k-cart-event-css')) {
         const _s = document.createElement('style'); _s.id = 'k-cart-event-css';
-        _s.textContent = '.k-cart-event-btn{width:100%;padding:11px;background:#fff3e0;color:#e65100;border:1.5px solid #ff9800;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}';
+        _s.textContent = '.k-cart-event-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--violet,#6c3fc5),var(--violet-dark,#4a2d9e));color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 14px var(--violet-light,rgba(108,63,197,.3));letter-spacing:.01em}';
         document.head.appendChild(_s);
       }
     }
@@ -696,11 +696,11 @@ function quickRemove(productId, btnEl) {
 
   /* ══════════════════════════════════════════════════════════
      FAMILY PARTICIPATION SHEET
-     "Faire participer ma famille" — bottom sheet dédié
+     "Payer en groupe" — bottom sheet dédié
      ══════════════════════════════════════════════════════════ */
 
   /**
-   * Ouvre le bottom sheet "🎉 Faire participer ma famille".
+   * Ouvre le bottom sheet "👥 Payer en groupe".
    * Remplace le redirect vers /event/create.
    */
   function _showFamilySheet() {
@@ -714,12 +714,12 @@ function quickRemove(productId, btnEl) {
     ov.className = 'k-share-overlay';
 
     var html = '<div class="k-share-sheet" id="k-share-sheet">'
-      + '<div class="k-share-title">🎉 Faire participer ma famille</div>'
+      + '<div class="k-share-title">👥 Payer en groupe</div>'
       + '<div class="k-share-sub-family">Plusieurs proches peuvent payer une partie<br>de ce panier.</div>'
       + '<div class="k-family-total">' + fmt(total, 'KMF') + '</div>'
       + '<div class="k-event-form">'
         + '<label>Nom du panier <span style="color:#bbb;font-weight:400;font-size:11px">(facultatif)</span></label>'
-        + '<input id="k-event-label" type="text" placeholder="Ex : Commande famille, Cousins, Mariage, Naissance" maxlength="80"/>'
+        + '<input id="k-event-label" type="text" placeholder="Ex : Ex : Famille, Cousins, Mariage" maxlength="80"/>'
         + '<button class="k-event-go" id="k-family-go-btn">Créer le lien de participation</button>'
       + '</div>'
       + '<button class="k-share-cancel" id="k-share-cancel-btn">Annuler</button>'
@@ -809,10 +809,10 @@ function quickRemove(productId, btnEl) {
   function _showEventForm() {
     var sheet = document.getElementById('k-share-sheet');
     if (!sheet) return;
-    /* Refresh 28/04/26 — Vocabulaire spec V1 : "Panier famille" + ajout
+    /* Refresh 28/04/26 — Vocabulaire spec V1 : "Paiement groupé" + ajout
        champ téléphone obligatoire (utilisé par authenticateOrCreateGuest
        pour créer le user à la volée si l'utilisateur n'est pas connecté). */
-    var html = '<div class="k-share-title">&#127881; Faire participer ma famille</div>'
+    var html = '<div class="k-share-title">&#127881; Payer en groupe</div>'
       + '<div class="k-share-sub">Cr&#233;e un lien pour que tes proches contribuent &#224; ce panier</div>'
       + '<div class="k-event-form">'
         + '<label>Nom du panier <span style="color:#999">(optionnel)</span></label>'
@@ -821,7 +821,7 @@ function quickRemove(productId, btnEl) {
         + '<input id="k-event-sharer" type="text" placeholder="ex: Fatima" maxlength="60"/>'
         + '<label>Ton num&#233;ro <span style="color:#999">(pour suivre les contributions)</span></label>'
         + '<input id="k-event-phone" type="tel" placeholder="ex: +269..." maxlength="20"/>'
-        + '<button class="k-event-go" id="k-event-go-btn">Cr&#233;er le lien famille &#127881;</button>'
+        + '<button class="k-event-go" id="k-event-go-btn">Créer le lien de groupe</button>'
       + '</div>'
       + '<button class="k-share-cancel" id="k-share-back-btn">&#8592; Retour</button>';
     sheet.innerHTML = html;
@@ -876,7 +876,7 @@ function quickRemove(productId, btnEl) {
     /* Phone obligatoire : c'est lui qui sert à authenticateOrCreateGuest
        pour rattacher le panier à un user (existant ou créé à la volée). */
     if (!phone) {
-      showToast('Ton num&#233;ro est requis pour cr&#233;er le panier famille', 'error');
+      showToast('Ton num&#233;ro est requis pour cr&#233;er le paiement groupé', 'error');
       return;
     }
 
@@ -902,14 +902,14 @@ function quickRemove(productId, btnEl) {
     try {
       response = await apiPost('/api/shared-carts/from-cart-items', payload);
     } catch (err) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Cr&#233;er le lien famille &#127881;'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Créer le lien de groupe'; }
       var msg = (err && err.message) ? err.message : 'Erreur lors de la cr&#233;ation';
       showToast(msg, 'error');
       return;
     }
 
     if (!response || !response.share_url) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Cr&#233;er le lien famille &#127881;'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Créer le lien de groupe'; }
       showToast('R&#233;ponse serveur invalide', 'error');
       return;
     }
@@ -918,7 +918,7 @@ function quickRemove(productId, btnEl) {
 
     /* Composer le message WhatsApp. On garde la mise en forme actuelle qui
        fonctionne bien : titre, liste articles, total, lien, signature. */
-    var lines = ['&#127881; *' + (eventLabel || 'Panier famille') + '*', '--------------------', ''];
+    var lines = ['👥 *' + (eventLabel || 'Paiement groupé') + '*', '--------------------', ''];
     lines.push('Aide-moi &#224; financer ce panier - participe selon tes moyens !', '');
     state.cart.forEach(function(item, i) {
       var name = item.product.name || 'Produit';
@@ -936,7 +936,7 @@ function quickRemove(productId, btnEl) {
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
 
     /* Toast de confirmation + invitation à consulter ses paniers */
-    showToast('Panier famille cr&#233;&#233; - lien envoy&#233; sur WhatsApp', 'success');
+    showToast('Paiement groupé cr&#233;&#233; - lien envoy&#233; sur WhatsApp', 'success');
   }
 
   /**

@@ -9,6 +9,9 @@
   /* ── Couleurs principales ──────────────────────────────────── */
   --ocean:        #64AF5A;
   --ocean-light:  #82C478;
+  --violet:      #6c3fc5;   /* paiement groupé, workspace, événements */
+  --violet-dark:  #4a2d9e;
+  --violet-light: rgba(108,63,197,.08);
   --ocean-dark:   #4A9040;
   --cta-green:    #2a7a3e;
 
