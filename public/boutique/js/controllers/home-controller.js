@@ -44,6 +44,21 @@ function handleCategorySelection(cat, deps) {
     renderGrid();
   }
 
+  // Mode pager actif : scroll vers la page existante, pas de renderGrid
+  const pageScroll = document.getElementById('k-page-scroll');
+  const pagerActive = window.innerWidth < 900
+    && pageScroll
+    && pageScroll.classList.contains('k-pager-active')
+    && document.getElementById('k-grid')?.classList.contains('k-grid-cat-pager');
+
+  if (pagerActive) {
+    state.activeCat    = cat;
+    state.activeSubcat = null;
+    syncRailActiveState(cat, { center: true });
+    scrollPagerToCat(cat);
+    return;
+  }
+
   if (cat === 'all') {
     if (state.activeCat === 'all') {
       window.scrollTo({ top: 0, behavior: 'smooth' });

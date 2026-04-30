@@ -301,6 +301,13 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 .k-grid.k-grid-has-sections { display:block; grid-template-columns:none; gap:0; padding:0; }
+/* En mode pager catégories, display:flex l'emporte sur display:block */
+@media (max-width: 899px) {
+  #k-grid.k-grid-has-sections.k-grid-cat-pager:not(.k-grid-flat-subcat) {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MISC — load-more, view-active, bnav-label, card basket

@@ -277,10 +277,21 @@ function renderGrid() {
       shuffle:           _shuffle,
     });
     _bindGridEvents();
-    // Grille verticale sur mobile ET desktop — pas de rail horizontal
-    // k-pager-active n'est posé que pour flatSubcat (sous-catégories)
-    var _ps = document.getElementById('k-page-scroll');
-    if (_ps) _ps.classList.remove('k-pager-active');
+    if (_isMobile) {
+      var _ps = document.getElementById('k-page-scroll');
+      if (_ps) _ps.classList.add('k-pager-active');
+      dom.grid.classList.add('k-grid-cat-pager');
+      requestAnimationFrame(function() {
+        _setupMobilePager();
+        if (state.activeCat !== 'all') {
+          setTimeout(function() { _scrollPagerToCat(state.activeCat, 'instant'); }, 80);
+        }
+      });
+    } else {
+      var _ps2 = document.getElementById('k-page-scroll');
+      if (_ps2) _ps2.classList.remove('k-pager-active');
+      dom.grid.classList.remove('k-grid-cat-pager');
+    }
     return;
   }
 
