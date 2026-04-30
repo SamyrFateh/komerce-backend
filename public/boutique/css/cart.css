@@ -224,10 +224,10 @@ body.cart-open .k-hero { pointer-events: none; }
 /* ── WHATSAPP FAB ────────────────────────────────────────────── */
 .k-wa-fab {
   position: fixed;
-  right: 16px;
-  bottom: calc(var(--bnav-h) + 10px + env(safe-area-inset-bottom, 0px));
-  width: 54px;
-  height: 54px;
+  right: 10px;
+  bottom: calc(var(--bnav-h) + 6px + env(safe-area-inset-bottom, 0px));
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--whatsapp);
   color: var(--white);
