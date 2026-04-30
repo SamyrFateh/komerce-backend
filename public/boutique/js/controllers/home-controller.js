@@ -60,7 +60,16 @@ function handleCategorySelection(cat, deps) {
 
   if (state.activeCat === 'all') {
     syncRailActiveState(cat, { center: true });
-    scrollToCategorySection(cat);
+    if (window.innerWidth < 900) {
+      // Mobile : filtrer la grille ET scroller en haut
+      state.activeCat = cat;
+      state.activeSubcat = null;
+      renderGrid();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Desktop : scroll vers la section dans la grille "Tout"
+      scrollToCategorySection(cat);
+    }
     return;
   }
 

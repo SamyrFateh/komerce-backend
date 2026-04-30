@@ -78,9 +78,10 @@ export function renderHomeSections({
       if (!products || products.length === 0) continue;
 
       const emoji = getCategorySectionEmoji(category);
-      parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '">');
+      var anchorId = 'k-sec-' + category.replace(/[^a-zA-Z0-9]/g, '-');
+      parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '" id="cat-' + anchorId + '">');
       parts.push(
-        '<div class="k-sec-header" data-cat="' + sanitize(category) + '">' +
+        '<div class="k-sec-header" id="' + anchorId + '" data-cat="' + sanitize(category) + '">' +
         '<span class="k-sec-header-emoji">' + emoji + '</span>' +
         '<span class="k-sec-header-name">' + sanitize(category) + '</span>' +
         '<span class="k-sec-header-count">' + products.length + '</span>' +
@@ -102,20 +103,18 @@ export function renderHomeSections({
     totalByCategory[cat] = (totalByCategory[cat] || 0) + 1;
   }
 
-  // Ordre desktop : catégories avec produits dans l'ordre schema (Soldes inclus)
-  const desktopOrder = order.filter(cat => byCategory[cat] || cat === 'Soldes');
+  // Ordre desktop : catégories avec produits dans l'ordre schema (Soldes exclu sur desktop)
+  const desktopOrder = order.filter(cat => cat !== 'Soldes' && byCategory[cat]);
   // Ajouter les catégories non listées en schema (Autres, etc.)
   for (const cat in byCategory) {
     if (!desktopOrder.includes(cat)) desktopOrder.push(cat);
   }
 
   for (const category of desktopOrder) {
-    const products = category === 'Soldes'
-      ? getPromoProducts().slice(0, 20)
-      : byCategory[category];
+    const products = byCategory[category];
     if (!products || products.length === 0) continue;
     const emoji = getCategorySectionEmoji(category);
-    const total = category === 'Soldes' ? products.length : (totalByCategory[category] || products.length);
+    const total = totalByCategory[category] || products.length;
     const anchorId = 'k-sec-' + category.replace(/[^a-zA-Z0-9]/g, '-');
     parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '">');
     parts.push(
