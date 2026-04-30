@@ -428,7 +428,7 @@ function renderCheckoutCompact() {
   const senderGroup = makeIntlPhoneInput('of-sender-phone', 'Tél. (optionnel)', od, 'sender_phone');
   const trkHint = document.createElement('div');
   trkHint.className = 'ck-track-hint';
-  trkHint.textContent = 'Notif WA à l\'arrivée au relais';
+  trkHint.textContent = '';
   trackExtra.appendChild(senderGroup);
   trackExtra.appendChild(trkHint);
   trackWrap.appendChild(trackExtra);
@@ -540,7 +540,7 @@ export function renderCheckout() {
     renderFulfillmentSelector(body, od, refreshFulfillment);
 
       body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
-    body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
+    body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone *', od, 'beneficiary_phone'));
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
