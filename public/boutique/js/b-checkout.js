@@ -353,7 +353,7 @@ function renderCheckoutCompact() {
   const body = dom.orderBody;
   body.innerHTML = '';
   body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-  dom.orderTitle.textContent = '🛒 Commander';
+  dom.orderTitle.textContent = 'Commander';
 
   const od = state.orderData;
   if (!od.checkout_step) od.checkout_step = 1;
@@ -361,39 +361,35 @@ function renderCheckoutCompact() {
   const backBtn = document.createElement('button');
   backBtn.className = 'ck-back-btn';
   backBtn.type = 'button';
-  backBtn.innerHTML = '← Retour au panier';
+  backBtn.innerHTML = '← Panier';
   backBtn.addEventListener('click', () => {
     closeOrderModal();
     setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
   });
   body.appendChild(backBtn);
 
-  const stepper = document.createElement('div');
-  stepper.className = 'ck-stepper';
-  stepper.innerHTML = '<div class="ck-step-chip" data-step="1">1. Coordonnées</div><div class="ck-step-chip" data-step="2">2. Retrait et paiement</div>';
-  body.appendChild(stepper);
+  // Pas de stepper — tout sur une page
 
   const step1 = document.createElement('div');
   step1.className = 'ck-step-panel';
   step1.dataset.step = '1';
-  step1.innerHTML = '<div class="ck-step-card"><div class="ck-step-title">Qui récupère la commande ?</div><div class="ck-step-sub">On commence simple : nom et téléphone du bénéficiaire.</div></div>';
+  step1.style.display = 'block'; // toujours visible
+  step1.innerHTML = '';
   step1.appendChild(makeInput('of-beneficiary-name', 'Nom *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
-  step1.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Tél. du bénéficiaire *', od, 'beneficiary_phone'));
-  const step1Actions = document.createElement('div');
-  step1Actions.className = 'ck-step-actions';
-  step1Actions.innerHTML = '<button type="button" class="ck-step-btn ck-step-btn--primary" id="ck-next-step">Continuer</button>';
-  step1.appendChild(step1Actions);
+  step1.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone *', od, 'beneficiary_phone'));
+
   body.appendChild(step1);
 
   const step2 = document.createElement('div');
   step2.className = 'ck-step-panel';
   step2.dataset.step = '2';
+  step2.style.display = 'block'; // toujours visible
   step2.innerHTML = '';
   body.appendChild(step2);
 
   const sRelais = document.createElement('div');
   sRelais.className = 'ck-label';
-  sRelais.textContent = '🏪 Relais *';
+  sRelais.textContent = 'Relais *';
   step2.appendChild(sRelais);
   const relayNote = document.createElement('div');
   relayNote.className = 'ck-relay-note';
@@ -407,7 +403,7 @@ function renderCheckoutCompact() {
 
   const s2 = document.createElement('div');
   s2.className = 'ck-label';
-  s2.textContent = '💳 Paiement';
+  s2.textContent = 'Paiement';
   step2.appendChild(s2);
 
   const payGrid = document.createElement('div');
@@ -585,7 +581,7 @@ export function renderCheckout() {
     cashHelper.id = 'ck-pay-cash-helper';
     cashHelper.className = 'ck-pay-helper';
     cashHelper.hidden = true;
-    cashHelper.textContent = 'Vous recevrez un code à présenter au relais.';
+    cashHelper.textContent = 'Un code vous sera envoyé pour le relais.';
     body.appendChild(cashHelper);
 
     // Stripe card wrap : inline dans le scroll, juste sous les chips paiement

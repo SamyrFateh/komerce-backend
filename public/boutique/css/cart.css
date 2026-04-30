@@ -405,11 +405,11 @@ body.cart-open .k-wa-fab {
 .ck-sum-total { font-weight:800; font-size:1rem; color:var(--coral); margin-left:auto; }
 
 .ck-label {
-  font-size:.86rem; font-weight:800; color:var(--text); margin:6px 0 3px;
+  font-size:.8rem; font-weight:700; color:var(--text); margin:4px 0 2px;
 }
-.ck-fulfillment-switch { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:0 0 6px; }
+.ck-fulfillment-switch { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin:0 0 4px; }
 .ck-fulfillment-btn {
-  min-height:38px; padding:0 8px;
+  min-height:32px; padding:0 6px;
   border:1.5px solid rgba(31,48,36,.10); border-radius:13px;
   background:#fff; color:#617064;
   font-size:.79rem; font-weight:700; line-height:1.15;
@@ -422,7 +422,7 @@ body.cart-open .k-wa-fab {
 }
 
 /* Formulaire */
-.k-ck-section  { font-weight:700; font-size:.82rem; margin:5px 0 2px; }
+.k-ck-section  { font-weight:700; font-size:.78rem; margin:3px 0 1px; }
 .k-ck-group    { margin-bottom:4px; }
 .k-ck-label    { display:block; font-size:.8rem; font-weight:700; margin-bottom:3px; color:var(--text); }
 .k-ck-label--sm { font-size:.75rem; color:#666; }
@@ -489,7 +489,7 @@ body.cart-open .k-wa-fab {
 
 /* Chips paiement */
 .ck-pay-grid  { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:5px; }
-.ck-pay-chip  { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:56px; padding:5px 4px; border:1.5px solid rgba(31,48,36,.1); border-radius:13px; cursor:pointer; background:#fff; text-align:center; gap:3px; transition:border-color .15s, background .15s; user-select:none; box-shadow:0 3px 10px rgba(31,48,36,.04); }
+.ck-pay-chip  { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:48px; padding:3px 4px; border:1.5px solid rgba(31,48,36,.1); border-radius:13px; cursor:pointer; background:#fff; text-align:center; gap:3px; transition:border-color .15s, background .15s; user-select:none; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-pay-chip input[type=radio] { display:none; }
 .ck-pay-chip--active { border-color:var(--coral); background:rgba(255,107,53,.07); box-shadow:0 0 0 1px rgba(255,107,53,.16), 0 8px 18px rgba(255,107,53,.10); }
 .ck-pay-chip--off    { opacity:.5; filter:saturate(.75); cursor:not-allowed; }
@@ -520,7 +520,7 @@ body.cart-open .k-wa-fab {
 .ck-relais-ile-grid  { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
 .ck-relais-ile-btn   { min-height:36px; padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:#fff; color:var(--text); font-size:.78rem; font-weight:700; text-align:center; }
 .ck-relais-ile-btn.active { border-color:var(--ocean); background:#f2faef; color:var(--ocean-dark); }
-.ck-relais-item      { position:relative; padding:7px 10px 7px 34px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:#fff; cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
+.ck-relais-item      { position:relative; padding:5px 8px 5px 30px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:#fff; cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-relais-item--compact { padding-top:9px; padding-bottom:9px; }
 .ck-relais-item.selected { border-color:var(--ocean); background:#f4fbf2; box-shadow:0 0 0 1px rgba(100,175,90,.16), 0 6px 14px rgba(49,81,30,.07); }
 .ck-relais-item.selected::before { content:"\2713"; position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; border-radius:50%; background:var(--ocean); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
@@ -555,7 +555,7 @@ body.cart-open .k-wa-fab {
 /* Modal checkout header */
 .k-order-header         { min-height:44px; padding:4px 10px; padding-top:calc(4px + env(safe-area-inset-top)); background:var(--ocean-dark); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; font-weight:700; font-size:.96rem; color:var(--white); }
 .k-order-body           { flex:1; overflow-y:auto; padding:4px 10px 8px; }
-.k-order-body--checkout { padding-bottom:calc(116px + env(safe-area-inset-bottom)); }
+.k-order-body--checkout { padding-bottom:calc(90px + env(safe-area-inset-bottom)); }
 .ck-order-title-text    { font-size:.92rem; font-weight:800; letter-spacing:.01em; }
 .ck-modal-back-btn--header { min-height:32px; padding:0 9px; border-radius:999px; border:1px solid rgba(255,163,122,.28); background:rgba(255,255,255,.10); color:#fff; font-size:.74rem; font-weight:700; white-space:nowrap; }
 
@@ -587,7 +587,7 @@ body.cart-open .k-wa-fab {
 /* Garantir la structure du modal paiement */
 .k-order-overlay.open { display:flex; z-index:1200; }
 .k-order-overlay.open .k-order-modal { display:flex; flex-direction:column; height:100vh; height:100dvh; max-height:100dvh; overflow:hidden; }
-.k-order-overlay.open .k-order-body  { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0; -webkit-overflow-scrolling:touch; padding-bottom:20px; }
+.k-order-overlay.open .k-order-body  { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0; -webkit-overflow-scrolling:touch; padding-bottom:8px; }
 .k-order-overlay.open .ck-confirm-btn { flex:0 0 auto; position:sticky; bottom:0; width:100%; margin:0; z-index:1300; padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
 
 /* Ring pulse bouton panier */
@@ -664,10 +664,10 @@ body.cart-open .k-wa-fab {
 
 /* ── Checkout ultra compact ──────────────────────────────────── */
 .ck-relay-note    { font-size:.72rem; color:var(--text-muted); margin:0 0 5px; line-height:1.3; }
-.ck-step-card     { padding:6px 0 4px; }
+.ck-step-card     { padding:2px 0; }
 .ck-step-title    { font-size:.9rem; font-weight:700; color:var(--text); }
 .ck-step-sub      { font-size:.72rem; color:var(--text-muted); margin-top:1px; line-height:1.3; }
-.ck-step-actions  { margin-top:6px; }
+.ck-step-actions  { margin-top:4px; }
 .ck-step-btn      { width:100%; padding:9px 14px; border-radius:10px; font-size:.85rem; font-weight:700; cursor:pointer; border:none; transition:all .15s; }
 .ck-step-btn--primary { background:var(--ocean-dark); color:#fff; }
 .ck-step-btn--ghost   { background:transparent; border:1.5px solid var(--border); color:var(--text-muted); font-weight:600; }
