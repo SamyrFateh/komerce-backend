@@ -15,7 +15,7 @@
   .sa-app { max-width: 800px; margin: 0 auto; padding: 16px; }
 
   .sa-header {
-    background: linear-gradient(135deg, #16a34a, #15803d);
+    background: linear-gradient(135deg, #6c3fc5, #4a2d9e);
     color: white; padding: 18px; border-radius: 12px;
     margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
   }
@@ -152,8 +152,8 @@
 
 <div class="sa-app">
   <div class="sa-header">
-    <a href="/mon-compte" class="sa-back">← Mon compte</a>
-    <h1>🤝 Mes paniers partagés</h1>
+    <a href="/boutique/" class="sa-back">← Boutique</a>
+    <h1>👥 Mes paniers groupe</h1>
   </div>
 
   <div class="sa-tip">
@@ -215,13 +215,26 @@ const STATUS_LABELS = {
 
 async function loadAndRender() {
   try {
+    // Support guest via ?phone= (créateur mobile sans compte)
+    const urlPhone = new URLSearchParams(window.location.search).get('phone');
+    if (urlPhone) {
+      // Tenter une guest auth silencieuse
+      try {
+        await fetch('/api/auth/guest-session', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tracking_phone: urlPhone }),
+        });
+      } catch(e) { /* silencieux */ }
+    }
     const data = await api('GET', API + '/mine');
     if (!data.carts || !data.carts.length) {
       document.getElementById('sa-content').innerHTML =
         '<div class="sa-empty">' +
         '<h3 style="margin:0 0 8px;color:#1e293b;">Aucun panier partagé</h3>' +
         '<p>Composez d\'abord un panier sur la boutique, puis revenez ici pour le partager.</p>' +
-        '<a href="/" class="sa-btn sa-btn-primary" style="display:inline-block;margin-top:14px;text-decoration:none;">→ Aller à la boutique</a>' +
+        '<a href="/boutique/" class="sa-btn sa-btn-primary" style="display:inline-block;margin-top:14px;text-decoration:none;">→ Retour à la boutique</a>' +
         '</div>';
       return;
     }

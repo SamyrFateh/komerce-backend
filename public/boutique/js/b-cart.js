@@ -935,8 +935,33 @@ function quickRemove(productId, btnEl) {
 
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
 
-    /* Toast de confirmation + invitation à consulter ses paniers */
-    showToast('Paiement groupé cr&#233;&#233; - lien envoy&#233; sur WhatsApp', 'success');
+    /* Toast de confirmation + lien vers la page de suivi */
+    showToast('Paiement groupé créé - lien envoyé sur WhatsApp', 'success');
+
+    /* Stocker le token pour accès rapide depuis la boutique */
+    try {
+      var stored = JSON.parse(localStorage.getItem('k_group_carts') || '[]');
+      stored.unshift({
+        token: response.token,
+        title: eventLabel || 'Paiement groupé',
+        total_kmf: response.total_kmf,
+        share_url: response.share_url,
+        created_at: new Date().toISOString(),
+      });
+      localStorage.setItem('k_group_carts', JSON.stringify(stored.slice(0, 10)));
+    } catch(e) {}
+
+    /* Bouton de suivi affiché 3 secondes après */
+    setTimeout(function() {
+      var followBtn = document.createElement('div');
+      followBtn.style.cssText = 'position:fixed;bottom:calc(var(--bnav-h,56px) + 12px);left:50%;transform:translateX(-50%);z-index:2000;background:var(--violet,#6c3fc5);color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(108,63,197,.4);white-space:nowrap;';
+      followBtn.textContent = '👥 Suivre mon panier groupe →';
+      followBtn.onclick = function() {
+        window.location.href = '/boutique/shared-cart-account.html?phone=' + encodeURIComponent(phone);
+      };
+      document.body.appendChild(followBtn);
+      setTimeout(function() { if (followBtn.parentNode) followBtn.remove(); }, 6000);
+    }, 1500);
   }
 
   /**
