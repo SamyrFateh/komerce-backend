@@ -592,14 +592,7 @@ export function renderCheckout() {
       setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
       setIntlPhoneDefault('of-sender-phone', od.fulfillment_zone, !od.sender_phone);
       _loadRelaisSection(relaisSection, od);
-        const trackSummary = trackWrap.querySelector('summary');
-        if (trackSummary) {
-          trackSummary.textContent = 'Suivi optionnel';
-        }
-        trkHint.textContent = od.fulfillment_zone === 'france'
-          ? 'Infos de retrait en France sur ce numéro'
-          : 'Infos de retrait aux Comores sur ce numéro';
-      }
+    }
     refreshFulfillment();
 
     /* ── 5. Wallet ── */
