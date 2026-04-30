@@ -41,36 +41,40 @@
   inset: 0;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;   /* slogan en haut de l'image */
+  justify-content: center;      /* centré verticalement entre les personnages */
   text-align: center;
   z-index: 5;
-  padding: 12px 24px 0;
+  /* Décalé légèrement vers le bas pour se loger entre les 2 personnages */
+  padding: 0 20px 10%;
   pointer-events: none;
 }
 .k-hero-mini-slogan .k-line-1 {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(17px, 4.8vw, 22px);
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.15;
-  /* Halo blanc épais pour lisibilité sur image chargée */
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 900;
+  /* Texte sombre sur fond clair de l'image */
+  color: #1a2e1c;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  /* Halo blanc pour lisibilité quelle que soit l'image */
   text-shadow:
-    0 0 8px rgba(255,255,255,1),
-    0 0 20px rgba(255,255,255,.95),
-    0 2px 4px rgba(255,255,255,.9);
+    0 0 12px rgba(255,255,255,1),
+    0 0 24px rgba(255,255,255,.9),
+    0 2px 6px rgba(255,255,255,.8);
 }
 .k-hero-mini-slogan .k-line-2 {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(19px, 5.4vw, 26px);
+  font-size: clamp(22px, 6.2vw, 30px);
   font-weight: 900;
   color: var(--coral);
-  line-height: 1.1;
+  line-height: 1.05;
+  letter-spacing: -.01em;
   text-shadow:
-    0 0 8px rgba(255,255,255,1),
-    0 0 20px rgba(255,255,255,.95),
-    0 2px 4px rgba(255,255,255,.9);
+    0 0 12px rgba(255,255,255,1),
+    0 0 24px rgba(255,255,255,.9),
+    0 2px 6px rgba(255,255,255,.8);
 }
 
 /* Overlay sticky : on garde uniquement les pills + proverbe, pas le slogan */
