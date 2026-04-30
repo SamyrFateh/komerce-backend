@@ -102,21 +102,15 @@ function _setupMobilePager() {
   if (grid.classList.contains('k-grid-flat-subcat')) return;
   grid.classList.add('k-grid-cat-pager');
 
-  // Calculer --pager-h et --pager-w
-  // Forcer #k-page-scroll à width:100vw (le script inline ne le fait pas)
-  var ps = document.getElementById('k-page-scroll');
-  if (ps) {
-    ps.style.left  = '0';
-    ps.style.right = '0';
-    ps.style.width = '100vw';
-  }
-  var bnav  = document.querySelector('.k-bnav');
+  // Calculer et activer la cage du pager mobile
+var ps = document.getElementById('k-page-scroll');
+var bnav = document.querySelector('.k-bnav');
 var bnavH = bnav ? bnav.offsetHeight : 56;
 
 var gridRect = grid.getBoundingClientRect();
 var pagerTop = Math.max(0, Math.round(gridRect.top));
-
 var pagerH = window.innerHeight - pagerTop - bnavH;
+
 if (pagerH < 300) pagerH = 300;
 
 document.documentElement.style.setProperty('--pager-top', pagerTop + 'px');
@@ -178,10 +172,13 @@ function destroyMobilePager() {
   }
   var ps = document.getElementById('k-page-scroll');
   if (ps) {
-    ps.classList.remove('k-pager-active');
-    ps.style.top = '';
-    ps.style.bottom = '';
-  }
+  ps.classList.remove('k-pager-active');
+  ps.style.left = '';
+  ps.style.right = '';
+  ps.style.top = '';
+  ps.style.bottom = '';
+  ps.style.width = '';
+}
   window.removeEventListener('resize', _setupMobilePager);
   window.removeEventListener('orientationchange', _setupMobilePager);
   document.documentElement.style.removeProperty('--pager-top');
