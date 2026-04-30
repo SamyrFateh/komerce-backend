@@ -290,7 +290,9 @@
 */
 @media (max-width: 899px) {
   #k-page-scroll.k-pager-active #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) {
-    display: flex;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: none;
+	display: flex;
     flex-wrap: nowrap;
     width: 100vw;
     max-width: 100vw;
@@ -315,7 +317,9 @@
   }
 
   #k-page-scroll.k-pager-active #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section {
-    flex: 0 0 100vw;
+    overscroll-behavior-y: contain;
+	overscroll-behavior-x: none;
+	flex: 0 0 100vw;
     width: 100vw;
     min-width: 100vw;
     max-width: 100vw;
