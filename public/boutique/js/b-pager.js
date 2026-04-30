@@ -99,11 +99,24 @@ function _setupInfiniteLoop() {
 }
 
 function _ghostTeleport(grid) {
-  // Mélanger les cartes de Tout (dopamine)
+  // 1. Masquer le grid pendant la téléportation (évite le scintillement)
+  grid.style.opacity    = '0';
+  grid.style.transition = 'none';
+
+  // 2. Mélanger les cartes de Tout (dopamine)
   _reshuffleToutInDOM();
-  // Téléporter silencieusement vers idx 0 sans animation
+
+  // 3. Téléporter vers idx 0 sans animation
   _scrollToIndex(grid, 0, 'instant');
   _syncChip('all');
+
+  // 4. Réafficher après un frame (le browser a repositionné le scroll)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      grid.style.opacity    = '';
+      grid.style.transition = '';
+    });
+  });
 }
 
 // ── Scroll listener principal ─────────────────────────────────────

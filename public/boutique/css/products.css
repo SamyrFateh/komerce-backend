@@ -106,7 +106,9 @@
 }
 
 .k-card-fav.liked {
-  color: var(--coral);
+  color: #e91e63;
+  background: rgba(233,30,99,.10);
+  box-shadow: 0 0 0 2px rgba(233,30,99,.15);
 }
 
 @media (hover: hover) and (pointer: fine) {
