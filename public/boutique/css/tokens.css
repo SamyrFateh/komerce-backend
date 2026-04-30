@@ -16,6 +16,13 @@
   --sand-warm:    #f6f0e3;
   --sand-dark:    #F0EBE0;
 
+  /* ── Surfaces sémantiques ─────────────────────────────────── */
+  --page-bg:      var(--sand);
+  --hero-bg:      var(--page-bg);
+  --hero-border:  transparent;
+  --hero-shadow:  none;
+
+  --coral:        #C85C2D;
   --coral:        #C85C2D;
   --coral-dark:   #A84820;
   --hero-red:     #e53935;

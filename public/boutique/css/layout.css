@@ -4,6 +4,17 @@
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Fond global boutique ───────────────────────────────────── */
+html,
+body {
+  background: var(--page-bg);
+}
+
+#k-page-scroll,
+#k-catalog-section {
+  background: var(--page-bg);
+}
+
 /* ── HEADER ─────────────────────────────────────────────────── */
 .k-header {
   position: sticky;

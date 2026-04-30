@@ -313,3 +313,27 @@
   .k-hero-mini-slogan .k-line-2 { font-size: clamp(2.6rem, 4.2vw, 4.4rem); margin-bottom: 26px; }
   .k-hero-sub { font-size: 18px; max-width: 420px; }
 }
+/* ── Hero fondu dans le fond de page ─────────────────────────── */
+.k-hero,
+.k-hero-wrap,
+.k-hero-shell,
+.k-hero-card,
+.k-hero-banner {
+  background: var(--hero-bg);
+  border-color: var(--hero-border);
+  box-shadow: var(--hero-shadow);
+}
+
+.k-hero-card,
+.k-hero-banner {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.k-hero img,
+.k-hero-card img,
+.k-hero-banner img {
+  display: block;
+  width: 100%;
+  background: transparent;
+}
