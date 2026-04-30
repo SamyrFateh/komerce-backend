@@ -419,21 +419,8 @@ function renderCheckoutCompact() {
   stripeCardWrap.innerHTML = '<div class="k-stripe-title">🔒 Informations de carte</div><div id="stripe-card-element" class="k-stripe-element"></div><div id="stripe-card-error" class="k-stripe-error"></div><div id="stripe-eur-display" class="k-stripe-eur"></div>';
   step2.appendChild(stripeCardWrap);
 
-  const trackWrap = document.createElement('details');
-  trackWrap.className = 'ck-track-details';
-  trackWrap.innerHTML = '<summary>Suivi optionnel</summary>';
-  const trackExtra = document.createElement('div');
-  trackExtra.id = 'ck-track-extra';
-  trackExtra.className = 'ck-track-details-body';
-  const senderGroup = makeIntlPhoneInput('of-sender-phone', 'Tél. (optionnel)', od, 'sender_phone');
-  const trkHint = document.createElement('div');
-  trkHint.className = 'ck-track-hint';
-  trkHint.textContent = '';
-  trackExtra.appendChild(senderGroup);
-  trackExtra.appendChild(trkHint);
-  trackWrap.appendChild(trackExtra);
-  trackWrap.open = false; // fermé par défaut
-  step2.appendChild(trackWrap);
+  const senderGroup = makeIntlPhoneInput('of-sender-phone', 'Recevoir le suivi (optionnel)', od, 'sender_phone');
+  step2.appendChild(senderGroup);
 
   checkWalletBalance();
   const walletSection = document.createElement('div');
@@ -598,23 +585,8 @@ export function renderCheckout() {
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
     body.appendChild(stripeCardWrap);
 
-    /* ── 4. Suivi SMS accordion ── */
-    const trackWrap = document.createElement('details');
-    trackWrap.className = 'ck-track-details';
-    trackWrap.innerHTML = '<summary>Suivi optionnel</summary>';
-    trackWrap.open = false;
-    const trackExtra = document.createElement('div');
-    trackExtra.id = 'ck-track-extra';
-    trackExtra.className = 'ck-track-details-body';
-    const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
-    senderGroup.classList.add('k-ck-group--tracking-compact');
-    const trkHint = document.createElement('div');
-    trkHint.className = 'ck-track-hint';
-    trkHint.textContent = 'Infos de retrait sur ce numéro';
-    trackExtra.appendChild(senderGroup);
-    trackExtra.appendChild(trkHint);
-    trackWrap.appendChild(trackExtra);
-    body.appendChild(trackWrap);
+    const senderGroup2 = makeIntlPhoneInput('of-sender-phone', 'Recevoir le suivi (optionnel)', od, 'sender_phone');
+    body.appendChild(senderGroup2);
 
     function refreshFulfillment() {
       setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
@@ -799,7 +771,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 
   sel.addEventListener('change', function() {
     const c = currentCountry();
-    help.textContent = 'Exemple ' + c.name + ' : ' + c.ph;
+    help.textContent = '';
     sync();
   });
 
