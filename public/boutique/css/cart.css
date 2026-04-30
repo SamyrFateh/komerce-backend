@@ -285,39 +285,9 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
   /* ── Variable hauteur pager (calculée par JS dans _setupMobilePager) ── */
   :root { --pager-h: calc(100dvh - 180px); }
 
-  /* ── PAGER JS translateX — CSS minimal ─────────────────────── */
-  /* Le layout est géré en JS inline dans b-pager.js (_applyPagerCSS) */
-  /* CSS ici = juste le header sticky dans chaque section             */
-
-  #k-page-scroll.k-pager-active {
-    overflow: hidden;      /* clip les sections qui débordent à droite */
-  }
-
-  #k-page-scroll.k-pager-active #k-catalog-section {
-    overflow: visible;
-    padding: 0;
-  }
-
-  /* Header sticky dans chaque section */
-  #k-page-scroll.k-pager-active .k-grid .k-sec-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: rgba(253,250,245,.96);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 8px 12px 6px;
-    border-bottom: 2px solid var(--coral);
-    user-select: none;
-  }
-
-  /* Grille 2 colonnes dans chaque section */
-  #k-page-scroll.k-pager-active .k-grid .k-sec-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 8px 12px 16px;
-  }
+  /* ── PAGER SLIDE — pas de layout spécial, juste animations ─── */
+  /* Le swipe change de catégorie via animation CSS slide            */
+  /* Pas de position:absolute, pas d'overflow:hidden sur les parents */
 
   /* ── Indicateur bounce bas → catégorie suivante ─────────────── */
   @keyframes k-pager-bounce-hint {
@@ -678,3 +648,44 @@ body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: transla
 /* Indicateur de suivi optionnel — discret */
 .ck-track-details summary { font-size:.78rem; font-weight:600; color:var(--text-muted); padding:6px 0; }
 .ck-track-hint    { font-size:.7rem; color:var(--text-muted); margin-top:2px; }
+
+/* ══════════════════════════════════════════════════════════════
+   FLAT SUBCAT — layout natif scroll-snap (b-subcat.js)
+   Séparé du pager catégories (b-pager.js / slide animation)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 899px) {
+  #k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat {
+    display: flex;
+    width: 100%;
+    height: var(--pager-h);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    /* Annuler tout translateX résiduel du pager catégories */
+    transform: none;
+    transition: none;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    grid-template-columns: none;
+  }
+  #k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    height: var(--pager-h);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+    padding-bottom: calc(var(--bnav-h) + 64px);
+  }
+  /* Pendant le drag flat, désactiver le scroll-snap pour fluidité */
+  #k-grid.k-grid-flat-subcat.is-flat-dragging {
+    scroll-snap-type: none;
+  }
+}

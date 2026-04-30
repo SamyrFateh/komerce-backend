@@ -232,6 +232,8 @@ function renderGrid() {
 
   // ── TEMU FLAT SUBCAT MODE (mobile only) ──
   if (_isMobile && state.flatSubcat) {
+    // Couper le pager principal AVANT de monter le flat subcat
+    destroyMobilePager();
     dom.grid.classList.add('k-grid-has-sections', 'k-grid-flat-subcat');
     dom.grid.innerHTML = _renderFlatSubcat();
     _mountFlatSubcatChrome();

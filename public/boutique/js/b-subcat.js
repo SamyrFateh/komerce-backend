@@ -17,6 +17,7 @@ import {
 }                         from './b-cart-core.js';
 import {
   _setupMobilePager,
+  destroyMobilePager,
 }                         from './b-pager.js';
 import { _renderCard, renderGrid } from './b-catalog.js';
 import { openModal }               from './b-modal.js';
@@ -173,6 +174,8 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    * @param {HTMLElement} section - Élément section catégorie
    */
   function _mountFlatSubcatChrome() {
+    // Couper le pager principal AVANT de monter le flat subcat
+    destroyMobilePager();
     _unmountFlatSubcatChrome();
     var sec = document.getElementById('k-catalog-section');
     var grid = document.getElementById('k-grid');
@@ -283,9 +286,30 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    * Crée et injecte les pages du pager plat (une page par subcat).
    * Appelée à chaque chargement de catégorie en mode mobile.
    */
+  /**
+   * Prépare le layout du #k-grid pour le mode flat subcat.
+   * Nettoie les styles inline du pager principal, ajoute les classes nécessaires.
+   */
+  function _prepareFlatSubcatLayout() {
+    var grid = document.getElementById('k-grid');
+    if (!grid) return;
+    // Nettoyer les styles inline laissés par b-pager.js (translateX, etc.)
+    grid.style.transform  = '';
+    grid.style.transition = '';
+    grid.style.width      = '';
+    grid.style.height     = '';
+    grid.style.position   = '';
+    grid.style.overflow   = '';
+    grid.style.willChange = '';
+    grid.style.display    = '';
+    // Classes CSS pour le layout flat (géré par CSS, pas par inline styles)
+    grid.classList.add('k-grid-has-sections', 'k-grid-flat-subcat');
+  }
+
   function _setupFlatSubcatPager() {
     var grid = document.getElementById('k-grid');
     if (!grid || !state.flatSubcat) return;
+    _prepareFlatSubcatLayout();
 
     var fs = state.flatSubcat;
     var initialPage = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + fs.sub + '"]');
@@ -296,9 +320,12 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
       });
     }
 
-    // Sync tab actif au swipe horizontal
+    // Sync tab actif au swipe horizontal (guard double-binding)
+    if (grid._flatScrollBound) {
+      grid.removeEventListener('scroll', grid._flatScrollHandler);
+    }
     var syncRaf = null;
-    grid.addEventListener('scroll', function() {
+    grid._flatScrollHandler = function() {
       if (syncRaf) cancelAnimationFrame(syncRaf);
       syncRaf = requestAnimationFrame(function() {
         var pages = grid.querySelectorAll('.k-flat-subcat-page');
@@ -313,7 +340,9 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
           _syncFlatActiveTab(bestPage.dataset.flatSub);
         }
       });
-    }, { passive: true });
+    };
+    grid.addEventListener('scroll', grid._flatScrollHandler, { passive: true });
+    grid._flatScrollBound = true;
 
     _setupFlatSubcatDragScroll();
     _setupFlatSubcatTouchSwipe();
@@ -333,9 +362,8 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
     function _isFlatActive() {
     var _g = document.getElementById('k-grid');
     return window.innerWidth < 900 &&
-      window.state &&
-      window.state.flatSubcat &&
-      _g &&
+      !!state.flatSubcat &&
+      !!_g &&
       _g.classList.contains('k-grid-flat-subcat');
   }
 
