@@ -283,6 +283,8 @@ function renderGrid() {
       dom.grid.classList.add('k-grid-cat-pager');
       requestAnimationFrame(function() {
         _setupMobilePager();
+        _setupInfiniteLoop();      // ghost loop : clone Tout à la fin
+        _setupSectionAutoAdvance(); // bounce bas → catégorie suivante
         if (state.activeCat !== 'all') {
           setTimeout(function() { _scrollPagerToCat(state.activeCat, 'instant'); }, 80);
         }
