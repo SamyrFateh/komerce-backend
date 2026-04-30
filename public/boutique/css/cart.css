@@ -224,26 +224,59 @@ body.cart-open .k-hero { pointer-events: none; }
 /* ── WHATSAPP FAB ────────────────────────────────────────────── */
 .k-wa-fab {
   position: fixed;
-  bottom: calc(var(--bnav-h) + 16px + env(safe-area-inset-bottom));
   right: 16px;
-  width: 54px; height: 54px; border-radius: 50%;
-  background: var(--whatsapp); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 100;
-  box-shadow: 0 3px 10px rgba(37,211,102,.35);
-  transition: transform .2s var(--ease), opacity .2s var(--ease);
-  animation: waPulse 2.5s ease-in-out infinite;
+  bottom: calc(var(--bnav-h) + 10px + env(safe-area-inset-bottom, 0px));
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--whatsapp);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 88;
+  box-shadow: 0 4px 14px rgba(37,211,102,.28);
+  transition: transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+  animation: waPulse 3.5s ease-in-out infinite;
   text-decoration: none;
 }
-.k-wa-fab:hover  { transform: scale(1.08); }
-.k-wa-fab:active { transform: scale(.92); }
-.k-wa-fab svg { width: 26px; height: 26px; }
+
+.k-wa-fab:hover {
+  transform: scale(1.06);
+}
+
+.k-wa-fab:active {
+  transform: scale(.94);
+}
+
+.k-wa-fab svg {
+  width: 26px;
+  height: 26px;
+}
+
 body.modal-open .k-wa-fab,
-body.cart-open  .k-wa-fab { opacity: 0; pointer-events: none; transform: translateY(8px); }
-@media (min-width: 1024px) { .k-wa-fab { bottom: 18px; right: 18px; } }
+body.k-modal-open .k-wa-fab,
+body.cart-open .k-wa-fab {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px) scale(.96);
+}
+
+@media (min-width: 1024px) {
+  .k-wa-fab {
+    bottom: 18px;
+    right: 18px;
+    z-index: 100;
+  }
+}
+
 @keyframes waPulse {
-  0%,100% { box-shadow: 0 3px 10px rgba(37,211,102,.35); }
-  50%      { box-shadow: 0 3px 18px rgba(37,211,102,.55); }
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(37,211,102,.24);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(37,211,102,.38);
+  }
 }
 
 /* ── BOTTOM NAV (cart badge) ─────────────────────────────────── */
