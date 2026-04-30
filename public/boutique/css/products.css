@@ -378,10 +378,10 @@
   letter-spacing: -.01em;
   color: var(--text);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.55em;
+  min-height: 0;
   font-variation-settings: 'opsz' 14;
 }
 

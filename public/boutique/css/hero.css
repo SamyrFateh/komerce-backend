@@ -45,15 +45,14 @@
   text-align: center;
   z-index: 5;
   /* Décalé légèrement vers le bas pour se loger entre les 2 personnages */
-  padding: 0 20px 10%;
+  padding: 0 28% 8%;
   pointer-events: none;
 }
 .k-hero-mini-slogan .k-line-1 {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(20px, 5.5vw, 26px);
+  font-size: clamp(16px, 4.2vw, 20px);
   font-weight: 900;
-  /* Texte sombre sur fond clair de l'image */
   color: #1a2e1c;
   line-height: 1.1;
   letter-spacing: -.01em;
@@ -66,7 +65,7 @@
 .k-hero-mini-slogan .k-line-2 {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(22px, 6.2vw, 30px);
+  font-size: clamp(18px, 4.8vw, 24px);
   font-weight: 900;
   color: var(--coral);
   line-height: 1.05;
