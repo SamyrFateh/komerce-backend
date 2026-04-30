@@ -392,10 +392,10 @@
   line-height: 1.28;
   margin-top: 4px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: calc(12px * 1.28 * 2);
+  min-height: 0;
 }
 
 .k-card-bottom {
@@ -559,7 +559,7 @@
 
   .k-card-desc {
     font-size: 11px;
-    min-height: calc(11px * 1.28 * 2);
+    min-height: 0;
   }
 
   .k-card-price {
