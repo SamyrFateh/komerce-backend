@@ -153,7 +153,7 @@ async function _loadRelaisSection(container, od) {
       return;
     }
 
-    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = zone === 'france' ? 'Relais en France :' : 'Zone de retrait :'; container.appendChild(ileLabel);
+    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = ''; container.appendChild(ileLabel);
     const ileGrid = document.createElement('div'); ileGrid.className = 'ck-relais-ile-grid';
     const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
     groups.forEach(ile => {
@@ -187,14 +187,14 @@ function classifyRelayGroup(relais) {
   ].filter(Boolean).join(' ').toLowerCase();
 
   if (haystack.includes('france') || haystack.includes('paris')) return 'France';
-  if (haystack.includes('anjouan')) return 'Anjouan';
-  if (haystack.includes('grande comore') || haystack.includes('ngazidja') || haystack.includes('moroni')) return 'Grande Comore';
-  if (haystack.includes('moh') || haystack.includes('fomboni')) return 'Mohéli';
+  if (haystack.includes('anjouan')) return 'Ndzouani';
+  if (haystack.includes('grande comore') || haystack.includes('ngazidja') || haystack.includes('moroni')) return 'Ngazidja';
+  if (haystack.includes('moh') || haystack.includes('fomboni')) return 'Mwali';
   return relais.island || relais.ile || relais.island_name || 'Comores';
 }
 
 function getRelayGroupOrder(groups) {
-  const order = ['Anjouan', 'Grande Comore', 'Mohéli', 'France', 'Comores'];
+  const order = ['Ndzouani', 'Ngazidja', 'Mwali', 'France', 'Comores'];
   return groups.slice().sort((a, b) => {
     const ai = order.indexOf(a);
     const bi = order.indexOf(b);
@@ -425,13 +425,14 @@ function renderCheckoutCompact() {
   const trackExtra = document.createElement('div');
   trackExtra.id = 'ck-track-extra';
   trackExtra.className = 'ck-track-details-body';
-  const senderGroup = makeIntlPhoneInput('of-sender-phone', '', od, 'sender_phone');
+  const senderGroup = makeIntlPhoneInput('of-sender-phone', 'Tél. (optionnel)', od, 'sender_phone');
   const trkHint = document.createElement('div');
   trkHint.className = 'ck-track-hint';
-  trkHint.textContent = 'Notif WA à l\'arrivée';
+  trkHint.textContent = 'Notif WA à l\'arrivée au relais';
   trackExtra.appendChild(senderGroup);
   trackExtra.appendChild(trkHint);
   trackWrap.appendChild(trackExtra);
+  trackWrap.open = false; // fermé par défaut
   step2.appendChild(trackWrap);
 
   checkWalletBalance();
@@ -779,7 +780,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 
   const help = document.createElement('div');
   help.className = 'k-ck-phone-help';
-  help.textContent = 'Exemple Comores : 321 12 34';
+  help.textContent = '';
 
   function currentCountry() {
     return COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];

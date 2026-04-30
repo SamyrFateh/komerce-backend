@@ -86,7 +86,11 @@ export function switchView(tab) {
 
   if (pageScroll) {
     pageScroll.dataset.tab = tab;
-    if (tab !== 'shop') pageScroll.style.top = '';
+    if (tab !== 'shop') {
+      // Désactiver le pager cage quand on quitte la boutique
+      pageScroll.style.top = '';
+      pageScroll.classList.remove('k-pager-active');
+    }
   }
 
   // Fermer le panier si ouvert
