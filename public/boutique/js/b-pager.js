@@ -16,15 +16,14 @@ import { state, scroll } from './b-store.js';
 
 'use strict';
 
-// ── Helpers index-based ───────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────
 
 function _getPagerPages(grid) {
   return Array.from(grid.querySelectorAll(':scope > .k-cat-section'));
 }
 
 function _getCurrentPagerIndex(grid) {
-  var w = (grid.clientWidth > 50 ? grid.clientWidth : window.innerWidth);
-  if (w === 0) return 0;
+  var w = grid.clientWidth || window.innerWidth;
   return Math.max(0, Math.round(grid.scrollLeft / w));
 }
 
@@ -37,28 +36,36 @@ function _getCatByIndex(grid, index) {
 function _syncActiveChip(cat) {
   state.activeCat    = cat;
   state.activeSubcat = null;
+
   var chips = Array.from(document.querySelectorAll('#k-cats .k-chip'));
   var activeChip = null;
+
   chips.forEach(function(chip) {
     var on = chip.dataset.cat === cat;
     chip.classList.toggle('active', on);
     if (on) activeChip = chip;
   });
+
   if (activeChip) bus.emit('chip:center', activeChip);
 }
 
 function _scrollPagerToIndex(index, behavior) {
   var grid = document.getElementById('k-grid');
-  if (!grid) return;
+  if (!grid || window.innerWidth >= 900) return;
   if (grid.classList.contains('k-grid-flat-subcat')) return;
+
   var pages = _getPagerPages(grid);
   if (!pages.length) return;
+
   var safeIndex = Math.max(0, Math.min(index, pages.length - 1));
-  // Utiliser window.innerWidth — grid.clientWidth peut être 0 si pas encore peint
-  var pageW = grid.clientWidth || window.innerWidth;
-  var left = safeIndex * pageW;
-  grid.scrollTo({ left: left, behavior: behavior || 'smooth' });
-  var cat = pages[safeIndex] ? pages[safeIndex].dataset.cat : null;
+  var left = safeIndex * grid.clientWidth;
+
+  grid.scrollTo({
+    left: left,
+    behavior: behavior || 'smooth'
+  });
+
+  var cat = pages[safeIndex].dataset.cat;
   if (cat) _syncActiveChip(cat);
 }
 
@@ -66,8 +73,12 @@ function _scrollPagerToCat(cat, behavior) {
   var grid = document.getElementById('k-grid');
   if (!grid || window.innerWidth >= 900) return;
   if (grid.classList.contains('k-grid-flat-subcat')) return;
+
   var pages = _getPagerPages(grid);
-  var index = pages.findIndex(function(p) { return p.dataset.cat === cat; });
+  var index = pages.findIndex(function(page) {
+    return page.dataset.cat === cat;
+  });
+
   if (index < 0) return;
   _scrollPagerToIndex(index, behavior || 'smooth');
 }
@@ -75,8 +86,10 @@ function _scrollPagerToCat(cat, behavior) {
 function _syncCatFromScroll() {
   var grid = document.getElementById('k-grid');
   if (!grid || grid.classList.contains('k-grid-flat-subcat')) return;
+
   var index = _getCurrentPagerIndex(grid);
   var cat = _getCatByIndex(grid, index);
+
   if (cat) _syncActiveChip(cat);
 }
 
@@ -87,6 +100,7 @@ function _setupMobilePager() {
   var grid = document.getElementById('k-grid');
   if (!grid) return;
   if (grid.classList.contains('k-grid-flat-subcat')) return;
+  grid.classList.add('k-grid-cat-pager');
 
   // Calculer --pager-h et --pager-w
   // Forcer #k-page-scroll à width:100vw (le script inline ne le fait pas)

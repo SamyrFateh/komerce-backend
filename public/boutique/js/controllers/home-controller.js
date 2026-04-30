@@ -48,15 +48,13 @@ function handleCategorySelection(cat, deps) {
   const pagerActive = window.innerWidth < 900 && pageScroll && pageScroll.classList.contains('k-pager-active');
 
   if (pagerActive) {
-    syncRailActiveState(cat, { center: true });
-    if (cat === 'all') {
-      const grid = document.getElementById('k-grid');
-      if (grid) grid.scrollTo({ left: 0, behavior: 'smooth' });
-    } else {
-      scrollPagerToCat(cat);
-    }
-    return;
-  }
+  // En mode pager natif : ne pas renderGrid. On scrolle vers la page déjà rendue.
+  state.activeCat = cat;
+  state.activeSubcat = null;
+  syncRailActiveState(cat, { center: true });
+  scrollPagerToCat(cat);
+  return;
+}
 
   if (cat === 'all') {
     if (state.activeCat === 'all') {
