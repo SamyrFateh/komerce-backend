@@ -23,7 +23,7 @@ function _getPagerPages(grid) {
 }
 
 function _getCurrentPagerIndex(grid) {
-  var w = grid.clientWidth || window.innerWidth;
+  var w = window.innerWidth;
   return Math.max(0, Math.round(grid.scrollLeft / w));
 }
 
@@ -58,7 +58,7 @@ function _scrollPagerToIndex(index, behavior) {
   if (!pages.length) return;
 
   var safeIndex = Math.max(0, Math.min(index, pages.length - 1));
-  var left = safeIndex * grid.clientWidth;
+  var left = safeIndex * window.innerWidth;
 
   grid.scrollTo({
     left: left,
