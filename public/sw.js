@@ -1,5 +1,5 @@
-/* Komerce SW v301 — purge agressive + reload forcé aux clients */
-const CACHE = 'komerce-v301';
+/* Komerce SW v302 — purge agressive + reload forcé aux clients */
+const CACHE = 'komerce-v302';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -11,14 +11,14 @@ self.addEventListener('activate', (e) => {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => {
         if (k !== CACHE) {
-          console.log('[SW v301] Purge ancien cache :', k);
+          console.log('[SW v302] Purge ancien cache :', k);
           return caches.delete(k);
         }
       }));
       await self.clients.claim();
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach(client => {
-        client.postMessage({ type: 'sw-updated', version: 'v301' });
+        client.postMessage({ type: 'sw-updated', version: 'v302' });
       });
     })()
   );

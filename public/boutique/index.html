@@ -3,23 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <script>
-/* Nuclear SW reset v100 — runs ONCE to clear all old caches */
+/* Nuclear SW reset v302 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v300'))return;
-  localStorage.setItem('sw_reset_v300','1');
+  if(localStorage.getItem('sw_reset_v302'))return;
+  localStorage.setItem('sw_reset_v302','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
-    if(!regs.length){location.reload(true);return;}
     Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
       return caches.keys();
     }).then(function(keys){
       return Promise.all(keys.map(function(k){return caches.delete(k);}));
     }).then(function(){
-      console.log('[RESET] All SWs unregistered, all caches cleared. Reloading...');
-      location.reload(true);
+      console.log('[RESET v302] All SWs unregistered, all caches cleared. Reloading...');
+      location.reload();
     });
   });
 })();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){r.update();});
+  });
+
+  navigator.serviceWorker.addEventListener('message', function(e){
+    if(e.data && e.data.type === 'sw-updated'){
+      console.log('[SW] Nouvelle version', e.data.version, '→ reload auto');
+      location.reload();
+    }
+  });
+
+  if(window.caches){
+    caches.keys().then(function(names){
+      names.forEach(function(n){
+        if(n.indexOf('komerce-v302') === -1) caches.delete(n);
+      });
+    });
+  }
+}
 </script>
 <script>
 // Force SW update + cache purge (one-time)
@@ -224,22 +245,18 @@ if('serviceWorker' in navigator){
 <div id="k-bar-spacer"></div>
 
 <div id="k-page-scroll">
-<!-- ═══ PROVERBE SÉPARATEUR ═══ -->
-  </div>
-</section>
+  <!-- ═══ PROVERBE SÉPARATEUR ═══ -->
+  <div class="k-proverb-sep"></div>
 
-<!-- ═══ PROVERBE SÉPARATEUR ═══ -->
-<div class="k-proverb-sep"></div>
-
-<!-- ═══ CATALOGUE PRODUITS ═══ -->
-<section class="k-section" id="k-catalog-section">
-  <div class="k-grid" id="k-grid">
-    <!-- JS fills -->
-  </div>
-  <div class="k-loading" id="k-loading">
-    <div class="k-spinner"></div>
-  </div>
-</section>
+  <!-- ═══ CATALOGUE PRODUITS ═══ -->
+  <section class="k-section" id="k-catalog-section">
+    <div class="k-grid" id="k-grid">
+      <!-- JS fills -->
+    </div>
+    <div class="k-loading" id="k-loading">
+      <div class="k-spinner"></div>
+    </div>
+  </section>
 </div><!-- /k-page-scroll -->
 
 <!-- ═══ PRODUCT MODAL ═══ -->
