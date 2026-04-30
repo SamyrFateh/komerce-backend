@@ -1,220 +1,185 @@
 /**
- * b-pager.js — Navigation catégories mobile (Temu-style)
+ * b-pager.js — Pager horizontal catégories principales mobile
  *
- * Implémentation fidèle à l'ancienne boutique :
- * - Swipe horizontal sur la grille → change de catégorie
- * - Animation slide-out/slide-in sur la grille (translateX CSS classes)
- * - Chip s'allume immédiatement au swipe
- * - Scroll vertical dans chaque catégorie : natif (pas de pager)
- * - Auto-advance bas de page → catégorie suivante
+ * Moteur : scroll natif CSS scroll-snap sur #k-grid.k-grid-cat-pager
+ * Sync   : listener scroll passif → _syncCatFromScroll (index-based)
+ * Nav    : _scrollPagerToCat depuis chip click ou home-controller
  *
- * Pas de scroll-snap, pas de position:fixed, pas de translateX custom.
- * Juste des classes CSS d'animation + renderGrid() comme avant.
+ * Règles :
+ * - Jamais actif en même temps que b-subcat.js (k-grid-flat-subcat)
+ * - Jamais actif quand state.modalOpen
+ * - destroyMobilePager() nettoyage complet avant flatSubcat
  */
 
-import { bus }    from './b-bus.js';
-import { scroll } from './b-store.js';
+import { bus }           from './b-bus.js';
+import { state, scroll } from './b-store.js';
 
 'use strict';
 
-// ── Swipe horizontal → change catégorie ──────────────────────────
-function _setupMobilePager() {
-  if (window.innerWidth >= 900) return;
-  _setupCatalogSwipeNav();
+// ── Helpers index-based ───────────────────────────────────────────
+
+function _getPagerPages(grid) {
+  return Array.from(grid.querySelectorAll(':scope > .k-cat-section'));
 }
 
-function _setupCatalogSwipeNav() {
+function _getCurrentPagerIndex(grid) {
+  var w = (grid.clientWidth > 50 ? grid.clientWidth : window.innerWidth);
+  if (w === 0) return 0;
+  return Math.max(0, Math.round(grid.scrollLeft / w));
+}
+
+function _getCatByIndex(grid, index) {
+  var pages = _getPagerPages(grid);
+  var page = pages[index];
+  return page ? page.dataset.cat : null;
+}
+
+function _syncActiveChip(cat) {
+  state.activeCat    = cat;
+  state.activeSubcat = null;
+  var chips = Array.from(document.querySelectorAll('#k-cats .k-chip'));
+  var activeChip = null;
+  chips.forEach(function(chip) {
+    var on = chip.dataset.cat === cat;
+    chip.classList.toggle('active', on);
+    if (on) activeChip = chip;
+  });
+  if (activeChip) bus.emit('chip:center', activeChip);
+}
+
+function _scrollPagerToIndex(index, behavior) {
+  var grid = document.getElementById('k-grid');
+  if (!grid) return;
+  if (grid.classList.contains('k-grid-flat-subcat')) return;
+  var pages = _getPagerPages(grid);
+  if (!pages.length) return;
+  var safeIndex = Math.max(0, Math.min(index, pages.length - 1));
+  // Utiliser window.innerWidth — grid.clientWidth peut être 0 si pas encore peint
+  var pageW = grid.clientWidth || window.innerWidth;
+  var left = safeIndex * pageW;
+  grid.scrollTo({ left: left, behavior: behavior || 'smooth' });
+  var cat = pages[safeIndex] ? pages[safeIndex].dataset.cat : null;
+  if (cat) _syncActiveChip(cat);
+}
+
+function _scrollPagerToCat(cat, behavior) {
+  var grid = document.getElementById('k-grid');
+  if (!grid || window.innerWidth >= 900) return;
+  if (grid.classList.contains('k-grid-flat-subcat')) return;
+  var pages = _getPagerPages(grid);
+  var index = pages.findIndex(function(p) { return p.dataset.cat === cat; });
+  if (index < 0) return;
+  _scrollPagerToIndex(index, behavior || 'smooth');
+}
+
+function _syncCatFromScroll() {
+  var grid = document.getElementById('k-grid');
+  if (!grid || grid.classList.contains('k-grid-flat-subcat')) return;
+  var index = _getCurrentPagerIndex(grid);
+  var cat = _getCatByIndex(grid, index);
+  if (cat) _syncActiveChip(cat);
+}
+
+// ── Setup principal ───────────────────────────────────────────────
+
+function _setupMobilePager() {
   if (window.innerWidth >= 900) return;
+  var grid = document.getElementById('k-grid');
+  if (!grid) return;
+  if (grid.classList.contains('k-grid-flat-subcat')) return;
 
-  var startX = 0, startY = 0, startT = 0;
-  var tracking = false;
-  var SWIPE_MIN_DIST     = 45;
-  var SWIPE_MAX_VERTICAL = 80;
-  var SWIPE_MAX_DURATION = 900;
+  // Calculer --pager-h et --pager-w
+  // Forcer #k-page-scroll à width:100vw (le script inline ne le fait pas)
+  var ps = document.getElementById('k-page-scroll');
+  if (ps) {
+    ps.style.left  = '0';
+    ps.style.right = '0';
+    ps.style.width = '100vw';
+  }
+  var bnav  = document.querySelector('.k-bnav');
+  var bnavH = bnav ? bnav.offsetHeight : 56;
+  // Mesurer APRÈS avoir forcé la largeur
+  void (ps && ps.offsetWidth); // reflow
+  var gridRect = grid.getBoundingClientRect();
+  var pagerH = window.innerHeight - gridRect.top - bnavH;
+  if (pagerH < 300) pagerH = 300;
+  // Toujours window.innerWidth — jamais clientWidth qui peut être 0
+  var pagerW = window.innerWidth;
+  document.documentElement.style.setProperty('--pager-h', pagerH + 'px');
+  document.documentElement.style.setProperty('--pager-w', pagerW + 'px');
 
-  // Nettoyer les anciens listeners
-  document.removeEventListener('touchstart', document._pagerTouchStart, true);
-  document.removeEventListener('touchend',   document._pagerTouchEnd,   true);
-
-  document._pagerTouchStart = function(e) {
-    if (e.touches.length !== 1) { tracking = false; return; }
-    var t = e.target;
-    // Ignorer les zones qui ont leur propre scroll/interaction
-    if (t.closest &&  t.closest(
-      '.k-cats, .k-subcats-rail, .k-header, .k-modal-overlay, .k-modal,' +
-      '.k-cart-drawer, .k-cart-overlay, .k-bnav, .k-wa-fab,' +
-      '.k-card-fav, .k-card-add, .k-card-tab,' +
-      '.k-promo-rail, .k-promo-card,' +
-      '.k-sug-rail, .k-modal-carousel,' +
-      'input, textarea, select, button'
-    )) { tracking = false; return; }
-    // Seulement sur la zone catalogue
-    if (t.closest && !t.closest('#k-page-scroll, #k-catalog-section, .k-grid, .k-card, .k-section, .k-cat-section')) {
-      tracking = false; return;
-    }
-    startX    = e.touches[0].clientX;
-    startY    = e.touches[0].clientY;
-    startT    = Date.now();
-    tracking  = true;
+  // Listener scroll passif — sync chips au scroll natif
+  if (grid._catPagerScrollHandler) {
+    grid.removeEventListener('scroll', grid._catPagerScrollHandler);
+  }
+  var raf = null;
+  grid._catPagerScrollHandler = function() {
+    if (state.modalOpen) return;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(_syncCatFromScroll);
   };
+  grid.addEventListener('scroll', grid._catPagerScrollHandler, { passive: true });
 
-  document._pagerTouchEnd = function(e) {
-    if (!tracking) return;
-    tracking = false;
-    var touch = e.changedTouches[0];
-    if (!touch) return;
-    var dx = touch.clientX - startX;
-    var dy = touch.clientY - startY;
-    var dt = Date.now() - startT;
-
-    if (dt > SWIPE_MAX_DURATION)               return;
-    if (Math.abs(dy) > SWIPE_MAX_VERTICAL)     return;
-    if (Math.abs(dx) < SWIPE_MIN_DIST)         return;
-    if (Math.abs(dx) < Math.abs(dy) * 1.2)    return;
-
-    // Trouver la chip active et la chip suivante/précédente
-    var chips = Array.from(document.querySelectorAll('#k-cats .k-chip'));
-    if (chips.length < 2) return;
-    var currentIdx = chips.findIndex(function(c) { return c.classList.contains('active'); });
-    if (currentIdx === -1) currentIdx = 0;
-    var nextIdx = dx < 0 ? currentIdx + 1 : currentIdx - 1;
-    if (nextIdx < 0 || nextIdx >= chips.length) return;
-
-    // Émettre le swipe vers le chip — b-catalog.js gérera l'animation + renderGrid
-    var swipeDir = dx < 0 ? -1 : 1;
-    bus.emit('pager:swipe', { chip: chips[nextIdx], dir: swipeDir });
-  };
-
-  document.addEventListener('touchstart', document._pagerTouchStart, { passive: true, capture: true });
-  document.addEventListener('touchend',   document._pagerTouchEnd,   { passive: true, capture: true });
+  // Resize
+  window.removeEventListener('resize', _setupMobilePager);
+  window.addEventListener('resize', _setupMobilePager);
 }
 
 // ── Auto-advance bas → catégorie suivante ─────────────────────────
+
 function _setupSectionAutoAdvance() {
-  // En mode slide simple, l'auto-advance se fait via scroll de window/page-scroll
-  var pageScroll = document.getElementById('k-page-scroll') || window;
-  var _lastST = 0, _wasDown = false, _timer = null;
-
-  function _scrollTop() {
-    var ps = document.getElementById('k-page-scroll');
-    return ps ? ps.scrollTop : window.scrollY;
-  }
-  function _scrollHeight() {
-    var ps = document.getElementById('k-page-scroll');
-    return ps ? ps.scrollHeight : document.body.scrollHeight;
-  }
-  function _clientHeight() {
-    var ps = document.getElementById('k-page-scroll');
-    return ps ? ps.clientHeight : window.innerHeight;
-  }
-  function _atBottom() {
-    return _scrollTop() + _clientHeight() >= _scrollHeight() - 48;
-  }
-
-  function onScroll() {
-    var st = _scrollTop();
-    if (st > _lastST + 2)      _wasDown = true;
-    else if (st < _lastST - 8) _wasDown = false;
-    _lastST = st;
-    if (_wasDown && _atBottom()) {
-      clearTimeout(_timer);
-      _timer = setTimeout(function() {
-        if (!_wasDown || !_atBottom()) return;
-        var chips = Array.from(document.querySelectorAll('#k-cats .k-chip'));
-        var idx   = chips.findIndex(function(c) { return c.classList.contains('active'); });
-        if (idx === -1) return;
-        var nextIdx = idx + 1 >= chips.length ? 0 : idx + 1;
-        bus.emit('pager:swipe', { chip: chips[nextIdx], dir: -1 });
-      }, 350);
-    }
-  }
-
-  var ps = document.getElementById('k-page-scroll');
-  if (ps) {
-    ps.removeEventListener('scroll', ps._pagerScroll);
-    ps._pagerScroll = onScroll;
-    ps.addEventListener('scroll', onScroll, { passive: true });
-  } else {
-    window.removeEventListener('scroll', window._pagerScroll);
-    window._pagerScroll = onScroll;
-    window.addEventListener('scroll', onScroll, { passive: true });
-  }
+  // Désactivé temporairement — réactiver quand le pager est stable
 }
 
-// ── Stubs compatibilité (appelés par b-catalog.js) ───────────────
-function _setupInfiniteLoop()   { /* géré par ghost dans b-catalog */ }
-function _setupHorizontalWrap() { /* géré par swipeNav */ }
-function _syncChipToScroll()    { /* non utilisé */ }
-function _onPagerScroll()       { /* non utilisé */ }
-function _setupPagerDots()      { /* optionnel */ }
+// ── Destroy ───────────────────────────────────────────────────────
+
+function destroyMobilePager() {
+  var grid = document.getElementById('k-grid');
+  if (grid) {
+    if (grid._catPagerScrollHandler) {
+      grid.removeEventListener('scroll', grid._catPagerScrollHandler);
+      grid._catPagerScrollHandler = null;
+    }
+    grid.classList.remove('k-grid-cat-pager');
+    grid.style.transform  = '';
+    grid.style.transition = '';
+    grid.style.width      = '';
+    grid.style.height     = '';
+    grid.style.position   = '';
+    grid.style.overflow   = '';
+    grid.style.willChange = '';
+    grid.style.display    = '';
+    grid.querySelectorAll('.k-pager-dots').forEach(function(d) { d.remove(); });
+  }
+  var ps = document.getElementById('k-page-scroll');
+  if (ps) ps.classList.remove('k-pager-active');
+  window.removeEventListener('resize', _setupMobilePager);
+}
+
+// ── Stubs compatibilité ───────────────────────────────────────────
+function _setupInfiniteLoop()   { }
+function _setupHorizontalWrap() { }
+function _syncChipToScroll()    { _syncCatFromScroll(); }
+function _onPagerScroll()       { }
+function _setupPagerDots()      { }
 function _reshuffleToutInDOM()  {
-  var toutSec = document.querySelector('.k-grid');
-  if (!toutSec) return;
-  var cards = Array.from(toutSec.children);
+  var grid = document.getElementById('k-grid');
+  if (!grid) return;
+  var sec = grid.querySelector('.k-cat-section[data-cat="all"]');
+  if (!sec) return;
+  var secGrid = sec.querySelector('.k-sec-grid');
+  if (!secGrid) return;
+  var cards = Array.from(secGrid.children);
   for (var i = cards.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
     var t = cards[i]; cards[i] = cards[j]; cards[j] = t;
   }
   var frag = document.createDocumentFragment();
   cards.forEach(function(c) { frag.appendChild(c); });
-  toutSec.appendChild(frag);
-}
-
-function _scrollPagerToCat(cat) {
-  var chips = Array.from(document.querySelectorAll('#k-cats .k-chip'));
-  var chip  = chips.find(function(c) { return c.dataset.cat === cat; });
-  if (chip && !chip.classList.contains('active')) chip.click();
+  secGrid.appendChild(frag);
 }
 function _scrollPagerToGhost() {
-  var allChip = document.querySelector('.k-chip[data-cat="all"]');
-  if (allChip) allChip.click();
-}
-
-/**
- * Cleanup complet du pager principal catégories.
- * À appeler AVANT d'activer le mode flat subcat.
- */
-function destroyMobilePager() {
-  // Retirer les listeners touchstart/touchend du document
-  if (document._pagerTouchStart) {
-    document.removeEventListener('touchstart', document._pagerTouchStart, true);
-    document._pagerTouchStart = null;
-  }
-  if (document._pagerTouchEnd) {
-    document.removeEventListener('touchend', document._pagerTouchEnd, true);
-    document._pagerTouchEnd = null;
-  }
-  // Retirer le listener scroll de l'auto-advance
-  var ps = document.getElementById('k-page-scroll');
-  if (ps && ps._pagerScroll) {
-    ps.removeEventListener('scroll', ps._pagerScroll);
-    ps._pagerScroll = null;
-  }
-  if (window._pagerScroll) {
-    window.removeEventListener('scroll', window._pagerScroll);
-    window._pagerScroll = null;
-  }
-  // Retirer les styles inline du pager sur #k-grid (translateX résiduel, etc.)
-  var grid = document.getElementById('k-grid');
-  if (grid) {
-    grid.style.transform   = '';
-    grid.style.transition  = '';
-    grid.style.width       = '';
-    grid.style.height      = '';
-    grid.style.position    = '';
-    grid.style.overflow    = '';
-    grid.style.willChange  = '';
-    grid.style.display     = '';
-    // Supprimer les dots
-    grid.querySelectorAll('.k-pager-dots').forEach(function(d) { d.remove(); });
-  }
-  // Retirer k-pager-active si présent
-  var pageScroll = document.getElementById('k-page-scroll');
-  if (pageScroll) {
-    pageScroll.classList.remove('k-pager-active');
-    pageScroll.style.overflow = '';
-    pageScroll.style.height   = '';
-  }
+  _scrollPagerToCat('all', 'smooth');
 }
 
 export {
