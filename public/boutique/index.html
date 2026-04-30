@@ -400,7 +400,9 @@ if('serviceWorker' in navigator){
       var h = wrap.offsetHeight;
       spacer.style.display = 'none'; // spacer not needed with fixed scroll
       var scroll = document.getElementById('k-page-scroll');
-      if (scroll) scroll.style.top = (h + 44) + 'px'; // 44px = header height
+      if (scroll && !scroll.classList.contains('k-pager-active')) {
+        scroll.style.top = (h + 44) + 'px'; // 44px = header height
+      }
     }
     update();
     // Re-mesure après chargement de l'image hero

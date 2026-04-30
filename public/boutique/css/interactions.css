@@ -301,6 +301,15 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 .k-grid.k-grid-has-sections { display:block; grid-template-columns:none; gap:0; padding:0; }
+@media (max-width: 899px) {
+  #k-page-scroll.k-pager-active #k-grid.k-grid-has-sections.k-grid-cat-pager:not(.k-grid-flat-subcat) {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
+    grid-template-columns: none;
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MISC — load-more, view-active, bnav-label, card basket
@@ -317,7 +326,7 @@ body.cart-open  #k-section-index { display:none; }
 
 /* Carousel mobile overlay fix */
 #k-sug-rail { display:block; }
-.k-modal-img-wrap { flex:0 0 auto; height:45vh; max-height:450px; position:sticky; top:0; z-index:2; background:var(--sand); }
+.k-modal-img-wrap { flex:0 0 auto; height:45vh; max-height:450px; position:relative; top:auto; z-index:1; background:var(--sand); }
 
 /* Cart overlay mobile full-width */
 @media (max-width:768px) {
@@ -348,8 +357,24 @@ body.cart-open  #k-section-index { display:none; }
 .k-sug-wrap          { display:block; }
 .k-sug-rail          { display:flex; gap:10px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:4px 2px; }
 .k-sug-rail::-webkit-scrollbar { display:none; }
-.k-sug-add           { width:100%; padding:10px; background:var(--ocean); color:#fff; border:none; border-radius:50px; font-size:13px; font-weight:700; cursor:pointer; transition:opacity .15s; }
-.k-sug-add:active    { opacity:.85; }
+.k-sug-add {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--white);
+  border: 1.5px solid var(--sand-dark);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--elev-1);
+  cursor: pointer;
+  transition: transform .15s var(--ease), box-shadow .2s var(--ease), border-color .2s;
+  flex-shrink: 0;
+}
+.k-sug-add:active { transform: scale(.92); }
+.k-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
+.k-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; }
 .k-sug-arrow         { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }

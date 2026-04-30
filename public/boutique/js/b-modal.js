@@ -179,14 +179,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
 
-    // ── Déplacer les actions DANS le scroll pour un flux unifié ──
-    const modalScroll = document.querySelector('.k-modal-scroll');
-    const modalActions = document.querySelector('.k-modal-actions');
-    if (modalScroll && modalActions && modalActions.parentElement !== modalScroll) {
-      modalScroll.appendChild(modalActions);
-    }
-
-    // ── FAB flottant : apparaît quand les vrais boutons sortent du viewport ──
+    // Les actions restent hors du scroll : bouton Acheter toujours visible.
+    // La topbar enrichie rappelle le produit ouvert pendant le scroll.
     setupModalFAB();
   }
 

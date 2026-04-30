@@ -127,6 +127,8 @@ if (ps) {
   ps.classList.add('k-pager-active');
   ps.style.left = '0';
   ps.style.right = '0';
+  ps.style.top = pagerTop + 'px';
+  ps.style.bottom = 'calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px))';
   ps.style.width = '100vw';
 }
 
@@ -175,8 +177,13 @@ function destroyMobilePager() {
     grid.querySelectorAll('.k-pager-dots').forEach(function(d) { d.remove(); });
   }
   var ps = document.getElementById('k-page-scroll');
-  if (ps) ps.classList.remove('k-pager-active');
+  if (ps) {
+    ps.classList.remove('k-pager-active');
+    ps.style.top = '';
+    ps.style.bottom = '';
+  }
   window.removeEventListener('resize', _setupMobilePager);
+  window.removeEventListener('orientationchange', _setupMobilePager);
   document.documentElement.style.removeProperty('--pager-top');
   document.documentElement.style.removeProperty('--pager-h');
   document.documentElement.style.removeProperty('--pager-w');
