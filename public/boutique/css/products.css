@@ -125,18 +125,15 @@
   right: 7px;
   width: 32px;
   height: 32px;
-  background: rgba(253,250,245,.94) url('/images/panier_tresse_vert.png') center/70% no-repeat;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--elev-1);
-  transition: transform .15s var(--ease), box-shadow .2s var(--ease), width .25s var(--ease), border-radius .25s var(--ease);
+  background: url('/images/panier_tresse_vert.png') center/100% no-repeat;
+  border-radius: 0;
+  box-shadow: none;
   border: none;
   padding: 0;
   z-index: 5;
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
+  transition: transform .15s var(--ease);
 }
 
 .k-card-add:active {
