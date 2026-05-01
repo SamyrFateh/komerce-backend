@@ -2,8 +2,46 @@
 
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 
-const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN || 'komerce_meta_verify_token';
+const VERIFY_TOKEN   = process.env.META_WA_VERIFY_TOKEN || 'komerce_meta_verify_token';
+const WA_APP_SECRET  = process.env.META_WA_APP_SECRET || '';
+
+/**
+ * Vérifie la signature HMAC-SHA256 envoyée par Meta dans X-Hub-Signature-256.
+ * Si META_WA_APP_SECRET n'est pas défini (environnement dev), on laisse passer.
+ * En production, la variable DOIT être définie — le webhook rejette sinon.
+ */
+function verifyMetaSignature(req, res, next) {
+  if (!WA_APP_SECRET) {
+    // Dev : pas de secret configuré → on loggue et on laisse passer
+    console.warn('[META-WA] META_WA_APP_SECRET absent — vérification HMAC désactivée (DEV uniquement)');
+    return next();
+  }
+
+  const sig = req.headers['x-hub-signature-256'];
+  if (!sig || !sig.startsWith('sha256=')) {
+    return res.status(403).json({ error: 'Signature Meta manquante' });
+  }
+
+  const rawBody = req.rawBody || JSON.stringify(req.body);
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', WA_APP_SECRET)
+    .update(rawBody, 'utf8')
+    .digest('hex');
+
+  const valid = crypto.timingSafeEqual(
+    Buffer.from(sig, 'utf8'),
+    Buffer.from(expected, 'utf8')
+  );
+
+  if (!valid) {
+    console.warn('[META-WA] Signature HMAC invalide — requête rejetée');
+    return res.status(403).json({ error: 'Signature Meta invalide' });
+  }
+
+  return next();
+}
 
 router.get('/webhook/meta-whatsapp', (req, res) => {
   const mode = req.query['hub.mode'];
@@ -16,7 +54,7 @@ router.get('/webhook/meta-whatsapp', (req, res) => {
   return res.sendStatus(403);
 });
 
-router.post('/webhook/meta-whatsapp', async (req, res) => {
+router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
   try {
     const body = req.body || {};
 
