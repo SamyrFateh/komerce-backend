@@ -13,7 +13,6 @@
     "analyze:boutique-css": "node scripts/analyze-boutique-css.mjs"
   },
   "dependencies": {
-    "africastalking": "^0.7.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -23,7 +22,6 @@
     "helmet": "^8.0.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "lodash": "^4.17.21",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.5",
     "pdfkit": "^0.14.0",
