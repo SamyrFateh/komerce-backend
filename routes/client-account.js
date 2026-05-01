@@ -10,6 +10,17 @@ const BASE_URL = process.env.BASE_URL || 'https://komerce.km';
 const CLIENT_COOKIE = 'komerce_client';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+function maskPhone(phone) {
+  if (!phone) return null;
+  const raw = String(phone);
+  if (raw.length <= 4) return '****';
+  return raw.slice(0, 4) + '******' + raw.slice(-2);
+}
+
+function canEchoMagicLink() {
+  return process.env.NODE_ENV !== 'production' && process.env.MAGIC_LINK_DEV_ECHO === 'true';
+}
+
 // ─── Auth middleware for client routes ───────────────────────────────
 
 function requireClientAuth(req, res, next) {
@@ -51,7 +62,7 @@ router.post('/magic-link', async (req, res) => {
 
     if (userResult.rows.length === 0) {
       // Don't reveal if user exists or not — always return success
-      console.log(`Magic link requested for unknown phone: ${normalizedPhone}`);
+      console.log('[magic-link] Requested for unknown phone', { phone: maskPhone(normalizedPhone) });
       return res.json({ success: true, message: 'Lien envoyé' });
     }
 
@@ -73,9 +84,11 @@ router.post('/magic-link', async (req, res) => {
     // Build magic link URL
     const magicUrl = `${BASE_URL}/api/auth/magic-link/validate?token=${magicToken}`;
 
-    // Log for now (WhatsApp integration later)
-    console.log(`\n🔗 Magic link for ${user.full_name} (${user.phone}):`);
-    console.log(`   ${magicUrl}\n`);
+    // Never echo a usable magic link in production logs.
+    console.log('[magic-link] Generated', { userId: user.id, phone: maskPhone(user.phone) });
+    if (canEchoMagicLink()) {
+      console.log('[magic-link][dev] URL:', magicUrl);
+    }
 
     res.json({ success: true, message: 'Lien envoyé' });
   } catch (err) {
