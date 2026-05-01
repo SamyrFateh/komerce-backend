@@ -226,14 +226,18 @@ if('serviceWorker' in navigator){
   <div class="k-proverb-sep"></div>
 
   <!-- ═══ CATALOGUE PRODUITS ═══ -->
-  <section class="k-section" id="k-catalog-section">
-    <div class="k-grid" id="k-grid">
-      <!-- JS fills -->
-    </div>
-    <div class="k-loading" id="k-loading">
-      <div class="k-spinner"></div>
-    </div>
-  </section>
+  <div id="k-desktop-catalog-wrap">
+    <!-- Sidebar catégories desktop (LOT 11) — masquée mobile via CSS -->
+    <aside id="k-desktop-sidebar" class="k-desktop-sidebar" aria-label="Catégories"></aside>
+    <section class="k-section" id="k-catalog-section">
+      <div class="k-grid" id="k-grid">
+        <!-- JS fills -->
+      </div>
+      <div class="k-loading" id="k-loading">
+        <div class="k-spinner"></div>
+      </div>
+    </section>
+  </div><!-- /k-desktop-catalog-wrap -->
 </div><!-- /k-page-scroll -->
 
 <!-- ═══ PRODUCT MODAL ═══ -->
