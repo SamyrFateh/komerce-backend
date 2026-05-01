@@ -5,9 +5,10 @@
  * Gestion pager sous-catégories + swipe dans modal
  */
 
-import { bus }           from './b-bus.js';
+import { bus }                                         from './b-bus.js';
+import { getSubcategories, getSubcategoryMeta, getNextSubcategoryKey } from './shop-schema.js';
 import {
-  state, SUBCATS, dom, $, $$,
+  state, dom, $, $$,
 }                         from './b-store.js';
 import {
   sanitize, fmt, bindCarouselDots,
@@ -57,7 +58,7 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    * @returns {Array<{label:string, slug:string, count:number}>}
    */
   function _subcatMeta(cat, subKey) {
-    var subs = SUBCATS[cat] || [];
+    var subs = getSubcategories(cat);
     for (var i = 0; i < subs.length; i++) {
       if (subs[i].key === subKey) return subs[i];
     }
@@ -73,7 +74,7 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    * @returns {string|null} Subcat suivante
    */
   function _nextSubcat(cat, currentSub) {
-    var subs = SUBCATS[cat] || [];
+    var subs = getSubcategories(cat);
     for (var i = 0; i < subs.length - 1; i++) {
       if (subs[i].key === currentSub) return subs[i + 1].key;
     }
@@ -119,7 +120,7 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
   function _renderFlatSubcat() {
     var fs = state.flatSubcat;
     if (!fs) return '';
-    var subs = SUBCATS[fs.cat] || [];
+    var subs = getSubcategories(fs.cat);
 
     // Chrome (header + tabs) — stocké pour _mountFlatSubcatChrome
     var headerHtml =

@@ -243,7 +243,9 @@ const adminCustomsCategoriesRouter = require('./routes/admin-customs-categories'
 const adminPricingComponentsRouter = require('./routes/admin-pricing-components');
 const adminCostComponentsRouter    = require('./routes/admin-cost-components');
 const sharedCart                   = require('./routes/shared-cart');
-const adminRiskProvisionsRouter    = require('./routes/admin-risk-provisions');
+const adminRiskProvisionsRouter         = require('./routes/admin-risk-provisions');
+const categoriesRouter                  = require('./routes/categories');
+const adminBoutiqueCategoriesRouter     = require('./routes/admin-boutique-categories');
 
 
 app.use('/api/transit-dashboard', transitDashRouter);
@@ -256,6 +258,8 @@ app.use('/api/admin/pilotage', dashboardRouter);
 app.use('/api/admin/stats',    dashboardRouter);
 app.use('/api/admin/customs-shipments', adminCustomsShipmentsRouter);
 app.use('/api/admin/customs-categories', adminCustomsCategoriesRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/admin/boutique-categories', adminBoutiqueCategoriesRouter);
 app.use('/api/admin/pricing-components', adminPricingComponentsRouter);
 app.use('/api/admin/cost-components',    adminCostComponentsRouter);
 
@@ -423,6 +427,7 @@ const ADMIN_DASHBOARD_PATHS = [
   '/admin/event-workspaces',
   '/admin/sourcing',
   '/admin/alerts',
+  '/admin/categories',
 ];
 ADMIN_DASHBOARD_PATHS.forEach(p => {
   app.get(p, (req, res) => {

@@ -4,12 +4,12 @@
  *
  * Contient :
  *   - state       → état mutable partagé (panier, catalogue, modal…)
- *   - SUBCATS     → map statique des sous-catégories par famille
+
  *   - dom         → cache des refs DOM (peuplé par initDom() au boot)
  *   - $, $$       → aliases querySelector / querySelectorAll
  *
  * Usage :
- *   import { state, SUBCATS, dom, initDom } from './b-store.js';
+
  */
 
 /* ── CONSTANTES ──────────────────────────────────────────── */
@@ -101,63 +101,14 @@ export const scroll = {
   scrollingToSection: false,
 };
 
-/* ── SUBCATEGORIES MAP ───────────────────────────────────── */
 
-/**
- * Map statique des sous-catégories par famille.
- * Les clés DOIVENT correspondre exactement aux valeurs DB (case-sensitive).
+/* ── SUBCATEGORIES MAP — LOT 10 ─────────────────────────── */
+/*
+ * SUBCATS supprimé — source de vérité déplacée vers la DB.
+ * Utiliser getSubcategories(catKey) depuis ./shop-schema.js
+ * (fetche GET /api/categories au boot, fallback hardcodé si API indispo).
  */
-export const SUBCATS = {
-  'Mode': [
-    { key: 'Femme',    label: 'Femme',    icon: '👗' },
-    { key: 'Homme',    label: 'Homme',    icon: '👔' },
-    { key: 'Hijab',    label: 'Hijab',    icon: '🧕' },
-    { key: 'Boubou',   label: 'Boubou',   icon: '👘' },
-    { key: 'Shoes',    label: 'Shoes',    icon: '👟' },
-  ],
-  'Beauté': [
-    { key: 'Parfums',    label: 'Parfum',   icon: '🌸' },
-    { key: 'Soins',      label: 'Soin',     icon: '🧴' },
-    { key: 'Cheveux',    label: 'Cheveux',  icon: '💇' },
-    { key: 'Maquillage', label: 'Maquil.',  icon: '💄' },
-    { key: 'Ongles',     label: 'Ongles',   icon: '💅' },
-  ],
-  'Tech': [
-    { key: 'Phones',   label: 'Tél.',     icon: '📱' },
-    { key: 'Ordi',     label: 'Ordi',     icon: '💻' },
-    { key: 'Audio',    label: 'Audio',    icon: '🎧' },
-    { key: 'Montres',  label: 'Montres',  icon: '⌚' },
-    { key: 'Gaming',   label: 'Gaming',   icon: '🎮' },
-  ],
-  'Enfant': [
-    { key: 'Bébé',    label: 'Bébé',    icon: '🍼' },
-    { key: 'Garçon',  label: 'Garçon',  icon: '👦' },
-    { key: 'Fille',   label: 'Fille',   icon: '👧' },
-    { key: 'Jouets',  label: 'Jouets',  icon: '🧸' },
-    { key: 'École',   label: 'École',   icon: '📚' },
-  ],
-  'Maison': [
-    { key: 'Cuisine',    label: 'Cuisine',   icon: '🍳' },
-    { key: 'Salon',      label: 'Salon',     icon: '🛋'  },
-    { key: 'Chambre',    label: 'Chambre',   icon: '🛏'  },
-    { key: 'Déco',       label: 'Déco',      icon: '🖼'  },
-    { key: 'Rangement',  label: 'Rangem.',   icon: '📦' },
-  ],
-  'Sport': [
-    { key: 'Foot',      label: 'Foot',      icon: '⚽' },
-    { key: 'Fitness',   label: 'Fitness',   icon: '💪' },
-    { key: 'Natation',  label: 'Natation',  icon: '🏊' },
-    { key: 'Yoga',      label: 'Yoga',      icon: '🧘' },
-    { key: 'Outdoor',   label: 'Outdoor',   icon: '🏕' },
-  ],
-  'Sur-mesure': [
-    { key: 'Couture',   label: 'Couture',   icon: '🧵' },
-    { key: 'Design',    label: 'Design',    icon: '✏️'  },
-    { key: 'Mesure',    label: 'Mesure',    icon: '📏' },
-    { key: 'Broderie',  label: 'Broderie',  icon: '🪡' },
-    { key: 'Premium',   label: 'Premium',   icon: '⭐' },
-  ],
-};
+
 
 /* ── DOM REFS ────────────────────────────────────────────── */
 
