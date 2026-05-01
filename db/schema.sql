@@ -1,6 +1,6 @@
 -- ============================================================
 -- KOMERCE — Schéma PostgreSQL MVP
--- Version 1.3 · Mars 2026
+-- Version 1.4 · Mai 2026 (LOT 5 — ENUMs + colonnes orders alignés avec migrations 044/059/060)
 -- Inclut : commandes, paiements, logistique, scan chaîne
 -- ============================================================
 
@@ -14,19 +14,21 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TYPE user_role AS ENUM ('client', 'admin', 'agent_relais', 'agent_hub');
 
 CREATE TYPE order_status AS ENUM (
-  'confirmed',    -- commande confirmée, en attente paiement
-  'ordered',      -- commande passée (migration 004)
-  'preparation',  -- [SCAN 1] article préparé au hub
-  'shipped',      -- [SCAN 2] remis au transitaire à Dubai
-  'in_transit',   -- [SCAN 3] 🚢 embarqué — confirmation transitaire
-  'available',    -- [SCAN 4] reçu au relais → SMS envoyé au destinataire
-  'collected',    -- [SCAN 5] récupéré par le destinataire
+  'pending',               -- commande créée, en attente paiement (migration 059, LOT 1)
+  'pending_group_payment', -- commande groupée en attente de financement (migration 059, LOT 4)
+  'confirmed',             -- paiement confirmé, commande validée
+  'ordered',               -- commande passée fournisseur (migration 004)
+  'preparation',           -- [SCAN 1] article préparé au hub
+  'shipped',               -- [SCAN 2] remis au transitaire à Dubai
+  'in_transit',            -- [SCAN 3] 🚢 embarqué — confirmation transitaire
+  'available',             -- [SCAN 4] reçu au relais → SMS envoyé au destinataire
+  'collected',             -- [SCAN 5] récupéré par le destinataire
   'cancelled',
   'refunded'
 );
 
-CREATE TYPE payment_mode   AS ENUM ('stripe_eur', 'cash_relais');
-CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded');
+CREATE TYPE payment_mode   AS ENUM ('stripe_eur', 'cash_relais', 'mixed_shared_cart_cash');
+CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded', 'partially_paid');
 CREATE TYPE basket_type    AS ENUM ('personal', 'shared', 'gift');
 
 -- Étapes de scan sur la chaîne logistique (5 étapes MVP v9.0)
@@ -192,6 +194,8 @@ CREATE TABLE orders (
   ordered_at          TIMESTAMPTZ,
   cancelled_at        TIMESTAMPTZ,
   cancel_reason       TEXT,
+  pending_at          TIMESTAMPTZ,                         -- LOT 1/060: timestamp status=pending
+  confirmed_at        TIMESTAMPTZ,                         -- LOT 1/060: timestamp confirmation paiement
 
   -- Coûts réels (pour marge réelle — renseignés après groupage ou à la facturation)
   -- marge_réelle = (price_kmf - cost_kmf) × qty - cost_transport_kmf - cost_douane_kmf

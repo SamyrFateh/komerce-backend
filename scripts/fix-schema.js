@@ -371,6 +371,43 @@ await run('customs_taux_mensuel view', `
   await run('idx_orders_qr_token',
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_qr_token ON orders(qr_token) WHERE qr_token IS NOT NULL');
 
+
+  // ── Migration 044b : payment ENUM shared cart (LOT 5) ────────────────────
+  await run('payment_mode enum mixed_shared_cart_cash',
+    `DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'mixed_shared_cart_cash'
+        AND enumtypid = 'payment_mode'::regtype)
+      THEN ALTER TYPE payment_mode ADD VALUE 'mixed_shared_cart_cash'; END IF;
+    END $$`);
+  await run('payment_status enum partially_paid',
+    `DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'partially_paid'
+        AND enumtypid = 'payment_status'::regtype)
+      THEN ALTER TYPE payment_status ADD VALUE 'partially_paid'; END IF;
+    END $$`);
+
+  // ── Migration 059b : pending + pending_group_payment dans order_status (LOT 5) ─
+  await run('order_status enum pending',
+    `DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending'
+        AND enumtypid = 'order_status'::regtype)
+      THEN ALTER TYPE order_status ADD VALUE 'pending' BEFORE 'confirmed'; END IF;
+    END $$`);
+  await run('order_status enum pending_group_payment',
+    `DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'pending_group_payment'
+        AND enumtypid = 'order_status'::regtype)
+      THEN ALTER TYPE order_status ADD VALUE 'pending_group_payment' AFTER 'pending'; END IF;
+    END $$`);
+
+  // ── Migration 060b : pending_at / confirmed_at sur orders (LOT 5) ─────────
+  await run('orders.pending_at',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ');
+  await run('orders.confirmed_at',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ');
+  await run('idx_orders_confirmed_at',
+    'CREATE INDEX IF NOT EXISTS idx_orders_confirmed_at ON orders(confirmed_at) WHERE confirmed_at IS NOT NULL');
+
   console.log('🔧 Schema migrations complete.');
 }
 
