@@ -169,6 +169,34 @@ router.post('/public/:token/contributions', async (req, res, next) => {
   }
 });
 
+
+// ─── Stripe webhook idempotency helpers ─────────────────────────────────
+async function isStripeEventProcessed(event) {
+  try {
+    const { rows } = await db.query(
+      'SELECT 1 FROM stripe_events_processed WHERE stripe_event_id = $1',
+      [event.id]
+    );
+    return rows.length > 0;
+  } catch (e) {
+    console.warn('[shared-cart webhook] stripe_events_processed unavailable:', e.message);
+    return false;
+  }
+}
+
+async function markStripeEventProcessed(event, payloadSummary = {}) {
+  try {
+    await db.query(
+      `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (stripe_event_id) DO NOTHING`,
+      [event.id, event.type, JSON.stringify(payloadSummary || {})]
+    );
+  } catch (e) {
+    console.warn('[shared-cart webhook] mark event processed failed:', e.message);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // ── WEBHOOK Stripe (montage spécial dans server.js avec express.raw)
 // ═══════════════════════════════════════════════════════════════════════
@@ -189,19 +217,34 @@ async function stripeWebhookHandler(req, res) {
 
   console.log(`[shared-cart webhook] event ${event.type} reçu`);
 
+  if (await isStripeEventProcessed(event)) {
+    return res.json({ received: true, idempotent: true });
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         // Filtrer : ne traiter QUE nos sessions (metadata.komerce='shared_cart_contribution')
         if (session.metadata?.komerce !== 'shared_cart_contribution') {
+          await markStripeEventProcessed(event, { ignored: 'not_a_shared_cart_session' });
           return res.json({ received: true, ignored: 'not_a_shared_cart_session' });
         }
         const result = await engine.confirmContributionFromStripe(session);
         if (!result) {
           console.log(`[shared-cart webhook] session ${session.id} déjà traitée ou non confirmée`);
+          await markStripeEventProcessed(event, {
+            session_id: session.id,
+            contribution: 'already_processed_or_not_confirmed',
+          });
         } else {
           console.log(`[shared-cart webhook] contribution ${result.contribution.id} confirmée`);
+          await markStripeEventProcessed(event, {
+            session_id: session.id,
+            shared_cart_id: result.cart?.id,
+            contribution_id: result.contribution?.id,
+            status: 'confirmed',
+          });
         }
         break;
       }
@@ -211,10 +254,15 @@ async function stripeWebhookHandler(req, res) {
           return res.json({ received: true, ignored: 'not_a_shared_cart_session' });
         }
         await engine.markContributionFailed(session.id, 'session_expired');
+        await markStripeEventProcessed(event, {
+          session_id: session.id,
+          status: 'expired',
+        });
         break;
       }
       default:
         // Ignorer les autres events
+        await markStripeEventProcessed(event, { ignored: 'unsupported_event_type' });
         break;
     }
     res.json({ received: true });
