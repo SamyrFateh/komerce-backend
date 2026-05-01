@@ -74,6 +74,7 @@ import {
   _setupMobilePager, _setupSectionAutoAdvance,
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,
 }                              from './b-pager.js';
+import { setupDesktopSidebar } from './b-desktop-sidebar.js';
 
 'use strict';
 
@@ -114,6 +115,7 @@ function init() {
   // Expose renderGrid sur window pour le listener délégué global (flat subcat)
   if (typeof window !== 'undefined') window.renderGrid = renderGrid;
   setupCats();
+  setupDesktopSidebar();
   setupCatSwipeNav();
   setupSearch();
   setupModal();
