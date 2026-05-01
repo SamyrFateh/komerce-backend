@@ -29,28 +29,16 @@
  *   anomaly_alert   -> anomalie logistique (admin)
  */
 
-const AfricasTalking = require('africastalking');
 const db = require('../db');
 const { getRuleNumber } = require('./rules');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 
-// Initialisation conditionnelle — Africa's Talking uniquement si les clés sont renseignées.
+// Legacy SMS provider disabled.
+// Komerce uses WhatsApp/AuthKey through services/notification-service.js.
+// sendSMS() is kept as a compatibility shim for old cron flows.
 let smsClient = null;
 
-const atKey  = process.env.AT_API_KEY;
-const atUser = process.env.AT_USERNAME;
-
-if (atKey && atUser && atKey !== '...' && atUser !== 'komerce') {
-  try {
-    const at = AfricasTalking({ apiKey: atKey, username: atUser });
-    smsClient = at.SMS;
-    console.log('📱 Africa\'s Talking initialisé — SMS actifs');
-  } catch (err) {
-    console.warn('⚠️  Africa\'s Talking : erreur initialisation —', err.message);
-  }
-} else {
-  console.warn('⚠️  SMS désactivés — clés Africa\'s Talking non configurées (mode dev)');
-}
+console.warn('⚠️  Legacy SMS désactivé — canal cible : WhatsApp/AuthKey');
 
 // ── Validation numéro de téléphone ───────────────────────────────────────────
 
