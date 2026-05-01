@@ -762,8 +762,11 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       throw new Error(JSON.stringify({ code: 'stock_issues', issues: stockIssues }));
     }
 
-    // 5. Créer la commande (squelette ; les items sont créés par la route via la logique orders existante)
-    // On suppose ici un INSERT minimal compatible avec orders
+    // 5. Créer la commande
+    // Colonnes retirées car inexistantes en DB (aucune migration) :
+    //   shared_cart_id, prepaid_amount_kmf, remaining_cash_kmf
+    // Le lien shared_cart → order est assuré par shared_carts.finalized_order_id (étape 6).
+    // status = 'pending' OBLIGATOIRE : le DEFAULT DB est 'confirmed' (schema.sql).
     const reference = await generateOrderReference(client);
     const paymentMode = (remainingCashKmf > 0)
       ? 'mixed_shared_cart_cash'
@@ -780,16 +783,35 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       `INSERT INTO orders (
          reference, user_id, basket_id, relais_id,
          total_kmf, payment_mode, payment_status,
-         shared_cart_id, prepaid_amount_kmf, remaining_cash_kmf
-       ) VALUES ($1, $2, $3, $4, $5, $6::payment_mode, $7::payment_status, $8, $9, $10)
+         status
+       ) VALUES ($1, $2, $3, $4, $5, $6::payment_mode, $7::payment_status, 'pending')
        RETURNING *`,
       [
         reference, userId, cart.source_basket_id, relayId,
         cart.total_kmf_snapshot, paymentMode, paymentStatus,
-        sharedCartId, prepaidKmf, remainingCashKmf,
       ]
     );
     const order = orderRows[0];
+
+    // 5.1 — order_items depuis le snapshot panier partagé
+    // Nécessaire : la route /:id/finalize ne crée PAS les items (elle délègue tout à l'engine).
+    for (const it of items) {
+      await client.query(
+        `INSERT INTO order_items (
+           order_id, product_id, quantity, price_kmf,
+           module_type, module_fabric_id, module_fabric_type,
+           module_size, module_retouche, module_qty_meters, module_accessories
+         ) VALUES ($1, $2, $3, $4, NULL, NULL, NULL, NULL, FALSE, NULL, NULL)`,
+        [order.id, it.product_id, r(it.quantity), r(it.unit_price_kmf_snapshot)]
+      );
+    }
+
+    // 5.2 — Historique de statut (obligatoire pour audit + state machine)
+    await client.query(
+      `INSERT INTO order_status_history (order_id, status, note, changed_by)
+       VALUES ($1, 'pending', 'Commande créée via panier partagé', $2)`,
+      [order.id, userId]
+    );
 
     // 6. Marquer le panier comme converti
     await client.query(
