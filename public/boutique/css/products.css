@@ -155,7 +155,7 @@
   max-width: 86px;
   height: 32px;
   padding: 0;
-  background: var(--white);
+  background: transparent;                       /* transparent d'abord */
   border: 1.5px solid var(--ocean);
   border-radius: 16px;
   box-shadow: 0 2px 6px rgba(74,144,64,.25);
@@ -165,6 +165,13 @@
   animation: cartAddPulse .35s cubic-bezier(.34,1.56,.64,1);
   right: 7px;
   bottom: 7px;
+  /* Le fond blanc n'apparaît qu'après la fin de l'animation */
+  animation: cartAddPulse .35s cubic-bezier(.34,1.56,.64,1) forwards,
+             cartAddBg .01s linear .35s forwards;
+}
+
+@keyframes cartAddBg {
+  to { background: var(--white); }
 }
 
 @keyframes cartAddPulse {
