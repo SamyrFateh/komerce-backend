@@ -12,9 +12,9 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const express = require('express');
 const router  = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                  = require('../../middleware/validate');
@@ -218,7 +218,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
 
     // ── 6. Générer les références colis ─────────────────────────────────────
     const psRef = await generateParcelRef(db);
-    const psId  = uuidv4();
+    const psId  = crypto.randomUUID();
 
     // ── 7a. Créer le colis « partial » ─────────────────────────────────────
     await client.query(
@@ -232,7 +232,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
     const psItems = [];
     for (const ai of available_items) {
       const original = allItems.find(oi => oi.id === ai.order_item_id);
-      const piId     = uuidv4();
+      const piId     = crypto.randomUUID();
       await client.query(
         `INSERT INTO parcel_items (id, parcel_id, order_item_id, product_id, quantity)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -275,7 +275,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
 
     if (allBackorderItems.length > 0) {
       boRef = await generateParcelRef(db);
-      boId  = uuidv4();
+      boId  = crypto.randomUUID();
 
       await client.query(
         `INSERT INTO parcels (
@@ -286,7 +286,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
       );
 
       for (const boi of allBackorderItems) {
-        const piId = uuidv4();
+        const piId = crypto.randomUUID();
         await client.query(
           `INSERT INTO parcel_items (id, parcel_id, order_item_id, product_id, quantity)
            VALUES ($1, $2, $3, $4, $5)`,
