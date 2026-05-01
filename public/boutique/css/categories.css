@@ -435,16 +435,16 @@
   }
 
   .k-chip:hover {
-    border-color: var(--ocean);
-    color: var(--ocean-dark);
+    border-color: var(--coral);
+    color: var(--coral);
     box-shadow: var(--elev-2);
   }
 
   .k-chip.active {
-    background: var(--ocean-dark);
+    background: var(--coral);
     color: var(--white);
-    border-color: var(--ocean-dark);
-    box-shadow: 0 4px 14px rgba(74,144,64,.28);
+    border-color: var(--coral);
+    box-shadow: 0 4px 14px rgba(200,92,45,.28);
   }
 
   .k-chip-photo {

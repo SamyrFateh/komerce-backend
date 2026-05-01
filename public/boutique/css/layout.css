@@ -566,7 +566,7 @@ body {
   }
 
   .k-chip.active {
-    background: var(--ocean-dark);
+    background: var(--coral);
     color: var(--white);
   }
 
