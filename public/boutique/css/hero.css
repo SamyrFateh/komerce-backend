@@ -45,7 +45,7 @@
   text-align: center;
   z-index: 5;
   padding: 6px 28% 0;
-  pointer-events: none;
+  pointer-events: none; /* Mobile : slogan décoratif, boutons CTA masqués */
 }
 .k-hero-mini-slogan .k-line-1 {
   display: block;
@@ -193,6 +193,8 @@
     z-index: 10;
     background: none;
     gap: 0;
+    /* HOTFIX #213 — reset pointer-events pour que les boutons CTA cliquent */
+    pointer-events: auto;
   }
   .k-hero-mini-slogan .k-line-1 {
     font-size: clamp(1.6rem, 2.8vw, 2.8rem);

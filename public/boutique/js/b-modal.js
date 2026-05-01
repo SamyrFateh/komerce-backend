@@ -138,6 +138,13 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     const product = state.products.find(p => p.id === id);
     if (!product) return;
 
+    // HOTFIX #213 — Reset la barre de recherche interne à chaque ouverture
+    if (state._modalSearchInput) {
+      state._modalSearchInput.value = '';
+      document.getElementById('k-sug-rail') &&
+        document.getElementById('k-sug-rail').querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+    }
+
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
     if (!dom.modalOverlay.classList.contains('open')) {
       state._savedCatalogScrollY = window.scrollY;
@@ -723,7 +730,75 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       });
     }
 
-    // ── Image zone: carousel swipe + pull-to-close (Temu-style)
+
+    // ── Barre de recherche interne (entre infos produit et suggestions) ──
+    // Injectée une seule fois — filtre les suggestions en live
+    // + sur Enter : ferme le modal et lance la recherche catalogue
+    (function setupModalInnerSearch() {
+      const sugSection = document.getElementById('k-modal-suggestions');
+      if (!sugSection || sugSection.previousElementSibling?.classList.contains('k-modal-inner-search')) return;
+
+      const searchWrap = document.createElement('div');
+      searchWrap.className = 'k-modal-inner-search';
+      searchWrap.innerHTML =
+        '<svg class="k-modal-inner-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>' +
+        '</svg>' +
+        '<input type="search" class="k-modal-inner-search-input" ' +
+               'placeholder="Chercher un produit..." autocomplete="off" autocorrect="off">' +
+        '<span class="k-modal-inner-search-hint">↵ Chercher dans le catalogue</span>';
+
+      // Insérer juste avant la section suggestions
+      sugSection.parentElement.insertBefore(searchWrap, sugSection);
+
+      const searchInput = searchWrap.querySelector('.k-modal-inner-search-input');
+      // Stocker la référence pour reset à chaque openModal
+      state._modalSearchInput = searchInput;
+
+      // Filtrage live des cartes suggestion
+      searchInput.addEventListener('input', function() {
+        const q = searchInput.value.trim().toLowerCase();
+        const sugRailEl = document.getElementById('k-sug-rail');
+        if (!sugRailEl) return;
+        sugRailEl.querySelectorAll('.k-sug-card').forEach(function(card) {
+          if (q.length < 2) {
+            card.classList.remove('search-hidden');
+            return;
+          }
+          const pid = card.dataset.id;
+          const p = state.products.find(function(x) { return String(x.id) === String(pid); });
+          if (!p) { card.classList.add('search-hidden'); return; }
+          const match =
+            (p.name || '').toLowerCase().includes(q) ||
+            (p.category || '').toLowerCase().includes(q) ||
+            (p.description || '').toLowerCase().includes(q);
+          card.classList.toggle('search-hidden', !match);
+        });
+      });
+
+      // Enter → ferme modal + lance recherche dans le catalogue principal
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        const q = searchInput.value.trim();
+        if (q.length < 1) { e.preventDefault(); return; }
+        e.preventDefault();
+        searchInput.value = '';
+        closeModal();
+        // Injecter dans la barre de recherche principale
+        const mainInput = dom.searchInput || document.getElementById('k-search-input');
+        if (mainInput) {
+          mainInput.value = q;
+          mainInput.dispatchEvent(new Event('input', { bubbles: true }));
+          // Scroll doux vers le catalogue
+          setTimeout(function() {
+            const pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+            if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 200);
+        }
+      });
+    })();
+
+        // ── Image zone: carousel swipe + pull-to-close (Temu-style)
     setupImageZoneTouch();
 
     // ── Navigation clavier ← → entre produits (desktop)

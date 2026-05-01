@@ -46,6 +46,7 @@
   font-size: 14px; font-weight: 600; color: var(--text);
   background: none; border: none; padding: 6px 10px;
   border-radius: 50px; transition: opacity .15s;
+  flex-shrink: 0;
 }
 .k-modal-back svg { width: 18px; height: 18px; }
 .k-modal-back:active { opacity: .7; }
@@ -60,7 +61,7 @@
 }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
 .k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
-.k-modal-topbar-right { display: flex; align-items: center; gap: 8px; }
+.k-modal-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 /* Avatar panier dans la topbar */
 .k-modal-cart-btn {
@@ -98,7 +99,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 0; /* topbar sticky — pas besoin de compenser */
+  padding-top: 0;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
@@ -129,7 +130,7 @@
   min-height: 0;
   background: var(--white);
   border-radius: 20px 20px 0 0;
-  margin-top: -20px;          /* chevauche légèrement le bas de l'image */
+  margin-top: -20px;
   position: relative;
   z-index: 2;
   box-shadow: 0 -2px 16px rgba(31,48,36,.06);
@@ -155,6 +156,58 @@
 .k-modal-meta { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
 .k-modal-meta span { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; background: var(--sand); border-radius: 50px; }
 
+/* ── BARRE DE RECHERCHE INTERNE (entre infos et suggestions) ─── */
+/*    Mobile + Desktop — filtre les suggestions + lance recherche catalogue */
+.k-modal-inner-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 12px 4px;
+  padding: 9px 14px;
+  background: var(--sand);
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.k-modal-inner-search:focus-within {
+  border-color: var(--ocean);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(100,175,90,.1);
+}
+.k-modal-inner-search-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.k-modal-inner-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+}
+.k-modal-inner-search-input::placeholder {
+  color: var(--text-muted);
+}
+.k-modal-inner-search-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+.k-modal-inner-search:focus-within .k-modal-inner-search-hint {
+  opacity: 1;
+}
+/* Carte cachée par le filtre search */
+.k-sug-card.search-hidden { display: none !important; }
+
 /* ── ACTIONS ─────────────────────────────────────────────────── */
 .k-modal-actions {
   display: grid;
@@ -163,7 +216,7 @@
   gap: 10px;
   align-items: center;
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-  touch-action: manipulation;  /* évite le délai 300ms sur iOS */
+  touch-action: manipulation;
   border-top: 1px solid var(--sand-dark);
   flex-shrink: 0;
   background: rgba(255,255,255,.96);
@@ -310,7 +363,7 @@
 .k-sug-grid .k-sug-card-name { font-size: 13px; line-height: 1.3; padding: 6px 8px 2px; color: var(--text); font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
 .k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
 
-/* ── DESKTOP : modal 2 colonnes ─────────────────────────────── */
+/* ── DESKTOP ≥600px : modal 2 colonnes légères ───────────────── */
 @media (min-width: 600px) {
   .k-modal {
     width: min(90vw, 900px);
@@ -332,13 +385,12 @@
     align-self: start;
   }
   .k-modal-details { grid-column: 2; grid-row: 1; overflow-y: auto; }
-  /* Desktop : topbar repasse en relative (grid layout) */
   .k-modal-topbar {
     position: relative;
     top: auto; left: auto; right: auto;
   }
   .k-modal-scroll {
-    padding-top: 0;   /* pas besoin de compenser sur desktop */
+    padding-top: 0;
   }
   .k-modal-actions {
     grid-column: 2; grid-row: 2;
@@ -351,7 +403,222 @@
 }
 
 
-/* ── Stepper suggestions (mini inline) ────────────────────────── */
+/* ── DESKTOP PREMIUM ≥900px — Layout Temu-style ─────────────── */
+/* Colonne gauche : miniatures + image grande
+   Colonne droite : infos + search + suggestions (scroll vertical naturel)
+   Actions : sticky en bas du modal (hors scroll, flex-column)             */
+
+@media (min-width: 900px) {
+
+  .k-modal-overlay {
+    align-items: center;
+    padding: 24px;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .k-modal {
+    width: min(92vw, 1080px);
+    max-height: min(90vh, 820px);
+    border-radius: 16px;
+    box-shadow: var(--elev-4);
+    /* k-modal = flex column : topbar | scroll(flex:1) | actions(sticky) */
+  }
+
+  .k-modal-scroll {
+    /* 2 colonnes : image 56% | détails+search+suggestions 44% */
+    display: grid;
+    grid-template-columns: 56% 44%;
+    grid-template-rows: 1fr;   /* 1 seule rangée — chaque colonne scrolle indépendamment */
+    height: 100%;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  /* Topbar sur toute la largeur — sticky hors scroll */
+  .k-modal-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 52px;
+    padding: 0 16px;
+  }
+
+  /* Colonne gauche : image wrap (thumbs + carousel) — fixe, ne scrolle pas */
+  .k-modal-img-wrap {
+    grid-column: 1;
+    grid-row: 1;
+    height: 100%;
+    min-height: 400px;
+    max-height: 100%;
+    border-radius: 0 0 0 16px;
+    overflow: hidden;
+    background: var(--sand);
+    align-self: stretch;
+  }
+
+  /* Colonne droite : details + inner-search + suggestions — scrolle verticalement */
+  .k-modal-details {
+    grid-column: 2;
+    grid-row: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 22px 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Suggestions coulent dans la colonne droite — PAS de max-height bloquant */
+  .k-modal-suggestions {
+    grid-column: unset;
+    grid-row: unset;
+    border-top: 1px solid var(--sand-dark);
+    padding: 12px 0 20px;
+    max-height: none;      /* HOTFIX #213 — supprime le double-scroll 260px */
+    overflow-y: visible;   /* scrolle avec le parent .k-modal-details */
+    flex: 1;
+  }
+
+  /* Actions : sticky en bas de .k-modal (hors grid-scroll) */
+  .k-modal-actions {
+    grid-column: unset;
+    grid-row: unset;
+    position: relative;    /* déjà géré par flex-column de .k-modal */
+    bottom: auto;
+    border-top: 1px solid rgba(0,0,0,.06);
+    padding: 12px 22px 20px;
+    background: var(--white);
+    border-radius: 0 0 16px 0;
+    /* Sur desktop, le bouton Acheter prend toute la largeur */
+  }
+  .k-modal-actions .k-buy-now-btn {
+    grid-column: 1 / -1;
+    border-radius: 10px;
+  }
+
+  /* Nom + prix plus lisibles sur desktop */
+  .k-modal-info h2 {
+    font-size: 1.25rem;
+    font-variation-settings: 'opsz' 20;
+  }
+  .k-modal-price { font-size: 1.5rem; }
+  .k-modal-desc {
+    -webkit-line-clamp: none;   /* Afficher description complète sur desktop */
+    overflow: visible;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  /* Barre recherche interne plus proéminente sur desktop */
+  .k-modal-inner-search {
+    margin: 10px 0 8px;
+    padding: 10px 16px;
+  }
+  .k-modal-inner-search-input {
+    font-size: 14px;
+  }
+
+  /* Grille suggestions en 3 colonnes sur desktop */
+  .k-sug-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+}
+
+@media (min-width: 1200px) {
+  .k-modal {
+    width: min(92vw, 1160px);
+  }
+  .k-modal-scroll {
+    grid-template-columns: 58% 42%;
+  }
+  /* 4 colonnes suggestions sur très grands écrans */
+  .k-sug-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   MINIATURES DESKTOP — colonne gauche Temu-style
+   Mobile : caché (dots horizontaux suffisent)
+   Desktop : colonne verticale à gauche de l'image principale
+   ══════════════════════════════════════════════════════════════ */
+
+/* Mobile : cacher les miniatures */
+.k-modal-thumbs { display: none; }
+
+@media (min-width: 900px) {
+
+  /* Conteneur image : flex row avec miniatures à gauche */
+  .k-modal-img-wrap {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+  }
+
+  /* Colonne miniatures */
+  .k-modal-thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 8px 10px 10px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    width: 72px;
+    background: var(--sand);
+    scrollbar-width: none;
+  }
+  .k-modal-thumbs::-webkit-scrollbar { display: none; }
+
+  .k-modal-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background: var(--white);
+    overflow: hidden;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .k-modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .k-modal-thumb:hover {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 1px var(--coral);
+  }
+  .k-modal-thumb.is-active {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 2px rgba(200,92,45,.25);
+  }
+
+  /* Carousel principal prend le reste de la place */
+  .k-modal-carousel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Cacher les dots sur desktop (remplacés par miniatures) */
+  .k-modal-dots { display: none; }
+
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEPPER & ACTIONS SUGGESTIONS
+   ══════════════════════════════════════════════════════════════ */
+
 .k-sug-card-actions {
   display: flex;
   align-items: center;
@@ -387,7 +654,7 @@
   flex: 1; min-width: 0;
 }
 
-/* ── k-sug-add : panier sans fond blanc dans les suggestions ─── */
+/* k-sug-add : panier sans fond blanc dans les suggestions */
 .k-sug-add {
   background: transparent;
   border: none;
@@ -404,169 +671,12 @@
 .k-sug-add:active { transform: scale(.88); }
 .k-sug-add img { width: 28px; height: 28px; display: block; }
 
-/* ══════════════════════════════════════════════════════════════
-   DESKTOP PREMIUM — modal produit
-   ══════════════════════════════════════════════════════════════ */
-
-@media (min-width: 900px) {
-
-  .k-modal-overlay {
-    align-items: center;
-    padding: 24px;
-    background: rgba(0,0,0,.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .k-modal {
-    width: min(92vw, 980px);
-    max-height: min(88vh, 780px);
-    border-radius: 16px;
-    box-shadow: var(--elev-4);
-  }
-
-  .k-modal-scroll {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr auto;
-    height: 100%;
-    max-height: min(88vh, 780px);
-    overflow: hidden;
-    padding-top: 0;
-  }
-
-  /* Topbar sur toute la largeur */
-  .k-modal-topbar {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    height: 52px;
-    padding: 0 16px;
-  }
-
-  /* Image gauche */
-  .k-modal-img-wrap {
-    grid-column: 1;
-    grid-row: 2;
-    height: auto;
-    min-height: 380px;
-    max-height: 100%;
-    border-radius: 0 0 0 16px;
-    overflow: hidden;
-    background: var(--sand);
-  }
-
-  /* Détails droite */
-  .k-modal-details {
-    grid-column: 2;
-    grid-row: 2;
-    overflow-y: auto;
-    padding: 20px 22px 0;
-  }
-
-  /* Actions droite bas */
-  .k-modal-actions {
-    grid-column: 2;
-    grid-row: 3;
-    position: sticky;
-    bottom: 0;
-    border-top: 1px solid rgba(0,0,0,.06);
-    padding: 12px 22px 20px;
-    background: var(--white);
-    border-radius: 0 0 16px 0;
-  }
-
-  /* Suggestions pleine largeur bas */
-  .k-modal-suggestions {
-    grid-column: 1 / -1;
-    grid-row: 4;
-    border-top: 1px solid var(--sand-dark);
-    padding: 16px 20px 20px;
-    max-height: 260px;
-    overflow-y: auto;
-  }
-
-  .k-modal-name { font-size: 1.3rem; margin-bottom: 6px; }
-  .k-modal-price { font-size: 1.6rem; }
-
-  .k-buy-now-btn {
-    width: 100%;
-    padding: 14px;
-    font-size: 15px;
-    border-radius: 10px;
-    margin-top: 8px;
-  }
-
-}
-
-/* ══════════════════════════════════════════════════════════════
-   MINIATURES DESKTOP — colonne gauche Temu-style
-   Mobile : caché (dots horizontaux suffisent)
-   Desktop : colonne verticale à gauche de l'image principale
-   ══════════════════════════════════════════════════════════════ */
-
-/* Mobile : cacher les miniatures */
-.k-modal-thumbs { display: none; }
-
-@media (min-width: 900px) {
-
-  /* Conteneur image : flex row avec miniatures à gauche */
-  .k-modal-img-wrap {
-    display: flex;
-    flex-direction: row;
-    gap: 0;
-  }
-
-  /* Colonne miniatures */
-  .k-modal-thumbs {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 10px 8px 10px 10px;
-    overflow-y: auto;
-    flex-shrink: 0;
-    width: 70px;
-    background: var(--sand);
-    scrollbar-width: none;
-  }
-  .k-modal-thumbs::-webkit-scrollbar { display: none; }
-
-  .k-modal-thumb {
-    width: 54px;
-    height: 54px;
-    border-radius: 6px;
-    border: 2px solid transparent;
-    background: var(--white);
-    overflow: hidden;
-    cursor: pointer;
-    padding: 0;
-    flex-shrink: 0;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  .k-modal-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
-  }
-  .k-modal-thumb:hover {
-    border-color: var(--coral);
-    box-shadow: 0 0 0 1px var(--coral);
-  }
-  .k-modal-thumb.is-active {
-    border-color: var(--coral);
-    box-shadow: 0 0 0 2px rgba(200,92,45,.25);
-  }
-
-  /* Carousel principal prend le reste de la place */
-  .k-modal-carousel {
-    flex: 1;
-    min-width: 0;
-  }
-
-  /* Cacher les dots sur desktop (remplacés par miniatures) */
-  .k-modal-dots { display: none; }
-
+/* ── Promo badge sur les cartes suggestion ────────────────────── */
+.k-sug-promo-badge {
+  position: absolute;
+  top: 5px; left: 5px;
+  background: var(--coral); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 50px;
+  pointer-events: none; z-index: 2;
 }
