@@ -15,6 +15,7 @@
     { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', section: 'PILOTAGE' },
     { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', section: 'PILOTAGE' },
     { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',       icon: '🎉', section: 'PILOTAGE' },
+    { path: '/admin/categories', view: 'CategoriesView',  label: 'Catégories boutique', icon: '🏷️', section: 'CATALOGUE' },
     { path: '/admin/sourcing',         view: null,                   label: 'Sourcing',               icon: '🔎', section: 'AUTRES' },
     { path: '/admin/alerts',           view: null,                   label: 'Alertes',                icon: '🚨', section: 'AUTRES' },
   ];
