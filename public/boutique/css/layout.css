@@ -843,3 +843,46 @@ body {
   .k-desktop-sidebar { width: 192px; }
   #k-desktop-catalog-wrap { gap: 24px; }
 }
+
+
+/* PATCH #227 — desktop page scroll and sidebar stabilization */
+
+@media (min-width: 900px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  #k-page-scroll,
+  #k-desktop-catalog-wrap,
+  #k-catalog-section {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  #k-desktop-catalog-wrap {
+    box-sizing: border-box;
+  }
+
+  .k-desktop-sidebar {
+    contain: layout paint;
+  }
+
+  .k-sidebar-mega {
+    max-height: calc(100vh - var(--header-h) - 40px);
+    overflow-y: auto;
+  }
+
+  .k-sidebar-cat {
+    outline: none;
+  }
+
+  .k-sidebar-cat:focus,
+  .k-sidebar-cat:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}
+

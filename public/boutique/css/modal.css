@@ -871,3 +871,97 @@
   padding: 2px 6px; border-radius: 50px;
   pointer-events: none; z-index: 2;
 }
+
+
+/* PATCH #227 — desktop modal suggestions vertical */
+
+@media (min-width: 900px) {
+  .k-modal {
+    overflow: hidden;
+  }
+
+  .k-modal-scroll {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .k-modal-details {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  /* Les suggestions restent dans le flux vertical de la colonne droite */
+  .k-modal-suggestions {
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 96px;
+  }
+
+  /* Force les rails/grilles de suggestions en vertical dans la modal desktop */
+  .k-modal-suggestions .k-sug-rail,
+  .k-modal-suggestions .k-sug-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .k-modal-suggestions .k-sug-card {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 10px;
+    align-items: center;
+    border: 1px solid var(--sand-dark);
+    border-radius: 12px;
+    background: var(--white);
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  .k-modal-suggestions .k-sug-card-img {
+    width: 72px;
+    height: 72px;
+    aspect-ratio: auto;
+    border-radius: 10px;
+    background: var(--sand);
+  }
+
+  .k-modal-suggestions .k-sug-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  .k-modal-suggestions .k-sug-card-name {
+    padding: 0 8px 2px 0;
+    min-height: 0;
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+
+  .k-modal-suggestions .k-sug-card-price {
+    padding: 0 8px 0 0;
+    font-size: 14px;
+  }
+
+  /* Chips sous-catégorie : scroll horizontal ok, mais stable */
+  .k-modal-suggestions .k-sug-chips {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    padding-bottom: 8px;
+  }
+
+  /* Actions toujours en bas, hors du scroll droit */
+  .k-modal-actions {
+    flex-shrink: 0;
+  }
+}
+

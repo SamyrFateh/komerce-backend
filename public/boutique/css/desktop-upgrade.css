@@ -636,3 +636,67 @@
     stroke-width: 2;
   }
 }
+
+
+/* PATCH #227 — desktop Temu UX stabilization */
+
+@media (min-width: 900px) {
+  /* Supprime la cible/lens orange visible dans la modal produit */
+  .k-modal-carousel {
+    cursor: default;
+  }
+
+  .k-modal-zoom-lens,
+  .k-modal-zoom-preview {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Évite les rectangles/focus parasites sur desktop à la souris */
+  .k-card,
+  .k-card *,
+  .k-modal,
+  .k-modal *,
+  .k-desktop-sidebar,
+  .k-desktop-sidebar * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .k-card:focus,
+  .k-card:focus-visible,
+  .k-card-img-wrap:focus,
+  .k-card-img-wrap:focus-visible,
+  .k-modal-carousel:focus,
+  .k-modal-carousel:focus-visible,
+  .k-modal-slide:focus,
+  .k-modal-slide:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Focus clavier conservé seulement sur vrais contrôles */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible {
+    outline: 2px solid rgba(42,122,62,.45);
+    outline-offset: 2px;
+  }
+
+  /* Stabilise le hover overlay pour éviter scintillement */
+  .k-card-hover-overlay {
+    will-change: opacity;
+    backface-visibility: hidden;
+  }
+
+  .k-card:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Évite que l’animation d’entrée se rejoue violemment au re-render */
+  .k-card {
+    animation-duration: .22s;
+    animation-fill-mode: both;
+  }
+}
+
