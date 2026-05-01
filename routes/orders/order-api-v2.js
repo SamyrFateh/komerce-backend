@@ -17,9 +17,9 @@
  * ═══════════════════════════════════════════════════════════════
  */
 
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const { randomBytes } = require('crypto');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
@@ -89,7 +89,7 @@ async function autoCreateParcel(client, orderId, actor) {
   }).join('');
 
   // 8. Insert parcel
-  const parcelId = uuidv4();
+  const parcelId = crypto.randomUUID();
   await client.query(
     `INSERT INTO parcels (
        id, order_id, reference, type, status, relais_id,
@@ -122,7 +122,7 @@ async function autoCreateParcel(client, orderId, actor) {
            $6, $7, 0, 0, 0,
            false, $8
          )`,
-        [uuidv4(), parcelId, item.id, item.product_id, item.quantity,
+        [crypto.randomUUID(), parcelId, item.id, item.product_id, item.quantity,
          item.quantity, item.quantity, item.product_name]
       );
       await client.query('RELEASE SAVEPOINT sp_pi');
@@ -142,7 +142,7 @@ async function autoCreateParcel(client, orderId, actor) {
          $4, $5::uuid, $6, $7,
          'Hub', $8, 'applied', NOW()
        )`,
-      [uuidv4(), parcelId, orderId, parcelRef,
+      [crypto.randomUUID(), parcelId, orderId, parcelRef,
        actor.id || null, actor.name || 'Système',
        actor.role === 'agent_hub' ? 'hub_agent' : 'system',
        `Colis ${parcelRef} auto-créé pour ${order.reference}`]

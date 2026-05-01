@@ -1,7 +1,6 @@
 // routes/shares.js — v2 (event shares + contributions)
 const express = require('express');
 const router  = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const db      = require('../db');
 
 /* ── helpers ─────────────────────────────────────── */
