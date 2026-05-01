@@ -330,6 +330,31 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       );
     }
 
+    // ── Wallet couvre 100% → cycle paiement complet (state machine + stock) ──
+    // Sans cet appel : status reste 'pending', stock non décrémenté, machine contournée.
+    if (creditApplied > 0 && total_kmf === 0) {
+      const { confirmPaymentCycle } = require('../../services/order-payment-confirmation');
+      const cycleResult = await confirmPaymentCycle({
+        orderId: order.id,
+        actor:   { id: req.user.id, role: req.user.role || 'user' },
+        source:  'wallet_full_payment',
+        dbClient: client,
+        note:    'Paiement intégral par wallet',
+      });
+      if (cycleResult.stockBlocked) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: 'Stock insuffisant pour finaliser la commande',
+          items: cycleResult.insufficientItems,
+        });
+      }
+      // Rafraîchir order : status / confirmed_at à jour dans la réponse API
+      const { rows: [refreshed] } = await client.query(
+        'SELECT * FROM orders WHERE id = $1', [order.id]
+      );
+      if (refreshed) Object.assign(order, refreshed);
+    }
+
     // ─── PHASE B — Snapshot economique fige (P3 doctrine) ────────────────
     // Appelle pricing-engine.recommend() sur chaque order_item et stocke
     // l'estime dans order_item_cost_imputations (immuable).
